@@ -144,7 +144,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
 | `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `ChunkFailed`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
-| `src/experience/camera/**` | `camera`, `experience`, `career` and `ride` |
+| `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
+| `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**` and the rover mesh, fade and runtime | `camera` and `experience` |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |

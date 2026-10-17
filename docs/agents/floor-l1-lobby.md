@@ -107,10 +107,11 @@ Code: `floors/lobby/observatoryLayout.ts`.
 | Zone | Where | Camera |
 |---|---|---|
 | `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.5, so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
-| `L1:arrival` | the elevator approach | north of the rover and east of the glass shaft, looking due south at the observatory, the kiosk at the left; zoom 1.15 |
+| `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0) | behind the rover, looking east at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 0.88, the widest views that keep the camera east of the glass shaft |
 | `L1:visits` | the observatory door | |
 
 - `CameraDirector` primes the zone under the rover when it is marked `prime` (only `L1:kiosk`; `primeZone`), on the first frame and through the boot and the intro.
 - The intro's end pose is that follow pose (yaw, zoom, look-ahead, offset scale), so the intro lands on the spawn view with no jump.
 - `resetView` returns to the default north-west look.
-- The arrival zone eases like any zone, so under reduced motion the camera keeps the default look.
+- The elevator rolls the rover on east from the shaft to `LOBBY.arrival`; the camera glides out of the car into the arrival zone ([Elevator arrival](3d-experience.md#elevator-arrival)). Under reduced motion the rover and the camera cut to it.
+- The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The session still spawns at the kiosk stop in `L1:kiosk` (a `prime` zone), not on the arrival point.

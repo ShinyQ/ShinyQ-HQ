@@ -24,6 +24,7 @@ import { prefersReducedMotion, REDUCED_MOTION_QUERY } from "@/lib/reduced-motion
 import { parseHQUrl, serializeHQUrl } from "@/lib/url-sync";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { ARRIVAL_HEADING } from "./camera/arrival";
 import { CanvasBoundary } from "./CanvasBoundary";
 import { canvasReplacedInCommit, isQualityRemount, markCanvasReplaced } from "./qualityRemount";
 import { buildFloorLayouts, LOBBY, READY_FLOORS } from "./config";
@@ -107,9 +108,16 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
   if (isQualityRemount(!started, prevTier, tier, canvasReplacedInCommit())) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
-    // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); every other start turns toward the default follow camera.
+    // The L1 spawn faces the Ask Rover kiosk (owner 2026-10-14); a start on a floor's arrival point faces east like an
+    // elevator arrival, under the arrival view (Round 8 J); every other start turns toward the default follow camera.
     const spawn = layouts.L1.spawn;
-    const heading = floor === "L1" && at.x === spawn.x && at.z === spawn.z ? LOBBY.spawnHeading : Math.PI / 4;
+    const arrival = layouts[floor].arrival;
+    const heading =
+      floor === "L1" && at.x === spawn.x && at.z === spawn.z
+        ? LOBBY.spawnHeading
+        : arrival && at.x === arrival.x && at.z === arrival.z
+          ? ARRIVAL_HEADING
+          : Math.PI / 4;
     s.resume(floor, { ...at, heading });
     roverRuntime.x = at.x;
     roverRuntime.z = at.z;

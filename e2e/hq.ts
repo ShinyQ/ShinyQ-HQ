@@ -487,37 +487,58 @@ export async function interactablesOf(page: Page): Promise<InteractSnapshot[]> {
   );
 }
 
+type ClickableQuery = { kinds?: string[]; ids?: string[]; safe: { top: number; bottom: number; side: number }; minDistance: number; grid: Sample[] };
+type ClickableHit = { item: InteractSnapshot; sample: Sample; point: ScreenPoint };
+
+/**
+ * Runs in the page (`page.evaluate(clickableHits, ...)`, so it is self-contained): the targets of `kinds` (or `ids`) at
+ * least `minDistance` from the rover with the first `grid` sample where a click lands on them, nearest first. A sample
+ * counts when it is inside the `safe` box, the bare canvas is under it, the raycast hits this very target (no other
+ * volume in front) and it is 100 px or more from the rover (a click on the rover opens Ask Rover). Null before the
+ * scene can pick.
+ */
+function clickableHits({ kinds, ids, safe, minDistance, grid }: ClickableQuery): ClickableHit[] | null {
+  const { interact, rover } = (window as unknown as InteractWindow).__hq;
+  const hitAt = interact.hitAt;
+  if (!interact.project || !hitAt) return null;
+  const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const clickable = (id: string, s: Sample) => {
+    const p = interact.screenAt(id, s.fx, s.fz, s.lift);
+    if (!p || p.x < safe.side || p.x > w - safe.side || p.y < safe.top || p.y > h - safe.bottom) return null;
+    if (document.elementFromPoint(p.x, p.y)?.tagName !== "CANVAS") return null;
+    if (self && Math.hypot(p.x - self.x, p.y - self.y) <= 100) return null;
+    return hitAt(p.x, p.y) === id ? p : null;
+  };
+  const out: (ClickableHit & { d: number })[] = [];
+  for (const i of interact.items) {
+    if ((kinds && !kinds.includes(i.kind)) || (ids && !ids.includes(i.id))) continue;
+    const d = Math.hypot(i.at.x - rover.x, i.at.z - rover.z);
+    if (d < minDistance) continue;
+    for (const sample of grid) {
+      const point = clickable(i.id, sample);
+      if (!point) continue;
+      const { id, kind, label, at, bounds, action } = i;
+      out.push({ item: { id, kind, label, at, bounds, action }, sample, point, d });
+      break;
+    }
+  }
+  return out.sort((a, b) => a.d - b.d).map(({ item, sample, point }) => ({ item, sample, point }));
+}
+
+/** A screen point where a click lands on target `id` (same checks as `visibleTarget`), or null when none shows. */
+export async function clickablePoint(page: Page, id: string, safe = DESKTOP_SAFE): Promise<ScreenPoint | null> {
+  const hits = await page.evaluate(clickableHits, { ids: [id], safe, minDistance: 0, grid: SAMPLES });
+  return hits?.[0]?.point ?? null;
+}
+
 /**
  * The target of `kinds` nearest to the rover whose pick volume shows on the bare canvas inside `safe`,
  * at least 100 px from the rover on screen (a click on the rover opens Ask Rover). Fails when none shows.
  */
 export async function visibleTarget(page: Page, { kinds, safe = DESKTOP_SAFE, minDistance = 0 }: TargetQuery): Promise<InteractSnapshot> {
-  const found = await page.evaluate(
-    ({ kinds, safe, minDistance, grid }) => {
-      const { interact, rover } = (window as unknown as InteractWindow).__hq;
-      if (!interact.project || !interact.hitAt) return null;
-      const self = interact.project({ x: rover.x, y: rover.y + 1, z: rover.z });
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      // A sample counts when it is inside the safe box, the bare canvas is under it, the raycast hits this very
-      // target (no other volume in front) and it is 100 px or more from the rover (a click on the rover opens Ask Rover).
-      const clickable = (id: string, s: { fx: number; fz: number; lift: number }) => {
-        const p = interact.screenAt(id, s.fx, s.fz, s.lift);
-        if (!p || p.x < safe.side || p.x > w - safe.side || p.y < safe.top || p.y > h - safe.bottom) return false;
-        if (document.elementFromPoint(p.x, p.y)?.tagName !== "CANVAS") return false;
-        if (self && Math.hypot(p.x - self.x, p.y - self.y) <= 100) return false;
-        return interact.hitAt!(p.x, p.y) === id;
-      };
-      const hits = interact.items
-        .filter((i) => kinds.includes(i.kind) && Math.hypot(i.at.x - rover.x, i.at.z - rover.z) >= minDistance)
-        .map((i) => ({ i, d: Math.hypot(i.at.x - rover.x, i.at.z - rover.z), s: grid.find((s) => clickable(i.id, s)) }))
-        .filter(({ s }) => s !== undefined)
-        .sort((a, b) => a.d - b.d);
-      const hit = hits[0];
-      return hit ? { item: { id: hit.i.id, kind: hit.i.kind, label: hit.i.label, at: hit.i.at, bounds: hit.i.bounds, action: hit.i.action }, sample: hit.s! } : null;
-    },
-    { kinds, safe, minDistance, grid: SAMPLES },
-  );
+  const found = (await page.evaluate(clickableHits, { kinds, safe, minDistance, grid: SAMPLES }))?.[0];
   if (!found) throw new Error(`No ${kinds.join(" or ")} target on screen`);
   samples.set(found.item.id, found.sample);
   return found.item;

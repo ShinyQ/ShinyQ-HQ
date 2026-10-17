@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review (Round 8, sub-project I). Spec: Round 8 design, sections 1, 2, 3 and 7 (owner-approved 2026-10-17, layout A "Corners").
+Status: shipped in #183 (2e56547c), 2026-10-17 (Round 8, sub-project I). Spec: Round 8 design, sections 1, 2, 3 and 7 (owner-approved 2026-10-17, layout A "Corners").
 
 **Goal:** Phones and tablets get the Corners HUD (floor chip, Ask plus menu, minimap, joystick with double-tap boost, one reset button), every HUD gets an SVG minimap with a full-screen overview, and one settings panel gathers every preference behind a small registry that sibling sub-projects K (day and night) and L (open links in) extend.
 

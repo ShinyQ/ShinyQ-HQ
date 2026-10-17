@@ -33,6 +33,8 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 - Stations dock with `dockAlong`: 6 u apart, 3 u forecourt, pad 1.1 u in front, spur from the road.
 - Every post has its own door.
 - `LIBRARY_FLOOR.padZone` stays free for the elevator call pad.
+- Spawn and arrival are one point (`NEWSROOM.arrival`, (-4, 0)) on the plaza axis, west of its center: deep links spawn there and elevator arrivals roll on to it.
+  - Zone `L4:arrival` (`arrivalOnly`, `travel` east) puts the camera behind the rover, looking east down the timeline lane at its first stations; zoom 1.12, phones 0.96 (the widest views that keep the camera east of the glass shaft).
 - The layout test passes `expectSpaceRules` with the real content.
 
 ## Scene (`Library.tsx`)
@@ -79,6 +81,7 @@ Code: `LibraryLayout.end`, `NEWSROOM.end`, scene `EndPlaza.tsx`.
 - The timeline ends on a closed ring road (`nav/ringRoad.ts`, shared with the L3 reactor) around the Topic Constellation pedestal.
   - The pedestal is a `Plaza.core` obstacle and tall column.
   - Stop: `stops["L4:topics"]`, on the ring's west point.
+  - Camera zone `L4:topics` (look east, zoom 1.35): any heading within 2.5 u of the stop, plus the last `NEWSROOM.end.approach` (8 u) of the timeline for eastbound rovers (`travel`), so a rover approaching the plaza already sees the whole cloud and the topic count above it. Both parts share the id, and the approach clears every station door zone.
 - The research monument stands north of the plaza: only with `researchMetrics`, `L4:station:metrics`, command `open:L4:research`.
 - The Express Return pad is south of it.
 - The archive board is on its east rim, drawn: its name is on the end plaza's sign group.

@@ -12,6 +12,7 @@ export const SMOKE_SPECS = ["static-routes", "seo", "deploy", "boot-first", "pag
 
 /** Every spec in the default (non-screenshot) suite. */
 export const ALL_SPECS = [
+  "arrivals",
   "ask",
   "boost",
   "boot-first",
@@ -158,12 +159,14 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
+  // Arrival points and zones (Round 8 J): each floor's layout and the shared config select the arrivals spec too.
+  { test: /^src\/experience\/floors\/labs\/layout\.ts$/, specs: ["labs", "labs-data", "labs-paths", "gallery", "spectacle", "fast-return", "reactor", "production", "arrivals"] },
   { test: /^src\/experience\/floors\/labs\//, specs: ["labs", "labs-data", "labs-paths", "gallery", "spectacle", "fast-return", "reactor", "production"] },
-  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop"] },
+  { test: /^src\/experience\/floors\/career\//, specs: ["career", "pads", "spectacle", "fast-return", "workshop", "arrivals"] },
   // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
   { test: /^src\/hud\/drawer\/(TopicsBody|filterParts)\.tsx$|^src\/content\/(topic-index|topic-map|room-views\/library)\.ts$|^src\/components\/page\/TopicFilter\.tsx$/, specs: ["topics", "library-roof", "reactor"] },
   { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "spectacle", "topics", "fast-return"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "spectacle", "topics", "fast-return", "arrivals"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
   { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
   // The shared holo shader also draws the sky dome and the sun and moon (day and night).
@@ -175,11 +178,14 @@ export const RULES: Rule[] = [
   // Generated geo data (Natural Earth): covered by unit tests and the visits spec through its output.
   { test: /^scripts\/visits-geo\.ts$/, specs: [] },
   // Public visit stats (S2): the shared model, store, panel and placements, the RF observatory and the L1 tile.
+  // The observatory layout's view zones (the observatory door, the kiosk spawn) share the Lobby with its arrival view.
+  { test: /^src\/experience\/floors\/lobby\/observatoryLayout\.ts$/, specs: ["visits", "experience", "highlights", "pageview", "arrivals"] },
   {
-    test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/lobby\/(VisitsStation\.tsx|observatory\.ts|observatoryLayout\.ts|visitsRoom\.ts)$|experience\/missions\/roomAliases\.ts$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
+    test: /^src\/(lib\/visits\/|components\/stats\/|experience\/visits3d\.ts$|experience\/floors\/lobby\/(VisitsStation\.tsx|observatory\.ts|visitsRoom\.ts)$|experience\/missions\/roomAliases\.ts$|hud\/drawer\/VisitsBody\.tsx$)|^e2e\/visits\.spec\.ts$/,
     specs: ["visits", "experience", "highlights", "pageview"],
   },
   // RF roof deck: the layout, and the elevator call pad that sits on the deck.
+  { test: /^src\/experience\/floors\/roof\/layout\.ts$/, specs: ["library-roof", "pads", "roof", "arrivals"] },
   { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
@@ -198,10 +204,12 @@ export const RULES: Rule[] = [
   { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
-  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions"] },
+  { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions", "arrivals", "memory"] },
   // View zones (travel direction, class views): the L3 three paths arrival and road entrances read them too.
-  { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths"] },
-  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride"] },
+  { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths", "arrivals"] },
+  { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride", "arrivals"] },
+  // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone.
+  { test: /^src\/experience\/config\.ts$/, specs: ["experience", "arrivals"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/(Rover\.tsx|fade\.ts|runtime\.ts)$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).

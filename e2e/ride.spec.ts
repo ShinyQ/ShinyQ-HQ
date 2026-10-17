@@ -104,8 +104,8 @@ test("the car waits for the new floor with the doors closed, then compiles nothi
 
 test("a ride called the moment the rover arrives drops the old floor's roll-on drive", async ({ page }) => {
   test.slow();
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await chooseMotion(page, "system");
+  // Full motion: under reduced motion an arrival cuts the rover to its arrival point and leaves no roll-on pending.
+  await chooseMotion(page, "full");
   await enterHQ(page);
   await rideTo(page, "L4", 180_000);
   type Pose = { x: number; z: number; autopilot: { state: string } | null };
@@ -113,11 +113,11 @@ test("a ride called the moment the rover arrives drops the old floor's roll-on d
     __hq: {
       store: { getState: () => { floor: string; ride: unknown; goToFloor: (f: string) => void }; subscribe: (fn: (s: { floor: string; ride: unknown }) => void) => () => void };
       rover: Pose;
-      layouts: Record<string, { approach: { x: number; z: number } }>;
+      layouts: Record<string, { arrival: { x: number; z: number } }>;
     };
   };
-  // RF rolls the rover on to its spawn after the ride. Calling the elevator in the store update of
-  // the arrival (before the Director's next frame) leaves that roll-on pending during the ride back.
+  // Every floor rolls the rover on to its arrival point after the ride. Calling the elevator in the store update
+  // of the RF arrival (before the Director's next frame) leaves RF's roll-on pending during the ride back.
   await page.evaluate(() => {
     const hq = (window as unknown as Win).__hq;
     const stop = hq.store.subscribe((s) => {
@@ -128,11 +128,21 @@ test("a ride called the moment the rover arrives drops the old floor's roll-on d
     hq.store.getState().goToFloor("RF");
   });
   await waitForFloor(page, "L1", 180_000);
+  // Dropped, the stale RF drive never steers the rover on L1: it rolls on to the Lobby's own arrival point (2 u east
+  // of RF's) and parks there.
+  await page.waitForFunction(
+    () => {
+      const r = (window as unknown as Win).__hq.rover;
+      return r.autopilot === null || r.autopilot.state === "done";
+    },
+    null,
+    { timeout: 120_000 },
+  );
   await waitForFrames(page, 30);
-  const { pose, approach } = await page.evaluate(() => {
+  const { pose, arrival } = await page.evaluate(() => {
     const hq = (window as unknown as Win).__hq;
-    return { pose: { x: hq.rover.x, z: hq.rover.z, state: hq.rover.autopilot?.state ?? null }, approach: hq.layouts.L1.approach };
+    return { pose: { x: hq.rover.x, z: hq.rover.z, state: hq.rover.autopilot?.state ?? null }, arrival: hq.layouts.L1.arrival };
   });
   expect(pose.state === null || pose.state === "done").toBe(true);
-  expect(Math.hypot(pose.x - approach.x, pose.z - approach.z)).toBeLessThan(0.05);
+  expect(Math.hypot(pose.x - arrival.x, pose.z - arrival.z)).toBeLessThan(0.5);
 });

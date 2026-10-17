@@ -1,4 +1,6 @@
 import type { FloorId } from "@/content/schema";
+import { yawLooking } from "./camera/look";
+import type { ViewZone } from "./camera/orbit";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildLabsLayout } from "./floors/labs/layout";
 import { buildLibraryLayout } from "./floors/library/layout";
@@ -124,6 +126,14 @@ export const LOBBY = {
   spawn: LOBBY_SPAWN,
   /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
   spawnHeading: Math.atan2(KIOSK_AXIS.x, KIOSK_AXIS.z),
+  /**
+   * Elevator arrivals (Round 8 J, like L3) roll on east along the elevator axis to the west point of the lane
+   * ring; the camera stands behind the rover and looks east at the profile hologram, the name above it and the
+   * stats ring around it. Zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   */
+  arrival: { x: -6, z: 0 } as Vec2,
+  arrivalZoom: 1.03,
+  arrivalZoomPhone: 0.88,
   hologram: LOBBY_HOLOGRAM,
   /**
    * Name and headline float above the stats tiles and the rover mark (both top out below 5.85), low and
@@ -177,6 +187,7 @@ function careerLayout(yearCount: number, extras: LayoutExtras): FloorLayout {
   const road = buildCareerRoad(extras.career);
   return {
     ...standard("L2", road.bounds, road.obstacles),
+    arrival: road.arrival,
     doors: road.doors,
     scrubStops: road.stops,
     road: road.network,
@@ -207,6 +218,20 @@ function withFloorPads(layout: FloorLayout): FloorLayout {
   return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(back ? [back] : []), ...(layout.pads ?? [])] };
 }
 
+/** The Lobby arrival view: behind a rover heading east, looking east at the hologram (`travel`: eastbound rovers only). */
+function lobbyArrivalZone(): ViewZone {
+  const { arrival: a } = LOBBY;
+  return {
+    id: "L1:arrival",
+    area: { minX: a.x - 2, maxX: a.x + 2, minZ: a.z - 2, maxZ: a.z + 2 },
+    yaw: yawLooking({ x: 1, z: 0 }),
+    zoom: LOBBY.arrivalZoom,
+    classView: { mobile: { zoom: LOBBY.arrivalZoomPhone } },
+    travel: { x: 1, z: 0 },
+    arrivalOnly: true,
+  };
+}
+
 /** Axis-aligned bounds of the turned kiosk footprint (its obstacle and point-and-go bounds). */
 export function kioskRect(): Rect {
   const { x, z, yaw, depth, width } = LOBBY.kiosk;
@@ -218,7 +243,7 @@ export function kioskRect(): Rect {
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
   const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
-  const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis, approach: standard("L1", LOBBY.bounds).approach });
+  const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis });
   const layouts: Record<FloorId, FloorLayout> = {
     L1: {
       ...standard(
@@ -234,12 +259,14 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
         ],
         LOBBY.spawn,
       ),
+      arrival: LOBBY.arrival,
       // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera
-      // zones; the Visitor Observatory's door and the spawn, arrival and observatory views (floors/lobby/observatoryLayout.ts).
+      // zones; the Visitor Observatory's door and the spawn and observatory views (floors/lobby/observatoryLayout.ts);
+      // the elevator arrival view.
       doors: [...HALL_LAYOUT.doors, observatory.door],
       road: HALL_LAYOUT.network,
       roadZone: HALL_LAYOUT.zone,
-      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones],
+      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone()],
       // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
       // card) and the observatory globe.
       tall: [...hallTall(), LOBBY.observatory],

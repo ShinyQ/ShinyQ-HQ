@@ -6,7 +6,7 @@ import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveT
  * Fast return (F1, owner decision 2026-10-14: "Beam when far"). Express Return pads beam the rover to
  * its floor's elevator call pad, and a floor change requested more than 40 u from that pad beams the
  * rover into the car before the ride (`src/experience/nav/fastReturn.ts`; owner decision: raised from
- * 25 u so the L3 overview and the RF arrival drive; the L1 spawn is about 16.5 u away). Closer, it drives as before.
+ * 25 u so the L3 overview and the RF plaza drive; the L1 spawn is about 16.5 u away). Closer, it drives as before.
  */
 test.describe.configure({ timeout: 240_000 });
 
@@ -160,14 +160,17 @@ test.describe("fast return on the Career Road (L2)", () => {
 });
 
 test.describe("everyday spots within 40 u drive to the elevator (owner decision)", () => {
-  for (const { name, path, floor, to, min } of [
+  for (const { name, path, floor, to, min, at } of [
     // The L1 spawn stands in front of the Ask Rover kiosk (owner 2026-10-14): it drove under the old rule too.
     { name: "the L1 spawn (about 16.5 u)", path: "/en", floor: "L1", to: "L2", min: 10 },
     { name: "the L3 overview (29.5 u)", path: "/en/labs", floor: "L3", to: "L4", min: 25 },
-    { name: "the RF arrival spot (25.9 u)", path: "/en/contact", floor: "RF", to: "L4", min: 25 },
-  ]) {
+    // The RF deep link now spawns on the arrival point at the end of the lead road, about 9 u from the call pad:
+    // the far everyday spot is the plaza's south-east corner (the old spawn and arrival view).
+    { name: "the RF plaza's south-east corner (25.9 u)", path: "/en/contact", floor: "RF", to: "L4", min: 25, at: { x: 8, z: 7 } },
+  ] as { name: string; path: string; floor: string; to: string; min: number; at?: { x: number; z: number } }[]) {
     test(`a floor change from ${name} drives, no beam`, async ({ page }) => {
       await openFloor(page, path);
+      if (at) await placeRover(page, at);
       const lift = await approach(page, floor);
       const start = await rover(page);
       const d = Math.hypot(start.x - lift.x, start.z - lift.z);

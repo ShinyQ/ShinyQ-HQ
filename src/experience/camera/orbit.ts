@@ -45,6 +45,8 @@ export interface OrbitState {
   suppressedZone: string | null;
   /** Zoom set by a view zone; restored to 1 on exit unless the visitor zoomed by hand meanwhile. */
   zoneZoom: number | null;
+  /** Rail yaw set by a view zone on the L2 rail rig; eased back to the side view on exit unless the visitor turned the rail by hand. */
+  zoneRailYaw: number | null;
 }
 
 export const ZOOM_RANGE = [0.6, 1.5] as const;
@@ -83,6 +85,7 @@ export function createOrbitState(): OrbitState {
     zone: null,
     suppressedZone: null,
     zoneZoom: null,
+    zoneRailYaw: null,
   };
 }
 
@@ -104,6 +107,7 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
   if (rail) {
     s.railYaw += dyaw;
     s.railYawTarget = s.railYaw;
+    s.zoneRailYaw = null;
   } else {
     s.yaw += dyaw;
     s.yawTarget = s.yaw;
@@ -123,6 +127,7 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
 export function rotateStep(s: OrbitState, direction: number, rail = false): void {
   if (rail) {
     s.railYawTarget = (s.easing ? s.railYawTarget : s.railYaw) + direction * ROTATE_STEP;
+    s.zoneRailYaw = null;
   } else {
     s.yawTarget = (s.easing ? s.yawTarget : s.yaw) + direction * ROTATE_STEP;
   }
@@ -137,6 +142,7 @@ export function resetView(s: OrbitState): void {
   s.zoomTarget = 1;
   s.railYawTarget = s.railYaw - wrapPi(s.railYaw);
   s.zoneZoom = null;
+  s.zoneRailYaw = null;
   s.firstPerson = false;
   s.push = 1;
   s.easing = true;
@@ -183,10 +189,18 @@ export interface ViewZone {
   yaw: number;
   /** Optional zoom so a wide feature fits the view. */
   zoom?: number;
+  /** Rail yaw (offset from the side view) on the L2 rail rig, which ignores `yaw`; the follow rig ignores it. */
+  railYaw?: number;
   /** Another yaw or zoom for a camera class (a phone frames a tall view where a desktop frames a wide one). */
   classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number }>>;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
   prime?: boolean;
+  /**
+   * An arrival view (Round 8 J): active only while `OrbitState.zone` already holds this id, set by an elevator
+   * arrival or a deep-link spawn (`primeZone`). Driving into it does nothing (`activeZone`), so a rover passing
+   * the arrival point later never swings the camera (or, on L2, the rail).
+   */
+  arrivalOnly?: true;
   /**
    * Applies only while the rover faces within about 104 degrees of this direction (forward `(sin h, cos h)`,
    * `TRAVEL_SLACK` past perpendicular), so a zone that looks along a road never turns the camera against a
@@ -232,7 +246,7 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
  * Applies a zone at once (no easing), as an initial state: the session spawn starts in its zone's view,
  * so the intro ends on that view and a deep link opens on it. Also under reduced motion (nothing moves).
  */
-export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass): void {
+export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass, rail = false): void {
   const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined };
   s.zone = zone?.id ?? null;
   s.suppressedZone = null;
@@ -240,6 +254,10 @@ export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportCl
   s.zoom = s.zoomTarget = view.zoom ?? 1;
   s.zoneZoom = view.zoom ?? null;
   s.pitch = s.pitchTarget = 0;
+  if (rail && zone?.railYaw !== undefined) {
+    s.railYaw = s.railYawTarget = zone.railYaw;
+    s.zoneRailYaw = zone.railYaw;
+  }
   s.easing = false;
 }
 
@@ -261,12 +279,26 @@ export function zoneAt(floor: FloorId, p: Vec2 & { heading?: number }, extra: re
   return VIEW_ZONES[floor]?.find(inside) ?? extra.find(inside) ?? null;
 }
 
+/** The zone `updateZone` should track: an `arrivalOnly` zone counts only while it is already the current zone. */
+export function activeZone(zone: ViewZone | null, s: Pick<OrbitState, "zone">): ViewZone | null {
+  return zone?.arrivalOnly && s.zone !== zone.id ? null : zone;
+}
+
+/** Eases a zone's rail yaw back to the nearest side view (leaving the zone, or moving to one without a rail yaw). */
+function releaseRailZone(s: OrbitState): void {
+  if (s.zoneRailYaw === null) return;
+  s.railYawTarget = s.railYaw - wrapPi(s.railYaw);
+  s.zoneRailYaw = null;
+  s.easing = true;
+}
+
 /**
  * Tracks the zone the rover is in. Entering a zone eases the camera to face its feature, unless
  * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
- * Leaving clears the block.
+ * Leaving clears the block. On the rail rig a zone's `railYaw` eases the rail in the same way and back to
+ * the nearest side view on leaving, unless the visitor turned the rail by hand meanwhile.
  */
-export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass): void {
+export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass, rail = false): void {
   const id = zone?.id ?? null;
   if (id === s.zone) return;
   s.zone = id;
@@ -277,8 +309,10 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
       s.zoneZoom = null;
       s.easing = true;
     }
+    releaseRailZone(s);
     return;
   }
+  if (zone.railYaw === undefined) releaseRailZone(s);
   if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
   const view = zoneView(zone, cls);
   s.yawTarget = nearestAngle(view.yaw, s.yaw);
@@ -286,6 +320,10 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
   if (view.zoom) {
     s.zoomTarget = view.zoom;
     s.zoneZoom = view.zoom;
+  }
+  if (rail && zone.railYaw !== undefined) {
+    s.railYawTarget = nearestAngle(zone.railYaw, s.railYaw);
+    s.zoneRailYaw = zone.railYaw;
   }
   s.easing = true;
 }

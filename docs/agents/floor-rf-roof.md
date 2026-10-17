@@ -11,9 +11,11 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md).
   - the stations: centerpiece, comms north, CV east, about south-west, each flush with a slab edge;
   - `stops` and `channelSlots`.
 - `ROOF_DECK.callPad` (x -20 to -12, z -4 to 4) stays free for the elevator call pad.
-- `ROOF_DECK.signYaw` turns the availability sign square to the overview camera (`overviewYaw`).
+- `ROOF_DECK.signYaw` (-PI/2) turns the availability sign west, square to the arrival camera and to the availability stop's camera (owner decision 2026-10-17: the sign is in view with the mast on arrival).
+- The availability stop (`ROOF_DECK.availability`, (-4, 0)) stands on the axis between the arrival point and the mast; its zone `RF:availability` (`availabilityYaw`, looking east) applies to eastbound rovers only (`travel`), so driving back to the elevator never turns the camera.
 - The layout feeds the navgrid, the door triggers, `roomTarget` and the R3F components, so scene and autopilot never disagree.
-- Deep links spawn in front of the content (`spawn` in `buildFloorLayouts`).
+- Deep links spawn on the arrival point and elevator arrivals roll on to it (`ROOF_DECK.spawn`, (-8, 0): the end of the lead road at the plaza rim; `FloorLayout.arrival` is the same point).
+- Zone `RF:arrival` (`arrivalOnly`, `travel` east): the camera stands behind the rover and looks east over the plaza at the centerpiece mast and its availability sign (asserted at four sizes in `tests/unit/arrivals.test.ts`); zoom 0.95, phones 0.8 (the widest views that keep the camera east of the glass shaft).
 - In-world targets are point-and-go registry entries (see [Point-and-go](floors.md#point-and-go)); floors add no click handlers of their own.
 
 ## Scenery: Signal Garden

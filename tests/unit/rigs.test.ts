@@ -133,6 +133,26 @@ describe("camera rigs", () => {
     expect(behind.target[0]).toBeCloseTo(6);
   });
 
+  it("runs the rail look-ahead into the screen when asked, so a camera behind the rover centers it", () => {
+    // Default: the look-ahead stays to the screen's right at any yaw.
+    expect(railPose("desktop", 10, 14, 1, 0, Math.PI / 6, 0, 0, false)).toEqual(railPose("desktop", 10, 14, 1, 0, Math.PI / 6));
+    // Side view (yaw 0): into the screen is north, so the target moves from east of the rover to north of it.
+    const side = railPose("desktop", 10, 14, 1, 0, 0, 0, 0, true);
+    expect(side.position).toEqual(railPose("desktop", 10, 14).position);
+    expect(side.target[0]).toBeCloseTo(10);
+    expect(side.target[2]).toBeCloseTo(-4);
+    // Behind the rover (due west, looking east): the target sits on the line through the camera and the rover.
+    const yaw = -Math.PI / 2;
+    const behind = railPose("desktop", 10, 14, 1, 2, yaw, 2, 0, true);
+    expect(behind.position).toEqual(railPose("desktop", 10, 14, 1, 2, yaw, 2, 0).position);
+    expect(behind.target[0]).toBeCloseTo(10 + 4);
+    expect(behind.target[2]).toBeCloseTo(2);
+    expect(behind.position[2]).toBeCloseTo(2);
+    const f = railForward(yaw);
+    expect(behind.target[0] - 10).toBeCloseTo(4 * f.x);
+    expect(behind.target[2] - 2).toBeCloseTo(4 * f.z);
+  });
+
   it("tilts the rail camera within the pitch limits and keeps the side view at pitch 0", () => {
     const radius = Math.hypot(RAIL.desktop.y, RAIL.desktop.z);
     const low = railPose("desktop", 0, 0, 1, 0, 0, 0, -5);

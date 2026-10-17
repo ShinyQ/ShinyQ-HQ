@@ -4,13 +4,15 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, clickablePoint, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and
  * home ticker item, and the Visitor Observatory in the Lobby's south-west corner
  * (owner decision 2026-10-14: reached from the elevator arrival, drawer filters, deep links including the
- * old roof ones, Cmd-K, reduced motion, budget) plus the L1 ring tile. `/api/stats` is mocked with the fixture.
+ * old roof ones, Cmd-K, reduced motion, budget) plus the L1 ring tile. The 2026-10-17 arrival (owner, L3-style
+ * arrivals) supersedes the arrival view toward the observatory: the camera now looks east at the hologram, so the
+ * elevator test turns the view to the station first. `/api/stats` is mocked with the fixture.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -30,6 +32,7 @@ type ProbeWindow = {
     layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }>;
   };
 };
+
 const spectacle = (page: Page, key: string) => page.evaluate((k) => (window as unknown as ProbeWindow).__hq.probes.spectacle[k], key);
 
 /** Opens `path` in 3D as a returning visitor; a `#visits` deep link starts in the room, everything else in explore. */
@@ -111,10 +114,17 @@ test.describe("Visitor Observatory in the Lobby", () => {
     await enterFloorRoute(page, "/en/journey");
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L1"]').click();
     await waitForFloor(page, "L1");
-    // The arrival view turns toward the south-west corner (L1:arrival), so the station is on screen.
+    // The 2026-10-17 arrival (owner, L3-style arrivals) supersedes the 2026-10-14 view toward the observatory: it
+    // looks east at the hologram with the south-west corner behind the camera, so turn the view in 45 degree steps (the HUD's Rotate right) until the station is on screen.
     await waitForCameraSettle(page);
     await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
-    const point = await targetPoint(page, "L1:station:visits");
+    let point = await clickablePoint(page, "L1:station:visits");
+    for (let turn = 0; !point && turn < 8; turn++) {
+      await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
+      await waitForCameraSettle(page);
+      point = await clickablePoint(page, "L1:station:visits");
+    }
+    if (!point) throw new Error("L1:station:visits never came on screen");
     await page.mouse.click(point.x, point.y);
     await waitForRoom(page, "L1:visits");
     const { rover, floor } = await snapshot(page);

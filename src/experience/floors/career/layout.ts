@@ -1,5 +1,6 @@
 import type { RoomId } from "@/content/schema";
 import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
+import { yawLooking } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
 import { CAREER_TONE } from "../../fx/holoIcons";
 import { DOOR_SIZE } from "../../nav/doors";
@@ -56,7 +57,18 @@ export const CAREER_ROAD = {
    * center (toward the rail camera), off the driving width, clear of the spurs and the floor digits.
    */
   teleport: { inset: 3.5, offset: 6.5 },
+  /**
+   * Elevator arrivals (Round 8 J, like L3) roll on east along the road to this x, inside the first year
+   * plaza and short of its scrub stop (the plaza center), so a swipe never parks in the arrival view. The rail
+   * turns behind the rover (`railYaw`, west of it) and looks east down the road at the next year's arch.
+   * Zooms per camera class: the widest rail view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   */
+  arrivalX: 6,
+  arrivalZoom: { desktop: 0.98, tablet: 0.86, mobile: 0.77 },
 } as const;
+
+/** Rail yaw that puts the camera due west of the rover, behind it as it heads east (`railYawBehind` in camera/arrival.ts). */
+const RAIL_YAW_BEHIND = -Math.PI / 2;
 
 export const ROOM_W: Record<CareerType, number> = { job: 9, freelance: 9, education: 9, milestone: 9, award: 6 };
 
@@ -116,6 +128,8 @@ export interface CareerRoadLayout {
   /** Scrub stops along x: plaza centers, then the forecourt and the Workshop. */
   stops: number[];
   approach: Vec2;
+  /** Where the rover rolls on to after an elevator ride (`FloorLayout.arrival`). */
+  arrival: Vec2;
   door: Vec2;
 }
 
@@ -219,6 +233,17 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
   const plazaOf = new Map(years.map((y) => [y.year, y.plaza]));
   const spurs: Spur[] = rooms.map((r) => ({ room: r.id, from: { x: r.at.x, z: plazaOf.get(r.year)!.center.z }, to: r.at, color: CAREER_TONE[r.type] }));
   const road: Road = { id: "career", points, width: C.width };
+  const arrival: Vec2 = { x: C.arrivalX, z: roadZAt(points, C.arrivalX) };
+  const arrivalZone: ViewZone = {
+    id: "L2:arrival",
+    area: { minX: arrival.x - 2, maxX: arrival.x + 2, minZ: arrival.z - 2, maxZ: arrival.z + 2 },
+    yaw: yawLooking({ x: 1, z: 0 }),
+    railYaw: RAIL_YAW_BEHIND,
+    zoom: C.arrivalZoom.desktop,
+    classView: { tablet: { zoom: C.arrivalZoom.tablet }, mobile: { zoom: C.arrivalZoom.mobile } },
+    travel: { x: 1, z: 0 },
+    arrivalOnly: true,
+  };
 
   const archPosts: Rect[] = years.flatMap((y) => y.arch.posts.map((p) => rect(p, C.archPost, C.archPost)));
   const obstacles: Rect[] = [...rooms.map((r) => rect(r.center, C.pedestal, C.pedestal)), ...archPosts, ...workshop.obstacles];
@@ -246,7 +271,7 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     workshop: { ...workshop, room: WORKSHOP_ROOM },
     roomStops,
     tall: workshop.tall,
-    viewZones: workshop.viewZones,
+    viewZones: [...workshop.viewZones, arrivalZone],
     windowX: bounds.maxX,
     obstacles,
     doors,
@@ -255,6 +280,7 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
     returnPad: workshop.returnPad,
     stops: [...years.map((y) => y.plaza.center.x), ...workshop.stops],
     approach: C.approach,
+    arrival,
     door: C.door,
   };
 }

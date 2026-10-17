@@ -17,6 +17,11 @@ export interface CullFloor {
   content: Object3D | null;
   /** The floor's slab fill mesh: an occluder while it draws fully opaque and writes depth. */
   slab: Object3D | null;
+  /**
+   * Hide the whole content for this render: a floor under the car parked at the target (`belowParkedCar`).
+   * FloorLevel hides it from the next frame on; this covers the frame the Director parks the car.
+   */
+  hide?: boolean;
 }
 
 export interface RideCullStats {
@@ -174,6 +179,11 @@ export function cullUnderSlabs(camera: Camera, floors: readonly CullFloor[]): nu
   for (const floor of floors) {
     const content = floor.content;
     if (!content || !visibleInScene(content)) continue;
+    if (floor.hide) {
+      content.visible = false;
+      hidden.push(content);
+      continue;
+    }
     content.updateWorldMatrix(true, false);
     const floorTop = content.matrixWorld.elements[13];
     const occluders = slabs.filter((s): s is SlabRect => s !== null && s.bottom > floorTop && eyeAt[1] > s.top);

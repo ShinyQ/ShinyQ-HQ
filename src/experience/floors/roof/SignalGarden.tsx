@@ -17,7 +17,7 @@ import { latticeSegments, roofDetail, scatter, type Box } from "./solids";
 
 const mid = (a: number, b: number) => (a + b) / 2;
 const MAST_HEIGHT = 14;
-/** The availability sign hangs on the mast, facing the spawn camera head on. */
+/** The availability sign hangs on the mast, facing the arrival camera (west) head on. */
 const SIGN_YAW = ROOF_DECK.signYaw;
 const SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
 /** The drone patrols round the mast above the sign. */

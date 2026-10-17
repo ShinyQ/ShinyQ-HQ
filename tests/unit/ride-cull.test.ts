@@ -106,6 +106,19 @@ describe("cullUnderSlabs", () => {
     }
   });
 
+  it("hides the whole content of a floor under the parked car for one render, even where no slab shadows it", () => {
+    const { lower, scene, floors } = tower();
+    lower.content.add(box(-19, 0));
+    update(scene);
+    // Low at the west edge (the arrival glide's first frame in the car): the slab shadow test keeps the box.
+    const low = camera(-21, 16, 0, [-10, 0, 0]);
+    expect(cullUnderSlabs(low, floors)).toBe(0);
+    expect(cullUnderSlabs(low, [{ ...floors[0], hide: true }, floors[1]])).toBe(1);
+    expect(lower.content.visible).toBe(false);
+    restoreCulled();
+    expect(lower.content.visible).toBe(true);
+  });
+
   it("needs the camera above the slab", () => {
     const { lower, scene, floors } = tower();
     lower.content.add(box(0, 0));
