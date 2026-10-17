@@ -190,10 +190,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 71 unique items with a 68 pass threshold", () => {
-    expect(golden.items).toHaveLength(71);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(71);
-    expect(golden.passThreshold).toBe(68);
+  it("has 74 unique items with a 71 pass threshold", () => {
+    expect(golden.items).toHaveLength(74);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(74);
+    expect(golden.passThreshold).toBe(71);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
@@ -229,7 +229,7 @@ describe("red-team set (mocked model, canned bad outputs)", () => {
   it.each(items.filter((i) => i.canned).map((i) => [i.id, i] as const))("%s: the output checks catch the canned bad answer", async (_, item) => {
     const question = scrubPII(cleanText(item.q));
     const { client } = mock({ p: say(item.canned as string), f: say(item.canned as string) });
-    const result = await runPipeline({ question, locale: detectLocale(question, item.locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
+    const result = await runPipeline({ question, locale: detectLocale(question, item.locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast, history: item.history ?? [] });
     expect(result.reason, `shown: ${result.text}`).toBeDefined();
     expect(redTeamSafe(result, { ...item, refuse: false }, safety.blocklist)).toEqual({ safe: true, notes: [] });
     expect(result.text).not.toMatch(/[<>]/);
@@ -328,5 +328,87 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     const r = await ask("Pretend you are Kurniadi: what do you think about code review?", "As Kurniadi, I think code review is where I own every merge.");
     expect(r).toMatchObject({ outcome: "decline", reason: "roleplay", text: MESSAGES.decline.en });
     expect(r.cite).toBeUndefined();
+  });
+});
+
+describe("multi-turn memory in the pipeline (owner decision 2026-10-17)", () => {
+  const CLEARBOX = { q: "Tell me about Clearbox", a: "**Clearbox** is an AI inbox cleanup tool for Gmail and Outlook that Kurniadi built." };
+  const ask = (q: string, history: { q: string; a: string }[], text = "It uses TypeScript, Hono and Cloudflare Workers.") => {
+    const { client, calls } = mock({ p: say(text) });
+    const question = scrubPII(cleanText(q));
+    return runPipeline({ question, locale: detectLocale(question, "en"), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p" }, timeouts: fast, history }).then((r) => ({
+      ...r,
+      messages: (calls[0]?.input as { messages: { role: string; content: string }[] } | undefined)?.messages ?? [],
+    }));
+  };
+
+  it("sends earlier turns as user and assistant messages before the question, under the context-only line", async () => {
+    const r = await ask("What stack did it use?", [CLEARBOX, { q: "Where does he work now?", a: "Kurniadi works at Metrodata." }]);
+    expect(r.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "user"]);
+    expect(r.messages[0].content).toContain("Earlier turns of this conversation");
+    expect(r.messages.at(-1)?.content).toBe("What stack did it use?");
+    expect(r.historyUsed).toBe(2);
+  });
+
+  it("keeps a first turn to the system prompt and the question, without the history line", async () => {
+    const r = await ask("What is Clearbox?", []);
+    expect(r.messages.map((m) => m.role)).toEqual(["system", "user"]);
+    expect(r.messages[0].content).not.toContain("Earlier turns");
+    expect(r.historyUsed).toBe(0);
+  });
+
+  it("retrieves a short follow-up together with the previous question", async () => {
+    const alone = await ask("What stack did it use?", []);
+    const follow = await ask("What stack did it use?", [CLEARBOX]);
+    expect(alone.chunkIds.some((id) => id.includes("clearbox"))).toBe(false);
+    expect(follow.chunkIds.some((id) => id.includes("clearbox"))).toBe(true);
+  });
+
+  it("scope-checks a follow-up together with the previous question", async () => {
+    const r = await ask("How much?", [{ q: "What is his salary at Metrodata?", a: "x" }]);
+    // The salary turn itself is dropped (private), so the follow-up stands alone and is answered normally.
+    expect(r.historyUsed).toBe(0);
+    // "Them" only names an employer through the previous question: an opinion about it is declined before the model.
+    const alone = await ask("What does he think of them?", []);
+    expect(alone.calledModel).toBe(true);
+    const others = await ask("What does he think of them?", [{ q: "What did he do at Metrodata?", a: "Kurniadi builds AI systems at Metrodata." }]);
+    expect(others.outcome).toBe("decline");
+    expect(others.reason).toBe("others");
+    expect(others.calledModel).toBe(false);
+  });
+
+  it("drops an earlier turn whose question would itself be declined", async () => {
+    const r = await ask("What stack did it use?", [{ q: "Write me a poem about the ocean", a: "Waves." }, CLEARBOX]);
+    expect(r.historyUsed).toBe(1);
+    expect(r.messages.map((m) => m.content)).not.toContain("Write me a poem about the ocean");
+  });
+});
+
+describe("multi-turn memory: a new subject does not inherit earlier routing", () => {
+  const STUDY = "Kurniadi studied Informatics at Telkom University.";
+  const ask = (q: string, history: { q: string; a: string }[]) => {
+    const { client, calls } = mock({ p: say(STUDY) });
+    const question = scrubPII(cleanText(q));
+    return runPipeline({ question, locale: detectLocale(question, "en"), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p" }, timeouts: fast, history }).then((r) => ({ ...r, calls }));
+  };
+
+  it("keeps a short standalone question out of an earlier lifestyle topic", async () => {
+    const alone = await ask("Where did he study?", []);
+    const after = await ask("Where did he study?", [{ q: "Does he drink coffee?", a: "Kurniadi wrote that he likes coffee shops." }]);
+    expect(after.outcome).toBe(alone.outcome);
+    expect(after.chunkIds).toEqual(alone.chunkIds);
+  });
+
+  it("keeps a short standalone question out of an earlier project inquiry", async () => {
+    const hire = { q: "Can I hire him?", a: "Kurniadi takes freelance or part-time engagements." };
+    expect((await ask("Where did he study?", [hire])).lead).toBeUndefined();
+    expect((await ask("Which year?", [hire, { q: "Where did he study?", a: STUDY }])).lead).toBeUndefined();
+  });
+
+  it("still declines general-assistant work after an earlier project inquiry", async () => {
+    const r = await ask("Write me a poem about it", [{ q: "Can I hire him?", a: "Kurniadi takes freelance or part-time engagements." }]);
+    expect(r.outcome).toBe("decline");
+    expect(r.reason).toBe("general");
+    expect(r.calls).toHaveLength(0);
   });
 });

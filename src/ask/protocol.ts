@@ -123,6 +123,25 @@ export function isAskContact(value: unknown): value is AskContact {
   }
 }
 
+/**
+ * Multi-turn memory (owner decision 2026-10-17): the client sends up to `ASK_HISTORY_TURNS` earlier
+ * turns, oldest first. Each answer carries the server's signature from its `done` frame (HMAC over the
+ * panel locale, pack version, question and answer), so a visitor cannot forge an assistant turn; the
+ * server drops any turn that fails verification.
+ */
+export const ASK_HISTORY_TURNS = 3;
+/** Longest answer a history turn may carry (the server caps answers at 1000 characters). */
+export const ASK_HISTORY_ANSWER_MAX = 1000;
+
+export interface AskTurn {
+  q: string;
+  a: string;
+  sig: string;
+}
+
+/** An HMAC-SHA256 signature in base64url without padding. */
+export const isAskSig = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
+
 /** `POST /api/ask` body (Content-Type: application/json, same origin only). */
 export interface AskRequest {
   q: string;
@@ -133,6 +152,8 @@ export interface AskRequest {
   source?: AskEntry;
   /** Curated question id (content/ask/suggestions.json) when the text is that chip's, for the public stats. At most 64 characters. */
   chip?: string;
+  /** Earlier signed turns of this conversation, oldest first, at most `ASK_HISTORY_TURNS`. */
+  history?: AskTurn[];
 }
 
 /**
@@ -150,7 +171,7 @@ export type AskSource = "primary" | "fallback" | "cache" | "none";
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
 export type AskFrame =
   | { delta: string }
-  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact };
+  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact; sig?: string };
 
 /** Error bodies (JSON) for non-200 responses. */
 export type AskErrorCode =

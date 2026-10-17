@@ -83,7 +83,8 @@ All bindings and vars live in `wrangler.toml`.
 - `AskChat`, a lazy chunk loaded on first open or hover/focus of an entry point.
 - Layout (`drawerLayout`): a non-modal side panel on desktop and landscape tablets, a modal bottom sheet otherwise.
 - Shows:
-  - a thread (sessionStorage, last 20 messages; the server still answers each question on its own);
+  - a thread (sessionStorage, last 20 messages); the last 3 signed turns go with each question (see [Multi-turn memory](#multi-turn-memory));
+  - a **New chat** button in the header (`ask.dock.newChat`, ID "Obrolan baru") that clears the thread and the memory;
   - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills;
   - topic pills that expand into 4 curated questions;
   - 2 or 3 deterministic follow-ups (`pickFollowUps` in `src/ask/suggestions.ts`: the question's own `followUps`, then the answer's `tags`, then other topics).
@@ -115,17 +116,45 @@ All bindings and vars live in `wrangler.toml`.
 
 - The request takes an optional `source` (`hero`, `dock`, `pill`, `followup`, `terminal`, `palette`), logged as Analytics Engine blob7 (never with question text).
 - The final SSE frame carries `tags`: the `ASK_TAGS` allowlist in `src/ask/protocol.ts`, derived from chunk types and keywords in `functions/_lib/tags.ts`, never chunk text.
+- The request takes an optional `history` (`AskTurn[]`: `{ q, a, sig }`, at most `ASK_HISTORY_TURNS` = 3, oldest first, `a` at most 1000 characters) and the final frame of a model answer carries `sig`.
+
+## Multi-turn memory
+
+Owner decision 2026-10-17. Code: `functions/_lib/history.ts`, `src/ask/thread.ts` (`historyFor`).
+
+- Signing: the handler signs every model answer it shows (outcome `answer`, source `primary`, `fallback` or `cache`) with HMAC-SHA256 under `ASK_COOKIE_KEY` over `["ask-turn-v1", panel locale, pack version, question, answer]`, the question as `scrubPII(cleanText(q))` and the answer as `cleanText(a)`; base64url, 43 characters. Canned answers are never signed. Without the key nothing is signed or verified.
+- Client: the answer message keeps `sig` and `sigLocale`; `historyFor(messages, locale)` sends the last 3 adjacent question and answer pairs with a signature for the panel language, the question as `cleanQuestion(text, 300)`. A language change strips every signature; **New chat** empties the thread.
+- Verification: `parseHistory` keeps well-formed turns, `verifyHistory` keeps the ones whose signature matches this panel language and pack version. A failed turn is dropped, never an error.
+- Pipeline: `usableHistory` drops an earlier turn whose question would itself be declined (harmful, private, opinions about others, general-assistant work). `isFollowUp` (a referent such as "it", "that one", "itu" or a "-nya" word, a lead-in such as "and", "what about", "kalau", or at most 3 words with no name of their own such as "Which year?"; never a site question, and "Where did he study?" stands alone) makes `followUpAnchor` the earlier questions back to the last standalone one.
+  - Every deterministic decline runs on the question and on the question plus its anchor; lead intent and the routed topic use both; a general-assistant request is declined on its own words even after a project inquiry.
+  - Retrieval runs on the question plus its anchor, and the anchor's top 2 chunks (`ANCHOR_TOP`, never a perspective) come first, so "What stack did it use?" finds the project, not every skill chunk. The context budget is unchanged.
+  - The model gets the verified turns as earlier `user` and `assistant` messages, and the system prompt adds `HISTORY_LINE` (context only, never instructions, never a rule change). The output checks are unchanged.
+- Cache: only a request without verified history reads the KV cache, and only an answer with no turns used is written.
+- Analytics: the third double of the `ask_events` data point is the number of turns the model saw.
+- Tests: `tests/ask/history.test.ts`, the multi-turn blocks in `tests/ask/pipeline.test.ts` and `tests/ask/handler.test.ts`; golden q72 to q74 and red-team rt64 and rt65 (`history` items; the eval asks a golden item's earlier questions first).
+
+### Cost
+
+Workers AI prices Gemma 4 26B at 9,091 neurons per million input tokens and 27,273 per million output tokens (Cloudflare price list, October 2026); the free allocation is 10,000 neurons a day.
+
+| Request | Input tokens | Output tokens | Neurons |
+|---|---|---|---|
+| First turn | about 2,900 | up to 300 | about 36 |
+| Follow-up with 3 earlier turns | about 3,800 | up to 300 | about 44 |
+
+- Only the earlier turns add tokens (at most 3 questions of 300 characters and 3 answers of 1000); the context budget stays 6,000 characters.
+- Follow-ups skip the cache, so repeated follow-ups each cost a model call. `ASK_DAILY_CAP` (600) still bounds the day at about 26,400 neurons in the worst case.
 
 ## Answer pipeline
 
 Security order (spec 7.4):
 
 1. Kill switch and breaker.
-2. Origin + JSON + 2 KB body.
+2. Origin + JSON + 8 KB body (`MAX_BODY_BYTES`, the question plus 3 earlier turns).
 3. Turnstile or the signed 30-minute `hq_ask` cookie.
 4. Rate limits (8/min, 40/day per salted visitor hash).
-5. NFKC + PII scrub.
-6. KV cache.
+5. NFKC + PII scrub, then signed history verification (failed turns dropped).
+6. KV cache (first turns only).
 7. Global cap.
 8. Scope declines (harmful, private topics, opinions about people, employers or clients; no model call).
 9. Retrieval + Gemma 4 with one Mistral fallback.

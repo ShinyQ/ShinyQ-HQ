@@ -143,11 +143,16 @@ export interface RetrieveOptions {
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): contact first, then the matching past work and his engagement terms, never other opinions. */
   lead?: boolean;
+  /** Earlier questions a follow-up refers to (`followUpAnchor`): their best chunks come first, so "What stack did it use?" finds the project, not every skill. */
+  anchor?: string;
 }
+
+/** Chunks the anchor itself retrieves first (multi-turn memory). */
+export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
 export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question) }): Retrieved {
-  const { topic, lead } = options;
+  const { topic, lead, anchor } = options;
   const scored = scoreChunks(pack, question);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -178,6 +183,13 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
   } else {
     const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
     always.forEach((id) => add(byId(id)));
+    if (anchor) {
+      scoreChunks(pack, anchor)
+        .filter((r) => r.score > 0 && r.chunk.type !== "perspective")
+        .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+        .slice(0, ANCHOR_TOP)
+        .forEach((r) => add(r.chunk));
+    }
     let perspectives = 0;
     for (const { chunk } of ranked) {
       if (picked.length >= TOP_K + always.length) break;

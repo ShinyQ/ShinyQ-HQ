@@ -16,6 +16,7 @@ import id from "../../messages/id.json";
 import { findBlockedLabels, findBlockedTerms, formatBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
 import { FORBIDDEN_OUTPUT, findBlocked } from "../../functions/_lib/checks";
 import { indexPack } from "../../functions/_lib/pack-index";
+import { followUpAnchor } from "../../functions/_lib/history";
 import { retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { cleanText, detectLocale, normalizeQuestion, tokenize } from "../../functions/_lib/text";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
@@ -138,7 +139,11 @@ describe("retrieval", () => {
     const facts = loadDynamicFacts();
     for (const raw of golden.items) {
       const item = resolveGoldenItem(raw, facts);
-      const context = fold(retrieve(pack, item.q, item.lang as "en" | "id").context);
+      // A follow-up (multi-turn memory) retrieves as the pipeline does: with its anchor, the earlier questions.
+      const history = ((raw as { history?: string[] }).history ?? []).map((q) => ({ q, a: "" }));
+      const anchor = followUpAnchor(item.q, history);
+      const lang = item.lang as "en" | "id";
+      const context = fold((anchor ? retrieve(pack, `${item.q} ${anchor}`, lang, { anchor }) : retrieve(pack, item.q, lang)).context);
       for (const fact of item.facts) {
         if (!text.includes(fold(fact))) missingInPack.push(`${item.id}: ${fact}`);
         else if (!context.includes(fold(fact))) missingInContext.push(`${item.id}: ${fact}`);

@@ -25,6 +25,7 @@ import { redactBlockedText } from "@/content/safety";
 import { findBlocked, leaksPrompt } from "../functions/_lib/checks";
 import { extractText, type ModelClient } from "../functions/_lib/model";
 import { scrubPII } from "../functions/_lib/pii";
+import type { HistoryTurn } from "../functions/_lib/history";
 import { packVocabulary, runPipeline, type PipelineResult } from "../functions/_lib/pipeline";
 import { cleanText, detectLocale } from "../functions/_lib/text";
 
@@ -37,6 +38,8 @@ export interface GoldenItem {
   id: string;
   lang: "en" | "id";
   q: string;
+  /** Earlier questions (multi-turn memory): asked first, in order; each model answer joins the history like a signed turn. */
+  history?: string[];
   facts: string[];
   expect: { all?: string[]; any?: string[]; any2?: string[]; none?: string[]; refuse?: boolean; lang?: "id" };
 }
@@ -46,6 +49,8 @@ export interface RedTeamItem {
   category: string;
   locale: "en" | "id";
   q: string;
+  /** Earlier turns, as if the server had verified their signatures. */
+  history?: { q: string; a: string }[];
   refuse?: boolean;
   mustNot: string[];
   canned?: string;
@@ -250,9 +255,19 @@ async function main() {
 
   const rows = await pool(items, 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
-    const question = scrubPII(cleanText(item.q));
+    const ask = (q: string, history: HistoryTurn[]) => {
+      const question = scrubPII(cleanText(q));
+      return runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, history }).then((result) => ({ question, result }));
+    };
+    // Earlier turns: fixed ones (red team), or earlier questions asked live whose model answers join the history, as the server signs only those.
+    const earlierTurns = (item.history ?? []) as (string | { q: string; a: string })[];
+    const history: HistoryTurn[] = earlierTurns.filter((h): h is { q: string; a: string } => typeof h === "object").map((h) => ({ q: scrubPII(cleanText(h.q)), a: cleanText(h.a) }));
+    for (const earlier of earlierTurns.filter((h): h is string => typeof h === "string")) {
+      const { question, result } = await ask(earlier, history.slice(-3));
+      if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback")) history.push({ q: question, a: cleanText(result.text) });
+    }
     const started = Date.now();
-    const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts });
+    const { result } = await ask(item.q, history.slice(-3));
     const ms = Date.now() - started;
     const verdict =
       set === "golden" ? scoreGolden(result.text, item as GoldenItem) : set === "suggestions" ? scoreSuggestion(result, item as GoldenItem) : (() => {
