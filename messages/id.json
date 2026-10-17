@@ -139,7 +139,7 @@
     "before": "Sebelum",
     "after": "Sesudah",
     "gate": "Gate",
-    "checks": "Yang diperiksa",
+    "checks": "Yang diperiksa dan batasnya",
     "budget": "Batas",
     "blocksMerge": "Blokir merge",
     "reportsOnly": "Hanya melapor",

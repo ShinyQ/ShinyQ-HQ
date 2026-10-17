@@ -139,7 +139,7 @@
     "before": "Before",
     "after": "After",
     "gate": "Gate",
-    "checks": "What it checks",
+    "checks": "What it checks and its budget",
     "budget": "Budget",
     "blocksMerge": "Blocks merge",
     "reportsOnly": "Reports only",

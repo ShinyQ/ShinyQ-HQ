@@ -33,11 +33,11 @@ export async function BlueprintBody({ locale }: Props) {
   return (
     <>
       <ArchitectureDiagram architecture={architecture} locale={locale} />
-      <h3 className="pv-h3 mt-12 mb-4">{t("howItRuns")}</h3>
+      <h3 className="pv-h3 mt-14 mb-4">{t("howItRuns")}</h3>
       <ol className="pv-rows pv-rows-closed">
         {steps.map((step, i) => (
-          <li key={step.en} className="grid grid-cols-[2rem_1fr] gap-x-3 py-4">
-            <span className="pv-num text-[22px]">{i + 1}</span>
+          <li key={step.en} className="flex gap-3 py-4">
+            <span className="pv-num min-w-[4ch] shrink-0 text-[22px]">{i + 1}</span>
             <p className="pv-body">{step[locale]}</p>
           </li>
         ))}
@@ -55,8 +55,8 @@ export async function AgentsBody({ locale }: Props) {
       <h3 className="pv-h3 mb-4">{t("loop")}</h3>
       <ol className="pv-rows pv-rows-closed">
         {steps.map((step, i) => (
-          <li key={step.title.en} className="grid grid-cols-[2rem_1fr] gap-x-3 py-4">
-            <span className="pv-num text-[22px]">{i + 1}</span>
+          <li key={step.title.en} className="flex gap-3 py-4">
+            <span className="pv-num min-w-[4ch] shrink-0 text-[22px]">{i + 1}</span>
             <div>
               <p className="font-semibold text-ink">{step.title[locale]}</p>
               <p className="pv-body mt-1">{step.text[locale]}</p>
@@ -64,7 +64,7 @@ export async function AgentsBody({ locale }: Props) {
           </li>
         ))}
       </ol>
-      <h3 className="pv-h3 mt-12 mb-4">{t("tools")}</h3>
+      <h3 className="pv-h3 mt-14 mb-4">{t("tools")}</h3>
       <ul className="flex flex-wrap gap-2">
         {tools.map((tool) => (
           <li key={tool} className="chip">
@@ -72,14 +72,14 @@ export async function AgentsBody({ locale }: Props) {
           </li>
         ))}
       </ul>
-      <figure className="mt-12">
+      <figure className="mt-14">
         <figcaption className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <span className="pv-h3">{t("excerpt")}</span>
           <ExternalLink href={repoFileUrl(excerpt.path)} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink-2 hover:text-ink" srHint={tc("external")}>
             {t("excerptSource")}
           </ExternalLink>
         </figcaption>
-        <pre className="card p-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-ink-2 [overflow-wrap:anywhere] sm:p-5">
+        <pre className="card p-4 font-mono text-[13px] whitespace-pre-wrap text-ink-2 [overflow-wrap:anywhere] sm:p-5">
           <code>{excerpt.text}</code>
         </pre>
       </figure>
@@ -97,34 +97,31 @@ export async function GatesBody({ locale }: Props) {
     </span>
   );
   return (
-    <table className="w-full border-collapse text-left">
+    <table className="w-full text-left">
       <caption className="sr-only">{title[locale]}</caption>
       <thead className="pv-data">
         <tr className="border-b border-line">
           <th scope="col" className="py-3 pr-4 font-normal">
             {t("gate")}
           </th>
-          <th scope="col" className="py-3 pr-4 font-normal">
+          <th scope="col" className="py-3 font-normal">
             {t("checks")}
-          </th>
-          <th scope="col" className="hidden py-3 font-normal sm:table-cell">
-            {t("budget")}
           </th>
         </tr>
       </thead>
       <tbody>
         {gates.map((gate) => (
           <tr key={gate.id} id={`gate-${gate.id}`} className="border-b border-line align-top">
-            <th scope="row" className="w-[38%] py-4 pr-4 font-semibold text-ink sm:w-[30%]">
+            <th scope="row" className="py-4 pr-4 font-semibold text-ink">
               <span className="block">{gate.title[locale]}</span>
               {status(gate.required)}
             </th>
-            <td className="py-4 pr-4 text-ink-2">
+            <td className="py-4 text-ink-2">
               {gate.text[locale]}
-              {/* Phones drop the budget column; the budget follows the check instead. */}
-              <span className="mt-2 block text-ink sm:hidden">{gate.budget[locale]}</span>
+              <span className="mt-2 block text-ink">
+                <span className="pv-data">{t("budget")}</span> {gate.budget[locale]}
+              </span>
             </td>
-            <td className="hidden py-4 text-ink sm:table-cell">{gate.budget[locale]}</td>
           </tr>
         ))}
       </tbody>
@@ -180,7 +177,7 @@ export async function ComingSoonSection({ locale }: Props) {
     <SectionSplit id="coming-soon" title={t("comingSoonTitle")} intro={t("comingSoonIntro")}>
       <ul className="grid gap-3 sm:grid-cols-2">
         {COMING_SOON_IDS.map((id) => (
-          <li key={id} id={id} className="rounded-xl border border-dashed border-line-2 p-5 sm:p-6">
+          <li key={id} id={id} className="rounded-xl border border-line p-5 sm:p-6">
             <span className="chip text-ink-3">
               <AccentDot tone="muted" />
               {t("comingSoon")}

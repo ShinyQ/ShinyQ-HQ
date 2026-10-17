@@ -3,9 +3,8 @@ import { getBuildFacts, getBuildStory } from "@/content/build-story";
 import type { Locale } from "@/content/schema";
 import { prUrl, roundDates, timelineRows } from "@/lib/build-page";
 
-/** Pull request links stay bare (no per-link arrow or hint): one hint above the list keeps the page under its HTML budget. */
-const PR_LINKS =
-  "mt-2 flex flex-wrap gap-x-1 gap-y-1 [&_a]:inline-flex [&_a]:min-h-7 [&_a]:items-center [&_a]:px-1 [&_a]:font-mono [&_a]:text-[13px] [&_a]:text-ink-2 [&_a]:underline [&_a]:decoration-line-2 [&_a]:underline-offset-4 [&_a:hover]:text-cyan";
+/** Pull request links stay bare (no per-link arrow or hint, one hint above the rounds) and reuse existing utilities (CSS budget). */
+const PR_LINK = "pv-uline px-1 font-mono text-[13px] text-ink-2 hover:text-cyan";
 
 /** The build rounds, oldest first: title, merge dates, summary, merged pull requests and the optional before and after captures. */
 export async function TimelineBody({ locale }: { locale: Locale }) {
@@ -18,7 +17,7 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
         {rows.map(({ round, prs, first, last, open }) => {
           const dates = roundDates({ first, last }, locale);
           return (
-            <li key={round.id} id={`round-${round.number}`} className="py-8">
+            <li key={round.id} id={`round-${round.number}`} className="py-6">
               <p className="pv-data flex flex-wrap gap-x-4 gap-y-1">
                 <span>{t("round", { n: round.number })}</span>
                 {dates && <span>{dates}</span>}
@@ -29,10 +28,10 @@ export async function TimelineBody({ locale }: { locale: Locale }) {
               {prs.length > 0 && (
                 <>
                   <p className="pv-small mt-4">{t("prCount", { count: prs.length })}</p>
-                  <ul aria-label={t("prList", { n: round.number })} className={PR_LINKS}>
+                  <ul aria-label={t("prList", { n: round.number })} className="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                     {prs.map((n) => (
                       <li key={n}>
-                        <a href={prUrl(n)} target="_blank" rel="noopener noreferrer">{`#${n}`}</a>
+                        <a href={prUrl(n)} target="_blank" rel="noopener noreferrer" className={PR_LINK}>{`#${n}`}</a>
                       </li>
                     ))}
                   </ul>
