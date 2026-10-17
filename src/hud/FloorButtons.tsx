@@ -5,8 +5,8 @@ import type { FloorId } from "@/content/schema";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
-import { PUBLIC_FLOORS } from "@/lib/floors";
 import { useHQStore } from "@/store/useHQStore";
+import { floorRows } from "./floorRows";
 
 /** Lit code circle of the current floor, in the floor's accent. */
 export const FLOOR_ACTIVE: Record<FloorId, string> = {
@@ -17,8 +17,6 @@ export const FLOOR_ACTIVE: Record<FloorId, string> = {
   L4: "border-white bg-white/15 text-white",
   RF: "border-blue bg-blue/15 text-blue",
 };
-
-const TOP_DOWN = [...PUBLIC_FLOORS].reverse();
 
 export type FloorButtonsVariant = "rail" | "rail-compact" | "rail-codes" | "sheet";
 
@@ -43,9 +41,10 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
   const t = useTranslations("hud");
   const floor = useHQStore((s) => s.floor);
   const target = useHQStore((s) => s.ride?.to ?? null);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   const compact = variant === "rail-compact";
   const sheet = variant === "sheet";
-  return TOP_DOWN.map((id) => {
+  return floorRows(b1Unlocked).map(({ id }) => {
     const current = id === floor;
     const pending = id === target;
     const label = t(`floorLabel.${id}`);

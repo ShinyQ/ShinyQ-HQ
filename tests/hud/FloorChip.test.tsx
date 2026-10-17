@@ -21,6 +21,7 @@ const data = {
     L3: { name: "Labs", route: "/work" },
     L4: { name: "Library", route: "/writing" },
     RF: { name: "Roof", route: "/about" },
+    B1: { name: "Engine Room", route: "/" },
   },
 } as unknown as ExperienceData;
 
@@ -109,5 +110,17 @@ describe("FloorChip", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(emitted.filter((i) => i.type === "elevator")).toEqual([]);
     expect(chip).toHaveFocus();
+  });
+
+  it("lists B1 Build below L1 in the floor sheet only once B1 is unlocked", async () => {
+    const user = userEvent.setup();
+    await user.click(mount("phone"));
+    expect(screen.getByTestId("floor-sheet").querySelector('[data-floor="B1"]')).toBeNull();
+    cleanup();
+    getHQStore().setState({ b1Unlocked: true });
+    await user.click(mount("phone"));
+    const rows = [...screen.getByTestId("floor-sheet").querySelectorAll("[data-floor]")].map((b) => b.getAttribute("data-floor"));
+    expect(rows).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
+    getHQStore().setState({ b1Unlocked: false });
   });
 });

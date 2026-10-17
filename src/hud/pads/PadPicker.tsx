@@ -105,6 +105,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
   const picker = useHQStore((s) => s.picker);
   const exploring = useHQStore((s) => s.phase === "explore");
   const floor = useHQStore((s) => s.floor);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   const closePicker = useHQStore((s) => s.closePicker);
 
   // A ride, a room or the hologram view takes over: the picker goes away with it.
@@ -122,7 +123,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
       <PickerList
         title={t("pads.floorTitle")}
         hint={t("pads.floorHint")}
-        options={floorOptions(floor, (id) => t(`floorLabel.${id}`), (id) => t(`pads.floorDesc.${id}`))}
+        options={floorOptions(floor, (id) => t(`floorLabel.${id}`), (id) => t(`pads.floorDesc.${id}`), b1Unlocked)}
         onClose={close}
         onPick={(id) => {
           close();

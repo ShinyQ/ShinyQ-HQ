@@ -9,6 +9,8 @@ describe("pad picker options", () => {
     expect(options[2]).toEqual({ id: "L3", eyebrow: "L3", title: "label L3", detail: "desc L3", thumb: "/floors/L3.webp", current: true });
     expect(options.filter((o) => o.current)).toHaveLength(1);
     expect(floorThumb("RF")).toBe("/floors/RF.webp");
+    expect(floorOptions("L1", (f) => `label ${f}`, (f) => `desc ${f}`, true).map((o) => o.id)).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
+    expect(floorOptions("L1", (f) => f, (f) => f, true).at(-1)).toEqual({ id: "B1", eyebrow: "B1", title: "B1", detail: "B1", current: false });
   });
 
   it("lists every year plaza oldest first with rooms and organizations, and the prologue on the first year", () => {
