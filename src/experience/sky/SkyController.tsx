@@ -6,6 +6,7 @@ import type { BloomEffect } from "postprocessing";
 import { Color, DirectionalLight, HemisphereLight, Fog, InstancedBufferAttribute, Object3D, PlaneGeometry, SphereGeometry, type Group, type InstancedMesh } from "three";
 import { readDayNight, subscribeDayNight } from "@/lib/day-night";
 import { useHQStore } from "@/store/useHQStore";
+import { roverRuntime } from "../rover/runtime";
 import { createHoloMaterial, HOLO_MODE } from "../fx/holoFx";
 import { neonColor } from "../fx/materials";
 import { useDispose } from "../fx/useDispose";
@@ -13,7 +14,7 @@ import { useUniformTime } from "../fx/useUniformTime";
 import { postHandle } from "../scene/postHandle";
 import { sceneSettings } from "../scene/settings";
 import type { GpuTier } from "../types";
-import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, type SkyMode } from "./dayNight";
+import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, underground, type SkyMode } from "./dayNight";
 import { applyDome, applyOrbs } from "./applySky";
 import { skyRuntime } from "./skyRuntime";
 
@@ -66,6 +67,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
 
   const mode = useRef<SkyMode>({ source: "held", phase: 0, still: false });
   const last = useRef<number | null>(null);
+  const under = useRef(false);
   const bloomWritten = useRef<BloomEffect | null>(null);
   useEffect(() => {
     const resolve = () => {
@@ -76,7 +78,8 @@ export function SkyController({ tier }: { tier: GpuTier }) {
         automated: navigator.webdriver === true,
       });
       // The automation hold's night equals today's background: skip drawing the sky (a costly full-screen pass on CPU renderers).
-      const visible = !mode.current.still;
+      // The sky shows only when the mode draws it and the rover is above ground.
+      const visible = !mode.current.still && !under.current;
       if (group.current && group.current.visible !== visible) group.current.visible = visible;
       last.current = null;
     };
@@ -92,6 +95,14 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const scratch = useMemo(() => new Object3D(), []);
 
   useFrame(({ scene }) => {
+    // B1 is underground: hide the dome and the orbs and hold the night state (phase 0 is today's look) until the rover is back above the Lobby.
+    const below = underground(roverRuntime.y);
+    if (below !== under.current) {
+      under.current = below;
+      last.current = null;
+      if (group.current) group.current.visible = !mode.current.still && !below;
+      skyRuntime.underground = below;
+    }
     const sky = group.current;
     if (sky) {
       sky.position.copy(camera.position);
@@ -107,7 +118,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
       bloomWritten.current = bloom;
     }
     const m = mode.current;
-    const phase = m.phase ?? clockPhase(Date.now());
+    const phase = under.current ? 0 : (m.phase ?? clockPhase(Date.now()));
     if (last.current !== null && Math.abs(phase - last.current) <= EPSILON) return;
     last.current = phase;
     skyState(phase, state);

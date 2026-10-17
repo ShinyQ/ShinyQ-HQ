@@ -17,6 +17,13 @@ export type SkyPhaseName = keyof typeof SKY_PHASES;
  */
 export const SKY = { horizon: -0.6, arc: 0.09, azimuth: Math.PI } as const;
 
+/** Rover heights below this are under the Lobby slab (B1): no dome, no sun or moon, and the night state holds. */
+export const UNDERGROUND_BELOW = -0.5;
+
+export function underground(roverY: number): boolean {
+  return roverY < UNDERGROUND_BELOW;
+}
+
 export function clockPhase(nowMs: number): number {
   return (((nowMs % CYCLE_MS) + CYCLE_MS) % CYCLE_MS) / CYCLE_MS;
 }

@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
-import { PUBLIC_FLOORS } from "@/lib/floors";
 import { useHQStore } from "@/store/useHQStore";
-import { COLORS, floorY, SHAFT } from "../config";
+import { COLORS, floorY, SHAFT, towerFloors } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import type { LabsLabels } from "../floors/Labs";
 import type { LibraryLabels } from "../floors/Library";
@@ -95,9 +94,12 @@ export function Tower({
   const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
   const neighbours = useNeighboursReady();
   const warming = useWarmingFloor();
-  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0, warming);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
+  // B1 (the Engine Room) exists in the tower only once unlocked: locked sessions mount, draw and prefetch nothing of it.
+  const floors = towerFloors(b1Unlocked);
+  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0, warming, floors);
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
-  const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
+  const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0, null, floors);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
   // L3, L4 and RF load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
   // ordinary update like L1 and L2 (`floorMount`); until then the floor's own slab (FloorLevel) shows.
@@ -127,7 +129,7 @@ export function Tower({
 
   return (
     <group name="tower">
-      {PUBLIC_FLOORS.map((id) => {
+      {floors.map((id) => {
         const isNear = near.includes(id);
         const content = isNear ? floorContent(id) : null;
         return (
@@ -142,7 +144,7 @@ export function Tower({
           </FloorLevel>
         );
       })}
-      <ElevatorShaft layouts={layouts} near={shaftNear} />
+      <ElevatorShaft layouts={layouts} near={shaftNear} floors={floors} />
       <DrawnWork />
       <RideCull />
       <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />

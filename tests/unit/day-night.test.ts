@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Color } from "three";
+import { floorY } from "@/experience/config";
 import { sceneSettings } from "@/experience/scene/settings";
-import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, SKY, SKY_PHASES } from "@/experience/sky/dayNight";
+import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, SKY, SKY_PHASES, underground, UNDERGROUND_BELOW } from "@/experience/sky/dayNight";
 
 describe("day and night model", () => {
   it("runs an 8 minute cycle from clock time", () => {
@@ -91,5 +92,16 @@ describe("day and night model", () => {
     const a = skyState(0.999999);
     const b = skyState(0);
     expect(a.fog.getHex()).toBe(b.fog.getHex());
+  });
+});
+
+describe("no sky underground (B1 Engine Room)", () => {
+  it("is underground only below the Lobby slab", () => {
+    expect(UNDERGROUND_BELOW).toBe(-0.5);
+    expect(underground(floorY("B1"))).toBe(true);
+    expect(underground(floorY("L1"))).toBe(false);
+    expect(underground(floorY("RF"))).toBe(false);
+    // The car between the Lobby and B1: the sky goes as soon as the car is below the Lobby slab.
+    expect(underground(-1)).toBe(true);
   });
 });

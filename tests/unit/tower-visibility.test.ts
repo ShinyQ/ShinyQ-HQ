@@ -1,5 +1,6 @@
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { FLOOR_GAP, floorY } from "@/experience/config";
+import { floorContentVisible } from "@/experience/tower/near";
 import { contentVisible, INTRO_GHOST_BY, introGhost, RIDE_BELOW_REACH } from "@/experience/tower/visibility";
 
 const at = (id: "L1" | "L2" | "L3" | "L4" | "RF", roverY: number, extra: { exterior?: boolean; rideTo?: "L1" | "L2" | "L3" | "L4" | "RF" | null; introFly?: number } = {}) =>
@@ -52,4 +53,26 @@ it("intro fly-in: the slabs above the rover fade from solid to ghosts over the f
     prev = g;
   }
   expect(INTRO_GHOST_BY).toBeLessThan(1);
+});
+
+describe("a floor below the Lobby (B1)", () => {
+  const onB1 = { roverY: floorY("B1"), exterior: false };
+  it("ghosts every floor above B1 and draws B1 itself", () => {
+    for (const id of ["L1", "L2", "L3", "L4", "RF"] as const) expect(contentVisible({ id, floorY: floorY(id), ...onB1, rideTo: null }), id).toBe(false);
+    expect(contentVisible({ id: "B1", floorY: floorY("B1"), ...onB1, rideTo: null })).toBe(true);
+  });
+
+  it("shows B1 during rides down to it, from the Lobby and from the roof", () => {
+    // Mid ride from RF: the car is between L2 and L1; B1, the target, draws; floors above the car do not.
+    const roverY = 7;
+    expect(contentVisible({ id: "B1", floorY: floorY("B1"), roverY, exterior: false, rideTo: "B1" })).toBe(true);
+    expect(contentVisible({ id: "L1", floorY: floorY("L1"), roverY, exterior: false, rideTo: "B1" })).toBe(true);
+    expect(contentVisible({ id: "L3", floorY: floorY("L3"), roverY, exterior: false, rideTo: "B1" })).toBe(false);
+    // Parked at B1 with the doors opening: nothing below B1 exists, B1 draws.
+    expect(floorContentVisible({ floorY: floorY("B1"), roverY: floorY("B1"), exterior: false, ride: { stage: "opening" }, ready: true })).toBe(true);
+  });
+
+  it("keeps B1 out of the boot and intro exterior", () => {
+    expect(contentVisible({ id: "B1", floorY: floorY("B1"), roverY: 0, exterior: true, rideTo: null })).toBe(false);
+  });
 });
