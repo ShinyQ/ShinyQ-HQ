@@ -182,9 +182,14 @@ describe("cameraBehindHeading", () => {
     expect(cameraBehindHeading([3, 5, 0], [0, 0, 0])).toBeCloseTo(-Math.PI / 2);
   });
 
-  it("round trips a shoulder pose", () => {
-    const pose = shoulderPose([5, 0, 5], 1.1, 40);
-    expect(wrapPi(cameraBehindHeading(pose.position, [5, 0, 5]) - 1.1)).toBeLessThan(0.3);
+  it("round trips a shoulder pose to the heading, off only by the shoulder's side offset", () => {
+    const { back, side } = ARRIVAL_GLIDE.start;
+    for (const heading of [-2.5, 0, 1.1, ARRIVAL_HEADING, 3]) {
+      const pose = shoulderPose([5, 0, 5], heading, 40);
+      const deviation = wrapPi(cameraBehindHeading(pose.position, [5, 0, 5]) - heading);
+      expect(Math.abs(deviation)).toBeLessThanOrEqual(Math.atan2(side, back) + 1e-9);
+      expect(Math.abs(deviation)).toBeCloseTo(Math.atan2(side, back), 9);
+    }
   });
 });
 
@@ -328,7 +333,7 @@ describe("rail-aware view zones", () => {
     expect(s.railYaw).toBeCloseTo(kept);
   });
 
-  it("keeps the angle after an eased step or a reset", () => {
+  it("drops the zone rail yaw after an eased step or a reset", () => {
     const step = createOrbitState();
     updateZone(step, zone, false, "desktop", true);
     rotateStep(step, 1, true);
