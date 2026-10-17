@@ -1,0 +1,499 @@
+{
+  "$comment": "The build story (B1 Engine Room, owner request 2026-10-17): how this site was built, for the Classic page /{locale}/build and the secret B1 floor. Text only: every count comes from content/generated/build-facts.json (scripts/build-facts.ts), never from here. Round ranges are merged pull request numbers. Third person or neutral voice; never a client company (C3), a cloud resource id, a gateway id or a hostname. Validated by BuildStorySchema (src/content/build-story.ts) and the public-safety lint.",
+  "published": "2026-10-17",
+  "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
+  "lead": {
+    "en": "ShinyQ HQ was built in the open, one pull request at a time, by AI coding agents working from written specs and plans while Kurniadi reviewed and merged the work. This page follows the build from the blueprint to the gates that keep it honest.",
+    "id": "ShinyQ HQ dibangun secara terbuka, satu pull request demi satu, oleh AI coding agent yang bekerja dari spec dan rencana tertulis, sementara Kurniadi me-review dan me-merge pekerjaannya. Halaman ini mengikuti pembangunannya dari cetak biru sampai gate yang menjaganya tetap jujur."
+  },
+  "stations": {
+    "blueprint": {
+      "title": { "en": "The Blueprint", "id": "Cetak Biru" },
+      "summary": {
+        "en": "The whole system on one map: who writes the code, where it ships, and what runs when a visitor opens the site.",
+        "id": "Seluruh sistem dalam satu peta: siapa yang menulis kode, ke mana kode dikirim, dan apa yang berjalan saat pengunjung membuka situs."
+      },
+      "architecture": {
+        "nodes": [
+          {
+            "id": "owner",
+            "label": "Kurniadi",
+            "sublabel": { "en": "Writes specs, reviews, merges", "id": "Menulis spec, me-review, me-merge" },
+            "layer": 0,
+            "row": 0,
+            "kind": "human"
+          },
+          {
+            "id": "agents",
+            "label": "AI coding agents",
+            "sublabel": { "en": "GitHub Copilot and Claude Code", "id": "GitHub Copilot dan Claude Code" },
+            "layer": 0,
+            "row": 1,
+            "kind": "ai"
+          },
+          {
+            "id": "github",
+            "label": "GitHub",
+            "sublabel": { "en": "Pull requests and Actions CI", "id": "Pull request dan CI Actions" },
+            "layer": 1,
+            "row": 0,
+            "kind": "external"
+          },
+          {
+            "id": "visitor",
+            "label": "Visitor browser",
+            "sublabel": { "en": "Classic site or the 3D tower", "id": "Situs klasik atau menara 3D" },
+            "layer": 1,
+            "row": 3,
+            "kind": "client"
+          },
+          {
+            "id": "pages",
+            "label": "Cloudflare Pages",
+            "sublabel": { "en": "Next.js static export", "id": "Static export Next.js" },
+            "layer": 2,
+            "row": 0,
+            "kind": "service",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "functions",
+            "label": "Pages Functions",
+            "sublabel": { "en": "ask, rum, visit and stats", "id": "ask, rum, visit, dan stats" },
+            "layer": 2,
+            "row": 3,
+            "kind": "service",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "cron",
+            "label": "hq-stats Cron Worker",
+            "sublabel": { "en": "Every 4 hours", "id": "Setiap 4 jam" },
+            "layer": 2,
+            "row": 5,
+            "kind": "service",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "workers-ai",
+            "label": "Workers AI",
+            "sublabel": {
+              "en": "Through AI Gateway: Gemma 4, Mistral Small 3.1 fallback",
+              "id": "Lewat AI Gateway: Gemma 4, fallback Mistral Small 3.1"
+            },
+            "layer": 3,
+            "row": 2,
+            "kind": "ai",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "kv",
+            "label": "KV and Analytics Engine",
+            "sublabel": { "en": "Visit counts and beacons", "id": "Hitungan kunjungan dan beacon" },
+            "layer": 3,
+            "row": 4,
+            "kind": "data",
+            "group": "Cloudflare"
+          }
+        ],
+        "edges": [
+          { "from": "owner", "to": "github", "label": "Specs, review, merge" },
+          { "from": "agents", "to": "github", "label": "Pull requests" },
+          { "from": "github", "to": "pages", "label": "After green CI" },
+          { "from": "visitor", "to": "pages", "label": "HTML, JS, 3D" },
+          { "from": "visitor", "to": "functions", "label": "Ask, beacons, stats" },
+          { "from": "functions", "to": "workers-ai" },
+          { "from": "functions", "to": "kv" },
+          { "from": "cron", "to": "kv", "async": true }
+        ]
+      },
+      "steps": [
+        {
+          "en": "Every page is pre-rendered as static HTML, so the Classic site works without WebGL or a server.",
+          "id": "Setiap halaman di-render lebih dulu sebagai HTML statis, sehingga situs klasik berjalan tanpa WebGL atau server."
+        },
+        {
+          "en": "The 3D tower mounts on the client on top of those pages and never replaces their content.",
+          "id": "Menara 3D dipasang di sisi klien di atas halaman-halaman itu dan tidak pernah menggantikan isinya."
+        },
+        {
+          "en": "Pages Functions serve the Ask the HQ assistant and the small performance and visit beacons.",
+          "id": "Pages Functions melayani asisten Ask the HQ dan beacon kecil untuk performa dan kunjungan."
+        },
+        {
+          "en": "A Cron Worker aggregates public visit stats into KV on a schedule, so the site never exposes raw logs.",
+          "id": "Sebuah Cron Worker merangkum statistik kunjungan publik ke KV sesuai jadwal, sehingga situs tidak pernah menampilkan log mentah."
+        },
+        {
+          "en": "Production deploys only from a manual workflow that reuses a complete green CI run.",
+          "id": "Deploy produksi hanya berasal dari workflow manual yang memakai ulang satu run CI hijau yang lengkap."
+        }
+      ]
+    },
+    "timeline": {
+      "title": { "en": "The Build Timeline", "id": "Lini Masa Pembangunan" },
+      "summary": {
+        "en": "Rounds of merged pull requests, from the first foundation to this page. The counts and dates come from the repository history.",
+        "id": "Putaran pull request yang di-merge, dari fondasi pertama sampai halaman ini. Jumlah dan tanggalnya berasal dari riwayat repositori."
+      },
+      "rounds": [
+        {
+          "id": "r1",
+          "number": 1,
+          "title": { "en": "Foundation and the Five Floors", "id": "Fondasi dan Lima Lantai" },
+          "summary": {
+            "en": "The content dataset, missions, launch infrastructure, the tower shell, the rover and the first five floors took shape.",
+            "id": "Dataset konten, misi, infrastruktur peluncuran, kerangka menara, rover, dan lima lantai pertama mulai terbentuk."
+          },
+          "prs": { "from": 1, "to": 15 }
+        },
+        {
+          "id": "r2",
+          "number": 2,
+          "title": { "en": "Game-First Load, Classic Site and Ask the HQ", "id": "Pemuatan Game-First, Situs Klasik, dan Ask the HQ" },
+          "summary": {
+            "en": "The Classic site was revamped, the 3D boot cover and CI fast pipeline arrived, client work moved to sector labels and the Ask the HQ assistant launched, with the first walkable floors, the CV viewer and a performance pass.",
+            "id": "Situs klasik dirombak, boot cover 3D dan pipeline CI cepat hadir, pekerjaan klien dipindah ke label sektor, dan asisten Ask the HQ diluncurkan, bersama lantai pertama yang bisa dijelajahi, penampil CV, dan perbaikan performa."
+          },
+          "prs": { "from": 16, "to": 51 },
+          "shots": {
+            "before": {
+              "src": "/build-story/r2-before.webp",
+              "width": 960,
+              "height": 600,
+              "alt": {
+                "en": "Design mockup of the Classic site home page, drawn before it was built",
+                "id": "Mockup desain beranda situs klasik, dibuat sebelum situs dibangun"
+              }
+            },
+            "after": {
+              "src": "/build-story/r2-after.webp",
+              "width": 960,
+              "height": 600,
+              "alt": {
+                "en": "The Classic site home page as built",
+                "id": "Beranda situs klasik seperti yang dibangun"
+              }
+            },
+            "caption": {
+              "en": "The Classic site home page, from the design mockup to the built page.",
+              "id": "Beranda situs klasik, dari mockup desain sampai halaman yang dibangun."
+            }
+          }
+        },
+        {
+          "id": "r3",
+          "number": 3,
+          "title": { "en": "Title Case, Call Pads and the Writing Floor", "id": "Title Case, Call Pad, dan Lantai Tulisan" },
+          "summary": {
+            "en": "Titles moved to Title Case with one project order, elevator call pads and a new landing hero arrived, and the Writing floor and roof deck were built.",
+            "id": "Judul beralih ke Title Case dengan satu urutan proyek, call pad elevator dan hero landing baru hadir, dan lantai Tulisan serta roof deck dibangun."
+          },
+          "prs": { "from": 52, "to": 58 },
+          "shots": {
+            "before": {
+              "src": "/build-story/r3-before.webp",
+              "width": 960,
+              "height": 600,
+              "alt": {
+                "en": "Design mockup of the landing hero with the tower directory, drawn before it was built",
+                "id": "Mockup desain hero landing dengan direktori menara, dibuat sebelum dibangun"
+              }
+            },
+            "after": {
+              "src": "/build-story/r3-after.webp",
+              "width": 960,
+              "height": 600,
+              "alt": {
+                "en": "The landing hero as built, with the Ask AI shortcut",
+                "id": "Hero landing seperti yang dibangun, dengan pintasan Ask AI"
+              }
+            },
+            "caption": {
+              "en": "The landing hero, from the design mockup to the built page.",
+              "id": "Hero landing, dari mockup desain sampai halaman yang dibangun."
+            }
+          }
+        },
+        {
+          "id": "r4",
+          "number": 4,
+          "title": { "en": "Point-and-Go, Onboarding and the Highlights Hall", "id": "Point-and-Go, Onboarding, dan Aula Sorotan" },
+          "summary": {
+            "en": "Perspectives, live links and ticketing projects joined the content, point-and-go movement, paper PDFs, the Rover dialog, onboarding and the Highlights Hall were added.",
+            "id": "Perspektif, tautan langsung, dan proyek ticketing bergabung ke konten, lalu gerakan point-and-go, PDF makalah, dialog Rover, onboarding, dan Aula Sorotan ditambahkan."
+          },
+          "prs": { "from": 59, "to": 65 }
+        },
+        {
+          "id": "r5",
+          "number": 5,
+          "title": { "en": "Performance, Camera and Spectacle", "id": "Performa, Kamera, dan Tontonan" },
+          "summary": {
+            "en": "Share cards and SEO landed, the elevator and camera became smoother and freer, a GPU, CPU and memory pass set the performance gates, and the Motion setting and floating signs arrived.",
+            "id": "Kartu share dan SEO hadir, elevator dan kamera menjadi lebih mulus dan bebas, perbaikan GPU, CPU, dan memori menetapkan gate performa, lalu pengaturan Motion dan papan melayang tiba."
+          },
+          "prs": { "from": 66, "to": 88 }
+        },
+        {
+          "id": "r6",
+          "number": 6,
+          "title": { "en": "Visit Stats, Ops Room, Data and ML, Security", "id": "Statistik Kunjungan, Ruang Ops, Data dan ML, Keamanan" },
+          "summary": {
+            "en": "Public visit stats, the Tech Reactor, the Ops Control Room, the Data and ML pods and the Topic Constellation were built, followed by a security audit, Ask answers about how the site was built and a README redesign.",
+            "id": "Statistik kunjungan publik, Tech Reactor, Ops Control Room, pod Data dan ML, dan Topic Constellation dibangun, disusul audit keamanan, jawaban Ask tentang cara situs dibuat, dan desain ulang README."
+          },
+          "prs": { "from": 89, "to": 145 }
+        },
+        {
+          "id": "r7",
+          "number": 7,
+          "title": { "en": "Uptime, CSP and Floor Chunks", "id": "Uptime, CSP, dan Chunk Lantai" },
+          "summary": {
+            "en": "Hourly uptime alerts and per-page CSP hashes arrived, packages were upgraded, floors loaded as separate chunks and the Labs floor was split into three separate project boards.",
+            "id": "Peringatan uptime per jam dan hash CSP per halaman hadir, paket ditingkatkan, lantai dimuat sebagai chunk terpisah, dan lantai Labs dibagi menjadi tiga papan proyek terpisah."
+          },
+          "prs": { "from": 146, "to": 171 },
+          "shots": {
+            "before": {
+              "src": "/build-story/r7-before.webp",
+              "width": 960,
+              "height": 540,
+              "alt": {
+                "en": "The Labs floor before the three separate boards: one directory board splits Product Engineering and AI Engineering",
+                "id": "Lantai Labs sebelum tiga papan terpisah: satu papan direktori membagi Product Engineering dan AI Engineering"
+              }
+            },
+            "after": {
+              "src": "/build-story/r7-after.webp",
+              "width": 960,
+              "height": 540,
+              "alt": {
+                "en": "The Labs floor after the three separate boards: Product Engineering, Data and ML, and AI Engineering",
+                "id": "Lantai Labs setelah tiga papan terpisah: Product Engineering, Data dan ML, serta AI Engineering"
+              }
+            },
+            "caption": {
+              "en": "The Labs floor before and after the three separate boards.",
+              "id": "Lantai Labs sebelum dan sesudah tiga papan terpisah."
+            }
+          }
+        },
+        {
+          "id": "r8",
+          "number": 8,
+          "title": { "en": "Diagrams, Music, Day and Night", "id": "Diagram, Musik, Siang dan Malam" },
+          "summary": {
+            "en": "Architecture diagrams, ambient music, shareable Classic links and smart CI were added, with a day and night sky, a Corners HUD with a minimap and L3-style arrivals on every floor.",
+            "id": "Diagram arsitektur, musik ambient, tautan Situs klasik yang bisa dibagikan, dan smart CI ditambahkan, bersama langit siang dan malam, HUD Corners dengan minimap, dan kedatangan ala L3 di setiap lantai."
+          },
+          "prs": { "from": 172, "to": 186 }
+        },
+        {
+          "id": "r9",
+          "number": 9,
+          "title": { "en": "Camera Polish and the Engine Room", "id": "Poles Kamera dan Ruang Mesin" },
+          "summary": {
+            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that will tell it.",
+            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan lantai rahasia B1 Engine Room yang akan menceritakannya."
+          },
+          "prs": { "from": 187, "to": null }
+        }
+      ],
+      "unlinkedPrs": [26]
+    },
+    "agents": {
+      "title": { "en": "Working with AI Agents", "id": "Bekerja dengan AI Agent" },
+      "summary": {
+        "en": "Agents write the code; the human owns the decisions. Every change followed the same loop, with the plan and spec committed to the repository.",
+        "id": "Agent menulis kode; manusia memegang keputusan. Setiap perubahan mengikuti loop yang sama, dengan plan dan spec tersimpan di repositori."
+      },
+      "steps": [
+        {
+          "title": { "en": "Spec", "id": "Spec" },
+          "text": {
+            "en": "A brainstorm with the agent ends in a written design spec that states what to build and why, with the owner's content decisions as the final word.",
+            "id": "Brainstorm bersama agent berakhir pada design spec tertulis yang menyatakan apa yang dibangun dan mengapa, dengan keputusan konten pemilik sebagai penentu akhir."
+          }
+        },
+        {
+          "title": { "en": "Plan", "id": "Rencana" },
+          "text": {
+            "en": "The spec becomes a step-by-step plan in the repository: small tasks, exact files, tests written first and the commands that prove each step.",
+            "id": "Spec menjadi rencana langkah demi langkah di repositori: task kecil, file yang tepat, test ditulis lebih dulu, dan perintah yang membuktikan setiap langkah."
+          }
+        },
+        {
+          "title": { "en": "Agent Tasks", "id": "Task Agent" },
+          "text": {
+            "en": "The superpowers workflow runs the plan as subagent-driven tasks: one fresh agent per task, each returning a report with test evidence.",
+            "id": "Workflow superpowers menjalankan rencana sebagai task berbasis subagent: satu agent baru per task, masing-masing mengembalikan laporan beserta bukti test."
+          }
+        },
+        {
+          "title": { "en": "Review", "id": "Review" },
+          "text": {
+            "en": "Each task is reviewed before the next begins. Changes to the look of a floor also pass a local look-preserving visual gate (scripts/visual-gate.ts) that compares screenshots across devices and camera poses.",
+            "id": "Setiap task di-review sebelum task berikutnya dimulai. Perubahan tampilan lantai juga melewati visual gate lokal yang menjaga tampilan (scripts/visual-gate.ts) dan membandingkan screenshot di berbagai perangkat dan pose kamera."
+          }
+        },
+        {
+          "title": { "en": "CI", "id": "CI" },
+          "text": {
+            "en": "The pull request must pass the required checks: tests, the build, end-to-end shards, Lighthouse and the 3D performance gates.",
+            "id": "Pull request harus lulus check wajib: test, build, shard end-to-end, Lighthouse, dan gate performa 3D."
+          }
+        },
+        {
+          "title": { "en": "Deploy", "id": "Deploy" },
+          "text": {
+            "en": "The owner merges the pull request. A push to main never deploys: production goes out only through the deploy workflow, by hand or after the weekly live-facts update, and it reuses a complete green CI run.",
+            "id": "Pemilik me-merge pull request. Push ke main tidak pernah men-deploy: produksi hanya dirilis lewat workflow deploy, secara manual atau setelah pembaruan live-facts mingguan, dan workflow itu memakai ulang satu run CI hijau yang lengkap."
+          }
+        }
+      ],
+      "tools": ["GitHub Copilot", "Claude Code"],
+      "excerpt": {
+        "path": "docs/superpowers/plans/2026-10-15-floor-chunks.md",
+        "text": "### Task 5: Bundle gate with per-floor chunk caps\n\n**Files:**\n- Modify: `e2e/budgets.ts` (`BYTES_3D_BUDGET.floors`)\n- Modify: `e2e/perf/bytes-3d.spec.ts`\n- Modify: `scripts/perf-report.ts` (`bytes3d` entry `floors?`, summary line)\n- Test: `tests/unit/perf-report.test.ts`\n\n**Interfaces:**\n- Consumes: `window.__hq.floorChunks.load(id)` and `?prefetch=off` (Tasks 1 and 4).\n- Produces: `BYTES_3D_BUDGET.floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 }`; perf entry `{ kind: \"bytes3d\"; tier; js; other; floors?: Partial<Record<\"L3\" | \"L4\" | \"RF\", number>> }`."
+      }
+    },
+    "gates": {
+      "title": { "en": "The Gates", "id": "Gerbang Kualitas" },
+      "summary": {
+        "en": "Automated checks that decide whether a change may merge. Each one states what it checks and the number it enforces.",
+        "id": "Pemeriksaan otomatis yang menentukan apakah sebuah perubahan boleh di-merge. Masing-masing menyatakan apa yang diperiksa dan angka yang ditegakkan."
+      },
+      "gates": [
+        {
+          "id": "quality",
+          "title": { "en": "Types, Lint and Unit Tests", "id": "Tipe, Lint, dan Unit Test" },
+          "text": {
+            "en": "Strict TypeScript, the linter and the Vitest suite, including the content and public-safety tests.",
+            "id": "TypeScript strict, linter, dan suite Vitest, termasuk test konten dan keamanan publik."
+          },
+          "budget": { "en": "Zero type errors, lint errors and failing tests", "id": "Nol error tipe, error lint, dan test yang gagal" },
+          "jobs": ["Typecheck, lint, unit tests"],
+          "required": true
+        },
+        {
+          "id": "secrets",
+          "title": { "en": "Secret Scan", "id": "Pemindaian Rahasia" },
+          "text": {
+            "en": "Scans the repository history for committed credentials, because the repository is public.",
+            "id": "Memindai riwayat repositori untuk kredensial yang ter-commit, karena repositori ini publik."
+          },
+          "budget": { "en": "Zero secrets found", "id": "Nol rahasia ditemukan" },
+          "jobs": ["Secret scan"],
+          "required": true
+        },
+        {
+          "id": "public-safety",
+          "title": { "en": "Public-Safety Scan", "id": "Pemindaian Keamanan Publik" },
+          "text": {
+            "en": "Scans every text file of the built export against the private blocklist.",
+            "id": "Memindai setiap file teks hasil build terhadap blocklist privat."
+          },
+          "budget": { "en": "Zero blocklisted terms in the export", "id": "Nol istilah dalam blocklist pada hasil export" },
+          "jobs": ["Build static export"],
+          "required": true
+        },
+        {
+          "id": "csp",
+          "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP untuk Setiap Halaman" },
+          "text": {
+            "en": "Hashes every inline script of every page and fails the build when one is missing its hash.",
+            "id": "Meng-hash setiap inline script di setiap halaman dan menggagalkan build bila ada yang tanpa hash."
+          },
+          "budget": { "en": "No inline script without a hash", "id": "Tidak ada inline script tanpa hash" },
+          "jobs": ["Build static export"],
+          "required": true
+        },
+        {
+          "id": "e2e",
+          "title": { "en": "End-to-End Shards", "id": "Shard End-to-End" },
+          "text": {
+            "en": "Playwright drives the built site in duration-balanced shards, waiting on state and never on time.",
+            "id": "Playwright menjalankan situs hasil build dalam beberapa shard yang seimbang durasinya, menunggu state dan tidak pernah menunggu waktu."
+          },
+          "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
+          "jobs": ["E2E shard ${{ matrix.shard }}/4"],
+          "required": true
+        },
+        {
+          "id": "bytes-3d",
+          "title": { "en": "3D Download Size", "id": "Ukuran Unduhan 3D" },
+          "text": {
+            "en": "Measures the gzip JavaScript the 3D experience downloads before its first frame, for the lite and full tiers.",
+            "id": "Mengukur JavaScript gzip yang diunduh pengalaman 3D sebelum frame pertama, untuk tier lite dan full."
+          },
+          "budget": { "en": "Under 450 KB gzip on the first-frame path", "id": "Di bawah 450 KB gzip pada jalur frame pertama" },
+          "jobs": ["3D perf gates ${{ matrix.shard }}/2"],
+          "required": true
+        },
+        {
+          "id": "render-memory",
+          "title": { "en": "3D Render and Memory", "id": "Render dan Memori 3D" },
+          "text": {
+            "en": "Counts draw calls and triangles on every floor, then rides the elevator round trips and checks that nothing leaks.",
+            "id": "Menghitung draw call dan segitiga di setiap lantai, lalu menaiki elevator bolak-balik dan memeriksa bahwa tidak ada yang bocor."
+          },
+          "budget": {
+            "en": "Under 150 scene draw calls and 30k triangles; zero GPU object growth and under 2 MB heap growth",
+            "id": "Di bawah 150 draw call scene dan 30 ribu segitiga; nol pertumbuhan objek GPU dan pertumbuhan heap di bawah 2 MB"
+          },
+          "jobs": ["3D perf gates ${{ matrix.shard }}/2"],
+          "required": true
+        },
+        {
+          "id": "lighthouse",
+          "title": { "en": "Classic Site Speed", "id": "Kecepatan Situs Klasik" },
+          "text": {
+            "en": "Lighthouse CI loads the Classic pages and fails the check on slow paint, layout shift, blocking time or heavy scripts.",
+            "id": "Lighthouse CI memuat halaman klasik dan menggagalkan check bila paint lambat, layout bergeser, waktu blocking tinggi, atau script terlalu berat."
+          },
+          "budget": {
+            "en": "LCP 2 s, CLS 0.01, TBT 200 ms and JS 240 KB on Classic pages",
+            "id": "LCP 2 detik, CLS 0,01, TBT 200 ms, dan JS 240 KB pada halaman klasik"
+          },
+          "jobs": ["Lighthouse CI"],
+          "required": true
+        },
+        {
+          "id": "smart-ci",
+          "title": { "en": "Smart CI Plan", "id": "Rencana Smart CI" },
+          "text": {
+            "en": "Reads a pull request's changed paths and runs only the heavy jobs they need. Any planner failure runs everything.",
+            "id": "Membaca path yang berubah dalam pull request dan hanya menjalankan job berat yang dibutuhkan. Jika perencana gagal, semuanya dijalankan."
+          },
+          "budget": { "en": "Pushes to main always run every job", "id": "Push ke main selalu menjalankan semua job" },
+          "jobs": ["Plan CI"],
+          "required": true
+        }
+      ]
+    },
+    "dashboard": {
+      "title": { "en": "The Dashboard", "id": "Dasbor" },
+      "summary": {
+        "en": "Numbers measured from the repository when the site is built: commits, merged pull requests, tests, specs, plans and budgets.",
+        "id": "Angka yang diukur dari repositori saat situs dibangun: commit, pull request yang di-merge, test, spec, plan, dan budget."
+      }
+    }
+  },
+  "comingSoon": {
+    "brain": {
+      "title": { "en": "Rover's Brain", "id": "Otak Rover" },
+      "summary": {
+        "en": "How Ask the HQ finds, grounds and checks its answers.",
+        "id": "Cara Ask the HQ menemukan, mendasari, dan memeriksa jawabannya."
+      }
+    },
+    "rejected": {
+      "title": { "en": "Rejected Designs", "id": "Desain yang Ditolak" },
+      "summary": {
+        "en": "Ideas that were tried and dropped, and why.",
+        "id": "Ide yang dicoba lalu dibuang, beserta alasannya."
+      }
+    }
+  }
+}

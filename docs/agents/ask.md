@@ -18,7 +18,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - Parsed by `src/ask/markdown.ts`, rendered as React elements by `src/hud/ask/AskMarkdown.tsx` (never HTML).
   - Links allowlisted by `src/ask/links.ts`.
 - Server side (`sanitizeAnswer`, `answerLinkPaths` in `functions/_lib/checks.ts`):
-  - keeps only links to the retrieved chunks' pages (context lines carry `[link: <url>]`), the top pages (`ASK_LINK_PAGES`) and the public repository;
+  - keeps only links to the retrieved chunks' pages (context lines carry `[link: <url>]`), the top pages (`ASK_LINK_PAGES`) and, for older cached answers, the public repository;
   - scans the markdown (URLs included) and its plain text for blocked terms, forbidden patterns and secrets;
   - runs every other check on `markdownToPlain`.
 
@@ -136,10 +136,11 @@ Security order (spec 7.4):
 
 - `content/ask/site-build.json` (`SiteBuildSchema`, read through `getSiteBuild()`; never import it into a client component).
   - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`), at most `SITE_BUILD_TEXT_MAX` (2600) characters per language.
-  - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url the public repository).
+  - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
-  - Such an answer carries `cite` = `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, the only external value `isAskCite` accepts; the dock opens it in a new tab).
+  - Such an answer carries `cite` = `/build` (kind `build`; the dock shows "Read on this site: How this site was built"), and the page links the public repository.
+  - `isAskCite` still accepts `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, kind `repo`, opened in a new tab) so an older cached answer renders; nothing new cites it.
 - Every fact must be backed by the repository.
   - Update the note in the same PR when the stack, hosting, the assistant or the test gates change.
   - Keep golden q45 to q47, q69 and q70 true (runbook section 16).
@@ -169,9 +170,10 @@ Spec section 13.
   - Otherwise the answer becomes the no-view message with the closest source (`noViewMessage`; `closestSource` never names a perspective, which has no page).
 - The pack's "Kurniadi's written view" label counts as an opinion claim (`claimsOpinion`).
 - `privateTopic` and `opinionAboutOthers` decline before the model; `firstPersonVoice` replaces first-person answers.
-- The `done` frame may carry `cite`: an allowlisted path (`isAskCite` in `src/ask/protocol.ts`: `/contact#how`, `/blog/<slug>`, `/labs/<slug>`, `/library`; never a `#perspectives-*` anchor).
+- The `done` frame may carry `cite`: an allowlisted path (`isAskCite` in `src/ask/protocol.ts`: `/contact#how`, `/blog/<slug>`, `/labs/<slug>`, `/library`, `/build`; never a `#perspectives-*` anchor).
   - Rendered by `AskCiteLink` as "Read on this site".
-  - The site-build answer's repository link reads "Source: ..." and opens in a new tab.
+  - `citeKind` maps a cite to its label (`ask.cite.<kind>`: how, blog, project, library, build, repo) and to the "where" phrase of the no-view answer (`WHERE` in `functions/_lib/messages.ts`).
+  - The legacy repository cite reads "Source: ..." and opens in a new tab.
 - A perspective answer cites the entry's backing post or project through its chunk `url` (`perspectiveSourcePath`), or nothing when the entry has none.
 - Personal essays (post tag `personal`) never count as a source.
 

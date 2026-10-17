@@ -6,7 +6,8 @@
     "labs": "Labs",
     "library": "Library",
     "contact": "Contact",
-    "cv": "CV"
+    "cv": "CV",
+    "build": "How this site was built"
   },
   "nav": {
     "label": "Main navigation",
@@ -17,6 +18,7 @@
     "library": "Library",
     "contact": "Contact",
     "cv": "CV",
+    "build": "How this site was built",
     "language": "Language",
     "skip": "Skip to content",
     "work": "Work",
@@ -118,6 +120,49 @@
     "library": "Library",
     "contact": "Contact",
     "skills": "Skills"
+  },
+  "build": {
+    "toc": "On this page",
+    "snapshot": "Snapshot of {date}, commit {commit}",
+    "snapshotDate": "Snapshot of {date}",
+    "source": "Source code on GitHub",
+    "howItRuns": "How it runs",
+    "loop": "Every change, step by step",
+    "tools": "Agents used",
+    "excerpt": "From a real plan",
+    "excerptSource": "Read the full plan on GitHub",
+    "dateTo": "to",
+    "prHint": "Pull request numbers open on GitHub in a new tab.",
+    "round": "Round {n}",
+    "inProgress": "In progress",
+    "prCount": "{count, plural, one {# merged pull request} other {# merged pull requests}}",
+    "prList": "Pull requests of round {n}",
+    "before": "Before",
+    "after": "After",
+    "gate": "Gate",
+    "checks": "What it checks and its budget",
+    "budget": "Budget",
+    "blocksMerge": "Blocks merge",
+    "reportsOnly": "Reports only",
+    "tiles": {
+      "mergedPrs": "Merged pull requests",
+      "commits": "Commits since {date}",
+      "unitFiles": "Unit test files",
+      "e2eTests": "End-to-end tests",
+      "specs": "Spec documents",
+      "plans": "Written plans",
+      "floors": "Floors in the 3D tower",
+      "js3dKb": "3D JavaScript ceiling before the first frame (gzip)",
+      "sceneCalls": "Draw call ceiling per frame",
+      "triangles": "Triangle ceiling per frame",
+      "uptime": "Uptime check on the live site",
+      "visits": "Visits in the last 30 days"
+    },
+    "kb": "{value} KB",
+    "hourly": "Hourly",
+    "comingSoon": "Coming soon",
+    "comingSoonTitle": "Coming Soon",
+    "comingSoonIntro": "More of the build story is on its way."
   },
   "journey": {
     "title": "Career journey: 2019 to 2026",
@@ -759,6 +804,7 @@
       "blog": "Kurniadi's blog post",
       "project": "The project's case study",
       "library": "The Writing page",
+      "build": "How this site was built",
       "repo": "The ShinyQ HQ source code on GitHub"
     },
     "contact": {
@@ -950,6 +996,8 @@
     "contactDescription": "Contact {name}, {role} in {city}, about software and AI engineering roles and projects.",
     "cvTitle": "CV of {name}: software and AI engineering",
     "cvDescription": "CV of {name}, {role}: Azure AI applications, backend systems, career, education and certifications.",
+    "buildTitle": "How {name} built this site with AI agents",
+    "buildDescription": "How {name} builds ShinyQ HQ with AI coding agents: written specs and plans, small pull requests and automated gates on every merge.",
     "podTitle": "{title} by {name}",
     "postTitle": "{title} by {name}",
     "entryTitle": "{name}: {role}",
@@ -1003,6 +1051,11 @@
         "1": "Read it online or download the PDF.",
         "2": "Read online or download.",
         "3": "View or download."
+      },
+      "build": {
+        "1": "With the build timeline, the CI gates and numbers measured at build time.",
+        "2": "With the timeline, the gates and measured numbers.",
+        "3": "With the timeline and the gates."
       }
     },
     "og": {
@@ -1032,6 +1085,11 @@
         "cv": {
           "title": "CV",
           "subtitle": "Career, education and certifications in one PDF"
+        },
+        "build": {
+          "title": "How this site was built",
+          "subtitle": "Specs, AI agents, pull requests and the gates behind every merge",
+          "eyebrow": "Engine Room"
         }
       }
     }

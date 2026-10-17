@@ -24,7 +24,7 @@ export function isPerspectiveQuestion(question: string): boolean {
 /**
  * Questions about this site itself (ShinyQ HQ): its stack, 3D engine, hosting, the assistant and how
  * it was made (owner request 2026-10-15). They always retrieve the `site-build` chunk, and an answer
- * cites the public repository. Deliberately narrow: "his portfolio" or "a live site" of a project
+ * cites the /build page. Deliberately narrow: "his portfolio" or "a live site" of a project
  * are about his work, not about this site.
  */
 const SITE: RegExp[] = [

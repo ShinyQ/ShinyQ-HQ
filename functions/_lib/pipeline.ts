@@ -43,7 +43,7 @@ export interface PipelineResult {
   chunkIds: string[];
   /** Allowlisted topic tags of the retrieved chunks (follow-up pills); empty when nothing was retrieved. */
   tags: AskTag[];
-  /** Page View path of the written source the answer cites (or the public repository for a site question), or of the closest one for the no-view answer (`isAskCite`). */
+  /** Page View path of the written source the answer cites (`/build` for a site question), or of the closest one for the no-view answer (`isAskCite`). */
   cite?: string;
   /** Lead intent (owner request 2026-10-15): the `done` frame carries the contact card (`pack.contact`). */
   lead?: boolean;

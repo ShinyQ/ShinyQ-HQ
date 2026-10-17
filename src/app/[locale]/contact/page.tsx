@@ -37,6 +37,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   const tc = await getTranslations({ locale, namespace: "common" });
   const tq = await getTranslations({ locale, namespace: "quick" });
   const tf = await getTranslations({ locale, namespace: "floors" });
+  const tn = await getTranslations({ locale, namespace: "nav" });
   const roof = getRoof();
   const profile = getProfile();
   const [lead, rest] = splitStory(profile.story[locale]);
@@ -56,6 +57,11 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
           </div>
           <p className="pv-lead mt-6">{lead}</p>
           {rest && <p className="pv-body mt-4">{rest}</p>}
+          <p className="mt-4">
+            <Link href="/build" className="pv-go">
+              {tn("build")}
+            </Link>
+          </p>
         </div>
         <div className="min-w-0 lg:col-span-4 lg:col-start-9 lg:pt-12">
           <ContactPanel roof={roof} profile={profile} locale={locale} />

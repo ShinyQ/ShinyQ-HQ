@@ -453,10 +453,11 @@ export const PerspectivesFileSchema = z
 
 /**
  * How ShinyQ HQ itself was built (content/ask/site-build.json, owner request 2026-10-15): Ask the HQ
- * knowledge only, no page. One knowledge chunk (`site-build`) that answers questions about the site's
- * stack, 3D engine, hosting, the assistant, testing and process, and how visitors use it (Rover, floors,
- * minimap, settings, links; the "This site" pills), cited to the public repository. Facts only, third
- * person, never a client, resource or host name.
+ * knowledge only; the long form renders on the /build page (content/build-story.json). One knowledge
+ * chunk (`site-build`) that answers questions about the site's stack, 3D engine, hosting, the assistant,
+ * testing and process, and how visitors use it (Rover, floors, minimap, settings, links; the "This site"
+ * pills), cited to the How this site was built page (`/build`), which links the public repository. Facts
+ * only, third person, never a client, resource or host name.
  */
 export const SITE_BUILD_TEXT_MAX = 2600;
 export const SITE_BUILD_SOURCE = "https://github.com/ShinyQ/ShinyQ-HQ";
@@ -465,7 +466,7 @@ export const SiteBuildSchema = z.strictObject({
   $comment: z.string().optional(),
   asOf: IsoDateSchema,
   title: LocalizedTextSchema,
-  /** The public repository the answer cites (the footer's source code link). */
+  /** The public repository (the footer's source code link); the chunk itself cites the /build page. */
   source: z.literal(SITE_BUILD_SOURCE),
   text: boundedText(SITE_BUILD_TEXT_MAX),
   keywords: z.array(z.string().trim().min(2).max(32).regex(/^[a-z0-9][a-z0-9 .+-]*$/, "Lowercase keywords")).min(4).max(40),

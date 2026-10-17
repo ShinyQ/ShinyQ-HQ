@@ -24,6 +24,7 @@ describe("lighthouserc", () => {
       "http://127.0.0.1:4320/en/blog/making-a-voice-agent-interruptible",
       "http://127.0.0.1:4320/en/contact",
       "http://127.0.0.1:4320/en/cv",
+      "http://127.0.0.1:4320/en/build",
     ]);
   });
 

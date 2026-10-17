@@ -102,7 +102,8 @@ describe("sitemap and robots", () => {
   it("lists every static page, journey entry, pod and hosted post", () => {
     expect(paths).toContain("/");
     expect(paths).toContain("/quick");
-    expect(paths).toHaveLength(7 + floors.careerArchive.entries.length + floors.labs.pods.length + hostedPosts.length);
+    expect(paths).toContain("/build");
+    expect(paths).toHaveLength(8 + floors.careerArchive.entries.length + floors.labs.pods.length + hostedPosts.length);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.some((p) => floors.library.posts.some((post) => post.url && p === `/blog/${post.slug}`))).toBe(false);
   });

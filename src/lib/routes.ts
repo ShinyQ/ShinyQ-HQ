@@ -2,9 +2,10 @@
  * Every locale-relative page path the static export renders. Single source
  * for the sitemap; keep in sync with the `generateStaticParams` of each route.
  */
+import { getBuildFacts } from "@/content/build-story";
 import { getContent, getDynamicFacts, getTimeline } from "@/content/load";
 
-export const STATIC_PATHS = ["/", "/quick", "/journey", "/labs", "/library", "/contact", "/cv"] as const;
+export const STATIC_PATHS = ["/", "/quick", "/journey", "/labs", "/library", "/contact", "/cv", "/build"] as const;
 
 export function allPagePaths(): string[] {
   const { floors } = getContent();
@@ -24,7 +25,8 @@ const newest = (dates: string[], today = new Date().toISOString().slice(0, 10)) 
  * `lastmod` from content dates, only where the date says when the page changed (W3C dates such as
  * "2026-10-12" or "2026-02"): a post by its date, Writing by its newest post, Journey by its newest
  * timeline date, and Home and Quick view (live facts, newest posts and roles) by the newest of the
- * weekly facts date, posts and timeline. Other pages carry no date rather than a guessed one.
+ * weekly facts date, posts and timeline, and the build story by its facts snapshot (the HEAD commit
+ * date). Other pages carry no date rather than a guessed one.
  */
 export function lastModified(path: string): string | undefined {
   const { floors } = getContent();
@@ -34,6 +36,7 @@ export function lastModified(path: string): string | undefined {
   if (path.startsWith("/blog/")) return posts.find((p) => `/blog/${p.slug}` === path)?.date;
   if (path === "/library") return writing;
   if (path === "/journey") return timeline;
+  if (path === "/build") return getBuildFacts().generatedAt;
   if (path === "/" || path === "/quick") return newest([getDynamicFacts().asOf, writing, timeline].filter((d): d is string => Boolean(d)));
   return undefined;
 }

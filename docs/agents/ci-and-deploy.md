@@ -66,6 +66,9 @@ runs the fast checks always and the heavy jobs only when its changed paths need 
   - `Typecheck, lint, unit tests` (`check` job).
   - `Secret scan` (gitleaks).
   - `Build static export` (`site` job): the build with its CSP hashes, the public-safety scan of `out/` and `og:check`.
+    - It checks out the full history (`fetch-depth: 0`) and first runs `bun scripts/build-facts.ts --write` (right after the setup action), which rewrites `content/generated/build-facts.json` (commits, PRs per round, unit test files, the end-to-end test count, spec and plan documents, CI jobs, the 3D budgets) for the build page.
+    - The `site` job of `deploy.yml` (full-history checkout) runs the same step before its builds, so the shipped build page carries fresh numbers.
+    - Local builds use the committed snapshot; refresh it with `bun scripts/build-facts.ts --write`. `--no-runners` skips the `playwright test --list` count and cannot be combined with `--write` (it would drop it from the file). No unit test count is measured (`vitest list` counts each `it.each` template once); only unit test files are. A shallow clone keeps the committed file. A failing runner prints a warning and omits only its number.
 - Heavy jobs, against that one build:
   - e2e in 4 duration-balanced shards (`E2E shard n/4`); a selective run passes only the planned spec files (`E2E_FILES`), split across the same 4 shards.
   - The 3D perf gates in 2 shards (`perf` job, `3D perf gates n/2`: `bun run e2e:perf`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)).

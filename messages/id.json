@@ -6,7 +6,8 @@
     "labs": "Labs",
     "library": "Perpustakaan",
     "contact": "Kontak",
-    "cv": "CV"
+    "cv": "CV",
+    "build": "Cara situs ini dibuat"
   },
   "nav": {
     "label": "Navigasi utama",
@@ -17,6 +18,7 @@
     "library": "Perpustakaan",
     "contact": "Kontak",
     "cv": "CV",
+    "build": "Cara situs ini dibuat",
     "language": "Bahasa",
     "skip": "Langsung ke konten",
     "work": "Karya",
@@ -118,6 +120,49 @@
     "library": "Perpustakaan",
     "contact": "Kontak",
     "skills": "Keahlian"
+  },
+  "build": {
+    "toc": "Isi halaman",
+    "snapshot": "Snapshot per {date}, commit {commit}",
+    "snapshotDate": "Snapshot per {date}",
+    "source": "Kode sumber di GitHub",
+    "howItRuns": "Cara kerjanya",
+    "loop": "Setiap perubahan, langkah demi langkah",
+    "tools": "Agent yang dipakai",
+    "excerpt": "Dari rencana sungguhan",
+    "excerptSource": "Baca rencana lengkapnya di GitHub",
+    "dateTo": "hingga",
+    "prHint": "Nomor pull request terbuka di GitHub pada tab baru.",
+    "round": "Ronde {n}",
+    "inProgress": "Sedang berjalan",
+    "prCount": "{count, plural, other {# pull request di-merge}}",
+    "prList": "Pull request ronde {n}",
+    "before": "Sebelum",
+    "after": "Sesudah",
+    "gate": "Gate",
+    "checks": "Yang diperiksa dan batasnya",
+    "budget": "Batas",
+    "blocksMerge": "Blokir merge",
+    "reportsOnly": "Hanya melapor",
+    "tiles": {
+      "mergedPrs": "Pull request di-merge",
+      "commits": "Commit sejak {date}",
+      "unitFiles": "File unit test",
+      "e2eTests": "Test end-to-end",
+      "specs": "Dokumen spec",
+      "plans": "Rencana tertulis",
+      "floors": "Lantai di menara 3D",
+      "js3dKb": "Batas JavaScript 3D sebelum frame pertama (gzip)",
+      "sceneCalls": "Batas draw call per frame",
+      "triangles": "Batas segitiga per frame",
+      "uptime": "Pemeriksaan uptime situs live",
+      "visits": "Kunjungan dalam 30 hari terakhir"
+    },
+    "kb": "{value} KB",
+    "hourly": "Per jam",
+    "comingSoon": "Segera hadir",
+    "comingSoonTitle": "Segera Hadir",
+    "comingSoonIntro": "Bagian lain dari kisah pembangunan ini sedang disiapkan."
   },
   "journey": {
     "title": "Perjalanan karier: 2019 hingga 2026",
@@ -759,6 +804,7 @@
       "blog": "Tulisan blog Kurniadi",
       "project": "Studi kasus proyek",
       "library": "Halaman Tulisan",
+      "build": "Cara situs ini dibuat",
       "repo": "Kode sumber ShinyQ HQ di GitHub"
     },
     "contact": {
@@ -950,6 +996,8 @@
     "contactDescription": "Hubungi {name}, {role} di {city}, untuk peran dan proyek software serta AI engineering.",
     "cvTitle": "CV {name}: software dan AI engineering",
     "cvDescription": "CV {name}, {role}: aplikasi Azure AI, sistem backend, karier, pendidikan, dan sertifikasi.",
+    "buildTitle": "Cara {name} membangun situs ini dengan AI",
+    "buildDescription": "Cara {name} membangun ShinyQ HQ bersama AI coding agent: spec dan rencana tertulis, pull request kecil, dan gate otomatis di setiap merge.",
     "podTitle": "{title} oleh {name}",
     "postTitle": "{title} oleh {name}",
     "entryTitle": "{name}: {role}",
@@ -1003,6 +1051,11 @@
         "1": "Baca langsung atau unduh PDF-nya.",
         "2": "Baca atau unduh PDF-nya.",
         "3": "Baca atau unduh."
+      },
+      "build": {
+        "1": "Lengkap dengan timeline, gate CI, dan angka yang diukur saat build.",
+        "2": "Dengan timeline, gate, dan angka terukur.",
+        "3": "Dengan timeline dan gate."
       }
     },
     "og": {
@@ -1032,6 +1085,11 @@
         "cv": {
           "title": "CV",
           "subtitle": "Karier, pendidikan, dan sertifikasi dalam satu PDF"
+        },
+        "build": {
+          "title": "Cara situs ini dibuat",
+          "subtitle": "Spec, AI agent, pull request, dan gate di balik setiap merge",
+          "eyebrow": "Ruang Mesin"
         }
       }
     }

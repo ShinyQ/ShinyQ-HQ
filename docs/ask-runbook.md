@@ -266,11 +266,11 @@ All far inside the Workers limits (3 MB compressed script on Free, 128 MB memory
 
 ## 16. How this site was built: edit the note
 
-Questions about ShinyQ HQ itself ("How was this site built?", "What tech stack does ShinyQ HQ use?", "Apakah situs ini dibuat dengan AI?") are answered from `content/ask/site-build.json` (owner request 2026-10-15). It is Ask knowledge only: no page shows it.
+Questions about ShinyQ HQ itself ("How was this site built?", "What tech stack does ShinyQ HQ use?", "Apakah situs ini dibuat dengan AI?") are answered from `content/ask/site-build.json` (owner request 2026-10-15). It is Ask knowledge only: the `/build` page renders its own note, `content/build-story.json`, not this file.
 
 - Shape (`SiteBuildSchema`): `asOf` (YYYY-MM-DD), `title`, `source` (always the public repository `https://github.com/ShinyQ/ShinyQ-HQ`), `text` `{ en, id }` (at most 2,600 characters each, third person; it also covers how visitors use the site: Rover, the floors, the minimap, the settings panel and shareable links, for the "This site" pills) and lowercase `keywords`.
 - Retrieval: `isSiteQuestion` (`functions/_lib/scope.ts`, EN and ID: "this site", "ShinyQ HQ", "this chatbot", "situs ini", "model apa yang kamu pakai", ...) always adds the `site-build` chunk (`SITE_INCLUDE`); it stays narrow so "his portfolio" or a project's live site never trigger it (`tests/ask/scope.test.ts` checks every curated and golden question).
-- Citation: an answer to such a question carries `cite` = the repository URL (`ASK_REPO_CITE`, the only external cite); the dock shows "Source: The ShinyQ HQ source code on GitHub" in a new tab.
+- Citation: an answer to such a question carries `cite` = `/build` (kind `build`); the dock shows "Read on this site: How this site was built" as an in-site link, and the page links the repository. `ASK_REPO_CITE` (the repository URL, kind `repo`, "Source" in a new tab) is accepted only so older cached answers render; nothing new cites it.
 - Facts only, each one backed by the repository (package versions, `wrangler.toml`, CI workflows); `tests/ask/pack.test.ts` checks the Next.js and React majors and the model names. Update the note in the same PR when the stack, hosting, the assistant, the test gates or the visitor controls change, and keep golden q45 to q47, q69 and q70 true. Content-only edits need no `PROMPT_VERSION` bump.
 - Check: `bun run validate:content`, then `bun run test tests/content tests/ask`.
 

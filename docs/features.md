@@ -51,6 +51,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Blog architecture figures | 2026-10-16: the four technical posts show architecture figures through an `<Architecture>` MDX tag (a case study's diagram or a post-local one from `content/blog/diagrams.json`), each with a caption and a numbered walkthrough; every architecture diagram (posts and case studies) is a real box and arrow drawing (build-time SVG: left to right from 1100 px, top to bottom below and on phones), and the Clearbox post's two figures use it too | Done |
 | Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
 | Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the "Day and night" switch is registered in the settings registry (`day-night`, display group, order 30), and its panel UI comes with the HUD settings work; +2 scene calls, no new shader program | Done |
+| Build story page | Round 9 (2026-10-17): the Classic page `/{locale}/build` ("How this site was built") tells the build from the blueprint to the quality gates, with numbers measured at build time (`content/build-story.json`, `content/generated/build-facts.json`); Ask the HQ now cites it for questions about the site | Done |
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume), a round minimap with a floor overview, a slim Rover toast on phones | Done |
 | L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
 | Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
@@ -149,6 +150,11 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
   - `?view=classic` opens the Classic site and stays in the URL through navigation, the language switch and copied links (`?view=page` still works).
   - **Copy Classic link** and **Copy 3D link** sit on case studies, posts and the drawer's "..." menu; the 3D link opens the same page in the tower (posts open the Writing floor).
   - The choice is remembered across tabs, and an explicit `?view=` in a link always wins.
+- **How this site was built** (`/{locale}/build`, linked from the footer and About):
+  - A page of five sections: the blueprint (an architecture diagram with a numbered walkthrough), the build rounds (a timeline with before and after captures), the AI agent workflow, the quality gates (what each CI job enforces and which ones block a merge) and a dashboard of measured numbers (commits, pull requests, tests, budgets, the live visit count).
+  - A short "coming soon" section follows the five.
+  - Text lives in `content/build-story.json`; every number comes from a snapshot taken at build time (`content/generated/build-facts.json`), shown with its date and commit, and the page links the public repository.
+  - Ask the HQ answers about the site with a "Read on this site" link to it.
 - The Rover Terminal never opens on its own; the **Ask Rover** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
 
 ## Glass Drawer
@@ -277,6 +283,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
   - The full certifications list.
   - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board).
+- `/{locale}/build`: How this site was built (Classic site only, no 3D counterpart yet): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 4 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
@@ -295,7 +302,7 @@ Every page is a static HTML page with its own search and share tags, so crawlers
 
 ## Ask the HQ (AI Q&A)
 
-Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`, answers cite this repository), and get short answers grounded only in this site's content (EN and ID).
+Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`; answers cite the How this site was built page, `/build`, which links the repository), and get short answers grounded only in this site's content (EN and ID).
 
 ### Where
 

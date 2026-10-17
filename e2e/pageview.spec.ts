@@ -24,6 +24,7 @@ const TEMPLATES = [
   "/en/contact",
   "/en/quick",
   "/en/cv",
+  "/en/build",
   "/id",
   "/id/labs",
 ];
@@ -105,6 +106,47 @@ test("Home keeps the deep-link anchors used by the room catalog", async ({ page 
   for (const id of ["stats", "skills", "certifications"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await openPage(page, staticTier("/en/contact"));
   for (const id of ["cv", "channels"]) await expect(page.locator(`#${id}`)).toBeAttached();
+});
+
+test("the build story page: stations by id, a working table of contents, the diagram and lazy before and after captures", async ({ page }) => {
+  for (const locale of ["en", "id"] as const) {
+    await openPage(page, staticTier(`/${locale}/build`));
+    await expect(page.locator("h1")).toHaveCount(1);
+    const toc = page.getByRole("navigation", { name: locale === "en" ? "On this page" : "Isi halaman" });
+    for (const id of ["blueprint", "timeline", "agents", "gates", "dashboard", "coming-soon"]) {
+      await expect(page.locator(`section#${id}`), `${locale} #${id}`).toBeAttached();
+      await expect(toc.locator(`a[href="#${id}"]`), `${locale} ToC #${id}`).toHaveCount(1);
+    }
+    for (const id of ["brain", "rejected"]) await expect(page.locator(`#coming-soon #${id}`)).toBeAttached();
+    await expect(page.locator("#blueprint [role=img]")).toHaveCount(1);
+    await expect(page.locator("#blueprint [role=img]")).toHaveAttribute("aria-label", /\d/);
+    const shots = page.locator("#timeline figure img");
+    expect(await shots.count()).toBeGreaterThan(0);
+    for (const img of await shots.all()) {
+      await expect(img).toHaveAttribute("loading", "lazy");
+      await expect(img).toHaveAttribute("alt", /\S/);
+    }
+    // Lazy images only load once near the viewport: scroll each into view, then wait for it to decode.
+    for (const img of await shots.all()) {
+      await img.scrollIntoViewIfNeeded();
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0), { message: `${locale} ${await img.getAttribute("src")}` }).toBe(true);
+    }
+    const text = await page.locator("main").innerText();
+    expect(text).not.toContain("${{");
+    const commit = /commit ([0-9a-f]{7,40})/.exec(text)?.[1];
+    if (commit) await expect(page.locator("main a").filter({ hasText: commit }), `${locale} snapshot commit is not a link`).toHaveCount(0);
+    const prs = page.locator('#timeline a[href^="https://github.com/ShinyQ/ShinyQ-HQ/pull/"]');
+    expect(await prs.count()).toBeGreaterThan(0);
+    await expect(prs.first()).toHaveAttribute("target", "_blank");
+    // PR 26 is counted but its diff shows text the site hides: plain text, never a link.
+    await expect(page.locator("#timeline li").filter({ hasText: /^#26$/ }), `${locale} #26 is listed`).toHaveCount(1);
+    await expect(page.locator('#timeline a[href$="/pull/26"]'), `${locale} #26 is not a link`).toHaveCount(0);
+    await expect(page.locator("#gates th[scope=row]").first()).toBeVisible();
+    await expect(page.locator("#dashboard [data-tile]").first()).toBeVisible();
+    expect(await page.locator("main").innerText()).not.toContain("\u2014");
+    await toc.locator('a[href="#gates"]').click();
+    await expect(page).toHaveURL(/#gates$/);
+  }
 });
 
 const cvPdf = `/cv/${content.floors.roof.cv.fileName}.pdf`;

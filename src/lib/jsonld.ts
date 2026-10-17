@@ -3,6 +3,7 @@
  * metadata (src/lib/seo.ts). Rendered with <JsonLd> as `application/ld+json` scripts.
  */
 import { getPostSource } from "@/content/blog";
+import { getBuildFacts, getBuildStory } from "@/content/build-story";
 import { getContact, getPod, getPost, getProfile, getSkills, getTimeline, getTimelineEntry } from "@/content/load";
 import type { Locale, Pod, PostRef } from "@/content/schema";
 import { podLiveLink } from "@/content/selectors";
@@ -156,6 +157,31 @@ export function postJsonLd(post: PostRef, locale: Locale, contentLocale: Locale)
   };
 }
 
+/** Topics of the build story page (/build), as schema.org Things. */
+const BUILD_ABOUT = ["Next.js", "React Three Fiber", "Cloudflare Pages", "AI coding agents"];
+
+/** The build story page (/build): a TechArticle by the owner, published on the story's date and modified on the build facts snapshot's. */
+export function techArticleJsonLd(locale: Locale): JsonLdObject {
+  const url = absoluteUrl(localePath(locale, "/build"));
+  return {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "@id": `${url}#article`,
+    headline: getBuildStory().title[locale],
+    description: seoFor(locale, "/build").description,
+    image: [absoluteUrl(ogImagePath({ kind: "page", locale, page: "build" }))],
+    url,
+    mainEntityOfPage: url,
+    inLanguage: LANGUAGE_TAG[locale],
+    datePublished: getBuildStory().published,
+    dateModified: getBuildFacts().generatedAt,
+    about: BUILD_ABOUT.map((name) => ({ "@type": "Thing", name })),
+    author: personRef(locale),
+    publisher: { "@id": PERSON_ID },
+    isPartOf: { "@id": WEBSITE_ID },
+  };
+}
+
 /** JSON for a <script type="application/ld+json">, with `<` escaped against injection. */
 export function serializeJsonLd(data: JsonLdObject | JsonLdObject[]): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -169,7 +195,7 @@ export function breadcrumbJsonLd(crumbs: { name: string; path: string }[], local
   };
 }
 
-type Section = "quick" | "journey" | "labs" | "library" | "contact" | "cv";
+type Section = "quick" | "journey" | "labs" | "library" | "contact" | "cv" | "build";
 
 /** Structured data a page adds to the layout's Person and WebSite: its breadcrumb, plus the pod or post itself. */
 export function pageJsonLd(locale: Locale, path: string): JsonLdObject[] {
@@ -199,6 +225,8 @@ export function pageJsonLd(locale: Locale, path: string): JsonLdObject[] {
     if (entry) crumbs.push({ name: `${entry.role[locale]}, ${entry.org}`, path });
   } else if (!slug && section === "contact") {
     extra.push(profilePageJsonLd(locale));
+  } else if (!slug && section === "build") {
+    extra.push(techArticleJsonLd(locale));
   }
   return [breadcrumbJsonLd(crumbs, locale), ...extra];
 }
