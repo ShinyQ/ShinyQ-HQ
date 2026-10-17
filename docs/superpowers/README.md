@@ -84,7 +84,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [HUD Corners, Minimap and Settings Implementation Plan](plans/2026-10-17-hud-corners-minimap-settings.md) | shipped | [#183](https://github.com/ShinyQ/ShinyQ-HQ/pull/183) |
 | [Round 8 J: L3-Style Arrivals Implementation Plan](plans/2026-10-17-l3-style-arrivals.md) | shipped | [#184](https://github.com/ShinyQ/ShinyQ-HQ/pull/184) |
 | [Ask Pills 100 Implementation Plan](plans/2026-10-17-ask-pills-100.md) | shipped | [#187](https://github.com/ShinyQ/ShinyQ-HQ/pull/187) |
-| [B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan](plans/2026-10-17-b1-build-story-page.md) | in review | |
+| [B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan](plans/2026-10-17-b1-build-story-page.md) | in review | [#190](https://github.com/ShinyQ/ShinyQ-HQ/pull/190) |
 
 ## Specs
 
