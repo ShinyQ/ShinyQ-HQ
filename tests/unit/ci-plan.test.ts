@@ -48,12 +48,22 @@ describe("ci-plan importClosure", () => {
     "src/lib/b.ts": "",
     "src/lib/types.ts": "",
     "src/lib/page-only.ts": "",
+    "src/app/globals.css": '@import "tailwindcss";\n@import "./pageview.css";\n@import url("./landing.css");\n@import url(./print.css);',
+    "src/app/pageview.css": "",
+    "src/app/landing.css": "",
+    "src/app/print.css": "",
+    "src/app/Page.tsx": 'import "./globals.css";',
   };
   const read = (f: string) => files[f] ?? null;
 
   it("follows value, re-export, side-effect and dynamic imports, not type-only imports", () => {
     const seen = importClosure(["src/hud/Hud.tsx"], read);
     expect([...seen].sort()).toEqual(["src/hud/Hud.tsx", "src/hud/Lazy.tsx", "src/lib/a.ts", "src/lib/b.ts", "src/lib/side.ts"]);
+  });
+
+  it("follows relative CSS @import from imported stylesheets", () => {
+    const seen = importClosure(["src/app/Page.tsx"], read);
+    expect([...seen].sort()).toEqual(["src/app/Page.tsx", "src/app/globals.css", "src/app/landing.css", "src/app/pageview.css", "src/app/print.css"]);
   });
 
   it("skips dynamic imports when asked (static closures for Lighthouse)", () => {
@@ -191,11 +201,11 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(planOutputs(plan, lhciUrls)).toMatchObject({ full: "false", e2e: "specs", e2e_files: "e2e/ask.spec.ts", e2e_shards: "[1]", perf: "false", lighthouse: "false" });
   });
 
-  it("runs every e2e shard for an unmapped src/ file, listing it", () => {
+  it("plans a full run for a path no e2e rule maps, listing it", () => {
     const plan = planFor(["src/unknown/thing.ts"], none, opts);
-    expect(plan).toMatchObject({ full: false, e2e: "all", e2eTests: [], e2eShards: 8, perf: false });
+    expect(plan).toMatchObject({ full: true, e2e: "all", e2eTests: [], e2eShards: 8, perf: [...ALL_PERF_KEYS], perfShards: 2, lighthouse: "all" });
     expect(plan.reasons.join(" ")).toContain("src/unknown/thing.ts");
-    expect(planOutputs(plan, lhciUrls)).toMatchObject({ full: "false", e2e: "all", e2e_files: "", e2e_shards: "[1,2,3,4,5,6,7,8]", perf: "false" });
+    expect(planOutputs(plan, lhciUrls)).toMatchObject({ full: "true", e2e: "all", e2e_files: "", e2e_shards: "[1,2,3,4,5,6,7,8]", perf: "true", perf_grep: "", perf_shards: "[1,2]", lighthouse: "true", lighthouse_urls: "" });
   });
 
   it("runs perf for page code only when the 3D roots import it", () => {
@@ -225,8 +235,8 @@ describe("ci-plan planFor: selective pull request runs", () => {
   });
 
   it("selects Lighthouse URLs from the pages each file can move; all wins", () => {
-    const pages = (f: string) => (f === "src/a.tsx" ? ["/en/quick"] : f === "src/b.tsx" ? ["/en/cv", "/en"] : f === "messages/en.json" ? ("all" as const) : []);
-    const some = planFor(["src/a.tsx", "src/b.tsx", "content/x.json"], none, { ...opts, pages });
+    const pages = (f: string) => (f === "src/components/page/A.tsx" ? ["/en/quick"] : f === "src/components/page/B.tsx" ? ["/en/cv", "/en"] : f === "messages/en.json" ? ("all" as const) : []);
+    const some = planFor(["src/components/page/A.tsx", "src/components/page/B.tsx", "content/x.json"], none, { ...opts, pages });
     expect(some.lighthouse).toEqual(["/en", "/en/quick", "/en/cv"]);
     expect(JSON.parse(planOutputs(some, lhciUrls).lighthouse_urls)).toEqual([
       "http://127.0.0.1:4320/en?lhci-warmup=1",
@@ -236,8 +246,8 @@ describe("ci-plan planFor: selective pull request runs", () => {
     ]);
     // Without the config URLs, run every URL rather than guess.
     expect(planOutputs(some).lighthouse_urls).toBe("");
-    expect(planFor(["src/a.tsx", "messages/en.json"], none, { ...opts, pages }).lighthouse).toBe("all");
-    expect(planFor(["src/zzz.tsx"], none, { ...opts, pages }).lighthouse).toBe(false);
+    expect(planFor(["src/components/page/A.tsx", "messages/en.json"], none, { ...opts, pages }).lighthouse).toBe("all");
+    expect(planFor(["src/components/page/Z.tsx"], none, { ...opts, pages }).lighthouse).toBe(false);
   });
 });
 
@@ -254,6 +264,9 @@ describe("ci-plan Lighthouse pages", () => {
     expect(pages("src/app/[locale]/page.tsx")).toEqual(["/en", "/id"]);
     expect(pages("src/app/[locale]/layout.tsx")).toBe("all");
     expect(pages("src/app/globals.css")).toBe("all");
+    expect(pages("src/app/pageview.css")).toBe("all");
+    expect(pages("src/app/landing.css")).toBe("all");
+    expect(pages("src/i18n/request.ts")).toBe("all");
     expect(pages("messages/id.json")).toBe("all");
     expect(pages("public/fonts/x.woff2")).toBe("all");
     expect(pages("scripts/csp-hashes.ts")).toBe("all");
