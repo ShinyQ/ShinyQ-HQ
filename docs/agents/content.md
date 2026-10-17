@@ -131,6 +131,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - joint programs such as "Kominfo x IBM" stay text.
 - Page View renders `<Certifications locale limit? />` (`src/components/certs/`):
   - up to 3 featured cards (`featured: true` pins, then the newest earned with a code), then a dense two-column list;
+  - a certification without an exam code (Google's Generative AI Leader) shows its issuer mark and name instead, so the newest code-less one is pinned with `featured: true` to stay among the cards;
   - `limit` (home) caps the rows and links to `/contact#certifications`;
   - from `CERT_FILTER_MIN` (10) the full list gets issuer chips, a status select (`?issuer=`, `?status=` in the query string) and a local search box.
 - Every card, row and 3D badge calls `openCert(view)` (`hq:hud` command), which `DialogHost` shows as `CertDialog` (shared `Modal`, width `sm`):

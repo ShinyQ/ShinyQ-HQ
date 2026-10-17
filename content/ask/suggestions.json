@@ -253,7 +253,7 @@
     {
       "id": "career-certs",
       "topic": "career",
-      "q": { "en": "Which Microsoft certifications does he have?", "id": "Sertifikasi Microsoft apa saja yang dia punya?" },
+      "q": { "en": "Which certifications does he have?", "id": "Sertifikasi apa saja yang dia punya?" },
       "tags": ["certifications", "career"],
       "followUps": ["career-awards", "career-skills", "career-now"],
       "expect": ["certifications"]
