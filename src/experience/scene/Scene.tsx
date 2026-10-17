@@ -21,6 +21,7 @@ import { Director } from "./Director";
 import { ProgramWarmup } from "./ProgramWarmup";
 import { QualityController } from "./QualityController";
 import { sceneSettings, type GfxOverride, type RenderBudget } from "./settings";
+import { SkyController } from "../sky/SkyController";
 import { RenderCounter } from "../perf/RenderCounter";
 
 // Postprocessing is only downloaded on the full tier.
@@ -75,8 +76,7 @@ export const Scene = memo(function Scene({
       <RenderCounter />
       <color attach="background" args={[settings.fog.color]} />
       <fog attach="fog" args={[settings.fog.color, settings.fog.near, settings.fog.far]} />
-      <hemisphereLight args={settings.hemisphere} />
-      <directionalLight color={settings.directional.color} position={settings.directional.position} intensity={settings.directional.intensity} />
+      <SkyController tier={tier} />
       <Tower layouts={layouts} data={data} labels={labels} tier={tier} />
       <InteractLayer layouts={layouts} data={interactData} tier={tier} />
       <HintProbe />

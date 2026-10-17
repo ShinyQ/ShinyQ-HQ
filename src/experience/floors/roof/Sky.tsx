@@ -2,10 +2,11 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BufferGeometry, Float32BufferAttribute, type Group } from "three";
+import { BufferGeometry, Float32BufferAttribute, type Group, type PointsMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { FLOOR_COLOR } from "../../config";
 import { useDispose } from "../../fx/useDispose";
+import { skyRuntime } from "../../sky/skyRuntime";
 import type { GpuTier } from "../../types";
 import { mulberry32 } from "./solids";
 
@@ -44,8 +45,10 @@ export function Sky({ tier }: { tier: GpuTier }) {
   useDispose(stars);
   useDispose(clouds);
   const drift = useRef<Group>(null);
+  const starMaterial = useRef<PointsMaterial>(null);
 
   useFrame((_, dt) => {
+    if (starMaterial.current) starMaterial.current.opacity = 0.85 * skyRuntime.stars;
     if (!drift.current || getHQStore().getState().reducedMotion) return;
     drift.current.rotation.y += Math.min(dt, 0.1) * 0.012;
   });
@@ -53,7 +56,7 @@ export function Sky({ tier }: { tier: GpuTier }) {
   return (
     <group name="sky">
       <points geometry={stars}>
-        <pointsMaterial color="#e0e7ff" size={2} sizeAttenuation={false} transparent opacity={0.85} fog={false} depthWrite={false} />
+        <pointsMaterial ref={starMaterial} color="#e0e7ff" size={2} sizeAttenuation={false} transparent opacity={0.85} fog={false} depthWrite={false} />
       </points>
       <group ref={drift}>
         <points geometry={clouds}>

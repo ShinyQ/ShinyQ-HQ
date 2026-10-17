@@ -146,6 +146,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
+| `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
 | `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` | the full suite |
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |
