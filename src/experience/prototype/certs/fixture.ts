@@ -2,7 +2,7 @@ import type { Certification } from "@/content/schema";
 
 /**
  * Scale fixture for the certification layouts (unit tests and the dev-only /{locale}/dev/certs route).
- * The first 7 entries mirror content/site-content.json; the other 23 are FICTIONAL placeholders that
+ * The first 8 entries mirror content/site-content.json; the other 22 are FICTIONAL placeholders that
  * only exercise the layouts at 30 certifications. Never import this into shipped pages.
  */
 const real: Certification[] = [
@@ -10,6 +10,7 @@ const real: Certification[] = [
   { id: "ai-901", code: "AI-901", name: "Microsoft Certified: Azure AI Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/ai-901", status: "earned" },
   { id: "az-900", code: "AZ-900", name: "Microsoft Certified: Azure Fundamentals", issuer: "Microsoft", issued: "2026-05", credentialUrl: "https://example.com/credential/az-900", status: "earned" },
   { id: "gh-600", code: "GH-600", name: "GitHub Certified: Agentic AI Developer", issuer: "GitHub", issued: "2026-10", credentialUrl: "https://example.com/credential/gh-600", status: "earned", expires: "2027-10" },
+  { id: "google-gen-ai-leader", name: "Google Certified: Generative AI Leader", issuer: "Google", issued: "2026-10", credentialUrl: "https://example.com/credential/google-gen-ai-leader", credentialId: "FIXTURE-GOOGLE", shortLabel: "Gen AI Leader", status: "earned", expires: "2029-10", featured: true },
   { id: "associate-data-scientist-microcredential", name: "Microcredential: Associate Data Scientist", issuer: "IARC x APTIKOM", issued: "2021-12", status: "earned" },
   { id: "digital-talent-machine-learning", name: "Digital Talent Scholarship: Machine Learning (160 hours)", issuer: "Kominfo x IBM", issued: "2021-07", status: "earned" },
   { id: "toefl-itp", name: "TOEFL ITP (score 547)", issuer: "ETS", issued: "2024", status: "earned" },
@@ -39,7 +40,6 @@ const fictional: Row[] = [
   ["mla-c01", "MLA-C01", "AWS Certified Machine Learning Engineer: Associate", "AWS", "2026-10", "in-progress"],
   ["gcp-ace", "ACE", "Google Cloud Associate Cloud Engineer", "Google Cloud", "2023-06", "expired"],
   ["hackerrank-python-basic", "", "Python (Basic)", "HackerRank", "2021-03"],
-  ["cka", "CKA", "Certified Kubernetes Administrator", "CNCF", "2025-01"],
 ];
 
 const nextYear = (ym: string) => `${Number(ym.slice(0, 4)) + 1}${ym.slice(4)}`;
