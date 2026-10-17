@@ -30,6 +30,7 @@ type ArrivalWindow = Window & {
     layouts: Record<string, { arrival?: Point }>;
   };
   __glides?: number[];
+  __glidesStop?: boolean;
   __glideCancel?: { fired: boolean; yaw0: number; after: { glide: number; yaw: number }[]; done: boolean };
 };
 
@@ -68,26 +69,35 @@ async function arrivalPose(page: Page, floor: string) {
 }
 
 /** The camera stands behind the rover (the camera-to-rover heading is east) and the rover heads east. */
-async function expectBehindLookingEast(page: Page, floor: string, { heading = true } = {}) {
+async function expectBehindLookingEast(page: Page, floor: string) {
   await waitForCameraSettle(page);
   const pose = await arrivalPose(page, floor);
   expect(angleGap(pose.cameraBehind, EAST), `${floor} cameraBehind ${pose.cameraBehind}`).toBeLessThan(0.1);
-  if (heading) expect(angleGap(pose.heading, EAST), `${floor} heading ${pose.heading}`).toBeLessThan(0.1);
+  expect(angleGap(pose.heading, EAST), `${floor} heading ${pose.heading}`).toBeLessThan(0.1);
   return pose;
 }
 
-/** Records `arrivalGlide` on every rendered frame (the rAF callback runs after R3F's: one sample per drawn frame). */
+/**
+ * Records `arrivalGlide` on every rendered frame (the rAF callback runs after R3F's: one sample per drawn frame).
+ * `read` returns the samples, `reset` empties the buffer, `stop` ends the sampler.
+ */
 async function sampleGlide(page: Page) {
   await page.evaluate(() => {
     const w = window as unknown as ArrivalWindow;
     w.__glides = [];
+    w.__glidesStop = false;
     const tick = () => {
+      if (w.__glidesStop) return;
       w.__glides!.push(w.__hq.rover.arrivalGlide);
       if (w.__glides!.length < 50_000) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
-  return () => page.evaluate(() => (window as unknown as ArrivalWindow).__glides ?? []);
+  return {
+    read: () => page.evaluate(() => (window as unknown as ArrivalWindow).__glides ?? []),
+    reset: () => page.evaluate(() => void ((window as unknown as ArrivalWindow).__glides = [])),
+    stop: () => page.evaluate(() => void ((window as unknown as ArrivalWindow).__glidesStop = true)),
+  };
 }
 
 async function openLobby(page: Page, motion: "full" | "reduced" = "full") {
@@ -107,15 +117,15 @@ for (const { name, size, phone } of [
       await openLobby(page);
       const glides = await sampleGlide(page);
       for (const floor of TOUR) {
+        await glides.reset();
         await goToFloor(page, floor);
         await waitForArrival(page, floor);
         await expectBehindLookingEast(page, floor);
-        if (floor === TOUR[0]) {
-          // The camera glides out of the car: some drawn frame sits strictly inside the glide.
-          const seen = await glides();
-          expect(seen.some((p) => p > 0 && p < 1), `glide frames ${seen.filter((p) => p >= 0).length}`).toBe(true);
-        }
+        // The camera glides out of the car on every floor: some drawn frame of this ride sits strictly inside the glide.
+        const seen = await glides.read();
+        expect(seen.some((p) => p > 0 && p < 1), `${floor} glide frames ${seen.filter((p) => p >= 0).length}`).toBe(true);
       }
+      await glides.stop();
     });
   });
 }
@@ -171,21 +181,21 @@ test.describe("arrival glide and reduced motion (1440x900)", () => {
       await goToFloor(page, floor);
       await waitForArrival(page, floor, 0.5);
       await waitForFrames(page, 3);
-      const pose = await expectBehindLookingEast(page, floor);
-      expect(Math.hypot(pose.x - pose.arrival.x, pose.z - pose.arrival.z)).toBeLessThan(0.5);
+      await expectBehindLookingEast(page, floor);
     }
-    const seen = await glides();
+    const seen = await glides.read();
+    await glides.stop();
     expect(seen.length).toBeGreaterThan(0);
-    expect(Math.max(...seen)).toBe(-1);
+    expect(seen.every((p) => p === -1)).toBe(true);
   });
 
-  test("a floor deep link (/en/library) opens on the L4 arrival view behind the rover", async ({ page }) => {
+  test("a floor deep link (/en/library) opens on the L4 arrival view behind the rover, heading east", async ({ page }) => {
     await chooseMotion(page, "full");
     await skipFloorLines(page);
     await enterHQ(page, { path: "/en/library" });
     await waitForFloor(page, "L4");
-    // A deep link spawns the rover with the default spawn heading (it never drove): only the camera is checked.
-    const pose = await expectBehindLookingEast(page, "L4", { heading: false });
+    // The spawn on the arrival point faces east like an elevator arrival.
+    const pose = await expectBehindLookingEast(page, "L4");
     expect(Math.hypot(pose.x - pose.arrival.x, pose.z - pose.arrival.z)).toBeLessThan(1);
   });
 });
