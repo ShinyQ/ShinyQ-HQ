@@ -253,6 +253,41 @@ describe("tier chain", () => {
   it("defaults the deadline to the chain budget", () => {
     expect(CHAIN_MS).toBe(24_000);
   });
+
+  it("clamps each tier's timeouts to the remaining budget", async () => {
+    let clock = 1_000_000;
+    const seen: AbortSignal[] = [];
+    const hang: ModelClient = {
+      stream(_model, _input, signal) {
+        seen.push(signal);
+        clock += 2_000;
+        return (async function* (): AsyncGenerator<string> {
+          await new Promise((_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted"))));
+        })();
+      },
+    };
+    const started = Date.now();
+    const result = await generate(hang, { primary: "p" }, [], { firstTokenMs: 60_000, totalMs: 60_000 }, { now: () => clock, deadlineMs: 1_600 });
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(result.source).toBe("none");
+    expect(result.failures[0]).toMatchObject({ model: "p", reason: "first_token_timeout" });
+  });
+
+  it("runs the fallback with its own timeouts when the deadline is Infinity", async () => {
+    let clock = 1_000_000;
+    const { client, calls } = mock({ p: fail(new Error("x")), f: say("f", 20) });
+    const jumping: ModelClient = {
+      stream(model, input, signal) {
+        clock += 60_000;
+        return client.stream(model, input, signal);
+      },
+    };
+    const result = await generate(jumping, models, [], fast, { now: () => clock, deadlineMs: Number.POSITIVE_INFINITY });
+    expect(result).toMatchObject({ text: "f", source: "fallback" });
+    expect(names(calls)).toEqual(["p", "f"]);
+    const clamped = await generate(jumping, models, [], fast, { now: () => clock });
+    expect(clamped.failures).toEqual([{ model: "p", reason: "error" }, { model: "f", reason: "deadline" }]);
+  });
 });
 
 describe("modelInput for backups", () => {

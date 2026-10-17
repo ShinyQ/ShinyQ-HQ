@@ -31,6 +31,8 @@ export interface PipelineInput {
   /** Tiers tried after Workers AI (the Groq models); empty or absent without a key. */
   backups?: BackupTier[];
   breaker?: ModelBreaker;
+  /** Chain deadline override; absent keeps the production `CHAIN_MS`. The eval passes Infinity to keep its own timeouts. */
+  deadlineMs?: number;
 }
 
 export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "model_failed" | "model_decline";
@@ -138,7 +140,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const messages = buildMessages(pack.packDate, context, modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
-  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker });
+  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
   const leadFlag = lead ? { lead: true } : {};
   const modelOf = generation.model ? { model: generation.model } : {};
   if (generation.source === "none") {

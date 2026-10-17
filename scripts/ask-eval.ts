@@ -359,10 +359,11 @@ async function main() {
 
   const rows = await pool(items, groqMode ? 1 : 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
-    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, history, ...(models ? { models } : {}) });
+    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, deadlineMs: Number.POSITIVE_INFINITY, history, ...(models ? { models } : {}) });
     // Groq mode waits out a rate limit (retry-after) and asks again, at most MAX_RATE_LIMIT_RETRIES times.
     const ask = async (q: string, history: HistoryTurn[]) => {
       const question = scrubPII(cleanText(q));
+      let started = Date.now();
       let result = await run(question, history);
       for (let retry = 1; groqMode && retry <= MAX_RATE_LIMIT_RETRIES; retry++) {
         const limited = result.failures.find((f) => f.reason === "rate_limited");
@@ -371,9 +372,10 @@ async function main() {
         console.log(`${item.id} rate limited, waiting ${wait} s (retry ${retry} of ${MAX_RATE_LIMIT_RETRIES})`);
         await sleep(wait);
         last.usage = undefined;
+        started = Date.now();
         result = await run(question, history);
       }
-      return { question, result };
+      return { question, result, started };
     };
     // Earlier turns: fixed ones (red team), or earlier questions asked live whose model answers join the history, as the server signs only those.
     const earlierTurns = (item.history ?? []) as (string | { q: string; a: string })[];
@@ -383,8 +385,8 @@ async function main() {
       if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup")) history.push({ q: question, a: cleanText(result.text) });
     }
     last.usage = undefined;
-    const started = Date.now();
-    const { result } = await ask(item.q, history.slice(-3));
+    // Latency of the last attempt only (a rate-limit wait is not the model's time).
+    const { result, started } = await ask(item.q, history.slice(-3));
     const ms = Date.now() - started;
     const chars = result.text.length;
     const usage = last.usage as GroqRow["usage"];

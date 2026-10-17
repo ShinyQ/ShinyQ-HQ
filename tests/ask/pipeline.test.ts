@@ -236,6 +236,32 @@ describe("red-team set (mocked model, canned bad outputs)", () => {
   });
 });
 
+describe("pipeline chain deadline", () => {
+  const input = () => {
+    const question = scrubPII(cleanText("What does Kurniadi do?"));
+    const { client, calls } = mock({ p: say("ok"), f: say("ok") });
+    return { calls, input: { question, locale: detectLocale(question, "en"), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast } };
+  };
+
+  it("passes deadlineMs to generate: a spent deadline skips every tier", async () => {
+    const { calls, input: base } = input();
+    const r = await runPipeline({ ...base, deadlineMs: 0 });
+    expect(r).toMatchObject({ source: "none", reason: "model_failed", calledModel: true });
+    expect(r.failures).toEqual([
+      { model: "p", reason: "deadline" },
+      { model: "f", reason: "deadline" },
+    ]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("keeps the default chain budget when deadlineMs is absent", async () => {
+    const { calls, input: base } = input();
+    const r = await runPipeline(base);
+    expect(r).toMatchObject({ source: "primary", calledModel: true });
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe("perspectives in the pipeline (spec section 13)", () => {
   const ask = (q: string, answer: string, locale: "en" | "id" = "en") => {
     const question = scrubPII(cleanText(q));
