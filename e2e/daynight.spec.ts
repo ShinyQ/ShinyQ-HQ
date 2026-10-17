@@ -13,7 +13,7 @@ import {
 } from "./hq";
 
 /**
- * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, so visual baselines keep today's look),
+ * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
  * a stored choice and the Motion setting decide for a human visitor, and the sky costs no extra shader
  * program or scene draw calls (`SkyController` writes colors and lights, the dome and the orbs reuse
  * the shared holo program). `__hq.sky` is the sky as last applied (src/experience/sky/skyRuntime.ts).
@@ -62,6 +62,13 @@ test("automation holds night when no ?sky= is given", async ({ page }) => {
   await enterHQ(page);
   await waitForSource(page, "held");
   expect(await readSky(page)).toMatchObject({ phase: 0, day: 0, stars: 1, still: true, source: "held", fog: NIGHT_FOG });
+});
+
+test("the perf lane's sessionStorage opt-in draws the sky under automation (not still)", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("hq:sky", "night"));
+  await enterHQ(page);
+  await waitForSource(page, "param");
+  expect(await readSky(page)).toMatchObject({ phase: 0, stars: 1, still: false, source: "param", fog: NIGHT_FOG });
 });
 
 test("?sky=night and ?sky=day pin the phase: day has a different fog color and no stars, night keeps the night fog and stars", async ({ page }) => {
