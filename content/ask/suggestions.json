@@ -397,7 +397,7 @@
     {
       "id": "contact-engagements",
       "topic": "contact",
-      "q": { "en": "What freelance engagements does he take?", "id": "Engagement freelance seperti apa yang dia ambil?" },
+      "q": { "en": "What freelance engagements does he take?", "id": "Pekerjaan freelance seperti apa yang dia cari?" },
       "tags": ["contact", "career"],
       "followUps": ["contact-freelance", "contact-reach", "career-freelance"],
       "expect": ["perspective-freelance-engagements"]
@@ -501,7 +501,7 @@
     {
       "id": "persp-compete",
       "topic": "perspectives",
-      "q": { "en": "Can Indonesian engineers compete globally?", "id": "Bisakah engineer Indonesia bersaing global?" },
+      "q": { "en": "Can Indonesian engineers compete globally?", "id": "Bisakah engineer Indonesia bersaing secara global?" },
       "tags": ["perspectives", "career"],
       "followUps": ["persp-build-indonesia", "persp-replace", "about-growth"],
       "expect": ["perspective-compete-globally"]
@@ -565,7 +565,7 @@
     {
       "id": "about-nickname",
       "topic": "about",
-      "q": { "en": "Why is he called ShinyQ?", "id": "Kenapa dia dipanggil ShinyQ?" },
+      "q": { "en": "Is ShinyQ his nickname?", "id": "Apakah ShinyQ nama panggilannya?" },
       "tags": ["contact", "github"],
       "followUps": ["about-shinyq", "work-github", "about-fun-fact"],
       "expect": ["profile"]
@@ -607,7 +607,7 @@
       "topic": "about",
       "q": { "en": "Why does he explore coffee shops?", "id": "Kenapa dia suka menjelajah coffee shop?" },
       "tags": ["perspectives"],
-      "followUps": ["about-weekend", "about-fun-fact", "about-games"],
+      "followUps": ["about-weekend", "about-games", "about-anime"],
       "expect": ["perspective-fun-fact"]
     },
     {
@@ -623,7 +623,7 @@
       "topic": "about",
       "q": { "en": "What is a fun fact about him?", "id": "Apa fakta unik tentang dia?" },
       "tags": ["perspectives"],
-      "followUps": ["about-coffee", "about-anime", "about-shinyq"],
+      "followUps": ["about-anime", "about-books", "about-shinyq"],
       "expect": ["perspective-fun-fact"]
     },
     {
@@ -645,7 +645,7 @@
     {
       "id": "about-team",
       "topic": "about",
-      "q": { "en": "What kind of team brings out his best?", "id": "Tim seperti apa yang membuatnya bekerja terbaik?" },
+      "q": { "en": "What kind of team brings out his best?", "id": "Tim seperti apa yang membuatnya bekerja paling baik?" },
       "tags": ["perspectives"],
       "followUps": ["about-week", "about-problems", "contact-open"],
       "expect": ["perspective-best-team"]
@@ -661,7 +661,7 @@
     {
       "id": "about-pressure",
       "topic": "about",
-      "q": { "en": "How does he handle a 2 a.m. incident?", "id": "Bagaimana dia menghadapi insiden pukul 2 pagi?" },
+      "q": { "en": "How does he handle a production incident?", "id": "Bagaimana dia menghadapi insiden pukul 2 pagi?" },
       "tags": ["perspectives"],
       "followUps": ["about-mistake", "about-burnout", "persp-reliability"],
       "expect": ["perspective-pressure-incidents"]
@@ -702,7 +702,7 @@
     {
       "id": "site-3d",
       "topic": "site",
-      "q": { "en": "How does the 3D on this site work?", "id": "Bagaimana 3D di situs ini bekerja?" },
+      "q": { "en": "How does the 3D on this site work?", "id": "Bagaimana cara kerja 3D di situs ini?" },
       "tags": ["work"],
       "followUps": ["site-floors", "site-rover", "site-classic"],
       "expect": ["site-build"]
@@ -742,7 +742,7 @@
     {
       "id": "site-settings",
       "topic": "site",
-      "q": { "en": "What can I change in this site's settings?", "id": "Opsi apa saja di menu settings situs ini?" },
+      "q": { "en": "What can I change in this site's settings?", "id": "Apa saja yang bisa saya ubah di situs ini?" },
       "tags": ["work"],
       "followUps": ["site-minimap", "site-classic", "site-share"],
       "expect": ["site-build"]
