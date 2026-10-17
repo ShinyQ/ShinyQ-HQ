@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -141,7 +141,21 @@ describe("collectFacts", () => {
     expect(Object.keys(JSON.parse(a))).toEqual(["generatedAt", "commit", "git", "rounds", "tests", "docs", "ci", "budgets"]);
   });
 
+  it("uses a precomputed git result instead of reading history again", () => {
+    const precomputed = gitFacts(repo);
+    expect(precomputed).toBeDefined();
+    expect(serialize(collectFacts(shallow, { runners: false, rounds, git: precomputed }))).toContain(`"commit": "${precomputed?.commit}"`);
+  });
+
   it("throws without usable git history", () => {
     expect(() => collectFacts(shallow, { runners: false, rounds })).toThrow(/unavailable/);
+  });
+});
+
+describe("CLI", () => {
+  it("rejects --write with --no-runners and leaves the file alone", () => {
+    const result = spawnSync("bun", ["scripts/build-facts.ts", "--write", "--no-runners"], { cwd: process.cwd(), encoding: "utf8" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/cannot be combined/);
   });
 });

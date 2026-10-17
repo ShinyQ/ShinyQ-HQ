@@ -122,6 +122,9 @@ jobs:
           # The knowledge pack date comes from the last commit that touched content/.
           fetch-depth: 0
       - uses: ./.github/actions/setup
+      # Refresh the /build numbers (git history, test counts, CI jobs, budgets) for the shipped build.
+      - name: Build facts snapshot
+        run: bun scripts/build-facts.ts --write
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .next/cache

@@ -8,7 +8,8 @@
  * by BuildFactsSchema). Everything is deterministic per commit: dates are UTC committer dates and the
  * history is the first-parent line of HEAD (never `main`, which may be stale locally). A shallow clone
  * cannot give honest git numbers, so the committed snapshot is kept (CI checks out with fetch-depth 0).
- * The test runners (`vitest list`, `playwright test --list`) only enumerate; a failure omits that number.
+ * The test runners (`vitest list`, `playwright test --list`) only enumerate; a failure warns and omits that number.
+ * `--write` with `--no-runners` is rejected (it would drop the runner counts from the committed file).
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -118,25 +119,29 @@ function runner(cwd: string, args: string[]): string | undefined {
 
 function vitestTests(cwd: string): number | undefined {
   const out = runner(cwd, ["vitest", "list", "--json"]);
-  if (out === undefined) return undefined;
+  let count: number | undefined;
   try {
-    const list: unknown = JSON.parse(out);
-    return Array.isArray(list) ? list.length : undefined;
+    const list: unknown = out === undefined ? undefined : JSON.parse(out);
+    count = Array.isArray(list) ? list.length : undefined;
   } catch {
-    return undefined;
+    count = undefined;
   }
+  if (count === undefined) console.warn("build-facts: `vitest list --json` failed or was not parseable, omitting tests.unit");
+  return count;
 }
 
 function playwrightTests(cwd: string): number | undefined {
   const out = runner(cwd, ["playwright", "test", "--list"]);
-  return out === undefined ? undefined : parsePlaywrightList(out)?.tests;
+  const count = out === undefined ? undefined : parsePlaywrightList(out)?.tests;
+  if (count === undefined) console.warn("build-facts: `playwright test --list` failed or was not parseable, omitting tests.e2e");
+  return count;
 }
 
 const kb = (bytes: number) => Math.round((bytes / 1024) * 10) / 10;
 
 /** Throws when git history is unavailable (shallow, not a repository): callers keep the committed snapshot. */
-export function collectFacts(cwd: string, opts: { runners: boolean; rounds?: Rounds }): BuildFacts {
-  const git = gitFacts(cwd);
+export function collectFacts(cwd: string, opts: { runners: boolean; rounds?: Rounds; git?: GitFacts }): BuildFacts {
+  const git = opts.git ?? gitFacts(cwd);
   if (!git) throw new Error("Git history is unavailable (shallow clone or not a repository)");
   const { prs, ...gitPart } = git;
   const rounds = opts.rounds ?? getBuildStory().stations.timeline.rounds;
@@ -183,11 +188,16 @@ export function serialize(facts: BuildFacts): string {
 function main() {
   const args = process.argv.slice(2);
   const cwd = process.cwd();
-  if (!gitFacts(cwd)) {
+  if (args.includes("--write") && args.includes("--no-runners")) {
+    console.error("build-facts: --write cannot be combined with --no-runners (it would drop tests.unit and tests.e2e from the committed file)");
+    process.exit(1);
+  }
+  const git = gitFacts(cwd);
+  if (!git) {
     console.log(`build-facts: git history is unavailable (shallow clone?), keeping ${path.relative(cwd, FACTS_FILE)}`);
     return;
   }
-  const json = serialize(collectFacts(cwd, { runners: !args.includes("--no-runners") }));
+  const json = serialize(collectFacts(cwd, { runners: !args.includes("--no-runners"), git }));
   process.stdout.write(json);
   if (args.includes("--write")) {
     const current = existsSync(FACTS_FILE) ? readFileSync(FACTS_FILE, "utf8") : "";
