@@ -92,14 +92,25 @@ function startParam(target: Vec3, camera: Vec3, from: Vec3): number {
  * rover and a low camera brings the camera in front of it. With the view's vertical `fov` (degrees) a
  * camera off the slab also counts as blocked while the bottom of its view leaves the slab (`viewOnSlab`),
  * at any height. Returns `camera` itself when it is high enough and on the slab, when nothing blocks the
- * ray, or when the ray already starts blocked.
+ * ray, or when the whole ray past the rover is blocked. A blocked stretch next to the rover (a column the ray
+ * crosses at the start) is skipped.
  */
 export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target, fov?: number): Vec3 {
   const offSlab = fov !== undefined && !onSlab(camera[0], camera[2], w.bounds);
   if (camera[1] - w.floorY >= blockHeight(w) && !offSlab) return camera;
   const blocked = (p: Vec3) => cameraBlocked(p, w) || (fov !== undefined && !viewOnSlab(p, target, w, fov));
-  const t0 = startParam(target, camera, from);
-  if (blocked(lerp3(target, camera, t0))) return camera;
+  let t0 = startParam(target, camera, from);
+  // The ray may start inside a column next to the rover (the look-ahead ray crossing the L1 kiosk): skip that stretch
+  // instead of giving up, or the camera would jump out past walls and off the slab at some yaws and back at others.
+  if (blocked(lerp3(target, camera, t0))) {
+    let next = -1;
+    for (let i = 1; i <= STEPS && next < 0; i++) {
+      const t = t0 + ((1 - t0) * i) / STEPS;
+      if (!blocked(lerp3(target, camera, t))) next = t;
+    }
+    if (next < 0) return camera;
+    t0 = next;
+  }
   let free = t0;
   for (let i = 1; i <= STEPS; i++) {
     const t = t0 + ((1 - t0) * i) / STEPS;

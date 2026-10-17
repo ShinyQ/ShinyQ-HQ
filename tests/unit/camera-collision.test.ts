@@ -46,6 +46,21 @@ describe("camera collision", () => {
     expect(clampCamera([6, 1, 0], cam, world)).toBe(cam);
   });
 
+  it("still clamps when the ray starts inside an obstacle next to the rover (the look-ahead ray crosses the L1 kiosk)", () => {
+    // The rover stands just east of a column; the ray from the look-ahead point to the camera crosses the column next to it.
+    const kiosk: CameraWorld = { ...world, obstacles: [{ minX: -5, maxX: -1.5, minZ: 0.2, maxZ: 4 }] };
+    const rover: Vec3 = [0, 1, 0];
+    const target: Vec3 = [-5, 1, -3];
+    const cam: Vec3 = [16.7, 3.6, 34];
+    const out = clampCamera(target, cam, kiosk, rover, 40);
+    expect(out).not.toBe(cam);
+    expect(cameraBlocked(out, kiosk)).toBe(false);
+    expect(viewOnSlab(out, target, kiosk, 40)).toBe(true);
+    // Without the FOV rule the plain clamp still keeps it on the slab below the edge clearance.
+    const low: Vec3 = [16.7, 2.2, 34];
+    expect(cameraBlocked(clampCamera(target, low, kiosk, rover), kiosk)).toBe(false);
+  });
+
   it("blocks a low camera behind a tall wall up to the wall's height", () => {
     const tall: CameraWorld = { ...world, tall: [{ minX: -12, maxX: -11, minZ: -4, maxZ: 4, h: 9.5 }] };
     expect(cameraBlocked([-11.5, 6, 0], tall)).toBe(true);
@@ -64,8 +79,9 @@ describe("camera collision", () => {
       for (const p of [layout.spawn, layout.approach]) {
         const follow = followPose("desktop", [p.x, 1, p.z]);
         expect(clampCamera(follow.target, follow.position, w, follow.target, follow.fov)).toBe(follow.position);
+        // The L2 rail view stands beside the narrow road by design: it takes no FOV (no view rule).
         const rail = railPose("desktop", p.x, 0, 1, p.z);
-        expect(clampCamera(rail.target, rail.position, w, rail.target, rail.fov)).toBe(rail.position);
+        expect(clampCamera(rail.target, rail.position, w)).toBe(rail.position);
       }
     }
   });
