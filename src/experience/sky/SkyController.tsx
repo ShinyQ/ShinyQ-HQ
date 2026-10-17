@@ -13,13 +13,22 @@ import { useUniformTime } from "../fx/useUniformTime";
 import { postHandle } from "../scene/postHandle";
 import { sceneSettings } from "../scene/settings";
 import type { GpuTier } from "../types";
-import { clockPhase, createSkyState, parseSkyParam, resolveSkyMode, skyState, type SkyMode } from "./dayNight";
+import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, type SkyMode } from "./dayNight";
 import { applyDome, applyOrbs } from "./applySky";
 import { skyRuntime } from "./skyRuntime";
 
 const NO_RAYCAST = () => null;
 const DOME_RADIUS = 400;
 const EPSILON = 1e-5;
+
+/** Test-only opt-in: the perf lane sets sessionStorage["hq:sky"] so automation draws the sky like a visitor sees it. */
+function readSkyOptIn(): string | null {
+  try {
+    return sessionStorage.getItem("hq:sky");
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Day and night (Round 8 K): the two scene lights, a camera-centered sky dome and the sun and moon
@@ -61,11 +70,14 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   useEffect(() => {
     const resolve = () => {
       mode.current = resolveSkyMode({
-        param: parseSkyParam(window.location.search),
+        param: parseSkyParam(window.location.search) ?? parseSkyValue(readSkyOptIn()),
         pref: readDayNight(),
         reducedMotion: reduced,
         automated: navigator.webdriver === true,
       });
+      // The automation hold's night equals today's background: skip drawing the sky (a costly full-screen pass on CPU renderers).
+      const visible = !mode.current.still;
+      if (group.current && group.current.visible !== visible) group.current.visible = visible;
       last.current = null;
     };
     resolve();

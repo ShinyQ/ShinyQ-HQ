@@ -19,6 +19,8 @@ import { waitForStablePrograms, writePerfEntry } from "./helpers";
  */
 // Full-tier floors take about 2.5 minutes on a CI runner (SwiftShader); the waits are on state, not time.
 test.describe.configure({ timeout: 300_000 });
+// The perf gates measure the sky as visitors see it at night (automation otherwise skips drawing it).
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem("hq:sky", "night")));
 
 const FLOORS = [
   { floor: "L1", path: "/en" },

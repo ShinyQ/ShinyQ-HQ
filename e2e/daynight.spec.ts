@@ -5,15 +5,15 @@ import {
   chooseMotion,
   enterHQ,
   expectRenderBudget,
-  readSettledGpuCounters,
   waitForHQ,
   waitForPhase,
   waitForSceneLive,
   type RenderPeaks,
 } from "./hq";
+import { waitForStablePrograms } from "./perf/helpers";
 
 /**
- * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, so visual baselines keep today's look),
+ * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
  * a stored choice and the Motion setting decide for a human visitor, and the sky costs no extra shader
  * program or scene draw calls (`SkyController` writes colors and lights, the dome and the orbs reuse
  * the shared holo program). `__hq.sky` is the sky as last applied (src/experience/sky/skyRuntime.ts).
@@ -31,6 +31,7 @@ interface SkyRead {
 }
 
 type SkyWindow = Window & { __hq: { sky: SkyRead } };
+type RenderWindow = Window & { __hq: { render: { programNames(): string[] } } };
 
 const readSky = (page: Page): Promise<SkyRead> =>
   page.evaluate(() => {
@@ -62,6 +63,13 @@ test("automation holds night when no ?sky= is given", async ({ page }) => {
   await enterHQ(page);
   await waitForSource(page, "held");
   expect(await readSky(page)).toMatchObject({ phase: 0, day: 0, stars: 1, still: true, source: "held", fog: NIGHT_FOG });
+});
+
+test("the perf lane's sessionStorage opt-in draws the sky under automation (not still)", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("hq:sky", "night"));
+  await enterHQ(page);
+  await waitForSource(page, "param");
+  expect(await readSky(page)).toMatchObject({ phase: 0, stars: 1, still: false, source: "param", fog: NIGHT_FOG });
 });
 
 test("?sky=night and ?sky=day pin the phase: day has a different fog color and no stars, night keeps the night fog and stars", async ({ page }) => {
@@ -99,13 +107,17 @@ test("day costs the same shader programs and scene draw calls as night on L1", a
   const measure = async (sky: string) => {
     await openSky(page, sky);
     await waitForSource(page, "param");
-    const programs = (await readSettledGpuCounters(page)).programs;
+    const programs = await waitForStablePrograms(page);
+    const names = await page.evaluate(() => (window as unknown as RenderWindow).__hq.render.programNames());
+    const holo = names.filter((name) => name.startsWith("holo-fx"));
     const peaks: RenderPeaks = await expectRenderBudget(page);
-    return { programs, peaks };
+    return { programs, holo, peaks };
   };
   const night = await measure("night");
   const day = await measure("day");
-  expect(day.programs, `programs night ${night.programs}, day ${day.programs}`).toBe(night.programs);
+  expect(day.holo, `holo-fx programs night [${night.holo.join(", ")}], day [${day.holo.join(", ")}]`).toEqual(night.holo);
+  // The per-floor program budget is gated by e2e/perf/floors.spec.ts; one program of warm-up jitter is normal between loads.
+  expect(Math.abs(day.programs - night.programs), `programs night ${night.programs}, day ${day.programs}`).toBeLessThanOrEqual(1);
   expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(2);
 });
 

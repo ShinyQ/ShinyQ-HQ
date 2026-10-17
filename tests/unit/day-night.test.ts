@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color } from "three";
 import { sceneSettings } from "@/experience/scene/settings";
-import { clockPhase, CYCLE_MS, parseSkyParam, resolveSkyMode, skyState, SKY, SKY_PHASES } from "@/experience/sky/dayNight";
+import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, SKY, SKY_PHASES } from "@/experience/sky/dayNight";
 
 describe("day and night model", () => {
   it("runs an 8 minute cycle from clock time", () => {
@@ -17,6 +17,16 @@ describe("day and night model", () => {
     expect(parseSkyParam("?sky=noon")).toBeNull();
     expect(parseSkyParam("?sky=2")).toBeNull();
     expect(parseSkyParam("")).toBeNull();
+  });
+  it("parses a stored sky value", () => {
+    expect(parseSkyValue("night")).toEqual({ kind: "phase", phase: 0 });
+    expect(parseSkyValue("dusk")).toEqual({ kind: "phase", phase: SKY_PHASES.dusk });
+    expect(parseSkyValue("0.25")).toEqual({ kind: "phase", phase: 0.25 });
+    expect(parseSkyValue("cycle")).toEqual({ kind: "cycle" });
+    expect(parseSkyValue(null)).toBeNull();
+    expect(parseSkyValue("")).toBeNull();
+    expect(parseSkyValue("noon")).toBeNull();
+    expect(parseSkyValue("1.5")).toBeNull();
   });
   it("resolves the mode: param, automation, preference, reduced motion", () => {
     const base = { param: null, pref: null, reducedMotion: false, automated: false } as const;

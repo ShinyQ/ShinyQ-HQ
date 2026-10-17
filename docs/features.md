@@ -113,7 +113,7 @@ Open `/en` and press **Boot rover**.
 - Night is the neon look with a moon and twinkling stars; "day" is a deep twilight, an indigo to teal sky with a sun glow on the horizon. Dawn and dusk blend the two.
 - The sun and the moon cross a shallow arc around the tower, opposite each other; the lights, the fog and the bloom follow the phase, and the neon glows brighter at night.
 - The cycle follows the Motion setting: it runs unless reduced motion is on, and reduced motion holds night. A "Day and night" switch is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, display group, order 30) and shows in the settings panel once the HUD settings work renders it; the choice is kept in this browser (`localStorage["hq:day-night"]`).
-- Automated browsers hold a still night (today's exact look: no stars, moon or sun, so visual baselines stay valid); a visitor's held night keeps the moon and stars; `?sky=night|dawn|day|dusk|<0..1>` pins a phase and `?sky=cycle` runs the clock.
+- Automated browsers hold a still night (today's exact frame: no stars, moon, sun or drawn sky, so visual baselines stay valid); a visitor's held night keeps the moon and stars; `?sky=night|dawn|day|dusk|<0..1>` pins a phase and `?sky=cycle` runs the clock.
 - The Classic site is unchanged. Rules: [`agents/3d-experience.md`](agents/3d-experience.md).
 
 ### Ask Rover and the Classic site

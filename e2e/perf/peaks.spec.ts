@@ -25,6 +25,8 @@ import { writePerfEntry } from "./helpers";
  * moved here (F3.3), now on every scenario.
  */
 test.describe.configure({ timeout: 180_000 });
+// The perf gates measure the sky as visitors see it at night (automation otherwise skips drawing it).
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem("hq:sky", "night")));
 
 type Tier = "lite" | "full";
 

@@ -39,6 +39,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
   - CI job `3D perf gates`: `bun run e2e:perf:shard i/2`, 2 duration-balanced shards; on a PR only for 3D code or a `src/` file the 3D roots import, always on `main` and nightly ([ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
+- `floors`, `peaks` and `memory-full` set `sessionStorage["hq:sky"] = "night"` in a `beforeEach`: automation's still night draws no sky, so the gates opt in to measure it as visitors see it at night (`look`, `bytes-3d` and `timeline` do not).
 - Each test writes `perf-report/<id>.json`; `bun scripts/perf-summary.ts gates --head perf-report` prints the tables.
 
 | Spec | What it gates |

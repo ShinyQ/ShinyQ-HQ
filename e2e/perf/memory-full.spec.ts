@@ -21,6 +21,8 @@ const { fullTierRoundTrips: TRIPS, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
 test.describe.configure({ timeout: 900_000 });
 test.use({ reducedMotion: "no-preference" });
 test.beforeEach(({ page }) => chooseMotion(page, "full"));
+// The perf gates measure the sky as visitors see it at night (automation otherwise skips drawing it).
+test.beforeEach(({ page }) => page.addInitScript(() => sessionStorage.setItem("hq:sky", "night")));
 
 async function ride(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as MemoryWindow).__hq.store.getState().goToFloor(f), floor);

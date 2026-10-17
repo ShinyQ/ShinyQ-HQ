@@ -25,7 +25,10 @@ export type SkyParam = { kind: "phase"; phase: number } | { kind: "cycle" } | nu
 
 /** `?sky=night|dawn|day|dusk|<0..1>` pins a phase, `?sky=cycle` runs the clock (tests, captures). */
 export function parseSkyParam(search: string): SkyParam {
-  const raw = new URLSearchParams(search).get("sky");
+  return parseSkyValue(new URLSearchParams(search).get("sky"));
+}
+
+export function parseSkyValue(raw: string | null): SkyParam {
   if (!raw) return null;
   if (raw === "cycle") return { kind: "cycle" };
   if (Object.hasOwn(SKY_PHASES, raw)) return { kind: "phase", phase: SKY_PHASES[raw as SkyPhaseName] };
@@ -38,7 +41,7 @@ export interface SkyMode {
   source: "param" | "clock" | "held";
   /** null: follow the clock. */
   phase: number | null;
-  /** True only for the automation hold: the night renders without stars, moon or sun so visual baselines keep today's exact look (the dome and the orb mesh still draw). */
+  /** True only for the automation hold: the night renders without stars, moon or sun so visual baselines keep today's exact look (the sky group is not drawn at all). */
   still: boolean;
 }
 
