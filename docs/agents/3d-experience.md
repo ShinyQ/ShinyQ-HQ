@@ -90,16 +90,22 @@ The same script sets these on every page before first paint:
   - The rover waits in the Lobby, and after the intro it continues as an ad hoc mission (`intro:continue`: elevator, drive, open; `introTarget`, `continuationSteps` and the pending slot in `src/experience/introContinue.ts`), so manual input cancels it like any mission.
   - The URL keeps the deep link during the intro; `?view=architecture` opens the hologram on arrival.
   - The first-session tour runs in its short form once the rover has arrived and the drawer is closed.
-- Nothing skips them:
-  - No Skip button; Esc does nothing in `boot` or `intro`.
+- Nothing skips the boot:
+  - No Skip button; Esc does nothing in `boot`.
   - Mission steps wait for the intro (`afterIntro` in `host3d.ts`).
   - Boot rover only starts once the log has typed out (`aria-disabled` until then, same pace with reduced motion).
-- The intro (`camera/rigs.ts`): a 1.9 s exterior orbit (`INTRO_ORBIT`), then a 1.7 s fly-in (`INTRO_FLY`) down to the follow pose behind the rover in one continuous move (Round 9 M).
-  - The fly-in is a quadratic curve whose control point extends the follow offset past the follow pose (`INTRO_APPROACH`), on `easeInOutCubic` like the arrival glide (`introFlyProgress`), so it starts and lands at rest along the follow line.
-  - `roverRuntime.introFly` is its progress (0 to 1, -1 outside it). The slabs above the rover are ghosts from the first boot frame (`tower/FloorLevel.tsx`) and only L1's detail draws in the boot and intro (`tower/visibility.ts`), so the camera never comes down onto an opaque slab. The fog eases from the exterior range to the follow range with it.
+- The intro: Rover wakes up, then a reveal orbit (owner design). The timeline is pure (`camera/intro.ts`, `INTRO`); the shared frame state is `introRuntime` (`intro/runtime.ts`), written by `CameraDirector` and read by the floor shaders and the Lobby parts.
+  - The boot holds the wake pose under every motion setting: a still, dark close-up of Rover (`introPose(plan, 0)`, per camera class `WAKE`), its face screen off (`introRuntime.face`), turned to the orbit's start, nothing revealed.
+  - Boot rover starts `INTRO.duration` (6.6 s): the face boots (`introFace`: off until 0.35 s, a boot screen until 0.8 s) during a slow push-in over `INTRO.wake` (1.1 s), and Rover turns to its spawn heading between 1.3 and 2.6 s (`introHeading`).
+  - Reveal ring: from `INTRO.revealStart` (0.55 s) a ring spreads from Rover (`revealRadius`, out to `INTRO.revealReach` 80 u) until `INTRO.revealEnd` (3.0 s), when the reveal turns off (Infinity). The grid and the lanes mask themselves with the shared `revealUniforms`, the Lobby landmarks switch on as the ring reaches them ([Intro reveal and beacons](floor-l1-lobby.md#intro-reveal-and-beacons)), and the fog rides the ring (`introFog`) so everything past it fades into the night, reaching the follow range before the ring turns off.
+  - Orbit: after the wake the camera pulls back to a high point (`PULL`, `PEAK` per camera class) and sweeps 270 degrees (`INTRO.sweep`) around Rover while it descends; the angular speed ramps up, holds and eases to rest (`orbitProgress`). The radius waits (`plan.hold`) until the path clears the elevator shaft. The plan (`introPlan`) is rebuilt every boot frame (the end pose follows a resize) and frozen from the first intro frame.
+  - Beacons: as the orbit passes the middle of the view, the landmarks `stats`, `skills`, `hall`, `observatory` and `elevator` pulse once and their ids go into `introRuntime.lit`.
+  - Handoff: the orbit's end pose is the primed follow pose (yaw, zoom, look-ahead, offset scale), and the path's end error is blended in with the orbit, so the intro lands exactly on it with no jump; `phase` becomes `explore` and the runtime resets (`active` false, `reveal` Infinity, `lit` emptied). The phase leaving the intro any other way (the static tier, `recover`) resets it too.
+  - The slabs above the rover are ghosts from the first boot frame (`tower/FloorLevel.tsx`) and only L1's detail draws in the boot and intro (`tower/visibility.ts`).
   - Landing beat: when the intro hands over, the rover hops, blinks (`roverRuntime.blinkUntil`) and beeps (silent with the sound off).
-  - Drive, turn, zoom or reset input during the fly-in (never the orbit) hands over at once; the follow spring eases on from the drawn pose.
-- Reduced motion holds one still exterior shot (`reducedIntroPose`) for `INTRO_REDUCED` (2.5 s), then cuts to the follow camera.
+  - Skip: drive, turn, zoom, reset view or Esc input during `intro` (the intents `move`, `orbit`, `zoom`, `view`, `cancel`; `skipsIntro`) ends it on the next frame: a cut to the follow pose under a veil (`IntroVeil`, the scene background color in front of the camera) that starts at 1 and fades out over `INTRO.skipFade` (0.3 s); `introRuntime.skipped` is true. The boot ignores that input.
+- Reduced motion (stored Motion Reduced, or System with the OS reduce): no camera motion. Boot rover cuts to the follow pose with everything revealed under a veil that clears over `INTRO.reduced` (0.9 s), then `explore`. A new visitor with the OS reduce alone and no stored choice gets Full, so the intro animates ([Motion setting](hud-and-drawer.md#motion-setting)).
+- Probe: `__hq.intro` is `introRuntime`: `{ active, t, reveal, heading, face, veil, lit, skipped }`.
 - Crawlers, Lighthouse and the static tier never load the 3D chunk.
 - E2E: `asReturningVisitor` sets the flag, so `enterHQ` and `enterFloorRoute` land in explore (`enterHQ` also waits for `waitForSceneLive`); tests of the boot itself open without it.
 
@@ -534,10 +540,11 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 ## Testing hooks
 
 - Playwright sets `navigator.webdriver`, so e2e tests that need the 3D tier pass `?tier=lite|full`; tests of real auto-detection call `asHumanBrowser(page)` (`e2e/hq.ts`). More on writing 3D tests: [performance.md](performance.md).
-- `window.__hq` exposes `{ store, rover, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf, sky }` for Playwright:
+- `window.__hq` exposes `{ store, rover, intro, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf, sky }` for Playwright:
 
   | Member | Contents |
   |---|---|
+  | `intro` | `introRuntime`: the intro's timeline `t`, `reveal` radius, Rover `heading` and `face`, `veil`, `lit` landmark ids and `skipped` (see [Boot and intro](#boot-and-intro)) |
   | `floorChunks` | `floorChunksHandle`: `state(floor)`, `snapshot()`, `requestedAt(floor)`, `load(floor)` |
   | `layouts` | carries the floor pads |
   | `interact` | `interactRuntime`: the current floor's `items`, `project`, `screenOf(id)`, `screenAt(id, fx, fz, lift)`, `hitAt(x, y)` (the click raycast) and `highlight` |

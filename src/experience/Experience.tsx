@@ -96,7 +96,7 @@ export interface ExperienceStart {
 
 /**
  * Session start: tier, locale, device, and the first phase. The first 3D load of a browser session
- * plays the boot and the intro in the Lobby on every route (nothing skips them); a deep link or a
+ * plays the boot and the intro in the Lobby on every route (input may skip the intro, never the boot); a deep link or a
  * language switch then continues to its floor or room (`introContinue.ts`). Later loads open straight in.
  */
 function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor: requested, startRoom }: ExperienceStart) {

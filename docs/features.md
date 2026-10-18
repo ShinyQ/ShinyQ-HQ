@@ -36,7 +36,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Walkable floors | Road kit, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
 | Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
 | Walkable floors 2 | L4 Writing as the walkable Newsroom | Done |
-| HUD polish | Shift boost (touch toggle; trails, lean, camera kick, streaks, sparks), Rover menu, unskippable intro, top bar without Quick view, bottom band, drawer footer, centered Lobby | Done |
+| HUD polish | Shift boost (touch toggle; trails, lean, camera kick, streaks, sparks), Rover menu, unskippable intro (the 2026-10-18 wake and reveal orbit intro is skippable), top bar without Quick view, bottom band, drawer footer, centered Lobby | Done |
 | Walkable floors 3 | RF as a walkable roof deck: Signal Garden with the courier drone | Done |
 | Highlights Hall | L1 summary behind the certifications wall: about me, top 3 projects, work experience (employment and freelance), contact | Done |
 | Onboarding | Rover's dialog (handheld RPG text box), first-session tour, "!" hint bubbles, first-visit floor lines | Done |
@@ -59,8 +59,9 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
 | Ask memory | 2026-10-17: Ask remembers the last 3 turns of a conversation (signed by the server, so a visitor cannot forge an answer), a short follow-up like "What stack did it use?" is understood from the previous question, and a **New chat** button starts over | Done |
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
-| Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over | Done |
+| Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over (replaced by the wake and reveal orbit intro, 2026-10-18) | Done |
 | Black frame fix | 2026-10-18: no more single pure-black frames on L1 at a low camera (a NaN from the glass shader blacked out the bloomed frame); `?gfx=probe` logs any black frame and its cause on the device | Done |
+| Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card | In review |
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 
 ## Controls and first visit
@@ -69,7 +70,10 @@ Open `/en` and press **Boot rover**.
 
 ### Boot and intro
 
-- The boot log and the intro play in full on the first 3D load of every browser session, on any route. Nothing skips them.
+- The boot log and the intro play on the first 3D load of every browser session, on any route. Nothing skips the boot log.
+- The intro: a still, dark close-up of Rover during the boot card; Boot rover wakes it (its face boots), a ring of light spreads across the Lobby and switches each landmark on, then the camera pulls back and orbits 270 degrees around Rover, each landmark pulsing once as it passes, and lands on the view behind Rover (6.6 s).
+- Drive, turn, zoom, reset view or Esc skips the intro: a quick fade to the view behind Rover.
+- With reduced motion the camera does not move: the intro is a 0.9 s fade into the view behind Rover.
 - A deep link such as `/en/labs/<slug>` then rides on to its floor or room.
 - Add `?tier=lite` or `?tier=static` to force a tier.
 
@@ -120,7 +124,7 @@ Open `/en` and press **Boot rover**.
 
 - The **Motion** button right of Sound (on phones and tablets in the menu's settings, and in Cmd-K) picks System, Full or Reduced.
 - Full is the default on every device (owner decision 2026-10-14; Windows reports reduced motion whenever its animation effects are off), so the device's reduced motion setting no longer applies by default.
-- Pick System to follow it again, or Reduced to keep rides as a short cut and the intro still.
+- Pick System to follow it again, or Reduced to keep rides as a short cut and the intro a short fade.
 
 ### Day and night
 

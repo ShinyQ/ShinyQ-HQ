@@ -284,7 +284,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     renderProbe.record(renderStats.sceneCalls + renderStats.postCalls, renderStats.triangles);
 
     // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's). The landing
-    // beat of the fly-in (Round 9 M): the eyes blink and the rover beeps (silent when the sound is off).
+    // beat of the intro: the eyes blink and the rover beeps (silent when the sound is off).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {
       roverRuntime.status = labels.hello;
       local.statusUntil = now + 2;
