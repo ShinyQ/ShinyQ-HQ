@@ -294,8 +294,8 @@
           "number": 9,
           "title": { "en": "Camera Polish and the Engine Room", "id": "Poles Kamera dan Ruang Mesin" },
           "summary": {
-            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that will tell it.",
-            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan lantai rahasia B1 Engine Room yang akan menceritakannya."
+            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that tells it.",
+            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan lantai rahasia B1 Engine Room yang menceritakannya."
           },
           "prs": { "from": 187, "to": null }
         }

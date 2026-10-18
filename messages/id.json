@@ -648,7 +648,7 @@
     "locked": "Kunjungi semua {total} lantai ({seen}/{total})",
     "lockedName": "{floor} Kunjungi semua {total} lantai ({seen}/{total})",
     "lockedTitle": "Terkunci",
-    "unlock": "Kamu sudah menemukan semuanya. Mau lihat cara tempat ini dibuat?",
+    "unlock": "Anda sudah menemukan semuanya. Mau lihat cara tempat ini dibuat?",
     "go": "Antar saya ke sana",
     "later": "Nanti",
     "lockedLine": "B1 masih terkunci: kunjungi semua {total} lantai dulu ({seen}/{total}).",
