@@ -1,0 +1,63 @@
+name: Ask pack check
+
+# Proves that the deploy token can do what deploy.yml does with the Ask knowledge pack in Workers KV
+# (docs/ask-runbook.md section 17), without changing what production serves:
+#   - verify:  read pack:current and pack:index, list pack: keys, write and delete the pack:probe key;
+#   - dry-run: build the pack from main, validate it (private blocklist included), plan the publish against
+#              the live index and write only the probe key;
+#   - status:  print the pointer, the index and the stored versions.
+# Run it after adding or rotating the CLOUDFLARE_API_TOKEN permission (Workers KV Storage: Edit):
+#   gh workflow run ask-pack.yml --ref main -f mode=dry-run
+# Manual dispatch from main only, in the main-only `production` environment; Cloudflare secrets only in step env (H1).
+# Any failed KV call exits 1 (scripts/ask-pack.ts), so the run goes red.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: verify (token access), dry-run (validate and plan a publish) or status
+        required: true
+        type: choice
+        default: dry-run
+        options: [verify, dry-run, status]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ask-pack
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Ask pack ${{ inputs.mode }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      deployment: false
+    env:
+      MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Build the Ask the HQ knowledge pack
+        if: inputs.mode == 'dry-run'
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun scripts/build-knowledge.ts
+      - name: Run ask-pack
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            verify) bun scripts/ask-pack.ts verify ;;
+            dry-run) bun scripts/ask-pack.ts publish --commit "$GITHUB_SHA" --dry-run true ;;
+            status) bun scripts/ask-pack.ts status ;;
+            *) echo "::error::unknown mode $MODE"; exit 1 ;;
+          esac

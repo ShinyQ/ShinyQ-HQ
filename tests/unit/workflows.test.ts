@@ -193,6 +193,28 @@ describe("deploy on merge (deploy.yml, rollback.yml)", () => {
       expect(steps[pack]).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
       expect(steps[pack - 1]).toContain("bun install --frozen-lockfile");
     });
+
+    it("fails red on a KV error: every piped pack command runs under pipefail", () => {
+      const packSteps = [...deploySteps, ...stepsOf(rollbackJob("rollback"))].filter((step) => step.includes("scripts/ask-pack.ts"));
+      expect(packSteps.length).toBeGreaterThanOrEqual(4);
+      for (const step of packSteps) {
+        expect(step).not.toContain("continue-on-error");
+        expect(step).not.toMatch(/ask-pack\.ts[^\n]*\|\|/);
+        if (/ask-pack\.ts[^\n]*\|/.test(step)) expect(step).toMatch(/set -[a-z]*o pipefail|shell: bash/);
+      }
+    });
+
+    it("offers a dispatch-only check of the token's KV access in the production environment", () => {
+      const check = read(path.join(dir, "ask-pack.yml"));
+      expect(check).toMatch(/on:\n  workflow_dispatch:/);
+      expect(check).not.toMatch(/pull_request|push:|schedule:/);
+      expect(check).toContain("if: github.ref == 'refs/heads/main'");
+      expect(check).toMatch(/environment:\n      name: production\n      deployment: false/);
+      expect(check.split("    steps:")[0]).not.toContain("secrets.");
+      expect(check).toContain("set -euo pipefail");
+      for (const mode of ["verify", "dry-run", "status"]) expect(check).toContain(`${mode})`);
+      expect(check).toContain('publish --commit "$GITHUB_SHA" --dry-run true');
+    });
   });
 });
 

@@ -7,8 +7,11 @@
  *   bun scripts/ask-pack.ts pin <version>                  # the same, by hand (owner path)
  *   bun scripts/ask-pack.ts rollback --commit <sha> [--dry-run true]  # flip to the pack deployed with that commit
  *   bun scripts/ask-pack.ts status                         # pointer, index and stored versions
+ *   bun scripts/ask-pack.ts verify                         # prove the token can read, list, write and delete pack: keys
+ *   bun scripts/ask-pack.ts publish --commit <sha> --dry-run true   # validate and plan, write only the probe key
  *
- * Env: CLOUDFLARE_API_TOKEN (needs Workers KV Storage: Edit) and CLOUDFLARE_ACCOUNT_ID. `publish` and `flip` write
+ * Env: CLOUDFLARE_API_TOKEN (needs Workers KV Storage: Edit) and CLOUDFLARE_ACCOUNT_ID. Any failed KV call (non-2xx other
+ * than a 404 read or delete), a failed check or a bad argument exits 1, so a workflow step goes red. `publish` and `flip` write
  * `previous=<version>` and `version=<version>` to $GITHUB_OUTPUT. Keys: `pack:v1:<version>` (immutable value),
  * `pack:current` (pointer), `pack:index` (the last PACK_KEEP versions, newest first), `pack:commit:<sha>` (400 days).
  * Pack content is never published from here without a deploy: `publish` only uploads what this commit built, and
@@ -29,6 +32,8 @@ export const commitKey = (sha: string) => `pack:commit:${sha}`;
 export const PACK_KEEP = 10;
 /** Lifetime of `pack:commit:<sha>` (400 days): how far back a Pages rollback can find its pack. */
 export const COMMIT_TTL_SECONDS = 34_560_000;
+/** Written and deleted by `verify` and dry runs (60 s TTL, KV's minimum, in case the delete never runs). */
+export const PROBE_KEY = "pack:probe";
 export const TOKEN_HINT = "add Workers KV Storage: Edit to CLOUDFLARE_API_TOKEN (docs/ask-runbook.md section 17)";
 
 export interface IndexEntry {
@@ -128,7 +133,7 @@ export interface PublishInput {
 }
 
 /** Uploads this build's pack (not flipped). Fails before any write when the value or its pin do not validate. */
-export async function publish({ kv, blocklist, now = () => new Date(), log = console.log }: Deps, { json, meta, commit }: PublishInput): Promise<{ previous: string; version: string; uploaded: boolean; pruned: string[] }> {
+export async function publish({ kv, blocklist, now = () => new Date(), log = console.log }: Deps, { json, meta, commit }: PublishInput, options: { dryRun?: boolean } = {}): Promise<{ previous: string; version: string; uploaded: boolean; pruned: string[] }> {
   if (!/^[0-9a-f]{7,40}$/.test(commit)) throw new Error(`publish needs --commit <sha>, got "${commit}"`);
   const errors = validateStoredPack(json, blocklist);
   if (errors.length) throw new Error(`the built pack does not validate:\n- ${errors.join("\n- ")}`);
@@ -138,12 +143,19 @@ export async function publish({ kv, blocklist, now = () => new Date(), log = con
 
   const previous = parsePointer(await kv.get(POINTER_KEY))?.version ?? "";
   const existing = await kv.get(packKey(meta.version));
+  if (existing !== null && sha256(existing) !== meta.sha256) throw new Error(`${packKey(meta.version)} already exists with another SHA-256; a version is immutable (bump the content or PACK_SCHEMA)`);
+  if (options.dryRun) {
+    const { kept, pruned } = planPrune(planPublish(parseIndex(await kv.get(INDEX_KEY)), meta, commit, now()), [meta.version, previous].filter(Boolean));
+    await probe(kv);
+    log(
+      `Dry run for ${commit.slice(0, 7)}: would ${existing === null ? `upload ${packKey(meta.version)} (${meta.bytes} bytes)` : `keep ${packKey(meta.version)} (same SHA-256)`}, write ${commitKey(commit)} and ${INDEX_KEY} (${kept.length} versions)${pruned.length ? `, delete ${pruned.map((e) => packKey(e.version)).join(", ")}` : ""}; current pointer ${previous || "(none)"}. The probe write succeeded.`,
+    );
+    return { previous, version: meta.version, uploaded: false, pruned: pruned.map((e) => e.version) };
+  }
   let uploaded = false;
   if (existing === null) {
     await kv.put(packKey(meta.version), json);
     uploaded = true;
-  } else if (sha256(existing) !== meta.sha256) {
-    throw new Error(`${packKey(meta.version)} already exists with another SHA-256; a version is immutable (bump the content or PACK_SCHEMA)`);
   }
   await kv.put(commitKey(commit), meta.version, { expirationTtl: COMMIT_TTL_SECONDS });
   const { kept, pruned } = planPrune(planPublish(parseIndex(await kv.get(INDEX_KEY)), meta, commit, now()), [meta.version, previous].filter(Boolean));
@@ -187,6 +199,22 @@ export async function rollback(deps: Deps, commit: string, dryRun: boolean): Pro
   return { action: "flip", note: `Flipped ${POINTER_KEY} from ${current || "(none)"} to ${version}, the pack of ${commit.slice(0, 7)}.`, version };
 }
 
+/** Writes, reads back and deletes `PROBE_KEY`: proves the token may write `pack:` keys without touching the pack. */
+async function probe(kv: KvClient): Promise<void> {
+  const nonce = `probe ${new Date().toISOString()} ${Math.random().toString(36).slice(2)}`;
+  await kv.put(PROBE_KEY, nonce, { expirationTtl: 60 });
+  await kv.delete(PROBE_KEY);
+}
+
+/** The deploy token's KV access, as `deploy.yml` uses it: read the pointer and index, list `pack:` keys, write and delete a probe. */
+export async function verify({ kv, log = console.log }: Deps): Promise<void> {
+  const pointer = parsePointer(await kv.get(POINTER_KEY));
+  const index = parseIndex(await kv.get(INDEX_KEY));
+  const keys = await kv.list("pack:");
+  await probe(kv);
+  log(`KV access OK: read ${POINTER_KEY} (${pointer?.version ?? "none"}) and ${INDEX_KEY} (${index.length} versions), listed ${keys.length} pack: keys, wrote and deleted ${PROBE_KEY}.`);
+}
+
 export async function status({ kv, log = console.log }: Deps): Promise<void> {
   const pointer = parsePointer(await kv.get(POINTER_KEY));
   const index = parseIndex(await kv.get(INDEX_KEY));
@@ -199,51 +227,59 @@ export async function status({ kv, log = console.log }: Deps): Promise<void> {
 }
 
 /** The deploy job's blocklist (with the private terms, functions/_generated/safety.json), else the repo's lists. */
-function blocklist(root: string): string[] {
+function blocklist(root: string, env: Record<string, string | undefined>): string[] {
   const file = path.join(root, "functions", "_generated", "safety.json");
-  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { blocklist: string[] }).blocklist : loadBlocklist();
+  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { blocklist: string[] }).blocklist : loadBlocklist(env);
 }
 
-async function main() {
-  const [command, ...args] = process.argv.slice(2);
+const USAGE = "usage: bun scripts/ask-pack.ts publish --commit <sha> [--dry-run true] | flip <version> | pin <version> | rollback --commit <sha> [--dry-run true] | status | verify";
+
+/** The CLI. Returns the exit code: 0, or 1 on any failed KV call, check or argument (printed as a GitHub error annotation). */
+export async function run(argv: readonly string[], options: { env?: Record<string, string | undefined>; fetch?: typeof fetch; root?: string; log?: (line: string) => void } = {}): Promise<number> {
+  const env = options.env ?? process.env;
+  const root = options.root ?? process.cwd();
+  const log = options.log ?? console.log;
+  const [command, ...args] = argv;
   const flag = (name: string) => {
     const i = args.indexOf(name);
     return i >= 0 ? args[i + 1] : undefined;
   };
-  const root = process.cwd();
-  const token = process.env.CLOUDFLARE_API_TOKEN;
-  const account = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const namespace = readKvId(readFileSync(path.join(root, "wrangler.toml"), "utf8"));
-  if (!token || !account) throw new Error("CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required");
-  if (!namespace) throw new Error("wrangler.toml has no ASK_KV namespace id");
-  const deps: Deps = { kv: kvClient(fetch, account, namespace, token), blocklist: blocklist(root) };
-  const output = (values: Record<string, string>) => {
-    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(values).map(([k, v]) => `${k}=${v}\n`).join(""));
-  };
-  if (command === "publish") {
-    const dir = path.join(root, "functions", "_generated");
-    const json = readFileSync(path.join(dir, "pack.json"), "utf8");
-    const meta = JSON.parse(readFileSync(path.join(dir, "pack-meta.json"), "utf8")) as PackMeta;
-    const result = await publish(deps, { json, meta, commit: flag("--commit") ?? "" });
-    output({ previous: result.previous, version: result.version });
-  } else if (command === "flip" || command === "pin") {
-    const version = args[0];
-    if (!version || !/^[0-9a-f]{16}$/.test(version)) throw new Error(`usage: bun scripts/ask-pack.ts ${command} <version>`);
-    output(await flip(deps, version));
-  } else if (command === "rollback") {
-    const commit = flag("--commit");
-    if (!commit) throw new Error("usage: bun scripts/ask-pack.ts rollback --commit <sha> [--dry-run true]");
-    await rollback(deps, commit, flag("--dry-run") === "true");
-  } else if (command === "status") {
-    await status(deps);
-  } else {
-    throw new Error("usage: bun scripts/ask-pack.ts publish|flip|pin|rollback|status ...");
+  try {
+    const token = env.CLOUDFLARE_API_TOKEN;
+    const account = env.CLOUDFLARE_ACCOUNT_ID;
+    const namespace = readKvId(readFileSync(path.join(root, "wrangler.toml"), "utf8"));
+    if (!["publish", "flip", "pin", "rollback", "status", "verify"].includes(command ?? "")) throw new Error(USAGE);
+    if (!token || !account) throw new Error("CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required");
+    if (!namespace) throw new Error("wrangler.toml has no ASK_KV namespace id");
+    const deps: Deps = { kv: kvClient(options.fetch ?? fetch, account, namespace, token), blocklist: blocklist(root, env), log };
+    const output = (values: Record<string, string>) => {
+      if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, Object.entries(values).map(([k, v]) => `${k}=${v}\n`).join(""));
+    };
+    if (command === "publish") {
+      const dir = path.join(root, "functions", "_generated");
+      const json = readFileSync(path.join(dir, "pack.json"), "utf8");
+      const meta = JSON.parse(readFileSync(path.join(dir, "pack-meta.json"), "utf8")) as PackMeta;
+      const dryRun = flag("--dry-run") === "true";
+      const result = await publish(deps, { json, meta, commit: flag("--commit") ?? "" }, { dryRun });
+      if (!dryRun) output({ previous: result.previous, version: result.version });
+    } else if (command === "flip" || command === "pin") {
+      const version = args[0];
+      if (!version || !/^[0-9a-f]{16}$/.test(version)) throw new Error(`usage: bun scripts/ask-pack.ts ${command} <version>`);
+      output(await flip(deps, version));
+    } else if (command === "rollback") {
+      const commit = flag("--commit");
+      if (!commit) throw new Error("usage: bun scripts/ask-pack.ts rollback --commit <sha> [--dry-run true]");
+      await rollback(deps, commit, flag("--dry-run") === "true");
+    } else if (command === "status") {
+      await status(deps);
+    } else {
+      await verify(deps);
+    }
+    return 0;
+  } catch (error) {
+    log(`::error::${(error as Error).message.split("\n").join("%0A")}`);
+    return 1;
   }
 }
 
-if (import.meta.main) {
-  main().catch((error) => {
-    console.log(`::error::${(error as Error).message.split("\n").join("%0A")}`);
-    process.exit(1);
-  });
-}
+if (import.meta.main) process.exit(await run(process.argv.slice(2)));

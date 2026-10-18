@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildPackArtifacts, type PackMeta } from "@/ask/pack";
 import { buildRepoPack } from "@/ask/repo-pack";
-import { COMMIT_TTL_SECONDS, commitKey, flip, INDEX_KEY, kvClient, PACK_KEEP, parseIndex, planPrune, planPublish, publish, rollback, status, TOKEN_HINT, type Deps, type IndexEntry } from "../../scripts/ask-pack";
+import { COMMIT_TTL_SECONDS, commitKey, flip, INDEX_KEY, kvClient, PACK_KEEP, parseIndex, planPrune, planPublish, PROBE_KEY, publish, rollback, run, status, TOKEN_HINT, verify, type Deps, type IndexEntry } from "../../scripts/ask-pack";
 import { packKey, POINTER_KEY } from "../../functions/_lib/pack-source";
 
 const ACCOUNT = "a".repeat(32);
@@ -13,6 +13,7 @@ function fakeApi() {
   const ttl = new Map<string, number>();
   const requests: string[] = [];
   let deny = false;
+  let fail: ((method: string, key: string) => number | undefined) | null = null;
   const api = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
     const method = init?.method ?? "GET";
@@ -25,6 +26,8 @@ function fakeApi() {
     }
     const key = decodeURIComponent(url.pathname.split("/values/")[1]);
     requests.push(`${method} ${key}`);
+    const failure = fail?.(method, key);
+    if (failure) return new Response("upstream error", { status: failure });
     if (method === "GET") return store.has(key) ? new Response(store.get(key)) : new Response(JSON.stringify({ success: false }), { status: 404 });
     if (method === "PUT") {
       expect((init?.headers as Record<string, string>)["Content-Type"]).toBe("application/octet-stream");
@@ -39,7 +42,7 @@ function fakeApi() {
     }
     return new Response(null, { status: 405 });
   }) as typeof fetch;
-  return { api, store, ttl, requests, setDeny: (v: boolean) => (deny = v) };
+  return { api, store, ttl, requests, setDeny: (v: boolean) => (deny = v), setFail: (f: typeof fail) => (fail = f) };
 }
 
 let blocklist: string[];
@@ -182,5 +185,71 @@ describe("ask-pack flip and rollback", () => {
     expect(lines.join("\n")).toContain(`${meta.version}  ${meta.packDate}  a1a1a1a`);
     expect(lines.join("\n")).toContain("<- current");
     expect(lines.join("\n")).toContain(`Stored but not indexed: ${packKey("e".repeat(16))}`);
+  });
+});
+
+describe("ask-pack verify, dry run and exit codes", () => {
+  it("verifies read, list, write and delete with a probe key only", async () => {
+    const { deps, requests, store, ttl, lines } = setup();
+    await verify(deps);
+    expect(requests).toEqual([`GET ${POINTER_KEY}`, `GET ${INDEX_KEY}`, "LIST pack:", `PUT ${PROBE_KEY}`, `DELETE ${PROBE_KEY}`]);
+    expect(ttl.get(PROBE_KEY)).toBe(60);
+    expect(store.size).toBe(0);
+    expect(lines.join("\n")).toContain("KV access OK");
+  });
+
+  it("dry-runs a publish: validates and plans, writes only the probe", async () => {
+    const { deps, requests, store, lines } = setup();
+    const result = await publish(deps, { json, meta, commit: "a1".repeat(20) }, { dryRun: true });
+    expect(result).toMatchObject({ version: meta.version, uploaded: false });
+    expect(requests.filter((r) => /^(PUT|DELETE)/.test(r))).toEqual([`PUT ${PROBE_KEY}`, `DELETE ${PROBE_KEY}`]);
+    expect(store.size).toBe(0);
+    expect(lines.join("\n")).toMatch(/Dry run .*would upload pack:v1:/);
+    store.set(packKey(meta.version), `${json} `);
+    await expect(publish(deps, { json, meta, commit: "a1".repeat(20) }, { dryRun: true })).rejects.toThrow(/another SHA-256/);
+  });
+
+  it("fails publish on a KV write error before the pointer can move", async () => {
+    const { deps, setFail, store } = setup();
+    setFail((method, key) => (method === "PUT" && key === INDEX_KEY ? 500 : undefined));
+    await expect(publish(deps, { json, meta, commit: "a1".repeat(20) })).rejects.toThrow(/HTTP 500/);
+    expect(store.has(POINTER_KEY)).toBe(false);
+  });
+
+  const cli = async (argv: string[], fail?: (method: string, key: string) => number | undefined, deny = false, env: Record<string, string> = { CLOUDFLARE_API_TOKEN: "token", CLOUDFLARE_ACCOUNT_ID: ACCOUNT }) => {
+    const fake = fakeApi();
+    if (fail) fake.setFail(fail);
+    fake.setDeny(deny);
+    const lines: string[] = [];
+    // The namespace comes from the repo's wrangler.toml; route every call to the fake API whatever its id.
+    const api = ((input: string | URL | Request, init?: RequestInit) => fake.api(String(input).replace(/namespaces\/[^/]+/, `namespaces/${NAMESPACE}`), init)) as typeof fetch;
+    const code = await run(argv, { env, fetch: api, log: (l) => void lines.push(l) });
+    return { code, lines: lines.join("\n"), fake };
+  };
+
+  it("exits 0 when every call succeeds and 1 on any non-2xx write, a denied token, a bad argument or missing secrets", async () => {
+    expect((await cli(["verify"])).code).toBe(0);
+    const put = await cli(["verify"], (method) => (method === "PUT" ? 500 : undefined));
+    expect(put.code).toBe(1);
+    expect(put.lines).toMatch(/::error::Cloudflare KV PUT pack:probe: HTTP 500/);
+    expect((await cli(["verify"], (method) => (method === "DELETE" ? 502 : undefined))).code).toBe(1);
+    expect((await cli(["verify"], (method, key) => (method === "GET" && key === POINTER_KEY ? 503 : undefined))).code).toBe(1);
+    const denied = await cli(["verify"], undefined, true);
+    expect(denied.code).toBe(1);
+    expect(denied.lines).toContain(TOKEN_HINT);
+    expect((await cli(["flip", "not-a-version"])).code).toBe(1);
+    expect((await cli(["nope"])).code).toBe(1);
+    expect((await cli(["verify"], undefined, false, {})).lines).toMatch(/CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required/);
+  });
+
+  it("fails a flip when the pointer write fails, and exits 1 for an unpublished version", async () => {
+    const { deps, setFail, store } = setup();
+    await publish(deps, { json, meta, commit: "a1".repeat(20) });
+    setFail((method, key) => (method === "PUT" && key === POINTER_KEY ? 500 : undefined));
+    await expect(flip(deps, meta.version)).rejects.toThrow(/PUT pack:current: HTTP 500/);
+    expect(store.has(POINTER_KEY)).toBe(false);
+    const { code, lines } = await cli(["flip", meta.version]);
+    expect(code).toBe(1);
+    expect(lines).toMatch(/not in pack:index/);
   });
 });

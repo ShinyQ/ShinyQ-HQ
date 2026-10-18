@@ -206,6 +206,7 @@ jobs:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           TARGET: ${{ steps.pages.outputs.target_sha }}
         run: |
+          set -o pipefail
           bun scripts/ask-pack.ts rollback --commit "$TARGET" --dry-run "$DRY_RUN" | tee pack-rollback.log
           echo "- Ask knowledge pack: $(tail -n1 pack-rollback.log)" >> "$GITHUB_STEP_SUMMARY"
       - name: Report on the deploy-rollback issue

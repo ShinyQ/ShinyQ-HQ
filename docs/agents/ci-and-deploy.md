@@ -181,10 +181,10 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
      - It fails the deploy on a red CI, marker or not.
      - Without a complete CI result, or with the `rerun_e2e` input, it runs the 8 e2e shards itself first.
      - The weekly facts merge always lands here: it gets no push CI, and its PR was tested by a `workflow_dispatch` run, never reused by tree (`refresh-facts.yml` already gated the merge on that full run).
-  2. Builds, deploys the hq-office Worker (after the gates, before the upload: Pages rejects a binding to a missing Worker), then deploys `out/` plus `functions/`.
+  2. Builds, deploys the hq-office Worker (after the gates, before the upload: Pages rejects a binding to a missing Worker), publishes the Ask knowledge pack to Workers KV (`scripts/ask-pack.ts publish`, no flip), deploys `out/` plus `functions/`, then flips `pack:current` to the new pack ([ask.md](ask.md), runbook section 17). A failed KV call exits 1 before the upload, so production is unchanged.
   3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
-  5. Opens a `deploy-failed` issue on failure.
+  5. Opens a `deploy-failed` issue on failure. A smoke failure after the flip flips the pack pointer back first.
 - The deploy job (Cloudflare Pages production) deploys the hq-office Worker after the gates (fast path still open, complete green main CI) and the knowledge pack (which writes `functions/_generated/safety.json`), and before the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
   It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment, in step env;
   a commit without `workers/office/` skips it with a notice. The Worker step has `continue-on-error`, so a failure
@@ -201,11 +201,13 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
     - target: the newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and is proven good: a green complete CI, or no CI run at all (the weekly facts merge, which the deploy shipped after its own e2e shards). A cancelled or unfinished CI (a `main` push whose pending run a newer push replaced) proves nothing, so that deployment is skipped. No stored state: the Cloudflare and GitHub APIs are the record;
     - calls `POST /accounts/{id}/pages/projects/{project}/deployments/{target}/rollback`, then waits until the target is live and `/en` answers 200;
     - redeploys the hq-stats Worker from the target commit when `workers/stats/` differs and `STATS_WORKER_DEPLOY` is not `false`;
+    - flips the Ask knowledge pack pointer to the target commit's pack (`ask-pack.ts rollback`, production project only; a commit before the KV pack leaves it);
     - comments the outcome on the issue (from and to deployment ids, or why nothing was rolled back).
   - Green: closes the issue once the green commit equals or follows the last failing commit, then dispatches `deploy.yml` for the tip of `main` (a rollback may have left production behind `main`).
   - The nightly and dispatched CI runs never trigger it.
   - Drill: `gh workflow run rollback.yml --ref main -f sha=<commit>` (a dry run by default: decides and reports, no rollback call, no Worker deploy, no issue); `-f dry_run=false -f project=<throwaway project>` for a real rollback on a drill project.
   - Manual rollback: [deploy.md section 6](../deploy.md#6-rollback).
+- Ask pack check (`.github/workflows/ask-pack.yml`, dispatch from `main` only, `production` environment): `-f mode=verify` (the deploy token can read, list, write and delete `pack:` keys, with a probe key), `dry-run` (build and validate the pack and plan the publish, writing only the probe) or `status`. Run it after adding or rotating the token's Workers KV Storage: Edit permission.
 - PR previews are off unless `CF_PREVIEWS=true`.
 - Owner setup: `docs/deploy.md` ([deploy.md](../deploy.md)).
 

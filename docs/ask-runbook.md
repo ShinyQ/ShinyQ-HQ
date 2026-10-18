@@ -341,6 +341,8 @@ bun scripts/ask-pack.ts status                          # pointer, index, stored
 bun scripts/ask-pack.ts pin <version>                   # serve an older published version (re-read and re-validated first)
 bun scripts/ask-pack.ts rollback --commit <sha> --dry-run true   # what a rollback to that commit would flip
 bun scripts/ask-pack.ts rollback --commit <sha>         # flip to the pack deployed with that commit
+bun scripts/ask-pack.ts verify                          # token access only (probe key), changes nothing
+bun scripts/ask-pack.ts publish --commit <sha> --dry-run true   # validate and plan a publish, probe key only
 ```
 
 - Rollback: `rollback.yml` runs `ask-pack.ts rollback --commit <target>` after a real Pages rollback (dry runs print the plan; never for a drill project). A target older than the KV pack, an expired `pack:commit` key or a pruned version leaves the pointer; the rolled-back code then serves the current pointer's pack when it can parse it, else its pin, else its fallback.
@@ -348,6 +350,8 @@ bun scripts/ask-pack.ts rollback --commit <sha>         # flip to the pack deplo
 - Bad pack in production: `pin <last good version>` (from `status`), then fix the content in a PR. New content is never published without a deploy: `publish` uploads only what the checked-out commit built.
 - KV incident: `ASK_PACK_SOURCE = "bundle"` (section 5).
 - Monitoring: the weekly content-gap report's "Pack tier" table (blob12). `memory` and `kv` are normal; any `pin` means the pointer's value failed its checks; `fallback` means KV failed or held no valid pack. Check `status`, then `pin` or `ASK_PACK_SOURCE`.
+- Proving the deploy token (merge gate for the KV pack): after adding **Workers KV Storage: Edit** to `CLOUDFLARE_API_TOKEN`, and after every rotation, run `gh workflow run ask-pack.yml --ref main -f mode=dry-run` (or `-f mode=verify`): it writes and deletes only `pack:probe`, validates and plans the publish, and goes red on any failed KV call. Pull requests never get the token (H1), so the first proof on a branch is impossible by design; on the merge itself, `deploy.yml` publishes before `wrangler pages deploy`, so a missing permission fails the deploy red (and opens `deploy-failed`) with production unchanged. Fix the token and rerun the deploy.
+- Every `ask-pack.ts` command exits 1 on a failed KV call (any non-2xx except a 404 read or delete), a failed check or a bad argument, and the workflow steps run it unpiped or under `set -o pipefail`, so a KV write failure always turns the job red.
 - Integrity: the Function serves a value only when its SHA-256 equals the pointer's, its schema matches and its required chunks and index lengths hold; only the deploy token writes `pack:` keys, and the safety blocklist stays bundled with the code.
 
 ## Deviations from the plan
