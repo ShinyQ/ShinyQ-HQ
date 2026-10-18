@@ -57,29 +57,28 @@ export function ShareLinks({ labels, variant = "page", itemClassName }: ShareLin
     </div>
   );
 
-  const items: { kind: Kind; label: string }[] = [
-    { kind: "classic", label: labels.classic },
-    { kind: "threeD", label: labels.threeD },
-  ];
+  const buttonClassName = variant === "menu" ? itemClassName : "pv-btn pv-btn-ghost";
+  const classicButton = (
+    <button type="button" className={buttonClassName} onClick={() => void copy("classic")}>
+      <span aria-live="polite">{state.status === "copied" && state.kind === "classic" ? labels.copied : labels.classic}</span>
+    </button>
+  );
+  const threeDButton = (
+    <button type="button" className={buttonClassName} onClick={() => void copy("threeD")}>
+      <span aria-live="polite">{state.status === "copied" && state.kind === "threeD" ? labels.copied : labels.threeD}</span>
+    </button>
+  );
 
-  const buttons = items.map(({ kind, label }) => {
-    const button = (
-      <button
-        key={kind}
-        type="button"
-        className={variant === "menu" ? itemClassName : "pv-btn pv-btn-ghost"}
-        onClick={() => void copy(kind)}
-      >
-        <span aria-live="polite">{state.status === "copied" && state.kind === kind ? labels.copied : label}</span>
-      </button>
-    );
-    return variant === "menu" ? <li key={kind}>{button}{state.status === "failed" && state.kind === kind && recovery}</li> : button;
-  });
-
-  if (variant === "menu") return <>{buttons}</>;
+  if (variant === "menu") return (
+    <>
+      <li>{classicButton}{state.status === "failed" && state.kind === "classic" && recovery}</li>
+      <li>{threeDButton}{state.status === "failed" && state.kind === "threeD" && recovery}</li>
+    </>
+  );
   return (
     <div role="group" aria-label={labels.group} className="flex flex-wrap gap-3">
-      {buttons}
+      {classicButton}
+      {threeDButton}
       {recovery}
     </div>
   );
