@@ -211,10 +211,13 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 ### CI shards
 
 - CI shards with `scripts/e2e-shard.ts` (both lanes):
-  - `playwright test --list`, then the longest test first onto the least-loaded shard by the CI medians in `e2e/durations.json`.
+  - `playwright test --list`, then the longest test first onto the least-loaded worker by the CI medians in `e2e/durations.json`, counting `CI_WORKERS_PER_SHARD` (2) Playwright workers per shard, so a long test fills one worker while its shard's other worker takes shorter tests. The worker count is a constant: every shard computes the same plan.
+  - Each shard logs its estimate (`about N worker-s, M s on 2 workers`) and a runner fingerprint (`runner: <vCPUs> x <CPU model>, sha256 <n> MB/s`).
   - Unknown tests count as the median; without the file it falls back to round-robin.
   - Playwright's own `--shard` cuts contiguous blocks.
 - Refresh the timings with `bun run e2e:durations` (the last 5 green nightly runs) when the `E2E shard n/8` job times drift apart; PR shard counts are sized from the same file, without the nightly-only tests.
+  - It skips runs without test results, divides each job's samples by its runner speed factor (the job's median ratio to the tests' medians; `normalizeRunnerSpeed`) before the medians, and prints each job's factor and runner.
+  - GitHub runners differ in CPU speed and SwiftShader is CPU-bound: every test of a shard runs at about its runner's factor, 0.65 to 1.21 across 7 runs on 2026-10-18. A static plan cannot see that, so equal estimates still finish about 3 min apart on 9 to 10 min shards.
 - `bun run e2e:shard 1/8 --dry` prints the plan.
 - Shards upload blob reports that `Build, CV and e2e` merges into the `playwright-report` artifact.
 - Reproduce a shard locally: `bun run e2e:shard 2/8`.

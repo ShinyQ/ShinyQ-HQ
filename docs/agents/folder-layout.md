@@ -90,10 +90,10 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 ### E2E planning and perf reports
 
 - `scripts/ci-plan.ts`: smart CI planner (`Plan CI` job): classifies a PR's changed files and plans the e2e shards (every spec, the mapped specs or none), the 3D perf gates (with an import walk from the 3D roots) and Lighthouse; fails safe to a full run.
-- `scripts/e2e-plan.ts`: pure path-to-spec map, duration-balanced shard split and CI log timing parser (unit tested, including the shard union against the real `--list`).
+- `scripts/e2e-plan.ts`: pure path-to-spec map, worker-aware duration-balanced shard split, CI log timing parser and runner speed normalization (unit tested, including the shard union against the real `--list`).
 - `scripts/e2e-changed.ts`: `e2e:changed`: runs the specs that cover your changed paths.
 - `scripts/e2e-shard.ts`: `e2e:shard i/N` and `e2e:perf:shard i/N`: duration-balanced CI shard (e2e/durations.json) with a blob report; `--dry` prints the plan.
-- `scripts/e2e-durations.ts`: `e2e:durations`: refreshes e2e/durations.json from the E2E shard and 3D perf gates logs of the last green main CI runs (needs `gh`).
+- `scripts/e2e-durations.ts`: `e2e:durations`: refreshes e2e/durations.json from the E2E shard and 3D perf gates logs of the last green main CI runs, scaled to a median-speed runner (needs `gh`).
 - `scripts/perf-report.ts`, `scripts/perf-summary.ts`: pure summary logic and CLI: per-chunk JS diffs, 3D gate tables, timeline trend, program baseline (no dependencies).
 - `scripts/perf-base.sh`: downloads the newest main artifact as a summary baseline (never fails).
 - `scripts/flaky-report.ts`: tests that passed only on retry, from the merged e2e JSON report, in the `Build, CV and e2e` job summary (warnings, never fails).
