@@ -11,6 +11,7 @@ import { ADJACENT_INCLUDE, PERSPECTIVE_CAP, retrieve } from "../../functions/_li
 import { isAdjacentQuestion, isCapabilityQuestion, isPersonaRequest, isRuleOverride } from "../../functions/_lib/scope";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { GoldenItem } from "../../scripts/ask-eval";
 import golden from "./golden.json";
 
 /** Rover's voice and adjacent grounded questions (owner decision 2026-10-19, spec 2026-10-19 section 3). */
@@ -258,7 +259,7 @@ describe("adjacent grounded questions: pipeline", () => {
 describe("golden scoring of the cite", () => {
   it("fails an adjacent golden item whose answer carries no cite", async () => {
     const { scoreGolden } = await import("../../scripts/ask-eval");
-    const item = golden.items.find((i) => i.id === "q81")!;
+    const item = golden.items.find((i) => i.id === "q81") as GoldenItem;
     const text = "From his written view, a probabilistic model should not be the final authority.";
     expect(scoreGolden(text, item, {}).notes).toContain("no cite");
     expect(scoreGolden(text, item, { cite: "/blog/why-the-better-fraud-engine-shipped-in-shadow-mode" }).pass).toBe(true);
