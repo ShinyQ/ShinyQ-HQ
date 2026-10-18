@@ -19,6 +19,14 @@ afterEach(() => {
 });
 
 describe("EngineBody (B1 station drawers)", () => {
+  it("names and draws the ID blueprint with the same native node labels", () => {
+    const view = buildEngineRoomViews("id")["B1:blueprint"];
+    const { container } = render(<EngineBody view={view} locale="id" />);
+    expect(screen.getByRole("img", { name: /Browser pengunjung/ })).toBeInTheDocument();
+    const lines = [...container.querySelectorAll("svg tspan")].map((line) => line.textContent).join(" ");
+    expect(lines).toContain("Browser pengunjung");
+  });
+
   it("draws the site diagram as one named image", () => {
     const root = body("blueprint");
     expect(root.querySelector("[data-engine-station='blueprint'] svg")).not.toBeNull();

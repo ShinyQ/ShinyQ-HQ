@@ -82,7 +82,7 @@ describe("searchPalette", () => {
   it("finds the Topic Constellation row first for a writing query, in both languages", () => {
     const show = searchPalette(entries, "show writing about voice ai");
     expect(show[0].entries[0].key).toBe("topic:voice-ai");
-    expect(show[0].entries[0].title).toEqual({ en: "Show writing about Voice AI", id: "Tampilkan tulisan tentang Voice AI" });
+    expect(show[0].entries[0].title).toEqual({ en: "Show work about Voice AI", id: "Tampilkan karya tentang Voice AI" });
     expect(show[0].entries[0].floor).toBe("L4");
     expect(searchPalette(entries, "tampilkan tulisan analisis sentimen")[0].entries[0].key).toBe("topic:sentiment-analysis");
     expect(searchPalette(entries, "").flatMap((g) => g.entries).some((e) => e.target.type === "topic")).toBe(false);

@@ -11,6 +11,47 @@ const placeholders = (text: string) =>
   [...new Set([...text.matchAll(/\{([a-zA-Z]\w*)(?:\}|,)/g)].map((match) => match[1]))].sort();
 
 describe("bilingual UI copy", () => {
+  it("qualifies the FPS share as session medians, not sustained frame rate", () => {
+    expect(en.production.live.fps).toMatch(/sessions.*median 55\+ FPS/i);
+    expect(id.production.live.fps).toMatch(/sesi.*median 55\+ FPS/i);
+  });
+
+  it("distinguishes local New chat clearing from retained service logs and signed follow-up context", () => {
+    expect(en.ask.privacy).toMatch(/three earlier exchanges/i);
+    expect(en.ask.privacy).toMatch(/New chat clears.*not.*service logs/i);
+    expect(id.ask.privacy).toMatch(/tiga tanya-jawab sebelumnya/i);
+    expect(id.ask.privacy).toMatch(/Obrolan baru mengosongkan.*bukan.*log layanan/i);
+  });
+
+  it("discloses opt-out timing and the narrower browser-signal coverage without claiming guard enforcement", () => {
+    expect(en.stats.optOutHint).toMatch(/page load/i);
+    expect(en.stats.optOutHint).toMatch(/cancels the active visit beacon/i);
+    expect(en.stats.optOutHint).toMatch(/already-loaded.*may continue/i);
+    expect(en.stats.optOutHint).toMatch(/not the Web Analytics loader/i);
+    expect(id.stats.optOutHint).toMatch(/saat halaman dimuat/i);
+    expect(id.stats.optOutHint).toMatch(/membatalkan beacon kunjungan aktif/i);
+    expect(id.stats.optOutHint).toMatch(/sudah dimuat.*dapat tetap berjalan/i);
+    expect(id.stats.optOutHint).toMatch(/bukan pemuat Web Analytics/i);
+  });
+
+  it("names Kurniadi as the assistant's About subject and distinguishes remainder projects from the full list", () => {
+    expect(en.ask.topics.about).toBe("About Kurniadi");
+    expect(id.ask.topics.about).toBe("Tentang Kurniadi");
+    expect(en.work.allProjects).toBe("More projects");
+    expect(id.work.allProjects).toBe("Proyek lainnya");
+    expect(en.home.allProjects).toBe("All {count} projects");
+    expect(id.home.allProjects).toBe("Semua {count} proyek");
+  });
+
+  it("names Classic return destinations without changing the floor names", () => {
+    expect(en.labs.back).toBe("Back to Work");
+    expect(id.labs.back).toBe("Kembali ke Karya");
+    expect(en.blog.back).toBe("Back to Writing");
+    expect(id.blog.back).toBe("Kembali ke Tulisan");
+    expect(en.floors.L3).toBe("Labs");
+    expect(id.floors.L4).toBe("Perpustakaan");
+  });
+
   it("keeps message keys and interpolation variables aligned", () => {
     const english = collectStrings(en);
     const indonesian = new Map(collectStrings(id).map(({ path, value }) => [path, value]));

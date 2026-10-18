@@ -15,7 +15,10 @@
         },
         {
           "id": "spec",
-          "label": "Numbered spec",
+          "label": {
+            "en": "Numbered spec",
+            "id": "Spec bernomor"
+          },
           "sublabel": {
             "en": "Task, AC and business-rule IDs",
             "id": "ID task, AC, dan business rule"
@@ -26,7 +29,10 @@
         },
         {
           "id": "constitution",
-          "label": "Constitution and conventions",
+          "label": {
+            "en": "Constitution and conventions",
+            "id": "Constitution dan konvensi"
+          },
           "sublabel": {
             "en": "Rules every agent follows",
             "id": "Aturan untuk setiap agent"
@@ -37,7 +43,10 @@
         },
         {
           "id": "agents",
-          "label": "Coding agents",
+          "label": {
+            "en": "Coding agents",
+            "id": "AI coding agent"
+          },
           "sublabel": {
             "en": "GitHub Copilot and Claude, one worktree each",
             "id": "GitHub Copilot dan Claude, satu worktree per agent"
@@ -48,7 +57,10 @@
         },
         {
           "id": "ci",
-          "label": "CI gates",
+          "label": {
+            "en": "CI gates",
+            "id": "Pemeriksaan CI"
+          },
           "sublabel": {
             "en": "Spec IDs, contracts, architecture tests",
             "id": "ID spec, kontrak, architecture test"
@@ -59,10 +71,13 @@
         },
         {
           "id": "review",
-          "label": "Engineer review",
+          "label": {
+            "en": "Engineer review",
+            "id": "Tinjauan engineer"
+          },
           "sublabel": {
             "en": "Reviews every pull request and decides what merges",
-            "id": "Me-review setiap pull request dan memutuskan yang di-merge"
+            "id": "Meninjau setiap pull request dan memutuskan yang di-merge"
           },
           "layer": 4,
           "row": 0,
@@ -70,7 +85,10 @@
         },
         {
           "id": "main",
-          "label": "Main branch",
+          "label": {
+            "en": "Main branch",
+            "id": "Branch main"
+          },
           "layer": 5,
           "row": 0,
           "kind": "external"
@@ -91,17 +109,26 @@
         {
           "from": "engineer",
           "to": "spec",
-          "label": "write"
+          "label": {
+            "en": "write",
+            "id": "menulis"
+          }
         },
         {
           "from": "spec",
           "to": "agents",
-          "label": "tasks"
+          "label": {
+            "en": "tasks",
+            "id": "tugas"
+          }
         },
         {
           "from": "constitution",
           "to": "agents",
-          "label": "rules"
+          "label": {
+            "en": "rules",
+            "id": "aturan"
+          }
         },
         {
           "from": "agents",
@@ -111,7 +138,10 @@
         {
           "from": "ci",
           "to": "review",
-          "label": "checks"
+          "label": {
+            "en": "checks",
+            "id": "hasil pemeriksaan"
+          }
         },
         {
           "from": "review",
@@ -131,7 +161,10 @@
       "nodes": [
         {
           "id": "browser",
-          "label": "Owner browser",
+          "label": {
+            "en": "Owner browser",
+            "id": "Browser pemilik"
+          },
           "sublabel": {
             "en": "React 19 app: Review, Clean up, Undo, Insights",
             "id": "Aplikasi React 19: Review, Clean up, Undo, Insights"
@@ -145,7 +178,7 @@
           "label": "GitHub Actions",
           "sublabel": {
             "en": "Tests and builds, never deploys",
-            "id": "Menguji dan membangun, tidak pernah deploy"
+            "id": "Menjalankan test dan build, tidak pernah deploy"
           },
           "layer": 0,
           "row": 1,
@@ -266,7 +299,10 @@
         {
           "from": "worker",
           "to": "decision",
-          "label": "api-key, 5 questions"
+          "label": {
+            "en": "api-key, 5 questions",
+            "id": "api-key, 5 pertanyaan"
+          }
         }
       ]
     },
@@ -274,7 +310,10 @@
       "nodes": [
         {
           "id": "fetch",
-          "label": "Fetch one page",
+          "label": {
+            "en": "Fetch one page",
+            "id": "Ambil satu halaman"
+          },
           "sublabel": {
             "en": "Up to 25 messages: headers, flags, snippet",
             "id": "Hingga 25 pesan: header, flag, cuplikan"
@@ -285,7 +324,10 @@
         },
         {
           "id": "signals",
-          "label": "Signals",
+          "label": {
+            "en": "Signals",
+            "id": "Sinyal"
+          },
           "sublabel": {
             "en": "Headers and history only",
             "id": "Hanya header dan riwayat"
@@ -296,7 +338,10 @@
         },
         {
           "id": "guardrails",
-          "label": "Guardrails",
+          "label": {
+            "en": "Guardrails",
+            "id": "Guardrail"
+          },
           "sublabel": {
             "en": "Set a ceiling: keep or archive at most",
             "id": "Menetapkan batas: paling tinggi keep atau archive"
@@ -307,7 +352,10 @@
         },
         {
           "id": "state",
-          "label": "State for the model",
+          "label": {
+            "en": "State for the model",
+            "id": "State untuk model"
+          },
           "sublabel": {
             "en": "Compact JSON, at most 1,750 characters",
             "id": "JSON ringkas, maksimal 1.750 karakter"
@@ -329,10 +377,13 @@
         },
         {
           "id": "validate",
-          "label": "Validate",
+          "label": {
+            "en": "Validate",
+            "id": "Validasi"
+          },
           "sublabel": {
             "en": "zod schema; retries, then unsure",
-            "id": "Schema zod; retry, lalu unsure"
+            "id": "Skema zod; retry, lalu unsure"
           },
           "layer": 5,
           "row": 0,
@@ -340,7 +391,10 @@
         },
         {
           "id": "fuse",
-          "label": "Fuse",
+          "label": {
+            "en": "Fuse",
+            "id": "Gabungkan"
+          },
           "sublabel": {
             "en": "Sender prior, flags, ceiling, tau_delete",
             "id": "Prior pengirim, flag, batas, tau_delete"
@@ -351,7 +405,10 @@
         },
         {
           "id": "suggestion",
-          "label": "Suggestion",
+          "label": {
+            "en": "Suggestion",
+            "id": "Saran"
+          },
           "sublabel": {
             "en": "Trash, archive, keep or unsure, up to 3 reasons",
             "id": "Trash, archive, keep, atau unsure, hingga 3 alasan"
@@ -362,7 +419,10 @@
         },
         {
           "id": "owner",
-          "label": "Owner confirms",
+          "label": {
+            "en": "Owner confirms",
+            "id": "Persetujuan pemilik"
+          },
           "sublabel": {
             "en": "Clean up of approved suggestions, Undo for 24 hours",
             "id": "Clean up untuk saran yang disetujui, Undo selama 24 jam"
@@ -373,10 +433,13 @@
         },
         {
           "id": "learning",
-          "label": "Priors and threshold",
+          "label": {
+            "en": "Priors and threshold",
+            "id": "Prior dan threshold"
+          },
           "sublabel": {
-            "en": "Every decision updates priors; nightly calibration",
-            "id": "Setiap keputusan memperbarui prior; kalibrasi malam hari"
+            "en": "Decisions update priors; conditional nightly calibration",
+            "id": "Keputusan memperbarui prior; kalibrasi malam bersyarat"
           },
           "layer": 8,
           "row": 1,
@@ -403,7 +466,10 @@
         {
           "from": "decision",
           "to": "validate",
-          "label": "probabilities"
+          "label": {
+            "en": "probabilities",
+            "id": "probabilitas"
+          }
         },
         {
           "from": "validate",
@@ -420,12 +486,18 @@
         {
           "from": "owner",
           "to": "learning",
-          "label": "labels"
+          "label": {
+            "en": "labels",
+            "id": "label"
+          }
         },
         {
           "from": "learning",
           "to": "fuse",
-          "label": "priors, threshold",
+          "label": {
+            "en": "priors, threshold",
+            "id": "prior, threshold"
+          },
           "async": true
         }
       ]

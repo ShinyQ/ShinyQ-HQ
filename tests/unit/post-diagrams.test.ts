@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { architectureRefs, resolvePostArchitecture } from "@/content/post-diagrams";
+import { PostDiagramsSchema } from "@/content/schema";
+import { resolveArchitecture } from "@/components/diagram/text";
 
 const arch = { nodes: [{ id: "a", label: "A", layer: 0, row: 0, kind: "service" as const }], edges: [] };
 const sources = { pods: [{ slug: "pod-x", architecture: arch }, { slug: "pod-bare" }], diagrams: { "post-y": { loop: arch } } };
 
 describe("resolvePostArchitecture", () => {
+  it("keeps reference resolution raw and resolves bilingual labels only at the locale boundary", () => {
+    const diagrams = PostDiagramsSchema.parse({
+      "post-y": { loop: { ...arch, nodes: [{ ...arch.nodes[0], label: { en: "Review", id: "Tinjauan" } }] } },
+    });
+    const raw = resolvePostArchitecture("post-y", { diagram: "loop" }, { pods: [], diagrams });
+    expect(raw).toBe(diagrams["post-y"].loop);
+    expect(resolveArchitecture(raw, "id").nodes[0].label).toBe("Tinjauan");
+    expect(raw.nodes[0].label).toEqual({ en: "Review", id: "Tinjauan" });
+  });
   it("finds a pod's architecture by slug", () => {
     expect(resolvePostArchitecture("post-y", { pod: "pod-x" }, sources)).toBe(arch);
   });

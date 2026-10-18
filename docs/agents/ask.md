@@ -8,6 +8,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - Visible name (owner decision): the chat panel is **Ask Rover Assistant** (ID **Asisten Rover**) and answers are labelled "Rover"; the floating launcher stays **Ask AI**. The `>_` terminal is the Rover menu, a separate feature (see [hud-and-drawer.md](hud-and-drawer.md#rover-menu-name)).
 - The internal name **Ask the HQ** stays in code, the Pages Function, workflows, scripts, the runbook and the design spec; so do `/api/ask` and the `hq:ask-*` keys.
+- Rover is also the small robot guide in the 3D tower. Distinguish that character from the separate chat panel when describing the site.
 
 ## Design and operations
 
@@ -26,6 +27,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   - keeps only links to the retrieved chunks' pages (context lines carry `[link: <url>]`), the top pages (`ASK_LINK_PAGES`) and, for older cached answers, the public repository;
   - scans the markdown (URLs included) and its plain text for blocked terms, forbidden patterns and secrets;
   - runs every other check on `markdownToPlain`.
+- Prompt guidance preserves each metric's population, sample size and evaluation conditions. Deployment alone is not evidence of a production measurement, and results from different evaluations are not a single trend.
+- The concise reply limit is five list items across the whole answer. Refusals do not repeat requests for personal details; project inquiries use the contact card. These are prompt instructions, not new runtime filters.
 
 ## Bindings, vars and secrets
 
@@ -103,7 +106,7 @@ All bindings and vars live in `wrangler.toml`.
 - `content/ask/suggestions.json`: 102 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
   - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
-  - "About me" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
+  - "About Kurniadi" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
 - Sampling (`src/ask/suggestions.ts`), seeded once per page session (`sessionStorage["hq:ask-seed"]`, read by `readAskSeed`):
   - `topicQuestions` shows a seeded random 4 of a topic, `starterQuestions` the "Try asking" mix (one pill from each of 3 topics in seeded order);
   - a pill asked in the thread never shows again (an exhausted topic shows none); the order stays stable while the panel is open;
@@ -215,6 +218,7 @@ Spec section 13.
 - Questions about Kurniadi's written professional views are in scope: `isPerspectiveQuestion` in `functions/_lib/scope.ts` always retrieves the `principles` chunk.
 - The pack must stay under `PACK_MAX_BYTES` (256 KiB, measured and owner pre-approved, runbook section 15) with every draft approved.
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
+  - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
 - At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, so posts and projects still reach the context.
 - `tests/ask/scope.test.ts` checks retrieval with every draft approved.
 

@@ -1,7 +1,7 @@
 ---
 title: "Spec-Driven Development with AI Coding Agents"
 date: "2026-10-09"
-excerpt: "I built a vendor portal as the only engineer in about six weeks, with AI agents writing most of the code. Numbered specs and CI gates kept the work reviewable, but a skipped integration tier and two sign-in bugs still got through. I owned every merge."
+excerpt: "AI agents wrote most of a solo-built vendor portal. CI missed a skipped integration tier and two sign-in bugs. Productivity gains were not measured."
 tags: ["spec-driven-development", "ai-coding-agents", "github-spec-kit", "code-review", "case-study"]
 readingTime: "6 min"
 ---
@@ -41,7 +41,7 @@ Every feature went through the same path:
 
 The constitution and conventions file held rules I did not want agents to reinterpret. The two-boundary rule, for example, keeps presentation and a backend-for-frontend in Next.js, with all business logic in FastAPI. Permissions must be re-derived from the database on every request, never trusted from the client.
 
-For bigger stages, I ran several agents in parallel in separate git worktrees, then brought their branches together through fan-in PRs. CI gates made that work reviewable.
+For larger stages, I ran agents in parallel in separate git worktrees and combined their branches through integration pull requests. CI gates helped me review the combined changes.
 
 Alongside typecheck, lint, build, a bundle-size budget and ruff, CI checked that work referenced spec IDs. It also ran a drift check on the generated TypeScript API client, a secret scan, architecture tests, and an extended tier against a real PostgreSQL 16 service. Deployment ran only after CI was green.
 
@@ -55,7 +55,7 @@ That meant one shared PO workspace for vendors and internal staff, replacing doc
 
 I wrote new numbered specs for these changes. The purchase-order pivot landed between 9 and 16 September. Removing the approval matrix used an expand and contract migration, keeping existing data readable while the new routing took over.
 
-The useful part, for me, was seeing a document diff before a code diff. I could identify superseded acceptance criteria and give agents bounded tasks against the new spec. The ledger guard flagged work with no requirement behind it.
+The useful part, for me, was seeing a document diff before a code diff. I could identify superseded acceptance criteria and give agents bounded tasks against the new spec. The ledger guard checked that work linked back to a requirement and flagged anything that did not.
 
 That is my reasoning, not a measured time saving. I have no counterfactual.
 

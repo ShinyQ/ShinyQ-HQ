@@ -31,7 +31,7 @@ export async function ContactPanel({ roof, profile, locale }: { roof: Roof; prof
         {contact.email}
       </a>
       <div className="mt-2">
-        <CopyEmail email={contact.email} label={tc("copyEmail")} copied={tc("copied")} />
+        <CopyEmail email={contact.email} label={tc("copyEmail")} copied={tc("copied")} failed={tc("emailCopyFailed")} />
       </div>
       <dl className="mt-5 grid grid-cols-[96px_1fr] gap-3 border-t border-line pt-4">
         <dt className="pv-data pt-1">{t("location")}</dt>

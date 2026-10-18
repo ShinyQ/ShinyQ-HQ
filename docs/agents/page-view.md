@@ -34,12 +34,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - **Choosing a view:** `chooseView` (Classic site, Back to 3D) writes the tab and the remembered preference, normalizes the URL and fires the view events. `setTabView` (the drawer's Open page) writes the tab only.
 - **Drawer page links** (Read case study, Read post, Open page) point at the Classic page with `?view=classic` and carry `data-hq-view="page"`. The target never equals the URL the room pushed (a same-URL navigation would keep the 3D route mounted), and new tabs open Classic too.
 - **Share buttons** (`ShareLinks`, `src/components/ShareLinks.tsx`): "Copy Classic link" and "Copy 3D link" (copied state "Link copied", announced politely).
+  - Clipboard rejection or an unavailable API shows a localized polite status and a named, focusable read-only field with the exact captured canonical URL. Menu recovery stays in the failed action's `li`; page recovery stays outside the buttons. It never takes focus automatically. The latest attempt alone updates feedback, failure persists, and only success has a cleaned-up two-second reset timer. The Classic About email action follows the same contract with the raw email address.
   - Where: the case study header (`/labs/<slug>`), posts (`/blog/<slug>`, after the tags) and the room drawer's overflow menu.
   - Classic: `${SITE_URL}${path}?view=classic${hash}`. 3D: `${SITE_URL}${threeDPath(path)}`; gated routes keep their path, posts open `/{locale}/library`, everything else the Lobby. Other query parameters are dropped.
   - `SITE_URL` is `https://kurniadi.pages.dev` unless `NEXT_PUBLIC_SITE_URL` is set at build.
-  - A 3D link has no parameter, so a recipient whose remembered choice is Classic gets the Classic site (their "Open links in" setting applies); only `?view=` links override it.
+  - A 3D link has no parameter, so a recipient whose remembered choice is Classic gets the Classic site (their "Default HQ view" setting applies); only `?view=` links override it.
 - **SEO:** canonical, `og:url` and the sitemap never carry `view`; the parameter only selects what a visitor sees.
-- **Preference API** for a settings entry "Open links in": `getViewPreference`, `setViewPreference`, `subscribeViewPreference` in `view-pref.ts` (localStorage only). It decides new tabs and visits, not the current tab. The settings entry binds to this API.
+- **Preference API** for "Default HQ view": `getViewPreference`, `setViewPreference`, `subscribeViewPreference` in `view-pref.ts` (localStorage only). It decides new tabs and visits, not the current tab. An explicit link view takes priority.
 - Tests: `e2e/view-links.spec.ts`, `tests/unit` for the helpers.
 
 ## Design

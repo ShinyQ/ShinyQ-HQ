@@ -41,6 +41,31 @@ beforeAll(() => {
 const check = (answer: string, question = "What does he do?") =>
   checkAnswer({ answer, question, context: retrieve(pack, question, "en").context, packDate: pack.packDate, pack, vocabulary, safety });
 
+describe("fixed freelance guidance", () => {
+  it("uses ordinary Indonesian while retaining full-time work constraints", () => {
+    for (const message of [MESSAGES.lead, MESSAGES.leadRates]) {
+      expect(message.id).not.toMatch(/\bengagement\b/i);
+      expect(message.en).toMatch(/full-time/);
+      expect(message.id).toMatch(/penuh waktu/);
+    }
+  });
+});
+
+describe("evidence-backed answer guidance", () => {
+  it("applies the short-list limit to the entire answer", () => {
+    expect(RULES.join(" ")).toContain("The five-item limit applies to the entire reply");
+  });
+
+  it("preserves evaluation populations instead of promoting deployment to measurement", () => {
+    expect(RULES.join(" ")).toContain("A production deployment does not turn an offline result into a production measurement.");
+    expect(RULES.join(" ")).toContain("Never combine results from different evaluations into a trend.");
+  });
+
+  it("redirects project inquiries without echoing personal-data requests", () => {
+    expect(RULES.join(" ")).toContain("Do not echo requests for those details, even to refuse them");
+  });
+});
+
 describe("PII scrubber (T10)", () => {
   it.each([
     ["mail me at jane.doe+x@example.co.id please", "mail me at [email] please"],
@@ -253,7 +278,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-17.history.1");
+    expect(PROMPT_VERSION).toBe("2026-10-18.editorial.1");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
@@ -270,7 +295,7 @@ describe("prompt (spec section 13)", () => {
   it("asks for neutral Indonesian phrasing without visitor address", () => {
     expect(RULES[10]).toContain("omit visitor-address words Anda and kamu");
     expect(RULES[10]).toContain("neutral subject-led sentences");
-    expect(RULES[10]).toContain("Preserve measurement caveats");
+    expect(RULES[10]).toContain("Preserve each metric's measured population, sample size and conditions");
   });
 });
 

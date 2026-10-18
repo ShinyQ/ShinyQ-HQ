@@ -96,7 +96,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
               </p>
             )}
             <div className="mt-6">
-              <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }} />
+              <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied"), failed: tc("linkCopyFailed") }} />
             </div>
           </div>
           <FactRow

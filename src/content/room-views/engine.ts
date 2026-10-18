@@ -1,6 +1,6 @@
 import { createTranslator } from "next-intl";
 import { DIAGRAM_PRESETS, drawnDiagram, layoutArchitecture } from "@/components/diagram/layout";
-import { diagramSummary, diagramTexts } from "@/components/diagram/text";
+import { diagramSummary, diagramTexts, resolveArchitecture } from "@/components/diagram/text";
 import { ENGINE_STATIONS, engineRoom, type EngineStationId } from "@/experience/floors/engine/layout";
 import { dashboardTiles, prUrl, repoFileUrl, roundDates, timelineRows } from "@/lib/build-page";
 import { PUBLIC_FLOORS } from "@/lib/floors";
@@ -45,14 +45,15 @@ export function buildEngineViews(locale: Locale): RoomView[] {
   const shot = (s: { src: string; width: number; height: number; alt: LocalizedText }) => ({ src: s.src, width: s.width, height: s.height, alt: s.alt[locale] });
   const { blueprint, agents, gates } = story.stations;
   const nodeTexts = diagramTexts(locale, (kind) => tLabs(`nodeKind.${kind}`));
+  const architecture = resolveArchitecture(blueprint.architecture, locale);
 
   const content: Record<EngineStationId, StationContent> = {
     blueprint: {
       engine: {
         diagram: {
-          layout: drawnDiagram(layoutArchitecture(blueprint.architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
-          wide: drawnDiagram(layoutArchitecture(blueprint.architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
-          label: diagramSummary(blueprint.architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
+          layout: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
+          wide: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
+          label: diagramSummary(architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
         },
       },
       sections: [{ title: t("howItRuns"), bullets: blueprint.steps.map((s) => s[locale]) }],

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { RoomArchitecture, RoomView } from "@/content/room-views/types";
 import { renderAsciiArchitecture, renderReadme, wrap, type ReadmeLabels } from "@/hud/drawer/ascii";
 import { buildRoomViews } from "@/content/room-views";
+import { getPods } from "@/content/load";
+import { podView } from "@/content/room-views/labs";
 import en from "../../messages/en.json";
 
 const EM_DASH = "\u2014";
@@ -62,6 +64,17 @@ const view: RoomView = {
 const lines = (s: string) => s.split("\n");
 
 describe("renderAsciiArchitecture", () => {
+  it("prints resolved native node and edge labels and preserves legacy labels", () => {
+    const pod = structuredClone(getPods().find((p) => p.architecture)!);
+    pod.architecture!.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    pod.architecture!.edges[0].label = { en: "request", id: "permintaan" };
+    const id = renderAsciiArchitecture(podView(pod, "id").architecture!);
+    expect(id).toContain("Browser pengunjung");
+    expect(id).toContain("permintaan");
+    expect(id).not.toContain("[object Object]");
+    expect(renderAsciiArchitecture(podView(pod, "en").architecture!)).toContain("Visitor browser");
+  });
+
   const out = renderAsciiArchitecture(arch);
 
   it("draws one box per node with every label", () => {

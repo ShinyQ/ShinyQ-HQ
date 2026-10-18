@@ -38,3 +38,35 @@ describe("Result.headline in the schema", () => {
     expect(SiteContentSchema.safeParse(rawData).success).toBe(true);
   });
 });
+
+describe("context-free portfolio metrics", () => {
+  const pods = SiteContentSchema.parse(rawData).floors.labs.pods;
+  const compact = (slug: string, locale: "en" | "id") =>
+    headlineResults(pods.find((p) => p.slug === slug)!.results).map((r) => ({ value: r.value, label: r.label[locale] }));
+
+  it.each(["en", "id"] as const)("keeps the original CV baseline and missing rerun visible in %s", (locale) => {
+    const results = compact("ai-cv-screening-platform", locale);
+    expect(results[0].value).toBe("~45%");
+    expect(results[0].label).toMatch(/22/);
+    expect(results[0].label).toMatch(/original|awal/);
+    expect(results[0].label).toMatch(/no recorded rerun|belum ada rerun.*tercatat/);
+    expect(results[0].label).not.toMatch(/eliminat|dihilangkan/i);
+    expect(pods.find((p) => p.slug === "ai-cv-screening-platform")!.results[0].context?.en).toContain("7 regression tests");
+  });
+
+  it.each(["en", "id"] as const)("retains the controlled voice sample and offline fraud scope in %s", (locale) => {
+    const voice = compact("voice-ai-contact-center", locale)[0];
+    expect(voice.value).toBe("~2 s to ~0.2 s");
+    expect(voice.label).toMatch(/n=4/);
+    expect(voice.label).toMatch(/controlled|terkontrol/);
+    const fraud = compact("fraud-review-platform", locale);
+    expect(fraud.slice(0, 2).map((r) => r.value)).toEqual(["90.9% to 36.4%", "76.2% to 0%"]);
+    for (const result of fraud.slice(0, 2)) expect(result.label).toMatch(/offline/i);
+  });
+
+  it.each(["en", "id"] as const)("does not present in-sample COVID fits as held-out prediction in %s", (locale) => {
+    const results = compact("covid-herd-immunity-forecast", locale);
+    expect(results.slice(0, 2).map((r) => r.value)).toEqual(["0.992", "0.9995"]);
+    for (const result of results.slice(0, 2)) expect(result.label).toContain("in-sample");
+  });
+});

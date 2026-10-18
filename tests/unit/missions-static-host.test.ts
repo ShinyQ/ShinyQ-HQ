@@ -31,7 +31,7 @@ describe("static mission host", () => {
 
   it.each([
     ["work", "en", ["nav /en/labs", "say Pick a wing: Product Engineering,\nAI Engineering, or Data and ML. 2400"]],
-    ["work", "id", ["nav /id/labs", "say Pilih wing: Product Engineering,\nAI Engineering, atau Data dan ML. 2400"]],
+    ["work", "id", ["nav /id/labs", "say Pilih bagian: Product Engineering,\nAI Engineering, atau Data dan ML. 2400"]],
     ["hire", "id", ["nav /id/contact"]],
     ["cv", "en", ["nav /en/cv"]],
     ["blog", "en", ["nav /en/library", "palette posts"]],

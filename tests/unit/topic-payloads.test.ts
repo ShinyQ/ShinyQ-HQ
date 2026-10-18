@@ -40,7 +40,7 @@ describe("Topic Constellation payloads", () => {
   it("lists the topics in the HUD index and the room catalog", () => {
     const hud = buildHudIndex(getContent());
     expect(hud.topics.map((t) => t.slug)).toEqual(index.topics.map((t) => t.slug));
-    expect(hud.topics.find((t) => t.slug === "ui-ux")?.title).toEqual({ en: "Show writing about UI/UX", id: "Tampilkan tulisan tentang UI/UX" });
+    expect(hud.topics.find((t) => t.slug === "ui-ux")?.title).toEqual({ en: "Show work about UI/UX", id: "Tampilkan karya tentang UI/UX" });
     const room = hud.rooms.find((r) => r.id === "L4:topics");
     expect(room).toMatchObject({ floor: "L4", kind: "topics", path: "/library#topics", title: { en: "Topic Constellation", id: "Konstelasi Topik" } });
   });

@@ -82,7 +82,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 ### Bilingual editorial voice
 
-- Review copy in context, with Indonesian as the priority.
+- Review every public source in context, including unchanged passages. Edit EN and ID independently, then reconcile factual equivalence.
 - Prefer warm, direct, professional sentences without unnecessary `Anda` or `kamu`.
 - Keep strong existing passages rather than rewriting every line.
 - Preserve facts, measurement caveats, negative results, team credit, official names, citations, code, URLs and identifiers.
@@ -107,6 +107,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 - Use `makalah` for reader-facing paper controls, `repositori` for public code links, and `situs aktif` for a live-site action when appropriate.
 - Keep `paper`, `repo`, `live`, `production`, RAG, backend, guardrail, observability and shadow mode where technical prose needs them.
 - Never apply global term replacements.
+- Keep the complete Sun/Moon essay family unchanged: body, frontmatter, registry title/excerpt, quotations, footnote and essay-specific accessible text. Do not create an EN translation.
 
 ### Copy compatibility
 
@@ -114,6 +115,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 - Preserve the existing limits: 40-character mission, 110-character dialog, 120/640-character perspective (question/answer, `PerspectivesFileSchema`) and 140 to 160-character SEO.
 - Edit authoritative sources, and align hosted-post frontmatter with the registry.
 - Keep sample limits in the registry excerpt plus first paragraph used by Ask.
+- Put essential measurement boundaries in compact result labels too: strips and share cards omit the longer result context.
 - Do not change retrieval compression, scope, safety checks, routes or behavior to accommodate wording.
 - Bump `PROMPT_VERSION` for prompt changes.
 

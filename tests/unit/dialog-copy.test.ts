@@ -42,6 +42,13 @@ describe("Rover dialog copy", () => {
 describe("B1 unlock dialog copy (3D-only engine namespace)", () => {
   const lines = (m: typeof en) => ({ unlock: m.engine.unlock, go: m.engine.go, later: m.engine.later, lockedLine: m.engine.lockedLine });
 
+  it("announces visited main floors and unlocked B1 rather than completed rooms", () => {
+    expect(en.engine.unlock).toMatch(/all main floors visited/i);
+    expect(en.engine.unlock).toMatch(/Engine Room is unlocked/);
+    expect(id.engine.unlock).toMatch(/semua lantai utama sudah dikunjungi/i);
+    expect(id.engine.unlock).toMatch(/Ruang Mesin terbuka/);
+  });
+
   it("keeps each line within the phone limit, also with the progress numbers filled in", () => {
     for (const [locale, messages] of [["en", en], ["id", id]] as const) {
       for (const [key, value] of Object.entries(lines(messages))) {
@@ -77,6 +84,11 @@ describe("touch boost copy", () => {
   it("teaches the joystick double tap in the touch onboarding line", () => {
     expect(en.dialog.onboarding.moveCoarse).toMatch(/double-tap the joystick/i);
     expect(id.dialog.onboarding.moveCoarse).toMatch(/ketuk dua kali joystick/i);
+  });
+
+  it("explains that the second double tap turns turbo off, not that it stops driving", () => {
+    expect(en.dialog.onboarding.moveCoarse).toMatch(/double-tap again to turn boost off/i);
+    expect(id.dialog.onboarding.moveCoarse).toMatch(/mengaktifkan atau mematikan turbo/i);
   });
 });
 

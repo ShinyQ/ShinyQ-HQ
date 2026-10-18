@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import { hintsOn, resetFlagMemory, setHintsOn } from "@/hud/dialog/storage";
 import { registerTutorial } from "@/hud/dialog/tutorial";
 import { SettingsPanel } from "@/hud/settings/SettingsPanel";
@@ -72,6 +73,30 @@ afterEach(() => {
 });
 
 describe("SettingsPanel", () => {
+  for (const [locale, messages, musicName, ambienceName, volumeName] of [
+    ["en", en, "Background music", "Floor ambience", "Music and ambience volume"],
+    ["id", id, "Musik latar", "Suara latar tiap lantai", "Volume musik dan suara latar"],
+  ] as const) {
+    it(`${locale}: names independent soundtrack switches and their shared volume`, async () => {
+      render(<NextIntlClientProvider locale={locale} messages={messages}><SettingsPanel /></NextIntlClientProvider>);
+      const music = screen.getByRole("switch", { name: musicName });
+      const ambience = screen.getByRole("switch", { name: ambienceName });
+      expect(ambience).toHaveAccessibleDescription(locale === "en"
+        ? /controlled separately from Background music/i
+        : /terpisah dari Musik latar/i);
+      await userEvent.click(music);
+      expect(music).toHaveAttribute("aria-checked", "false");
+      expect(ambience).toHaveAttribute("aria-checked", "true");
+      await userEvent.click(ambience);
+      expect(ambience).toHaveAttribute("aria-checked", "false");
+      expect(music).toHaveAttribute("aria-checked", "false");
+      const volume = screen.getByRole("slider", { name: volumeName });
+      expect(volume).toHaveAttribute("min", "0");
+      expect(volume).toHaveAttribute("max", "100");
+      expect(volume).toHaveAttribute("step", "5");
+      expect(screen.getByRole("switch", { name: messages.hud.settings.sound.label })).toHaveAttribute("aria-checked", "true");
+    });
+  }
   it("renders every group and setting from the registry", () => {
     render(<SettingsPanel />, { wrapper: Wrap });
     for (const name of ["General", "Display", "Sound"]) expect(screen.getByRole("heading", { name })).toBeInTheDocument();
@@ -83,11 +108,11 @@ describe("SettingsPanel", () => {
 
   it("toggles write through to their store and re-render", async () => {
     render(<SettingsPanel />, { wrapper: Wrap });
-    const music = screen.getByRole("switch", { name: "Music" });
+    const music = screen.getByRole("switch", { name: "Background music" });
     expect(music).toHaveAttribute("aria-checked", "true");
     await userEvent.click(music);
     expect(fakeAudio.setMusic).toHaveBeenCalledWith(false);
-    expect(screen.getByRole("switch", { name: "Music" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("switch", { name: "Background music" })).toHaveAttribute("aria-checked", "false");
   });
 
   it("the Floor ambience switch writes through to the engine", async () => {
@@ -147,7 +172,7 @@ describe("SettingsPanel", () => {
 
   it("the music volume slider reports percent", () => {
     render(<SettingsPanel />, { wrapper: Wrap });
-    const slider = screen.getByRole("slider", { name: "Music volume" });
+    const slider = screen.getByRole("slider", { name: "Music and ambience volume" });
     expect(slider).toHaveAttribute("aria-valuetext", "50 percent");
     fireEvent.change(slider, { target: { value: "40" } });
     expect(fakeAudio.setMusicVolume).toHaveBeenCalledWith(0.4);

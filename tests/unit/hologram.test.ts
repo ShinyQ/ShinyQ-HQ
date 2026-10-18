@@ -5,6 +5,8 @@ import { layBoard } from "@/experience/floors/labs/board";
 import { hologramParts } from "@/experience/floors/labs/hologramParts";
 import { BOARD } from "@/experience/floors/labs/layout";
 import type { HologramKind } from "@/experience/types";
+import { getPods } from "@/content/load";
+import { podView } from "@/content/room-views/labs";
 
 const KINDS: HologramKind[] = ["waveform", "shield", "documents", "graph", "chart", "template", "pipeline"];
 const heroes = Object.values(buildRoomViews("en")).filter((v) => v.hologram);
@@ -23,6 +25,18 @@ describe("pod holograms", () => {
 });
 
 describe("hologram board", () => {
+  it("receives locale-resolved string labels with identical positions and topology", () => {
+    const pod = structuredClone(getPods().find((p) => p.architecture)!);
+    pod.architecture!.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    const en = layBoard(podView(pod, "en").architecture!);
+    const id = layBoard(podView(pod, "id").architecture!);
+    expect(en.nodes[0].label).toBe("Visitor browser");
+    expect(id.nodes[0].label).toBe("Browser pengunjung");
+    expect(id.nodes.every((n) => typeof n.label === "string")).toBe(true);
+    expect(id.nodes.map((node) => ({ ...node, label: undefined }))).toEqual(en.nodes.map((node) => ({ ...node, label: undefined })));
+    expect(id.edges).toEqual(en.edges);
+  });
+
   it("lays nodes out by layer (columns, left to right) and row (top to bottom)", () => {
     for (const view of heroes) {
       const arch = view.architecture!;

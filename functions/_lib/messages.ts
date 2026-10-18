@@ -7,16 +7,16 @@ export const MESSAGES = {
     id: "Informasi itu belum tersedia di situs ini. Coba tanyakan proyek, pengalaman kerja, atau tulisan Kurniadi.",
   },
   decline: {
-    en: "This assistant only answers questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views, so try asking about one of those.",
-    id: "Asisten ini hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, dan pandangan tertulisnya, jadi coba tanyakan salah satunya.",
+    en: "This assistant only answers questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views. Try asking about one of those.",
+    id: "Asisten ini hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, dan pandangan tertulisnya. Coba tanyakan salah satunya.",
   },
   restricted: {
     en: "This assistant can't share client names or private details. Projects for clients are described by sector on this site.",
     id: "Asisten ini tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
   },
   fallback: {
-    en: "A reliable answer is not available right now. Press Cmd-K (Ctrl-K) to search the site, or browse the Work and Journey pages.",
-    id: "Jawaban yang andal belum tersedia sekarang. Tekan Cmd-K (Ctrl-K) untuk mencari di situs, atau buka halaman Karya dan Perjalanan.",
+    en: "A reliable answer is not available right now. Search with Cmd-K or Ctrl-K, or browse the Work and Journey pages.",
+    id: "Jawaban yang bisa diandalkan belum tersedia saat ini. Cari lewat Cmd-K atau Ctrl-K, atau buka halaman Karya dan Perjalanan.",
   },
   private: {
     en: "This assistant only covers Kurniadi's work and the views he has written down. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site.",
@@ -33,13 +33,13 @@ export const MESSAGES = {
   },
   // Lead intent when the model's answer cannot be shown (failed checks, a fit claimed without a match, a model refusal).
   lead: {
-    en: "Kurniadi takes on freelance and part-time engagements in software and AI engineering alongside his full-time role. The best next step is a short message about the project; his contact details are below.",
-    id: "Kurniadi menerima engagement freelance dan paruh waktu di bidang software dan AI engineering di samping pekerjaan penuh waktunya. Langkah terbaik berikutnya adalah mengirim pesan singkat tentang proyeknya; detail kontaknya ada di bawah.",
+    en: "Kurniadi considers freelance and part-time software and AI engineering projects alongside his full-time role, subject to capacity. Send a short message describing the project to discuss fit; his contact details are below.",
+    id: "Kurniadi mempertimbangkan proyek freelance dan pekerjaan paruh waktu di bidang software dan AI engineering sesuai kapasitas di luar pekerjaan penuh waktu. Kirim pesan singkat tentang proyeknya untuk membahas kecocokan; detail kontaknya ada di bawah.",
   },
   // Lead intent that asks for a price or a rate: no numbers, contact instead.
   leadRates: {
-    en: "Rates and timelines are not published on this site; they depend on the scope of the work. Kurniadi takes on freelance and part-time engagements, so the best next step is a short message about the project; his contact details are below.",
-    id: "Tarif dan estimasi waktu tidak dicantumkan di situs ini karena bergantung pada lingkup pekerjaannya. Kurniadi menerima engagement freelance dan paruh waktu, jadi langkah terbaik berikutnya adalah mengirim pesan singkat tentang proyeknya; detail kontaknya ada di bawah.",
+    en: "Rates and timelines are not published on this site; they depend on scope and available capacity alongside Kurniadi's full-time role. Send a short message describing the freelance or part-time project to discuss it; his contact details are below.",
+    id: "Tarif dan estimasi waktu tidak dicantumkan di situs ini. Keduanya bergantung pada lingkup pekerjaan dan kapasitas di luar pekerjaan penuh waktu Kurniadi. Kirim pesan singkat tentang proyek freelance atau paruh waktunya untuk dibahas; detail kontaknya ada di bawah.",
   },
   noView: {
     en: "Kurniadi hasn't shared a written view on that on this site.",

@@ -4,6 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import CertDialog from "@/components/certs/CertDialog";
 import type { CertView } from "@/content/certs";
 
@@ -29,6 +30,29 @@ const cert = (status: CertView["status"]): CertView => ({
 });
 
 describe("CertDialog (R5 P10)", () => {
+  for (const [locale, messages, expiry, pending] of [
+    ["en", en, "Expires", "No public credential link yet."],
+    ["id", id, "Berlaku hingga", "Tautan kredensial publik belum tersedia."],
+  ] as const) {
+    it(`${locale}: labels expiresLabel as expiry and does not promise automatic publication`, () => {
+      render(
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <CertDialog cert={{ ...cert("earned"), expires: "2027-01", expiresLabel: "Jan 2027" }} onClose={vi.fn()} />
+        </NextIntlClientProvider>,
+      );
+      expect(screen.getByText(expiry).nextElementSibling).toHaveTextContent("Jan 2027");
+    });
+
+    it(`${locale}: reports a missing in-progress credential link without promising publication`, () => {
+      render(
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <CertDialog cert={cert("in-progress")} onClose={vi.fn()} />
+        </NextIntlClientProvider>,
+      );
+      expect(screen.getByText(pending)).toBeInTheDocument();
+      expect(screen.queryByTestId("cert-open")).toBeNull();
+    });
+  }
   for (const [status, label, tone] of [
     ["earned", "Earned", "text-green"],
     ["in-progress", "In progress", "text-amber"],

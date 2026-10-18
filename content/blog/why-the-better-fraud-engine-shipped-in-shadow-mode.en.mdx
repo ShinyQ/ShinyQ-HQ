@@ -1,12 +1,12 @@
 ---
 title: "Why the Better Fraud Engine Shipped in Shadow Mode"
 date: "2026-10-09"
-excerpt: "I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker."
+excerpt: "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
 ---
 
-I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
+On noisy-clean procurement packets in the development gold set, I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
 
 That was the result on noisy but clean procurement packets in the development gold set. High-risk recall went the other way: 1.000 to 0.841. The engine missed more of the packets it needed to catch.
 
@@ -72,7 +72,7 @@ I compared engine v2, baseline N1, with the best LLM pipeline, baseline B2, offl
 
 The engine was more precise. It also missed High-risk packets that the old pipeline caught. Held-out recall of 0.429 showed that this was not just a development-set fluke. Gate G3, the High-risk recall gate, failed.
 
-My reading was that the rule thresholds traded recall for precision, and I had tuned them with my attention fixed on false positives. Writing the gates before the run mattered here. Without them, the better FPR could have talked me into releasing a worse system.
+My interpretation was that the thresholds improved precision at the expense of recall. While tuning them, I had focused too narrowly on false positives. Writing the gates before the run mattered here. Without them, the better FPR could have talked me into releasing a worse system.
 
 There is a sample-size caveat too. Some slices are small. The noisy-clean rates move in steps consistent with about eleven packets, so one packet shifts the rate by roughly nine points. That is my inference; the exact slice size is not recorded here.
 
@@ -116,7 +116,7 @@ Switching to Document Intelligence Layout extraction exposed a related issue. Ac
 
 That was a good development-set run. The engine is still in shadow mode.
 
-## What would convince me to promote it
+## What would justify giving it control of the verdict
 
 This is my reasoning, not a recorded plan. Before giving engine v2 control of the verdict, I would want:
 

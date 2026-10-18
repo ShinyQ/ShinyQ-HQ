@@ -153,6 +153,7 @@ Open `/en` and press **Boot rover**.
 
 The Classic site (internally the Page View) is the permanent no-WebGL fallback and the version crawlers see.
 
+- Architecture figures use native EN/ID node and edge labels where authored, consistently across case studies, technical posts, the build page and B1 drawers. Shared technical identities and legacy string labels remain supported.
 - The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
@@ -160,6 +161,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - **Shareable links:**
   - `?view=classic` opens the Classic site and stays in the URL through navigation, the language switch and copied links (`?view=page` still works).
   - **Copy Classic link** and **Copy 3D link** sit on case studies, posts and the drawer's "..." menu; the 3D link opens the same page in the tower (posts open the Writing floor).
+  - If clipboard access fails, a localized status and read-only field expose the exact attempted link for manual copying, without taking focus. About's email-copy action exposes the raw address on failure too.
   - The choice is remembered across tabs, and an explicit `?view=` in a link always wins.
 - **How this site was built** (`/{locale}/build`, linked from the footer and About):
   - A page of five sections: the blueprint (an architecture diagram with a numbered walkthrough), the build rounds (a timeline with before and after captures), the AI agent workflow, the quality gates (what each CI job enforces and which ones block a merge) and a dashboard of measured numbers (commits, pull requests, tests, budgets, the live visit count).

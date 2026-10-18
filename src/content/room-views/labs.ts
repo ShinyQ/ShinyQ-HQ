@@ -8,15 +8,17 @@ import type { Locale, Pod } from "../schema";
 import { clientLabel, headlineResults, podLiveLink, podPublications, publicationDate, repoName } from "../selectors";
 import { WING_ACCENT } from "@/lib/accent";
 import { formatPeriod } from "@/lib/format";
+import { resolveArchitecture } from "@/components/diagram/text";
 import { chain, galleryOf, linkLogo, messages, roomId, single, stackItems } from "./shared";
 import type { RoomArchitecture, RoomLinkItem, RoomSection, RoomView } from "./types";
 
 
 function architectureOf(pod: Pod, locale: Locale): RoomArchitecture | undefined {
   if (!pod.architecture) return undefined;
+  const architecture = resolveArchitecture(pod.architecture, locale);
   return {
-    nodes: pod.architecture.nodes.map((n) => ({ id: n.id, label: n.label, sublabel: n.sublabel?.[locale], layer: n.layer, row: n.row, kind: n.kind })),
-    edges: pod.architecture.edges.map((e) => ({ from: e.from, to: e.to, label: e.label, async: e.async })),
+    nodes: architecture.nodes.map((n) => ({ id: n.id, label: n.label, sublabel: n.sublabel?.[locale], layer: n.layer, row: n.row, kind: n.kind })),
+    edges: architecture.edges.map((e) => ({ from: e.from, to: e.to, label: e.label, async: e.async })),
   };
 }
 

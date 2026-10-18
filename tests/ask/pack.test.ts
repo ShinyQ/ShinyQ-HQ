@@ -35,6 +35,26 @@ beforeAll(() => {
 const fold = (text: string) => text.toLowerCase().replace(/(\d),(\d)/g, "$1.$2");
 
 describe("knowledge pack", () => {
+  it("identifies the latest post by publication date in both languages", () => {
+    const latest = [...getContent().floors.library.posts].sort((a, b) => b.date.localeCompare(a.date))[0];
+    const enLatest = pack.chunks.filter((chunk) => /^Latest blog post\b/.test(chunk.text_en));
+    const idLatest = pack.chunks.filter((chunk) => /^Tulisan blog terbaru\b/.test(chunk.text_id));
+    expect(enLatest.map((chunk) => chunk.id)).toEqual([`post-${latest.slug}`]);
+    expect(idLatest.map((chunk) => chunk.id)).toEqual([`post-${latest.slug}`]);
+  });
+
+  it("describes the current tutorial and both boost inputs, not the removed tour", () => {
+    const site = getSiteBuild();
+    expect(site.text.en).toMatch(/\bRover is a small robot guide\b/);
+    expect(site.text.id).toMatch(/\bRover adalah robot pemandu kecil\b/);
+    expect(site.text.en).not.toMatch(/\btour\b/i);
+    expect(site.text.id).not.toMatch(/\btur\b/i);
+    expect(site.text.en).toMatch(/Shift[^.]*double-tap/i);
+    expect(site.text.id).toMatch(/Shift[^.]*ketuk dua kali/i);
+    expect(site.text.en).toContain("?view=classic");
+    expect(site.text.id).toContain("?view=classic");
+  });
+
   it("has the required chunks, stays under the 256 KiB cap and is versioned by content", () => {
     for (const id of ["profile", "now", "contact"]) expect(pack.chunks.some((c) => c.id === id)).toBe(true);
     expect(PACK_MAX_BYTES).toBe(256 * 1024);
@@ -305,10 +325,12 @@ describe("pack budget with the Data and ML pods (runbook deviation 8, 2026-10-14
 
   it("keeps one lead paragraph of each hosted post", () => {
     expect(POST_LEAD_PARAGRAPHS).toBe(1);
+    const latest = [...getContent().floors.library.posts].sort((a, b) => b.date.localeCompare(a.date))[0];
     for (const { slug, locale, file } of listBlogFiles()) {
       const post = getContent().floors.library.posts.find((entry) => entry.slug === slug)!;
       const chunk = byId(pack, `post-${slug}`)!;
-      const intro = locale === "en" ? `Post "${post.title.en}" (${post.date}).` : `Tulisan "${post.title.id}" (${post.date}).`;
+      const prefix = locale === "en" ? (slug === latest.slug ? "Latest blog post" : "Post") : (slug === latest.slug ? "Tulisan blog terbaru" : "Tulisan");
+      const intro = `${prefix} "${post.title[locale]}" (${post.date}).`;
       const expected = sanitizePackText(`${intro} ${post.excerpt[locale]} ${leadParagraphs(readFileSync(file, "utf8"), 1)}`);
       expect(chunk[locale === "en" ? "text_en" : "text_id"], `${slug}/${locale}`).toBe(expected);
     }
@@ -318,13 +340,22 @@ describe("pack budget with the Data and ML pods (runbook deviation 8, 2026-10-14
     const voice = byId(pack, "post-making-a-voice-agent-interruptible")!;
     const llm = byId(pack, "post-45-percent-of-our-llm-calls-failed")!;
     const fraud = byId(pack, "post-why-the-better-fraud-engine-shipped-in-shadow-mode")!;
+    const delivery = byId(pack, "post-spec-driven-development-with-ai-coding-agents")!;
+    const clearbox = byId(pack, "post-clearbox-inbox-cleanup-with-microsoft-decision-1")!;
     for (const locale of ["text_en", "text_id"] as const) {
       expect(voice[locale]).toContain("n=4");
       expect(voice[locale]).toMatch(/harness/i);
       expect(llm[locale]).toContain("22");
       expect(llm[locale]).toMatch(/45%/);
+      expect(llm[locale]).toMatch(/rerun|run ulang|uji ulang|pengujian ulang|diulang/i);
+      expect(llm[locale]).toMatch(/\b(?:no|not|without|unrecorded|belum|tidak|tanpa)\b/i);
       expect(fraud[locale]).toMatch(/offline|pengembangan|development/i);
       expect(fraud[locale]).toMatch(/high.?risk|berisiko tinggi/i);
+      expect(fraud[locale]).toMatch(/shadow/i);
+      expect(delivery[locale]).toMatch(/integration|integrasi/i);
+      expect(delivery[locale]).toMatch(/skip|lewat|dilewati|tidak berjalan/i);
+      expect(clearbox[locale]).toMatch(/40/);
+      expect(clearbox[locale]).toMatch(/synthetic|sintetis/i);
     }
   });
 

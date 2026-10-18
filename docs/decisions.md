@@ -9,6 +9,7 @@ month is known); the PR column links the PR that shipped it, when known.
 
 | Date | Area | Decision | PR |
 |---|---|---|---|
+| 2026-10-18 | Content: diagrams | Node and edge labels may be legacy strings or strict EN/ID text, resolved before layout and serialization. IDs, topology and shared group identity/display strings stay unchanged. |  |
 | 2026-10-09 | Glass Drawer | Phase 4: every room on every floor renders through one shared drawer (the Glass Drawer), with the hologram view for hero pods. | [#8](https://github.com/ShinyQ/ShinyQ-HQ/pull/8) |
 | 2026-10-10 | Audio | Sound is on by default; a missing `hq:sound` means on. | [#21](https://github.com/ShinyQ/ShinyQ-HQ/pull/21) |
 | 2026-10-10 | Content | C3 revised: clients of the owner's employers never appear on the site; they get a sector label, while employers, freelance clients (C8) and product names stay named. | [#26](https://github.com/ShinyQ/ShinyQ-HQ/pull/26) |

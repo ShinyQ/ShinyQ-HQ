@@ -28,6 +28,38 @@ const titles = (s: BuildStory) => [
 ];
 
 describe("build story content", () => {
+  it("describes merge-triggered deploys, same-tree reuse, complete-main-CI fallback and rollback", () => {
+    const deploy = readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8");
+    const rollback = readFileSync(path.join(root, ".github/workflows/rollback.yml"), "utf8");
+    expect(deploy).toMatch(/push:\n\s+branches: \[main\]/);
+    expect(deploy).toContain("scripts/merge-gate.ts");
+    expect(rollback).toContain("scripts/rollback.ts");
+    const text = story.stations.blueprint.steps[4];
+    expect(text.en).toMatch(/merge/i);
+    expect(text.en).toMatch(/same (?:code|tree)/i);
+    expect(text.en).toMatch(/(?:complete|full) CI on main/i);
+    expect(text.en).toMatch(/roll(?:s|ed)? (?:production )?back|rollback/i);
+    expect(text.id).toMatch(/merge/i);
+    expect(text.id).toMatch(/(?:kode|tree) yang sama/i);
+    expect(text.id).toMatch(/CI lengkap di main/i);
+    expect(text.id).toMatch(/rollback|mengembalikan produksi/i);
+  });
+
+  it("inherits strict bilingual blueprint labels while retaining legacy and endpoint contracts", () => {
+    const mixed = structuredClone(raw);
+    mixed.stations.blueprint.architecture.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    mixed.stations.blueprint.architecture.edges[0].label = { en: "request", id: "permintaan" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(true);
+    mixed.stations.blueprint.architecture.nodes[0].label = { en: "Visitor browser" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+    mixed.stations.blueprint.architecture.nodes[0].label = "Visitor browser";
+    mixed.stations.blueprint.architecture.edges[0].label = { en: "request", id: "permintaan", fr: "requete" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+    mixed.stations.blueprint.architecture.edges[0].label = "request";
+    mixed.stations.blueprint.architecture.edges[0].to = "missing";
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+  });
+
   it("parses and is memoized", () => {
     expect(getBuildStory()).toBe(getBuildStory());
     expect(getBuildStory().title.en).toBe("How This Site Was Built");

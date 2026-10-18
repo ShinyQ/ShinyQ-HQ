@@ -25,7 +25,7 @@
     "timezone": "GMT+7",
     "bio": {
       "en": "I am an AI and Software Engineer based in Jakarta, with 4+ years of experience building production systems for digital banking, fintech and enterprise SaaS. Since February 2026, I have led the delivery of Azure-native AI platforms at Metrodata for 12+ enterprise clients in sectors such as banking, automotive, mining and food manufacturing. The work includes multi-agent RAG assistants, realtime voice agents, document AI and AI code security. Before that, I built backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius. I make LLM systems reliable in production through evaluation, guardrails and observability.",
-      "id": "Saya AI dan Software Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin delivery platform AI berbasis Azure di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, dan manufaktur makanan. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
+      "id": "Saya AI dan Software Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin pengembangan platform AI berbasis Azure hingga rilis di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, dan manufaktur makanan. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
     },
     "story": {
       "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
@@ -43,8 +43,8 @@
           "id": "Tetapkan Spec Terlebih Dahulu"
         },
         "text": {
-          "en": "I write a numbered spec with acceptance criteria and a constitution that sets the agents' working rules before implementation starts.",
-          "id": "Sebelum implementasi, saya menulis spec bernomor dengan acceptance criteria dan constitution yang menetapkan aturan kerja agent."
+          "en": "Before implementation, I write a numbered spec with acceptance criteria and a constitution: the working rules every agent must follow.",
+          "id": "Sebelum implementasi, saya menulis spec bernomor dengan acceptance criteria. Aturan kerja setiap agent saya tetapkan dalam constitution."
         }
       },
       {
@@ -132,8 +132,8 @@
           "id": "Tata kelola telemetri."
         },
         "text": {
-          "en": "Personal data is redacted before export, noisy spans are sampled, and ingestion has a daily cap with an alert at 80 percent.",
-          "id": "Data pribadi disamarkan sebelum diekspor, span yang menambah noise di-sampling, dan ingestion punya batas harian dengan alert di 80 persen."
+          "en": "Personal data is redacted before export. Noisy spans are sampled, and ingestion has a daily cap with an alert at 80 percent.",
+          "id": "Data pribadi disamarkan sebelum diekspor. Span yang menambah noise di-sampling, dan ingestion dibatasi per hari dengan alert pada 80 persen."
         }
       },
       {
@@ -290,8 +290,8 @@
       "id": "shipping-since-2019",
       "value": "2019",
       "label": {
-        "en": "Building software since 2019; full-time engineering since 2022",
-        "id": "Membangun software sejak 2019; bekerja full-time di engineering sejak 2022"
+        "en": "Building software since 2019; working full-time as an engineer since 2022",
+        "id": "Membangun software sejak 2019; bekerja penuh waktu sebagai engineer sejak 2022"
       },
       "source": "Part-time e-commerce backend from Sep 2019; full-time engineering roles since Feb 2022",
       "confidence": "verified"
@@ -340,8 +340,8 @@
       "id": "voice-interruption-speedup",
       "value": "10x",
       "label": {
-        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B)",
-        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B test terkontrol)"
+        "en": "Faster voice-agent interruption: ~2 s to ~0.2 s (controlled A/B, n=4 calls per arm)",
+        "id": "Interupsi voice agent lebih cepat: ~2 dtk menjadi ~0,2 dtk (A/B terkontrol, n=4 panggilan per jalur)"
       },
       "source": "Controlled A/B latency benchmark of the voice platform (4 calls per arm)",
       "confidence": "verified"
@@ -1408,7 +1408,7 @@
           "end": "2023-01",
           "summary": {
             "en": "While completing my final year and working full-time, I taught AI, judged a hackathon and attended a structured backend engineering program.",
-            "id": "Sambil menyelesaikan tahun terakhir kuliah dan bekerja full-time, saya mengajar AI, menjadi juri hackathon, dan mengikuti program backend engineering terstruktur."
+            "id": "Sambil menyelesaikan tahun terakhir kuliah dan bekerja penuh waktu, saya mengajar AI, menjadi juri hackathon, dan mengikuti program backend engineering terstruktur."
           },
           "highlights": [
             {
@@ -1445,7 +1445,7 @@
           "end": "2023-02",
           "summary": {
             "en": "I developed the backend for a travel booking platform in my first full-time role, while still at university.",
-            "id": "Saya mengembangkan backend platform pemesanan travel dalam pekerjaan full-time pertama saya, saat masih kuliah."
+            "id": "Saya mengembangkan backend platform pemesanan travel dalam pekerjaan penuh waktu pertama saya, saat masih kuliah."
           },
           "highlights": [
             {
@@ -1587,7 +1587,7 @@
           "end": "2022-11",
           "summary": {
             "en": "My final competition season brought two 2nd-place finishes and a national finalist spot as I moved into full-time engineering.",
-            "id": "Pada musim kompetisi terakhir, saya meraih dua juara 2 dan menjadi finalis tingkat nasional saat beralih ke pekerjaan engineering full-time."
+            "id": "Pada musim kompetisi terakhir, saya meraih dua juara 2 dan menjadi finalis tingkat nasional saat beralih menjadi engineer penuh waktu."
           },
           "highlights": [
             {
@@ -2034,8 +2034,8 @@
           "start": "2025-06",
           "end": "2025-11",
           "summary": {
-            "en": "I delivered projects across the full development lifecycle for agency clients using Next.js, Prisma, Express and PostgreSQL.",
-            "id": "Saya mengerjakan proyek klien agensi dari awal hingga delivery menggunakan Next.js, Prisma, Express, dan PostgreSQL."
+            "en": "I took agency-client projects through development and delivery, using Next.js, Prisma, Express and PostgreSQL.",
+            "id": "Saya mengerjakan proyek klien agensi dari awal pengembangan hingga penyerahan, menggunakan Next.js, Prisma, Express, dan PostgreSQL."
           },
           "highlights": [],
           "stack": [
@@ -2158,13 +2158,13 @@
           "start": "2026-02",
           "end": "present",
           "summary": {
-            "en": "In the Microsoft AI practice, I lead end-to-end delivery of Azure-native AI platforms for 12+ enterprise clients in sectors such as banking, automotive, mining and food manufacturing, from architecture to production, alongside the practice's own products. I built a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
-            "id": "Di praktik Microsoft AI, saya memimpin delivery end-to-end platform AI berbasis Azure untuk 12+ klien enterprise, dari arsitektur hingga production. Sektornya antara lain perbankan, otomotif, pertambangan, dan manufaktur makanan; saya juga mengerjakan produk tim sendiri. Saya membangun template AI full-stack yang bisa digunakan ulang dan dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
+            "en": "In the Microsoft AI practice, I lead Azure-native AI projects from architecture to production for 12+ enterprise clients in banking, automotive, mining and food manufacturing. I also build the practice's own products, including a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
+            "id": "Di praktik Microsoft AI, saya memimpin pengembangan platform AI berbasis Azure, dari arsitektur hingga production, untuk 12+ klien enterprise di sektor perbankan, otomotif, pertambangan, dan manufaktur makanan. Saya juga mengerjakan produk tim sendiri, termasuk template AI full-stack yang bisa digunakan ulang dan dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
           },
           "highlights": [
             {
-              "en": "Reduced voice-agent interruption latency from ~2 s to ~0.2 s in a controlled A/B test",
-              "id": "Menurunkan latensi interupsi voice agent dari ~2 dtk menjadi ~0,2 dtk dalam A/B test terkontrol"
+              "en": "Reduced voice-agent interruption latency from ~2 s to ~0.2 s in a controlled A/B test (n=4 calls per arm)",
+              "id": "Menurunkan latensi interupsi voice agent dari ~2 dtk menjadi ~0,2 dtk dalam A/B test terkontrol (n=4 panggilan per jalur)"
             },
             {
               "en": "Built an AI code security platform with 8 scanning engines and a fix-PR agent with guardrails",
@@ -2199,8 +2199,8 @@
           "type": "milestone",
           "org": "Microsoft, GitHub and Google",
           "role": {
-            "en": "Certification candidate",
-            "id": "Peserta sertifikasi"
+            "en": "Certification learner",
+            "id": "Pembelajar dan peraih sertifikasi"
           },
           "start": "2026-05",
           "end": "2026-10",
@@ -2294,7 +2294,10 @@
             "nodes": [
               {
                 "id": "banking-app",
-                "label": "Jenius app",
+                "label": {
+                  "en": "Jenius app",
+                  "id": "Aplikasi Jenius"
+                },
                 "sublabel": {
                   "en": "Insurance within the banking app",
                   "id": "Asuransi dalam aplikasi bank"
@@ -2305,7 +2308,10 @@
               },
               {
                 "id": "ops-dashboards",
-                "label": "React dashboards",
+                "label": {
+                  "en": "React dashboards",
+                  "id": "Dashboard React"
+                },
                 "sublabel": {
                   "en": "Priority customers and operations",
                   "id": "Nasabah prioritas dan operasional"
@@ -2316,7 +2322,10 @@
               },
               {
                 "id": "insurance-services",
-                "label": "Insurance microservices",
+                "label": {
+                  "en": "Insurance microservices",
+                  "id": "Microservice asuransi"
+                },
                 "sublabel": {
                   "en": "Express.js and Spring Boot",
                   "id": "Express.js dan Spring Boot"
@@ -2327,7 +2336,10 @@
               },
               {
                 "id": "sftp-service",
-                "label": "MFT / SFTP service",
+                "label": {
+                  "en": "MFT / SFTP service",
+                  "id": "Layanan MFT / SFTP"
+                },
                 "sublabel": {
                   "en": "In-house partner file scheduling",
                   "id": "Penjadwalan file mitra secara in-house"
@@ -2371,7 +2383,10 @@
               },
               {
                 "id": "insurance-partners",
-                "label": "Insurance partners (5)",
+                "label": {
+                  "en": "Insurance partners (5)",
+                  "id": "Mitra asuransi (5)"
+                },
                 "sublabel": {
                   "en": "Partner APIs and file exchange",
                   "id": "API mitra dan pertukaran file"
@@ -2385,17 +2400,26 @@
               {
                 "from": "banking-app",
                 "to": "insurance-services",
-                "label": "policy flows"
+                "label": {
+                  "en": "policy flows",
+                  "id": "alur polis"
+                }
               },
               {
                 "from": "ops-dashboards",
                 "to": "insurance-services",
-                "label": "ops views"
+                "label": {
+                  "en": "ops views",
+                  "id": "tampilan operasional"
+                }
               },
               {
                 "from": "insurance-services",
                 "to": "kafka",
-                "label": "events",
+                "label": {
+                  "en": "events",
+                  "id": "event"
+                },
                 "async": true
               },
               {
@@ -2406,17 +2430,26 @@
               {
                 "from": "insurance-services",
                 "to": "postgresql",
-                "label": "records"
+                "label": {
+                  "en": "records",
+                  "id": "data"
+                }
               },
               {
                 "from": "insurance-services",
                 "to": "insurance-partners",
-                "label": "partner APIs"
+                "label": {
+                  "en": "partner APIs",
+                  "id": "API mitra"
+                }
               },
               {
                 "from": "sftp-service",
                 "to": "insurance-partners",
-                "label": "file transfers",
+                "label": {
+                  "en": "file transfers",
+                  "id": "transfer file"
+                },
                 "async": true
               }
             ]
@@ -2530,7 +2563,10 @@
             "nodes": [
               {
                 "id": "marketplace-clients",
-                "label": "Web and mobile clients",
+                "label": {
+                  "en": "Web and mobile clients",
+                  "id": "Klien web dan mobile"
+                },
                 "sublabel": {
                   "en": "Buyers and sellers",
                   "id": "Pembeli dan penjual"
@@ -2541,7 +2577,10 @@
               },
               {
                 "id": "admin-partner-panel",
-                "label": "Admin and partner panel",
+                "label": {
+                  "en": "Admin and partner panel",
+                  "id": "Panel admin dan mitra"
+                },
                 "sublabel": {
                   "en": "Review, refund and payout workflows",
                   "id": "Alur review, refund, dan payout"
@@ -2552,7 +2591,10 @@
               },
               {
                 "id": "marketplace-api",
-                "label": "Express API on Bun",
+                "label": {
+                  "en": "Express API on Bun",
+                  "id": "API Express di Bun"
+                },
                 "sublabel": {
                   "en": "Orders, auctions and wallet ledger",
                   "id": "Pesanan, lelang, dan ledger wallet"
@@ -2563,7 +2605,10 @@
               },
               {
                 "id": "chat-gateway",
-                "label": "Socket.IO chat",
+                "label": {
+                  "en": "Socket.IO chat",
+                  "id": "Chat Socket.IO"
+                },
                 "sublabel": {
                   "en": "Chat opens after payment",
                   "id": "Chat terbuka setelah pembayaran"
@@ -2631,12 +2676,18 @@
               {
                 "from": "admin-partner-panel",
                 "to": "marketplace-api",
-                "label": "review, payouts"
+                "label": {
+                  "en": "review, payouts",
+                  "id": "review, pencairan"
+                }
               },
               {
                 "from": "marketplace-api",
                 "to": "postgresql",
-                "label": "transactions"
+                "label": {
+                  "en": "transactions",
+                  "id": "transaksi"
+                }
               },
               {
                 "from": "marketplace-api",
@@ -2646,12 +2697,18 @@
               {
                 "from": "chat-gateway",
                 "to": "postgresql",
-                "label": "messages"
+                "label": {
+                  "en": "messages",
+                  "id": "pesan"
+                }
               },
               {
                 "from": "marketplace-api",
                 "to": "payment-gateway",
-                "label": "payments"
+                "label": {
+                  "en": "payments",
+                  "id": "pembayaran"
+                }
               },
               {
                 "from": "payment-gateway",
@@ -2662,7 +2719,10 @@
               {
                 "from": "marketplace-api",
                 "to": "object-storage",
-                "label": "ticket files"
+                "label": {
+                  "en": "ticket files",
+                  "id": "file tiket"
+                }
               }
             ]
           },
@@ -2748,7 +2808,7 @@
           },
           "role": {
             "en": "Sole engineer and operator, responsible for design, AI coding agent direction, review and delivery",
-            "id": "Engineer dan operator tunggal, bertanggung jawab atas desain, arahan AI coding agent, review, dan delivery"
+            "id": "Engineer dan operator tunggal, bertanggung jawab atas desain, pengarahan AI coding agent, review, dan rilis"
           },
           "problem": {
             "en": "Metrodata needed one vendor portal built around the purchase order: vendor onboarding, delivery acceptance (BAST), invoices with several tax types, and accounting and tax approvals that run in parallel. SAP failures must not stop the portal. The business owner gave weekly direction, including a process revision that users approved mid-project and that moved the whole workflow onto the purchase order. The gallery shows a masked local demo, not production captures.",
@@ -2780,7 +2840,10 @@
             "nodes": [
               {
                 "id": "vendors",
-                "label": "Vendors",
+                "label": {
+                  "en": "Vendors",
+                  "id": "Vendor"
+                },
                 "sublabel": {
                   "en": "Onboarding, documents and invoices",
                   "id": "Onboarding, dokumen, dan invoice"
@@ -2791,7 +2854,10 @@
               },
               {
                 "id": "approvers",
-                "label": "Internal approvers",
+                "label": {
+                  "en": "Internal approvers",
+                  "id": "Pemberi persetujuan internal"
+                },
                 "sublabel": {
                   "en": "Procurement, accounting and tax",
                   "id": "Pengadaan, akuntansi, dan pajak"
@@ -2802,7 +2868,10 @@
               },
               {
                 "id": "web-portal",
-                "label": "Next.js portal",
+                "label": {
+                  "en": "Next.js portal",
+                  "id": "Portal Next.js"
+                },
                 "sublabel": {
                   "en": "UI and BFF with sealed sessions",
                   "id": "UI dan BFF dengan sesi tersegel"
@@ -2886,7 +2955,10 @@
               {
                 "from": "web-portal",
                 "to": "blob-storage",
-                "label": "direct upload"
+                "label": {
+                  "en": "direct upload",
+                  "id": "upload langsung"
+                }
               },
               {
                 "from": "fastapi-backend",
@@ -2896,7 +2968,10 @@
               {
                 "from": "fastapi-backend",
                 "to": "blob-storage",
-                "label": "documents"
+                "label": {
+                  "en": "documents",
+                  "id": "dokumen"
+                }
               },
               {
                 "from": "fastapi-backend",
@@ -3087,7 +3162,10 @@
             "nodes": [
               {
                 "id": "tenant-dashboards",
-                "label": "Tenant dashboards",
+                "label": {
+                  "en": "Tenant dashboards",
+                  "id": "Dashboard tenant"
+                },
                 "sublabel": {
                   "en": "Next.js and React",
                   "id": "Next.js dan React"
@@ -3098,7 +3176,10 @@
               },
               {
                 "id": "go-apis",
-                "label": "Go (Echo) APIs",
+                "label": {
+                  "en": "Go (Echo) APIs",
+                  "id": "API Go (Echo)"
+                },
                 "sublabel": {
                   "en": "Asset and task services",
                   "id": "Layanan aset dan tugas"
@@ -3109,7 +3190,10 @@
               },
               {
                 "id": "laravel-modules",
-                "label": "Laravel modules",
+                "label": {
+                  "en": "Laravel modules",
+                  "id": "Modul Laravel"
+                },
                 "sublabel": {
                   "en": "Refactored legacy features",
                   "id": "Fitur lama yang sudah di-refactor"
@@ -3181,7 +3265,10 @@
               {
                 "from": "laravel-modules",
                 "to": "sonarqube",
-                "label": "debt scans",
+                "label": {
+                  "en": "debt scans",
+                  "id": "pemindaian technical debt"
+                },
                 "async": true
               }
             ]
@@ -3252,7 +3339,7 @@
           },
           "role": {
             "en": "Backend Engineer, my first full-time role while completing university",
-            "id": "Backend Engineer, pekerjaan full-time pertama saya sambil menyelesaikan kuliah"
+            "id": "Backend Engineer, pekerjaan penuh waktu pertama saya sambil menyelesaikan kuliah"
           },
           "problem": {
             "en": "Slow payments and stale data affected travel and hotel bookings at Mister Aladin. The payment gateway, realtime request handling and several MySQL-heavy endpoints were bottlenecks.",
@@ -3280,7 +3367,10 @@
             "nodes": [
               {
                 "id": "travel-clients",
-                "label": "Travel web and app",
+                "label": {
+                  "en": "Travel web and app",
+                  "id": "Situs dan aplikasi travel"
+                },
                 "sublabel": {
                   "en": "Travel bookings and checkout",
                   "id": "Pemesanan travel dan checkout"
@@ -3313,7 +3403,10 @@
               },
               {
                 "id": "payments-lambda",
-                "label": "Payments on AWS Lambda",
+                "label": {
+                  "en": "Payments on AWS Lambda",
+                  "id": "Pembayaran di AWS Lambda"
+                },
                 "sublabel": {
                   "en": "Payment gateway processing",
                   "id": "Pemrosesan payment gateway"
@@ -3349,17 +3442,26 @@
               {
                 "from": "travel-clients",
                 "to": "graphql-api",
-                "label": "queries"
+                "label": {
+                  "en": "queries",
+                  "id": "query"
+                }
               },
               {
                 "from": "travel-clients",
                 "to": "websocket",
-                "label": "live updates"
+                "label": {
+                  "en": "live updates",
+                  "id": "pembaruan live"
+                }
               },
               {
                 "from": "graphql-api",
                 "to": "payments-lambda",
-                "label": "payments"
+                "label": {
+                  "en": "payments",
+                  "id": "pembayaran"
+                }
               },
               {
                 "from": "websocket",
@@ -3476,7 +3578,10 @@
             "nodes": [
               {
                 "id": "storefront",
-                "label": "Storefront",
+                "label": {
+                  "en": "Storefront",
+                  "id": "Toko online"
+                },
                 "sublabel": {
                   "en": "Collectors",
                   "id": "Kolektor"
@@ -3487,7 +3592,10 @@
               },
               {
                 "id": "admin-dashboard",
-                "label": "Admin dashboard",
+                "label": {
+                  "en": "Admin dashboard",
+                  "id": "Dashboard admin"
+                },
                 "sublabel": {
                   "en": "Orders, ledger and vouchers",
                   "id": "Pesanan, ledger, dan voucher"
@@ -3560,12 +3668,18 @@
               {
                 "from": "laravel-api",
                 "to": "ipaymu",
-                "label": "payments"
+                "label": {
+                  "en": "payments",
+                  "id": "pembayaran"
+                }
               },
               {
                 "from": "laravel-api",
                 "to": "rajaongkir",
-                "label": "shipping rates"
+                "label": {
+                  "en": "shipping rates",
+                  "id": "tarif pengiriman"
+                }
               }
             ]
           },
@@ -3717,7 +3831,10 @@
             "nodes": [
               {
                 "id": "analyst-dashboard",
-                "label": "Analyst dashboard",
+                "label": {
+                  "en": "Analyst dashboard",
+                  "id": "Dashboard analis"
+                },
                 "sublabel": {
                   "en": "Assets, scans and reports",
                   "id": "Aset, scan, dan laporan"
@@ -3728,7 +3845,10 @@
               },
               {
                 "id": "express-api",
-                "label": "Express API",
+                "label": {
+                  "en": "Express API",
+                  "id": "API Express"
+                },
                 "sublabel": {
                   "en": "Sequelize, Swagger",
                   "id": "Sequelize, Swagger"
@@ -3739,7 +3859,10 @@
               },
               {
                 "id": "scan-scheduler",
-                "label": "Scan scheduler",
+                "label": {
+                  "en": "Scan scheduler",
+                  "id": "Penjadwal pemindaian"
+                },
                 "sublabel": {
                   "en": "Scheduled cron jobs and exports",
                   "id": "Cron job dan ekspor terjadwal"
@@ -3791,12 +3914,18 @@
               {
                 "from": "express-api",
                 "to": "nessus",
-                "label": "launch, pause, resume"
+                "label": {
+                  "en": "launch, pause, resume",
+                  "id": "mulai, jeda, lanjutkan"
+                }
               },
               {
                 "from": "scan-scheduler",
                 "to": "nessus",
-                "label": "progress",
+                "label": {
+                  "en": "progress",
+                  "id": "progres"
+                },
                 "async": true
               },
               {
@@ -3807,13 +3936,19 @@
               {
                 "from": "scan-scheduler",
                 "to": "mysql",
-                "label": "results",
+                "label": {
+                  "en": "results",
+                  "id": "hasil"
+                },
                 "async": true
               },
               {
                 "from": "express-api",
                 "to": "redis",
-                "label": "stats"
+                "label": {
+                  "en": "stats",
+                  "id": "statistik"
+                }
               }
             ]
           },
@@ -3900,8 +4035,8 @@
             "id": "Ticketing Acara Berkuota Terbatas"
           },
           "tagline": {
-            "en": "Transactional booking prevents overselling for premium events, with online payments and QR e-tickets.",
-            "id": "Booking transaksional mencegah overselling tiket acara premium, dengan pembayaran online dan e-ticket QR."
+            "en": "Ticketing for limited-quota premium events, with atomic booking designed to prevent overselling, online payments and QR e-tickets.",
+            "id": "Ticketing acara premium berkuota terbatas, dengan booking atomik untuk mencegah overselling, pembayaran online, dan e-ticket QR."
           },
           "period": {
             "start": "2025-07",
@@ -3937,7 +4072,10 @@
             "nodes": [
               {
                 "id": "storefront",
-                "label": "Ticket storefront",
+                "label": {
+                  "en": "Ticket storefront",
+                  "id": "Toko tiket"
+                },
                 "sublabel": {
                   "en": "Next.js 15",
                   "id": "Next.js 15"
@@ -3948,7 +4086,10 @@
               },
               {
                 "id": "admin-dashboard",
-                "label": "Admin dashboard",
+                "label": {
+                  "en": "Admin dashboard",
+                  "id": "Dashboard admin"
+                },
                 "sublabel": {
                   "en": "Event and transaction management",
                   "id": "Pengelolaan acara dan transaksi"
@@ -3959,7 +4100,10 @@
               },
               {
                 "id": "api-routes",
-                "label": "Next.js API routes",
+                "label": {
+                  "en": "Next.js API routes",
+                  "id": "API route Next.js"
+                },
                 "sublabel": {
                   "en": "Repository and service layers",
                   "id": "Lapisan repository dan service"
@@ -4000,17 +4144,26 @@
               {
                 "from": "admin-dashboard",
                 "to": "api-routes",
-                "label": "manage"
+                "label": {
+                  "en": "manage",
+                  "id": "kelola"
+                }
               },
               {
                 "from": "api-routes",
                 "to": "postgresql",
-                "label": "atomic booking"
+                "label": {
+                  "en": "atomic booking",
+                  "id": "booking atomik"
+                }
               },
               {
                 "from": "api-routes",
                 "to": "ipaymu",
-                "label": "payments"
+                "label": {
+                  "en": "payments",
+                  "id": "pembayaran"
+                }
               },
               {
                 "from": "ipaymu",
@@ -4170,8 +4323,8 @@
             "end": "2025-08"
           },
           "role": {
-            "en": "Full Stack Engineer in a two-person team (backend foundation, accounts, events, caching and uploads, the attendee site and the organizer dashboard)",
-            "id": "Full Stack Engineer dalam tim dua orang (fondasi backend, akun, acara, caching dan upload, situs pengunjung, serta dashboard penyelenggara)"
+            "en": "Full Stack Engineer in a two-person team, responsible for the API foundation, attendee site and organizer dashboard",
+            "id": "Full Stack Engineer dalam tim dua orang, menangani fondasi API, situs pengunjung, dan dashboard penyelenggara"
           },
           "problem": {
             "en": "Serupa needed its own ticketing platform: organizers publish events with ticket tiers, attendees find events and get free or paid tickets online, and every order ends in a ticket that can be shown at the door. Two freelance engineers built it as three apps between June and August 2025.",
@@ -4203,7 +4356,10 @@
             "nodes": [
               {
                 "id": "attendee-site",
-                "label": "Attendee site",
+                "label": {
+                  "en": "Attendee site",
+                  "id": "Situs pengunjung"
+                },
                 "sublabel": {
                   "en": "Next.js 15, TanStack Query",
                   "id": "Next.js 15, TanStack Query"
@@ -4214,7 +4370,10 @@
               },
               {
                 "id": "organizer-dashboard",
-                "label": "Organizer dashboard",
+                "label": {
+                  "en": "Organizer dashboard",
+                  "id": "Dashboard penyelenggara"
+                },
                 "sublabel": {
                   "en": "Next.js 15, Radix UI",
                   "id": "Next.js 15, Radix UI"
@@ -4225,7 +4384,10 @@
               },
               {
                 "id": "express-api",
-                "label": "Express API",
+                "label": {
+                  "en": "Express API",
+                  "id": "API Express"
+                },
                 "sublabel": {
                   "en": "Bun, JWT, Socket.IO",
                   "id": "Bun, JWT, Socket.IO"
@@ -4288,12 +4450,18 @@
               {
                 "from": "organizer-dashboard",
                 "to": "express-api",
-                "label": "manage events"
+                "label": {
+                  "en": "manage events",
+                  "id": "kelola acara"
+                }
               },
               {
                 "from": "express-api",
                 "to": "postgresql",
-                "label": "queries"
+                "label": {
+                  "en": "queries",
+                  "id": "query"
+                }
               },
               {
                 "from": "express-api",
@@ -4303,12 +4471,18 @@
               {
                 "from": "express-api",
                 "to": "s3",
-                "label": "uploads"
+                "label": {
+                  "en": "uploads",
+                  "id": "upload"
+                }
               },
               {
                 "from": "express-api",
                 "to": "payment-gateway",
-                "label": "payment links"
+                "label": {
+                  "en": "payment links",
+                  "id": "tautan pembayaran"
+                }
               },
               {
                 "from": "payment-gateway",
@@ -4508,7 +4682,10 @@
             "nodes": [
               {
                 "id": "event-platform",
-                "label": "Event platform",
+                "label": {
+                  "en": "Event platform",
+                  "id": "Platform acara"
+                },
                 "sublabel": {
                   "en": "Event attendees and exhibitors",
                   "id": "Peserta acara dan exhibitor"
@@ -4519,7 +4696,10 @@
               },
               {
                 "id": "matching-api",
-                "label": "Search and matching API",
+                "label": {
+                  "en": "Search and matching API",
+                  "id": "API pencarian dan pencocokan"
+                },
                 "sublabel": {
                   "en": "Collaborative filtering",
                   "id": "Collaborative filtering"
@@ -4563,7 +4743,10 @@
               },
               {
                 "id": "sentiment-service",
-                "label": "Sentiment service",
+                "label": {
+                  "en": "Sentiment service",
+                  "id": "Layanan sentimen"
+                },
                 "sublabel": {
                   "en": "LangChain and OpenAI",
                   "id": "LangChain dan OpenAI"
@@ -4577,12 +4760,18 @@
               {
                 "from": "event-platform",
                 "to": "matching-api",
-                "label": "search"
+                "label": {
+                  "en": "search",
+                  "id": "pencarian"
+                }
               },
               {
                 "from": "matching-api",
                 "to": "elasticsearch",
-                "label": "ranked queries"
+                "label": {
+                  "en": "ranked queries",
+                  "id": "query berperingkat"
+                }
               },
               {
                 "from": "matching-api",
@@ -4592,13 +4781,19 @@
               {
                 "from": "matching-api",
                 "to": "rabbitmq",
-                "label": "report jobs",
+                "label": {
+                  "en": "report jobs",
+                  "id": "job laporan"
+                },
                 "async": true
               },
               {
                 "from": "rabbitmq",
                 "to": "sentiment-service",
-                "label": "feedback batches",
+                "label": {
+                  "en": "feedback batches",
+                  "id": "batch feedback"
+                },
                 "async": true
               }
             ]
@@ -4866,8 +5061,8 @@
             "id": "Contact Center Voice AI Realtime"
           },
           "tagline": {
-            "en": "ARIA, MII's voice AI contact center: natural caller interruption (~2 s to ~0.2 s), grounded answers and mid-call transfer to a human.",
-            "id": "ARIA, contact center voice AI milik MII: interupsi alami (~2 detik menjadi ~0,2 detik), jawaban dari knowledge base, dan pengalihan ke petugas di tengah panggilan."
+            "en": "ARIA, MII's voice AI contact center: ~2 s to ~0.2 s interruption latency in a controlled A/B (n=4 calls per arm), grounded answers and human handover.",
+            "id": "ARIA, voice AI MII: jawaban dari knowledge base dan pengalihan ke petugas. Latensi interupsi ~2 ke ~0,2 detik pada A/B terkontrol (n=4 panggilan per jalur)."
           },
           "period": {
             "start": "2026-05",
@@ -4907,7 +5102,10 @@
             "nodes": [
               {
                 "id": "caller",
-                "label": "Caller",
+                "label": {
+                  "en": "Caller",
+                  "id": "Penelepon"
+                },
                 "sublabel": {
                   "en": "Browser calls over WebRTC",
                   "id": "Panggilan browser melalui WebRTC"
@@ -4984,7 +5182,10 @@
               },
               {
                 "id": "ingest",
-                "label": "Knowledge ingestion",
+                "label": {
+                  "en": "Knowledge ingestion",
+                  "id": "Pengisian knowledge base"
+                },
                 "sublabel": {
                   "en": "Durable Functions, Document Intelligence",
                   "id": "Durable Functions, Document Intelligence"
@@ -5003,7 +5204,10 @@
               {
                 "from": "media",
                 "to": "backend",
-                "label": "audio stream"
+                "label": {
+                  "en": "audio stream",
+                  "id": "stream audio"
+                }
               },
               {
                 "from": "backend",
@@ -5018,12 +5222,18 @@
               {
                 "from": "backend",
                 "to": "cosmos",
-                "label": "calls, transcripts"
+                "label": {
+                  "en": "calls, transcripts",
+                  "id": "panggilan, transkrip"
+                }
               },
               {
                 "from": "supervisor",
                 "to": "backend",
-                "label": "takeover, hand-back"
+                "label": {
+                  "en": "takeover, hand-back",
+                  "id": "ambil alih, kembalikan"
+                }
               },
               {
                 "from": "ingest",
@@ -5037,8 +5247,8 @@
             {
               "value": "~2 s to ~0.2 s",
               "label": {
-                "en": "Caller interruption latency during knowledge lookups",
-                "id": "Latensi interupsi penelepon saat pencarian di knowledge base"
+                "en": "Knowledge-lookup interruption latency, controlled A/B (n=4 calls per arm)",
+                "id": "Latensi interupsi akses knowledge base, A/B terkontrol (n=4 panggilan per jalur)"
               },
               "context": {
                 "en": "Controlled A/B on the same deployment, index and audio, n=4 calls per arm: 1,875 to 2,140 ms vs 93 to 220 ms.",
@@ -5061,8 +5271,8 @@
             {
               "value": "6 vs 18",
               "label": {
-                "en": "Hallucinated answers in model comparison; the quality gate retained the stronger realtime model",
-                "id": "Jawaban halusinasi dalam perbandingan model; quality gate mempertahankan model realtime yang lebih kuat"
+                "en": "Hallucinated answers in an offline model comparison; the quality gate retained the stronger realtime model",
+                "id": "Jawaban halusinasi dalam perbandingan model offline; quality gate mempertahankan model realtime yang lebih kuat"
               },
               "context": {
                 "en": "Evaluated offline with a calibrated LLM judge; mean score 4.71 vs 4.28.",
@@ -5259,23 +5469,26 @@
               "id": "Saya menambahkan triage dan ringkasan eksekutif dengan Azure OpenAI, check run untuk merge gate, serta chat asisten keamanan berbasis vector index."
             },
             {
-              "en": "I built a fix agent with token-budgeted code context and region-splice patches. Dependency upgrades use package-manager resolution and never downgrade; protected-path guards and rescan validation run before publication.",
-              "id": "Saya membangun fix agent dengan konteks kode sesuai token budget dan patch region-splice. Upgrade dependency menggunakan resolusi package manager tanpa downgrade; proteksi path sensitif dan validasi rescan berjalan sebelum publikasi."
+              "en": "I built a fix agent that limits code context to a token budget and patches only the selected code regions. Dependency upgrades use package-manager resolution and never downgrade; protected-path guards and rescan validation run before publication.",
+              "id": "Saya membangun fix agent yang membatasi konteks kode sesuai token budget dan menerapkan patch hanya pada bagian kode yang dipilih. Upgrade dependency memakai resolusi package manager tanpa downgrade; proteksi path sensitif dan validasi rescan berjalan sebelum publikasi."
             },
             {
               "en": "After an internal audit reproduced untrusted repository code executing alongside production secrets, I led a 14-item hardening program. Scans moved to isolated, autoscaled jobs with tokens scoped per job.",
               "id": "Setelah audit internal mereproduksi eksekusi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, saya memimpin hardening 14 item. Scan dipindahkan ke job terisolasi dengan autoscaling dan token yang dibatasi per job."
             },
             {
-              "en": "I added Prompt Shields, prompt secret redaction and an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days).",
-              "id": "Saya menambahkan Prompt Shields, redaksi secret dalam prompt, dan suite prompt injection offline, lalu merilis lewat staging, canary revision, dan health gate (13 rilis dalam 7 hari)."
+              "en": "I added Prompt Shields, redacted secrets from prompts and built an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days).",
+              "id": "Saya menambahkan Prompt Shields, menyamarkan secret di dalam prompt, dan membangun suite prompt injection offline, lalu merilis lewat staging, canary revision, dan health gate (13 rilis dalam 7 hari)."
             }
           ],
           "architecture": {
             "nodes": [
               {
                 "id": "developers",
-                "label": "Developers",
+                "label": {
+                  "en": "Developers",
+                  "id": "Developer"
+                },
                 "sublabel": {
                   "en": "Submit pull requests",
                   "id": "Mengajukan pull request"
@@ -5286,7 +5499,10 @@
               },
               {
                 "id": "security-team",
-                "label": "Security team",
+                "label": {
+                  "en": "Security team",
+                  "id": "Tim keamanan"
+                },
                 "sublabel": {
                   "en": "Next.js dashboard with Entra ID",
                   "id": "Dashboard Next.js dengan Entra ID"
@@ -5381,7 +5597,10 @@
               {
                 "from": "api",
                 "to": "service-bus",
-                "label": "scan, fix jobs",
+                "label": {
+                  "en": "scan, fix jobs",
+                  "id": "job scan, perbaikan"
+                },
                 "async": true
               },
               {
@@ -5393,18 +5612,27 @@
               {
                 "from": "scan-jobs",
                 "to": "api",
-                "label": "results",
+                "label": {
+                  "en": "results",
+                  "id": "hasil"
+                },
                 "async": true
               },
               {
                 "from": "api",
                 "to": "openai",
-                "label": "triage, fix patches"
+                "label": {
+                  "en": "triage, fix patches",
+                  "id": "triage, patch perbaikan"
+                }
               },
               {
                 "from": "api",
                 "to": "cosmos",
-                "label": "findings"
+                "label": {
+                  "en": "findings",
+                  "id": "temuan"
+                }
               },
               {
                 "from": "scan-jobs",
@@ -5565,8 +5793,8 @@
             "id": "Review Dokumen Fraud AI"
           },
           "tagline": {
-            "en": "MII Fraud Detection, MII's internal platform: OCR and two-pass LLM review for procurement packets, with evaluation gates controlling risk-engine release.",
-            "id": "MII Fraud Detection, platform internal MII: OCR dan review LLM dua tahap untuk paket dokumen pengadaan, dengan rilis risk engine ditentukan oleh gate evaluasi."
+            "en": "MII Fraud Detection: OCR and two-pass LLM procurement review, with offline development-set evaluation. The hybrid engine remains in shadow mode only.",
+            "id": "MII Fraud Detection: OCR dan review LLM dua tahap untuk dokumen pengadaan. Evaluasi memakai set development offline; engine hybrid tetap di shadow mode."
           },
           "period": {
             "start": "2026-05",
@@ -5606,7 +5834,10 @@
             "nodes": [
               {
                 "id": "reviewer",
-                "label": "Procurement reviewer",
+                "label": {
+                  "en": "Procurement reviewer",
+                  "id": "Reviewer pengadaan"
+                },
                 "layer": 0,
                 "row": 0,
                 "kind": "human",
@@ -5617,7 +5848,10 @@
               },
               {
                 "id": "web",
-                "label": "Next.js web app",
+                "label": {
+                  "en": "Next.js web app",
+                  "id": "Aplikasi web Next.js"
+                },
                 "sublabel": {
                   "en": "Upload, live progress and reports",
                   "id": "Upload, progres live, dan laporan"
@@ -5650,7 +5884,10 @@
               },
               {
                 "id": "agents",
-                "label": "Agent Framework YAML agents",
+                "label": {
+                  "en": "Agent Framework YAML agents",
+                  "id": "Agent YAML Agent Framework"
+                },
                 "sublabel": {
                   "en": "Per-document review, then cross-document",
                   "id": "Review per dokumen, lalu lintas dokumen"
@@ -5672,7 +5909,10 @@
               },
               {
                 "id": "risk-engine",
-                "label": "Hybrid risk engine",
+                "label": {
+                  "en": "Hybrid risk engine",
+                  "id": "Risk engine hybrid"
+                },
                 "sublabel": {
                   "en": "Rules and LLM in shadow mode",
                   "id": "Rules dan LLM dalam shadow mode"
@@ -5683,7 +5923,10 @@
               },
               {
                 "id": "storage",
-                "label": "Cosmos DB and Blob",
+                "label": {
+                  "en": "Cosmos DB and Blob",
+                  "id": "Cosmos DB dan Blob"
+                },
                 "sublabel": {
                   "en": "Review history and reports",
                   "id": "Riwayat review dan laporan"
@@ -5697,12 +5940,18 @@
               {
                 "from": "reviewer",
                 "to": "web",
-                "label": "document packet"
+                "label": {
+                  "en": "document packet",
+                  "id": "paket dokumen"
+                }
               },
               {
                 "from": "web",
                 "to": "api",
-                "label": "REST, live progress"
+                "label": {
+                  "en": "REST, live progress",
+                  "id": "REST, progres live"
+                }
               },
               {
                 "from": "api",
@@ -5712,29 +5961,44 @@
               {
                 "from": "api",
                 "to": "agents",
-                "label": "findings, verdict"
+                "label": {
+                  "en": "findings, verdict",
+                  "id": "temuan, verdict"
+                }
               },
               {
                 "from": "agents",
                 "to": "openai",
-                "label": "model calls"
+                "label": {
+                  "en": "model calls",
+                  "id": "panggilan model"
+                }
               },
               {
                 "from": "api",
                 "to": "risk-engine",
-                "label": "shadow run",
+                "label": {
+                  "en": "shadow run",
+                  "id": "run shadow mode"
+                },
                 "async": true
               },
               {
                 "from": "risk-engine",
                 "to": "storage",
-                "label": "shadow results",
+                "label": {
+                  "en": "shadow results",
+                  "id": "hasil shadow mode"
+                },
                 "async": true
               },
               {
                 "from": "api",
                 "to": "storage",
-                "label": "history, reports"
+                "label": {
+                  "en": "history, reports",
+                  "id": "riwayat, laporan"
+                }
               }
             ]
           },
@@ -5742,8 +6006,8 @@
             {
               "value": "90.9% to 36.4%",
               "label": {
-                "en": "False-positive rate reduction on noisy clean packets",
-                "id": "Penurunan false-positive rate pada paket bersih yang noisy"
+                "en": "False-positive rate on noisy clean packets, offline development set",
+                "id": "False-positive rate paket bersih, gangguan administratif; development offline"
               },
               "context": {
                 "en": "Measured offline on a development gold set.",
@@ -5754,8 +6018,8 @@
             {
               "value": "76.2% to 0%",
               "label": {
-                "en": "Fail-open rate reduction",
-                "id": "Penurunan tingkat fail-open"
+                "en": "Fail-open rate, offline development set",
+                "id": "Tingkat fail-open, set development offline"
               },
               "context": {
                 "en": "Measured offline on the same development gold set.",
@@ -5778,8 +6042,8 @@
             {
               "value": "11.1% to 3.7%",
               "label": {
-                "en": "Reduction in prompt-injection success rate",
-                "id": "Penurunan tingkat keberhasilan prompt injection"
+                "en": "Prompt-injection success rate in a live evaluation, not production",
+                "id": "Tingkat keberhasilan prompt injection pada evaluasi live, bukan produksi"
               },
               "context": {
                 "en": "Live evaluation after a model change; false positives also fell from 26.1% to 21.7%. These are evaluation results, not production outcomes.",
@@ -5869,8 +6133,8 @@
             "id": "AI CV Screening dan Evaluasi"
           },
           "tagline": {
-            "en": "MII E-Recruitment, a failing prototype rebuilt into MII's tested, evaluated screening platform: AI provides evidence, and the recruiter decides.",
-            "id": "MII E-Recruitment, prototipe yang sering gagal ditata ulang menjadi platform screening MII yang teruji dan terevaluasi: AI memberikan bukti, recruiter memutuskan."
+            "en": "MII E-Recruitment: ~45% failures in the original 22-pair screening run; no recorded rerun. AI supplies evidence; the recruiter makes the final decision.",
+            "id": "MII E-Recruitment: tingkat kegagalan ~45% pada run awal 22 pasang, tanpa rerun tercatat. AI memberikan bukti; recruiter tetap mengambil keputusan."
           },
           "period": {
             "start": "2026-06",
@@ -5917,21 +6181,30 @@
               },
               {
                 "id": "web",
-                "label": "Next.js web app",
+                "label": {
+                  "en": "Next.js web app",
+                  "id": "Aplikasi web Next.js"
+                },
                 "layer": 1,
                 "row": 0,
                 "kind": "client"
               },
               {
                 "id": "backend",
-                "label": "FastAPI and Durable Functions",
+                "label": {
+                  "en": "FastAPI and Durable Functions",
+                  "id": "FastAPI dan Durable Functions"
+                },
                 "layer": 2,
                 "row": 0,
                 "kind": "service"
               },
               {
                 "id": "eval",
-                "label": "Evaluation harness",
+                "label": {
+                  "en": "Evaluation harness",
+                  "id": "Harness evaluasi"
+                },
                 "sublabel": {
                   "en": "Deployment gate in CI",
                   "id": "Deployment gate di CI"
@@ -5971,7 +6244,10 @@
               {
                 "from": "web",
                 "to": "backend",
-                "label": "HMAC-signed"
+                "label": {
+                  "en": "HMAC-signed",
+                  "id": "bertanda tangan HMAC"
+                }
               },
               {
                 "from": "backend",
@@ -5981,7 +6257,10 @@
               {
                 "from": "backend",
                 "to": "docint",
-                "label": "parse"
+                "label": {
+                  "en": "parse",
+                  "id": "parsing"
+                }
               },
               {
                 "from": "eval",
@@ -5994,8 +6273,8 @@
             {
               "value": "~45%",
               "label": {
-                "en": "Screening failure rate eliminated by the fixes",
-                "id": "Tingkat kegagalan screening yang dihilangkan lewat perbaikan"
+                "en": "Failure rate, original 22-pair screening run; no recorded rerun",
+                "id": "Tingkat kegagalan screening awal, 22 pasang; belum ada rerun yang tercatat"
               },
               "context": {
                 "en": "Observed in a 22-pair evaluation run, with fixes covered by 7 regression tests from real error strings. A rerun of that exact evaluation was not recorded.",
@@ -6010,8 +6289,8 @@
                 "id": "Tingkat parse failure pada baseline berikutnya (1 dari 800 panggilan)"
               },
               "context": {
-                "en": "Measured in a later evaluation baseline using a newer model and prompt.",
-                "id": "Diukur pada baseline evaluasi berikutnya menggunakan model dan prompt yang lebih baru."
+                "en": "Measured in a later evaluation baseline using a newer model and prompt, not a before/after estimate of the original fixes.",
+                "id": "Diukur pada baseline evaluasi berikutnya menggunakan model dan prompt yang lebih baru, bukan perbandingan sebelum dan sesudah perbaikan awal."
               },
               "confidence": "verified"
             },
@@ -6030,8 +6309,8 @@
             {
               "value": "21.1 s to 12.1 s",
               "label": {
-                "en": "Screening p95 latency with medium rather than high reasoning effort",
-                "id": "Latensi p95 screening dengan reasoning effort medium, bukan high"
+                "en": "Screening p95 latency in controlled evaluations, medium vs high reasoning effort",
+                "id": "Latensi p95 screening pada evaluasi terkontrol, reasoning effort medium vs high"
               },
               "context": {
                 "en": "Measured in controlled evaluation rounds; the selected setting still passed fairness and injection gates.",
@@ -6135,8 +6414,8 @@
             "id": "PoC Analisis Rekening Koran"
           },
           "tagline": {
-            "en": "ATLAS, document AI for a national digital bank's evaluators, with strict access control, Indonesian data residency and faster document processing.",
-            "id": "ATLAS, Document AI untuk evaluator sebuah bank digital nasional, dengan kontrol akses ketat, penyimpanan data di Indonesia, dan pemrosesan dokumen lebih cepat."
+            "en": "Document AI for a national digital bank's evaluators, with strict access control, Indonesian data residency and faster document processing.",
+            "id": "Document AI untuk evaluator sebuah bank digital nasional, dengan kontrol akses ketat, penyimpanan data di Indonesia, dan pemrosesan dokumen lebih cepat."
           },
           "period": {
             "start": "2026-06",
@@ -6172,14 +6451,20 @@
             "nodes": [
               {
                 "id": "evaluator",
-                "label": "Bank evaluator",
+                "label": {
+                  "en": "Bank evaluator",
+                  "id": "Evaluator bank"
+                },
                 "layer": 0,
                 "row": 0,
                 "kind": "human"
               },
               {
                 "id": "web",
-                "label": "Next.js web app",
+                "label": {
+                  "en": "Next.js web app",
+                  "id": "Aplikasi web Next.js"
+                },
                 "sublabel": {
                   "en": "Entra OIDC, maker-checker",
                   "id": "Entra OIDC, maker-checker"
@@ -6208,7 +6493,10 @@
               },
               {
                 "id": "storage",
-                "label": "Cosmos DB and Blob",
+                "label": {
+                  "en": "Cosmos DB and Blob",
+                  "id": "Cosmos DB dan Blob"
+                },
                 "sublabel": {
                   "en": "Indonesian region",
                   "id": "Region Indonesia"
@@ -6222,7 +6510,10 @@
               {
                 "from": "evaluator",
                 "to": "web",
-                "label": "statements"
+                "label": {
+                  "en": "statements",
+                  "id": "rekening koran"
+                }
               },
               {
                 "from": "web",
@@ -6235,7 +6526,10 @@
               {
                 "from": "backend",
                 "to": "storage",
-                "label": "audit trail"
+                "label": {
+                  "en": "audit trail",
+                  "id": "jejak audit"
+                }
               }
             ]
           },
@@ -6296,8 +6590,8 @@
             {
               "src": "/media/bank-statement-analyzer/01-operations-dashboard.webp",
               "alt": {
-                "en": "ATLAS operations dashboard: exposure under analysis, statements processed, high-risk statements and a work queue; amounts and names blurred",
-                "id": "Operations dashboard ATLAS: exposure yang dianalisis, statement yang diproses, statement berisiko tinggi, dan antrean kerja; nominal dan nama diburamkan"
+                "en": "Bank-statement analysis dashboard: exposure under analysis, statements processed, high-risk statements and a work queue; amounts and names blurred",
+                "id": "Dashboard analisis rekening koran: exposure yang dianalisis, rekening koran yang diproses, dokumen berisiko tinggi, dan antrean kerja; nominal dan nama diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -6349,7 +6643,7 @@
           },
           "tagline": {
             "en": "The MII AI Dashboard Template, a shared starting point for client AI apps, combining the web tier, agents, persistence, sign-in and infrastructure.",
-            "id": "MII AI Dashboard Template, template bersama untuk aplikasi AI klien, mencakup web tier, agent, persistence, sign-in, dan infrastruktur."
+            "id": "MII AI Dashboard Template, fondasi bersama untuk aplikasi AI klien, mencakup web tier, agent, penyimpanan percakapan, sign-in, dan infrastruktur."
           },
           "period": {
             "start": "2026-03",
@@ -6381,7 +6675,10 @@
             "nodes": [
               {
                 "id": "web",
-                "label": "Next.js web tier",
+                "label": {
+                  "en": "Next.js web tier",
+                  "id": "Lapisan web Next.js"
+                },
                 "sublabel": {
                   "en": "Entra ID sign-in",
                   "id": "Sign-in Entra ID"
@@ -6392,14 +6689,20 @@
               },
               {
                 "id": "agent-service",
-                "label": "FastAPI agent service",
+                "label": {
+                  "en": "FastAPI agent service",
+                  "id": "Layanan agent FastAPI"
+                },
                 "layer": 1,
                 "row": 0,
                 "kind": "service"
               },
               {
                 "id": "registry",
-                "label": "Agent Framework YAML registry",
+                "label": {
+                  "en": "Agent Framework YAML registry",
+                  "id": "Registry YAML Agent Framework"
+                },
                 "sublabel": {
                   "en": "Multi-provider models",
                   "id": "Model multi-provider"
@@ -6428,7 +6731,10 @@
               {
                 "from": "agent-service",
                 "to": "registry",
-                "label": "run agent"
+                "label": {
+                  "en": "run agent",
+                  "id": "jalankan agent"
+                }
               },
               {
                 "from": "agent-service",
@@ -6557,8 +6863,8 @@
             "id": "Forecasting Permintaan Fabric"
           },
           "tagline": {
-            "en": "A national bakery brand's demand-planning platform on Microsoft Fabric: an on-premise database migrated into a medallion lakehouse, a forecasting dashboard and a data agent in Microsoft 365 Copilot.",
-            "id": "Platform perencanaan permintaan untuk merek roti nasional di Microsoft Fabric: database on-premise yang dimigrasikan ke lakehouse medallion, dashboard forecasting, dan data agent di Microsoft 365 Copilot."
+            "en": "Demand planning on Microsoft Fabric for a national bakery brand: a forecasting dashboard, a Microsoft 365 Copilot data agent and a medallion migration pipeline whose live cut-over is still in progress.",
+            "id": "Perencanaan permintaan di Microsoft Fabric untuk merek roti nasional: dashboard forecasting, data agent di Microsoft 365 Copilot, dan pipeline migrasi medallion yang cut-over live-nya masih berlangsung."
           },
           "period": {
             "start": "2026-08",
@@ -6586,15 +6892,18 @@
               "id": "Saya menambahkan backend privat dengan proteksi Entra untuk executive briefing berbasis AI. Setelah mengukur respons non-streaming yang lambat, saya memindahkan chat ke Fabric data agent yang membaca tabel gold. Agent ini dipublikasikan ke Microsoft 365 Copilot agar tim perencana bisa bertanya dari tempat mereka bekerja."
             },
             {
-              "en": "I migrated the client's on-premise database into Fabric with a medallion model, as one fail-fast, stage-resumable pipeline: data contract, bronze ingestion, silver data-quality rules, forecast adapter, gold serving tables and app sync with reconciliation.",
-              "id": "Saya memigrasikan database on-premise klien ke Fabric dengan model medallion, sebagai satu pipeline yang fail-fast dan bisa dilanjutkan per tahap: data contract, ingestion bronze, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi dengan rekonsiliasi."
+              "en": "I built a medallion pipeline to migrate the client's on-premise database into Fabric. It stops on failure and can resume from a completed stage: data contract, bronze ingestion, silver data-quality rules, forecast adapter, gold serving tables and reconciled app sync. Live cut-over remains in progress.",
+              "id": "Saya membangun pipeline medallion untuk memigrasikan database on-premise klien ke Fabric. Pipeline berhenti saat terjadi kegagalan dan bisa dilanjutkan dari tahap yang sudah selesai: data contract, ingestion bronze, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi dengan rekonsiliasi. Cut-over live masih berlangsung."
             }
           ],
           "architecture": {
             "nodes": [
               {
                 "id": "app",
-                "label": "Next.js app on Fabric",
+                "label": {
+                  "en": "Next.js app on Fabric",
+                  "id": "Aplikasi Next.js di Fabric"
+                },
                 "layer": 0,
                 "row": 0,
                 "kind": "client"
@@ -6608,7 +6917,10 @@
               },
               {
                 "id": "briefing",
-                "label": "Azure AI Foundry briefing",
+                "label": {
+                  "en": "Azure AI Foundry briefing",
+                  "id": "Briefing Azure AI Foundry"
+                },
                 "sublabel": {
                   "en": "Private App Service backend",
                   "id": "Backend App Service privat"
@@ -6641,7 +6953,10 @@
               },
               {
                 "id": "source",
-                "label": "On-premise source database",
+                "label": {
+                  "en": "On-premise source database",
+                  "id": "Database sumber on-premise"
+                },
                 "layer": 3,
                 "row": 0,
                 "kind": "external"
@@ -6655,23 +6970,35 @@
               {
                 "from": "app",
                 "to": "briefing",
-                "label": "executive briefing"
+                "label": {
+                  "en": "executive briefing",
+                  "id": "briefing eksekutif"
+                }
               },
               {
                 "from": "graphql",
                 "to": "lakehouse",
-                "label": "gold views"
+                "label": {
+                  "en": "gold views",
+                  "id": "view gold"
+                }
               },
               {
                 "from": "source",
                 "to": "lakehouse",
-                "label": "Data Pipelines migration",
+                "label": {
+                  "en": "Data Pipelines migration",
+                  "id": "migrasi Data Pipelines"
+                },
                 "async": true
               },
               {
                 "from": "agent",
                 "to": "lakehouse",
-                "label": "gold tables"
+                "label": {
+                  "en": "gold tables",
+                  "id": "tabel gold"
+                }
               }
             ]
           },
@@ -6877,7 +7204,10 @@
             "nodes": [
               {
                 "id": "site",
-                "label": "Next.js site",
+                "label": {
+                  "en": "Next.js site",
+                  "id": "Situs Next.js"
+                },
                 "sublabel": {
                   "en": "Streaming assistant",
                   "id": "Asisten streaming"
@@ -6888,21 +7218,30 @@
               },
               {
                 "id": "router",
-                "label": "Deterministic router",
+                "label": {
+                  "en": "Deterministic router",
+                  "id": "Router deterministik"
+                },
                 "layer": 1,
                 "row": 0,
                 "kind": "service"
               },
               {
                 "id": "agents",
-                "label": "3 Agent Framework agents",
+                "label": {
+                  "en": "3 Agent Framework agents",
+                  "id": "3 agent Agent Framework"
+                },
                 "layer": 2,
                 "row": 0,
                 "kind": "ai"
               },
               {
                 "id": "guards",
-                "label": "Content Safety guards",
+                "label": {
+                  "en": "Content Safety guards",
+                  "id": "Guard Content Safety"
+                },
                 "sublabel": {
                   "en": "Prompt Shields, output guard",
                   "id": "Prompt Shields, output guard"
@@ -6920,7 +7259,10 @@
               },
               {
                 "id": "studio",
-                "label": "Studio dashboard",
+                "label": {
+                  "en": "Studio dashboard",
+                  "id": "Dashboard Studio"
+                },
                 "sublabel": {
                   "en": "Entra ID admin",
                   "id": "Admin Entra ID"
@@ -6938,7 +7280,10 @@
               {
                 "from": "router",
                 "to": "guards",
-                "label": "screen"
+                "label": {
+                  "en": "screen",
+                  "id": "periksa"
+                }
               },
               {
                 "from": "router",
@@ -6947,12 +7292,18 @@
               {
                 "from": "agents",
                 "to": "retrieval",
-                "label": "cited passages"
+                "label": {
+                  "en": "cited passages",
+                  "id": "kutipan sumber"
+                }
               },
               {
                 "from": "studio",
                 "to": "retrieval",
-                "label": "publish"
+                "label": {
+                  "en": "publish",
+                  "id": "terbitkan"
+                }
               }
             ]
           },
@@ -7134,7 +7485,7 @@
             "nodes": [
               {
                 "id": "engineer",
-                "label": "Me",
+                "label": "Kurniadi",
                 "sublabel": {
                   "en": "Writes specs and reviews changes",
                   "id": "Menulis spec dan me-review perubahan"
@@ -7145,14 +7496,20 @@
               },
               {
                 "id": "specs",
-                "label": "Spec Kit specs and constitutions",
+                "label": {
+                  "en": "Spec Kit specs and constitutions",
+                  "id": "Spec dan constitution Spec Kit"
+                },
                 "layer": 1,
                 "row": 0,
                 "kind": "data"
               },
               {
                 "id": "agents",
-                "label": "Copilot, Claude Code and Codex agents",
+                "label": {
+                  "en": "Copilot, Claude Code and Codex agents",
+                  "id": "Agent Copilot, Claude Code dan Codex"
+                },
                 "sublabel": {
                   "en": "Parallel worktrees",
                   "id": "Worktree paralel"
@@ -7163,14 +7520,20 @@
               },
               {
                 "id": "ci",
-                "label": "CI gates",
+                "label": {
+                  "en": "CI gates",
+                  "id": "Gate CI"
+                },
                 "layer": 3,
                 "row": 0,
                 "kind": "service"
               },
               {
                 "id": "main",
-                "label": "Main branch",
+                "label": {
+                  "en": "Main branch",
+                  "id": "Branch main"
+                },
                 "layer": 4,
                 "row": 0,
                 "kind": "external"
@@ -7180,12 +7543,18 @@
               {
                 "from": "engineer",
                 "to": "specs",
-                "label": "write"
+                "label": {
+                  "en": "write",
+                  "id": "tulis"
+                }
               },
               {
                 "from": "specs",
                 "to": "agents",
-                "label": "tasks"
+                "label": {
+                  "en": "tasks",
+                  "id": "tugas"
+                }
               },
               {
                 "from": "agents",
@@ -7195,7 +7564,10 @@
               {
                 "from": "ci",
                 "to": "engineer",
-                "label": "review gate"
+                "label": {
+                  "en": "review gate",
+                  "id": "gate review"
+                }
               },
               {
                 "from": "engineer",
@@ -7411,8 +7783,8 @@
             "id": "Dashboard Review Fraud dan Remediasi Keamanan"
           },
           "tagline": {
-            "en": "FREDDY, an automotive manufacturer's fraud review dashboard, delivered in two days, followed by remediation against the client's full security assessment.",
-            "id": "FREDDY, dashboard review fraud untuk sebuah produsen otomotif, selesai dalam dua hari, dilanjutkan remediasi berdasarkan security assessment menyeluruh dari klien."
+            "en": "A fraud review dashboard for an automotive manufacturer, delivered in two days from a team prototype, followed by work on the client's security-assessment findings.",
+            "id": "Dashboard review fraud untuk produsen otomotif, dikembangkan dari prototipe tim dalam dua hari, lalu dilanjutkan dengan penanganan temuan security assessment klien."
           },
           "period": {
             "start": "2026-03",
@@ -7517,8 +7889,8 @@
           },
           "approach": [
             {
-              "en": "I migrated persistence from PostgreSQL to Cosmos DB.",
-              "id": "Saya memigrasikan persistence dari PostgreSQL ke Cosmos DB."
+              "en": "I moved the agent's stored state from PostgreSQL to Cosmos DB.",
+              "id": "Saya memindahkan penyimpanan state agent dari PostgreSQL ke Cosmos DB."
             },
             {
               "en": "I migrated the agent from LangGraph to Microsoft Agent Framework with 14 tools and vector search. I also added Key Vault, Entra sign-in, health-checked deployments with rollback and secret rotation.",
@@ -7862,8 +8234,8 @@
             "id": "Penyusunan dan Hosting Presentasi AI"
           },
           "tagline": {
-            "en": "MII Deck: a web app for authoring and presenting slides online with MII's light and dark slide components. Agents in MII Cowork draft decks in sandboxes, an owner approves each change, and each publish ships through a checked pull request.",
-            "id": "MII Deck: aplikasi web untuk menyusun dan mempresentasikan slide secara online dengan komponen slide MII bertema terang dan gelap. AI agent di MII Cowork menyusun deck di sandbox, owner menyetujui setiap perubahan, dan setiap publikasi dirilis lewat pull request yang lolos pemeriksaan."
+            "en": "MII Deck, a slide-authoring and hosting app with MII light and dark components, plus Deck Studio inside the colleague-led MII Cowork platform. Agent drafts need owner approval and publish through checked pull requests.",
+            "id": "MII Deck, aplikasi penyusunan dan hosting slide dengan komponen terang dan gelap MII, serta Deck Studio di platform MII Cowork yang dipimpin rekan. Draf agent perlu persetujuan pemilik dan dipublikasikan melalui pull request yang lolos pemeriksaan."
           },
           "period": {
             "start": "2026-07",
@@ -7883,8 +8255,8 @@
               "id": "Saya membangun kit MII Deck: komponen slide terang dan gelap, 32 blueprint slide dengan animasi, serta gate QA untuk layout, kontras, dan kedalaman teks, ditambah critic yang menilai setiap deck dengan rubrik."
             },
             {
-              "en": "I built Deck Studio inside MII Cowork: agents draft decks in the conversation's sandbox, the owner approves stages and locks slides, and decks export to editable PPTX.",
-              "id": "Saya membangun Deck Studio di dalam MII Cowork: agent menyusun deck di sandbox percakapan, owner menyetujui setiap tahap dan mengunci slide, dan deck dapat diekspor ke PPTX yang bisa diedit."
+              "en": "I built Deck Studio inside MII Cowork. Agents draft presentations in the conversation's sandbox; the owner approves each stage, locks slides and can export an editable PPTX.",
+              "id": "Saya membangun Deck Studio di dalam MII Cowork. Agent menyusun presentasi di sandbox percakapan; pemiliknya menyetujui setiap tahap, mengunci slide, dan dapat mengekspor PPTX yang bisa diedit."
             },
             {
               "en": "I built the publish path: Cowork opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
@@ -8079,8 +8451,8 @@
             "id": "Revamp UI MII Cowork dan Deck Studio"
           },
           "tagline": {
-            "en": "MII Cowork, MII's AI agent workspace where every conversation runs in its own Azure Container Apps sandbox: its interface rebuilt on MII light and dark themes, plus Deck Studio for drafting MII Deck presentations beside the chat.",
-            "id": "MII Cowork, workspace AI agent milik MII tempat setiap percakapan berjalan di sandbox Azure Container Apps sendiri: antarmukanya dibangun ulang dengan tema terang dan gelap MII, ditambah Deck Studio untuk menyusun presentasi MII Deck di samping chat."
+            "en": "A frontend revamp for MII Cowork, the AI workspace with a sandbox for each conversation, plus Deck Studio for creating MII Deck presentations alongside the chat.",
+            "id": "Pembaruan frontend MII Cowork, workspace AI dengan sandbox tersendiri untuk setiap percakapan, serta Deck Studio untuk menyusun presentasi MII Deck di samping chat."
           },
           "period": {
             "start": "2026-09",
@@ -8097,11 +8469,11 @@
           "approach": [
             {
               "en": "I rebuilt the frontend on an MII design system with MII Light (default) and MII Dark themes, official MII brand assets, and shared dialog, sheet, menu and toast components in place of browser confirm dialogs.",
-              "id": "Saya membangun ulang frontend di atas design system MII: MII Light sebagai default dan MII Dark, aset brand resmi MII, serta komponen dialog, sheet, menu, dan toast bersama sebagai pengganti dialog konfirmasi bawaan browser."
+              "id": "Saya membangun ulang frontend dengan design system MII: tema MII Light sebagai default dan MII Dark, aset brand resmi MII, serta komponen bersama untuk dialog, sheet, menu, dan toast sebagai pengganti dialog konfirmasi bawaan browser."
             },
             {
               "en": "I redesigned the layout: a navigation rail with a context panel, a files and tasks panel that overlays the chat or docks beside it, a centered chat column, and tool steps shown as activity rows.",
-              "id": "Saya mendesain ulang tata letak: navigation rail dengan context panel, panel files dan tasks yang dapat menimpa chat atau berdampingan dengannya, kolom chat di tengah, dan langkah tool yang ditampilkan sebagai baris aktivitas."
+              "id": "Saya mendesain ulang tata letak: navigasi samping dengan panel konteks, panel file dan tugas yang dapat tampil di atas chat atau berdampingan dengannya, kolom chat di tengah, serta langkah tool sebagai baris aktivitas."
             },
             {
               "en": "I integrated MII Deck as Deck Studio: a Decks hub and a Deck mode on the home page, a studio panel beside the chat, and publishing through the MII Deck pipeline.",
@@ -8163,8 +8535,8 @@
             {
               "src": "/media/mii-cowork/01-home.webp",
               "alt": {
-                "en": "MII Cowork home in the MII Light theme: navigation rail and workspace panel, a greeting, the agent composer with Chat and Deck modes, starter ideas and the MII Deck promo; email blurred",
-                "id": "Halaman utama MII Cowork dengan tema MII Light: navigation rail dan panel workspace, sapaan, composer agent dengan mode Chat dan Deck, ide awal, dan promo MII Deck; email diburamkan"
+                "en": "MII Cowork home in MII Light, with workspace navigation, a prompt composer offering Chat and Deck modes, starter ideas and the MII Deck panel; email blurred",
+                "id": "Beranda MII Cowork bertema MII Light, dengan navigasi workspace, kolom prompt bermode Chat dan Deck, ide awal, dan panel MII Deck; email diburamkan"
               },
               "width": 1600,
               "height": 1000,
@@ -8258,8 +8630,8 @@
             "id": "Clearbox Pembersih Inbox AI"
           },
           "tagline": {
-            "en": "A self-hosted inbox assistant for Gmail and Outlook: Microsoft-Decision-1 pre-sorts every email into trash, archive, keep or unsure with its reasons, and nothing moves until the owner confirms one Clean up.",
-            "id": "Asisten inbox self-hosted untuk Gmail dan Outlook: Microsoft-Decision-1 memilah setiap email ke trash, archive, keep, atau unsure beserta alasannya, dan tidak ada email yang dipindahkan sebelum pemiliknya mengonfirmasi satu Clean up."
+            "en": "A self-hosted Gmail and Outlook assistant: Microsoft-Decision-1 scores email, code adds guardrails and reasons, and the owner approves every move to Trash or Archive.",
+            "id": "Asisten inbox self-hosted untuk Gmail dan Outlook. Microsoft-Decision-1 menilai email; kode menambahkan guardrail dan alasan. Pemindahan ke Trash atau Archive tetap perlu persetujuan pemilik."
           },
           "period": {
             "start": "2026-10",
@@ -8275,16 +8647,16 @@
           },
           "approach": [
             {
-              "en": "I built a pipeline per email: signals from headers and history, guardrails that cap the allowed action, Microsoft-Decision-1 on Microsoft Foundry for trash, archive, keep and unsure probabilities, per-sender priors, then a deterministic fusion that suggests trash only above a calibrated threshold.",
-              "id": "Saya membangun pipeline untuk setiap email: sinyal dari header dan riwayat, guardrail yang membatasi aksi yang diizinkan, Microsoft-Decision-1 di Microsoft Foundry untuk probabilitas trash, archive, keep, dan unsure, prior per pengirim, lalu fusion deterministik yang hanya menyarankan trash di atas threshold yang sudah dikalibrasi."
+              "en": "I built a per-email pipeline: Microsoft-Decision-1 on Microsoft Foundry returns trash, archive, keep and unsure probabilities; code derives reasons from headers and history, applies guardrails and sender priors, then fuses the scores. Trash suggestions must clear a threshold, calibrated only with enough labels. Moves need owner approval, with Undo for 24 hours and no permanent deletion.",
+              "id": "Saya membangun pipeline per email: Microsoft-Decision-1 di Microsoft Foundry menghasilkan probabilitas trash, archive, keep, dan unsure; kode menyusun alasan dari header dan riwayat, menerapkan guardrail serta prior pengirim, lalu menggabungkan skor. Saran trash harus melewati threshold yang dikalibrasi setelah labelnya cukup. Pemindahan perlu persetujuan pemilik, dengan Undo selama 24 jam dan tanpa penghapusan permanen."
             },
             {
               "en": "Review groups email by sender with a confidence band and up to three reasons from real signals; one Clean up moves only approved mail to Trash or Archive, with Undo for 24 hours and no permanent delete path.",
               "id": "Halaman Review mengelompokkan email per pengirim dengan tingkat keyakinan dan hingga tiga alasan dari sinyal nyata; satu Clean up hanya memindahkan email yang disetujui ke Trash atau Archive, dengan Undo selama 24 jam dan tanpa jalur penghapusan permanen."
             },
             {
-              "en": "A nightly job tunes the trash threshold to the lowest value that keeps agreement with the owner's trash decisions at or above 98%, so every approval and override teaches it.",
-              "id": "Job malam hari menyetel threshold trash ke nilai terendah yang menjaga kesesuaian dengan keputusan trash pemilik di 98% atau lebih, sehingga setiap persetujuan dan koreksi menjadi bahan belajar."
+              "en": "Once enough labels are available, a nightly job targets at least 98% agreement with the owner's trash decisions, using the newest 500 labels: at least 50 eligible labels and 20 supporting labels per candidate threshold. It searches 0.80 to 0.99 and falls back to 0.99 if none qualifies. Approvals and overrides update sender priors.",
+              "id": "Setelah labelnya cukup, job malam hari menargetkan kesesuaian minimal 98% dengan keputusan trash pemilik, memakai 500 label terbaru: minimal 50 label yang memenuhi syarat dan 20 label pendukung per kandidat threshold. Pencarian dilakukan dari 0.80 hingga 0.99; jika tidak ada yang memenuhi syarat, threshold kembali ke 0.99. Persetujuan dan koreksi memperbarui prior pengirim."
             },
             {
               "en": "It runs on Cloudflare Workers and D1 (EU jurisdiction) behind Cloudflare Access, with least-privilege OAuth, AES-256-GCM encrypted tokens, metadata and snippets only, and a Bicep deployment for the model in Sweden Central.",
@@ -8323,8 +8695,8 @@
                 "id": "Email sintetis berlabel untuk evaluasi model"
               },
               "context": {
-                "en": "The evaluation reports delete precision and recall, calibration and latency against the real model deployment.",
-                "id": "Evaluasi melaporkan precision dan recall penghapusan, kalibrasi, dan latensi terhadap deployment model yang sebenarnya."
+                "en": "The evaluation reports delete precision and recall, calibration and latency against the real model deployment, not production inbox precision or proof of the 98% agreement target.",
+                "id": "Evaluasi melaporkan precision dan recall penghapusan, kalibrasi, dan latensi pada deployment model yang sebenarnya, bukan precision inbox produksi atau bukti tercapainya target kesesuaian 98%."
               },
               "confidence": "verified"
             }
@@ -8431,8 +8803,8 @@
             "id": "Situs Web MII Microsoft Solutions"
           },
           "tagline": {
-            "en": "The public bilingual website of MII's Microsoft Solutions division, covering its practices, delivered engagements, products, licensing and promotions, built from 17 written specs.",
-            "id": "Situs web publik dwibahasa untuk divisi Microsoft Solutions di MII, mencakup practice, engagement yang telah dikerjakan, produk, lisensi, dan promosi, dibangun dari 17 spec tertulis."
+            "en": "MII's public Microsoft Solutions website in English and Indonesian, built from 17 specs to present its practice areas, completed work, products, licensing and promotions.",
+            "id": "Situs publik divisi Microsoft Solutions MII dalam bahasa Inggris dan Indonesia, dibangun dari 17 spec untuk menyajikan bidang layanan, proyek yang telah dikerjakan, produk, lisensi, dan promosi."
           },
           "period": {
             "start": "2026-08",
@@ -8449,7 +8821,7 @@
           "approach": [
             {
               "en": "I built the site through 17 GitHub Spec Kit specs, from the first landing page to the practice pages, the promotions catalogue and the devices experience.",
-              "id": "Saya membangun situs ini melalui 17 spec GitHub Spec Kit, dari landing page pertama hingga halaman practice, katalog promosi, dan bagian perangkat."
+              "id": "Saya membangun situs ini melalui 17 spec GitHub Spec Kit, dari landing page pertama hingga halaman bidang layanan, katalog promosi, dan bagian perangkat."
             },
             {
               "en": "I kept every page as typed bilingual content validated at build time, so a missing translation or a broken content rule fails the build instead of shipping.",
@@ -8457,7 +8829,7 @@
             },
             {
               "en": "I built an outcome navigator that maps a business goal to the matching practice and capabilities, plus searchable engagement, licensing and promotion catalogues.",
-              "id": "Saya membangun outcome navigator yang memetakan tujuan bisnis ke practice dan kapabilitas yang sesuai, serta katalog engagement, lisensi, dan promosi yang bisa dicari."
+              "id": "Saya membangun outcome navigator yang memetakan tujuan bisnis ke bidang layanan dan kapabilitas yang sesuai, serta katalog proyek, lisensi, dan promosi yang bisa dicari."
             },
             {
               "en": "I moved media to Azure Blob Storage with a synced manifest and shipped the standalone build to App Service. The deploy script wipes files left by earlier deploys so old routes cannot shadow the new build, then checks every route on the live site.",
@@ -8570,15 +8942,15 @@
           "wing": "software",
           "title": {
             "en": "Sewise Fashion Labs: Made-to-Measure Sewing Patterns",
-            "id": "Sewise Fashion Labs: Pattern Jahit Made-to-Measure"
+            "id": "Sewise Fashion Labs: Pola Jahit Sesuai Ukuran"
           },
           "shortTitle": {
             "en": "Sewise Fashion Labs",
             "id": "Sewise Fashion Labs"
           },
           "tagline": {
-            "en": "A 2026 hackathon build that turns a garment sketch and five body measurements into a made-to-measure sewing pattern, the exact fabric to buy for each roll width and a shopping list, plus circular fashion tools for old clothes.",
-            "id": "Hasil hackathon 2026 yang mengubah sketsa pakaian dan lima ukuran tubuh menjadi pattern jahit made-to-measure, jumlah kain yang tepat untuk setiap lebar gulungan, dan daftar belanja, ditambah fitur circular fashion untuk pakaian lama."
+            "en": "A 2026 hackathon project that turns a garment sketch and five body measurements into a made-to-measure pattern, calculated fabric lengths for each roll width and a shopping list, with tools for reusing old clothes.",
+            "id": "Proyek hackathon 2026 yang mengolah sketsa pakaian dan lima ukuran tubuh menjadi pola jahit sesuai ukuran, perhitungan kebutuhan kain untuk setiap lebar gulungan, dan daftar belanja, serta fitur untuk memanfaatkan kembali pakaian lama."
           },
           "period": {
             "start": "2026-10",
@@ -8590,16 +8962,16 @@
           },
           "problem": {
             "en": "Home sewers, small tailors and fashion students in Indonesia need pattern-making skills to turn a design into a pattern that fits. Fabric is bought from generic charts that ignore the roll width, notions get forgotten, and old clothes are thrown away even when they could be reused.",
-            "id": "Penjahit rumahan, penjahit kecil, dan mahasiswa mode di Indonesia membutuhkan keahlian pattern making untuk mengubah desain menjadi pattern yang pas. Kain dibeli berdasarkan tabel umum yang mengabaikan lebar gulungan, perlengkapan jahit sering terlupa, dan pakaian lama dibuang padahal masih bisa dipakai ulang."
+            "id": "Penjahit rumahan, usaha jahit kecil, dan mahasiswa mode di Indonesia membutuhkan keahlian membuat pola untuk mengubah desain menjadi pola yang sesuai ukuran. Kain dibeli berdasarkan tabel umum yang mengabaikan lebar gulungan, perlengkapan jahit sering terlupa, dan pakaian lama dibuang padahal masih bisa dipakai ulang."
           },
           "approach": [
             {
-              "en": "I kept every number that ends up on fabric in deterministic, tested code: a Python drafting engine drafts the bodice, sleeves, peplum and skirt from five measurements, and a fit report checks every pair of seams that are sewn together against its target in millimetres.",
-              "id": "Saya menjaga setiap angka yang berakhir di kain tetap berada di kode yang deterministik dan teruji: drafting engine Python menyusun bodice, lengan, peplum, dan rok dari lima ukuran, lalu fit report memeriksa setiap pasangan jahitan yang disatukan terhadap targetnya dalam milimeter."
+              "en": "I put pattern dimensions in deterministic, tested code. A Python drafting engine calculates the bodice, sleeves, peplum and skirt from five measurements. A fit report compares each pair of adjoining seams with its target in millimetres: checks of calculated geometry, not physical garment-fit validation.",
+              "id": "Ukuran pola saya hitung melalui kode yang deterministik dan teruji. Drafting engine Python menghitung bodice, lengan, peplum, dan rok dari lima ukuran. Fit report membandingkan setiap pasangan jahitan yang akan disatukan dengan targetnya dalam milimeter: pemeriksaan geometri hasil perhitungan, bukan validasi fisik kecocokan pakaian."
             },
             {
-              "en": "A nesting engine lays the pieces out on 110, 115 and 150 cm fabric with grainline rules, falls back to a simpler layout heuristic when the main engine is unavailable, and turns the metres to buy into a shopping list with thread, zipper and needle.",
-              "id": "Nesting engine menata potongan pada kain selebar 110, 115, dan 150 cm sesuai aturan grainline, beralih ke heuristik tata letak yang lebih sederhana saat engine utama tidak tersedia, lalu mengubah jumlah meter yang harus dibeli menjadi daftar belanja lengkap dengan benang, ritsleting, dan jarum."
+              "en": "A nesting engine lays the pieces out on 110, 115 and 150 cm fabric with grainline rules. It falls back to a simpler layout heuristic when the main engine is unavailable, then uses the calculated fabric lengths in a shopping list with thread, zipper and needle.",
+              "id": "Nesting engine menata potongan pada kain selebar 110, 115, dan 150 cm sesuai aturan grainline. Saat engine utama tidak tersedia, alurnya beralih ke heuristik tata letak yang lebih sederhana, lalu memakai hasil perhitungan panjang kain untuk menyusun daftar belanja beserta benang, ritsleting, dan jarum."
             },
             {
               "en": "AI only reads intent and orchestrates: Azure OpenAI reads a sketch into a constrained design spec, and an assistant on Microsoft Agent Framework calls the deterministic services as tools. Without the model, the samples and the manual spec form keep the whole flow working.",
@@ -9071,8 +9443,8 @@
             "id": "Prediksi Herd Immunity COVID-19"
           },
           "tagline": {
-            "en": "A study of Indonesia's COVID-19 case and vaccination dynamics, with N-BEATS forecasts of daily cases and full-dose vaccinations.",
-            "id": "Studi dinamika kasus dan vaksinasi COVID-19 di Indonesia, dengan prediksi N-BEATS untuk kasus harian dan vaksinasi dosis lengkap."
+            "en": "A historical 2021 N-BEATS study of Indonesia's COVID-19 cases and vaccinations. Reported R-squared values are in-sample checks, not held-out tests.",
+            "id": "Studi historis N-BEATS tentang kasus dan vaksinasi COVID-19 Indonesia pada 2021. Nilai R-squared berasal dari pengecekan in-sample, bukan data uji terpisah."
           },
           "period": {
             "start": "2021-08",
@@ -9104,8 +9476,8 @@
             {
               "value": "0.992",
               "label": {
-                "en": "R-squared of the daily case model backtest",
-                "id": "R-squared uji mundur model kasus harian"
+                "en": "Daily case model R-squared, in-sample historical forecast",
+                "id": "R-squared model kasus harian, historical forecast in-sample"
               },
               "context": {
                 "en": "Historical forecast from 20 March to 22 August 2021 on the training series: an in-sample check, not a held-out test (Darts r2_score, notebook output).",
@@ -9116,8 +9488,8 @@
             {
               "value": "0.9995",
               "label": {
-                "en": "R-squared of the full-dose vaccination model backtest",
-                "id": "R-squared uji mundur model vaksinasi dosis lengkap"
+                "en": "Full-dose vaccination model R-squared, in-sample historical forecast",
+                "id": "R-squared model vaksinasi dosis lengkap, historical forecast in-sample"
               },
               "context": {
                 "en": "Same in-sample historical forecast method on cumulative full-dose vaccinations (notebook output).",
@@ -9397,8 +9769,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Clearbox pre-sorts my inbox into trash, archive, keep and unsure, so a weekly cleanup takes minutes. Microsoft-Decision-1 scores each email, deterministic code adds guardrails and reasons, and nothing moves until I approve it. Here is the architecture, and what a 40-email evaluation did and did not show.",
-            "id": "Clearbox memilah inbox saya ke trash, archive, keep, dan unsure, sehingga pembersihan mingguan cukup beberapa menit. Microsoft-Decision-1 menilai setiap email, kode deterministik menambahkan guardrail dan alasan, dan tidak ada email yang dipindahkan sebelum saya setujui. Berikut arsitekturnya, serta apa yang ditunjukkan dan tidak ditunjukkan oleh evaluasi 40 email."
+            "en": "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox.",
+            "id": "Clearbox memilah email Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
           }
         },
         {
@@ -9420,8 +9792,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested both paths in a controlled harness: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.",
-            "id": "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol pada harness mencatat sekitar 0,2 detik, dengan n=4 panggilan di masing-masing jalur. Eksperimen cut-off berikutnya tidak menunjukkan perbaikan."
+            "en": "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement.",
+            "id": "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
           }
         },
         {
@@ -9443,8 +9815,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker.",
-            "id": "False positive pada paket bersih yang noisy turun dari 36,4% ke 9,1% secara offline. Tapi engine hybrid rules dan LLM ini makin banyak melewatkan kasus High-risk, jadi saya merilisnya dalam shadow mode, bukan untuk menentukan verdict."
+            "en": "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode.",
+            "id": "Uji offline di set development: FPR paket bersih yang noisy turun 36,4% ke 9,1%, tetapi recall High-risk turun. Dirilis hanya dalam shadow mode."
           }
         },
         {
@@ -9466,8 +9838,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch.",
-            "id": "Sekitar 45% evaluasi dalam batch 22 pasangan kandidat dan lowongan tidak menghasilkan apa pun yang bisa dipakai. Saya menemukan dua bug dari pesan error dan menambahkan tujuh regression test, tetapi tidak mencatat run ulang batch itu."
+            "en": "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded.",
+            "id": "Sekitar 45% dari 22 pasangan CV/lowongan gagal. Dua bug parsing diperbaiki dengan tujuh regression test, tetapi run ulang batch awal tidak tercatat."
           }
         },
         {
@@ -9489,8 +9861,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "I built a vendor portal as the only engineer in about six weeks, with AI agents writing most of the code. Numbered specs and CI gates kept the work reviewable, but a skipped integration tier and two sign-in bugs still got through. I owned every merge.",
-            "id": "Saya membangun portal vendor dalam sekitar enam minggu sebagai satu-satunya engineer, dengan sebagian besar kode ditulis AI agent. Spec bernomor dan CI gate membantu saya me-review pekerjaan itu, tetapi integration tier yang terlewat dan dua bug login tetap lolos. Semua merge adalah keputusan saya."
+            "en": "AI agents wrote most of a solo-built vendor portal. CI missed a skipped integration tier and two sign-in bugs. Productivity gains were not measured.",
+            "id": "AI agent menulis mayoritas kode portal vendor. CI melewatkan integration tier yang di-skip dan dua bug login. Peningkatan produktivitas belum diukur."
           }
         },
         {
@@ -9607,8 +9979,8 @@
           "url": "https://doi.org/10.1109/icicyta53712.2021.9689122",
           "code": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast",
           "summary": {
-            "en": "Forecasts COVID-19 case trends to study Indonesia's path to herd immunity.",
-            "id": "Memprediksi tren kasus COVID-19 untuk mengkaji kemungkinan tercapainya herd immunity di Indonesia."
+            "en": "A historical 2021 study using COVID-19 case forecasts to examine Indonesia's path to herd immunity.",
+            "id": "Studi historis pada 2021 yang memakai prediksi kasus COVID-19 untuk mengkaji kemungkinan tercapainya herd immunity di Indonesia."
           },
           "abstract": "Herd immunity decides whether the COVID-19 outbreak is under control, and government policy on social restrictions and vaccination shapes how fast a country reaches it. This study analyzes the dynamics of COVID-19 cases in Indonesia against government policies, from large-scale social restrictions (PSBB) to emergency restrictions (PPKM Darurat), and the vaccination rate, and finds vaccination to be the key factor. Case and vaccination time series are forecast with an N-BEATS model to support the analysis, which estimated that positive cases would decline from October 2021 and that a mask removal policy could follow around February 2022. The study does not model vaccine-resistant variants, which could delay herd immunity."
         },
@@ -9772,8 +10144,8 @@
       "id": "jagarupa",
       "title": "JagaRupa",
       "summary": {
-        "en": "I built JagaRupa to turn small sellers' real product photos into campaign images consistent with their brand. The agentic workflow uses a brief, an art director, a brand guardian critique loop and a copywriter, with checks against Indonesian marketplace rules. Text and logos are composited in code, never rendered by the model. I delivered it solo through 15 feature specs, directing a GitHub Copilot coding agent.",
-        "id": "Saya membangun JagaRupa untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Alur agentic mencakup brief, art director, loop kritik brand guardian, dan copywriter, dengan pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
+        "en": "I built JagaRupa to turn small sellers' real product photos into campaign images consistent with their brand. The workflow passes a brief through art director, brand guardian and copywriter agents, with a critique loop and checks against Indonesian marketplace rules. Text and logos are composited in code, never rendered by the model. I delivered it solo through 15 feature specs, directing a GitHub Copilot coding agent.",
+        "id": "Saya membangun JagaRupa untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Brief diproses oleh agent art director, brand guardian, dan copywriter, dengan peninjauan berulang serta pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
       },
       "stack": [
         "Next.js",
@@ -10034,8 +10406,8 @@
       "name": "NextJS_Real-Estate-Cluster-Mapping",
       "url": "https://github.com/ShinyQ/NextJS_Real-Estate-Cluster-Mapping",
       "description": {
-        "en": "Maps clustered real estate data for visualization and analysis.",
-        "id": "Memetakan data properti terklaster untuk visualisasi dan analisis."
+        "en": "Maps real estate data by cluster for visualization and analysis.",
+        "id": "Memetakan data properti yang dikelompokkan dalam klaster untuk visualisasi dan analisis."
       },
       "language": "TypeScript",
       "stars": 0
@@ -10086,8 +10458,8 @@
       "id": "work",
       "order": 0,
       "label": {
-        "en": "Explore my work",
-        "id": "Jelajahi karya saya"
+        "en": "Explore the work",
+        "id": "Jelajahi karya"
       },
       "steps": [
         {
@@ -10098,7 +10470,7 @@
           "kind": "say",
           "text": {
             "en": "Pick a wing: Product Engineering,\nAI Engineering, or Data and ML.",
-            "id": "Pilih wing: Product Engineering,\nAI Engineering, atau Data dan ML."
+            "id": "Pilih bagian: Product Engineering,\nAI Engineering, atau Data dan ML."
           }
         }
       ]
@@ -10129,8 +10501,8 @@
       "id": "journey",
       "order": 2,
       "label": {
-        "en": "Follow my career, 2019 to 2026",
-        "id": "Telusuri karier saya, 2019 hingga 2026"
+        "en": "Career timeline, 2019 to 2026",
+        "id": "Jejak karier, 2019 hingga 2026"
       },
       "steps": [
         {
@@ -10143,8 +10515,8 @@
       "id": "projects",
       "order": 3,
       "label": {
-        "en": "Browse my projects",
-        "id": "Jelajahi proyek saya"
+        "en": "Browse projects",
+        "id": "Jelajahi proyek"
       },
       "steps": [
         {
@@ -10161,8 +10533,8 @@
       "id": "blog",
       "order": 4,
       "label": {
-        "en": "Read my writing",
-        "id": "Baca tulisan saya"
+        "en": "Read the writing",
+        "id": "Baca tulisan"
       },
       "steps": [
         {

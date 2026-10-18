@@ -1,7 +1,7 @@
 ---
 title: "How We Made a Voice Agent Interruptible"
 date: "2026-10-09"
-excerpt: "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested both paths in a controlled harness: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things."
+excerpt: "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
@@ -10,7 +10,7 @@ Our voice agent took about two seconds to react when a caller interrupted it dur
 
 I lead this realtime contact-center agent at Metrodata. I fixed two separate barge-in bugs, and a controlled A/B on the knowledge-search path measured roughly 0.2 seconds afterward. That test had just n=4 calls per arm. It showed a clear difference in that path, not that we had solved turn-taking.
 
-The later experiments make that distinction important: some changes failed their verdicts, and the live cut-off rate did not improve.
+Later experiments showed why that distinction matters: some changes failed the criteria set before testing, and the live cut-off rate did not improve.
 
 ## What barge-in means for a speech-to-speech agent
 
@@ -47,7 +47,7 @@ The media channel, Azure Communication Services at the time, could still have au
 
 We were also truncating conversation history at the wrong position. We used the number of audio bytes forwarded to the channel, not the amount actually heard. Audio still sitting in a buffer counted as delivered.
 
-I made barge-in playout-aware. A small tracker estimates how many milliseconds of the current response have played to the caller. This is a simplified sketch, not the production code:
+I changed barge-in to track playback. A small tracker estimates how many milliseconds of the current response the caller has actually heard. This is a simplified sketch, not the production code:
 
 ```
 on caller speech start:

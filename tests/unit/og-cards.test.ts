@@ -5,7 +5,7 @@ import { LOCALES } from "@/content/schema";
 import { WING_ACCENT } from "@/lib/accent";
 import { hasFirstPerson } from "@/lib/first-person";
 import { allOgTargets, ogCard, ogSegments, parseOgSegments } from "@/lib/og-cards";
-import { LEGIBLE_PRIMARY_MIN, LEGIBLE_SECONDARY_MIN, OG_EYEBROW_MAX, OG_FONT, OG_GLYPHS, OG_STILLS, ogText, resultSize, titleSize } from "@/lib/og-layout";
+import { LEGIBLE_PRIMARY_MIN, LEGIBLE_SECONDARY_MIN, OG_EYEBROW_MAX, OG_FONT, OG_GLYPHS, OG_STILLS, clampText, ogText, resultSize, titleSize } from "@/lib/og-layout";
 import { keyResult } from "@/lib/seo";
 import { OG_PAGES, ogImagePath } from "@/lib/site";
 
@@ -59,6 +59,18 @@ describe("OG cards", () => {
       expect(card.accent).toBe(WING_ACCENT[pod.wing]);
       expect(card.result).toEqual({ value: ogText(keyResult(pod).value, "en"), label: ogText(keyResult(pod).label.en, "en") });
     }
+  });
+
+  it.each(LOCALES)("keeps measurement limits in standalone %s result cards", (locale) => {
+    const label = (slug: string) => clampText(ogCard({ kind: "labs", locale, slug }).result!.label, 80);
+    expect(label("voice-ai-contact-center")).toMatch(/n\s*=\s*4/i);
+    expect(label("voice-ai-contact-center")).toMatch(/(?:per|each|tiap|setiap|\/)\s*(?:arm|jalur|kelompok)/i);
+    expect(label("fraud-review-platform")).toMatch(/offline|development|pengembangan/i);
+    expect(label("covid-herd-immunity-forecast")).toMatch(/in-sample/i);
+    const cv = label("ai-cv-screening-platform");
+    expect(cv).toMatch(/22/);
+    expect(cv).toMatch(/rerun|uji ulang|pengujian ulang|diulang/i);
+    expect(cv).toMatch(/\b(?:no|not|without|unrecorded|belum|tidak|tanpa)\b/i);
   });
 
   it("never speaks in the first person singular", () => {

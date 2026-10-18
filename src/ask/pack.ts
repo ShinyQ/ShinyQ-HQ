@@ -363,6 +363,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
   }
 
   const library = content.floors.library;
+  const latestPost = [...library.posts].sort((a, b) => b.date.localeCompare(a.date))[0];
   for (const post of library.posts) {
     const body = posts[post.slug] ?? {};
     out.push({
@@ -373,7 +374,10 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
       updatedAt: post.date,
       keywords: ["writing", ...post.tags],
       text: join([
-        { en: `Post "${post.title.en}" (${post.date}).`, id: `Tulisan "${post.title.id}" (${post.date}).` },
+        {
+          en: `${post === latestPost ? "Latest blog post" : "Post"} "${post.title.en}" (${post.date}).`,
+          id: `${post === latestPost ? "Tulisan blog terbaru" : "Tulisan"} "${post.title.id}" (${post.date}).`,
+        },
         loc(post.excerpt),
         // One lead paragraph after the excerpt keeps the pack under its cap (runbook deviation 8).
         { en: body.en ? leadParagraphs(body.en, POST_LEAD_PARAGRAPHS) : "", id: body.id ? leadParagraphs(body.id, POST_LEAD_PARAGRAPHS) : body.en ? leadParagraphs(body.en, POST_LEAD_PARAGRAPHS) : "" },

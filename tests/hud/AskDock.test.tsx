@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 import type { AskOptions, AskResult } from "@/ask/client";
 import type { AskStatus, AskTag } from "@/ask/protocol";
 import { ASK_SEED_KEY } from "@/ask/suggestions";
@@ -185,6 +186,18 @@ describe("Ask dock launcher", () => {
 });
 
 describe("Ask dock chat", () => {
+  for (const [locale, messages, aboutName] of [["en", en, "About Kurniadi"], ["id", id, "Tentang Kurniadi"]] as const) {
+    it(`${locale}: names the About topic after Kurniadi, not the assistant`, async () => {
+      askMock.status = ENABLED;
+      render(<NextIntlClientProvider locale={locale} messages={messages}><AskDock locale={locale} /></NextIntlClientProvider>);
+      await act(async () => { await requestAskStatus(); });
+      act(() => openAsk());
+      const panel = await screen.findByRole("dialog", { name: messages.ask.dock.title });
+      const topic = within(within(panel).getByTestId("ask-topics")).getByRole("button", { name: aboutName });
+      await userEvent.click(topic);
+      expect(within(panel).getByTestId("ask-topic-questions")).toHaveAttribute("data-topic", "about");
+    });
+  }
   it("offers the Perspectives topic and links a cited answer to its source", async () => {
     askMock.ask.mockImplementation(async ({ onDelta }) => {
       onDelta("Kurniadi writes that he owns every merge decision.");
