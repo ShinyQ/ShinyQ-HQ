@@ -32,10 +32,10 @@ export function useQuietNav(): boolean {
 export function QuietLink({ prefetch, onPointerEnter, onFocus, onTouchStart, ...props }: ComponentProps<typeof Link>) {
   const quiet = useQuietNav();
   const router = useRouter();
-  const warmed = useRef(false);
+  const warmed = useRef<string | null>(null);
   const warm = () => {
-    if (prefetch !== undefined || quiet || warmed.current || typeof props.href !== "string") return;
-    warmed.current = true;
+    if (prefetch !== undefined || quiet || typeof props.href !== "string" || warmed.current === props.href) return;
+    warmed.current = props.href;
     router.prefetch(props.href);
   };
   return (

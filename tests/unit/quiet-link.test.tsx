@@ -42,6 +42,15 @@ describe("QuietLink", () => {
     expect(prefetch).toHaveBeenCalledTimes(1);
   });
 
+  it("prefetches again once the href changes", () => {
+    const { rerender } = render(<QuietLink href="/labs">Work</QuietLink>);
+    fireEvent.pointerEnter(screen.getByRole("link", { name: "Work" }));
+    rerender(<QuietLink href="/journey">Work</QuietLink>);
+    fireEvent.pointerEnter(screen.getByRole("link", { name: "Work" }));
+    fireEvent.focus(screen.getByRole("link", { name: "Work" }));
+    expect(prefetch.mock.calls).toEqual([["/labs"], ["/journey"]]);
+  });
+
   it("prefetches on keyboard focus and on touchstart", () => {
     render(
       <>
