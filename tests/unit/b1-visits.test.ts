@@ -47,6 +47,18 @@ describe("B1 unlock: floor visits", () => {
     expect(bad.getState()).toMatchObject({ floorsSeen: ["L2"], b1Unlocked: false });
   });
 
+  it("starts a legacy payload without the new keys with no floors and B1 locked", () => {
+    const legacy = createHQStore(memory(JSON.stringify({ state: { visited: ["L3:a"], firstVisit: true, locale: "en", motion: "full" }, version: STORE_VERSION })));
+    expect(legacy.getState()).toMatchObject({ floorsSeen: [], b1Unlocked: false, b1Moment: false });
+  });
+
+  it("keeps B1 locked when a saved unlock disagrees with the floors seen, as partialize would", () => {
+    const three = createHQStore(memory(JSON.stringify({ state: { floorsSeen: ["L1", "L2", "L3"], b1Unlocked: true }, version: STORE_VERSION })));
+    expect(three.getState()).toMatchObject({ floorsSeen: ["L1", "L2", "L3"], b1Unlocked: false });
+    const all = createHQStore(memory(JSON.stringify({ state: { floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true }, version: STORE_VERSION })));
+    expect(all.getState().b1Unlocked).toBe(true);
+  });
+
   it("reads #B1 on the Lobby route only", () => {
     expect(b1FromHash(undefined, "#B1")).toBe("B1");
     expect(b1FromHash(undefined, "#b1")).toBe("B1");

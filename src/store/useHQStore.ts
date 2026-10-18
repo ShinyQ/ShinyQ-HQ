@@ -379,7 +379,8 @@ export function createHQStore(storage?: StateStorage) {
           const saved = (persisted ?? {}) as Partial<Persisted>;
           const motion = isMotionPref(saved.motion) ? saved.motion : DEFAULT_MOTION;
           const floorsSeen = Array.isArray(saved.floorsSeen) ? saved.floorsSeen.filter((f): f is FloorId => typeof f === "string" && isPublicFloor(f as FloorId)) : [];
-          return { ...current, ...saved, motion, floorsSeen, b1Unlocked: saved.b1Unlocked === true, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
+          const b1Unlocked = saved.b1Unlocked === true && floorProgress(floorsSeen).seen === PUBLIC_FLOOR_COUNT;
+          return { ...current, ...saved, motion, floorsSeen, b1Unlocked, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
         },
       },
     ),
