@@ -96,7 +96,7 @@ export function DiagramSvg({ layout, className }: { layout: DrawnDiagram; classN
       {layout.groups.map((g) => (
         <g key={g.label}>
           <rect x={r1(g.x)} y={r1(g.y)} width={r1(g.w)} height={r1(g.h)} rx={14} fill="none" stroke="#ffffff" strokeOpacity={0.16} strokeDasharray="2 4" />
-          <text x={r1(g.x + 10)} y={r1(g.y - 6)} fill={INK_2} fontSize={p.kindSize} className="font-mono" letterSpacing="0.06em">
+          <text x={r1(g.labelX)} y={r1(g.y - 6)} fill={INK_2} fontSize={p.kindSize} className="font-mono" letterSpacing="0.06em">
             {g.label.toUpperCase()}
           </text>
         </g>

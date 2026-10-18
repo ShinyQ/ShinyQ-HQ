@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignGrid, DIAGRAM_PRESETS, edgeCrossings, layoutArchitecture, PAD, textWidth, wrapText, type DiagramLayout } from "@/components/diagram/layout";
+import { assignGrid, DIAGRAM_PRESETS, edgeCrossings, groupLabelBox, layoutArchitecture, monoWidth, PAD, segmentHits, textWidth, wrapText, type DiagramLayout } from "@/components/diagram/layout";
 import { arrowHead, edgePath } from "@/components/diagram/DiagramSvg";
 import { getBuildStory } from "@/content/build-story";
 import { getPods } from "@/content/load";
@@ -50,6 +50,16 @@ function expectSound(name: string, arch: Architecture, layout: DiagramLayout) {
   });
   for (const n of layout.nodes) expect(n.x >= 0 && n.y >= 0 && n.x + n.w <= layout.width && n.y + n.h <= layout.height, name).toBe(true);
   for (const g of layout.groups) expect(g.y - layout.preset.kindSize - 6, `${name}: group "${g.label}" name inside`).toBeGreaterThanOrEqual(0);
+  for (const g of layout.groups) {
+    const box = groupLabelBox(g, layout.preset.kindSize);
+    expect(g.labelX >= g.x && g.labelX + monoWidth(g.label, layout.preset.kindSize) <= g.x + g.w, `${name}: group "${g.label}" name over its frame`).toBe(true);
+    arch.edges.forEach((e, i) => {
+      const pts = layout.edges[i].points;
+      for (let k = 1; k < pts.length; k++) expect(segmentHits(pts[k - 1], pts[k], box), `${name}: ${e.from} to ${e.to} crosses group "${g.label}" name`).toBe(false);
+    });
+    for (const n of layout.nodes) expect(overlap(box, n), `${name}: group "${g.label}" name covers ${n.id}`).toBe(false);
+    for (const l of labels) expect(overlap(box, l), `${name}: group "${g.label}" name covers an edge label`).toBe(false);
+  }
   const inner = (n: DiagramLayout["nodes"][number]) => n.w - 2 * PAD + 1;
   for (const n of layout.nodes)
     for (const line of n.label) expect(textWidth(line, layout.preset.labelSize, true), `${name}: "${line}" fits ${n.id}`).toBeLessThanOrEqual(inner(n));
