@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: parts 1 and 2 merged (#214, #216), part 3 in review (2026-10-18). Owner decision 2026-10-18: three PRs in order, after the B1 PRs merge.
+Status: part 3 in review, 2026-10-18; parts 1 and 2 shipped in #214 and #216. Owner decision 2026-10-18: three PRs in order, after the B1 PRs merge.
 No test or gate leaves the suite; only when and where each one runs changes.
 
 **Goal:** Stop running on `main` what the merged pull request already proved on the same tree, select fewer perf
