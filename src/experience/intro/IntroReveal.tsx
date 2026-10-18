@@ -5,8 +5,7 @@ import { useRef, type ReactNode } from "react";
 import type { Group } from "three";
 import { roverRuntime } from "../rover/runtime";
 import type { Rect } from "../types";
-import { revealDistance } from "./landmarks";
-import { introRuntime } from "./runtime";
+import { introRuntime, revealDistance } from "./runtime";
 
 /** Neon flicker after the ring reaches the rect: on for 0.06 s, off until 0.14 s, then on for good. */
 const FLICKER_OFF = 0.06;

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { HALL } from "@/experience/floors/lobby/hallLayout";
-import { beaconAlpha, INTRO_LANDMARKS, revealDistance } from "@/experience/intro/landmarks";
+import { beaconAlpha, INTRO_LANDMARKS } from "@/experience/intro/landmarks";
+import { revealDistance } from "@/experience/intro/runtime";
 
 describe("INTRO_LANDMARKS", () => {
   it("lists the five landmarks the orbit passes, in order", () => {

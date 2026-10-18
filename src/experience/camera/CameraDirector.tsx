@@ -22,7 +22,8 @@ import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import { introRuntime, resetIntroRuntime, setReveal } from "../intro/runtime";
-import { INTRO, introFace, introFog, introHeading, introPlan, introPose, reducedVeil, revealRadius, skipsIntro, type IntroPlan } from "./intro";
+import { introModule } from "../intro/chunk";
+import type { IntroPlan } from "./intro";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
@@ -110,7 +111,7 @@ export function CameraDirector({
         const { orbit } = local.current;
         const s = getHQStore().getState();
         // Drive, turn, zoom, reset or Esc during the intro skips it (the boot ignores input).
-        if (skipsIntro(s.phase, intent.type)) local.current.skip = true;
+        if (introModule()?.skipsIntro(s.phase, intent.type)) local.current.skip = true;
         // Any turn, zoom or reset hands the arrival glide over to the normal camera, which eases on from the drawn pose.
         if (intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") local.current.glide = null;
         const rail = selectRig(s.phase, s.floor) === "rail";
@@ -140,6 +141,8 @@ export function CameraDirector({
     l.now += dt;
     const cls = s.device.camera;
     const rig = selectRig(s.phase, s.floor);
+    // The intro chunk: Experience mounts the canvas of an intro session only once it loaded (intro/chunk.ts).
+    const intro = rig === "intro" ? introModule() : null;
     // The phase can leave the intro without its last frame running here (the static tier, `recover`): drop its state.
     if (rig !== "intro" && introRuntime.active) {
       resetIntroRuntime();
@@ -253,12 +256,16 @@ export function CameraDirector({
       const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
       const rover: Vec3 = [roverRuntime.x, roverRuntime.y, roverRuntime.z];
       snap = true;
-      if (s.phase === "boot") {
+      if (!intro) {
+        // Unreachable while the canvas waits for the chunk; without it the intro cannot play, so it ends on the follow pose.
+        desired = end;
+        if (s.phase === "intro") s.finishIntro();
+      } else if (s.phase === "boot") {
         // The dark wake close-up, under any motion setting: Rover's face off, turned to the orbit's start, nothing revealed.
         l.introStart = null;
         l.skip = false;
-        l.plan = introPlan(cls, rover, LOBBY.spawnHeading, end);
-        desired = introPose(l.plan, 0);
+        l.plan = intro.introPlan(cls, rover, LOBBY.spawnHeading, end);
+        desired = intro.introPose(l.plan, 0);
         introRuntime.active = true;
         introRuntime.t = 0;
         introRuntime.face = "off";
@@ -287,8 +294,8 @@ export function CameraDirector({
           resetIntroRuntime();
         }
         const t = l.now - l.introStart;
-        introRuntime.veil = reducedVeil(t);
-        if (t >= INTRO.reduced) {
+        introRuntime.veil = intro.reducedVeil(t);
+        if (t >= intro.INTRO.reduced) {
           s.finishIntro();
           introRuntime.veil = 0;
           l.introStart = null;
@@ -298,16 +305,16 @@ export function CameraDirector({
       } else {
         // The wake close-up, then the reveal orbit lands on the follow pose. The plan stays frozen from the first intro frame.
         l.introStart ??= l.now;
-        l.plan ??= introPlan(cls, rover, LOBBY.spawnHeading, end);
+        l.plan ??= intro.introPlan(cls, rover, LOBBY.spawnHeading, end);
         const t = l.now - l.introStart;
-        desired = introPose(l.plan, t);
+        desired = intro.introPose(l.plan, t);
         introRuntime.active = true;
         introRuntime.t = t;
-        introRuntime.face = introFace(t);
-        introRuntime.heading = introHeading(l.plan, t);
-        setReveal(revealRadius(t), roverRuntime);
+        introRuntime.face = intro.introFace(t);
+        introRuntime.heading = intro.introHeading(l.plan, t);
+        setReveal(intro.revealRadius(t), roverRuntime);
         introFogMode = "ring";
-        if (t >= INTRO.duration) {
+        if (t >= intro.INTRO.duration) {
           s.finishIntro();
           resetIntroRuntime();
           l.introStart = null;
@@ -421,7 +428,7 @@ export function CameraDirector({
       // then the follow range, so explore starts on it.
       if (introFogMode) {
         const follow = sceneSettings(s.tier, "follow").fog;
-        const range = introFogMode === "ring" ? introFog(l.outPos.distanceTo(l.introAt.set(roverRuntime.x, roverRuntime.y, roverRuntime.z)), introRuntime.reveal, follow) : follow;
+        const range = introFogMode === "ring" && intro ? intro.introFog(l.outPos.distanceTo(l.introAt.set(roverRuntime.x, roverRuntime.y, roverRuntime.z)), introRuntime.reveal, follow) : follow;
         fogNear = range.near;
         fogFar = range.far;
       }

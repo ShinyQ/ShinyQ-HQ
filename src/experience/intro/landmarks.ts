@@ -40,13 +40,6 @@ export const INTRO_LANDMARKS: readonly IntroLandmark[] = [
   { id: "elevator", x: LOBBY.bounds.minX + 1.5, z: SHAFT.z, w: 3, d: 6, y: 1.8 },
 ];
 
-/** Distance on the floor from the rover to the nearest point of `rect` (0 inside): the reveal radius that reaches it. */
-export function revealDistance(rover: { x: number; z: number }, rect: Bounds): number {
-  const dx = Math.max(rect.minX - rover.x, 0, rover.x - rect.maxX);
-  const dz = Math.max(rect.minZ - rover.z, 0, rover.z - rect.maxZ);
-  return Math.hypot(dx, dz);
-}
-
 const smoothstep = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);

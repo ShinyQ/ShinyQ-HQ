@@ -1,4 +1,5 @@
 import { Vector2 } from "three";
+import type { Rect } from "../types";
 
 /** Shader value for "no reveal": far beyond any floor, so the mask is exactly 1 and both rings exactly 0. */
 const REVEAL_OFF = 1e5;
@@ -36,4 +37,11 @@ export function resetIntroRuntime(): void {
   introRuntime.lit.length = 0;
   introRuntime.skipped = false;
   setReveal(Infinity, { x: 0, z: 0 });
+}
+
+/** Distance on the floor from the rover to the nearest point of `rect` (0 inside): the reveal radius that reaches it. */
+export function revealDistance(rover: { x: number; z: number }, rect: Rect): number {
+  const dx = Math.max(rect.minX - rover.x, 0, rover.x - rect.maxX);
+  const dz = Math.max(rect.minZ - rover.z, 0, rover.z - rect.maxZ);
+  return Math.hypot(dx, dz);
 }

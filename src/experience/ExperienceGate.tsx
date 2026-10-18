@@ -6,19 +6,25 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
+import { introSeen } from "@/lib/intro-session";
 import { chooseView, currentView, VIEW_EVENT } from "@/lib/view-pref";
 import { b1FromHash } from "./b1";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
 import { useGateTier, useQualityTier } from "./gate-tier";
+import { loadIntro } from "./intro/chunk";
 import { claimAutoOpen } from "./missions/bridge";
 import type { Recovery } from "./recovery";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import type { FloorId, RoomId } from "@/content/schema";
 import type { ExperienceData } from "./types";
 
-const loadExperience = () => import("./Experience");
+/** The 3D chunk; a session that plays the intro loads the intro chunk alongside it (Experience waits for both). */
+const loadExperience = () => {
+  if (typeof window !== "undefined" && !introSeen()) void loadIntro();
+  return import("./Experience");
+};
 const Experience = dynamic(loadExperience, { ssr: false });
 
 // Boot-first visits (html[data-hq-boot], set by the inline head script) start the 3D chunk download

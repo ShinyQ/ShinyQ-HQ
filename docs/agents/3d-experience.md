@@ -106,6 +106,10 @@ The same script sets these on every page before first paint:
   - Skip: drive, turn, zoom, reset view or Esc input during `intro` (the intents `move`, `orbit`, `zoom`, `view`, `cancel`; `skipsIntro`) ends it on the next frame: a cut to the follow pose under a veil (`IntroVeil`, the scene background color in front of the camera) that starts at 1 and fades out over `INTRO.skipFade` (0.3 s); `introRuntime.skipped` is true. The boot ignores that input.
 - Reduced motion (stored Motion Reduced, or System with the OS reduce): no camera motion. Boot rover cuts to the follow pose with everything revealed under a veil that clears over `INTRO.reduced` (0.9 s), then `explore`. A new visitor with the OS reduce alone and no stored choice gets Full, so the intro animates ([Motion setting](hud-and-drawer.md#motion-setting)).
 - Probe: `__hq.intro` is `introRuntime`: `{ active, t, reveal, heading, face, veil, lit, skipped }`.
+- Intro chunk: the intro-only code (`camera/intro.ts`, `IntroBeacons`, `IntroVeil`, `intro/beacons.ts`, `intro/landmarks.ts`, entry `intro/scene.ts`) is an on-demand chunk that only a session playing the intro (`!introSeen()`) downloads; a returning visitor never does.
+  - `ExperienceGate` starts `loadIntro()` (`intro/chunk.ts`, one shared promise) alongside the 3D chunk, and `Experience` mounts nothing until it settled, so `CameraDirector`, the Lobby and the scene read it synchronously (`introModule()`) through the boot and the intro.
+  - A failed load skips the intro: `Experience` marks it seen and the session starts like a returning visitor's, never a boot that cannot end.
+  - Main-path code imports only types from the chunk (`tests/unit/intro-chunk-graph.test.ts`); `intro/runtime.ts`, `intro/IntroReveal.tsx` and `intro/chunk.ts` stay on the main path.
 - Crawlers, Lighthouse and the static tier never load the 3D chunk.
 - E2E: `asReturningVisitor` sets the flag, so `enterHQ` and `enterFloorRoute` land in explore (`enterHQ` also waits for `waitForSceneLive`); tests of the boot itself open without it.
 

@@ -6,7 +6,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { kioskRect, LOBBY } from "../config";
 import type { ExperienceData, GpuTier, Rect } from "../types";
 import { sceneProbes } from "../fx/probes";
-import { IntroBeacons } from "../intro/IntroBeacons";
+import { introModule } from "../intro/chunk";
 import { IntroReveal } from "../intro/IntroReveal";
 import { postHandle } from "../scene/postHandle";
 import { useRingStats } from "../visits3d";
@@ -78,6 +78,8 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
   const observing = useHQStore((s) => s.phase === "room" && s.activeRoom === VISITS_ROOM);
   const intro = useHQStore((s) => s.phase === "intro");
   const composerLive = useComposerLive(tier);
+  // From the intro chunk, loaded before the canvas mounts in a session that plays the intro (intro/chunk.ts).
+  const IntroBeacons = introModule()?.IntroBeacons;
   useEffect(() => {
     sceneProbes.spectacle.ringTiles = stats.length;
   }, [stats.length]);
@@ -108,7 +110,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
           <HighlightsHall data={data} labels={labels.hall} tier={tier} />
         </IntroReveal>
       )}
-      {intro && composerLive && <IntroBeacons tier={tier} />}
+      {intro && composerLive && IntroBeacons && <IntroBeacons tier={tier} />}
     </group>
   );
 }

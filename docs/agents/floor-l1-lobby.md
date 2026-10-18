@@ -134,7 +134,7 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 ## Intro reveal and beacons
 
-Code: `intro/landmarks.ts` (pure), `intro/beacons.ts` (the per-frame beacon step), `intro/IntroReveal.tsx`, `intro/IntroBeacons.tsx`, wired in `floors/Lobby.tsx`.
+Code: `intro/landmarks.ts` (pure), `intro/beacons.ts` (the per-frame beacon step), `intro/IntroReveal.tsx` (with `revealDistance` from `intro/runtime.ts`), `intro/IntroBeacons.tsx`, wired in `floors/Lobby.tsx`. The beacons come from the intro chunk (`introModule()`, [Boot and intro](3d-experience.md#boot-and-intro)); `IntroReveal` stays on the main path.
 
 - During the boot and the intro the Lobby is dark: each landmark sits in an `IntroReveal` with its floor rect (hologram and stats ring, skills wall, certification wall, kiosk, observatory, Highlights Hall) and switches on, with a quick neon flicker (on 0.06 s, off until 0.14 s), once the reveal ring around the rover reaches it (`revealDistance`). The grid and the lanes mask themselves in their shaders, so `Lanes` is not wrapped.
 - Outside the intro (`introRuntime.active` false: explore, a skipped intro, the reduced-motion fade) every landmark shows.

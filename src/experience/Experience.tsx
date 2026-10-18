@@ -35,6 +35,7 @@ import { continuationSteps, endContinuation, introTarget, isContinuing, setIntro
 import { onMissionState, register3DHost, runMissionSteps } from "./missions/bridge";
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
+import { introModule, loadIntro } from "./intro/chunk";
 import { introRuntime } from "./intro/runtime";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
@@ -220,8 +221,37 @@ function FirstFrame({ onFrame }: { onFrame?: () => void }) {
   return null;
 }
 
-/** The lazily loaded 3D chunk: canvas, scene and HUD, portalled over the HTML page. */
-export default function Experience({
+type ExperienceProps = { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart;
+
+/**
+ * The intro chunk (intro/chunk.ts) gates a session that plays the boot and the intro: nothing mounts until it
+ * settled, so the session start, the canvas and the CameraDirector always have it during the boot and the intro
+ * (ExperienceGate starts the load alongside this chunk, so the wait is usually over before this renders). A failed
+ * load skips the intro (marked seen, the session starts like a returning visitor's) instead of holding the tower
+ * on a boot that cannot end. A returning session never loads it.
+ */
+function useIntroChunk(): boolean {
+  const [ready, setReady] = useState(() => introSeen() || introModule() !== null);
+  useEffect(() => {
+    if (ready) return;
+    let live = true;
+    void loadIntro().then((mod) => {
+      if (!mod) markIntroSeen();
+      if (live) setReady(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+  return ready;
+}
+
+/** The lazily loaded 3D chunk: canvas, scene and HUD, portalled over the HTML page (once the intro chunk is ready). */
+export default function Experience(props: ExperienceProps) {
+  return useIntroChunk() ? <ExperienceView {...props} /> : null;
+}
+
+function ExperienceView({
   data,
   tier,
   onExit,
@@ -229,7 +259,7 @@ export default function Experience({
   onCrash,
   startFloor,
   startRoom,
-}: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart) {
+}: ExperienceProps) {
   const t = useTranslations("hud");
   const tEngine = useTranslations("engine");
   const tHome = useTranslations("home");

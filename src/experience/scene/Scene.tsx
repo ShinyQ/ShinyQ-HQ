@@ -14,7 +14,7 @@ import { libraryLayoutInput } from "../floors/library/model";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
 import { HintProbe } from "../hints/HintProbe";
-import { IntroVeil } from "../intro/IntroVeil";
+import { introModule } from "../intro/chunk";
 import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
@@ -74,6 +74,8 @@ export const Scene = memo(function Scene({
   const interactData = useMemo(() => ({ experience: data, labels: labels.interact }), [data, labels.interact]);
   const settings = sceneSettings(tier);
   const coarse = useHQStore((s) => s.device.coarse);
+  // From the intro chunk, loaded before the canvas mounts in a session that plays the intro (intro/chunk.ts).
+  const IntroVeil = introModule()?.IntroVeil;
   return (
     <>
       <RenderCounter />
@@ -87,7 +89,7 @@ export const Scene = memo(function Scene({
       <TeleportBeam />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
       <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} layouts={layouts} />
-      <IntroVeil />
+      {IntroVeil && <IntroVeil />}
       <GlassClock />
       <QualityController tier={tier} coarse={coarse} gfx={gfx} />
       <ProgramWarmup tier={tier} />
