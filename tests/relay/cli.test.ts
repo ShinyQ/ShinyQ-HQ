@@ -72,6 +72,7 @@ describe("office-relay CLI", () => {
     const h = home();
     const r = run(["send"], { HOME: h, OFFICE_BEAT: '{"v":1,"prompt":"x"}', OFFICE_RELAY_KEY: "k", OFFICE_RELAY_ENDPOINT: "http://evil.example/" });
     expect(r.status).toBe(0);
+    expect(r.stdout + r.stderr).toBe("");
     expect(readFileSync(path.join(h, ".office-relay", "relay.log"), "utf8")).toContain("send invalid");
   });
 
