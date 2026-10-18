@@ -151,6 +151,49 @@ describe("deploy on merge (deploy.yml, rollback.yml)", () => {
   it("defaults the drill to a dry run", () => {
     expect(rollback).toMatch(/dry_run:[\s\S]*?default: true/);
   });
+
+  describe("Ask knowledge pack in KV", () => {
+    const stepsOf = (job: string) => job.split(/\n(?=      - )/);
+    const deploySteps = stepsOf(deployJob("deploy"));
+    const at = (needle: string) => deploySteps.findIndex((step) => step.includes(needle));
+
+    it("publishes before the Pages deploy, flips after it and before the smoke check, and flips back on a failure", () => {
+      const publish = at("bun scripts/ask-pack.ts publish --commit");
+      const pages = at("bunx wrangler pages deploy");
+      const flip = at('bun scripts/ask-pack.ts flip "$VERSION"');
+      const smoke = at("bun scripts/deploy-smoke.ts");
+      const back = at('bun scripts/ask-pack.ts flip "$PREVIOUS"');
+      expect(at("bun scripts/build-knowledge.ts")).toBeLessThan(publish);
+      expect([publish, pages, flip, smoke, back].every((i) => i >= 0)).toBe(true);
+      expect(publish).toBeLessThan(pages);
+      expect(pages).toBeLessThan(flip);
+      expect(flip).toBeLessThan(smoke);
+      expect(smoke).toBeLessThan(back);
+      expect(deploySteps[back]).toMatch(/if: failure\(\) && steps\.flip\.outcome == 'success'/);
+    });
+
+    it("passes the Cloudflare secrets to the pack steps in step env only, and step outputs through env", () => {
+      for (const needle of ["ask-pack.ts publish", 'ask-pack.ts flip "$VERSION"', 'ask-pack.ts flip "$PREVIOUS"']) {
+        const step = deploySteps[at(needle)];
+        expect(step, needle).toMatch(/\n        env:\n[\s\S]*CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
+        expect(step.split("run:")[1], needle).not.toContain("${{");
+      }
+      expect(deployJob("deploy").split("    steps:")[0]).not.toContain("secrets.");
+    });
+
+    it("rolls the pack back after the Pages rollback and the Worker redeploys, for the production project only", () => {
+      const steps = stepsOf(rollbackJob("rollback"));
+      const find = (needle: string) => steps.findIndex((step) => step.includes(needle));
+      const pack = find("bun scripts/ask-pack.ts rollback --commit");
+      expect(pack).toBeGreaterThan(find("bun scripts/rollback.ts pages"));
+      expect(pack).toBeGreaterThan(find("Redeploy hq-office"));
+      expect(pack).toBeLessThan(find("bun scripts/rollback.ts report"));
+      expect(steps[pack]).toContain("env.CF_PAGES_PROJECT == vars.CF_PAGES_PROJECT");
+      expect(steps[pack]).toContain('--dry-run "$DRY_RUN"');
+      expect(steps[pack]).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
+      expect(steps[pack - 1]).toContain("bun install --frozen-lockfile");
+    });
+  });
 });
 
 describe("Ask samples (ask-samples.yml)", () => {

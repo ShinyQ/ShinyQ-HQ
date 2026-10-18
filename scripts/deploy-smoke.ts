@@ -3,8 +3,9 @@
  *
  *   bun scripts/deploy-smoke.ts [--site https://kurniadi.pages.dev] [--timeout 180]
  *
- * Expected values come from the checkout that was just deployed: the knowledge pack date
- * (functions/_generated/knowledge.json, so run scripts/build-knowledge.ts first), the live GitHub
+ * Expected values come from the checkout that was just deployed: the knowledge pack date (the pin in
+ * functions/_generated/pack-meta.json, so run scripts/build-knowledge.ts first; deploy.yml flips the KV pointer to that
+ * pack before this runs, and the status `asOf` is the pointer's date), the live GitHub
  * contributions (content/generated/dynamic-facts.json) and, when NEXT_PUBLIC_CF_BEACON_TOKEN is set,
  * the Web Analytics beacon. /en must also carry its per-page script policy (scripts/csp-hashes.ts) and no
  * Cloudflare-injected beacon (scripts/injected-analytics.ts).
@@ -106,7 +107,7 @@ export function smokeProblems(expected: Expected, observed: Observed): string[] 
 }
 
 export function expectedFromCheckout(root = process.cwd(), env = process.env): Expected {
-  const pack = JSON.parse(readFileSync(path.join(root, "functions", "_generated", "knowledge.json"), "utf8")) as { packDate: string };
+  const pack = JSON.parse(readFileSync(path.join(root, "functions", "_generated", "pack-meta.json"), "utf8")) as { packDate: string };
   const facts = DynamicFactsSchema.parse(JSON.parse(readFileSync(path.join(root, "content", "generated", "dynamic-facts.json"), "utf8")));
   return {
     asOf: pack.packDate,
