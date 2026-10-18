@@ -120,10 +120,10 @@ if (argv[0] === "hook" || argv[0] === "send") {
   process.on("unhandledRejection", () => process.exit(0));
 }
 
-// A hook must never fail or print: errors are swallowed and the process exits 0. Only install and uninstall report theirs (exit 1).
+// A hook must never fail or print: hook and send swallow errors and exit 0. Every owner command reports its error (exit 1).
 main(argv)
   .catch((error: unknown) => {
-    if (argv[0] === "install" || argv[0] === "uninstall") {
+    if (argv[0] !== "hook" && argv[0] !== "send") {
       console.error(error instanceof Error ? error.message : String(error));
       process.exitCode = 1;
     }

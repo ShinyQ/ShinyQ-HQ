@@ -114,4 +114,13 @@ describe("office-relay CLI", () => {
     expect(run(["resume"], { HOME: h }).stdout).toContain("active");
     expect(existsSync(path.join(h, ".office-pause"))).toBe(false);
   });
+
+  it("pause: exit 1 with a message when the pause file cannot be written", () => {
+    const file = path.join(home(), "not-a-dir");
+    writeFileSync(file, "");
+    const r = run(["pause"], { HOME: file });
+    expect(r.status).toBe(1);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toMatch(/office-pause/);
+  });
 });
