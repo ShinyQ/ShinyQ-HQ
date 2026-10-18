@@ -28,7 +28,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | Page View LCP | 2 s | `lighthouserc.json` |
 | Page View CLS | 0.01 | `lighthouserc.json` |
 | Page View TBT | 200 ms | `lighthouserc.json` |
-| Page View transfer budgets for fonts, HTML, CSS and JS | see the file | `lighthouserc.json` |
+| Page View transfer budgets for fonts, HTML, CSS and JS | see the file (HTML 83,968 B, 82 KB: an owner-approved stopgap on 2026-10-18 until Classic pages stop inlining the whole `hud` message namespace) | `lighthouserc.json` |
 | RUM sampling (`RUM_RATE`) | 25% of 3D sessions | `src/experience/perf/rumDecision.ts` |
 
 Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).

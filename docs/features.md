@@ -394,7 +394,7 @@ The HTML pages paint their text before any JavaScript runs, so Lighthouse's simu
 | CLS | under 0.01 |
 | TBT | under 200 ms |
 | Fonts per page | at most 60 KB |
-| HTML per page | at most 80 KB |
+| HTML per page | at most 82 KB |
 | CSS per page | at most 20 KB |
 | JavaScript per page | at most 240 KB |
 

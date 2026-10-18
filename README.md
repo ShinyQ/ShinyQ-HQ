@@ -246,7 +246,7 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 | Shader programs | committed baseline + 2 |
 | GPU memory | round trips return to baseline |
 | Lighthouse (Classic site) | LCP under 2 s, CLS under 0.01, TBT under 200 ms |
-| Page weight (Classic site) | fonts 60 KB, HTML 80 KB, CSS 20 KB, JS 240 KB |
+| Page weight (Classic site) | fonts 60 KB, HTML 82 KB, CSS 20 KB, JS 240 KB |
 
 Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/performance.md`](docs/agents/performance.md).
 
