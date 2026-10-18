@@ -74,7 +74,7 @@ function status(paths: RelayPaths): string {
     `endpoint: ${config.endpoint}`,
     `ingest key: ${readIngestKey() ? "found" : "missing (security add-generic-password -s hq-office-ingest -a office-relay -w <key>)"}`,
     `allowlist: ${config.allow.join(", ")}`,
-    ...Object.entries(installed(installPaths(process.env.HOME ?? homedir()))).map(([agent, ok]) => `hooks ${agent}: ${ok ? "installed" : "not installed"}`),
+    ...Object.entries(installed(installPaths(process.env.HOME || homedir()))).map(([agent, ok]) => `hooks ${agent}: ${ok ? "installed" : "not installed"}`),
     "last events:",
     ...tail.map((l) => `  ${l}`),
   ].join("\n");
@@ -103,10 +103,10 @@ async function main(argv: string[]): Promise<void> {
       console.log(status(paths));
       return;
     case "install":
-      console.log(install(process.env.HOME ?? homedir(), { cli: SELF, runtime: process.execPath }).join("\n"));
+      console.log(install(process.env.HOME || homedir(), { cli: SELF, runtime: process.execPath }).join("\n"));
       return;
     case "uninstall":
-      console.log(uninstall(process.env.HOME ?? homedir()).join("\n"));
+      console.log(uninstall(process.env.HOME || homedir()).join("\n"));
       return;
     default:
       console.log(USAGE);
@@ -120,9 +120,12 @@ if (argv[0] === "hook" || argv[0] === "send") {
   process.on("unhandledRejection", () => process.exit(0));
 }
 
-// A hook must never fail or print: errors are swallowed and the process always exits 0. Only install and uninstall report theirs.
+// A hook must never fail or print: errors are swallowed and the process exits 0. Only install and uninstall report theirs (exit 1).
 main(argv)
   .catch((error: unknown) => {
-    if (argv[0] === "install" || argv[0] === "uninstall") console.error(error instanceof Error ? error.message : String(error));
+    if (argv[0] === "install" || argv[0] === "uninstall") {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    }
   })
-  .finally(() => process.exit(0));
+  .finally(() => process.exit(process.exitCode ?? 0));

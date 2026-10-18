@@ -31,11 +31,13 @@ interface Group {
 }
 
 const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
+/** POSIX single quoting: nothing inside is expanded, and `'` becomes `'\''`. */
+const shq = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
 /**
  * A hook must never fail (a Copilot preToolUse hook that exits non-zero denies the tool), even without Bun or the checkout.
- * Only the directory is quoted, so the line contains MARKER literally (`.../office-relay hook`).
+ * Only the directory is quoted, so the line contains MARKER literally (`'<dir>'/office-relay hook`).
  */
-const command = (bin: string, agent: string, event: string) => `"${path.dirname(bin)}"/${path.basename(bin)} hook ${agent} ${event} 2>/dev/null || true`;
+const command = (bin: string, agent: string, event: string) => `${shq(path.dirname(bin))}/${path.basename(bin)} hook ${agent} ${event} 2>/dev/null || true`;
 const ours = (h: Obj) => String(h.command ?? h.bash ?? "").includes(MARKER);
 
 function withoutOurs(groups: unknown): Group[] {
@@ -89,7 +91,7 @@ function readJson(file: string): Obj {
   } catch {
     // fall through
   }
-  throw new Error(`office-relay: cannot parse ${file}; fix or move it, then run install again (nothing was changed)`);
+  throw new Error(`office-relay: cannot parse ${file}; fix or move it, then run the command again; nothing was changed`);
 }
 
 function writeJson(file: string, value: Obj, stamp: number): void {
@@ -111,7 +113,7 @@ export function install(home: string, opts: { cli: string; runtime: string; now?
   const claude = mergeClaude(readJson(p.claude), p.bin);
   const codex = mergeCodex(readJson(p.codex), p.bin);
   mkdirSync(path.dirname(p.bin), { recursive: true });
-  writeFileSync(p.bin, `#!/bin/sh\nexec "${opts.runtime}" "${opts.cli}" "$@"\n`);
+  writeFileSync(p.bin, `#!/bin/sh\nexec ${shq(opts.runtime)} ${shq(opts.cli)} "$@"\n`);
   chmodSync(p.bin, 0o755);
   writeJson(p.copilot, copilotHooks(p.bin), stamp);
   writeJson(p.claude, claude, stamp);
@@ -127,11 +129,14 @@ export function install(home: string, opts: { cli: string; runtime: string; now?
   ];
 }
 
+/** Parses both files first, so a broken one aborts before any write or removal. */
 export function uninstall(home: string): string[] {
   const p = installPaths(home);
   const stamp = Date.now();
-  if (existsSync(p.claude)) writeJson(p.claude, stripOurs(readJson(p.claude)), stamp);
-  if (existsSync(p.codex)) writeJson(p.codex, stripOurs(readJson(p.codex)), stamp);
+  const claude = existsSync(p.claude) ? stripOurs(readJson(p.claude)) : null;
+  const codex = existsSync(p.codex) ? stripOurs(readJson(p.codex)) : null;
+  if (claude) writeJson(p.claude, claude, stamp);
+  if (codex) writeJson(p.codex, codex, stamp);
   rmSync(p.copilot, { force: true });
   rmSync(p.bin, { force: true });
   return ["office-relay hooks removed (backups kept next to the files)"];

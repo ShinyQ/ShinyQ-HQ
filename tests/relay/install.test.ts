@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,7 +7,7 @@ import { CLAUDE_EVENTS, CODEX_EVENTS, copilotHooks, COPILOT_EVENTS, install, ins
 
 const opts = { cli: "/repo/tools/office-relay/src/cli.ts", runtime: "/opt/bun/bin/bun", now: 1_792_327_344_000 };
 const json = (file: string) => JSON.parse(readFileSync(file, "utf8"));
-const cmd = (bin: string, agent: string, event: string) => `"${path.dirname(bin)}"/office-relay hook ${agent} ${event} 2>/dev/null || true`;
+const cmd = (bin: string, agent: string, event: string) => `'${path.dirname(bin)}'/office-relay hook ${agent} ${event} 2>/dev/null || true`;
 
 function homeWithClaude(settings: unknown) {
   const home = mkdtempSync(path.join(tmpdir(), "relay-install-"));
@@ -40,7 +40,7 @@ describe("install", () => {
     expect(codex.hooks.PreToolUse[0].matcher).toBe("^Bash$");
     expect(codex.hooks.Stop[0].hooks[0].async).toBe(true);
 
-    expect(readFileSync(p.bin, "utf8")).toBe(`#!/bin/sh\nexec "${opts.runtime}" "${opts.cli}" "$@"\n`);
+    expect(readFileSync(p.bin, "utf8")).toBe(`#!/bin/sh\nexec '${opts.runtime}' '${opts.cli}' "$@"\n`);
     expect(statSync(p.bin).mode & 0o111).not.toBe(0);
     expect(readdirSync(path.join(home, ".claude")).some((f) => f.startsWith("settings.json.office-backup-"))).toBe(true);
     expect(report.join("\n")).toContain("Codex: open /hooks");
@@ -56,6 +56,30 @@ describe("install", () => {
     expect(run.status).toBe(0);
     expect(run.stdout).toBe("");
     expect(run.stderr).toBe("");
+  });
+
+  it.each(["with space", "it's", 'say "hi"', "$(echo X)", "$(touch relay-pwned)"])("quotes a directory named %s in the hook line and the shim", (name) => {
+    const root = mkdtempSync(path.join(tmpdir(), "relay-install-"));
+    const home = path.join(root, name);
+    const work = path.join(root, "work");
+    mkdirSync(work);
+    mkdirSync(home);
+    const runtime = path.join(home, "runtime");
+    const out = path.join(root, "argv.txt");
+    writeFileSync(runtime, `#!/bin/sh\nprintf '%s\\n' "$@" > "$OUT"\n`);
+    chmodSync(runtime, 0o755);
+    const cli = path.join(home, "cli.ts");
+    install(home, { cli, runtime, now: opts.now });
+    const p = installPaths(home);
+    const line = json(p.copilot).hooks.preToolUse[0].bash as string;
+    expect(line).toContain(MARKER);
+    const run = spawnSync("/bin/sh", ["-c", line], { input: "{}", encoding: "utf8", cwd: work, env: { ...process.env, OUT: out } });
+    expect(run.status).toBe(0);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toBe("");
+    expect(readFileSync(out, "utf8")).toBe(`${cli}\nhook\ncopilot\npreToolUse\n`);
+    expect(existsSync(path.join(work, "relay-pwned"))).toBe(false);
+    expect(existsSync(path.join(root, "relay-pwned"))).toBe(false);
   });
 
   it("is idempotent: a second install keeps one office entry per event", () => {
@@ -87,5 +111,20 @@ describe("install", () => {
     expect(existsSync(p.copilot)).toBe(false);
     expect(existsSync(p.bin)).toBe(false);
     expect(installed(p)).toEqual({ copilot: false, claude: false, codex: false });
+  });
+
+  it("uninstall changes nothing when hooks.json cannot be parsed", () => {
+    const home = homeWithClaude({ theme: "dark" });
+    install(home, opts);
+    const p = installPaths(home);
+    writeFileSync(p.codex, "{ not json");
+    const claudeBefore = readFileSync(p.claude, "utf8");
+    const copilotBefore = readFileSync(p.copilot, "utf8");
+    const shimBefore = readFileSync(p.bin, "utf8");
+    expect(() => uninstall(home)).toThrow(/hooks\.json; fix or move it, then run the command again; nothing was changed/);
+    expect(readFileSync(p.claude, "utf8")).toBe(claudeBefore);
+    expect(readFileSync(p.copilot, "utf8")).toBe(copilotBefore);
+    expect(readFileSync(p.bin, "utf8")).toBe(shimBefore);
+    expect(readFileSync(p.codex, "utf8")).toBe("{ not json");
   });
 });
