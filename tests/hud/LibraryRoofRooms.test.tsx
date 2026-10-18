@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { previewCitations } from "@/content/citation";
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -120,7 +121,7 @@ describe("Research shelf in the drawer", () => {
     expect(commands).toHaveLength(2);
     for (const command of commands) {
       expect(command.type).toBe("paper");
-      if (command.type === "paper") expect(command.paper.citations.bibtex).toMatch(/^@inproceedings\{fattahila2021indonesian,/);
+      if (command.type === "paper") expect(previewCitations(command.paper).bibtex).toMatch(/^@inproceedings\{fattahila2021indonesian,/);
     }
   });
 });

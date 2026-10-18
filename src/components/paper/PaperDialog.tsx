@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import type { PaperCitations, PaperPreview } from "@/content/citation";
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { previewCitations, type PaperCitations, type PaperPreview } from "@/content/citation";
 import { Modal } from "../Modal";
 import { PaperNotice, PaperReader } from "./PaperReader";
 
@@ -53,7 +53,8 @@ export default function PaperDialog({ paper, read = false, onClose }: { paper: P
   const reset = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(reset.current), []);
 
-  const citation = paper.citations[format];
+  const citations = useMemo(() => previewCitations(paper), [paper]);
+  const citation = citations[format];
   const doiUrl = paper.doi ? `https://doi.org/${paper.doi}` : undefined;
   // A GitHub URL without a separate code link is the source code, not a publisher page.
   const code = paper.code ?? (paper.url?.startsWith("https://github.com/") ? paper.url : undefined);

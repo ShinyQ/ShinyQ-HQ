@@ -165,7 +165,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/content/title-case.ts`: `titleCase` rules for content titles; content/titles.ts lists the title fields (see "Content style" in [content-style-and-safety.md](content-style-and-safety.md)).
 - `src/content/pageview.ts`: pure Page View helpers (pod and timeline filters, URL params, nav matching), client-safe.
 - `src/content/blog.ts`: MDX discovery with translation fallback.
-- `src/content/citation.ts`: PaperPreview type and pure APA, IEEE and BibTeX formatters (client-safe); content/papers.ts builds previews on the server.
+- `src/content/citation.ts`: PaperPreview type and pure APA, IEEE and BibTeX formatters (client-safe; the paper dialog formats with `previewCitations`); content/papers.ts builds previews on the server.
 - `src/content/experience.ts`: buildExperienceData(locale, floorNames): small payload for the 3D chunk (labPods for L3).
 - `src/content/tech.ts`: getTechLogo(name) registry (aliases, text-only allowlist), client-safe.
 - `src/content/tech-rings.ts`, `src/content/tech-index.ts`: L3 Tech Reactor: six rings from the CV skill groups, explicit ring map, aliases and misc allowlist; pure `buildTechIndex` (read it through `getTechIndex()` from `@/content/load`).

@@ -115,7 +115,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Research rows (`ResearchList` on Page View, `ResearchBody` in the drawer) open `PaperDialog` from the title or the "Abstract and citation" button.
 - The dialog gets a `PaperPreview` built on the server by `buildPaperPreview(pub, locale)` (`src/content/papers.ts`):
   - authors, venue, date, abstract, citation count;
-  - copyable APA / IEEE / BibTeX (`src/content/citation.ts`);
+  - copyable APA / IEEE / BibTeX, formatted in the dialog by `previewCitations(preview)` (`src/content/citation.ts`; the preview carries only `cite.kind` and `cite.pages` for it, so the citation text never repeats in a page payload);
   - DOI and Google Scholar (title search) links in a new tab with `rel="noopener noreferrer"`.
 - No third-party iframes (owner decision: credential, Medium and IEEE pages refuse framing or are paywalled); the CSP keeps `frame-src 'self'`.
 
