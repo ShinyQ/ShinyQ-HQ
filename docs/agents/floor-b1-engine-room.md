@@ -48,7 +48,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 ## Draw calls
 
 - Scene calls: the road kit, one merged mesh and its edges, two instanced holo draws and the floating sign pair.
-- Settled on B1: 45 scene calls and 8,100 triangles on lite, 48 and 9,015 on full, with 43 and 62 shader programs (`e2e/perf/baseline.json`).
+- Settled on B1: 45 scene calls and 8,100 triangles on lite, 48 and 9,015 on full, with 43 and 81 shader programs on CI (`e2e/perf/baseline.json`; B1 is measured after riding down from the Lobby, so its count includes the Lobby's programs, like L1 full at 81).
 - `FLOOR_SCENE_CAPS.B1` caps it at 100; the worst ride to B1 draws up to 110 scene calls and 127 whole-frame calls (budget 150) and about 22k triangles at most.
 - The B1 chunk (EngineRoom, EngineBody) is 4.8 KB gzip (cap 16 KB). The cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
 
