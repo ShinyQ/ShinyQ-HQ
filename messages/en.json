@@ -418,7 +418,7 @@
     "settings": {
       "dayNight": {
         "label": "Day and night",
-        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
+        "hint": "A 4 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
       },
       "openLinks": {
         "label": "Open links in",

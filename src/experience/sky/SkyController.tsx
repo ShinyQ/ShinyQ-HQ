@@ -14,7 +14,7 @@ import { useUniformTime } from "../fx/useUniformTime";
 import { postHandle } from "../scene/postHandle";
 import { sceneSettings } from "../scene/settings";
 import type { GpuTier } from "../types";
-import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, underground, type SkyMode } from "./dayNight";
+import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMode, skyAzimuth, skyState, underground, type SkyMode } from "./dayNight";
 import { applyDome, applyOrbs } from "./applySky";
 import { skyRuntime } from "./skyRuntime";
 
@@ -39,6 +39,7 @@ function readSkyOptIn(): string | null {
 export function SkyController({ tier }: { tier: GpuTier }) {
   const settings = useMemo(() => sceneSettings(tier), [tier]);
   const reduced = useHQStore((s) => s.reducedMotion);
+  const cameraClass = useHQStore((s) => s.device.camera);
   const camera = useThree((s) => s.camera);
   const group = useRef<Group>(null);
   const orbMesh = useRef<InstancedMesh>(null);
@@ -67,6 +68,12 @@ export function SkyController({ tier }: { tier: GpuTier }) {
 
   const mode = useRef<SkyMode>({ source: "held", phase: 0, still: false });
   const last = useRef<number | null>(null);
+  const azimuth = useRef(skyAzimuth(cameraClass));
+  // A camera class change (rotate a tablet, resize a window) moves the sun and moon arc: re-apply on the next frame.
+  useEffect(() => {
+    azimuth.current = skyAzimuth(cameraClass);
+    last.current = null;
+  }, [cameraClass]);
   const under = useRef(false);
   const bloomWritten = useRef<BloomEffect | null>(null);
   useEffect(() => {
@@ -121,7 +128,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
     const phase = under.current ? 0 : (m.phase ?? clockPhase(Date.now()));
     if (last.current !== null && Math.abs(phase - last.current) <= EPSILON) return;
     last.current = phase;
-    skyState(phase, state);
+    skyState(phase, state, azimuth.current);
 
     if (scene.background instanceof Color) scene.background.copy(state.fog);
     if (scene.fog instanceof Fog) scene.fog.color.copy(state.fog);
@@ -145,6 +152,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
     skyRuntime.source = m.source;
     skyRuntime.still = m.still;
     skyRuntime.fog = state.fog.getHex();
+    skyRuntime.azimuth = azimuth.current;
     skyRuntime.applied += 1;
   });
 

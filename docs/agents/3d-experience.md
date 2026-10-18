@@ -417,16 +417,19 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ## Day and night
 
-The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner decision 2026-10-17). Classic site pages are unchanged.
+The tower runs a 4 minute cycle from neon night to a deep twilight "day" (owner decisions 2026-10-17 and 2026-10-18). Classic site pages are unchanged.
 
 ### Model
 
-- `src/experience/sky/dayNight.ts` is pure: `skyState(phase)` maps a phase in [0, 1) to the sky (`CYCLE_MS` is 8 minutes).
+- `src/experience/sky/dayNight.ts` is pure: `skyState(phase)` maps a phase in [0, 1) to the sky (`CYCLE_MS` is 4 minutes).
   - Phase 0 is night, 0.25 dawn, 0.5 twilight day, 0.75 dusk (`SKY_PHASES`); the `day`, `warm` and `stars` mixes drive colors, lights and the star amount.
   - Night reproduces `sceneSettings` exactly (fog and background `#0a0a0f`, hemisphere, directional light, bloom), so the base look does not move.
   - "Day" is not daylight: an indigo to teal sky with a sun glow on the horizon. Neon glows brighter at night (full tier bloom 0.9 at night, 0.72 at twilight day).
 - Geometry: the sky is a dome whose horizon sits at `SKY.horizon` (-0.6 rad), because the follow cameras look 44 to 47 degrees down.
-  - The sun and the moon ride a shallow arc (`SKY.arc` 0.09) around the tower, opposite each other; `SKY.azimuth` puts the night moon and the midday sun on the left of the L1 desktop view.
+  - The sun and the moon ride one tall, narrow ellipse on the sky sphere, opposite each other, so they move up and down (owner decision 2026-10-18): centered on the horizon at `SKY.azimuth` for the camera class (`skyAzimuth(device.camera)`: desktop -0.2, the open sky on the left of the L1 view between the profile card and the Visitor Observatory; tablet and phone -0.85, the open sky at the top left of the L1 portrait view), climbing `SKY.rise` (0.16 rad) above it and swinging `SKY.width` (0.06 rad) sideways where they cross it.
+  - The sun rises on the left at dawn, tops out at midday, sinks straight down on the right at dusk and stays below the horizon at night; the moon does the same half a cycle later.
+  - One orb near the horizon at a time: each orb's `alpha` (in the model, written by `applyOrbs`) fades in from 0.06 rad below the horizon to 0.03 above it, and the moon shows only while the sun is more than 0.06 rad below the horizon, so it fades out before the sun starts to show at dawn and back in after the sun is gone at dusk.
+  - `SkyController` re-applies the sky when the camera class changes. The dome's sun glow follows the sun direction.
 
 ### Mode resolution
 
@@ -435,7 +438,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - Under automation (`navigator.webdriver`) the sky holds a still night otherwise (source `held`, `still` true): today's exact frame, so the visual baselines stay valid. The sky group (dome and orbs) is not drawn at all (`visible = false`, written when the mode resolves), which costs a CPU renderer (SwiftShader) nothing; the dome's star amount and both orb alphas are also written as 0. A visitor's held night (reduced motion or stored "off") has `still` false and keeps the moon and stars.
   - `?sky=` or `sessionStorage["hq:sky"]` (same values; the perf lane's opt-in, `parseSkyValue`) draws the sky under automation; the perf gates measure the sky through that opt-in.
   - A visitor runs the clock (source `clock`) when the stored choice says on, or when there is no choice and reduced motion is off. Reduced motion holds night unless the visitor turns the cycle on.
-- The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 8 min`): every visitor sees the same phase and a reload continues.
+- The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 4 min`): every visitor sees the same phase and a reload continues.
 - Preference: `localStorage["hq:day-night"]` is `"on"`, `"off"` or unset (unset follows Motion). `src/lib/day-night.ts` (`readDayNight`, `setDayNight`, `subscribeDayNight`, `dayNightOn`) imports nothing, so the HUD bundle can use it.
 - The "Day and night" toggle is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, group display, order 30) and shows in the settings panel (Display group, between Graphics quality and Minimap). Its `get` reads `dayNightOn(readDayNight(), reducedMotion)`, its `set` is `setDayNight`.
 
@@ -449,9 +452,9 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - On the full tier the two meshes mount only once the lazy composer is live; earlier, the frame-3 precompile would compile a canvas variant of the holo program.
 - Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
 - The RF star dome (`floors/roof/Sky.tsx`) fades with `skyRuntime.stars`.
-- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, applied, underground }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications, `underground` is true below the Lobby), read from `skyRuntime`.
+- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, azimuth, applied, underground }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `azimuth` is the arc azimuth as last applied, `applied` counts applications, `underground` is true below the Lobby), read from `skyRuntime`.
 - Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `day-night-setting.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (still held night under automation without a drawn sky, the sessionStorage opt-in, held night for a visitor, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
-- Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite). `bun scripts/b1-shots.ts --base <url> --out <dir>` captures B1 (arrival, aisle, each station's drawer; desktop full and phone lite) with the dev flag; its `unlock` part captures the locked row and the unlock moment.
+- Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3 by default, `FLOORS=L1,L2,L3,L4,RF`; four phases by default, `PHASES` takes names or numbers; desktop full and phone lite; `--gpu` renders on the Metal GPU on macOS, where a 1440x900 SwiftShader screenshot can time out). `bun scripts/b1-shots.ts --base <url> --out <dir>` captures B1 (arrival, aisle, each station's drawer; desktop full and phone lite) with the dev flag; its `unlock` part captures the locked row and the unlock moment.
 - B1 is underground: no dome, sun or moon below `UNDERGROUND_BELOW`; the night state holds, so the lights and fog stay at today's look.
 - Budgets are authoritative in `e2e/budgets.ts` (3D bytes, draw calls, triangles) and `e2e/perf/baseline.json` (shader programs, memory); this section keeps only the invariants above.
 
@@ -540,7 +543,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `interact` | `interactRuntime`: the current floor's `items`, `project`, `screenOf(id)`, `screenAt(id, fx, fz, lift)`, `hitAt(x, y)` (the click raycast) and `highlight` |
   | `memory()` | the live `renderer.info` geometries, textures and program count (null without a canvas) |
   | `motion()` | the live ride and beam (`{ ride, beam }`, the store only holds their stage starts) |
-  | `sky` | `{ phase, day, stars, source, fog, applied, underground }` of the day and night cycle (see "Day and night") |
+  | `sky` | `{ phase, day, stars, source, fog, azimuth, applied, underground }` of the day and night cycle (see "Day and night") |
   | `probe` | only with `?gfx=probe`: `{ checked, black }`, frames checked and the black frames found (see [Shader math](#shader-math)) |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.

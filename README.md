@@ -50,7 +50,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 
 - **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator and five themed floors.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
-- **Day and night**: an 8 minute twilight and neon night cycle from clock time, with a moving sun and moon.
+- **Day and night**: a 4 minute twilight and neon night cycle from clock time, with a sun and moon that rise and set.
 - **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles, plus the Rover menu (`>_`) with shortcuts to the best rooms.
 - **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, with Mistral and Groq fallbacks) and Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
