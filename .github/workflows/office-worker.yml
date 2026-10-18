@@ -1,0 +1,38 @@
+name: Office Worker check
+
+# Pull request check for the Agent Office Worker (workers/office/, hq-office): bundles it with
+# `wrangler deploy --dry-run` and nothing else. Pull request runs never receive a Cloudflare secret (security S3).
+# Not a required check. Runbook: workers/office/README.md.
+
+on:
+  pull_request:
+    paths:
+      - "workers/office/**"
+      - "src/lib/office/**"
+      - "src/content/safety-match.ts"
+      - ".github/workflows/office-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: office-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    name: hq-office bundle (dry run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Build the safety list (public terms only)
+        run: bun scripts/build-knowledge.ts
+      - name: Bundle the Worker (dry run, no secrets)
+        working-directory: workers/office
+        # wrangler from the lockfile (devDependency, exact version; S4).
+        run: bunx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/hq-office"

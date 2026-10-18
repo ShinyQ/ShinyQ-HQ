@@ -222,10 +222,75 @@ jobs:
           path: blob-report/
           retention-days: 7
 
+  office-worker:
+    name: hq-office Worker
+    runs-on: ubuntu-latest
+    needs: [resolve, verify, site, e2e]
+    # Before the Pages upload, so the Pages service binding OFFICE never points at a missing Worker. The upload does
+    # not wait for its success (deploy's `if` ignores it). The repository variable OFFICE_WORKER_DEPLOY = "false"
+    # skips it. Runbook: workers/office/README.md.
+    if: ${{ !cancelled() && needs.site.result == 'success' && (needs.e2e.result == 'success' || needs.e2e.result == 'skipped') }}
+    timeout-minutes: 10
+    environment:
+      name: production
+      deployment: false
+    permissions:
+      contents: read
+    steps:
+      - name: Check configuration
+        id: gate
+        env:
+          HAS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          SKIP: ${{ vars.OFFICE_WORKER_DEPLOY == 'false' }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OFFICE_WORKER_DEPLOY is false; the hq-office Worker is not deployed by this run."
+          elif [ "$HAS" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping the hq-office Worker."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
+          ref: ${{ needs.resolve.outputs.sha }}
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Build the safety list
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun scripts/build-knowledge.ts
+      - name: Deploy hq-office and set its secrets
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: workers/office
+        # The deploy token and the Worker secrets only in this step (S4, H1); a missing secret is skipped, so the
+        # Worker answers 503 on that route until the owner adds it.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OFFICE_INGEST_KEY: ${{ secrets.OFFICE_INGEST_KEY }}
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+        run: |
+          bunx wrangler deploy
+          if [ -n "$OFFICE_INGEST_KEY" ]; then
+            printf '%s' "$OFFICE_INGEST_KEY" | bunx wrangler secret put OFFICE_INGEST_KEY > /dev/null
+          else
+            echo "::notice::OFFICE_INGEST_KEY is not set; POST /api/office/beat answers 503."
+          fi
+          if [ -n "$GITHUB_WEBHOOK_SECRET" ]; then
+            printf '%s' "$GITHUB_WEBHOOK_SECRET" | bunx wrangler secret put GITHUB_WEBHOOK_SECRET > /dev/null
+          else
+            echo "::notice::GITHUB_WEBHOOK_SECRET is not set; POST /api/office/github answers 503."
+          fi
+
   deploy:
     name: Cloudflare Pages production
     runs-on: ubuntu-latest
-    needs: [resolve, verify, site, e2e]
+    needs: [resolve, verify, site, e2e, office-worker]
     # After the shards passed, or straight after the build when the CI result was reused (e2e skipped).
     if: ${{ !cancelled() && needs.site.result == 'success' && (needs.e2e.result == 'success' || needs.e2e.result == 'skipped') }}
     permissions:
@@ -398,7 +463,7 @@ jobs:
   report:
     name: Report a failed deploy
     runs-on: ubuntu-latest
-    needs: [resolve, verify, site, e2e, deploy, stats-worker]
+    needs: [resolve, verify, site, e2e, deploy, stats-worker, office-worker]
     if: ${{ failure() }}
     permissions:
       issues: write
