@@ -558,4 +558,5 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `probe` | only with `?gfx=probe`: `{ checked, black }`, frames checked and the black frames found (see [Shader math](#shader-math)) |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.
+- Test-only animation speed: `window.__hqE2ESpeed` under `navigator.webdriver` (read by `animationSpeed()`, `scene/animationSpeed.ts`) speeds up rides, autopilot drives, beams, camera eases and the intro for functional specs; never for visitors, the perf lane or the memory gates. Details: [performance.md](performance.md#animation-speed).
 - The rover hides during the hologram view; pod labels too.
