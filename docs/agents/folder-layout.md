@@ -79,6 +79,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `scripts/subset-fonts.sh`: subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); `tests/content/fonts.test.ts` checks coverage.
 - `scripts/troika-fonts.ts`, `scripts/troika-glyphs.ts`: subset the in-world fonts (fonttools) to the characters 3D text uses; `tests/content/troika-fonts.test.ts` checks coverage.
 - `scripts/validate-fragment.ts`: schema + safety check for content files.
+- `scripts/docs-index.ts`: prints the owner decisions log (`docs/decisions/`) and the plans table (each plan's `Status:` line) at read time; nothing it prints is committed.
 - `scripts/brand-marks.ts`: writes the rover brand mark files (public/brand/, src/app/icon.svg, apple-icon.png, favicon.ico) from `src/lib/brand-mark.ts`; the lockup wordmark is outlined by brand-wordmark.py (fonttools).
 - `scripts/title-case.ts`: lists content titles not in Title Case; `--write` fixes site-content.json and the MDX frontmatter.
 - `scripts/pdf-pages.ts`: shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts.
@@ -375,4 +376,6 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 - `docs/features.md`: feature reference by floor (controls, floors, Ask, CI, performance, status log); the README links here.
 - `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, safety lint).
+- `docs/decisions.md`: how to add and read owner decisions (static, no table); `docs/decisions/`: one file per decision, `YYYY-MM-DD-slug.md`.
+- `docs/superpowers/`: specs (with a status table) and plans (status only in each plan's `Status:` line).
 - `docs/readme/`: README media: hero.gif, hero.jpg, floor-{L1,L2,L3,L4,RF}.jpg (output of `scripts/readme-hero.ts`, committed).
