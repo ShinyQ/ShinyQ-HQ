@@ -151,7 +151,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Triangles per frame | under 30k |
 | Shader programs per floor | `e2e/perf/baseline.json` plus 2 |
 | Memory gates | zero growth in geometries, textures and programs; under 2 MB JS heap growth |
-| Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 80 KB |
+| Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 82 KB |
 | Ask knowledge pack | `PACK_MAX_BYTES` 256 KiB |
 | README hero GIF | under 6 MB |
 

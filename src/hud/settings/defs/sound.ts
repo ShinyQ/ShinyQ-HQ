@@ -32,12 +32,13 @@ export const musicSetting = defineSetting({
   available: () => true,
 });
 
-/** The per-floor background layer; independent of the music toggle, scaled by the music volume. */
+/** The per-floor track: replaces the background music while on (one soundtrack at a time), scaled by the music volume. */
 export const ambienceSetting = defineSetting({
   id: "ambience",
   group: "sound",
   order: 35,
   labelKey: "ambience.label",
+  hintKey: "ambience.hint",
   control: { kind: "toggle", get: () => audio.getSettings().ambience, set: (on) => audio.setAmbience(on) },
   subscribe: (listener) => audio.subscribe(listener),
   available: () => true,

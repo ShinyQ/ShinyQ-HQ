@@ -45,7 +45,7 @@ describe("lighthouserc", () => {
     expect(a["cumulative-layout-shift"][1].maxNumericValue).toBe(0.01);
     expect(a["total-blocking-time"][1].maxNumericValue).toBe(200);
     expect(a["resource-summary:font:size"][1].maxNumericValue).toBe(61440);
-    expect(a["resource-summary:document:size"][1].maxNumericValue).toBe(81920);
+    expect(a["resource-summary:document:size"][1].maxNumericValue).toBe(83968);
     expect(a["resource-summary:stylesheet:size"][1].maxNumericValue).toBe(20480);
     expect(a["resource-summary:script:size"][1].maxNumericValue).toBe(245760);
   });

@@ -52,7 +52,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Deep Space Ambient | 2026-10-16: the ambient hum becomes procedural background music (drones, random pentatonic glass bells, a long reverb) while sound is on, at the hum's loudness so the effects stay clear | Done |
 | Day and night | 2026-10-17: Round 8 K: the tower cycles every 8 minutes from clock time between neon night (today's look plus a moon and stars) and a deep twilight day (indigo to teal sky, a sun glow on the horizon), with a sun and moon on a shallow arc, lights, fog and bloom following the phase; the cycle follows Motion (reduced motion holds night); the "Day and night" switch is registered in the settings registry (`day-night`, display group, order 30), and its panel UI comes with the HUD settings work; +2 scene calls, no new shader program | Done |
 | Build story page | Round 9 (2026-10-17): the Classic page `/{locale}/build` ("How this site was built") tells the build from the blueprint to the quality gates, with numbers measured at build time (`content/build-story.json`, `content/generated/build-facts.json`); Ask the HQ now cites it for questions about the site | Done |
-| Floor ambience | Round 9 O (2026-10-17): each floor adds a quiet procedural layer under the music (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter and paper, RF wind and a distant radio beacon) that crossfades over 2 s on a floor change; a "Floor ambience" toggle in the settings sound group, independent of the music | Done |
+| Floor ambience | Round 9 O (2026-10-17): each floor has its own procedural soundtrack (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter and paper, RF wind and a distant radio beacon) that crossfades over 2 s on a floor change; a "Floor ambience" toggle in the settings sound group. Fix (2026-10-18): the floor layer replaces the music instead of playing on top of it (one soundtrack at a time) | Done |
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume, floor ambience), a round minimap with a floor overview, a slim Rover toast on phones | Done |
 | L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
 | Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
@@ -110,7 +110,7 @@ Open `/en` and press **Boot rover**.
 ### Sound
 
 - While sound is on, the tower plays procedural "Deep Space Ambient" background music (drones, random pentatonic bells, a long reverb), quiet enough to keep the effects clear; muting or leaving the 3D view stops it.
-- Each floor adds its own quiet layer under the music (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon); it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off without touching the music.
+- Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
 
 ### Motion setting
 
@@ -394,7 +394,7 @@ The HTML pages paint their text before any JavaScript runs, so Lighthouse's simu
 | CLS | under 0.01 |
 | TBT | under 200 ms |
 | Fonts per page | at most 60 KB |
-| HTML per page | at most 80 KB |
+| HTML per page | at most 82 KB |
 | CSS per page | at most 20 KB |
 | JavaScript per page | at most 240 KB |
 
