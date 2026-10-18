@@ -3,18 +3,24 @@
  * CI work a pull request needs. Typecheck, lint, unit tests, the build (CSP hashes, public-safety scan,
  * og:check) and the secret scan always run. A pull request runs only the affected e2e specs (plus a small
  * smoke set when 3D or page code changed) on as many shards as their measured time needs, only the 3D perf
- * gates its 3D files can move, and only the Lighthouse URLs its files can move. Pushes, dispatches, the
- * nightly schedule, the `full-ci` label and any failure here run everything.
+ * gates its 3D files can move, and only the Lighthouse URLs its files can move. A push to main whose merged
+ * pull request passed CI on the same tree runs only the complement of that run (scripts/ci-complement.ts).
+ * Other pushes, dispatches, the nightly schedule, the `full-ci` label and any failure here run everything.
  *
  *   EVENT=pull_request REPO=owner/name PR=123 GH_TOKEN=... bun scripts/ci-plan.ts
+ *   EVENT=push REPO=owner/name SHA=<commit> GH_TOKEN=... bun scripts/ci-plan.ts
+ *   EVENT=workflow_dispatch COMPLEMENT_PR=123 REPO=owner/name SHA=<commit> GH_TOKEN=... bun scripts/ci-plan.ts
  *
- * Writes the planOutputs keys to $GITHUB_OUTPUT and a table to the job summary. Uses fetch and GH_TOKEN
- * only; no dependencies, so the job skips `bun install`.
+ * Writes the planOutputs keys to $GITHUB_OUTPUT, a table to the job summary and the run's record to
+ * ci-plan.json (the `ci-plan` artifact). Uses fetch, gh and GH_TOKEN only; no dependencies, so the job skips
+ * `bun install`.
  */
-import { appendFileSync, existsSync, readFileSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Source } from "./ci-complement";
+import { complementPlan, findSource, parseRecord, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
 import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
+import type { MergedPr } from "./merge-gate";
 import { ALL_PERF_KEYS, perfGrep, perfKeysFor, type PerfKey } from "./perf-plan";
 
 export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
@@ -346,6 +352,51 @@ async function hasFullLabel(repo: string, pr: string, token: string): Promise<bo
   }
 }
 
+/**
+ * The complement plan of the green PR run `findSource` finds, else `fallback()` (a full plan) with the reason in
+ * front. Any lookup error falls back too, so a flaky API never blocks main.
+ */
+export async function lookupComplement(
+  find: () => Promise<SourceResult>,
+  fallback: () => CiPlan,
+  opts: { durations?: Durations | null; perfDurations?: Durations | null } = {},
+): Promise<CiPlan> {
+  let found: SourceResult;
+  try {
+    found = await find();
+  } catch (error) {
+    found = { ok: false, why: error instanceof Error ? error.message : String(error) };
+  }
+  if (found.ok) return complementPlan(found.record, found.source, { lighthousePaths: Object.keys(LIGHTHOUSE_PAGES), ...opts });
+  const plan = fallback();
+  plan.reasons.unshift(`full run: ${found.why}`);
+  return plan;
+}
+
+function apiDeps(repo: string, token: string): SourceDeps {
+  const get = async <T>(endpoint: string): Promise<T> => {
+    const response = await fetch(`https://api.github.com/repos/${repo}/${endpoint}`, { headers: apiHeaders(token), signal: AbortSignal.timeout(20_000) });
+    if (!response.ok) throw new Error(`GitHub API ${endpoint.split("?")[0]}: HTTP ${response.status}`);
+    return (await response.json()) as T;
+  };
+  return {
+    pullsFor: (sha) => get<MergedPr[]>(`commits/${sha}/pulls`),
+    pull: (n) => get<MergedPr>(`pulls/${n}`),
+    treeOf: async (sha) => (await get<{ commit: { tree: { sha: string } } }>(`commits/${sha}`)).commit.tree.sha,
+    greenRuns: async (headSha) => (await get<{ workflow_runs: GreenRun[] }>(`actions/workflows/ci.yml/runs?head_sha=${headSha}&status=success&per_page=20`)).workflow_runs,
+    record: async (runId) => {
+      const dir = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), "ci-plan-"));
+      try {
+        const out = Bun.spawnSync(["gh", "run", "download", String(runId), "--repo", repo, "--name", PLAN_ARTIFACT, "--dir", dir], { stdout: "pipe", stderr: "pipe", timeout: 60_000 });
+        const file = path.join(dir, PLAN_FILE);
+        return out.exitCode === 0 && existsSync(file) ? parseRecord(readFileSync(file, "utf8")) : null;
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  };
+}
+
 function repoReader(root: string): (f: string) => string | null {
   return (f) => {
     const p = path.join(root, f);
@@ -380,9 +431,16 @@ function writeOutputs(outputs: Record<string, string>) {
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(outputs).map(([k, v]) => `${k}=${v}\n`).join(""));
 }
 
+/** The record of `plan` in the working directory, for the `ci-plan` artifact a later complement run reads. */
+function writeRecord(plan: CiPlan, outputs: Record<string, string>) {
+  writeFileSync(PLAN_FILE, JSON.stringify(recordFor(plan, outputs)));
+}
+
 async function main() {
-  const { EVENT, REPO, PR, GH_TOKEN } = process.env;
+  const { EVENT, REPO, PR, GH_TOKEN, SHA, COMPLEMENT_PR } = process.env;
   const event = EVENT === "pull_request" ? "pull_request" : "other";
+  const complementPr = COMPLEMENT_PR && /^[1-9]\d*$/.test(COMPLEMENT_PR) ? Number(COMPLEMENT_PR) : null;
+  const wantsComplement = EVENT === "push" || (complementPr !== null && event !== "pull_request");
   let files: string[] | null = null;
   let fullLabel = false;
   let note = "";
@@ -396,25 +454,40 @@ async function main() {
     }
     if (files) fullLabel = await hasFullLabel(REPO, PR, GH_TOKEN);
   }
+  if (COMPLEMENT_PR && complementPr === null && event !== "pull_request") note = `complement_pr "${COMPLEMENT_PR}" is not a pull request number`;
   const root = process.cwd();
   const read = repoReader(root);
+  const durations = readJson<DurationsFile>(read, "e2e/durations.json");
   const closure = files ? importClosure(listRoots(root), read) : new Set<string>();
-  const plan = planFor(files, (f) => closure.has(f), {
-    event,
-    fullLabel,
-    durations: readJson<DurationsFile>(read, "e2e/durations.json")?.e2e ?? null,
-    locate: locateFromDisk(root),
-    pages: files ? pagesFromRepo(read) : undefined,
-  });
-  if (note) plan.reasons.unshift(`full run: ${note}`);
+  const ownPlan = () => {
+    const p = planFor(files, (f) => closure.has(f), {
+      event,
+      fullLabel,
+      durations: durations?.e2e ?? null,
+      locate: locateFromDisk(root),
+      pages: files ? pagesFromRepo(read) : undefined,
+    });
+    if (note) p.reasons.unshift(`full run: ${note}`);
+    return p;
+  };
+  let plan: CiPlan;
+  if (!wantsComplement) plan = ownPlan();
+  else if (REPO && SHA && GH_TOKEN) {
+    plan = await lookupComplement(() => findSource(REPO, SHA, complementPr, apiDeps(REPO, GH_TOKEN)), ownPlan, { durations: durations?.e2e ?? null, perfDurations: durations?.perf ?? null });
+  } else {
+    plan = ownPlan();
+    plan.reasons.unshift("full run: REPO, SHA or GH_TOKEN is missing, so no merged pull request run to complement");
+  }
   const outputs = planOutputs(plan, lhciUrlsFrom(read));
   console.log(JSON.stringify({ outputs, reasons: plan.reasons, classes: plan.classes }, null, 2));
   writeOutputs(outputs);
+  writeRecord(plan, outputs);
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = Object.entries(plan.classes).map(([cls, list]) => `| \`${cls}\` | ${list!.length} | ${list!.slice(0, 5).map((f) => `\`${f}\``).join(", ")}${list!.length > 5 ? ", ..." : ""} |`);
     const summary = [
-      `### Smart CI plan: ${outputs.full === "true" ? "full run" : "selective run"}`,
+      `### Smart CI plan: ${plan.source ? "complement run" : outputs.full === "true" ? "full run" : "selective run"}`,
       "",
+      ...(plan.source ? [`Source: [CI run ${plan.source.run}](${plan.source.url}) of #${plan.source.pr}`, ""] : []),
       `e2e: **${outputs.e2e}** on ${outputs.e2e_total} shard(s)${outputs.e2e_files ? ` (${outputs.e2e_files})` : ""}`,
       `3D perf gates: **${outputs.perf}**${outputs.perf === "true" ? ` on ${outputs.perf_total} shard(s)${outputs.perf_grep ? `, grep \`${outputs.perf_grep}\`` : ", the whole lane"}` : ""}`,
       `Lighthouse: **${outputs.lighthouse}**${outputs.lighthouse === "true" ? (Array.isArray(plan.lighthouse) && outputs.lighthouse_urls ? ` (${plan.lighthouse.join(", ")})` : ", every URL") : ""}`,
@@ -431,6 +504,9 @@ if (import.meta.main) {
   main().catch((error) => {
     // Fail safe: an unexpected error plans a full run instead of blocking the PR.
     console.log(`::warning::Smart CI planner failed (${error instanceof Error ? error.message : String(error)}); running everything.`);
-    writeOutputs(planOutputs(planFor(null, () => false, { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" })));
+    const plan = planFor(null, () => false, { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" });
+    const outputs = planOutputs(plan);
+    writeOutputs(outputs);
+    writeRecord(plan, outputs);
   });
 }

@@ -80,7 +80,8 @@ export function complementPlan(record: PlanRecord, source: Source, opts: { light
   else {
     const done = new Set<Spec>(record.e2e.specs);
     const rest = ALL_SPECS.filter((s) => !done.has(s));
-    if (rest.length === ALL_SPECS.length) {
+    if (rest.length === 0) reasons.push("e2e: the PR run ran every spec whole");
+    else if (rest.length === ALL_SPECS.length) {
       e2e = "all";
       e2eShards = MAX_E2E_SHARDS;
     } else {
