@@ -80,6 +80,12 @@ describe("technical article discovery boundaries", () => {
     });
   }
 
+  it("keeps owner attribution within 60 characters in the final Indonesian Clearbox search title", () => {
+    const { searchTitle } = seoFor("id", "/blog/clearbox-inbox-cleanup-with-microsoft-decision-1");
+    expect(searchTitle).toContain("Kurniadi");
+    expect(searchTitle.length).toBeLessThanOrEqual(60);
+  });
+
   it("resolves useful native text in all three local figures while retaining product names", () => {
     const diagrams = getPostDiagrams();
     const delivery = resolveArchitecture(diagrams["spec-driven-development-with-ai-coding-agents"]["delivery-loop"], "id");
