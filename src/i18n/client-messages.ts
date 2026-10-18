@@ -58,6 +58,7 @@ export const LAYOUT_NAMESPACES = [
  * `NextIntlClientProvider`: the study guide dialog reads `guides` from `/data/guides/{locale}.json`. The layout and
  * the pages may reach such a dialog through `DialogHost` without carrying the namespace, so it never joins
  * LAYOUT_NAMESPACES; Page View islands that read it directly (the `/library` shelf) still need `ClientMessages`.
+ * The namespace test exempts only the fetching files (its `FETCHING_FILES`), never the whole namespace.
  */
 export const FETCHED_NAMESPACES = ["guides"] as const;
 

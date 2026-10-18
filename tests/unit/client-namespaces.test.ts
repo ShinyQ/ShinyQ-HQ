@@ -72,20 +72,31 @@ function clientGraphOf(entry: string): Set<string> {
 }
 
 /**
- * Namespaces read with useTranslations (top level, or the full literal path with `paths`), plus problems that
- * make the lists unverifiable.
+ * The files that fetch each FETCHED_NAMESPACES namespace with their data and read it under their own nested
+ * provider (the study guide dialog and its lazy reader). Only these files may read the namespace without the
+ * layout or `ClientMessages` sending it; the same read anywhere else still has to be covered.
  */
-function namespacesOf(files: Iterable<string>, { paths = false } = {}) {
+const FETCHING_FILES: Record<(typeof FETCHED_NAMESPACES)[number], readonly string[]> = {
+  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx"],
+};
+const isFetchedRead = (rel: string, path: string) =>
+  (FETCHING_FILES as Record<string, readonly string[] | undefined>)[path.split(".")[0]]?.includes(rel) ?? false;
+
+/**
+ * Namespaces read with useTranslations (top level, or the full literal path with `paths`), plus problems that
+ * make the lists unverifiable. `fetched` drops the reads of a fetched namespace inside the file that fetches it.
+ */
+function namespacesOf(files: Iterable<string>, { paths = false, fetched = false } = {}, read = text) {
   const used = new Map<string, string>();
   const problems: string[] = [];
   for (const file of files) {
     const rel = relative(ROOT, file);
-    const source = text(file);
+    const source = read(file);
     if (/\buseMessages\(/.test(source)) problems.push(`${rel}: useMessages reads every namespace`);
     for (const m of source.matchAll(/\buseTranslations\(([^)]*)\)/g)) {
       const literal = /^["'`]([A-Za-z0-9_.]+)["'`]$/.exec(m[1].trim());
-      if (literal) used.set(paths ? literal[1] : literal[1].split(".")[0], rel);
-      else problems.push(`${rel}: useTranslations(${m[1].trim()}) needs a literal namespace`);
+      if (!literal) problems.push(`${rel}: useTranslations(${m[1].trim()}) needs a literal namespace`);
+      else if (!(fetched && isFetchedRead(rel, literal[1]))) used.set(paths ? literal[1] : literal[1].split(".")[0], rel);
     }
   }
   return { used, problems };
@@ -114,8 +125,8 @@ describe("client message namespaces", () => {
   });
 
   it("LAYOUT_NAMESPACES lists exactly what the locale layout's client islands read", () => {
-    const { used } = namespacesOf(clientGraphOf(join(LOCALE, "layout.tsx")), { paths: true });
-    expect(missingFrom(used, [...LAYOUT_NAMESPACES, ...FETCHED_NAMESPACES])).toEqual([]);
+    const { used } = namespacesOf(clientGraphOf(join(LOCALE, "layout.tsx")), { paths: true, fetched: true });
+    expect(missingFrom(used, LAYOUT_NAMESPACES)).toEqual([]);
     expect(LAYOUT_NAMESPACES.filter((l) => ![...used.keys()].some((p) => covers([l], p)))).toEqual([]);
     // The 3D HUD's strings (settings, pads, rooms) stay off the Classic pages: the layout never sends all of `hud`.
     expect(LAYOUT_NAMESPACES).not.toContain("hud");
@@ -125,12 +136,34 @@ describe("client message namespaces", () => {
     for (const ns of FETCHED_NAMESPACES) expect(CLIENT_NAMESPACES).toContain(ns);
   });
 
+  it("exempts a fetched namespace only inside the files that fetch it", () => {
+    expect(Object.keys(FETCHING_FILES).sort()).toEqual([...FETCHED_NAMESPACES].sort());
+    expect(TEXTS.has(join(ROOT, FETCHING_FILES.guides[0]))).toBe(true);
+    const sources: Record<string, string> = {
+      "src/components/guides/GuideDialog.tsx": `const t = useTranslations("guides"); const d = useTranslations("dialog.menu");`,
+      "src/components/guides/GuideReader.tsx": `const t = useTranslations("guides.pageOf");`,
+      "src/components/library/GuideShelf.tsx": `const t = useTranslations("guides");`,
+      "src/components/CertDialog.tsx": `const t = useTranslations("guides.readGuide");`,
+    };
+    const files = Object.keys(sources).map((rel) => join(ROOT, rel));
+    const read = (file: string) => sources[relative(ROOT, file)];
+    const { used } = namespacesOf(files, { paths: true, fetched: true }, read);
+    expect(missingFrom(used, LAYOUT_NAMESPACES).sort()).toEqual([
+      "guides (src/components/library/GuideShelf.tsx)",
+      "guides.readGuide (src/components/CertDialog.tsx)",
+    ]);
+    // The fetching dialog's other reads are still checked.
+    expect(used.get("dialog.menu")).toBe("src/components/guides/GuideDialog.tsx");
+    // Without the exemption every read counts.
+    expect([...namespacesOf(files, { paths: true }, read).used.keys()]).toContain("guides.pageOf");
+  });
+
   it("every page either fits the layout's namespaces or wraps its content in ClientMessages", () => {
     const wrong: string[] = [];
     for (const page of pages) {
       const wrapped = /return \(\s*<ClientMessages>/.test(text(page));
-      const { used } = namespacesOf(clientGraphOf(page), { paths: true });
-      const missing = missingFrom(used, wrapped ? CLIENT_NAMESPACES : [...LAYOUT_NAMESPACES, ...FETCHED_NAMESPACES]);
+      const { used } = namespacesOf(clientGraphOf(page), { paths: true, fetched: true });
+      const missing = missingFrom(used, wrapped ? CLIENT_NAMESPACES : LAYOUT_NAMESPACES);
       if (missing.length) wrong.push(`${relative(ROOT, page)}: ${missing.join(", ")}`);
     }
     expect(wrong).toEqual([]);
