@@ -328,6 +328,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 | Canvas | never multisamples |
 
 - `?gfx=dpr1.5,msaa0,bloom5,monitor-on|off` overrides it for measurements.
+- `?gfx=probe` mounts the black-frame probe (`scene/BlackFrameProbe.tsx`, a lazy chunk, never loaded otherwise; see [Shader math](#shader-math)).
 
 ### Counting
 
@@ -360,6 +361,14 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - It applies MSAA and bloom levels on the existing composer (no rebuild) and publishes the DPR to the `Canvas`.
 - Level per session: `sessionStorage["hq:gfx"]`.
 - Test handle: `__hq.quality` (`snapshot()`, `simulate(ms)`).
+
+## Shader math
+
+- One NaN pixel blacks out the whole full-tier frame: the composer's HDR input feeds the mipmap bloom, whose downsample spreads the pixel into every mip and whose upsample spreads it back over the screen, and ACES turns NaN into black. On lite (no bloom) the same NaN is a single black pixel.
+- GLSL `pow(x, y)` is undefined for `x < 0` and returns NaN on Apple GPUs. Give every `pow()` a base that is non-negative by construction: `max(..., 0.)`, `clamp`, `abs`, a positive literal, or `x * x` for a square. `tests/unit/shader-pow.test.ts` scans `src` and fails otherwise.
+  - Root cause of the L1 black flicker (2026-10-18): the glass fresnel `pow(1.-abs(dot(n, v)), 2.2)` in `fx/materials.ts`. Seen almost head-on, rounding puts `abs(dot)` a hair above 1; a low orbit on L1 lines the lobby and shaft glass up with the camera for single frames.
+- Also guard `normalize` of a vector that can be zero, `asin` and `acos` (clamp to [-1, 1]), `sqrt` and `log` of values that can go negative.
+- `?gfx=probe` checks this on a visitor's device. After every final draw it reads 5 canvas pixels; on an all-black frame it logs (`console.warn("[hq probe] black frame", ...)`, kept in `__hq.probe`) the floor, phase, camera, quality and canvas size, and on full scans the composer input for NaN and Inf and bisects the scene by visibility to name the object that writes the pixel. The quality monitor stays off with it unless `monitor-on`.
 
 ## Shader precompile
 
@@ -532,6 +541,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `memory()` | the live `renderer.info` geometries, textures and program count (null without a canvas) |
   | `motion()` | the live ride and beam (`{ ride, beam }`, the store only holds their stage starts) |
   | `sky` | `{ phase, day, stars, source, fog, applied, underground }` of the day and night cycle (see "Day and night") |
+  | `probe` | only with `?gfx=probe`: `{ checked, black }`, frames checked and the black frames found (see [Shader math](#shader-math)) |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.
 - The rover hides during the hologram view; pod labels too.

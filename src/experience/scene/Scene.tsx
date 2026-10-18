@@ -26,6 +26,8 @@ import { RenderCounter } from "../perf/RenderCounter";
 
 // Postprocessing is only downloaded on the full tier.
 const Effects = lazy(() => import("./Effects"));
+// `?gfx=probe` only: the black-frame probe (debugging on a visitor's device).
+const BlackFrameProbe = lazy(() => import("./BlackFrameProbe"));
 
 /** Advances the shared glass shader clock once per frame. */
 function GlassClock() {
@@ -91,6 +93,11 @@ export const Scene = memo(function Scene({
       {tier === "full" && (
         <Suspense fallback={null}>
           <Effects multisampling={budget.multisampling} levels={budget.bloomLevels} />
+        </Suspense>
+      )}
+      {gfx.probe && (
+        <Suspense fallback={null}>
+          <BlackFrameProbe />
         </Suspense>
       )}
     </>

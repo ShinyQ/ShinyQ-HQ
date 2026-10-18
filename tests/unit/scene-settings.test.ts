@@ -57,6 +57,8 @@ it("keeps the touch and lite budgets", () => {
 it("parses the ?gfx= debug override and ignores junk", () => {
   expect(parseGfxOverride("?gfx=msaa0,dpr1.5,bloom5,monitor-off")).toEqual({ multisampling: 0, dprMax: 1.5, bloomLevels: 5, monitor: false });
   expect(parseGfxOverride("?gfx=monitor-on")).toEqual({ monitor: true });
+  expect(parseGfxOverride("?gfx=probe")).toEqual({ probe: true });
+  expect(parseGfxOverride("?gfx=probe,monitor-on")).toEqual({ probe: true, monitor: true });
   expect(parseGfxOverride("?gfx=msaa3,dpr9,bloom0,hello")).toEqual({});
   expect(parseGfxOverride("?tier=full")).toEqual({});
 });

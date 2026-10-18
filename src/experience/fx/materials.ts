@@ -9,13 +9,17 @@ const GLASS_VS =
   "varying vec3 vN; varying vec3 vV; varying vec2 vUv; void main(){ vUv = uv; vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }";
 const GLASS_FS =
   `uniform vec3 uColor; uniform float uTime; uniform float uOp; varying vec3 vN; varying vec3 vV; varying vec2 vUv;
-void main(){ float f = pow(1.-abs(dot(normalize(vN),normalize(vV))), 2.2);
+void main(){ float f = pow(max(1.-abs(dot(normalize(vN),normalize(vV))), 0.), 2.2);
   float top = smoothstep(.86,1.,vUv.y), base = 1.-smoothstep(0.,.12,vUv.y);
   float scan = 1.-smoothstep(0.,.03,abs(fract(vUv.y*.7 - uTime*.12)-.5));
   float a = uOp + f*.16 + top*.16 + base*.08 + scan*.04;
   gl_FragColor = vec4(uColor*(.22 + f*.8 + top*1.1 + base*.5), a);` + END;
 
-/** Tinted glass wall: fresnel edges, bright top band, base band and a slow moving scanline. */
+/**
+ * Tinted glass wall: fresnel edges, bright top band, base band and a slow moving scanline. The fresnel base is
+ * clamped: seen almost head-on, rounding puts abs(dot) a hair above 1, and pow() of a negative base is NaN on
+ * Apple GPUs. One NaN pixel in the HDR buffer spreads through the mipmap bloom and blacks out the whole frame.
+ */
 export function createGlassMaterial(color: string, opacity: number): ShaderMaterial {
   return new ShaderMaterial({
     uniforms: { uColor: { value: new Color(color) }, uTime: { value: 0 }, uOp: { value: opacity } },
