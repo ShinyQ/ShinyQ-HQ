@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { isPublicLiveUrl, PUBLIC_LIVE_NAMES } from "./live-links";
+import { escapeRegExp, findBlockedTerms } from "./safety-match";
+
+export { findBlockedTerms };
 
 export const EM_DASH = "\u2014";
 
@@ -56,10 +59,6 @@ export function loadBlocklist(
   return [...terms].filter((t) => !isAllowedTerm(t, allow) && !isAllowedTerm(t, PUBLIC_LIVE_NAMES));
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 /** The committed default list (client names, personal data, Azure resource names): public, so safe to print. */
 export function loadDefaultBlocklist(): string[] {
   return existsSync(DEFAULT_BLOCKLIST_FILE) ? parseBlocklist(readFileSync(DEFAULT_BLOCKLIST_FILE, "utf8")) : [];
@@ -94,19 +93,6 @@ export function redactBlockedText(text: string, terms: readonly string[]): strin
     out = out.replace(regex, (_match, lead) => `${typeof lead === "string" ? lead : ""}[redacted]`);
   }
   return out;
-}
-
-/**
- * Case-insensitive whole-word match. Terms wrapped in slashes (`/regex/`) are
- * treated as case-sensitive regular expressions.
- */
-export function findBlockedTerms(text: string, terms: readonly string[]): string[] {
-  return terms.filter((term) => {
-    if (term.length > 2 && term.startsWith("/") && term.endsWith("/")) {
-      return new RegExp(term.slice(1, -1)).test(text);
-    }
-    return new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}($|[^\\p{L}\\p{N}])`, "iu").test(text);
-  });
 }
 
 export interface StringLeaf {
