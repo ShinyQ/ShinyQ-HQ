@@ -254,3 +254,13 @@ describe("adjacent grounded questions: pipeline", () => {
     expect(trivia.text).not.toContain("Paris");
   });
 });
+
+describe("golden scoring of the cite", () => {
+  it("fails an adjacent golden item whose answer carries no cite", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const item = golden.items.find((i) => i.id === "q81")!;
+    const text = "From his written view, a probabilistic model should not be the final authority.";
+    expect(scoreGolden(text, item, {}).notes).toContain("no cite");
+    expect(scoreGolden(text, item, { cite: "/blog/why-the-better-fraud-engine-shipped-in-shadow-mode" }).pass).toBe(true);
+  });
+});
