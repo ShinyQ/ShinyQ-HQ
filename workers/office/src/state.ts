@@ -35,6 +35,8 @@ export type JobStatus = "queued" | "running" | "done" | "failed";
 
 export interface RunRecord {
   id: number;
+  /** GitHub's `run_attempt`: a re-run keeps the run id and raises it. */
+  attempt: number;
   repo: string;
   branch: string;
   title: string;
@@ -70,7 +72,7 @@ export interface OfficeDoc {
 }
 
 export type GithubChange =
-  | { type: "run"; id: number; branch: string; title: string; url: string; status: RunStatus }
+  | { type: "run"; id: number; attempt: number; branch: string; title: string; url: string; status: RunStatus }
   | { type: "job"; runId: number; jobId: string; name: string; status: JobStatus }
   | { type: "pr"; number: number; branch: string; title: string; url: string; action: "opened" | "merged" }
   | { type: "push"; sha: string; title: string; url: string }
@@ -188,11 +190,13 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
   switch (c.type) {
     case "run": {
       const key = `run:${c.id}`;
-      if (c.status === "cancelled") return { ...doc, runs: doc.runs.filter((r) => r.id !== c.id), feed: doc.feed.filter((f) => f.key !== key) };
       const prev = doc.runs.find((r) => r.id === c.id);
-      const restart = c.status === "running" && prev !== undefined && prev.status !== "running";
-      const run: RunRecord = { id: c.id, repo, branch: c.branch, title: c.title, url: c.url, status: c.status, jobs: restart ? {} : (prev?.jobs ?? {}), ...(!restart && prev?.failedJob ? { failedJob: prev.failedJob } : {}), updated: now };
-      const counted = c.status !== "running" && (!prev || prev.status === "running");
+      // GitHub does not order deliveries: an older attempt, or a late "running" of a completed attempt, changes nothing.
+      if (prev && (c.attempt < prev.attempt || (c.attempt === prev.attempt && c.status === "running" && prev.status !== "running"))) return doc;
+      if (c.status === "cancelled") return { ...doc, runs: doc.runs.filter((r) => r.id !== c.id), feed: doc.feed.filter((f) => f.key !== key) };
+      const restart = prev !== undefined && c.attempt > prev.attempt;
+      const run: RunRecord = { id: c.id, attempt: c.attempt, repo, branch: c.branch, title: c.title, url: c.url, status: c.status, jobs: restart ? {} : (prev?.jobs ?? {}), ...(!restart && prev?.failedJob ? { failedJob: prev.failedJob } : {}), updated: now };
+      const counted = c.status !== "running" && (!prev || prev.status === "running" || restart);
       const today = counted ? { ...doc.today, ciRuns: doc.today.ciRuns + 1, ciGreen: doc.today.ciGreen + (c.status === "success" ? 1 : 0) } : doc.today;
       const sessions = c.status === "failure" ? doc.sessions.map((s) => (s.state === "ci" && s.repo === repo && s.branch === c.branch ? failSession(s, now) : s)) : doc.sessions;
       const progress = c.status === "running" ? progressOf(run) : undefined;

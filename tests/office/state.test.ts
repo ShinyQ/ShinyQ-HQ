@@ -75,7 +75,7 @@ describe("applyBeat", () => {
 });
 
 describe("applyGithub", () => {
-  const run = (status: "running" | "success" | "failure" | "cancelled") => ({ type: "run" as const, id: 42, branch: "feat/x", title: "CI · feat/x", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42", status });
+  const run = (status: "running" | "success" | "failure" | "cancelled", attempt = 1) => ({ type: "run" as const, id: 42, attempt, branch: "feat/x", title: "CI · feat/x", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42", status });
 
   it("tracks job progress for the desk on that branch and counts CI runs once", () => {
     let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
@@ -131,6 +131,36 @@ describe("applyGithub", () => {
     doc = applyBeat(doc, beat(1, { repo: HQ, branch: "feat/x", title: "X" }), T0 + 2);
     expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("title");
     expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("repo");
+  });
+
+  it("ignores a late running delivery of a completed attempt", () => {
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, jobId: "1", name: "Lint", status: "done" }] }, "a0", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("success")] }, "a", T0 + 1000);
+    const feed = doc.feed;
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "b", T0 + 2000);
+    expect(doc.runs[0]).toMatchObject({ id: 42, attempt: 1, status: "success", jobs: { "1": "done" }, updated: T0 + 1000 });
+    expect(doc.feed).toEqual(feed);
+    expect(view(doc, T0 + 2000).github[0]).toMatchObject({ kind: "run", status: "success" });
+  });
+
+  it("restarts a run on a newer attempt: jobs cleared, feed back to running", () => {
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, jobId: "9", name: "E2E", status: "failed" }] }, "a0", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("failure")] }, "a1", T0 + 1000);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running", 2)] }, "b0", T0 + 2000);
+    expect(doc.runs[0]).toMatchObject({ id: 42, attempt: 2, status: "running", jobs: {} });
+    expect(doc.runs[0]).not.toHaveProperty("failedJob");
+    expect(view(doc, T0 + 2000).github[0]).toMatchObject({ kind: "run", status: "running" });
+    expect(doc.today).toMatchObject({ ciRuns: 1, ciGreen: 0 });
+    const direct = applyGithub(doc, { repo: HQ, changes: [run("success", 3)] }, "c1", T0 + 3000);
+    expect(direct.runs[0]).toMatchObject({ attempt: 3, status: "success" });
+    expect(direct.today).toMatchObject({ ciRuns: 2, ciGreen: 1 });
+  });
+
+  it("ignores an older attempt after a newer one, cancelled included", () => {
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running", 2)] }, "b0", T0);
+    const before = { runs: doc.runs, feed: doc.feed, today: doc.today };
+    for (const [i, status] of (["failure", "success", "running", "cancelled"] as const).entries()) doc = applyGithub(doc, { repo: HQ, changes: [run(status, 1)] }, `old-${i}`, T0 + 1000);
+    expect({ runs: doc.runs, feed: doc.feed, today: doc.today }).toEqual(before);
   });
 
   it("returns the same document for a repeated delivery", () => {

@@ -111,7 +111,8 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const id = int(run?.id);
       const branch = text(run?.head_branch);
       if (!run || id === null || !sameName(text(obj(run.head_repository)?.full_name), repo) || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
-      changes.push({ type: "run", id, branch, title: title(`${text(run.name)} · ${branch}`, "Workflow run"), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
+      const attempt = int(run.run_attempt);
+      changes.push({ type: "run", id, attempt: attempt !== null && attempt > 0 ? attempt : 1, branch, title: title(`${text(run.name)} · ${branch}`, "Workflow run"), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
       break;
     }
     case "workflow_job": {

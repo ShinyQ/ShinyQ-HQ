@@ -43,6 +43,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Desks: five stable slots (`assignSlots`); an awake newcomer may take the longest-asleep desk; others are `extra`.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
+- Workflow runs carry `run_attempt` (deliveries arrive in any order): an older attempt and a late `running` of a
+  completed attempt are ignored; only a newer attempt restarts the run (jobs cleared).
 
 ### Pages Functions
 
