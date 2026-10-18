@@ -14,8 +14,10 @@ const FLICKER_ON = 0.14;
 
 /**
  * Hides a Lobby landmark during the intro until the reveal ring (centered on the rover) reaches `rect`, then
- * switches it on with a quick neon flicker. Visibility is written per frame, never through React state. Hidden
- * children are still compiled at boot (the precompile traverses them), so switching on costs no hitch.
+ * switches it on with a quick neon flicker. Visibility is written per frame, never through React state. three's
+ * `compile` prepares the programs of hidden objects too (it only gathers lights from visible ones), so the boot
+ * precompile builds and pins the hidden landmarks' programs; their buffers and textures still upload on the
+ * first frame they draw.
  */
 export function IntroReveal({ rect, children }: { rect: Rect; children: ReactNode }) {
   const group = useRef<Group>(null);

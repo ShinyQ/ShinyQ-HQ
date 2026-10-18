@@ -134,9 +134,9 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 ## Intro reveal and beacons
 
-Code: `intro/landmarks.ts` (pure), `intro/IntroReveal.tsx`, `intro/IntroBeacons.tsx`, wired in `floors/Lobby.tsx`.
+Code: `intro/landmarks.ts` (pure), `intro/beacons.ts` (the per-frame beacon step), `intro/IntroReveal.tsx`, `intro/IntroBeacons.tsx`, wired in `floors/Lobby.tsx`.
 
 - During the boot and the intro the Lobby is dark: each landmark sits in an `IntroReveal` with its floor rect (hologram and stats ring, skills wall, certification wall, kiosk, observatory, Highlights Hall) and switches on, with a quick neon flicker (on 0.06 s, off until 0.14 s), once the reveal ring around the rover reaches it (`revealDistance`). The grid and the lanes mask themselves in their shaders, so `Lanes` is not wrapped.
-- `IntroReveal` writes `visible` per frame from `introRuntime`, never through React state; hidden children are still compiled at boot, so switching on costs no hitch.
+- `IntroReveal` writes `visible` per frame from `introRuntime`, never through React state. three's `compile` prepares the programs of hidden objects too (it only gathers lights from visible ones), so the boot precompile builds and pins the hidden landmarks' programs; their buffers and textures still upload on the first frame they draw.
 - Beacons: `IntroBeacons` is one instanced holo mesh (`HOLO_MODE.beacon`, 5 instances, `aAlpha`) lying on the floor under the five `INTRO_LANDMARKS` (stats, skills, hall, observatory, elevator). After `INTRO.wake` each landmark pulses once (`beaconAlpha`, gone by 2 s) the first frame it projects within `|ndc.x| < 0.55`, `|ndc.y| < 0.75`, and its id goes into `introRuntime.lit`.
 - `Lobby` mounts the beacons only while `phase` is `intro`, and on the full tier only once the lazy composer exists: mounted earlier, the frame-3 precompile would build a second, canvas-target holo program.

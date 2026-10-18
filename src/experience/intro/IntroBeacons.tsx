@@ -2,46 +2,17 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3, type Camera, type InstancedMesh } from "three";
-import { INTRO } from "../camera/intro";
+import { InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3, type InstancedMesh } from "three";
 import { createHoloMaterial, HOLO_MODE } from "../fx/holoFx";
 import { neonColor } from "../fx/materials";
 import { useDispose } from "../fx/useDispose";
 import { useUniformTime } from "../fx/useUniformTime";
 import type { GpuTier } from "../types";
-import { beaconAlpha, INTRO_LANDMARKS } from "./landmarks";
-import { introRuntime } from "./runtime";
+import { stepBeacons } from "./beacons";
+import { INTRO_LANDMARKS } from "./landmarks";
 
 const NO_RAYCAST = () => null;
 const BEACON_Y = 0.03;
-/** A landmark counts as passed once it projects inside this box around the middle of the view (NDC). */
-const PASS_X = 0.55;
-const PASS_Y = 0.75;
-
-/** Latches each landmark's pass time and writes the beacon alphas (all 0 outside the intro). */
-function stepBeacons(alpha: InstancedBufferAttribute, hits: (number | null)[], camera: Camera, ndc: Vector3): void {
-  const a = alpha.array as Float32Array;
-  let dirty = false;
-  const t = introRuntime.t;
-  for (let i = 0; i < hits.length; i++) {
-    const l = INTRO_LANDMARKS[i];
-    if (!introRuntime.active) hits[i] = null;
-    else if (hits[i] === null && t > INTRO.wake) {
-      ndc.set(l.x, l.y, l.z).project(camera);
-      if (ndc.z < 1 && Math.abs(ndc.x) < PASS_X && Math.abs(ndc.y) < PASS_Y) {
-        hits[i] = t;
-        if (!introRuntime.lit.includes(l.id)) introRuntime.lit.push(l.id);
-      }
-    }
-    const hit = hits[i];
-    const next = hit === null ? 0 : beaconAlpha(t - hit);
-    if (a[i] !== next) {
-      a[i] = next;
-      dirty = true;
-    }
-  }
-  if (dirty) alpha.needsUpdate = true;
-}
 
 /**
  * Intro floor beacons: one instanced holo quad per landmark (`INTRO_LANDMARKS`), pulsing once when the

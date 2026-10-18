@@ -47,9 +47,9 @@ const REVEAL = {
 } satisfies Record<string, Rect>;
 
 /**
- * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays: it builds during the boot
- * card so the intro orbit can show it, and a deep link that rides on to another floor never pays for its
- * text and geometry.
+ * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays. Every session that boots on
+ * L1 builds it during the boot card, so the intro orbit can show it; a returning session that starts on another
+ * floor builds it only when it rides to L1.
  */
 function useHallReady(): boolean {
   const want = useHQStore((s) => (s.ride?.to ?? s.floor) === "L1");
