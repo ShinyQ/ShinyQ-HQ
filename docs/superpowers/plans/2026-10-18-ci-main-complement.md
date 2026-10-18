@@ -73,7 +73,7 @@ tests off `main` (reported to the owner; option: `memory-full` on `main` only in
 - Produces: `MAX_E2E_SHARDS = 8`, `E2E_SHARD_SECONDS = 480`, `e2eShardsFor(seconds: number): number`
   (0 seconds gives 1; else `ceil(seconds / 480)` clamped to 1..8).
 
-- [ ] **Step 1: Write the failing test** in `tests/unit/e2e-plan.test.ts`:
+- [x] **Step 1: Write the failing test** in `tests/unit/e2e-plan.test.ts`:
 
 ```ts
 describe("e2eShardsFor", () => {
@@ -86,8 +86,8 @@ describe("e2eShardsFor", () => {
 });
 ```
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/e2e-plan.test.ts` and see it fail (no export).
-- [ ] **Step 3: Implement** in `scripts/e2e-plan.ts`:
+- [x] **Step 2: Run** `bunx vitest run tests/unit/e2e-plan.test.ts` and see it fail (no export).
+- [x] **Step 3: Implement** in `scripts/e2e-plan.ts`:
 
 ```ts
 export const MAX_E2E_SHARDS = 8;
@@ -102,8 +102,8 @@ export function e2eShardsFor(seconds: number): number {
 
   In `scripts/ci-plan.ts` delete the local `MAX_E2E_SHARDS` and `SHARD_SECONDS`, import the two names, and replace
   the inline formula with `e2eShards = e2eShardsFor(seconds);`.
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/e2e-plan.test.ts tests/unit/ci-plan.test.ts`: pass.
-- [ ] **Step 5: Commit** `refactor(ci): share the e2e shard sizing`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/e2e-plan.test.ts tests/unit/ci-plan.test.ts`: pass.
+- [x] **Step 5: Commit** `refactor(ci): share the e2e shard sizing`.
 
 ### Task 2: `scripts/ci-complement.ts` (pure record, complement and source lookup)
 
@@ -133,7 +133,7 @@ export function e2eShardsFor(seconds: number): number {
   - `CiPlan.source?: Source`; `planOutputs` adds `source_run` (`""` without a source) and reports
     `full: "true"` for a plan with a source.
 
-- [ ] **Step 1: Write the failing tests** (`tests/unit/ci-complement.test.ts`):
+- [x] **Step 1: Write the failing tests** (`tests/unit/ci-complement.test.ts`):
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -252,8 +252,8 @@ describe("findSource", () => {
 
   And in `tests/unit/ci-plan.test.ts` add the row `["scripts/ci-complement.ts", "ci"],` to the classify table.
 
-- [ ] **Step 2: Run** `bunx vitest run tests/unit/ci-complement.test.ts tests/unit/ci-plan.test.ts`: fails (no module).
-- [ ] **Step 3: Implement** `scripts/ci-complement.ts`:
+- [x] **Step 2: Run** `bunx vitest run tests/unit/ci-complement.test.ts tests/unit/ci-plan.test.ts`: fails (no module).
+- [x] **Step 3: Implement** `scripts/ci-complement.ts`:
 
 ```ts
 /**
@@ -407,8 +407,8 @@ export async function findSource(repo: string, sha: string, prNumber: number | n
   `full: String(plan.full || plan.source !== undefined || (...existing...))` and add
   `source_run: plan.source ? String(plan.source.run) : ""`; add `ci-complement` to the `ci` regex in `CLASSES`
   (`scripts\/(ci-plan|ci-complement|e2e-plan|...)`).
-- [ ] **Step 4: Run** `bunx vitest run tests/unit/ci-complement.test.ts tests/unit/ci-plan.test.ts tests/unit/e2e-plan.test.ts`: pass.
-- [ ] **Step 5: Commit** `feat(ci): plan the complement of a green same-tree PR run`.
+- [x] **Step 4: Run** `bunx vitest run tests/unit/ci-complement.test.ts tests/unit/ci-plan.test.ts tests/unit/e2e-plan.test.ts`: pass.
+- [x] **Step 5: Commit** `feat(ci): plan the complement of a green same-tree PR run`.
 
 ### Task 3: Wire the lookup and the record into `scripts/ci-plan.ts` `main()`
 
@@ -421,7 +421,7 @@ export async function findSource(repo: string, sha: string, prNumber: number | n
 - Produces: env `SHA` (the run's commit) and `COMPLEMENT_PR` (dispatch input) read by `main()`; `ci-plan.json` in
   the working directory on every run, including the planner-failure path.
 
-- [ ] **Step 1: Implement** in `main()`:
+- [x] **Step 1: Implement** in `main()`:
   - `const { EVENT, REPO, PR, GH_TOKEN, SHA, COMPLEMENT_PR } = process.env;`
   - When `EVENT === "push"`, or `COMPLEMENT_PR` is a positive integer and the event is not `pull_request`, and
     `REPO`, `SHA`, `GH_TOKEN` are set: `findSource(REPO, SHA, COMPLEMENT_PR ? Number(COMPLEMENT_PR) : null, apiDeps(REPO, GH_TOKEN))`,
@@ -434,7 +434,7 @@ export async function findSource(repo: string, sha: string, prNumber: number | n
   - After `planOutputs`, `writeFileSync(PLAN_FILE, JSON.stringify(recordFor(plan, outputs)))`; the failure catch
     writes the record of its full plan too.
   - Summary title: `complement run` when `plan.source`, else the existing full or selective text.
-- [ ] **Step 2: Verify locally** against the real API (read-only):
+- [x] **Step 2: Verify locally** against the real API (read-only):
 
 ```bash
 EVENT=push REPO=ShinyQ/ShinyQ-HQ SHA=b3780ab2b... GH_TOKEN=$(gh auth token) bun scripts/ci-plan.ts
@@ -442,20 +442,20 @@ EVENT=push REPO=ShinyQ/ShinyQ-HQ SHA=b3780ab2b... GH_TOKEN=$(gh auth token) bun 
 
   Expected: a full run with the reason "CI run ... has no readable ci-plan artifact" (older runs carry none), and
   `ci-plan.json` written with `"e2e":"all"`. With `EVENT=pull_request PR=210` it plans as before.
-- [ ] **Step 3: Run** `bun run typecheck && bunx vitest run tests/unit/ci-*.test.ts`: pass.
-- [ ] **Step 4: Commit** `feat(ci): Plan CI reads the merged PR's record on a push to main`.
+- [x] **Step 3: Run** `bun run typecheck && bunx vitest run tests/unit/ci-*.test.ts`: pass.
+- [x] **Step 4: Commit** `feat(ci): Plan CI reads the merged PR's record on a push to main`.
 
 ### Task 4: `ci.yml` wiring
 
 **Files:**
 - Modify: `.github/workflows/ci.yml`
 
-- [ ] **Step 1:** `workflow_dispatch.inputs.complement_pr` (string, default empty, description "Plan the complement
+- [x] **Step 1:** `workflow_dispatch.inputs.complement_pr` (string, default empty, description "Plan the complement
   of this pull request's green CI run on the same tree, as a push to main does (measurement)").
-- [ ] **Step 2:** `changes` job: `actions: read` permission; output `source_run`; plan step env
+- [x] **Step 2:** `changes` job: `actions: read` permission; output `source_run`; plan step env
   `SHA: ${{ github.sha }}` and `COMPLEMENT_PR: ${{ inputs.complement_pr }}`; then upload `ci-plan.json` as the
   `ci-plan` artifact (`if: ${{ !cancelled() }}`, `retention-days: 30`, `if-no-files-found: warn`).
-- [ ] **Step 3:** `lighthouse` job, after `Run Lighthouse CI` and before the baseline: step `The PR run's reports
+- [x] **Step 3:** `lighthouse` job, after `Run Lighthouse CI` and before the baseline: step `The PR run's reports
   (complement run)` when `!cancelled() && needs.changes.outputs.source_run != ''`, with `GH_TOKEN`, `REPO`,
   `RUN: ${{ needs.changes.outputs.source_run }}`:
 
@@ -470,7 +470,7 @@ fi
 ```
 
   The upload condition becomes `always() && (needs.changes.outputs.lighthouse != 'false' || needs.changes.outputs.source_run != '')`.
-- [ ] **Step 4:** `build` job: before `actions/download-artifact` of `perf-report-*`, step `The PR run's perf
+- [x] **Step 4:** `build` job: before `actions/download-artifact` of `perf-report-*`, step `The PR run's perf
   report (complement run)` when `needs.changes.outputs.source_run != ''`:
 
 ```bash
@@ -484,9 +484,9 @@ fi
   The baseline, summary and `perf-report` upload conditions become
   `needs.changes.outputs.perf != 'false' || needs.changes.outputs.source_run != ''` (the shard download keeps
   `perf != 'false'`). `ci-full.txt` gets a second line `complement of CI run <id>` when `source_run` is set.
-- [ ] **Step 5:** Header comment: pushes to `main` run the complement; dispatches and the nightly stay full.
-- [ ] **Step 6: Validate** `bunx --bun actionlint` if present, else `bun -e` YAML parse; `bunx vitest run tests/unit/build-facts.test.ts`.
-- [ ] **Step 7: Commit** `ci: a push to main runs the complement of its PR run`.
+- [x] **Step 5:** Header comment: pushes to `main` run the complement; dispatches and the nightly stay full.
+- [x] **Step 6: Validate** `bunx --bun actionlint` if present, else `bun -e` YAML parse; `bunx vitest run tests/unit/build-facts.test.ts`.
+- [x] **Step 7: Commit** `ci: a push to main runs the complement of its PR run`.
 
 ### Task 5: Docs
 
@@ -496,9 +496,9 @@ fi
   `docs/decisions.md` (dated row), `AGENTS.md` (Smart CI bullet), `README.md` (CI bullet), `scripts/ci-status.ts`
   doc comment, `.github/workflows/deploy.yml` header, `docs/deploy.md` (complete run wording),
   `docs/superpowers/README.md` (row, counts).
-- [ ] **Step 1:** Write them (current state only; the before numbers go into decisions.md and this plan).
-- [ ] **Step 2: Run** `bun run verify:quick`: pass (the em dash scan, AGENTS.md size and docs tests included).
-- [ ] **Step 3: Commit** `docs: main CI runs the complement of the merged PR`.
+- [x] **Step 1:** Write them (current state only; the before numbers go into decisions.md and this plan).
+- [x] **Step 2: Run** `bun run verify:quick`: pass (the em dash scan, AGENTS.md size and docs tests included).
+- [x] **Step 3: Commit** `docs: main CI runs the complement of the merged PR`.
 
 ### Task 6: Measure and ship (after #213 merged and no CI in flight)
 

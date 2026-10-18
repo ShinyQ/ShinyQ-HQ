@@ -116,7 +116,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 ## Fast verification
 
-The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the tests your change affects plus a small smoke set (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); pushes to `main` and the nightly run the full suite (8 e2e shards), the whole perf lane (4 shards) and Lighthouse. A test the map does not tie to your paths runs only after the merge, so keep the `RULES` in `scripts/e2e-plan.ts` current when you add a spec or move code, and add the `full-ci` label for a risky cross-cutting change.
+The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the tests your change affects plus a small smoke set (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); a push to `main` runs what its merged PR's green same-tree run did not (the complement, [ci-and-deploy.md](ci-and-deploy.md#complement-runs-on-main), or everything when there is no such run) and merges that PR run's perf and Lighthouse reports into its own, so `main` keeps complete baselines; the nightly runs the full suite (8 e2e shards), the whole perf lane (4 shards) and Lighthouse. A test the map does not tie to your paths runs only after the merge, so keep the `RULES` in `scripts/e2e-plan.ts` current when you add a spec or move code, and add the `full-ci` label for a risky cross-cutting change.
 
 ### Which command when
 

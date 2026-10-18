@@ -6,8 +6,11 @@
  *
  * Writes `reuse=true|false` to $GITHUB_OUTPUT and one line to the job summary.
  * A green CI run is reused only when it is complete: it carries the `ci-full` artifact, uploaded by the
- * aggregate job when the run ran every e2e shard, the perf gates and Lighthouse (pushes to main,
- * dispatches and schedules always do). A green selective PR run is never reused, even on the same tree;
+ * aggregate job when the run ran every e2e shard, the perf gates and Lighthouse (dispatches and schedules
+ * always do). A push to main that ran only the complement of its merged PR's green same-tree run
+ * (owner decision 2026-10-18, scripts/ci-complement.ts) carries it too, with a second line
+ * `complement of CI run <id>`: together with that PR run it covered every e2e spec, perf gate and
+ * Lighthouse URL, so this gate treats it like any complete run. A green selective PR run is never reused, even on the same tree;
  * older runs without the marker are not reused either (the deploy then runs the e2e shards itself).
  * A red CI on the commit fails the deploy, marker or not.
  * - reuse=true: CI's aggregate check `Build, CV and e2e` passed on this commit in a complete run, or a
@@ -24,7 +27,7 @@ import { appendFileSync } from "node:fs";
 
 export const CI_CHECK = "Build, CV and e2e";
 export const CI_WORKFLOW = "ci.yml";
-/** Artifact the aggregate CI job uploads only when the run ran every heavy job (.github/workflows/ci.yml). */
+/** Artifact the aggregate CI job uploads only when the run (with its source PR run, for a complement run) ran every heavy job (.github/workflows/ci.yml). */
 export const CI_FULL_ARTIFACT = "ci-full";
 
 export interface CheckRun {
