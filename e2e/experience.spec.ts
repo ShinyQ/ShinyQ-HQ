@@ -44,7 +44,7 @@ async function trackPeaks(page: Page) {
 }
 
 test.describe("boot and intro", () => {
-  test("the boot and the intro play in full once per session; nothing skips them", async ({ page }) => {
+  test("the boot and the intro play once per session; nothing skips the boot", async ({ page }) => {
     const errors = collectErrors(page);
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -59,16 +59,12 @@ test.describe("boot and intro", () => {
     await expect(start).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(boot).toBeVisible();
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
     await start.click();
     await waitForPhase(page, "intro");
     const introAt = Date.now();
-    // Esc used to skip the intro; proving that it no longer does.
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(400);
-    expect((await snapshot(page)).phase).toBe("intro");
-    await waitForPhase(page, "explore", 30_000);
-    expect(Date.now() - introAt).toBeGreaterThanOrEqual(2000);
+    await waitForPhase(page, "explore", 60_000);
+    expect(Date.now() - introAt).toBeGreaterThanOrEqual(5000);
     expect(await page.evaluate(() => sessionStorage.getItem("hq:intro"))).toBe("seen");
 
     // Same session: straight into the Lobby, no boot and no intro.
@@ -104,11 +100,11 @@ test.describe("boot and intro", () => {
     expect((await snapshot(page)).floor).toBe("L1");
     await expect(page).toHaveURL(url);
     const start = boot.getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
     await start.click();
     await waitForPhase(page, "intro");
     await expect(page).toHaveURL(url);
-    await waitForPhase(page, "explore", 30_000);
+    await waitForPhase(page, "explore", 60_000);
     await waitForRoom(page, "L3:voice-ai-contact-center");
     await expect(page).toHaveURL(url);
     // The first-visit terminal belongs to the Lobby; a deep link continues to its room instead.
@@ -122,7 +118,7 @@ test.describe("boot and intro", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the intro flies down to the rover in one continuous move and lands on the follow view", async ({ page }) => {
+  test("the intro opens on Rover's face, lights the Lobby and lands on the follow view", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
@@ -130,38 +126,68 @@ test.describe("boot and intro", () => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
+    type Sample = { t: number; phase: string; active: boolean; it: number; reveal: number | null; face: string | null; lit: string[]; cam: number[]; face3: number[] };
     await page.evaluate(() => {
-      type W = { __fly: { t: number; phase: string; fly: number; cam: number[]; ghost: boolean }[]; __hq: { store: { getState: () => { phase: string } }; rover: { introFly: number }; camera: () => number[]; probes: { ghosts: Record<string, boolean> } } };
+      type Intro = { active: boolean; t: number; reveal: number; face: string | null; lit: string[] };
+      type W = { __intro: Sample[]; __hq: { store: { getState: () => { phase: string } }; intro: Intro; rover: { x: number; y: number; z: number }; camera: () => number[] } };
       const w = window as unknown as W;
-      w.__fly = [];
+      w.__intro = [];
       const tick = () => {
         const phase = w.__hq.store.getState().phase;
-        w.__fly.push({ t: performance.now(), phase, fly: w.__hq.rover.introFly, cam: w.__hq.camera(), ghost: w.__hq.probes.ghosts.L2 ?? false });
-        if (phase === "explore" && w.__fly.filter((f) => f.phase === "explore").length > 3) return;
+        const i = w.__hq.intro;
+        const r = w.__hq.rover;
+        w.__intro.push({
+          t: performance.now(),
+          phase,
+          active: i.active,
+          it: i.t,
+          // Infinity does not survive JSON: null stands for "the whole floor is revealed".
+          reveal: Number.isFinite(i.reveal) ? i.reveal : null,
+          face: i.face,
+          lit: [...i.lit],
+          cam: w.__hq.camera(),
+          face3: [r.x, r.y + 1.5, r.z],
+        });
+        if (phase === "explore" && w.__intro.filter((f) => f.phase === "explore").length > 3) return;
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     });
+    // The boot card's log can type out before the scene draws its first frame: click once the wake pose is drawn.
+    await page.waitForFunction(() => (window as unknown as { __hq: { intro: { active: boolean } } }).__hq.intro.active, null, { timeout: 60_000, polling: "raf" });
+    await waitForFrames(page, 2);
     await start.click();
     await waitForPhase(page, "explore", 60_000);
     await waitForFrames(page, 6);
-    type Sample = { t: number; phase: string; fly: number; cam: number[]; ghost: boolean };
-    const log = await page.evaluate(() => (window as unknown as { __fly: Sample[] }).__fly);
-    const fly = log.filter((f) => f.phase === "intro" && f.fly >= 0);
-    // Several drawn frames inside the fly-in, the progress never going back, over at least 1.5 s.
-    expect(fly.filter((f) => f.fly > 0 && f.fly < 1).length).toBeGreaterThanOrEqual(4);
-    for (let i = 1; i < fly.length; i++) expect(fly[i].fly).toBeGreaterThanOrEqual(fly[i - 1].fly);
-    expect(fly[fly.length - 1].t - fly[0].t).toBeGreaterThanOrEqual(1400);
-    // The L2 slab is a ghost before explore starts: no opaque slab between the camera and the Lobby.
-    expect(fly[fly.length - 1].ghost).toBe(true);
-    // It lands where explore starts: the first explore frame continues from the last intro frame.
-    const lastIntro = log.filter((f) => f.phase === "intro").pop()!;
+    const log = await page.evaluate(() => (window as unknown as { __intro: Sample[] }).__intro);
+    // The boot holds the dark wake close-up: Rover's face off, nothing revealed yet.
+    const boot = log.filter((f) => f.phase === "boot").pop()!;
+    expect(boot).toMatchObject({ active: true, reveal: 0, face: "off" });
+    const intro = log.filter((f) => f.phase === "intro");
+    expect(intro.length).toBeGreaterThanOrEqual(8);
+    // It opens on Rover's face.
+    expect(Math.hypot(...intro[0].cam.map((v, i) => v - intro[0].face3[i]))).toBeLessThan(4);
+    // The reveal ring grows from Rover, then the whole floor is revealed while the orbit still runs.
+    const ring = intro.filter((f) => f.active && f.reveal !== null).map((f) => f.reveal!);
+    expect(ring[0]).toBe(0);
+    expect(Math.max(...ring)).toBeGreaterThan(0);
+    for (let i = 1; i < ring.length; i++) expect(ring[i]).toBeGreaterThanOrEqual(ring[i - 1]);
+    expect(intro.some((f) => f.active && f.reveal === null && f.it < 6)).toBe(true);
+    // The orbit passes the landmarks and their beacons light up.
+    expect(Math.max(...intro.map((f) => f.lit.length))).toBeGreaterThanOrEqual(3);
+    // A full intro (6.6 s of timeline), and it lands where explore starts: no jump at the handover.
     const firstExplore = log.find((f) => f.phase === "explore")!;
-    expect(Math.hypot(...lastIntro.cam.map((v, i) => v - firstExplore.cam[i]))).toBeLessThan(1);
+    expect(firstExplore.t - intro[0].t).toBeGreaterThanOrEqual(5000);
+    const lastIntro = intro[intro.length - 1];
+    expect(Math.hypot(...lastIntro.cam.map((v, i) => v - firstExplore.cam[i]))).toBeLessThan(0.5);
   });
 
-  test("driving during the fly-in takes over the view at once", async ({ page }) => {
+  /**
+   * Boots a fresh session, waits until the intro is under way and records `__hq.intro` every frame until explore:
+   * returns a reader of the last intro timeline time drawn before the handover and the skip flag.
+   */
+  async function intoTheIntro(page: Page) {
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
@@ -169,24 +195,52 @@ test.describe("boot and intro", () => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
     await start.click();
     await waitForPhase(page, "intro");
-    await page.waitForFunction(() => {
-      const fly = (window as unknown as { __hq: { rover: { introFly: number } } }).__hq.rover.introFly;
-      return fly > 0.02 && fly < 0.5;
-    }, null, { timeout: 60_000, polling: "raf" });
+    await page.waitForFunction(() => (window as unknown as { __hq: { intro: { t: number } } }).__hq.intro.t > 0.5, null, { timeout: 60_000, polling: "raf" });
+    await page.evaluate(() => {
+      type W = { __lastT: number; __hq: { store: { getState: () => { phase: string } }; intro: { t: number } } };
+      const w = window as unknown as W;
+      w.__lastT = w.__hq.intro.t;
+      const tick = () => {
+        if (w.__hq.store.getState().phase !== "intro") return;
+        if (w.__hq.intro.t >= 0) w.__lastT = w.__hq.intro.t;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    return () => page.evaluate(() => {
+      const w = window as unknown as { __lastT: number; __hq: { intro: { skipped: boolean } } };
+      return { lastT: w.__lastT, skipped: w.__hq.intro.skipped };
+    });
+  }
+
+  test("input skips the intro to the follow view", async ({ page }) => {
+    const read = await intoTheIntro(page);
     await page.keyboard.down("w");
-    await waitForPhase(page, "explore", 10_000);
+    await waitForPhase(page, "explore", 30_000);
+    const { lastT, skipped } = await read();
     await page.keyboard.up("w");
+    // Skipped on the next frame: the intro timeline (6.6 s) was far from its end when explore began.
+    expect(skipped).toBe(true);
+    expect(lastT).toBeLessThan(4);
     await waitForFrames(page, 2);
     expect((await snapshot(page)).phase).toBe("explore");
-    expect(await page.evaluate(() => (window as unknown as { __hq: { rover: { introFly: number } } }).__hq.rover.introFly)).toBe(-1);
   });
 
-  test("reduced motion holds a still intro of the same length", async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: "reduce" });
-    await chooseMotion(context, "system");
+  test("Esc skips the intro too", async ({ page }) => {
+    const read = await intoTheIntro(page);
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore", 30_000);
+    const { lastT, skipped } = await read();
+    expect(skipped).toBe(true);
+    expect(lastT).toBeLessThan(4);
+  });
+
+  test("reduced motion fades to the follow view without moving the camera", async ({ browser }) => {
+    const context = await browser.newContext();
+    await chooseMotion(context, "reduced");
     const page = await context.newPage();
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -195,23 +249,36 @@ test.describe("boot and intro", () => {
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
-    await expect(start).not.toHaveAttribute("aria-disabled", "true");
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
+    type Sample = { t: number; phase: string; veil: number; cam: number[] };
+    await page.evaluate(() => {
+      type W = { __intro: Sample[]; __hq: { store: { getState: () => { phase: string } }; intro: { veil: number }; camera: () => number[] } };
+      const w = window as unknown as W;
+      w.__intro = [];
+      const tick = () => {
+        const phase = w.__hq.store.getState().phase;
+        w.__intro.push({ t: performance.now(), phase, veil: w.__hq.intro.veil, cam: w.__hq.camera() });
+        if (phase === "explore") return;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { reducedMotion: boolean } } } }).__hq.store.getState().reducedMotion)).toBe(true);
     await start.click();
-    await waitForPhase(page, "intro");
-    const introAt = Date.now();
-    await waitForFrames(page, 3);
-    const read = () =>
-      page.evaluate(() => {
-        const w = window as unknown as { __hq: { camera: () => number[]; store: { getState: () => { phase: string } } } };
-        return { camera: w.__hq.camera(), phase: w.__hq.store.getState().phase };
-      });
-    const a = await read();
-    await page.waitForTimeout(300);
-    const b = await read();
-    expect(b.phase).toBe("intro");
-    expect(Math.hypot(a.camera[0] - b.camera[0], a.camera[1] - b.camera[1], a.camera[2] - b.camera[2])).toBeLessThan(0.01);
     await waitForPhase(page, "explore", 30_000);
-    expect(Date.now() - introAt).toBeGreaterThanOrEqual(2000);
+    const log = await page.evaluate(() => (window as unknown as { __intro: Sample[] }).__intro);
+    // From its first frame (the veil is up) the intro holds the follow view while the veil clears.
+    const intro = log.filter((f) => f.phase === "intro" && f.veil > 0);
+    expect(intro.length).toBeGreaterThanOrEqual(2);
+    for (const f of intro) expect(Math.hypot(...f.cam.map((v, i) => v - intro[0].cam[i]))).toBeLessThan(0.01);
+    const firstIntro = log.findIndex((f) => f.phase === "intro");
+    const firstExplore = log.findIndex((f) => f.phase === "explore");
+    expect(Math.hypot(...log[firstExplore].cam.map((v, i) => v - intro[0].cam[i]))).toBeLessThan(0.01);
+    // Explore within 3 s of scene time: the Director's clock, each frame capped at 0.25 s (MAX_FRAME_DT), so a slow
+    // software renderer does not stretch it.
+    let scene = 0;
+    for (let i = firstIntro + 1; i <= firstExplore; i++) scene += Math.min(0.25, (log[i].t - log[i - 1].t) / 1000);
+    expect(scene).toBeLessThan(3);
     await context.close();
   });
 

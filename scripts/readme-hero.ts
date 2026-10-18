@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * README media: the animated hero (boot card, intro fly-in, a boosted drive on L1, an elevator ride to
+ * README media: the animated hero (boot card, intro, a boosted drive on L1, an elevator ride to
  * L3 Project Roads) and one settled still per floor, captured from the static export.
  *
  *   bun run build && bun scripts/readme-hero.ts     # needs ffmpeg and gifsicle (brew install ffmpeg gifsicle)
@@ -133,7 +133,7 @@ async function hero(browser: Browser) {
     await waitForQuiet(page);
     await record(page, 48);
 
-    // 2. Intro fly-in to the spawn in front of the Rover menu kiosk (2x: its first half is the bare shell).
+    // 2. Intro: Rover wakes up, then the reveal orbit lands on the spawn in front of the Rover menu kiosk (2x).
     await page.getByTestId("boot").getByRole("button", { name: "Boot rover" }).click();
     await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 2);
     await record(page, 18);

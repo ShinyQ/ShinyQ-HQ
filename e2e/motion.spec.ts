@@ -6,7 +6,7 @@ import { asReturningVisitor, enterHQ, openPage, waitForFloor, waitForFrames, wai
 
 /**
  * Motion setting: System follows `prefers-reduced-motion`, Full and Reduced override it, in 3D
- * (`store.reducedMotion`: the elevator cut, the still intro) and on the Classic site (`html[data-motion]`
+ * (`store.reducedMotion`: the elevator cut, the intro fade) and on the Classic site (`html[data-motion]`
  * and the reduce CSS). Owner decision 2026-10-14: Full is the default on every OS (a Windows PC with
  * "Animation effects" off reports reduce, so every ride used to be the 150 ms cut); the Motion menu
  * (System or Reduced) restores the OS preference.
@@ -115,7 +115,8 @@ test("a new visitor's intro animates even when the OS asks for reduced motion", 
   await waitForFrames(page, 3);
   const camera = () => page.evaluate(() => (window as unknown as MotionWindow).__hq.camera());
   const a = await camera();
-  // The orbit moves the camera while the phase is still "intro" (reduced motion holds one still shot).
+  // The wake and reveal orbit move the camera while the phase is still "intro" (reduced motion fades into the
+  // follow view without moving it).
   await expect
     .poll(
       async () => {
