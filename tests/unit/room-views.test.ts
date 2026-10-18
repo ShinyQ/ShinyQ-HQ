@@ -16,6 +16,24 @@ import { makePod } from "../fixtures/minimal-content";
 const catalog = buildRoomCatalog(getContent(), structuralLabels());
 
 describe("room views (Glass Drawer content)", () => {
+  it("resolves project labels before drawer, ASCII and hologram serialization without mutating the source", () => {
+    const pod = structuredClone(getPods().find((p) => p.architecture)!);
+    const graph = pod.architecture!;
+    graph.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    graph.edges[0].label = { en: "request", id: "permintaan" };
+    delete graph.edges[1].label;
+    const before = structuredClone(graph);
+    const en = podView(pod, "en").architecture!;
+    const id = podView(pod, "id").architecture!;
+    expect(en.nodes[0].label).toBe("Visitor browser");
+    expect(id.nodes[0].label).toBe("Browser pengunjung");
+    expect(id.edges[0].label).toBe("permintaan");
+    expect(id.edges[1].label).toBeUndefined();
+    expect(id.nodes.every((n) => typeof n.label === "string")).toBe(true);
+    expect(id.edges.every((e) => e.label === undefined || typeof e.label === "string")).toBe(true);
+    expect(graph).toEqual(before);
+    expect(JSON.stringify(id)).not.toContain("[object Object]");
+  });
   it("shows the location and timezone in the comms station header", () => {
     const profile = getProfile();
     for (const locale of LOCALES) expect(buildRoomViews(locale)["RF:contact"].meta).toEqual([profile.location[locale], profile.timezone]);

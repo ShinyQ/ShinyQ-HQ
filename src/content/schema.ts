@@ -147,9 +147,11 @@ export const ResultSchema = z.strictObject({
   headline: z.boolean().optional(),
 });
 
+const ArchitectureLabelSchema = z.union([nonEmpty, LocalizedTextSchema]);
+
 export const ArchitectureNodeSchema = z.strictObject({
   id: SlugSchema,
-  label: nonEmpty,
+  label: ArchitectureLabelSchema,
   sublabel: LocalizedTextSchema.optional(),
   layer: z.number().int().min(0),
   row: z.number().int().min(0),
@@ -161,7 +163,7 @@ export const ArchitectureNodeSchema = z.strictObject({
 export const ArchitectureEdgeSchema = z.strictObject({
   from: SlugSchema,
   to: SlugSchema,
-  label: nonEmpty.optional(),
+  label: ArchitectureLabelSchema.optional(),
   async: z.boolean().optional(),
 });
 

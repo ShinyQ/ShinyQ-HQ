@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as buildStory from "@/content/build-story";
 import { getBuildFacts, getBuildStory, STATION_IDS } from "@/content/build-story";
 import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
@@ -9,6 +10,28 @@ const story = getBuildStory();
 const facts = getBuildFacts();
 
 describe("B1 Engine Room drawers", () => {
+  it("uses resolved native labels for both drawings and the accessible summary", () => {
+    const localized = structuredClone(story);
+    localized.stations.blueprint.architecture.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    localized.stations.blueprint.architecture.edges[0].label = { en: "request", id: "permintaan" };
+    const before = structuredClone(localized);
+    const spy = vi.spyOn(buildStory, "getBuildStory").mockReturnValue(localized);
+    try {
+      const diagram = buildEngineRoomViews("id")["B1:blueprint"].engine!.diagram!;
+      for (const drawing of [diagram.layout, diagram.wide]) {
+        expect(drawing.nodes[0].label.join(" ")).toBe("Browser pengunjung");
+        expect(drawing.edges[0].label?.lines.join(" ")).toBe("permintaan");
+      }
+      expect(diagram.label).toContain("Browser pengunjung");
+      expect(diagram.label).toContain("permintaan");
+      expect(diagram.label).not.toContain("Visitor browser ke GitHub");
+      expect(JSON.stringify(diagram)).not.toContain("[object Object]");
+      expect(localized).toEqual(before);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   for (const locale of LOCALES) {
     it(`keeps the secret B1 views out of the shared rooms file every 3D visitor fetches (${locale})`, () => {
       expect(Object.keys(buildRoomViews(locale)).filter((k) => k.startsWith("B1:"))).toEqual([]);

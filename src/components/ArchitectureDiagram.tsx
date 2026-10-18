@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import type { Architecture, Locale } from "@/content/schema";
 import { DiagramSvg } from "./diagram/DiagramSvg";
 import { DIAGRAM_PRESETS, layoutArchitecture } from "./diagram/layout";
-import { diagramSummary, diagramTexts } from "./diagram/text";
+import { diagramSummary, diagramTexts, resolveArchitecture } from "./diagram/text";
 
 /**
  * Widest drawing (px) the left-to-right layout may have and still read at 85% scale or more from 1100 px:
@@ -31,12 +31,13 @@ export async function ArchitectureDiagram({
   const t = await getTranslations({ locale, namespace: "labs" });
   const td = await getTranslations({ locale, namespace: "diagram" });
   const texts = diagramTexts(locale, (kind) => t(`nodeKind.${kind}`));
-  const wide = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.wide);
-  const column = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.column);
-  const phone = layoutArchitecture(architecture, texts, DIAGRAM_PRESETS.phone);
+  const resolved = resolveArchitecture(architecture, locale);
+  const wide = layoutArchitecture(resolved, texts, DIAGRAM_PRESETS.wide);
+  const column = layoutArchitecture(resolved, texts, DIAGRAM_PRESETS.column);
+  const phone = layoutArchitecture(resolved, texts, DIAGRAM_PRESETS.phone);
   const useWide = wide.width <= (breakout ? WIDE_LIMIT.breakout : WIDE_LIMIT.column);
 
-  const summary = diagramSummary(architecture, { flow: (from, to) => td("flow", { from, to }), async: td("async"), summary: (count, flows) => td("summary", { count, flows }) });
+  const summary = diagramSummary(resolved, { flow: (from, to) => td("flow", { from, to }), async: td("async"), summary: (count, flows) => td("summary", { count, flows }) });
   const breaks = useWide && breakout;
 
   return (

@@ -5,8 +5,10 @@ import { getBuildStory } from "@/content/build-story";
 import { getPods } from "@/content/load";
 import { getPostDiagrams } from "@/content/post-diagrams";
 import type { Architecture } from "@/content/schema";
+import { ArchitectureSchema } from "@/content/schema";
+import { diagramSummary, diagramTexts, resolveArchitecture, type ResolvedArchitecture } from "@/components/diagram/text";
 
-const texts = (n: Architecture["nodes"][number]) => ({ kind: n.kind.toUpperCase(), label: n.label, sublabel: n.sublabel?.en });
+const texts = diagramTexts("en", (kind) => kind);
 
 const diagrams: [string, Architecture][] = [
   ...getPods().flatMap((p) => (p.architecture ? [[`pod:${p.slug}`, p.architecture] as [string, Architecture]] : [])),
@@ -15,6 +17,9 @@ const diagrams: [string, Architecture][] = [
   ),
   ["build-story:blueprint", getBuildStory().stations.blueprint.architecture],
 ];
+const localizedDiagrams = diagrams.flatMap(([id, raw]) => (["en", "id"] as const).map((locale) => ({
+  id: `${id} ${locale}`, graph: resolveArchitecture(raw, locale), texts: diagramTexts(locale, (kind) => kind),
+})));
 
 type Rect = { x: number; y: number; w: number; h: number };
 const overlap = (a: Rect, b: Rect, gap = 0) =>
@@ -23,7 +28,7 @@ const onBorder = ([x, y]: readonly [number, number], r: Rect) =>
   ((Math.abs(x - r.x) < 0.5 || Math.abs(x - r.x - r.w) < 0.5) && y >= r.y - 0.5 && y <= r.y + r.h + 0.5) ||
   ((Math.abs(y - r.y) < 0.5 || Math.abs(y - r.y - r.h) < 0.5) && x >= r.x - 0.5 && x <= r.x + r.w + 0.5);
 
-function expectSound(name: string, arch: Architecture, layout: DiagramLayout) {
+function expectSound(name: string, arch: ResolvedArchitecture, layout: DiagramLayout) {
   const byId = new Map(layout.nodes.map((n) => [n.id, n]));
   expect(layout.nodes.length, name).toBe(arch.nodes.length);
   for (let i = 0; i < layout.nodes.length; i++)
@@ -68,6 +73,39 @@ function expectSound(name: string, arch: Architecture, layout: DiagramLayout) {
 }
 
 describe("diagram layout", () => {
+  it("resolves mixed labels without mutating raw graphs or translating structural fields", () => {
+    const graph = ArchitectureSchema.parse(diagrams[0][1]);
+    graph.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    graph.edges[0].label = { en: "request", id: "permintaan" };
+    delete graph.edges[1].label;
+    const before = structuredClone(graph);
+    const en = resolveArchitecture(graph, "en");
+    const id = resolveArchitecture(graph, "id");
+    expect(en.nodes[0].label).toBe("Visitor browser");
+    expect(id.nodes[0].label).toBe("Browser pengunjung");
+    expect(id.edges[0].label).toBe("permintaan");
+    expect(id.edges[1]).not.toHaveProperty("label");
+    expect(graph).toEqual(before);
+    for (const resolved of [en, id]) {
+      expect(resolved.nodes.every((n) => typeof n.label === "string")).toBe(true);
+      expect(resolved.edges.every((e) => e.label === undefined || typeof e.label === "string")).toBe(true);
+      expect(resolved.nodes.map(({ label: _label, ...n }) => n)).toEqual(graph.nodes.map(({ label: _label, ...n }) => n));
+      expect(resolved.edges.map(({ label: _label, ...e }) => e)).toEqual(graph.edges.map(({ label: _label, ...e }) => e));
+      expect(JSON.stringify(resolved)).not.toContain("[object Object]");
+    }
+    expect(id.nodes[1].label).toBe(graph.nodes[1].label);
+    const summary = diagramSummary(id, { flow: (from, to) => `${from} ke ${to}`, async: "asinkron", summary: (count, flows) => `${count} komponen: ${flows}` });
+    expect(summary).toContain("Browser pengunjung");
+    expect(summary).toContain("permintaan");
+    expect(summary).not.toContain("Visitor browser");
+    for (const [name, preset] of Object.entries(DIAGRAM_PRESETS)) {
+      const layout = layoutArchitecture(id, diagramTexts("id", (kind) => kind), preset);
+      expectSound(`mixed ID ${name}`, id, layout);
+      expect(layout.nodes[0].label.join(" ")).toBe("Browser pengunjung");
+      expect(layout.edges[0].label?.lines.join(" ")).toBe("permintaan");
+    }
+  });
+
   it("wraps by measured width and keeps long words whole", () => {
     expect(wrapText("Agent Framework YAML agents", 120, 13, true)).toEqual(["Agent Framework", "YAML agents"]);
     expect(wrapText("Supercalifragilistic", 40, 12)).toEqual(["Supercalifragilistic"]);
@@ -75,7 +113,7 @@ describe("diagram layout", () => {
   });
 
   it("keeps the authored grid left to right and packs layers top to bottom", () => {
-    const arch: Architecture = {
+    const arch: ResolvedArchitecture = {
       nodes: [
         { id: "a", label: "A", layer: 0, row: 0, kind: "client" },
         { id: "b", label: "B", layer: 1, row: 0, kind: "service" },
@@ -105,24 +143,24 @@ describe("diagram layout", () => {
 
   for (const [name, preset] of Object.entries(DIAGRAM_PRESETS)) {
     it(`lays out every real diagram soundly (${name})`, () => {
-      for (const [id, arch] of diagrams) {
-        const layout = layoutArchitecture(arch, texts, preset);
-        expectSound(`${id} ${name}`, arch, layout);
+      for (const { id, graph, texts } of localizedDiagrams) {
+        const layout = layoutArchitecture(graph, texts, preset);
+        expectSound(`${id} ${name}`, graph, layout);
       }
     });
   }
 
   it("draws every post diagram without crossing edges, in every layout", () => {
     const postPods = ["voice-ai-contact-center", "ai-cv-screening-platform", "fraud-review-platform", "vendor-management-portal"];
-    const inPosts = diagrams.filter(([id]) => id.startsWith("post:") || postPods.some((slug) => id === `pod:${slug}`));
+    const inPosts = localizedDiagrams.filter(({ id }) => id.startsWith("post:") || postPods.some((slug) => id.startsWith(`pod:${slug} `)));
     expect(inPosts.length).toBeGreaterThanOrEqual(7);
     for (const [name, preset] of Object.entries(DIAGRAM_PRESETS))
-      for (const [id, arch] of inPosts) expect(edgeCrossings(layoutArchitecture(arch, texts, preset).edges).crossings, `${id} ${name}`).toBe(0);
+      for (const { id, graph, texts } of inPosts) expect(edgeCrossings(layoutArchitecture(graph, texts, preset).edges).crossings, `${id} ${name}`).toBe(0);
   });
 
   it("fits phones at scale 1 with text of at least 12 px", () => {
     const p = DIAGRAM_PRESETS.phone;
     expect(Math.min(p.kindSize, p.labelSize, p.subSize, p.edgeSize)).toBeGreaterThanOrEqual(12);
-    for (const [id, arch] of diagrams) expect(layoutArchitecture(arch, texts, p).width, id).toBeLessThanOrEqual(p.maxWidth);
+    for (const { id, graph, texts } of localizedDiagrams) expect(layoutArchitecture(graph, texts, p).width, id).toBeLessThanOrEqual(p.maxWidth);
   });
 });

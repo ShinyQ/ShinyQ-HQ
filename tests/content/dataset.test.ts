@@ -4,13 +4,38 @@ import { describe, expect, it } from "vitest";
 import { isPublicLiveUrl } from "@/content/live-links";
 import { getPods } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
-import { SiteContentSchema, type LocalizedText } from "@/content/schema";
+import { ArchitectureSchema, SiteContentSchema, type LocalizedText } from "@/content/schema";
 import { LABS } from "@/experience/floors/labs/layout";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
 
 const raw: unknown = JSON.parse(readFileSync(path.join(process.cwd(), "content", "site-content.json"), "utf8"));
 const parsed = SiteContentSchema.safeParse(raw);
+
+describe("architecture authoring labels", () => {
+  const node = { id: "browser", label: "Browser", layer: 0, row: 0, kind: "client" };
+  const graph = { nodes: [node], edges: [{ from: "browser", to: "browser" }] };
+
+  it("accepts legacy, bilingual and mixed labels without changing endpoint validation", () => {
+    expect(ArchitectureSchema.safeParse(graph).success).toBe(true);
+    expect(ArchitectureSchema.safeParse({
+      nodes: [{ ...node, label: { en: "Visitor browser", id: "Browser pengunjung" } }],
+      edges: [{ ...graph.edges[0], label: { en: "request", id: "permintaan" } }],
+    }).success).toBe(true);
+    expect(ArchitectureSchema.safeParse({
+      nodes: [node], edges: [{ ...graph.edges[0], label: { en: "request", id: "permintaan" } }],
+    }).success).toBe(true);
+    expect(ArchitectureSchema.safeParse({ ...graph, edges: [{ from: "missing", to: "browser" }] }).success).toBe(false);
+  });
+
+  it.each([{ en: "Browser" }, { en: "Browser", id: "" }, { en: "", id: "Browser" }, { en: "Browser", id: "Browser", fr: "Browser" }])(
+    "rejects malformed localized node and edge labels: %j",
+    (label) => {
+      expect(ArchitectureSchema.safeParse({ ...graph, nodes: [{ ...node, label }] }).success).toBe(false);
+      expect(ArchitectureSchema.safeParse({ ...graph, edges: [{ ...graph.edges[0], label }] }).success).toBe(false);
+    },
+  );
+});
 
 describe("content/site-content.json", () => {
   it("validates against the zod schema", () => {

@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 import type { DrawerTab, RoomId } from "@/content/schema";
 import { buildRoomViews } from "@/content/room-views";
 import type { RoomView } from "@/content/room-views/types";
@@ -33,7 +34,7 @@ function Harness({ view, ...over }: { view: RoomView } & Partial<RoomDrawerProps
   const [tab, setTab] = useState<DrawerTab>("overview");
   const [readme, setReadme] = useState(false);
   return (
-    <NextIntlClientProvider locale="en" messages={en}>
+    <NextIntlClientProvider locale={over.locale ?? "en"} messages={over.locale === "id" ? idMessages : en}>
       <button type="button">outside</button>
       <RoomDrawer
         view={view}
@@ -54,6 +55,17 @@ function Harness({ view, ...over }: { view: RoomView } & Partial<RoomDrawerProps
 }
 
 describe("RoomDrawer", () => {
+  it("renders supplied native architecture strings in the ID drawer", () => {
+    const view = structuredClone(hero);
+    view.architecture!.nodes[0].label = "Browser pengunjung";
+    view.architecture!.nodes[1].label = "Layanan aplikasi";
+    view.architecture!.edges[0] = { from: view.architecture!.nodes[0].id, to: view.architecture!.nodes[1].id, label: "permintaan", async: true };
+    render(<Harness view={view} locale="id" tab="architecture" />);
+    expect(screen.getAllByText("Browser pengunjung").length).toBeGreaterThan(0);
+    expect(screen.getByText(/permintaan/)).toBeInTheDocument();
+    expect(screen.queryByText("[object Object]")).toBeNull();
+  });
+
   it("is a labelled modal dialog that takes focus and traps Tab", async () => {
     const user = userEvent.setup();
     render(<Harness view={hero} />);

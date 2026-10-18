@@ -28,6 +28,21 @@ const titles = (s: BuildStory) => [
 ];
 
 describe("build story content", () => {
+  it("inherits strict bilingual blueprint labels while retaining legacy and endpoint contracts", () => {
+    const mixed = structuredClone(raw);
+    mixed.stations.blueprint.architecture.nodes[0].label = { en: "Visitor browser", id: "Browser pengunjung" };
+    mixed.stations.blueprint.architecture.edges[0].label = { en: "request", id: "permintaan" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(true);
+    mixed.stations.blueprint.architecture.nodes[0].label = { en: "Visitor browser" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+    mixed.stations.blueprint.architecture.nodes[0].label = "Visitor browser";
+    mixed.stations.blueprint.architecture.edges[0].label = { en: "request", id: "permintaan", fr: "requete" };
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+    mixed.stations.blueprint.architecture.edges[0].label = "request";
+    mixed.stations.blueprint.architecture.edges[0].to = "missing";
+    expect(BuildStorySchema.safeParse(mixed).success).toBe(false);
+  });
+
   it("parses and is memoized", () => {
     expect(getBuildStory()).toBe(getBuildStory());
     expect(getBuildStory().title.en).toBe("How This Site Was Built");

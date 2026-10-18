@@ -1,4 +1,4 @@
-import type { Architecture } from "@/content/schema";
+import type { ResolvedArchitecture } from "./text";
 import { interWidth } from "@/experience/fx/interWidth";
 import { LINE_GAP, PAD, lineHeight } from "./metrics";
 
@@ -10,7 +10,7 @@ export { LINE_GAP, PAD, lineHeight };
  * main axis `u` (along layers) and cross axis `v` (along rows), then mapped to x/y for the direction.
  */
 
-export type DiagramNode = Architecture["nodes"][number];
+export type DiagramNode = ResolvedArchitecture["nodes"][number];
 export type DiagramKind = DiagramNode["kind"];
 export type Point = readonly [number, number];
 
@@ -202,7 +202,7 @@ export interface GridOrder {
 }
 
 /** Bands (main axis) and slots (cross axis) for every node. `right` keeps the authored grid; `down` packs each layer. */
-export function assignGrid(arch: Architecture, p: DiagramPreset, order: GridOrder = {}): Map<string, { band: number; slot: number }> {
+export function assignGrid(arch: ResolvedArchitecture, p: DiagramPreset, order: GridOrder = {}): Map<string, { band: number; slot: number }> {
   const out = new Map<string, { band: number; slot: number }>();
   const layers = [...new Set(arch.nodes.map((n) => n.layer))].sort((a, b) => a - b);
   if (p.direction === "right") {
@@ -229,7 +229,7 @@ export function assignGrid(arch: Architecture, p: DiagramPreset, order: GridOrde
   return out;
 }
 
-const defaultOrder = (arch: Architecture, layer: number) =>
+const defaultOrder = (arch: ResolvedArchitecture, layer: number) =>
   arch.nodes
     .filter((n) => n.layer === layer)
     .sort((a, b) => a.row - b.row)
@@ -294,7 +294,7 @@ interface Route {
  * Lays out one direction. `texts` resolves each node's localized kind, label and sublabel; edge labels stay
  * as written (they are technical terms, like the case-study data flow).
  */
-export function layoutArchitecture(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
+export function layoutArchitecture(arch: ResolvedArchitecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
   let layout = bestLayout(arch, texts, preset);
   for (let i = 0; i < 4 && preset.maxWidth && layout.width > preset.maxWidth; i++) {
     const nodeWidth = layout.preset.nodeWidth - Math.ceil((layout.width - preset.maxWidth) / preset.perBand);
@@ -314,7 +314,7 @@ export function layoutCost(layout: DiagramLayout): number {
  * `right` keeps the authored grid. `down` tries the node orders of each layer (and where an overflow band sits),
  * one layer at a time for two passes, and keeps the cheapest layout.
  */
-function bestLayout(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
+function bestLayout(arch: ResolvedArchitecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset): DiagramLayout {
   const right = preset.direction === "right";
   const layers = [...new Set(arch.nodes.map((n) => n.layer))].sort((a, b) => a - b);
   // `right` starts from the authored grid (rows may leave gaps on purpose) and moves off it only to remove a crossing.
@@ -367,7 +367,7 @@ function bestLayout(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
   return best!;
 }
 
-function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset, order: GridOrder = {}): DiagramLayout {
+function layoutOnce(arch: ResolvedArchitecture, texts: (node: DiagramNode) => DiagramText, preset: DiagramPreset, order: GridOrder = {}): DiagramLayout {
   const p = preset;
   const right = p.direction === "right";
   const grid = assignGrid(arch, p, order);
