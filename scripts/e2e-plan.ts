@@ -3,8 +3,9 @@
  * - specsForChanges: which Playwright specs cover a set of changed paths (`bun run e2e:changed`).
  * - planShards: a duration-balanced split of the test list for CI shards (`bun run e2e:shard`), from the
  *   per-test seconds in e2e/durations.json; assignShard (round-robin) is the fallback without durations.
- * - listTestIds, parseListReporter, medianDurations: the test ids of a `playwright test --list` report
- *   and the per-test seconds of CI logs (`scripts/e2e-durations.ts` refreshes e2e/durations.json).
+ * - listTestIds, parseListReporter, normalizeRunnerSpeed, medianDurations: the test ids of a `playwright test
+ *   --list` report and the per-test seconds of CI logs, scaled to a median-speed runner
+ *   (`scripts/e2e-durations.ts` refreshes e2e/durations.json).
  */
 
 /** Fast specs that cover routes, SEO, deploy rules and the game-first load (about 1 to 2 minutes). */
@@ -449,32 +450,46 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+/** Playwright workers per CI shard: `workers` is unset in CI, so Playwright uses half the runner's 4 vCPUs. */
+export const CI_WORKERS_PER_SHARD = 2;
+
+function testSeconds(tests: readonly string[], durations: Durations): number[] {
+  const known = tests.map((t) => durations[durationKey(t)]).filter((d): d is number => typeof d === "number");
+  const fallback = median(known);
+  return tests.map((t) => durations[durationKey(t)] ?? fallback);
+}
+
 /**
- * Splits an ordered test list into `total` shards, balanced by duration: longest first onto the shard
- * with the least load (LPT). Tests missing from `durations` count as the median of the known ones;
- * without durations it falls back to round-robin (`assignShard`). Deterministic for the same inputs,
- * and every test lands in exactly one shard, in its original order within the shard.
+ * Splits an ordered test list into `total` shards, balanced by duration: longest first onto the least
+ * loaded worker (LPT), where each shard has `workers` Playwright workers, so a long test fills one worker
+ * of its shard while the shard's other workers take the shorter tests (with 1 worker per shard this is
+ * LPT on the shard sums). Tests missing from `durations` count as the median of the known ones; without
+ * durations it falls back to round-robin (`assignShard`). Deterministic for the same inputs (every shard
+ * must compute the same plan, so `workers` is a constant, not the runner's core count), and every test
+ * lands in exactly one shard, in its original order within the shard.
  */
-export function planShards<T extends string>(tests: readonly T[], total: number, durations?: Durations | null): T[][] {
+export function planShards<T extends string>(tests: readonly T[], total: number, durations?: Durations | null, workers = 1): T[][] {
   assignShard([], 1, total);
+  if (!Number.isInteger(workers) || workers < 1) throw new Error(`invalid workers per shard ${workers}`);
   if (!durations || Object.keys(durations).length === 0) {
     return Array.from({ length: total }, (_, i) => assignShard(tests, i + 1, total));
   }
-  const known = tests.map((t) => durations[durationKey(t)]).filter((d): d is number => typeof d === "number");
-  const fallback = median(known);
-  const seconds = tests.map((t) => durations[durationKey(t)] ?? fallback);
+  const seconds = testSeconds(tests, durations);
   const order = tests.map((_, i) => i).sort((a, b) => seconds[b] - seconds[a] || a - b);
-  const loads = new Array<number>(total).fill(0);
+  // Worker k * workers + w is worker w of shard k.
+  const loads = new Array<number>(total * workers).fill(0);
   const picked: number[][] = Array.from({ length: total }, () => []);
   for (const i of order) {
     let best = 0;
-    // Zero-second tests (skipped in CI) go to the shard with the fewest tests, so no shard collects them all.
-    const byCount = seconds[i] === 0;
-    for (let k = 1; k < total; k++) {
-      if (byCount ? picked[k].length < picked[best].length : loads[k] < loads[best]) best = k;
+    if (seconds[i] === 0) {
+      // Zero-second tests (skipped in CI) go to the shard with the fewest tests, so no shard collects them all.
+      for (let k = 1; k < total; k++) if (picked[k].length < picked[best].length) best = k;
+      picked[best].push(i);
+      continue;
     }
+    for (let w = 1; w < loads.length; w++) if (loads[w] < loads[best]) best = w;
     loads[best] += seconds[i];
-    picked[best].push(i);
+    picked[Math.floor(best / workers)].push(i);
   }
   return picked.map((idx) => idx.sort((a, b) => a - b).map((i) => tests[i]));
 }
@@ -485,6 +500,16 @@ export function shardSeconds(tests: readonly string[], durations?: Durations | n
   const known = Object.values(durations);
   const fallback = median(known);
   return tests.reduce((sum, t) => sum + (durations[durationKey(t)] ?? fallback), 0);
+}
+
+/** Estimated wall seconds of a shard on `workers` workers: its tests longest first onto the least loaded worker. */
+export function shardWallSeconds(tests: readonly string[], durations: Durations | null | undefined, workers: number): number {
+  if (!durations) return 0;
+  const fallback = median(Object.values(durations));
+  const loads = new Array<number>(Math.max(1, workers)).fill(0);
+  const seconds = tests.map((t) => durations[durationKey(t)] ?? fallback).sort((a, b) => b - a);
+  for (const s of seconds) loads[loads.indexOf(Math.min(...loads))] += s;
+  return Math.max(...loads);
 }
 
 /** One suite of Playwright's JSON report (`playwright test --list --reporter=json`). */
@@ -536,6 +561,48 @@ export function parseListReporter(log: string): DurationSample[] {
     out.push({ lane, key: `${file} › ${title}`, seconds: mark === "-" ? null : Math.round(Number(value) * UNIT[unit] * 1000) / 1000 });
   }
   return out;
+}
+
+/** Timed samples below this many seconds do not vote on a runner's speed (fixed costs dominate them). */
+const SPEED_MIN_SECONDS = 5;
+/** A job needs this many voting samples for a speed factor; fewer keep the factor at 1. */
+const SPEED_MIN_SAMPLES = 5;
+
+/**
+ * Runner speed per CI job: the median, over the job's samples of at least 5 s, of the sample divided by
+ * that test's median across all jobs. GitHub runners differ in CPU speed and SwiftShader is CPU-bound, so
+ * every test of one shard runs at about the same factor (0.65 to 1.21 across the shards of 7 runs on
+ * 2026-10-18). 1 when a job has fewer than 5 such samples.
+ */
+export function runnerSpeedFactors(jobs: readonly (readonly DurationSample[])[]): number[] {
+  const byTest = new Map<string, number[]>();
+  for (const s of jobs.flat()) {
+    if (s.seconds === null) continue;
+    const id = `${s.lane}|${s.key}`;
+    byTest.set(id, [...(byTest.get(id) ?? []), s.seconds]);
+  }
+  const medians = new Map([...byTest].map(([id, values]) => [id, median(values)]));
+  return jobs.map((job) => {
+    const ratios = job
+      .filter((s) => s.seconds !== null && s.seconds >= SPEED_MIN_SECONDS)
+      .map((s) => (s.seconds as number) / (medians.get(`${s.lane}|${s.key}`) ?? 0))
+      .filter((r) => Number.isFinite(r) && r > 0);
+    return ratios.length >= SPEED_MIN_SAMPLES ? Math.round(median(ratios) * 1000) / 1000 : 1;
+  });
+}
+
+/** Every job's samples divided by its runner speed factor, so fast and slow runners do not pull the medians. */
+export function normalizeRunnerSpeed(jobs: readonly (readonly DurationSample[])[]): { samples: DurationSample[]; factors: number[] } {
+  const factors = runnerSpeedFactors(jobs);
+  const samples = jobs.flatMap((job, j) => job.map((s) => (s.seconds === null ? s : { ...s, seconds: Math.round((s.seconds / factors[j]) * 1000) / 1000 })));
+  return { samples, factors };
+}
+
+const RUNNER_LINE = /\brunner: (\d+ x .+)$/m;
+
+/** The runner fingerprint `scripts/e2e-shard.ts` logs (`runner: 4 x <CPU model>, sha256 <n> MB/s`), or null. */
+export function parseRunnerLine(log: string): string | null {
+  return RUNNER_LINE.exec(log)?.[1].trim() ?? null;
 }
 
 /** Median seconds per test and lane (skipped-only tests count as 0), rounded to 0.1 s, keys sorted. */
