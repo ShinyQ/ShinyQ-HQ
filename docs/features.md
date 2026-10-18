@@ -152,6 +152,7 @@ Open `/en` and press **Boot rover**.
 
 The Classic site (internally the Page View) is the permanent no-WebGL fallback and the version crawlers see.
 
+- Architecture figures use native EN/ID node and edge labels where authored, consistently across case studies, technical posts, the build page and B1 drawers. Shared technical identities and legacy string labels remain supported.
 - The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
