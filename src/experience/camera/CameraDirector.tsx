@@ -6,7 +6,7 @@ import { Fog, PerspectiveCamera, Vector3 } from "three";
 import type { FloorId } from "@/content/schema";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore, type HQState } from "@/store/useHQStore";
-import { floorY } from "../config";
+import { floorY, LOBBY } from "../config";
 import { roadZAt } from "../floors/career/layout";
 import { intents, pitchAxisFromKeys, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
@@ -21,21 +21,16 @@ import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPers
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { INTRO, introPlan, introPose } from "./intro";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
   followPose,
   forwardOf,
   hologramShift,
-  INTRO_DURATION,
-  INTRO_ORBIT,
-  INTRO_REDUCED,
-  introFlyProgress,
-  introPose,
   pitchRange,
   railForward,
   railPose,
-  reducedIntroPose,
   selectRig,
   springFactor,
   type CameraPose,
@@ -109,9 +104,9 @@ export function CameraDirector({
       intents.on((intent) => {
         const { orbit } = local.current;
         const s = getHQStore().getState();
-        // Input during the intro fly-in (never during the exterior orbit, which nothing skips) hands the view over.
+        // Input after the wake close-up (which nothing skips) hands the view over.
         const l = local.current;
-        if (s.phase === "intro" && !s.reducedMotion && l.introStart !== null && l.now - l.introStart >= INTRO_ORBIT) {
+        if (s.phase === "intro" && !s.reducedMotion && l.introStart !== null && l.now - l.introStart >= INTRO.wake) {
           if (intent.type === "move" || intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") l.takeover = true;
         }
         // Any turn, zoom or reset hands the arrival glide over to the normal camera, which eases on from the drawn pose.
@@ -218,8 +213,8 @@ export function CameraDirector({
 
     let desired: CameraPose;
     let snap = false;
-    /** Intro fly-in progress this frame (0 to 1), -1 outside it. */
-    let introFly = -1;
+    /** Intro fly-in progress this frame (0 to 1), -1 outside it. The wake intro has no fly-in, so it stays -1. */
+    const introFly: number = -1;
     /** The rig the drawn pose belongs to: during a glide the destination's (the store still holds the origin floor until the ride ends). */
     const drawRail = glide ? glide.to === "L2" : rail;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
@@ -248,27 +243,27 @@ export function CameraDirector({
       const f = followForward(cls, orbit.yaw);
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
       const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
+      const plan = introPlan(cls, [roverRuntime.x, roverRuntime.y, roverRuntime.z], LOBBY.spawnHeading, end);
       snap = true;
       if (s.phase === "boot") {
         l.introStart = null;
         l.takeover = false;
-        desired = introPose(cls, 0, end);
+        desired = introPose(plan, 0);
       } else if (s.reducedMotion) {
-        // Reduced motion holds a still exterior shot for INTRO_REDUCED, then cuts to the follow camera.
+        // Reduced motion holds the still wake close-up for INTRO.reduced, then cuts to the follow camera.
         l.introStart ??= l.now;
-        desired = reducedIntroPose(cls, end);
-        if (l.now - l.introStart >= INTRO_REDUCED) {
+        desired = introPose(plan, 0);
+        if (l.now - l.introStart >= INTRO.reduced) {
           s.finishIntro();
           l.cut = true;
         }
       } else {
-        // The exterior orbit always runs; the fly-in then comes down to the follow pose in one move (Round 9 M). Input
-        // during the fly-in ends it early: the follow spring eases on from the drawn pose.
+        // The wake close-up always runs; the reveal orbit then lands on the follow pose. Input after the wake ends it
+        // early: the follow spring eases on from the drawn pose.
         l.introStart ??= l.now;
         const t = l.now - l.introStart;
-        desired = introPose(cls, t, end);
-        introFly = introFlyProgress(t);
-        if (t >= INTRO_DURATION || l.takeover) {
+        desired = introPose(plan, t);
+        if (t >= INTRO.duration || l.takeover) {
           s.finishIntro();
           l.takeover = false;
         }

@@ -1,6 +1,5 @@
 import type { FloorId } from "@/content/schema";
 import type { Vec2, ViewportClass } from "../types";
-import { easeInOutCubic } from "../tower/elevator";
 
 export type Vec3 = [number, number, number];
 /** `first` is only a fog key (first person); `selectRig` never returns it. */
@@ -32,21 +31,6 @@ export const RAIL: Record<ViewportClass, { fov: number; y: number; z: number }> 
   mobile: { fov: 55, y: 26, z: 38 },
 };
 export const RAIL_LOOK_AHEAD = 4;
-
-export const INTRO_RADIUS: Record<ViewportClass, number> = { desktop: 70, tablet: 80, mobile: 90 };
-export const INTRO_SWEEP = (120 * Math.PI) / 180;
-export const INTRO_ORBIT = 1.9;
-/** The fly-in (Round 9 M): one continuous eased move from the orbit's end down to the follow pose behind the rover. */
-export const INTRO_FLY = 1.7;
-export const INTRO_DURATION = INTRO_ORBIT + INTRO_FLY;
-/** Reduced motion holds the still exterior shot this long (s), then cuts to the follow camera. */
-export const INTRO_REDUCED = 2.5;
-/**
- * The fly-in curve's control point lies this many follow offsets past the follow pose (away from the rover), so the
- * camera settles in along the follow line, from behind and above the rover.
- */
-export const INTRO_APPROACH = 0.8;
-export const TOWER_CENTER: Vec3 = [0, 28, 0];
 
 export const SPRING_HALF_LIFE = 0.18;
 /**
@@ -160,62 +144,6 @@ export function railForward(yaw: number): Vec2 {
 /** A horizontal swipe on L2 moves toward the side of the screen it pulls from; turned around, the road runs the other way. */
 export function scrubSign(railYaw: number): 1 | -1 {
   return Math.cos(railYaw) < 0 ? -1 : 1;
-}
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerp3 = (a: Vec3, b: Vec3, t: number): Vec3 => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
-
-/** Angle of the orbit at progress p (0 to 1), ending where the Lobby follow camera sits. */
-export function introAngle(end: CameraPose, p: number): number {
-  const endAngle = Math.atan2(end.position[0] - TOWER_CENTER[0], end.position[2] - TOWER_CENTER[2]);
-  return endAngle - INTRO_SWEEP * (1 - p);
-}
-
-/**
- * Eased fly-in progress 0 to 1 at intro time `t` (s), with `easeInOutCubic` (the arrival glide's curve), so it
- * starts and lands at rest; -1 during the orbit before it.
- */
-export function introFlyProgress(t: number): number {
-  if (t < INTRO_ORBIT) return -1;
-  return easeInOutCubic(Math.min(1, (t - INTRO_ORBIT) / INTRO_FLY));
-}
-
-const bezier = (a: number, c: number, b: number, q: number) => (1 - q) * (1 - q) * a + 2 * (1 - q) * q * c + q * q * b;
-
-/**
- * Exterior orbit around the tower (120 degrees while descending), then a fly-in to `end`: a quadratic curve from
- * the orbit's end whose control point extends the follow offset past `end` (`INTRO_APPROACH`, no higher than the
- * orbit's end or `end`), so the camera comes down in one move and lands along the follow line behind the rover.
- */
-export function introPose(cls: ViewportClass, t: number, end: CameraPose): CameraPose {
-  const r = INTRO_RADIUS[cls];
-  const orbitAt = (p: number): CameraPose => {
-    const a = introAngle(end, p);
-    return {
-      position: [TOWER_CENTER[0] + Math.sin(a) * r, lerp(62, 26, p), TOWER_CENTER[2] + Math.cos(a) * r],
-      target: [TOWER_CENTER[0], lerp(30, 6, p), TOWER_CENTER[2]],
-      fov: 40,
-    };
-  };
-  if (t <= INTRO_ORBIT) return orbitAt(easeInOutCubic(Math.max(0, t / INTRO_ORBIT)));
-  const q = introFlyProgress(t);
-  const from = orbitAt(1);
-  const [ex, ey, ez] = end.position;
-  const control: Vec3 = [
-    ex + (ex - end.target[0]) * INTRO_APPROACH,
-    Math.min(Math.max(from.position[1], ey), ey + (ey - end.target[1]) * INTRO_APPROACH),
-    ez + (ez - end.target[2]) * INTRO_APPROACH,
-  ];
-  return {
-    position: [0, 1, 2].map((i) => bezier(from.position[i], control[i], end.position[i], q)) as Vec3,
-    target: lerp3(from.target, end.target, q),
-    fov: lerp(from.fov, end.fov, q),
-  };
-}
-
-/** Reduced motion: one still exterior shot (the end of the orbit) held for the whole intro, then a cut to the follow camera. */
-export function reducedIntroPose(cls: ViewportClass, end: CameraPose): CameraPose {
-  return introPose(cls, INTRO_ORBIT, end);
 }
 
 /** Exponential smoothing factor for a critically damped follow with the given half-life. */
