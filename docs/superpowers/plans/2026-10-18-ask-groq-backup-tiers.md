@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in progress (owner request 2026-10-18).
+Status: shipped in #210, 2026-10-18 (owner request).
 
 **Goal:** Ask Rover Assistant keeps giving real, grounded answers after the Workers AI free quota (10,000 neurons per day, reset at 00:00 UTC) runs out, by adding two free Groq tiers behind Gemma and Mistral.
 
