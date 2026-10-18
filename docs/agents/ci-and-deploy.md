@@ -185,7 +185,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
   5. Opens a `deploy-failed` issue on failure.
 - `office-worker` (deploy.yml) deploys the hq-office Worker after a successful Pages upload, like hq-stats, so it
-  passes the same gates, and sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment;
+  passes the same gates, and sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment;
   a commit without `workers/office/` skips it with a notice. Until the Worker first exists, `/api/office` answers
   mode "off" (a Pages upload does not check the service binding). The rollback redeploys it from the rollback
   target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,

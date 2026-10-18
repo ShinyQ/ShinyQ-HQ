@@ -21,9 +21,11 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Deploy: `deploy.yml` job "hq-office Worker", after a successful Pages upload (the same gates as the upload); a
   commit without `workers/office/` skips it. Until the Worker first exists, `/api/office` answers mode "off".
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
-- Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets of the same name):
-  - `OFFICE_INGEST_KEY`: HMAC key of relay beats; the owner's Keychain holds the same value.
-  - `GITHUB_WEBHOOK_SECRET`: the secret of every repository webhook.
+- Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
+  - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
+    same value.
+  - `GITHUB_WEBHOOK_SECRET` (GitHub secret `OFFICE_GITHUB_WEBHOOK_SECRET`, because GitHub rejects secret names that
+    start with `GITHUB_`): the secret of every repository webhook.
 - Root `wrangler.toml` (Pages): `[[services]] OFFICE = hq-office` and the kill switch `OFFICE_ENABLED`.
 
 ## What GitHub events count
@@ -40,11 +42,12 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 
 1. Generate two keys: `openssl rand -hex 32` twice.
 2. GitHub, repository settings, Environments, `production`: add the secrets `OFFICE_INGEST_KEY` and
-   `GITHUB_WEBHOOK_SECRET`. The next production deploy sets them on the Worker.
+   `OFFICE_GITHUB_WEBHOOK_SECRET`. The next production deploy sets them on the Worker (the second as
+   `GITHUB_WEBHOOK_SECRET`).
 3. Keychain (Mac): `security add-generic-password -s hq-office-ingest -a office-relay -w <OFFICE_INGEST_KEY>`.
 4. For each public repository to show (ShinyQ/ShinyQ-HQ first): Settings, Webhooks, Add webhook:
    - Payload URL `https://kurniadi.pages.dev/api/office/github`, content type `application/json`, secret
-     `GITHUB_WEBHOOK_SECRET`, SSL verification on;
+     the `OFFICE_GITHUB_WEBHOOK_SECRET` value, SSL verification on;
    - events: Workflow runs, Workflow jobs, Pull requests, Pushes, Deployment statuses, Repositories (the
      `privatized` action hides a repository that turns private).
    GitHub has no user-level webhooks; a GitHub App installed on all repositories (Actions read, Pull requests read,

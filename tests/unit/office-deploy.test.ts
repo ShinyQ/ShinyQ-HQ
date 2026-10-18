@@ -33,7 +33,7 @@ describe("hq-office deploy", () => {
     expect(section).toContain("bunx wrangler secret put OFFICE_INGEST_KEY");
     expect(section).toContain("bunx wrangler secret put GITHUB_WEBHOOK_SECRET");
     expect(section).toContain("OFFICE_INGEST_KEY: ${{ secrets.OFFICE_INGEST_KEY }}");
-    expect(section).toContain("GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}");
+    expect(section).toContain("GITHUB_WEBHOOK_SECRET: ${{ secrets.OFFICE_GITHUB_WEBHOOK_SECRET }}");
     expect(section).not.toMatch(/^\s{4}env:\n[\s\S]*?secrets\./m);
     expect(section).toContain("vars.OFFICE_WORKER_DEPLOY == 'false'");
   });

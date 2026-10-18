@@ -427,7 +427,7 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 - The Worker `hq-office` (`workers/office/`) holds the office state in a SQLite-backed Durable Object; the Pages
   Functions `/api/office`, `/api/office/beat` and `/api/office/github` reach it through the service binding `OFFICE`.
 - `deploy.yml` deploys it after a successful Pages upload (job "hq-office Worker", the same gates as the upload) and
-  sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets; a missing secret
+  sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET` (GitHub rejects secret names starting with `GITHUB_`); a missing secret
   leaves its route at 503. A Pages upload does not check the service binding: on the first production deploy
   `/api/office` answers mode "off" for about a minute, until the Worker exists. A commit without `workers/office/`
   (a manual redeploy of an older one) skips the job with a notice.

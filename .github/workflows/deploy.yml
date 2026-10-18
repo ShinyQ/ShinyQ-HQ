@@ -461,7 +461,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OFFICE_INGEST_KEY: ${{ secrets.OFFICE_INGEST_KEY }}
-          GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+          # Stored as OFFICE_GITHUB_WEBHOOK_SECRET: GitHub rejects secret names that start with GITHUB_.
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.OFFICE_GITHUB_WEBHOOK_SECRET }}
         run: |
           bunx wrangler deploy
           if [ -n "$OFFICE_INGEST_KEY" ]; then

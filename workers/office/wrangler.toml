@@ -6,7 +6,7 @@
 #
 # Secrets never live here. deploy.yml sets them from production environment secrets on every deploy:
 #   OFFICE_INGEST_KEY      HMAC key of relay beats (the owner's Keychain holds the same value)
-#   GITHUB_WEBHOOK_SECRET  secret of the repository webhooks
+#   GITHUB_WEBHOOK_SECRET  secret of the repository webhooks (GitHub secret OFFICE_GITHUB_WEBHOOK_SECRET)
 
 name = "hq-office"
 main = "src/index.ts"
