@@ -10,7 +10,7 @@ import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
 import { formatYearMonth } from "@/lib/format";
-import { b1UnlockFlag, canEnterFloor } from "./b1";
+import { b1UnlockFlag, canEnterFloor, watchFloorVisits } from "./b1";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { TOPICS_ROOM } from "./floors/library/topicHash";
 import { createTopicHashSync } from "./floors/library/topicUrl";
@@ -260,6 +260,8 @@ export default function Experience({
     [],
   );
   usePerfMarks();
+  // B1 Engine Room unlock: every public floor the rover explores counts toward 5/5 (src/experience/b1.ts).
+  useEffect(() => watchFloorVisits(getHQStore()), []);
   const [perf] = useState(() => perfOverlayOn(window.location.search));
   const [rum] = useState(() => (decideRum() ? rumPath({ startFloor, startRoom, coverUsed: bootCoverUsed() }) : null));
 

@@ -133,13 +133,13 @@ describe("HQ store", () => {
     expect(store.getState()).toMatchObject({ tier: "lite", phase: "explore", ride: null, beam: null, picker: null });
   });
 
-  it("persists only visited, firstVisit, locale and motion (the audio engine owns sound)", () => {
+  it("persists only visited, firstVisit, locale, motion, floorsSeen and b1Unlocked (the audio engine owns sound)", () => {
     store.getState().toggleSound();
     store.getState().setLocale("id");
     store.getState().finishIntro();
     store.getState().setRover({ x: 5 });
     const saved = JSON.parse(storage.data.get(STORE_KEY) ?? "{}");
-    expect(Object.keys(saved.state).sort()).toEqual(["firstVisit", "locale", "motion", "visited"]);
+    expect(Object.keys(saved.state).sort()).toEqual(["b1Unlocked", "firstVisit", "floorsSeen", "locale", "motion", "visited"]);
     expect(saved.state).toMatchObject({ locale: "id", firstVisit: false });
   });
 
@@ -225,7 +225,7 @@ describe("HQ store", () => {
     expect(sets).toBe(2);
   });
 
-  it("writes localStorage only when visited, firstVisit, locale or motion change", () => {
+  it("writes localStorage only when a persisted key changes", () => {
     const counted = memoryStorage();
     let writes = 0;
     const write = counted.setItem;
@@ -243,7 +243,7 @@ describe("HQ store", () => {
     st.getState().markVisited("L3:a" as RoomId);
     st.getState().setLocale("id");
     expect(writes).toBe(base + 2);
-    expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id", motion: "full" });
+    expect(JSON.parse(counted.data.get(STORE_KEY)!).state).toEqual({ visited: ["L3:a"], firstVisit: true, locale: "id", motion: "full", floorsSeen: [], b1Unlocked: false });
   });
 });
 

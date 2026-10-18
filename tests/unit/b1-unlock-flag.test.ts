@@ -42,11 +42,14 @@ describe("B1 unlock flag (dev and test only)", () => {
     expect(store.getState().ride).toMatchObject({ from: "L1", to: "B1", stage: "toDoor" });
   });
 
-  it("never persists the PR 2 flag", () => {
+  it("keeps the flag unlock in memory: only a real unlock persists", () => {
     const storage = memory();
     const store = createHQStore(storage);
     store.getState().unlockB1();
     store.getState().setLocale("id");
-    expect(storage.getItem("hq:v1")).not.toContain("b1Unlocked");
+    expect(storage.getItem("hq:v1")).toContain('"b1Unlocked":false');
+    expect(store.getState().b1Unlocked).toBe(true);
+    for (const f of ["L1", "L2", "L3", "L4", "RF"] as const) store.getState().markFloorSeen(f);
+    expect(storage.getItem("hq:v1")).toContain('"b1Unlocked":true');
   });
 });
