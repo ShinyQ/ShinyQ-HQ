@@ -294,6 +294,16 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ## Floor mounting and render budget
 
+### Floor order and the secret floor
+
+- `FLOOR_IDS` (`src/experience/config.ts`) lists every floor bottom up, B1 first: `["B1", "L1", "L2", "L3", "L4", "RF"]`.
+  - `floorY(id)` is `(floorIndex(id) - floorIndex("L1")) * FLOOR_GAP`, so L1 stays at y 0, every public floor keeps its height and B1 sits one gap below (y -14); ride time by index distance stays correct.
+  - `PUBLIC_FLOORS` (`src/lib/floors.ts`, L1 to RF) is the list visitors tour: visit tracking, floor lines, missions, OG stills, picker thumbnails and the build dashboard never include B1.
+  - `towerFloors(b1Unlocked)` is what the tower draws and the elevator serves (`PUBLIC_FLOORS`, plus B1 once unlocked); `shaftSpan(floors)` sizes the glass shaft (the old box while locked) and `ElevatorShaft` draws a stop label per drawn floor.
+- The store's `b1Unlocked` / `unlockB1()` gate the floor (not persisted in this PR; `?unlock=b1`, in production with `debug`: [B1 access](floor-b1-engine-room.md#access)). The elevator, deep links and a language-switch resume go through `canEnterFloor` (`src/experience/b1.ts`).
+- Locked sessions mount nothing of B1: no floor content, no chunk request, no drawer data.
+- Below the Lobby there is no sky: while `underground(roverRuntime.y)` (y below `UNDERGROUND_BELOW`, -0.5) `SkyController` hides the sky group and holds night (probe `__hq.sky.underground`, see "Day and night").
+
 ### What mounts and draws
 
 - Floors above the rover render as ghosts each frame (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`.
@@ -429,9 +439,10 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - On the full tier the two meshes mount only once the lazy composer is live; earlier, the frame-3 precompile would compile a canvas variant of the holo program.
 - Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
 - The RF star dome (`floors/roof/Sky.tsx`) fades with `skyRuntime.stars`.
-- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, applied }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications), read from `skyRuntime`.
+- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, applied, underground }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications, `underground` is true below the Lobby), read from `skyRuntime`.
 - Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `day-night-setting.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (still held night under automation without a drawn sky, the sessionStorage opt-in, held night for a visitor, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
-- Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite).
+- Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite). `bun scripts/b1-shots.ts --base <url> --out <dir>` captures B1 (arrival, aisle, each station's drawer; desktop full and phone lite) with the dev flag.
+- B1 is underground: no dome, sun or moon below `UNDERGROUND_BELOW`; the night state holds, so the lights and fog stay at today's look.
 - Budgets are authoritative in `e2e/budgets.ts` (3D bytes, draw calls, triangles) and `e2e/perf/baseline.json` (shader programs, memory); this section keeps only the invariants above.
 
 ## Store additions beyond appendix 06
@@ -445,6 +456,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 | `topics` | L4 Topic Constellation: the picked `topic` with its rooms. Not persisted; the hash `#library-topic=<slug>` carries it |
 | `reactor` | L3 Tech Reactor: drawer `ring`, picked `tech` with its pod slugs, Surprise me `spin` counter. Not persisted; the hash `#labs-tech=<slug>` carries the pick through `createReactorHashSync` in `floors/labs/reactorUrl.ts` |
 | `ride` | elevator ride state |
+| `b1Unlocked` | the B1 Engine Room is reachable; `unlockB1()` sets it (session only for now) |
 | `device` | `viewport`, `camera`, `coarse` |
 | `reducedMotion` | effective: `resolveReducedMotion(motion, systemReducedMotion)` |
 | `motion` | the Motion setting |
@@ -515,7 +527,7 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `interact` | `interactRuntime`: the current floor's `items`, `project`, `screenOf(id)`, `screenAt(id, fx, fz, lift)`, `hitAt(x, y)` (the click raycast) and `highlight` |
   | `memory()` | the live `renderer.info` geometries, textures and program count (null without a canvas) |
   | `motion()` | the live ride and beam (`{ ride, beam }`, the store only holds their stage starts) |
-  | `sky` | `{ phase, day, stars, source, fog, applied }` of the day and night cycle (see "Day and night") |
+  | `sky` | `{ phase, day, stars, source, fog, applied, underground }` of the day and night cycle (see "Day and night") |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.
 - The rover hides during the hologram view; pod labels too.

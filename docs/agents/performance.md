@@ -159,10 +159,14 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
+| `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
 | `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` | the full suite |
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |
 
+- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`.
+- `scripts/b1-shots.ts` (like the other capture scripts) is offline tooling: it runs no spec.
+- The perf planner (`scripts/perf-plan.ts`, PR CI only) maps the lazy B1 files (`floors/engine/**`, `EngineRoom.tsx`, `chunks/engine.ts`, `EngineBody`, `room-views/engine.ts`) to `bytes`, `floor:B1` and `ride:B1`. `floors/engine/layout.ts` and `src/experience/b1.ts` are on the main 3D path (the tower, the registry and the store read them), so they keep the full lane.
 - Options: `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`).
 - When you add a spec or a folder, add its rule (a unit test checks every spec is known).
 

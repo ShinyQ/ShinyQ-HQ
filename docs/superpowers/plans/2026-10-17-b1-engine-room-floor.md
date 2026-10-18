@@ -1,6 +1,6 @@
 # B1 Engine Room, PR 2: The Floor Implementation Plan
 
-Status: planned (PR 2 of 3)
+Status: in review (PR 2 of 3)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -71,8 +71,8 @@ This PR adds (owner-approved by the spec): B1 chunk 16 KB gzip (`BYTES_3D_BUDGET
 
 #197 merged as 1bcd491d; branch from `origin/main` at or after it. It changed `tower/FloorLevel.tsx` (intro ghosting, `introGhost`), `tower/visibility.ts` (`introFly`), `camera/collision.ts` (`cameraWorld` adds the shaft as a column, `SHAFT_COLUMN`, `viewOnSlab`, `clampCamera(..., fov)`) and added the `tests/unit/camera-collision.test.ts` case "leaves every floor's default views alone", which iterates every layout of `buildFloorLayouts`, so B1's spawn, approach and arrival views are checked by it.
 
-- [ ] `git fetch origin && git log --oneline -1 origin/main` shows 1bcd491d or later; branch from it.
-- [ ] Re-checks this plan relies on (each task says when): Task 1 runs `tests/unit/camera-collision.test.ts` with B1 in the layouts; Task 3 reads the current `FloorLevel.tsx` and `visibility.ts` before editing and runs `tests/unit/tower-visibility.test.ts`.
+- [x] `git fetch origin && git log --oneline -1 origin/main` shows 1bcd491d or later; branch from it.
+- [x] Re-checks this plan relies on (each task says when): Task 1 runs `tests/unit/camera-collision.test.ts` with B1 in the layouts; Task 3 reads the current `FloorLevel.tsx` and `visibility.ts` before editing and runs `tests/unit/tower-visibility.test.ts`.
 
 ## File structure
 
@@ -124,7 +124,7 @@ B1 becomes a `FloorId` with a real, pure layout, while every visitor-facing list
   - `buildExperienceData(locale, floorNames: Record<PublicFloor, string>)` (B1's name comes from `messages.floors.B1`).
   - `nearFloors(floor, target, exterior, reach = 1, warm = null, floors: readonly FloorId[] = PUBLIC_FLOORS)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/floor-ids.test.ts`:
 
@@ -262,12 +262,12 @@ const ZONE_ID: Record<FloorId, string> = { B1: "B1:arrival", L1: "L1:arrival", L
 
 `tests/content/floor-thumbs.test.ts`: iterate `PUBLIC_FLOORS` (from `@/lib/floors`) instead of `FLOOR_IDS`: the picker thumbnails cover the public floors only.
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `bunx vitest run tests/unit/floor-ids.test.ts tests/unit/engine-layout.test.ts`
 Expected: FAIL (`@/lib/floors` and `@/experience/floors/engine/layout` do not exist; `FloorIdSchema` has no B1).
 
-- [ ] **Step 3: The public floor list and the schema**
+- [x] **Step 3: The public floor list and the schema**
 
 `src/lib/floors.ts`:
 
@@ -299,7 +299,7 @@ export const RoomIdSchema = z
   .regex(/^(L1|L2|L3|L4|RF|B1):[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected FloorId:slug");
 ```
 
-- [ ] **Step 4: The B1 layout (pure, main path)**
+- [x] **Step 4: The B1 layout (pure, main path)**
 
 `src/experience/floors/engine/layout.ts`:
 
@@ -477,7 +477,7 @@ export function buildEngineLayout(): EngineLayout {
 }
 ```
 
-- [ ] **Step 5: Floor ids, heights and per-floor records in `src/experience/config.ts`**
+- [x] **Step 5: Floor ids, heights and per-floor records in `src/experience/config.ts`**
 
 ```ts
 import { PUBLIC_FLOORS, SECRET_FLOOR } from "@/lib/floors";
@@ -510,7 +510,7 @@ export function shaftSpan(floors: readonly FloorId[]): { bottom: number; height:
 
 `floorAt` keeps indexing `FLOOR_IDS`. Add `B1: Math.PI / 2` to `ELEVATOR_PAD_FACE` and `B1: -Math.PI / 2` to `RETURN_PAD_FACE`, and in `buildFloorLayouts` add `B1: buildEngineLayout().floor,` (comment: "B1 Engine Room: the aisle, seven bays and the workbench (floors/engine/layout.ts)"). `withFloorPads` already runs over `FLOOR_IDS`.
 
-- [ ] **Step 6: Every other `Record<FloorId, ...>` and the public-floor guards**
+- [x] **Step 6: Every other `Record<FloorId, ...>` and the public-floor guards**
 
 - `src/lib/url-sync.ts` `FLOOR_ROUTE`: `B1: "/"` with the comment "B1 has no route: its URL stays the Lobby's (/{locale}); its Classic counterpart is /build (`FLOOR_PATHS`)". `parseHQUrl` never matches "/" to a section, and `serializeHQUrl` writes `/{locale}` for B1.
 - `src/experience/missions/rooms.ts` `FLOOR_PATHS`: `B1: "/build"`.
@@ -541,7 +541,7 @@ function resolveTarget(base: FloorId, target: ElevatorTarget): FloorId | undefin
 - `src/experience/Experience.tsx` ambience: `audio.setFloor(isPublicFloor(f) ? f : null)` at both call sites (B1 is silent until Task 6 adds its layer).
 - `src/components/build/BuildDashboard.tsx`: `dashboardTiles(getBuildFacts(), PUBLIC_FLOORS.length)` and drop the `FloorIdSchema` import (the dashboard's "Floors in the 3D tower" stays 5: B1 is secret).
 
-- [ ] **Step 7: `ExperienceData.engine` and the B1 station titles**
+- [x] **Step 7: `ExperienceData.engine` and the B1 station titles**
 
 `src/experience/types.ts`:
 
@@ -592,7 +592,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
 }
 ```
 
-- [ ] **Step 8: B1 stations in the point-and-go registry**
+- [x] **Step 8: B1 stations in the point-and-go registry**
 
 `src/experience/interact/registry.ts`:
 
@@ -615,12 +615,12 @@ import { buildEngineLayout, ENGINE } from "../floors/engine/layout";
 
 Ids are `B1:station:<station>` (`door.room.slice(3)`), so `tests/unit/interact-registry.test.ts` (which loops over `FLOOR_IDS`) covers B1 with no change.
 
-- [ ] **Step 9: Messages (both files, identical keys)**
+- [x] **Step 9: Messages (both files, identical keys)**
 
 `messages/en.json`: `floors.B1: "Engine Room"`; `hud.floorLabel.B1: "Build"`; `hud.pads.floorDesc.B1: "How this site was built: five stations"`; a new `hud.engine` object `{ "title": "Engine Room", "subtitle": "How this site was built", "soon": "Coming soon" }`.
 `messages/id.json`: `floors.B1: "Ruang Mesin"`; `hud.floorLabel.B1: "Pembuatan"`; `hud.pads.floorDesc.B1: "Cara situs ini dibuat: lima stasiun"`; `hud.engine` `{ "title": "Ruang Mesin", "subtitle": "Cara situs ini dibuat", "soon": "Segera hadir" }`.
 
-- [ ] **Step 10: Run the tests and the type check**
+- [x] **Step 10: Run the tests and the type check**
 
 Run: `bunx vitest run tests/unit/floor-ids.test.ts tests/unit/engine-layout.test.ts tests/unit/arrivals.test.ts tests/unit/floor-pads.test.ts tests/unit/interact-registry.test.ts tests/unit/camera-collision.test.ts tests/content/floor-thumbs.test.ts tests/unit/build-page.test.ts`
 Expected: PASS. If an `arrivals` sight or the "default views alone" check (#197) fails for B1, move `ENGINE.arrival.x` east or west in 2 u steps, or lower `arrivalZoomPhone` by 0.05, keeping `arrival.x > approach.x + 5`; do not change other floors.
@@ -628,7 +628,7 @@ Expected: PASS. If an `arrivals` sight or the "default views alone" check (#197)
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS (the compiler finds any `Record<FloorId, ...>` still missing B1; add its entry following Step 6).
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/lib/floors.ts src/experience/floors/engine/layout.ts src/content/schema.ts src/experience/config.ts src/lib/url-sync.ts src/experience/missions/rooms.ts src/experience/tower src/lib/accent.ts src/hud src/store/useHQStore.ts src/experience/Experience.tsx src/experience/types.ts src/content/experience.ts src/content/experience-floors.ts src/experience/interact/registry.ts src/components/build/BuildDashboard.tsx messages tests
@@ -652,7 +652,7 @@ git commit -m "feat(b1): B1 floor id, public floor list and the Engine Room layo
   - `src/hud/floorRows.ts`: `interface FloorRow { id: FloorId; locked: boolean }`, `floorRows(b1Unlocked: boolean): FloorRow[]` (top-down; PR 3 adds the locked B1 row).
   - `floorOptions(current: FloorId, label: (f: FloorId) => string, describe: (f: FloorId) => string, b1Unlocked = false): PickerOption[]` (B1 has no thumbnail).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/b1-unlock-flag.test.ts`:
 
@@ -735,12 +735,12 @@ describe("B1 unlock flag (dev and test only)", () => {
   });
 ```
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `bunx vitest run tests/unit/b1-unlock-flag.test.ts tests/unit/pad-picker.test.ts tests/hud/FloorChip.test.tsx`
 Expected: FAIL (`@/experience/b1` and `@/hud/floorRows` are missing; the store has no `unlockB1`).
 
-- [ ] **Step 3: `src/experience/b1.ts`**
+- [x] **Step 3: `src/experience/b1.ts`**
 
 ```ts
 import type { FloorId } from "@/content/schema";
@@ -764,7 +764,7 @@ export function canEnterFloor(floor: FloorId, b1Unlocked: boolean): boolean {
 }
 ```
 
-- [ ] **Step 4: `src/hud/floorRows.ts`**
+- [x] **Step 4: `src/hud/floorRows.ts`**
 
 ```ts
 import type { FloorId } from "@/content/schema";
@@ -783,7 +783,7 @@ export function floorRows(b1Unlocked: boolean): FloorRow[] {
 }
 ```
 
-- [ ] **Step 5: Store flag and the elevator guard**
+- [x] **Step 5: Store flag and the elevator guard**
 
 `src/store/useHQStore.ts`:
 
@@ -807,7 +807,7 @@ function resolveTarget(base: FloorId, target: ElevatorTarget, b1Unlocked: boolea
 
 `partialize` stays as it is (the flag is not persisted in PR 2). Drop the Task 1 `isPublicFloor` import if it is now unused.
 
-- [ ] **Step 6: Apply the flag at session start; a resume never lands on a locked B1**
+- [x] **Step 6: Apply the flag at session start; a resume never lands on a locked B1**
 
 `src/experience/Experience.tsx`, in `startSession` right after `s.setDevice(readDevice());`:
 
@@ -824,7 +824,7 @@ and replace `const resume = first ? takeResume() : null;` with:
   const resume = taken && canEnterFloor(taken.floor, getHQStore().getState().b1Unlocked) ? taken : null;
 ```
 
-- [ ] **Step 7: Rows in the rail, the floor sheet and the call pad picker**
+- [x] **Step 7: Rows in the rail, the floor sheet and the call pad picker**
 
 `src/hud/FloorButtons.tsx`: delete `TOP_DOWN`, read the flag and map the rows:
 
@@ -850,7 +850,7 @@ export function floorOptions(current: FloorId, label: (floor: FloorId) => string
 
 `src/hud/pads/PadPicker.tsx`: `const b1Unlocked = useHQStore((s) => s.b1Unlocked);` and pass it as the fourth argument of `floorOptions`.
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/unit/b1-unlock-flag.test.ts tests/unit/pad-picker.test.ts tests/hud/FloorChip.test.tsx tests/hud/PadPicker.test.tsx tests/unit/floor-ids.test.ts`
 Expected: PASS.
@@ -858,7 +858,7 @@ Expected: PASS.
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/experience/b1.ts src/hud/floorRows.ts src/store/useHQStore.ts src/experience/Experience.tsx src/hud/FloorButtons.tsx src/hud/pads tests
@@ -879,7 +879,7 @@ Read the current (post-#197) `src/experience/tower/FloorLevel.tsx` and `src/expe
 - Consumes: `towerFloors`, `shaftSpan`, `nearFloors(..., floors)` (Task 1), store `b1Unlocked` (Task 2), `contentVisible`, `floorContentVisible`, `belowParkedCar` (unchanged), `roverRuntime.y`.
 - Produces: `underground(roverY: number): boolean` and `UNDERGROUND_BELOW = -0.5` in `sky/dayNight.ts`; `skyRuntime.underground: boolean` (probe, read by Task 7 through `__hq.sky`); `ElevatorShaft` prop `floors: readonly FloorId[]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/day-night.test.ts`:
 
@@ -929,12 +929,12 @@ describe("a floor below the Lobby (B1)", () => {
 });
 ```
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `bunx vitest run tests/unit/day-night.test.ts tests/unit/tower-visibility.test.ts`
 Expected: FAIL on the missing `underground` export (the visibility cases already pass: they pin today's rules for B1).
 
-- [ ] **Step 3: The tower draws `towerFloors(b1Unlocked)`**
+- [x] **Step 3: The tower draws `towerFloors(b1Unlocked)`**
 
 `src/experience/tower/Tower.tsx`:
 
@@ -955,7 +955,7 @@ import { COLORS, floorY, SHAFT, towerFloors } from "../config";
 
 The tower outline (`towerFrame`, `FRAME_TOP`) stays around L1 to RF: B1 is a basement under it.
 
-- [ ] **Step 4: The shaft spans the tower's floors**
+- [x] **Step 4: The shaft spans the tower's floors**
 
 `src/experience/tower/ElevatorShaft.tsx`: delete `TOP` and `HEIGHT`, import `shaftSpan`, and:
 
@@ -985,7 +985,7 @@ export function ElevatorShaft({ layouts, near, floors }: { layouts: Record<Floor
 
 With the five public floors `shaftSpan` returns the old box exactly (bottom -0.4, height 64.4), so locked sessions keep today's pixels. `GlassBox` re-memoizes and disposes its geometries when the height changes.
 
-- [ ] **Step 5: No sky underground**
+- [x] **Step 5: No sky underground**
 
 `src/experience/sky/dayNight.ts`:
 
@@ -1024,7 +1024,7 @@ import { clockPhase, createSkyState, parseSkyParam, parseSkyValue, resolveSkyMod
 
 Fog near and far stay with `CameraDirector`; the scene lights, background and fog color hold night while underground. No light is added for B1 (a new light would change every lit program).
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `bunx vitest run tests/unit/day-night.test.ts tests/unit/tower-visibility.test.ts tests/unit/floor-ids.test.ts tests/unit/holo-sky.test.ts`
 Expected: PASS.
@@ -1032,7 +1032,7 @@ Expected: PASS.
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/experience/tower/Tower.tsx src/experience/tower/ElevatorShaft.tsx src/experience/sky tests/unit/day-night.test.ts tests/unit/tower-visibility.test.ts
@@ -1059,7 +1059,7 @@ The floor itself, in its own chunk: bay shells, rack rows, the workbench, pipes 
   - `floorPrefetch.ts`: `PrefetchSnapshot.b1Unlocked?: boolean`, `PrefetchSnapshot.idle?: boolean`.
   - `TowerLabels.engine: EngineLabels`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/engine-scenery.test.ts`:
 
@@ -1140,12 +1140,12 @@ describe("B1 Engine Room scenery", () => {
 
 `tests/unit/floating-sign.test.ts`: add `"floors/engine/EngineFx.tsx"` to the instanced-holo file list.
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `bunx vitest run tests/unit/engine-scenery.test.ts tests/unit/floor-chunks.test.ts tests/unit/floor-prefetch.test.ts tests/unit/floor-chunks-graph.test.ts tests/unit/floating-sign.test.ts`
 Expected: FAIL (missing modules, B1 not lazy).
 
-- [ ] **Step 3: The pure scenery**
+- [x] **Step 3: The pure scenery**
 
 `src/experience/floors/engine/scenery.ts`:
 
@@ -1353,7 +1353,7 @@ export function engineSigns(layout: EngineLayout, data: EngineData, labels: Engi
 }
 ```
 
-- [ ] **Step 4: The two instanced holo draws**
+- [x] **Step 4: The two instanced holo draws**
 
 `src/experience/floors/engine/EngineFx.tsx`:
 
@@ -1448,7 +1448,7 @@ export function PanelMesh({ items, tier }: { items: readonly PanelInstance[]; ti
 
 Reduced motion freezes both (`useUniformTime` stops `uTime`): pipes and LEDs hold still, screens stop falling.
 
-- [ ] **Step 5: The floor component and the chunk entry**
+- [x] **Step 5: The floor component and the chunk entry**
 
 `src/experience/floors/EngineRoom.tsx`:
 
@@ -1503,7 +1503,7 @@ export { EngineRoom } from "../EngineRoom";
 
 `MergedBoxes` and `MergedEdges` come from the RF chunk's `roof/kit.tsx`; the bundler moves that module into a shared async chunk, which `bytes-3d` counts toward RF (the floor loaded first, as with L3 and L4 today).
 
-- [ ] **Step 6: B1 as a lazy floor, prefetched only when unlocked**
+- [x] **Step 6: B1 as a lazy floor, prefetched only when unlocked**
 
 `src/experience/floors/floorChunks.ts`:
 
@@ -1592,7 +1592,7 @@ export function FloorChunkPrefetch() {
 
 (Update its doc comment: "every public lazy floor once the first frame is drawn and the page is idle, B1 too once unlocked".) (`afterFirstFrameIdle` returns its cancel function.)
 
-- [ ] **Step 7: Mount it in the tower and pass the labels**
+- [x] **Step 7: Mount it in the tower and pass the labels**
 
 `src/experience/tower/Tower.tsx`:
 
@@ -1611,7 +1611,7 @@ import { engineFloor, labsFloor, libraryFloor, roofFloor, useFloorChunks } from 
 
 `src/experience/Experience.tsx`, in the `labels` memo after `roof`: `engine: { title: t("engine.title"), subtitle: t("engine.subtitle"), soon: t("engine.soon") },`.
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `bunx vitest run tests/unit/engine-scenery.test.ts tests/unit/floor-chunks.test.ts tests/unit/floor-prefetch.test.ts tests/unit/floor-chunks-graph.test.ts tests/unit/floating-sign.test.ts tests/unit/three-disposal.test.ts tests/unit/floor-text.test.ts`
 Expected: PASS.
@@ -1619,7 +1619,7 @@ Expected: PASS.
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/experience/floors src/experience/tower/Tower.tsx src/experience/Experience.tsx tests/unit
@@ -1644,7 +1644,7 @@ Each lit bay opens the Glass Drawer on a `B1:<station>` room with an Engine Room
   - `src/content/room-views/types.ts`: `EngineShot`, `RoomEngine` (fields below), `RoomView.engine?: RoomEngine`.
   - `buildEngineViews(locale: Locale): RoomView[]`, `RoomKind` `"engine"`, `EngineBody({ view, locale }: RoomBodyProps)` with root `data-engine-station={station}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/engine-views.test.ts`:
 
@@ -1752,12 +1752,12 @@ describe("EngineBody (B1 station drawers)", () => {
 
 `tests/unit/floor-chunks-graph.test.ts`: add `"src/hud/drawer/EngineBody.tsx"` to `LAZY_ONLY` and `expect(staticClosure("src/experience/floors/chunks/engine.ts").has("src/hud/drawer/EngineBody.tsx")).toBe(true);`.
 
-- [ ] **Step 2: Run them and see them fail**
+- [x] **Step 2: Run them and see them fail**
 
 Run: `bunx vitest run tests/unit/engine-views.test.ts tests/hud/EngineBody.test.tsx tests/unit/floor-chunks-graph.test.ts`
 Expected: FAIL (no B1 views, no `EngineBody`).
 
-- [ ] **Step 3: A client-safe diagram drawing and shared diagram text**
+- [x] **Step 3: A client-safe diagram drawing and shared diagram text**
 
 `src/components/diagram/metrics.ts`:
 
@@ -1813,7 +1813,7 @@ export function diagramSummary(
 
 The Classic page output is unchanged (`tests/unit/diagram-layout.test.ts`, `tests/unit/post-diagrams.test.ts` and `e2e/pageview.spec.ts` cover it; add both unit files to Step 7's run).
 
-- [ ] **Step 4: The room view contract**
+- [x] **Step 4: The room view contract**
 
 `src/content/room-views/types.ts`:
 
@@ -1852,7 +1852,7 @@ export interface RoomEngine {
 
 `src/experience/missions/rooms.ts`: add `"engine"` to `RoomKind`. B1 rooms are not in the room catalog (no Cmd-K row and no Classic search entry in PR 2); the drawer opens them through `openRoom` and the point-and-go registry.
 
-- [ ] **Step 5: Build the views**
+- [x] **Step 5: Build the views**
 
 `src/content/room-views/engine.ts`:
 
@@ -1973,7 +1973,7 @@ export function buildEngineViews(locale: Locale): RoomView[] {
 
 `src/content/room-views/index.ts`: import `buildEngineViews` and append `...buildEngineViews(locale)` after the roof views.
 
-- [ ] **Step 6: The client body (B1 chunk only)**
+- [x] **Step 6: The client body (B1 chunk only)**
 
 `src/hud/drawer/EngineBody.tsx`:
 
@@ -2107,7 +2107,7 @@ const EngineBody = chunkBody(() => floorChunks.load("B1").then((m) => m.EngineBo
 
 `src/experience/Experience.tsx` `hasPage`: add `&& !room.startsWith("B1:")` (B1 rooms keep the floor URL, `/{locale}`, and are remembered in the history entry).
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `bunx vitest run tests/unit/engine-views.test.ts tests/hud/EngineBody.test.tsx tests/unit/floor-chunks-graph.test.ts tests/unit/room-views.test.ts tests/unit/client-namespaces.test.ts tests/unit/diagram-layout.test.ts tests/unit/post-diagrams.test.ts tests/hud/RoomDrawer.test.tsx`
 Expected: PASS.
@@ -2115,7 +2115,7 @@ Expected: PASS.
 Run: `bun run typecheck && bun run lint && bun run test && bun run build`
 Expected: PASS; `out/data/rooms/en.json` contains `"B1:blueprint"` (`grep -c '"B1:blueprint"' out/data/rooms/en.json` prints at least 1) and `bun scripts/check-client-chunks.ts` (part of the build) reports no zod or content loader in a client chunk.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/components src/content/room-views src/experience/missions/rooms.ts src/hud/drawer src/experience/floors/chunks/engine.ts src/experience/Experience.tsx tests
@@ -2134,7 +2134,7 @@ The ambience system takes one layer per floor (`AMBIENCE_LAYERS`), so B1 gets a 
 - Consumes: `createKit`, `lowpass`, `noiseLoop`, `midiToHz`, `Track` (in `ambience.ts`).
 - Produces: `AmbienceFloor` adds `"B1"`; `AMBIENCE_FLOORS` ends with `"B1"`; `B1_HUM_MIDI = [36, 43]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/unit/audio-ambience.test.ts`:
 
@@ -2148,12 +2148,12 @@ The ambience system takes one layer per floor (`AMBIENCE_LAYERS`), so B1 gets a 
 
 (import `B1_HUM_MIDI` from `@/lib/audio/ambience`).
 
-- [ ] **Step 2: Run it and see it fail**
+- [x] **Step 2: Run it and see it fail**
 
 Run: `bunx vitest run tests/unit/audio-ambience.test.ts`
 Expected: FAIL (`B1_HUM_MIDI` is not exported).
 
-- [ ] **Step 3: The layer**
+- [x] **Step 3: The layer**
 
 `src/lib/audio/ambience.ts`:
 
@@ -2230,7 +2230,7 @@ function createEngineLayer(ctx: BaseAudioContext, destination: AudioNode, random
 
 `src/lib/audio/README.md`: add the row `| B1 Engine Room | Machine hum | Two detuned sawtooth pairs on C2 and G2 under a 180 Hz lowpass, a band-passed noise bed as air handling, and a soft G5 relay tick every 3 to 6 s |` and "(`\"L1\"` to `\"RF\"`, and `\"B1\"`)" in the `setFloor` row.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `bunx vitest run tests/unit/audio-ambience.test.ts tests/unit/audio.test.ts`
 Expected: PASS (B1 included in the bounded-notes, cleanup and pentatonic checks).
@@ -2238,9 +2238,9 @@ Expected: PASS (B1 included in the bounded-notes, cleanup and pentatonic checks)
 Run: `bun run typecheck && bun run lint && bun run test`
 Expected: PASS.
 
-- [ ] **Step 5: Listen once** (`bun run dev`, open `/en?unlock=b1`, sound and Floor ambience on, ride to B1): the hum sits under the music like the other layers; if it is louder, lower `B1_HUM_LEVEL` in steps of 0.01.
+- [x] **Step 5: Listen once** (`bun run dev`, open `/en?unlock=b1`, sound and Floor ambience on, ride to B1): the hum sits under the music like the other layers; if it is louder, lower `B1_HUM_LEVEL` in steps of 0.01.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/audio src/experience/Experience.tsx tests/unit/audio-ambience.test.ts
@@ -2258,7 +2258,7 @@ git commit -m "feat(audio): B1 Engine Room machine hum ambience layer"
 - Consumes: `asReturningVisitor`, `collectErrors`, `expectRenderBudget`, `snapshot`, `targetPoint`, `visibleTarget`, `waitForCameraSettle`, `waitForFloor`, `waitForHQ`, `waitForPhase`, `waitForRoom`, `waitForSceneLive`, `readSettledGpuCounters`, `readJsHeapAfterGc`, `expectNoGpuGrowth`, `chooseMotion` (`e2e/hq.ts`); `FLOOR_SCENE_CAPS`, `GPU_MEMORY_BUDGET` (`e2e/budgets.ts`; Task 8 adds `B1`); `ENGINE`, `ENGINE_STATIONS` (Task 1); `ARRIVAL_HEADING` (`src/experience/camera/arrival.ts`).
 - Produces (`e2e/b1.ts`, used by Task 8, Task 9 and PR 3): `B1_QUERY = "unlock=b1&debug=1"`, `enterB1Route(page: Page, path?: string, tier?: string): Promise<void>`, `rideTo(page: Page, floor: string): Promise<void>`; `FLOOR_SCENE_CAPS.B1 = 100`, `BYTES_3D_BUDGET.floors.B1 = 16 * 1024`, `BYTES_3D_BUDGET.sessionFloors = ["L3", "L4", "RF"]`.
 
-- [ ] **Step 1: Helpers and the B1 budget numbers**
+- [x] **Step 1: Helpers and the B1 budget numbers**
 
 `e2e/budgets.ts` (owner-approved by the spec: "floor chunk cap about 16 KB gzip"; decision: "a FLOOR_SCENE_CAPS entry for B1 at or below 100"):
 
@@ -2301,7 +2301,7 @@ export async function rideTo(page: Page, floor: string) {
 }
 ```
 
-- [ ] **Step 2: The spec**
+- [x] **Step 2: The spec**
 
 `e2e/engine-room.spec.ts`:
 
@@ -2426,7 +2426,7 @@ test("rides from the roof down to B1 and back up to the Lobby", async ({ page })
 });
 ```
 
-- [ ] **Step 3: The memory gate for B1 rides**
+- [x] **Step 3: The memory gate for B1 rides**
 
 `e2e/memory.spec.ts`, a third test using the same reduced-motion setup:
 
@@ -2452,7 +2452,7 @@ test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ p
 });
 ```
 
-- [ ] **Step 4: Plan rules**
+- [x] **Step 4: Plan rules**
 
 `scripts/e2e-plan.ts`: add `"engine-room"` to `ALL_SPECS` (alphabetical), and before the floor chunk rule (`^src\/experience\/floors\/(floorChunks|...)`) add:
 
@@ -2471,12 +2471,12 @@ test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ p
   });
 ```
 
-- [ ] **Step 5: Run**
+- [x] **Step 5: Run**
 
 Run: `bunx vitest run tests/unit/e2e-plan.test.ts` (PASS), then `bun run build` and `E2E_PORT=4433 bunx playwright test e2e/engine-room.spec.ts e2e/memory.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add e2e/b1.ts e2e/engine-room.spec.ts e2e/memory.spec.ts e2e/budgets.ts scripts/e2e-plan.ts tests/unit/e2e-plan.test.ts
@@ -2493,9 +2493,9 @@ git commit -m "test(b1): e2e for the Engine Room floor, its rides, drawers and m
 - Consumes: `enterB1Route`, `rideTo` (Task 7).
 - Produces: baseline entries `programs.lite.B1` and `programs.full.B1`; the bytes gate's session total over `BYTES_3D_BUDGET.sessionFloors`.
 
-- [ ] **Step 1: The numbers** are in `e2e/budgets.ts` since Task 7 (`FLOOR_SCENE_CAPS.B1` 100, `BYTES_3D_BUDGET.floors.B1` 16 KB, `sessionFloors`); this task makes the perf lane use them.
+- [x] **Step 1: The numbers** are in `e2e/budgets.ts` since Task 7 (`FLOOR_SCENE_CAPS.B1` 100, `BYTES_3D_BUDGET.floors.B1` 16 KB, `sessionFloors`); this task makes the perf lane use them.
 
-- [ ] **Step 2: Bytes gate: B1 capped on its own, not in the session total**
+- [x] **Step 2: Bytes gate: B1 capped on its own, not in the session total**
 
 `e2e/perf/bytes-3d.spec.ts`: the floor loop already runs over `Object.keys(BYTES_3D_BUDGET.floors)` (B1 last). Replace the session sum:
 
@@ -2506,7 +2506,7 @@ git commit -m "test(b1): e2e for the Engine Room floor, its rides, drawers and m
 
 and the log line's "floor chunks" with "public floor chunks". `scripts/perf-report.ts`: type `floors?: Partial<Record<keyof typeof BYTES_3D_BUDGET.floors, number>>` and the sentence "Session total with every public floor chunk".
 
-- [ ] **Step 3: Settled B1 in `floors.spec.ts`**
+- [x] **Step 3: Settled B1 in `floors.spec.ts`**
 
 Move the body of the per-floor test into `async function measureFloor(page: Page, tier: "lite" | "full", floor: string)` (everything after `enterFloorRoute`), keep the loop calling it, and add:
 
@@ -2523,7 +2523,7 @@ for (const tier of ["lite", "full"] as const) {
 }
 ```
 
-- [ ] **Step 4: Ride peaks to B1 in `peaks.spec.ts`**
+- [x] **Step 4: Ride peaks to B1 in `peaks.spec.ts`**
 
 ```ts
 import { enterB1Route } from "../b1";
@@ -2537,7 +2537,7 @@ import { enterB1Route } from "../b1";
     else await enterFloorRoute(page, ROUTE[from], { tier });
 ```
 
-- [ ] **Step 5: Measure** (one run at a time on this machine; build first)
+- [x] **Step 5: Measure** (one run at a time on this machine; build first)
 
 ```bash
 bun run build
@@ -2552,7 +2552,7 @@ E2E_PORT=4433 bun run e2e:perf e2e/perf/memory-full.spec.ts
 
 Expected: B1 chunk under 16 KB gzip on both tiers; main path and session totals unchanged from main within 2 KB (the B1 layout, the flag and the rows are the only main-path additions); B1 settled under 100 scene calls and 30k triangles on both tiers; the regenerated baseline adds only `B1` (every other floor's count unchanged; if one moved, find out why before committing); B1 rides under 150 scene calls, 20 post passes and 30k triangles; the full-tier memory gate passes. If B1 is over 100 scene calls, merge more of the scenery (fold the panel instances into the flow draw) rather than raising the cap. Record every number in the PR text.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add e2e/perf scripts/perf-report.ts
@@ -2571,12 +2571,12 @@ Locked sessions must look exactly like main, and the owner reviews B1 before PR 
 - Consumes: `B1_QUERY` (Task 7), `__hq` probes, `ENGINE_STATIONS`.
 - Produces: `bun scripts/b1-shots.ts --base <url> --out <dir> [--only floor]`; files `<dir>/<name>-<w>x<h>.png` for `arrival`, `aisle`, `station-<id>` (PR 3 adds `locked-row`, `unlock-moment`, `unlocked-row` behind `--only unlock`).
 
-- [ ] **Step 1: The visual gate against main** (no B1 pixels for a locked visitor)
+- [x] **Step 1: The visual gate against main** (no B1 pixels for a locked visitor)
 
 Run: `E2E_PORT=4433 bun scripts/visual-gate.ts --base origin/main --profile strict`
 Expected: PASS 48/48. A failing pose means something of B1 leaked into a locked session (the shaft, the tower frame, a slab, the sky): fix it, do not loosen the profile.
 
-- [ ] **Step 2: The capture script**
+- [x] **Step 2: The capture script**
 
 `scripts/b1-shots.ts`:
 
@@ -2685,7 +2685,7 @@ try {
 }
 ```
 
-- [ ] **Step 3: Capture and hand over**
+- [x] **Step 3: Capture and hand over**
 
 ```bash
 bun run build
@@ -2695,7 +2695,7 @@ bun scripts/b1-shots.ts --base http://127.0.0.1:4300 --out screenshots/b1
 
 Stop the server (`kill <pid>`). Expected: 14 PNGs (arrival, aisle, five stations, two sizes). Send them to the coordinator; the owner reviews them together with PR 3's locked row and unlock moment, captured from the PR 3 branch stacked on this one.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/b1-shots.ts
@@ -2708,7 +2708,7 @@ git commit -m "chore(b1): capture script for the owner's B1 review"
 - Create: `docs/agents/floor-b1-engine-room.md`
 - Modify: `docs/features.md`, `docs/agents/floors.md`, `docs/agents/3d-experience.md`, `docs/agents/hud-and-drawer.md`, `docs/agents/performance.md`, `docs/agents/content.md`, `AGENTS.md`, `docs/superpowers/README.md`, this plan (status line)
 
-- [ ] **Step 1: Current-state docs** (no history in `docs/agents/`)
+- [x] **Step 1: Current-state docs** (no history in `docs/agents/`)
 
 - `docs/agents/floor-b1-engine-room.md` (new, same shape as `floor-rf-roof.md`): Layout (`ENGINE`, seven bays alternating north and south from x -10 in 7 u steps, stations 1 to 5 lit, bays 6 and 7 dark, rack rows in the wall gaps, the workbench flush with the east edge, the call pad area, the Return pad at (40, 9), arrival (-12, 0) with `B1:arrival`, one zone per station and `B1:workbench`); Scenery (one merged solid mesh and its edges from the roof kit, `FlowMesh` on holo `strip` for pipes, trays, drops, front strips and rack LEDs, `PanelMesh` on holo `fall` for the screens, `FloatingSigns` for bay names, Coming soon plates and the workbench title; lite draws half the LEDs; reduced motion freezes `uTime`); Drawers (`B1:<station>` views from `room-views/engine.ts`, `EngineBody` in the B1 chunk, links to `/build#<station>`); Access (only `b1Unlocked`, set in PR 2 by `?unlock=b1`, in production with `debug`); Draw calls (measured numbers from Task 8, cap 100); Sky and sound (no dome underground, machine hum layer).
 - `docs/agents/floors.md`: per-floor file list adds B1; Ready floors lists `["B1", "L1", "L2", "L3", "L4", "RF"]` and says B1 has no route (URL `/{locale}`, Classic counterpart `/build`); Arrival list adds "B1 (-12, 0)"; the floor chunk table gains `| B1 | EngineRoom, EngineBody |`; the rule "Never import `Labs`, `Library`, `Roof`, `EngineRoom` or those HUD pieces statically"; prefetch: "B1 only once unlocked (idle, picker, call pad hover)"; Return pad table adds B1; point-and-go ids add `B1:station:<station>`; "Probes, tests and sizes" adds the B1 chunk size from Task 8.
@@ -2722,7 +2722,7 @@ git commit -m "chore(b1): capture script for the owner's B1 review"
 - `docs/decisions.md`: no new row unless the owner states a new decision in the capture review; then one dated row in the existing format, quoting the owner.
 - This plan: status line "Status: in review (PR 2 of 3)" and tick the boxes.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```bash
 bun run verify:quick

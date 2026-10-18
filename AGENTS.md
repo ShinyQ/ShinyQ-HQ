@@ -86,7 +86,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | Motion | Write reduce rules as `@variant motion-reduce`, never a bare `prefers-reduced-motion` query | [hud-and-drawer.md](docs/agents/hud-and-drawer.md) |
 | 3D memory | `useDispose(value)` after every memoized geometry, texture or material | [3d-experience.md](docs/agents/3d-experience.md) |
 | 3D loop | Animate with `useFrame` deltas; never start another rAF loop | [3d-experience.md](docs/agents/3d-experience.md) |
-| Floor chunks | Never import `Labs`, `Library`, `Roof` or their HUD pieces statically from the `Experience.tsx` closure | [floors.md](docs/agents/floors.md) |
+| Floor chunks | Never import `Labs`, `Library`, `Roof`, `EngineRoom` or their HUD pieces statically from the `Experience.tsx` closure | [floors.md](docs/agents/floors.md) |
 | Floor text | No words painted on a floor: use `FloatingSigns` | [floors.md](docs/agents/floors.md) |
 | Interaction | In-world targets go through the point-and-go registry; no navigation `onClick` on scene objects | [floors.md](docs/agents/floors.md) |
 | Audio | Use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext` | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) |
@@ -145,9 +145,9 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Budget | Limit |
 |---|---|
 | 3D JS on the first-frame path (`?prefetch=off`, per tier) | under 450 KB gzip |
-| 3D session total (main path plus all floor chunks) | full 470 KB, lite 446.4 KB gzip |
-| Floor chunks (incremental) | L3 20 KB, L4 16 KB, RF 8 KB gzip |
-| Scene draw calls per frame, any floor | under 150 (L1 125, RF 79); at most 20 post passes |
+| 3D session total (main path plus the public floor chunks) | full 470 KB, lite 446.4 KB gzip |
+| Floor chunks (incremental) | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip |
+| Scene draw calls per frame, any floor | under 150 (L1 125, RF 79, B1 100); at most 20 post passes |
 | Triangles per frame | under 30k |
 | Shader programs per floor | `e2e/perf/baseline.json` plus 2 |
 | Memory gates | zero growth in geometries, textures and programs; under 2 MB JS heap growth |
@@ -191,6 +191,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [floor-l3-labs.md](docs/agents/floor-l3-labs.md) | L3 Project Roads, Data and ML spine, Ops Control Room, Tech Reactor |
 | [floor-l4-library.md](docs/agents/floor-l4-library.md) | L4 Writing: newsroom, timeline, end plaza, Topic Constellation |
 | [floor-rf-roof.md](docs/agents/floor-rf-roof.md) | RF roof deck |
+| [floor-b1-engine-room.md](docs/agents/floor-b1-engine-room.md) | B1 Engine Room: layout, scenery, station drawers, access, budget |
 | [ask.md](docs/agents/ask.md) | Ask the HQ: pipeline, scope routing, UI, pack, CSP, credentials, CI around it |
 | [stats.md](docs/agents/stats.md) | Public visit stats: pipeline, beacon, opt-out, display |
 | [performance.md](docs/agents/performance.md) | Perf gates, measurement, RUM, fast verification, writing 3D tests |

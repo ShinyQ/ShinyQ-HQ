@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-79 plans: 52 shipped and still current, 24 shipped with a part later removed or replaced, 3 in review (see each plan's status line).
+82 plans: 52 shipped and still current, 24 shipped with a part later removed or replaced, 5 in review, 1 planned (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -86,6 +86,8 @@ Plans are history: they record what was decided and built at the time, and later
 | [Rover Idle Animations Implementation Plan](plans/2026-10-17-rover-idle.md) | shipped | [#188](https://github.com/ShinyQ/ShinyQ-HQ/pull/188) |
 | [Ask Pills 100 Implementation Plan](plans/2026-10-17-ask-pills-100.md) | shipped | [#187](https://github.com/ShinyQ/ShinyQ-HQ/pull/187) |
 | [B1 Engine Room, PR 1: Build Story Data and the Classic Page Implementation Plan](plans/2026-10-17-b1-build-story-page.md) | in review | [#190](https://github.com/ShinyQ/ShinyQ-HQ/pull/190) |
+| [B1 Engine Room, PR 2: The Floor Implementation Plan](plans/2026-10-17-b1-engine-room-floor.md) | in review |  |
+| [B1 Engine Room, PR 3: The Unlock Implementation Plan](plans/2026-10-17-b1-unlock.md) | planned |  |
 | [Case-Study Metric Strip (Round 9 P) Implementation Plan](plans/2026-10-17-case-study-metric-strip.md) | shipped |  |
 | [Floor Ambience Implementation Plan](plans/2026-10-17-floor-ambience.md) | in review | [#193](https://github.com/ShinyQ/ShinyQ-HQ/pull/193) |
 | [L1 Skills Wall: Neat and Compact (Round 9 R) Implementation Plan](plans/2026-10-17-l1-skills-wall-compact.md) | shipped |  |
