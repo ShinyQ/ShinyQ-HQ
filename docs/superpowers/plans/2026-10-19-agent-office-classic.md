@@ -753,7 +753,7 @@ In `content/ask/site-build.json`:
 - [ ] **Step 4: Run the Ask and content tests**
 
 Run: `bunx vitest run tests/ask tests/content && bun scripts/build-knowledge.ts`
-Expected: PASS; the pack builds under `PACK_MAX_BYTES`. `PROMPT_VERSION` stays unchanged (no prompt change).
+Expected: PASS; the pack builds under `PACK_MAX_BYTES` (256 KiB). It measured 253.2 KB on 2026-10-19 and the two paragraphs add about 2 KB: if `build-knowledge` reports the cap, shorten both paragraphs to their first two sentences (what it is, and that only allowlisted public titles show) rather than raising the cap. `PROMPT_VERSION` stays unchanged (no prompt change).
 
 - [ ] **Step 5: Commit**
 
