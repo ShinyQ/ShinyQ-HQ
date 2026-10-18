@@ -644,7 +644,10 @@
     "desc": "Cara situs ini dibuat: lima stasiun",
     "title": "Ruang Mesin",
     "subtitle": "Cara situs ini dibuat",
-    "soon": "Segera hadir"
+    "soon": "Segera hadir",
+    "locked": "Kunjungi semua {total} lantai ({seen}/{total})",
+    "lockedName": "{floor} Kunjungi semua {total} lantai ({seen}/{total})",
+    "lockedTitle": "Terkunci"
   },
   "drawer": {
     "label": "Detail ruang",

@@ -644,7 +644,10 @@
     "desc": "How this site was built: five stations",
     "title": "Engine Room",
     "subtitle": "How this site was built",
-    "soon": "Coming soon"
+    "soon": "Coming soon",
+    "locked": "Visit all {total} floors ({seen}/{total})",
+    "lockedName": "{floor} Visit all {total} floors ({seen}/{total})",
+    "lockedTitle": "Locked"
   },
   "drawer": {
     "label": "Room details",

@@ -5,11 +5,16 @@ import { BACK_TO_ELEVATOR, consoleOptions, floorOptions, floorThumb, nextIndex, 
 describe("pad picker options", () => {
   it("lists the floors top-down like the elevator panel, with labels, descriptions and thumbnails", () => {
     const options = floorOptions("L3", (f) => `label ${f}`, (f) => `desc ${f}`);
-    expect(options.map((o) => o.id)).toEqual(["RF", "L4", "L3", "L2", "L1"]);
+    expect(options.map((o) => o.id)).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
     expect(options[2]).toEqual({ id: "L3", eyebrow: "L3", title: "label L3", detail: "desc L3", thumb: "/floors/L3.webp", current: true });
     expect(options.filter((o) => o.current)).toHaveLength(1);
     expect(floorThumb("RF")).toBe("/floors/RF.webp");
-    expect(floorOptions("L1", (f) => `label ${f}`, (f) => `desc ${f}`, true).map((o) => o.id)).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
+  });
+
+  it("offers B1 as a locked option without a thumbnail until it is unlocked", () => {
+    const locked = floorOptions("L1", (f) => `label ${f}`, (f) => `desc ${f}`, false, { title: "Locked", detail: "Visit all 5 floors (2/5)" });
+    expect(locked.map((o) => o.id)).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
+    expect(locked.at(-1)).toEqual({ id: "B1", eyebrow: "B1", title: "Locked", detail: "Visit all 5 floors (2/5)", current: false, locked: true });
     expect(floorOptions("L1", (f) => f, (f) => f, true).at(-1)).toEqual({ id: "B1", eyebrow: "B1", title: "B1", detail: "B1", current: false });
   });
 

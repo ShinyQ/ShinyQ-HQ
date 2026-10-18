@@ -25,10 +25,9 @@ describe("B1 unlock flag (dev and test only)", () => {
     expect(canEnterFloor("B1", true)).toBe(true);
   });
 
-  it("lists the elevator rows top-down, with B1 below L1 only once unlocked", () => {
-    expect(floorRows(false)).toEqual(["RF", "L4", "L3", "L2", "L1"].map((id) => ({ id, locked: false })));
-    expect(floorRows(true).map((r) => r.id)).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
-    expect(floorRows(true).every((r) => !r.locked)).toBe(true);
+  it("lists B1 below L1 always: locked until unlocked", () => {
+    expect(floorRows(false).map((r) => [r.id, r.locked])).toEqual([["RF", false], ["L4", false], ["L3", false], ["L2", false], ["L1", false], ["B1", true]]);
+    expect(floorRows(true).at(-1)).toEqual({ id: "B1", locked: false });
   });
 
   it("rides to B1 (by name or one floor down from the Lobby) once the store flag is set", () => {

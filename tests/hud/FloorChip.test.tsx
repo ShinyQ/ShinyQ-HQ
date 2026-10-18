@@ -83,7 +83,7 @@ describe("FloorChip", () => {
     expect(dialog).toHaveAttribute("data-testid", "floor-sheet");
     expect(dialog).toHaveAttribute("data-sheet", "bottom");
     const buttons = [...dialog.querySelectorAll<HTMLButtonElement>("[data-floor]")];
-    expect(buttons.map((b) => b.getAttribute("data-floor"))).toEqual(["RF", "L4", "L3", "L2", "L1"]);
+    expect(buttons.map((b) => b.getAttribute("data-floor"))).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
     expect(within(dialog).getByRole("button", { name: /^L1 Home/ })).toHaveAttribute("aria-current", "true");
     await user.click(within(dialog).getByRole("button", { name: /^L3 Work/ }));
     expect(emitted).toContainEqual({ type: "elevator", to: "L3" });
@@ -112,15 +112,22 @@ describe("FloorChip", () => {
     expect(chip).toHaveFocus();
   });
 
-  it("lists B1 Build below L1 in the floor sheet only once B1 is unlocked", async () => {
+  it("lists a locked B1 row below L1 with the hint, which rides nowhere; unlocked it is B1 Build", async () => {
     const user = userEvent.setup();
+    getHQStore().setState({ b1Unlocked: false, floorsSeen: ["L1", "L2", "L3"] });
     await user.click(mount("phone"));
-    expect(screen.getByTestId("floor-sheet").querySelector('[data-floor="B1"]')).toBeNull();
+    const locked = screen.getByTestId("floor-sheet").querySelector<HTMLButtonElement>('[data-floor="B1"]')!;
+    expect(locked).toHaveAttribute("aria-disabled", "true");
+    expect(locked).toHaveAttribute("data-locked");
+    expect(locked).toHaveAccessibleName("B1 Visit all 5 floors (3/5)");
+    await user.click(locked);
+    expect(emitted).toEqual([]);
     cleanup();
     getHQStore().setState({ b1Unlocked: true });
     await user.click(mount("phone"));
-    const rows = [...screen.getByTestId("floor-sheet").querySelectorAll("[data-floor]")].map((b) => b.getAttribute("data-floor"));
-    expect(rows).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
-    getHQStore().setState({ b1Unlocked: false });
+    const open = screen.getByTestId("floor-sheet").querySelector<HTMLButtonElement>('[data-floor="B1"]')!;
+    expect(open).not.toHaveAttribute("aria-disabled");
+    expect(open.textContent?.replace(/\s+/g, " ").trim().startsWith("B1 Build")).toBe(true);
+    getHQStore().setState({ b1Unlocked: false, floorsSeen: [] });
   });
 });
