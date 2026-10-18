@@ -49,6 +49,13 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride", "experience"]));
   });
 
+  it("maps the B1 unlock files to the unlock spec and keeps their earlier mappings", () => {
+    expect(specsForChanges(["src/hud/dialog/EngineUnlockLayer.tsx"]).specs).toEqual(["b1-unlock", "camera", "experience", "hud", "hud-corners", "onboarding", "pads"]);
+    expect(specsForChanges(["src/hud/floorRows.ts"]).specs).toEqual(expect.arrayContaining(["b1-unlock", "engine-room", "floor-chunks", "memory"]));
+    expect(specsForChanges(["src/hud/hudActions.ts"]).specs).toContain("b1-unlock");
+    expect(specsForChanges(["e2e/b1-unlock.spec.ts"]).specs).toEqual(["b1-unlock"]);
+  });
+
   it("maps the B1 Engine Room files to its spec", () => {
     expect(specsForChanges(["src/experience/floors/engine/scenery.ts"]).specs).toEqual(expect.arrayContaining(["engine-room", "floor-chunks"]));
     expect(specsForChanges(["src/experience/floors/engine/layout.ts"]).specs).toEqual(expect.arrayContaining(["engine-room", "arrivals"]));
@@ -258,7 +265,7 @@ describe("specsForChanges", () => {
     ]) {
       expect(specsForChanges([file]).specs, file).toEqual(corners);
     }
-    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "engine-room", "experience", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "engine-room", "experience", "hud", "hud-corners", "onboarding", "pads"]);
     expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost"]);
     expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
@@ -289,7 +296,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/fx/PadGlow.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/fastReturn.ts"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
     expect(specsForChanges(["src/experience/fx/ReturnPadSign.tsx"]).specs).toEqual(["experience", "fast-return", "pads", "ride"]);
-    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["engine-room", "experience", "fast-return", "pads", "workshop"]);
+    expect(specsForChanges(["src/hud/pads/PadPicker.tsx"]).specs).toEqual(["b1-unlock", "engine-room", "experience", "fast-return", "hud", "hud-corners", "pads", "workshop"]);
     expect(specsForChanges(["public/floors/L2.webp"]).specs).toEqual(["experience", "fast-return", "pads", "workshop"]);
     expect(specsForChanges(["src/experience/nav/space.ts"]).specs).toEqual(["experience", "pads"]);
     expect(specsForChanges(["scripts/floor-thumbs.ts"]).specs).toEqual([]);

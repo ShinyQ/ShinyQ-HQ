@@ -63,6 +63,13 @@ const publicFloorsReady = (page: Page) =>
 const settled = (page: Page) => page.waitForLoadState("networkidle");
 const angleGap = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 const elevator = (page: Page) => page.getByRole("navigation", { name: "Elevator" });
+/** A locked session lists the five public floors and B1 as a locked, aria-disabled row with the progress hint. */
+async function expectLockedRow(page: Page) {
+  await expect(elevator(page).locator("[data-floor]")).toHaveCount(6);
+  const b1 = elevator(page).locator('[data-floor="B1"]');
+  await expect(b1).toHaveAttribute("aria-disabled", "true");
+  await expect(b1).toContainText("Visit all 5 floors");
+}
 
 /** Every URL the page requests from now on. */
 function recordRequests(page: Page): string[] {
@@ -99,8 +106,7 @@ test.describe("the unlock flag", () => {
     const errors = collectErrors(page);
     const requests = recordRequests(page);
     await enterHQ(page);
-    await expect(elevator(page).locator("[data-floor]")).toHaveCount(5);
-    await expect(elevator(page).locator('[data-floor="B1"]')).toHaveCount(0);
+    await expectLockedRow(page);
     // Idle prefetch has run once every public floor is ready; B1 must still be untouched.
     await publicFloorsReady(page);
     const p = await probe(page);
@@ -122,8 +128,7 @@ test.describe("the unlock flag", () => {
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    await expect(elevator(page).locator("[data-floor]")).toHaveCount(5);
-    await expect(elevator(page).locator('[data-floor="B1"]')).toHaveCount(0);
+    await expectLockedRow(page);
     await publicFloorsReady(page);
     await settled(page);
     const p = await probe(page);
@@ -186,14 +191,14 @@ test.describe("a locked session", () => {
     expect(b1Requests(requests)).toEqual([]);
   });
 
-  test("shows no B1 row in the elevator rail, the floor picker or the command palette", async ({ page }) => {
+  test("shows B1 only as a locked row in the elevator rail and the floor picker, and not in the command palette", async ({ page }) => {
     await enterHQ(page);
-    await expect(elevator(page).locator("[data-floor]")).toHaveCount(5);
+    await expectLockedRow(page);
     await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().openPicker({ kind: "floor" }));
     const picker = page.getByTestId("pad-picker");
     await expect(picker).toBeVisible();
-    await expect(picker.locator("[data-option]")).toHaveCount(5);
-    await expect(picker.locator('[data-option="B1"]')).toHaveCount(0);
+    await expect(picker.locator("[data-option]")).toHaveCount(6);
+    await expect(picker.locator('[data-option="B1"]')).toHaveAttribute("aria-disabled", "true");
     await page.keyboard.press("Escape");
     await expect(picker).toHaveCount(0);
 
@@ -205,11 +210,11 @@ test.describe("a locked session", () => {
     await expect(palette.getByRole("option").filter({ hasText: /\bB1\b|Engine Room/i })).toHaveCount(0);
   });
 
-  test("phones: the floor sheet lists five floors, and six once unlocked", async ({ browser }) => {
+  test("phones: the floor sheet lists B1 locked, and lit once unlocked", async ({ browser }) => {
     const locked = await openPhone(browser, "");
     await locked.page.getByTestId("floor-chip").tap();
-    await expect(locked.page.getByTestId("floor-sheet").locator("[data-floor]")).toHaveCount(5);
-    await expect(locked.page.getByTestId("floor-sheet").locator('[data-floor="B1"]')).toHaveCount(0);
+    await expect(locked.page.getByTestId("floor-sheet").locator("[data-floor]")).toHaveCount(6);
+    await expect(locked.page.getByTestId("floor-sheet").locator('[data-floor="B1"]')).toHaveAttribute("aria-disabled", "true");
     await locked.context.close();
 
     const open = await openPhone(browser, `&${B1_QUERY}`);

@@ -43,14 +43,15 @@ export function EngineUnlockLayer() {
   // The palette lives in the locale layout, which has no `engine` strings: hand it the resolved label.
   useEffect(() => (unlocked ? registerHudAction(engineRoomAction(goTo)) : undefined), [unlocked, goTo]);
 
+  // Once exploring, so the Lobby is already counted in the progress the line reads.
   useEffect(() => {
-    if (!settled || !b1FromHash(undefined, window.location.hash)) return;
+    if (!settled || !free || !b1FromHash(undefined, window.location.hash)) return;
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
     const s = getHQStore().getState();
     if (s.b1Unlocked) return;
     const { seen, total } = floorProgress(s.floorsSeen);
     void dialog.say({ key: "b1-locked", text: t("lockedLine", { seen, total }), face: "thinking" }, { id: "b1-locked" });
-  }, [t, settled]);
+  }, [t, settled, free]);
 
   useEffect(() => {
     if (!moment) {

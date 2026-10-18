@@ -125,8 +125,9 @@ test.describe("Corners menu and floor sheet on a phone", () => {
     await hudControl(page, "floor-chip").tap();
     const floors = page.getByTestId("floor-sheet");
     await expect(floors).toBeVisible();
-    await expect(floors.locator("[data-floor]")).toHaveCount(5);
-    for (const floor of ["RF", "L4", "L3", "L2", "L1"]) await expect(floors.locator(`[data-floor="${floor}"]`), floor).toBeInViewport();
+    await expect(floors.locator("[data-floor]")).toHaveCount(6);
+    await floors.locator('[data-floor="B1"]').scrollIntoViewIfNeeded();
+    for (const floor of ["RF", "L4", "L3", "L2", "L1", "B1"]) await expect(floors.locator(`[data-floor="${floor}"]`), floor).toBeInViewport();
     await floors.locator('[data-floor="L2"]').tap();
     await expect(floors).toHaveCount(0);
     await waitForFloor(page, "L2");
