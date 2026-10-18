@@ -7,6 +7,8 @@ import { getPostDiagrams } from "@/content/post-diagrams";
 import type { Architecture } from "@/content/schema";
 import { ArchitectureSchema } from "@/content/schema";
 import { diagramSummary, diagramTexts, resolveArchitecture, type ResolvedArchitecture } from "@/components/diagram/text";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 
 const diagrams: [string, Architecture][] = [
   ...getPods().flatMap((p) => (p.architecture ? [[`pod:${p.slug}`, p.architecture] as [string, Architecture]] : [])),
@@ -15,8 +17,9 @@ const diagrams: [string, Architecture][] = [
   ),
   ["build-story:blueprint", getBuildStory().stations.blueprint.architecture],
 ];
+const dictionaries = { en, id };
 const localizedDiagrams = diagrams.flatMap(([id, raw]) => (["en", "id"] as const).map((locale) => ({
-  id: `${id} ${locale}`, graph: resolveArchitecture(raw, locale), texts: diagramTexts(locale, (kind) => kind),
+  id: `${id} ${locale}`, graph: resolveArchitecture(raw, locale), texts: diagramTexts(locale, (kind) => dictionaries[locale].labs.nodeKind[kind]),
 })));
 
 type Rect = { x: number; y: number; w: number; h: number };

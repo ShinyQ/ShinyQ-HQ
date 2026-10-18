@@ -288,15 +288,15 @@ Keep them documented here.
 
   | Mission | Label | 3D steps | Static tier |
   |---|---|---|---|
-  | `work` | "Explore my work" | `elevator L3`, then `say` "Pick a wing: Product Engineering, AI Engineering, or Data and ML." | opens `/labs` and says the line |
-  | `journey` | "Follow my career, 2019 to 2026" | `elevator L2` only (the rover arrives at the start of the Career Road) | opens `/{locale}/journey` |
-  | `projects` | "Browse my projects" | `elevator L3` then `palette pods` | opens `/labs` and the pods palette |
-  | `blog` | "Read my writing" | `elevator L4` then `palette posts` | opens `/library` and the posts palette |
+  | `work` | "Explore the work" | `elevator L3`, then `say` "Pick a wing: Product Engineering, AI Engineering, or Data and ML." | opens `/labs` and says the line |
+  | `journey` | "Career timeline, 2019 to 2026" | `elevator L2` only (the rover arrives at the start of the Career Road) | opens `/{locale}/journey` |
+  | `projects` | "Browse projects" | `elevator L3` then `palette pods` | opens `/labs` and the pods palette |
+  | `blog` | "Read the writing" | `elevator L4` then `palette posts` | opens `/library` and the posts palette |
   | `highlights` | "See the highlights" | `elevator L1`, then `drive` and `open` `L1:highlights-about` | opens `/{locale}#intro` |
   | `cv` | "View CV" | `elevator RF`, then `drive` and `open` `RF:cv` | opens `/{locale}/cv` |
   | `hire` | "Discuss a role or project" | `elevator RF`, then `drive` and `open` `RF:contact` | opens `/{locale}/contact` |
 
-- The Rover menu lists the missions in catalog `order` (at most 9, keys 1 to 9); the `work` mission ("Explore my work", order 0) rides to L3 and Rover then says to pick a wing. See [hud-and-drawer.md](hud-and-drawer.md).
+- The Rover menu lists the missions in catalog `order` (at most 9, keys 1 to 9); the `work` mission ("Explore the work", order 0) rides to L3 and Rover then says to pick a wing. See [hud-and-drawer.md](hud-and-drawer.md).
 
 ### Perspectives file
 

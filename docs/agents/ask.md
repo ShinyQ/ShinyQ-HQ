@@ -106,7 +106,7 @@ All bindings and vars live in `wrangler.toml`.
 - `content/ask/suggestions.json`: 102 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
   - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
-  - "About me" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
+  - "About Kurniadi" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
 - Sampling (`src/ask/suggestions.ts`), seeded once per page session (`sessionStorage["hq:ask-seed"]`, read by `readAskSeed`):
   - `topicQuestions` shows a seeded random 4 of a topic, `starterQuestions` the "Try asking" mix (one pill from each of 3 topics in seeded order);
   - a pill asked in the thread never shows again (an exhausted topic shows none); the order stays stable while the panel is open;
