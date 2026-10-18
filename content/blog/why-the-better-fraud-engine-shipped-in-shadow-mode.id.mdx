@@ -1,14 +1,14 @@
 ---
 title: "Mengapa Fraud Engine yang Lebih Baik Dirilis dalam Shadow Mode"
 date: "2026-10-09"
-excerpt: "False positive pada paket bersih yang noisy turun dari 36,4% ke 9,1% secara offline. Tapi engine hybrid rules dan LLM ini makin banyak melewatkan kasus High-risk, jadi saya merilisnya dalam shadow mode, bukan untuk menentukan verdict."
+excerpt: "Uji offline menurunkan false positive dari 36,4% ke 9,1%, tetapi recall High-risk turun. Engine hybrid rules/LLM dirilis hanya dalam shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
 ---
 
 False positive turun dari 36,4% ke 9,1%. Tetap saja, saya belum bisa menyerahkan verdict ke engine yang baru.
 
-Hasil itu berasal dari paket pengadaan yang bersih tapi noisy di gold set development. Recall High-risk justru turun dari 1,000 ke 0,841. Paket yang seharusnya tertangkap malah makin banyak terlewat.
+Hasil itu berasal dari paket pengadaan yang bersih tetapi memuat gangguan administratif di gold set development. Recall High-risk justru turun dari 1,000 ke 0,841. Paket yang seharusnya tertangkap malah makin banyak terlewat.
 
 Saya menyelesaikan risk engine generasi kedua ini pada akhir September 2026, untuk platform internal review dokumen berbasis AI di Metrodata. Release gate untuk recall sudah saya tetapkan sebelum evaluasi. Engine ini tidak lolos.
 
@@ -16,7 +16,7 @@ Akhirnya saya merilisnya ke produksi dalam shadow mode. Engine berjalan di sampi
 
 ## Paket bersih yang terus kena flag
 
-Platform ini me-review paket dokumen transaksi: invoice, kuitansi, purchase order, formulir vendor, dan kontrak. Azure Document Intelligence menangani OCR. Azure OpenAI menghasilkan temuan per dokumen, lalu verdict lintas dokumen dan risk score 0 sampai 100. Fungsinya decision support, bukan hakim otomatis.
+Platform ini memeriksa paket dokumen transaksi: invoice, kuitansi, purchase order, formulir vendor, dan kontrak. Azure Document Intelligence menangani OCR. Azure OpenAI menghasilkan temuan per dokumen, lalu verdict lintas dokumen dan risk score 0 sampai 100. Fungsinya mendukung keputusan reviewer, bukan menjadi hakim otomatis.
 
 Yang paling merepotkan versi awal justru paket bersih dengan administrasi berantakan. Stempel tidak ada, format tanggal tidak lazim, atau hasil scan miring. Model membaca noise itu sebagai fraud.
 
@@ -26,7 +26,7 @@ Karena itu, input bersih yang noisy saya ukur sebagai slice tersendiri. Rata-rat
 
 ## Guardrail-nya perlu diperbaiki dulu
 
-Sebelum mengubah prompt, saya membangun evaluation harness. Isinya gold set berlabel, masing-masing 21 sampai 90 kasus ditambah generated mutations. Saya memisahkan set development dan held-out, membekukan baseline, lalu mengukur false-positive rate (FPR), false-negative rate, recall High-risk, fail-open rate, dan prompt-injection success dengan confidence interval. Gate dijalankan lewat workflow eval khusus dan CI lokal.
+Sebelum mengubah prompt, saya membangun evaluation harness. Isinya gold set berlabel, masing-masing 21 sampai 90 kasus ditambah variasi kasus hasil mutasi. Saya memisahkan set development dan held-out, membekukan baseline, lalu mengukur false-positive rate (FPR), false-negative rate, recall High-risk, fail-open rate, dan prompt-injection success dengan confidence interval. Gate dijalankan lewat workflow eval khusus dan CI lokal.
 
 Baseline pertama menandai 90,9% paket bersih yang noisy di set development. Guardrail-nya juga bermasalah: fail-open rate mencapai 76,2%.
 
@@ -38,7 +38,7 @@ Secara offline, FPR paket bersih yang noisy turun dari 90,9% ke 36,4% di develop
 
 Upgrade model berikutnya memperlihatkan masalah lain. Ada blok prompt yang menyebut pembeli sebagai pihak tepercaya. Dengan model baru, framing itu membuat verdict bias. Setelah saya pangkas, run evaluasi live menunjukkan FPR turun dari 26,1% ke 21,7%, dan prompt-injection success dari 11,1% ke 3,7%.
 
-Saya juga membandingkan wording yang netral terhadap pihak-pihak di dokumen dengan framing lama lewat paired run: 23 kasus, masing-masing diulang 3 kali. FPR-nya 18,8% dengan wording netral, berbanding 36,9% dengan framing lama. Ini hasil evaluasi, bukan hasil produksi.
+Saya juga membandingkan instruksi yang netral terhadap pihak-pihak di dokumen dengan framing lama lewat paired run: 23 kasus, masing-masing diulang 3 kali. FPR-nya 18,8% dengan instruksi netral, berbanding 36,9% dengan framing lama. Ini hasil evaluasi, bukan hasil produksi.
 
 Prompt ternyata bagian dari classifier. Perubahan prompt maupun versi model perlu diperlakukan sebagai rilis, lengkap dengan menjalankan ulang gate di setiap perubahan.
 
@@ -74,7 +74,7 @@ Saya membandingkan engine v2, baseline N1, dengan pipeline LLM terbaik, baseline
 
 Precision membaik, tetapi engine ini melewatkan paket High-risk yang tertangkap pipeline lama. Recall held-out 0,429 menunjukkan masalahnya bukan sekadar kebetulan di set development. Gate G3, yaitu gate recall High-risk, gagal.
 
-Pembacaan saya: threshold rules menukar recall dengan precision, sementara perhatian saya saat tuning terlalu tertuju pada false positive. Di sinilah gate yang ditulis sebelum run berguna. Tanpanya, FPR yang lebih bagus bisa membujuk saya merilis sistem yang lebih buruk.
+Menurut saya, threshold pada rules meningkatkan precision dengan mengorbankan recall. Saat tuning, saya terlalu berfokus pada false positive. Di sinilah gate yang ditulis sebelum run berguna. Tanpanya, FPR yang lebih bagus bisa membujuk saya merilis sistem yang lebih buruk.
 
 Ukuran sampelnya juga perlu diingat. Beberapa slice kecil. Perubahan FPR paket bersih yang noisy konsisten dengan sekitar sebelas paket, jadi satu paket bisa menggeser angka sekitar sembilan poin. Itu inferensi saya; ukuran slice persisnya tidak tercatat di sini.
 
@@ -96,11 +96,11 @@ Satu paket melewati dua jalur di platform ini:
 
 1. Reviewer mengunggah paket dokumen di web app Next.js. Web app mengirimnya ke backend FastAPI dan menampilkan progresnya secara live.
 2. Backend menjalankan OCR dengan Document Intelligence.
-3. Agent dari Agent Framework me-review setiap dokumen, lalu seluruh paket, lewat Azure OpenAI, dengan input yang disaring Prompt Shields. Hasilnya adalah temuan dan verdict yang dilihat reviewer.
+3. Agent dari Agent Framework memeriksa setiap dokumen, lalu seluruh paket, lewat Azure OpenAI, dengan input yang disaring Prompt Shields. Hasilnya adalah temuan dan verdict yang dilihat reviewer.
 4. Backend menyimpan riwayat review dan laporan di Cosmos DB dan Blob Storage.
 5. Secara paralel, backend menjalankan risk engine hybrid dalam shadow run. Hasilnya disimpan untuk perbandingan dan tidak pernah kembali ke web app.
 
-Catatan rollout mencatat 0 dari 3.780 run ketika shadow engine mengubah output pengguna. Bagi saya, itu bukti jalur shadow terisolasi. Bukan bukti engine-nya akurat.
+Catatan rollout menunjukkan 0 dari 3.780 run dengan perubahan output pengguna oleh shadow engine. Bagi saya, itu bukti jalur shadow terisolasi. Bukan bukti engine-nya akurat.
 
 Volume kasus nyata di platform ini masih kecil. Catatan saya juga tidak merinci isi 3.780 run tersebut.
 
@@ -118,7 +118,7 @@ Masalah serupa muncul saat beralih ke ekstraksi Document Intelligence Layout. No
 
 Hasil development itu bagus. Engine-nya tetap di shadow mode.
 
-## Apa yang perlu saya lihat sebelum promosi
+## Apa yang perlu terpenuhi sebelum engine menentukan verdict
 
 Ini penalaran saya, bukan rencana yang sudah tercatat. Sebelum menyerahkan verdict ke engine v2, saya ingin:
 
@@ -126,6 +126,6 @@ Ini penalaran saya, bukan rencana yang sudah tercatat. Sebelum menyerahkan verdi
 - FPR paket bersih yang noisy tetap jauh di bawah pipeline saat ini pada kedua set.
 - Fail-open tetap 0%.
 - Verdict shadow sejalan dengan keputusan reviewer untuk paket nyata. Ini membutuhkan lebih banyak kasus nyata daripada yang ada sekarang.
-- Setiap perbedaan antara kedua engine di-review manual, karena masing-masing berarti fraud yang terlewat atau false alarm yang berhasil dihindari.
+- Setiap perbedaan antara kedua engine ditinjau manual, karena masing-masing berarti fraud yang terlewat atau false alarm yang berhasil dihindari.
 
 Saya menaruh angka held-out di samping development karena recall 0,429 itu memberi tahu saya lebih banyak daripada metrik development mana pun. Satu run development yang bagus memang menggembirakan, tetapi belum cukup untuk memberi engine ini wewenang menentukan verdict.

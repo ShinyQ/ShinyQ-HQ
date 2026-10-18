@@ -9754,7 +9754,7 @@
           "slug": "clearbox-inbox-cleanup-with-microsoft-decision-1",
           "title": {
             "en": "Clearbox: Inbox Triage with Microsoft-Decision-1",
-            "id": "Memilah Inbox dengan Microsoft-Decision-1"
+            "id": "Clearbox: Memilah Inbox dengan Microsoft-Decision-1"
           },
           "date": "2026-10-16",
           "tags": [
@@ -9769,8 +9769,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Clearbox pre-sorts my inbox into trash, archive, keep and unsure, so a weekly cleanup takes minutes. Microsoft-Decision-1 scores each email, deterministic code adds guardrails and reasons, and nothing moves until I approve it. Here is the architecture, and what a 40-email evaluation did and did not show.",
-            "id": "Clearbox memilah inbox saya ke trash, archive, keep, dan unsure, sehingga pembersihan mingguan cukup beberapa menit. Microsoft-Decision-1 menilai setiap email, kode deterministik menambahkan guardrail dan alasan, dan tidak ada email yang dipindahkan sebelum saya setujui. Berikut arsitekturnya, serta apa yang ditunjukkan dan tidak ditunjukkan oleh evaluasi 40 email."
+            "en": "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox.",
+            "id": "Clearbox memilah email Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
           }
         },
         {
@@ -9792,8 +9792,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Our voice agent took about two seconds to stop when a caller interrupted a knowledge search. I fixed the blocked receive loop and tested both paths in a controlled harness: roughly 0.2 seconds, with n=4 calls per arm. The later cut-off experiments did not improve things.",
-            "id": "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol pada harness mencatat sekitar 0,2 detik, dengan n=4 panggilan di masing-masing jalur. Eksperimen cut-off berikutnya tidak menunjukkan perbaikan."
+            "en": "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement.",
+            "id": "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
           }
         },
         {
@@ -9815,8 +9815,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "I cut false positives on noisy but clean packets from 36.4% to 9.1% offline. But the hybrid rules and LLM engine missed more High-risk cases, so I shipped it in shadow mode, not as the decision maker.",
-            "id": "False positive pada paket bersih yang noisy turun dari 36,4% ke 9,1% secara offline. Tapi engine hybrid rules dan LLM ini makin banyak melewatkan kasus High-risk, jadi saya merilisnya dalam shadow mode, bukan untuk menentukan verdict."
+            "en": "Offline tests cut false positives from 36.4% to 9.1%, but High-risk recall fell. The hybrid rules/LLM engine shipped in shadow mode, without verdict control.",
+            "id": "Uji offline menurunkan false positive dari 36,4% ke 9,1%, tetapi recall High-risk turun. Engine hybrid rules/LLM dirilis hanya dalam shadow mode."
           }
         },
         {
@@ -9838,8 +9838,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch.",
-            "id": "Sekitar 45% evaluasi dalam batch 22 pasangan kandidat dan lowongan tidak menghasilkan apa pun yang bisa dipakai. Saya menemukan dua bug dari pesan error dan menambahkan tujuh regression test, tetapi tidak mencatat run ulang batch itu."
+            "en": "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded.",
+            "id": "Sekitar 45% dari 22 pasangan CV/lowongan gagal. Dua bug parsing diperbaiki dengan tujuh regression test, tetapi run ulang batch awal tidak tercatat."
           }
         },
         {
@@ -9861,8 +9861,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "I built a vendor portal as the only engineer in about six weeks, with AI agents writing most of the code. Numbered specs and CI gates kept the work reviewable, but a skipped integration tier and two sign-in bugs still got through. I owned every merge.",
-            "id": "Saya membangun portal vendor dalam sekitar enam minggu sebagai satu-satunya engineer, dengan sebagian besar kode ditulis AI agent. Spec bernomor dan CI gate membantu saya me-review pekerjaan itu, tetapi integration tier yang terlewat dan dua bug login tetap lolos. Semua merge adalah keputusan saya."
+            "en": "AI agents wrote most of a solo-built vendor portal. CI missed a skipped integration tier and two sign-in bugs. Productivity gains were not measured.",
+            "id": "AI agent menulis mayoritas kode portal vendor. CI melewatkan integration tier yang di-skip dan dua bug login. Peningkatan produktivitas belum diukur."
           }
         },
         {

@@ -1,7 +1,7 @@
 ---
 title: "Cara Kami Membuat Voice Agent Bisa Diinterupsi"
 date: "2026-10-09"
-excerpt: "Voice agent kami butuh sekitar dua detik untuk berhenti saat penelepon menyela pencarian knowledge. Setelah receive loop diperbaiki, A/B terkontrol pada harness mencatat sekitar 0,2 detik, dengan n=4 panggilan di masing-masing jalur. Eksperimen cut-off berikutnya tidak menunjukkan perbaikan."
+excerpt: "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
 tags: ["voice-ai", "azure-openai-realtime", "latency", "evaluation", "case-study"]
 readingTime: "6 min"
 ---
@@ -18,11 +18,11 @@ Agent ini memakai Azure OpenAI Realtime. Audio penelepon masuk sebagai stream, l
 
 Backend Python FastAPI menjadi penghubung media channel dan model. Backend ini juga menjalankan tool, termasuk pencarian knowledge lewat Azure AI Search, serta mengalihkan panggilan ke operator manusia jika diperlukan.
 
-Barge-in terjadi saat penelepon mulai bicara ketika agent sedang bicara, atau baru akan bicara. Penanganannya bukan sekadar cancel response:
+Barge-in terjadi saat penelepon mulai bicara ketika agent sedang bicara, atau baru akan bicara. Penanganannya bukan sekadar membatalkan response:
 
 1. Menghentikan audio yang sedang didengar penelepon.
 2. Berhenti menghasilkan sisa jawaban.
-3. Menyamakan ingatannya tentang percakapan dengan apa yang benar-benar didengar penelepon.
+3. Menyesuaikan riwayat percakapan agent dengan apa yang benar-benar didengar penelepon.
 
 Langkah ketiga mudah terlewat. Model bisa sudah menghasilkan satu paragraf, sementara penelepon baru mendengar separuhnya. Tanpa koreksi conversation history, jawaban berikutnya menganggap sisa paragraf itu sudah didengar.
 
@@ -37,7 +37,7 @@ Saat ini, interupsi dari penelepon melewati jalur ini:
 3. Saat model memanggil tool, misalnya pencarian knowledge di Azure AI Search, tool itu berjalan sebagai task tersendiri yang bisa di-cancel, dengan batas waktu 2,5 detik. Receive loop tetap membaca event.
 4. Begitu event "penelepon mulai bicara" masuk, backend menghentikan audio di media channel, membatalkan response jika masih dihasilkan, lalu melakukan truncate percakapan sampai bagian yang sudah didengar penelepon.
 
-Masalah pertama di bawah merusak langkah 4. Masalah kedua membuat receive loop di langkah 2 berhenti membaca.
+Masalah pertama di bawah membuat langkah 4 gagal. Masalah kedua membuat receive loop di langkah 2 berhenti membaca.
 
 ## Masalah pertama: selesai bagi model, masih diputar bagi penelepon
 
@@ -47,7 +47,7 @@ Media channel, waktu itu Azure Communication Services, masih bisa menyimpan antr
 
 Posisi truncate kami juga keliru. Kami menghitung dari jumlah byte audio yang sudah diteruskan ke channel, bukan audio yang sudah didengar. Akibatnya, audio yang masih tertahan di buffer ikut dianggap sudah tersampaikan.
 
-Saya mengubahnya menjadi barge-in yang playout-aware. Tracker kecil memperkirakan berapa milidetik dari response saat ini yang sudah diputar ke penelepon. Berikut sketsa sederhananya, bukan kode produksi:
+Saya mengubah barge-in agar memperhitungkan audio yang sudah didengar penelepon. Tracker kecil memperkirakan durasinya dalam milidetik untuk response yang sedang diputar. Berikut sketsa sederhananya, bukan kode produksi:
 
 ```
 on caller speech start:
@@ -57,7 +57,7 @@ on caller speech start:
     realtime.truncate(item_id, heard_ms)
 ```
 
-Urutannya penting: hentikan playback dulu, batalkan generation jika masih berjalan, lalu truncate conversation item pada posisi yang sudah didengar. Penelepon mendapat hening lebih dulu, dan history model berhenti di titik yang sama dengan audio yang didengar.
+Urutannya penting: hentikan playback dulu, batalkan generation jika masih berjalan, lalu truncate conversation item pada posisi yang sudah didengar. Audio berhenti lebih dulu, dan riwayat percakapan model berakhir di titik yang sama dengan audio yang didengar penelepon.
 
 Saya tidak punya pengukuran sebelum dan sesudah khusus untuk perbaikan ini. Perbaikannya dirilis sebagai salah satu prioritas tertinggi dari architecture review internal. A/B di bawah mengukur jalur kode yang berbeda.
 
@@ -86,8 +86,8 @@ Kedua jalur memakai model deployment, search index, dan audio penelepon yang sam
 
 Hasil pada giliran yang memakai knowledge base:
 
-- Latency barge-in pada jalur lama: 1.875 sampai 2.140 ms.
-- Latency barge-in pada jalur baru: 93 sampai 220 ms.
+- Latensi barge-in pada jalur lama: 1.875 sampai 2.140 ms.
+- Latensi barge-in pada jalur baru: 93 sampai 220 ms.
 - Jalur baru menjawab pertanyaan knowledge di 4 dari 4 panggilan. Jalur lama mengalihkan ke manusia di 4 dari 4 panggilan.
 
 Dengan n=4 panggilan di masing-masing jalur, selisih sekitar sepuluh kali lipat terlihat berulang. Sampel ini tetap tidak cukup untuk menghitung persentil atau confidence interval.
@@ -98,9 +98,9 @@ Ini panggilan dari harness di runner eksperimen, bukan traffic pelanggan. Saya t
 
 Belakangan, kami memindahkan voice channel ke LiveKit self-hosted. Muncul masalah berbeda: agent bicara menimpa penelepon. Tingkat cut-off di lingkungan live tercatat 53,3%.
 
-Awalnya saya menduga sinyal berhenti terlambat sampai ke media layer. Saya membuat reproduksi LiveKit lokal dengan trace berbasis monotonic clock, lalu mengujinya dengan model palsu dan model sungguhan. Aturan verdict sudah saya tulis sebelum pengujian.
+Awalnya saya menduga sinyal berhenti terlambat sampai ke media layer. Saya membuat reproduksi LiveKit lokal dengan trace berbasis monotonic clock, lalu mengujinya dengan model palsu dan model sungguhan. Kriteria untuk menerima atau menolak perubahan sudah saya tetapkan sebelum pengujian.
 
-Trace itu sebagian besar membantah dugaan saya: hanya sekitar 80 ms audio yang terdengar setelah clear. Penyebab sebenarnya adalah provider meng-commit giliran penelepon saat jeda alami, serta stale response yang tidak pernah dibatalkan.
+Trace itu sebagian besar membantah dugaan saya: hanya sekitar 80 ms audio yang terdengar setelah clear. Penyebab sebenarnya adalah provider menganggap giliran penelepon selesai saat jeda alami, serta stale response yang tidak pernah dibatalkan.
 
 Saya merilis start-hold dan stale-response cancel, lalu mengukur ulang di lingkungan live. Tingkat cut-off menjadi 60,0%. Tidak turun.
 
@@ -118,4 +118,4 @@ Saat debugging barge-in, bedakan audio yang dihasilkan model, yang dikirim backe
 
 Lalu periksa receive loop. Jangan taruh I/O lambat di sana. Jalankan tool sebagai task yang bisa dibatalkan dengan satu batas waktu. Bandingkan jalur lama dan baru dalam kondisi yang sama, jalankan di luar laptop, dan cantumkan ukuran sampelnya.
 
-Setiap perbaikan di atas berawal dari spec tertulis. Saya mengarahkan AI coding agent untuk sebagian besar implementasi, lalu me-review dan melakukan merge. Tetapi spec dan PR yang sudah di-merge bukan bukti bahwa perbaikannya berhasil. Tulis aturan verdict sebelum pengujian, terima hasil negatif, dan hapus yang ditolak data. Masalah cut-off kami masih belum selesai.
+Setiap perbaikan di atas berawal dari spec tertulis. Saya mengarahkan AI coding agent untuk sebagian besar implementasi, lalu meninjau dan menggabungkan perubahannya. Tetapi spec dan PR yang sudah di-merge bukan bukti bahwa perbaikannya berhasil. Tetapkan kriteria pengujian lebih dulu, terima hasil negatif, dan hapus yang ditolak data. Masalah cut-off kami masih belum selesai.

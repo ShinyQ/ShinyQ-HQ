@@ -1,20 +1,20 @@
 ---
 title: "Clearbox: Inbox Triage with Microsoft-Decision-1"
 date: "2026-10-16"
-excerpt: "Clearbox pre-sorts my inbox into trash, archive, keep and unsure, so a weekly cleanup takes minutes. Microsoft-Decision-1 scores each email, deterministic code adds guardrails and reasons, and nothing moves until I approve it. Here is the architecture, and what a 40-email evaluation did and did not show."
+excerpt: "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox."
 tags: ["microsoft-decision-1", "microsoft-foundry", "cloudflare-workers", "evaluation", "case-study"]
 readingTime: "14 min"
 ---
 
-Clearbox is a self-hosted inbox assistant I built for my own Gmail and Outlook accounts. It pre-sorts every inbox email into trash, archive, keep or unsure, groups the suggestions by sender with a confidence and up to three reasons, and moves only what I approve. Trash always means a recoverable move to Trash or Deleted Items, never a permanent delete. The model behind the sorting is Microsoft-Decision-1 on Microsoft Foundry.
+Clearbox is a self-hosted inbox assistant I built for my own Gmail and Outlook accounts. Microsoft-Decision-1 on Microsoft Foundry scores each email as trash, archive, keep or unsure. Code applies guardrails and adds up to three reasons, then groups suggestions by sender with a confidence band. Only approved suggestions move to Trash or Archive, never permanent deletion. Clearbox offers Undo for 24 hours; recovery through the mail provider follows its own policy.
 
 The code is public under the MIT license at [github.com/ShinyQ/Clearbox](https://github.com/ShinyQ/Clearbox), and the project has its own room on the [Labs floor](/en/labs/clearbox). The repository holds 179 commits from 15 and 16 October 2026, and a fresh clone passes 1,589 automated tests. This post covers the use case, why I picked a decision model instead of a chatbot, the architecture in detail, and what I learned. It also says what I have not measured yet.
 
 ## The use case: a weekly Clean up
 
-A lot of inbox mail has no future value: promotions, expired notifications, ignored newsletters, superseded automated alerts. Cleaning it by hand means reading email by email. I wanted the AI to do that sorting before I arrive, and I wanted the mailbox access to stay in my own accounts.
+Much of the mail left in my inbox no longer needs attention: promotions, expired notifications, unread newsletters and automated alerts replaced by newer ones. Cleaning it by hand means reading email by email. I wanted the AI to do that sorting before I arrive, and I wanted the mailbox access to stay in my own accounts.
 
-I designed Clearbox around one session: a weekly Clean up of five to ten minutes in a desktop browser. By the time I open it, new mail has already been sorted in the background. The Review screen groups suggestions by sender. Each group shows a verdict, a confidence band (Very sure, Sure, Likely, Unsure) and up to three reasons, such as "You trashed 41 of 44 from this sender". I skim the groups, override what looks wrong and press Clean up. Everything above the confidence threshold goes into one batch, and one confirm moves it to Trash or Archive.
+I designed Clearbox around one session: a weekly Clean up of five to ten minutes in a desktop browser. That is a design target, not a measured cleanup time. By the time I open it, new mail has already been sorted in the background. The Review screen groups suggestions by sender. Each group shows a verdict, a confidence band (Very sure, Sure, Likely, Unsure) and up to three reasons, such as "You trashed 41 of 44 from this sender". I skim the groups, override what looks wrong and press Clean up. Everything above the confidence threshold goes into one batch, and one confirm moves it to Trash or Archive.
 
 <a href="/media/clearbox/01-review.webp"><img src="/media/clearbox/01-review.webp" alt="Clearbox Review on synthetic data: 186 emails ready to clean up, sender groups with verdicts and confidence bands, and the reasons for one group in the detail panel" width="1600" height="1000" loading="lazy" decoding="async" /></a>
 
@@ -23,13 +23,13 @@ I designed Clearbox around one session: a weekly Clean up of five to ten minutes
 Four rules shape that session:
 
 - **Nothing moves without approval.** No code path trashes or archives a message unless I approved its pending suggestion in that request.
-- **Trash is recoverable.** Undo works for 24 hours from the Activity page, and Gmail and Outlook keep Trash for about 30 days after that.
+- **Recovery has limits.** Undo is available from Activity for 24 hours. Separately, [Gmail keeps messages in Trash for up to 30 days from deletion](https://support.google.com/mail/answer/7401?hl=en), unless permanently deleted sooner. Outlook recovery depends on the account policy and whether Deleted Items has been emptied; [Microsoft's recovery guidance](https://support.microsoft.com/en-us/outlook/mail/recover-and-restore-deleted-items-in-outlook) distinguishes those states. Provider recovery periods do not start when Clearbox's Undo expires.
 - **Uncertainty is shown, not hidden.** When the evidence is weak, the suggestion is unsure and waits for me.
-- **Every decision teaches.** Approvals and overrides update per-sender priors and the trash threshold.
+- **Decisions feed later suggestions.** Approvals and overrides update per-sender priors. Nightly threshold calibration runs only once there are enough labels.
 
 ## Why a decision model, not a chatbot
 
-Sorting email is classification. For each email I need one of four labels, a number I can put a threshold on, and an answer that a hostile email cannot steer. I do not need prose.
+Sorting email is classification. For each email I need one of four labels and a number I can put a threshold on. A hostile email should not get to decide what moves, which is why approval and guardrails belong in code. I do not need prose from the model.
 
 Microsoft-Decision-1 is built for that kind of task. [Microsoft Learn](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) describes it as a model for classification, routing, ranking, grading and binary decisions that does not generate a free-form response or a written rationale. Instead, it returns a typed, numerical decision. A request carries a `state` (text or JSON) and typed questions:
 
@@ -37,7 +37,7 @@ Microsoft-Decision-1 is built for that kind of task. [Microsoft Learn](https://l
 - `score` places the input on an ordered scale.
 - `noul` returns the probability that a statement is true.
 
-Microsoft's [model list](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#microsoft-models-sold-by-azure) describes the output as a calibrated probability score for every answer option, from a single model invocation over inputs of up to 32K tokens. Clearbox asks five questions in one request per email:
+Microsoft's [model list](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#microsoft-models-sold-by-azure) describes the output as a calibrated probability score for every answer option, from a single model invocation over inputs of up to 32K tokens. That description does not establish calibration on my inbox. Clearbox asks five questions in one request per email:
 
 ```
 action         choice  delete, archive, keep, unsure
@@ -49,17 +49,17 @@ is_from_human  noul    written personally by a human to the owner?
 
 That shape fits the job for three reasons.
 
-1. **Probabilities I can threshold.** Clearbox suggests trash only when the trash probability clears a calibrated threshold with a margin. The threshold becomes a product decision ("trash suggestions should match my own choices at least 98% of the time") rather than a prompt tweak.
-2. **No generated text.** The model returns bounded probabilities, so a hostile email cannot make it say or do anything. It can still try to nudge the numbers, which is why the guardrails and the approval step sit outside the model.
+1. **Probabilities I can threshold.** Clearbox suggests trash only when its probability clears a threshold with a margin. With enough labels, calibration targets at least 98% agreement with my trash decisions. That is a conditional product target, not a measured production guarantee or a prompt tweak.
+2. **No generated text.** The model returns bounded probabilities, not free-form prose. A hostile email may still influence those numbers, which is why guardrails and the approval step stay outside the model.
 3. **Honest reasons.** Because the model gives no rationale, the reasons on each group come from real signals (headers, sender history, my own past decisions), never from model-written explanations.
 
 The best practices on Learn match the design. Include an abstention option: in Clearbox that is `unsure`. Set thresholds from the cost of false positives and false negatives. Consider randomizing option order: Clearbox shuffles the four action options per message, seeded by the account and message id, so a retry sends the same order.
 
-One caveat up front: Clearbox treats Microsoft-Decision-1 as a Preview model, and the model catalog in Azure Resource Manager gives version 1 an inference retirement date of 4 February 2027 (Microsoft Learn did not list either detail when I checked). The runbook already has a migration plan, covered below.
+One caveat up front: in my notes from 16 October 2026, I treated Microsoft-Decision-1 as a Preview model. The Azure Resource Manager model catalog listed an inference retirement date of 4 February 2027 for version 1; I did not find either detail on Microsoft Learn then. This is the lifecycle information I recorded for that setup, not a freshly verified retirement schedule. The runbook has a migration plan, covered below.
 
 ## Architecture
 
-<Architecture diagram="architecture" caption="Clearbox architecture. Everything runs in the owner's own Cloudflare, Google, Microsoft and Azure accounts." />
+<Architecture diagram="architecture" caption="Clearbox architecture. Each self-hosted installation uses its owner's Cloudflare, Google, Microsoft and Azure accounts." />
 
 Everything runs in my own accounts. There is no shared service and no shared credential: anyone who self-hosts brings their own Cloudflare account, Google and Microsoft OAuth clients and Foundry deployment.
 
@@ -73,13 +73,13 @@ Everything runs in my own accounts. There is no shared service and no shared cre
 
 **Mail through my own OAuth clients.** Gmail uses the `gmail.modify` scope, and Microsoft Graph uses delegated `Mail.ReadWrite`. Both connect with an authorization code and PKCE, and the PKCE verifier travels in an HMAC-signed cookie. Refresh and access tokens are encrypted with AES-256-GCM, with a random IV per value and associated data bound to the account, the token kind and the key version.
 
-**The Foundry deployment.** A Bicep file and an az script in `infra/azure/` create a deployment named `decision-1` of Microsoft-Decision-1 in Sweden Central. It uses the DataZoneStandard SKU, capacity 300 (one capacity unit is one request per minute for this model) and no automatic version upgrades, so calibration stays stable. According to Learn, [DataZoneStandard is available in Sweden Central](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability#data-zone-standard) and keeps inference processing within that data zone. The Worker calls the decision endpoint with an api-key header, and the request's `model` field is the deployment name. A deployment cannot be named `Microsoft-Decision-1` itself, because that name is reserved.
+**The Foundry deployment.** For the 16 October 2026 setup, a Bicep file and an az script in `infra/azure/` created a deployment named `decision-1` of Microsoft-Decision-1 in Sweden Central. That setup used the DataZoneStandard SKU, capacity 300 and no automatic version upgrades, keeping the model version fixed for calibration. According to Learn, [DataZoneStandard is available in Sweden Central](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability#data-zone-standard) and keeps inference processing within that data zone. This describes my deployment, not the only supported configuration. Actual request limits depend on deployment capacity and allocated subscription quota, not a universal capacity-to-RPM conversion. The Worker calls the decision endpoint with an api-key header, and the request's `model` field is the deployment name. A deployment cannot be named `Microsoft-Decision-1` itself, because that name is reserved.
 
 **CI never deploys.** GitHub Actions runs lint, the format check, typecheck, every test suite and the production build, plus ShellCheck, a dry run of the deploy script and a Bicep build. CodeQL runs on every pull request. Deploys are manual: the Azure script for the model, and `pnpm setup:cf` for Cloudflare, which creates the EU database and deploys with provisioning turned off, so the CLI cannot quietly provision a database outside the EU.
 
 ## One email through the pipeline
 
-<Architecture diagram="pipeline" caption="One email through the pipeline. The dashed arrow is the learning loop: every decision updates the priors and the nightly threshold." />
+<Architecture diagram="pipeline" caption="One email through the pipeline. The dashed arrow feeds decisions back into sender priors and nightly threshold calibration, once enough labels are available." />
 
 The core is a pure TypeScript package with no Cloudflare, Hono or DOM imports. Each tick runs it on every new message of a page.
 
@@ -92,11 +92,11 @@ The core is a pure TypeScript package with no Cloudflare, Hono or DOM imports. E
 7. **Thresholds.** Trash only if its probability is at least `tau_delete` (0.80 by default, never lower) and it leads the next action by at least 0.20. Otherwise Clearbox takes the best of keep, archive and unsure, and anything below 0.55 becomes unsure.
 8. **Reasons.** Up to three, in a fixed priority: model unavailable, guardrails, low confidence, the sender prior ("You trashed 41 of 44 from this sender"), then supporting signals such as a low open rate or an unsubscribe header.
 
-The learning loop closes the circle. Every approval, override or Clean up writes a label and updates the sender and domain priors, and Undo reverses that update. Each night, a calibration job reads the newest 500 labels. Once at least 50 of them would have been trash suggestions at 0.80, it tries every threshold from 0.80 to 0.99 and keeps the smallest one with at least 20 supporting labels and at least 98% agreement with my trash decisions. If none qualifies, the threshold goes to 0.99. The Insights page shows that agreement against the 98% target.
+Approvals and overrides feed the next round of suggestions. Every approval, override or Clean up writes a label and updates the sender and domain priors, and Undo reverses that update. Each night, a calibration job reads the newest 500 labels. Once at least 50 of them would have been trash suggestions at 0.80, it tries every threshold from 0.80 to 0.99 and keeps the smallest one with at least 20 supporting labels and at least 98% agreement with my trash decisions. If none qualifies, the threshold goes to 0.99. The Insights page shows that agreement against the 98% target.
 
 ## Scanning on the Free plan
 
-Clearbox runs on Cloudflare Workers Free, and that constraint shaped the scanner more than anything else.
+Clearbox runs on Cloudflare Workers Free, and that constraint shaped the scanner more than anything else. The limits below describe the 16 October 2026 setup; provider quotas can change.
 
 Every minute, the tick leases one mailbox that is due, fetches one page of up to 25 messages (metadata and snippet only), decides the new ones and writes everything in one D1 batch. Scan now on the Accounts page runs the same tick on demand. A tick stays within 45 subrequests, D1 calls included, and a benchmark test guards the Free plan's 10 ms of CPU per invocation. If a tick is killed, the next claim halves that mailbox's page size (down to 5), and successful ticks grow it back.
 
@@ -120,7 +120,7 @@ Most of Clearbox's safety lives outside the model.
 
 ## Costs and limits
 
-Cloudflare Workers, D1, Cron Triggers, Workers Logs and Access all run on free plans, and the Gmail API and Microsoft Graph cost nothing to call. Microsoft-Decision-1 bills input tokens only; output tokens are free. The question texts count as input too. I planned for 450 to 800 input tokens per email, which the README turns into an estimate of a fraction of a dollar per ten thousand emails. The live evaluation used fewer: about 387 tokens on average and 412 at most.
+For the 16 October 2026 setup, Cloudflare Workers, D1, Cron Triggers, Workers Logs and Access ran on free plans, with no API call charge for Gmail or Microsoft Graph. Microsoft-Decision-1 billed input tokens only, including the question texts, not output tokens. I budgeted 450 to 800 input tokens per email. The live evaluation used fewer: about 387 tokens on average and 412 at most.
 
 The limits I accept:
 
@@ -130,7 +130,7 @@ The limits I accept:
 - Clearbox uses 2 of the 5 Cron Triggers a Cloudflare account gets on the Free plan.
 - A personal Google OAuth app shows the unverified app warning, and work or school Microsoft accounts may need admin consent.
 - The `cf` CLI and the Cloudflare Vite plugin are in beta, so their versions are pinned.
-- The model is in Preview. For the retirement, the runbook says to deploy the new version under a new name, run the evaluation against both deployments on the synthetic fixtures and on my exported labels, switch the deployment secret, and let the nightly calibration re-tune the threshold. A `DecisionEngine` interface isolates the model, and a deterministic fake engine keeps the app and the tests running without it.
+- Given the lifecycle information recorded above, the runbook says to deploy a new version under a new name, run the evaluation against both deployments on the synthetic fixtures and on my exported labels, switch the deployment secret, and let the nightly calibration re-tune the threshold. A `DecisionEngine` interface isolates the model, and a deterministic fake engine keeps the app and the tests running without it.
 
 ## What the evaluation showed
 
@@ -151,8 +151,8 @@ Read it for what it is. The guardrails and the threshold traded recall for preci
 
 **Let the free plan shape the design early.** The D1 write budget, not the model or the cron, decides how fast Clearbox can sort a large inbox. Designing the gates, the page size and the scan history window around it from the start was cheaper than retrofitting them.
 
-**Keep safety out of the model.** A decision model is easier to bound than a chatbot because it returns numbers, not text. The guarantees still come from code: guardrails, mandatory approval, trash-only actions and Undo.
+**Keep safety out of the model.** A decision model has a narrower output contract than a chatbot: numbers, not text. That alone does not make its decisions safe. The controls still come from code: guardrails, mandatory approval, no permanent deletion and Undo for 24 hours.
 
 **Deploying finds what tests cannot.** The first live deploy found problems that 1,589 tests could not. The first deploy was refused because the Access audience secret did not exist yet, so the documented fallback is to deploy once with a placeholder. Pasting the Azure key into a hidden prompt over a slow terminal once stored a malformed key; ticks failed safely with an authentication banner and ingested nothing until I replaced the key. And a Google consent screen left in Testing mode only lets listed test users sign in and expires refresh tokens after 7 days, so a personal deployment needs the app set to In production.
 
-The AI prepares, and I confirm. That split is the whole design: the model does the tedious sorting, and every step that moves mail stays with a person and stays reversible.
+The AI prepares the suggestions; I decide what moves. That is the core of the design: the model helps with sorting, approval stays with a person, and Clearbox offers Undo for 24 hours.

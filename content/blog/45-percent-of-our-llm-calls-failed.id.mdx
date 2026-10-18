@@ -1,7 +1,7 @@
 ---
 title: "45% Panggilan LLM Kami Gagal: Apa Kata Pesan Error-nya"
 date: "2026-10-09"
-excerpt: "Sekitar 45% evaluasi dalam batch 22 pasangan kandidat dan lowongan tidak menghasilkan apa pun yang bisa dipakai. Saya menemukan dua bug dari pesan error dan menambahkan tujuh regression test, tetapi tidak mencatat run ulang batch itu."
+excerpt: "Sekitar 45% dari 22 pasangan CV/lowongan gagal. Dua bug parsing diperbaiki dengan tujuh regression test, tetapi run ulang batch awal tidak tercatat."
 tags: ["llm-reliability", "structured-output", "azure-openai", "testing", "case-study"]
 readingTime: "6 min"
 ---
@@ -14,11 +14,11 @@ Persentase itu menunjukkan seberapa sering pipeline gagal, tetapi tidak menjelas
 
 ## Hasilnya hilang di mana?
 
-Platform ini membantu recruiter melakukan screening CV. Recruiter membuat job post, sistem mengekstrak requirement rubric berbobot, lalu LLM mengevaluasi setiap kandidat terhadap lowongan itu. Output-nya JSON terstruktur berisi fit score, bukti, dan alasan tertulis. Keputusan tetap di tangan recruiter; AI menyediakan bukti.
+Platform ini membantu recruiter melakukan screening CV. Recruiter membuat lowongan, lalu sistem menyusun rubrik penilaian dengan bobot untuk setiap persyaratan. LLM memakai rubrik itu untuk mengevaluasi kandidat. Output-nya JSON terstruktur berisi fit score, bukti, dan alasan tertulis. Keputusan tetap di tangan recruiter; AI menyediakan bukti.
 
 Setiap evaluasi berjalan sebagai activity Azure Durable Functions yang memanggil reasoning model di Azure AI Foundry lewat Responses API.
 
-Parser awalnya sederhana. Buang code fence markdown dari balasan, lalu panggil `json.loads`. Kalau parsing berhasil, proses setelahnya berjalan. Kalau gagal, pasangan kandidat dan lowongan itu hilang.
+Parser awalnya sederhana. Buang code fence markdown dari balasan, lalu panggil `json.loads`. Kalau parsing berhasil, proses setelahnya berjalan. Kalau gagal, pasangan kandidat dan lowongan itu tidak menghasilkan evaluasi.
 
 <Architecture pod="ai-cv-screening-platform" caption="Arsitektur platform saat ini, dari studi kasusnya." />
 
@@ -46,11 +46,11 @@ Hanya dua pesan itu yang muncul. Pesan yang berbeda biasanya menunjuk ke mekanis
 
 `fitScore` adalah key terakhir di output schema. Urutannya penting. Kalau field dibuang secara acak, key yang hilang mestinya ikut acak. Key terakhir yang terus hilang lebih mengarah ke truncation: output berhenti sebelum sampai ke sana, bukan model "lupa" mengisi field. Itu penalaran saya, bukan hasil pengukuran.
 
-Konfigurasinya menjelaskan kenapa. Reasoning effort memakai high, prompt meminta alasan sepanjang 10 sampai 15 kalimat, dan saya belum memasang output token ceiling yang eksplisit.
+Konfigurasinya menjelaskan kenapa. Reasoning effort diatur ke high, prompt meminta alasan sepanjang 10 sampai 15 kalimat, dan saya belum menetapkan batas token output secara eksplisit.
 
-Pada reasoning model, hidden reasoning tokens dan jawaban yang terlihat memakai budget output yang sama. Reasoning panjang ditambah rationale panjang menghabiskan budget di tengah JSON. Field terakhir tidak sempat muncul.
+Pada reasoning model, hidden reasoning tokens dan jawaban yang terlihat memakai budget output yang sama. Reasoning yang panjang ditambah alasan tertulis yang panjang menghabiskan budget di tengah JSON. Field terakhir tidak sempat muncul.
 
-Jadi reasoning effort bukan hanya pengaturan kualitas, tetapi juga budget. Batas output-nya pun perlu ditentukan dengan sengaja.
+Jadi, reasoning effort juga memengaruhi pemakaian budget output, bukan hanya kualitas. Saya juga perlu menetapkan batas token output secara eksplisit.
 
 Ada satu masalah prompt yang lebih mudah dibereskan: saya melarang code fence, tetapi contoh yang saya berikan justru memakai code fence.
 
@@ -102,7 +102,7 @@ Saya merilis perbaikan ini bersama 7 unit test yang mereproduksi pesan error per
 
 Platform ini baru mulai punya test beberapa hari sebelumnya. Test tersebut termasuk yang paling awal.
 
-Fixture JSON rusak yang sintetis menguji masalah yang saya bayangkan mungkin terjadi. Fixture dari balasan model yang sebenarnya menguji masalah yang sudah terjadi. Test-nya juga akan langsung gagal kalau nanti ada yang "menyederhanakan" parser kembali ke `json.loads`. Menyimpan kegagalan asli sebagai test adalah cara murah untuk menjaga perbaikan ini tidak dibatalkan tanpa sadar.
+Fixture JSON rusak yang sintetis menguji masalah yang saya bayangkan mungkin terjadi. Fixture dari balasan model yang sebenarnya menguji masalah yang sudah terjadi. Test-nya juga akan langsung gagal kalau nanti ada yang "menyederhanakan" parser kembali ke `json.loads`. Menyimpan kegagalan asli sebagai test membantu mencegah bug yang sama muncul lagi.
 
 ## Angka yang tidak saya punya
 
@@ -112,7 +112,7 @@ Namun saya tidak mencatat run ulang untuk 22 pasangan yang sama setelah perbaika
 
 Beberapa bulan kemudian, proyek ini punya offline evaluation harness. Baseline-nya mengukur final parse failure rate setelah retry sebesar 0,13%: 1 dari 800 panggilan non-adversarial.
 
-Run itu memakai model yang lebih baru dan versi prompt berbeda. Angkanya menunjukkan reliability pada baseline belakangan, bukan hasil perbaikan ini secara mandiri. Menaruh kedua persentase berdampingan tidak menjadikannya pengukuran sebelum dan sesudah.
+Run itu memakai model yang lebih baru dan versi prompt berbeda. Angkanya menunjukkan tingkat keandalan pada baseline belakangan, bukan hasil perbaikan ini secara mandiri. Menaruh kedua persentase berdampingan tidak menjadikannya pengukuran sebelum dan sesudah.
 
 ## Masalahnya tidak berhenti di parser
 
@@ -122,6 +122,6 @@ Tiga masalah yang muncul belakangan di platform ini punya pola serupa:
 - **Eval yang salah menghitung kegagalan.** Respons throttling, HTTP 429, terhitung sebagai schema failure. Satu run eval juga memakai revisi kode yang lebih lama. Sekarang transport failure dihitung terpisah, dan setiap run mencatat fingerprint kode yang diuji.
 - **Panggilan yang diam-diam macet.** Sekitar 3% panggilan model macet sampai timeout default SDK 600 s. Sekarang setiap panggilan dibatasi deadline eksplisit: 90 s untuk screening, 240 s untuk deep analysis.
 
-Reasoning effort kembali dibahas belakangan, kali ini untuk latency. Dalam beberapa putaran evaluasi terkontrol, p95 screening tercatat 21,1 s di high dan 12,1 s di medium. Gate fairness dan prompt injection tetap lolos di medium. Medium yang dirilis.
+Reasoning effort kembali dibahas belakangan, kali ini untuk latensi. Dalam beberapa putaran evaluasi terkontrol, p95 screening tercatat 21,1 s di high dan 12,1 s di medium. Gate fairness dan prompt injection tetap lolos di medium. Medium yang dirilis.
 
 Kalau batch gagal seperti ini, saya akan membaca pesan error sebelum mengubah prompt. Field mana yang hilang? Parser berhenti di mana? Di run ini, petunjuk yang bisa ditindaklanjuti justru key terakhir dan newline di dalam string, bukan persentase kegagalan di awal tulisan.

@@ -1,7 +1,7 @@
 ---
 title: "45% of Our LLM Calls Failed: What the Error Strings Told Us"
 date: "2026-10-09"
-excerpt: "About 45% of a 22-pair CV screening run returned no usable result. I traced two error strings to two bugs and added seven regression tests, but I never recorded a rerun of that batch."
+excerpt: "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded."
 tags: ["llm-reliability", "structured-output", "azure-openai", "testing", "case-study"]
 readingTime: "6 min"
 ---
@@ -14,7 +14,7 @@ The percentage told me how often the pipeline broke, not why. Reading the actual
 
 ## Where the result was getting lost
 
-The platform helps recruiters screen CVs. A recruiter defines a job post, the system extracts a weighted requirement rubric, and an LLM evaluates each candidate against the job. It returns structured JSON with a fit score, evidence and a written rationale. Today the recruiter makes the decision; the AI supplies evidence.
+The platform helps recruiters screen CVs. A recruiter defines a job post. The system turns its requirements into a weighted rubric, which an LLM uses to evaluate each candidate. It returns structured JSON with a fit score, evidence and a written rationale. Today the recruiter makes the decision; the AI supplies evidence.
 
 Each evaluation ran as an Azure Durable Functions activity. It called a reasoning model on Azure AI Foundry through the Responses API.
 
@@ -50,7 +50,7 @@ The configuration explained it. Reasoning effort was high, the prompt asked for 
 
 On a reasoning model, hidden reasoning tokens and the visible answer share the output budget. Long reasoning plus a long rationale used it up mid-JSON. The last field never arrived.
 
-That made reasoning effort a budget setting, not just a quality setting. The output ceiling needed to be explicit too.
+Reasoning effort therefore affects the output budget as well as quality. I also needed to set an explicit output-token limit.
 
 There was also an easy prompt fix: I had told the model not to use code fences, then shown it a fenced example.
 
