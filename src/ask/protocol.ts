@@ -1,7 +1,7 @@
 /**
  * Wire contract between the browser and the Ask the HQ Pages Function (`functions/api/ask.ts`).
  * Types and tiny dependency-free validators: imported by the client (`src/ask/client.ts`) and the
- * Function, so both sides agree.
+ * Function, so both sides agree (measurement PR, not for merge).
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md.
  */
 
