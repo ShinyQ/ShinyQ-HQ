@@ -283,5 +283,7 @@ site.
 | Edge cache | shared by all visitors | Cache API is per data center. |
 | GitHub webhooks | one for the account | No user-level webhooks: one per repository (or a GitHub App). Job progress needs `workflow_job`. |
 | 3D bytes | lazy chunk inside the budgets | Session total has about 2 KB headroom; office chunk gets its own cap (owner approval). |
+| 3D main path | trigger and hooks fit the session total | Measured in a scratch build: office chunk 12.2 KB; main path grows 2.4 KB (lite) and 2.5 KB (full), so the session totals land about 0.5 KB over (446.9 of 446.4, 470.5 of 470). Part 3 lists fallbacks; else the owner raises both session caps by 3 KB. |
+| Space rules | office fits the Lobby rules | Any curved row of five desks breaks the 6 u `SPACE_RULES` (desk gaps, 3.89 u to the kiosk, 2.32 u to the hall road); part 3 treats the office as one fixture with its own clearance tests (owner approval). |
 | Needs Kurniadi card | shows the agent's question | Prompt text; generic card only. |
 | Thinking | no tool for 8 s | 20 s without a beat (keepalives every 15 s); visitors poll every 10 s, so 8 s is not observable. |
