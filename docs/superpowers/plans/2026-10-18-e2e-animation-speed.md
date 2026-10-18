@@ -83,7 +83,7 @@ Per test in the full runs, the ride- and drive-heavy tests save the most: `works
 
 Correctness: all 30 specs pass at 4x (294 tests); the one 4x failure on the first pass (`experience` boot and intro: a describe-wide real-speed hook also slowed the room deep-link test into its 30 s intro wait) is fixed by scoping real speed to the three intro tests that assert its length or catch it mid-flight. Two specs found real issues at 4x:
 
-- `fast-return`: a beam could end on its jump frame, so the pad it landed on (the elevator call pad) was not latched and opened the floor picker. The Director now primes the pad latch on the jump frame. A real bug at real speed too: under reduced motion the beam is a 0.15 s cut with the jump at 0.075 s, so one slow frame does both. It ships in its own fix PR off main; this branch drops it on rebase.
+- `fast-return`: a beam could end on its jump frame, so the pad it landed on (the elevator call pad) was not latched and opened the floor picker. The Director now primes the pad latch on the jump frame. A real bug at real speed too: under reduced motion the beam is a 0.15 s cut with the jump at 0.075 s, so one slow frame does both. It shipped on its own in #222.
 - `fast-return` and `motion` assert the dolly's car heights (`distinctY`) and drive samples mid-flight: they stay at real speed.
 
 ### CI
