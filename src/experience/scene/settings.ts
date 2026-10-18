@@ -84,12 +84,16 @@ export function renderBudget(tier: GpuTier, coarse: boolean, screen: ScreenSize)
   return { dpr: [1, max], multisampling, bloomLevels: BLOOM_LEVELS };
 }
 
-/** `?gfx=` debug override (perf measurements and tests): `dpr1.5`, `msaa0|2|4|8`, `bloom1..8`, `monitor-on|off`. */
+/**
+ * `?gfx=` debug override (perf measurements and tests): `dpr1.5`, `msaa0|2|4|8`, `bloom1..8`, `monitor-on|off`, and
+ * `probe` (the black-frame probe, BlackFrameProbe.tsx; it keeps the quality monitor off unless `monitor-on`).
+ */
 export interface GfxOverride {
   dprMax?: number;
   multisampling?: number;
   bloomLevels?: number;
   monitor?: boolean;
+  probe?: boolean;
 }
 
 export function parseGfxOverride(search: string): GfxOverride {
@@ -99,6 +103,7 @@ export function parseGfxOverride(search: string): GfxOverride {
   for (const part of raw.split(",").map((p) => p.trim())) {
     if (part === "monitor-off") out.monitor = false;
     else if (part === "monitor-on") out.monitor = true;
+    else if (part === "probe") out.probe = true;
     const m = /^(dpr|msaa|bloom)(\d+(?:\.\d+)?)$/.exec(part);
     if (!m) continue;
     const v = Number(m[2]);

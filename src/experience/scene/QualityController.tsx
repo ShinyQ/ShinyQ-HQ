@@ -14,7 +14,7 @@ import { renderBudget, withOverride, type GfxOverride } from "./settings";
  * Runtime safety net (REPORT SP5, Area 8). Recomputes the pixel budget when the canvas resizes, runs
  * the frame monitor in explore, room and hologram phases, and applies the level: the DPR through the
  * store (Experience passes it to `Canvas`), composer MSAA and bloom levels directly on the existing
- * objects. Off under automation unless `?gfx=monitor-on`.
+ * objects. Off under automation and `?gfx=probe` unless `?gfx=monitor-on`.
  */
 export function QualityController({ tier, coarse, gfx }: { tier: GpuTier; coarse: boolean; gfx: GfxOverride }) {
   const width = useThree((s) => s.size.width);
@@ -24,7 +24,8 @@ export function QualityController({ tier, coarse, gfx }: { tier: GpuTier; coarse
   const base = useMemo(() => withOverride(renderBudget(tier, coarse, { width, height, dpr: deviceDpr }), gfx), [tier, coarse, width, height, deviceDpr, gfx]);
   const ladder = useMemo(() => qualityLadder(base, tier, deviceDpr), [base, tier, deviceDpr]);
   const level = Math.min(snapshot.level, ladder.length);
-  const enabled = gfx.monitor ?? !navigator.webdriver;
+  // The black-frame probe reads pixels back every frame; the monitor would take that stall for a slow GPU.
+  const enabled = gfx.monitor ?? (!gfx.probe && !navigator.webdriver);
   const monitor = useRef<FrameMonitor | null>(null);
   const last = useRef<number | null>(null);
 
