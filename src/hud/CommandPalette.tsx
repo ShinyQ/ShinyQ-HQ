@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslations } from "next-intl";
 import { AccentDot } from "@/components/AccentDot";
 import type { FloorId, Locale, RoomId } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
 import type { PaletteEntry, PaletteGroup } from "./palette-types";
 import { searchPalette } from "./search";
+import type { PaletteTypeahead } from "./typeahead";
 
 export interface CommandPaletteProps {
   open: boolean;
@@ -20,6 +21,8 @@ export interface CommandPaletteProps {
   /** Runs the entry. The palette calls `onClose` first. */
   onSelect: (entry: PaletteEntry) => void;
   onClose: () => void;
+  /** Keys typed after the shortcut while the palette chunk was still loading: they seed the query on open, and an Enter runs the top result. */
+  typeahead?: PaletteTypeahead;
 }
 
 const FLOOR_BADGE: Record<FloorId, string> = {
@@ -42,14 +45,17 @@ export function CommandPalette(props: CommandPaletteProps) {
   return props.open ? <PaletteDialog {...props} /> : null;
 }
 
-function PaletteDialog({ locale, entries, recent, filter = null, ask = false, onFilterChange, onSelect, onClose }: CommandPaletteProps) {
+function PaletteDialog({ locale, entries, recent, filter = null, ask = false, onFilterChange, onSelect, onClose, typeahead }: CommandPaletteProps) {
   const t = useTranslations("hud.palette");
   const tAsk = useTranslations("ask.palette");
   const tFloors = useTranslations("floors");
   const baseId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
+  const [typed] = useState(() => typeahead?.peek() ?? { text: "", submit: false });
+  const [query, setQuery] = useState(typed.text);
   const [activeIndex, setActiveIndex] = useState(0);
+  // The query whose top result runs once rendered: an Enter typed while the chunk was loading.
+  const submitFor = useRef<string | null>(typed.submit ? typed.text : null);
 
   const groups = useMemo<PaletteGroup[]>(() => searchPalette(entries, query, { filter, recent, ask }), [entries, query, filter, recent, ask]);
   const rows = useMemo<Row[]>(() => groups.flatMap((g, group) => g.entries.map((entry) => ({ entry, group }))), [groups]);
@@ -60,12 +66,22 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
   const optionId = (i: number) => `${baseId}-opt-${i}`;
   const activeId = active >= 0 ? optionId(active) : undefined;
 
-  useEffect(() => {
+  // A layout effect: the input holds focus before the next key event, so nothing typed right after a lazy open is lost.
+  useLayoutEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     inputRef.current?.focus();
+    // Keys that arrived while this first render was in progress (a lazy mount can yield to input) join the query.
+    const late = typeahead?.peek();
+    typeahead?.stop();
+    if (late?.submit) submitFor.current = late.text;
+    // One catch-up update on mount, before paint; there is nothing to derive it from during render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (late && late.text !== typed.text) setQuery(late.text);
     return () => {
       if (previous?.isConnected) previous.focus();
     };
+    // Once per open: the dialog mounts on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -78,6 +94,15 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
     onClose();
     onSelect(entry);
   };
+
+  // An Enter typed before the chunk arrived runs the top result of the typed query, once it has rendered.
+  useEffect(() => {
+    if (submitFor.current === null || submitFor.current !== query) return;
+    submitFor.current = null;
+    if (active >= 0) select(rows[active].entry);
+    // Keyed on the query only: the catch-up update above may still change it once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   const firstOfGroup = (group: number) => rows.findIndex((row) => row.group === group);
 

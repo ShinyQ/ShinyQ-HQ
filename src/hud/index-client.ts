@@ -4,12 +4,18 @@ import { HUD_INDEX_PATH } from "./index-path";
 
 /**
  * Client side of the HUD index. The pages no longer inline it (about 9 KB of compressed HTML on
- * every page, on the LCP path): MissionHud fetches the static file once after hydration.
+ * every page, on the LCP path): MissionHud fetches the static file once per page load, when the
+ * palette or the Rover menu opens, when a mission needs the runner, or when the page is idle after
+ * `load` (`requestIdleCallback`, 2 s timeout), whichever comes first.
  */
+
+/** `requestIdleCallback` timeout for the background index load. */
+export const HUD_INDEX_IDLE_TIMEOUT_MS = 2000;
 
 let current: HudIndex | null = null;
 let pending: Promise<HudIndex | null> | null = null;
 let settled = false;
+let scheduled = false;
 const listeners = new Set<() => void>();
 
 const notify = () => listeners.forEach((listener) => listener());
@@ -33,6 +39,19 @@ export function loadHudIndex(version?: string): Promise<HudIndex | null> {
   return pending;
 }
 
+/** Loads the index once the page is idle after `load` (at most `HUD_INDEX_IDLE_TIMEOUT_MS` after it). */
+export function scheduleHudIndex(version?: string) {
+  if (scheduled || current || typeof window === "undefined") return;
+  scheduled = true;
+  const run = () => void loadHudIndex(version);
+  const idle = () => {
+    if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: HUD_INDEX_IDLE_TIMEOUT_MS });
+    else window.setTimeout(run, 0);
+  };
+  if (document.readyState === "complete") idle();
+  else window.addEventListener("load", idle, { once: true });
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -53,11 +72,11 @@ const read = (): HudIndexState => {
 };
 const serverSnapshot: HudIndexState = { index: null, settled: false };
 
-/** The HUD index: `initial` when given (tests), else loaded after mount. */
+/** The HUD index: `initial` when given (tests), else loaded at idle after mount (or earlier through `loadHudIndex`). */
 export function useHudIndex(version?: string, initial?: HudIndex): HudIndexState {
   const state = useSyncExternalStore(subscribe, read, () => serverSnapshot);
   useEffect(() => {
-    if (!initial) void loadHudIndex(version);
+    if (!initial) scheduleHudIndex(version);
   }, [initial, version]);
   return initial ? { index: initial, settled: true } : state;
 }
@@ -66,6 +85,7 @@ export function useHudIndex(version?: string, initial?: HudIndex): HudIndexState
 export function primeHudIndex(index: HudIndex | null) {
   current = index;
   settled = Boolean(index);
+  scheduled = false;
   pending = index ? Promise.resolve(index) : null;
   notify();
 }

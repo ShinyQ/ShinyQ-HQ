@@ -2,13 +2,13 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createElement, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { isAskEnabled } from "@/ask/status";
 import type { Locale, RoomId } from "@/content/schema";
 import type { MissionHost, PaletteFilter } from "@/experience/missions/host";
 import { roomFromPath } from "@/experience/missions/rooms";
 import { createMissionRunner, type MissionRunner } from "@/experience/missions/runner";
-import { registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
+import { onRunnerRequest, registerRunner, resolveHost, visitedRooms, type HostDeps } from "@/experience/missions/bridge";
 import { createStaticHost } from "@/experience/missions/staticHost";
 import { REACTOR_ROOM } from "@/experience/floors/labs/techHash";
 import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
@@ -16,7 +16,6 @@ import { setSearchParams } from "@/components/page/urlState";
 import { audio } from "@/lib/audio";
 import type { MotionPref } from "@/lib/motion";
 import { getHQStore } from "@/store/useHQStore";
-import { CommandPalette } from "./CommandPalette";
 import { useTutorialAvailable } from "./dialog/hooks";
 import { hintsOn, setHintsOn } from "./dialog/storage";
 import { replayTutorial } from "./dialog/tutorial";
@@ -24,18 +23,31 @@ import { ensureAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
 import { useHudActions } from "./hudActions";
 import type { HudIndex } from "./index-data";
-import { useHudIndex } from "./index-client";
+import { loadHudIndex, useHudIndex } from "./index-client";
+import { lazyFromChunk } from "./lazyFromChunk";
+import { loadPalette, loadTerminal } from "./lazy-hud";
+import type { PaletteHostProps } from "./PaletteHost";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
 import { pushRecent, readRecent } from "./recent";
-import { RoverTerminal, markTerminalSeen } from "./RoverTerminal";
-import { buildPaletteEntries } from "./search";
-import { orderTerminalMissions } from "./terminal";
+import type { RoverTerminalProps } from "./RoverTerminal";
+import { markTerminalSeen, orderTerminalMissions } from "./terminal";
+import { createTypeahead } from "./typeahead";
 
 const MIN_TOAST_MS = 2400;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view", "motion-system", "motion-full", "motion-reduced"];
 const MOTION_ACTIONS: Partial<Record<PaletteActionId, MotionPref>> = { "motion-system": "system", "motion-full": "full", "motion-reduced": "reduced" };
 /** Only while the 3D HUD is open (its OnboardingLayer hosts the replay). */
 const TUTORIAL_ACTIONS: readonly PaletteActionId[] = ["replay-tutorial", "toggle-hints"];
+const ALL_ACTIONS: readonly PaletteActionId[] = [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS];
+
+/** A failed chunk renders nothing and reports it, so MissionHud closes the overlay and the next open retries. */
+function ChunkMissing({ onFailed }: { onFailed?: () => void }) {
+  useEffect(() => onFailed?.(), [onFailed]);
+  return null;
+}
+type LazyProps<P> = P & { onFailed?: () => void };
+const lazyPalette = lazyFromChunk<LazyProps<PaletteHostProps>>(loadPalette, ChunkMissing);
+const lazyTerminal = lazyFromChunk<LazyProps<RoverTerminalProps>>(loadTerminal, ChunkMissing);
 
 export interface MissionHudProps {
   locale: Locale;
@@ -63,6 +75,11 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const pathname = usePathname();
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // The palette and the terminal are lazy chunks, mounted on their first open and kept (the terminal remembers its typing animation).
+  const [paletteMounted, setPaletteMounted] = useState(false);
+  const [terminalMounted, setTerminalMounted] = useState(false);
+  // Keys typed between the shortcut and the palette's mount (its chunk may still be loading): they seed its query.
+  const [typeahead] = useState(createTypeahead);
   const [filter, setFilter] = useState<PaletteFilter | null>(null);
   const [recent, setRecent] = useState<RoomId[]>([]);
   const [toast, setToast] = useState<{ text: string; ms: number; id: number } | null>(null);
@@ -76,6 +93,19 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const loadAskStatus = useCallback(() => {
     void ensureAskStatus();
   }, []);
+
+  // The index loads at idle (useHudIndex); an open or a mission waiting for the runner loads it now.
+  const loadIndex = useCallback(() => {
+    if (!preloaded) void loadHudIndex(indexVersion);
+  }, [preloaded, indexVersion]);
+  useEffect(() => onRunnerRequest(loadIndex), [loadIndex]);
+
+  const openPaletteNow = useCallback(() => {
+    loadIndex();
+    loadAskStatus();
+    typeahead.start();
+    setPaletteMounted(true);
+  }, [loadIndex, loadAskStatus, typeahead]);
 
   const say = useCallback((text: string, ms = MIN_TOAST_MS) => {
     setToast({ text, ms: Math.max(ms, MIN_TOAST_MS), id: Date.now() });
@@ -97,22 +127,29 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     };
   }, [toast]);
 
+  const closePalette = useCallback(() => {
+    typeahead.stop();
+    setPaletteOpen(false);
+  }, [typeahead]);
+
   const showTerminal = useCallback(() => {
     markTerminalSeen();
+    loadIndex();
     loadAskStatus();
-    setPaletteOpen(false);
+    setTerminalMounted(true);
+    closePalette();
     setTerminalOpen(true);
-  }, [loadAskStatus]);
+  }, [loadIndex, loadAskStatus, closePalette]);
 
   const showPalette = useCallback(
     (next: PaletteFilter | null = null) => {
-      loadAskStatus();
+      openPaletteNow();
       setRecent(readRecent());
       setFilter(next);
       setTerminalOpen(false);
       setPaletteOpen(true);
     },
-    [loadAskStatus],
+    [openPaletteNow],
   );
 
   const runner: MissionRunner | null = useMemo(() => {
@@ -151,10 +188,6 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     if (settled) document.documentElement.setAttribute("data-hydrated", "");
   }, [settled]);
 
-  const entries = useMemo(
-    () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS, registered) : []),
-    [index, tutorial, registered],
-  );
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions) : []), [index]);
 
   // HUD commands and global shortcuts.
@@ -165,7 +198,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
       else {
         // The Ask dock (src/hud/ask/AskDock.tsx) takes the question; close what would cover it.
         setTerminalOpen(false);
-        setPaletteOpen(false);
+        closePalette();
       }
     });
     const onKeyDown = (event: KeyboardEvent) => {
@@ -173,11 +206,11 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         event.preventDefault();
         setPaletteOpen((open) => {
           if (!open) {
-            loadAskStatus();
+            openPaletteNow();
             setRecent(readRecent());
             setFilter(null);
             setTerminalOpen(false);
-          }
+          } else typeahead.stop();
           return !open;
         });
         return;
@@ -192,7 +225,24 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
       offCommand();
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [showTerminal, showPalette, loadAskStatus]);
+  }, [showTerminal, showPalette, openPaletteNow, closePalette, typeahead]);
+
+  // While the palette chunk loads, what is typed is kept for its query (focus moves to its input on mount). A
+  // capture listener registered at layout mount runs before every other key handler (the 3D drive and toggle
+  // keys, Rover's dialog box), and nothing else sees the key: the open palette owns the keyboard.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const kept = typeahead.key(event);
+      if (!kept) return;
+      event.stopImmediatePropagation();
+      if (kept === "escape") {
+        event.preventDefault();
+        closePalette();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [typeahead, closePalette]);
 
   // Remember rooms whose page was opened (palette "Recent", surprise skips them).
   useEffect(() => {
@@ -324,29 +374,49 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
     }
   };
 
+
   return (
     <>
-      <RoverTerminal
-        open={terminalOpen}
-        locale={locale}
-        missions={terminalMissions}
-        onRun={(id) => {
-          setTerminalOpen(false);
-          void runner?.start(id);
-        }}
-        onClose={() => setTerminalOpen(false)}
-      />
-      <CommandPalette
-        open={paletteOpen}
-        locale={locale}
-        entries={entries}
-        recent={recent}
-        filter={filter}
-        ask={askEnabled}
-        onFilterChange={setFilter}
-        onSelect={onSelect}
-        onClose={() => setPaletteOpen(false)}
-      />
+      {terminalMounted && (
+        <Suspense fallback={null}>
+          {createElement(lazyTerminal(), {
+            open: terminalOpen,
+            locale,
+            missions: terminalMissions,
+            onRun: (id: string) => {
+              setTerminalOpen(false);
+              void runner?.start(id);
+            },
+            onClose: () => setTerminalOpen(false),
+            onFailed: () => {
+              setTerminalOpen(false);
+              setTerminalMounted(false);
+            },
+          })}
+        </Suspense>
+      )}
+      {paletteMounted && (
+        <Suspense fallback={null}>
+          {createElement(lazyPalette(), {
+            open: paletteOpen,
+            locale,
+            index,
+            actions: tutorial ? ALL_ACTIONS : STATIC_ACTIONS,
+            hudActions: registered,
+            recent,
+            filter,
+            ask: askEnabled,
+            onFilterChange: setFilter,
+            onSelect,
+            onClose: closePalette,
+            typeahead,
+            onFailed: () => {
+              closePalette();
+              setPaletteMounted(false);
+            },
+          })}
+        </Suspense>
+      )}
       <div role="status" aria-live="polite" className="no-print pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pb-[env(safe-area-inset-bottom)]">
         {toast && (
           <p key={toast.id} className="rounded-lg border border-terminal-fg/40 bg-terminal-bg px-4 py-2 font-mono text-[13px] leading-5 text-terminal-fg shadow-[0_0_24px_rgb(52_211_153/0.2)]">

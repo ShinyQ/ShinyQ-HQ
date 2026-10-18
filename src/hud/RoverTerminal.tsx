@@ -7,17 +7,9 @@ import { resolveReducedMotion } from "@/lib/motion";
 import { useHQStore } from "@/store/useHQStore";
 import { greetingKey } from "./terminal";
 
-export const TERMINAL_SEEN_KEY = "hq:terminal-seen";
+export { TERMINAL_SEEN_KEY, markTerminalSeen } from "./terminal";
 const CHAR_MS = 12;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-export function markTerminalSeen() {
-  try {
-    localStorage.setItem(TERMINAL_SEEN_KEY, "1");
-  } catch {
-    // Storage can be unavailable (private mode); the terminal may auto-open again.
-  }
-}
 
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia?.(REDUCED_MOTION);

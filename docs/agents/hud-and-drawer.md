@@ -53,7 +53,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 
 - The HUD index (`HudIndex`: rooms, missions, years; `src/hud/index-data.ts`) is built on the server so zod and the dataset never ship to the client.
 - It is exported as a static file (`/data/hud/index.json`, from `src/app/data`), not as a layout prop: every layout client prop is inlined into every HTML file and sits on the LCP path.
-- `MissionHud` fetches it after hydration (`useHudIndex` in `src/hud/index-client.ts`) and sets `html[data-hydrated]` once it loaded.
+- `MissionHud` fetches it on demand (`src/hud/index-client.ts`): when the palette or the Rover menu opens, when `goToRoom` or `runMissionSteps` waits for the runner (`onRunnerRequest` in `missions/bridge.ts`), else once the page is idle after `load` (`scheduleHudIndex`: `requestIdleCallback`, 2 s timeout). It sets `html[data-hydrated]` once the index loaded (or failed).
   - The URL carries `hudIndexVersion`, so the 1 h `/data/*` cache never outlives a deploy.
 - `goToRoom` and `runMissionSteps` wait up to 5 s for the runner.
 - HUD components get data through props.
@@ -110,6 +110,8 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - From anywhere, through `src/hud/events.ts` (window `hq:hud` events):
   - `openPalette(filter?)`, `openTerminal()`.
+  - The command palette (`PaletteHost`, with `CommandPalette` and `search.ts`) and the Rover menu (`RoverTerminal`) are lazy chunks (`src/hud/lazy-hud.ts`): `MissionHud` mounts each on its first open (React.lazy through `lazyFromChunk`, `Suspense` fallback null, so the closed state renders nothing as before) and keeps it mounted. `HudLaunchers` warms the chunk on hover or focus. A failed chunk closes the overlay; the next open retries.
+  - The shortcuts work on the first press: keys typed after Ctrl K, Cmd K or `/` while the palette chunk loads are kept (`src/hud/typeahead.ts`) and seed its query on mount; an Enter typed then runs the top result. A window capture listener registered at layout mount takes them first and stops them, so no other key handler (the 3D drive and language keys, Rover's dialog box) sees them.
   - `enterHq()`: Page View to the 3D tower, handled by `ExperienceGate` like Back to 3D.
 - `openCv()`, `openPaper(preview)` and `openCert(view)` open the site-wide modals in `DialogHost`.
   - `DialogHost` is mounted in the locale layout outside `#site-shell`, so the modals work over the 3D tower and the room drawer; chunks load on first use.

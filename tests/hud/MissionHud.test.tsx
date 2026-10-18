@@ -19,7 +19,7 @@ import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
 import { registerTutorial } from "@/hud/dialog/tutorial";
 import { RECENT_KEY } from "@/hud/recent";
-import { TERMINAL_SEEN_KEY } from "@/hud/RoverTerminal";
+import { TERMINAL_SEEN_KEY } from "@/hud/terminal";
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), pathname: "/en" }));
 vi.mock("next/navigation", () => ({
