@@ -130,6 +130,64 @@ describe("install", () => {
     expect(readFileSync(p.codex, "utf8")).toBe("{ not json");
   });
 
+  it("bundles the relay into ~/.hq-office-relay and the hooks run from that copy alone", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "relay-bundle-"));
+    const [home, work, relayHome] = ["home", "work", "relay"].map((d) => path.join(root, d));
+    for (const dir of [home, work]) mkdirSync(dir);
+    const bun = process.versions.bun ? process.execPath : spawnSync("which", ["bun"], { encoding: "utf8" }).stdout.trim();
+    const report = install(home, { cli: path.resolve("tools/office-relay/src/cli.ts"), runtime: bun, now: opts.now, bundle: true });
+    const p = installPaths(home);
+    expect(p.program).toBe(path.join(home, ".hq-office-relay", "office-relay.js"));
+    expect(installPaths(home, { OFFICE_RELAY_INSTALL_DIR: path.join(root, "elsewhere") }).program).toBe(path.join(root, "elsewhere", "office-relay.js"));
+    expect(report[0]).toBe(`program: ${p.program}`);
+    expect(readFileSync(p.bin, "utf8")).toBe(`#!/bin/sh\ncd / && exec '${bun}' --no-env-file '${p.program}' "$@"\n`);
+    expect(readdirSync(path.dirname(p.program))).toEqual(["office-relay.js"]);
+
+    // Fully bundled: no relative or `@/` import left, and nothing points back into the checkout (SELF comes from import.meta.url at run time).
+    const program = readFileSync(p.program, "utf8");
+    expect(program).not.toMatch(/(from\s*|import\s*\(\s*|require\s*\(\s*)["'](\.{1,2}|@)\//);
+    expect(program).not.toContain(process.cwd());
+    expect(program).toContain("fileURLToPath(import.meta.url)");
+
+    const line = json(p.copilot).hooks.preToolUse[0].bash as string;
+    const spool = path.join(root, "spool");
+    const env = { PATH: process.env.PATH ?? "", NODE_ENV: "test" as const, HOME: home, OFFICE_RELAY_HOME: relayHome };
+    const input = JSON.stringify(HOOK_FIXTURES.copilot.preToolUse);
+    const spooled = spawnSync("/bin/sh", ["-c", line], { input, encoding: "utf8", cwd: work, env: { ...env, OFFICE_RELAY_SPOOL: spool }, timeout: 10_000 });
+    expect(spooled.status).toBe(0);
+    expect(spooled.stdout + spooled.stderr).toBe("");
+    expect(JSON.parse(readFileSync(spool, "utf8").trim())).toMatchObject({ v: 1, agent: "copilot", state: "testing" });
+
+    // The detached sender is the bundle too: a closed local port gives `send 0`.
+    const port = await new Promise<number>((resolve) => {
+      const server = createServer().listen(0, "127.0.0.1", () => {
+        const { port: free } = server.address() as { port: number };
+        server.close(() => resolve(free));
+      });
+    });
+    const failure = { ...HOOK_FIXTURES.copilot.preToolUse, sessionId: "bundle-send" };
+    const sent = spawnSync("/bin/sh", ["-c", line], { input: JSON.stringify(failure), encoding: "utf8", cwd: work, env: { ...env, OFFICE_RELAY_KEY: "k", OFFICE_RELAY_ENDPOINT: `http://127.0.0.1:${port}/api/office/beat` }, timeout: 10_000 });
+    expect(sent.status).toBe(0);
+    expect(sent.stdout + sent.stderr).toBe("");
+    const log = path.join(relayHome, "relay.log");
+    for (let i = 0; i < 100 && !(existsSync(log) && readFileSync(log, "utf8").includes("send ")); i++) await new Promise((r) => setTimeout(r, 50));
+    expect(readFileSync(log, "utf8")).toMatch(/\S+ send 0\n$/);
+
+    uninstall(home);
+    expect(existsSync(p.program)).toBe(false);
+    expect(existsSync(p.bin)).toBe(false);
+    expect(existsSync(path.join(relayHome, "relay.log"))).toBe(true);
+  });
+
+  it("aborts before any write when the bundle cannot be built", () => {
+    const home = mkdtempSync(path.join(tmpdir(), "relay-install-"));
+    const bun = process.versions.bun ? process.execPath : spawnSync("which", ["bun"], { encoding: "utf8" }).stdout.trim();
+    expect(() => install(home, { cli: path.join(home, "missing.ts"), runtime: bun, now: opts.now, bundle: true })).toThrow(/cannot bundle/);
+    const p = installPaths(home);
+    for (const file of [p.copilot, p.claude, p.codex, p.bin, p.program]) expect(existsSync(file)).toBe(false);
+    expect(existsSync(path.dirname(p.program)) ? readdirSync(path.dirname(p.program)) : []).toEqual([]);
+  });
+
   it("runs Bun from / without .env files, so the agent's repository cannot preload code or set relay overrides", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "relay-evil-"));
     const [home, evil, relayHome] = ["home", "evil", "relay"].map((d) => path.join(root, d));

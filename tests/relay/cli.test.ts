@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { createServer as createNetServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -113,6 +113,25 @@ describe("office-relay CLI", () => {
     expect(run(["status"], { HOME: h, OFFICE_RELAY_KEY: "k" }).stdout).toMatch(/office-relay: paused[\s\S]*ingest key: found/);
     expect(run(["resume"], { HOME: h }).stdout).toContain("active");
     expect(existsSync(path.join(h, ".office-pause"))).toBe(false);
+  });
+
+  it("install copies the bundle into the install dir; status shows it; uninstall removes it", () => {
+    const h = home();
+    const dir = path.join(h, "program");
+    const env = { HOME: h, OFFICE_RELAY_KEY: "k", OFFICE_RELAY_INSTALL_DIR: dir };
+    const program = path.join(dir, "office-relay.js");
+    expect(run(["status"], env).stdout).toContain("program: running from a checkout");
+    const installed = run(["install"], env);
+    expect(installed.status).toBe(0);
+    expect(installed.stdout).toContain(`program: ${program}`);
+    expect(readFileSync(path.join(h, ".local", "bin", "office-relay"), "utf8")).toContain(`--no-env-file '${program}' "$@"`);
+    const shown = /program: (\S+) \(installed (\S+)\)/.exec(run(["status"], env).stdout);
+    expect(shown?.[1]).toBe(program);
+    // Node (vitest) and Bun round the file time's sub-millisecond part differently.
+    expect(Math.abs(Date.parse(shown?.[2] ?? "") - statSync(program).mtimeMs)).toBeLessThan(2);
+    expect(run(["uninstall"], env).status).toBe(0);
+    expect(existsSync(program)).toBe(false);
+    expect(run(["status"], env).stdout).toContain("program: running from a checkout");
   });
 
   it("pause: exit 1 with a message when the pause file cannot be written", () => {

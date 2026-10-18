@@ -11,10 +11,12 @@ output and the raw session id never leave the machine.
 1. Put the ingest key in the Keychain (the same value as the `OFFICE_INGEST_KEY` production secret); already done if
    `office-relay status` (before the install: `bun tools/office-relay/src/cli.ts status`) shows `ingest key: found`:
    `security add-generic-password -s hq-office-ingest -a office-relay -w <key>`
-2. From the repository root: `bun tools/office-relay/src/cli.ts install`. It writes the shim `~/.local/bin/office-relay`
-   (pointing at this checkout and this Bun), `~/.copilot/hooks/office.json`, and merges `~/.claude/settings.json` and
-   `~/.codex/hooks.json` (a backup `*.office-backup-<time>` sits next to each changed file). Run it from a checkout
-   that stays (not a worktree that will be deleted).
+2. From the root of any checkout (a worktree is fine): `bun tools/office-relay/src/cli.ts install`. It bundles the relay
+   into one self-contained file, `~/.hq-office-relay/office-relay.js` (printed as `program:`), writes the shim
+   `~/.local/bin/office-relay` (running that file with the Bun that ran the install, by absolute path),
+   `~/.copilot/hooks/office.json`, and merges `~/.claude/settings.json` and `~/.codex/hooks.json` (a backup
+   `*.office-backup-<time>` sits next to each changed file). The checkout can be deleted afterwards. To update the
+   relay, run the install again from a newer checkout; reinstall too after moving or reinstalling Bun.
 3. Codex: start Codex, open `/hooks`, review and trust the office-relay hooks (again after any reinstall).
 4. Check: `office-relay status` shows "active", "ingest key: found" and the three hooks installed. Use each agent once
    and run `office-relay status` again: the last events list `copilot ...`, `claude ...` and `codex ...` lines with
@@ -22,16 +24,18 @@ output and the raw session id never leave the machine.
    (the app is built on Copilot CLI; this confirms it loads `~/.copilot/hooks`).
 
 Every hook command is written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` (the directory
-single-quoted), so a hook never fails, even when Bun or the checkout is missing. The shim runs Bun from `/` with
+single-quoted), so a hook never fails, even when Bun or the program is missing. The shim runs Bun from `/` with
 `--no-env-file`, so a project's `bunfig.toml` or `.env` never affects the relay. Install and uninstall parse every
 file before writing anything: a file they cannot parse aborts the command with exit code 1 and nothing changed.
 
 ## Use
 
 - `office-relay pause` stops all broadcasting (creates `~/.office-pause`); `office-relay resume` starts it again.
-- `office-relay status`: state, endpoint, key, allowlist, hooks and the last ten events (agent, event, state, outcome
-  only).
-- `office-relay uninstall` removes the office entries, the Copilot file and the shim (other hooks stay).
+- `office-relay status`: state, the program (`~/.hq-office-relay/office-relay.js` and its install time, or "running from
+  a checkout" when it is not installed), endpoint, key, allowlist, hooks and the last ten events (agent, event, state,
+  outcome only).
+- `office-relay uninstall` removes the office entries, the Copilot file, the shim and `~/.hq-office-relay/office-relay.js`
+  (other hooks stay, and so does the data in `~/.office-relay/`: salt, config, log, sessions).
 - Config: `~/.office-relay/config.json` `{ "endpoint": "https://kurniadi.pages.dev/api/office/beat", "allow": ["ShinyQ/*"] }`
   (only `https://` endpoints are accepted). Only repositories in `allow` (and, on the server, only public ones) show a
   title; everything else is "Client project".
@@ -56,6 +60,7 @@ set them.
 - `OFFICE_RELAY_ENDPOINT`: another endpoint, accepted only on `http://127.0.0.1:<port>/`.
 - `OFFICE_RELAY_SPOOL`: append beats to this file instead of starting the sender.
 - `OFFICE_RELAY_HOME`: the relay directory instead of `~/.office-relay` (an empty `HOME` falls back to the OS home).
+- `OFFICE_RELAY_INSTALL_DIR`: the program directory instead of `~/.hq-office-relay` (tests only).
 
 ## Troubleshooting
 

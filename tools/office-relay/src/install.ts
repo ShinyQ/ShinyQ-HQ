@@ -1,4 +1,5 @@
-import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 /** Every command the installer writes contains this, so it only ever replaces or removes its own entries. */
@@ -13,14 +14,17 @@ export interface InstallPaths {
   claude: string;
   codex: string;
   bin: string;
+  /** The installed single-file bundle, outside any checkout (`OFFICE_RELAY_INSTALL_DIR` overrides the directory). */
+  program: string;
 }
 
-export function installPaths(home: string): InstallPaths {
+export function installPaths(home: string, env: Partial<NodeJS.ProcessEnv> = process.env): InstallPaths {
   return {
     copilot: path.join(home, ".copilot", "hooks", "office.json"),
     claude: path.join(home, ".claude", "settings.json"),
     codex: path.join(home, ".codex", "hooks.json"),
     bin: path.join(home, ".local", "bin", "office-relay"),
+    program: path.join(env.OFFICE_RELAY_INSTALL_DIR || path.join(home, ".hq-office-relay"), "office-relay.js"),
   };
 }
 
@@ -106,20 +110,38 @@ export function installed(p: InstallPaths): Record<"copilot" | "claude" | "codex
   return { copilot: hasMarker(p.copilot), claude: hasMarker(p.claude), codex: hasMarker(p.codex) };
 }
 
-/** Installs the shim and the three hook configs. Parses every file first, so a broken one aborts before any write. */
-export function install(home: string, opts: { cli: string; runtime: string; now?: number }): string[] {
+/** Bundles `entry` and everything it imports into one file at `out` (written next to it, then renamed). */
+function bundle(entry: string, runtime: string, out: string): void {
+  mkdirSync(path.dirname(out), { recursive: true });
+  const tmp = `${out}.tmp-${process.pid}`;
+  const r = spawnSync(runtime, ["build", "--target=bun", `--outfile=${tmp}`, entry], { cwd: "/", encoding: "utf8", timeout: 60_000 });
+  if (r.status !== 0 || !existsSync(tmp)) {
+    rmSync(tmp, { force: true });
+    throw new Error(`office-relay: cannot bundle ${entry}; nothing was changed\n${r.stderr || r.error?.message || ""}`.trim());
+  }
+  renameSync(tmp, out);
+}
+
+/**
+ * Installs the shim and the three hook configs. Parses every file first, so a broken one aborts before any write.
+ * With `bundle`, `cli` is bundled into `program` and the shim runs that copy, so the checkout can be deleted afterwards.
+ */
+export function install(home: string, opts: { cli: string; runtime: string; now?: number; bundle?: boolean }): string[] {
   const p = installPaths(home);
   const stamp = opts.now ?? Date.now();
   const claude = mergeClaude(readJson(p.claude), p.bin);
   const codex = mergeCodex(readJson(p.codex), p.bin);
+  if (opts.bundle) bundle(opts.cli, opts.runtime, p.program);
+  const program = opts.bundle ? p.program : opts.cli;
   mkdirSync(path.dirname(p.bin), { recursive: true });
   // From `/` and without .env files: the agent's repository (its bunfig.toml preload, its .env) never reaches the relay.
-  writeFileSync(p.bin, `#!/bin/sh\ncd / && exec ${shq(opts.runtime)} --no-env-file ${shq(opts.cli)} "$@"\n`);
+  writeFileSync(p.bin, `#!/bin/sh\ncd / && exec ${shq(opts.runtime)} --no-env-file ${shq(program)} "$@"\n`);
   chmodSync(p.bin, 0o755);
   writeJson(p.copilot, copilotHooks(p.bin), stamp);
   writeJson(p.claude, claude, stamp);
   writeJson(p.codex, codex, stamp);
   return [
+    ...(opts.bundle ? [`program: ${p.program}`] : []),
     `shim: ${p.bin}`,
     `GitHub Copilot: ${p.copilot}`,
     `Claude Code: ${p.claude} (backup next to it)`,
@@ -140,5 +162,6 @@ export function uninstall(home: string): string[] {
   if (codex) writeJson(p.codex, codex, stamp);
   rmSync(p.copilot, { force: true });
   rmSync(p.bin, { force: true });
-  return ["office-relay hooks removed (backups kept next to the files)"];
+  rmSync(p.program, { force: true });
+  return ["office-relay hooks and program removed (backups kept next to the files; ~/.office-relay data stays)"];
 }

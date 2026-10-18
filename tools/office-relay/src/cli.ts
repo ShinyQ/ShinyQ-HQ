@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { spawn } from "node:child_process";
-import { appendFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parseOfficeBeat } from "../../../src/lib/office/protocol";
@@ -10,6 +10,7 @@ import { install, installed, installPaths, uninstall } from "./install";
 import { endpointOf, postBeat, readIngestKey } from "./send";
 import { appendLog, isPaused, loadConfig, relayPaths, type RelayPaths } from "./store";
 
+/** This file, or the installed bundle when running from it (Bun keeps `import.meta.url` as the bundle's own URL). */
 const SELF = fileURLToPath(import.meta.url);
 
 /** stdin of a hook, capped at 1 MB and 1 s (a hook that never closes stdin cannot hang the agent). */
@@ -69,12 +70,15 @@ function status(paths: RelayPaths): string {
   } catch {
     tail = ["(no events yet)"];
   }
+  const install = installPaths(process.env.HOME || homedir());
+  const program = existsSync(install.program) ? `${install.program} (installed ${statSync(install.program).mtime.toISOString()})` : "running from a checkout";
   return [
     `office-relay: ${isPaused(paths) ? "paused" : "active"}`,
+    `program: ${program}`,
     `endpoint: ${config.endpoint}`,
     `ingest key: ${readIngestKey() ? "found" : "missing (security add-generic-password -s hq-office-ingest -a office-relay -w <key>)"}`,
     `allowlist: ${config.allow.join(", ")}`,
-    ...Object.entries(installed(installPaths(process.env.HOME || homedir()))).map(([agent, ok]) => `hooks ${agent}: ${ok ? "installed" : "not installed"}`),
+    ...Object.entries(installed(install)).map(([agent, ok]) => `hooks ${agent}: ${ok ? "installed" : "not installed"}`),
     "last events:",
     ...tail.map((l) => `  ${l}`),
   ].join("\n");
@@ -103,7 +107,7 @@ async function main(argv: string[]): Promise<void> {
       console.log(status(paths));
       return;
     case "install":
-      console.log(install(process.env.HOME || homedir(), { cli: SELF, runtime: process.execPath }).join("\n"));
+      console.log(install(process.env.HOME || homedir(), { cli: SELF, runtime: process.execPath, bundle: true }).join("\n"));
       return;
     case "uninstall":
       console.log(uninstall(process.env.HOME || homedir()).join("\n"));
