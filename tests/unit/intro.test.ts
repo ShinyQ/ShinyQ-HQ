@@ -1,6 +1,21 @@
+import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { followPose, FOLLOW_LOOK_AHEAD, followForward } from "@/experience/camera/rigs";
-import { cubicBezierEase, decayVeil, FACE_Y, INTRO, introFace, introFog, introHeading, introPlan, introPose, reducedVeil, revealRadius, skipsIntro } from "@/experience/camera/intro";
+import {
+  cubicBezierEase,
+  decayVeil,
+  FACE_Y,
+  INTRO,
+  introFace,
+  introFog,
+  introHeading,
+  introPlan,
+  introPose,
+  orbitCenter,
+  reducedVeil,
+  revealRadius,
+  skipsIntro,
+} from "@/experience/camera/intro";
 import { yawLooking } from "@/experience/camera/look";
 import { LOBBY, SHAFT } from "@/experience/config";
 import { OBSERVATORY_VIEW } from "@/experience/floors/lobby/observatoryLayout";
@@ -23,6 +38,12 @@ const cases: [ViewportClass, number, number][] = [
   ["mobile", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.mobile],
 ];
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
+/** The camera's angle around the orbit's center (Rover, or the plaza on narrow frames) at `t`. */
+const angleAt = (plan: ReturnType<typeof introPlan>, t: number) => {
+  const p = introPose(plan, t).position;
+  const c = orbitCenter(plan, t);
+  return Math.atan2(p[0] - c[0], p[2] - c[2]);
+};
 
 describe("intro timeline", () => {
   it("lands exactly on the follow pose at rest", () => {
@@ -39,7 +60,7 @@ describe("intro timeline", () => {
     }
   });
 
-  it("opens on a close-up of the face and sweeps 270 degrees around Rover", () => {
+  it("opens on a close-up of the face and sweeps 270 degrees around the orbit's center", () => {
     for (const [cls, yaw, zoom] of cases) {
       const plan = introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom));
       const first = introPose(plan, 0);
@@ -50,11 +71,10 @@ describe("intro timeline", () => {
       expect(first.target[1]).toBeLessThan(FACE_Y + 0.5);
       expect(plan.sweep).toBeCloseTo(1.5 * Math.PI);
       expect(plan.wakeHeading).toBeCloseTo(plan.start);
-      // The camera's angle around Rover never goes back.
+      // The camera's angle around the orbit's center never goes back.
       let prev = -Infinity;
       for (let i = 0; i <= 400; i++) {
-        const p = introPose(plan, (INTRO.duration * i) / 400).position;
-        const a = Math.atan2(p[0] - rover[0], p[2] - rover[2]);
+        const a = angleAt(plan, (INTRO.duration * i) / 400);
         const unwrapped = prev === -Infinity ? a : prev + Math.atan2(Math.sin(a - prev), Math.cos(a - prev));
         expect(unwrapped).toBeGreaterThanOrEqual(prev - 1e-9);
         prev = unwrapped;
@@ -96,8 +116,7 @@ describe("intro timeline", () => {
     let prev = plan.start;
     let swept = 0;
     for (let i = 1; i <= 400; i++) {
-      const p = introPose(plan, (t * i) / 400).position;
-      const a = Math.atan2(p[0] - rover[0], p[2] - rover[2]);
+      const a = angleAt(plan, (t * i) / 400);
       swept += Math.atan2(Math.sin(a - prev), Math.cos(a - prev));
       prev = a;
     }
@@ -113,14 +132,15 @@ describe("intro timeline", () => {
     }
   });
 
-  it("looks at the landmarks from the side at mid-orbit (pitch 32 to 45 degrees, like the follow camera)", () => {
+  it("looks at the landmarks from the side at mid-orbit on desktop (pitch 32 to 45 degrees), down on the plaza on narrow frames", () => {
     const mid = (INTRO.wake + INTRO.duration) / 2;
     for (const [cls, yaw, zoom] of primed) {
       const plan = introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom));
+      const [lo, hi] = cls === "desktop" ? [32, 45] : [50, 65];
       for (let t = mid - 0.5; t <= mid + 0.5 + 1e-9; t += 0.05) {
         const pitch = pitchAt(introPose(plan, t));
-        expect(pitch).toBeGreaterThanOrEqual(32);
-        expect(pitch).toBeLessThanOrEqual(45);
+        expect(pitch).toBeGreaterThanOrEqual(lo);
+        expect(pitch).toBeLessThanOrEqual(hi);
       }
     }
   });
@@ -144,6 +164,97 @@ describe("intro timeline", () => {
       expect(half).toBeGreaterThan(0.4);
       expect(half).toBeLessThan(0.6);
       expect(sweptAt(plan, INTRO.duration)).toBeCloseTo(1, 6);
+    }
+  });
+
+  // The primed phone view (portrait screens, tablets standing up included), drawn as on a 390 x 844 phone.
+  const phone = introPlan("mobile", rover, LOBBY.spawnHeading, endFor("mobile", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.mobile));
+  // The tablet camera class is a landscape frame (a phone on its side, a landscape tablet).
+  const tablet = introPlan("tablet", rover, LOBBY.spawnHeading, endFor("tablet", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.tablet));
+  const cameraAt = (plan: ReturnType<typeof introPlan>, aspect: number, t: number) => {
+    const p = introPose(plan, t);
+    const camera = new PerspectiveCamera(p.fov, aspect, 0.1, 500);
+    camera.position.set(...p.position);
+    camera.lookAt(new Vector3(...p.target));
+    camera.updateMatrixWorld();
+    return camera;
+  };
+  const phoneCamera = (t: number) => cameraAt(phone, 390 / 844, t);
+  const pullEnd = INTRO.wake + phone.hold + phone.pull;
+
+  it("keeps the plaza in the middle of the phone frame from the end of the pull-back to the landing", () => {
+    // The follow view itself frames the hologram low (NDC y -0.66), so the window holds until 0.8 s before the end.
+    for (let t = pullEnd; t <= INTRO.duration - 0.8 + 1e-9; t += 1 / 60) {
+      const h = new Vector3(LOBBY.hologram.x, 0, LOBBY.hologram.z).project(phoneCamera(t));
+      expect(Math.abs(h.x)).toBeLessThan(0.5);
+      expect(Math.abs(h.y)).toBeLessThan(0.6);
+    }
+  });
+
+  it("orbits the phone closer and higher than Rover's 42 u circle at its end height + 6", () => {
+    let top = -Infinity;
+    for (let t = pullEnd; t <= INTRO.duration + 1e-9; t += 1 / 60) {
+      const p = introPose(phone, t).position;
+      const c = orbitCenter(phone, t);
+      expect(Math.hypot(p[0] - c[0], p[2] - c[2])).toBeLessThan(26);
+      top = Math.max(top, p[1]);
+    }
+    expect(phone.focus).toEqual([LOBBY.hologram.x, 0, LOBBY.hologram.z]);
+    expect(top).toBeGreaterThanOrEqual(phone.end.position[1] + 9);
+  });
+
+  it("only shows the skills wall from the front on a phone and a tablet", () => {
+    const wall = LOBBY.skillsWall;
+    for (const [plan, aspect] of [
+      [phone, 390 / 844],
+      [tablet, 844 / 390],
+      [tablet, 1000 / 800],
+    ] as const) {
+      let seen = 0;
+      for (let i = 0; i <= INTRO.duration * 60; i++) {
+        const camera = cameraAt(plan, aspect, i / 60);
+        const w = new Vector3(wall.x, wall.h / 2, wall.z).project(camera);
+        if (Math.abs(w.x) < 1 && Math.abs(w.y) < 1 && w.z < 1) {
+          seen++;
+          // The wall's skills face +z.
+          expect(camera.position.z).toBeGreaterThan(wall.z + wall.d / 2);
+        }
+      }
+      expect(seen).toBeGreaterThan(30);
+    }
+  });
+
+  it("leaves every desktop pose as it was (the narrow-frame orbit is phone and tablet only)", () => {
+    const pinned: Record<string, [number, { position: number[]; target: number[]; fov: number }][]> = {
+      primed: [
+        [0, { position: [-10.010973036682085, 2.4, 6.982899361999176], target: [-7.173734378075779, 1.85, 8.102085134831322], fov: 38 }],
+        [0.5, { position: [-9.926580291666822, 2.4, 7.0161891803459095], target: [-7.173734378075779, 1.85, 8.102085134831322], fov: 38 }],
+        [1.5, { position: [-11.819020965476223, 5.1951977813343735, 6.70691219737842], target: [-6.30179564505891, 1.9074961568945363, 8.406891870373713], fov: 38.03260869565217 }],
+        [2.5, { position: [-25.737411069106052, 30.96830869996757, 22.65897795241655], target: [0.41461102745159906, 2.4376392612335103, 2.8313441090563964], fov: 38.43478260869565 }],
+        [3.3, { position: [-9.41802920333116, 33.95531279962112, 34.14501855924917], target: [-5.734550335529234, 2.488828199905279, -1.6506257919729173], fov: 38.78260869565217 }],
+        [4.4, { position: [16.227577403630516, 31.217377105226348, 22.246413564223996], target: [-13.713883170212913, 1.804344276306587, 4.034554456858929], fov: 39.26086956521739 }],
+        [5.5, { position: [16.46448106590216, 28.538839401053885, -6.959247654575564], target: [-12.072941385568607, 1.1347098502634716, 11.754414915983523], fov: 39.73913043478261 }],
+        [6.2, { position: [4.83848003034851, 28.058538852071692, -17.13430159987506], target: [-9.262596732829874, 1.0146347130179232, 13.761063954213167], fov: 39.977739130434784 }],
+      ],
+      offAxis: [
+        [0, { position: [-7.155354406189995, 2.4, 4.790169527340513], target: [-6.806583411298225, 1.85, 7.820162727518066], fov: 38 }],
+        [0.5, { position: [-7.1449803259019875, 2.4, 4.880295693768181], target: [-6.806583411298225, 1.85, 7.820162727518066], fov: 38 }],
+        [1.5, { position: [-7.3811043361500905, 5.1951977813343735, 5.0373114686882055], target: [-6.66487002218319, 1.9074961568945363, 8.732906730792042], fov: 38.03260869565217 }],
+        [2.5, { position: [-17.729298703084815, 30.96830869996757, 3.2108003855977194], target: [1.4166094693047917, 2.4376392612335103, 12.032382546422967], fov: 38.43478260869565 }],
+        [3.3, { position: [-29.783189033344634, 33.95531279962112, 17.673406076596695], target: [2.474788762127412, 2.488828199905279, 4.497099124682917], fov: 38.78260869565217 }],
+        [4.4, { position: [-8.231203089489192, 31.217377105226348, 34.533837033095345], target: [-6.298135099741243, 1.804344276306587, 0.13512321206896227], fov: 39.26086956521739 }],
+        [5.5, { position: [17.513919916239388, 28.538839401053885, 21.527265798106125], target: [-12.33569586964203, 1.1347098502634716, 5.218114004771815], fov: 39.73913043478261 }],
+        [6.2, { position: [21.10288214061398, 28.058538852071692, 6.533577946177055], target: [-12.782491475145296, 1.0146347130179232, 8.642300202499401], fov: 39.977739130434784 }],
+      ],
+    };
+    const views: Record<string, [number, number]> = {
+      primed: [axisYaw + OBSERVATORY_VIEW.spawnTurn, OBSERVATORY_VIEW.spawnZoom],
+      offAxis: [0.9, 1.5],
+    };
+    for (const [name, [yaw, zoom]] of Object.entries(views)) {
+      const plan = introPlan("desktop", rover, LOBBY.spawnHeading, endFor("desktop", yaw, zoom));
+      expect(plan.focus).toEqual(rover);
+      for (const [t, pose] of pinned[name]) expect(introPose(plan, t)).toEqual(pose);
     }
   });
 

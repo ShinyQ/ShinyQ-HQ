@@ -1,4 +1,4 @@
-import { SHAFT } from "../config";
+import { LOBBY, SHAFT } from "../config";
 import type { ViewportClass } from "../types";
 import type { CameraPose, Vec3 } from "./rigs";
 
@@ -36,17 +36,29 @@ const PUSH = 0.06;
 /** How long the pull-back from the close-up to the orbit's high point takes (s after the wake), per camera class. */
 const PULL: Record<ViewportClass, number> = { desktop: 2, tablet: 2.1, mobile: 2.6 };
 /**
- * The orbit's high point after the pull-back: radius around Rover and how far above the end (follow) height it rises,
- * so the orbit descends onto the follow pose on every camera class.
+ * The orbit's high point after the pull-back: radius around the orbit's center and how far above the end (follow) height
+ * it rises, so the orbit descends onto the follow pose on every camera class.
  */
 const PEAK: Record<ViewportClass, { radius: number; rise: number }> = {
   desktop: { radius: 26, rise: 6 },
-  tablet: { radius: 28, rise: 6 },
-  mobile: { radius: 42, rise: 6 },
+  tablet: { radius: 18, rise: 10 },
+  mobile: { radius: 24, rise: 10 },
 };
-/** How far past Rover the camera looks during the orbit, so the far side of the plaza (the landmarks) fills the frame. */
-const ACROSS = 10;
-const ACROSS_Y = 2.5;
+/**
+ * The orbit's center: Rover on desktop; on the narrow (portrait) frames of tablets and phones the plaza (the hologram),
+ * which the center glides to during the pull-back, so the stats ring stays in the middle of the frame all the way round.
+ */
+const PLAZA_ORBIT: Record<ViewportClass, boolean> = { desktop: false, tablet: true, mobile: true };
+/**
+ * How far past the orbit's center (and at what height) the camera looks during the orbit: on desktop past Rover, so the
+ * far side of the plaza (the landmarks) fills the frame; on narrow frames just past the plaza's center, where the look
+ * point holds until `land` s before the end and only then moves onto the follow target (desktop: from the pull-back's end).
+ */
+const ACROSS: Record<ViewportClass, { ahead: number; y: number; land?: number }> = {
+  desktop: { ahead: 10, y: 2.5 },
+  tablet: { ahead: 4, y: 1, land: 1.4 },
+  mobile: { ahead: 4, y: 1, land: 1.4 },
+};
 /**
  * The elevator shaft (a tower through every floor): the pull-back's radius waits (up to HOLD_MAX s, in HOLD_STEP steps)
  * until the path clears the shaft's footprint plus SHAFT_MARGIN, so the camera turns past the shaft before it pulls out.
@@ -106,7 +118,11 @@ export function orbitProgress(s: number, a: number, b: number): number {
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export interface IntroPlan {
+  /** Rover: the wake close-up's center. */
   center: Vec3;
+  /** The orbit's center after the pull-back (Rover on desktop, the plaza on narrow frames); `end` is measured around it. */
+  focus: Vec3;
+  across: { ahead: number; y: number; land?: number };
   start: number;
   sweep: number;
   wakeHeading: number;
@@ -128,13 +144,16 @@ export interface IntroPlan {
 }
 
 export function introPlan(cls: ViewportClass, rover: Vec3, spawnHeading: number, end: CameraPose): IntroPlan {
-  const [cx, cy, cz] = rover;
+  const focus: Vec3 = PLAZA_ORBIT[cls] ? [LOBBY.hologram.x, rover[1], LOBBY.hologram.z] : rover;
+  const [cx, cy, cz] = focus;
   const ex = end.position[0] - cx;
   const ez = end.position[2] - cz;
   const endAngle = Math.atan2(ex, ez);
   const start = endAngle - INTRO.sweep;
   const plan: IntroPlan = {
     center: rover,
+    focus,
+    across: ACROSS[cls],
     start,
     sweep: INTRO.sweep,
     wakeHeading: start,
@@ -143,7 +162,7 @@ export function introPlan(cls: ViewportClass, rover: Vec3, spawnHeading: number,
     endAngle,
     endRadius: Math.hypot(ex, ez),
     endHeight: end.position[1] - cy,
-    // The follow target lies on the line from the camera through Rover (followPose), endAhead past Rover.
+    // The follow target lies on the line from the camera through Rover (followPose), endAhead past the orbit's center.
     endAhead: -((end.target[0] - cx) * Math.sin(endAngle) + (end.target[2] - cz) * Math.cos(endAngle)),
     endLookY: end.target[1] - cy,
     wake: WAKE[cls],
@@ -166,10 +185,25 @@ function orbitAt(t: number): number {
   return orbitProgress(span(t, INTRO.wake, INTRO.duration), ORBIT_IN / window, ORBIT_OUT / window);
 }
 
+/** How far the radius has pulled out of the close-up (0 to 1); the orbit's center glides from Rover to `focus` with it. */
+function pullAt(plan: IntroPlan, t: number): number {
+  const pullStart = INTRO.wake + plan.hold;
+  return pullEase(span(t, pullStart, pullStart + plan.pull));
+}
+
+/** The orbit's center at `t`: Rover through the wake, `focus` from the end of the pull-back. */
+export function orbitCenter(plan: IntroPlan, t: number): Vec3 {
+  const { center: a, focus: b } = plan;
+  if (a === b) return a;
+  const k = pullAt(plan, t);
+  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+}
+
 function orbitPos(plan: IntroPlan, t: number): [number, number] {
   const angle = plan.start + plan.sweep * orbitAt(t);
   const r = pathRadius(plan, t);
-  return [plan.center[0] + Math.sin(angle) * r, plan.center[2] + Math.cos(angle) * r];
+  const c = orbitCenter(plan, t);
+  return [c[0] + Math.sin(angle) * r, c[2] + Math.cos(angle) * r];
 }
 
 /**
@@ -200,7 +234,7 @@ function pathRadius(plan: IntroPlan, t: number): number {
   const { wake, peak } = plan;
   const push = smooth(span(t, 0, INTRO.wake));
   const pullStart = INTRO.wake + plan.hold;
-  const pull = pullEase(span(t, pullStart, pullStart + plan.pull));
+  const pull = pullAt(plan, t);
   const settle = settleEase(span(t, pullStart + plan.pull, INTRO.duration));
   return wake.distance * (1 - PUSH * push) + (peak.radius - wake.distance * (1 - PUSH)) * pull + (plan.endRadius - peak.radius) * settle;
 }
@@ -213,10 +247,12 @@ function rawPose(plan: IntroPlan, t: number): CameraPose {
   const angle = plan.start + plan.sweep * orbitAt(t);
   const radius = pathRadius(plan, t);
   const height = wake.height + (peak.height - wake.height) * pull + (plan.endHeight - peak.height) * settle;
-  const ahead = -FACE_AHEAD + (ACROSS + FACE_AHEAD) * pull + (plan.endAhead - ACROSS) * settle;
-  const lookY = wake.look + (ACROSS_Y - wake.look) * pull + (plan.endLookY - ACROSS_Y) * settle;
+  const { ahead: across, y: acrossY, land } = plan.across;
+  const look = land === undefined ? settle : settleEase(span(t, Math.max(pullEnd, INTRO.duration - land), INTRO.duration));
+  const ahead = -FACE_AHEAD + (across + FACE_AHEAD) * pull + (plan.endAhead - across) * look;
+  const lookY = wake.look + (acrossY - wake.look) * pull + (plan.endLookY - acrossY) * look;
   const fov = wake.fov + (plan.end.fov - wake.fov) * orbitAt(t);
-  const [cx, cy, cz] = plan.center;
+  const [cx, cy, cz] = orbitCenter(plan, t);
   const s = Math.sin(angle);
   const c = Math.cos(angle);
   return {
