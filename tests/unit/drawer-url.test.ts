@@ -148,6 +148,7 @@ describe("room URL sync", () => {
   });
 
   it("closes a B1 station drawer on Back although B1 shares the Lobby route", () => {
+    store.getState().unlockB1();
     store.getState().resume("B1");
     const h = fakeEnv("/en");
     createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true, hasPage: (room) => !room.startsWith("B1:") });

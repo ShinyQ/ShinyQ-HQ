@@ -27,6 +27,7 @@ export const audio: AudioEngine = {
   setAmbience: (on) => engine().setAmbience(on),
   setFloor: (floor) => engine().setFloor(floor),
   ambienceFloor: () => engine().ambienceFloor(),
+  playCounts: () => engine().playCounts(),
   subscribe: (listener) => engine().subscribe(listener),
   dispose: () => {
     instance?.dispose();

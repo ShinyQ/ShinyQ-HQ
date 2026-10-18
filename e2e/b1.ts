@@ -20,3 +20,17 @@ export async function rideTo(page: Page, floor: string) {
   await page.evaluate((f) => (window as unknown as StoreWindow).__hq.store.getState().goToFloor(f), floor);
   await waitForFloor(page, floor, 90_000);
 }
+
+/** Writes `floorsSeen` and `b1Unlocked` into the persisted store (`hq:v1`) before the first load of the tab only (a reload keeps what the session recorded). */
+export async function seedFloors(page: Page, floors: string[], unlocked = false) {
+  await page.addInitScript(
+    ({ floors, unlocked }) => {
+      if (sessionStorage.getItem("hq:test-seeded")) return;
+      sessionStorage.setItem("hq:test-seeded", "1");
+      const raw = localStorage.getItem("hq:v1");
+      const saved = raw ? JSON.parse(raw) : { state: { visited: [], firstVisit: false, locale: "en", motion: "full" }, version: 3 };
+      localStorage.setItem("hq:v1", JSON.stringify({ ...saved, state: { ...saved.state, floorsSeen: floors, b1Unlocked: unlocked } }));
+    },
+    { floors, unlocked },
+  );
+}

@@ -12,7 +12,7 @@ import { audio, useAudio } from "@/lib/audio";
 | --- | --- | --- |
 | `audio` | `AudioEngine` | Lazy singleton proxy. Importing creates nothing; the real engine is built on the first method call. |
 | `createAudioEngine` | `(deps?: Partial<AudioEngineDeps>) => AudioEngine` | For tests or isolated instances. Deps: `createContext`, `storage`, `doc`, `now`, `loadAmbience` (loads the ambience chunk), `paused` (the initial pause state). |
-| `play` | `(name: SoundName) => void` | `"beep" \| "ding" \| "whoosh" \| "click"`. No-op while muted. |
+| `play` | `(name: SoundName) => void` | `"beep" \| "ding" \| "whoosh" \| "click" \| "blip" \| "chime"`. No-op while muted. |
 | `setRumble` | `(speed: number) => void` | Rover speed in u/s. At or below 1 is silent, clamps at 12. Gain and cutoff glide with `setTargetAtTime`. |
 | `setMuted` | `(muted: boolean) => void` | Persists `"on"` / `"off"` in `localStorage["hq:sound"]`. The first unmute creates the `AudioContext`, resumes it and starts the background music. |
 | `toggleMuted` | `() => void` | Same as `setMuted(!isMuted())`. |
@@ -26,6 +26,7 @@ import { audio, useAudio } from "@/lib/audio";
 | `setAmbience` | `(on: boolean) => void` | Persists `localStorage["hq:ambience"]` (`"off"` disables, missing is on). Off fades the floor ambience out over `AMBIENCE_CROSSFADE` and stops it; on starts it when audible and a floor is set. While on with a floor set, the floor layer replaces the music (2 s crossfade); off crossfades back to the music (when the music toggle is on). |
 | `setFloor` | `(floor: AmbienceFloor \| null) => void` | The floor the ambience follows (`"L1"` to `"RF"`, and `"B1"`). Crossfades while sounding, is remembered while silent, `null` fades out and hands back to the music. `Experience` reports the store floor on mount and on every change, and on unmount pauses first, then reports `null`. |
 | `ambienceFloor` | `() => AmbienceFloor \| null` | The remembered floor (a probe). |
+| `playCounts` | `() => Readonly<Partial<Record<SoundName, number>>>` | How many times `play` was called per one-shot (a copy; counted before the mute and effects checks, so tests see calls while muted). A probe for tests, read through `window.__hq.audio().played`. |
 | `subscribe` | `(listener: () => void) => () => void` | Called on mute and setting changes. Shaped for `useSyncExternalStore`. |
 | `dispose` | `() => void` | Removes document listeners and closes the context. |
 | `useAudio` | `(engine?: AudioEngine) => { muted, setMuted, toggleMuted, play, setRumble }` | Client hook. Server render and hydration report `muted: true`. |
@@ -41,6 +42,7 @@ import { audio, useAudio } from "@/lib/audio";
 | Tread rumble | `setRumble(speed)` | loop | Looped brown noise through a lowpass; gain and cutoff follow speed |
 | Elevator ding | `play("ding")` | about 550 ms | Inharmonic sine partials with exponential decay |
 | Drawer whoosh | `play("whoosh")` | about 220 ms | Band-passed noise with a rising sweep |
+| B1 unlock chime | `play("chime")` | about 780 ms | Three sine notes, C6, E6 and G6, 90 ms apart, each decaying over 600 ms |
 | Key click | `play("click")` | about 25 ms | High-passed noise burst, rate limited to 20 per second (extras dropped) |
 
 ### Floor ambience layers

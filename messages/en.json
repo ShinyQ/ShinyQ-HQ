@@ -644,7 +644,15 @@
     "desc": "How this site was built: five stations",
     "title": "Engine Room",
     "subtitle": "How this site was built",
-    "soon": "Coming soon"
+    "soon": "Coming soon",
+    "locked": "Visit all {total} floors ({seen}/{total})",
+    "lockedName": "{floor} Visit all {total} floors ({seen}/{total})",
+    "lockedTitle": "Locked",
+    "unlock": "You found everything. Want to see how this place was built?",
+    "go": "Take me there",
+    "later": "Later",
+    "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total}).",
+    "goTo": "Go to B1 Engine Room"
   },
   "drawer": {
     "label": "Room details",

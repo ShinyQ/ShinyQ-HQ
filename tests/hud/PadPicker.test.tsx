@@ -50,7 +50,7 @@ describe("pad pickers", () => {
     const dialog = await screen.findByRole("dialog", { name: "Take the elevator" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveAttribute("data-sheet", "bottom");
-    expect([...dialog.querySelectorAll("[data-option]")].map((b) => b.getAttribute("data-option"))).toEqual(["RF", "L4", "L3", "L2", "L1"]);
+    expect([...dialog.querySelectorAll("[data-option]")].map((b) => b.getAttribute("data-option"))).toEqual(["RF", "L4", "L3", "L2", "L1", "B1"]);
     expect(option(dialog, "L3")).toHaveTextContent("Work");
     expect(option(dialog, "L3")).toHaveTextContent("Product Engineering, AI Engineering, and Data and ML");
     expect(option(dialog, "L2")).toHaveAttribute("aria-current", "true");
@@ -67,7 +67,7 @@ describe("pad pickers", () => {
     await user.keyboard("{ArrowUp}");
     expect(option(dialog, "L3")).toHaveFocus();
     await user.keyboard("{End}");
-    expect(option(dialog, "L1")).toHaveFocus();
+    expect(option(dialog, "B1")).toHaveFocus();
     await user.keyboard("{ArrowDown}");
     expect(option(dialog, "RF")).toHaveFocus();
     await user.keyboard("{Home}{ArrowDown}{ArrowDown}");
@@ -76,6 +76,23 @@ describe("pad pickers", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(getHQStore().getState().picker).toBeNull();
     expect(emitted).toContainEqual({ type: "elevator", to: "L3" });
+  });
+
+  it("lists B1 as a locked option with the hint and rides nowhere when picked", async () => {
+    const user = userEvent.setup();
+    getHQStore().setState({ b1Unlocked: false, floorsSeen: ["L1", "L2"] });
+    mount();
+    act(() => getHQStore().getState().openPicker({ kind: "floor" }));
+    const dialog = await screen.findByRole("dialog", { name: "Take the elevator" });
+    const locked = option(dialog, "B1");
+    expect(locked).toHaveAttribute("aria-disabled", "true");
+    expect(locked).toHaveTextContent("Locked");
+    expect(locked).toHaveTextContent("Visit all 5 floors (2/5)");
+    expect(locked.querySelector("img")).toBeNull();
+    await user.click(locked);
+    expect(emitted.filter((i) => i.type === "elevator")).toEqual([]);
+    expect(screen.getByRole("dialog", { name: "Take the elevator" })).toBeInTheDocument();
+    getHQStore().setState({ floorsSeen: [] });
   });
 
   it("closes on Esc without riding, and picking the current floor only closes", async () => {

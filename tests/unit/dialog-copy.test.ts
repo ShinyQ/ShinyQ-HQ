@@ -39,6 +39,28 @@ describe("Rover dialog copy", () => {
   });
 });
 
+describe("B1 unlock dialog copy (3D-only engine namespace)", () => {
+  const lines = (m: typeof en) => ({ unlock: m.engine.unlock, go: m.engine.go, later: m.engine.later, lockedLine: m.engine.lockedLine });
+
+  it("keeps each line within the phone limit, also with the progress numbers filled in", () => {
+    for (const [locale, messages] of [["en", en], ["id", id]] as const) {
+      for (const [key, value] of Object.entries(lines(messages))) {
+        const t = createTranslator({ locale, messages: { sample: value } });
+        const expanded = t("sample", { seen: 4, total: 5 });
+        expect(value.length, `${locale}.${key}`).toBeLessThanOrEqual(MAX_LINE);
+        expect(expanded.length, `${locale}.${key}`).toBeLessThanOrEqual(MAX_LINE);
+        expect(value, `${locale}.${key}`).not.toContain("\n");
+        expect(value, `${locale}.${key}`).not.toContain("\u2014");
+      }
+    }
+  });
+
+  it("follows the voice rules: no tours and no boost button", () => {
+    for (const { path, value } of collectStrings(lines(en))) expect(value, `en${path}`).not.toMatch(/\btours?\b|boost button/i);
+    for (const { path, value } of collectStrings(lines(id))) expect(value, `id${path}`).not.toMatch(/\btur\b|tombol (boost|turbo)/i);
+  });
+});
+
 describe("removed tours", () => {
   it("no dialog line mentions the removed tours", () => {
     for (const { path, value } of collectStrings(en.dialog)) expect(value, `en${path}`).not.toMatch(/\btours?\b/i);

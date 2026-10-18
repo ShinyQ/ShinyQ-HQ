@@ -92,6 +92,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let ambienceModule: ReturnType<AudioEngineDeps["loadAmbience"]> | null = null;
   let suspendTimer: ReturnType<typeof setTimeout> | null = null;
   let clickTimes: number[] = [];
+  const played: Partial<Record<SoundName, number>> = {};
 
   /** Sound is on by default; only a stored "off" (the visitor muted) keeps it muted. */
   function readMuted(): boolean {
@@ -364,6 +365,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
 
   const engine: AudioEngine = {
     play(name: SoundName) {
+      played[name] = (played[name] ?? 0) + 1;
       if (silent() || !settings.effects) return;
       if ((name === "click" || name === "blip") && !allowClick()) return;
       const context = ensureContext();
@@ -487,6 +489,10 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
       else startAmbience();
       if (ambience?.floor()) yieldMusic();
       else startMusic();
+    },
+
+    playCounts() {
+      return { ...played };
     },
 
     ambienceFloor() {

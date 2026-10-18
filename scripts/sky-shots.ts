@@ -60,6 +60,10 @@ try {
       localStorage.setItem("hq:onboarded", "done");
       localStorage.setItem("hq:hints", "off");
       localStorage.setItem("hq:floor-intro", JSON.stringify(["L1", "L2", "L3", "L4", "RF"]));
+      // All five floors seen and B1 unlocked, so Rover's offer and chime never land in a capture.
+      const raw = localStorage.getItem("hq:v1");
+      const saved = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+      localStorage.setItem("hq:v1", JSON.stringify({ ...saved, state: { ...saved.state, floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true } }));
     });
     const page = await context.newPage();
     for (const f of FLOORS) {

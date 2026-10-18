@@ -21,8 +21,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 465.2 KB, about 4.8 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 441.5 KB, about 4.9 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 466.2 KB, about 3.8 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 446.4 KB (measured 442.6 KB, about 3.8 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -60,8 +60,8 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 470 KB: measured 465.2 KB, so about 4.8 KB of headroom catches creep early.
-  - lite 446.4 KB: measured 441.5 KB, about 4.9 KB of headroom.
+  - full 470 KB: measured 466.2 KB, so about 3.8 KB of headroom catches creep early.
+  - lite 446.4 KB: measured 442.6 KB, about 3.8 KB of headroom.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 
 #### Memory gates
@@ -148,6 +148,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
+| `src/hud/dialog/{EngineUnlockLayer,engineRoomAction}`, `hud/{floorRows,FloorButtons}` and `hud/pads/**` | `b1-unlock`, `hud-corners`, `hud` and `pads` (the specs they matched before stay through `ALSO_RULES`) |
 | `src/hud/{menu,minimap,settings}/**`, `FloorChip`, `FloorButtons`, `ChunkFailed`, `layout.ts`, `src/lib/{local-pref,quality-pref}.ts` | `hud-corners`, `hud` and `onboarding` (`Joystick` and `boost.ts` add `boost`) |
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
 | `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
@@ -159,12 +160,12 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
-| `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
+| `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `b1-unlock`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
 | `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` | the full suite |
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |
 
-- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`.
+- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`; the Cmd-K files (`hudActions`, `search`, `palette-types`, `MissionHud`) add `b1-unlock`; so do the unlock's producers (`src/store/`, `Experience.tsx`, `ExperienceGate.tsx`, `src/lib/audio/engine.ts`).
 - `scripts/b1-shots.ts` (like the other capture scripts) is offline tooling: it runs no spec.
 - The perf planner (`scripts/perf-plan.ts`, PR CI only) maps the lazy B1 files (`floors/engine/**`, `EngineRoom.tsx`, `chunks/engine.ts`, `EngineBody`, `room-views/engine.ts`) to `bytes`, `floor:B1` and `ride:B1`. `floors/engine/layout.ts` and `src/experience/b1.ts` are on the main 3D path (the tower, the registry and the store read them), so they keep the full lane.
 - Options: `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`).

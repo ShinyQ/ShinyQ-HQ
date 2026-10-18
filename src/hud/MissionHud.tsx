@@ -22,6 +22,7 @@ import { hintsOn, setHintsOn } from "./dialog/storage";
 import { replayTutorial } from "./dialog/tutorial";
 import { requestAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
+import { useHudActions } from "./hudActions";
 import type { HudIndex } from "./index-data";
 import { useHudIndex } from "./index-client";
 import type { PaletteActionId, PaletteEntry } from "./palette-types";
@@ -69,6 +70,8 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const askEnabled = isAskEnabled(useAskStatus());
   const tutorial = useTutorialAvailable();
   const tMenu = useTranslations("dialog.menu");
+  // Actions the 3D HUD adds while they apply (Go to B1 Engine Room once unlocked); none on the Classic site.
+  const registered = useHudActions();
 
   const loadAskStatus = useCallback(() => {
     void requestAskStatus();
@@ -149,8 +152,8 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   }, [settled]);
 
   const entries = useMemo(
-    () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS) : []),
-    [index, tutorial],
+    () => (index ? buildPaletteEntries(index, tutorial ? [...STATIC_ACTIONS, ...TUTORIAL_ACTIONS] : STATIC_ACTIONS, registered) : []),
+    [index, tutorial, registered],
   );
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions) : []), [index]);
 
@@ -266,6 +269,9 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
         return;
       case "action":
         void runAction(target.id);
+        return;
+      case "hud":
+        registered.find((action) => action.id === target.id)?.run();
         return;
       case "ask":
         setPaletteOpen(false);

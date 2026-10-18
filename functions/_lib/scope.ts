@@ -33,6 +33,7 @@ const SITE: RegExp[] = [
   /\b(?:this|your) (?:ai )?(?:chat ?bot|assistant)\b/i,
   /\b(?:built|made|created|developed|coded|designed|powered|powers) (?:you|this)\b|\b(?:are|were) you (?:built|made|created|powered)\b/i,
   /\bwhat (?:ai |llm |language )?models? (?:are you|do you|powers? you)\b/i,
+  /\bengine room\b|\bruang mesin\b|\b(?:secret|hidden) floor\b|\blantai (?:rahasia|tersembunyi)\b/i,
   /\b(?:situs|website|web|portofolio|chatbot|asisten|menara) ini\b/i,
   /\b(?:kamu|anda) (?:dibuat|dibangun|memakai|menggunakan|pakai)\b|\bmodel (?:ai |llm )?apa (?:yang )?(?:kamu|anda)\b/i,
 ];

@@ -10,7 +10,7 @@ import {
   type AudioEngineDeps,
 } from "@/lib/audio";
 import { AMBIENCE_CROSSFADE, type AmbienceVoice } from "@/lib/audio/ambience";
-import { rumbleTargets } from "@/lib/audio/synth";
+import { ONE_SHOTS, rumbleTargets } from "@/lib/audio/synth";
 import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
 
 class FakeStorage {
@@ -227,6 +227,21 @@ describe("audio engine: paused outside the 3D view", () => {
   });
 });
 
+describe("audio engine: play counts", () => {
+  it("counts every requested one-shot, audible or not, and returns a copy", () => {
+    const { engine } = setup();
+    expect(engine.playCounts()).toEqual({});
+    engine.play("chime");
+    engine.setPaused(true);
+    engine.play("chime");
+    engine.play("ding");
+    const counts = engine.playCounts();
+    expect(counts).toEqual({ chime: 2, ding: 1 });
+    engine.play("ding");
+    expect(counts.ding).toBe(1);
+  });
+});
+
 describe("audio engine: paused until the 3D view opens", () => {
   it("starts paused: no context from gestures or one-shots on the Page View", () => {
     const storage = new FakeStorage();
@@ -246,6 +261,10 @@ describe("audio engine: paused until the 3D view opens", () => {
 });
 
 describe("audio engine: one-shots", () => {
+  it("plays a short chime for the B1 unlock", () => {
+    expect(Object.keys(ONE_SHOTS)).toContain("chime");
+  });
+
   it.each(["beep", "ding", "whoosh", "click", "blip"] as const)("%s starts and stops its sources", (name) => {
     const { engine, ctx } = setup();
     engine.setMuted(false);

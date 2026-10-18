@@ -10,7 +10,7 @@ import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
 import { formatYearMonth } from "@/lib/format";
-import { b1UnlockFlag, canEnterFloor } from "./b1";
+import { b1UnlockFlag, canEnterFloor, startFloor as startFloorFor, watchFloorVisits } from "./b1";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { TOPICS_ROOM } from "./floors/library/topicHash";
 import { createTopicHashSync } from "./floors/library/topicUrl";
@@ -98,7 +98,7 @@ export interface ExperienceStart {
  * plays the boot and the intro in the Lobby on every route (nothing skips them); a deep link or a
  * language switch then continues to its floor or room (`introContinue.ts`). Later loads open straight in.
  */
-function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor, startRoom }: ExperienceStart) {
+function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<FloorId, FloorLayout>, { startFloor: requested, startRoom }: ExperienceStart) {
   const store = getHQStore();
   const s = store.getState();
   const prevTier = s.tier;
@@ -106,8 +106,12 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setLocale(data.locale);
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
-  // Dev and test unlock (B1 Engine Room, PR 2): `?unlock=b1`, in production only with `debug`.
+  // Dev and test unlock of B1 (session only): `?unlock=b1`, in production only with `debug`.
   if (b1UnlockFlag(window.location.search, process.env.NODE_ENV !== "production")) s.unlockB1();
+  // `#B1` reaches the Engine Room only once unlocked; a locked visitor starts in the Lobby (EngineUnlockLayer says why).
+  const unlocked = getHQStore().getState().b1Unlocked;
+  const startFloor = startFloorFor(requested, unlocked);
+  const ready = READY_FLOORS.filter((floor) => canEnterFloor(floor, unlocked));
   // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
   if (isQualityRemount(!started, prevTier, tier, canvasReplacedInCommit())) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
@@ -136,19 +140,19 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   started = true;
   const taken = first ? takeResume() : null;
   // A language switch on B1 resumes there only while B1 is unlocked (the PR 2 flag rides along in the query).
-  const resume = taken && canEnterFloor(taken.floor, getHQStore().getState().b1Unlocked) ? taken : null;
+  const resume = taken && canEnterFloor(taken.floor, unlocked) ? taken : null;
   // Deep links (and a language switch that resumes a floor) need their floor's chunk at once (Round 7 B).
-  for (const floor of [startFloor, startRoom ? floorOf(startRoom) : undefined, resume?.floor]) if (floor) floorChunks.ensure(floor);
+  for (const floor of [startFloor, startRoom ? floorOf(startRoom) : undefined, resume?.floor]) if (floor && canEnterFloor(floor, unlocked)) floorChunks.ensure(floor);
   const intro = !introSeen();
   if (intro) {
     const architecture = parseHQUrl(window.location.pathname, window.location.search)?.view === "architecture";
-    setIntroTarget(introTarget({ resumeFloor: resume?.floor, startFloor, startRoom, ready: READY_FLOORS, architecture }));
+    setIntroTarget(introTarget({ resumeFloor: resume?.floor, startFloor, startRoom, ready, architecture }));
     if (getHQStore().getState().activeRoom) getHQStore().getState().closeRoom();
     place("L1", layouts.L1.spawn);
     s.setPhase(lobbyStartPhase(false));
   } else if (!first) {
     // Re-entering 3D on another route (page view, then "Explore in 3D"): start where that route is.
-    const target = startFloor && READY_FLOORS.includes(startFloor) ? startFloor : "L1";
+    const target = startFloor && ready.includes(startFloor) ? startFloor : "L1";
     const now = getHQStore().getState();
     if (!now.ride && (now.floor !== target || startRoom)) {
       place(target, doorOf(target, startRoom) ?? layouts[target].spawn);
@@ -157,7 +161,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     return;
   } else if (resume) {
     place(resume.floor, { x: resume.x, z: resume.z });
-  } else if (startFloor && startFloor !== "L1" && READY_FLOORS.includes(startFloor)) {
+  } else if (startFloor && startFloor !== "L1" && ready.includes(startFloor)) {
     place(startFloor, doorOf(startFloor, startRoom) ?? layouts[startFloor].spawn);
   } else if (startRoom && floorOf(startRoom) === "L1") {
     // `/{locale}#highlights-<station>`: start on the station's door pad, then open it below.
@@ -187,8 +191,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     quality: qualityHandle,
     frames: () => framePacer.frames,
     clock: () => framePacer.elapsed,
-    // Read-only audio engine state (the floor the ambience follows, its setting, the mute).
-    audio: () => ({ floor: audio.ambienceFloor(), ambience: audio.getSettings().ambience, muted: audio.isMuted() }),
+    // Read-only audio engine state (the floor the ambience follows, its setting, the mute, one-shot request counts).
+    audio: () => ({ floor: audio.ambienceFloor(), ambience: audio.getSettings().ambience, muted: audio.isMuted(), played: audio.playCounts() }),
     motion: () => {
       const live = store.getState();
       return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };
@@ -260,6 +264,8 @@ export default function Experience({
     [],
   );
   usePerfMarks();
+  // B1 Engine Room unlock: every public floor the rover explores counts toward 5/5 (src/experience/b1.ts).
+  useEffect(() => watchFloorVisits(getHQStore()), []);
   const [perf] = useState(() => perfOverlayOn(window.location.search));
   const [rum] = useState(() => (decideRum() ? rumPath({ startFloor, startRoom, coverUsed: bootCoverUsed() }) : null));
 

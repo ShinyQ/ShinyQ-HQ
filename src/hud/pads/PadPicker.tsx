@@ -5,11 +5,13 @@ import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { Modal } from "@/components/Modal";
 import type { FloorId } from "@/content/schema";
-import { isPublicFloor } from "@/lib/floors";
+import { floorProgress, PUBLIC_FLOOR_COUNT } from "@/experience/b1";
 import { intents } from "@/experience/input/intents";
 import { elevatorPadId, teleportPadId } from "@/experience/nav/pads";
 import type { ExperienceData } from "@/experience/types";
+import { isPublicFloor } from "@/lib/floors";
 import { useHQStore } from "@/store/useHQStore";
+import { Padlock } from "../FloorButtons";
 import { useFloorLabel } from "../useFloorLabel";
 import { BACK_TO_ELEVATOR, consoleOptions, floorOptions, nextIndex, yearOptions, type PickerOption } from "./picker";
 
@@ -70,7 +72,9 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
                 buttons.current[i] = node;
               }}
               type="button"
-              onClick={() => onPick(o.id)}
+              onClick={o.locked ? undefined : () => onPick(o.id)}
+              aria-disabled={o.locked ? "true" : undefined}
+              data-locked={o.locked ? "" : undefined}
               aria-current={o.current ? "true" : undefined}
               data-autofocus={o.current ? "" : undefined}
               data-option={o.id}
@@ -82,6 +86,7 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={o.thumb} alt="" width={96} height={54} loading="lazy" decoding="async" className="h-[54px] w-24 shrink-0 rounded-md border border-line object-cover" />
               )}
+              {o.locked && <Padlock className="text-ink-3" />}
               {o.tone && <AccentDot tone={o.tone} size="md" className="shrink-0" />}
               <span className="min-w-0 flex-1">
                 {o.eyebrow && <span className="label block truncate text-ink-3">{o.eyebrow}</span>}
@@ -110,6 +115,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
   const exploring = useHQStore((s) => s.phase === "explore");
   const floor = useHQStore((s) => s.floor);
   const b1Unlocked = useHQStore((s) => s.b1Unlocked);
+  const seen = useHQStore((s) => floorProgress(s.floorsSeen).seen);
   const closePicker = useHQStore((s) => s.closePicker);
 
   // A ride, a room or the hologram view takes over: the picker goes away with it.
@@ -127,9 +133,13 @@ export function PadPicker({ data }: { data: ExperienceData }) {
       <PickerList
         title={t("pads.floorTitle")}
         hint={t("pads.floorHint")}
-        options={floorOptions(floor, floorLabel, (id) => (isPublicFloor(id) ? t(`pads.floorDesc.${id}`) : tEngine("desc")), b1Unlocked)}
+        options={floorOptions(floor, floorLabel, (id) => (isPublicFloor(id) ? t(`pads.floorDesc.${id}`) : tEngine("desc")), b1Unlocked, {
+          title: tEngine("lockedTitle"),
+          detail: tEngine("locked", { seen, total: PUBLIC_FLOOR_COUNT }),
+        })}
         onClose={close}
         onPick={(id) => {
+          if (id === "B1" && !b1Unlocked) return;
           close();
           if (id !== floor) intents.emit({ type: "elevator", to: id as FloorId });
         }}

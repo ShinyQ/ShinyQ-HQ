@@ -1,7 +1,7 @@
 import type { AmbienceFloor } from "./ambience";
 
 export type { AmbienceFloor };
-export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip";
+export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip" | "chime";
 
 export interface AudioSettings {
   /** One-shots and the tread rumble. */
@@ -40,6 +40,8 @@ export interface AudioEngine {
   setFloor(floor: AmbienceFloor | null): void;
   /** The remembered floor (a probe for tests). */
   ambienceFloor(): AmbienceFloor | null;
+  /** How many times each one-shot was requested since the engine was created, audible or not (a probe for tests). */
+  playCounts(): Readonly<Partial<Record<SoundName, number>>>;
   /** Notified whenever the muted state or a setting changes. Returns an unsubscribe function. */
   subscribe(listener: () => void): () => void;
   /** Removes document listeners and closes the AudioContext. */

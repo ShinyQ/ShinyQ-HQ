@@ -336,6 +336,14 @@ describe("pack budget with the Data and ML pods (runbook deviation 8, 2026-10-14
   });
 });
 
+describe("site-build chunk and the B1 Engine Room (2026-10-17)", () => {
+  it("mentions the B1 Engine Room in the site-build chunk in both languages", () => {
+    const chunk = pack.chunks.find((c) => c.id === "site-build")!;
+    expect(chunk.text_en).toContain("B1 Engine Room");
+    expect(chunk.text_id).toContain("Ruang Mesin B1");
+  });
+});
+
 describe("pack budget for project chunks", () => {
   it("keeps every approach step of hero pods and caps featured and listed pods (the case study pages keep them all)", () => {
     expect(PACK_APPROACH_STEPS).toEqual({ hero: Infinity, featured: 1, listed: 1 });

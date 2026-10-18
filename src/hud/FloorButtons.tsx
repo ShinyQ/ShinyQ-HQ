@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { FloorId } from "@/content/schema";
+import { floorProgress, PUBLIC_FLOOR_COUNT } from "@/experience/b1";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
@@ -31,8 +32,18 @@ const BUTTON: Record<FloorButtonsVariant, (current: boolean) => string> = {
     }`,
 };
 
+/** The padlock of the locked B1 row (decorative; the row's name carries the hint). */
+export function Padlock({ className = "" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${className}`}>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
 /**
- * The elevator's floor buttons (RF to L1), shared by the right-edge rail and the Corners floor sheet. Every
+ * The elevator's floor buttons (RF to L1, then B1: locked until all five floors are reached), shared by the right-edge rail and the Corners floor sheet. Every
  * button names its floor with the Page View nav label (L3 Work), prefetches the floor chunk on hover or
  * focus and emits an elevator intent like every other floor control. Variants: `rail` (a pill with the
  * label), `rail-compact` (phones: the code over a short label in a 52 px column), `rail-codes` (code-only
@@ -40,13 +51,43 @@ const BUTTON: Record<FloorButtonsVariant, (current: boolean) => string> = {
  */
 export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; variant: FloorButtonsVariant; onPick?: () => void }) {
   const t = useTranslations("hud");
+  const tEngine = useTranslations("engine");
   const floorLabel = useFloorLabel();
   const floor = useHQStore((s) => s.floor);
   const target = useHQStore((s) => s.ride?.to ?? null);
   const b1Unlocked = useHQStore((s) => s.b1Unlocked);
+  const seen = useHQStore((s) => floorProgress(s.floorsSeen).seen);
+  const pulse = useHQStore((s) => s.b1Moment && !s.reducedMotion);
   const compact = variant === "rail-compact";
   const sheet = variant === "sheet";
-  return floorRows(b1Unlocked).map(({ id }) => {
+  const hint = tEngine("locked", { seen, total: PUBLIC_FLOOR_COUNT });
+  return floorRows(b1Unlocked).map(({ id, locked }) => {
+    if (locked) {
+      // A locked row does nothing: no click, no hover or focus prefetch of the B1 chunk. The hint shows as text on
+      // rail and sheet; as a title only where it is not visible.
+      return (
+        <button
+          key={id}
+          type="button"
+          aria-disabled="true"
+          aria-label={tEngine("lockedName", { floor: id, seen, total: PUBLIC_FLOOR_COUNT })}
+          title={variant === "rail" || sheet ? undefined : hint}
+          data-floor={id}
+          data-locked=""
+          className={BUTTON[variant](false)}
+        >
+          <span className={`label grid shrink-0 place-items-center rounded-full border border-glass-border text-ink-3 ${compact ? "size-8" : "size-10"}`}>{id}</span>
+          {variant !== "rail-codes" && " "}
+          {compact && <Padlock className="text-ink-3" />}
+          {(variant === "rail" || sheet) && (
+            <span aria-hidden="true" data-testid="elevator-floor-label" className={`inline-flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-ink-3 ${sheet ? "flex-1" : "whitespace-nowrap"}`}>
+              <Padlock />
+              <span className="truncate">{hint}</span>
+            </span>
+          )}
+        </button>
+      );
+    }
     const current = id === floor;
     const pending = id === target;
     const label = floorLabel(id);
@@ -55,7 +96,9 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
       ? `${FLOOR_ACTIVE[id]} shadow-[0_0_14px_currentColor]`
       : pending
         ? "animate-pulse border-cyan text-cyan motion-reduce:animate-none"
-        : "border-glass-border text-ink-2 group-hover:border-ink-3 group-hover:text-ink";
+        : id === "B1" && pulse
+          ? "animate-pulse border-amber text-amber motion-reduce:animate-none"
+          : "border-glass-border text-ink-2 group-hover:border-ink-3 group-hover:text-ink";
     return (
       <button
         key={id}

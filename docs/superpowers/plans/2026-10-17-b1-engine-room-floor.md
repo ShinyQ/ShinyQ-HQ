@@ -1,6 +1,6 @@
 # B1 Engine Room, PR 2: The Floor Implementation Plan
 
-Status: in review (PR 2 of 3)
+Status: shipped in #209 (ae6ccef), 2026-10-18
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -2731,7 +2731,7 @@ bun run e2e:changed
 
 Expected: green. Then `grep -rn $'\u2014' docs src e2e scripts messages content` prints nothing.
 
-- [ ] **Step 3: Push and open the PR** (one CI run at a time)
+- [x] **Step 3: Push and open the PR** (one CI run at a time)
 
 ```bash
 gh run list -R ShinyQ/ShinyQ-HQ -s in_progress

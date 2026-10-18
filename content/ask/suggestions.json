@@ -802,6 +802,24 @@
       "tags": ["agents", "ai"],
       "followUps": ["persp-agents", "site-tests", "ai-agents"],
       "expect": ["site-build"]
+    },
+    {
+      "id": "site-secret-floor",
+      "topic": "site",
+      "q": { "en": "Is there a secret floor in this tower?", "id": "Apakah ada lantai rahasia di menara ini?" },
+      "tags": ["work"],
+      "followUps": ["site-engine-room", "work-site", "site-floors"],
+      "expect": ["site-build"],
+      "answer": { "any": ["B1"] }
+    },
+    {
+      "id": "site-engine-room",
+      "topic": "site",
+      "q": { "en": "What is in the B1 Engine Room of this site?", "id": "Apa isi Ruang Mesin B1 di situs ini?" },
+      "tags": ["work", "agents"],
+      "followUps": ["work-site", "site-stack", "site-secret-floor"],
+      "expect": ["site-build"],
+      "answer": { "any": ["Engine Room", "B1", "Ruang Mesin", "build"] }
     }
   ]
 }

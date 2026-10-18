@@ -43,9 +43,12 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Access
 
-- B1 is reachable only when the store's `b1Unlocked` is set (not persisted). For now the only way is the dev and test flag `?unlock=b1` (`src/experience/b1.ts`, applied by `Experience.startSession`): in a dev build, and in production only with `debug`, so `?unlock=b1&debug=1`.
-- Locked sessions show nothing of B1 and load none of it: no elevator or picker row, no Cmd-K entry, no tower floor, no chunk or drawer data request, and the store refuses a ride to it (`canEnterFloor`). A language-switch resume to B1 is dropped without the flag.
-- Locked sessions load no B1 chunk and no B1 drawer data, and mount no B1 DOM or scene objects. The bay titles (`ExperienceData.engine`, about 0.4 KB) and the B1 UI strings ride in the page data and client messages, and the main 3D path grew about 0.9 KB (layout, hum layer, store).
+- B1 is reachable only when the store's `b1Unlocked` is set. A visitor unlocks it by reaching all five public floors in explore (`withFloorSeen`, `watchFloorVisits` in `src/experience/b1.ts`; B1 never counts); the store persists `floorsSeen` and `b1Unlocked` in `hq:v1`, so the floor stays open on later visits ([3d-experience.md](3d-experience.md#persistence-and-storage)).
+  - The fifth floor also starts the one-time unlock moment: a chime, Rover's offer and a pulsing B1 row ([Unlock moment](hud-and-drawer.md#unlock-moment)).
+  - `/{locale}#B1` on the Lobby route starts on B1 when unlocked (`b1FromHash`, `startFloor`; after the intro it continues there); locked, the visitor stays in the Lobby and Rover says how to unlock it (`engine.lockedLine`). Cmd-K lists "Go to B1 Engine Room" in the 3D tower: unlocked it rides there, locked it says the same locked line.
+  - `?unlock=b1` stays for dev and tests (`b1UnlockFlag`, applied by `Experience.startSession`): always in a dev build, in production only with `debug` (`?unlock=b1&debug=1`). It unlocks the session only: it is never persisted, never counts floors and never triggers the unlock moment.
+- Locked, the elevator rows, the floor picker and the floor sheet show a padlock row "B1" with "Visit all 5 floors (n/5)" (`aria-disabled`, no ride). Nothing else of B1 shows: no tower floor, no chunk or drawer data request, and the store refuses a ride to it (`canEnterFloor`) and `openRoom` of a B1 room is a no-op. A language-switch resume to B1 is dropped while locked.
+- Locked sessions load no B1 chunk and no B1 drawer data, and mount no B1 DOM or scene objects. The bay titles (`ExperienceData.engine`, about 0.4 KB) ride in the page data, the B1 UI strings in the 3D-only `engine` message namespace ([styling-and-i18n.md](styling-and-i18n.md#client-messages)), and the main 3D path grew about 0.9 KB for the floor (layout, hum layer, store) and 1.0 KB for the unlock (visit tracking, locked rows, moment).
 - B1 has no route of its own: its URL stays `/{locale}`, and station drawers are remembered in the history entry. Browser Back closes an open station drawer (the popstate handler compares route floors with `routeFloor`, B1 being L1's `/{locale}`, not floor ids).
 
 ## Draw calls
@@ -62,6 +65,6 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Tests and captures
 
-- Unit: `tests/unit/engine-layout.test.ts`, `engine-scenery.test.ts`, `engine-views.test.ts`, `b1-unlock-flag.test.ts`, `floor-chunks-graph.test.ts`, `arrivals.test.ts`.
-- E2E: `e2e/engine-room.spec.ts` (the flag, a locked session, rides from the Lobby and the roof, every station's drawer), `e2e/memory.spec.ts` (Lobby to B1 round trips); the helpers are in `e2e/b1.ts` (`B1_QUERY`, `enterB1Route`, `rideTo`).
+- Unit: `tests/unit/engine-layout.test.ts`, `engine-scenery.test.ts`, `engine-views.test.ts`, `b1-unlock-flag.test.ts`, `floor-chunks-graph.test.ts`, `arrivals.test.ts`; the unlock (PR 3): `tests/unit/b1-visits.test.ts`, `b1-deep-link.test.ts`, `tests/hud/EngineUnlockLayer.test.tsx`.
+- E2E: `e2e/engine-room.spec.ts` (the flag, a locked session, rides from the Lobby and the roof, every station's drawer), `e2e/memory.spec.ts` (Lobby to B1 round trips), `e2e/b1-unlock.spec.ts` (the locked row, the unlock moment, deep links, Cmd-K); the helpers are in `e2e/b1.ts` (`B1_QUERY`, `enterB1Route`, `rideTo`).
 - Captures for review: `bun scripts/b1-shots.ts --base <url> --out <dir>` (arrival, aisle and each station's drawer, desktop full and phone lite).

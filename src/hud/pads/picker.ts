@@ -16,14 +16,26 @@ export interface PickerOption {
   /** Dot in the pad's color (time console: pink years like the teleporters, green Back to elevator like the Return pad). */
   tone?: "pink" | "green";
   current: boolean;
+  /** The locked B1 row: shown with a padlock and its hint, picks nothing. */
+  locked?: true;
 }
 
 /** Committed picker thumbnail of a floor (`bun run floor:thumbs`). */
 export const floorThumb = (floor: FloorId) => `/floors/${floor}.webp`;
 
-/** Floors top-down like the elevator panel (RF first), named with the panel's labels; B1 (unlocked) has no thumbnail. */
-export function floorOptions(current: FloorId, label: (floor: FloorId) => string, describe: (floor: FloorId) => string, b1Unlocked = false): PickerOption[] {
-  return floorRows(b1Unlocked).map(({ id }) => ({ id, eyebrow: id, title: label(id), detail: describe(id), ...(isPublicFloor(id) ? { thumb: floorThumb(id) } : {}), current: id === current }));
+/** Floors top-down like the elevator panel (RF first), named with the panel's labels; B1 has no thumbnail and stays a locked row until unlocked. */
+export function floorOptions(
+  current: FloorId,
+  label: (floor: FloorId) => string,
+  describe: (floor: FloorId) => string,
+  b1Unlocked = false,
+  locked?: { title: string; detail: string },
+): PickerOption[] {
+  return floorRows(b1Unlocked).map(({ id, locked: isLocked }) =>
+    isLocked
+      ? { id, eyebrow: id, title: locked?.title ?? id, detail: locked?.detail ?? "", current: false, locked: true as const }
+      : { id, eyebrow: id, title: label(id), detail: describe(id), ...(isPublicFloor(id) ? { thumb: floorThumb(id) } : {}), current: id === current },
+  );
 }
 
 /** Year plazas oldest first: room count and up to two organizations; the first year notes the folded prologue. */

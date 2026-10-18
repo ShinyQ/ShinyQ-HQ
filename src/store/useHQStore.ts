@@ -3,7 +3,7 @@ import { canonicalRoom } from "@/experience/missions/roomAliases";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { createStore } from "zustand/vanilla";
 import type { DrawerTab, FloorId, Locale, RoomId } from "@/content/schema";
-import { canEnterFloor } from "@/experience/b1";
+import { canEnterFloor, floorProgress, PUBLIC_FLOOR_COUNT, withFloorSeen } from "@/experience/b1";
 import { FLOOR_IDS, floorIndex, LOBBY } from "@/experience/config";
 import type { Ride } from "@/experience/tower/elevator";
 import type { PickerRequest } from "@/experience/nav/pads";
@@ -11,6 +11,7 @@ import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
 import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 import type { ReactorRingId } from "@/content/tech-rings";
+import { isPublicFloor } from "@/lib/floors";
 import { applyMotionAttr, DEFAULT_MOTION, isMotionPref, migrateMotion, resolveReducedMotion, type MotionPref } from "@/lib/motion";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import { skipUnchanged } from "./persist-storage";
@@ -117,8 +118,15 @@ export interface HQState {
   reactor: ReactorState;
   /** L4 Topic Constellation: the selected topic. Not persisted (the URL hash carries it). */
   topics: { topic: TopicPick | null };
-  /** B1 Engine Room is reachable (PR 2: only `?unlock=b1`, applied by `startSession`; not persisted). */
+  /** Public floors the rover has reached in explore, in order (persisted). Five unlock B1 (`withFloorSeen`). */
+  floorsSeen: FloorId[];
+  /**
+   * B1 Engine Room is reachable: the fifth public floor (persisted once all five are seen) or the dev and test
+   * flag `?unlock=b1` (`unlockB1`, session only: never written to storage).
+   */
   b1Unlocked: boolean;
+  /** The one-time unlock moment is due (EngineUnlockLayer plays it, then clears it). Not persisted. */
+  b1Moment: boolean;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -165,8 +173,11 @@ export interface HQState {
   clearReactorTech: () => void;
   spinReactor: () => void;
   selectTopic: (topic: TopicPick) => void;
-  /** Unlocks B1 for this session: the elevator serves it and the floor rows list it. */
+  /** Unlocks B1 for this session only (the dev and test flag): the elevator serves it and the floor rows list it. */
   unlockB1: () => void;
+  /** Records a reached floor; the fifth public floor unlocks B1 and starts the moment. */
+  markFloorSeen: (floor: FloorId) => void;
+  clearB1Moment: () => void;
   clearTopic: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number; heading?: number }) => void;
@@ -175,10 +186,11 @@ export interface HQState {
 export const STORE_KEY = "hq:v1";
 
 /** Keys the store persists (appendix 06 section 2, plus `motion`); `sound` is persisted by the audio engine. */
-type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale" | "motion">;
+type Persisted = Pick<HQState, "visited" | "firstVisit" | "locale" | "motion" | "floorsSeen" | "b1Unlocked">;
 /**
  * Version 2 added `motion`; version 3 made Full the default (owner decision 2026-10-14): older payloads
- * migrate a stored or missing System to Full and keep Reduced (`migrateMotion`).
+ * migrate a stored or missing System to Full and keep Reduced (`migrateMotion`). `floorsSeen` and `b1Unlocked`
+ * were added in version 3 without a bump: `merge` fills missing keys and drops invalid ones.
  */
 export const STORE_VERSION = 3;
 
@@ -232,7 +244,9 @@ export function createHQStore(storage?: StateStorage) {
         pointHint: false,
         reactor: { ring: "ai", tech: null, spin: 0 },
         topics: { topic: null },
+        floorsSeen: [],
         b1Unlocked: false,
+        b1Moment: false,
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -260,6 +274,8 @@ export function createHQStore(storage?: StateStorage) {
         openRoom: (id, tab) => {
           // Rooms that moved (RF:visits is now L1:visits) open under their current id.
           const room = canonicalRoom(id);
+          // A locked B1 never opens a station (a Back into a stale history entry, a stray link): no drawer, no fetch.
+          if (!canEnterFloor(room.slice(0, room.indexOf(":")) as FloorId, get().b1Unlocked)) return;
           get().markVisited(room);
           const same = get().activeRoom === room;
           set({ activeRoom: room, phase: "room", drawerTab: tab ?? (same ? get().drawerTab : "overview"), readme: same && get().readme });
@@ -324,6 +340,11 @@ export function createHQStore(storage?: StateStorage) {
         spinReactor: () => set({ reactor: { ...get().reactor, spin: get().reactor.spin + 1 } }),
         selectTopic: (topic) => set({ topics: { topic } }),
         unlockB1: () => set({ b1Unlocked: true }),
+        markFloorSeen: (floor) => {
+          const patch = withFloorSeen(get(), floor);
+          if (patch) set(patch);
+        },
+        clearB1Moment: () => set({ b1Moment: false }),
         clearTopic: () => {
           if (get().topics.topic) set({ topics: { topic: null } });
         },
@@ -341,7 +362,15 @@ export function createHQStore(storage?: StateStorage) {
         version: STORE_VERSION,
         storage: skipUnchanged(createJSONStorage<Persisted>(() => storage ?? localStorage)),
         // `sound` is owned and persisted by the audio engine (localStorage "hq:sound"); the store mirrors it.
-        partialize: ({ visited, firstVisit, locale, motion }): Persisted => ({ visited, firstVisit, locale, motion }),
+        // The session-only flag unlock is not stored: `b1Unlocked` persists only once all five public floors were seen.
+        partialize: ({ visited, firstVisit, locale, motion, floorsSeen, b1Unlocked }): Persisted => ({
+          visited,
+          firstVisit,
+          locale,
+          motion,
+          floorsSeen,
+          b1Unlocked: b1Unlocked && floorProgress(floorsSeen).seen === PUBLIC_FLOOR_COUNT,
+        }),
         migrate: (persisted, version): Persisted => {
           const saved = (persisted ?? {}) as Persisted;
           return version < STORE_VERSION ? { ...saved, motion: migrateMotion(saved.motion, version) } : saved;
@@ -349,7 +378,9 @@ export function createHQStore(storage?: StateStorage) {
         merge: (persisted, current) => {
           const saved = (persisted ?? {}) as Partial<Persisted>;
           const motion = isMotionPref(saved.motion) ? saved.motion : DEFAULT_MOTION;
-          return { ...current, ...saved, motion, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
+          const floorsSeen = Array.isArray(saved.floorsSeen) ? saved.floorsSeen.filter((f): f is FloorId => typeof f === "string" && isPublicFloor(f as FloorId)) : [];
+          const b1Unlocked = saved.b1Unlocked === true && floorProgress(floorsSeen).seen === PUBLIC_FLOOR_COUNT;
+          return { ...current, ...saved, motion, floorsSeen, b1Unlocked, reducedMotion: resolveReducedMotion(motion, current.systemReducedMotion) };
         },
       },
     ),

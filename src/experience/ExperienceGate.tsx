@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { onHudCommand } from "@/hud/events";
 import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { chooseView, currentView, VIEW_EVENT } from "@/lib/view-pref";
+import { b1FromHash } from "./b1";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
@@ -48,7 +49,9 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
   // A hash room on another floor than the route's (the Ops Control Room from /contact#production, the Visitor
   // Observatory from /contact#visits) starts on its floor. L1 hash rooms start in the Lobby, which has no start
   // floor; floor ids are two characters ("L3:ops").
-  const hashFloor = !startRoom && hashRoom ? (hashRoom.startsWith("L1:") ? undefined : (hashRoom.slice(0, 2) as FloorId)) : startFloor;
+  // `/{locale}#B1`: the Engine Room, honoured by startSession only when unlocked (read once on the client).
+  const [b1Hash] = useState(() => (typeof window === "undefined" ? undefined : b1FromHash(startFloor, window.location.hash)));
+  const hashFloor = !startRoom && hashRoom ? (hashRoom.startsWith("L1:") ? undefined : (hashRoom.slice(0, 2) as FloorId)) : (b1Hash ?? startFloor);
   // WebGL context loss or a crash: one automatic remount on a fresh canvas, then the static page with "Retry 3D".
   // The state machine loads on the first crash only, so it stays out of every page's initial JS.
   const [recovery, setRecovery] = useState<Recovery>({ failures: 0, status: "ok" });

@@ -15,6 +15,7 @@ export const ALL_SPECS = [
   "ambience",
   "arrivals",
   "ask",
+  "b1-unlock",
   "boost",
   "boot-first",
   "camera",
@@ -117,6 +118,8 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/Hud\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud", "hud-corners", "arrivals"] },
   { test: /^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience", "hud-corners"] },
   { test: /^src\/components\/Modal\.tsx$/, specs: ["gallery", "lifecycle", "pageview", "hud-corners"] },
+  // B1 unlock (PR 3): the unlock moment, the locked floor rows and their pickers. The mappings these files had before stay in ALSO_RULES.
+  { test: /^src\/hud\/dialog\/(EngineUnlockLayer\.tsx|engineRoomAction\.ts)$|^src\/hud\/(floorRows\.ts|FloorButtons\.tsx)$|^src\/hud\/pads\//, specs: ["b1-unlock", "hud-corners", "hud", "pads"] },
   { test: /^src\/hud\/dialog\/(DialogBox\.tsx|placement\.ts)$/, specs: ["onboarding", "experience", "camera", "hud-corners"] },
   { test: /^src\/hud\/ask\/AskDock\.tsx$/, specs: ["ask", "experience", "pageview", "hud-corners"] },
   // The dock is mounted on every page and over the 3D HUD (top-right pill).
@@ -170,7 +173,7 @@ export const RULES: Rule[] = [
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
   // B1 Engine Room (PR 2): the floor, its layout, chunk, drawers, unlock flag and rows.
   { test: /^src\/experience\/floors\/engine\/layout\.ts$/, specs: ["engine-room", "arrivals", "memory"] },
-  { test: /^src\/experience\/floors\/(engine\/|EngineRoom\.tsx$|chunks\/engine\.ts$)|^src\/hud\/drawer\/EngineBody\.tsx$|^src\/content\/room-views\/engine\.ts$|^src\/experience\/b1\.ts$|^src\/hud\/floorRows\.ts$|^e2e\/b1\.ts$/, specs: ["engine-room", "floor-chunks", "memory"] },
+  { test: /^src\/experience\/floors\/(engine\/|EngineRoom\.tsx$|chunks\/engine\.ts$)|^src\/hud\/drawer\/EngineBody\.tsx$|^src\/content\/room-views\/engine\.ts$|^src\/experience\/b1\.ts$|^src\/hud\/floorRows\.ts$|^e2e\/b1\.ts$/, specs: ["engine-room", "b1-unlock", "floor-chunks", "memory"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
   // Arrival points and zones (Round 8 J): each floor's layout and the shared config select the arrivals spec too.
@@ -327,6 +330,15 @@ export function specSeconds(durations: Durations | null | undefined, spec: strin
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // The B1 unlock files (PR 3) keep the specs of the rules they used to match.
+  { test: /^src\/hud\/dialog\/(EngineUnlockLayer\.tsx|engineRoomAction\.ts)$/, specs: ["onboarding", "experience", "camera"] },
+  { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["onboarding", "experience", "arrivals"] },
+  { test: /^src\/hud\/pads\//, specs: ["fast-return", "experience", "workshop"] },
+  { test: /^src\/hud\/floorRows\.ts$/, specs: ["engine-room", "floor-chunks", "memory"] },
+  // The unlock's producers: the store (floorsSeen, b1Unlocked, merge), the session start and gate (deep links), the chime.
+  { test: /^src\/store\/|^src\/experience\/(Experience|ExperienceGate)\.tsx$|^src\/lib\/audio\/engine\.ts$/, specs: ["b1-unlock"] },
+  // Cmd-K's gated action (the unlock moment's host files keep their own specs).
+  { test: /^src\/hud\/(hudActions|search|palette-types|MissionHud)\.tsx?$/, specs: ["b1-unlock"] },
   {
     test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["engine-room"],
