@@ -62,6 +62,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - How this site was built (`/build`, key `nav.build`) is a footer link and a link under About's story; it is not in the primary nav. It is a Classic page without a 3D counterpart yet, with its own share card and TechArticle JSON-LD.
 - URLs and anchors never change (the room catalog and missions link to them).
 - Back to 3D stays owned by `ExperienceGate`; the footer keeps 112 px of bottom padding for it.
+- Link prefetch (owner decision): header, nav (bar and mobile tabs), crumb, hero and section "more" links use `QuietLink` (`src/components/QuietLink.tsx`).
+  - It renders `prefetch={false}`, so nothing prefetches in the viewport, and calls `router.prefetch(href)` (next-intl's `useRouter`, locale prefixed) once on `pointerenter`, `focus` or `touchstart`: the route's RSC payload and chunks arrive before the click.
+  - No intent prefetch while `useQuietNav()` is true (boot cover or 3D tower showing). A link that passes its own `prefetch` keeps Next's behavior; object hrefs get no intent prefetch.
+  - Card and footer links still use the plain `Link` (viewport prefetch while scrolling). Test: `tests/unit/quiet-link.test.tsx`.
 
 ## Layout
 

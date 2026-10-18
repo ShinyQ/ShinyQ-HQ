@@ -35,6 +35,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
+Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction (was 11, plus 4 route chunks). See [page-view.md](page-view.md#navigation).
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.

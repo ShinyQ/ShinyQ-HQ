@@ -66,7 +66,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - `#site-shell` also stays `visibility: hidden` while `html[data-hq]` is set (tower open), so the page never paints under it and never becomes a late LCP.
 - Both states also set `content-visibility: hidden`, so the hidden page's lazy images and link prefetches never start.
-- Header, nav, crumb and hero links use `QuietLink` (`prefetch={false}` while hidden).
+- Header, nav, crumb, hero and section "more" links use `QuietLink`: no viewport prefetch, and no intent prefetch while hidden (`useQuietNav`); see [page-view.md](page-view.md#navigation).
 - The Glass Drawer data loads after the first frame on idle (`afterFirstFrameIdle` in `src/experience/boot-signals.ts`) or at once when a room opens.
 
 ### Flags on every page
