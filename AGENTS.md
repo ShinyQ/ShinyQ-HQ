@@ -108,8 +108,9 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 - Package manager: Bun. Commits: conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`),
   in logical steps. Prefer the `rtk` git wrapper.
 - One PR per change. Do not merge without the owner; PRs land as squash merges.
-- One CI run at a time: before pushing, check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`
-  and wait for a free slot (e2e renders WebGL on the CPU; parallel runs starve each other).
+- At most 2 CI runs in flight, both pull request runs and at most one of them a full run; a `main` run stays alone
+  (Free plan cap 20 jobs: full PR 12, selective PR 5 to 7, `main` 14 plus Deploy). Before pushing, check
+  `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued` ([ci-and-deploy.md](docs/agents/ci-and-deploy.md#before-pushing-and-committing)).
 - `main` is protected by a ruleset: changes land only through a PR whose head has the required checks
   (`Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`, `3D perf gates 1/2` and `2/2`). Force
   pushes, deletion and direct pushes are rejected. In-progress runs on `main` are never cancelled; check main's CI after a merge.

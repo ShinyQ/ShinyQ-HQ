@@ -293,6 +293,8 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
     for (const p of moved) paths.add(p);
   }
   if (lighthouse !== "all" && paths.size) {
+    // Every selective run also measures the home page.
+    paths.add(HOME_URL);
     const rank = (p: string) => (order.includes(p) ? order.indexOf(p) : order.length);
     lighthouse = [...paths].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   }
@@ -343,15 +345,24 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
   };
 }
 
-/** Layouts: anything they import statically moves every Lighthouse URL. */
+/** Layouts: their static import closure is in every page. */
 const LAYOUTS = ["src/app/[locale]/layout.tsx", "src/app/(root)/layout.tsx"];
+/** The home page: Lighthouse measures every selective pull request there, and a shared layout module only there. */
+export const HOME_URL = "/en";
+/**
+ * Layout-closure files that change what each page ships differently: layouts and templates, stylesheets, the
+ * font setup and the message selection (`src/i18n/`: which namespaces each page inlines).
+ */
+const PER_PAGE = /^src\/app\/(.+\/)?(layout|template)\.tsx$|\.css$|^src\/app\/fonts\.ts$|^src\/i18n\//;
 const BLOG_URL = Object.keys(LIGHTHOUSE_PAGES).find((p) => p.startsWith("/en/blog/"))!;
 const BUILD_URL = "/en/build";
 
 /**
  * The Lighthouse URL paths a file can move. Strings, fonts, the build steps, the dataset and the generated
- * facts move every URL; the build facts only /en/build and the posts only the measured post. Any other file
- * moves every URL when the layouts import it statically, else the measured pages whose static imports reach it.
+ * facts move every URL; the build facts only /en/build and the posts only the measured post. In the layouts'
+ * static closure, a PER_PAGE file moves every URL and any other module lands in a chunk every page loads the
+ * same way, so the home page measures it (plus the measured pages whose own static imports reach it, unless every
+ * page does). Any other file moves the measured pages whose static imports reach it.
  */
 export function pagesFromRepo(read: (f: string) => string | null): (file: string) => readonly string[] | "all" {
   const layouts = importClosure(LAYOUTS, read, { dynamic: false });
@@ -362,8 +373,11 @@ export function pagesFromRepo(read: (f: string) => string | null): (file: string
     // src/i18n/request.ts is loaded by createNextIntlPlugin in next.config.ts, not through an import.
     if (/^src\/i18n\/request\.ts$|^messages\/|^public\/(fonts|brand)\/|^src\/assets\/fonts\/[^/]+\.woff2$|^content\/(site-content\.json$|generated\/)/.test(file)) return "all";
     if (classify(file) === "ui" && file.startsWith("scripts/")) return "all";
-    if (layouts.has(file)) return "all";
-    return pageClosures.filter(([, closure]) => closure.has(file)).map(([url]) => url);
+    if (layouts.has(file) && PER_PAGE.test(file)) return "all";
+    const own = pageClosures.filter(([, closure]) => closure.has(file)).map(([url]) => url);
+    if (!layouts.has(file)) return own;
+    // Shared by the layout and every page (the content loader, metadata helpers): the home page measures it.
+    return own.length === pageClosures.length ? [HOME_URL] : [...new Set([HOME_URL, ...own])];
   };
 }
 

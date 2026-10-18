@@ -311,6 +311,12 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(planFor(["e2e/topics.spec.ts"], none).e2eShards).toBe(1);
   });
 
+  it("adds the home page to every selective Lighthouse list", () => {
+    const pages = (f: string) => (f === "src/components/page/A.tsx" ? ["/en/quick"] : []);
+    expect(planFor(["src/components/page/A.tsx"], none, { ...opts, pages }).lighthouse).toEqual(["/en", "/en/quick"]);
+    expect(planFor(["src/components/page/Z.tsx"], none, { ...opts, pages }).lighthouse).toBe(false);
+  });
+
   it("selects Lighthouse URLs from the pages each file can move; all wins", () => {
     const pages = (f: string) => (f === "src/components/page/A.tsx" ? ["/en/quick"] : f === "src/components/page/B.tsx" ? ["/en/cv", "/en"] : f === "messages/en.json" ? ("all" as const) : []);
     const some = planFor(["src/components/page/A.tsx", "src/components/page/B.tsx", "content/x.json"], none, { ...opts, pages });
@@ -335,11 +341,44 @@ describe("ci-plan Lighthouse pages", () => {
     for (const file of Object.values(LIGHTHOUSE_PAGES)) expect(existsSync(file), file).toBe(true);
   });
 
+  it("maps a layout-closure module to the home page, plus the pages that import it unless every page does", () => {
+    const files: Record<string, string> = {
+      "src/app/[locale]/layout.tsx": 'import "../globals.css";\nimport { f } from "../fonts";\nimport { s } from "@/lib/shared";\nimport { o } from "@/lib/some";\nimport { l } from "@/lib/layout-only";',
+      "src/app/(root)/layout.tsx": "",
+      "src/app/globals.css": "",
+      "src/app/fonts.ts": "",
+      "src/lib/shared.ts": "",
+      "src/lib/some.ts": "",
+      "src/lib/layout-only.ts": "",
+      "src/lib/page-only.ts": "",
+    };
+    for (const page of new Set(Object.values(LIGHTHOUSE_PAGES))) {
+      files[page] = `import { s } from "@/lib/shared";${page.includes("/quick/") ? '\nimport { o } from "@/lib/some";\nimport { p } from "@/lib/page-only";' : ""}`;
+    }
+    const pages = pagesFromRepo((f) => files[f] ?? null);
+    expect(pages("src/app/[locale]/layout.tsx")).toBe("all");
+    expect(pages("src/app/globals.css")).toBe("all");
+    expect(pages("src/app/fonts.ts")).toBe("all");
+    expect(pages("src/lib/layout-only.ts")).toEqual(["/en"]);
+    expect(pages("src/lib/shared.ts")).toEqual(["/en"]);
+    expect(pages("src/lib/some.ts")).toEqual(["/en", "/en/quick"]);
+    expect(pages("src/lib/page-only.ts")).toEqual(["/en/quick"]);
+  });
+
   it("on this repo: maps files to the pages they can move through static imports", () => {
     const pages = pagesFromRepo(repoRead);
     expect(pages("src/app/[locale]/quick/page.tsx")).toEqual(["/en/quick"]);
     expect(pages("src/app/[locale]/page.tsx")).toEqual(["/en", "/id"]);
     expect(pages("src/app/[locale]/layout.tsx")).toBe("all");
+    expect(pages("src/app/(root)/layout.tsx")).toBe("all");
+    expect(pages("src/app/fonts.ts")).toBe("all");
+    expect(pages("src/i18n/client-messages.ts")).toBe("all");
+    // A shared layout module lands in a chunk every page loads the same way: the home page measures it.
+    expect(pages("src/ask/protocol.ts")).toEqual(["/en"]);
+    expect(pages("src/components/SiteFooter.tsx")).toEqual(["/en"]);
+    // Shared by the layout and every page: still the home page only.
+    expect(pages("src/lib/seo.ts")).toEqual(["/en"]);
+    expect(pages("src/content/load.ts")).toEqual(["/en"]);
     expect(pages("src/app/globals.css")).toBe("all");
     expect(pages("src/app/pageview.css")).toBe("all");
     expect(pages("src/app/landing.css")).toBe("all");

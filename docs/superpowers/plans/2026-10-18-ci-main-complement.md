@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: part 1 in progress (2026-10-18). Owner decision 2026-10-18: three PRs in order, after the B1 PRs merge.
+Status: part 3 in review, 2026-10-18; parts 1 and 2 shipped in #214 and #216. Owner decision 2026-10-18: three PRs in order, after the B1 PRs merge.
 No test or gate leaves the suite; only when and where each one runs changes.
 
 **Goal:** Stop running on `main` what the merged pull request already proved on the same tree, select fewer perf
@@ -502,12 +502,12 @@ fi
 
 ### Task 6: Measure and ship (after #213 merged and no CI in flight)
 
-- [ ] **Step 1:** Push the branch, open PR 1 (ready for review). Its own CI is a full run (CI files).
-- [ ] **Step 2:** Measurement: branch `measure/complement` off PR 1 with a one-line comment in `src/ask/protocol.ts`;
+- [x] **Step 1:** Push the branch, open PR 1 (ready for review). Its own CI is a full run (CI files).
+- [x] **Step 2:** Measurement: branch `measure/complement` off PR 1 with a one-line comment in `src/ask/protocol.ts`;
   open a throwaway PR, let its selective CI pass, then
   `gh workflow run ci.yml --ref measure/complement -f complement_pr=<n>` and record the dispatch run's wall time
   and runner-minutes (`gh run view <id> --json jobs`). Close the PR, delete the branch.
-- [ ] **Step 3:** Merge PR 1 when every required check is green; record the merge sha and the main run numbers.
+- [x] **Step 3:** Merge PR 1 when every required check is green; record the merge sha and the main run numbers.
 
 ---
 
@@ -532,13 +532,13 @@ highlights to the Lobby gates), else `ALL_BUT_MEMORY`. A shared file a `PERF_RUL
 `in3d` callback becomes `perf3d: (file) => PerfKey[]`), `scripts/perf-plan.ts` (export a `bytes`, `boot` pair for
 `src/ask/` if the HUD rule alone misses boot), Test `tests/unit/ci-plan.test.ts`.
 
-- [ ] Failing tests with an in-memory repo: a module imported only by `src/experience/floors/lobby/X.tsx` maps to
+- [x] Failing tests with an in-memory repo: a module imported only by `src/experience/floors/lobby/X.tsx` maps to
   `["boot", "bytes", "floor:L1", "hover"]`; one imported by `src/hud/A.tsx` through `src/lib/b.ts` maps to
   `["bytes"]`; one imported by `src/experience/Experience.tsx` maps to every key; one imported by an unmatched 3D
   file maps to `ALL_BUT_MEMORY`. Real-repo tests: `src/content/certs.ts` selects `floor:L1` and no other floor;
   `src/ask/client.ts` and `src/ask/protocol.ts` select no floor and no ride.
-- [ ] Implement, run `bunx vitest run tests/unit/ci-plan.test.ts`, commit `feat(ci): perf keys of the 3D files that import a shared module`.
-- [ ] Docs (`ci-and-deploy.md` perf bullet, decisions row), measure with a throwaway PR touching
+- [x] Implement, run `bunx vitest run tests/unit/ci-plan.test.ts`, commit `feat(ci): perf keys of the 3D files that import a shared module`.
+- [x] Docs (`ci-and-deploy.md` perf bullet, decisions row), measure with a throwaway PR touching
   `src/ask/protocol.ts` (before: 2 perf shards 9 to 11 min; target PR wall 7 to 9 min), merge.
 
 ## Part 3 (PR 3): Lighthouse on affected URLs, two runs in flight
@@ -551,15 +551,21 @@ runs. The main complement then runs the URLs the PR skipped.
 
 ### Task 8: Lighthouse selection
 
+Refined while implementing: `src/ask/client.ts` is not in the layouts' static closure (the Ask chat loads lazily), so
+`src/ask/protocol.ts` is the layout-closure example. It is also in every page's closure (the content loader validates
+perspectives with it), so a layout-closure module that every measured page imports maps to `/en` only; one that only
+some pages import maps to `/en` plus those pages. `src/i18n/` (the message selection) and `src/app/fonts.ts` count as
+message and font files: every URL.
+
 **Files:** Modify `scripts/ci-plan.ts` (`pagesFromRepo`, `planFor` adds `/en`), Test `tests/unit/ci-plan.test.ts`.
 
-- [ ] Failing tests: `src/ask/client.ts` (layout closure, not a layout or CSS) maps to `["/en"]`; `src/app/globals.css`
+- [x] Failing tests: `src/ask/protocol.ts` (layout closure, not a layout or CSS) maps to `["/en"]`; `src/app/globals.css`
   and `src/app/[locale]/layout.tsx` map to `"all"`; a page-only file maps to its page plus `/en`.
-- [ ] Implement, test, commit `feat(ci): Lighthouse runs the affected URLs plus the home page on pull requests`.
+- [x] Implement, test, commit `feat(ci): Lighthouse runs the affected URLs plus the home page on pull requests`.
 
 ### Task 9: Two CI runs in flight
 
-- [ ] Measure the peak concurrent jobs of a main complement run and a typical PR run (`gh run view --json jobs`,
+- [x] Measure the peak concurrent jobs of a main complement run and a typical PR run (`gh run view --json jobs`,
   overlapping `startedAt` to `completedAt`). The Free plan allows 20 concurrent jobs. If main peak plus PR peak is
   at most 20, change "One CI run at a time" in `AGENTS.md` and `docs/agents/ci-and-deploy.md` to "at most 2 CI
   runs in flight", with the numbers in `docs/decisions.md`; else keep the rule and record why.
