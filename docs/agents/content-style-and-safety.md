@@ -185,6 +185,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 - `scanBuildOutput(out, loadBlocklist())` covers every `.html`, `.txt`, `.json`, `.xml`, `.webmanifest`, `.js`, `.mjs`, `.css`, `.svg` and `.md` file of the export (`BUILD_TEXT_FILE`).
 - Why: client chunks do carry content strings (Ask pills, TS constants), so a client name cannot reach a page, RSC payload, script, sitemap or room data file.
 - Blocklist terms only: forbidden patterns would flag RSC references such as `"$1c"`.
+- Machine-made tokens are masked before matching (`maskBuildTokens`): CSP and SRI hashes (`sha256-<base64>`), base64 data URIs, the exact Next.js build id (the `_next/static/<id>/` directory name) and the hash segment of chunk and media file names (a bare hash with a digit after `chunks/`; the part after the readable stem in `media/`). They differ per build, so one could spell a short term such as `/\b[Ss][Mm][Bb][Cc]/` by chance (a CSP hash did once in CI, PR #228). Readable text, payload strings and asset name stems stay scanned.
 - `scripts/scan-export.ts` runs it:
   - right after the CI build (`site` job)
   - after the production build in `deploy.yml`, the artifact that ships
