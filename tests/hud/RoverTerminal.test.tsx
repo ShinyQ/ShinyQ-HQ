@@ -197,11 +197,11 @@ describe("terminal helpers", () => {
     const all = getContent().missions;
     expect(orderTerminalMissions(all).map((m) => m.id)).toEqual(["work", "highlights", "journey", "projects", "blog", "cv", "hire"]);
     expect(orderTerminalMissions(all).map((m) => m.label.en)).toEqual([
-      "Explore my work",
+      "Explore the work",
       "See the highlights",
-      "Follow my career, 2019 to 2026",
-      "Browse my projects",
-      "Read my writing",
+      "Career timeline, 2019 to 2026",
+      "Browse projects",
+      "Read the writing",
       "View CV",
       "Discuss a role or project",
     ]);
