@@ -73,7 +73,7 @@ test("the fifth floor unlocks B1 once: Rover offers the ride, the row lights up,
   expect(await chimes(page)).toBe(0);
   await rideTo(page, "RF");
   await expect(offer(page)).toBeVisible({ timeout: 60_000 });
-  await expect(offer(page)).toContainText("You found everything");
+  await expect(offer(page)).toContainText("All main floors visited!");
   await expect.poll(() => chimes(page)).toBe(1);
   await expect(row(page)).not.toHaveAttribute("aria-disabled");
   await expect(row(page)).toHaveAccessibleName(/^B1 Build: go to floor/);

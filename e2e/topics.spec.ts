@@ -146,7 +146,7 @@ test("Cmd-K shows the writing about a topic in the tower", async ({ page }) => {
   await enterFloorRoute(page, "/en/library");
   await page.keyboard.press("Control+k");
   await page.getByRole("combobox").fill("show writing about ai agents");
-  await expect(page.getByRole("option").first()).toContainText("Show writing about AI agents");
+  await expect(page.getByRole("option").first()).toContainText("Show work about AI agents");
   await page.keyboard.press("Enter");
   await waitForRoom(page, "L4:topics", 150_000);
   await expect.poll(async () => (await probe(page)).topic).toBe("ai-agents");

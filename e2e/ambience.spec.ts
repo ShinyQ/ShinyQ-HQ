@@ -79,10 +79,10 @@ test("a floor deep link starts the engine on that floor", async ({ page }) => {
   await expect.poll(() => probe(page)).toMatchObject({ floor: "L3" });
 });
 
-test("Indonesian pages label the row Suasana lantai", async ({ page }) => {
+test("Indonesian pages label the row Suara latar tiap lantai", async ({ page }) => {
   await enterHQ(page, { path: "/id" });
   const sheet = await openSettings(page);
   await expect(sheet.getByTestId("setting-ambience").getByRole("switch", { name: id.hud.settings.ambience.label })).toBeVisible();
-  expect(id.hud.settings.ambience.label).toBe("Suasana lantai");
+  expect(id.hud.settings.ambience.label).toBe("Suara latar tiap lantai");
   await expect(sheet.getByTestId("setting-ambience")).toContainText(id.hud.settings.ambience.hint);
 });
