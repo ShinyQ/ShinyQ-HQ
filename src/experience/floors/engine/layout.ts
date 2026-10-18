@@ -47,8 +47,8 @@ export const ENGINE = {
   /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`), as on RF. */
   arrivalZoom: 0.95,
   arrivalZoomPhone: 0.8,
-  /** Height of the ceiling pipe runs (u above the slab). */
-  ceiling: 6.4,
+  /** Height of the ceiling pipe runs (u above the slab), well above the station signs. */
+  ceiling: 7.4,
 } as const;
 
 export interface EngineBay {

@@ -45,7 +45,7 @@ export interface EngineLabels {
   soon: string;
 }
 
-export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75" } as const;
+export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
 const LED_TONES = [ENGINE_TONES.green, ENGINE_TONES.amber, ENGINE_TONES.cyan] as const;
 
 /** LEDs per rack cabinet; the lite tier draws half. */
@@ -62,6 +62,8 @@ const PIPE_Z = 8.4;
 const TRAY_Z = 3;
 /** Cable trays stay narrow and dim (a warm tray with a faint cyan data line under it), so the stations and signs lead. */
 const TRAY = { d: 0.4, h: 0.06, line: 0.08 } as const;
+/** Pipe runs and their drops stay thin and dim warm at the ceiling, so each bay's sign is its brightest element. */
+const PIPE = { run: 0.14, drop: 0.1 } as const;
 
 /** +1 when the bay's open face looks toward +z (north bays), -1 for south bays. */
 const out = (bay: EngineBay): 1 | -1 => (bay.side === "north" ? 1 : -1);
@@ -155,12 +157,12 @@ function pipes(layout: EngineLayout): FlowInstance[] {
   const w = to - from;
   const drops = layout.bays
     .filter((bay) => bay.lit)
-    .map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: bay.front - out(bay) * 0.4, w: 0.2, h: ENGINE.ceiling - ENGINE.bay.h, d: 0.2, color: ENGINE_TONES.amber }));
+    .map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: bay.front - out(bay) * 0.4, w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
   return [
-    ...[-PIPE_Z, PIPE_Z].map((z) => ({ x, y: ENGINE.ceiling, z, w, h: 0.36, d: 0.36, color: ENGINE_TONES.amber })),
+    ...[-PIPE_Z, PIPE_Z].map((z) => ({ x, y: ENGINE.ceiling, z, w, h: PIPE.run, d: PIPE.run, color: ENGINE_TONES.pipe })),
     ...[-TRAY_Z, TRAY_Z].flatMap((z) => [
-      { x, y: ENGINE.ceiling + 0.5, z, w, h: TRAY.h, d: TRAY.d, color: ENGINE_TONES.tray },
-      { x, y: ENGINE.ceiling + 0.45, z, w, h: 0.04, d: TRAY.line, color: ENGINE_TONES.data },
+      { x, y: ENGINE.ceiling - 0.5, z, w, h: TRAY.h, d: TRAY.d, color: ENGINE_TONES.tray },
+      { x, y: ENGINE.ceiling - 0.55, z, w, h: 0.04, d: TRAY.line, color: ENGINE_TONES.data },
     ]),
     ...drops,
   ];
