@@ -2,6 +2,8 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { asReturningVisitor, enterFloorRoute, waitForHQ, waitForHydration, waitForRoom } from "./hq";
 import { heroPod, hostedPost } from "./routes";
 import en from "../messages/en.json";
+import id from "../messages/id.json";
+import { SITE_URL } from "../src/lib/site";
 
 test.describe.configure({ timeout: 90_000 });
 
@@ -142,6 +144,76 @@ test("copy buttons put the Classic and 3D addresses on the clipboard", async ({ 
   expect(await read()).toMatch(/^https?:\/\/[^/]+\/en\/library$/);
   await context.close();
 });
+
+for (const [locale, messages] of [["en", en], ["id", id]] as const) {
+  for (const failure of ["rejected", "missing"] as const) {
+    test(`${locale}: failed ${failure} clipboard exposes usable links and raw email on a phone`, async ({ browser }) => {
+      const context = await quietContext(browser, { viewport: { width: 390, height: 844 } });
+      await context.addInitScript((kind) => {
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: kind === "missing" ? undefined : { writeText: async () => { throw new Error("Clipboard blocked"); } },
+        });
+      }, failure);
+      const page = await context.newPage();
+      await page.goto(`/${locale}/labs/${heroPod.slug}?view=classic&tier=static#architecture`);
+      await waitForHydration(page);
+      const share = page.getByRole("group", { name: messages.common.share });
+      const classic = share.getByRole("button", { name: messages.common.copyClassicLink });
+      await classic.click();
+      const link = share.getByRole("textbox", { name: messages.common.linkCopyFailed });
+      await expect(link).toHaveValue(`${SITE_URL}/${locale}/labs/${heroPod.slug}?view=classic#architecture`);
+      await expect(share.getByRole("status")).toHaveText(messages.common.linkCopyFailed);
+      await expect(link).toHaveAttribute("readonly", "");
+      await expect(classic).toBeFocused();
+      await share.getByRole("button", { name: messages.common.copy3dLink }).click();
+      await expect(link).toHaveValue(`${SITE_URL}/${locale}/labs/${heroPod.slug}#architecture`);
+      await page.keyboard.press("Tab");
+      await expect(link).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+      await page.goto(`/${locale}/contact?view=classic&tier=static`);
+      await waitForHydration(page);
+      const mail = page.locator("main a[href^='mailto:']").first();
+      const email = decodeURIComponent((await mail.getAttribute("href"))!.slice("mailto:".length));
+      const copy = page.getByRole("button", { name: /copy.*email|salin.*email/i });
+      await copy.click();
+      const address = page.getByRole("textbox", { name: messages.common.emailCopyFailed });
+      await expect(address).toHaveValue(email);
+      await expect(copy).toBeFocused();
+      await expect(mail).toHaveAttribute("href", `mailto:${email}`);
+      await page.keyboard.press("Tab");
+      await expect(address).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+      await context.close();
+    });
+  }
+
+  test(`${locale}: rejected drawer copy stays in its action and keyboard trap`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async () => { throw new Error("Clipboard blocked"); } },
+    }));
+    await asReturningVisitor(page);
+    await page.goto(`/${locale}/labs/${heroPod.slug}?tier=lite`);
+    await waitForHQ(page);
+    await waitForRoom(page, `L3:${heroPod.slug}`);
+    const drawer = page.getByTestId("room-drawer");
+    await drawer.getByRole("button", { name: messages.drawer.more }).click();
+    const action = drawer.getByRole("button", { name: messages.common.copyClassicLink });
+    await action.click();
+    const field = drawer.getByRole("textbox", { name: messages.common.linkCopyFailed });
+    await expect(field).toHaveValue(`${SITE_URL}/${locale}/labs/${heroPod.slug}?view=classic`);
+    await expect(action.locator("..").getByRole("textbox")).toHaveCount(1);
+    await expect(action).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(field).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(action).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  });
+}
 
 /** Opens a pod route in 3D as a returning visitor: the deep link opens the room drawer for that pod. */
 async function openPodDrawer(page: Page, slug = heroPod.slug) {

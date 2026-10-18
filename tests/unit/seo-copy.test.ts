@@ -123,6 +123,17 @@ describe("every page's title and description", () => {
     for (const locale of LOCALES) expect(seoFor(locale, "/").description).toContain(getProfile().subheadline[locale]);
   });
 
+  it.each(LOCALES)("keeps experimental scope in context-free %s project descriptions", (locale) => {
+    const description = (slug: string) => seoFor(locale, `/labs/${slug}`).description;
+    expect(description("voice-ai-contact-center")).toMatch(/n\s*=\s*4/i);
+    expect(description("fraud-review-platform")).toMatch(/offline|development|pengembangan/i);
+    expect(description("covid-herd-immunity-forecast")).toMatch(/in-sample/i);
+    const cv = description("ai-cv-screening-platform");
+    expect(cv).toMatch(/22/);
+    expect(cv).toMatch(/rerun|uji ulang|pengujian ulang|diulang/i);
+    expect(cv).toMatch(/\b(?:no|not|without|unrecorded|belum|tidak|tanpa)\b/i);
+  });
+
   it("marks projects and posts as articles and journey entries with the journey card", () => {
     const pod = getContent().floors.labs.pods[0];
     expect(seoFor("en", `/labs/${pod.slug}`)).toMatchObject({ type: "article", tags: pod.stack, image: { kind: "labs", slug: pod.slug } });
