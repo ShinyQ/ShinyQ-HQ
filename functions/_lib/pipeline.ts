@@ -141,7 +141,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const messages = buildMessages(pack.packDate, context, modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
-  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
+  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, locale, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
   const leadFlag = lead ? { lead: true } : {};
   const modelOf = generation.model ? { model: generation.model } : {};
   if (generation.source === "none") {

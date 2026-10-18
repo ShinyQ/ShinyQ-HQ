@@ -33,16 +33,30 @@ export interface ModelClient {
   stream(model: string, input: ModelInput, signal: AbortSignal): AsyncIterable<string>;
 }
 
+const GPT_OSS_STYLE_EN =
+  "Reply in English. Write one to three plain sentences, or one sentence and a short list; never start with a heading or a bold title line. Copy every number exactly as CONTEXT writes it and never calculate, round or combine numbers. Use plain hyphens, never en or em dashes.";
+const GPT_OSS_STYLE_ID =
+  "Jawab dalam bahasa Indonesia, termasuk setiap butir daftar; nama produk, sertifikasi, dan istilah teknis tetap seperti aslinya. Tulis satu sampai tiga kalimat biasa, atau satu kalimat dan daftar singkat; jangan mulai dengan judul atau baris tebal. Salin setiap angka persis seperti tertulis di CONTEXT dan jangan menghitung, membulatkan, atau menggabungkan angka. Pakai tanda hubung biasa, bukan en dash atau em dash.";
+
+/** Final system message for gpt-oss only; the shared prompt stays first and unchanged so Groq prompt caching keeps its prefix. */
+export function GPT_OSS_STYLE(locale?: "en" | "id"): string {
+  if (locale === "en") return GPT_OSS_STYLE_EN;
+  if (locale === "id") return GPT_OSS_STYLE_ID;
+  return GPT_OSS_STYLE_EN.replace("Reply in English.", "Reply in the language of the visitor's last question.");
+}
+
 /**
  * Gemma 4 returns an empty answer unless thinking is disabled (benchmark finding). The Groq backups
  * keep reasoning off (Qwen) or low and hidden with a larger token cap (gpt-oss).
  */
-export function modelInput(model: string, messages: ChatMessage[]): ModelInput {
+export function modelInput(model: string, messages: ChatMessage[], options: { locale?: "en" | "id" } = {}): ModelInput {
   const input: ModelInput = { messages, max_tokens: MAX_TOKENS, temperature: TEMPERATURE };
   if (/gemma-4/i.test(model)) input.chat_template_kwargs = { enable_thinking: false };
   if (/qwen/i.test(model)) input.reasoning_effort = "none";
   if (/gpt-oss/i.test(model)) {
+    // Stays "low" on purpose: the number rule in the style line fixes the arithmetic slips and keeps tokens inside the free 8K TPM / 200K TPD.
     input.reasoning_effort = "low";
+    input.messages = [...messages, { role: "system", content: GPT_OSS_STYLE(options.locale) }];
     input.include_reasoning = false;
     input.max_tokens = GPT_OSS_MAX_TOKENS;
   }
@@ -214,6 +228,7 @@ export interface GenerateOptions {
   backups?: BackupTier[];
   breaker?: ModelBreaker;
   deadlineMs?: number;
+  locale?: "en" | "id";
   now?: () => number;
 }
 
@@ -278,7 +293,7 @@ export async function generate(
     }
     const timeouts = { firstTokenMs: Math.min(tier.timeouts.firstTokenMs, remaining), totalMs: Math.min(tier.timeouts.totalMs, remaining) };
     try {
-      const text = await attempt(tier.client, tier.model, modelInput(tier.model, messages), timeouts);
+      const text = await attempt(tier.client, tier.model, modelInput(tier.model, messages, { locale: opts.locale }), timeouts);
       return { text, source: tier.source, model: tier.model, failures };
     } catch (error) {
       const reason = error instanceof AttemptError ? error.reason : "error";

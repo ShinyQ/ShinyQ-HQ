@@ -8,7 +8,7 @@ import {
   retryAfterSeconds,
   stripReasoning,
 } from "../../functions/_lib/groq";
-import { UpstreamError, modelInput } from "../../functions/_lib/model";
+import { GPT_OSS_STYLE, UpstreamError, modelInput } from "../../functions/_lib/model";
 import type { AskEnv } from "../../functions/_lib/types";
 
 const messages = [
@@ -89,7 +89,7 @@ describe("groqClient request", () => {
     const body = JSON.parse((fetcher.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body).toEqual({
       model: "openai/gpt-oss-120b",
-      messages,
+      messages: [...messages, { role: "system", content: GPT_OSS_STYLE() }],
       temperature: 0.2,
       max_completion_tokens: 1024,
       stream: false,

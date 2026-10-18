@@ -3,6 +3,7 @@ import { modelBreaker, resetModelBreakers, secondsToMidnight } from "../../funct
 import {
   CHAIN_MS,
   generate,
+  GPT_OSS_STYLE,
   groqKey,
   isQuotaError,
   modelInput,
@@ -304,6 +305,48 @@ describe("modelInput for backups", () => {
     const input = modelInput("@cf/mistralai/mistral-small-3.1-24b-instruct", []);
     expect(input.reasoning_effort).toBeUndefined();
     expect(input.include_reasoning).toBeUndefined();
+  });
+});
+
+describe("gpt-oss style line", () => {
+  const messages = [
+    { role: "system" as const, content: "SYSTEM PROMPT" },
+    { role: "user" as const, content: "Where does he work?" },
+  ];
+
+  it("appends the language-specific line as a final system message to a copy", () => {
+    const before = JSON.stringify(messages);
+    const en = modelInput(GPT, messages, { locale: "en" });
+    expect(en.messages).toHaveLength(3);
+    expect(en.messages.slice(0, 2)).toEqual(messages);
+    expect(en.messages[2]).toEqual({ role: "system", content: GPT_OSS_STYLE("en") });
+    expect(GPT_OSS_STYLE("en")).toMatch(/^Reply in English\./);
+    expect(modelInput(GPT, messages, { locale: "id" }).messages[2].content).toBe(GPT_OSS_STYLE("id"));
+    expect(GPT_OSS_STYLE("id")).toMatch(/^Jawab dalam bahasa Indonesia/);
+    expect(modelInput(GPT, messages).messages[2].content).toBe(GPT_OSS_STYLE());
+    expect(GPT_OSS_STYLE()).toMatch(/^Reply in the language of the visitor's last question\. Write one/);
+    expect(JSON.stringify(messages)).toBe(before);
+    expect(en.messages).not.toBe(messages);
+  });
+
+  it("leaves Gemma, Mistral and Qwen inputs byte-identical", () => {
+    for (const model of ["@cf/google/gemma-4-26b-a4b-it", "@cf/mistralai/mistral-small-3.1-24b-instruct", QWEN]) {
+      expect(modelInput(model, messages, { locale: "id" }).messages).toBe(messages);
+      expect(JSON.stringify(modelInput(model, messages, { locale: "id" }))).toBe(JSON.stringify(modelInput(model, messages)));
+    }
+  });
+
+  it("keeps reasoning low", () => {
+    expect(modelInput(GPT, messages, { locale: "en" }).reasoning_effort).toBe("low");
+  });
+
+  it("forwards the locale from generate to the model input", async () => {
+    const { client, calls } = mock({ p: fail(new Error("boom")), [GPT]: say("ok") });
+    await generate(client, { primary: "p" }, messages, fast, { backups: [{ model: GPT, client }], locale: "id" });
+    expect(names(calls)).toEqual(["p", GPT]);
+    expect((calls[0].input as { messages: unknown[] }).messages).toBe(messages);
+    const input = calls[1].input as { messages: { role: string; content: string }[] };
+    expect(input.messages.at(-1)).toEqual({ role: "system", content: GPT_OSS_STYLE("id") });
   });
 });
 
