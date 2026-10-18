@@ -1,4 +1,15 @@
 @import "tailwindcss";
+/* Tailwind scans the whole repo by default; these folders never ship, and their words (design mockups, specs,
+   test names) would otherwise add utilities to the shared stylesheet. */
+@source not "../../docs";
+@source not "../../e2e";
+@source not "../../tests";
+@source not "../../scripts";
+@source not "../../workers";
+@source not "../../functions";
+@source not "../../AGENTS.md";
+@source not "../../CLAUDE.md";
+@source not "../../README.md";
 @import "./pageview.css";
 @import "./landing.css";
 
