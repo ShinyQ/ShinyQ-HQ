@@ -9,6 +9,7 @@
 #   TURNSTILE_SECRET  Turnstile widget secret (siteverify)
 #   ASK_IP_SALT_SEED  seed of the daily-rotating salt for visitor IP hashes (rate limits)
 #   ASK_COOKIE_KEY    HMAC key of the 30-minute signed Turnstile session cookie
+#   GROQ_API_KEY      Groq API key of the backup tiers (optional; without it Groq is skipped)
 
 name = "kurniadi"
 pages_build_output_dir = "out"
@@ -27,7 +28,8 @@ binding = "ASK_KV"
 id = "52fa119d49f641078dbecbb12aad4ccb"
 
 # Workers Analytics Engine dataset for anonymized ask events (no IP, no raw text):
-# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip],
+# blobs [outcome, locale, source, scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip,
+# model (id of the answering model), failureTrail ("model:reason > ..." of the tiers that failed first)],
 # doubles [latencyMs, 1]. topic (blob8) and chip (blob9) feed the public visit stats (workers/stats/).
 # The dataset is created on the first write; scripts/content-gap.ts reads it through the SQL API.
 [[analytics_engine_datasets]]
@@ -71,6 +73,8 @@ ASK_ENABLED = "true"
 # Primary and fallback Workers AI models (one fallback attempt per question).
 ASK_PRIMARY = "@cf/google/gemma-4-26b-a4b-it"
 ASK_FALLBACK = "@cf/mistralai/mistral-small-3.1-24b-instruct"
+# Groq backup models, tried in order after the Workers AI models (needs the GROQ_API_KEY secret).
+ASK_BACKUP_MODELS = "qwen/qwen3.8-27b,openai/gpt-oss-120b"
 # AI Gateway ID (cache TTL 7 days, logs on, 600 requests per day). Its Workers AI billing mode is
 # "postpaid": calls count against the account's own Workers AI quota (10k free neurons per day).
 ASK_GATEWAY_ID = "shinyq-hq"

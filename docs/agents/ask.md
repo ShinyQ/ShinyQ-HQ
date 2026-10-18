@@ -39,11 +39,12 @@ All bindings and vars live in `wrangler.toml`.
 | `PERF_EVENTS` | binding | Analytics Engine `perf_events`, the RUM beacon, kill switch `RUM_ENABLED` |
 | `ASK_RL` | binding | optional |
 | `ASK_ENABLED` | var | kill switch, anything but `"true"` is off |
-| `ASK_PRIMARY`, `ASK_FALLBACK` | var | |
+| `ASK_PRIMARY`, `ASK_FALLBACK` | var | Workers AI models |
+| `ASK_BACKUP_MODELS` | var | Groq backup models, comma list, in order; default `qwen/qwen3.8-27b,openai/gpt-oss-120b` |
 | `ASK_GATEWAY_ID` | var | `shinyq-hq` |
 | `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP` | var | |
 
-- Secrets (`TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`) only via `wrangler pages secret put`, never in the repo.
+- Secrets (`TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`, and the optional `GROQ_API_KEY`) only via `wrangler pages secret put`, never in the repo.
 
 ## Deploy
 
@@ -157,11 +158,30 @@ Security order (spec 7.4):
 6. KV cache (first turns only).
 7. Global cap.
 8. Scope declines (harmful, private topics, opinions about people, employers or clients; no model call).
-9. Retrieval + Gemma 4 with one Mistral fallback.
+9. Retrieval + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
 10. Output checks: blocklist, forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source.
 11. Then cache, event, SSE.
 
 - Bump `PROMPT_VERSION` in `functions/_lib/prompt.ts` with any prompt change.
+
+## Backup tiers
+
+Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_lib/groq.ts`, `modelBreaker` in `functions/_lib/limits.ts`.
+
+- Chain, never in parallel: Gemma (primary), Mistral (fallback), then each `ASK_BACKUP_MODELS` model on Groq (source `backup`), then the canned fallback message. A tier is tried after an error, a missing first token, a total timeout or an empty answer.
+- Every tier gets the same prompt, retrieval, scope routing and output checks; backup answers are cached like the others. Keep the system prompt a stable prefix (Groq caches it).
+- Dashes: `normalizeDashes` (`functions/_lib/text.ts`) runs on every tier's answer before the output checks and on cached answers when served: hyphen variants and the minus sign become `-`, an en dash between digits closes up (`2019-2021`), an em dash becomes a comma. `raw` in eval reports keeps the model text.
+- gpt-oss only: `modelInput` appends one final system message, `GPT_OSS_STYLE(locale)` (reply language, no heading or bold title line, numbers copied as CONTEXT writes them, plain hyphens), after the unchanged shared prompt; the other models get byte-identical input. `reasoning_effort` stays `low`.
+- Quota: a Workers AI quota error (code 3036, the daily neurons) skips Mistral and pauses the shared breaker key `wai` until the next 00:00 UTC. Any other Workers AI error or timeout tries Mistral first.
+- Breakers (`mb:<key>`, in memory plus KV, KV written only for pauses of 60 s or more): a Groq 429 or 413 pauses that model for `retry-after` (60 s default), 401 or 403 for 1 hour, 404 or model not found for 6 hours. Timeouts, plain errors and empty answers never pause a tier.
+- Timeouts: the whole chain stops at 24 s (`CHAIN_MS`, under the client's 30 s), a Groq tier gets 6 s (`GROQ_TIMEOUTS`), and a tier needs at least 1.5 s left (`MIN_ATTEMPT_MS`).
+- Groq client: one non-streaming OpenAI-compatible request (fetch only); the answer arrives in one piece.
+  - Qwen sends `reasoning_effort: "none"`; gpt-oss sends `reasoning_effort: "low"`, `include_reasoning: false` and `max_completion_tokens` 1024. `<think>` blocks are stripped and `message.reasoning` is never read, so reasoning never reaches a visitor.
+  - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
+- No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
+- Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id and blob11 the failure trail (`model:reason > ...`, 200 characters at most); the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints a Models table.
+- Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks
 

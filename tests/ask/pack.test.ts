@@ -375,6 +375,8 @@ describe("how this site was built (content/ask/site-build.json, owner request 20
     expect(wrangler).toContain("gemma-4");
     expect(wrangler).toContain("mistral-small-3.1");
     expect(text).toMatch(/Gemma 4\b.*Mistral Small 3\.1/);
+    expect(wrangler).toContain("qwen/qwen3.8-27b");
+    expect(text).toMatch(/Groq/);
   });
 
   it("drops only the stack keywords that already sit in the project text and carry no topic tag", () => {

@@ -3,8 +3,9 @@ import { checkAnswer, closestSource, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
+import { normalizeDashes } from "./text";
 import { followUpAnchor, type HistoryTurn } from "./history";
-import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
+import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
 import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, nicknameForModel, resolveNickname, routedTopic } from "./scope";
@@ -28,6 +29,11 @@ export interface PipelineInput {
   timeouts?: Timeouts;
   /** Earlier turns the handler verified (signed by this server), oldest first. */
   history?: readonly HistoryTurn[];
+  /** Tiers tried after Workers AI (the Groq models); empty or absent without a key. */
+  backups?: BackupTier[];
+  breaker?: ModelBreaker;
+  /** Chain deadline override; absent keeps the production `CHAIN_MS`. The eval passes Infinity to keep its own timeouts. */
+  deadlineMs?: number;
 }
 
 export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "model_failed" | "model_decline";
@@ -41,7 +47,9 @@ export interface PipelineResult {
   detail?: string[];
   /** Raw model text before the checks (eval reports only; never sent to the browser). */
   raw?: string;
-  failures: { model: string; reason: AttemptFailure }[];
+  failures: Generation["failures"];
+  /** Model that produced the text, set whenever a model call succeeded (even if the checks then replaced its text). */
+  model?: string;
   calledModel: boolean;
   chunkIds: string[];
   /** Allowlisted topic tags of the retrieved chunks (follow-up pills); empty when nothing was retrieved. */
@@ -133,15 +141,16 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const messages = buildMessages(pack.packDate, context, modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
-  const generation = await generate(client, models, messages, input.timeouts);
+  const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, locale, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
   const leadFlag = lead ? { lead: true } : {};
+  const modelOf = generation.model ? { model: generation.model } : {};
   if (generation.source === "none") {
     if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true, historyUsed };
     return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, historyUsed };
   }
 
   const check = checkAnswer({
-    answer: generation.text,
+    answer: normalizeDashes(generation.text),
     question: routed,
     context,
     packDate: pack.packDate,
@@ -167,6 +176,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       detail: check.detail,
       raw: generation.text,
       failures: generation.failures,
+      ...modelOf,
       calledModel: true,
       chunkIds,
       tags,
@@ -179,7 +189,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   // A project inquiry the model refuses or cannot place (no matching work) still gets the invitation and the card.
   if (check.outcome === "decline" || (lead && check.outcome === "unknown")) {
     const kind: CannedKind = lead ? "lead" : "decline";
-    return { text: canned(kind, locale), outcome: OUTCOME_OF[kind], source: "none", reason: "model_decline", raw: generation.text, failures: generation.failures, calledModel: true, chunkIds, tags: lead ? tags : [], ...leadFlag, historyUsed };
+    return { text: canned(kind, locale), outcome: OUTCOME_OF[kind], source: "none", reason: "model_decline", raw: generation.text, failures: generation.failures, ...modelOf, calledModel: true, chunkIds, tags: lead ? tags : [], ...leadFlag, historyUsed };
   }
   return {
     text: check.text,
@@ -187,6 +197,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     source: generation.source,
     raw: generation.text,
     failures: generation.failures,
+    ...modelOf,
     calledModel: true,
     chunkIds,
     tags,

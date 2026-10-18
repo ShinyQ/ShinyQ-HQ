@@ -5,7 +5,7 @@ import { SUGGESTIONS } from "@/ask/suggestions";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
 import { findBlocked } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
-import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
+import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow, resetModelBreakers } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
 import { answerTags, chunkTags } from "../../functions/_lib/tags";
 import { hasValidSession, issueSession, originAllowed, visitorHash } from "../../functions/_lib/security";
@@ -23,6 +23,7 @@ beforeAll(() => {
 beforeEach(() => {
   resetMinuteWindow();
   resetBreaker();
+  resetModelBreakers();
 });
 
 class MemoryKv implements KvNamespace {
@@ -41,19 +42,38 @@ interface Setup {
   env?: Partial<AskEnv>;
   answer?: string | (() => AsyncIterable<string>);
   turnstile?: { success: boolean; hostname?: string };
+  /** Workers AI throws its daily quota error for every model. */
+  quota?: boolean;
+  /** Groq answer text (status 200) for the injected Groq fetch. */
+  groq?: string;
 }
 
-function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile }: Setup = {}) {
+const QUOTA_MESSAGE = "3036: You have used up your daily free allocation of 10,000 neurons";
+
+function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, quota, groq = "Kurniadi works at Metrodata as an engineer." }: Setup = {}) {
   const kv = new MemoryKv();
   const events: { blobs?: string[] }[] = [];
   const modelCalls: string[] = [];
   const modelInputs: { messages: { role: string; content: string }[] }[] = [];
   const turnstileCalls: string[] = [];
   const pending: Promise<unknown>[] = [];
+  const groqCalls: { url: string; model: unknown }[] = [];
+  const groqBodies: { messages: { role: string; content: string }[] }[] = [];
+  const groqFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body));
+    groqCalls.push({ url: String(url), model: body.model });
+    groqBodies.push(body);
+    return new Response(JSON.stringify({ choices: [{ message: { content: groq } }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }), { status: 200 });
+  }) as typeof fetch;
   const client: ModelClient = {
     stream(model, input) {
       modelCalls.push(model);
       modelInputs.push(input as (typeof modelInputs)[number]);
+      if (quota) {
+        return (async function* () {
+          throw new Error(QUOTA_MESSAGE);
+        })();
+      }
       if (typeof answer === "function") return answer();
       return (async function* () {
         yield answer;
@@ -76,6 +96,7 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile }:
     now: () => NOW,
     streamDelayMs: 0,
     client: () => client,
+    groqFetch,
     fetcher: async (_url, init) => {
       turnstileCalls.push(String((init?.body as FormData).get("response")));
       return new Response(JSON.stringify(turnstile ?? { success: true, hostname: "kurniadi.pages.dev" }));
@@ -93,7 +114,7 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile }:
     await Promise.all(pending);
     return response;
   };
-  return { kv, events, modelCalls, modelInputs, turnstileCalls, call, env: fullEnv };
+  return { kv, events, modelCalls, modelInputs, groqCalls, groqBodies, turnstileCalls, call, env: fullEnv };
 }
 
 async function frames(response: Response): Promise<AskFrame[]> {
@@ -361,15 +382,16 @@ describe("privacy (T10)", () => {
     const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
     const { call, events } = setup();
     await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
-    expect(events[0].blobs).toHaveLength(9);
+    expect(events[0].blobs).toHaveLength(11);
     expect(events[0].blobs?.[6]).toBe("pill");
-    expect(events[0].blobs?.slice(7)).toEqual(["work", "work-best"]);
+    expect(events[0].blobs?.slice(7, 9)).toEqual(["work", "work-best"]);
+    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", ""]);
   });
 
   it("derives the topic from the answer tags for typed questions and drops a chip id that does not match", async () => {
     const { call, events } = setup({ answer: "The voice agent interrupts in about 0.2 seconds." });
     await (await call({ body: { q: "How does the voice AI contact center work?", locale: "en", chip: "work-best" } })).text();
-    expect(events[0].blobs?.slice(7)).toEqual(["ai", ""]);
+    expect(events[0].blobs?.slice(7, 9)).toEqual(["ai", ""]);
   });
 
   it("rejects a chip that is not a short string", async () => {
@@ -383,7 +405,50 @@ describe("privacy (T10)", () => {
     const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
     expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
     expect(events[0].blobs?.[0]).toBe("rejected");
-    expect(events[0].blobs?.slice(7)).toEqual(["", ""]);
+    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", ""]);
+  });
+});
+
+describe("Groq backup tiers", () => {
+  const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+  it("answers from Groq after a Workers AI quota error, logs the model and trail, and caches the answer", async () => {
+    const { call, events, kv, groqCalls, modelCalls } = setup({ quota: true, env: { GROQ_API_KEY: "gsk_test" } });
+    const list = await frames(await call());
+    expect(answerOf(list)).toBe("Kurniadi works at Metrodata as an engineer.");
+    expect(doneOf(list).source).toBe("backup");
+    expect(groqCalls).toEqual([{ url: GROQ_URL, model: "qwen/qwen3.8-27b" }]);
+    // The quota error skips Mistral.
+    expect(modelCalls).toHaveLength(1);
+    const blobs = events[0].blobs ?? [];
+    expect(blobs[2]).toBe("backup");
+    expect(blobs[9]).toBe("qwen/qwen3.8-27b");
+    expect(blobs[10]).toContain("quota");
+    expect(blobs[10].length).toBeLessThanOrEqual(200);
+    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toHaveLength(1);
+    const again = doneOf(await frames(await call()));
+    expect(again.source).toBe("cache");
+    expect(events[1].blobs?.slice(9)).toEqual(["", ""]);
+    expect(groqCalls).toHaveLength(1);
+  });
+
+  it("gives the canned fallback without GROQ_API_KEY and never calls Groq", async () => {
+    const { call, groqCalls, events } = setup({ quota: true });
+    const list = await frames(await call());
+    expect(answerOf(list)).toBe(MESSAGES.fallback.en);
+    expect(doneOf(list).source).toBe("none");
+    expect(groqCalls).toEqual([]);
+    expect(events[0].blobs?.[9]).toBe("");
+  });
+
+  it("replaces a leaking Groq answer like any tier and does not cache it", async () => {
+    const term = safety.blocklist.find((t) => /^[a-z]{5,}$/i.test(t))!;
+    expect(term).toBeTruthy();
+    const { call, kv } = setup({ quota: true, groq: `The client was ${term}.`, env: { GROQ_API_KEY: "gsk_test" } });
+    const list = await frames(await call());
+    expect(answerOf(list)).not.toContain(term);
+    expect(doneOf(list).source).toBe("none");
+    expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 });
 
@@ -441,6 +506,14 @@ describe("perspectives through the Function (spec section 13)", () => {
     const done = doneOf(await frames(await call({ body })));
     expect(done).toMatchObject({ outcome: "answer", source: "primary", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
     expect(JSON.parse(kv.store.get(await cacheKey(pack.packVersion, "en", body.q)) ?? "{}")).toEqual({ text: answer, cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+  });
+
+  it("serves a cached answer without em dashes", async () => {
+    const { call, kv } = setup();
+    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata \u2014 as an engineer." }));
+    const list = await frames(await call());
+    expect(doneOf(list).source).toBe("cache");
+    expect(answerOf(list)).toBe("Kurniadi works at Metrodata, as an engineer.");
   });
 
   it("drops a cached About anchor of a perspective: they have no page any more", async () => {
@@ -510,6 +583,19 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
     expect(s.modelInputs.at(-1)?.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
     expect(s.modelInputs.at(-1)?.messages[2].content).toBe(ANSWER);
     expect(s.events.at(-1)).toMatchObject({ doubles: [expect.any(Number), 1, 1] });
+  });
+
+  it("sends the same verified history to a Groq backup tier and signs its answer", async () => {
+    const s = setup({ answer: ANSWER });
+    const turn = await firstTurn(s);
+    const q = setup({ quota: true, groq: "Clearbox uses TypeScript.", env: { GROQ_API_KEY: "gsk_test" } });
+    const done = doneOf(await frames(await q.call({ body: { q: "What stack did it use?", locale: "en", history: [turn] } })));
+    expect(done.source).toBe("backup");
+    expect(done.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const messages = q.groqBodies.at(-1)?.messages ?? [];
+    expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+    expect(messages[2].content).toBe(ANSWER);
+    expect(q.events.at(-1)).toMatchObject({ doubles: [expect.any(Number), 1, 1] });
   });
 
   it("drops a tampered answer, another panel language or a forged signature, and still answers", async () => {

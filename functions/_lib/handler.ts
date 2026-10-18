@@ -2,8 +2,9 @@ import { ASK_MAX_QUESTION, isAskEntry, type AskTurn, type AskEntry, type AskErro
 import { markdownToPlain } from "../../src/ask/markdown";
 import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
 import { findBlocked } from "./checks";
+import { backupTiers } from "./groq";
 import { parseHistory, signTurn, verifyHistory } from "./history";
-import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
+import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, modelBreaker, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
 import { scrubPII } from "./pii";
 import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
@@ -13,7 +14,7 @@ import { isLeadQuestion, resolveNickname } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
-import { cleanText, detectLocale, normalizeQuestion } from "./text";
+import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
@@ -35,6 +36,8 @@ export interface HandlerDeps {
   now?: () => number;
   fetcher?: Fetcher;
   client?: (env: AskEnv, metadata: Record<string, string>) => ModelClient | undefined;
+  /** Fetch used by the Groq backup tiers (tests). */
+  groqFetch?: typeof fetch;
   streamDelayMs?: number;
 }
 
@@ -148,6 +151,10 @@ interface EventData {
   /** Public visit stats: the question's topic (chip topic, else from the answer tags) and curated chip id, or "". */
   topic?: StatsTopic | "";
   chip?: string;
+  /** Model that produced the text (backup tiers included), or "". */
+  model?: string;
+  /** Failed attempts before the answer, `model:reason > model:reason`, or "". */
+  trail?: string;
   latencyMs: number;
   /** Earlier turns that reached the model (multi-turn memory); 0 for a first turn. */
   historyUsed?: number;
@@ -156,13 +163,14 @@ interface EventData {
 /**
  * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
  * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
- * topic, chip id (the last two feed the public visit stats; appended so older queries keep working).
+ * topic, chip id (these two feed the public visit stats), answering model id (blob10), failure trail
+ * `model:reason > model:reason` cut at 200 characters (blob11). Appended so older queries keep working.
  * Doubles: latency, count, earlier turns sent to the model.
  */
 function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? ""],
+      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200)],
       doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
@@ -242,13 +250,14 @@ export function createAskHandler(deps: HandlerDeps) {
       // Cached text is markdown: scan it and its plain text, which joins words that marks split ("SM**BC**").
       const blocked = (text: string) => [text, markdownToPlain(text)].some((s) => findBlocked(s, safety.blocklist).length > 0);
       if (cached && typeof cached.text === "string" && !blocked(cached.text)) {
+        const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
-        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cached.text)) }, tags), delay, responseHeaders);
+        return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -262,6 +271,7 @@ export function createAskHandler(deps: HandlerDeps) {
     if (!client) return fail(503, "disabled");
 
     // 8. Output checks happen inside the pipeline.
+    const backups = backupTiers(env, metadata, deps.groqFetch);
     const result = await runPipeline({
       question,
       locale,
@@ -271,6 +281,8 @@ export function createAskHandler(deps: HandlerDeps) {
       client,
       models: { primary: env.ASK_PRIMARY || DEFAULT_PRIMARY, fallback: env.ASK_FALLBACK || DEFAULT_FALLBACK },
       history,
+      backups,
+      breaker: modelBreaker(env.ASK_KV),
     });
 
     // 9. Count, cache passing answers, log, stream.
@@ -280,12 +292,12 @@ export function createAskHandler(deps: HandlerDeps) {
       const bad = result.reason === "model_failed" || (result.reason !== undefined && !EXPECTED_REASONS.has(result.reason));
       background.push(recordSample(env.ASK_KV, bad, started));
     }
-    const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback");
+    const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup");
     if (modelAnswer && result.historyUsed === 0 && env.ASK_KV) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), latencyMs: now() - started, historyUsed: result.historyUsed });
+    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;

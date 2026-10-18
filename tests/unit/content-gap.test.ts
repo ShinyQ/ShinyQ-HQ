@@ -82,6 +82,25 @@ describe("report", () => {
     expect(md).not.toContain("<x>");
   });
 
+  it("lists the answering models after Sources, skipping empty keys and sanitizing the rest", () => {
+    const md = formatReport({
+      weekOf: "2026-10-12",
+      topics: [],
+      outcomes: [{ key: "answer", n: 10 }],
+      sources: [{ key: "primary", n: 10 }],
+      models: [{ key: "@cf/google/gemma-3-12b-it", n: 6 }, { key: "qwen/qwen3.8-27b", n: 3 }, { key: "", n: 1 }, { key: "<b>x y</b>", n: 1 }],
+    });
+    expect(md).toContain("## Models");
+    expect(md).toContain("| Model | Count | Share |");
+    expect(md).toContain("| @cf/google/gemma-3-12b-it | 6 | 60% |");
+    expect(md).toContain("| qwen/qwen3.8-27b | 3 | 30% |");
+    expect(md).toContain("| bxy/b | 1 | 10% |");
+    expect(md).not.toContain("<b>");
+    expect(md.indexOf("## Sources")).toBeLessThan(md.indexOf("## Models"));
+    expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [], models: [{ key: "", n: 2 }] })).not.toContain("## Models");
+    expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).not.toContain("## Models");
+  });
+
   it("says so when nothing was unanswered", () => {
     expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).toContain("None this week.");
   });
@@ -117,5 +136,6 @@ describe("report", () => {
     // The public report never selects the question text (blob4).
     for (const q of Object.values(QUERIES)) expect(q).not.toMatch(/blob4/);
     expect(QUERIES.topics).toContain("blob8 AS key");
+    expect(QUERIES.models).toContain("blob10 AS key");
   });
 });

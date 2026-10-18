@@ -31,7 +31,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | 2 | Screen Rover (keyboard, click/tap-to-move, joystick) and the L1 Lobby | Done |
 | 3 to 5 | Career Archive, Labs and the Glass Drawer, Library and Roof, missions | Done |
 | 6 | Launch on Cloudflare Pages (`kurniadi.pages.dev`), SEO, Lighthouse CI | Done |
-| Ask | Ask the HQ: grounded AI Q&A (Gemma 4 with Mistral fallback), chat dock, weekly live facts | Done |
+| Ask | Ask the HQ: grounded AI Q&A (Gemma 4 with Mistral and Groq fallbacks), chat dock, weekly live facts | Done |
 | Ask: leads and lifestyle | "What can you do?", project inquiries with a contact card, 30 endorsed lifestyle, industry and policy answers, deterministic scope routing | Done |
 | Walkable floors | Road kit, L2 Career Road, L3 Project Roads, Neon line type icons | Done |
 | Content and UI | Galleries from the live apps, certifications at scale, CV viewer and paper previews, roomier drawer, named elevator, Title Case titles, gallery-first ordering, cinematic Page View landing, elevator call pads and L2 teleporters | Done |
@@ -338,6 +338,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`).
 - It then calls Workers AI through AI Gateway `shinyq-hq`: **Gemma 4 26B** (`@cf/google/gemma-4-26b-a4b-it`, thinking off), falling back once to **Mistral Small 3.1** on error, timeout or an empty answer.
 - Earlier turns travel with the question: each answer carries the server's signature (HMAC), and only verified turns reach the model, as earlier messages it may use for context but never as instructions. A short follow-up is scope-checked and retrieved together with the question it refers to.
+- Groq is the backup when Workers AI fails or runs out of its daily quota. A quota error (3036) also skips Mistral, and the Groq backup tiers answer until 00:00 UTC: **Qwen 3.8 27B** (`qwen/qwen3.8-27b`, a Groq preview model), then **gpt-oss-120b** (`openai/gpt-oss-120b`). Groq is called through the same AI Gateway, only when the `GROQ_API_KEY` secret exists, with the same prompt, retrieval and output checks. Without a working tier the visitor sees the fallback message.
 - Answers stream over SSE and first-turn answers are cached in KV for 7 days (a follow-up depends on its history, so it is never cached). The model may use short bullet lists (at most 5 items), **bold** titles and links to pages it was given; the dock renders that safe markdown subset as React elements (never HTML), and the server keeps only links to retrieved pages, the top pages and the public repository (any other link becomes its label).
 
 ### Safety
