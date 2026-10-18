@@ -37,6 +37,11 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction (was 11, plus 4 route chunks). See [page-view.md](page-view.md#navigation).
 
+JetBrains Mono (`jetbrains` in `src/app/fonts.ts`) stays preloaded with Inter and Archivo: it paints in the first viewport of every page.
+
+- Classic site: the header (`>_` tool, EN/ID switch; on desktop also the site name, the nav floor labels and `Ctrl K`) and `pv-data` labels such as the floor eyebrow, filter labels and chip counts. Boot cover: its eyebrow, the role line and the boot log.
+- Dropping the preload would swap these from the fallback after first paint. Recheck with a first-viewport scan of computed `font-family` before changing it.
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
