@@ -1,6 +1,6 @@
 # Test Suite Trim Implementation Plan
 
-Status: shipped in #201; its Motion Reduced warm-up for `memory-full` was reverted in a follow-up (Task 8).
+Status: shipped in #201; its Motion Reduced warm-up for `memory-full` was reverted in a follow-up, #203 (Task 8).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
