@@ -10,7 +10,7 @@ The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function 
 | Production URL | https://kurniadi.pages.dev |
 | Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6` (never pushed, so every deploy is a preview) |
 | Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
-| Repository secrets | `CLOUDFLARE_API_TOKEN` (account-owned token "shinyq-hq Pages deploy", Cloudflare Pages Edit only, expires 2027-01-09) and `CLOUDFLARE_ACCOUNT_ID`, set on 2026-10-11 |
+| Repository secrets | `CLOUDFLARE_API_TOKEN` (account-owned token "shinyq-hq Pages deploy", Cloudflare Pages Edit plus Workers KV Storage Edit for the Ask knowledge pack, expires 2027-01-09) and `CLOUDFLARE_ACCOUNT_ID`, set on 2026-10-11 |
 | Repository variables | `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); `AUTO_DEPLOY_FACTS` unset (on); `CF_PREVIEWS` unset (PR previews off) |
 
 The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
@@ -36,7 +36,7 @@ Or Actions > Deploy > Run workflow. A merge to `main` starts the same workflow b
 
 - Turn the automatic deploy off: `gh variable set AUTO_DEPLOY_FACTS --body false` (the facts PR still merges; deploy by hand later). Turn it back on: `gh variable delete AUTO_DEPLOY_FACTS`.
 - Turn every Actions deploy off: `gh secret delete CLOUDFLARE_API_TOKEN` (the deploy job then skips with a notice; the manual local deploy keeps working).
-- Token rotation: "shinyq-hq Pages deploy" expires on 2027-01-09. Before then, create a new account-owned token with Cloudflare Pages Edit only (section 2, or the `cf accounts tokens create` command in `docs/ask-runbook.md` section 8 with the Pages Write permission group `8d28297797f24fb8a0c332fe0866ec89`), pipe it into `gh secret set CLOUDFLARE_API_TOKEN`, run one deploy, then delete the old token.
+- Token rotation: "shinyq-hq Pages deploy" expires on 2027-01-09. Before then, create a new account-owned token with Cloudflare Pages Edit and Workers KV Storage Edit (section 2, or the `cf accounts tokens create` command in `docs/ask-runbook.md` section 8 with the Pages Write permission group `8d28297797f24fb8a0c332fe0866ec89`), pipe it into `gh secret set CLOUDFLARE_API_TOKEN`, run one deploy, then delete the old token.
 
 ## Manual local deploy
 
@@ -140,7 +140,7 @@ Moving from repository secrets: set each one in the environment first (an enviro
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) and R2 access for the `GUIDES` binding (section 19) |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers KV Storage Edit for the Ask knowledge pack (`scripts/ask-pack.ts`, `docs/ask-runbook.md` section 17) and Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) and R2 access for the `GUIDES` binding (section 19) |
 | `CF_EVAL_TOKEN` | Yes, for evals | Workers AI Read, AI Gateway Read, Account Analytics Read: Ask evals and the content-gap report; also the hq-stats Worker's `WA_TOKEN` until `CF_STATS_TOKEN` exists |
 | `CF_STATS_TOKEN` | Recommended | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
