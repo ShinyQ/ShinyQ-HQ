@@ -1,12 +1,42 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { BuildVisits } from "@/components/build/BuildVisits";
 import { DiagramSvg } from "@/components/diagram/DiagramSvg";
+import type { RoomEngine } from "@/content/room-views/types";
 import type { RoomBodyProps } from "./bodies";
 import { MetricTiles, Sections } from "./blocks";
 
 const PR = "inline-flex min-h-6 items-center px-1 font-mono text-[13px] text-ink-2";
+
+/**
+ * The site diagram: the wide drawer layout once the figure is as wide as it (a desktop side drawer), the phone
+ * layout otherwise. Picked by the figure's own width (no new CSS), measured before paint and on every resize.
+ */
+function Blueprint({ diagram }: { diagram: NonNullable<RoomEngine["diagram"]> }) {
+  const ref = useRef<HTMLElement>(null);
+  const [wide, setWide] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fits = () => {
+      const style = getComputedStyle(el);
+      const padding = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+      setWide(el.clientWidth - padding >= diagram.wide.width);
+    };
+    fits();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(fits);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [diagram.wide.width]);
+  return (
+    <figure ref={ref} role="img" aria-label={diagram.label} className="card p-3" data-diagram={wide ? "wide" : "phone"}>
+      <DiagramSvg layout={wide ? diagram.wide : diagram.layout} className="mx-auto block h-auto max-w-full" />
+    </figure>
+  );
+}
 
 /**
  * B1 Engine Room station drawer (ships in the B1 chunk): the station's own block (diagram, rounds, gates,
@@ -19,11 +49,7 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
   const l = e.labels;
   return (
     <div className="space-y-6" data-engine-station={e.station}>
-      {e.diagram && (
-        <figure role="img" aria-label={e.diagram.label} className="card p-3">
-          <DiagramSvg layout={e.diagram.layout} className="mx-auto block h-auto max-w-full" />
-        </figure>
-      )}
+      {e.diagram && <Blueprint diagram={e.diagram} />}
       {e.tiles && (
         <div className="space-y-3">
           <MetricTiles metrics={e.tiles.map(({ value, label }) => ({ value, label }))} fluid />

@@ -15,7 +15,8 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 - Each station has a door pad 1.1 u inside its front and a 4 u spur from the aisle. Doors are `station`s (`DoorTrigger.facing` looks into the bay), rooms `B1:<station>`.
 - Server rack rows (`engineRacks`) fill the wall gaps between neighbouring bays on the same side; the workbench (x 44 to 48, z -5 to 5) is flush with the east edge.
 - The Express Return pad is at (40, 9) (`ENGINE.returnPad`, see [Fast return](floors.md#fast-return)).
-- Arrival is (-8, 0) (`ENGINE.arrival`, also `spawn`): east of the shaft-clear line, as on RF. Zone `B1:arrival` is the shared arrival zone ([Arrival](floors.md#arrival)): eastbound only, `arrivalOnly`, zoom 0.95 and 0.8 on phones.
+- Arrival is (-8, 0) (`ENGINE.arrival`, also `spawn`): east of the shaft-clear line, as on RF. Zone `B1:arrival` is the shared arrival zone ([Arrival](floors.md#arrival)): eastbound only, `arrivalOnly`, zoom 0.95.
+  - Phones (camera class mobile, owner review 2026-10-18) use `ENGINE.arrivalPhone`: the camera turns 75 degrees to the north side of the rover, zoom 0.85, pitch -0.2 below the rig's elevation. It looks across the aisle at the Blueprint and Build Timeline signs, both whole (a portrait view straight down the aisle cut every sign at the edges; no pose down the aisle shows two signs readable). Driving out of the zone eases the camera back to east with a level pitch.
 - Zones: one per station (`B1:<station>`, on the door pad, the camera on the aisle side looking into the bay) and `B1:workbench` (the aisle end, eastbound only, looking east).
 - Obstacles are the bay rects, the racks and the workbench; the navgrid, door triggers, camera collision and the scenery all read the same layout.
 
@@ -25,6 +26,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
   - the aisle through the shared road kit (`RoadMarkings`);
   - one merged solid mesh and its edges (`MergedBoxes`, `MergedEdges` from the roof kit): bay shells, station props, racks, the workbench;
   - `FlowMesh` (`engine/EngineFx.tsx`, holo `strip`, one instanced draw) for ceiling pipes and their drops, cable trays, bay front strips and rack LEDs, with a slow pulse along x and a random phase per instance;
+  - the pipe runs hang over the back walls (`PIPE_Z`), held by brackets on each bay's back corners, and their drops meet the back walls, so from the aisle no bracket or drop stands in front of a station sign (a front bracket used to cut the Agents sign on arrival);
   - `PanelMesh` (holo `fall`, one instanced draw) for the screens: the blueprint table top, the timeline wall, the agent monitors, the dashboard wall and the workbench wall;
   - `FloatingSigns` for the bay names (lit amber, the dark bays dim with a "Coming soon" plate) and the workbench title and subtitle; no word is painted on the floor.
 - Pipes and trays stay calm so the station signs lead: the ceiling is 7.4 u (`ENGINE.ceiling`), runs are thin dim warm lines (pipe tone `#7c2d12`), trays a dim warm strip with a faint cyan data line.
@@ -37,6 +39,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 - Views come from `buildEngineViews` (`content/room-views/engine.ts`): the build story and the build-time snapshot through the Classic page helpers (`src/lib/build-page.ts`), so a number shows only when the snapshot carries it.
 - They live in their own static file, `/data/rooms/b1-<locale>.json`, never in the shared rooms file. `DrawerHost` fetches it (`loadEngineViews`) only when B1 is unlocked or a `B1:` room opens ([hud-and-drawer.md](hud-and-drawer.md)).
 - `EngineBody` (`hud/drawer/EngineBody.tsx`, in the B1 chunk) renders `RoomView.engine`: the blueprint diagram, the rounds timeline, the gate list, the plan excerpt or the dashboard tiles, around the generic sections. Each drawer links its Classic section `/{locale}/build#<station>`.
+- The blueprint diagram ships laid out twice: `layout` (`DIAGRAM_PRESETS.phone`, 318 px) and `wide` (`DIAGRAM_PRESETS.drawer`: top to bottom, three nodes per band, every text at least 12 px, at most 492 px). `Blueprint` in `EngineBody` measures its figure before paint and on resize (a `ResizeObserver`, no new CSS) and draws `wide` once the figure is as wide as it: the 560 and 600 px side drawers; phones, the 480 px drawer and the drawer next to the Ask panel keep the phone layout.
 
 ## Access
 

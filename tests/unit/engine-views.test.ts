@@ -33,6 +33,12 @@ describe("B1 Engine Room drawers", () => {
       const diagram = view("blueprint").engine?.diagram;
       expect(diagram?.layout.nodes).toHaveLength(story.stations.blueprint.architecture.nodes.length);
       expect(diagram?.layout.width).toBeLessThanOrEqual(DIAGRAM_PRESETS.phone.maxWidth);
+      // The wide side drawer layout (owner 2026-10-18): three nodes per band, as wide as a 560 px drawer's figure, text of at least 12 px.
+      const d = DIAGRAM_PRESETS.drawer;
+      expect(diagram?.wide.nodes).toHaveLength(story.stations.blueprint.architecture.nodes.length);
+      expect(diagram?.wide.width).toBeLessThanOrEqual(d.maxWidth);
+      expect(diagram?.wide.width).toBeGreaterThan(diagram!.layout.width);
+      expect(Math.min(d.kindSize, d.labelSize, d.subSize, d.edgeSize)).toBeGreaterThanOrEqual(12);
       expect(diagram?.label.length).toBeGreaterThan(20);
     });
 

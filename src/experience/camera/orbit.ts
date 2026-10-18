@@ -47,6 +47,11 @@ export interface OrbitState {
   zoneZoom: number | null;
   /** Rail yaw set by a view zone on the L2 rail rig; eased back to the side view on exit unless the visitor turned the rail by hand. */
   zoneRailYaw: number | null;
+  /**
+   * The zone's own yaw when its camera-class view turned or pitched the camera off it (the B1 phone arrival): eased back
+   * to, with the pitch leveled, on exit, unless the visitor turned by hand meanwhile.
+   */
+  zoneTurn: number | null;
 }
 
 export const ZOOM_RANGE = [0.6, 1.5] as const;
@@ -86,6 +91,7 @@ export function createOrbitState(): OrbitState {
     suppressedZone: null,
     zoneZoom: null,
     zoneRailYaw: null,
+    zoneTurn: null,
   };
 }
 
@@ -111,6 +117,7 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
   } else {
     s.yaw += dyaw;
     s.yawTarget = s.yaw;
+    s.zoneTurn = null;
   }
   if (s.firstPerson) {
     s.look = clamp(s.look - dpitch, FIRST_PERSON.pitch[0], FIRST_PERSON.pitch[1]);
@@ -130,6 +137,7 @@ export function rotateStep(s: OrbitState, direction: number, rail = false): void
     s.zoneRailYaw = null;
   } else {
     s.yawTarget = (s.easing ? s.yawTarget : s.yaw) + direction * ROTATE_STEP;
+    s.zoneTurn = null;
   }
   s.easing = true;
   if (s.zone) s.suppressedZone = s.zone;
@@ -143,6 +151,7 @@ export function resetView(s: OrbitState): void {
   s.railYawTarget = s.railYaw - wrapPi(s.railYaw);
   s.zoneZoom = null;
   s.zoneRailYaw = null;
+  s.zoneTurn = null;
   s.firstPerson = false;
   s.push = 1;
   s.easing = true;
@@ -191,8 +200,11 @@ export interface ViewZone {
   zoom?: number;
   /** Rail yaw (offset from the side view) on the L2 rail rig, which ignores `yaw`; the follow rig ignores it. */
   railYaw?: number;
-  /** Another yaw or zoom for a camera class (a phone frames a tall view where a desktop frames a wide one). */
-  classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number }>>;
+  /**
+   * Another yaw, zoom or pitch for a camera class (a phone frames a tall view where a desktop frames a wide one).
+   * `pitch` is an offset from the rig's default elevation (`OrbitState.pitch`); without it the zone levels the pitch to 0.
+   */
+  classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number; pitch?: number }>>;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
   prime?: boolean;
   /**
@@ -210,10 +222,15 @@ export interface ViewZone {
   travel?: Vec2;
 }
 
-/** The yaw and zoom a zone asks for on a camera class. */
-export function zoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zoom: number | undefined } {
+/** The zone's own yaw when its class view turns or pitches the camera off it (`OrbitState.zoneTurn`), else null. */
+function turnOf(zone: ViewZone, view: ReturnType<typeof zoneView>): number | null {
+  return view.yaw !== zone.yaw || view.pitch !== undefined ? zone.yaw : null;
+}
+
+/** The yaw, zoom and pitch a zone asks for on a camera class. */
+export function zoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zoom: number | undefined; pitch?: number } {
   const own = cls ? zone.classView?.[cls] : undefined;
-  return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom };
+  return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom, pitch: own?.pitch };
 }
 
 /**
@@ -249,13 +266,14 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
  * so the intro ends on that view and a deep link opens on it. Also under reduced motion (nothing moves).
  */
 export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass, rail = false): void {
-  const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined };
+  const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined, pitch: undefined };
   s.zone = zone?.id ?? null;
   s.suppressedZone = null;
   s.yaw = s.yawTarget = view.yaw;
   s.zoom = s.zoomTarget = view.zoom ?? 1;
   s.zoneZoom = view.zoom ?? null;
-  s.pitch = s.pitchTarget = 0;
+  s.pitch = s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
+  s.zoneTurn = zone ? turnOf(zone, view) : null;
   if (rail && zone?.railYaw !== undefined) {
     s.railYaw = s.railYawTarget = zone.railYaw;
     s.zoneRailYaw = zone.railYaw;
@@ -294,6 +312,15 @@ function releaseRailZone(s: OrbitState): void {
   s.easing = true;
 }
 
+/** Eases a class view's turn back to its zone's own yaw and a level pitch (leaving the zone). */
+function releaseTurn(s: OrbitState): void {
+  if (s.zoneTurn === null) return;
+  s.yawTarget = nearestAngle(s.zoneTurn, s.yaw);
+  s.pitchTarget = 0;
+  s.zoneTurn = null;
+  s.easing = true;
+}
+
 /**
  * Tracks the zone the rover is in. Entering a zone eases the camera to face its feature, unless
  * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
@@ -312,13 +339,18 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
       s.easing = true;
     }
     releaseRailZone(s);
+    releaseTurn(s);
     return;
   }
   if (zone.railYaw === undefined) releaseRailZone(s);
-  if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
+  if (reduced || s.firstPerson || s.suppressedZone === zone.id) {
+    releaseTurn(s);
+    return;
+  }
   const view = zoneView(zone, cls);
   s.yawTarget = nearestAngle(view.yaw, s.yaw);
-  s.pitchTarget = 0;
+  s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
+  s.zoneTurn = turnOf(zone, view);
   if (view.zoom) {
     s.zoomTarget = view.zoom;
     s.zoneZoom = view.zoom;

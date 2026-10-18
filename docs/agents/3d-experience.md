@@ -182,7 +182,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
 
 ## Elevator arrival
 
-Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the car heading east and the camera ends behind it, looking east. Pure math in `camera/arrival.ts`; floor points and zones in [floors.md](floors.md#arrival).
+Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the car heading east and the camera ends behind it, looking east. The one exception is the B1 phone arrival, whose class view turns the camera to the north side of the rover so two station signs read whole ([B1](floor-b1-engine-room.md#layout)). Pure math in `camera/arrival.ts`; floor points and zones in [floors.md](floors.md#arrival).
 
 - The Director rolls every elevator arrival on from the shaft to `FloorLayout.arrival` (the autopilot drive, `roverRuntime.autopilot`, carries `arrival: true`); a queued mission drive still replaces it.
 - Glide (`CameraDirector`, lifecycle in the pure `stepGlide`): it starts when the ride's stage becomes `opening`, not under reduced motion.
@@ -198,7 +198,8 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - Floor deep links to L3, L4 and RF spawn the rover on the arrival point heading east (`ARRIVAL_HEADING`, `place` in `Experience.tsx`).
   - On L4 and RF the first-frame prime pass primes the `arrivalOnly` zone under the rover, so the first frame shows the arrival view.
   - L3's arrival view `L3:overview` is an ordinary zone: it is not primed and eases in like any zone the rover is in (never under reduced motion).
-- Zones: `ViewZone.arrivalOnly` and `ViewZone.railYaw` (see [Orbit](#orbit)). Zooms are capped per camera class by `shaftClearZoom`, so the camera stays east of the shaft (`SHAFT_CLEAR_X`).
+- Zones: `ViewZone.arrivalOnly` and `ViewZone.railYaw` (see [Orbit](#orbit)). Zooms are capped per camera class by `shaftClearZoom`, so the camera stays east of the shaft (`SHAFT_CLEAR_X`); a turned class view (B1 phones) keeps its camera east of `SHAFT_CLEAR_X` too.
+- A zone's `classView` may set `yaw`, `zoom` and `pitch` (an offset from the rig's elevation) for one camera class. When it turns or pitches the camera off the zone's own view, `OrbitState.zoneTurn` keeps the zone's yaw: leaving the zone eases back to it with a level pitch, unless the visitor turned by hand meanwhile (`rotate`, `rotateStep` and `resetView` clear it).
 - Probes on `roverRuntime`: `arrivalGlide` (0 to 1, -1 when not gliding), `cameraBehind` (heading of the vector from the camera to the rover) and `steering`.
 - Tests: `tests/unit/arrivals.test.ts` (per floor: the arrival point and its east-facing zone, the free roll-on path, the settled camera behind the rover and clear of the shaft at four sizes, the deep-link spawns), `arrival-glide.test.ts` (`shoulderPose`, the top view edge below the horizon over the glide for every camera class, `glideProgress`, `glidePose`, the `stepGlide` lifecycle (start, progress, the hold while rolling on, each end, none under reduced motion), `cameraBehindHeading`, `railYawBehind`, `shaftClearZoom` and rail-aware zone priming and easing in `orbit.ts`), `orbit-arrival-only.test.ts` (`activeZone`: an `arrivalOnly` zone counts only once primed); `e2e/arrivals.spec.ts` (one desktop tour through the elevator panel: camera behind the rover within 0.1 rad of east, the rover heading east, the panel's `aria-current`, the floor announcer and the floor's route on every floor; glide cancel on input, reduced-motion cut); `scripts/arrival-shots.ts` captures the arrivals at four sizes.
 

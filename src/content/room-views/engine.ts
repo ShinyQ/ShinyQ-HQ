@@ -44,12 +44,14 @@ export function buildEngineViews(locale: Locale): RoomView[] {
   };
   const shot = (s: { src: string; width: number; height: number; alt: LocalizedText }) => ({ src: s.src, width: s.width, height: s.height, alt: s.alt[locale] });
   const { blueprint, agents, gates } = story.stations;
+  const nodeTexts = diagramTexts(locale, (kind) => tLabs(`nodeKind.${kind}`));
 
   const content: Record<EngineStationId, StationContent> = {
     blueprint: {
       engine: {
         diagram: {
-          layout: drawnDiagram(layoutArchitecture(blueprint.architecture, diagramTexts(locale, (kind) => tLabs(`nodeKind.${kind}`)), DIAGRAM_PRESETS.phone)),
+          layout: drawnDiagram(layoutArchitecture(blueprint.architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
+          wide: drawnDiagram(layoutArchitecture(blueprint.architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
           label: diagramSummary(blueprint.architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
         },
       },

@@ -200,8 +200,11 @@ export interface EngineShot {
 /** B1 Engine Room station drawer (`EngineBody`): the build story's station, laid out and labelled on the server. */
 export interface RoomEngine {
   station: EngineStationId;
-  /** Blueprint: the site diagram laid out for the drawer (`DIAGRAM_PRESETS.phone`) and its text alternative. */
-  diagram?: { layout: DrawnDiagram; label: string };
+  /**
+   * Blueprint: the site diagram laid out for a phone (`layout`, `DIAGRAM_PRESETS.phone`) and for a wide side drawer
+   * (`wide`, `DIAGRAM_PRESETS.drawer`, shown once the figure is as wide as it), and its text alternative.
+   */
+  diagram?: { layout: DrawnDiagram; wide: DrawnDiagram; label: string };
   /** Timeline: rounds oldest first with the measured pull requests (`href` absent for unlinked ones). */
   rounds?: { id: string; heading: string; dates?: string; title: string; summary: string; open: boolean; count?: string; listLabel: string; prs: { n: number; href?: string }[]; shots?: { before: EngineShot; after: EngineShot; caption: string } }[];
   /** Gates: what each CI gate checks, its budget and whether it blocks a merge. */

@@ -25,6 +25,24 @@ describe("EngineBody (B1 station drawers)", () => {
     expect(screen.getByRole("img", { name: views["B1:blueprint"]!.engine!.diagram!.label })).toBeInTheDocument();
   });
 
+  it("draws the wide diagram once its figure is as wide as it, the phone diagram otherwise", () => {
+    const diagram = views["B1:blueprint"]!.engine!.diagram!;
+    const figure = (root: HTMLElement) => root.querySelector<HTMLElement>("[data-diagram]")!;
+    const svgWidth = (root: HTMLElement) => Number(figure(root).querySelector("svg")!.getAttribute("width") ?? figure(root).querySelector("svg")!.getAttribute("viewBox")!.split(" ")[2]);
+    const narrow = body("blueprint");
+    expect(figure(narrow).dataset.diagram).toBe("phone");
+    expect(svgWidth(narrow)).toBe(diagram.layout.width);
+    cleanup();
+    const spy = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(diagram.wide.width + 24);
+    try {
+      const wide = body("blueprint");
+      expect(figure(wide).dataset.diagram).toBe("wide");
+      expect(svgWidth(wide)).toBe(diagram.wide.width);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("links every linked pull request in a new tab", () => {
     const root = body("timeline");
     const links = [...root.querySelectorAll<HTMLAnchorElement>("a[href*='/pull/']")];

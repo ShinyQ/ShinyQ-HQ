@@ -57,8 +57,11 @@ const WALL = 0.8;
 const SIDE = 0.3;
 const CABINET = { w: 1.8, h: 3.6, pitch: 2 } as const;
 const SIGN_Y = 5.3;
-/** Pipe runs hang over the bay fronts (z = +-PIPE_Z, held by brackets on the bay walls); cable trays over the aisle edges. */
-const PIPE_Z = 8.4;
+/**
+ * Pipe runs hang over the back walls (z = +-PIPE_Z, held by brackets on the bays' back corners), behind every
+ * station sign seen from the aisle, so no bracket or drop ever cuts a sign; cable trays over the aisle edges.
+ */
+const PIPE_Z = ENGINE.bounds.maxZ - WALL / 2;
 const TRAY_Z = 3;
 /** Cable trays stay narrow and dim (a warm tray with a faint cyan data line under it), so the stations and signs lead. */
 const TRAY = { d: 0.4, h: 0.06, line: 0.08 } as const;
@@ -75,14 +78,14 @@ const faceYaw = (bay: EngineBay) => (bay.side === "north" ? 0 : Math.PI);
 function bayShell(bay: EngineBay): Box[] {
   const { w, d, h } = ENGINE.bay;
   const { x } = bay.center;
-  const bracketZ = bay.front - out(bay) * 0.4;
+  const wallZ = backFace(bay) - out(bay) * (WALL / 2);
   return [
-    { x, y: 0, z: backFace(bay) - out(bay) * (WALL / 2), w, h, d: WALL },
+    { x, y: 0, z: wallZ, w, h, d: WALL },
     { x: bay.rect.minX + SIDE / 2, y: 0, z: bay.center.z, w: SIDE, h, d },
     { x: bay.rect.maxX - SIDE / 2, y: 0, z: bay.center.z, w: SIDE, h, d },
     { x, y: 0, z: bay.center.z, w: w - 2 * SIDE, h: 0.12, d: d - WALL },
-    { x: bay.rect.minX + SIDE / 2, y: h, z: bracketZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
-    { x: bay.rect.maxX - SIDE / 2, y: h, z: bracketZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
+    { x: bay.rect.minX + SIDE / 2, y: h, z: wallZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
+    { x: bay.rect.maxX - SIDE / 2, y: h, z: wallZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
   ];
 }
 
@@ -157,7 +160,7 @@ function pipes(layout: EngineLayout): FlowInstance[] {
   const w = to - from;
   const drops = layout.bays
     .filter((bay) => bay.lit)
-    .map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: bay.front - out(bay) * 0.4, w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
+    .map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: backFace(bay) - out(bay) * (WALL / 2), w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
   return [
     ...[-PIPE_Z, PIPE_Z].map((z) => ({ x, y: ENGINE.ceiling, z, w, h: PIPE.run, d: PIPE.run, color: ENGINE_TONES.pipe })),
     ...[-TRAY_Z, TRAY_Z].flatMap((z) => [

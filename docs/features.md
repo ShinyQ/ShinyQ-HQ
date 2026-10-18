@@ -283,7 +283,8 @@ The basement under the Lobby: a workshop where each station explains one part of
 - **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
 - **Stations 1 to 5** (blueprint, build timeline, agent workbench, CI and gates, live dashboard) each open the Glass Drawer with the diagram, rounds, gate list, plan excerpt or numbers from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section. Bays 6 and 7 stay dark with a "Coming soon" plate.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum under the music.
-- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench.
+- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
+- The Blueprint drawer draws the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
 - Budgets: its own 4.8 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
 
 ## Routes

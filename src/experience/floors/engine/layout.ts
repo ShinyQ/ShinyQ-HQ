@@ -44,9 +44,14 @@ export const ENGINE = {
   /** Elevator arrivals roll on here and deep links spawn here (Round 8 J), looking east down the aisle. */
   // x -8 as on RF: far enough east of the shaft that the arrival camera clears the glass (`shaftClearZoom`).
   arrival: { x: -8, z: 0 },
-  /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`), as on RF. */
+  /** Desktop arrival zoom: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`), as on RF. */
   arrivalZoom: 0.95,
-  arrivalZoomPhone: 0.8,
+  /**
+   * Phone arrival (owner 2026-10-18): a portrait view straight down the aisle cuts every station sign at the edges,
+   * so the phone camera swings `turn` radians to the north side of the rover and pitches down less (`pitch`, an
+   * offset from the rig's elevation): it looks across the aisle at the first two stations, their signs whole.
+   */
+  arrivalPhone: { zoom: 0.85, turn: (-75 * Math.PI) / 180, pitch: -0.2 },
   /** Height of the ceiling pipe runs (u above the slab), well above the station signs. */
   ceiling: 7.4,
 } as const;
@@ -139,7 +144,7 @@ export function buildEngineLayout(): EngineLayout {
       area: { minX: arrival.x - 2, maxX: arrival.x + 2, minZ: arrival.z - 2, maxZ: arrival.z + 2 },
       yaw: LOOK_EAST,
       zoom: E.arrivalZoom,
-      classView: { mobile: { zoom: E.arrivalZoomPhone } },
+      classView: { mobile: { yaw: LOOK_EAST + E.arrivalPhone.turn, zoom: E.arrivalPhone.zoom, pitch: E.arrivalPhone.pitch } },
       travel: { x: 1, z: 0 },
       arrivalOnly: true,
     },

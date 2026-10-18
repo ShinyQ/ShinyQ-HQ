@@ -41,6 +41,8 @@ export const DIAGRAM_PRESETS = {
   wide: { direction: "right", kindSize: 10.5, labelSize: 13, subSize: 11.5, edgeSize: 11, nodeWidth: 140, perBand: 99, edgeLabelWidth: 84 },
   /** Desktop column, top to bottom, up to three nodes per band. */
   column: { direction: "down", kindSize: 10.5, labelSize: 13.5, subSize: 12, edgeSize: 11.5, nodeWidth: 184, perBand: 3, edgeLabelWidth: 150 },
+  /** Side drawers on wide desktops (the B1 Blueprint), top to bottom, three nodes per band, every text at least 12 px at scale 1. */
+  drawer: { direction: "down", kindSize: 12, labelSize: 14, subSize: 12, edgeSize: 12, nodeWidth: 160, perBand: 3, edgeLabelWidth: 120, maxWidth: 492 },
   /** Phones, top to bottom, two nodes per band, every text at least 12 px at scale 1. */
   phone: { direction: "down", kindSize: 12, labelSize: 14, subSize: 12, edgeSize: 12, nodeWidth: 147, perBand: 2, edgeLabelWidth: 80, maxWidth: 318 },
 } as const satisfies Record<string, DiagramPreset>;
