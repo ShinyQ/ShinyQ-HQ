@@ -252,7 +252,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - Pure model.ts (LibraryLayout contract, dockAlong, signsFor, paperSlots, tagLinks, `YEAR_POST`).
   - signPlacement.ts (`placeLibraryLabels`: which timeline signs show).
   - concepts/ (atrium, newsroom, constellation builders), layout.ts (buildLibraryLayout: the owner's pick).
-  - decor/ (R3F decor per concept, BookHolograms.tsx shared turning book, pure flipBooks.ts).
+  - decor/ (R3F decor per concept, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement).
 - `src/experience/floors/roof/`: RF roof deck.
   - Pure layout.ts (buildRoofLayout, ROOF_DECK, roofActive), solids.ts (merged boxes, lattice, scatter).
   - kit.tsx (MergedBoxes, MergedEdges, PulseRings, HitBox, aboutCard).
@@ -351,7 +351,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | L3 Data and ML spine | `labs-data.spec.ts` |
 | L3 three paths | `labs-paths.spec.ts`: arrival and the mirrored end on both tiers, the reactor drive on full; every pose with `LABS_SHOTS` |
 | Library + Roof | `library-roof.spec.ts` |
-| L4 label overlap and caps | `library-labels.spec.ts` |
+| L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
 | RF roof deck | `roof.spec.ts` |
