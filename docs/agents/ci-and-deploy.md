@@ -29,6 +29,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 ### Before pushing and committing
 
 - Before pushing: see [Fast verification](performance.md#fast-verification) (`verify:quick` plus `e2e:changed`); PR CI runs only the heavy jobs the change needs, `main` and the nightly run everything ([CI](#ci)).
+- CI runs in flight (GitHub Free plan: 20 concurrent jobs for the account; each job is its own hosted VM, so overlapping runs only queue jobs past the cap). Before pushing, check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`:
+  - at most 2 runs in flight, both `pull_request` runs, at most one of them a full run: peaks of 12 jobs for a full PR run (8 e2e shards) and 5 to 7 for a selective one, so 19 at worst;
+  - a `main` run (push complement or full run, dispatch, nightly) stays the only run in flight: it peaks at 14 jobs (8 e2e and 4 perf shards) plus about 1 for `Deploy`, and 14 + 1 + 7 is over 20.
+  - Measured 2026-10-18 (job `startedAt` to `completedAt` overlap): full `main` runs 39114729615, 39116733269 and 39119431246 peak at 14; complement dispatch 39128755562 at 14, `main` complement 39129760520 at 4; full PR runs 39122107380 and 39126462529 at 12; selective PR runs 39111135400 and 39108331771 at 7, 39127959018 at 5.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`).
 - Prefer the `rtk` git wrapper.
 - One PR per phase; do not merge without the owner.
