@@ -204,7 +204,8 @@ export interface ViewZone {
   /**
    * Another yaw, zoom or pitch for a camera class (a phone frames a tall view where a desktop frames a wide one).
    * `pitch` is an offset from the rig's default elevation (`OrbitState.pitch`); without it the zone levels the pitch to 0.
-   * Defining `pitch` also opts into the turn-back on exit (`OrbitState.zoneTurn`); no other class view changes the camera on exit.
+   * Defining `pitch` also opts into the turn-back on exit (`OrbitState.zoneTurn`); without it, exit leaves the yaw and the pitch
+   * untouched (the zoom still eases back to 1 as on any zone exit).
    */
   classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number; pitch?: number }>>;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
