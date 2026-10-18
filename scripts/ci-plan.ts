@@ -21,7 +21,7 @@ import path from "node:path";
 import { complementPlan, findSource, parseRecord, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
 import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import type { MergedPr } from "./merge-gate";
-import { ALL_PERF_KEYS, perfGrep, perfKeysFor, type PerfKey } from "./perf-plan";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
 
 export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
 
@@ -64,9 +64,18 @@ function resolveImport(from: string, spec: string, read: (f: string) => string |
  * Every repo file reachable from `roots` through value, re-export, side-effect and dynamic imports, and
  * relative CSS `@import` (`dynamic: false` skips `import()`, for what a page loads before any lazy chunk).
  */
-export function importClosure(roots: readonly string[], read: (f: string) => string | null, options: { dynamic?: boolean } = {}): Set<string> {
+export function importClosure(
+  roots: readonly string[],
+  read: (f: string) => string | null,
+  options: { dynamic?: boolean; onEdge?: (from: string, to: string) => void } = {},
+): Set<string> {
   const seen = new Set<string>();
   const queue = [...roots];
+  const follow = (from: string, target: string | null) => {
+    if (!target) return;
+    options.onEdge?.(from, target);
+    if (!seen.has(target)) queue.push(target);
+  };
   while (queue.length) {
     const file = queue.pop()!;
     if (seen.has(file)) continue;
@@ -74,20 +83,56 @@ export function importClosure(roots: readonly string[], read: (f: string) => str
     if (source === null) continue;
     seen.add(file);
     if (file.endsWith(".css")) {
-      for (const m of source.matchAll(CSS_IMPORT)) {
-        const target = resolveImport(file, m[1], read);
-        if (target && !seen.has(target)) queue.push(target);
-      }
+      for (const m of source.matchAll(CSS_IMPORT)) follow(file, resolveImport(file, m[1], read));
       continue;
     }
     if (!/\.(ts|tsx|js|mjs)$/.test(file)) continue;
     for (const m of source.matchAll(IMPORT)) {
       if (m[2] !== undefined && options.dynamic === false) continue;
-      const target = resolveImport(file, m[1] ?? m[2] ?? m[3], read);
-      if (target && !seen.has(target)) queue.push(target);
+      follow(file, resolveImport(file, m[1] ?? m[2] ?? m[3], read));
     }
   }
   return seen;
+}
+
+/** Reverse import edges of the closure of `roots`: each reached file to the closure files that import it. */
+export function reverseImports(roots: readonly string[], read: (f: string) => string | null): Map<string, Set<string>> {
+  const importers = new Map<string, Set<string>>();
+  importClosure(roots, read, { onEdge: (from, to) => (importers.get(to) ?? importers.set(to, new Set()).get(to)!).add(from) });
+  return importers;
+}
+
+/**
+ * The 3D files (ROOTS) that import `file` directly or through a chain of non-3D files; the walk stops at each
+ * 3D file, so a module the Lobby imports reaches the Lobby, not everything that imports the Lobby.
+ */
+export function importing3d(file: string, importers: ReadonlyMap<string, ReadonlySet<string>>): string[] {
+  const found = new Set<string>();
+  const seen = new Set([file]);
+  const queue = [file];
+  while (queue.length) {
+    for (const from of importers.get(queue.pop()!) ?? []) {
+      if (seen.has(from)) continue;
+      seen.add(from);
+      if (ROOTS.test(from)) found.add(from);
+      else queue.push(from);
+    }
+  }
+  return [...found].sort();
+}
+
+/**
+ * The perf keys of a shared (non-3D) file: the keys an edit of the 3D files importing it would get (unknown 3D
+ * files: ALL_BUT_MEMORY), plus its SHARED_PERF_RULES keys. The payload builder counts through the rule, and as
+ * ALL_BUT_MEMORY without one. A file no 3D file imports gets none.
+ */
+export function sharedPerfKeys(file: string, importers: ReadonlyMap<string, ReadonlySet<string>>): PerfKey[] {
+  const via = importing3d(file, importers);
+  if (via.length === 0) return [];
+  const client = via.filter((f) => f !== PAYLOAD_BUILDER);
+  const own = sharedRuleKeys(file) ?? (client.length < via.length ? ALL_BUT_MEMORY : []);
+  const keys = new Set<PerfKey>([...perfKeysFor(client), ...own]);
+  return ALL_PERF_KEYS.filter((k) => keys.has(k));
 }
 
 export interface PlanOptions {
@@ -156,9 +201,9 @@ function classesOf(files: readonly string[]): Partial<Record<ChangeClass, string
 
 /**
  * `files` null means unknown (push, dispatch, schedule, or the PR file list failed): run everything.
- * `in3d` tells whether the 3D roots import a file (shared page code that can move the perf gates).
+ * `perf3d` gives the perf keys of a shared `src/` file the 3D roots import (`sharedPerfKeys`; [] when none).
  */
-export function planFor(files: readonly string[] | null, in3d: (file: string) => boolean, opts: PlanOptions = {}): CiPlan {
+export function planFor(files: readonly string[] | null, perf3d: (file: string) => readonly PerfKey[], opts: PlanOptions = {}): CiPlan {
   const event = opts.event ?? (files === null ? "other" : "pull_request");
   const perfShards = event === "pull_request" ? 2 : 4;
   const full = (classes: CiPlan["classes"], reasons: string[]): CiPlan => ({
@@ -222,10 +267,15 @@ export function planFor(files: readonly string[] | null, in3d: (file: string) =>
     if (seconds) reasons.push(`about ${Math.round(seconds)} worker-seconds of e2e: ${e2eShards} shard${e2eShards > 1 ? "s" : ""}`);
   }
 
-  // Perf: the 3D files, plus page code the 3D roots import.
-  const shared3d = (classes.ui ?? []).filter((f) => f.startsWith("src/") && in3d(f));
-  if (shared3d.length) reasons.push(`imported by the 3D roots: ${shared3d.join(", ")} (perf gates)`);
-  const keys = perfKeysFor([...(classes.code3d ?? []), ...shared3d]);
+  // Perf: the 3D files, plus the keys of the 3D files that import shared page code.
+  const keySet = new Set<PerfKey>(perfKeysFor(classes.code3d ?? []));
+  for (const f of (classes.ui ?? []).filter((f) => f.startsWith("src/"))) {
+    const shared = perf3d(f);
+    if (shared.length === 0) continue;
+    reasons.push(`imported by the 3D roots: ${f} (${shared.length === ALL_PERF_KEYS.length ? "every perf key" : shared.join(", ")})`);
+    for (const k of shared) keySet.add(k);
+  }
+  const keys = ALL_PERF_KEYS.filter((k) => keySet.has(k));
   const perf = keys.length ? keys : false;
   if (perf) reasons.push(perf.length === ALL_PERF_KEYS.length ? "3D perf gates: the whole lane" : `3D perf gates: ${perf.join(", ")}`);
 
@@ -462,9 +512,9 @@ async function main() {
   const root = process.cwd();
   const read = repoReader(root);
   const durations = readJson<DurationsFile>(read, "e2e/durations.json");
-  const closure = files ? importClosure(listRoots(root), read) : new Set<string>();
+  const importers = files ? reverseImports(listRoots(root), read) : new Map<string, Set<string>>();
   const ownPlan = () => {
-    const p = planFor(files, (f) => closure.has(f), {
+    const p = planFor(files, (f) => sharedPerfKeys(f, importers), {
       event,
       fullLabel,
       durations: durations?.e2e ?? null,
@@ -508,7 +558,7 @@ if (import.meta.main) {
   main().catch((error) => {
     // Fail safe: an unexpected error plans a full run instead of blocking the PR.
     console.log(`::warning::Smart CI planner failed (${error instanceof Error ? error.message : String(error)}); running everything.`);
-    const plan = planFor(null, () => false, { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" });
+    const plan = planFor(null, () => [], { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" });
     const outputs = planOutputs(plan);
     writeOutputs(outputs);
     writeRecord(plan, outputs);

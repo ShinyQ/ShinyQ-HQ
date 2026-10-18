@@ -522,6 +522,12 @@ everything. Unknown 3D importers fall back to `ALL_BUT_MEMORY` through `perfKeys
 
 ### Task 7: `importers` map and `sharedPerfKeys` in `scripts/ci-plan.ts`
 
+Refined while implementing: the reverse walk alone sends most `src/content/` modules to every floor, because the
+server-only payload builder `src/experience/gate-data.ts` imports them (`buildExperienceData`) and matches no perf
+rule. The payload builder is therefore not a 3D importer: a module it reaches takes its `SHARED_PERF_RULES` entry in
+`scripts/perf-plan.ts` (the owner's module to gate map: `src/ask/` to `boot` and `bytes`, certifications and
+highlights to the Lobby gates), else `ALL_BUT_MEMORY`. A shared file a `PERF_RULES` entry names keeps those keys.
+
 **Files:** Modify `scripts/ci-plan.ts` (`reverseImports(roots, read)`, `sharedPerfKeys(file, ...)`, `planFor`'s
 `in3d` callback becomes `perf3d: (file) => PerfKey[]`), `scripts/perf-plan.ts` (export a `bytes`, `boot` pair for
 `src/ask/` if the HUD rule alone misses boot), Test `tests/unit/ci-plan.test.ts`.
