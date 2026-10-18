@@ -71,8 +71,11 @@ function clientGraphOf(entry: string): Set<string> {
   return closure(boundaries);
 }
 
-/** Top-level namespaces read with useTranslations, plus problems that make the lists unverifiable. */
-function namespacesOf(files: Iterable<string>) {
+/**
+ * Namespaces read with useTranslations (top level, or the full literal path with `paths`), plus problems that
+ * make the lists unverifiable.
+ */
+function namespacesOf(files: Iterable<string>, { paths = false } = {}) {
   const used = new Map<string, string>();
   const problems: string[] = [];
   for (const file of files) {
@@ -81,15 +84,17 @@ function namespacesOf(files: Iterable<string>) {
     if (/\buseMessages\(/.test(source)) problems.push(`${rel}: useMessages reads every namespace`);
     for (const m of source.matchAll(/\buseTranslations\(([^)]*)\)/g)) {
       const literal = /^["'`]([A-Za-z0-9_.]+)["'`]$/.exec(m[1].trim());
-      if (literal) used.set(literal[1].split(".")[0], rel);
+      if (literal) used.set(paths ? literal[1] : literal[1].split(".")[0], rel);
       else problems.push(`${rel}: useTranslations(${m[1].trim()}) needs a literal namespace`);
     }
   }
   return { used, problems };
 }
 
+/** `list` covers a used path when it lists the path or one of its parents (`hud.palette` covers `hud.palette.empty`). */
+const covers = (list: readonly string[], path: string) => list.some((l) => path === l || path.startsWith(`${l}.`));
 const missingFrom = (used: Map<string, string>, list: readonly string[]) =>
-  [...used].filter(([ns]) => !list.includes(ns)).map(([ns, rel]) => `${ns} (${rel})`);
+  [...used].filter(([ns]) => !covers(list, ns)).map(([ns, rel]) => `${ns} (${rel})`);
 
 describe("client message namespaces", () => {
   const allClient = closure([...TEXTS.keys()].filter(isClient));
@@ -109,16 +114,19 @@ describe("client message namespaces", () => {
   });
 
   it("LAYOUT_NAMESPACES lists exactly what the locale layout's client islands read", () => {
-    const { used } = namespacesOf(clientGraphOf(join(LOCALE, "layout.tsx")));
+    const { used } = namespacesOf(clientGraphOf(join(LOCALE, "layout.tsx")), { paths: true });
     expect(missingFrom(used, LAYOUT_NAMESPACES)).toEqual([]);
-    expect(LAYOUT_NAMESPACES.filter((ns) => !used.has(ns))).toEqual([]);
+    expect(LAYOUT_NAMESPACES.filter((l) => ![...used.keys()].some((p) => covers([l], p)))).toEqual([]);
+    // The 3D HUD's strings (settings, pads, rooms) stay off the Classic pages: the layout never sends all of `hud`.
+    expect(LAYOUT_NAMESPACES).not.toContain("hud");
+    expect(LAYOUT_NAMESPACES).not.toContain("dialog");
   });
 
   it("every page either fits the layout's namespaces or wraps its content in ClientMessages", () => {
     const wrong: string[] = [];
     for (const page of pages) {
       const wrapped = /return \(\s*<ClientMessages>/.test(text(page));
-      const { used } = namespacesOf(clientGraphOf(page));
+      const { used } = namespacesOf(clientGraphOf(page), { paths: true });
       const missing = missingFrom(used, wrapped ? CLIENT_NAMESPACES : LAYOUT_NAMESPACES);
       if (missing.length) wrong.push(`${relative(ROOT, page)}: ${missing.join(", ")}`);
     }
@@ -134,6 +142,18 @@ describe("client message namespaces", () => {
     expect(Object.keys(picked).sort()).toEqual([...CLIENT_NAMESPACES].sort());
     expect(picked).not.toHaveProperty("seo");
     expect(picked.hud).toBe(en.hud);
-    expect(Object.keys(pickMessages(en, LAYOUT_NAMESPACES)).sort()).toEqual([...LAYOUT_NAMESPACES].sort());
+    const layout = pickMessages(en, LAYOUT_NAMESPACES);
+    expect(Object.keys(layout).sort()).toEqual([...new Set(LAYOUT_NAMESPACES.map((p) => p.split(".")[0]))].sort());
+    for (const path of LAYOUT_NAMESPACES) {
+      for (const messages of [en, id]) {
+        const value = path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], messages);
+        expect(value, path).toBeDefined();
+      }
+      // The same object, so React dedupes it against a page's full namespaces.
+      expect(path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], layout)).toBe(
+        path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], en),
+      );
+    }
+    expect(Object.keys(layout.hud as object).sort()).toEqual(["launcher", "palette", "status", "terminal"]);
   });
 });
