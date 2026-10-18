@@ -71,7 +71,7 @@ export function stepPadLatch(latch: DoorLatch<string>, pads: readonly PadTrigger
   return fired && pad ? pad : null;
 }
 
-/** A latch for a rover standing at `p` (deep link, resume, elevator arrival): the pad under it stays quiet until it leaves. */
+/** A latch for a rover standing at `p` (deep link, resume, elevator arrival, beam landing): the pad under it stays quiet until it leaves. */
 export function primedPadLatch(pads: readonly PadTrigger[] | undefined, p: Vec2): DoorLatch<string> {
   return { room: padAt(pads, p)?.id ?? null };
 }

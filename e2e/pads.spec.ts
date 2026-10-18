@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
+import { BEAM } from "../src/experience/nav/teleport";
 import {
   chooseMotion,
   asReturningVisitor,
@@ -34,6 +35,11 @@ type PadWindow = Window & {
     rover: { x: number; z: number; autopilot: unknown; target: unknown };
     camera: () => [number, number, number];
   };
+};
+/** The store as the same-frame beam case reads it: the subscription records each beam's `jumped` (null once it ends). */
+type BeamWindow = PadWindow & {
+  __hq: { store: { subscribe: (fn: (s: { beam: { jumped: boolean } | null }) => void) => () => void } };
+  __beamStates: (boolean | null)[];
 };
 
 /** L2 as a returning visitor without the first-visit floor line (it sits over the floor on phones). */
@@ -98,6 +104,33 @@ test.describe("floor pads on the Career Road (L2)", () => {
     // Landing on the target pad does not open its picker.
     await waitForFrames(page, 30);
     expect(await picker(page)).toBeNull();
+  });
+
+  test("a beam that jumps and ends on the same frame lands quietly on the elevator pad", async ({ page }) => {
+    const errors = collectErrors(page);
+    await openJourney(page);
+    const lift = (await padsOf(page, "L2")).find((p) => p.kind === "elevator")!;
+    await driveTo(page, { x: lift.at.x + 10, z: lift.at.z });
+    expect(await picker(page)).toBeNull();
+
+    // A beam a hair before its end that has not jumped yet: the next frame jumps and ends at once, the way one
+    // slow frame does under the 0.15 s reduced-motion cut. The store never sees a jumped beam in between.
+    await page.evaluate(
+      ({ to, t }) => {
+        const w = window as unknown as BeamWindow;
+        w.__beamStates = [];
+        w.__hq.store.subscribe((s) => w.__beamStates.push(s.beam ? s.beam.jumped : null));
+        w.__hq.store.getState().setBeam({ pad: "teleport:test", from: { x: w.__hq.rover.x, z: w.__hq.rover.z }, to, heading: Math.PI / 2, t, jumped: false });
+      },
+      { to: lift.at, t: BEAM.out + BEAM.in - 1e-4 },
+    );
+    await expect.poll(() => beam(page)).toBeNull();
+    expect(await page.evaluate(() => (window as unknown as BeamWindow).__beamStates)).not.toContain(true);
+    const at = await roverAt(page);
+    expect(Math.hypot(at.x - lift.at.x, at.z - lift.at.z)).toBeLessThan(0.5);
+    await waitForFrames(page, 30);
+    expect(await picker(page)).toBeNull();
+    expect(errors).toEqual([]);
   });
 });
 
