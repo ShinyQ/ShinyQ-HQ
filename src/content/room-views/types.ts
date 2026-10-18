@@ -1,3 +1,5 @@
+import type { DrawnDiagram } from "@/components/diagram/layout";
+import type { EngineStationId } from "@/experience/floors/engine/layout";
 import type { VisitsLabels } from "@/lib/visits/labels";
 import type { Accent, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
@@ -183,6 +185,36 @@ export interface RoomView {
   visits?: VisitsLabels;
   /** L3:ops: the observability section (`OpsBody`); live numbers are fetched on the client. */
   ops?: RoomOps;
+  /** B1:<station>: the Engine Room station (`EngineBody`). */
+  engine?: RoomEngine;
+}
+
+/** One before or after capture on the B1 timeline. */
+export interface EngineShot {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+/** B1 Engine Room station drawer (`EngineBody`): the build story's station, laid out and labelled on the server. */
+export interface RoomEngine {
+  station: EngineStationId;
+  /**
+   * Blueprint: the site diagram laid out for a phone (`layout`, `DIAGRAM_PRESETS.phone`) and for a wide side drawer
+   * (`wide`, `DIAGRAM_PRESETS.drawer`, shown once the figure is as wide as it), and its text alternative.
+   */
+  diagram?: { layout: DrawnDiagram; wide: DrawnDiagram; label: string };
+  /** Timeline: rounds oldest first with the measured pull requests (`href` absent for unlinked ones). */
+  rounds?: { id: string; heading: string; dates?: string; title: string; summary: string; open: boolean; count?: string; listLabel: string; prs: { n: number; href?: string }[]; shots?: { before: EngineShot; after: EngineShot; caption: string } }[];
+  /** Gates: what each CI gate checks, its budget and whether it blocks a merge. */
+  gates?: { id: string; title: string; text: string; budget: string; required: boolean }[];
+  /** Agents: a real plan excerpt and its file on GitHub. */
+  excerpt?: { text: string; href: string };
+  /** Dashboard: only the numbers the snapshot carries, formatted. */
+  tiles?: { id: string; value: string; label: string }[];
+  /** Resolved words (the drawer loads no `build` messages on the client). */
+  labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string };
 }
 
 /** L3:ops, the Ops Control Room (`OpsBody`): "How I run AI in production"; tiles ride in `metrics`, case studies in `cards`. */

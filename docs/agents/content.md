@@ -18,6 +18,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - `getBuildStory()` reads `content/build-story.json`; `getBuildFacts()` reads the snapshot `content/generated/build-facts.json` written by `scripts/build-facts.ts`.
   - It pulls zod into the bundle, so it is server-side only: import it from server components and scripts, never from a client component (client pieces take plain props; `src/lib/build-page.ts` holds the pure joins).
   - Counts always come from the snapshot, never from the story text. See [../content.md](../content.md#build-story).
+  - The story also feeds the B1 Engine Room: `buildEngineViews` (`content/room-views/engine.ts`) builds the station drawers and `buildEngineData` the floor's `ExperienceData.engine` (bay titles for the signs and the registry), see [floor-b1-engine-room.md](floor-b1-engine-room.md).
 - Types come from `@/content/schema` (`Pod`, `TimelineEntry`, `Mission`, `MissionStep`, `RoomId`, `Locale`, ...). Do not redeclare them.
 - Client code imports the locale values from `@/content/locales`, never values from `@/content/schema` (type-only imports are fine); `bun run build` fails otherwise.
 
@@ -271,6 +272,8 @@ Keep them documented here.
 | `SideProject` | `SideProject.year` | added field |
 | top level | `awards[]` | added |
 | `ExperienceData` | `ExperienceData.highlights` | `buildHighlightsData`: `projects` from `pickFeaturedPods`, experience rows, stats, contact; feeds the hall ([floor-l1-lobby.md](floor-l1-lobby.md)) |
+| `ExperienceData` | `ExperienceData.engine` | `buildEngineData`: the seven bays with their titles (the dark ones included) for the B1 signs and the point-and-go names; feeds [the Engine Room](floor-b1-engine-room.md) |
+| `RoomView` | `RoomView.engine` (`RoomEngine`) | `buildEngineViews`: the B1 station block (diagram, rounds, gates, excerpt or tiles) and resolved labels |
 | `RoomView` | `RoomView.cards` (`RoomCard`) | carries the station cards |
 | `LibraryData` | `LibraryData.posts[].tags` | carries post tags to the 3D chunk |
 

@@ -1,4 +1,5 @@
 import type { CertView } from "@/content/certs";
+import type { EngineBayId } from "./floors/engine/layout";
 import type { OpsData } from "./floors/labs/ops";
 import type { Accent, FloorId, RoomId, Tier, Wing } from "@/content/schema";
 import type { LibraryLayoutInput } from "./floors/library/model";
@@ -169,6 +170,8 @@ export interface ExperienceData {
   roof: RoofData;
   /** L1 Highlights Hall: the landing's featured projects with their cover thumbnails. */
   highlights: HighlightsData;
+  /** B1 Engine Room: bay titles for the floor's signs and the point-and-go labels (drawer content: room-views/engine.ts). */
+  engine: EngineData;
 }
 
 /** L4 payload for the 3D floor (locale-resolved; the drawer content comes from `room-views/library.ts`). Posts keep `getPosts()` order (newest first), like the room catalog. */
@@ -213,6 +216,11 @@ export interface RoofData {
   timezone: string;
   /** One-line intro for the about card (`profile.subheadline`). */
   subheadline: string;
+}
+
+/** B1 Engine Room payload (locale-resolved): one entry per bay in `ENGINE_BAYS` order; `room` is null for the dark bays. */
+export interface EngineData {
+  bays: { id: EngineBayId; room: RoomId | null; title: string }[];
 }
 
 /** L1 Highlights Hall payload (locale-resolved; drawer content comes from `room-views/highlights.ts`). */

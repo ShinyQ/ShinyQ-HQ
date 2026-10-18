@@ -638,6 +638,14 @@
       "console": "Konsol waktu"
     }
   },
+  "engine": {
+    "floor": "Ruang Mesin",
+    "label": "Pembuatan",
+    "desc": "Cara situs ini dibuat: lima stasiun",
+    "title": "Ruang Mesin",
+    "subtitle": "Cara situs ini dibuat",
+    "soon": "Segera hadir"
+  },
   "drawer": {
     "label": "Detail ruang",
     "close": "Tutup ruang",

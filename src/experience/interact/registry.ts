@@ -2,6 +2,7 @@ import type { FloorId, RoomId, Wing } from "@/content/schema";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { LOBBY } from "../config";
 import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
+import { buildEngineLayout, ENGINE } from "../floors/engine/layout";
 import { buildCareerRoad, careerLayoutInput, type CareerRoadLayout } from "../floors/career/layout";
 import { SKYLINE } from "../floors/career/skyline";
 import { WORKSHOP } from "../floors/career/workshopLayout";
@@ -155,6 +156,10 @@ function roomLabel(room: RoomId, data: InteractData): string {
     const post = experience.library.posts.find((p) => p.slug === slug);
     if (post) return post.title;
   }
+  if (room.startsWith("B1:")) {
+    const bay = experience.engine.bays.find((b) => b.room === room);
+    if (bay) return bay.title;
+  }
   return slug;
 }
 
@@ -173,7 +178,7 @@ function padItem(floor: FloorId, pad: PadTrigger, labels: InteractLabels): Inter
 
 /** Every door of the floor; RF doors are stations (comms, CV), the rest are room doors. */
 function doorItems(floor: FloorId, layouts: FloorLayouts, data: InteractData, rooms: ReadonlyMap<RoomId, Footprint>): Interactable[] {
-  const kind = floor === "RF" ? "station" : "door";
+  const kind = floor === "RF" || floor === "B1" ? "station" : "door";
   return (layouts[floor].doors ?? []).map((door) => {
     const pad = doorRect(door);
     const room = rooms.get(door.room);
@@ -401,6 +406,11 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
   const pads = (layouts[floor].pads ?? []).map((pad) => padItem(floor, pad, data.labels));
   const { experience } = data;
   switch (floor) {
+    case "B1": {
+      const engine = buildEngineLayout();
+      const rooms = new Map<RoomId, Footprint>(engine.bays.flatMap((b): [RoomId, Footprint][] => (b.room ? [[b.room, { rect: bare(b.rect), height: ENGINE.bay.h }]] : [])));
+      return [...pads, ...doorItems(floor, layouts, data, rooms)];
+    }
     case "L1":
       return [...pads, ...lobbyItems(layouts, data)];
     case "L2": {

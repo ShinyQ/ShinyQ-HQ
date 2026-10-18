@@ -13,7 +13,7 @@ const isLazy = (c: unknown) => (c as { $$typeof?: symbol } | null)?.$$typeof ===
 function setup() {
   const imports: { resolve: (m: Mod) => void; reject: (e: unknown) => void }[] = [];
   const load = () => new Promise<Mod>((resolve, reject) => imports.push({ resolve, reject }));
-  const chunks = createFloorChunks<Mods>({ L3: load, L4: load, RF: load });
+  const chunks = createFloorChunks<Mods>({ L3: load, L4: load, RF: load, B1: load });
   const getter = floorGetters<Mods>(chunks)("L4", (m) => m.Floor);
   const mod: Mod = { Floor: () => null };
   const settle = () => new Promise((r) => setTimeout(r, 0));

@@ -98,8 +98,8 @@ describe("gates", () => {
     const full = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, floors, sessionTotal: 445.5 * 1024 } as const;
     const lite = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, floors, sessionTotal: 425.5 * 1024 } as const;
     const s = renderGates([full, lite], []);
-    expect(s.markdown).toContain("Session total with every floor chunk: 445.5 KB of 470.0 KB.");
-    expect(s.markdown).toContain("Session total with every floor chunk: 425.5 KB of 446.4 KB.");
+    expect(s.markdown).toContain("Session total with every public floor chunk (B1 excluded): 445.5 KB of 470.0 KB.");
+    expect(s.markdown).toContain("Session total with every public floor chunk (B1 excluded): 425.5 KB of 446.4 KB.");
   });
 
   it("renders P3's memory entries", () => {

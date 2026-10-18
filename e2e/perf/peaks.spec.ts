@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { enterB1Route } from "../b1";
 import {
   enterFloorRoute,
   enterHQ,
@@ -122,6 +123,7 @@ const ROUTE: Record<string, string> = { L1: "/en", L2: "/en/journey", L3: "/en/l
 /**
  * Up one, up several, the longest descent and a descent onto L2 (its road mounts on arrival). The full
  * tier rides the two busiest pairs: L1 and L2 both ways, and L1 to the Roof and back (from gpu.spec.ts).
+ * B1 (an unlocked session, `?unlock=b1&debug=1`): the descent from the Lobby and the longest one, from the Roof.
  */
 const RIDES: { tier: Tier; from: string; to: string }[] = [
   { tier: "lite", from: "L1", to: "L2" },
@@ -130,17 +132,22 @@ const RIDES: { tier: Tier; from: string; to: string }[] = [
   { tier: "lite", from: "L1", to: "RF" },
   { tier: "lite", from: "RF", to: "L1" },
   { tier: "lite", from: "L3", to: "L2" },
+  { tier: "lite", from: "L1", to: "B1" },
+  { tier: "lite", from: "RF", to: "B1" },
   { tier: "full", from: "L1", to: "L2" },
   { tier: "full", from: "L2", to: "L1" },
   { tier: "full", from: "L1", to: "RF" },
   { tier: "full", from: "RF", to: "L1" },
+  { tier: "full", from: "L1", to: "B1" },
+  { tier: "full", from: "RF", to: "B1" },
 ];
 
 for (const { tier, from, to } of RIDES) {
   test(`the ride ${from} to ${to} stays under the scene budget (${tier})`, async ({ page }) => {
     const scenario = `ride-${from}-${to}`;
     ratchet(`${tier} ${scenario}`);
-    await enterFloorRoute(page, ROUTE[from], { tier });
+    if (to === "B1") await enterB1Route(page, ROUTE[from], tier);
+    else await enterFloorRoute(page, ROUTE[from], { tier });
     await waitForCameraSettle(page);
     await measure(page, tier, scenario, async () => {
       await page.getByRole("navigation", { name: "Elevator" }).locator(`[data-floor="${to}"]`).click();

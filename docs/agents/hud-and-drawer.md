@@ -66,6 +66,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Phone: at most 5 controls plus the minimap (floor chip, Ask AI, menu, joystick, Reset view).
   - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
   - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
+- The elevator rows (rail, floor sheet, floor picker) come from `floorRows(b1Unlocked)` (`src/hud/floorRows.ts`): the five public floors top-down, plus B1 below L1 once it is unlocked.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
@@ -97,6 +98,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `src/hud/minimap/`: the pure `model.ts` (from `buildFloorLayouts` and `interactRuntime.items`), the round `Minimap`, the `MapOverview` dialog and `pref.ts` (`hq:minimap`). Geometry and sizes: [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
 - It is HTML and SVG over the canvas: zero draw calls, updated from the store's 10 Hz rover mirror, never a second frame loop.
+- It follows the rover's floor, so on B1 it shows the aisle, the bays' doors and the Return pad like any other floor.
 - Places come from `interactRuntime.items` (`subscribe`, `setItems`), so a floor that adds or moves a point-and-go target shows up on the map with no minimap change.
 - The overview's room list emits the same `interact` event as clicking in the world (the rover drives there, then the room opens).
 - Off in the settings hides the minimap only; `N` still opens the overview.
@@ -350,6 +352,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 
 - One builder per floor in `src/content/room-views/` (`lobby`, `career`, `labs`, `library`, `roof`), aggregated by `buildRoomViews(locale)`.
 - Exported at build time to `/data/rooms/{locale}.json`.
+- The secret B1 station views (`engine.ts`, `buildEngineRoomViews`) are a separate file, `/data/rooms/b1-{locale}.json`, never part of the shared one. `DrawerHost` fetches it (`loadEngineViews`) only when `b1Unlocked` is set or a `B1:` room opens, and merges it over the shared views.
 - The drawer fetches it once (`loadRoomViews`), after the first 3D frame on idle or when a room opens first, so pages do not grow.
 - A floor phase owns its builder file; a test checks that every catalog room has a view.
 
@@ -364,6 +367,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 | `roof` | `RoofBody`: email mailto plus copy with `click`, channels, the CV kiosk (page-one cover and "View CV" open the CV viewer modal, plus the PDF download with `click`) |
 | `highlights` | `HighlightsBody`: cards from `RoomView.cards` ride to their room with `goToRoom`; the contact station reuses `ContactBody` and `CvBody` from `RoofBody` |
 | `research` | `ResearchBody`, fed by the optional `RoomView.research`: `items` with authors, venue, DOI, summary, dated citations and `preview` (the paper preview modal data); `self` (the owner's name to highlight); `profiles`; `metrics` |
+| `engine` | `EngineBody` (B1 chunk, fed by `RoomView.engine`): the station's own block (blueprint diagram, build rounds, gate list, plan excerpt or dashboard tiles) around the generic sections, plus the link to its Classic `/build` section |
 | posts | the generic renderer with a "Read post" footer action (Medium posts: "Read the post" in a new tab) |
 
 ### Layout

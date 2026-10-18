@@ -9,6 +9,7 @@ import { intents } from "@/experience/input/intents";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { FLOOR_ACCENT } from "@/lib/accent";
 import { SheetHeader } from "../menu/SheetHeader";
+import { useFloorLabel } from "../useFloorLabel";
 import { MapLayers, useFloorMap } from "./MapLayers";
 import { floorBox } from "./model";
 
@@ -24,6 +25,7 @@ export function MapOverview({ open, onClose, layouts }: { open: boolean; onClose
 
 function Overview({ onClose, layouts }: { onClose: () => void; layouts: FloorLayouts }) {
   const t = useTranslations("hud");
+  const floorLabel = useFloorLabel();
   const titleId = useId();
   const listId = useId();
   const map = useFloorMap(layouts);
@@ -38,7 +40,7 @@ function Overview({ onClose, layouts }: { onClose: () => void; layouts: FloorLay
 
   return (
     <Modal labelledBy={titleId} onClose={onClose} width="md" testId="map-overview">
-      <SheetHeader id={titleId} title={t("map.title", { floor, name: t(`floorLabel.${floor}`) })} onClose={onClose} closeLabel={t("map.close")} />
+      <SheetHeader id={titleId} title={t("map.title", { floor, name: floorLabel(floor) })} onClose={onClose} closeLabel={t("map.close")} />
       <div className="flex flex-col gap-4 overflow-y-auto px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-5">
         <svg aria-hidden="true" viewBox={floorBox(map.view)} className="block h-auto max-h-[55dvh] w-full shrink-0" data-testid="map-overview-svg">
           <MapLayers map={map} labels roomRadius={1.1} arrowScale={1.2} />

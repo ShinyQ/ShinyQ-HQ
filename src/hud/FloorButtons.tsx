@@ -2,22 +2,22 @@
 
 import { useTranslations } from "next-intl";
 import type { FloorId } from "@/content/schema";
-import { FLOOR_IDS } from "@/experience/config";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
+import { floorRows } from "./floorRows";
+import { useFloorLabel } from "./useFloorLabel";
 
 /** Lit code circle of the current floor, in the floor's accent. */
 export const FLOOR_ACTIVE: Record<FloorId, string> = {
+  B1: "border-amber bg-amber/15 text-amber",
   L1: "border-green bg-green/15 text-green",
   L2: "border-amber bg-amber/15 text-amber",
   L3: "border-violet bg-violet/15 text-violet",
   L4: "border-white bg-white/15 text-white",
   RF: "border-blue bg-blue/15 text-blue",
 };
-
-const TOP_DOWN = [...FLOOR_IDS].reverse();
 
 export type FloorButtonsVariant = "rail" | "rail-compact" | "rail-codes" | "sheet";
 
@@ -40,14 +40,16 @@ const BUTTON: Record<FloorButtonsVariant, (current: boolean) => string> = {
  */
 export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; variant: FloorButtonsVariant; onPick?: () => void }) {
   const t = useTranslations("hud");
+  const floorLabel = useFloorLabel();
   const floor = useHQStore((s) => s.floor);
   const target = useHQStore((s) => s.ride?.to ?? null);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   const compact = variant === "rail-compact";
   const sheet = variant === "sheet";
-  return TOP_DOWN.map((id) => {
+  return floorRows(b1Unlocked).map(({ id }) => {
     const current = id === floor;
     const pending = id === target;
-    const label = t(`floorLabel.${id}`);
+    const label = floorLabel(id);
     const name = data.floors[id].name;
     const tone = current
       ? `${FLOOR_ACTIVE[id]} shadow-[0_0_14px_currentColor]`

@@ -3,6 +3,7 @@ import { canonicalRoom } from "@/experience/missions/roomAliases";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { createStore } from "zustand/vanilla";
 import type { DrawerTab, FloorId, Locale, RoomId } from "@/content/schema";
+import { canEnterFloor } from "@/experience/b1";
 import { FLOOR_IDS, floorIndex, LOBBY } from "@/experience/config";
 import type { Ride } from "@/experience/tower/elevator";
 import type { PickerRequest } from "@/experience/nav/pads";
@@ -116,6 +117,8 @@ export interface HQState {
   reactor: ReactorState;
   /** L4 Topic Constellation: the selected topic. Not persisted (the URL hash carries it). */
   topics: { topic: TopicPick | null };
+  /** B1 Engine Room is reachable (PR 2: only `?unlock=b1`, applied by `startSession`; not persisted). */
+  b1Unlocked: boolean;
 
   setPhase: (phase: Phase) => void;
   finishIntro: () => void;
@@ -162,6 +165,8 @@ export interface HQState {
   clearReactorTech: () => void;
   spinReactor: () => void;
   selectTopic: (topic: TopicPick) => void;
+  /** Unlocks B1 for this session: the elevator serves it and the floor rows list it. */
+  unlockB1: () => void;
   clearTopic: () => void;
   /** Starts directly in explore on a floor (deep link or language switch resume). */
   resume: (floor: FloorId, at?: { x: number; z: number; heading?: number }) => void;
@@ -194,10 +199,9 @@ const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", 
 /** Spawn at the Lobby spawn point (the kiosk stop), facing the Rover menu screen (owner 2026-10-14). */
 export const initialRover: RoverState = { x: LOBBY.spawn.x, z: LOBBY.spawn.z, heading: LOBBY.spawnHeading, speed: 0, face: "idle" };
 
-function resolveTarget(base: FloorId, target: ElevatorTarget): FloorId | undefined {
-  if (target === "up") return FLOOR_IDS[floorIndex(base) + 1];
-  if (target === "down") return FLOOR_IDS[floorIndex(base) - 1];
-  return target;
+function resolveTarget(base: FloorId, target: ElevatorTarget, b1Unlocked: boolean): FloorId | undefined {
+  const to = target === "up" ? FLOOR_IDS[floorIndex(base) + 1] : target === "down" ? FLOOR_IDS[floorIndex(base) - 1] : target;
+  return to && canEnterFloor(to, b1Unlocked) ? to : undefined;
 }
 
 export function createHQStore(storage?: StateStorage) {
@@ -228,6 +232,7 @@ export function createHQStore(storage?: StateStorage) {
         pointHint: false,
         reactor: { ring: "ai", tech: null, spin: 0 },
         topics: { topic: null },
+        b1Unlocked: false,
 
         setPhase: (phase) => set({ phase }),
         finishIntro: () => set({ phase: "explore", firstVisit: false }),
@@ -236,7 +241,7 @@ export function createHQStore(storage?: StateStorage) {
           const { phase, ride, floor } = get();
           if (BLOCKED_PHASES.includes(phase)) return;
           if (ride && ride.stage !== "toDoor") return;
-          const to = resolveTarget(ride ? ride.to : floor, target);
+          const to = resolveTarget(ride ? ride.to : floor, target, get().b1Unlocked);
           if (!to) return;
           if (ride) {
             if (to === ride.from) set({ ride: null, phase: "explore" });
@@ -318,6 +323,7 @@ export function createHQStore(storage?: StateStorage) {
         },
         spinReactor: () => set({ reactor: { ...get().reactor, spin: get().reactor.spin + 1 } }),
         selectTopic: (topic) => set({ topics: { topic } }),
+        unlockB1: () => set({ b1Unlocked: true }),
         clearTopic: () => {
           if (get().topics.topic) set({ topics: { topic: null } });
         },

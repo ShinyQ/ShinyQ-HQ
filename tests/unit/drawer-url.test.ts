@@ -147,6 +147,22 @@ describe("room URL sync", () => {
     expect(h.entries).toHaveLength(2);
   });
 
+  it("closes a B1 station drawer on Back although B1 shares the Lobby route", () => {
+    store.getState().resume("B1");
+    const h = fakeEnv("/en");
+    createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true, hasPage: (room) => !room.startsWith("B1:") });
+    store.getState().openRoom("B1:timeline");
+    expect(h.url()).toBe("/en");
+    expect(h.entries).toHaveLength(2);
+    h.go(-1);
+    expect(store.getState().activeRoom).toBeNull();
+    expect(store.getState().floor).toBe("B1");
+    expect(h.entries[0].state).toBeNull();
+    expect(h.entries).toHaveLength(2);
+    h.go(1);
+    expect(store.getState().activeRoom).toBe("B1:timeline");
+  });
+
   it("restores the hologram view from the URL", () => {
     const h = fakeEnv("/en/labs");
     createRoomUrlSync({ store, locale: "en", env: h.env, isReady: () => true });

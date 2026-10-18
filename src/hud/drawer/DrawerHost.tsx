@@ -11,7 +11,7 @@ import { audio } from "@/lib/audio";
 import { setTabView } from "@/lib/view-pref";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { useTranslations } from "next-intl";
-import { loadRoomViews } from "./data";
+import { loadEngineViews, loadRoomViews } from "./data";
 import { drawerLayout } from "./layout";
 import { RoomDrawer } from "./RoomDrawer";
 import { createRoomUrlSync, leaveRoomForPage } from "./urlSync";
@@ -30,21 +30,30 @@ export function useDrawerLayout() {
   );
 }
 
-/** Room views for the locale, loaded once when `wanted` (null until ready, "error" when the fetch failed). */
-export function useRoomViews(locale: Locale, wanted = true): RoomViews | null | "error" {
+function useLoadedViews(load: (locale: Locale) => Promise<RoomViews>, locale: Locale, wanted: boolean): RoomViews | null | "error" {
   const [views, setViews] = useState<RoomViews | null | "error">(null);
   useEffect(() => {
     if (!wanted) return;
     let live = true;
-    loadRoomViews(locale).then(
+    load(locale).then(
       (v) => live && setViews(v),
       () => live && setViews("error"),
     );
     return () => {
       live = false;
     };
-  }, [locale, wanted]);
+  }, [load, locale, wanted]);
   return views;
+}
+
+/** Room views for the locale, loaded once when `wanted` (null until ready, "error" when the fetch failed). */
+export function useRoomViews(locale: Locale, wanted = true): RoomViews | null | "error" {
+  return useLoadedViews(loadRoomViews, locale, wanted);
+}
+
+/** The B1 Engine Room views (their own file), loaded once when `wanted`. */
+export function useEngineViews(locale: Locale, wanted: boolean): RoomViews | null | "error" {
+  return useLoadedViews(loadEngineViews, locale, wanted);
 }
 
 const trim = (path: string) => (path.length > 1 ? path.replace(/\/$/, "") : path);
@@ -98,7 +107,16 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   const open = Boolean(activeRoom) && phase === "room";
   const idle = useAfterFirstFrameIdle();
   // Room data waits for the first frame and an idle moment, unless a room opens first (deep links).
-  const views = useRoomViews(locale, open || idle);
+  const shared = useRoomViews(locale, open || idle);
+  // The secret B1 drawers are a separate file: locked sessions never fetch it.
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
+  const b1Room = Boolean(activeRoom?.startsWith("B1:"));
+  const engine = useEngineViews(locale, b1Room || (b1Unlocked && (open || idle)));
+  const views = useMemo(() => {
+    if (!engine || engine === "error") return shared;
+    if (shared && shared !== "error") return { ...shared, ...engine };
+    return b1Room ? engine : shared;
+  }, [shared, engine, b1Room]);
   const returnFocus = useRef<HTMLElement | null>(null);
 
   // Esc closes the open room from the moment the store opens it: while its data loads (the loading card)
@@ -143,7 +161,7 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   if (!view) {
     return (
       <div role="status" className="glass glass-solid pointer-events-auto absolute right-4 bottom-4 z-20 flex items-center gap-3 px-4 py-3 text-sm text-ink-2" data-testid="room-drawer-status">
-        {views === "error" ? t("unavailable") : t("loading")}
+        {views === "error" || (b1Room && engine === "error") ? t("unavailable") : t("loading")}
         <button type="button" onClick={() => s.closeRoom()} className="link min-h-11">
           {t("close")}
         </button>

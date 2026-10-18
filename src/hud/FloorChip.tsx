@@ -7,6 +7,7 @@ import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import { FLOOR_ACTIVE, FloorButtons } from "./FloorButtons";
 import type { HudLayout } from "./layout";
+import { useFloorLabel } from "./useFloorLabel";
 
 /**
  * Corners HUD floor chip (top left on phones and tablets): the current floor's code and nav label (plus
@@ -15,11 +16,12 @@ import type { HudLayout } from "./layout";
  */
 export function FloorChip({ data, layout }: { data: ExperienceData; layout: HudLayout }) {
   const t = useTranslations("hud");
+  const floorLabel = useFloorLabel();
   const floor = useHQStore((s) => s.floor);
   const [open, setOpen] = useState(false);
   const chip = useRef<HTMLButtonElement>(null);
   const titleId = useId();
-  const label = t(`floorLabel.${floor}`);
+  const label = floorLabel(floor);
   const name = data.floors[floor].name;
 
   // Focus moves back before the sheet unmounts, so it never drops to the body.

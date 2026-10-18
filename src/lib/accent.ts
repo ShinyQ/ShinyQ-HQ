@@ -13,6 +13,7 @@ export const ACCENT_TEXT: Record<Accent, string> = {
 
 /** Floor accents from appendix 05 (L1 green, L2 amber, L3 violet, L4 white, RF blue). */
 export const FLOOR_ACCENT: Record<FloorId, Accent> = {
+  B1: "amber",
   L1: "green",
   L2: "amber",
   L3: "violet",

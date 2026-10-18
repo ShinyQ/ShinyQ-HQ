@@ -10,6 +10,7 @@ import { ChunkFailed } from "../ChunkFailed";
 import { lazyFromChunk } from "../lazyFromChunk";
 import { SheetHeader } from "../menu/SheetHeader";
 import { useHudToggle } from "../menu/useHudToggles";
+import { useFloorLabel } from "../useFloorLabel";
 import { MapLayers, useFloorMap } from "./MapLayers";
 import { MINIMAP_RADIUS, windowBox } from "./model";
 import type { MapOverview } from "./MapOverview";
@@ -88,6 +89,7 @@ export function Minimap({ data, layouts, size, hidden = false }: { data: Experie
 
 const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; size: HudLayout; open: boolean; onOpen: () => void }>(function MinimapButton({ layouts, size, open, onOpen }, ref) {
   const t = useTranslations("hud");
+  const floorLabel = useFloorLabel();
   const map = useFloorMap(layouts);
   const rover = useHQStore((s) => s.rover);
   const clipId = `minimap-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -98,7 +100,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
       type="button"
       data-testid="minimap"
       data-floor={floor}
-      aria-label={t("map.label", { floor, name: t(`floorLabel.${floor}`) })}
+      aria-label={t("map.label", { floor, name: floorLabel(floor) })}
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={onOpen}

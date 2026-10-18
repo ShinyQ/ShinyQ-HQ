@@ -23,6 +23,7 @@ export const ALL_SPECS = [
   "daynight",
   "deploy",
   "drawer-solid",
+  "engine-room",
   "experience",
   "fast-return",
   "floor-chunks",
@@ -70,7 +71,7 @@ interface Rule {
 }
 
 /**
- * First matching rule wins, so specific paths come before their parent folders.
+ * First matching rule wins, so specific paths come before their parent folders (`ALSO_RULES` below add specs on top).
  * Keep this in sync with the "Fast verification" section of docs/agents/performance.md.
  */
 export const RULES: Rule[] = [
@@ -86,7 +87,7 @@ export const RULES: Rule[] = [
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks): never part of the export.
   {
-    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
     specs: [],
   },
   // Build-time scans of the export: the script policy and the deploy rules.
@@ -167,6 +168,9 @@ export const RULES: Rule[] = [
   { test: /^src\/content\/(workshop|room-views\/career)\.ts$/, specs: ["workshop", "career", "missions", "pageview"] },
   // 3D floors. L3 Tech Reactor: its drawer body, the tech index and the reactor's room view (also the Ops Control Room's).
   { test: /^src\/hud\/drawer\/ReactorBody\.tsx$|^src\/content\/(tech-index|tech-rings|room-views\/labs)\.ts$/, specs: ["reactor", "labs", "labs-data", "production"] },
+  // B1 Engine Room (PR 2): the floor, its layout, chunk, drawers, unlock flag and rows.
+  { test: /^src\/experience\/floors\/engine\/layout\.ts$/, specs: ["engine-room", "arrivals", "memory"] },
+  { test: /^src\/experience\/floors\/(engine\/|EngineRoom\.tsx$|chunks\/engine\.ts$)|^src\/hud\/drawer\/EngineBody\.tsx$|^src\/content\/room-views\/engine\.ts$|^src\/experience\/b1\.ts$|^src\/hud\/floorRows\.ts$|^e2e\/b1\.ts$/, specs: ["engine-room", "floor-chunks", "memory"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
   // Arrival points and zones (Round 8 J): each floor's layout and the shared config select the arrivals spec too.
@@ -318,6 +322,17 @@ export function specSeconds(durations: Durations | null | undefined, spec: strin
   return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : UNKNOWN_SPEC_SECONDS;
 }
 
+/**
+ * Extra specs added on top of the first matching rule (never instead of it). Shared files that the B1 Engine Room
+ * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
+ */
+const ALSO_RULES: Rule[] = [
+  {
+    test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["engine-room"],
+  },
+];
+
 const SPEC_FILE = /^e2e\/([a-z0-9-]+)\.spec\.ts$/;
 
 export interface ChangePlan {
@@ -345,6 +360,7 @@ export function specsForChanges(files: readonly string[]): ChangePlan {
     }
     if (rule.specs === "all") return { specs: "all", unmatched: [] };
     for (const s of rule.specs) specs.add(s);
+    for (const also of ALSO_RULES) if (also.test.test(file) && also.specs !== "all") for (const s of also.specs) specs.add(s);
   }
   if (unmatched.length) for (const s of SMOKE_SPECS) specs.add(s);
   return { specs: [...specs].sort(), unmatched };

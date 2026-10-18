@@ -6,10 +6,11 @@
 import { createTranslator } from "next-intl";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPod, getPost, getProfile } from "@/content/load";
-import { type FloorId, LOCALES, type Locale } from "@/content/schema";
+import { LOCALES, type Locale } from "@/content/schema";
 import { clientLabel } from "@/content/selectors";
 import { FLOOR_ACCENT, WING_ACCENT } from "@/lib/accent";
 import { formatDate } from "@/lib/format";
+import type { PublicFloor } from "@/lib/floors";
 import { OG_EYEBROW_MAX, type OgCard, clampText, ogText } from "@/lib/og-layout";
 import { journeyYears, keyResult } from "@/lib/seo";
 import { OG_PAGES, type OgPage, type OgTarget, ogImagePath } from "@/lib/site";
@@ -21,7 +22,7 @@ export type { OgTarget };
 const MESSAGES = { en, id } as const;
 
 /** The floor each section page lives on in 3D: its eyebrow and accent. */
-export const PAGE_FLOOR: Record<OgPage, FloorId> = { quick: "L1", journey: "L2", labs: "L3", library: "L4", contact: "RF", cv: "RF", build: "L1" };
+export const PAGE_FLOOR: Record<OgPage, PublicFloor> = { quick: "L1", journey: "L2", labs: "L3", library: "L4", contact: "RF", cv: "RF", build: "L1" };
 
 export function allOgTargets(): OgTarget[] {
   const { floors } = getContent();

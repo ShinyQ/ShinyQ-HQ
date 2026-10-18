@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AMBIENCE_CROSSFADE, AMBIENCE_FLOORS, AMBIENCE_LAYERS, createAmbience, type AmbienceFloor } from "@/lib/audio/ambience";
+import {
+  AMBIENCE_CROSSFADE,
+  AMBIENCE_FLOORS,
+  AMBIENCE_LAYERS,
+  B1_HUM_LEVEL,
+  B1_HUM_MIDI,
+  B1_UNDER_FLOORS,
+  FLOOR_TONE_PEAK,
+  createAmbience,
+  type AmbienceFloor,
+} from "@/lib/audio/ambience";
 
 // The ambience graph needs delay, analyser and periodic wave nodes that the shared fake does not model, so this
 // file keeps its own context. It also records every frequency an oscillator is given.
@@ -164,6 +174,26 @@ describe("floor ambience: single layers", () => {
     const before = sources.length;
     advance(2_000);
     expect(sources.length).toBe(before);
+  });
+
+  it("has a B1 Engine Room layer: a low C and G hum and relay ticks in the scale", () => {
+    expect(AMBIENCE_FLOORS).toContain("B1");
+    expect(B1_HUM_MIDI).toEqual([36, 43]);
+    expect(typeof AMBIENCE_LAYERS.B1).toBe("function");
+  });
+
+  it("keeps the B1 layer about 6 dB under the other floor layers (owner, 2026-10-18)", () => {
+    expect(B1_UNDER_FLOORS).toBe(0.5);
+    expect(B1_HUM_LEVEL).toBeCloseTo(FLOOR_TONE_PEAK * 0.5, 10);
+    expect(20 * Math.log10(B1_HUM_LEVEL / FLOOR_TONE_PEAK)).toBeCloseTo(-6, 0);
+    // Every fixed gain and tick peak the layer sets stays at or under the hum level.
+    const before = nodes.length;
+    const layer = AMBIENCE_LAYERS.B1(ctx, destination, seeded(3));
+    advance(10_000);
+    const gains = nodes.slice(before).flatMap((n) => n.gain.history.filter((v) => v > 0 && v < 1));
+    expect(gains).toContain(B1_HUM_LEVEL);
+    for (const v of gains) expect(v).toBeLessThanOrEqual(B1_HUM_LEVEL);
+    layer.stop();
   });
 
   it("keeps every pitched oscillator in C major pentatonic", () => {

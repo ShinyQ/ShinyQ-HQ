@@ -1,5 +1,8 @@
 import type { Architecture } from "@/content/schema";
 import { interWidth } from "@/experience/fx/interWidth";
+import { LINE_GAP, PAD, lineHeight } from "./metrics";
+
+export { LINE_GAP, PAD, lineHeight };
 
 /**
  * Build-time architecture diagram layout (pure, no DOM): nodes on the authored `layer` x `row` grid, orthogonal
@@ -38,6 +41,8 @@ export const DIAGRAM_PRESETS = {
   wide: { direction: "right", kindSize: 10.5, labelSize: 13, subSize: 11.5, edgeSize: 11, nodeWidth: 140, perBand: 99, edgeLabelWidth: 84 },
   /** Desktop column, top to bottom, up to three nodes per band. */
   column: { direction: "down", kindSize: 10.5, labelSize: 13.5, subSize: 12, edgeSize: 11.5, nodeWidth: 184, perBand: 3, edgeLabelWidth: 150 },
+  /** Side drawers on wide desktops (the B1 Blueprint), top to bottom, three nodes per band, every text at least 12 px at scale 1. */
+  drawer: { direction: "down", kindSize: 12, labelSize: 14, subSize: 12, edgeSize: 12, nodeWidth: 160, perBand: 3, edgeLabelWidth: 120, maxWidth: 492 },
   /** Phones, top to bottom, two nodes per band, every text at least 12 px at scale 1. */
   phone: { direction: "down", kindSize: 12, labelSize: 14, subSize: 12, edgeSize: 12, nodeWidth: 147, perBand: 2, edgeLabelWidth: 80, maxWidth: 318 },
 } as const satisfies Record<string, DiagramPreset>;
@@ -68,12 +73,14 @@ export interface LaidGroup {
   y: number;
   w: number;
   h: number;
+  /** Where the group's name starts (its baseline sits 6 px above the frame). */
+  labelX: number;
 }
 
 export interface DiagramLayout {
   preset: DiagramPreset;
   /** Routing quality counters that `layoutCost` weighs. */
-  quality: { relaxed: number; fallback: number; lanes: number; outer: number };
+  quality: { relaxed: number; fallback: number; lanes: number; outer: number; group: number };
   /** Lane candidates per lane edge, for the order search. */
   laneOptions: Map<number, number>;
   /** Edge indexes per gap in channel order, for the order search. */
@@ -85,14 +92,14 @@ export interface DiagramLayout {
   groups: LaidGroup[];
 }
 
-export const PAD = 10;
-export const LINE_GAP = 4;
 const MARGIN = 8;
 const CROSS_GAP = 18;
 const CHANNEL = 10;
 const LABEL_PAD = 6;
 const MIN_GAP = 40;
 export const GROUP_PAD = 6;
+/** A group's name starts this far in from its frame's left side when nothing runs through it there. */
+const GROUP_LABEL_INSET = 10;
 /** Inter at 600 runs about 4% wider than the 400 advances. */
 const BOLD = 1.04;
 /** JetBrains Mono advance (0.6 em) plus the label's 0.06 em tracking. */
@@ -100,7 +107,23 @@ const MONO = 0.66;
 
 export const textWidth = (text: string, size: number, bold = false) => interWidth(text) * size * (bold ? BOLD : 1);
 export const monoWidth = (text: string, size: number) => text.length * size * MONO;
-export const lineHeight = (size: number) => size + LINE_GAP;
+
+export type Rect = { x: number; y: number; w: number; h: number };
+
+/** The box a group's name takes above its frame, with 4 px to spare around the text. */
+export const groupLabelBox = (g: Pick<LaidGroup, "label" | "y" | "labelX">, kindSize: number): Rect => ({
+  x: g.labelX - 4,
+  y: g.y - kindSize - 8,
+  w: monoWidth(g.label, kindSize) + 8,
+  h: kindSize + 6,
+});
+
+export const rectsOverlap = (a: Rect, b: Rect, gap = 0) =>
+  a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
+
+/** True when the segment from `a` to `b` runs through the box (touching its border does not count). */
+export const segmentHits = ([ax, ay]: Point, [bx, by]: Point, r: Rect) =>
+  Math.min(ax, bx) < r.x + r.w && Math.max(ax, bx) > r.x && Math.min(ay, by) < r.y + r.h && Math.max(ay, by) > r.y;
 
 /** Words, with a word wider than `max` split after its hyphens ("Microsoft-Decision-1" to "Microsoft-", "Decision-1"). */
 function wrapUnits(text: string, max: number, size: number, bold: boolean): string[] {
@@ -280,11 +303,11 @@ export function layoutArchitecture(arch: Architecture, texts: (node: DiagramNode
   return layout;
 }
 
-/** Lower is better: crossings and labels that could not sit cleanly weigh most, then lanes and length. */
+/** Lower is better: crossings and labels that could not sit cleanly weigh most, then lanes, group names off their corner and length. */
 export function layoutCost(layout: DiagramLayout): number {
   const { crossings, length } = edgeCrossings(layout.edges);
   const q = layout.quality;
-  return crossings * 100 + q.relaxed * 60 + q.fallback * 400 + q.lanes * 25 + q.outer * 40 + length * 0.02;
+  return crossings * 100 + q.relaxed * 60 + q.fallback * 400 + q.lanes * 25 + q.outer * 40 + q.group * 20 + length * 0.02;
 }
 
 /**
@@ -589,9 +612,9 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
 
   const toXY = (u: number, v: number): Point => (right ? [u, v] : [v, u]);
   const placed: { u0: number; u1: number; v0: number; v1: number }[] = [];
-  const quality = { relaxed: 0, fallback: 0, lanes: 0, outer: 0 };
+  const quality = { relaxed: 0, fallback: 0, lanes: 0, outer: 0, group: 0 };
   const fromXY = (x: number, y: number): [number, number] => (right ? [x, y] : [y, x]);
-  // Group frames hug their members; each frame's name sits above its top-left corner and blocks edge labels.
+  // Group frames hug their members; each frame's name is placed once the edge lines are known (below).
   const groups: LaidGroup[] = [];
   for (const name of [...new Set(arch.nodes.flatMap((n) => (n.group ? [n.group] : [])))]) {
     const members = arch.nodes.filter((n) => n.group === name).map((n) => boxes.get(n.id)!);
@@ -600,10 +623,7 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     const y = Math.min(...corners.map((c) => c[1])) - GROUP_PAD;
     const w = Math.max(...corners.map((c) => c[0])) + GROUP_PAD - x;
     const h = Math.max(...corners.map((c) => c[1])) + GROUP_PAD - y;
-    groups.push({ label: name, x, y, w, h });
-    const [u0, v0] = fromXY(x + 6, y - p.kindSize - 8);
-    const [u1, v1] = fromXY(x + 14 + monoWidth(name, p.kindSize), y - 2);
-    placed.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1), v0: Math.min(v0, v1), v1: Math.max(v0, v1) });
+    groups.push({ label: name, x, y, w, h, labelX: x + GROUP_LABEL_INSET });
   }
   let routeLines: [number, number][][] = [];
   /** True when a label box would sit on another edge's line (it would read as that edge's label). */
@@ -724,6 +744,35 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     return pts;
   });
   routeLines = polylines;
+  // Each group's name sits above its frame, at the top-left corner when no edge line or node runs through it,
+  // else at the first clear spot further along the top; edge labels then keep clear of it.
+  const linesXY = polylines.map((line) => line.map(([u, v]) => toXY(u, v)));
+  const nodesXY = all.map((b) => {
+    const [x0, y0] = toXY(b.u0, b.v0);
+    const [x1, y1] = toXY(b.u1, b.v1);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  });
+  const groupBoxes: Rect[] = [];
+  for (const g of groups) {
+    // A line keeps at least 8 px from the text (the box spares 4 px, the check 4 more).
+    const free = (box: Rect) =>
+      !linesXY.some((line) => line.slice(1).some((b, k) => segmentHits(line[k], b, { x: box.x - 4, y: box.y, w: box.w + 8, h: box.h }))) &&
+      ![...nodesXY, ...groupBoxes].some((o) => rectsOverlap(box, o, 2));
+    let at: number | undefined;
+    for (let labelX = g.x + GROUP_LABEL_INSET; labelX + monoWidth(g.label, p.kindSize) <= g.x + g.w - GROUP_LABEL_INSET + 0.01; labelX += 2)
+      if (free(groupLabelBox({ ...g, labelX }, p.kindSize))) {
+        at = labelX;
+        break;
+      }
+    if (at === undefined) quality.fallback++;
+    else if (at > g.x + GROUP_LABEL_INSET) quality.group++;
+    g.labelX = at ?? g.x + GROUP_LABEL_INSET;
+    const box = groupLabelBox(g, p.kindSize);
+    groupBoxes.push(box);
+    const [u0, v0] = fromXY(box.x, box.y);
+    const [u1, v1] = fromXY(box.x + box.w, box.y + box.h);
+    placed.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1), v0: Math.min(v0, v1), v1: Math.max(v0, v1) });
+  }
   const edges: LaidEdge[] = routes.map((r, ri) => {
     const pts = polylines[ri];
     const points = pts.map(([u, v]) => toXY(u, v));
@@ -763,4 +812,11 @@ function layoutOnce(arch: Architecture, texts: (node: DiagramNode) => DiagramTex
     if ((r.kind === "lane" && r.lane! >= outer) || r.kind === "back") quality.outer++;
   }
   return { preset: p, width: Math.ceil(width), height: Math.ceil(height), nodes, edges, groups, quality, laneOptions, gapEdges };
+}
+
+/** What `DiagramSvg` draws: a laid-out diagram without the order-search bookkeeping (JSON-safe: a room view can carry it). */
+export type DrawnDiagram = Pick<DiagramLayout, "preset" | "width" | "height" | "nodes" | "edges" | "groups">;
+
+export function drawnDiagram({ preset, width, height, nodes, edges, groups }: DiagramLayout): DrawnDiagram {
+  return { preset, width, height, nodes, edges, groups };
 }

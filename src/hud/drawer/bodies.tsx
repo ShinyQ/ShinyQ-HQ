@@ -33,6 +33,7 @@ const OpsBody = chunkBody(() => floorChunks.load("L3").then((m) => m.OpsBody));
 const ReactorBody = chunkBody(() => floorChunks.load("L3").then((m) => m.ReactorBody));
 const ResearchBody = chunkBody(() => floorChunks.load("L4").then((m) => m.ResearchBody));
 const TopicsBody = chunkBody(() => floorChunks.load("L4").then((m) => m.TopicsBody));
+const EngineBody = chunkBody(() => floorChunks.load("B1").then((m) => m.EngineBody));
 
 /**
  * Custom bodies for the drawer's single-pane variant, by room kind. Floors that need more than the
@@ -51,6 +52,7 @@ const CHUNK_BODIES: Partial<Record<RoomKind, () => ComponentType<RoomBodyProps>>
   reactor: ReactorBody,
   research: ResearchBody,
   topics: TopicsBody,
+  engine: EngineBody,
 };
 
 export function lazyRoomBody(kind: RoomKind): ComponentType<RoomBodyProps> | undefined {

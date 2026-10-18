@@ -1,5 +1,6 @@
 import type { FloorId } from "@/content/schema";
-import { FLOOR_IDS } from "@/experience/config";
+import { isPublicFloor } from "@/lib/floors";
+import { floorRows } from "../floorRows";
 import type { CareerData } from "@/experience/types";
 
 /** One row of a pad picker (pure data, so the lists are unit tested without React). */
@@ -20,9 +21,9 @@ export interface PickerOption {
 /** Committed picker thumbnail of a floor (`bun run floor:thumbs`). */
 export const floorThumb = (floor: FloorId) => `/floors/${floor}.webp`;
 
-/** Floors top-down like the elevator panel (RF first), named with the panel's labels. */
-export function floorOptions(current: FloorId, label: (floor: FloorId) => string, describe: (floor: FloorId) => string): PickerOption[] {
-  return [...FLOOR_IDS].reverse().map((id) => ({ id, eyebrow: id, title: label(id), detail: describe(id), thumb: floorThumb(id), current: id === current }));
+/** Floors top-down like the elevator panel (RF first), named with the panel's labels; B1 (unlocked) has no thumbnail. */
+export function floorOptions(current: FloorId, label: (floor: FloorId) => string, describe: (floor: FloorId) => string, b1Unlocked = false): PickerOption[] {
+  return floorRows(b1Unlocked).map(({ id }) => ({ id, eyebrow: id, title: label(id), detail: describe(id), ...(isPublicFloor(id) ? { thumb: floorThumb(id) } : {}), current: id === current }));
 }
 
 /** Year plazas oldest first: room count and up to two organizations; the first year notes the folded prologue. */

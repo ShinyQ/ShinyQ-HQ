@@ -6,7 +6,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { MeshBasicMaterial, type Group } from "three";
 import type { FloorId } from "@/content/schema";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_COLOR, FLOOR_IDS, floorY, SHAFT, SHAFT_EAST_FACE, SLAB_THICKNESS } from "../config";
+import { COLORS, FLOOR_COLOR, floorY, SHAFT, SHAFT_EAST_FACE, shaftSpan, SLAB_THICKNESS } from "../config";
 import { rimGeometry } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
 import type { FloorLayout } from "../types";
@@ -14,8 +14,6 @@ import { carY, doorsOpen } from "./elevator";
 import { rideNow } from "./rideClock";
 import { BoxEdges, FONTS, GlassBox } from "./primitives";
 
-const TOP = floorY("RF") + 8;
-const HEIGHT = TOP + SLAB_THICKNESS;
 const DOOR_W = 1.5;
 const DOOR_H = 3.2;
 
@@ -111,11 +109,12 @@ function Bridge({ layout }: { layout: FloorLayout }) {
   );
 }
 
-/** Glass shaft on the west side of the tower with the car, doors and door bridges. */
-export function ElevatorShaft({ layouts, near }: { layouts: Record<FloorId, FloorLayout>; near: FloorId[] }) {
+/** Glass shaft on the west side of the tower with the car, doors and door bridges, from under the lowest drawn floor (B1 once unlocked) to above the roof. */
+export function ElevatorShaft({ layouts, near, floors }: { layouts: Record<FloorId, FloorLayout>; near: FloorId[]; floors: readonly FloorId[] }) {
+  const { bottom, height } = shaftSpan(floors);
   return (
     <group name="elevator">
-      <GlassBox size={[SHAFT.size, HEIGHT, SHAFT.size]} position={[SHAFT.x, HEIGHT / 2 - SLAB_THICKNESS, SHAFT.z]} color={COLORS.cyan} fillOpacity={0.035} edgeOpacity={0.85} />
+      <GlassBox size={[SHAFT.size, height, SHAFT.size]} position={[SHAFT.x, bottom + height / 2, SHAFT.z]} color={COLORS.cyan} fillOpacity={0.035} edgeOpacity={0.85} />
       <Car />
       {near.map((id) => (
         <group key={id}>
@@ -124,7 +123,7 @@ export function ElevatorShaft({ layouts, near }: { layouts: Record<FloorId, Floo
         </group>
       ))}
       <Suspense fallback={null}>
-        {FLOOR_IDS.map((id) => (
+        {floors.map((id) => (
           <Indicator key={id} floor={id} visible={near.includes(id)} />
         ))}
       </Suspense>

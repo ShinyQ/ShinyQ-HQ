@@ -158,9 +158,9 @@ describe("camera world", () => {
             continue;
           }
           const zone = zoneAt(layout.id, p, layout.viewZones);
-          const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined };
+          const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined, pitch: undefined };
           const f = followForward(cls, view.yaw);
-          const pose = followPose(cls, [p.x + f.x * FOLLOW_LOOK_AHEAD[cls], 1, p.z + f.z * FOLLOW_LOOK_AHEAD[cls]], view.yaw, view.zoom ?? 1);
+          const pose = followPose(cls, [p.x + f.x * FOLLOW_LOOK_AHEAD[cls], 1, p.z + f.z * FOLLOW_LOOK_AHEAD[cls]], view.yaw, view.zoom ?? 1, view.pitch ?? 0);
           if (clampCamera(pose.target, pose.position, w, [p.x, 1, p.z], pose.fov) !== pose.position) moved += 1;
         }
       }

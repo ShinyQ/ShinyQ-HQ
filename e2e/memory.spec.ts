@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { enterB1Route } from "./b1";
 import { GPU_MEMORY_BUDGET } from "./budgets";
 import { chooseMotion, enterHQ, expectNoGpuGrowth, readGpuCounters, readJsHeapAfterGc, readSettledGpuCounters, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
 
@@ -44,6 +45,26 @@ test("10 Lobby to Roof round trips leave renderer memory at its baseline", async
   const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;
   test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} trips ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
   expectNoGpuGrowth(base, after, GPU_MEMORY_BUDGET, `after each trip: ${perTrip.join(" ")}`);
+  expect(heapGrowth).toBeLessThan(HEAP_SLACK);
+});
+
+test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ page }) => {
+  await enterB1Route(page);
+  await ride(page, "B1");
+  await ride(page, "L1");
+  await readSettledGpuCounters(page);
+  await ride(page, "B1");
+  await ride(page, "L1");
+  const base = await readSettledGpuCounters(page);
+  const heapBase = await readJsHeapAfterGc(page);
+  for (let i = 0; i < TRIPS; i++) {
+    await ride(page, "B1");
+    await ride(page, "L1");
+  }
+  const after = await readSettledGpuCounters(page);
+  const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;
+  test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} B1 trips ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
+  expectNoGpuGrowth(base, after, GPU_MEMORY_BUDGET, "B1 round trips");
   expect(heapGrowth).toBeLessThan(HEAP_SLACK);
 });
 

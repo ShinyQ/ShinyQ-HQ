@@ -2,7 +2,7 @@ import type { Group, Mesh } from "three";
 import type { FloorId } from "@/content/schema";
 
 /** Name of each floor component's root group (Lobby, CareerArchive, Labs, Library, Roof). */
-export const FLOOR_ROOT: Record<FloorId, string> = { L1: "lobby", L2: "career-archive", L3: "labs", L4: "library", RF: "roof" };
+export const FLOOR_ROOT: Record<FloorId, string> = { B1: "engine-room", L1: "lobby", L2: "career-archive", L3: "labs", L4: "library", RF: "roof" };
 
 const groups = new Map<FloorId, Group>();
 

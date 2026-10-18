@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createOrbitState, primeZone, updateZone, yawLooking, zoneView, type ViewZone } from "@/experience/camera/orbit";
+import { createOrbitState, primeZone, rotate, updateZone, yawLooking, zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW, orbitOffset } from "@/experience/camera/rigs";
+import { LOBBY } from "@/experience/config";
+import { lobbyObservatory } from "@/experience/floors/lobby/observatoryLayout";
 
 const unit = (x: number, z: number) => {
   const l = Math.hypot(x, z);
@@ -69,6 +71,66 @@ describe("per camera class views", () => {
     expect(b).toMatchObject({ yawTarget: 1.4, zoomTarget: 1.75, easing: true });
     const c = createOrbitState();
     updateZone(c, zone, false);
-    expect(c).toMatchObject({ yawTarget: 2, zoomTarget: 1.5 });
+    expect(c).toMatchObject({ yawTarget: 2, zoomTarget: 1.5, zoneTurn: null });
+  });
+
+  // The B1 phone arrival (owner 2026-10-18): a class view may turn and pitch the camera off the zone's own view, and the
+  // camera eases back to the zone's yaw with a level pitch when the rover leaves, unless the visitor turned by hand.
+  const turned: ViewZone = { ...zone, classView: { mobile: { yaw: 1.4, zoom: 1.75, pitch: -0.3 } } };
+
+  it("applies a class pitch and eases the turn back to the zone's own yaw on exit", () => {
+    expect(zoneView(turned, "mobile")).toEqual({ yaw: 1.4, zoom: 1.75, pitch: -0.3 });
+    const a = createOrbitState();
+    primeZone(a, turned, "mobile");
+    expect(a).toMatchObject({ yaw: 1.4, pitch: -0.3, pitchTarget: -0.3, zoneTurn: 2 });
+    updateZone(a, null, false, "mobile");
+    expect(a).toMatchObject({ yawTarget: 2, pitchTarget: 0, zoomTarget: 1, zoneTurn: null, easing: true });
+    const b = createOrbitState();
+    updateZone(b, turned, false, "mobile");
+    expect(b).toMatchObject({ yawTarget: 1.4, pitchTarget: -0.3, zoneTurn: 2 });
+    const d = createOrbitState();
+    primeZone(d, turned, "desktop");
+    expect(d).toMatchObject({ yaw: 2, pitch: 0, zoneTurn: null });
+  });
+
+  it("keeps a hand turn when the rover leaves a turned class view", () => {
+    const s = createOrbitState();
+    primeZone(s, turned, "mobile");
+    rotate(s, 0.5);
+    updateZone(s, null, false, "mobile");
+    expect(s.yawTarget).toBeCloseTo(1.9);
+    expect(s.zoneTurn).toBeNull();
+  });
+
+  it("keeps a visitor's own tilt when the rover leaves a turned class view", () => {
+    const s = createOrbitState();
+    primeZone(s, turned, "mobile");
+    rotate(s, 0, 0.1);
+    expect(s.zoneTurn).toBeNull();
+    const tilted = s.pitchTarget;
+    updateZone(s, null, false, "mobile");
+    expect(s.pitchTarget).toBe(tilted);
+    expect(s.yawTarget).toBeCloseTo(1.4);
+  });
+
+  it("never turns back for a class view without a pitch (the L1 kiosk on tablets and phones)", () => {
+    const kiosk = lobbyObservatory({ rect: LOBBY.observatory, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis }).zones.find((z) => z.id === "L1:kiosk")!;
+    for (const cls of ["tablet", "mobile"] as const) {
+      expect(zoneView(kiosk, cls).yaw).not.toBe(kiosk.yaw);
+      const s = createOrbitState();
+      primeZone(s, kiosk, cls);
+      const { yaw, pitch } = s;
+      expect(s.zoneTurn).toBeNull();
+      updateZone(s, null, false, cls);
+      expect(s.yawTarget).toBe(yaw);
+      expect(s.pitchTarget).toBe(pitch);
+      const e = createOrbitState();
+      e.yaw = e.yawTarget = 0.3;
+      updateZone(e, kiosk, false, cls);
+      const { yawTarget, pitchTarget } = e;
+      updateZone(e, null, false, cls);
+      expect(e.yawTarget).toBe(yawTarget);
+      expect(e.pitchTarget).toBe(pitchTarget);
+    }
   });
 });

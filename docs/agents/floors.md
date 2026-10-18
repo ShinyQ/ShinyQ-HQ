@@ -4,11 +4,12 @@ Rules shared by every walkable floor: ready floors, layouts, doors, floor pads, 
 
 Index: [AGENTS.md](../../AGENTS.md).
 
-Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md), [L3 Labs](floor-l3-labs.md), [L4 Library](floor-l4-library.md), [RF Roof](floor-rf-roof.md). Engine, camera, store and render budget: [3D experience](3d-experience.md).
+Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md), [L3 Labs](floor-l3-labs.md), [L4 Library](floor-l4-library.md), [RF Roof](floor-rf-roof.md), [B1 Engine Room](floor-b1-engine-room.md). Engine, camera, store and render budget: [3D experience](3d-experience.md).
 
 ## Ready floors
 
-- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["L1", "L2", "L3", "L4", "RF"]`.
+- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
+  - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set ([B1 access](floor-b1-engine-room.md#access)).
 - URL sync writes floor routes only for ready floors.
   - Placeholders keep `/{locale}`, and the HUD links to their HTML page.
 - When a new floor ships: add it to `READY_FLOORS` and mount the gate on its route.
@@ -21,13 +22,14 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 ### Arrival
 
 - Every floor sets `FloorLayout.arrival` (Round 8 J): where the rover rolls on after an elevator ride, heading east along the floor's main axis. Ride, glide and camera rules: [Elevator arrival](3d-experience.md#elevator-arrival).
-  - L1 (-6, 0), L2 x = 6 in the 2019 plaza, L3 `LABS.overview`, L4 (-4, 0), RF (-8, 0).
-- L1, L2, L4 and RF carry a view zone `<floor>:arrival` in the floor's `viewZones`. L3 keeps its ordinary `L3:overview` zone instead (no `arrivalOnly`; [L3 arrival](floor-l3-labs.md#arrival-and-camera-views)). The `<floor>:arrival` zone is:
+  - L1 (-6, 0), L2 x = 6 in the 2019 plaza, L3 `LABS.overview`, L4 (-4, 0), RF (-8, 0), B1 (-8, 0).
+- L1, L2, L4, RF and B1 carry a view zone `<floor>:arrival` in the floor's `viewZones`. L3 keeps its ordinary `L3:overview` zone instead (no `arrivalOnly`; [L3 arrival](floor-l3-labs.md#arrival-and-camera-views)). The `<floor>:arrival` zone is:
   - a 4 u box at the arrival point, `yaw` looking east (`yawLooking({ x: 1, z: 0 })`), with `travel` east so only an eastbound rover matches;
   - `arrivalOnly`: active only once an arrival or a deep-link spawn primed it, so driving back through never swings the camera;
   - the L2 zone adds `railYaw` (the rail camera due west of the rover, looking down the Career Road).
-- Zooms are the widest view whose camera stays east of the elevator shaft: constants per floor (`LOBBY.arrivalZoom` and `arrivalZoomPhone` on L1 (`src/experience/config.ts`), `CAREER_ROAD.arrivalZoom` on L2, the newsroom concept's `arrivalZoom` on L4, `ROOF_DECK.arrivalZoom` on RF), capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
-- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`). L1 keeps the kiosk spawn and L2 the approach.
+- Zooms are the widest view whose camera stays east of the elevator shaft: constants per floor (`LOBBY.arrivalZoom` and `arrivalZoomPhone` on L1 (`src/experience/config.ts`), `CAREER_ROAD.arrivalZoom` on L2, the newsroom concept's `arrivalZoom` on L4, `ROOF_DECK.arrivalZoom` on RF, `ENGINE.arrivalZoom` on B1), capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
+- B1 phones (camera class mobile) turn the arrival camera off east (`ENGINE.arrivalPhone`, a `classView` yaw, zoom and pitch; the pitch opts into the turn-back on leaving, no other floor uses it): a portrait view down the aisle cuts every station sign. The arrivals test checks that this view keeps the first two station signs whole, with a font at least 10 px tall, and its camera east of the shaft.
+- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`); B1 has no route or deep link, so only arrivals (rides) put the rover there. L1 keeps the kiosk spawn and L2 the approach.
 
 ## Doors
 
@@ -95,7 +97,7 @@ Code: `nav/pads.ts` (owner decision).
 
 ## Floor chunks
 
-L3, L4 and RF load on demand; per-floor caps are owner-approved (budgets in [performance](performance.md)).
+L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in [performance](performance.md)).
 
 ### Structure
 
@@ -107,9 +109,10 @@ L3, L4 and RF load on demand; per-floor caps are owner-approved (budgets in [per
   | L3 | Labs, OpsBody, ReactorBody, HologramOverlay |
   | L4 | Library, ResearchBody, TopicsBody |
   | RF | Roof |
+  | B1 | EngineRoom, EngineBody |
 
 - L1 and L2 stay in the main 3D chunk.
-- Never import `Labs`, `Library`, `Roof` or those HUD pieces statically anywhere in the closure of `Experience.tsx`.
+- Never import `Labs`, `Library`, `Roof`, `EngineRoom` or those HUD pieces statically anywhere in the closure of `Experience.tsx`.
   - `tests/unit/floor-chunks-graph.test.ts` (`tests/helpers/import-graph.ts`) fails otherwise.
 - New floor-only HUD code goes into that floor's chunk entry and is reached through `lazyFloors.tsx` or the entry's exports.
 
@@ -138,7 +141,7 @@ L3, L4 and RF load on demand; per-floor caps are owner-approved (budgets in [per
 
 ### Prefetch and rides
 
-- Prefetch covers idle floors only (`floorPrefetch.ts`, `FloorChunkPrefetch.tsx`). Triggers:
+- Prefetch covers idle floors only (`floorPrefetch.ts`, `FloorChunkPrefetch.tsx`). B1 only once unlocked (idle, floor picker, call pad hover); a locked session never requests its chunk. Triggers:
   - after the first frame on idle (`afterFirstFrameIdle`);
   - when a ride targets the floor;
   - when the floor picker opens;
@@ -156,7 +159,7 @@ L3, L4 and RF load on demand; per-floor caps are owner-approved (budgets in [per
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 403.8 KB and full 427.4 KB gzip; floor chunks L3 13.3, L4 10.1, RF 3.3 KB; Classic site JS +381 B.
+- Measured: main 3D path lite 414.4 KB and full 438.0 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions).
 
 ## Fast return
 
@@ -192,6 +195,7 @@ Pure rules in `nav/fastReturn.ts` (owner decision).
 | L2 | Workshop forecourt, beside the time console (344.5, -8.2) | `workshop.returnPad` |
 | L3 | on the spine axis east of the reactor ring: its center plus (`LABS.returnPadX` 13, 0), (139, 0) today; in view below the rover from the reactor stop | `LABS.returnPadX` |
 | L4 | south of the end plaza | `LibraryLayout.end.returnPad` |
+| B1 | south of the aisle end, (40, 9) | `ENGINE.returnPad` |
 
 - The L2 and L3 floor code (`floors/career/*`, `floors/labs/*`) may move the coordinate; the pad rules in `tests/unit/floor-pads.test.ts` check it.
 - E2E: `e2e/fast-return.spec.ts`. The everyday spots within 40 u (the L3 deep-link spawn, the RF plaza corner) are layout distances in `tests/unit/fast-return.test.ts`; the e2e drives from the L1 spawn and within 40 u on L2.
@@ -316,10 +320,10 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
 
 - Sources:
-  - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF doors are `station`s);
+  - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
   - pads from `FloorLayout.pads`;
   - plus the L1 profile hologram, skills wall and Rover menu kiosk, the L3 wing boards and the L4 archive board.
-- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}`, `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
+- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
 
 ### Adding targets
 

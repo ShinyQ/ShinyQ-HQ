@@ -10,6 +10,7 @@ import { loadRoomViews } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
 import { formatYearMonth } from "@/lib/format";
+import { b1UnlockFlag, canEnterFloor } from "./b1";
 import { REACTOR_ROOM } from "./floors/labs/techHash";
 import { TOPICS_ROOM } from "./floors/library/topicHash";
 import { createTopicHashSync } from "./floors/library/topicUrl";
@@ -105,6 +106,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setLocale(data.locale);
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
+  // Dev and test unlock (B1 Engine Room, PR 2): `?unlock=b1`, in production only with `debug`.
+  if (b1UnlockFlag(window.location.search, process.env.NODE_ENV !== "production")) s.unlockB1();
   // A graphics quality change remounts the canvas: keep the rover, floor, phase and open room as they are.
   if (isQualityRemount(!started, prevTier, tier, canvasReplacedInCommit())) return;
   const place = (floor: FloorId, at: { x: number; z: number }) => {
@@ -131,7 +134,9 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   };
   const first = !started;
   started = true;
-  const resume = first ? takeResume() : null;
+  const taken = first ? takeResume() : null;
+  // A language switch on B1 resumes there only while B1 is unlocked (the PR 2 flag rides along in the query).
+  const resume = taken && canEnterFloor(taken.floor, getHQStore().getState().b1Unlocked) ? taken : null;
   // Deep links (and a language switch that resumes a floor) need their floor's chunk at once (Round 7 B).
   for (const floor of [startFloor, startRoom ? floorOf(startRoom) : undefined, resume?.floor]) if (floor) floorChunks.ensure(floor);
   const intro = !introSeen();
@@ -219,6 +224,7 @@ export default function Experience({
   startRoom,
 }: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
+  const tEngine = useTranslations("engine");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
   const tCerts = useTranslations("certs");
@@ -399,8 +405,9 @@ export default function Experience({
     // Highlights Hall stations have no route of their own: they keep /{locale} and live in the history entry.
     // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync), and so does the
     // Ops Control Room (the Classic site shows it on /contact#production) and the Visitor Observatory (/contact#visits).
+    // B1 Engine Room stations keep the floor URL (/{locale}) and are remembered in the history entry.
     return (room: RoomId) =>
-      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && !room.startsWith("B1:") && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Topic Constellation pick in the hash (`#library-topic=<slug>`), like the Tech Reactor below.
@@ -524,6 +531,7 @@ export default function Experience({
         about: t("world.about"),
         availability: t("world.availability"),
       },
+      engine: { title: tEngine("title"), subtitle: tEngine("subtitle"), soon: tEngine("soon") },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
       interact: {
@@ -559,7 +567,7 @@ export default function Experience({
         metrics: tLibrary("topics.monument.target"),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
+    [t, tEngine, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
   );
 
   return (

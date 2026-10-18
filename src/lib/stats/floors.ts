@@ -1,3 +1,4 @@
+import { isPublicFloor } from "../floors";
 import { parseHQUrl } from "../url-sync";
 import type { StatsFloor } from "./protocol";
 
@@ -8,5 +9,6 @@ import type { StatsFloor } from "./protocol";
  * (`/quick`, `/cv`, `/`) have none.
  */
 export function floorOfPath(path: string): StatsFloor | null {
-  return parseHQUrl(path)?.floor ?? null;
+  const floor = parseHQUrl(path)?.floor;
+  return floor && isPublicFloor(floor) ? floor : null;
 }

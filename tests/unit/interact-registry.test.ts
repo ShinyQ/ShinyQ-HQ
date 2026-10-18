@@ -113,7 +113,7 @@ describe("interactablesFor on the real content", () => {
     expect(layouts.L1.doors?.length).toBe(HALL_LAYOUT.stations.length + 1);
     for (const floor of FLOOR_IDS) {
       for (const door of layouts[floor].doors ?? []) {
-        const kind = floor === "RF" || floor === "L1" ? "station" : "door";
+        const kind = floor === "RF" || floor === "L1" || floor === "B1" ? "station" : "door";
         const item = withHall[floor].find((i) => i.id === `${floor}:${kind}:${door.room.slice(3)}`);
         expect(item, door.room).toBeDefined();
         expect(item!.kind).toBe(kind);

@@ -5,10 +5,12 @@ import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { Modal } from "@/components/Modal";
 import type { FloorId } from "@/content/schema";
+import { isPublicFloor } from "@/lib/floors";
 import { intents } from "@/experience/input/intents";
 import { elevatorPadId, teleportPadId } from "@/experience/nav/pads";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
+import { useFloorLabel } from "../useFloorLabel";
 import { BACK_TO_ELEVATOR, consoleOptions, floorOptions, nextIndex, yearOptions, type PickerOption } from "./picker";
 
 /** Keyboard focus returns to the 3D world (where the rover's keys live) once a picker closes. */
@@ -102,9 +104,12 @@ function PickerList({ title, hint, options, onPick, onClose }: PickerListProps) 
  */
 export function PadPicker({ data }: { data: ExperienceData }) {
   const t = useTranslations("hud");
+  const tEngine = useTranslations("engine");
+  const floorLabel = useFloorLabel();
   const picker = useHQStore((s) => s.picker);
   const exploring = useHQStore((s) => s.phase === "explore");
   const floor = useHQStore((s) => s.floor);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   const closePicker = useHQStore((s) => s.closePicker);
 
   // A ride, a room or the hologram view takes over: the picker goes away with it.
@@ -122,7 +127,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
       <PickerList
         title={t("pads.floorTitle")}
         hint={t("pads.floorHint")}
-        options={floorOptions(floor, (id) => t(`floorLabel.${id}`), (id) => t(`pads.floorDesc.${id}`))}
+        options={floorOptions(floor, floorLabel, (id) => (isPublicFloor(id) ? t(`pads.floorDesc.${id}`) : tEngine("desc")), b1Unlocked)}
         onClose={close}
         onPick={(id) => {
           close();

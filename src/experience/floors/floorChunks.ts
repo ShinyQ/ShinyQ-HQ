@@ -1,17 +1,21 @@
 import type { FloorId } from "@/content/schema";
+import type * as EngineChunk from "./chunks/engine";
 import type * as LabsChunk from "./chunks/labs";
 import type * as LibraryChunk from "./chunks/library";
 import type * as RoofChunk from "./chunks/roof";
 
 /**
- * On-demand floor chunks (Round 7 B). L3, L4 and RF load through one dynamic import each; L1 and L2
+ * On-demand floor chunks (Round 7 B). L3, L4, RF and B1 load through one dynamic import each; L1 and L2
  * stay in the main 3D chunk. Pure state machine plus the app instance; no React, no three.
  */
-export const LAZY_FLOORS = ["L3", "L4", "RF"] as const satisfies readonly FloorId[];
+/** On-demand floors: L3, L4 and RF for every visitor, B1 only once unlocked. */
+export const LAZY_FLOORS = ["L3", "L4", "RF", "B1"] as const satisfies readonly FloorId[];
 export type LazyFloor = (typeof LAZY_FLOORS)[number];
+/** The lazy floors every session prefetches after the first frame (B1 joins in FloorChunkPrefetch once unlocked). */
+export const PUBLIC_LAZY_FLOORS = ["L3", "L4", "RF"] as const satisfies readonly LazyFloor[];
 export type FloorChunkState = "eager" | "idle" | "loading" | "ready" | "failed";
 
-const ALL_FLOORS: readonly FloorId[] = ["L1", "L2", "L3", "L4", "RF"];
+const ALL_FLOORS: readonly FloorId[] = ["B1", "L1", "L2", "L3", "L4", "RF"];
 
 export function isLazyFloor(id: FloorId): id is LazyFloor {
   return (LAZY_FLOORS as readonly FloorId[]).includes(id);
@@ -29,6 +33,7 @@ export interface FloorChunks<M extends Record<LazyFloor, unknown>> {
   ensure(id: FloorId): void;
   /** The floor may be needed soon: like ensure, unless speculative prefetches are off. */
   prefetch(id: FloorId): void;
+  /** Prefetches the public lazy floors (never B1). */
   prefetchAll(): void;
   state(id: FloorId): FloorChunkState;
   /** Eager, ready or failed: nothing to wait for (a failed import surfaces through the canvas error boundary). */
@@ -94,7 +99,7 @@ export function createFloorChunks<M extends Record<LazyFloor, unknown>>(
     load,
     ensure,
     prefetch,
-    prefetchAll: () => LAZY_FLOORS.forEach(prefetch),
+    prefetchAll: () => PUBLIC_LAZY_FLOORS.forEach(prefetch),
     state,
     settled: (id) => state(id) !== "idle" && state(id) !== "loading",
     requestedAt: (id) => (isLazyFloor(id) ? (requested.get(id) ?? null) : null),
@@ -143,6 +148,7 @@ export interface FloorChunkModules {
   L3: typeof LabsChunk;
   L4: typeof LibraryChunk;
   RF: typeof RoofChunk;
+  B1: typeof EngineChunk;
 }
 
 /** The app's floor chunks. Each import() here is the only reference to its chunk entry. */
@@ -151,6 +157,7 @@ export const floorChunks = createFloorChunks<FloorChunkModules>(
     L3: () => import("./chunks/labs"),
     L4: () => import("./chunks/library"),
     RF: () => import("./chunks/roof"),
+    B1: () => import("./chunks/engine"),
   },
   { speculative: () => typeof window !== "undefined" && speculativePrefetchOn(window.location.search) },
 );

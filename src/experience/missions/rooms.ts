@@ -3,7 +3,7 @@ import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/con
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
 import { TOPICS } from "@/content/topic-map";
 
-export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops" | "engine";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -59,6 +59,7 @@ export type StructuralRoom =
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
+  B1: "/build",
   L1: "/",
   L2: "/journey",
   L3: "/labs",

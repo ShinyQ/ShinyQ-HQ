@@ -19,8 +19,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 457.0 KB, 13 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 433.4 KB, 13 KB headroom) | `e2e/budgets.ts` |
+| B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
+| B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 465.2 KB, about 4.8 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 446.4 KB (measured 441.5 KB, about 4.9 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -47,7 +49,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier: settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 
@@ -55,11 +57,11 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 - Main path: 3D JS after the gate under 450 KB gzip per tier, measured with `?prefetch=off` so it is the main path only.
   - 450 KB gates the critical path before the first frame (`?prefetch=off`).
-- Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB gzip.
+- Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
-- Session total: idle prefetch loads every floor in a normal session, so the session total (main + all floor chunks) has its own cap, `BYTES_3D_BUDGET.session` (owner decision).
-  - full 470 KB: measured 457.0 KB, so about 13 KB of headroom catches creep early.
-  - lite 446.4 KB: measured 433.4 KB, about 13 KB of headroom.
+- Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
+  - full 470 KB: measured 465.2 KB, so about 4.8 KB of headroom catches creep early.
+  - lite 446.4 KB: measured 441.5 KB, about 4.9 KB of headroom.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 
 #### Memory gates
@@ -67,6 +69,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 - `memory-full` (owner decision): `GPU_MEMORY_BUDGET.fullTierRoundTrips` (3) Lobby to Roof round trips on the full tier with Motion Full leave geometries, textures and programs at their baseline and the heap within the budget.
   - Its warm-up tour rides with Motion Full as well: a Motion Reduced warm-up left 2 geometries and a program for the first measured trips to build (a false failure in PR #201's CI).
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite.
+- B1 memory: `e2e/memory.spec.ts` rides Lobby to B1 round trips in an unlocked session (`e2e/b1.ts`). The perf lane covers B1 in `floors.spec.ts` (settled, after a ride from the Lobby) and `peaks.spec.ts` (rides L1 to B1 and RF to B1, both tiers).
 - Both use the `e2e/hq.ts` memory helpers and the one budget. The baseline and the final read are settled (`readSettledGpuCounters`); the per-trip numbers are for the failure message only and read unsettled (`readGpuCounters`), so each trip still calls the elevator the moment the rover arrives.
 
 #### Program baseline and known peaks
@@ -156,10 +159,14 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
+| `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
 | `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` | the full suite |
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |
 
+- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`.
+- `scripts/b1-shots.ts` (like the other capture scripts) is offline tooling: it runs no spec.
+- The perf planner (`scripts/perf-plan.ts`, PR CI only) maps the lazy B1 files (`floors/engine/**`, `EngineRoom.tsx`, `chunks/engine.ts`, `EngineBody`, `room-views/engine.ts`) to `bytes`, `floor:B1` and `ride:B1`. `floors/engine/layout.ts` and `src/experience/b1.ts` are on the main 3D path (the tower, the registry and the store read them), so they keep the full lane.
 - Options: `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`).
 - When you add a spec or a folder, add its rule (a unit test checks every spec is known).
 
@@ -195,6 +202,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Every worker renders WebGL on the CPU, so more workers starve each other and make 3D tests time out; do not raise it.
   - Do not run two e2e suites at once on one machine.
 - Turbopack can serve stale CSS after large style or dependency changes: `rm -rf .next` before `verify:quick` if the export looks wrong.
+- Tailwind scans every file in the repo, docs included: a utility class written in a plan or a doc snippet ships in the stylesheet (budget 20,480 B). Use utilities the stylesheet already has.
+- B1 UI strings live in the 3D-only `engine` message namespace (`CLIENT_NAMESPACES`, not `LAYOUT_NAMESPACES`), so they never ride in the Classic pages' HTML (budget 80 KB). Read floor labels through `useFloorLabel`.
 - `e2e:*` serves `out/` from the last build, so rebuild after code changes (`verify:quick` does).
 
 ### CI shards

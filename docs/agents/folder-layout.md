@@ -126,7 +126,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json.
+- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json.
 
 ### src/assets/
 
@@ -227,13 +227,14 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 #### Floor chunks
 
 - `src/experience/floors/floorChunks.ts`: pure, no React.
-  - `LAZY_FLOORS` (L3, L4, RF), `createFloorChunks` (state machine eager/idle/loading/ready/failed; failed counts as settled, a later load retries).
+  - `LAZY_FLOORS` (L3, L4, RF, B1) and `PUBLIC_LAZY_FLOORS` (L3, L4, RF), `createFloorChunks` (state machine eager/idle/loading/ready/failed; failed counts as settled, a later load retries).
   - The app instance `floorChunks`, `speculativePrefetchOn` (`?prefetch=off`), `rideChunkHold`, `floorChunksHandle` (`window.__hq.floorChunks`).
-- `src/experience/floors/chunks/`: one entry per lazy floor, the only importers of `Labs` / `Library` / `Roof` and their floor-only HUD pieces.
+- `src/experience/floors/chunks/`: one entry per lazy floor, the only importers of `Labs` / `Library` / `Roof` / `EngineRoom` and their floor-only HUD pieces.
   - `labs.ts` (L3: Labs, OpsBody, ReactorBody, HologramOverlay).
   - `library.ts` (L4: Library, ResearchBody, TopicsBody).
   - `roof.ts` (RF: Roof).
-- `src/experience/floors/lazyFloors.tsx`: `labsFloor()`, `libraryFloor()`, `roofFloor()` getters from `floorGetters`, and `useFloorChunks(near)`.
+  - `engine.ts` (B1: EngineRoom, EngineBody).
+- `src/experience/floors/lazyFloors.tsx`: `labsFloor()`, `libraryFloor()`, `roofFloor()`, `engineFloor()` getters from `floorGetters`, and `useFloorChunks(near)`.
   - A getter returns the loaded component, null while the chunk loads, React.lazy for a failed floor without a module; a rejection drops the wrapper, so the canvas remount retries (`tests/unit/lazy-floors.test.ts`).
   - Beside it: floorPrefetch.ts (pure `prefetchFor`) and FloorChunkPrefetch.tsx (the triggers).
 
@@ -256,6 +257,9 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - Pure layout.ts (buildRoofLayout, ROOF_DECK, roofActive), solids.ts (merged boxes, lattice, scatter).
   - kit.tsx (MergedBoxes, MergedEdges, PulseRings, HitBox, aboutCard).
   - SignalGarden.tsx (the picked scenery with the courier drone) and Sky.
+- `src/experience/floors/engine/`: B1 Engine Room (see [floor-b1-engine-room.md](floor-b1-engine-room.md)).
+  - Pure layout.ts (buildEngineLayout, ENGINE, bays, racks) and scenery.ts (solids, flow and panel instances, signs).
+  - EngineFx.tsx (`FlowMesh`, `PanelMesh`); `floors/EngineRoom.tsx` is the floor and `floors/chunks/engine.ts` its chunk entry.
 - `src/experience/floors/lobby/`: L1.
   - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP).
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).

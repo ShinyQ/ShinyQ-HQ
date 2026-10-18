@@ -15,8 +15,8 @@ export interface RenderBudget {
 
 export const RENDER_BUDGET: RenderBudget = { sceneCalls: 150, postCalls: 20, triangles: 30_000, minSceneCalls: 10 };
 
-/** Tighter caps on settled scene calls (inclusive): L1 is the densest floor, RF stays light. */
-export const FLOOR_SCENE_CAPS: Readonly<Record<string, number>> = { L1: 125, RF: 79 };
+/** Tighter caps on settled scene calls (inclusive): L1 is the densest floor, RF stays light, B1 is mostly instanced. */
+export const FLOOR_SCENE_CAPS: Readonly<Record<string, number>> = { L1: 125, RF: 79, B1: 100 };
 
 /** A settled budget check watches at least this many frames and this long (every frame counts). */
 export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
@@ -26,14 +26,19 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * `failAt` gates the critical path before the first frame (`?prefetch=off`). `floors`: each on-demand floor chunk
  * (Round 7 B, floors/floorChunks.ts), measured on its own load; caps are incremental (a module shared by two
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
- * session total (main + all floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
- * (measured 457.0 KB, about 13 KB headroom so creep is caught early), lite 446.4 KB (measured 433.4 KB).
+ * session total (main + the public floor chunks) has its own cap per tier (owner decision 2026-10-16): full 470 KB
+ * (measured 465.2 KB, about 4.8 KB headroom so creep is caught early), lite 446.4 KB (measured 441.5 KB).
+ * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
+ * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
+ * and it is left out of the session total: only unlocked visitors load it.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
   spec: 600 * 1024,
   minExpected: 100 * 1024,
-  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 },
+  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
+  /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
+  sessionFloors: ["L3", "L4", "RF"],
   session: { lite: Math.round(446.4 * 1024), full: 470 * 1024 },
 } as const;
 

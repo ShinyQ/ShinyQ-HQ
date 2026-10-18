@@ -6,11 +6,11 @@ import { envelope, getNoiseBuffer } from "./synth";
  * crossfades the music out, so two soundtracks never overlap). Every pitched note
  * stays in C major pentatonic (the scale of the music's bells and drones), and every layer is a texture, never a
  * melody: slow chime chords (L1), a warm analog pulse (L2), a sparse plucked arpeggio (L3), typewriter ticks and
- * paper rustle (L4), wind and a distant radio beacon (RF). Same lookahead scheduler as `music.ts`.
+ * paper rustle (L4), wind and a distant radio beacon (RF), a low machine hum (B1). Same lookahead scheduler as `music.ts`.
  */
 
-export type AmbienceFloor = "L1" | "L2" | "L3" | "L4" | "RF";
-export const AMBIENCE_FLOORS: readonly AmbienceFloor[] = ["L1", "L2", "L3", "L4", "RF"];
+export type AmbienceFloor = "L1" | "L2" | "L3" | "L4" | "RF" | "B1";
+export const AMBIENCE_FLOORS: readonly AmbienceFloor[] = ["L1", "L2", "L3", "L4", "RF", "B1"];
 
 /** Seconds of the linear crossfade between two floor layers (and of the fade in and out). */
 export const AMBIENCE_CROSSFADE = 2;
@@ -603,12 +603,83 @@ function createRoofLayer(ctx: BaseAudioContext, destination: AudioNode, random: 
   return kit.run([gusts, beacon]);
 }
 
+/* B1 Engine Room: a low machine hum. Two detuned sawtooth pairs on C2 and G2 under a 180 Hz lowpass (a slow beat),
+an air handling bed of band-passed noise, and a soft relay tick on G5 every 3 to 6 s. */
+
+/** C2 and G2: low, inside the pentatonic scale. */
+export const B1_HUM_MIDI = [36, 43] as const;
+/**
+ * The floor layers' tonal level, loudness matched at unity under `AMBIENCE_LEVEL`: the peak of L3's square plucks
+ * (L2's sawtooth pulse peaks at 0.047). The hum matched it at first.
+ */
+export const FLOOR_TONE_PEAK = L3_PEAK;
+/** About 6 dB under the floor layers (owner, 2026-10-18): half the amplitude, so the hum stays subtle. */
+export const B1_UNDER_FLOORS = 0.5;
+export const B1_HUM_LEVEL = FLOOR_TONE_PEAK * B1_UNDER_FLOORS;
+/** The air bed and the relay tick keep their balance to the hum (0.6 and 0.5 of it), so the whole layer drops. */
+const B1_AIR_LEVEL = B1_HUM_LEVEL * 0.6;
+const B1_TICK_PEAK = B1_HUM_LEVEL * 0.5;
+const B1_TICK_HZ = midiToHz(79);
+
+function createEngineLayer(ctx: BaseAudioContext, destination: AudioNode, random: () => number = Math.random): AmbienceLayer {
+  const kit = createKit(ctx, destination, random);
+
+  const low = lowpass(kit, 180, 0.9);
+  const hum = ctx.createGain();
+  hum.gain.setValueAtTime(B1_HUM_LEVEL, kit.t);
+  low.connect(hum).connect(kit.output);
+  kit.fixed(low, hum);
+  for (const midi of B1_HUM_MIDI) {
+    for (const cents of [-6, 6]) {
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(midiToHz(midi), kit.t);
+      osc.detune.setValueAtTime(cents, kit.t);
+      osc.connect(low);
+      osc.start(kit.t);
+      kit.loop(osc);
+    }
+  }
+
+  const air = noiseLoop(kit);
+  const band = ctx.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.setValueAtTime(320, kit.t);
+  band.Q.setValueAtTime(0.8, kit.t);
+  const airGain = ctx.createGain();
+  airGain.gain.setValueAtTime(B1_AIR_LEVEL, kit.t);
+  air.connect(band).connect(airGain).connect(kit.output);
+  kit.fixed(band, airGain);
+
+  const relay: Track = {
+    delay: kit.range(1, 3),
+    step(when) {
+      const end = when + 0.09;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(B1_TICK_HZ, when);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, when);
+      gain.gain.linearRampToValueAtTime(B1_TICK_PEAK, when + 0.005);
+      gain.gain.exponentialRampToValueAtTime(SILENT, end);
+      osc.connect(gain).connect(kit.output);
+      osc.start(when);
+      osc.stop(end + 0.02);
+      kit.note([osc], [osc, gain]);
+      return kit.range(3, 6);
+    },
+  };
+
+  return kit.run([relay]);
+}
+
 export const AMBIENCE_LAYERS: Record<AmbienceFloor, AmbienceLayerFactory> = {
   L1: createLobbyLayer,
   L2: createCareerLayer,
   L3: createLabsLayer,
   L4: createWritingLayer,
   RF: createRoofLayer,
+  B1: createEngineLayer,
 };
 
 export interface AmbienceVoice {

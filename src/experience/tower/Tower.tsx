@@ -3,13 +3,14 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { FloorId } from "@/content/schema";
 import { useHQStore } from "@/store/useHQStore";
-import { COLORS, FLOOR_IDS, floorY, SHAFT } from "../config";
+import { COLORS, floorY, SHAFT, towerFloors } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import type { LabsLabels } from "../floors/Labs";
 import type { LibraryLabels } from "../floors/Library";
+import type { EngineLabels } from "../floors/EngineRoom";
 import { Lobby, type LobbyLabels } from "../floors/Lobby";
 import type { RoofLabels } from "../floors/Roof";
-import { labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
+import { engineFloor, labsFloor, libraryFloor, roofFloor, useFloorChunks } from "../floors/lazyFloors";
 import type { ExperienceData, FloorLayout, GpuTier } from "../types";
 import { useWarmingFloor } from "../scene/warmState";
 import { DrawnWork } from "../scene/DrawnWorkHook";
@@ -29,6 +30,8 @@ export interface TowerLabels {
   career: CareerLabels;
   library: LibraryLabels;
   roof: RoofLabels;
+  /** B1 Engine Room floor words (`engine`). */
+  engine: EngineLabels;
   /** "Back to elevator": the sign over Express Return pads (`hud.interact.returnPad`). */
   returnPad: string;
 }
@@ -94,17 +97,21 @@ export function Tower({
   const exterior = useHQStore((s) => s.phase === "boot" || s.phase === "intro");
   const neighbours = useNeighboursReady();
   const warming = useWarmingFloor();
-  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0, warming);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
+  // B1 (the Engine Room) exists in the tower only once unlocked: locked sessions mount, draw and prefetch nothing of it.
+  const floors = towerFloors(b1Unlocked);
+  const near = nearFloors(floor, target, exterior, neighbours ? 1 : 0, warming, floors);
   // The floor warmed during boot stays out of the shaft: its doors and indicator would show in the exterior.
-  const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0);
+  const shaftNear = nearFloors(floor, target, exterior, neighbours ? 1 : 0, null, floors);
   const frame = useMemo(() => towerFrame(layouts), [layouts]);
-  // L3, L4 and RF load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
+  // L3, L4, RF and B1 load on demand (floors/floorChunks.ts) and mount once their chunk is here, in an
   // ordinary update like L1 and L2 (`floorMount`); until then the floor's own slab (FloorLevel) shows.
   // Rides hold for the chunk (elevator.ts).
   useFloorChunks(near);
   const Labs = labsFloor();
   const Library = libraryFloor();
   const Roof = roofFloor();
+  const EngineRoom = engineFloor();
   /** The floor's component, or null for a lazy floor whose chunk is still loading (the slab shows). */
   const floorContent = (id: FloorId) => {
     switch (id) {
@@ -118,12 +125,14 @@ export function Tower({
         return Library && <Library data={data} labels={labels.library} tier={tier} />;
       case "RF":
         return Roof && <Roof data={data} labels={labels.roof} tier={tier} />;
+      case "B1":
+        return EngineRoom && <EngineRoom data={data} labels={labels.engine} tier={tier} />;
     }
   };
 
   return (
     <group name="tower">
-      {FLOOR_IDS.map((id) => {
+      {floors.map((id) => {
         const isNear = near.includes(id);
         const content = isNear ? floorContent(id) : null;
         return (
@@ -138,7 +147,7 @@ export function Tower({
           </FloorLevel>
         );
       })}
-      <ElevatorShaft layouts={layouts} near={shaftNear} />
+      <ElevatorShaft layouts={layouts} near={shaftNear} floors={floors} />
       <DrawnWork />
       <RideCull />
       <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />

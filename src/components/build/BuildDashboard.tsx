@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { getBuildFacts } from "@/content/build-story";
-import { FloorIdSchema, type Locale } from "@/content/schema";
+import type { Locale } from "@/content/schema";
 import { dashboardTiles } from "@/lib/build-page";
+import { PUBLIC_FLOORS } from "@/lib/floors";
 import { formatDate, intlLocale } from "@/lib/format";
 import { BuildVisits } from "./BuildVisits";
 import { TILE, TILE_LABEL, TILE_VALUE } from "./tile";
@@ -13,7 +14,7 @@ import { TILE, TILE_LABEL, TILE_VALUE } from "./tile";
 export async function DashboardBody({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "build" });
   const number = new Intl.NumberFormat(intlLocale(locale));
-  const tiles = dashboardTiles(getBuildFacts(), FloorIdSchema.options.length);
+  const tiles = dashboardTiles(getBuildFacts(), PUBLIC_FLOORS.length);
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {tiles.map((tile) => {

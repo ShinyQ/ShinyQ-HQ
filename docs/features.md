@@ -14,6 +14,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 - [L3 Project Roads](#l3-project-roads)
 - [L4 Newsroom](#l4-newsroom)
 - [RF Roof deck](#rf-roof-deck)
+- [B1 Engine Room](#b1-engine-room)
 - [Routes](#routes)
 - [Search and link previews](#search-and-link-previews)
 - [Ask the HQ (AI Q&A)](#ask-the-hq-ai-qa)
@@ -59,6 +60,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Ask memory | 2026-10-17: Ask remembers the last 3 turns of a conversation (signed by the server, so a visitor cannot forge an answer), a short follow-up like "What stack did it use?" is understood from the previous question, and a **New chat** button starts over | Done |
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over | Done |
+| B1 Engine Room floor | Round 9 (PR 2 of 3): the floor, stations and drawers, reachable only with the dev and test flag until PR 3 | In review |
 
 ## Controls and first visit
 
@@ -110,7 +112,7 @@ Open `/en` and press **Boot rover**.
 ### Sound
 
 - While sound is on, the tower plays procedural "Deep Space Ambient" background music (drones, random pentatonic bells, a long reverb), quiet enough to keep the effects clear; muting or leaving the 3D view stops it.
-- Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
+- Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon, and a low machine hum with soft relay ticks in the unlockable B1 Engine Room) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
 
 ### Motion setting
 
@@ -273,6 +275,18 @@ Route `/en/contact`. A walkable deck: a road from the elevator into a round plaz
 - **CV kiosk** (east) and an **about board** with location and timezone (south-west).
 - **Courier drone**: patrols the mast and flies over the comms station or the CV kiosk while that room is open.
 
+## B1 Engine Room
+
+The basement under the Lobby: a workshop where each station explains one part of how this site was built. Its Classic counterpart is `/{locale}/build`; B1 has no route of its own (the URL stays `/{locale}`).
+
+- **Not yet for visitors.** For now the floor is reachable only with the dev and test flag `?unlock=b1` (in production `?unlock=b1&debug=1`); without it nothing of B1 shows, loads or rides.
+- **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
+- **Stations 1 to 5** (blueprint, build timeline, agent workbench, CI and gates, live dashboard) each open the Glass Drawer with the diagram, rounds, gate list, plan excerpt or numbers from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section. Bays 6 and 7 stay dark with a "Coming soon" plate.
+- **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers.
+- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
+- The Blueprint drawer draws the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
+- Budgets: its own 4.8 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
+
 ## Routes
 
 All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the remembered or browser language. The [README](../README.md#routes) has the overview table.
@@ -290,7 +304,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
   - The full certifications list.
   - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board).
-- `/{locale}/build`: How this site was built (Classic site only, no 3D counterpart yet): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
+- `/{locale}/build`: How this site was built (its 3D counterpart is the B1 Engine Room, not yet open to visitors): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 4 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
@@ -413,13 +427,13 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 
 | Gate | Budget | Where |
 |---|---|---|
-| Scene draw calls per floor | under 150 (L1 at most 125) | `e2e/budgets.ts` |
+| Scene draw calls per floor | under 150 (L1 at most 125, RF 79, B1 100) | `e2e/budgets.ts` |
 | Post-processing passes | at most 20 | `e2e/budgets.ts` |
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
 | JS after the 3D gate (main path, `?prefetch=off`) | under 450 KB gzip per tier | `bun run e2e:perf` |
-| Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB gzip | `bun run e2e:perf` |
+| Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.
 - The peaks of the intro, every elevator ride and hover count too. During a ride, meshes hidden under a solid slab are skipped (`src/experience/tower/rideCull.ts`).

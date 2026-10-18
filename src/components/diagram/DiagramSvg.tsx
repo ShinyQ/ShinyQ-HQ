@@ -1,5 +1,5 @@
-import type { DiagramKind, DiagramLayout, LaidEdge, Point } from "./layout";
-import { LINE_GAP, PAD, lineHeight } from "./layout";
+import type { DiagramKind, DrawnDiagram, LaidEdge, Point } from "./layout";
+import { LINE_GAP, PAD, lineHeight } from "./metrics";
 
 /** Site tokens (globals.css), written as SVG attributes so the figure adds no CSS. */
 const INK = "#f4f4f5";
@@ -82,7 +82,7 @@ function Edge({ edge, size }: { edge: LaidEdge; size: number }) {
 }
 
 /** One laid-out diagram as inline SVG (decorative to assistive tech: the figure carries the summary). */
-export function DiagramSvg({ layout, className }: { layout: DiagramLayout; className?: string }) {
+export function DiagramSvg({ layout, className }: { layout: DrawnDiagram; className?: string }) {
   const p = layout.preset;
   return (
     <svg
@@ -96,7 +96,7 @@ export function DiagramSvg({ layout, className }: { layout: DiagramLayout; class
       {layout.groups.map((g) => (
         <g key={g.label}>
           <rect x={r1(g.x)} y={r1(g.y)} width={r1(g.w)} height={r1(g.h)} rx={14} fill="none" stroke="#ffffff" strokeOpacity={0.16} strokeDasharray="2 4" />
-          <text x={r1(g.x + 10)} y={r1(g.y - 6)} fill={INK_2} fontSize={p.kindSize} className="font-mono" letterSpacing="0.06em">
+          <text x={r1(g.labelX)} y={r1(g.y - 6)} fill={INK_2} fontSize={p.kindSize} className="font-mono" letterSpacing="0.06em">
             {g.label.toUpperCase()}
           </text>
         </g>

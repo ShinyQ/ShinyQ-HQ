@@ -638,6 +638,14 @@
       "console": "Time console"
     }
   },
+  "engine": {
+    "floor": "Engine Room",
+    "label": "Build",
+    "desc": "How this site was built: five stations",
+    "title": "Engine Room",
+    "subtitle": "How this site was built",
+    "soon": "Coming soon"
+  },
   "drawer": {
     "label": "Room details",
     "close": "Close room",
