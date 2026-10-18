@@ -5,6 +5,8 @@ export interface UpdateContext {
   tuning: RoverTuning;
   autopilotSpeed: number;
   world: RoverWorld;
+  /** Test-only animation speed (`animationSpeed`): multiplies the accepted frame time; the sub-steps still cap each step. */
+  speed?: number;
 }
 
 export interface UpdateResult {
@@ -62,7 +64,7 @@ export class RoverController {
 
   /** Advances one frame in fixed sub-steps of at most MAX_PHYSICS_STEP. */
   step(frameDt: number, manual: Vec2 | null, ctx: UpdateContext): UpdateResult {
-    const dt = Math.min(frameDt, MAX_FRAME_DT);
+    const dt = Math.min(frameDt, MAX_FRAME_DT) * (ctx.speed ?? 1);
     const top = Math.max(ctx.tuning.maxSpeed, this.autopilot ? ctx.autopilotSpeed : 0, this.pose.speed);
     const steps = physicsSteps(dt, top);
     const result: UpdateResult = { arrived: false, blocked: false };

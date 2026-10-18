@@ -370,10 +370,11 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
 
 /**
  * Advances the first-person blend (toward the chosen view, or toward third person while `hold`; a cut
- * under reduced motion), forgets an idle zoom push, and advances easing (reduced motion jumps).
+ * under reduced motion), forgets an idle zoom push, and advances easing (reduced motion jumps). The push
+ * idle runs on `inputDt` (real frame time when the test-only animation speed scales `dt`).
  */
-export function stepOrbit(s: OrbitState, dt: number, reduced: boolean, hold = false): void {
-  s.pushIdle += dt;
+export function stepOrbit(s: OrbitState, dt: number, reduced: boolean, hold = false, inputDt = dt): void {
+  s.pushIdle += inputDt;
   if (s.pushIdle > FIRST_PERSON.pushIdle) s.push = 1;
   const goal = s.firstPerson && !hold ? 1 : 0;
   if (s.blend !== goal) {

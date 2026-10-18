@@ -74,6 +74,8 @@ export interface RideOptions {
   hold?: boolean;
   /** Most ride time this frame may add (`rideCap`); defaults to RIDE_CAP.min. */
   cap?: number;
+  /** Test-only animation speed (`animationSpeed`): multiplies the capped stage time, never the closed-door waits. */
+  speed?: number;
 }
 
 /**
@@ -92,16 +94,16 @@ function enterMoving(ride: Ride, frameDt: number, ready: boolean, hold: boolean,
 /**
  * Advances the ride by one frame of `frameDt` seconds. Returns null when the rover has left the car on
  * the new floor. `toDoor` runs on the frame time (the rover drives in real time); every other stage
- * adds at most `cap`. The car only starts moving once `ready` (or after PREPARE_TIMEOUT, and never while `hold`): at the end of
+ * adds at most `cap` (times the test-only `speed`). The car only starts moving once `ready` (or after PREPARE_TIMEOUT, and never while `hold`): at the end of
  * `closing`, or at the door under reduced motion.
  */
-export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, ready = true, hold = false, cap = RIDE_CAP.min }: RideOptions): Ride | null {
+export function advanceRide(ride: Ride, frameDt: number, { atDoor, reduced, ready = true, hold = false, cap = RIDE_CAP.min, speed = 1 }: RideOptions): Ride | null {
   if (ride.stage === "toDoor") {
     if (!atDoor) return { ...ride, t: ride.t + frameDt };
     return reduced ? enterMoving(ride, frameDt, ready, hold, ride) : { ...ride, stage: "boarding", t: 0 };
   }
   const duration = stageDuration(ride, reduced);
-  const t = ride.t + Math.min(frameDt, cap);
+  const t = ride.t + Math.min(frameDt, cap) * speed;
   if (t < duration) return { ...ride, t };
   const next = reduced && ride.stage === "moving" ? null : NEXT[ride.stage];
   if (next === "moving") return enterMoving(ride, frameDt, ready, hold, { ...ride, t: duration });
