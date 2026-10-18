@@ -36,10 +36,16 @@ export function cleanTitle(text: string, blocklist: readonly string[], max = OFF
   return line;
 }
 
+/** True when a branch name holds a blocklisted term, also with "/", "-" and "_" read as word breaks. */
+function branchBlocked(branch: string, blocklist: readonly string[]): boolean {
+  return findBlockedTerms(branch, blocklist).length > 0 || findBlockedTerms(branch.replace(/[/_-]/g, " "), blocklist).length > 0;
+}
+
 /** Server re-check of a parsed beat: repository data only for allowlisted names, titles through the blocklist. */
 export function sanitizeBeat(beat: OfficeBeatV1, allow: readonly string[], blocklist: readonly string[]): OfficeBeatV1 {
   const base: OfficeBeatV1 = { v: 1, agent: beat.agent, session: beat.session, state: beat.state, activity: beat.activity, ts: beat.ts };
   if (!beat.repo || !repoAllowed(beat.repo, allow)) return base;
+  if (beat.branch && branchBlocked(beat.branch, blocklist)) return { ...base, repo: beat.repo };
   const title = beat.title ? cleanTitle(beat.title, blocklist) : null;
   return { ...base, repo: beat.repo, ...(beat.branch ? { branch: beat.branch } : {}), ...(beat.title ? { title: title ?? undefined } : {}) };
 }
@@ -86,8 +92,8 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const run = obj(body.workflow_run);
       const id = int(run?.id);
       const branch = text(run?.head_branch);
-      if (!run || id === null || !BRANCH.test(branch)) break;
-      changes.push({ type: "run", id, branch, title: title(`${text(run.name)} · ${branch}`, `Workflow run · ${branch}`), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
+      if (!run || id === null || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
+      changes.push({ type: "run", id, branch, title: title(`${text(run.name)} · ${branch}`, "Workflow run"), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
       break;
     }
     case "workflow_job": {
@@ -103,7 +109,7 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const number = int(pr?.number);
       const branch = text(obj(pr?.head)?.ref);
       const action = text(body.action);
-      if (!pr || number === null || !BRANCH.test(branch)) break;
+      if (!pr || number === null || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
       const kind = action === "opened" || action === "reopened" || action === "ready_for_review" ? "opened" : action === "closed" && pr.merged === true ? "merged" : null;
       if (kind) changes.push({ type: "pr", number, branch, title: title(text(pr.title), `Pull request #${number}`), url: url(pr.html_url), action: kind });
       break;

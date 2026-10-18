@@ -77,4 +77,15 @@ describe("parseGithubEvent", () => {
     const pr = { action: "opened", number: 8, repository: repository(), pull_request: { number: 8, merged: false, title: "Acme Bank fix", html_url: "javascript:alert(1)", head: { ref: "fix/y" } } };
     expect(parseGithubEvent("pull_request", pr, ALLOW, BLOCK)?.changes[0]).toMatchObject({ title: "Pull request #8", url: "https://github.com/ShinyQ/ShinyQ-HQ" });
   });
+
+  it("drops runs, pull requests and beat branches whose branch name holds a blocked term", () => {
+    const run = { repository: repository(), workflow_run: { id: 42, name: "CI", head_branch: "feat/acme_bank-login", status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } };
+    expect(parseGithubEvent("workflow_run", run, ALLOW, BLOCK)?.changes).toEqual([]);
+    const pr = { action: "opened", number: 9, repository: repository(), pull_request: { number: 9, merged: false, title: "Login fix", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/9", head: { ref: "fix/acme-bank" } } };
+    expect(parseGithubEvent("pull_request", pr, ALLOW, BLOCK)?.changes).toEqual([]);
+    const blockedRun = { repository: repository(), workflow_run: { ...run.workflow_run, name: "Acme Bank CI", head_branch: "feat/x" } };
+    expect(parseGithubEvent("workflow_run", blockedRun, ALLOW, BLOCK)?.changes[0]).toMatchObject({ branch: "feat/x", title: "Workflow run" });
+    const beat: OfficeBeatV1 = { v: 1, agent: "claude", session: "b".repeat(64), state: "working", activity: "editing", repo: "ShinyQ/ShinyQ-HQ", branch: "fix/acme-bank", title: "Login fix", ts: 1 };
+    expect(sanitizeBeat(beat, ALLOW, BLOCK)).toEqual({ v: 1, agent: "claude", session: "b".repeat(64), state: "working", activity: "editing", repo: "ShinyQ/ShinyQ-HQ", ts: 1 });
+  });
 });
