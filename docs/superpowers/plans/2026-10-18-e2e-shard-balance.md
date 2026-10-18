@@ -1,6 +1,6 @@
 # E2E Shard Balance Implementation Plan
 
-Status: in review.
+Status: shipped in #228, 2026-10-19.
 
 **Goal:** Owner request: "balance the e2e shards (duration-sized greedy packing with the refreshed durations.json, or split the longest specs) so complement and full runs finish evenly. Fold that into PR 2 or a small separate PR." Target: under about 1.5 min between the fastest and slowest shard.
 
@@ -46,3 +46,15 @@ Conclusion: a static plan cannot see runner speed, so the spread stays about 3 m
 
 - [x] `docs/agents/performance.md`, `docs/agents/folder-layout.md`, `docs/decisions/2026-10-18-ci-e2e-shard-balance-runner-speed.md`.
 - [x] `bun run verify:quick`; then a full CI run (`full-ci` label) and a complement dispatch, reporting each shard's job time, factor and runner.
+
+## Results
+
+| Run | E2E shard jobs | Spread |
+|---|---|---|
+| Before: main 39116733269 (full) | 9.3 to 12.0 min | 2.7 min |
+| Before: complement 39125181678 | 6.6 to 10.8 min | 4.2 min |
+| After: full 39154907061 (`full-ci` on #228) | 7.5 to 9.9 min | 2.4 min |
+| After: complement 39157121496 (`complement_pr=229`) | 6.5 to 10.0 min | 3.5 min |
+
+- The plans are even (469 to 472 s planned wall per e2e shard); the residual spread is the runners. The speed factor follows the CPU model in the new fingerprint: AMD EPYC 7763 1.03 to 1.11, Intel Xeon Platinum 8573C 0.95 to 1.0, Intel Xeon 6973P-C 0.73 to 0.80, AMD EPYC 9V45 0.58 to 0.72.
+- Perf lane on the complement dispatch (4 shards): the `memory-full` shard (10.6 min) is the floor; the others finish at 5.5 to 6.9 min.
