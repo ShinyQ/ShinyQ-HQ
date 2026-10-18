@@ -3,8 +3,8 @@
   "published": "2026-10-17",
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
-    "en": "ShinyQ HQ was built in the open, one pull request at a time, by AI coding agents working from written specs and plans while Kurniadi reviewed and merged the work. This page follows the build from the blueprint to the gates that keep it honest.",
-    "id": "ShinyQ HQ dibangun secara terbuka, satu pull request demi satu, oleh AI coding agent yang bekerja dari spec dan rencana tertulis, sementara Kurniadi me-review dan me-merge pekerjaannya. Halaman ini mengikuti pembangunannya dari cetak biru sampai gate yang menjaganya tetap jujur."
+    "en": "ShinyQ HQ was built in the open by AI coding agents working from written specs and plans. Kurniadi reviewed the changes and approved each merge. This page follows the build from its blueprint to the checks required before release.",
+    "id": "ShinyQ HQ dibangun secara terbuka melalui serangkaian pull request. AI coding agent bekerja berdasarkan spec dan rencana tertulis; Kurniadi meninjau perubahan dan menyetujui setiap merge. Halaman ini menjelaskan arsitektur, proses pembangunan, dan pemeriksaan sebelum rilis."
   },
   "stations": {
     "blueprint": {
@@ -18,14 +18,14 @@
           {
             "id": "owner",
             "label": "Kurniadi",
-            "sublabel": { "en": "Writes specs, reviews, merges", "id": "Menulis spec, me-review, me-merge" },
+            "sublabel": { "en": "Writes specs, reviews, approves merges", "id": "Menulis spec, meninjau, menyetujui merge" },
             "layer": 0,
             "row": 0,
             "kind": "human"
           },
           {
             "id": "agents",
-            "label": "AI coding agents",
+            "label": { "en": "AI coding agents", "id": "Agent penulis kode" },
             "sublabel": { "en": "GitHub Copilot and Claude Code", "id": "GitHub Copilot dan Claude Code" },
             "layer": 0,
             "row": 1,
@@ -41,7 +41,7 @@
           },
           {
             "id": "visitor",
-            "label": "Visitor browser",
+            "label": { "en": "Visitor browser", "id": "Browser pengunjung" },
             "sublabel": { "en": "Classic site or the 3D tower", "id": "Situs klasik atau menara 3D" },
             "layer": 1,
             "row": 3,
@@ -88,7 +88,7 @@
           },
           {
             "id": "kv",
-            "label": "KV and Analytics Engine",
+            "label": { "en": "KV and Analytics Engine", "id": "KV dan Analytics Engine" },
             "sublabel": { "en": "Visit counts and beacons", "id": "Hitungan kunjungan dan beacon" },
             "layer": 3,
             "row": 4,
@@ -97,11 +97,11 @@
           }
         ],
         "edges": [
-          { "from": "owner", "to": "github", "label": "Specs, review, merge" },
+          { "from": "owner", "to": "github", "label": { "en": "Specs, review, merge", "id": "Spec, tinjauan, merge" } },
           { "from": "agents", "to": "github", "label": "Pull requests" },
-          { "from": "github", "to": "pages", "label": "After green CI" },
+          { "from": "github", "to": "pages", "label": { "en": "After green CI", "id": "Setelah CI lolos" } },
           { "from": "visitor", "to": "pages", "label": "HTML, JS, 3D" },
-          { "from": "visitor", "to": "functions", "label": "Ask, beacons, stats" },
+          { "from": "visitor", "to": "functions", "label": { "en": "Ask, beacons, stats", "id": "Ask, beacon, statistik" } },
           { "from": "functions", "to": "workers-ai" },
           { "from": "functions", "to": "kv" },
           { "from": "cron", "to": "kv", "async": true }
@@ -109,24 +109,24 @@
       },
       "steps": [
         {
-          "en": "Every page is pre-rendered as static HTML, so the Classic site works without WebGL or a server.",
-          "id": "Setiap halaman di-render lebih dulu sebagai HTML statis, sehingga situs klasik berjalan tanpa WebGL atau server."
+          "en": "Every page is pre-rendered as static HTML. The Classic site needs neither WebGL nor a Next.js server runtime; Cloudflare Pages hosts the files.",
+          "id": "Setiap halaman disiapkan sebagai HTML statis dan dihosting di Cloudflare Pages. Situs klasik tidak memerlukan WebGL atau server runtime Next.js."
         },
         {
           "en": "The 3D tower mounts on the client on top of those pages and never replaces their content.",
           "id": "Menara 3D dipasang di sisi klien di atas halaman-halaman itu dan tidak pernah menggantikan isinya."
         },
         {
-          "en": "Pages Functions serve the Ask the HQ assistant and the small performance and visit beacons.",
-          "id": "Pages Functions melayani asisten Ask the HQ dan beacon kecil untuk performa dan kunjungan."
+          "en": "Pages Functions handle the Ask Rover Assistant, performance and visit beacons, and public stats requests.",
+          "id": "Pages Functions menangani Asisten Rover, beacon performa dan kunjungan, serta permintaan statistik publik."
         },
         {
-          "en": "A Cron Worker aggregates public visit stats into KV on a schedule, so the site never exposes raw logs.",
-          "id": "Sebuah Cron Worker merangkum statistik kunjungan publik ke KV sesuai jadwal, sehingga situs tidak pernah menampilkan log mentah."
+          "en": "A Cron Worker aggregates visit statistics into KV every four hours. The public stats show counts and topics, not raw logs or visitor-entered questions.",
+          "id": "Cron Worker merangkum statistik kunjungan ke KV setiap empat jam. Statistik publik menampilkan jumlah dan topik, bukan log mentah atau pertanyaan yang diketik pengunjung."
         },
         {
-          "en": "Production deploys only from a manual workflow that reuses a complete green CI run.",
-          "id": "Deploy produksi hanya berasal dari workflow manual yang memakai ulang satu run CI hijau yang lengkap."
+          "en": "A merge to main triggers the deploy workflow. It can reuse a green pull request on the same tree; otherwise it waits for complete CI on main. A red main CI run rolls production back to the last good deployment.",
+          "id": "Merge ke main memicu workflow deploy. Hasil pull request yang lolos pada tree yang sama dapat dipakai ulang; jika tidak, workflow menunggu CI lengkap di main. CI main yang gagal memicu rollback ke deployment produksi terakhir yang baik."
         }
       ]
     },
@@ -134,7 +134,7 @@
       "title": { "en": "The Build Timeline", "id": "Lini Masa Pembangunan" },
       "summary": {
         "en": "Rounds of merged pull requests, from the first foundation to this page. The counts and dates come from the repository history.",
-        "id": "Putaran pull request yang di-merge, dari fondasi pertama sampai halaman ini. Jumlah dan tanggalnya berasal dari riwayat repositori."
+        "id": "Rangkaian pull request yang sudah digabungkan, dari fondasi pertama hingga halaman ini. Jumlah dan tanggalnya diambil dari riwayat repositori."
       },
       "rounds": [
         {
@@ -153,7 +153,7 @@
           "title": { "en": "Game-First Load, Classic Site and Ask the HQ", "id": "Pemuatan Game-First, Situs Klasik, dan Ask the HQ" },
           "summary": {
             "en": "The Classic site was revamped, the 3D boot cover and CI fast pipeline arrived, client work moved to sector labels and the Ask the HQ assistant launched, with the first walkable floors, the CV viewer and a performance pass.",
-            "id": "Situs klasik dirombak, boot cover 3D dan pipeline CI cepat hadir, pekerjaan klien dipindah ke label sektor, dan asisten Ask the HQ diluncurkan, bersama lantai pertama yang bisa dijelajahi, penampil CV, dan perbaikan performa."
+            "id": "Situs klasik dirombak, layar pemuatan 3D dan pipeline CI cepat ditambahkan, pekerjaan klien diberi label sektor, dan asisten Ask the HQ diluncurkan. Lantai yang bisa dijelajahi, penampil CV, dan perbaikan performa juga hadir pada tahap ini."
           },
           "prs": { "from": 16, "to": 51 },
           "shots": {
@@ -187,7 +187,7 @@
           "title": { "en": "Title Case, Call Pads and the Writing Floor", "id": "Title Case, Call Pad, dan Lantai Tulisan" },
           "summary": {
             "en": "Titles moved to Title Case with one project order, elevator call pads and a new landing hero arrived, and the Writing floor and roof deck were built.",
-            "id": "Judul beralih ke Title Case dengan satu urutan proyek, call pad elevator dan hero landing baru hadir, dan lantai Tulisan serta roof deck dibangun."
+            "id": "Judul diseragamkan ke Title Case dan daftar proyek memakai satu urutan. Area panggil lift serta hero beranda baru ditambahkan, lalu lantai Tulisan dan area atap dibangun."
           },
           "prs": { "from": 52, "to": 58 },
           "shots": {
@@ -220,18 +220,18 @@
           "number": 4,
           "title": { "en": "Point-and-Go, Onboarding and the Highlights Hall", "id": "Point-and-Go, Onboarding, dan Aula Sorotan" },
           "summary": {
-            "en": "Perspectives, live links and ticketing projects joined the content, point-and-go movement, paper PDFs, the Rover dialog, onboarding and the Highlights Hall were added.",
-            "id": "Perspektif, tautan langsung, dan proyek ticketing bergabung ke konten, lalu gerakan point-and-go, PDF makalah, dialog Rover, onboarding, dan Aula Sorotan ditambahkan."
+            "en": "Perspectives, live-site links and ticketing projects were added to the content, alongside point-and-go movement, paper PDFs, Rover dialog, onboarding and the Highlights Hall.",
+            "id": "Konten diperluas dengan perspektif, tautan situs aktif, dan proyek ticketing. Gerakan point-and-go, PDF makalah, dialog Rover, panduan awal, dan Aula Sorotan juga ditambahkan."
           },
           "prs": { "from": 59, "to": 65 }
         },
         {
           "id": "r5",
           "number": 5,
-          "title": { "en": "Performance, Camera and Spectacle", "id": "Performa, Kamera, dan Tontonan" },
+          "title": { "en": "Performance, Camera and Spectacle", "id": "Performa, Kamera, dan Efek Visual" },
           "summary": {
             "en": "Share cards and SEO landed, the elevator and camera became smoother and freer, a GPU, CPU and memory pass set the performance gates, and the Motion setting and floating signs arrived.",
-            "id": "Kartu share dan SEO hadir, elevator dan kamera menjadi lebih mulus dan bebas, perbaikan GPU, CPU, dan memori menetapkan gate performa, lalu pengaturan Motion dan papan melayang tiba."
+            "id": "Kartu berbagi dan SEO ditambahkan; lift dan kamera dibuat lebih mulus dan leluasa. Pengujian GPU, CPU, dan memori menjadi dasar gate performa, disusul pengaturan gerakan serta papan melayang."
           },
           "prs": { "from": 66, "to": 88 }
         },
@@ -285,7 +285,7 @@
           "title": { "en": "Diagrams, Music, Day and Night", "id": "Diagram, Musik, Siang dan Malam" },
           "summary": {
             "en": "Architecture diagrams, ambient music, shareable Classic links and smart CI were added, with a day and night sky, a Corners HUD with a minimap and L3-style arrivals on every floor.",
-            "id": "Diagram arsitektur, musik ambient, tautan Situs klasik yang bisa dibagikan, dan smart CI ditambahkan, bersama langit siang dan malam, HUD Corners dengan minimap, dan kedatangan ala L3 di setiap lantai."
+            "id": "Diagram arsitektur, musik latar, tautan Situs klasik yang bisa dibagikan, dan smart CI ditambahkan. Tahap ini juga menghadirkan siklus langit siang-malam, HUD Corners dengan minimap, serta gerakan kamera saat tiba yang konsisten di setiap lantai."
           },
           "prs": { "from": 172, "to": 186 }
         },
@@ -295,7 +295,7 @@
           "title": { "en": "Camera Polish and the Engine Room", "id": "Poles Kamera dan Ruang Mesin" },
           "summary": {
             "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that tells it.",
-            "id": "Perbaikan kamera dan fly-in pembuka datang lebih dulu, lalu kisah pembangunan ini dan lantai rahasia B1 Engine Room yang menceritakannya."
+            "id": "Perbaikan kamera dan gerakan kamera pembuka dikerjakan lebih dulu, lalu kisah pembangunan ini disajikan juga di lantai rahasia B1 Ruang Mesin."
           },
           "prs": { "from": 187, "to": null }
         }
@@ -306,49 +306,49 @@
       "title": { "en": "Working with AI Agents", "id": "Bekerja dengan AI Agent" },
       "summary": {
         "en": "Agents write the code; the human owns the decisions. Every change followed the same loop, with the plan and spec committed to the repository.",
-        "id": "Agent menulis kode; manusia memegang keputusan. Setiap perubahan mengikuti loop yang sama, dengan plan dan spec tersimpan di repositori."
+        "id": "Agent menulis kode; manusia bertanggung jawab atas keputusan. Setiap perubahan mengikuti alur yang sama, dengan rencana dan spec tersimpan di repositori."
       },
       "steps": [
         {
           "title": { "en": "Spec", "id": "Spec" },
           "text": {
             "en": "A brainstorm with the agent ends in a written design spec that states what to build and why, with the owner's content decisions as the final word.",
-            "id": "Brainstorm bersama agent berakhir pada design spec tertulis yang menyatakan apa yang dibangun dan mengapa, dengan keputusan konten pemilik sebagai penentu akhir."
+            "id": "Diskusi bersama agent menghasilkan spec desain tertulis: apa yang akan dibangun dan alasannya. Keputusan konten pemilik tetap menjadi acuan akhir."
           }
         },
         {
           "title": { "en": "Plan", "id": "Rencana" },
           "text": {
             "en": "The spec becomes a step-by-step plan in the repository: small tasks, exact files, tests written first and the commands that prove each step.",
-            "id": "Spec menjadi rencana langkah demi langkah di repositori: task kecil, file yang tepat, test ditulis lebih dulu, dan perintah yang membuktikan setiap langkah."
+            "id": "Spec dijabarkan menjadi rencana di repositori: tugas kecil, file yang akan diubah, pengujian yang ditulis lebih dulu, serta perintah untuk memverifikasi setiap langkah."
           }
         },
         {
-          "title": { "en": "Agent Tasks", "id": "Task Agent" },
+          "title": { "en": "Agent Tasks", "id": "Tugas Agent" },
           "text": {
             "en": "The superpowers workflow runs the plan as subagent-driven tasks: one fresh agent per task, each returning a report with test evidence.",
-            "id": "Workflow superpowers menjalankan rencana sebagai task berbasis subagent: satu agent baru per task, masing-masing mengembalikan laporan beserta bukti test."
+            "id": "Workflow superpowers membagi rencana menjadi tugas subagent. Setiap tugas ditangani agent baru yang mengembalikan laporan beserta hasil pengujian."
           }
         },
         {
-          "title": { "en": "Review", "id": "Review" },
+          "title": { "en": "Review", "id": "Tinjauan" },
           "text": {
             "en": "Each task is reviewed before the next begins. Changes to the look of a floor also pass a local look-preserving visual gate (scripts/visual-gate.ts) that compares screenshots across devices and camera poses.",
-            "id": "Setiap task di-review sebelum task berikutnya dimulai. Perubahan tampilan lantai juga melewati visual gate lokal yang menjaga tampilan (scripts/visual-gate.ts) dan membandingkan screenshot di berbagai perangkat dan pose kamera."
+            "id": "Setiap tugas ditinjau sebelum tugas berikutnya dimulai. Perubahan tampilan lantai juga diperiksa melalui visual gate lokal (scripts/visual-gate.ts), yang membandingkan screenshot di berbagai perangkat dan sudut kamera."
           }
         },
         {
           "title": { "en": "CI", "id": "CI" },
           "text": {
             "en": "The pull request must pass the required checks: tests, the build, end-to-end shards, Lighthouse and the 3D performance gates.",
-            "id": "Pull request harus lulus check wajib: test, build, shard end-to-end, Lighthouse, dan gate performa 3D."
+            "id": "Pull request harus lolos pemeriksaan wajib: pengujian, build, shard end-to-end, Lighthouse, dan gate performa 3D."
           }
         },
         {
           "title": { "en": "Deploy", "id": "Deploy" },
           "text": {
-            "en": "The owner merges the pull request and the deploy workflow ships it within minutes when the pull request passed every required check on the same code; otherwise it waits for the full CI on main. That full CI still runs after every merge, and a red run rolls production back to the last good deployment.",
-            "id": "Pemilik me-merge pull request, lalu workflow deploy merilisnya dalam hitungan menit bila pull request itu lulus semua check wajib pada kode yang sama; jika tidak, workflow menunggu CI lengkap di main. CI lengkap itu tetap berjalan setelah setiap merge, dan run yang merah mengembalikan produksi ke deployment terakhir yang baik."
+            "en": "The owner approves the merge. The deploy workflow can reuse the pull request's required green checks on the same tree; otherwise it waits for full CI on main. Full CI still runs after every merge, and a red run rolls production back to the last good deployment.",
+            "id": "Pemilik menyetujui merge. Workflow deploy dapat memakai ulang pemeriksaan wajib pull request yang lolos pada tree yang sama; jika tidak, workflow menunggu CI lengkap di main. CI lengkap tetap berjalan setelah setiap merge, dan kegagalannya memicu rollback ke deployment produksi terakhir yang baik."
           }
         }
       ],
@@ -359,10 +359,10 @@
       }
     },
     "gates": {
-      "title": { "en": "The Gates", "id": "Gerbang Kualitas" },
+      "title": { "en": "The Gates", "id": "Pemeriksaan Kualitas" },
       "summary": {
         "en": "Automated checks that decide whether a change may merge. Each one states what it checks and the number it enforces.",
-        "id": "Pemeriksaan otomatis yang menentukan apakah sebuah perubahan boleh di-merge. Masing-masing menyatakan apa yang diperiksa dan angka yang ditegakkan."
+        "id": "Pemeriksaan otomatis yang wajib lolos sebelum perubahan digabungkan. Setiap pemeriksaan menjelaskan cakupan dan batas yang diterapkan."
       },
       "gates": [
         {
@@ -370,7 +370,7 @@
           "title": { "en": "Types, Lint and Unit Tests", "id": "Tipe, Lint, dan Unit Test" },
           "text": {
             "en": "Strict TypeScript, the linter and the Vitest suite, including the content and public-safety tests.",
-            "id": "TypeScript strict, linter, dan suite Vitest, termasuk test konten dan keamanan publik."
+            "id": "TypeScript strict, linter, dan suite Vitest, termasuk pengujian konten serta pemeriksaan data yang tidak boleh dipublikasikan."
           },
           "budget": { "en": "Zero type errors, lint errors and failing tests", "id": "Nol error tipe, error lint, dan test yang gagal" },
           "jobs": ["Typecheck, lint, unit tests"],
@@ -378,12 +378,12 @@
         },
         {
           "id": "secrets",
-          "title": { "en": "Secret Scan", "id": "Pemindaian Rahasia" },
+          "title": { "en": "Secret Scan", "id": "Pemindaian Kredensial" },
           "text": {
             "en": "Scans the repository history for committed credentials, because the repository is public.",
-            "id": "Memindai riwayat repositori untuk kredensial yang ter-commit, karena repositori ini publik."
+            "id": "Memindai riwayat repositori publik untuk mendeteksi kredensial yang ikut tersimpan dalam commit."
           },
-          "budget": { "en": "Zero secrets found", "id": "Nol rahasia ditemukan" },
+          "budget": { "en": "Zero secrets found", "id": "Tidak ada kredensial yang terdeteksi" },
           "jobs": ["Secret scan"],
           "required": true
         },
@@ -403,7 +403,7 @@
           "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP untuk Setiap Halaman" },
           "text": {
             "en": "Hashes every inline script of every page and fails the build when one is missing its hash.",
-            "id": "Meng-hash setiap inline script di setiap halaman dan menggagalkan build bila ada yang tanpa hash."
+            "id": "Menghitung hash setiap inline script pada tiap halaman. Build gagal jika ada script yang belum memiliki hash."
           },
           "budget": { "en": "No inline script without a hash", "id": "Tidak ada inline script tanpa hash" },
           "jobs": ["Build static export"],
@@ -413,8 +413,8 @@
           "id": "e2e",
           "title": { "en": "End-to-End Shards", "id": "Shard End-to-End" },
           "text": {
-            "en": "Playwright drives the built site in duration-balanced shards, waiting on state and never on time.",
-            "id": "Playwright menjalankan situs hasil build dalam beberapa shard yang seimbang durasinya, menunggu state dan tidak pernah menunggu waktu."
+            "en": "Playwright tests the exported site in duration-balanced shards. Actions wait for the required application state, rather than relying on fixed delays.",
+            "id": "Playwright menguji situs hasil export dalam shard dengan pembagian durasi seimbang. Tindakan menunggu kondisi aplikasi yang diperlukan, bukan jeda tetap."
           },
           "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
           "jobs": ["E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}"],
@@ -435,8 +435,8 @@
           "id": "render-memory",
           "title": { "en": "3D Render and Memory", "id": "Render dan Memori 3D" },
           "text": {
-            "en": "Counts draw calls and triangles on every floor, then rides the elevator round trips and checks that nothing leaks.",
-            "id": "Menghitung draw call dan segitiga di setiap lantai, lalu menaiki elevator bolak-balik dan memeriksa bahwa tidak ada yang bocor."
+            "en": "Counts draw calls and triangles on every floor. Elevator round trips then check GPU object counts and JS heap growth against the memory budgets.",
+            "id": "Menghitung draw call dan segitiga pada setiap lantai. Perjalanan lift bolak-balik kemudian memeriksa jumlah objek GPU dan pertumbuhan heap JS terhadap batas memori."
           },
           "budget": {
             "en": "Under 150 scene draw calls and 30k triangles; zero GPU object growth and under 2 MB heap growth",
@@ -450,7 +450,7 @@
           "title": { "en": "Classic Site Speed", "id": "Kecepatan Situs Klasik" },
           "text": {
             "en": "Lighthouse CI loads the Classic pages and fails the check on slow paint, layout shift, blocking time or heavy scripts.",
-            "id": "Lighthouse CI memuat halaman klasik dan menggagalkan check bila paint lambat, layout bergeser, waktu blocking tinggi, atau script terlalu berat."
+            "id": "Lighthouse CI memuat halaman klasik dan menolak hasil yang melampaui batas waktu tampil, pergeseran layout, waktu blocking, atau ukuran script."
           },
           "budget": {
             "en": "LCP 2 s, CLS 0.01, TBT 200 ms and JS 240 KB on Classic pages",
@@ -475,8 +475,8 @@
     "dashboard": {
       "title": { "en": "The Dashboard", "id": "Dasbor" },
       "summary": {
-        "en": "Numbers measured from the repository when the site is built: commits, merged pull requests, tests, specs, plans and budgets.",
-        "id": "Angka yang diukur dari repositori saat situs dibangun: commit, pull request yang di-merge, test, spec, plan, dan budget."
+        "en": "A repository snapshot of commits, merged pull requests, tests, specs and plans, alongside the enforced performance budgets.",
+        "id": "Snapshot repositori berisi jumlah commit, pull request yang sudah digabungkan, pengujian, spec, dan rencana, beserta batas performa yang diterapkan."
       }
     }
   },
@@ -485,7 +485,7 @@
       "title": { "en": "Rover's Brain", "id": "Otak Rover" },
       "summary": {
         "en": "How Ask the HQ finds, grounds and checks its answers.",
-        "id": "Cara Ask the HQ menemukan, mendasari, dan memeriksa jawabannya."
+        "id": "Cara Ask the HQ menemukan sumber, menyusun jawaban, dan memeriksanya."
       }
     },
     "rejected": {
