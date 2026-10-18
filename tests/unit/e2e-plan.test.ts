@@ -2,17 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_SPECS,
   assignShard,
+  CI_WORKERS_PER_SHARD,
   durationKey,
   e2eShardsFor,
   isNightlyTest,
   listTestIds,
   locateTest,
   medianDurations,
+  normalizeRunnerSpeed,
   parseListReporter,
+  parseRunnerLine,
   parseShard,
   planShards,
   PR_SMOKE,
+  runnerSpeedFactors,
   shardSeconds,
+  shardWallSeconds,
   SMOKE_SPECS,
   specSeconds,
   specsForChanges,
@@ -445,6 +450,30 @@ describe("planShards", () => {
     expect(planShards(ids, 4, {})).toEqual([1, 2, 3, 4].map((i) => assignShard(ids, i, 4)));
     expect(() => planShards(ids, 0, durations)).toThrow();
   });
+
+  it("packs onto every worker of a shard, so a long test does not leave its shard's other worker idle", () => {
+    // The perf lane on 2026-10-18: one 9.6 min test, planned by shard sums, shared its shard with a single 53 s test.
+    const tests = ["long", ...Array.from({ length: 12 }, (_, i) => `short${i}`)].map((t) => `[chromium] › y.spec.ts › ${t}`);
+    const secs = { "y.spec.ts › long": 600, ...Object.fromEntries(tests.slice(1).map((t) => [durationKey(t), 50])) };
+    const longShard = (shards: string[][]) => shards.find((s) => s.includes(tests[0])) ?? [];
+    expect(longShard(planShards(tests, 2, secs))).toEqual([tests[0]]);
+    const shards = planShards(tests, 2, secs, CI_WORKERS_PER_SHARD);
+    expect(shards.flat().sort()).toEqual([...tests].sort());
+    expect(longShard(shards).length).toBeGreaterThan(1);
+    // 600 s on one worker; the other 11 workers' worth of 50 s tests spread over the remaining 3 workers.
+    expect(shards.map((s) => shardWallSeconds(s, secs, CI_WORKERS_PER_SHARD)).sort((a, b) => a - b)).toEqual([200, 600]);
+  });
+
+  it("keeps the shard-sum plan with one worker per shard and rejects a bad worker count", () => {
+    expect(planShards(ids, 2, durations, 1)).toEqual(planShards(ids, 2, durations));
+    expect(() => planShards(ids, 2, durations, 0)).toThrow();
+  });
+
+  it("estimates a shard's wall time on its workers", () => {
+    expect(shardWallSeconds(ids, durations, 2)).toBe(100);
+    expect(shardWallSeconds(ids, durations, 1)).toBe(190);
+    expect(shardWallSeconds(ids, null, 2)).toBe(0);
+  });
 });
 
 describe("CI timings", () => {
@@ -482,6 +511,36 @@ describe("CI timings", () => {
     expect(m).toEqual({ e2e: { k: 4, s: 0 }, perf: { p: 1.5 } });
   });
 
+  const job = (factor: number, lane: "e2e" | "perf" = "e2e") =>
+    [10, 20, 30, 40, 50, 60].map((seconds, i) => ({ lane, key: `t${i}`, seconds: Math.round(seconds * factor * 1000) / 1000 }));
+
+  it("measures each job's runner speed against the tests' medians", () => {
+    expect(runnerSpeedFactors([job(1), job(1), job(0.6), job(1.2)])).toEqual([1, 1, 0.6, 1.2]);
+  });
+
+  it("keeps the factor at 1 without enough samples of at least 5 s, and leaves skipped tests alone", () => {
+    const short = [1, 2, 3, 4, 6, 7].map((seconds, i) => ({ lane: "e2e" as const, key: `s${i}`, seconds: seconds < 5 ? seconds : seconds * 0.5 }));
+    const skipped = { lane: "e2e" as const, key: "skip", seconds: null };
+    expect(runnerSpeedFactors([short, [skipped]])).toEqual([1, 1]);
+    expect(normalizeRunnerSpeed([[skipped]]).samples).toEqual([skipped]);
+  });
+
+  it("scales a fast or slow runner's samples back to a median-speed runner before the medians", () => {
+    // 3 median-speed runners and 2 fast ones; test y ran once on a median runner and twice on the fast ones.
+    const y = (factor: number) => ({ lane: "e2e" as const, key: "y", seconds: 100 * factor });
+    const jobs = [[...job(1), y(1)], job(1), job(1), [...job(0.65), y(0.65)], [...job(0.65), y(0.65)]];
+    expect(medianDurations(jobs.flat()).e2e.y).toBe(65);
+    const { samples, factors } = normalizeRunnerSpeed(jobs);
+    expect(factors).toEqual([1, 1, 1, 0.65, 0.65]);
+    expect(medianDurations(samples).e2e).toEqual({ t0: 10, t1: 20, t2: 30, t3: 40, t4: 50, t5: 60, y: 100 });
+  });
+
+  it("reads the runner fingerprint from a job log", () => {
+    const log = "2026-10-18T11:57:29.7Z e2e shard 5/8: 56 of 450 tests, about 1038 worker-s\n2026-10-18T11:57:29.8Z runner: 4 x AMD EPYC 7763 64-Core Processor, sha256 512 MB/s\n";
+    expect(parseRunnerLine(log)).toBe("4 x AMD EPYC 7763 64-Core Processor, sha256 512 MB/s");
+    expect(parseRunnerLine("Current runner version: '2.329.0'")).toBeNull();
+  });
+
   it("matches the duration keys to the test list ids", () => {
     expect(durationKey("[chromium] › camera.spec.ts › wheel zoom and first person › the ! hints show")).toBe(
       "camera.spec.ts › wheel zoom and first person › the ! hints show",
@@ -517,7 +576,7 @@ describe("shard plan against the real Playwright list", () => {
     expect(all.length).toBeGreaterThan(perf ? 10 : 100);
     expect(new Set(all).size).toBe(all.length);
     for (const total of totals) {
-      const planned = planShards(all, total, durations[lane]).flat();
+      const planned = planShards(all, total, durations[lane], CI_WORKERS_PER_SHARD).flat();
       expect(planned).toHaveLength(all.length);
       expect([...planned].sort()).toEqual([...all].sort());
     }
