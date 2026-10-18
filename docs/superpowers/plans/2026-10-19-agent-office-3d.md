@@ -12,6 +12,7 @@ Status: in review
 
 ## Global Constraints
 
+- Carried from part 1's final review (do this first, as its own commit with tests, before Task 1): in `workers/office/src/state.ts`, a late same-attempt `running` delivery after a `cancelled` completion recreates a phantom running run and feed item (the cancelled run is deleted, so the attempt check has nothing to compare); keep a small hidden `{ id, attempt }` record of cancelled runs (bounded like `runsKept`) so `applyChange` ignores it; and give `workflow_job` changes the run attempt (`workflow_job.run_attempt`) so a late job of an older attempt does not write into a restarted run.
 - Performance review (coordinator, 2026-10-19), binding on Tasks 6, 9 and 13:
   - Atlas textures: no mipmaps (`minFilter = LinearFilter`, `generateMipmaps = false`); never re-upload the whole atlas: update only the changed cell (a partial upload through `renderer.copyTextureToTexture` from a cell-sized canvas texture, or one small texture per desk if that costs no more draw calls), and cap face redraws at 5 fps on both tiers (desk screens and the wall stay at or below their stated rates).
   - Frame loop: skip instance-matrix, colour and quad-position writes (and their `needsUpdate`) when no pose changed (every Rover asleep, or reduced motion), and wrap the per-frame work in `whenDrawn` per docs/agents/performance.md.
