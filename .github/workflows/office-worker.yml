@@ -10,6 +10,8 @@ on:
       - "workers/office/**"
       - "src/lib/office/**"
       - "src/content/safety-match.ts"
+      - "functions/_lib/security.ts"
+      - "scripts/build-knowledge.ts"
       - ".github/workflows/office-worker.yml"
   workflow_dispatch:
 

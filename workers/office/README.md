@@ -18,6 +18,9 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
     reported them public);
   - `OFFICE_GITHUB_ACTORS` (`ShinyQ,Copilot`): GitHub logins whose same-repository pull requests count, besides
     authors with the OWNER, MEMBER or COLLABORATOR association.
+- Deploy: `deploy.yml` job "hq-office Worker", after a successful Pages upload (the same gates as the upload); a
+  commit without `workers/office/` skips it. Until the Worker first exists, `/api/office` answers mode "off".
+  `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets of the same name):
   - `OFFICE_INGEST_KEY`: HMAC key of relay beats; the owner's Keychain holds the same value.
   - `GITHUB_WEBHOOK_SECRET`: the secret of every repository webhook.
@@ -54,9 +57,10 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Kill switch: set `OFFICE_ENABLED` to `"false"` in the root `wrangler.toml` and deploy; the site hides the office.
 - Rotate a key: update the GitHub secret (and the Keychain item or the webhook secret), then redeploy (Actions,
   `deploy.yml`, Run workflow).
-- Skip the Worker deploy: repository variable `OFFICE_WORKER_DEPLOY = "false"` (for example while deploying by hand,
-  from the repository root: `bun scripts/build-knowledge.ts && cd workers/office && bunx wrangler deploy`; the
-  first step writes `functions/_generated/safety.json`, which the Worker bundles).
+- Skip the Worker deploy and its rollback redeploy: repository variable `OFFICE_WORKER_DEPLOY = "false"` (for
+  example while deploying by hand, from the repository root:
+  `bun scripts/build-knowledge.ts && cd workers/office && bunx wrangler deploy`; the first step writes
+  `functions/_generated/safety.json`, which the Worker bundles).
 - Logs: Cloudflare dashboard, Workers, `hq-office`, Observability. The Worker logs no beat or webhook body.
 - Free plan: Durable Object requests and Workers requests are 100,000 per day each; one row is written per accepted
   beat or webhook (100,000 per day). Spec section 7 has the estimates.

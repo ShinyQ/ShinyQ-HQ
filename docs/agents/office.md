@@ -55,8 +55,12 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Deploy and CI
 
-- `deploy.yml` job `office-worker` deploys the Worker before the Pages upload and sets its secrets from the
-  `production` environment; `office-worker.yml` bundles it on pull requests (no secrets).
+- `deploy.yml` job `office-worker` deploys the Worker after a successful Pages upload (the same gates as the upload)
+  and sets its secrets from the `production` environment; a commit without `workers/office/` skips it. Until the
+  Worker first exists, `/api/office` answers mode "off". `office-worker.yml` bundles it on pull requests (no secrets).
+- `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
+  `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
+  `workers/office` leaves it at the live version).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests

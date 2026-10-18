@@ -1,7 +1,7 @@
 # hq-office: the Agent Office Worker and its Durable Object (runbook: workers/office/README.md).
 #
-# Deployed by .github/workflows/deploy.yml (job "hq-office Worker", before the Pages upload) from this folder; it has
-# its own config, separate from the Pages project in the repo root. No route, no workers.dev or preview URL: the
+# Deployed by .github/workflows/deploy.yml (job "hq-office Worker", after the Pages upload) from this folder, and
+# redeployed by rollback.yml with Pages; it has its own config, separate from the Pages project in the repo root. No route, no workers.dev or preview URL: the
 # Pages Functions /api/office, /api/office/beat and /api/office/github reach it through the service binding OFFICE.
 #
 # Secrets never live here. deploy.yml sets them from production environment secrets on every deploy:

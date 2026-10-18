@@ -1965,6 +1965,7 @@ git commit -m "feat(office): Pages Functions for the office snapshot, beats and 
 **Files:**
 - Create: `.github/workflows/office-worker.yml`
 - Modify: `.github/workflows/deploy.yml` (a new job `office-worker` before `deploy`; `deploy.needs` and `report.needs` gain `office-worker`)
+- Final-review change: the job moved after `deploy` (`needs: [resolve, deploy]`, like `stats-worker`) so it passes the upload's gates, and `rollback.yml` redeploys hq-office with Pages.
 - Test: `tests/unit/office-deploy.test.ts`
 
 **Interfaces:**
