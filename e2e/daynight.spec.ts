@@ -28,6 +28,7 @@ interface SkyRead {
   source: string;
   fog: number;
   applied: number;
+  azimuth: number;
 }
 
 type SkyWindow = Window & { __hq: { sky: SkyRead } };
@@ -35,8 +36,8 @@ type RenderWindow = Window & { __hq: { render: { programNames(): string[] } } };
 
 const readSky = (page: Page): Promise<SkyRead> =>
   page.evaluate(() => {
-    const { phase, day, stars, still, source, fog, applied } = (window as unknown as SkyWindow).__hq.sky;
-    return { phase, day, stars, still, source, fog, applied };
+    const { phase, day, stars, still, source, fog, applied, azimuth } = (window as unknown as SkyWindow).__hq.sky;
+    return { phase, day, stars, still, source, fog, applied, azimuth };
   });
 
 /** Waits until the controller applied the sky at least once and the source reflects the resolved mode. */
@@ -87,6 +88,8 @@ test("?sky=night and ?sky=day pin the phase: day has a different fog color and n
   expect(day.stars).toBe(0);
   expect(day.still).toBe(false);
   expect(day.fog, "the day fog color differs from night").not.toBe(night.fog);
+  // The desktop project's camera class puts the sun and moon arc at `SKY.azimuth.desktop` (-0.2).
+  expect(day.azimuth).toBe(-0.2);
 });
 
 test("?sky=dawn sits between night and day", async ({ page }) => {

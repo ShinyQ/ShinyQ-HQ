@@ -16,11 +16,11 @@ export type SkyPhaseName = keyof typeof SKY_PHASES;
  * decision 2026-10-18: up to down, not right to left). It is centered on the horizon at `azimuth` (per
  * camera class) and faces a camera looking along that azimuth: `rise` is how far the orbs climb above
  * (and sink below) the horizon, `width` how far they swing sideways where they cross it (rising on the
- * left, setting on the right). Desktop: azimuth 0 (+z), the open void on the left of the L1 view (the
- * camera looks along about -0.38 rad there); tablet and phone: the open sky at the top left of the L1
- * portrait view (the camera looks along about -1.0 rad).
+ * left, setting on the right). Desktop: azimuth -0.2, the open sky on the left of the L1 view between the
+ * profile card and the Visitor Observatory (the camera looks along about -0.38 rad there); tablet and
+ * phone: the open sky at the top left of the L1 portrait view (the camera looks along about -1.0 rad).
  */
-export const SKY = { horizon: -0.6, rise: 0.2, width: 0.06, azimuth: { desktop: 0, tablet: -0.85, mobile: -0.85 } } as const;
+export const SKY = { horizon: -0.6, rise: 0.16, width: 0.06, azimuth: { desktop: -0.2, tablet: -0.85, mobile: -0.85 } } as const;
 
 /** The sun and moon arc's azimuth for a camera class (`device.camera`). */
 export function skyAzimuth(cls: ViewportClass): number {

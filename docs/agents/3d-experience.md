@@ -426,7 +426,8 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - Night reproduces `sceneSettings` exactly (fog and background `#0a0a0f`, hemisphere, directional light, bloom), so the base look does not move.
   - "Day" is not daylight: an indigo to teal sky with a sun glow on the horizon. Neon glows brighter at night (full tier bloom 0.9 at night, 0.72 at twilight day).
 - Geometry: the sky is a dome whose horizon sits at `SKY.horizon` (-0.6 rad), because the follow cameras look 44 to 47 degrees down.
-  - The sun and the moon ride a shallow arc (`SKY.arc` 0.09) around the tower, opposite each other; `SKY.azimuth` puts the night moon and the midday sun on the left of the L1 desktop view.
+  - The sun and the moon ride one tall, narrow ellipse on the sky sphere, opposite each other, so they move up and down (owner decision 2026-10-18): centered on the horizon at `SKY.azimuth` for the camera class (`skyAzimuth(device.camera)`: desktop -0.2, the open sky on the left of the L1 view between the profile card and the Visitor Observatory; tablet and phone -0.85, the open sky at the top left of the L1 portrait view), climbing `SKY.rise` (0.16 rad) above it and swinging `SKY.width` (0.06 rad) sideways where they cross it.
+  - The sun rises on the left at dawn, tops out at midday, sinks straight down on the right at dusk and stays below the horizon at night; the moon does the same half a cycle later. `SkyController` re-applies the sky when the camera class changes. The dome's sun glow follows the sun direction.
 
 ### Mode resolution
 
@@ -449,7 +450,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - On the full tier the two meshes mount only once the lazy composer is live; earlier, the frame-3 precompile would compile a canvas variant of the holo program.
 - Per frame, only when the phase moved: the lights, the scene background and the fog color follow the phase. Fog near and far stay with `CameraDirector`.
 - The RF star dome (`floors/roof/Sky.tsx`) fades with `skyRuntime.stars`.
-- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, applied, underground }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `applied` counts applications, `underground` is true below the Lobby), read from `skyRuntime`.
+- Probe: `__hq.sky` is `{ phase, day, stars, still, source, fog, azimuth, applied, underground }` (`stars` is the model's star amount even when `still`, the RF star dome fades with it; `source` is `"param"`, `"clock"` or `"held"`; `fog` is the applied fog hex; `azimuth` is the arc azimuth as last applied, `applied` counts applications, `underground` is true below the Lobby), read from `skyRuntime`.
 - Tests: `tests/unit/day-night.test.ts`, `day-night-pref.test.ts`, `day-night-setting.test.ts`, `holo-sky.test.ts`; `e2e/daynight.spec.ts` (still held night under automation without a drawn sky, the sessionStorage opt-in, held night for a visitor, pinned phases, the same programs and scene calls at night and day, the clock, the stored choice and reduced motion). `scripts/e2e-plan.ts` maps `src/experience/sky/` and `src/lib/day-night.ts` to it.
 - Captures: `bun scripts/sky-shots.ts --base <url> --out <dir>` (L1 and L3, four phases, desktop full and phone lite). `bun scripts/b1-shots.ts --base <url> --out <dir>` captures B1 (arrival, aisle, each station's drawer; desktop full and phone lite) with the dev flag; its `unlock` part captures the locked row and the unlock moment.
 - B1 is underground: no dome, sun or moon below `UNDERGROUND_BELOW`; the night state holds, so the lights and fog stay at today's look.
