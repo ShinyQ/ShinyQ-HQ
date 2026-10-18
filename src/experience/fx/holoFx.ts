@@ -194,7 +194,8 @@ void main(){
     } else if (kind < 4.5) {
       float edge = smoothstep(0., .06, vUv.x) * smoothstep(1., .94, vUv.x);
       float lines = .75 + .25 * sin((vUv.y - uTime * .05) * 120.);
-      float k = kind < 3.5 ? exp(-pow((vUv.y - (1. - uProgress)) * 9., 2.)) * .9 + (1. - uProgress) * .18 : .06 + .3 * pow(1. - vUv.y, 1.6);
+      float sweep = (vUv.y - (1. - uProgress)) * 9.;
+      float k = kind < 3.5 ? exp(-sweep * sweep) * .9 + (1. - uProgress) * .18 : .06 + .3 * pow(max(1. - vUv.y, 0.), 1.6);
       a *= k * lines * edge;
     } else if (kind < 5.5) {
       vec2 d2 = min(vLocal, vSize - vLocal);
