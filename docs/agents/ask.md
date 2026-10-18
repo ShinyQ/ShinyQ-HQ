@@ -191,7 +191,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
-  - It also routes "engine room", "ruang mesin", "secret floor" and "lantai rahasia" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q75).
+  - It also routes "engine room", "b1 engine room", "ruang mesin", "secret floor", "hidden floor", "lantai rahasia" and "lantai tersembunyi" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q75).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
   - Such an answer carries `cite` = `/build` (kind `build`; the dock shows "Read on this site: How this site was built"), and the page links the public repository.
   - `isAskCite` still accepts `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, kind `repo`, opened in a new tab) so an older cached answer renders; nothing new cites it.
