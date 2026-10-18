@@ -60,7 +60,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Ask memory | 2026-10-17: Ask remembers the last 3 turns of a conversation (signed by the server, so a visitor cannot forge an answer), a short follow-up like "What stack did it use?" is understood from the previous question, and a **New chat** button starts over | Done |
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over | Done |
-| B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors | In review |
+| B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 
 ## Controls and first visit
 
