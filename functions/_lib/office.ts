@@ -1,10 +1,10 @@
 import { OFFICE_BEAT_MAX_BYTES, parseOfficeResponse, wibDay, type OfficeResponseV1, type OfficeSnapshotV1 } from "../../src/lib/office/protocol";
-import { readCapped } from "./security";
+import { etagOf, readCapped } from "./security";
 import type { EdgeCache, OfficeEnv, PagesContext } from "./types";
 
 export const OFFICE_GITHUB_MAX_BYTES = 512 * 1024;
 const WORKER = "https://hq-office";
-const SNAPSHOT_CACHE = "public, max-age=5";
+const SNAPSHOT_CACHE = "public, max-age=5, stale-while-revalidate=30";
 const DISABLED_CACHE = "public, max-age=60";
 
 /** The snapshot when the Worker or the Durable Object cannot answer (spec section 8): every Rover rests. */
@@ -19,9 +19,25 @@ function defaultCache(): EdgeCache | null {
   return store?.default ?? null;
 }
 
+async function jsonAnswer(value: OfficeResponseV1, cacheControl: string): Promise<Response> {
+  const body = JSON.stringify(value);
+  return new Response(body, {
+    status: 200,
+    headers: { "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", "Cache-Control": cacheControl, ETag: await etagOf(body) },
+  });
+}
+
+/** Fits a GET-shaped 200 to the request: 304 when If-None-Match equals its ETag, no body for HEAD. */
+function conditional(request: Request, res: Response): Response {
+  const etag = res.headers.get("ETag");
+  if (etag && request.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers: res.headers });
+  return request.method === "HEAD" ? new Response(null, { status: res.status, headers: res.headers }) : res;
+}
+
 /**
  * `GET /api/office`: the office snapshot from the hq-office Worker, validated again, edge-cached for 5 s per data
- * center (one Durable Object read per 5 s there). Always 200 JSON, so clients need one code path.
+ * center (one Durable Object read per 5 s there). Always 200 JSON with an ETag (304 on a matching If-None-Match),
+ * so clients need one code path.
  */
 export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | null; now?: () => number } = {}) {
   const cacheOf = opts.cache ?? defaultCache;
@@ -29,17 +45,12 @@ export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | nu
   return async function handle({ request, env, waitUntil }: PagesContext<OfficeEnv>): Promise<Response> {
     const method = request.method;
     if (method !== "GET" && method !== "HEAD") return noStore(405, { Allow: "GET, HEAD" });
-    const send = (value: OfficeResponseV1, cacheControl: string) =>
-      new Response(method === "HEAD" ? null : JSON.stringify(value), {
-        status: 200,
-        headers: { "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", "Cache-Control": cacheControl },
-      });
-    if (env.OFFICE_ENABLED !== "true") return send({ v: 1, enabled: false }, DISABLED_CACHE);
-    if (!env.OFFICE) return send(offSnapshot(now()), SNAPSHOT_CACHE);
+    if (env.OFFICE_ENABLED !== "true") return conditional(request, await jsonAnswer({ v: 1, enabled: false }, DISABLED_CACHE));
+    if (!env.OFFICE) return conditional(request, await jsonAnswer(offSnapshot(now()), SNAPSHOT_CACHE));
     const cache = cacheOf();
     const key = new Request(new URL("/api/office", request.url).toString(), { method: "GET" });
     const hit = await cache?.match(key);
-    if (hit) return method === "HEAD" ? new Response(null, { status: hit.status, headers: hit.headers }) : hit;
+    if (hit) return conditional(request, hit);
     let value: OfficeResponseV1 | null = null;
     try {
       const res = await env.OFFICE.fetch(`${WORKER}/snapshot`);
@@ -47,9 +58,9 @@ export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | nu
     } catch {
       value = null;
     }
-    const out = send(value ?? offSnapshot(now()), SNAPSHOT_CACHE);
-    if (cache && method === "GET") waitUntil(cache.put(key, out.clone()));
-    return out;
+    const out = await jsonAnswer(value ?? offSnapshot(now()), SNAPSHOT_CACHE);
+    if (cache) waitUntil(cache.put(key, out.clone()));
+    return conditional(request, out);
   };
 }
 

@@ -32,10 +32,10 @@ function memoryCache() {
   return { map, cache };
 }
 
-async function get(env: OfficeEnv, cache: EdgeCache | null = null, method = "GET") {
+async function get(env: OfficeEnv, cache: EdgeCache | null = null, method = "GET", headers: Record<string, string> = {}) {
   const pending: Promise<unknown>[] = [];
   const handle = createOfficeSnapshotHandler({ cache: () => cache, now: () => T0 });
-  const res = await handle({ request: new Request(`${SITE}/api/office?x=1`, { method }), env, waitUntil: (p) => void pending.push(p) });
+  const res = await handle({ request: new Request(`${SITE}/api/office?x=1`, { method, headers }), env, waitUntil: (p) => void pending.push(p) });
   await Promise.all(pending);
   return res;
 }
@@ -46,7 +46,8 @@ describe("GET /api/office", () => {
     const { cache, map } = memoryCache();
     const res = await get({ OFFICE_ENABLED: "true", OFFICE: binding }, cache);
     expect(res.status).toBe(200);
-    expect(res.headers.get("Cache-Control")).toBe("public, max-age=5");
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=5, stale-while-revalidate=30");
+    expect(res.headers.get("ETag")).toMatch(/^"[0-9a-f]{32}"$/);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(await res.json()).toEqual(OFFICE_FIXTURES.busy);
     expect([...map.keys()]).toEqual([`${SITE}/api/office`]);
@@ -56,8 +57,52 @@ describe("GET /api/office", () => {
 
   it("answers disabled when the kill switch is off, without calling the Worker", async () => {
     const { binding, calls } = worker(() => Response.json(OFFICE_FIXTURES.busy));
-    expect(await (await get({ OFFICE_ENABLED: "false", OFFICE: binding })).json()).toEqual({ v: 1, enabled: false });
+    const res = await get({ OFFICE_ENABLED: "false", OFFICE: binding });
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=60");
+    expect(res.headers.get("ETag")).toMatch(/^"[0-9a-f]{32}"$/);
+    expect(await res.json()).toEqual({ v: 1, enabled: false });
     expect(calls).toEqual([]);
+  });
+
+  it("answers 304 with no body when If-None-Match equals the ETag", async () => {
+    const { binding } = worker(() => Response.json(OFFICE_FIXTURES.busy));
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    const first = await get(env);
+    const etag = first.headers.get("ETag") ?? "";
+    const again = await get(env, null, "GET", { "If-None-Match": etag });
+    expect(again.status).toBe(304);
+    expect(await again.text()).toBe("");
+    expect(again.headers.get("ETag")).toBe(etag);
+    expect(again.headers.get("Cache-Control")).toBe(first.headers.get("Cache-Control"));
+    expect(again.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const disabled = await get({ OFFICE_ENABLED: "false" });
+    expect((await get({ OFFICE_ENABLED: "false" }, null, "GET", { "If-None-Match": disabled.headers.get("ETag") ?? "" })).status).toBe(304);
+    expect((await get(env, null, "GET", { "If-None-Match": '"0123"' })).status).toBe(200);
+  });
+
+  it("answers 304 from a cache hit without calling the Worker", async () => {
+    const { binding, calls } = worker(() => Response.json(OFFICE_FIXTURES.busy));
+    const { cache } = memoryCache();
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    const etag = (await get(env, cache)).headers.get("ETag") ?? "";
+    const hit = await get(env, cache, "GET", { "If-None-Match": etag });
+    expect(hit.status).toBe(304);
+    expect(await hit.text()).toBe("");
+    expect(hit.headers.get("ETag")).toBe(etag);
+    expect(calls.map((c) => c.path)).toEqual(["/snapshot"]);
+  });
+
+  it("stores a HEAD on a cache miss so the next GET comes from the cache", async () => {
+    const { binding, calls } = worker(() => Response.json(OFFICE_FIXTURES.busy));
+    const { cache } = memoryCache();
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    const head = await get(env, cache, "HEAD");
+    expect(await head.text()).toBe("");
+    expect(head.headers.get("ETag")).toMatch(/^"[0-9a-f]{32}"$/);
+    const next = await get(env, cache);
+    expect(await next.json()).toEqual(OFFICE_FIXTURES.busy);
+    expect(next.headers.get("ETag")).toBe(head.headers.get("ETag"));
+    expect(calls.map((c) => c.path)).toEqual(["/snapshot"]);
   });
 
   it("answers mode off when unbound, failing, throwing or invalid", async () => {
