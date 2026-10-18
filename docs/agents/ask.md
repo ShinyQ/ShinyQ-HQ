@@ -97,7 +97,9 @@ All bindings and vars live in `wrangler.toml`.
 
 ### Availability
 
-- `GET /api/ask` runs on idle about 1.5 s after `load` (never on first paint) or when an entry point is used.
+- `GET /api/ask` runs when the dock opens (`requestAskStatus`, once per page load) and when the hero bar is hovered or focused (it prepares the panel).
+- The surfaces whose visibility depends on the status (the floating launcher and its teaser, the hero bar, the 3D pill) also need it without an open, so the dock checks on idle about 1.5 s after `load` (never on first paint) through `ensureAskStatus` (`src/hud/ask/availability.ts`). The palette and the Rover menu use the same check when they open.
+  - `ensureAskStatus` reuses an "enabled" status from earlier in the tab session (`sessionStorage["hq:ask-status"]`, `ASK_STATUS_TTL_MS` 10 minutes) instead of asking on every page view; an unavailable status is never kept, so the next page view asks again. The dock open always asks the endpoint.
 - Turnstile loads only when the panel opens with a site key.
 - A 503 or 404 status hides every entry point (the hero bar keeps its space, invisible, so nothing shifts).
 

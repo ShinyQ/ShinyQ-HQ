@@ -13,6 +13,7 @@ import { engineRoomAction } from "@/hud/dialog/engineRoomAction";
 import { registerHudAction } from "@/hud/hudActions";
 import { register3DHost } from "@/experience/missions/bridge";
 import type { MissionHost } from "@/experience/missions/host";
+import { resetAskAvailability } from "@/hud/ask/availability";
 import { primeHudIndex } from "@/hud/index-client";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
@@ -65,6 +66,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   primeHudIndex(null);
+  resetAskAvailability();
   vi.unstubAllGlobals();
   document.documentElement.removeAttribute("data-hydrated");
   vi.useRealTimers();

@@ -20,7 +20,7 @@ import { CommandPalette } from "./CommandPalette";
 import { useTutorialAvailable } from "./dialog/hooks";
 import { hintsOn, setHintsOn } from "./dialog/storage";
 import { replayTutorial } from "./dialog/tutorial";
-import { requestAskStatus, useAskStatus } from "./ask/availability";
+import { ensureAskStatus, useAskStatus } from "./ask/availability";
 import { onHudCommand, openAsk, openCv } from "./events";
 import { useHudActions } from "./hudActions";
 import type { HudIndex } from "./index-data";
@@ -66,7 +66,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const [filter, setFilter] = useState<PaletteFilter | null>(null);
   const [recent, setRecent] = useState<RoomId[]>([]);
   const [toast, setToast] = useState<{ text: string; ms: number; id: number } | null>(null);
-  // Ask the HQ: the status is fetched on idle by the dock, or now when the terminal or the palette opens.
+  // Ask the HQ: the dock checks the status on idle; an open of the terminal or the palette checks it now.
   const askEnabled = isAskEnabled(useAskStatus());
   const tutorial = useTutorialAvailable();
   const tMenu = useTranslations("dialog.menu");
@@ -74,7 +74,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   const registered = useHudActions();
 
   const loadAskStatus = useCallback(() => {
-    void requestAskStatus();
+    void ensureAskStatus();
   }, []);
 
   const say = useCallback((text: string, ms = MIN_TOAST_MS) => {
