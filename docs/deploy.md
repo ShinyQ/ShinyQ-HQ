@@ -421,3 +421,13 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 | Package | Pinned to | Latest | Reason | Revisit |
 |---|---|---|---|---|
 | `typescript` | 6.0.x (`~6.0.3`) | 7.0.2 | typescript-eslint 8.71 (via eslint-config-next) throws "does not support TS 7.0" and supports TypeScript below 6.1 (typescript-eslint#10940); TypeScript 7 also drops the classic compiler API that `tests/unit/three-disposal.test.ts` uses. 6.1 is held back by the tilde range for the same reason | 2027-01-15 |
+
+## 18. Agent Office (hq-office)
+
+- The Worker `hq-office` (`workers/office/`) holds the office state in a SQLite-backed Durable Object; the Pages
+  Functions `/api/office`, `/api/office/beat` and `/api/office/github` reach it through the service binding `OFFICE`.
+- `deploy.yml` deploys it before the Pages upload (job "hq-office Worker") and sets `OFFICE_INGEST_KEY` and
+  `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets; a missing secret leaves its route at 503.
+- `GET /api/office` answers with an ETag (304 on a matching `If-None-Match`) and
+  `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).
+- First setup, webhooks, key rotation and the kill switch (`OFFICE_ENABLED`): `workers/office/README.md`.

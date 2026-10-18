@@ -22,7 +22,7 @@ Spec: [`docs/superpowers/specs/2026-10-18-agent-office-design.md`](../specs/2026
 - Time rules: asleep after 3 min without a beat (15 min while `testing`, `ci` or `input`); removed after 30 min; `done` shows 20 s then asleep; `working` or `reviewing` shows `thinking` after 20 s without a beat; `failed` holds until the next beat. Counters reset at 00:00 WIB (UTC+7).
 - Five desks, stable slots; a new awake session may take the slot of the longest-asleep session; others count in `extra`.
 - Kill switch: `OFFICE_ENABLED` in the root `wrangler.toml` `[vars]`; anything but `"true"` makes `GET /api/office` answer `{"v":1,"enabled":false}` and the POST routes answer 204 without forwarding.
-- Snapshot responses: `Cache-Control: public, max-age=5`, stored in `caches.default` for 5 s.
+- Snapshot responses: an ETag (304 on a matching `If-None-Match`) and `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in `caches.default` for 5 s.
 - Free plan only: no alarms, no WebSockets; one storage row written per accepted beat or webhook.
 - The Worker has `workers_dev = false`, `preview_urls = false` and no route; the public entry points are the Pages Functions.
 - CI: at most 2 CI runs in flight; check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued` before pushing. This PR is pre-approved to merge when green.

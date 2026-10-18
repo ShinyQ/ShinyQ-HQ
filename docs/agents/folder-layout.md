@@ -28,10 +28,14 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `functions/api/visit.ts`, `functions/api/stats.ts`: public visit stats.
   - Beacon: POST /api/visit to visit_events (`functions/_lib/visit.ts`).
   - Snapshot: GET /api/stats from KV STATS_KV (`functions/_lib/stats.ts`).
+- `functions/api/office/` (`index.ts`, `beat.ts`, `github.ts`): Agent Office routes (GET /api/office, POST beats and
+  webhooks) forwarding to the hq-office Worker through the service binding OFFICE (`functions/_lib/office.ts`).
 - `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval.
 - `functions/_generated/`: gitignored: knowledge pack + safety lists from `scripts/build-knowledge.ts`.
 - `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit and /api/stats (source of truth once deployed; no secrets).
 - `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
+- `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
+  state. See [office.md](office.md).
 
 ## messages/
 
@@ -195,6 +199,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - labels.ts (server: chip and floor labels).
 - `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
 - `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts.
+- `src/lib/office/`: the Agent Office contract (`protocol.ts`) and fixtures (`fixtures.ts`).
 - `src/lib/brand-mark.ts`: the rover brand mark (owner decision).
   - Geometry, colors and SVG bodies for every variant.
   - `RoverMark` (src/components/RoverMark.tsx) inlines it in the header.

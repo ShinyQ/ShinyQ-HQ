@@ -141,7 +141,9 @@ trust in `/hooks`.
 ### 3.4 Pages Function `GET /api/office`
 
 Calls the Worker through the service binding, returns the snapshot JSON (`desks[]`, `extra`, `github`, `today`,
-`mode: live | semi-live | off`, `updatedAt`) with `Cache-Control: public, max-age=5`, and stores it in the Cache API
+`mode: live | semi-live | off`, `updatedAt`) with an ETag (304 on a matching `If-None-Match`) and
+`Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), and stores
+it in the Cache API
 for 5 s. **Correction:** the Cache API is per data center and every poll still runs the Function (one Workers request
 from the shared free pool), so the snapshot read is shared per data center, not globally; section 7 counts it.
 
