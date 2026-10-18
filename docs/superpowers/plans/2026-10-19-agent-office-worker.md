@@ -1659,7 +1659,7 @@ import { parseOfficeResponse } from "@/lib/office/protocol";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
 import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
 
-const SITE = "https://kurniadi.dev";
+const SITE = "https://kurniadi.pages.dev";
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 
 function worker(reply: (path: string, init?: RequestInit) => Response | Promise<Response>) {
@@ -2190,12 +2190,12 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
    `GITHUB_WEBHOOK_SECRET`. The next production deploy sets them on the Worker.
 3. Keychain (Mac): `security add-generic-password -s hq-office-ingest -a office-relay -w <OFFICE_INGEST_KEY>`.
 4. For each public repository to show (ShinyQ/ShinyQ-HQ first): Settings, Webhooks, Add webhook:
-   - Payload URL `https://kurniadi.dev/api/office/github`, content type `application/json`, secret
+   - Payload URL `https://kurniadi.pages.dev/api/office/github`, content type `application/json`, secret
      `GITHUB_WEBHOOK_SECRET`, SSL verification on;
    - events: Workflow runs, Workflow jobs, Pull requests, Pushes, Deployment statuses.
    GitHub has no user-level webhooks; a GitHub App installed on all repositories (Actions read, Pull requests read,
    Contents read, Deployments read) is the alternative with one webhook.
-5. Check: the webhook's Recent Deliveries shows `ping` with 204, and `curl -s https://kurniadi.dev/api/office` shows
+5. Check: the webhook's Recent Deliveries shows `ping` with 204, and `curl -s https://kurniadi.pages.dev/api/office` shows
    `"mode":"semi-live"`.
 
 ## Operations

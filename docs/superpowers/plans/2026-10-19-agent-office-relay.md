@@ -746,7 +746,7 @@ export interface RelayConfig {
   allow: string[];
 }
 
-export const DEFAULT_CONFIG: RelayConfig = { endpoint: "https://kurniadi.dev/api/office/beat", allow: ["ShinyQ/*"] };
+export const DEFAULT_CONFIG: RelayConfig = { endpoint: "https://kurniadi.pages.dev/api/office/beat", allow: ["ShinyQ/*"] };
 
 export interface RelayPaths {
   home: string;
@@ -1556,7 +1556,7 @@ Create `tools/office-relay/README.md`:
 The local half of the L1 Agent Office (`docs/agents/office.md`): hooks of GitHub Copilot, Claude Code and OpenAI Codex
 call `office-relay hook <agent> <event>`, which turns the event into a tiny signed beat (agent, a hashed session id, a
 state, an activity type, and for allowlisted public repositories the repository, branch and a title from the branch
-name) and posts it to `https://kurniadi.dev/api/office/beat` from a detached process. Prompts, commands, file paths,
+name) and posts it to `https://kurniadi.pages.dev/api/office/beat` from a detached process. Prompts, commands, file paths,
 output and the raw session id never leave the machine.
 
 ## Install (owner, once)
@@ -1577,7 +1577,7 @@ output and the raw session id never leave the machine.
 - `office-relay pause` stops all broadcasting (creates `~/.office-pause`); `office-relay resume` starts it again.
 - `office-relay status`: state, endpoint, key, hooks and the last ten events (agent, event, state, outcome only).
 - `office-relay uninstall` removes the office entries, the Copilot file and the shim (other hooks stay).
-- Config: `~/.office-relay/config.json` `{ "endpoint": "https://kurniadi.dev/api/office/beat", "allow": ["ShinyQ/*"] }`.
+- Config: `~/.office-relay/config.json` `{ "endpoint": "https://kurniadi.pages.dev/api/office/beat", "allow": ["ShinyQ/*"] }`.
   Only repositories in `allow` (and, on the server, only public ones) show a title; everything else is "Client project".
 
 ## Troubleshooting
