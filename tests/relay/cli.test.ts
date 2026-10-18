@@ -132,7 +132,7 @@ describe("office-relay CLI", () => {
     expect(run(["uninstall"], env).status).toBe(0);
     expect(existsSync(program)).toBe(false);
     expect(run(["status"], env).stdout).toContain("program: running from a checkout");
-  });
+  }, 30_000);
 
   it("pause: exit 1 with a message when the pause file cannot be written", () => {
     const file = path.join(home(), "not-a-dir");

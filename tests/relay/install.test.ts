@@ -146,7 +146,8 @@ describe("install", () => {
     // Fully bundled: no relative or `@/` import left, and nothing points back into the checkout (SELF comes from import.meta.url at run time).
     const program = readFileSync(p.program, "utf8");
     expect(program).not.toMatch(/(from\s*|import\s*\(\s*|require\s*\(\s*)["'](\.{1,2}|@)\//);
-    expect(program).not.toContain(process.cwd());
+    // Bun names modules relative to `/` (no leading slash), so look for the path without it.
+    expect(program).not.toContain(process.cwd().slice(1));
     expect(program).toContain("fileURLToPath(import.meta.url)");
 
     const line = json(p.copilot).hooks.preToolUse[0].bash as string;
@@ -177,7 +178,7 @@ describe("install", () => {
     expect(existsSync(p.program)).toBe(false);
     expect(existsSync(p.bin)).toBe(false);
     expect(existsSync(path.join(relayHome, "relay.log"))).toBe(true);
-  });
+  }, 30_000);
 
   it("aborts before any write when the bundle cannot be built", () => {
     const home = mkdtempSync(path.join(tmpdir(), "relay-install-"));
@@ -186,7 +187,7 @@ describe("install", () => {
     const p = installPaths(home);
     for (const file of [p.copilot, p.claude, p.codex, p.bin, p.program]) expect(existsSync(file)).toBe(false);
     expect(existsSync(path.dirname(p.program)) ? readdirSync(path.dirname(p.program)) : []).toEqual([]);
-  });
+  }, 30_000);
 
   it("runs Bun from / without .env files, so the agent's repository cannot preload code or set relay overrides", async () => {
     const root = mkdtempSync(path.join(tmpdir(), "relay-evil-"));

@@ -114,7 +114,8 @@ export function installed(p: InstallPaths): Record<"copilot" | "claude" | "codex
 function bundle(entry: string, runtime: string, out: string): void {
   mkdirSync(path.dirname(out), { recursive: true });
   const tmp = `${out}.tmp-${process.pid}`;
-  const r = spawnSync(runtime, ["build", "--target=bun", `--outfile=${tmp}`, entry], { cwd: "/", encoding: "utf8", timeout: 60_000 });
+  // `--minify-whitespace` also drops the per-module source path comments, so the bundle names no checkout path.
+  const r = spawnSync(runtime, ["build", "--target=bun", "--minify-whitespace", `--outfile=${tmp}`, entry], { cwd: "/", encoding: "utf8", timeout: 60_000 });
   if (r.status !== 0 || !existsSync(tmp)) {
     rmSync(tmp, { force: true });
     throw new Error(`office-relay: cannot bundle ${entry}; nothing was changed\n${r.stderr || r.error?.message || ""}`.trim());
