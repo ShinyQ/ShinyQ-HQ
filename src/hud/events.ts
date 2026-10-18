@@ -24,6 +24,8 @@ export type HudCommand =
   | { type: "paper"; paper: PaperPreview; read?: boolean }
   /** Certification preview card (issuer, dates, credential ID, "Open credential"), see `DialogHost`. */
   | { type: "cert"; cert: CertView }
+  /** In-site study guide reader (pdf.js over `/api/guides/<slug>`), see `DialogHost`; may replace an open cert card. */
+  | { type: "guide"; slug: string }
   /** Page View to the 3D tower (the landing's "Enter the 3D HQ"), handled by `ExperienceGate` like Back to 3D. */
   | { type: "enter3d" };
 
@@ -36,6 +38,7 @@ export const openTerminal = () => sendHudCommand({ type: "terminal" });
 export const openCv = () => sendHudCommand({ type: "cv" });
 export const openPaper = (paper: PaperPreview, options: { read?: boolean } = {}) => sendHudCommand({ type: "paper", paper, ...options });
 export const openCert = (cert: CertView) => sendHudCommand({ type: "cert", cert });
+export const openGuide = (slug: string) => sendHudCommand({ type: "guide", slug });
 export const enterHq = () => sendHudCommand({ type: "enter3d" });
 export const openAsk = (q?: string, options: { topic?: AskTopic; source?: AskEntry } = {}) => sendHudCommand({ type: "ask", q, ...options });
 

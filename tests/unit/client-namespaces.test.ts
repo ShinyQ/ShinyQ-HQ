@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CLIENT_NAMESPACES, LAYOUT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
+import { CLIENT_NAMESPACES, FETCHED_NAMESPACES, LAYOUT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
@@ -115,11 +115,14 @@ describe("client message namespaces", () => {
 
   it("LAYOUT_NAMESPACES lists exactly what the locale layout's client islands read", () => {
     const { used } = namespacesOf(clientGraphOf(join(LOCALE, "layout.tsx")), { paths: true });
-    expect(missingFrom(used, LAYOUT_NAMESPACES)).toEqual([]);
+    expect(missingFrom(used, [...LAYOUT_NAMESPACES, ...FETCHED_NAMESPACES])).toEqual([]);
     expect(LAYOUT_NAMESPACES.filter((l) => ![...used.keys()].some((p) => covers([l], p)))).toEqual([]);
     // The 3D HUD's strings (settings, pads, rooms) stay off the Classic pages: the layout never sends all of `hud`.
     expect(LAYOUT_NAMESPACES).not.toContain("hud");
     expect(LAYOUT_NAMESPACES).not.toContain("dialog");
+    // Dialogs that fetch their own strings (the study guide reader) keep them off every page's HTML.
+    for (const ns of FETCHED_NAMESPACES) expect((LAYOUT_NAMESPACES as readonly string[]).some((l) => l === ns || l.startsWith(`${ns}.`))).toBe(false);
+    for (const ns of FETCHED_NAMESPACES) expect(CLIENT_NAMESPACES).toContain(ns);
   });
 
   it("every page either fits the layout's namespaces or wraps its content in ClientMessages", () => {
@@ -127,7 +130,7 @@ describe("client message namespaces", () => {
     for (const page of pages) {
       const wrapped = /return \(\s*<ClientMessages>/.test(text(page));
       const { used } = namespacesOf(clientGraphOf(page), { paths: true });
-      const missing = missingFrom(used, wrapped ? CLIENT_NAMESPACES : LAYOUT_NAMESPACES);
+      const missing = missingFrom(used, wrapped ? CLIENT_NAMESPACES : [...LAYOUT_NAMESPACES, ...FETCHED_NAMESPACES]);
       if (missing.length) wrong.push(`${relative(ROOT, page)}: ${missing.join(", ")}`);
     }
     expect(wrong).toEqual([]);

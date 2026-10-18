@@ -240,6 +240,32 @@
     "boardCount": "{count} proyek",
     "boardMore": "+{count} lainnya"
   },
+  "guides": {
+    "eyebrow": "Panduan belajar",
+    "pages": "{count} halaman",
+    "read": "Baca",
+    "readGuide": "Baca panduan belajar",
+    "download": "Unduh PDF",
+    "downloadHint": "PDF, {size}",
+    "close": "Tutup pembaca",
+    "loading": "Membuka panduan belajar",
+    "error": "Panduan belajar tidak dapat dibuka.",
+    "retry": "Coba lagi",
+    "page": "Halaman",
+    "pageOf": "Halaman {page} dari {count}",
+    "pageInput": "Buka halaman",
+    "prev": "Halaman sebelumnya",
+    "next": "Halaman berikutnya",
+    "zoomIn": "Perbesar",
+    "zoomOut": "Perkecil",
+    "fitWidth": "Sesuaikan lebar",
+    "chapters": "Bab",
+    "thumbnails": "Thumbnail halaman",
+    "domains": "Domain ujian",
+    "edition": "Edisi {date}",
+    "pageFailed": "Halaman ini tidak dapat ditampilkan.",
+    "independent": "Materi belajar mandiri, bukan panduan ujian resmi."
+  },
   "library": {
     "title": "Perpustakaan",
     "intro": "Tulisan, publikasi riset, model yang saya publikasikan, dan materi pengajaran.",
@@ -260,6 +286,8 @@
     },
     "research": "Riset",
     "researchIntro": "Makalah saya yang melalui peer review dan publikasi skripsi S1.",
+    "guides": "Panduan belajar",
+    "guidesIntro": "Panduan belajar yang saya tulis saat menyiapkan tiap ujian sertifikasi, bisa dibaca langsung di sini.",
     "authors": "Penulis",
     "doi": "DOI",
     "pdf": "PDF",
@@ -925,7 +953,8 @@
       "newTab": "terbuka di tab baru",
       "close": "Tutup",
       "noLink": "Tidak ada tautan kredensial publik.",
-      "pending": "Tautan kredensial publik belum tersedia."
+      "pending": "Tautan kredensial publik belum tersedia.",
+      "readGuide": "Baca panduan belajar"
     },
     "wall": {
       "all": "Semua",
