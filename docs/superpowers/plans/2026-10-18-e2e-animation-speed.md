@@ -1,6 +1,6 @@
 # E2E Animation Speed Experiment Implementation Plan
 
-Status: in review.
+Status: shipped in #231, 2026-10-19, after 3 consecutive green full CI runs with no retries.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -58,8 +58,8 @@ Status: in review.
 
 ### Task 5: CI proof
 
-- [ ] Ask the coordinator for the slot; 3 consecutive full CI runs (`full-ci`), compare the e2e shard worker-seconds with `e2e/durations.json` and list retries (`scripts/flaky-report.ts`).
-- [ ] Merge only if all 3 are green with no new flakes.
+- [x] Ask the coordinator for the slot; 3 consecutive full CI runs (`full-ci`), compare the e2e shard worker-seconds with `e2e/durations.json` and list retries (`scripts/flaky-report.ts`).
+- [x] Merge only if all 3 are green with no new flakes.
 
 ## Measurements
 
@@ -88,5 +88,16 @@ Correctness: two specs found issues at 4x:
 ### CI
 
 - Run 39164830803 (attempt 1, superseded): green, but `library-roof` "cv drives to the kiosk" passed only on retry: `snapshot().rover` read 1.77 u from the stop (tolerance 1.5). The store's rover mirror syncs every `STORE_SYNC_S` (0.1 s) of real time, and the mission opens the room while the rover still rolls at about 4.4 u/s of game speed, so at 4x a stale mirror can sit 1.76 u back (0.44 u at 1x; an offline drive simulation at every frame size arrives within 0.26 u). Fix: the mirror syncs every `STORE_SYNC_S / speed`. Its re-run on the old code was cancelled, and the 3-run proof restarted on the fix.
+- The proof, 3 consecutive full runs (`full-ci`) of 90f3eb79: 39168635632 attempts 1, 2 and 3. All green, no test passed on retry, no failed attempt; the perf gates and Lighthouse passed (real speed). None overlapped the nightly (39172279589 ran 22:27 to 22:45 UTC, between attempts 1 and 2).
+- E2E shard worker-seconds over the same 523 tests (`@nightly` excluded), from the `list` reporter lines in the shard logs, against tonight's nightly 39172279589 on main:
 
-Filled in from the 3 consecutive full CI runs (the e2e shard worker-seconds against the medians in `e2e/durations.json`, and the retries from `scripts/flaky-report.ts`).
+| Run | Opted-in specs | Other specs | Total |
+|---|---|---|---|
+| Nightly 39172279589 (real speed) | 6468 | 1855 | 8323 |
+| Attempt 1 | 5293 | 1757 | 7050 |
+| Attempt 2 | 5143 | 1761 | 6905 |
+| Attempt 3 | 5287 | 1762 | 7050 |
+| Mean of the 3 | 5241 (-19%) | 1760 (-5%) | 7002 (-1321 s, -16%) |
+
+- The unchanged specs also came out 5% faster, which is runner speed, not the change. With each shard scaled by a runner speed factor measured on the unchanged specs only, the opted-in specs go from 6101 to a mean of 5363 worker-seconds (-738 s, -12%) while the unchanged ones stay flat (1792 to 1785): about 740 worker-seconds saved per full run, about 9.5% of the 7820 s PR and `main` e2e lane, in line with the local projection (780 s).
+
