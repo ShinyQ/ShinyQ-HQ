@@ -13,6 +13,7 @@
  */
 import { appendFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import type { Source } from "./ci-complement";
 import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import { ALL_PERF_KEYS, perfGrep, perfKeysFor, type PerfKey } from "./perf-plan";
 
@@ -20,7 +21,7 @@ export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "toolin
 
 /** First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. */
 const CLASSES: [RegExp, ChangeClass][] = [
-  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
@@ -112,6 +113,8 @@ export interface CiPlan {
   lighthouse: false | "all" | string[];
   classes: Partial<Record<ChangeClass, string[]>>;
   reasons: string[];
+  /** A complement run: the green PR run on the same tree that covered the rest. */
+  source?: Source;
 }
 
 /** Lighthouse URL path to the page file that renders it (the measured URLs of lighthouserc.json, in its order). */
@@ -269,7 +272,7 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     if (warmup && plan.lighthouse.every((p) => found.has(p))) lighthouseUrls = JSON.stringify([warmup, ...picked]);
   }
   return {
-    full: String(plan.full || (plan.e2e === "all" && perfAll && plan.lighthouse === "all")),
+    full: String(plan.full || plan.source !== undefined || (plan.e2e === "all" && perfAll && plan.lighthouse === "all")),
     e2e: plan.e2e === "all" ? "all" : specs.length || tests.length ? "specs" : "none",
     e2e_files: [...specs.map((s) => `e2e/${s}.spec.ts`).sort(), ...tests].join(" "),
     e2e_shards: range(plan.e2eShards),
@@ -280,6 +283,7 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     perf_total: String(plan.perfShards),
     lighthouse: String(plan.lighthouse !== false),
     lighthouse_urls: lighthouseUrls,
+    source_run: plan.source ? String(plan.source.run) : "",
   };
 }
 
