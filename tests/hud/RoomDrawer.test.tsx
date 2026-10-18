@@ -11,7 +11,8 @@ import type { DrawerTab, RoomId } from "@/content/schema";
 import { buildRoomViews } from "@/content/room-views";
 import type { RoomView } from "@/content/room-views/types";
 import { getPods } from "@/content/load";
-import { RoomDrawer, type RoomDrawerProps } from "@/hud/drawer/RoomDrawer";
+import { ArchitectureGrid, RoomDrawer, type RoomDrawerProps } from "@/hud/drawer/RoomDrawer";
+import { SITE_URL } from "@/lib/site";
 
 // next-intl's Link needs the Next router; a plain anchor with the locale prefix is enough here.
 vi.mock("@/i18n/navigation", () => ({
@@ -28,7 +29,10 @@ const listed = views[`L3:${getPods().find((p) => p.tier === "listed")!.slug}`];
 const skills = views["L1:skills"];
 const liveView = views["L3:solutions-marketing-site"];
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 function Harness({ view, ...over }: { view: RoomView } & Partial<RoomDrawerProps>) {
   const [tab, setTab] = useState<DrawerTab>("overview");
@@ -55,6 +59,31 @@ function Harness({ view, ...over }: { view: RoomView } & Partial<RoomDrawerProps
 }
 
 describe("RoomDrawer", () => {
+  it.each([
+    { locale: "en", messages: en, source: "Client", target: "Store", async: false, expected: "Client to Store" },
+    { locale: "en", messages: en, source: "Client", target: "Store", async: true, expected: "Client sends asynchronously to Store" },
+    { locale: "id", messages: idMessages, source: "Klien", target: "Penyimpanan", async: false, expected: "Klien ke Penyimpanan" },
+    { locale: "id", messages: idMessages, source: "Klien", target: "Penyimpanan", async: true, expected: "Klien mengirim secara asinkron ke Penyimpanan" },
+  ] as const)("narrates $locale architecture endpoints in order (async=$async)", ({ locale, messages, source, target, async, expected }) => {
+    render(
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <ArchitectureGrid architecture={{
+          nodes: [
+            { id: "source", label: source, layer: 0, row: 0, kind: "client" },
+            { id: "target", label: target, layer: 1, row: 0, kind: "data" },
+          ],
+          edges: [{ from: "source", to: "target", async }],
+        }} />
+      </NextIntlClientProvider>,
+    );
+    const flow = screen.getByRole("heading", { name: messages.drawer.flow }).parentElement!;
+    const row = within(flow).getByRole("listitem");
+    expect(row.querySelector("[aria-hidden='true']")).toHaveTextContent(async ? "⇢" : "→");
+    const accessible = row.cloneNode(true) as HTMLElement;
+    accessible.querySelectorAll("[aria-hidden='true']").forEach((node) => node.remove());
+    expect(accessible.textContent!.replace(/\s+/g, " ").trim()).toBe(expected);
+  });
+
   it("renders supplied native architecture strings in the ID drawer", () => {
     const view = structuredClone(hero);
     view.architecture!.nodes[0].label = "Browser pengunjung";
@@ -241,6 +270,29 @@ describe("RoomDrawer", () => {
     await user.click(screen.getByRole("button", { name: "More actions" }));
     expect(screen.getByRole("button", { name: en.common.copyClassicLink })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: en.common.copy3dLink })).toBeInTheDocument();
+  });
+
+  it.each([["en", en], ["id", idMessages]] as const)("keeps failed %s menu copying inside its action and drawer focus trap", async (locale, messages) => {
+    const user = userEvent.setup();
+    const write = vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(new Error("Clipboard blocked"));
+    history.replaceState(null, "", `/${locale}${hero.page}?view=classic#architecture`);
+    render(<Harness view={hero} locale={locale} />);
+    await user.click(screen.getByRole("button", { name: messages.drawer.more }));
+    const action = screen.getByRole("button", { name: messages.common.copyClassicLink });
+    await user.click(action);
+    const recovery = await screen.findByRole("textbox", { name: messages.common.linkCopyFailed });
+    expect(recovery).toHaveValue(`${SITE_URL}/${locale}${hero.page}?view=classic#architecture`);
+    expect(write).toHaveBeenCalledWith(recovery.getAttribute("value"));
+    expect(action.closest("li")).toContainElement(recovery);
+    expect(action).toHaveFocus();
+    const dialog = screen.getByRole("dialog", { name: hero.title });
+    await user.tab();
+    expect(recovery).toHaveFocus();
+    for (let i = 0; i < 30; i++) {
+      await user.tab();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    expect(recovery).toBeInTheDocument();
   });
 
   it("puts Visit live site right after Read case study and before the cross-floor link, in a new tab (R4-J)", () => {

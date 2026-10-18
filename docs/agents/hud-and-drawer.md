@@ -87,7 +87,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Both use `lazyFromChunk`: a failed chunk shows `ChunkFailed` (`hud.loadFailed` and a Retry button, `hud.retry`) and Retry loads it again; the overview's fallback keeps the dialog shell (`map-overview-failed`) so Esc and close work.
   - While the panel loads, a `min-h-[36rem]` placeholder (`settings-loading`) holds the sheet's height.
 - To add a setting: one file in `defs/`, one entry in `defs/index.ts`, labels in both `messages/*.json`. Persisted preferences use `createLocalPref` (`src/lib/local-pref.ts`: one key, a validated fallback, same-tab and `storage`-event listeners, an in-memory fallback when storage is blocked).
-- Today: language, Open links in, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Music, Floor ambience, Music volume.
+- Today: language, Default HQ view, Motion, Graphics quality, Day and night, Minimap, Sound, Sound effects, Background music, Floor ambience, Music and ambience volume. The two soundtrack switches are independent; the shared volume scales both, and the master Sound switch retains its existing behavior.
 
 ### Graphics quality
 
@@ -134,13 +134,13 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:hints` | `off` hides the hint bubbles |
 | `hq:recent` | recent rooms on the static tier |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
-| `hq:view` | the remembered "Open links in" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
+| `hq:view` | the remembered "Default HQ view" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
 | `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
 | `hq:sound` | master mute, `"off"` mutes (a missing key is on), see [Audio](ci-and-deploy.md#audio) |
 | `hq:sfx` | sound effects, `"off"` disables them (missing is on) |
 | `hq:music` | background music, `"off"` disables it (missing is on) |
 | `hq:ambience` | floor ambience, `"off"` disables it (missing is on); while on, the floor layer replaces the music, see [Audio](ci-and-deploy.md#audio) |
-| `hq:music-volume` | music volume, 0 to 1 (missing is 1) |
+| `hq:music-volume` | shared music and floor-ambience volume, 0 to 1 (missing is 1) |
 | `hq:quality` | graphics quality: `auto` (default), `full` or `lite`, see [Graphics quality](#graphics-quality) |
 | `hq:minimap` | `on` (default) or `off`: whether the corner minimap shows, see [Minimap](#minimap) |
 | `hq:v1` | the store's persisted slice (owned by `useHQStore`, see [Persistence and storage](3d-experience.md#persistence-and-storage)); `floorsSeen` and `b1Unlocked` there keep the B1 unlock |
