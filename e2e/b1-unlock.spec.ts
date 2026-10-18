@@ -83,6 +83,8 @@ test("the fifth floor unlocks B1 once: Rover offers the ride, the row lights up,
   await offer(page).getByRole("button", { name: "Take me there" }).click();
   await waitForFloor(page, "B1", 90_000);
   expect(await state(page)).toMatchObject({ unlocked: true, moment: false });
+  // One chime per unlock: answering the offer and arriving on B1 never chime again.
+  expect(await chimes(page)).toBe(1);
 
   await reload(page);
   expect(await state(page)).toMatchObject({ unlocked: true, moment: false });
