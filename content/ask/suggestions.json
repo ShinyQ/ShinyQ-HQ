@@ -819,7 +819,7 @@
       "tags": ["work", "agents"],
       "followUps": ["work-site", "site-stack", "site-secret-floor"],
       "expect": ["site-build"],
-      "answer": { "any": ["Engine Room", "build"] }
+      "answer": { "any": ["Engine Room", "B1", "Ruang Mesin", "build"] }
     }
   ]
 }
