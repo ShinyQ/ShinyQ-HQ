@@ -98,6 +98,7 @@ Recorded in [`docs/decisions/2026-10-19-ask-rover-voice.md`](../../decisions/202
     memimpin / merancang / mengembangkan / meraih / magang", "saya Kurniadi", "menurut saya", ...);
   - allowed: Rover's guide verbs ("I found", "I can point you to", "I'm Rover", "Saya Rover", "saya menemukan"), and
     "my" for Rover's own things ("my map", "my sensors").
+- Security review (2026-10-19) hardening: `firstPersonVoice` became an allow-list of Rover's guide phrases (any other "I", "my", "saya" or "aku" clause is replaced; curly apostrophes folded; "Kurniadi here" and "my name is Kurniadi" caught), `usableHistory` drops signed turns whose answer fails it, and the adjacent check also requires `groundedShare` of at least 0.65 (the answer's own words found in CONTEXT) and no general-knowledge wording, since a named title alone is not grounding. Measured: world-knowledge answers that name a title score 0.43 to 0.50, grounded paraphrases 0.76 to 1.0.
 - `leaksPrompt` is unchanged in kind: the persona sentence lives in the opening line (never compared); the new rule
   text joins `RULES`, so 7-word runs of it count as a leak; `BENIGN` gains Rover's self-introduction and the new
   canned texts so a normal Rover reply never trips it.

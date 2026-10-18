@@ -284,24 +284,29 @@ export function defamatoryWords(text: string, context: string): string[] {
 }
 
 /**
- * First-person voice as Kurniadi (T18). Rover, the answering guide robot, may say "I" for itself ("I found", "I can
- * point you to", "I'm Rover"; owner decision 2026-10-19), but never with an opinion (Rover has none) and never with
- * Kurniadi's life, work or things. Quoted text is his written words and does not count.
+ * First-person voice as Kurniadi (T18). Rover, the answering guide robot, may say "I" for itself (owner decision
+ * 2026-10-19), but only in its guide phrases; any other "I", "my", "aku" or "saya" clause counts as speaking as
+ * Kurniadi (an allow-list, security review 2026-10-19: a list of forbidden verbs is always incomplete). Quoted text
+ * is his written words and does not count; curly apostrophes are folded first.
  */
-const FIRST_PERSON: RegExp[] = [
-  /\b(?:I|I'm|I've|I'd)\s+(?:really\s+|also\s+|personally\s+)?(?:think|believe|prefer|feel|always|never|like|love|hate|wrote|write|built|build|define|chose|choose|learned|learnt|shipped|own|worked|studied|graduated|joined|led|designed|developed|deployed|earned|interned|founded|created|used|recommend|suggest|enjoy)\b/,
-  /\bI(?:'m| am)\s+(?:a\s+|an\s+|the\s+)?(?:[\w-]+\s+){0,3}(?:engineer|developer|programmer|scientist|architect|consultant|freelancer|student|graduate|researcher)\b/i,
-  /\bI(?:'m| am)\s+Kurniadi\b|\bthis is Kurniadi\b/i,
-  /\b[Mm]y\s+(?:principles?|views?|opinions?|approach|code|projects?|career|team|manager|boss|clients?|salary|family|work|experience|skills?|certifications?|job|role|employers?|company|degree|thesis|posts?|writing|blog|portfolio|site|website|cv|resume|stack|hobb(?:y|ies)|games?)\b/,
-  /\bas Kurniadi\b(?!['\u2019]s)/i,
-  /\b(?:menurut saya|prinsip saya|pendapat saya|pandangan saya|proyek saya|karier saya|pengalaman saya|tim saya|situs saya|tulisan saya)\b/i,
-  /\bsaya\s+(?:pikir|rasa|percaya|lebih suka|lebih memilih|selalu|menulis|membangun|memakai|menggunakan|me-review|bekerja|kuliah|lulus|bergabung|memimpin|merancang|mengembangkan|meraih|magang|menyukai)\b/i,
-  /\bsaya(?:\s+adalah)?\s+Kurniadi\b/i,
-];
+const ROVER_I =
+  /^I(?:'m|\s+am)\s+(?:Rover|the (?:HQ's |small )?guide|a (?:small )?guide|only|not|just|sorry|afraid|unable|happy to)\b|^I(?:'ll|\s+will|'d|\s+would)\s+(?:point|show|take|guide|roll|answer|be happy)\b|^I(?:'ve|\s+have)\s+(?:found|checked|looked|searched|no)\b|^I\s+(?:answer|found|find|can|could|can't|cannot|couldn't|don't|do not|didn't|did not|only|have no|haven't|see|checked|looked|searched|scanned|spotted)\b/;
+const ROVER_MY = /^[Mm]y\s+(?:map|maps|sensors?|circuits?|scanner|wheels|tour|antenna|search|apologies|name is Rover)\b/;
+/** "saya" as an object ("ke saya") or Rover's own guide verbs ("Saya Rover", "saya menemukan"). */
+const SAYA_BEFORE = /(?:^|\s)(?:ke|kepada|dari|oleh|untuk|pada|bagi|dengan|jawaban|peta|sensor)\s+$/i;
+const SAYA_AFTER = /^saya\s+(?:Rover|robot|menemukan|temukan|bisa|dapat|hanya|belum (?:menemukan|punya|memiliki)|cek|periksa|lihat|arahkan|tunjukkan|jawab|menjawab|akan (?:menunjukkan|mengarahkan|tunjukkan|jawab)|tidak (?:bisa|dapat|menemukan|membahas|menulis|punya informasi|memiliki informasi|tahu))\b/i;
+const SELF_ID = /\bKurniadi here\b|\b(?:my name is|I'm|I am) Kurniadi\b|\bas Kurniadi\b(?!['\u2019]s)|\b(?:nama saya|saya(?: adalah)?) Kurniadi\b|\baku\b/i;
 
 export function firstPersonVoice(text: string): boolean {
-  const unquoted = text.replace(/"[^"]*"|\u201C[^\u201D]*\u201D/g, " ");
-  return FIRST_PERSON.some((re) => re.test(unquoted));
+  const unquoted = text.replace(/[\u2018\u2019\u02BC]/g, "'").replace(/"[^"]*"|\u201C[^\u201D]*\u201D/g, " ");
+  if (SELF_ID.test(unquoted)) return true;
+  for (const m of unquoted.matchAll(/\bI(?=['\s])/g)) if (!ROVER_I.test(unquoted.slice(m.index, m.index + 60))) return true;
+  for (const m of unquoted.matchAll(/\b[Mm]y\s/g)) if (!ROVER_MY.test(unquoted.slice(m.index, m.index + 40))) return true;
+  for (const m of unquoted.matchAll(/\bsaya\b/gi)) {
+    if (SAYA_BEFORE.test(unquoted.slice(Math.max(0, m.index - 20), m.index))) continue;
+    if (!SAYA_AFTER.test(unquoted.slice(m.index, m.index + 60))) return true;
+  }
+  return false;
 }
 
 /** Wording that attributes an opinion to Kurniadi; such an answer needs a written source even for a factual question. */
@@ -369,6 +374,31 @@ export function citedSources(answer: string, chunks: readonly KnowledgeChunk[], 
       const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
       return [...runs].filter((run) => own.has(run)).length >= 2;
     });
+}
+
+/** Words an adjacent answer may add around CONTEXT: Rover's voice, framing ("his work shows") and common function words. */
+const FRAMING = new Set(
+  (
+    "rover beep kurniadi work works worked shows show showed project projects case study studies written view views post posts title lesson lessons from his he him according closest source sources read site say says said also but so like see keep keeps use uses used one ones both while rather instead because which when where what why how should would could can may might not no yes hasn hasn't has have had been being written wrote writes note notes found " +
+    "karya menunjukkan proyek studi kasus pandangan tertulis tulisan pelajaran dari menurut sumber situs bahwa tetapi namun ia dia belum sudah juga karena saat ketika sebaiknya seharusnya bisa dapat tidak bukan menulis tulis ditulis"
+  ).split(" "),
+);
+/** Least share of an adjacent answer's own words that must come from CONTEXT or the question (security review 2026-10-19: a named title alone is not grounding). */
+export const ADJACENT_MIN_GROUNDED = 0.65;
+/** Wording of general knowledge, which an adjacent answer must never use (rule 13). */
+const GENERALITY = /(?:in general|generally(?: speaking)?|typically|in most cases|as a rule of thumb|industry best practice|secara umum|pada umumnya|umumnya)/i;
+
+/**
+ * Share of an answer's content words (framing and the question's own words aside) that appear in CONTEXT; a word
+ * also counts when CONTEXT has a word with the same first five letters ("reviewers", "reviewer").
+ */
+export function groundedShare(answer: string, context: string, question = ""): number {
+  const ctx = new Set(tokenize(context));
+  const stems = new Set([...ctx].filter((t) => t.length >= 5).map((t) => t.slice(0, 5)));
+  const asked = new Set(tokenize(question));
+  const words = [...new Set(tokenize(answer.replace(/[\u2018\u2019]/g, "'")))].filter((t) => !FRAMING.has(t) && !asked.has(t) && !/^\d+$/.test(t));
+  if (!words.length) return 1;
+  return words.filter((t) => ctx.has(t) || (t.length >= 5 && stems.has(t.slice(0, 5)))).length / words.length;
 }
 
 /**
@@ -489,6 +519,7 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   // A related professional question is answered only from his work (rule 13): it must cite a retrieved case study,
   // post, talk, paper or written view, and a lesson told as his opinion must cite his written view (rule 8).
   if (adjacent && outcome === "answer") {
+    if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "noView" };
     const cited = citedSources(text, chunks, locale, ADJACENT_SOURCE_TYPES).filter((c) => !claimsOpinion(text) || SOURCE_TYPES.has(c.type));
     if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
     const linked = cited.find((c) => isAskCite(c.url));

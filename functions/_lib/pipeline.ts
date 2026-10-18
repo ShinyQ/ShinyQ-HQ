@@ -1,5 +1,5 @@
 import type { AskLocale, AskOutcome, AskSource, AskTag } from "../../src/ask/protocol";
-import { checkAnswer, closestSource, type CheckFailure } from "./checks";
+import { checkAnswer, closestSource, firstPersonVoice, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
@@ -91,7 +91,8 @@ export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
 export function usableHistory(history: readonly HistoryTurn[], pack: KnowledgePack): HistoryTurn[] {
   return history.filter((t) => {
     const q = resolveNickname(t.q);
-    return !isHarmful(q) && !privateTopic(q) && !opinionAboutOthers(q, pack.orgs) && !isGeneralAssistantRequest(q) && !isPersonaRequest(q) && !isRuleOverride(q);
+    // A signed answer that would now fail the voice check (an older or weaker check signed it) never becomes context.
+    return !isHarmful(q) && !privateTopic(q) && !opinionAboutOthers(q, pack.orgs) && !isGeneralAssistantRequest(q) && !isPersonaRequest(q) && !isRuleOverride(q) && !firstPersonVoice(t.a);
   });
 }
 

@@ -240,6 +240,8 @@ const PERSONA: RegExp[] = [
   /\b(?:jawab|bicara|berbicara|menjawab|bertindak|berperan)(?:lah)? (?:sebagai|seperti|seolah(?:-olah)?(?: kamu)?) (?:kurniadi|shinyq|dia|beliau|orang lain)\b/i,
   /\b(?:pura-pura|berpura-pura|anggap(?:lah)? (?:kamu|dirimu|kau)|kamu (?:sekarang )?(?:adalah|jadi|menjadi))\s+(?:jadi |menjadi |adalah |sebagai )?(?:kurniadi|shinyq)\b/i,
   /\bpakai kata (?:saya|aku)\b|\bsebagai orang pertama\b/i,
+  // His voice or his role without his name (security review 2026-10-19).
+  /\b(?:in|using|with) (?:his|kurniadi'?s) (?:own )?voice\b|\bas (?:the )?(?:owner|author|creator) of (?:this|the) (?:site|portfolio|website)\b|\bsebagai pemilik (?:situs|portofolio|website) ini\b|\bdengan suara(?:nya| kurniadi)\b/i,
 ];
 
 /** A request to speak as Kurniadi or anyone else, or to take another persona (EN/ID). */
