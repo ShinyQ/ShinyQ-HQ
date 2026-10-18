@@ -55,7 +55,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
           </p>
           <p className="pv-data mt-5 flex flex-wrap gap-x-4" lang={locale}>
             <Marker accent="white">L4</Marker>
-            <span>{formatDate(post.date, locale)}</span>
+            <span className="pv-date">{formatDate(post.date, locale)}</span>
             <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(" · ")}</span>
           </p>
           <h1 className="pv-d-l mt-5 text-[clamp(36px,4.6vw,60px)]">{post.title[found.locale]}</h1>

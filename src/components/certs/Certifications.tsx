@@ -24,7 +24,7 @@ function FeaturedCard({ cert, details }: { cert: CertView; details: string }) {
       {title && <span className="pv-num mt-4 block text-[clamp(30px,3vw,40px)] leading-none">{title}</span>}
       <span className={`block leading-snug text-ink ${title ? "mt-3 text-[15px]" : "mt-4 text-[17px] font-semibold"}`}>{cert.short}</span>
       <span className="mt-auto flex items-center justify-between gap-3 pt-4">
-        <span className="pv-data">{cert.issuedLabel}</span>
+        <span className="pv-date">{cert.issuedLabel}</span>
         <span className="text-sm text-ink-2">{details}</span>
       </span>
     </button>
@@ -54,7 +54,7 @@ function CertRow({ cert, status, featured }: { cert: CertView; status: string; f
           ) : (
             <span className="truncate">{cert.issuer} ·</span>
           )}
-          <span className="shrink-0">{cert.issuedLabel}</span>
+          <span className="pv-date shrink-0">{cert.issuedLabel}</span>
           {cert.status !== "earned" && <span className={`pv-mark shrink-0 ${STATUS_CLASS[cert.status]}`}>{status}</span>}
         </span>
       </span>

@@ -9,7 +9,7 @@ export async function SideProjectGrid({ projects, locale }: { projects: readonly
     <ul className="pv-rows pv-rows-closed">
       {projects.map((p) => (
         <li key={p.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[90px_minmax(0,1fr)] md:py-6">
-          <p className="pv-data md:pt-1.5">{p.year}</p>
+          <p className="pv-date md:pt-1.5">{p.year}</p>
           <div className="min-w-0">
             <h3 className="pv-h3">{p.title}</h3>
             <p className="mt-2 max-w-[64ch] text-[15px] leading-6 text-ink-2">{p.summary[locale]}</p>

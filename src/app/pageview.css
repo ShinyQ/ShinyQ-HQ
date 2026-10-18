@@ -112,6 +112,17 @@
     color: var(--color-ink-3);
   }
 
+  /* Dates and periods: the data mono as a value, not a label (sentence case, tabular figures, no extra tracking). */
+  .pv-date {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-3);
+  }
+
   /* Wayfinding marker: a 7 px square in the text color, set with an accent text class. */
   .pv-mark {
     display: inline-flex;
