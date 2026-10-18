@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review in #220, 2026-10-18 (owner request).
+Status: in review in #220, 2026-10-18 (owner request). Owner review added one change after Task 5: the moon hands off to the sun (one orb near the horizon at a time; `Orb.alpha` in `dayNight.ts`).
 
 **Goal:** The sun and the moon of the day and night cycle move up and down (rise from the horizon, climb, sink straight down) instead of sliding right to left across the default view.
 

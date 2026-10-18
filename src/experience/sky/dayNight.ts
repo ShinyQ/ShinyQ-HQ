@@ -75,6 +75,8 @@ export function resolveSkyMode(i: { param: SkyParam; pref: DayNightPref; reduced
 export interface Orb {
   dir: Vector3;
   elevation: number;
+  /** Visibility 0 to 1: the horizon fade, and for the moon the handoff to the sun (see `orbAlphas`). */
+  alpha: number;
 }
 
 export interface SkyState {
@@ -140,7 +142,17 @@ function writeOrb(phase: number, offset: number, azimuth: number, out: Vector3):
 }
 
 export function orbDirection(phase: number, offset: number, out = new Vector3(), azimuth: number = SKY.azimuth.desktop): Orb {
-  return { dir: out, elevation: writeOrb(phase, offset, azimuth, out) };
+  const elevation = writeOrb(phase, offset, azimuth, out);
+  return { dir: out, elevation, alpha: horizonFade(elevation) };
+}
+
+/** An orb starts to show `HANDOFF` below the horizon and is fully shown `HORIZON_FADE_UP` above it. */
+const HANDOFF = 0.06;
+const HORIZON_FADE_UP = 0.03;
+
+/** An orb fades in from `HANDOFF` below the horizon to `HORIZON_FADE_UP` above it. */
+function horizonFade(elevation: number): number {
+  return smoothstep(SKY.horizon - HANDOFF, SKY.horizon + HORIZON_FADE_UP, elevation);
 }
 
 export function createSkyState(): SkyState {
@@ -156,8 +168,8 @@ export function createSkyState(): SkyState {
     hemisphere: { sky: new Color(), ground: new Color(), intensity: 0 },
     directional: { color: new Color(), intensity: 0 },
     bloom: BLOOM_NIGHT,
-    sun: { dir: new Vector3(), elevation: 0 },
-    moon: { dir: new Vector3(), elevation: 0 },
+    sun: { dir: new Vector3(), elevation: 0, alpha: 0 },
+    moon: { dir: new Vector3(), elevation: 0, alpha: 0 },
   };
 }
 
@@ -182,5 +194,9 @@ export function skyState(phase: number, out: SkyState = createSkyState(), azimut
   out.bloom = BLOOM_NIGHT + (BLOOM_DAY - BLOOM_NIGHT) * day;
   out.sun.elevation = writeOrb(phase, 0, azimuth, out.sun.dir);
   out.moon.elevation = writeOrb(phase, 0.5, azimuth, out.moon.dir);
+  out.sun.alpha = horizonFade(out.sun.elevation);
+  // One orb near the horizon at a time (owner review): the moon shows only while the sun is more than `HANDOFF` below
+  // the horizon, so it fades out (still about `HANDOFF` up) before the sun starts to show and fades back in after the sun is gone.
+  out.moon.alpha = horizonFade(out.moon.elevation) * (1 - smoothstep(SKY.horizon - 2 * HANDOFF, SKY.horizon - HANDOFF, out.sun.elevation));
   return out;
 }

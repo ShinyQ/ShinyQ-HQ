@@ -123,6 +123,36 @@ describe("day and night model", () => {
     // The night moon and the midday sun share one direction (in front of the L1 default camera).
     expect(skyState(0).moon.dir.distanceTo(skyState(0.5).sun.dir)).toBeLessThan(1e-9);
   });
+  it("shows one orb at a time: the moon fades out before the sun rises and back in after it sets", () => {
+    for (const cls of ["desktop", "tablet", "mobile"] as const) {
+      const at = (p: number) => skyState(p, undefined, skyAzimuth(cls));
+      let lastMoon = -1;
+      let firstSun = -1;
+      let lastSun = -1;
+      let firstMoon = -1;
+      for (let i = 0; i <= 2000; i++) {
+        const p = i / 2000;
+        const s = at(p);
+        // Never two orbs at once: the dimmer one is invisible.
+        expect(Math.min(s.sun.alpha, s.moon.alpha), `phase ${p}`).toBeLessThan(0.01);
+        if (p < 0.5 && s.moon.alpha > 0.01) lastMoon = p;
+        if (p < 0.5 && s.sun.alpha > 0.01 && firstSun < 0) firstSun = p;
+        if (p > 0.5 && s.sun.alpha > 0.01) lastSun = p;
+        if (p > 0.5 && s.moon.alpha > 0.01 && firstMoon < 0) firstMoon = p;
+      }
+      expect(lastMoon).toBeLessThan(firstSun);
+      expect(lastSun).toBeLessThan(firstMoon);
+      // Night shows the moon, day the sun; at dawn and dusk only the sun sits on the horizon.
+      expect(at(SKY_PHASES.night).moon.alpha).toBe(1);
+      expect(at(SKY_PHASES.night).sun.alpha).toBe(0);
+      expect(at(SKY_PHASES.day).sun.alpha).toBe(1);
+      expect(at(SKY_PHASES.day).moon.alpha).toBe(0);
+      for (const p of [SKY_PHASES.dawn, SKY_PHASES.dusk]) {
+        expect(at(p).sun.alpha).toBeGreaterThan(0.3);
+        expect(at(p).moon.alpha).toBe(0);
+      }
+    }
+  });
   it("is continuous across the cycle", () => {
     const a = skyState(0.999999);
     const b = skyState(0);

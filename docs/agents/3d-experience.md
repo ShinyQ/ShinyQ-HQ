@@ -427,7 +427,9 @@ The tower runs a 4 minute cycle from neon night to a deep twilight "day" (owner 
   - "Day" is not daylight: an indigo to teal sky with a sun glow on the horizon. Neon glows brighter at night (full tier bloom 0.9 at night, 0.72 at twilight day).
 - Geometry: the sky is a dome whose horizon sits at `SKY.horizon` (-0.6 rad), because the follow cameras look 44 to 47 degrees down.
   - The sun and the moon ride one tall, narrow ellipse on the sky sphere, opposite each other, so they move up and down (owner decision 2026-10-18): centered on the horizon at `SKY.azimuth` for the camera class (`skyAzimuth(device.camera)`: desktop -0.2, the open sky on the left of the L1 view between the profile card and the Visitor Observatory; tablet and phone -0.85, the open sky at the top left of the L1 portrait view), climbing `SKY.rise` (0.16 rad) above it and swinging `SKY.width` (0.06 rad) sideways where they cross it.
-  - The sun rises on the left at dawn, tops out at midday, sinks straight down on the right at dusk and stays below the horizon at night; the moon does the same half a cycle later. `SkyController` re-applies the sky when the camera class changes. The dome's sun glow follows the sun direction.
+  - The sun rises on the left at dawn, tops out at midday, sinks straight down on the right at dusk and stays below the horizon at night; the moon does the same half a cycle later.
+  - One orb near the horizon at a time: each orb's `alpha` (in the model, written by `applyOrbs`) fades in from 0.06 rad below the horizon to 0.03 above it, and the moon shows only while the sun is more than 0.06 rad below the horizon, so it fades out before the sun starts to show at dawn and back in after the sun is gone at dusk.
+  - `SkyController` re-applies the sky when the camera class changes. The dome's sun glow follows the sun direction.
 
 ### Mode resolution
 

@@ -5,11 +5,6 @@ const ORB_RADIUS = 380;
 const SUN_SIZE = 36;
 const MOON_SIZE = 30;
 
-function smoothstep(a: number, b: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-}
-
 /** Copies the sky state into the dome's uniforms (`still`: no stars, see `SkyMode`). */
 export function applyDome(material: ShaderMaterial, state: SkyState, still = false): void {
   const u = material.uniforms;
@@ -21,7 +16,7 @@ export function applyDome(material: ShaderMaterial, state: SkyState, still = fal
   u.uParams.value.y = still ? 0 : state.stars;
 }
 
-/** Places the sun (instance 0) and the moon (instance 1) on the sky sphere, facing the center, with their horizon fade (alpha 0 when `still`). */
+/** Places the sun (instance 0) and the moon (instance 1) on the sky sphere, facing the center, with their alpha from the model (0 when `still`). */
 export function applyOrbs(mesh: InstancedMesh, alpha: InstancedBufferAttribute, state: SkyState, scratch: Object3D, still = false): void {
   const place = (i: number, o: Orb, size: number) => {
     scratch.position.copy(o.dir).multiplyScalar(ORB_RADIUS);
@@ -29,7 +24,7 @@ export function applyOrbs(mesh: InstancedMesh, alpha: InstancedBufferAttribute, 
     scratch.scale.setScalar(size);
     scratch.updateMatrix();
     mesh.setMatrixAt(i, scratch.matrix);
-    alpha.setX(i, still ? 0 : smoothstep(SKY.horizon - 0.06, SKY.horizon + 0.03, o.elevation));
+    alpha.setX(i, still ? 0 : o.alpha);
   };
   place(0, state.sun, SUN_SIZE);
   place(1, state.moon, MOON_SIZE);
