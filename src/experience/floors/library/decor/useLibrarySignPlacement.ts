@@ -2,15 +2,12 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Vector3, type Camera, type Object3D } from "three";
+import { Vector3, type Object3D } from "three";
 import { getHQStore } from "@/store/useHQStore";
-import { ROVER_HEIGHT } from "../../../config";
-import type { ScreenBox } from "../../../fx/labelPlacement";
-import { projectPlate } from "../../../fx/plateProjection";
 import { sceneProbes } from "../../../fx/probes";
-import { signPlate, type SignSpec } from "../../../fx/signLayout";
+import type { SignSpec } from "../../../fx/signLayout";
 import { roverRuntime } from "../../../rover/runtime";
-import { placeLibraryLabels, type LibraryLabel } from "../signPlacement";
+import { createLibraryFrame, libraryLabelFrame, libraryPlateHalves, type LibraryFrame } from "./signFrame";
 import type { LibrarySignMeta } from "./signs";
 import { endPlazaScreen } from "./useEndSignPlacement";
 
@@ -18,40 +15,13 @@ import { endPlazaScreen } from "./useEndSignPlacement";
  * Screen placement of the L4 timeline signs (Round 7 declutter): every frame each sign's plate is projected
  * to the screen and `placeLibraryLabels` decides which show (picked titles, sections, years, then the
  * nearest titles to the rover, capped per kind), so no label covers another, an end plaza sign or the
- * rover (its bounds projected to the screen count as occupied space). Signs
- * hide when the camera is right under them (`NEAR`). Fades ease; under reduced motion they cut. Writes
- * `__hq.probes.library.labels` (the shown boxes in CSS pixels) for the overlap test.
+ * rover (its bounds projected to the screen count as occupied space). Signs hide when the camera is right
+ * under them (`LIBRARY_SIGN.near`). The frame itself is pure (`libraryLabelFrame` in `signFrame.ts`). Fades
+ * ease; under reduced motion they cut. Writes `__hq.probes.library.labels` (the shown boxes in CSS pixels) for
+ * the rendered overlap test.
  */
 
-/** Horizontal camera distance (u) under which a sign hides: it would fill the screen. */
-const NEAR = 6;
-/** A small margin around each plate. */
-const BOX_PAD = 1.04;
 const FADE_RATE = 8;
-/** Half the rover's footprint (u) for its screen box. */
-const ROVER_HALF = 0.9;
-
-/**
- * Screen box of the rover's bounds (x/z within `ROVER_HALF` of the rover, y from the floor to
- * `ROVER_HEIGHT`) in CSS pixels, written into `out`; null when a corner lies behind the camera.
- */
-function roverScreenBox(camera: Camera, floorY: number, size: { width: number; height: number }, v: Vector3, out: ScreenBox): ScreenBox | null {
-  out.x0 = Infinity;
-  out.y0 = Infinity;
-  out.x1 = -Infinity;
-  out.y1 = -Infinity;
-  for (let c = 0; c < 8; c++) {
-    v.set(roverRuntime.x + (c & 1 ? ROVER_HALF : -ROVER_HALF), floorY + (c & 2 ? ROVER_HEIGHT : 0), roverRuntime.z + (c & 4 ? ROVER_HALF : -ROVER_HALF)).project(camera);
-    if (v.z < -1 || v.z > 1) return null;
-    const x = ((v.x + 1) / 2) * size.width;
-    const y = ((1 - v.y) / 2) * size.height;
-    out.x0 = Math.min(out.x0, x);
-    out.x1 = Math.max(out.x1, x);
-    out.y0 = Math.min(out.y0, y);
-    out.y1 = Math.max(out.y1, y);
-  }
-  return out;
-}
 
 type ProbeLabel = (typeof sceneProbes.library.labels)[number];
 
@@ -73,34 +43,13 @@ export function useLibrarySignPlacement({
   useLayoutEffect(() => {
     alpha.current = new Float32Array(signs.length);
   }, [signs]);
-  const half = useMemo(
-    () =>
-      signs.map((s) => {
-        const p = signPlate(s);
-        return { w: (p.w / 2) * BOX_PAD, h: (p.h / 2) * BOX_PAD };
-      }),
-    [signs],
-  );
+  const half = useMemo(() => libraryPlateHalves(signs), [signs]);
   const texts = useMemo(() => signs.map((s) => s.text.replace(/\s+/g, " ")), [signs]);
   const size = useThree((s) => s.size);
   const v = useMemo(() => new Vector3(), []);
   const origin = useMemo(() => new Vector3(), []);
   /** Per-frame scratch (candidates, quads, the plate center), rebuilt when the sign list changes. */
-  const scratch = useRef<{
-    meta: readonly LibrarySignMeta[] | null;
-    labels: LibraryLabel[];
-    quads: ([number, number][] | null)[];
-    at: { x: number; y: number; z: number };
-    rover: ScreenBox;
-    fixed: ScreenBox[];
-  }>({
-    meta: null,
-    labels: [],
-    quads: [],
-    at: { x: 0, y: 0, z: 0 },
-    rover: { x0: 0, y0: 0, x1: 0, y1: 0 },
-    fixed: [],
-  });
+  const scratch = useRef<LibraryFrame>(createLibraryFrame());
   useEffect(
     () => () => {
       sceneProbes.library.labels = [];
@@ -113,37 +62,20 @@ export function useLibrarySignPlacement({
   useFrame(({ camera }, dt) => {
     if (!group.current || meta.length !== signs.length) return;
     const work = scratch.current;
-    if (work.meta !== meta) {
-      work.meta = meta;
-      work.labels = meta.map((m) => ({ kind: m.kind, box: null, distance: 0, picked: false }));
-      work.quads = meta.map(() => null);
-    }
-    const { labels, quads, at } = work;
     group.current.getWorldPosition(origin);
-    const rooms = getHQStore().getState().topics.topic?.rooms;
-    for (let i = 0; i < signs.length; i++) {
-      const s = signs[i];
-      const m = meta[i];
-      const label = labels[i];
-      at.x = origin.x + s.x;
-      at.y = origin.y + s.y;
-      at.z = origin.z + s.z;
-      label.distance = Math.hypot(roverRuntime.x - at.x, roverRuntime.z - at.z);
-      label.picked = m.kind === "title" && Boolean(m.room && rooms?.includes(m.room));
-      label.box = null;
-      quads[i] = null;
-      if (Math.hypot(camera.position.x - at.x, camera.position.z - at.z) < NEAR) continue;
-      const projected = projectPlate(camera, at, half[i], size, v);
-      if (!projected || !projected.onScreen) continue;
-      label.box = projected.box;
-      quads[i] = projected.quad;
-    }
-    const fixed = work.fixed;
-    fixed.length = 0;
-    for (const b of endPlazaScreen.boxes) fixed.push(b);
-    const rover = roverScreenBox(camera, origin.y, size, v, work.rover);
-    if (rover) fixed.push(rover);
-    const shown = placeLibraryLabels(labels, { narrow: size.width < 600, fixed });
+    const { shown, rover } = libraryLabelFrame(work, {
+      camera,
+      signs,
+      meta,
+      half,
+      origin,
+      rover: roverRuntime,
+      rooms: getHQStore().getState().topics.topic?.rooms,
+      size,
+      endBoxes: endPlazaScreen.boxes,
+      v,
+    });
+    const { labels, quads } = work;
     // A new sign list starts hidden and fades in where it fits.
     const a = alpha.current;
     const k = reducedMotion ? 1 : Math.min(1, dt * FADE_RATE);
