@@ -14,6 +14,9 @@ describe("ci-plan classify", () => {
     ["bun.lock", "ci"],
     ["e2e/perf/floors.spec.ts", "ci"],
     ["scripts/e2e-plan.ts", "ci"],
+    ["scripts/ci-complement.ts", "ci"],
+    ["scripts/ci-status.ts", "ci"],
+    ["scripts/merge-gate.ts", "ci"],
     ["src/experience/tower/Tower.tsx", "code3d"],
     ["src/hud/HudRoot.tsx", "code3d"],
     ["public/floors/l3.webp", "code3d"],
@@ -103,6 +106,7 @@ describe("ci-plan planFor: full runs", () => {
     perf_total: perfTotal,
     lighthouse: "true",
     lighthouse_urls: "",
+    source_run: "",
   });
 
   it("runs everything on 8 e2e and 4 perf shards when the file list is unknown (push)", () => {
@@ -149,6 +153,7 @@ describe("ci-plan planFor: selective pull request runs", () => {
       perf_total: "2",
       lighthouse: "false",
       lighthouse_urls: "",
+      source_run: "",
     });
   });
 

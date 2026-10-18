@@ -325,6 +325,15 @@ export function specSeconds(durations: Durations | null | undefined, spec: strin
   return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : UNKNOWN_SPEC_SECONDS;
 }
 
+export const MAX_E2E_SHARDS = 8;
+/** Worker-seconds one e2e shard should take: 2 workers for about 4 minutes. */
+export const E2E_SHARD_SECONDS = 2 * 240;
+
+/** Shards for a planned e2e run of `seconds` worker-seconds: ceil(seconds / 480), 1 to 8. */
+export function e2eShardsFor(seconds: number): number {
+  return seconds <= 0 ? 1 : Math.min(MAX_E2E_SHARDS, Math.max(1, Math.ceil(seconds / E2E_SHARD_SECONDS)));
+}
+
 /**
  * Extra specs added on top of the first matching rule (never instead of it). Shared files that the B1 Engine Room
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.

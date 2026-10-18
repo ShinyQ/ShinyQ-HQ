@@ -7,9 +7,10 @@ name: Deploy
 #   - push: the fast path (owner decision 2026-10-18). scripts/merge-gate.ts deploys at once, without waiting
 #     for the push CI on main, when the commit is the merge of a same-repository pull request whose head has the
 #     same tree and whose required checks were green there, and no `deploy-rollback` issue is open. Otherwise it
-#     falls back to waiting for the complete main CI as below. Main CI still runs the full suite in parallel;
-#     when it fails, rollback.yml rolls production back and opens the `deploy-rollback` issue, which blocks
-#     the fast path until main is green again. A GITHUB_TOKEN merge (the weekly facts PR) starts no push run.
+#     falls back to waiting for the complete main CI as below. Main CI runs the complement of the PR run (or the
+#     full suite) in parallel; when it fails, rollback.yml rolls production back and opens the `deploy-rollback`
+#     issue, which blocks the fast path until main is green again. A GITHUB_TOKEN merge (the weekly facts PR)
+#     starts no push run.
 #   - by refresh-facts.yml after it merged a weekly live-facts PR (sha = the merge commit), unless
 #     the repository variable AUTO_DEPLOY_FACTS is "false";
 #   - by hand: Actions > Deploy > Run workflow, or `gh workflow run deploy.yml --ref main [-f sha=<commit>]`.

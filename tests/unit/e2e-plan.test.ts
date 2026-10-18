@@ -3,6 +3,7 @@ import {
   ALL_SPECS,
   assignShard,
   durationKey,
+  e2eShardsFor,
   listTestIds,
   locateTest,
   medianDurations,
@@ -23,6 +24,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { classify } from "../../scripts/ci-plan";
+
+describe("e2eShardsFor", () => {
+  it("sizes ceil(seconds / 480), 1 to 8", () => {
+    expect(e2eShardsFor(0)).toBe(1);
+    expect(e2eShardsFor(480)).toBe(1);
+    expect(e2eShardsFor(481)).toBe(2);
+    expect(e2eShardsFor(9515)).toBe(8);
+  });
+});
 
 describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
