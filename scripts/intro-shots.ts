@@ -8,8 +8,8 @@
  *
  * Writes <device>/NNNN.png (one frame every `--stride` rendered frames, default 6), <device>-strip.png (a contact
  * strip of STRIP evenly spaced frames, default 10) and <device>.mp4 (10 fps, needs ffmpeg), plus timeline.json (per
- * capture: frame, phase, camera position, scene calls). `--reduced` emulates reduced motion. macOS renders on the
- * real GPU (ANGLE Metal), other systems on SwiftShader (slow, same frames).
+ * capture: frame, phase, camera position, scene calls). `--reduced` emulates reduced motion and stores the
+ * Motion choice "reduced". macOS renders on the real GPU (ANGLE Metal), other systems on SwiftShader (slow, same frames).
  */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -38,7 +38,7 @@ const DEVICES = process.env.DEVICES ? ALL_DEVICES.filter((d) => process.env.DEVI
 const TAIL = 60;
 const MAX_FRAMES = 900;
 
-type HQ = { __hq: { store: { getState(): { phase: string } }; rover: { drawCalls: number; cameraPosition: number[]; introFly?: number } } };
+type HQ = { __hq: { store: { getState(): { phase: string } }; rover: { drawCalls: number; cameraPosition: number[] } } };
 
 const GPU_ARGS = process.platform === "darwin" ? ["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] : ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
 
@@ -61,16 +61,18 @@ try {
     await context.route("**/api/stats", (route) => route.fulfill({ status: 204 }));
     const page = await context.newPage();
     await installVirtualClock(page, { autorun: false });
-    await page.addInitScript(() => {
+    await page.addInitScript((reduced) => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
       localStorage.setItem("hq:hints", "off");
       localStorage.setItem("hq:floor-intro", JSON.stringify(["L2", "L3", "L4", "RF"]));
       const raw = localStorage.getItem("hq:v1");
       const saved = raw ? JSON.parse(raw) : { state: {}, version: 3 };
-      localStorage.setItem("hq:v1", JSON.stringify({ ...saved, state: { ...saved.state, floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true } }));
+      // A new visitor's intro plays in full under the OS setting alone; the stored Motion choice turns it off.
+      const motion = reduced ? { motion: "reduced" } : {};
+      localStorage.setItem("hq:v1", JSON.stringify({ ...saved, state: { ...saved.state, ...motion, floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true } }));
       sessionStorage.setItem("hq:ask-teaser", "1");
-    });
+    }, REDUCED);
     await page.goto(`${BASE}/en?tier=${d.tier}`);
     await page.getByTestId("hq").waitFor({ timeout: 120_000 });
     await driveUntil(page, () => document.querySelector('[data-testid="boot"] button:not([aria-disabled="true"])') !== null, { maxFrames: 1500, batch: 10 });
