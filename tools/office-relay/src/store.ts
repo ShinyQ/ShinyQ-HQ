@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import path from "node:path";
 import type { Sent } from "./beat";
 
@@ -21,10 +22,13 @@ export interface RelayPaths {
 
 const LOG_MAX_BYTES = 256 * 1024;
 
-/** `~/.office-relay/` (override the home with OFFICE_RELAY_HOME) and the pause file `~/.office-pause`. */
+/**
+ * `~/.office-relay/` (override the home with OFFICE_RELAY_HOME) and the pause file `~/.office-pause`. A missing or
+ * empty HOME falls back to the OS home, so relay files never land in the agent's working directory.
+ */
 export function relayPaths(env: Partial<NodeJS.ProcessEnv> = process.env): RelayPaths {
-  const user = env.HOME ?? "";
-  const home = env.OFFICE_RELAY_HOME ?? path.join(user, ".office-relay");
+  const user = env.HOME || homedir();
+  const home = env.OFFICE_RELAY_HOME || path.join(user, ".office-relay");
   return { home, pause: path.join(user, ".office-pause"), config: path.join(home, "config.json"), salt: path.join(home, "salt"), sessions: path.join(home, "sessions"), log: path.join(home, "relay.log") };
 }
 

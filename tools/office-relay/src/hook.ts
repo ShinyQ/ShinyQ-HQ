@@ -50,8 +50,9 @@ export function runHook(agent: string, event: string, stdin: string, deps: HookD
     appendLog(paths, `${agent} ${safeEvent} ${beat.state} skipped`);
     return "skipped";
   }
-  writeSent(paths, session, { state: beat.state, activity: beat.activity, repo: beat.repo, title: beat.title, sentAt: now });
+  // Dispatch first: a failed spawn throws before the beat is recorded as sent, so the next event retries it.
   deps.dispatch(JSON.stringify(beat));
+  writeSent(paths, session, { state: beat.state, activity: beat.activity, repo: beat.repo, title: beat.title, sentAt: now });
   appendLog(paths, `${agent} ${safeEvent} ${beat.state} sent`);
   return "sent";
 }

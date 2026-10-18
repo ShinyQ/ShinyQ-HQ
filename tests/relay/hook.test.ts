@@ -68,6 +68,16 @@ describe("runHook", () => {
     expect(sent.map((b) => JSON.parse(b).state)).toEqual(["working", "working", "reviewing"]);
   });
 
+  it("does not record a beat as sent when dispatch throws", () => {
+    const { d, sent, tick } = deps();
+    const edit = JSON.stringify(HOOK_FIXTURES.claude.PostToolUseEdit);
+    const failing: HookDeps = { ...d, dispatch: () => { throw new Error("spawn failed"); } };
+    expect(() => runHook("claude", "PostToolUse", edit, failing)).toThrow("spawn failed");
+    tick(1000);
+    expect(runHook("claude", "PostToolUse", edit, d)).toBe("sent");
+    expect(sent).toHaveLength(1);
+  });
+
   it("does nothing while paused, on unknown events, bad JSON or unknown agents", () => {
     const { d, sent } = deps();
     writeFileSync(d.paths.pause, "");
