@@ -145,9 +145,10 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
 ### Full runs and the nightly
 
 - `workflow_dispatch` (without `complement_pr`) and the nightly schedule always run everything: 8 e2e shards and 4 perf shards. A push to `main` runs the complement of its merged PR's green same-tree run ([Complement runs on `main`](#complement-runs-on-main)), else everything as well.
+- The nightly-only e2e tests (title ending ` @nightly`, [performance.md](performance.md#nightly-only-e2e-tests)) run only on the nightly schedule and on a dispatch with `nightly: true`; pull requests, pushes to `main` and other dispatches skip them (`--grep-invert @nightly` in the `e2e` job).
 - Nightly: cron `15 20 * * *` (03:15 WIB) on `main`, in its own concurrency group so it never replaces a pending `main` push. It adds one job:
   - `Nightly report` (`scripts/ci-nightly.ts`): opens one issue labelled `ci-nightly` when a job failed, updates it while the nightly keeps failing (a comment only when the failed jobs change) and closes it once a later nightly is green. It writes only on `main`; elsewhere it is a dry run.
-- Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`).
+- Run it by hand: dispatch `ci.yml` with `nightly: true` (`gh workflow run ci.yml --ref main -f nightly=true`): the nightly-only tests and the report.
 - The strict visual gate is not in CI because it needs a real GPU (hosted runners time out on SwiftShader, [run](https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/38966094099)); run it locally per [performance.md](performance.md). Nightly visual captures for review stay in `screenshots.yml`.
 
 ## Production deploy

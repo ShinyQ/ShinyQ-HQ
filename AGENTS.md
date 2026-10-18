@@ -113,7 +113,8 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 - Smart CI: every PR runs typecheck, lint, unit tests, the secret scan and the build, then only the e2e specs, perf
   tests and Lighthouse URLs its changed paths affect, plus a smoke set (`scripts/ci-plan.ts`; label `full-ci` for
   everything). A push to `main` runs only what its merged PR's green same-tree run did not (else everything);
-  dispatches and the nightly run everything on 8 e2e and 4 perf shards. Detail:
+  dispatches and the nightly run everything on 8 e2e and 4 perf shards. Tests titled `@nightly` run only in the
+  nightly (PRs and `main` pass `--grep-invert @nightly`). Detail:
   [ci-and-deploy.md](docs/agents/ci-and-deploy.md#ci).
 - Before pushing: `bun run verify:quick`, then `bun run e2e:changed`. Add the perf lane when you touch the
   render path, materials, floor mounting, the elevator or what the 3D chunk imports.
