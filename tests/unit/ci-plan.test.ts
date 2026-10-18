@@ -1,11 +1,11 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classify, importClosure, LIGHTHOUSE_PAGES, locateFromDisk, pagesFromRepo, planFor, planOutputs, ROOTS, type PlanOptions } from "../../scripts/ci-plan";
+import { classify, importClosure, importing3d, LIGHTHOUSE_PAGES, locateFromDisk, pagesFromRepo, planFor, planOutputs, reverseImports, ROOTS, sharedPerfKeys, type PlanOptions } from "../../scripts/ci-plan";
 import { locateTest, type DurationsFile } from "../../scripts/e2e-plan";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS } from "../../scripts/perf-plan";
 
-const none = () => false;
+const none = () => [];
 
 describe("ci-plan classify", () => {
   it.each([
@@ -92,6 +92,71 @@ const line = (spec: string, title: string) => `e2e/${spec}.spec.ts:${locateTest(
 const RIDE_SMOKE = line("ride", "the car waits for the new floor with the doors closed, then compiles nothing while it moves");
 const HUD_SMOKE = line("experience", "the 3D HUD has no serious accessibility violations");
 const lhciUrls = (JSON.parse(readFileSync("lighthouserc.json", "utf8")) as { ci: { collect: { url: string[] } } }).ci.collect.url;
+
+describe("ci-plan shared perf keys", () => {
+  const files: Record<string, string> = {
+    "src/experience/Experience.tsx": 'import { core } from "@/lib/core";\nimport { X } from "./floors/lobby/X";',
+    "src/experience/floors/lobby/X.tsx": 'import { l } from "@/lib/lobby-only";\nimport { d } from "@/lib/deep";',
+    "src/experience/Unknown.tsx": 'import { o } from "@/lib/odd";',
+    "src/experience/gate-data.ts": 'import { p } from "@/content/payload-only";\nimport { c } from "@/content/certs";\nimport { q } from "@/content/asks";\nimport { e } from "@/content/room-views/engine";',
+    "src/hud/A.tsx": 'import { b } from "@/lib/b";\nimport { a } from "@/ask/protocol";',
+    "src/lib/b.ts": 'import { h } from "./hud-only";',
+    "src/lib/hud-only.ts": "",
+    "src/lib/lobby-only.ts": "",
+    "src/lib/deep.ts": "",
+    "src/lib/core.ts": "",
+    "src/lib/odd.ts": "",
+    "src/lib/page-only.ts": "",
+    "src/content/payload-only.ts": "",
+    "src/content/certs.ts": "",
+    "src/content/asks.ts": 'import { a } from "@/ask/protocol";',
+    "src/ask/protocol.ts": "",
+    "src/content/room-views/engine.ts": "",
+  };
+  const read = (f: string) => files[f] ?? null;
+  const roots = Object.keys(files).filter((f) => ROOTS.test(f));
+  const importers = reverseImports(roots, read);
+  const keys = (f: string) => sharedPerfKeys(f, importers);
+
+  it("walks importers up to the nearest 3D files, through non-3D files", () => {
+    expect(importing3d("src/lib/hud-only.ts", importers)).toEqual(["src/hud/A.tsx"]);
+    expect(importing3d("src/lib/deep.ts", importers)).toEqual(["src/experience/floors/lobby/X.tsx"]);
+    expect(importing3d("src/lib/page-only.ts", importers)).toEqual([]);
+  });
+
+  it("gives a shared module the keys of the 3D files that import it", () => {
+    expect(keys("src/lib/lobby-only.ts")).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+    // Stops at the Lobby file: Experience.tsx importing the Lobby does not widen it.
+    expect(keys("src/lib/deep.ts")).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+    expect(keys("src/lib/hud-only.ts")).toEqual(["bytes"]);
+    expect(keys("src/lib/core.ts")).toEqual([...ALL_PERF_KEYS]);
+    expect(keys("src/lib/page-only.ts")).toEqual([]);
+  });
+
+  it("falls back to every key but memory for an unknown 3D importer or an unmapped payload module", () => {
+    expect(keys("src/lib/odd.ts")).toEqual([...ALL_BUT_MEMORY]);
+    expect(keys("src/content/payload-only.ts")).toEqual([...ALL_BUT_MEMORY]);
+  });
+
+  it("uses the module to gate map for the payload path", () => {
+    expect(keys("src/content/certs.ts")).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+    expect(keys("src/ask/protocol.ts")).toEqual(["boot", "bytes"]);
+    // A shared module PERF_RULES names keeps its own keys.
+    expect(keys("src/content/room-views/engine.ts")).toEqual(["bytes", "floor:B1", "ride:B1"]);
+  });
+
+  it("on this repo: content and Ask modules select only their floors", () => {
+    const real = execSync("git ls-files src/experience src/hud src/store").toString().split("\n").filter((f) => ROOTS.test(f));
+    const repo = reverseImports(real, repoRead);
+    const floorsOf = (f: string) => sharedPerfKeys(f, repo).filter((k) => k.startsWith("floor:") || k.startsWith("ride:"));
+    expect(sharedPerfKeys("src/content/certs.ts", repo)).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+    expect(floorsOf("src/content/cert-views.ts")).toEqual(["floor:L1"]);
+    for (const f of ["src/ask/client.ts", "src/ask/protocol.ts"]) expect(sharedPerfKeys(f, repo), f).toEqual(["boot", "bytes"]);
+    expect(sharedPerfKeys("src/lib/audio/engine.ts", repo)).toEqual([...ALL_PERF_KEYS]);
+    expect(sharedPerfKeys("src/components/stats/VisitsPanel.tsx", repo)).toEqual(["bytes"]);
+    expect(sharedPerfKeys("src/lib/seo.ts", repo)).toEqual([]);
+  });
+});
 
 describe("ci-plan planFor: full runs", () => {
   const fullOutputs = (perfShards: string, perfTotal: string) => ({
@@ -217,8 +282,15 @@ describe("ci-plan planFor: selective pull request runs", () => {
     const page = planFor(["src/components/page/Hero.tsx"], none, opts);
     expect(page).toMatchObject({ perf: false, lighthouse: "all" });
     expect(page.e2e).toContain("pageview");
-    const shared = planFor(["src/lib/audio/engine.ts"], (f) => f === "src/lib/audio/engine.ts", opts);
+    const shared = planFor(["src/lib/audio/engine.ts"], (f) => (f === "src/lib/audio/engine.ts" ? ALL_BUT_MEMORY : []), opts);
     expect(shared).toMatchObject({ perf: [...ALL_BUT_MEMORY], lighthouse: "all" });
+  });
+
+  it("unions the shared keys with the 3D file keys and lists each shared module", () => {
+    const perf3d = (f: string) => (f === "src/ask/protocol.ts" ? (["boot", "bytes"] as const) : []);
+    const plan = planFor(["src/ask/protocol.ts", "src/experience/floors/labs/OpsRoom.tsx", "src/components/page/Hero.tsx"], perf3d, opts);
+    expect(plan.perf).toEqual(["boot", "bytes", "floor:L3", "ride:L3"]);
+    expect(plan.reasons).toContain("imported by the 3D roots: src/ask/protocol.ts (boot, bytes)");
   });
 
   it("runs a changed spec by itself", () => {

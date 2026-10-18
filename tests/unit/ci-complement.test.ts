@@ -10,16 +10,16 @@ const opts = { lighthousePaths: paths };
 
 describe("recordFor", () => {
   it("records a full run as all", () => {
-    const plan = planFor(null, () => false);
+    const plan = planFor(null, () => []);
     expect(recordFor(plan, planOutputs(plan))).toEqual({ version: 1, e2e: "all", perf: "all", lighthouse: "all" });
   });
   it("records the specs, smoke tests, perf keys and Lighthouse paths of a selective run", () => {
-    const plan = { ...planFor(null, () => false), full: false, e2e: ["ask" as const], e2eTests: ["e2e/ride.spec.ts:93"], perf: ["bytes" as const], lighthouse: ["/en"] };
+    const plan = { ...planFor(null, () => []), full: false, e2e: ["ask" as const], e2eTests: ["e2e/ride.spec.ts:93"], perf: ["bytes" as const], lighthouse: ["/en"] };
     const urls = ["http://h/en?lhci-warmup=1", "http://h/en"];
     expect(recordFor(plan, planOutputs(plan, urls))).toEqual({ version: 1, e2e: { specs: ["ask"], tests: ["e2e/ride.spec.ts:93"] }, perf: ["bytes"], lighthouse: ["/en"] });
   });
   it("records no heavy work as empty lists", () => {
-    const plan = { ...planFor(null, () => false), full: false, e2e: [], e2eTests: [], perf: false as const, lighthouse: false as const };
+    const plan = { ...planFor(null, () => []), full: false, e2e: [], e2eTests: [], perf: false as const, lighthouse: false as const };
     expect(recordFor(plan, planOutputs(plan))).toEqual({ version: 1, e2e: { specs: [], tests: [] }, perf: [], lighthouse: [] });
   });
 });
@@ -117,13 +117,13 @@ describe("findSource", () => {
   it("rejects when a dep throws, and lookupComplement turns that into a full run with the reason", async () => {
     const failing = deps({ greenRuns: async () => Promise.reject(new Error("GitHub API actions/workflows/ci.yml/runs: HTTP 502")) });
     await expect(findSource(repo, "m", null, failing)).rejects.toThrow("HTTP 502");
-    const plan = await lookupComplement(() => findSource(repo, "m", null, failing), () => planFor(null, () => false, { event: "other" }));
+    const plan = await lookupComplement(() => findSource(repo, "m", null, failing), () => planFor(null, () => [], { event: "other" }));
     expect(plan.source).toBeUndefined();
     expect(plan.reasons[0]).toBe("full run: GitHub API actions/workflows/ci.yml/runs: HTTP 502");
     expect(planOutputs(plan)).toMatchObject({ full: "true", e2e: "all", perf: "true", perf_grep: "", lighthouse: "true", lighthouse_urls: "", source_run: "" });
   });
   it("lookupComplement plans the complement of a found run", async () => {
-    const plan = await lookupComplement(() => findSource(repo, "m", null, deps()), () => planFor(null, () => false));
+    const plan = await lookupComplement(() => findSource(repo, "m", null, deps()), () => planFor(null, () => []));
     expect(plan.source).toEqual({ run: 7, pr: 210, url: "r7" });
     expect(planOutputs(plan)).toMatchObject({ e2e: "none", perf: "false", lighthouse: "false", source_run: "7" });
   });
