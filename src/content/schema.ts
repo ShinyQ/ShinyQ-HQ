@@ -473,7 +473,7 @@ export const PerspectivesFileSchema = z
  * pills), cited to the How this site was built page (`/build`), which links the public repository. Facts
  * only, third person, never a client, resource or host name.
  */
-export const SITE_BUILD_TEXT_MAX = 2600;
+export const SITE_BUILD_TEXT_MAX = 2800;
 export const SITE_BUILD_SOURCE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
 export const SiteBuildSchema = z.strictObject({

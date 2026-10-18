@@ -220,6 +220,11 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
     "Model apa yang kamu pakai?",
   ])("treats %s as a question about this site", (q) => expect(isSiteQuestion(q)).toBe(true));
 
+  it("treats questions about the Engine Room or a secret floor as site questions (EN and ID)", () => {
+    for (const q of ["What is the Engine Room?", "What is in the B1 Engine Room?", "Is there a hidden floor?", "Apa itu ruang mesin?", "Apakah ada lantai rahasia?"]) expect(isSiteQuestion(q), q).toBe(true);
+    expect(isSiteQuestion("Did Kurniadi work in an engine factory?")).toBe(false);
+  });
+
   it.each([
     "What's in his portfolio?",
     "Which projects have a live site?",
@@ -231,7 +236,7 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
   ])("treats %s as a question about his work", (q) => expect(isSiteQuestion(q)).toBe(false));
 
   it("fires on no curated or golden question except the ones about this site", () => {
-    const site = new Set(["q45", "q46", "q47", "q69", "q70"]);
+    const site = new Set(["q45", "q46", "q47", "q69", "q70", "q76"]);
     for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(s.topic === "site");
     for (const item of golden.items) expect(isSiteQuestion(item.q), item.id).toBe(site.has(item.id));
   });

@@ -188,7 +188,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
 ### Site-build chunk
 
 - `content/ask/site-build.json` (`SiteBuildSchema`, read through `getSiteBuild()`; never import it into a client component).
-  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`), at most `SITE_BUILD_TEXT_MAX` (2600) characters per language.
+  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
