@@ -39,3 +39,6 @@ e2e/perf/*-snapshots/
 .impeccable/hook.cache.json
 # Smart CI plan record (bun scripts/ci-plan.ts writes it; CI uploads it as the ci-plan artifact)
 /ci-plan.json
+
+# Prepared study guide PDFs (scripts/study-guides.ts); never committed, they live in R2.
+/.study-guides/
