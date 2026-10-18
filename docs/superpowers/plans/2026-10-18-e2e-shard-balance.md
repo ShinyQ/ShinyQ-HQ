@@ -40,7 +40,7 @@ Conclusion: a static plan cannot see runner speed, so the spread stays about 3 m
 
 - [x] `runnerSpeedFactors` / `normalizeRunnerSpeed`: each job's median ratio (samples of at least 5 s, at least 5 of them) to the tests' medians; samples are divided by it before `medianDurations`.
 - [x] `e2e:durations` skips runs without test results (a complement run on main can run none) and prints each job's factor and runner.
-- [x] Refresh `e2e/durations.json` from the last 5 green nightly runs (the `--event schedule` default from #221).
+- [x] Refresh `e2e/durations.json`: `--event push --runs 10` (only one green nightly run exists and it predates B1; the 10 push runs with tests are 39109321428 to 39146622848, 80 e2e shard jobs, factors 0.63 to 1.23). The 8 `@nightly` keys take the median of their untagged titles, as #221 renamed them.
 
 ### Task 4: Docs and verification
 
