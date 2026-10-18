@@ -20,7 +20,8 @@ name: CI
 # unexpanded check name and block the required checks): its steps skip and one "Not needed" step
 # passes. Complete runs (complement runs included) upload the `ci-full` artifact for the deploy gate
 # (scripts/ci-status.ts).
-# The nightly schedule runs the full pipeline on main every night, plus the nightly-only `nightly` job
+# The nightly schedule runs the full pipeline on main every night, the nightly-only e2e tests (`@nightly`,
+# skipped by pull requests and pushes) included, plus the nightly-only `nightly` job
 # (also on a dispatch with the `nightly` input), which reads every job's result and opens, updates or
 # closes the one `ci-nightly` issue (scripts/ci-nightly.ts; writes only on main, a dry run elsewhere).
 # The strict visual gate (scripts/visual-gate.ts) is not here: it needs a real GPU and times out on the
@@ -36,7 +37,7 @@ on:
   workflow_dispatch:
     inputs:
       nightly:
-        description: Also run the ci-nightly issue report
+        description: Also run the nightly-only e2e tests (@nightly) and the ci-nightly issue report
         type: boolean
         default: false
       complement_pr:
@@ -267,14 +268,19 @@ jobs:
         # Duration-balanced test list (scripts/e2e-shard.ts, e2e/durations.json); keep the total in sync
         # e2e/deploy.spec.ts repeats the out/ scan with the private list.
         # E2E_FILES: the planned spec files and `file:line` smoke tests of a selective run; empty means every spec.
+        # NIGHTLY: the nightly-only tests (`@nightly` in the title, docs/agents/performance.md) run on the
+        # nightly schedule and on a dispatch with the `nightly` input; pull requests and pushes to main skip them.
         if: needs.changes.outputs.e2e != 'none'
         env:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           E2E_FILES: ${{ needs.changes.outputs.e2e_files }}
           SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true }}
         run: |
+          skip=(--grep-invert @nightly)
+          if [ "$NIGHTLY" = "true" ]; then skip=(); fi
           # shellcheck disable=SC2086 # E2E_FILES splits into one argument per spec file on purpose.
-          bun run e2e:shard "$SHARD" $E2E_FILES
+          bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && needs.changes.outputs.e2e != 'none' }}
         with:

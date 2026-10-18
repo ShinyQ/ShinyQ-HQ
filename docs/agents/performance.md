@@ -116,7 +116,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 ## Fast verification
 
-The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the tests your change affects plus a small smoke set (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); a push to `main` runs what its merged PR's green same-tree run did not (the complement, [ci-and-deploy.md](ci-and-deploy.md#complement-runs-on-main), or everything when there is no such run) and merges that PR run's perf and Lighthouse reports into its own, so `main` keeps complete baselines; the nightly runs the full suite (8 e2e shards), the whole perf lane (4 shards) and Lighthouse. A test the map does not tie to your paths runs only after the merge, so keep the `RULES` in `scripts/e2e-plan.ts` current when you add a spec or move code, and add the `full-ci` label for a risky cross-cutting change.
+The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers code you did not touch. Verify what you changed locally. PR CI runs only the tests your change affects plus a small smoke set (smart CI, [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)); a push to `main` runs what its merged PR's green same-tree run did not (the complement, [ci-and-deploy.md](ci-and-deploy.md#complement-runs-on-main), or everything when there is no such run) and merges that PR run's perf and Lighthouse reports into its own, so `main` keeps complete baselines; the nightly runs the full suite (8 e2e shards, the [nightly-only tests](#nightly-only-e2e-tests) included), the whole perf lane (4 shards) and Lighthouse. A test the map does not tie to your paths runs only after the merge, so keep the `RULES` in `scripts/e2e-plan.ts` current when you add a spec or move code, and add the `full-ci` label for a risky cross-cutting change.
 
 ### Which command when
 
@@ -213,7 +213,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `playwright test --list`, then the longest test first onto the least-loaded shard by the CI medians in `e2e/durations.json`.
   - Unknown tests count as the median; without the file it falls back to round-robin.
   - Playwright's own `--shard` cuts contiguous blocks.
-- Refresh the timings with `bun run e2e:durations` when the `E2E shard n/8` job times drift apart; PR shard counts are sized from the same file.
+- Refresh the timings with `bun run e2e:durations` (the last 5 green nightly runs) when the `E2E shard n/8` job times drift apart; PR shard counts are sized from the same file, without the nightly-only tests.
 - `bun run e2e:shard 1/8 --dry` prints the plan.
 - Shards upload blob reports that `Build, CV and e2e` merges into the `playwright-report` artifact.
 - Reproduce a shard locally: `bun run e2e:shard 2/8`.
@@ -246,6 +246,30 @@ Each check lives in one place, at the cheapest level that can see the regression
 - Layout facts (positions, distances, mirror symmetry, reachable stops, counts) go into Vitest against the pure layout modules; the e2e keeps one case that proves the wiring.
 - One ride tour covers the elevator panel, arrivals and routes on every floor (`e2e/arrivals.spec.ts`); add per-floor ride checks there rather than in a new tour.
 - Before adding an e2e, search the suite for the same flow (`grep -rn "<the probe or test id>" e2e/`); fold a new assertion into the test that already reaches that state.
+- A slow budget sweep, or a second viewport or tier of the same behavior, ends its title with ` @nightly` (see [Nightly-only e2e tests](#nightly-only-e2e-tests)).
+
+### Nightly-only e2e tests
+
+Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped; slow budget and matrix checks run only in the nightly.
+
+- A test whose title ends with ` @nightly` runs in the nightly schedule run of `ci.yml` and on a dispatch with the `nightly` input. Pull requests and pushes to `main` (complement runs included) pass `--grep-invert @nightly`, and so does `bun run e2e:changed` (`--nightly` runs them too).
+- Shard sizing leaves them out (`specSeconds` in `scripts/e2e-plan.ts`); a selection that matches no test passes (`--pass-with-no-tests` in `scripts/e2e-shard.ts`).
+- `bun run e2e:durations` reads the nightly runs by default, the only runs that cover every test.
+- A unit test in `tests/unit/e2e-plan.test.ts` pins the count: update it and this list together.
+- Per behavior, pull requests and `main` keep one representative viewport and tier; the rest of the matrix is nightly.
+
+| Test | Worker-s | What still guards it on PRs and `main` |
+|---|---|---|
+| `library-labels`: L4 timeline labels, desktop and phone | 108 + 72 | `tests/unit/library-label-sweep.test.ts`: the same poses and checks without a renderer, on every PR. |
+| `gpu`: boot warms every floor (full tier) | 288 | `e2e/perf/floors.spec.ts` (programs per floor against the baseline) when the render path changes. |
+| `daynight`: day costs the same programs and calls as night on L1 | 120 | The day and night behavior tests in `daynight.spec.ts`; the L1 perf gate. |
+| `highlights`: L1 headroom under the floor budget (full) | 132 | The L1 perf gate on both tiers; the reduced-motion station and gate checks in `highlights.spec.ts`. |
+| `memory`: 10 Lobby to Roof round trips (lite) | 162 | `e2e/perf/memory-full.spec.ts` (the same round trips on the full tier); the B1 round trips and Page View toggles stay. |
+| `topics`: end plaza labels (desktop) | 50.8 | The phone variant (narrower caps, the most crowded screen). |
+| `labs-paths`: arrival (1440x900 full) | 54.7 | The phone arrival; the desktop full tier through the reactor drive. |
+
+- Not moved: the remaining viewport or tier pairs cost under 25 s per variant (HUD corners, drawer, Page View landing) or test tier-specific behavior (the first boost's programs, the Labs arrival calls per tier).
+- The gpu, daynight and highlights checks do not follow a PR's perf selection: the perf lane runs only `e2e/perf/`, so it would need a second test directory and a per-floor grep in the e2e job.
 
 ### Retries and flaky tests
 

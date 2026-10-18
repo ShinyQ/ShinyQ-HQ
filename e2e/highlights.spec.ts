@@ -254,7 +254,7 @@ test.describe("Highlights Hall", () => {
    * spawn 86 and 84, gate 75 and 73, plaza 55 and 53). Lite L1 stays gated at the spawn (e2e/perf/floors.spec.ts),
    * the About me station and the gate (reduced motion, below). The station pads deeper in the hall measured 45.
    */
-  test("L1 keeps headroom under the floor budget from the plaza to the hall (full)", async ({ page }) => {
+  test("L1 keeps headroom under the floor budget from the plaza to the hall (full) @nightly", async ({ page }) => {
     // Three spots, each with a full budget window (every frame over at least 20 frames): slow on the full tier in CI.
     test.setTimeout(360_000);
     await enterHQ(page, { tier: "full" });

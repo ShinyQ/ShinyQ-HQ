@@ -4,6 +4,7 @@ import {
   assignShard,
   durationKey,
   e2eShardsFor,
+  isNightlyTest,
   listTestIds,
   locateTest,
   medianDurations,
@@ -383,6 +384,14 @@ describe("PR smoke set", () => {
     expect(specSeconds(null, "ride")).toBe(UNKNOWN_SPEC_SECONDS);
     expect(specSeconds(undefined, "ride", "a")).toBe(UNKNOWN_TEST_SECONDS);
   });
+
+  it("leaves the nightly-only tests out of a planned run's seconds", () => {
+    const durations = { "ride.spec.ts › a": 10, "ride.spec.ts › sweep @nightly": 300, "ride.spec.ts › group › b @nightly": 5 };
+    expect(specSeconds(durations, "ride")).toBe(10);
+    expect(specSeconds({ "labels.spec.ts › sweep @nightly": 300 }, "labels")).toBe(0);
+    expect(isNightlyTest("ride.spec.ts › sweep @nightly")).toBe(true);
+    expect(isNightlyTest("ride.spec.ts › a")).toBe(false);
+  });
 });
 
 describe("assignShard", () => {
@@ -501,6 +510,7 @@ describe("shard plan against the real Playwright list", () => {
 
   it.each([
     { lane: "e2e" as const, perf: false, args: [], totals: [4, 5, 6] },
+    { lane: "e2e" as const, perf: false, args: ["--grep-invert", "@nightly"], totals: [4, 8] },
     { lane: "perf" as const, perf: true, args: ["--grep-invert", "@nightly|@look"], totals: [2, 3] },
   ])("$lane: every listed test lands in exactly one shard", ({ lane, perf, args, totals }) => {
     const all = list(perf, args);
@@ -514,5 +524,16 @@ describe("shard plan against the real Playwright list", () => {
     // Most listed tests have a measured duration; a big gap means e2e/durations.json needs a refresh.
     const known = all.filter((t) => durations[lane]?.[durationKey(t)] !== undefined).length;
     expect(known / all.length).toBeGreaterThan(0.8);
+  }, 120_000);
+
+  it("pull requests and main skip exactly the tagged nightly-only tests, each with a measured duration", () => {
+    const nightly = list(false, ["--grep", "@nightly"]);
+    // The moved tests and why: docs/agents/performance.md (Nightly-only e2e tests). Update both together.
+    expect(nightly).toHaveLength(8);
+    expect(nightly.every(isNightlyTest)).toBe(true);
+    for (const t of nightly) expect(durations.e2e?.[durationKey(t)], t).toBeGreaterThan(0);
+    const skipped = new Set(list(false, ["--grep-invert", "@nightly"]));
+    expect(nightly.some((t) => skipped.has(t))).toBe(false);
+    for (const smoke of PR_SMOKE) if (smoke.title) expect(isNightlyTest(smoke.title)).toBe(false);
   }, 120_000);
 });

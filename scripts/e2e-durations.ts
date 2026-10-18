@@ -1,9 +1,11 @@
 /**
  * Refreshes e2e/durations.json (seconds per test for the duration-balanced CI shards) from real CI timings:
  * the `list` reporter lines in the logs of the `E2E shard` and `3D perf gates` jobs of green CI runs.
- * Usage: bun scripts/e2e-durations.ts [--runs 5] [--branch main] [run ids...]
+ * Usage: bun scripts/e2e-durations.ts [--runs 5] [--branch main] [--event schedule] [run ids...]
  *
- * Without run ids it takes the last `--runs` successful `ci.yml` push runs on `--branch`. Needs `gh` (or GH_TOKEN) with
+ * Without run ids it takes the last `--runs` successful `ci.yml` runs of `--event` on `--branch`: the nightly
+ * schedule by default, the only runs that cover every test (pushes to main run the complement of their pull
+ * request's run, and pull requests and pushes skip the nightly-only `@nightly` tests). Needs `gh` (or GH_TOKEN) with
  * read access to the repository (`GH_REPO` or the current checkout). Each test gets its median over the
  * runs (passes only, a pass on retry included; skipped tests count as 0). Commit the result; rerun it when
  * shards drift apart in CI (compare the `E2E shard n/8` job times).
@@ -40,10 +42,11 @@ async function main() {
   const repo = process.env.GH_REPO ?? gh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]).trim();
   const count = Number(option(argv, "--runs", "5"));
   const branch = option(argv, "--branch", "main");
-  const optionValues = new Set([option(argv, "--runs", ""), option(argv, "--branch", "")]);
+  const event = option(argv, "--event", "schedule");
+  const optionValues = new Set([option(argv, "--runs", ""), option(argv, "--branch", ""), option(argv, "--event", "")]);
   let runs = argv.filter((a) => /^\d+$/.test(a) && !optionValues.has(a)).map(Number);
   if (runs.length === 0) {
-    const listed = gh(["run", "list", "-R", repo, "--workflow", "ci.yml", "--branch", branch, "--event", "push", "--status", "success", "--limit", String(count), "--json", "databaseId", "--jq", ".[].databaseId"]);
+    const listed = gh(["run", "list", "-R", repo, "--workflow", "ci.yml", "--branch", branch, "--event", event, "--status", "success", "--limit", String(count), "--json", "databaseId", "--jq", ".[].databaseId"]);
     runs = listed.split(/\s+/).filter(Boolean).map(Number);
   }
   if (runs.length === 0) throw new Error("no CI runs to read");

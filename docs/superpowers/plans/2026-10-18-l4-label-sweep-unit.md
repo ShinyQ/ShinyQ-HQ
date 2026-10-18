@@ -1,6 +1,6 @@
 # L4 Timeline Label Sweep as a Unit Test Implementation Plan
 
-Status: in review.
+Status: shipped in #219.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
