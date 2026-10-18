@@ -458,9 +458,12 @@
   }
 
   /* Sticky filter bar under the header (68 px on desktop, 60 px plus the 49 px tab row below lg). */
+  /* A flat bar (no frosted glass or drop shadow): the hairline and a near-opaque fill that keeps it legible when sticky. */
   .pv-filters {
     z-index: 20;
-    border-radius: 14px;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--color-void) 94%, transparent);
   }
 
   /* Phones keep the bar in flow: sticky, it would cover a sixth of the screen. */

@@ -39,7 +39,7 @@ export default async function BuildPage({ params }: PageProps<"/[locale]/build">
         </p>
       </PageIntro>
       <nav aria-labelledby="toc-title" className="pv-wrap mt-10">
-        <div className="glass pv-filters overflow-x-auto px-3 py-2">
+        <div className="pv-filters overflow-x-auto px-3 py-2">
           <h2 id="toc-title" className="sr-only">
             {t("toc")}
           </h2>
