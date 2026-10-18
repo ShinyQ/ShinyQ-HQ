@@ -118,6 +118,26 @@ test.describe("boot and intro", () => {
     expect(errors).toEqual([]);
   });
 
+  test("a drive key that skips the intro on a floor deep link does not cancel the ride on", async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.goto("/en/labs?tier=lite");
+    await waitForHQ(page);
+    const start = page.getByTestId("boot").getByRole("button", { name: "Boot rover" });
+    await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
+    await start.click();
+    await waitForPhase(page, "intro");
+    await page.waitForFunction(() => (window as unknown as { __hq: { intro: { t: number } } }).__hq.intro.t > 0.5, null, { timeout: 60_000, polling: "raf" });
+    // The key stays down for several frames after the skip: the continuation must not take it as manual input.
+    await page.keyboard.down("w");
+    await waitForPhase(page, "explore", 30_000);
+    await waitForFrames(page, 6);
+    await page.keyboard.up("w");
+    expect(await page.evaluate(() => (window as unknown as { __hq: { intro: { skipped: boolean } } }).__hq.intro.skipped)).toBe(true);
+    await waitForFloor(page, "L3", 60_000);
+    await expect(page).toHaveURL(/\/en\/labs\?tier=lite$/);
+    expect(errors).toEqual([]);
+  });
+
   test("the intro opens on Rover's face, lights the Lobby and lands on the follow view", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");

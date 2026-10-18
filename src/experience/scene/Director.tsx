@@ -28,6 +28,7 @@ import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
 import { introRuntime } from "../intro/runtime";
+import { holdSkipDrive, isContinuing } from "../introContinue";
 import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
@@ -97,6 +98,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
   const state = useRef({
     controller: null as RoverController | null,
     pendingMove: null as { x: number; y: number } | null,
+    /** The drive input held when the intro ended onto a deep-link continuation, ignored until released (`holdSkipDrive`). */
+    skipDrive: false,
     blockedUntil: 0,
     arrivedUntil: 0,
     statusUntil: 0,
@@ -292,6 +295,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.blinkUntil = now + 0.18;
       audio.play("beep");
     }
+    const introEnded = local.prevPhase === "intro" && s.phase !== "intro";
     local.prevPhase = s.phase;
 
     if (roverRuntime.cancelFlash) {
@@ -315,7 +319,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const stick = joystick.active ? { x: joystick.x, y: joystick.y } : null;
     const input = keys.x || keys.y ? keys : stick && (stick.x || stick.y) ? stick : null;
     if (input) intents.emit({ type: "move", x: input.x, y: input.y });
-    const move = local.pendingMove;
+    local.skipDrive = holdSkipDrive(local.skipDrive, local.pendingMove !== null, introEnded, isContinuing());
+    const move = local.skipDrive ? null : local.pendingMove;
     local.pendingMove = null;
     if (move && s.mission?.status === "running") cancelMission();
 

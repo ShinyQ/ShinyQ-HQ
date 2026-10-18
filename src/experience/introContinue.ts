@@ -77,3 +77,13 @@ export function endContinuation() {
 export function isContinuing(): boolean {
   return continuing || pending !== null;
 }
+
+/**
+ * Latch for the drive input that ends the intro (a held key or the joystick skips it): when the intro ends
+ * while a deep link is continuing, that input neither drives nor cancels the continuation until it is
+ * released for one frame; a later drive input cancels it like any manual input. Returns the next latch.
+ */
+export function holdSkipDrive(latched: boolean, driving: boolean, introEnded: boolean, continuing: boolean): boolean {
+  if (!driving) return false;
+  return latched || (introEnded && continuing);
+}
