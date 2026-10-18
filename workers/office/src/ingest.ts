@@ -15,6 +15,21 @@ export function parseAllowlist(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/** GitHub logins whose same-repository pull requests count without an OWNER, MEMBER or COLLABORATOR association (D4 keeps Copilot). */
+export const DEFAULT_GITHUB_ACTORS: readonly string[] = ["ShinyQ", "Copilot"];
+
+/** `OFFICE_GITHUB_ACTORS`: comma-separated GitHub logins, the defaults when empty. */
+export function parseActors(raw: string | undefined): string[] {
+  const actors = (raw ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return actors.length > 0 ? actors : [...DEFAULT_GITHUB_ACTORS];
+}
+
+const TRUSTED_ASSOCIATIONS: readonly string[] = ["OWNER", "MEMBER", "COLLABORATOR"];
+const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
 export function repoAllowed(repo: string, allow: readonly string[]): boolean {
   const name = repo.toLowerCase();
   return allow.some((entry) => {
@@ -77,12 +92,15 @@ function deployStatus(state: string): "running" | "success" | "failure" | null {
 /**
  * One GitHub webhook delivery to office changes, for allowlisted public repositories only (null otherwise, which also
  * keeps private repositories out of the known-public list). Titles go through the blocklist; URLs must be https.
+ * Pull requests and runs from forks are ignored; pull requests also need a listed sender or a trusted author association.
  */
-export function parseGithubEvent(event: string, payload: unknown, allow: readonly string[], blocklist: readonly string[]): GithubUpdate | null {
+export function parseGithubEvent(event: string, payload: unknown, allow: readonly string[], blocklist: readonly string[], actors: readonly string[] = DEFAULT_GITHUB_ACTORS): GithubUpdate | null {
   const body = obj(payload);
   const repository = obj(body?.repository);
   const repo = text(repository?.full_name);
-  if (!body || !repository || repository.private !== false || !REPO.test(repo) || !repoAllowed(repo, allow)) return null;
+  if (!body || !repository || !REPO.test(repo) || !repoAllowed(repo, allow)) return null;
+  if (event === "repository" && text(body.action) === "privatized") return { repo, changes: [{ type: "privatized" }] };
+  if (repository.private !== false) return null;
   const home = `https://github.com/${repo}`;
   const url = (x: unknown) => (SAFE_URL.test(text(x)) ? text(x) : home);
   const title = (raw: string, fallback: string) => cleanTitle(raw, blocklist) ?? fallback;
@@ -92,7 +110,7 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const run = obj(body.workflow_run);
       const id = int(run?.id);
       const branch = text(run?.head_branch);
-      if (!run || id === null || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
+      if (!run || id === null || !sameName(text(obj(run.head_repository)?.full_name), repo) || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
       changes.push({ type: "run", id, branch, title: title(`${text(run.name)} · ${branch}`, "Workflow run"), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
       break;
     }
@@ -107,9 +125,12 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
     case "pull_request": {
       const pr = obj(body.pull_request);
       const number = int(pr?.number);
-      const branch = text(obj(pr?.head)?.ref);
+      const head = obj(pr?.head);
+      const branch = text(head?.ref);
       const action = text(body.action);
-      if (!pr || number === null || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
+      const sender = text(obj(body.sender)?.login);
+      const trusted = (sender !== "" && actors.some((a) => sameName(a, sender))) || TRUSTED_ASSOCIATIONS.includes(text(pr?.author_association));
+      if (!pr || number === null || !sameName(text(obj(head?.repo)?.full_name), repo) || !trusted || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
       const kind = action === "opened" || action === "reopened" || action === "ready_for_review" ? "opened" : action === "closed" && pr.merged === true ? "merged" : null;
       if (kind) changes.push({ type: "pr", number, branch, title: title(text(pr.title), `Pull request #${number}`), url: url(pr.html_url), action: kind });
       break;

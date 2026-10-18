@@ -74,7 +74,8 @@ export type GithubChange =
   | { type: "job"; runId: number; jobId: string; name: string; status: JobStatus }
   | { type: "pr"; number: number; branch: string; title: string; url: string; action: "opened" | "merged" }
   | { type: "push"; sha: string; title: string; url: string }
-  | { type: "deploy"; id: number; title: string; url: string; status: "running" | "success" | "failure" };
+  | { type: "deploy"; id: number; title: string; url: string; status: "running" | "success" | "failure" }
+  | { type: "privatized" };
 
 /** One webhook delivery for one allowlisted public repository. */
 export interface GithubUpdate {
@@ -215,16 +216,26 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
       return { ...doc, feed: upsertFeed(doc.feed, { key: `push:${c.sha}`, kind: "push", status: "pushed", repo, title: c.title, at: now, url: c.url }) };
     case "deploy":
       return { ...doc, feed: upsertFeed(doc.feed, { key: `deploy:${c.id}`, kind: "deploy", status: c.status, repo, title: c.title, at: now, url: c.url }) };
+    case "privatized":
+      return {
+        ...doc,
+        publicRepos: doc.publicRepos.filter((r) => r !== repo),
+        runs: doc.runs.filter((r) => r.repo !== repo),
+        prs: doc.prs.filter((p) => p.repo !== repo),
+        feed: doc.feed.filter((f) => f.repo !== repo),
+        sessions: doc.sessions.map((s) => (s.repo === repo ? { id: s.id, agent: s.agent, slot: s.slot, firstSeen: s.firstSeen, lastBeat: s.lastBeat, state: s.state, activity: s.activity, since: s.since, recent: s.recent } : s)),
+      };
   }
 }
 
-/** Applies one webhook delivery (deduped by its delivery id) for an allowlisted public repository. */
+/** Applies one webhook delivery (deduped by its delivery id) for an allowlisted public repository; a privatized one is forgotten. */
 export function applyGithub(doc: OfficeDoc, update: GithubUpdate, delivery: string, now: number): OfficeDoc {
   if (delivery && doc.deliveries.includes(delivery)) return doc;
+  const privatized = update.changes.some((c) => c.type === "privatized");
   let next: OfficeDoc = {
     ...doc,
     today: rollToday(doc.today, now),
-    publicRepos: doc.publicRepos.includes(update.repo) ? doc.publicRepos : [...doc.publicRepos, update.repo].slice(-TIMING.publicReposKept),
+    publicRepos: privatized || doc.publicRepos.includes(update.repo) ? doc.publicRepos : [...doc.publicRepos, update.repo].slice(-TIMING.publicReposKept),
     deliveries: delivery ? [...doc.deliveries, delivery].slice(-TIMING.deliveriesKept) : doc.deliveries,
   };
   for (const change of update.changes) next = applyChange(next, update.repo, change, now);

@@ -2,11 +2,13 @@ import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type { OfficeBeatV1 } from "@/lib/office/protocol";
 import { hmacHex, signatureOk } from "../../workers/office/src/crypto";
-import { cleanTitle, parseAllowlist, parseGithubEvent, repoAllowed, sanitizeBeat } from "../../workers/office/src/ingest";
+import { cleanTitle, DEFAULT_GITHUB_ACTORS, parseActors, parseAllowlist, parseGithubEvent, repoAllowed, sanitizeBeat } from "../../workers/office/src/ingest";
 
 const ALLOW = parseAllowlist(" ShinyQ/* , other/one ");
 const BLOCK = ["acme bank"];
 const repository = (extra: Record<string, unknown> = {}) => ({ full_name: "ShinyQ/ShinyQ-HQ", private: false, default_branch: "main", ...extra });
+const headRepo = { full_name: "ShinyQ/ShinyQ-HQ" };
+const owner = { login: "ShinyQ" };
 
 describe("signatures", () => {
   it("matches node's HMAC-SHA256 hex and checks the sha256= header", async () => {
@@ -52,7 +54,7 @@ describe("parseGithubEvent", () => {
   });
 
   it("maps workflow_run and workflow_job", () => {
-    const run = (status: string, conclusion: string | null) => ({ repository: repository(), workflow_run: { id: 42, name: "CI", head_branch: "feat/x", status, conclusion, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } });
+    const run = (status: string, conclusion: string | null) => ({ repository: repository(), workflow_run: { id: 42, name: "CI", head_branch: "feat/x", head_repository: headRepo, status, conclusion, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } });
     expect(parseGithubEvent("workflow_run", run("in_progress", null), ALLOW, BLOCK)?.changes).toEqual([{ type: "run", id: 42, branch: "feat/x", title: "CI · feat/x", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42", status: "running" }]);
     expect(parseGithubEvent("workflow_run", run("completed", "success"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ status: "success" });
     expect(parseGithubEvent("workflow_run", run("completed", "timed_out"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ status: "failure" });
@@ -62,7 +64,7 @@ describe("parseGithubEvent", () => {
   });
 
   it("maps pull requests, default-branch pushes and deployments", () => {
-    const pr = (action: string, merged: boolean) => ({ action, number: 7, repository: repository(), pull_request: { number: 7, merged, title: "feat: office", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/7", head: { ref: "feat/office" } } });
+    const pr = (action: string, merged: boolean) => ({ action, number: 7, repository: repository(), sender: owner, pull_request: { number: 7, merged, title: "feat: office", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/7", head: { ref: "feat/office", repo: headRepo } } });
     expect(parseGithubEvent("pull_request", pr("opened", false), ALLOW, BLOCK)?.changes).toEqual([{ type: "pr", number: 7, branch: "feat/office", title: "feat: office", url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/7", action: "opened" }]);
     expect(parseGithubEvent("pull_request", pr("closed", true), ALLOW, BLOCK)?.changes[0]).toMatchObject({ action: "merged" });
     expect(parseGithubEvent("pull_request", pr("closed", false), ALLOW, BLOCK)?.changes).toEqual([]);
@@ -74,14 +76,14 @@ describe("parseGithubEvent", () => {
   });
 
   it("replaces a blocked title with a generic one and an unsafe URL with the repository URL", () => {
-    const pr = { action: "opened", number: 8, repository: repository(), pull_request: { number: 8, merged: false, title: "Acme Bank fix", html_url: "javascript:alert(1)", head: { ref: "fix/y" } } };
+    const pr = { action: "opened", number: 8, repository: repository(), sender: owner, pull_request: { number: 8, merged: false, title: "Acme Bank fix", html_url: "javascript:alert(1)", head: { ref: "fix/y", repo: headRepo } } };
     expect(parseGithubEvent("pull_request", pr, ALLOW, BLOCK)?.changes[0]).toMatchObject({ title: "Pull request #8", url: "https://github.com/ShinyQ/ShinyQ-HQ" });
   });
 
   it("drops runs, pull requests and beat branches whose branch name holds a blocked term", () => {
-    const run = { repository: repository(), workflow_run: { id: 42, name: "CI", head_branch: "feat/acme_bank-login", status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } };
+    const run = { repository: repository(), workflow_run: { id: 42, name: "CI", head_branch: "feat/acme_bank-login", head_repository: headRepo, status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } };
     expect(parseGithubEvent("workflow_run", run, ALLOW, BLOCK)?.changes).toEqual([]);
-    const pr = { action: "opened", number: 9, repository: repository(), pull_request: { number: 9, merged: false, title: "Login fix", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/9", head: { ref: "fix/acme-bank" } } };
+    const pr = { action: "opened", number: 9, repository: repository(), sender: owner, pull_request: { number: 9, merged: false, title: "Login fix", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/9", head: { ref: "fix/acme-bank", repo: headRepo } } };
     expect(parseGithubEvent("pull_request", pr, ALLOW, BLOCK)?.changes).toEqual([]);
     const blockedRun = { repository: repository(), workflow_run: { ...run.workflow_run, name: "Acme Bank CI", head_branch: "feat/x" } };
     expect(parseGithubEvent("workflow_run", blockedRun, ALLOW, BLOCK)?.changes[0]).toMatchObject({ branch: "feat/x", title: "Workflow run" });
@@ -90,7 +92,7 @@ describe("parseGithubEvent", () => {
   });
 
   it("reads dots in branch names as word breaks", () => {
-    const run = { repository: repository(), workflow_run: { id: 43, name: "CI", head_branch: "feat/acme.bank", status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
+    const run = { repository: repository(), workflow_run: { id: 43, name: "CI", head_branch: "feat/acme.bank", head_repository: headRepo, status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
     expect(parseGithubEvent("workflow_run", run, ALLOW, BLOCK)?.changes).toEqual([]);
   });
 
@@ -99,5 +101,36 @@ describe("parseGithubEvent", () => {
     expect(parseGithubEvent("push", push, ALLOW, ["acme"])?.changes).toEqual([]);
     const dotted = { ...push, ref: "refs/heads/acme.bank", repository: repository({ default_branch: "acme.bank" }) };
     expect(parseGithubEvent("push", dotted, ALLOW, BLOCK)?.changes).toEqual([]);
+  });
+
+  it("ignores fork pull requests and pull requests from outside actors", () => {
+    const pr = (sender: string, association: string, head = "ShinyQ/ShinyQ-HQ") => ({ action: "opened", number: 10, repository: repository(), sender: { login: sender }, pull_request: { number: 10, merged: false, title: "feat: x", author_association: association, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/10", head: { ref: "feat/x", repo: { full_name: head } } } });
+    expect(parseGithubEvent("pull_request", pr("ShinyQ", "OWNER", "stranger/ShinyQ-HQ"), ALLOW, BLOCK)?.changes).toEqual([]);
+    expect(parseGithubEvent("pull_request", pr("stranger", "NONE"), ALLOW, BLOCK)?.changes).toEqual([]);
+    expect(parseGithubEvent("pull_request", pr("ShinyQ", "NONE"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "pr", number: 10 });
+    expect(parseGithubEvent("pull_request", pr("shinyq", "NONE", "shinyq/shinyq-hq"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "pr", number: 10 });
+    expect(parseGithubEvent("pull_request", pr("helper", "COLLABORATOR"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "pr", number: 10 });
+    expect(parseGithubEvent("pull_request", pr("helper", "NONE"), ALLOW, BLOCK, ["Helper"])?.changes[0]).toMatchObject({ type: "pr", number: 10 });
+    expect(parseGithubEvent("pull_request", pr("ShinyQ", "NONE"), ALLOW, BLOCK, ["helper"])?.changes).toEqual([]);
+  });
+
+  it("reads the actor allowlist, falling back to the defaults", () => {
+    expect(DEFAULT_GITHUB_ACTORS).toEqual(["ShinyQ", "Copilot"]);
+    expect(parseActors(undefined)).toEqual(["ShinyQ", "Copilot"]);
+    expect(parseActors(" , ")).toEqual(["ShinyQ", "Copilot"]);
+    expect(parseActors(" a , b ")).toEqual(["a", "b"]);
+  });
+
+  it("ignores workflow runs from forks", () => {
+    const run = (head: string) => ({ repository: repository(), workflow_run: { id: 44, name: "CI", head_branch: "feat/x", head_repository: { full_name: head }, status: "completed", conclusion: "failure", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/44" } });
+    expect(parseGithubEvent("workflow_run", run("stranger/ShinyQ-HQ"), ALLOW, BLOCK)?.changes).toEqual([]);
+    expect(parseGithubEvent("workflow_run", run("shinyq/shinyq-hq"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "run", id: 44, status: "failure" });
+  });
+
+  it("reports a privatized allowlisted repository even though it is now private", () => {
+    const event = (full: string) => ({ action: "privatized", repository: repository({ full_name: full, private: true }) });
+    expect(parseGithubEvent("repository", event("ShinyQ/ShinyQ-HQ"), ALLOW, BLOCK)).toEqual({ repo: "ShinyQ/ShinyQ-HQ", changes: [{ type: "privatized" }] });
+    expect(parseGithubEvent("repository", event("client/app"), ALLOW, BLOCK)).toBeNull();
+    expect(parseGithubEvent("repository", { action: "edited", repository: repository({ private: true }) }, ALLOW, BLOCK)).toBeNull();
   });
 });

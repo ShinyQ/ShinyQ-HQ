@@ -106,6 +106,33 @@ describe("applyGithub", () => {
     expect(view(doc, T0).github.map((g) => g.kind)).toEqual(["pr"]);
   });
 
+  it("ignores jobs of unknown runs, so jobs of dropped fork runs add no progress", () => {
+    let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "d1", T0);
+    const before = view(doc, T0);
+    const after = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 999, jobId: "1", name: "Fork job", status: "failed" }] }, "d2", T0);
+    expect(after.runs).toEqual(doc.runs);
+    expect(view(after, T0)).toEqual(before);
+  });
+
+  it("forgets a privatized repository: no runs, pull requests, feed items or session details, and later beats lose their title", () => {
+    let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", title: "X", state: "ci", activity: "ci" }), T0);
+    doc = applyGithub(doc, { repo: "ShinyQ/other", changes: [{ type: "push", sha: "abc1234", title: "main · other", url: "https://github.com/ShinyQ/other" }] }, "o1", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running"), { type: "pr", number: 7, branch: "feat/x", title: "feat: x", url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/7", action: "opened" }] }, "d1", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "privatized" }] }, "priv-1", T0 + 1);
+    expect(doc.publicRepos).toEqual(["ShinyQ/other"]);
+    expect(doc.runs).toEqual([]);
+    expect(doc.prs).toEqual([]);
+    expect(doc.feed.map((f) => f.repo)).toEqual(["ShinyQ/other"]);
+    const desk = view(doc, T0 + 1).desks[0];
+    expect(desk).not.toHaveProperty("repo");
+    expect(desk).not.toHaveProperty("title");
+    expect(doc.sessions[0]).not.toHaveProperty("branch");
+    doc = applyBeat(doc, beat(1, { repo: HQ, branch: "feat/x", title: "X" }), T0 + 2);
+    expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("title");
+    expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("repo");
+  });
+
   it("returns the same document for a repeated delivery", () => {
     const doc = publicDoc();
     expect(applyGithub(doc, { repo: HQ, changes: [] }, "ping-1", T0 + 1)).toBe(doc);
