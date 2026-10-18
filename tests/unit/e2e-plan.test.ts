@@ -229,6 +229,7 @@ describe("specsForChanges", () => {
 
   it("runs no e2e for the RUM Function", () => {
     expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["functions/api/guides/[slug].ts", "functions/_lib/guides.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "src/lib/office/protocol.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
     expect(specsForChanges(["tools/office-relay/src/hook.ts", "tools/office-relay/README.md"])).toEqual({ specs: [], unmatched: [] });

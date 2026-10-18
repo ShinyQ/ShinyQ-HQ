@@ -105,6 +105,8 @@ export const RULES: Rule[] = [
   // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client
   // beacon and the opt-out aware Web Analytics guard run on every page.
   { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats|askStats))\.ts$|^workers\/|^scripts\/stats-/, specs: [] },
+  // Study guide PDFs from R2: the Function is unit tested (tests/unit/guides-function.test.ts).
+  { test: /^functions\/(api\/guides\/\[slug\]|_lib\/guides)\.ts$/, specs: [] },
   // Inline scripts under the per-page script policy (scripts/csp-hashes.ts): the head boot script, the
   // Web Analytics guard and the / language redirect each need their hash.
   { test: /^src\/components\/Analytics\.tsx$/, specs: ["csp", "boot-first", "static-routes", "visit", "pageview"] },

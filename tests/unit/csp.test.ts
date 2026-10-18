@@ -81,4 +81,11 @@ describe("Content-Security-Policy (public/_headers)", () => {
     expect(cspOf(papers)).toEqual(["frame-ancestors 'none'"]);
     expect(papers).not.toContain("! X-Frame-Options");
   });
+
+  it("keeps study guide PDFs out of frames, with the PDF viewer free of the site policy", () => {
+    const guides = block("/api/guides/*");
+    expect(guides).toContain("! Content-Security-Policy");
+    expect(cspOf(guides)).toEqual(["frame-ancestors 'none'"]);
+    expect(guides).not.toContain("! X-Frame-Options");
+  });
 });
