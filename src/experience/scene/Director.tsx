@@ -27,6 +27,7 @@ import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
+import { introRuntime } from "../intro/runtime";
 import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
@@ -539,6 +540,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     roverRuntime.y = y;
     roverRuntime.z = pose.z;
     roverRuntime.heading = pose.heading;
+    const waking = s.phase === "boot" || s.phase === "intro";
+    if (waking && introRuntime.heading !== null) roverRuntime.heading = introRuntime.heading;
     roverRuntime.speed = pose.speed;
     roverRuntime.tilt = pose.tilt;
     // The camera holds third person while the rover follows a path (autopilot, scrub, mission leg, elevator approach).
@@ -552,6 +555,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       blockedUntil: local.blockedUntil,
       arrivedUntil: local.arrivedUntil,
       ride: rideFace,
+      wake: waking ? introRuntime.face : null,
     });
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;

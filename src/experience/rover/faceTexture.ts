@@ -5,6 +5,11 @@ export const FACE_H = 96;
 
 /** Draws the rover screen (appendix 03: 128 x 96, green on #03140e). */
 export function drawFace(ctx: CanvasRenderingContext2D, frame: FaceFrame, fontFamily: string) {
+  if (frame.key === "off") {
+    ctx.fillStyle = "#010603";
+    ctx.fillRect(0, 0, FACE_W, FACE_H);
+    return;
+  }
   ctx.fillStyle = "#03140e";
   ctx.fillRect(0, 0, FACE_W, FACE_H);
   ctx.fillStyle = "rgba(52, 211, 153, 0.07)";

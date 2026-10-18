@@ -8,11 +8,14 @@ export interface FaceInput {
   blockedUntil: number;
   arrivedUntil: number;
   ride: "up" | "down" | null;
+  /** Intro wake face: the screen is dark ("off") or shows a boot cursor ("boot"). */
+  wake?: "off" | "boot" | null;
 }
 
 /** Picks the face for the current state (appendix 03 section 1). */
 export function faceFor(i: FaceInput): RoverFace {
   if (i.ride) return i.ride;
+  if (i.wake) return i.wake;
   if (i.now < i.blockedUntil) return "blocked";
   if (i.phase === "terminal" || i.phase === "palette") return "thinking";
   if (i.speed > 0.5) return i.autopilot ? "autopilot" : "driving";
@@ -31,6 +34,12 @@ export interface FaceFrame {
 
 /** Text drawn on the rover screen for a face at time `t` (seconds). */
 export function faceFrame(face: RoverFace, t: number, opts: { blinking?: boolean; status?: string } = {}): FaceFrame {
+  if (face === "off") return { lines: [""], key: "off" };
+  if (face === "boot") {
+    // 2.5 Hz cursor blink: on for 0.2 s, off for 0.2 s.
+    const cursor = Math.floor(t * 5) % 2 === 0 ? "_" : " ";
+    return { lines: [cursor], key: `boot:${cursor}` };
+  }
   let main: string;
   switch (face) {
     case "idle":
