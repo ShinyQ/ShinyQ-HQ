@@ -28,7 +28,8 @@ table in `docs/superpowers/README.md` and edited its counts line ("88 plans: 54 
 - [x] **Task 1: index script.** `scripts/docs-index.ts`: pure `parseDecision`, `planStatus`, `listDecisions`,
   `listPlans`, `renderDecisions`, `renderPlans`; the CLI prints both tables, or one with `decisions` / `plans`.
 - [x] **Task 2: migrate the decisions losslessly.** A one-off script (not committed) splits the 159 rows into
-  files; the rendered table must equal the old rows as a multiset, byte for byte.
+  files; the rendered table must equal the old rows as a multiset, byte for byte. Rebased on #221: its two
+  rows became files too (the L4 sweep row it duplicated with `#219` filled in keeps that PR; its own row gets `#221`).
 - [x] **Task 3: migrate the plan rows.** Every PR number and status in the old table must be in the plan's status
   line. Stale lines are brought up to date from `git log` (merged PRs #176, #187, #190, #191, #192, #193, #195,
   #196, #200, #202, #213, #220); plans an open PR edits (`2026-10-18-l4-label-sweep-unit.md` in #221,
