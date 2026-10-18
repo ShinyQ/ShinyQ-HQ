@@ -373,7 +373,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### CI
 
-- GitHub Actions runs typecheck, lint, unit tests and the secret scan next to the static build (CSP hashes, export safety scan, `og:check`), then the Playwright suite and the 3D perf gates in parallel shards against that build (8 and 4 on `main` and the nightly).
+- GitHub Actions runs typecheck, lint, unit tests and the secret scan next to the static build (CSP hashes, export safety scan, `og:check`), then the Playwright suite and the 3D perf gates in parallel shards against that build: a push to `main` usually runs only the complement of its merged PR's green same-tree run (1 to 8 e2e and 1 to 4 perf shards), a full run otherwise; the nightly and dispatches use 8 and 4.
 - Smart CI: on a pull request, `scripts/ci-plan.ts` runs only the affected e2e specs plus a smoke set (on 1 to 8 shards sized from the CI timings), the affected 3D perf tests and the affected Lighthouse URLs; a push to `main` runs only what its merged PR's green same-tree run did not (a full run otherwise); dispatches, the nightly and the `full-ci` label run everything. The nightly keeps one `ci-nightly` issue while it fails ([`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#ci)).
 - `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). `Lighthouse CI` enforces the Page View budgets and the `3D perf gates` job the 3D ones. Both publish per-chunk JS and gate tables against the last green `main` run in the job summary.
 - Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`).

@@ -389,7 +389,7 @@ function apiDeps(repo: string, token: string): SourceDeps {
       try {
         const out = Bun.spawnSync(["gh", "run", "download", String(runId), "--repo", repo, "--name", PLAN_ARTIFACT, "--dir", dir], { stdout: "pipe", stderr: "pipe", timeout: 60_000 });
         if (out.exitCode !== 0) {
-          console.log(`::notice::gh run download ${runId} exited ${out.exitCode}: ${out.stderr.toString().trim().slice(-300)}`);
+          console.log(`::notice::gh run download ${runId} exited ${out.exitCode}: ${out.stderr.toString().trim().slice(-300).replace(/\r?\n/g, " ")}`);
           return null;
         }
         const file = path.join(dir, PLAN_FILE);
