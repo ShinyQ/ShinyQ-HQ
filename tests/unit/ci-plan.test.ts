@@ -15,6 +15,8 @@ describe("ci-plan classify", () => {
     ["e2e/perf/floors.spec.ts", "ci"],
     ["scripts/e2e-plan.ts", "ci"],
     ["scripts/ci-complement.ts", "ci"],
+    ["scripts/ci-status.ts", "ci"],
+    ["scripts/merge-gate.ts", "ci"],
     ["src/experience/tower/Tower.tsx", "code3d"],
     ["src/hud/HudRoot.tsx", "code3d"],
     ["public/floors/l3.webp", "code3d"],

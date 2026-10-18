@@ -27,7 +27,7 @@ export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "toolin
 
 /** First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. */
 const CLASSES: [RegExp, ChangeClass][] = [
-  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
@@ -388,8 +388,12 @@ function apiDeps(repo: string, token: string): SourceDeps {
       const dir = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), "ci-plan-"));
       try {
         const out = Bun.spawnSync(["gh", "run", "download", String(runId), "--repo", repo, "--name", PLAN_ARTIFACT, "--dir", dir], { stdout: "pipe", stderr: "pipe", timeout: 60_000 });
+        if (out.exitCode !== 0) {
+          console.log(`::notice::gh run download ${runId} exited ${out.exitCode}: ${out.stderr.toString().trim().slice(-300)}`);
+          return null;
+        }
         const file = path.join(dir, PLAN_FILE);
-        return out.exitCode === 0 && existsSync(file) ? parseRecord(readFileSync(file, "utf8")) : null;
+        return existsSync(file) ? parseRecord(readFileSync(file, "utf8")) : null;
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
