@@ -13,7 +13,7 @@
  */
 import { appendFileSync, existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import { locateTest, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
+import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import { ALL_PERF_KEYS, perfGrep, perfKeysFor, type PerfKey } from "./perf-plan";
 
 export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
@@ -127,9 +127,6 @@ export const LIGHTHOUSE_PAGES: Readonly<Record<string, string>> = {
   "/en/build": "src/app/[locale]/build/page.tsx",
 };
 
-const MAX_E2E_SHARDS = 8;
-/** Seconds one e2e shard should take: 2 workers for about 4 minutes. */
-const SHARD_SECONDS = 2 * 240;
 const SPEC_FILE = /^e2e\/[^/]+\.spec\.ts$/;
 
 const defaultPages = (file: string): readonly string[] | "all" => (["ui", "code3d"].includes(classify(file)) ? "all" : []);
@@ -212,7 +209,7 @@ export function planFor(files: readonly string[] | null, in3d: (file: string) =>
         const spec = /^e2e\/(.+)\.spec\.ts:/.exec(t)![1] as Spec;
         return sum + specSeconds(opts.durations, spec, titled.get(spec));
       }, 0);
-    e2eShards = seconds === 0 ? 1 : Math.min(MAX_E2E_SHARDS, Math.max(1, Math.ceil(seconds / SHARD_SECONDS)));
+    e2eShards = e2eShardsFor(seconds);
     if (seconds) reasons.push(`about ${Math.round(seconds)} worker-seconds of e2e: ${e2eShards} shard${e2eShards > 1 ? "s" : ""}`);
   }
 
