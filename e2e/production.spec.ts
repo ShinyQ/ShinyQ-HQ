@@ -4,7 +4,10 @@ import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE_PERF, type StatsSnapshotV1 } from "../src/lib/visits/contract";
-import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, collectErrors, driveTo, expectRenderBudget, openPage, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * "How I run AI in production" (owner approved 2026-10-14): the About section on the Classic site, the

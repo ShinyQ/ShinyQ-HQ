@@ -1,5 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, visibleTarget, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, visibleTarget, targetPoint, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L3 Tech Reactor (design 2026-10-14, section 2): the reactor core as a project filter. Picking a tech in

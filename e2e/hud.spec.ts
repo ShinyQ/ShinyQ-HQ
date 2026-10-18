@@ -1,7 +1,10 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { asReturningVisitor, enterHQ, skipFloorLines, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, skipFloorLines, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * 3D HUD layout (owner round R3-B, Corners in Round 8 I): the desktop top bar (no Quick view, a

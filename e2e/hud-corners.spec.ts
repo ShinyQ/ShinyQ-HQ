@@ -2,7 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { writeFileSync } from "node:fs";
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
+import { asReturningVisitor, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Corners HUD (Round 8 I): phones and tablets show the floor chip top left, Ask AI and the menu top

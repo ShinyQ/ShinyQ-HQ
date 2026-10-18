@@ -1,10 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { NAV_TIMEOUT, chooseMotion, openPage } from "./hq";
+import { NAV_TIMEOUT, chooseMotion, openPage, fastAnimations } from "./hq";
 import { heroPod } from "./routes";
 import rawData from "../content/site-content.json";
 import { SiteContentSchema } from "../src/content/schema";
 import en from "../messages/en.json";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 const data = SiteContentSchema.parse(rawData);
 const mission = (id: string) => data.missions.find((entry) => entry.id === id)!;

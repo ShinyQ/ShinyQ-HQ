@@ -20,11 +20,15 @@ import {
   waitForHQ,
   waitForPhase,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
 import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { directoryBoard, LABS } from "../src/experience/floors/labs/layout";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 150_000 });
 

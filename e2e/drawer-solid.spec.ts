@@ -1,7 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, waitForHQ, waitForPhase } from "./hq";
+import { chooseMotion, asReturningVisitor, waitForHQ, waitForPhase, fastAnimations } from "./hq";
 import { findEdgeAccents } from "./edge-audit";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 120_000 });
 

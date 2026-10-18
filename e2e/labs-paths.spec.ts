@@ -3,7 +3,10 @@ import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { LABS } from "../src/experience/floors/labs/layout";
-import { asReturningVisitor, skipFloorLines, driveTo, expectRenderBudget, snapshot, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive, type RenderPeaks } from "./hq";
+import { asReturningVisitor, skipFloorLines, driveTo, expectRenderBudget, snapshot, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive, type RenderPeaks, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L3 three paths (Round 7 G): Product Engineering north, the Data and ML spine straight east and AI
