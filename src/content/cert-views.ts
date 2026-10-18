@@ -1,5 +1,6 @@
 import { formatYearMonth } from "@/lib/format";
 import { shortCertName, sortCertifications, type CertView } from "./certs";
+import { guideForCert } from "./guide-views";
 
 export type { CertView } from "./certs";
 import { getCertifications } from "./load";
@@ -37,5 +38,6 @@ export function toCertViews(certs: readonly Certification[], locale: Locale): Ce
     credentialId: c.credentialId ?? null,
     shortLabel: c.shortLabel ?? null,
     featured: c.featured ?? false,
+    guide: guideForCert(c.id),
   }));
 }

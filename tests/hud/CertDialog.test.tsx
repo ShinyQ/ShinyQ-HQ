@@ -27,6 +27,7 @@ const cert = (status: CertView["status"]): CertView => ({
   credentialId: null,
   shortLabel: null,
   featured: false,
+  guide: null,
 });
 
 describe("CertDialog (R5 P10)", () => {

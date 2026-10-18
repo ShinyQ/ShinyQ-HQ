@@ -23,6 +23,8 @@ export interface CertView {
   /** Featured card title for a certification without an exam code (Classic only; not a code). */
   shortLabel: string | null;
   featured: boolean;
+  /** Study guide slug for this certification (content/study-guides.json), or null. */
+  guide: string | null;
 }
 
 

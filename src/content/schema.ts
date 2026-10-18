@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GUIDE_SLUG } from "./guides";
 import { liveUrlProblem } from "./live-links";
 import { LOCALES } from "./locales";
 import { HEADLINE_MAX } from "./selectors";
@@ -10,7 +11,7 @@ import { HEADLINE_MAX } from "./selectors";
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, Pod.selected, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
- * (ProductionSchema).
+ * (ProductionSchema), the separate study guides file (StudyGuidesFileSchema).
  */
 
 export { DEFAULT_LOCALE, LOCALES } from "./locales";
@@ -489,6 +490,47 @@ export const SiteBuildSchema = z.strictObject({
 });
 
 /**
+ * Study guides (content/study-guides.json, L4 Study Vault): one PDF per certification, served from the
+ * private R2 bucket by the /api/guides Pages Function. `pages`, `bytes`, `version` and `cover` are written by
+ * `bun scripts/study-guides.ts prepare`; the rest by hand.
+ */
+const GuideWeightSchema = z
+  .tuple([z.number().int().min(1).max(100), z.number().int().min(1).max(100)])
+  .refine(([min, max]) => min <= max, "Expected [min, max] with min <= max");
+
+export const StudyGuideSchema = z.strictObject({
+  slug: z.string().regex(GUIDE_SLUG, "Expected a lowercase slug of 2 to 40 characters"),
+  certId: nonEmpty,
+  code: nonEmpty.nullable(),
+  spine: nonEmpty.max(14),
+  issuer: nonEmpty,
+  title: LocalizedTextSchema,
+  summary: LocalizedTextSchema,
+  edition: YearMonthSchema,
+  file: z.string().regex(/^[A-Za-z0-9_.-]+\.pdf$/, "Expected a PDF file name"),
+  pages: z.number().int().positive(),
+  bytes: z.number().int().positive(),
+  version: z.string().regex(/^[0-9a-f]{12}$/, "Expected 12 lowercase hex characters"),
+  cover: z.string().regex(/^\/study-guides\/[a-z0-9-]+\.webp$/, "Expected /study-guides/<slug>.webp"),
+  domains: z.array(z.strictObject({ weight: GuideWeightSchema, label: LocalizedTextSchema })).min(1).max(8),
+});
+
+export const StudyGuidesFileSchema = z
+  .strictObject({
+    $comment: z.string().optional(),
+    guides: z.array(StudyGuideSchema),
+  })
+  .superRefine((file, ctx) => {
+    for (const key of ["slug", "certId"] as const) {
+      const seen = new Set<string>();
+      file.guides.forEach((guide, i) => {
+        if (seen.has(guide[key])) ctx.addIssue({ code: "custom", path: ["guides", i, key], message: `Duplicate guide ${key} "${guide[key]}"` });
+        seen.add(guide[key]);
+      });
+    }
+  });
+
+/**
  * "How I run AI in production" (owner approved 2026-10-14): the About section `#production`, the L3 Ops
  * Control Room (`L3:ops`) and its Ask chunk. Facts only, aggregated, no client or resource names. Each proof
  * tile fills one Ops Control Room screen (`panel`); `alerts` are the rule families on the Alerts screen.
@@ -604,3 +646,5 @@ export type PerspectiveReference = z.infer<typeof PerspectiveReferenceSchema>;
 export type Perspective = z.infer<typeof PerspectiveSchema>;
 export type PerspectivesFile = z.infer<typeof PerspectivesFileSchema>;
 export type SiteBuild = z.infer<typeof SiteBuildSchema>;
+export type StudyGuide = z.infer<typeof StudyGuideSchema>;
+export type StudyGuidesFile = z.infer<typeof StudyGuidesFileSchema>;

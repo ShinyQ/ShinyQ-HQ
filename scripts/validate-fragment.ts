@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, type SiteContent } from "../src/content/schema";
+import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, StudyGuidesFileSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, findBlockedLabels, leafForbiddenPatterns, loadBlocklist, redactBlockedText } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
@@ -65,6 +65,23 @@ if (siteBuildData !== undefined) {
   if (!siteBuild.success) {
     failed = true;
     console.error(`${siteBuildFile}:\n${z.prettifyError(siteBuild.error)}`);
+  }
+}
+
+// ... and the study guides (content/study-guides.json), each tied to a certification in the dataset.
+const guidesFile = path.join(path.dirname(file), "study-guides.json");
+const guidesData: unknown = kind === "full" && existsSync(guidesFile) ? JSON.parse(readFileSync(guidesFile, "utf8")) : undefined;
+if (guidesData !== undefined) {
+  const guides = StudyGuidesFileSchema.safeParse(guidesData);
+  if (!guides.success) {
+    failed = true;
+    console.error(`${guidesFile}:\n${z.prettifyError(guides.error)}`);
+  } else if (parsed.success) {
+    const certIds = new Set((parsed.data as SiteContent).certifications.map((c) => c.id));
+    for (const guide of guides.data.guides.filter((g) => !certIds.has(g.certId))) {
+      failed = true;
+      console.error(`${guidesFile}: guide "${guide.slug}" names unknown certification "${guide.certId}"`);
+    }
   }
 }
 
