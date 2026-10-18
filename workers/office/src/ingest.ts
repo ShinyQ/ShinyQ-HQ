@@ -36,9 +36,9 @@ export function cleanTitle(text: string, blocklist: readonly string[], max = OFF
   return line;
 }
 
-/** True when a branch name holds a blocklisted term, also with "/", "-" and "_" read as word breaks. */
+/** True when a branch name holds a blocklisted term, also with "/", "-", "_" and "." read as word breaks. */
 function branchBlocked(branch: string, blocklist: readonly string[]): boolean {
-  return findBlockedTerms(branch, blocklist).length > 0 || findBlockedTerms(branch.replace(/[/_-]/g, " "), blocklist).length > 0;
+  return findBlockedTerms(branch, blocklist).length > 0 || findBlockedTerms(branch.replace(/[/_.-]/g, " "), blocklist).length > 0;
 }
 
 /** Server re-check of a parsed beat: repository data only for allowlisted names, titles through the blocklist. */
@@ -118,7 +118,7 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const main = text(repository.default_branch);
       const head = obj(body.head_commit);
       const sha = text(head?.id);
-      if (!head || !main || text(body.ref) !== `refs/heads/${main}` || !SHA.test(sha)) break;
+      if (!head || !BRANCH.test(main) || branchBlocked(main, blocklist) || text(body.ref) !== `refs/heads/${main}` || !SHA.test(sha)) break;
       const firstLine = text(head.message).split("\n")[0] ?? "";
       changes.push({ type: "push", sha, title: title(`${main} · ${firstLine}`, `Commit to ${main}`), url: url(head.url) });
       break;

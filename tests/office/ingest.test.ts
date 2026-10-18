@@ -88,4 +88,16 @@ describe("parseGithubEvent", () => {
     const beat: OfficeBeatV1 = { v: 1, agent: "claude", session: "b".repeat(64), state: "working", activity: "editing", repo: "ShinyQ/ShinyQ-HQ", branch: "fix/acme-bank", title: "Login fix", ts: 1 };
     expect(sanitizeBeat(beat, ALLOW, BLOCK)).toEqual({ v: 1, agent: "claude", session: "b".repeat(64), state: "working", activity: "editing", repo: "ShinyQ/ShinyQ-HQ", ts: 1 });
   });
+
+  it("reads dots in branch names as word breaks", () => {
+    const run = { repository: repository(), workflow_run: { id: 43, name: "CI", head_branch: "feat/acme.bank", status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
+    expect(parseGithubEvent("workflow_run", run, ALLOW, BLOCK)?.changes).toEqual([]);
+  });
+
+  it("skips pushes whose default branch holds a blocked term", () => {
+    const push = { ref: "refs/heads/acme", repository: repository({ default_branch: "acme" }), head_commit: { id: "abc1234def", message: "feat: office", url: "https://github.com/ShinyQ/ShinyQ-HQ/commit/abc1234def" } };
+    expect(parseGithubEvent("push", push, ALLOW, ["acme"])?.changes).toEqual([]);
+    const dotted = { ...push, ref: "refs/heads/acme.bank", repository: repository({ default_branch: "acme.bank" }) };
+    expect(parseGithubEvent("push", dotted, ALLOW, BLOCK)?.changes).toEqual([]);
+  });
 });
