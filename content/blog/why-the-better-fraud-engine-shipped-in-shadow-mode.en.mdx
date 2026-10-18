@@ -1,12 +1,12 @@
 ---
 title: "Why the Better Fraud Engine Shipped in Shadow Mode"
 date: "2026-10-09"
-excerpt: "Offline tests cut false positives from 36.4% to 9.1%, but High-risk recall fell. The hybrid rules/LLM engine shipped in shadow mode, without verdict control."
+excerpt: "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode."
 tags: ["llm-evaluation", "shadow-mode", "fraud-detection", "azure-openai", "case-study"]
 readingTime: "6 min"
 ---
 
-I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
+On noisy-clean procurement packets in the development gold set, I cut false positives from 36.4% to 9.1% and still could not let the new engine make the call.
 
 That was the result on noisy but clean procurement packets in the development gold set. High-risk recall went the other way: 1.000 to 0.841. The engine missed more of the packets it needed to catch.
 

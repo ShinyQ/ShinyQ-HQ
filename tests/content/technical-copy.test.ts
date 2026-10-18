@@ -22,7 +22,7 @@ const pack = buildKnowledgePack({ content, posts, products: [], contentDate: "20
 const caveats = [
   [/harness/i, /n=4/, /no improvement|belum menunjukkan perbaikan/],
   [/22/, /no rerun|run ulang.*tidak tercatat/],
-  [/offline/i, /High-risk/, /recall/i, /shadow mode/],
+  [/offline/i, /noisy-clean|bersih yang noisy/, /development/, /36[.,]4%/, /9[.,]1%/, /High-risk recall fell|recall High-risk turun/, /only in shadow mode|hanya dalam shadow mode/],
   [/skipped integration|integration tier yang di-skip/, /two sign-in bugs|dua bug login/, /not measured|belum diukur/],
   [/40 synthetic emails|40 email sintetis/, /not an inbox|bukan inbox nyata/],
 ];
@@ -52,6 +52,19 @@ describe("technical article discovery boundaries", () => {
           expect(source.match(new RegExp(`^${key}: "(.*)"$`, "m"))?.[1], `${slug}.${locale} ${key}`).toBe(value);
         }
       }
+    });
+
+    it("qualifies fraud percentages in the packed " + locale + " lead, not just its excerpt", () => {
+      const slug = "why-the-better-fraud-engine-shipped-in-shadow-mode";
+      const chunk = pack.chunks.find((c) => c.id === `post-${slug}`)!;
+      const text = chunk[locale === "en" ? "text_en" : "text_id"];
+      const excerpt = content.floors.library.posts.find((p) => p.slug === slug)!.excerpt[locale];
+      expect(text).toContain(excerpt);
+      const lead = text.slice(text.indexOf(excerpt) + excerpt.length).trim();
+      expect(lead).toMatch(/36[.,]4%/);
+      expect(lead).toMatch(/9[.,]1%/);
+      expect(lead).toMatch(/noisy-clean|bersih yang noisy/);
+      expect(lead).toMatch(/development/);
     });
 
     it("bounds Clearbox recovery and calibration without claiming numeric-output immunity in " + locale, () => {

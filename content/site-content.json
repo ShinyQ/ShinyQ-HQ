@@ -9815,8 +9815,8 @@
             "id"
           ],
           "excerpt": {
-            "en": "Offline tests cut false positives from 36.4% to 9.1%, but High-risk recall fell. The hybrid rules/LLM engine shipped in shadow mode, without verdict control.",
-            "id": "Uji offline menurunkan false positive dari 36,4% ke 9,1%, tetapi recall High-risk turun. Engine hybrid rules/LLM dirilis hanya dalam shadow mode."
+            "en": "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode.",
+            "id": "Uji offline di set development: FPR paket bersih yang noisy turun 36,4% ke 9,1%, tetapi recall High-risk turun. Dirilis hanya dalam shadow mode."
           }
         },
         {
