@@ -2,15 +2,16 @@
 export type CommandKind = "test" | "ci" | "build" | "git" | "read" | "shell";
 
 const ENV = /^[A-Za-z_][A-Za-z0-9_]*=/;
-const SKIP = new Set(["cd", "export", "env", "time", "sudo", "nohup", "pushd", "source", "."]);
+const SEGMENT_SKIP = new Set(["cd", "export", "pushd", "source", "."]);
+const PREFIX = new Set(["env", "time", "sudo", "nohup"]);
 const READERS = new Set(["rg", "grep", "cat", "sed", "head", "tail", "ls", "find", "wc", "tree", "less", "awk", "jq", "fd", "stat"]);
 
-/** The first three words of the first segment that runs a program (skips `cd x &&`, `export`, `FOO=bar`). */
+/** The first three words of the first segment that runs a program (skips `cd x &&`, `export`, `FOO=bar`, and sees through `env`, `time`, `sudo`, `nohup`). */
 function headWords(command: string): string[] {
   for (const segment of command.split(/&&|\|\||;|\||\n/)) {
     const words = segment.trim().split(/\s+/).filter(Boolean);
-    while (words.length > 0 && ENV.test(words[0])) words.shift();
-    if (words.length === 0 || SKIP.has(words[0])) continue;
+    while (words.length > 0 && (ENV.test(words[0]) || PREFIX.has(words[0]))) words.shift();
+    if (words.length === 0 || SEGMENT_SKIP.has(words[0])) continue;
     return words.slice(0, 3).map((w) => w.replace(/^["']|["']$/g, ""));
   }
   return [];

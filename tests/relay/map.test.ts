@@ -9,6 +9,10 @@ describe("commandKind", () => {
     ["bun run test -- --reporter=dot", "test"],
     ["cd /tmp/x && bunx vitest run tests/unit", "test"],
     ["E2E_PORT=4400 bun run e2e:changed", "test"],
+    ["time bun test", "test"],
+    ["sudo npm test", "test"],
+    ["env CI=1 bun test", "test"],
+    ["nohup bun run build", "build"],
     ["npx playwright test e2e/office.spec.ts", "test"],
     ["python -m pytest -q", "test"],
     ["pytest", "test"],
@@ -86,6 +90,11 @@ describe("mapEvent", () => {
   it("ignores unknown events and unknown agents' shapes without throwing", () => {
     expect(mapEvent("copilot", "somethingNew", { foo: 1 })).toBeNull();
     expect(mapEvent("claude", "PostToolUse", {})).toEqual({ state: "thinking", activity: "planning" });
+  });
+
+  it("maps an answered question (PostToolUse AskUserQuestion) to thinking, not needs input", () => {
+    expect(mapEvent("claude", "PostToolUse", { tool_name: "AskUserQuestion" })).toEqual({ state: "thinking", activity: "planning" });
+    expect(mapEvent("copilot", "postToolUse", { toolName: "ask_user" })).toEqual({ state: "thinking", activity: "planning" });
   });
 
   it("reads commands from every payload shape and the raw session id", () => {

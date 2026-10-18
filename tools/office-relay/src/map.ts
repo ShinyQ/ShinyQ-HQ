@@ -24,7 +24,6 @@ const KIND: Record<CommandKind, Mapped> = {
 const EDIT_TOOLS = new Set(["edit", "create", "write", "notebookedit", "apply_patch", "multiedit", "str_replace_editor"]);
 const READ_TOOLS = new Set(["view", "read", "grep", "glob", "web_fetch", "webfetch", "websearch", "ls"]);
 const SHELL_TOOLS = new Set(["bash", "powershell", "shell"]);
-const ASK_TOOLS = new Set(["ask_user", "askuserquestion"]);
 const NEEDS_INPUT = new Set(["permission_prompt", "elicitation_dialog", "agent_needs_input"]);
 
 const str = (x: unknown): string => (typeof x === "string" ? x : "");
@@ -62,7 +61,6 @@ function afterTool(p: Record<string, unknown>): Mapped {
   const tool = toolName(p);
   if (EDIT_TOOLS.has(tool)) return m("working", "editing");
   if (READ_TOOLS.has(tool)) return m("reviewing", "reading");
-  if (ASK_TOOLS.has(tool)) return ASKING;
   return THINKING;
 }
 
