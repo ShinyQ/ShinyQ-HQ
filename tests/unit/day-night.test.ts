@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { Color } from "three";
+import { Color, Vector3 } from "three";
 import { floorY } from "@/experience/config";
 import { sceneSettings } from "@/experience/scene/settings";
-import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyState, SKY, SKY_PHASES, underground, UNDERGROUND_BELOW } from "@/experience/sky/dayNight";
+import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyAzimuth, skyState, SKY, SKY_PHASES, underground, UNDERGROUND_BELOW } from "@/experience/sky/dayNight";
 
 describe("day and night model", () => {
   it("runs an 8 minute cycle from clock time", () => {
@@ -76,17 +76,52 @@ describe("day and night model", () => {
       expect(s.warm).toBeCloseTo(1);
     }
   });
-  it("sun and moon move on opposite sides of a low arc around the dome horizon", () => {
-    const night = skyState(0);
-    const day = skyState(0.5);
-    expect(night.moon.elevation).toBeCloseTo(SKY.horizon + SKY.arc);
-    expect(night.sun.elevation).toBeCloseTo(SKY.horizon - SKY.arc);
-    expect(day.sun.elevation).toBeCloseTo(SKY.horizon + SKY.arc);
-    expect(night.moon.dir.dot(night.sun.dir)).toBeLessThan(0);
-    expect(night.moon.dir.length()).toBeCloseTo(1);
+  it("sun and moon ride one tall vertical arc facing the camera, opposite each other", () => {
+    expect(skyAzimuth("desktop")).toBe(SKY.azimuth.desktop);
+    expect(skyAzimuth("tablet")).toBe(SKY.azimuth.tablet);
+    expect(skyAzimuth("mobile")).toBe(SKY.azimuth.mobile);
+    // The default azimuth is the desktop one.
+    expect(skyState(0.5).sun.dir.distanceTo(skyState(0.5, undefined, SKY.azimuth.desktop).sun.dir)).toBeLessThan(1e-9);
+    for (const cls of ["desktop", "tablet", "mobile"] as const) {
+      const az = skyAzimuth(cls);
+      const at = (p: number) => skyState(p, undefined, az);
+      // Camera right when looking along `az` (increasing azimuth is to the left).
+      const right = new Vector3(-Math.cos(az), 0, Math.sin(az));
+      // Midday: the sun at the top, the moon at the bottom; night: the other way round.
+      expect(at(0.5).sun.elevation).toBeCloseTo(SKY.horizon + SKY.rise, 6);
+      expect(at(0.5).moon.elevation).toBeCloseTo(SKY.horizon - SKY.rise, 6);
+      expect(at(0).moon.elevation).toBeCloseTo(SKY.horizon + SKY.rise, 6);
+      expect(at(0).sun.elevation).toBeCloseTo(SKY.horizon - SKY.rise, 6);
+      // Top and bottom sit straight above and below the center: no sideways offset.
+      expect(Math.abs(at(0.5).sun.dir.dot(right))).toBeLessThan(1e-9);
+      // Dawn and dusk: on the horizon, the sun rising on the left and setting on the right, the moon opposite.
+      const dawn = at(0.25);
+      const dusk = at(0.75);
+      expect(dawn.sun.elevation).toBeCloseTo(SKY.horizon, 2);
+      expect(dusk.sun.elevation).toBeCloseTo(SKY.horizon, 2);
+      expect(dawn.sun.dir.dot(right)).toBeLessThan(0);
+      expect(dusk.sun.dir.dot(right)).toBeGreaterThan(0);
+      expect(dawn.moon.dir.dot(right)).toBeGreaterThan(0);
+      expect(dusk.moon.dir.dot(right)).toBeLessThan(0);
+      let lateral = 0;
+      let low = Infinity;
+      let high = -Infinity;
+      for (let i = 0; i < 64; i++) {
+        const p = i / 64;
+        const s = at(p);
+        expect(s.sun.dir.length()).toBeCloseTo(1, 9);
+        expect(s.moon.dir.length()).toBeCloseTo(1, 9);
+        // The moon is the sun half a cycle later: the same ellipse, the opposite side.
+        expect(s.moon.dir.distanceTo(at((p + 0.5) % 1).sun.dir)).toBeLessThan(1e-9);
+        lateral = Math.max(lateral, Math.abs(Math.asin(s.sun.dir.dot(right))));
+        low = Math.min(low, s.sun.elevation);
+        high = Math.max(high, s.sun.elevation);
+      }
+      // Up to down: the vertical travel is more than twice the sideways travel.
+      expect(high - low).toBeGreaterThan(2 * (2 * lateral));
+    }
     // The night moon and the midday sun share one direction (in front of the L1 default camera).
-    expect(night.moon.dir.distanceTo(day.sun.dir)).toBeLessThan(1e-6);
-    expect(skyState(0.25).sun.elevation).toBeCloseTo(SKY.horizon);
+    expect(skyState(0).moon.dir.distanceTo(skyState(0.5).sun.dir)).toBeLessThan(1e-9);
   });
   it("is continuous across the cycle", () => {
     const a = skyState(0.999999);
