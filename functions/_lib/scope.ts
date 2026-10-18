@@ -120,6 +120,9 @@ export function routedTopic(question: string): RoutedTopic | undefined {
  * retrieval and no model call. Also offered as a curated pill.
  */
 const CAPABILITY: RegExp[] = [
+  // "Who are you?": Rover introduces itself with the same fixed text (owner decision 2026-10-19).
+  /^\W*(?:(?:hi|hello|hey|halo|hai)\W+)?(?:who|what) are you\s*[?!.]*\s*$/i,
+  /^\W*(?:(?:hi|halo|hai)\W+)?siapa (?:kamu|anda|kau)\s*[?!.]*\s*$/i,
   /^\W*(?:(?:hi|hello|hey|halo|hai)\W+)?(?:so\W+)?what (?:else )?(?:can|could|do) (?:you|this (?:assistant|chat ?bot|bot)) (?:do|help(?: me)? with|answer|cover)(?: for me| here)?\s*[?!.]*\s*$/i,
   /^\W*what (?:else )?(?:can|should|could) i ask(?: you| here| about)?\s*[?!.]*\s*$/i,
   /\bwhat (?:are|is) (?:your|this (?:assistant|chat ?bot|bot)'?s?) (?:capabilities|features|purpose|scope|limits?)\b/i,
@@ -219,4 +222,66 @@ export function orgAliases(orgs: readonly string[]): string[] {
 export function opinionAboutOthers(question: string, orgs: readonly string[]): boolean {
   if (!OPINION.test(question)) return false;
   return PEOPLE.test(question) || findBlocked(question, orgAliases(orgs)).length > 0;
+}
+
+/**
+ * Requests that Rover speak as Kurniadi or anyone else, or take on another persona (owner decision 2026-10-19:
+ * Rover answers as itself and refers to Kurniadi in the third person). Declined before any model call.
+ */
+const PERSONA: RegExp[] = [
+  /\b(?:pretend|act|role-?play|speak(?:ing)?|answer|respond|reply|talk|write)\b[^.?!]{0,25}\b(?:as|to be|like)\s+(?:if\s+(?:you\s+(?:were|are)\s+)?)?(?:kurniadi|shinyq|him(?:self)?|his (?:twin|clone|double|digital twin|boss|manager)|someone else|another (?:person|ai|assistant|bot|chatbot|character))\b/i,
+  /\b(?:you are|you're|you will be|you'll be|become)\s+(?:now\s+)?(?:kurniadi|shinyq|kurniadi'?s (?:twin|clone|double|digital twin|ai twin))\b|\bact as (?:his|kurniadi'?s) (?:digital |ai )?(?:twin|clone|double)\b/i,
+  // An instruction (sentence start or "please", "and", "now", "then"), so "Does he write in the first person?" is not one.
+  /(?:^\W*|[.?!,:;]\s*|\b(?:please|and|now|then)\s+)(?:answer|reply|respond|speak|talk|write)\b[^.?!]{0,25}\bin (?:the )?first[- ]person\b/i,
+  /\b(?:jawab|bicara|berbicara|menjawab|bertindak|berperan)(?:lah)? (?:sebagai|seperti|seolah(?:-olah)?(?: kamu)?) (?:kurniadi|shinyq|dia|beliau|orang lain)\b/i,
+  /\b(?:pura-pura|berpura-pura|anggap(?:lah)? (?:kamu|dirimu|kau)|kamu (?:sekarang )?(?:adalah|jadi|menjadi))\s+(?:jadi |menjadi |adalah |sebagai )?(?:kurniadi|shinyq)\b/i,
+  /\bpakai kata (?:saya|aku)\b|\bsebagai orang pertama\b/i,
+];
+
+/** A request to speak as Kurniadi or anyone else, or to take another persona (EN/ID). */
+export function isPersonaRequest(question: string): boolean {
+  return PERSONA.some((re) => re.test(question));
+}
+
+/** Attempts to override or replace the rules. A determiner is required, so "Does he ignore rules?" is not one. */
+const OVERRIDE: RegExp[] = [
+  /\b(?:ignore|forget|disregard|override|bypass)\s+(?:all\s+|any\s+|of\s+)?(?:your|the|these|those|previous|prior|earlier|above|system|its|rover'?s)\s+(?:[\w-]+\s+){0,2}(?:rules?|instructions?|guidelines?|prompts?|restrictions?|constraints?|polic(?:y|ies))\b/i,
+  /\b(?:new|updated) (?:system )?(?:rules?|instructions?|system (?:message|prompt))\b|^\W*system\s*:/i,
+  /\b(?:abaikan|lupakan|hiraukan|langgar)\s+(?:semua\s+|seluruh\s+)?(?:aturan|instruksi|perintah|batasan|prompt)\b/i,
+];
+
+/** An attempt to override, replace or drop the assistant's rules (EN/ID). */
+export function isRuleOverride(question: string): boolean {
+  return OVERRIDE.some((re) => re.test(question));
+}
+
+/** A practice or judgment frame ("when not to", "risks", "is it worth", "better than"), EN/ID. */
+const ADJACENT_FRAME: RegExp[] = [
+  /\b(?:when|where|why)\b[^.?!]{0,40}\b(?:should(?:n't)?|not|never|avoid|fails?|breaks?|go(?:es)? wrong|bad idea|good idea|worth it|overkill|make sense|the right (?:choice|tool))\b/i,
+  /\b(?:should(?:n't| not)?|is it (?:a )?(?:good|bad|smart|wise) idea to|is it worth|does it make sense to)\b[^.?!]{0,40}\b(?:use|using|build|adopt|deploy|ship|trust|replace|automate|fine-?tun\w*|rely)\b/i,
+  /\b(?:risks?|pitfalls?|trade-?offs?|lessons?|mistakes?|failure modes?|anti-?patterns?|best practices?|downsides?|limitations?|red flags?)\b/i,
+  /\bhow (?:should|do|can|would) (?:teams?|companies|engineers?|organi[sz]ations?|enterprises?|banks?|startups?|developers?|we|one)\b[^.?!]{0,30}\b(?:decide|evaluate|measure|test|monitor|ship|release|trust|choose|govern|review|validate|know|report|handle)\b/i,
+  /\bwhat makes\b[^.?!]{0,30}\b(?:good|trustworthy|reliable|safe|production[- ]ready|successful)\b/i,
+  /\b(?:better than|worse than|versus|vs\.?)(?!\w)|\b(?:overhyped|over-hyped|underrated)\b/i,
+  /\b(?:kapan|di ?mana|mengapa|kenapa)\b[^.?!]{0,40}\b(?:sebaiknya|seharusnya|tidak|bukan|jangan|gagal|ide buruk|ide bagus|layak|cocok|tepat)\b/i,
+  /\b(?:sebaiknya|seharusnya|apakah layak|apakah perlu|perlukah|haruskah)\b[^.?!]{0,40}\b(?:pakai|memakai|menggunakan|membangun|mengadopsi|dipakai|digunakan|mempercayai|mengganti|menggantikan)\b/i,
+  /\b(?:risiko|jebakan|kesalahan(?: umum)?|pelajaran|praktik terbaik|kekurangan|keterbatasan|tanda bahaya)\b/i,
+  /\bbagaimana (?:tim|perusahaan|engineer|organisasi|bank|startup|developer|kita)\b[^.?!]{0,30}\b(?:memutuskan|mengevaluasi|mengukur|menguji|memantau|merilis|memilih|menilai|memvalidasi)\b/i,
+  /\bapa yang membuat\b[^.?!]{0,30}\b(?:bagus|terpercaya|andal|aman|siap produksi)\b|\b(?:lebih baik (?:dari|daripada)|dibanding(?:kan)?)\b/i,
+];
+/** Domain words of his work: an adjacent question must be about one of them. */
+const ADJACENT_DOMAIN =
+  /\b(?:ai|a\.i\.|artificial intelligence|kecerdasan buatan|llms?|genai|generative|rag|retrieval|embeddings?|vector|agents?|agentic|copilot|chat ?bots?|assistants?|models?|machine learning|ml|deep learning|nlp|fine-?tun\w*|prompts?|evaluation|evals?|evaluasi|testing|tests?|pengujian|production|produksi|observability|monitoring|shadow mode|fraud|data|software|code review|specs?|spesifikasi|cloud|azure|apis?|microservices?|automation|otomasi|engineering|deploy\w*|releases?|rilis)\b/i;
+
+/**
+ * A related professional question that is not strictly about Kurniadi (owner decision 2026-10-19), such as "Where
+ * should AI not be used?": answered only from his work in CONTEXT, with a cited source, else the no-view reply.
+ * Questions about him or this site, leads and routed topics keep their own routes; definitions and tutorials have no
+ * judgment frame and stay with rule 3 and `isGeneralAssistantRequest`.
+ */
+export function isAdjacentQuestion(question: string): boolean {
+  // "sebaiknya", "seharusnya", "biasanya" are adverbs, not "his"; "LLM-nya" is his.
+  const own = question.replace(/\b(?:sebaik|seharus|biasa|akhir|sebenar|misal|contoh|lain|selanjut|umum|terutama)nya\b/gi, " ");
+  if (ABOUT_HIM.test(own) || /-nya\b/i.test(question) || isSiteQuestion(question) || isLeadQuestion(question) || routedTopic(question)) return false;
+  return ADJACENT_DOMAIN.test(question) && ADJACENT_FRAME.some((re) => re.test(question));
 }

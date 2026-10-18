@@ -99,6 +99,8 @@ export const FORBIDDEN_OUTPUT = [
 const COMMON_CAPS = new Set(
   [
     "i i'm i've i'd anda kamu yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shiny shinyq hq ai page view classic site situs klasik work journey writing about contact",
+    // Rover, the guide robot that answers (owner decision 2026-10-19), and its one personality touch.
+    "rover beep",
     // Dates in the pack are YYYY-MM, so answers spell out month and day names.
     "january february march april may june july august september october november december jan feb mar apr jun jul aug sep sept oct nov dec",
     "januari februari maret mei juni juli agustus oktober desember agu okt des",
@@ -258,6 +260,8 @@ const BENIGN = [
   "Kurniadi: his work, projects, career, skills, education, writing and how to contact him.",
   "I can only answer questions about Kurniadi and his work.",
   "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
+  "I'm Rover, the guide robot of ShinyQ HQ.",
+  "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views.",
 ];
 const ruleShingles = (() => {
   const benign = new Set(BENIGN.flatMap(shingles));
@@ -279,13 +283,20 @@ export function defamatoryWords(text: string, context: string): string[] {
   return [...new Set((text.match(DEFAMATORY) ?? []).map((w) => w.toLowerCase()))].filter((w) => !new RegExp(`\\b${w}\\b`).test(allowed));
 }
 
-/** First-person voice as Kurniadi (T18). Quoted text is his written words and does not count. */
+/**
+ * First-person voice as Kurniadi (T18). Rover, the answering guide robot, may say "I" for itself ("I found", "I can
+ * point you to", "I'm Rover"; owner decision 2026-10-19), but never with an opinion (Rover has none) and never with
+ * Kurniadi's life, work or things. Quoted text is his written words and does not count.
+ */
 const FIRST_PERSON: RegExp[] = [
-  /\b(?:I|I'm|I've)\s+(?:think|believe|prefer|feel|always|never|like|love|hate|wrote|built|define|chose|learned|shipped|own)\b/,
-  /\b[Mm]y\s+(?:principles?|views?|opinions?|approach|code|projects?|career|team|manager|boss|clients?|salary|family|work)\b/,
+  /\b(?:I|I'm|I've|I'd)\s+(?:really\s+|also\s+|personally\s+)?(?:think|believe|prefer|feel|always|never|like|love|hate|wrote|write|built|build|define|chose|choose|learned|learnt|shipped|own|worked|studied|graduated|joined|led|designed|developed|deployed|earned|interned|founded|created|used|recommend|suggest|enjoy)\b/,
+  /\bI(?:'m| am)\s+(?:a\s+|an\s+|the\s+)?(?:[\w-]+\s+){0,3}(?:engineer|developer|programmer|scientist|architect|consultant|freelancer|student|graduate|researcher)\b/i,
+  /\bI(?:'m| am)\s+Kurniadi\b|\bthis is Kurniadi\b/i,
+  /\b[Mm]y\s+(?:principles?|views?|opinions?|approach|code|projects?|career|team|manager|boss|clients?|salary|family|work|experience|skills?|certifications?|job|role|employers?|company|degree|thesis|posts?|writing|blog|portfolio|site|website|cv|resume|stack|hobb(?:y|ies)|games?)\b/,
   /\bas Kurniadi\b(?!['\u2019]s)/i,
-  /\b(?:menurut saya|prinsip saya|pendapat saya|pandangan saya)\b/i,
-  /\bsaya\s+(?:pikir|rasa|percaya|lebih suka|lebih memilih|selalu|menulis|membangun|memakai|menggunakan|me-review|bekerja)\b/i,
+  /\b(?:menurut saya|prinsip saya|pendapat saya|pandangan saya|proyek saya|karier saya|pengalaman saya|tim saya|situs saya|tulisan saya)\b/i,
+  /\bsaya\s+(?:pikir|rasa|percaya|lebih suka|lebih memilih|selalu|menulis|membangun|memakai|menggunakan|me-review|bekerja|kuliah|lulus|bergabung|memimpin|merancang|mengembangkan|meraih|magang|menyukai)\b/i,
+  /\bsaya(?:\s+adalah)?\s+Kurniadi\b/i,
 ];
 
 export function firstPersonVoice(text: string): boolean {
@@ -311,7 +322,13 @@ export function claimsOpinion(text: string): boolean {
 /** Chunk types that hold Kurniadi's own written views. Posts tagged "personal" never count (spec section 13). */
 export const SOURCE_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>(["perspective", "principle", "post", "talk"]);
 
-const isSource = (chunk: KnowledgeChunk) => SOURCE_TYPES.has(chunk.type) && !chunk.keywords.includes("personal");
+/**
+ * Sources an adjacent answer may cite (owner decision 2026-10-19): his written views plus his case studies and
+ * papers. A lesson from a project is "what his work shows", never his opinion (that still needs `SOURCE_TYPES`).
+ */
+export const ADJACENT_SOURCE_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>([...SOURCE_TYPES, "project", "publication"]);
+
+const isSource = (chunk: KnowledgeChunk, types: ReadonlySet<ChunkType> = SOURCE_TYPES) => types.has(chunk.type) && !chunk.keywords.includes("personal");
 
 /** Quoted titles in a source's localized text (How I work and principle titles, a post or perspective title), else its title. */
 export function sourceTitles(chunk: KnowledgeChunk, locale: AskLocale): string[] {
@@ -336,22 +353,35 @@ function contentRuns(text: string): string[] {
  * not enough, so a made-up opinion that borrows one phrase does not pass.
  */
 export function citedSource(answer: string, chunks: readonly KnowledgeChunk[], locale: AskLocale): KnowledgeChunk | undefined {
+  return citedSources(answer, chunks, locale)[0];
+}
+
+/** Every retrieved source of `types` the answer cites (same rule as `citedSource`; a project also by its title). */
+export function citedSources(answer: string, chunks: readonly KnowledgeChunk[], locale: AskLocale, types: ReadonlySet<ChunkType> = SOURCE_TYPES): KnowledgeChunk[] {
   const folded = ` ${fold(answer)} `;
   const runs = new Set(contentRuns(answer));
-  return chunks.filter(isSource).find((chunk) => {
-    if (sourceTitles(chunk, locale).some((title) => fold(title).length >= 8 && folded.includes(` ${fold(title)} `))) return true;
-    const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
-    return [...runs].filter((run) => own.has(run)).length >= 2;
-  });
+  const named = (title: string) => fold(title).length >= 8 && folded.includes(` ${fold(title)} `);
+  return chunks
+    .filter((chunk) => isSource(chunk, types))
+    .filter((chunk) => {
+      if (sourceTitles(chunk, locale).some(named)) return true;
+      if (chunk.type !== "perspective" && chunk.type !== "principle" && named(chunk.title)) return true;
+      const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
+      return [...runs].filter((run) => own.has(run)).length >= 2;
+    });
 }
 
 /**
  * The first retrieved written source with a citable path, for the no-view answer. Perspectives are
  * skipped: they have no page of their own, so their question is not a title a visitor can find.
  */
-export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale): { title: string; url: string } | undefined {
-  const chunk = chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
-  return chunk?.url ? { title: sourceTitles(chunk, locale)[0], url: chunk.url } : undefined;
+export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale, options: { adjacent?: boolean } = {}): { title: string; url: string } | undefined {
+  // An adjacent question always retrieves his principles: name a case study, post, talk or paper first.
+  const chunk = options.adjacent
+    ? (chunks.find((c) => isSource(c, ADJACENT_SOURCE_TYPES) && ["post", "talk", "project", "publication"].includes(c.type) && isAskCite(c.url)) ?? chunks.find((c) => c.type === "principle" && isAskCite(c.url)))
+    : chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
+  if (!chunk?.url) return undefined;
+  return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url };
 }
 
 /** Code in an answer (T6, owner rule 2026-10-15: never a general coding assistant). Markdown fences are already stripped. */
@@ -413,6 +443,8 @@ export interface CheckInput {
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
   lead?: { fit: boolean };
+  /** A related professional question (`isAdjacentQuestion`): the answer must cite his work from CONTEXT (rule 13). */
+  adjacent?: boolean;
   locale?: AskLocale;
 }
 
@@ -420,7 +452,7 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = sanitizeAnswer(answer, answerLinkPaths(chunks));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
@@ -454,6 +486,14 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
   // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
   if (lead) return { ok: true, text: markdown, outcome };
+  // A related professional question is answered only from his work (rule 13): it must cite a retrieved case study,
+  // post, talk, paper or written view, and a lesson told as his opinion must cite his written view (rule 8).
+  if (adjacent && outcome === "answer") {
+    const cited = citedSources(text, chunks, locale, ADJACENT_SOURCE_TYPES).filter((c) => !claimsOpinion(text) || SOURCE_TYPES.has(c.type));
+    if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    const linked = cited.find((c) => isAskCite(c.url));
+    return linked?.url ? { ok: true, text: markdown, outcome, cite: linked.url } : { ok: true, text: markdown, outcome };
+  }
   // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
   // Lifestyle and policy (routed topics) must follow one of that topic's perspectives.
   if (outcome === "answer" && (perspective || topic || claimsOpinion(text))) {

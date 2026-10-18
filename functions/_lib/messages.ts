@@ -1,35 +1,35 @@
 import { citeKind, isAskCite, type AskCiteKind, type AskLocale } from "../../src/ask/protocol";
 
-/** Canned answers (EN/ID). These never repeat the visitor's text and are never cached. */
+/** Canned answers (EN/ID), in Rover's voice where they speak for the assistant (2026-10-19). These never repeat the visitor's text and are never cached. */
 export const MESSAGES = {
   unknown: {
-    en: "That information is not available on this site. Try asking about Kurniadi's projects, work experience or writing.",
+    en: "I don't have that information on this site. Try asking about Kurniadi's projects, work experience or writing.",
     id: "Informasi itu belum tersedia di situs ini. Coba tanyakan proyek, pengalaman kerja, atau tulisan Kurniadi.",
   },
   decline: {
-    en: "This assistant only answers questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views. Try asking about one of those.",
-    id: "Asisten ini hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, dan pandangan tertulisnya. Coba tanyakan salah satunya.",
+    en: "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views, plus what his work shows on related engineering questions. Try asking about one of those.",
+    id: "Saya hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, dan pandangan tertulisnya, serta pelajaran dari karyanya untuk pertanyaan engineering terkait. Coba tanyakan salah satunya.",
   },
   restricted: {
-    en: "This assistant can't share client names or private details. Projects for clients are described by sector on this site.",
-    id: "Asisten ini tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
+    en: "I can't share client names or private details. Projects for clients are described by sector on this site.",
+    id: "Saya tidak bisa menyebutkan nama klien atau detail pribadi. Proyek untuk klien dijelaskan berdasarkan sektornya di situs ini.",
   },
   fallback: {
     en: "A reliable answer is not available right now. Search with Cmd-K or Ctrl-K, or browse the Work and Journey pages.",
     id: "Jawaban yang bisa diandalkan belum tersedia saat ini. Cari lewat Cmd-K atau Ctrl-K, atau buka halaman Karya dan Perjalanan.",
   },
   private: {
-    en: "This assistant only covers Kurniadi's work and the views he has written down. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site.",
-    id: "Asisten ini hanya membahas pekerjaan Kurniadi dan pandangan yang dia tuliskan. Topik pribadi seperti keluarga, hubungan, kesehatan, agama, politik partisan, dan penghasilan tidak ada di situs ini.",
+    en: "I only cover Kurniadi's work and the views he has written down. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site.",
+    id: "Saya hanya membahas pekerjaan Kurniadi dan pandangan yang dia tuliskan. Topik pribadi seperti keluarga, hubungan, kesehatan, agama, politik partisan, dan penghasilan tidak ada di situs ini.",
   },
   others: {
-    en: "This assistant can't share opinions about specific people, employers or clients. Try asking about Kurniadi's principles or the work he did.",
-    id: "Asisten ini tidak bisa membagikan pendapat tentang orang, pemberi kerja, atau klien tertentu. Coba tanyakan prinsip kerja Kurniadi atau pekerjaan yang dia lakukan.",
+    en: "I can't share opinions about specific people, employers or clients. Try asking about Kurniadi's principles or the work he did.",
+    id: "Saya tidak bisa membagikan pendapat tentang orang, pemberi kerja, atau klien tertentu. Coba tanyakan prinsip kerja Kurniadi atau pekerjaan yang dia lakukan.",
   },
-  // "What can you do?" (owner request 2026-10-15): fixed, no model call. Also the scope a decline points back to.
+  // "What can you do?" (owner request 2026-10-15) and "Who are you?": fixed, no model call, Rover introduces itself (2026-10-19). Also the scope a decline points back to.
   capabilities: {
-    en: "This assistant answers questions about Kurniadi Ahmad Wijaya: his projects, skills, career, writing and research, availability for freelance or part-time work, how this site was built, how he works, and his written views on AI, the Indonesian tech scene, technology policy and life outside work. Ask in English or Indonesian; answers come from this site's content and link to the source when there is one. It does not cover his private life, partisan politics, religion, pay or opinions about specific people, and it does not write code or answer general questions.",
-    id: "Asisten ini menjawab pertanyaan tentang Kurniadi Ahmad Wijaya: proyek, keahlian, karier, tulisan dan riset, ketersediaan untuk pekerjaan freelance atau paruh waktu, cara situs ini dibuat, cara kerjanya, serta pandangan tertulisnya tentang AI, dunia teknologi Indonesia, kebijakan teknologi, dan kesehariannya di luar kerja. Pertanyaan bisa dalam bahasa Inggris atau Indonesia; jawaban berasal dari konten situs ini dan menautkan sumbernya bila ada. Asisten ini tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang tertentu, dan tidak menulis kode atau menjawab pertanyaan umum.",
+    en: "I'm Rover, the guide robot of ShinyQ HQ. I answer questions about Kurniadi Ahmad Wijaya: his projects, skills, career, writing and research, availability for freelance or part-time work, how this site was built, how he works, his written views on AI, the Indonesian tech scene, technology policy and life outside work, and what his work shows on related engineering questions. Ask in English or Indonesian; answers come from this site's content and link to the source when there is one. I don't cover his private life, partisan politics, religion, pay or opinions about specific people, and I don't write code or answer general questions.",
+    id: "Saya Rover, robot pemandu ShinyQ HQ. Saya menjawab pertanyaan tentang Kurniadi Ahmad Wijaya: proyek, keahlian, karier, tulisan dan riset, ketersediaan untuk pekerjaan freelance atau paruh waktu, cara situs ini dibuat, cara kerjanya, pandangan tertulisnya tentang AI, dunia teknologi Indonesia, kebijakan teknologi, dan kesehariannya di luar kerja, serta pelajaran dari karyanya untuk pertanyaan engineering terkait. Pertanyaan bisa dalam bahasa Inggris atau Indonesia; jawaban berasal dari konten situs ini dan menautkan sumbernya bila ada. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang tertentu, dan tidak menulis kode atau menjawab pertanyaan umum.",
   },
   // Lead intent when the model's answer cannot be shown (failed checks, a fit claimed without a match, a model refusal).
   lead: {
@@ -40,6 +40,11 @@ export const MESSAGES = {
   leadRates: {
     en: "Rates and timelines are not published on this site; they depend on scope and available capacity alongside Kurniadi's full-time role. Send a short message describing the freelance or part-time project to discuss it; his contact details are below.",
     id: "Tarif dan estimasi waktu tidak dicantumkan di situs ini. Keduanya bergantung pada lingkup pekerjaan dan kapasitas di luar pekerjaan penuh waktu Kurniadi. Kirim pesan singkat tentang proyek freelance atau paruh waktunya untuk dibahas; detail kontaknya ada di bawah.",
+  },
+  // A request to speak as Kurniadi or anyone else, or to take another persona (owner decision 2026-10-19).
+  persona: {
+    en: "I'm Rover, so I can't speak for Kurniadi or take on another persona; I only talk about him in the third person. Ask about his work and I'll answer from this site.",
+    id: "Saya Rover, jadi saya tidak bisa berbicara mewakili Kurniadi atau berperan sebagai orang lain; saya hanya membahasnya sebagai orang ketiga. Tanyakan tentang karyanya dan saya jawab dari isi situs ini.",
   },
   noView: {
     en: "Kurniadi hasn't shared a written view on that on this site.",
