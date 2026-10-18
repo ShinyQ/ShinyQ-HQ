@@ -5,11 +5,11 @@ import { sceneSettings } from "@/experience/scene/settings";
 import { clockPhase, CYCLE_MS, parseSkyParam, parseSkyValue, resolveSkyMode, skyAzimuth, skyState, SKY, SKY_PHASES, underground, UNDERGROUND_BELOW } from "@/experience/sky/dayNight";
 
 describe("day and night model", () => {
-  it("runs an 8 minute cycle from clock time", () => {
-    expect(CYCLE_MS).toBe(480_000);
+  it("runs a 4 minute cycle from clock time", () => {
+    expect(CYCLE_MS).toBe(240_000);
     expect(clockPhase(0)).toBe(0);
-    expect(clockPhase(120_000)).toBeCloseTo(0.25);
-    expect(clockPhase(480_000 * 3 + 240_000)).toBeCloseTo(0.5);
+    expect(clockPhase(60_000)).toBeCloseTo(0.25);
+    expect(clockPhase(240_000 * 3 + 120_000)).toBeCloseTo(0.5);
   });
   it("parses ?sky=", () => {
     expect(parseSkyParam("?sky=day")).toEqual({ kind: "phase", phase: 0.5 });

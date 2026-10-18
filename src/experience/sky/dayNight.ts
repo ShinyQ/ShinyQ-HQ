@@ -3,8 +3,8 @@ import { dayNightOn, type DayNightPref } from "@/lib/day-night";
 import { sceneSettings } from "../scene/settings";
 import type { ViewportClass } from "../types";
 
-/** One full day and night (owner decision, Round 8 K). */
-export const CYCLE_MS = 8 * 60 * 1000;
+/** One full day and night: 4 minutes, so a typical visit sees dawn, day, dusk and night (owner decision 2026-10-18; Round 8 K had 8). */
+export const CYCLE_MS = 4 * 60 * 1000;
 export const SKY_PHASES = { night: 0, dawn: 0.25, day: 0.5, dusk: 0.75 } as const;
 export type SkyPhaseName = keyof typeof SKY_PHASES;
 

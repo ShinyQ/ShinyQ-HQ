@@ -136,7 +136,7 @@
     "csp.spec.ts › the 3D boot, intro and an elevator ride run with no CSP violation": 33,
     "csp.spec.ts › the 404 page runs with no CSP violation": 0.4,
     "csp.spec.ts › the CV viewer opens with no CSP violation": 1.8,
-    "daynight.spec.ts › ?sky=cycle follows the 8 minute wall clock": 8.3,
+    "daynight.spec.ts › ?sky=cycle follows the 4 minute wall clock": 8.3,
     "daynight.spec.ts › ?sky=dawn sits between night and day": 10,
     "daynight.spec.ts › ?sky=night and ?sky=day pin the phase: day has a different fog color and no stars, night keeps the night fog and stars": 20.7,
     "daynight.spec.ts › a human visitor (webdriver hidden) › a stored off holds night": 8.2,

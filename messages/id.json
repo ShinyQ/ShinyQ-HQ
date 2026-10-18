@@ -418,7 +418,7 @@
     "settings": {
       "dayNight": {
         "label": "Siang dan malam",
-        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
+        "hint": "Siklus langit 4 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
       },
       "openLinks": {
         "label": "Buka tautan di",

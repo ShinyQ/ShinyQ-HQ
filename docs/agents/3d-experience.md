@@ -417,11 +417,11 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ## Day and night
 
-The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner decision 2026-10-17). Classic site pages are unchanged.
+The tower runs a 4 minute cycle from neon night to a deep twilight "day" (owner decisions 2026-10-17 and 2026-10-18). Classic site pages are unchanged.
 
 ### Model
 
-- `src/experience/sky/dayNight.ts` is pure: `skyState(phase)` maps a phase in [0, 1) to the sky (`CYCLE_MS` is 8 minutes).
+- `src/experience/sky/dayNight.ts` is pure: `skyState(phase)` maps a phase in [0, 1) to the sky (`CYCLE_MS` is 4 minutes).
   - Phase 0 is night, 0.25 dawn, 0.5 twilight day, 0.75 dusk (`SKY_PHASES`); the `day`, `warm` and `stars` mixes drive colors, lights and the star amount.
   - Night reproduces `sceneSettings` exactly (fog and background `#0a0a0f`, hemisphere, directional light, bloom), so the base look does not move.
   - "Day" is not daylight: an indigo to teal sky with a sun glow on the horizon. Neon glows brighter at night (full tier bloom 0.9 at night, 0.72 at twilight day).
@@ -436,7 +436,7 @@ The tower runs an 8 minute cycle from neon night to a deep twilight "day" (owner
   - Under automation (`navigator.webdriver`) the sky holds a still night otherwise (source `held`, `still` true): today's exact frame, so the visual baselines stay valid. The sky group (dome and orbs) is not drawn at all (`visible = false`, written when the mode resolves), which costs a CPU renderer (SwiftShader) nothing; the dome's star amount and both orb alphas are also written as 0. A visitor's held night (reduced motion or stored "off") has `still` false and keeps the moon and stars.
   - `?sky=` or `sessionStorage["hq:sky"]` (same values; the perf lane's opt-in, `parseSkyValue`) draws the sky under automation; the perf gates measure the sky through that opt-in.
   - A visitor runs the clock (source `clock`) when the stored choice says on, or when there is no choice and reduced motion is off. Reduced motion holds night unless the visitor turns the cycle on.
-- The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 8 min`): every visitor sees the same phase and a reload continues.
+- The phase comes from clock time (`clockPhase(Date.now())`, `Date.now() % 4 min`): every visitor sees the same phase and a reload continues.
 - Preference: `localStorage["hq:day-night"]` is `"on"`, `"off"` or unset (unset follows Motion). `src/lib/day-night.ts` (`readDayNight`, `setDayNight`, `subscribeDayNight`, `dayNightOn`) imports nothing, so the HUD bundle can use it.
 - The "Day and night" toggle is registered in the settings registry (`src/hud/settings/defs/day-night.ts`, id `day-night`, group display, order 30) and shows in the settings panel (Display group, between Graphics quality and Minimap). Its `get` reads `dayNightOn(readDayNight(), reducedMotion)`, its `set` is `setDayNight`.
 

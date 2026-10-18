@@ -13,7 +13,7 @@ import {
 import { waitForStablePrograms } from "./perf/helpers";
 
 /**
- * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
+ * Day and night (Round 8 K): `?sky=` pins a phase or runs the 4 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
  * a stored choice and the Motion setting decide for a human visitor, and the sky costs no extra shader
  * program or scene draw calls (`SkyController` writes colors and lights, the dome and the orbs reuse
  * the shared holo program). `__hq.sky` is the sky as last applied (src/experience/sky/skyRuntime.ts).
@@ -124,7 +124,7 @@ test("day costs the same shader programs and scene draw calls as night on L1", a
   expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(2);
 });
 
-test("?sky=cycle follows the 8 minute wall clock", async ({ page }) => {
+test("?sky=cycle follows the 4 minute wall clock", async ({ page }) => {
   await asReturningVisitor(page);
   await openSky(page, "cycle");
   await waitForSource(page, "clock");
@@ -132,7 +132,7 @@ test("?sky=cycle follows the 8 minute wall clock", async ({ page }) => {
     .poll(
       () =>
         page.evaluate(() => {
-          const cycle = 8 * 60 * 1000;
+          const cycle = 4 * 60 * 1000;
           const expected = (Date.now() % cycle) / cycle;
           const phase = (window as unknown as SkyWindow).__hq.sky.phase;
           const d = Math.abs(phase - expected);
