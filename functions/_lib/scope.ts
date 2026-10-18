@@ -188,11 +188,15 @@ const TUTORIAL: RegExp[] = [
 ];
 /** The question is about Kurniadi or this site, so a "how" or "explain" pattern is not a general tutorial. */
 const ABOUT_HIM = /\b(?:kurniadi|he|him|his|himself|dia|beliau|shinyq|this site|situs ini)\b|\w+nya\b/i;
+/** Indonesian adverbs that end in "-nya" without meaning "his" ("sebaiknya", "biasanya"). */
+const NYA_ADVERBS = /\b(?:sebaik|seharus|biasa|akhir|sebenar|misal|contoh|lain|selanjut|umum|terutama)nya\b/gi;
+/** The question is about Kurniadi or this site ("LLM-nya" is his; "sebaiknya" is an adverb). */
+const aboutHim = (question: string) => ABOUT_HIM.test(question.replace(NYA_ADVERBS, " "));
 
 /** A request for general-assistant work (code, essays, homework, tutorials, translations, recommendations for the visitor). */
 export function isGeneralAssistantRequest(question: string): boolean {
   if (WRITING.some((re) => re.test(question))) return true;
-  return TUTORIAL.some((re) => re.test(question)) && !ABOUT_HIM.test(question);
+  return TUTORIAL.some((re) => re.test(question)) && !aboutHim(question);
 }
 
 const OPINION = /\b(?:think|thinks|thought|opinions?|views?|feels?|honest(?:ly)?|rate|likes?|liked|hates?|pendapat(?:nya)?|pandangan(?:nya)?|menurut(?:nya)?|pikir|suka|nilai|kesan(?:nya)?)\b/i;
@@ -280,8 +284,6 @@ const ADJACENT_DOMAIN =
  * judgment frame and stay with rule 3 and `isGeneralAssistantRequest`.
  */
 export function isAdjacentQuestion(question: string): boolean {
-  // "sebaiknya", "seharusnya", "biasanya" are adverbs, not "his"; "LLM-nya" is his.
-  const own = question.replace(/\b(?:sebaik|seharus|biasa|akhir|sebenar|misal|contoh|lain|selanjut|umum|terutama)nya\b/gi, " ");
-  if (ABOUT_HIM.test(own) || /-nya\b/i.test(question) || isSiteQuestion(question) || isLeadQuestion(question) || routedTopic(question)) return false;
+  if (aboutHim(question) || /-nya\b/i.test(question) || isSiteQuestion(question) || isLeadQuestion(question) || routedTopic(question)) return false;
   return ADJACENT_DOMAIN.test(question) && ADJACENT_FRAME.some((re) => re.test(question));
 }

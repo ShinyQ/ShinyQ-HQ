@@ -247,7 +247,7 @@ describe("adjacent grounded questions: pipeline", () => {
   });
 
   it("still declines tutorials, trivia, translations and code before the model", async () => {
-    for (const q of ["How do I build a RAG chatbot step by step?", "Translate 'where should AI not be used' into Indonesian.", "Write a Python function that detects fraud."]) {
+    for (const q of ["How do I build a RAG chatbot step by step?", "Translate 'where should AI not be used' into Indonesian.", "Terjemahkan ke bahasa Inggris: di mana AI sebaiknya tidak dipakai?", "Write a Python function that detects fraud."]) {
       const r = await ask(q, "unused");
       expect(r, q).toMatchObject({ outcome: "decline", calledModel: false });
     }
