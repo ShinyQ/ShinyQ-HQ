@@ -11,6 +11,15 @@ const packed = (slug: string, locale: "en" | "id") =>
   pack.chunks.find((c) => c.id === `project-${slug}`)![locale === "en" ? "text_en" : "text_id"];
 
 describe("portfolio evidence and ownership", () => {
+  it.each([
+    ["voice-ai-contact-center", [/A\/B terkontrol/, /n=4 panggilan per jalur/]],
+    ["fraud-review-platform", [/paket bersih/, /gangguan administratif/, /development offline/]],
+  ] as const)("fits %s ID result scope inside the 80-character screenshot label", (slug, qualifiers) => {
+    const label = pod(slug).results[0].label.id;
+    expect(label.length).toBeLessThanOrEqual(80);
+    for (const qualifier of qualifiers) expect(label).toMatch(qualifier);
+  });
+
   for (const locale of ["en", "id"] as const) {
     it.each([
       ["voice-ai-contact-center", /n\s*=\s*4/i],

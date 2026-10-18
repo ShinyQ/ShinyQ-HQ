@@ -5248,7 +5248,7 @@
               "value": "~2 s to ~0.2 s",
               "label": {
                 "en": "Knowledge-lookup interruption latency, controlled A/B (n=4 calls per arm)",
-                "id": "Latensi interupsi saat pencarian knowledge base, A/B terkontrol (n=4 panggilan per jalur)"
+                "id": "Latensi interupsi akses knowledge base, A/B terkontrol (n=4 panggilan per jalur)"
               },
               "context": {
                 "en": "Controlled A/B on the same deployment, index and audio, n=4 calls per arm: 1,875 to 2,140 ms vs 93 to 220 ms.",
@@ -6007,7 +6007,7 @@
               "value": "90.9% to 36.4%",
               "label": {
                 "en": "False-positive rate on noisy clean packets, offline development set",
-                "id": "False-positive rate pada paket bersih dengan gangguan administratif, set development offline"
+                "id": "False-positive rate paket bersih, gangguan administratif; development offline"
               },
               "context": {
                 "en": "Measured offline on a development gold set.",
