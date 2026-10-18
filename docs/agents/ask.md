@@ -170,6 +170,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
 
 - Chain, never in parallel: Gemma (primary), Mistral (fallback), then each `ASK_BACKUP_MODELS` model on Groq (source `backup`), then the canned fallback message. A tier is tried after an error, a missing first token, a total timeout or an empty answer.
 - Every tier gets the same prompt, retrieval, scope routing and output checks; backup answers are cached like the others. Keep the system prompt a stable prefix (Groq caches it).
+- Dashes: `normalizeDashes` (`functions/_lib/text.ts`) runs on every tier's answer before the output checks and on cached answers when served: hyphen variants and the minus sign become `-`, an en dash between digits closes up (`2019-2021`), an em dash becomes a comma. `raw` in eval reports keeps the model text.
 - Quota: a Workers AI quota error (code 3036, the daily neurons) skips Mistral and pauses the shared breaker key `wai` until the next 00:00 UTC. Any other Workers AI error or timeout tries Mistral first.
 - Breakers (`mb:<key>`, in memory plus KV, KV written only for pauses of 60 s or more): a Groq 429 or 413 pauses that model for `retry-after` (60 s default), 401 or 403 for 1 hour, 404 or model not found for 6 hours. Timeouts, plain errors and empty answers never pause a tier.
 - Timeouts: the whole chain stops at 24 s (`CHAIN_MS`, under the client's 30 s), a Groq tier gets 6 s (`GROQ_TIMEOUTS`), and a tier needs at least 1.5 s left (`MIN_ATTEMPT_MS`).

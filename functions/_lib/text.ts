@@ -11,6 +11,20 @@ export function cleanText(text: string): string {
   return text.normalize("NFKC").replace(INVISIBLE, "").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Model answers (gpt-oss especially) use typographic dashes. Hyphen variants and the minus sign become "-",
+ * an en dash between digits closes up ("2019-2021"), and an em dash or horizontal bar becomes a comma.
+ */
+export function normalizeDashes(text: string): string {
+  return text
+    .replace(/[\u2010-\u2012\u2212]/g, "-")
+    .replace(/(\d)[ \t]*\u2013[ \t]*(?=\d)/g, "$1-")
+    .replace(/\u2013/g, "-")
+    .replace(/(^|\n)[ \t]*[\u2014\u2015]+[ \t]*/g, "$1")
+    .replace(/[ \t]*[\u2014\u2015]+[ \t]*(?=\n|$)/g, "")
+    .replace(/[ \t]*,?[ \t]*[\u2014\u2015]+[ \t]*(?:,[ \t]*)?/g, ", ");
+}
+
 /** Lowercase, punctuation stripped, whitespace collapsed: the cache key form of a question. */
 export function normalizeQuestion(text: string): string {
   return cleanText(text)

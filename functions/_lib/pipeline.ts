@@ -3,6 +3,7 @@ import { checkAnswer, closestSource, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
+import { normalizeDashes } from "./text";
 import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
@@ -149,7 +150,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
 
   const check = checkAnswer({
-    answer: generation.text,
+    answer: normalizeDashes(generation.text),
     question: routed,
     context,
     packDate: pack.packDate,

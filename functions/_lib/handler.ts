@@ -14,7 +14,7 @@ import { isLeadQuestion, resolveNickname } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
-import { cleanText, detectLocale, normalizeQuestion } from "./text";
+import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./text";
 import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
@@ -250,13 +250,14 @@ export function createAskHandler(deps: HandlerDeps) {
       // Cached text is markdown: scan it and its plain text, which joins words that marks split ("SM**BC**").
       const blocked = (text: string) => [text, markdownToPlain(text)].some((s) => findBlocked(s, safety.blocklist).length > 0);
       if (cached && typeof cached.text === "string" && !blocked(cached.text)) {
+        const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
         logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
-        return streamResponse(cached.text, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cached.text)) }, tags), delay, responseHeaders);
+        return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.

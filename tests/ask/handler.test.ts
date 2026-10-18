@@ -508,6 +508,14 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect(JSON.parse(kv.store.get(await cacheKey(pack.packVersion, "en", body.q)) ?? "{}")).toEqual({ text: answer, cite: "/blog/spec-driven-development-with-ai-coding-agents" });
   });
 
+  it("serves a cached answer without em dashes", async () => {
+    const { call, kv } = setup();
+    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata \u2014 as an engineer." }));
+    const list = await frames(await call());
+    expect(doneOf(list).source).toBe("cache");
+    expect(answerOf(list)).toBe("Kurniadi works at Metrodata, as an engineer.");
+  });
+
   it("drops a cached About anchor of a perspective: they have no page any more", async () => {
     const { call, kv } = setup();
     kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "Kurniadi works at Metrodata.", cite: "/contact#perspectives-testing-approach" }));
