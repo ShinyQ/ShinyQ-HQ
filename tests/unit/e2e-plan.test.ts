@@ -225,6 +225,7 @@ describe("specsForChanges", () => {
   it("runs no e2e for the RUM Function", () => {
     expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
+    expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "src/lib/office/protocol.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {
