@@ -70,6 +70,10 @@ try {
       localStorage.setItem("hq:floor-intro", JSON.stringify(["L1", "L2", "L3", "L4", "RF"]));
       sessionStorage.setItem("hq:intro", "seen");
       if (!localStorage.getItem("hq:v1")) localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false, motion: "full" }, version: 3 }));
+      // All five floors seen and B1 unlocked, so Rover's offer and chime never land in a capture.
+      const raw = localStorage.getItem("hq:v1");
+      const saved = raw ? JSON.parse(raw) : { state: { firstVisit: false, visited: [], locale: "en", motion: "full" }, version: 3 };
+      localStorage.setItem("hq:v1", JSON.stringify({ ...saved, state: { ...saved.state, floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true } }));
     });
     const page = await context.newPage();
     await page.goto(`${base}/en?tier=${vp.tier}`);

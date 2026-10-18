@@ -54,6 +54,9 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/hud/floorRows.ts"]).specs).toEqual(expect.arrayContaining(["b1-unlock", "engine-room", "floor-chunks", "memory"]));
     expect(specsForChanges(["src/hud/hudActions.ts"]).specs).toContain("b1-unlock");
     expect(specsForChanges(["e2e/b1-unlock.spec.ts"]).specs).toEqual(["b1-unlock"]);
+    for (const file of ["src/store/useHQStore.ts", "src/experience/Experience.tsx", "src/experience/ExperienceGate.tsx", "src/lib/audio/engine.ts"]) {
+      expect(specsForChanges([file]).specs, file).toContain("b1-unlock");
+    }
   });
 
   it("maps the B1 Engine Room files to its spec", () => {
@@ -181,7 +184,7 @@ describe("specsForChanges", () => {
   it("selects the arrivals spec for arrival points, zones and the camera (Round 8 J)", () => {
     expect(specsForChanges(["src/experience/config.ts"]).specs).toEqual(["arrivals", "experience"]);
     // The 3D root writes each built floor's route; the arrivals tour checks it on every floor.
-    expect(specsForChanges(["src/experience/Experience.tsx"]).specs).toEqual(["arrivals", "experience"]);
+    expect(specsForChanges(["src/experience/Experience.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "experience"]);
     expect(specsForChanges(["src/experience/floors/career/YearGates.tsx"]).specs).toContain("arrivals");
     expect(specsForChanges(["src/experience/floors/library/concepts/newsroom.ts"]).specs).toContain("arrivals");
     expect(specsForChanges(["src/experience/floors/lobby/observatoryLayout.ts"]).specs).toEqual(["arrivals", "experience", "highlights", "pageview", "visits"]);

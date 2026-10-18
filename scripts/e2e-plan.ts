@@ -335,6 +335,8 @@ const ALSO_RULES: Rule[] = [
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["onboarding", "experience", "arrivals"] },
   { test: /^src\/hud\/pads\//, specs: ["fast-return", "experience", "workshop"] },
   { test: /^src\/hud\/floorRows\.ts$/, specs: ["engine-room", "floor-chunks", "memory"] },
+  // The unlock's producers: the store (floorsSeen, b1Unlocked, merge), the session start and gate (deep links), the chime.
+  { test: /^src\/store\/|^src\/experience\/(Experience|ExperienceGate)\.tsx$|^src\/lib\/audio\/engine\.ts$/, specs: ["b1-unlock"] },
   // Cmd-K's gated action (the unlock moment's host files keep their own specs).
   { test: /^src\/hud\/(hudActions|search|palette-types|MissionHud)\.tsx?$/, specs: ["b1-unlock"] },
   {
