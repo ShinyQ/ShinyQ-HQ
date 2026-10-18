@@ -77,6 +77,12 @@
     line-height: 1.08;
   }
 
+  /* Project cards share one title size on the landing and on Work. */
+  .pv-h3-card {
+    font-size: clamp(21px, 1.6vw, 23px);
+    line-height: 1.18;
+  }
+
   .pv-num {
     font-weight: 700;
     font-stretch: 72%;
@@ -89,12 +95,36 @@
     font-size: clamp(18px, 1.45vw, 21px);
     line-height: 1.55;
     color: var(--color-ink);
-    max-width: 62ch;
+    max-width: 30em;
+    text-wrap: pretty;
   }
 
   .pv-body {
     color: var(--color-ink-2);
     max-width: 68ch;
+    text-wrap: pretty;
+  }
+
+  /* Card copy: scanned, not read, so it is set tighter than body text. */
+  .pv-card-text {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--color-ink-2);
+    max-width: 60ch;
+    text-wrap: pretty;
+  }
+
+  /* A headline result at the foot of a card: the value over its label, on a neutral hairline. */
+  .pv-result {
+    border-top: 1px solid var(--color-line);
+    padding-top: 14px;
+  }
+
+  .pv-result-label {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--color-ink-2);
   }
 
   .pv-small {

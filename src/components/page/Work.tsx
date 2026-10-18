@@ -61,15 +61,15 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
       )}
       <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
         <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-        <span>{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
+        <span className="pv-date">{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
         {pod.client && <span>{clientLabel(pod.client, locale)}</span>}
       </p>
-      <h3 className={`pv-h3 pv-feature-title ${size === "pair" ? "" : "pv-h3-l"}`}>
+      <h3 className={`pv-h3 pv-feature-title ${size === "lead" ? "pv-h3-l" : "pv-h3-card"}`}>
         <Link href={`/labs/${pod.slug}`} className="pv-stretch">
           {pod.title[locale]}
         </Link>
       </h3>
-      <p className="pv-body">{pod.tagline[locale]}</p>
+      <p className={size === "lead" ? "pv-body" : "pv-card-text"}>{pod.tagline[locale]}</p>
       <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
         {size === "lead" && first && (
@@ -83,9 +83,10 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
           </dl>
         )}
         {size === "pair" && first && (
-          <p className="pv-small">
-            <span className="pv-num text-[20px]">{first.value}</span> {first.label[locale]}
-          </p>
+          <div className="pv-result">
+            <p className="pv-num text-[22px]">{first.value}</p>
+            <p className="pv-result-label">{first.label[locale]}</p>
+          </div>
         )}
         {size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}
       </div>
@@ -141,11 +142,11 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
         <PodLiveCta pod={pod} locale={locale} className="mt-2" />
       </div>
       <p className="pv-small hidden md:block md:pt-6">{clientLabel(pod.client, locale)}</p>
-      <p className="pv-data hidden md:block md:pt-7">{start}</p>
+      <p className="pv-date hidden md:block md:pt-7">{start}</p>
       {result && (
         <div className="col-start-2 md:col-start-auto md:pt-6">
           <p className="pv-num text-[22px]">{result.value}</p>
-          <p className="mt-1 text-[13px] leading-[19px] text-ink-2">{result.label[locale]}</p>
+          <p className="pv-result-label">{result.label[locale]}</p>
         </div>
       )}
     </li>

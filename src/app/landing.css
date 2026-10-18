@@ -166,14 +166,16 @@
     position: relative;
   }
 
+  /* Screenshot count: a small quiet plate in the cover's corner. */
   .hx-shots {
     position: absolute;
-    right: 12px;
-    bottom: 12px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    background: rgb(5 5 12 / 0.8);
-    color: var(--color-ink);
+    right: 10px;
+    bottom: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgb(5 5 12 / 0.72);
+    font: 500 11px/16px var(--font-mono);
+    color: var(--color-ink-2);
   }
 
   .hx-film {
