@@ -20,6 +20,8 @@ export interface CertView {
   status: CertStatus;
   url: string | null;
   credentialId: string | null;
+  /** Featured card title for a certification without an exam code (Classic only; not a code). */
+  shortLabel: string | null;
   featured: boolean;
 }
 
@@ -113,7 +115,7 @@ export function matchesCertFilter(cert: Pick<CertLike, "code" | "name" | "issuer
 
 /** Display name without the issuer's program prefix ("Microsoft Certified: Azure Fundamentals" to "Azure Fundamentals", "GitHub Certified: Agentic AI Developer" to "Agentic AI Developer"). */
 export function shortCertName(name: string): string {
-  return name.replace(/^(Microsoft Certified|GitHub Certified|AWS Certified|Google Cloud Certified)\s*:?\s*/i, "").trim() || name;
+  return name.replace(/^(Microsoft Certified|GitHub Certified|AWS Certified|Google Cloud Certified|Google Certified)\s*:?\s*/i, "").trim() || name;
 }
 
 /** Page View shows the filter bar from this many certifications on. */

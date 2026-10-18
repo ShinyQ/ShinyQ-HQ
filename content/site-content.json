@@ -318,12 +318,12 @@
     },
     {
       "id": "microsoft-certifications",
-      "value": "4",
+      "value": "5",
       "label": {
-        "en": "Microsoft and GitHub certifications: GH-600, AI-103, AI-901, AZ-900",
-        "id": "Sertifikasi Microsoft dan GitHub: GH-600, AI-103, AI-901, AZ-900"
+        "en": "Microsoft, GitHub and Google certifications: GH-600, AI-103, AI-901, AZ-900, Generative AI Leader",
+        "id": "Sertifikasi Microsoft, GitHub dan Google: GH-600, AI-103, AI-901, AZ-900, Generative AI Leader"
       },
-      "source": "Microsoft Learn credential records (AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13)",
+      "source": "Microsoft Learn credential records (AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13); Credly badge for Google Generative AI Leader (certification ID cadb3b0724f442698b9997a9d5c2adb4, earned 2026-10-17, valid until 2029-10-17)",
       "confidence": "verified"
     },
     {
@@ -527,6 +527,18 @@
       "credentialId": "6BB32EB2B28BD602",
       "status": "earned",
       "expires": "2027-10"
+    },
+    {
+      "id": "google-gen-ai-leader",
+      "name": "Google Certified: Generative AI Leader",
+      "issuer": "Google",
+      "issued": "2026-10",
+      "credentialUrl": "https://www.credly.com/badges/208e4cd7-afa5-4af7-ac0d-e41690d03333",
+      "credentialId": "cadb3b0724f442698b9997a9d5c2adb4",
+      "shortLabel": "Gen AI Leader",
+      "status": "earned",
+      "expires": "2029-10",
+      "featured": true
     },
     {
       "id": "associate-data-scientist-microcredential",
@@ -2185,7 +2197,7 @@
           "id": "certification-desk-2026",
           "slug": "certification-desk-2026",
           "type": "milestone",
-          "org": "Microsoft and GitHub",
+          "org": "Microsoft, GitHub and Google",
           "role": {
             "en": "Certification candidate",
             "id": "Peserta sertifikasi"
@@ -2193,17 +2205,13 @@
           "start": "2026-05",
           "end": "2026-10",
           "summary": {
-            "en": "I earned three Microsoft certifications and the GitHub agentic AI developer certification between May and October 2026.",
-            "id": "Saya meraih tiga sertifikasi Microsoft dan sertifikasi GitHub untuk agentic AI developer antara Mei dan Oktober 2026."
+            "en": "I earned three Microsoft certifications, the GitHub agentic AI developer certification and the Google Generative AI Leader certification between May and October 2026.",
+            "id": "Saya meraih tiga sertifikasi Microsoft, sertifikasi GitHub untuk agentic AI developer dan sertifikasi Google Generative AI Leader antara Mei dan Oktober 2026."
           },
           "highlights": [
             {
-              "en": "Azure Fundamentals (AZ-900), May 2026",
-              "id": "Azure Fundamentals (AZ-900), Mei 2026"
-            },
-            {
-              "en": "Azure AI Fundamentals (AI-901), May 2026",
-              "id": "Azure AI Fundamentals (AI-901), Mei 2026"
+              "en": "Azure Fundamentals (AZ-900) and Azure AI Fundamentals (AI-901), May 2026",
+              "id": "Azure Fundamentals (AZ-900) dan Azure AI Fundamentals (AI-901), Mei 2026"
             },
             {
               "en": "Azure AI Apps and Agents Developer Associate (AI-103), September 2026",
@@ -2212,12 +2220,17 @@
             {
               "en": "GitHub Certified: Agentic AI Developer (GH-600), October 2026",
               "id": "GitHub Certified: Agentic AI Developer (GH-600), diraih pada Oktober 2026"
+            },
+            {
+              "en": "Google Certified: Generative AI Leader, October 2026",
+              "id": "Google Certified: Generative AI Leader, diraih pada Oktober 2026"
             }
           ],
           "stack": [
             "Azure",
             "Azure AI Foundry",
-            "GitHub"
+            "GitHub",
+            "Google"
           ],
           "discipline": "ai",
           "confidence": "verified"
