@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review, 2026-10-18 (owner request).
+Status: in review in #220, 2026-10-18 (owner request).
 
 **Goal:** The sun and the moon of the day and night cycle move up and down (rise from the horizon, climb, sink straight down) instead of sliding right to left across the default view.
 
