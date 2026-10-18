@@ -63,9 +63,9 @@ Status: in review.
 
 ## Measurements
 
-### Scope (current `e2e/durations.json`: 590 tests, 8624 median worker-seconds; 582 tests and 7637 s without `@nightly`)
+### Scope (`e2e/durations.json` from #228, runner-speed-normalized: 592 tests, 8784 median worker-seconds; 584 tests and 7820 s without `@nightly`)
 
-The 30 opted-in specs hold 291 of the 582 PR and `main` tests and 5904 of their 7637 median worker-seconds. The other 20 specs (perf-sensitive, pacing, manual driving, static pages) run unchanged, and so do the 8 `@nightly` tests.
+The 30 opted-in specs hold 293 of the 584 PR and `main` tests and 6059 of their 7820 median worker-seconds. The other 20 specs (perf-sensitive, pacing, manual driving, static pages) run unchanged, and so do the 8 `@nightly` tests.
 
 ### Local, controlled (Apple M-series, 2 workers, the same build, back to back at load average 14 to 15)
 
@@ -76,7 +76,7 @@ The 30 opted-in specs without `@nightly` (296 tests), all passing at both speeds
 | `E2E_SPEED=1` | 37.1 min | 4441 |
 | `E2E_SPEED=4` | 32.4 min | 3871 (-12.8%) |
 
-Ride- and drive-heavy specs save the most (`arrivals` -54%, `b1-unlock` -41%, `highlights` -38%, `interact` -36%, `ambience` -34%, `labs-data` -30%, `production` -29%); specs dominated by page loads, shader compiles and settles barely move, and single specs vary by up to 40% either way between runs. Projected on CI: 12.8% of 5904 s is about 760 worker-seconds per full run (about 9% of the e2e lane). The 3 CI runs below are the measurement that counts.
+Ride- and drive-heavy specs save the most (`arrivals` -54%, `b1-unlock` -41%, `highlights` -38%, `interact` -36%, `ambience` -34%, `labs-data` -30%, `production` -29%); specs dominated by page loads, shader compiles and settles barely move, and single specs vary by up to 40% either way between runs. Projected on CI: 12.8% of 6059 s is about 780 worker-seconds per full run (about 10% of the e2e lane). The 3 CI runs below are the measurement that counts.
 
 An earlier pair of full runs on a busier machine (the 4x pass at load 40 to 60, the 1x pass at about 25) showed no saving; the load difference swamped the effect, so those numbers are not used.
 
