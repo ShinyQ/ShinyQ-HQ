@@ -8,7 +8,7 @@ the workflow, the key commands and budgets live here; everything else lives in [
 ## Purpose
 
 ShinyQ HQ is Kurniadi's bilingual (EN/ID) portfolio: a static Next.js export whose pages are the "Classic site",
-with an optional walkable 3D tower (five floors, a rover, an elevator) mounted client-side on top, plus Ask the HQ
+with an optional walkable 3D tower (five floors and a secret B1 Engine Room unlocked by visiting all five, a rover, an elevator) mounted client-side on top, plus Ask the HQ
 (shown as Ask Rover Assistant; a grounded chat assistant on Cloudflare Pages Functions) and public visit stats (a
 Cloudflare Cron Worker).
 
@@ -90,6 +90,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | Floor text | No words painted on a floor: use `FloatingSigns` | [floors.md](docs/agents/floors.md) |
 | Interaction | In-world targets go through the point-and-go registry; no navigation `onClick` on scene objects | [floors.md](docs/agents/floors.md) |
 | Audio | Use `audio` / `useAudio` from `@/lib/audio`; never create another `AudioContext` | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) |
+| 3D-only strings | B1 Engine Room strings live in the `engine` namespace (in `CLIENT_NAMESPACES`, never `LAYOUT_NAMESPACES`): `/en/quick` is at its HTML budget | [styling-and-i18n.md](docs/agents/styling-and-i18n.md#client-messages) |
 | Metadata | Every `generateMetadata` returns `seoMetadata(locale, path)`; new routes go into `src/lib/routes.ts` | [styling-and-i18n.md](docs/agents/styling-and-i18n.md) |
 | CSP | No inline event handlers, `javascript:` URLs or runtime inline scripts | [ask.md](docs/agents/ask.md) |
 | Ask | Bump `PROMPT_VERSION` with any prompt change; update `tests/ask/golden.json` with content changes | [ask.md](docs/agents/ask.md) |

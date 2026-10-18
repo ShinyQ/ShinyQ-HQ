@@ -9,7 +9,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 ## Ready floors
 
 - `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
-  - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set ([B1 access](floor-b1-engine-room.md#access)).
+  - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set (visiting all five public floors; [B1 access](floor-b1-engine-room.md#access)). Its elevator row is always listed, locked until then.
 - URL sync writes floor routes only for ready floors.
   - Placeholders keep `/{locale}`, and the HUD links to their HTML page.
 - When a new floor ships: add it to `READY_FLOORS` and mount the gate on its route.
@@ -29,7 +29,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - the L2 zone adds `railYaw` (the rail camera due west of the rover, looking down the Career Road).
 - Zooms are the widest view whose camera stays east of the elevator shaft: constants per floor (`LOBBY.arrivalZoom` and `arrivalZoomPhone` on L1 (`src/experience/config.ts`), `CAREER_ROAD.arrivalZoom` on L2, the newsroom concept's `arrivalZoom` on L4, `ROOF_DECK.arrivalZoom` on RF, `ENGINE.arrivalZoom` on B1), capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
 - B1 phones (camera class mobile) turn the arrival camera off east (`ENGINE.arrivalPhone`, a `classView` yaw, zoom and pitch; the pitch opts into the turn-back on leaving, no other floor uses it): a portrait view down the aisle cuts every station sign. The arrivals test checks that this view keeps the first two station signs whole, with a font at least 10 px tall, and its camera east of the shaft.
-- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`); B1 has no route or deep link, so only arrivals (rides) put the rover there. L1 keeps the kiosk spawn and L2 the approach.
+- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`); B1 has no route; its one deep link, `/{locale}#B1` (only when unlocked), also spawns on the arrival point. L1 keeps the kiosk spawn and L2 the approach.
 
 ## Doors
 
@@ -159,7 +159,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 414.4 KB and full 438.0 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions).
+- Measured: main 3D path lite 415.4 KB and full 439.0 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions).
 
 ## Fast return
 

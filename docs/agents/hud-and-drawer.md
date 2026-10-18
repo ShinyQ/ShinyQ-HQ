@@ -66,7 +66,9 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - Phone: at most 5 controls plus the minimap (floor chip, Ask AI, menu, joystick, Reset view).
   - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
   - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
-- The elevator rows (rail, floor sheet, floor picker) come from `floorRows(b1Unlocked)` (`src/hud/floorRows.ts`): the five public floors top-down, plus B1 below L1 once it is unlocked.
+- The elevator rows (rail, floor sheet, floor picker) come from `floorRows` (`src/hud/floorRows.ts`): the five public floors top-down, plus B1 below L1, always listed.
+  - Locked, B1 is a padlock row (`aria-disabled`, no ride) reading "Visit all 5 floors (n/5)"; the hint is in its accessible name and its `title` (the compact rail shows the code and the padlock). Floor names go through `useFloorLabel`.
+  - During the unlock moment the unlocked row pulses, except under reduced motion.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
@@ -141,6 +143,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:music-volume` | music volume, 0 to 1 (missing is 1) |
 | `hq:quality` | graphics quality: `auto` (default), `full` or `lite`, see [Graphics quality](#graphics-quality) |
 | `hq:minimap` | `on` (default) or `off`: whether the corner minimap shows, see [Minimap](#minimap) |
+| `hq:v1` | the store's persisted slice (owned by `useHQStore`, see [Persistence and storage](3d-experience.md#persistence-and-storage)); `floorsSeen` and `b1Unlocked` there keep the B1 unlock |
 
 `sessionStorage` keys:
 
@@ -295,6 +298,19 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Driving, a point-and-go action or a scrub dismisses it and marks it seen.
 - A line cancelled from elsewhere (a tutorial replay) waits for its next chance.
 - Tests that must not see a floor line call `skipFloorLines(page)` from `e2e/hq.ts`.
+
+### Unlock moment
+
+- `EngineUnlockLayer` (`src/hud/dialog/EngineUnlockLayer.tsx`, mounted by `Hud`, renders nothing) runs the B1 Engine Room unlock; the rules are in [B1 access](floor-b1-engine-room.md#access).
+  - When the store's `b1Moment` is set (the fifth public floor reached) and the visitor is free (explore, no ride) after the tour settled: one chime (`audio.play("chime")`) and the dialog line `b1-unlock` ("Take me there" rides to B1, "Later" ends it). `clearB1Moment()` runs on either answer.
+  - The chime plays once per moment, never while the dialog is paused (it waits, then plays once).
+  - A cancelled line (a tutorial replay) is offered again at most 3 times, once the dialog queue has been idle for 300 ms (`IDLE_GRACE_MS`) and the visitor is free, so it never queues ahead of the replayed tutorial; a ride or the tour waits first. The retry does not chime again.
+  - The moment is not persisted: a reload before the answer drops the offer (the row is lit no more, but B1 is open in every picker).
+  - A locked visitor who followed `/{locale}#B1` hears `b1-locked` ("B1 is still locked: visit all 5 floors first (n/5)") once exploring and free, so the progress counts the Lobby; the hash is stripped. Nothing is said while a ride or the intro runs.
+  - The flag `?unlock=b1` never starts the moment.
+- Cmd-K: while `b1Unlocked` the layer registers a "Go to B1 Engine Room" action through `registerHudAction` (`src/hud/hudActions.ts`, a module store read by `MissionHud` through `useHudActions`; entries `action:<id>`, target `{ type: "hud", id }`). It carries its resolved label, EN and ID keywords (`engineRoomAction.ts`) and rides the elevator to B1. It exists only in the 3D tower and only when unlocked: no locked toast, and the Classic pages have none.
+- Strings live in the 3D-only `engine` namespace (`engine.unlock`, `go`, `later`, `lockedLine`, `goTo`, and the picker row texts). The layout namespaces ship to every page and `/en/quick` sits at its HTML budget, so never put B1 strings in `hud`, `floors`, `ask`, `dialog` or another `LAYOUT_NAMESPACES` entry ([Client messages](styling-and-i18n.md#client-messages)); a layout island hands the palette a resolved label instead.
+- Tests: `tests/hud/EngineUnlockLayer.test.tsx`, `tests/unit/b1-visits.test.ts`, `b1-deep-link.test.ts`, `dialog-copy.test.ts` (the engine lines); `e2e/b1-unlock.spec.ts` (locked row, progress, the moment with the chime counted by `__hq.audio().played`, Later, deep links, Cmd-K).
 
 ### Hint bubbles
 

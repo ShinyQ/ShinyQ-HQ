@@ -7,7 +7,8 @@ export const B1_UNLOCK_PARAM = "unlock";
 
 /**
  * `?unlock=b1` unlocks B1 for the session: always in a dev build, in a production build only together with
- * `debug` (`?unlock=b1&debug=1`: how e2e and the capture scripts reach the floor before the real unlock exists).
+ * `debug` (`?unlock=b1&debug=1`: how e2e and the capture scripts reach the floor without visiting every floor).
+ * It is session only: never persisted and it never starts the unlock moment.
  */
 export function b1UnlockFlag(search: string, dev: boolean): boolean {
   const query = new URLSearchParams(search);

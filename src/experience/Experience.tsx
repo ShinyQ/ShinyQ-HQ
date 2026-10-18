@@ -106,7 +106,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   s.setLocale(data.locale);
   s.setReducedMotion(prefersReducedMotion());
   s.setDevice(readDevice());
-  // Dev and test unlock (B1 Engine Room, PR 2): `?unlock=b1`, in production only with `debug`.
+  // Dev and test unlock of B1 (session only): `?unlock=b1`, in production only with `debug`.
   if (b1UnlockFlag(window.location.search, process.env.NODE_ENV !== "production")) s.unlockB1();
   // `#B1` reaches the Engine Room only once unlocked; a locked visitor starts in the Lobby (EngineUnlockLayer says why).
   const unlocked = getHQStore().getState().b1Unlocked;

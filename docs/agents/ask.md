@@ -100,7 +100,7 @@ All bindings and vars live in `wrangler.toml`.
 
 ## Curated pills
 
-- `content/ask/suggestions.json`: 100 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
+- `content/ask/suggestions.json`: 102 questions in seven topics (work, ai, career, contact, perspectives, about, site), at least 10 each.
   - Fields: `topic`, allowlisted `tags`, `followUps`, `expect` chunk ids, optional `answer.any` for the eval.
   - English text at most 48 characters (compact pills); no pill on a declined topic (partisan politics, religion, pay, family, health).
   - "About me" (`about`) pills draw on the profile (the ShinyQ nickname) and his written perspectives (work style, lifestyle); "This site" (`site`) pills are exactly the ones `isSiteQuestion` matches and expect `site-build`.
@@ -191,12 +191,13 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
+  - It also routes "engine room", "ruang mesin", "secret floor" and "lantai rahasia" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q75).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
   - Such an answer carries `cite` = `/build` (kind `build`; the dock shows "Read on this site: How this site was built"), and the page links the public repository.
   - `isAskCite` still accepts `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, kind `repo`, opened in a new tab) so an older cached answer renders; nothing new cites it.
 - Every fact must be backed by the repository.
   - Update the note in the same PR when the stack, hosting, the assistant or the test gates change.
-  - Keep golden q45 to q47, q69 and q70 true (runbook section 16).
+  - Keep golden q45 to q47, q69, q70 and q75 true (runbook section 16).
 - To fit it, project chunks keep as keywords only the stack names that carry a topic tag (`stackKeywords` in `src/ask/pack.ts`; the text still lists the whole stack).
 
 ### Production chunk

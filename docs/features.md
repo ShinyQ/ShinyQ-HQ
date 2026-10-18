@@ -60,7 +60,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Ask memory | 2026-10-17: Ask remembers the last 3 turns of a conversation (signed by the server, so a visitor cannot forge an answer), a short follow-up like "What stack did it use?" is understood from the previous question, and a **New chat** button starts over | Done |
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over | Done |
-| B1 Engine Room floor | Round 9 (PR 2 of 3): the floor, stations and drawers, reachable only with the dev and test flag until PR 3 | In review |
+| B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors | In review |
 
 ## Controls and first visit
 
@@ -113,6 +113,7 @@ Open `/en` and press **Boot rover**.
 
 - While sound is on, the tower plays procedural "Deep Space Ambient" background music (drones, random pentatonic bells, a long reverb), quiet enough to keep the effects clear; muting or leaving the 3D view stops it.
 - Each floor has its own soundtrack layer (L1 chime pad, L2 warm analog pulse, L3 light arpeggio, L4 typewriter ticks and paper rustle, RF wind and a distant radio beacon, and a low machine hum with soft relay ticks in the unlockable B1 Engine Room) that replaces the background music while it plays, so two soundtracks never overlap; it crossfades over 2 seconds when you change floor and follows the same mute and pause rules. The **Floor ambience** switch (settings, sound group) turns it off and crossfades back to the music.
+- A short three-note chime (an effect, so the sound effects setting applies) marks the unlock of the B1 Engine Room, once per unlock.
 
 ### Motion setting
 
@@ -279,7 +280,10 @@ Route `/en/contact`. A walkable deck: a road from the elevator into a round plaz
 
 The basement under the Lobby: a workshop where each station explains one part of how this site was built. Its Classic counterpart is `/{locale}/build`; B1 has no route of its own (the URL stays `/{locale}`).
 
-- **Not yet for visitors.** For now the floor is reachable only with the dev and test flag `?unlock=b1` (in production `?unlock=b1&debug=1`); without it nothing of B1 shows, loads or rides.
+- **Unlock**: B1 opens after the rover has reached all five floors (L1 to RF); the progress is remembered on the device. Until then every floor picker (the elevator rail, the floor sheet and the pad picker) lists a locked "B1" row with a padlock and "Visit all 5 floors (n/5)", and nothing else of B1 shows, loads or rides.
+  - The moment the fifth floor is reached a short chime plays, the B1 row lights up and pulses (no pulse under reduced motion), and Rover offers "Take me there" or "Later". The offer is shown once; a reload before answering drops it, and the row stays open.
+  - `/{locale}#B1` (and Cmd-K "Go to B1 Engine Room", in the 3D tower only) goes straight to the floor once unlocked; locked, the link stays in the Lobby and Rover says how many floors are left.
+  - `?unlock=b1` (in production `?unlock=b1&debug=1`) unlocks a session for development and tests only: it is never remembered and does not start the moment.
 - **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
 - **Stations 1 to 5** (blueprint, build timeline, agent workbench, CI and gates, live dashboard) each open the Glass Drawer with the diagram, rounds, gate list, plan excerpt or numbers from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section. Bays 6 and 7 stay dark with a "Coming soon" plate.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers.
@@ -298,13 +302,14 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/quick`: Quick view, everything on one page.
 - `/{locale}/journey`, `/{locale}/journey/{slug}`: Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door).
 - `/{locale}/labs`, `/{locale}/labs/{slug}`: Product Engineering, AI Engineering and Data and ML case studies (`?wing=software|ai|data` filters the list); in 3D, L3 Project Roads (a slug deep link opens that pod at its door).
+- `/{locale}#B1`: the Lobby route with a B1 deep link; in 3D it starts on the B1 Engine Room when unlocked (see [B1 Engine Room](#b1-engine-room)).
 - `/{locale}/library`, `/{locale}/blog/{slug}`: blog, publications, models, talks; in 3D, L4 Writing. A post's drawer mirrors its `/blog/{slug}` URL, which is the article page.
 - `/{locale}/contact`: Roof. About, contact channels, availability, "How I work" and the CV.
   - "How I run AI in production" (`#production`): the owner-approved observability approach, proof tiles, a masked Grafana probe dashboard and alert rule, and the five case studies; in 3D the hash rides to the L3 Ops Control Room.
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
   - The full certifications list.
   - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board).
-- `/{locale}/build`: How this site was built (its 3D counterpart is the B1 Engine Room, not yet open to visitors): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
+- `/{locale}/build`: How this site was built (its 3D counterpart is the secret B1 Engine Room, unlocked after visiting all five floors): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 4 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
@@ -323,12 +328,12 @@ Every page is a static HTML page with its own search and share tags, so crawlers
 
 ## Ask the HQ (AI Q&A)
 
-Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing and process; `content/ask/site-build.json`; answers cite the How this site was built page, `/build`, which links the repository), and get short answers grounded only in this site's content (EN and ID).
+Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing, process and the secret B1 Engine Room; `content/ask/site-build.json`; answers cite the How this site was built page, `/build`, which links the repository), and get short answers grounded only in this site's content (EN and ID).
 
 ### Where
 
 - The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, and the Cmd-K "Ask AI" row. The chat panel is titled **Ask Rover Assistant** (ID **Asisten Rover**) and its answers are labelled Rover; the floating button stays **Ask AI**.
-- A "Try asking" row offers 3 curated questions from different topics, and topic pills (Work, AI, Career, Contact, Perspectives, About me, This site) expand into 4 of a bank of 100 curated questions (`content/ask/suggestions.json`); both are a random sample, fixed for the page session, and a question already asked never comes back. Each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
+- A "Try asking" row offers 3 curated questions from different topics, and topic pills (Work, AI, Career, Contact, Perspectives, About me, This site) expand into 4 of a bank of 102 curated questions (`content/ask/suggestions.json`); both are a random sample, fixed for the page session, and a question already asked never comes back. Each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
 - The thread is kept in `sessionStorage` only. The assistant remembers the last 3 turns, so follow-ups such as "What stack did it use?" or "And before that?" work; **New chat** (ID **Obrolan baru**) clears the thread and the memory, and so does switching the language.
 - **What can you do?** (also a Contact pill, ID "Apa saja yang bisa ditanyakan di sini?") lists what the assistant covers, the two languages, sources, and what it will not discuss.
 - **Project inquiries**: when a visitor describes their own need ("I need an AI chatbot for my clinic", "Kami butuh sistem deteksi fraud dokumen"), the answer names related skills and up to three matching past projects, says whether that work suggests a fit, notes freelance or part-time availability and invites contact; a **contact card** (Email, LinkedIn, Contact page) from the dataset appears under it. No prices, timelines, designs or code.
