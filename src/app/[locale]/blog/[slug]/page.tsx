@@ -65,7 +65,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
             ))}
           </ul>
           <div className="mt-6" lang={locale}>
-            <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }} />
+            <ShareLinks variant="page" labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied"), failed: tc("linkCopyFailed") }} />
           </div>
           {found.locale !== locale && (
             <p role="note" lang={locale} className="card mt-8 border-amber/40 px-4 py-3 text-sm text-amber">

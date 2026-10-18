@@ -35,9 +35,11 @@
   },
   "common": {
     "share": "Share",
-    "copyClassicLink": "Copy Classic link",
+    "copyClassicLink": "Copy Classic site link",
     "copy3dLink": "Copy 3D link",
     "linkCopied": "Link copied",
+    "linkCopyFailed": "Could not copy. Select and copy this link.",
+    "emailCopyFailed": "Could not copy. Select and copy this email address.",
     "present": "Present",
     "caseStudy": "Read case study",
     "stack": "Tech stack",
@@ -53,7 +55,7 @@
     "tier": {
       "hero": "Key project",
       "featured": "Featured",
-      "listed": "Listed"
+      "listed": "Project"
     },
     "wing": {
       "software": "Product Engineering",
@@ -123,8 +125,8 @@
   },
   "build": {
     "toc": "On this page",
-    "snapshot": "Snapshot of {date}, commit {commit}",
-    "snapshotDate": "Snapshot of {date}",
+    "snapshot": "As of {date}, commit {commit}",
+    "snapshotDate": "As of {date}",
     "source": "Source code on GitHub",
     "howItRuns": "How it runs",
     "loop": "Every change, step by step",
@@ -173,7 +175,7 @@
     "workshopIntro": "Side projects and public repositories.",
     "repos": "Public repositories",
     "stars": "{count, plural, one {# star} other {# stars}}",
-    "seeCaseStudy": "Read the case study in Labs",
+    "seeCaseStudy": "Read the case study",
     "back": "Back to the journey",
     "show": "Show",
     "jumpTo": "Jump to",
@@ -201,7 +203,7 @@
     "client": "Client",
     "role": "Role",
     "period": "Period",
-    "back": "Back to the Labs",
+    "back": "Back to Work",
     "timeline": "Related career entry",
     "nodeKind": {
       "client": "Client",
@@ -228,8 +230,8 @@
       "uses": "{count, plural, =1 {1 project uses {tech}} other {# projects use {tech}}}",
       "projects": "Projects using {tech}",
       "clear": "Clear technology filter",
-      "surprise": "Surprise me",
-      "directory": "On the wing directory",
+      "surprise": "Visit a random project",
+      "directory": "In the wing directory",
       "show": "Show projects using {tech}",
       "ringTarget": "Tech Reactor: {ring}",
       "selected": "Selected: {tech}"
@@ -289,7 +291,7 @@
       "count": "{count, plural, one {# piece} other {# pieces}}",
       "pieces": "{count, plural, one {# piece} other {# pieces}} on {topic}",
       "selection": "Pieces on {topic}",
-      "show": "Show writing about {topic}",
+      "show": "Show work about {topic}",
       "clear": "Clear topic filter",
       "all": "All topics",
       "filters": "Filter by topic",
@@ -302,7 +304,7 @@
     }
   },
   "blog": {
-    "back": "Back to the Library",
+    "back": "Back to Writing",
     "translationMissing": "This post is available in {language}. The original version is shown here.",
     "languageName": {
       "en": "English",
@@ -320,7 +322,7 @@
   },
   "cv": {
     "title": "CV",
-    "intro": "My CV, one PDF for both languages. Zoom in, read it here or download it.",
+    "intro": "My CV PDF stays the same when the site language changes. Read it here, zoom in or download it.",
     "view": "View CV",
     "close": "Close CV",
     "toolbar": "CV viewer controls",
@@ -380,9 +382,9 @@
     "noticeLabel": "Publisher notice"
   },
   "notFound": {
-    "title": "Room not found",
-    "body": "This page does not exist. Head back to the Lobby to find your way.",
-    "home": "Return to the Lobby"
+    "title": "Page not found",
+    "body": "This page could not be found. Return to Home to continue browsing.",
+    "home": "Return to Home"
   },
   "footer": {
     "pages": "Pages",
@@ -418,11 +420,11 @@
     "settings": {
       "dayNight": {
         "label": "Day and night",
-        "hint": "An 8 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."
+        "hint": "A shared 8-minute sky cycle. Reduced motion keeps the sky at night unless enabled here."
       },
       "openLinks": {
-        "label": "Open links in",
-        "hint": "New tabs and links without a view open here",
+        "label": "Default HQ view",
+        "hint": "Sets the default for new tabs. A link's explicit view takes priority.",
         "page": "Classic site",
         "3d": "3D"
       },
@@ -442,14 +444,14 @@
       "language": { "label": "Language", "en": "English", "id": "Bahasa Indonesia" },
       "motion": {
         "label": "Motion",
-        "hint": "System follows your device. Reduced cuts rides and glides.",
+        "hint": "System follows the device setting. Reduced limits travel and camera animations.",
         "system": "System",
         "full": "Full",
         "reduced": "Reduced"
       },
       "quality": {
         "label": "Graphics quality",
-        "hint": "Lite saves battery. A change reloads the 3D view.",
+        "hint": "Lite uses fewer graphics effects. Changing quality reloads the 3D view.",
         "auto": "Auto",
         "full": "Full",
         "lite": "Lite"
@@ -457,9 +459,9 @@
       "minimap": { "label": "Minimap" },
       "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
       "effects": { "label": "Sound effects" },
-      "music": { "label": "Music" },
-      "ambience": { "label": "Floor ambience", "hint": "Each floor plays its own track instead of the background music." },
-      "musicVolume": { "label": "Music volume" }
+      "music": { "label": "Background music" },
+      "ambience": { "label": "Floor ambience", "hint": "Replaces the background music with each floor's soundtrack. Controlled separately from Background music." },
+      "musicVolume": { "label": "Music and ambience volume" }
     },
     "menu": "Menu",
     "menuTitle": "Menu",
@@ -535,8 +537,8 @@
     },
     "palette": {
       "title": "Command palette",
-      "label": "Search the Rover menu, rooms, years and actions",
-      "placeholder": "Find a Rover menu pick, room, year or action",
+      "label": "Search projects, writing, rooms, years and actions",
+      "placeholder": "Find projects, writing or places in HQ",
       "results": "Results",
       "empty": "No results for \"{query}\"",
       "groups": {
@@ -648,7 +650,7 @@
     "locked": "Visit all {total} floors ({seen}/{total})",
     "lockedName": "{floor} Visit all {total} floors ({seen}/{total})",
     "lockedTitle": "Locked",
-    "unlock": "You found everything. Want to see how this place was built?",
+    "unlock": "All main floors visited! The Engine Room is unlocked. Want to see how this HQ was built?",
     "go": "Take me there",
     "later": "Later",
     "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total}).",
@@ -681,6 +683,8 @@
     "collapse": "Collapse panel",
     "external": "Read post",
     "flow": "Data flow",
+    "flowTo": "to",
+    "flowAsyncTo": "sends asynchronously to",
     "noArchitecture": "No architecture diagram for this room.",
     "onFloor": "On {floor}",
     "seeOnL3": "Read the case study in Labs",
@@ -741,7 +745,7 @@
   "work": {
     "title": "Work",
     "keyProjects": "Key projects",
-    "allProjects": "All projects",
+    "allProjects": "More projects",
     "filters": "Filter projects",
     "wing": "Wing",
     "all": "All",
@@ -775,10 +779,10 @@
     "thinking": "Rover is thinking . . .",
     "asOf": "Answered by AI from this site, as of {date}",
     "privacyTitle": "Privacy",
-    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
+    "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to three earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
-      "offline": "Ask AI is unavailable right now. Try search or browse the site pages.",
+      "offline": "Ask AI is unavailable right now. Use Search or browse the site pages.",
       "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
     },
     "palette": {
@@ -818,7 +822,7 @@
       "career": "Career",
       "contact": "Contact",
       "perspectives": "Perspectives",
-      "about": "About me",
+      "about": "About Kurniadi",
       "site": "This site"
     },
     "cite": {
@@ -833,7 +837,7 @@
       "title": "Get in touch with Kurniadi",
       "email": "Email",
       "linkedin": "LinkedIn",
-      "page": "Contact page",
+      "page": "About and contact",
       "label": "Contact details"
     },
     "hero": {
@@ -914,14 +918,14 @@
     "preview": {
       "issued": "Issued",
       "planned": "Planned",
-      "renews": "Renews",
+      "renews": "Expires",
       "expiredOn": "Expired",
       "credentialId": "Credential ID",
       "open": "Open credential",
       "newTab": "opens in a new tab",
       "close": "Close",
       "noLink": "No public credential link.",
-      "pending": "The credential link appears once the exam is passed."
+      "pending": "No public credential link yet."
     },
     "wall": {
       "all": "All",
@@ -941,7 +945,7 @@
       "skip": "Skip tutorial",
       "skipped": "No problem. Replay the tutorial from Settings anytime.",
       "moveFine": "Drive with WASD or the arrow keys. Hold Shift to boost.",
-      "moveCoarse": "Drag the joystick to drive. Double-tap the joystick to boost, double-tap it again to stop.",
+      "moveCoarse": "Drag the joystick to drive. Double-tap the joystick to boost; double-tap again to turn boost off.",
       "pointGoFine": "Point at a glowing object to see its name, then click it and I'll drive you there. Try it!",
       "pointGoCoarse": "Or tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
       "moved": "Nice driving!",
@@ -950,8 +954,8 @@
       "highlights": "The Highlights Hall on the east side shows {name}'s selected work. Want to see it?",
       "showMe": "Take me there",
       "later": "Later",
-      "elevator": "The elevator goes to every floor. Stop on the glowing call pad in front of it to pick one.",
-      "roverMenu": "Not sure where to go? The Rover menu has shortcuts to the best rooms.",
+      "elevator": "Stop on the glowing pad in front of the elevator, then choose a floor.",
+      "roverMenu": "Not sure where to go? Open the Rover menu for shortcuts around HQ.",
       "askAi": "And Ask AI answers questions about {name}'s work.",
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
       "closingShort": "That's the basics! Replay the full tutorial from Settings anytime."
@@ -965,7 +969,7 @@
     "hints": {
       "bubble": "Hint: {label}",
       "kind": {
-        "door": "{label}: drive into the door to open it.",
+        "door": "{label}: drive up to the door to open it.",
         "elevator-pad": "Stop on this pad to pick a floor.",
         "teleporter": "Stop on this pad to beam to another year.",
         "return-pad": "Stop on this pad to beam back to the elevator.",
@@ -975,7 +979,7 @@
       },
       "object": {
         "highlights": "The Highlights Hall: {name}'s selected work in one place.",
-        "roverMenu": "The Rover menu kiosk: shortcuts to the best rooms in the HQ.",
+        "roverMenu": "The Rover menu kiosk: shortcuts around HQ.",
         "cv": "The CV kiosk: read or download the CV.",
         "contact": "The comms station: every way to reach {name}.",
         "research": "The Research desk: papers with abstracts and citations.",
@@ -1118,13 +1122,13 @@
   "stats": {
     "title": "Visits",
     "observatory": "Visitor Observatory",
-    "intro": "Visits and AI questions are counted anonymously and updated every 4 hours, including today so far.",
+    "intro": "Visit estimates and AI question totals, updated every 4 hours with today's data so far.",
     "approx": "about {n}",
     "window": {
       "d30": "Last 30 days, including today",
       "all": "Since {date}"
     },
-    "source": "Cloudflare Web Analytics, sampled estimates",
+    "source": "Visit estimates: Cloudflare Web Analytics, sampled data",
     "updated": "Updated every 4 hours",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
@@ -1160,7 +1164,7 @@
     },
     "topicsTitle": "Questions by topic",
     "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
-    "chipsTitle": "Example questions (curated)",
+    "chipsTitle": "Suggested questions",
     "chipsNote": "How often each suggested question was picked. Visitor-entered text is not shown in these stats.",
     "chipCount": "{n} picks",
     "noChips": "No suggested question picked for this topic yet.",
@@ -1175,7 +1179,7 @@
       "code": "Code"
     },
     "optOut": "Don't count my visits",
-    "optOutHint": "Stored in this browser. Do Not Track and Global Privacy Control stop the visit and performance beacons.",
+    "optOutHint": "Saved in this browser when storage is available. With this choice saved, a page load blocks visit and performance beacons and Cloudflare Web Analytics. Turning it on also cancels the active visit beacon. Already-loaded performance and analytics scripts may continue until reload. Do Not Track and Global Privacy Control block first-party visit and performance beacons, not the Web Analytics loader. This does not clear logs or affect chat.",
     "tile": "visits in the last 30 days (estimate)",
     "openObservatory": "Visitor Observatory in the Lobby",
     "panel": {
@@ -1199,8 +1203,8 @@
     "live": {
       "title": "This site's telemetry",
       "visits": "Visits, last 30 days",
-      "fps": "3D sessions at 55+ FPS",
-      "explore": "Median time to explore",
+      "fps": "3D sessions: median 55+ FPS",
+      "explore": "Median time until ready to explore",
       "nightly": "Nightly performance runs",
       "sessions": "{count} sampled 3D sessions, last 30 days",
       "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated every 4 hours.",

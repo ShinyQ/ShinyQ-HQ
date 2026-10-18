@@ -98,7 +98,7 @@ export function ArchitectureGrid({ architecture }: { architecture: RoomArchitect
                 <span aria-hidden="true" className="text-cyan">
                   {edge.async ? "⇢" : "→"}
                 </span>
-                <span className="sr-only">{edge.async ? " sends asynchronously to " : " to "}</span>{" "}
+                <span className="sr-only">{" "}{t(edge.async ? "flowAsyncTo" : "flowTo")}{" "}</span>{" "}
                 <span className="text-ink">{byId.get(edge.to)?.label}</span>
                 {edge.label && <span className="text-ink-3"> ({edge.label})</span>}
               </li>
@@ -223,7 +223,7 @@ function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps
           <ShareLinks
             variant="menu"
             itemClassName={MENU_ITEM}
-            labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied") }}
+            labels={{ group: tc("share"), classic: tc("copyClassicLink"), threeD: tc("copy3dLink"), copied: tc("linkCopied"), failed: tc("linkCopyFailed") }}
           />
         </ul>
       )}

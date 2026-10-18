@@ -38,6 +38,8 @@
     "copyClassicLink": "Salin tautan situs klasik",
     "copy3dLink": "Salin tautan 3D",
     "linkCopied": "Tautan disalin",
+    "linkCopyFailed": "Tautan belum bisa disalin. Pilih lalu salin tautan ini.",
+    "emailCopyFailed": "Alamat email belum bisa disalin. Pilih lalu salin alamat ini.",
     "present": "Sekarang",
     "caseStudy": "Baca studi kasus",
     "stack": "Tech stack",
@@ -53,7 +55,7 @@
     "tier": {
       "hero": "Proyek utama",
       "featured": "Pilihan",
-      "listed": "Daftar"
+      "listed": "Proyek"
     },
     "wing": {
       "software": "Product Engineering",
@@ -123,8 +125,8 @@
   },
   "build": {
     "toc": "Isi halaman",
-    "snapshot": "Snapshot per {date}, commit {commit}",
-    "snapshotDate": "Snapshot per {date}",
+    "snapshot": "Data per {date}, commit {commit}",
+    "snapshotDate": "Data per {date}",
     "source": "Kode sumber di GitHub",
     "howItRuns": "Cara kerjanya",
     "loop": "Setiap perubahan, langkah demi langkah",
@@ -142,7 +144,7 @@
     "gate": "Gate",
     "checks": "Yang diperiksa dan batasnya",
     "budget": "Batas",
-    "blocksMerge": "Blokir merge",
+    "blocksMerge": "Wajib lolos sebelum merge",
     "reportsOnly": "Hanya melapor",
     "tiles": {
       "mergedPrs": "Pull request di-merge",
@@ -155,7 +157,7 @@
       "js3dKb": "Batas JavaScript 3D sebelum frame pertama (gzip)",
       "sceneCalls": "Batas draw call per frame",
       "triangles": "Batas segitiga per frame",
-      "uptime": "Pemeriksaan uptime situs live",
+      "uptime": "Pemeriksaan uptime situs aktif",
       "visits": "Kunjungan dalam 30 hari terakhir"
     },
     "kb": "{value} KB",
@@ -173,7 +175,7 @@
     "workshopIntro": "Proyek sampingan dan repositori publik.",
     "repos": "Repositori publik",
     "stars": "{count} bintang",
-    "seeCaseStudy": "Baca studi kasus di Labs",
+    "seeCaseStudy": "Baca studi kasus",
     "back": "Kembali ke perjalanan",
     "show": "Tampilkan",
     "jumpTo": "Lompat ke",
@@ -201,7 +203,7 @@
     "client": "Klien",
     "role": "Peran",
     "period": "Periode",
-    "back": "Kembali ke Labs",
+    "back": "Kembali ke Karya",
     "timeline": "Riwayat karier terkait",
     "nodeKind": {
       "client": "Klien",
@@ -228,8 +230,8 @@
       "uses": "{count} proyek memakai {tech}",
       "projects": "Proyek yang memakai {tech}",
       "clear": "Hapus filter teknologi",
-      "surprise": "Kejutkan saya",
-      "directory": "Di direktori sayap",
+      "surprise": "Kunjungi proyek acak",
+      "directory": "Di daftar proyek bidang ini",
       "show": "Tampilkan proyek yang memakai {tech}",
       "ringTarget": "Reaktor Teknologi: {ring}",
       "selected": "Dipilih: {tech}"
@@ -289,7 +291,7 @@
       "count": "{count} karya",
       "pieces": "{count} karya tentang {topic}",
       "selection": "Karya tentang {topic}",
-      "show": "Tampilkan tulisan tentang {topic}",
+      "show": "Tampilkan karya tentang {topic}",
       "clear": "Hapus filter topik",
       "all": "Semua topik",
       "filters": "Filter berdasarkan topik",
@@ -302,7 +304,7 @@
     }
   },
   "blog": {
-    "back": "Kembali ke Perpustakaan",
+    "back": "Kembali ke Tulisan",
     "translationMissing": "Tulisan ini tersedia dalam {language}. Versi asli ditampilkan di sini.",
     "languageName": {
       "en": "bahasa Inggris",
@@ -320,7 +322,7 @@
   },
   "cv": {
     "title": "CV",
-    "intro": "CV saya, satu PDF untuk kedua bahasa. Perbesar, baca di sini, atau unduh.",
+    "intro": "PDF CV saya tetap sama saat bahasa situs diganti. Baca di sini, perbesar, atau unduh.",
     "view": "Lihat CV",
     "close": "Tutup CV",
     "toolbar": "Kontrol penampil CV",
@@ -380,9 +382,9 @@
     "noticeLabel": "Catatan penerbit"
   },
   "notFound": {
-    "title": "Ruang tidak ditemukan",
-    "body": "Halaman ini tidak tersedia. Kembali ke Lobi untuk melanjutkan penjelajahan.",
-    "home": "Kembali ke Lobi"
+    "title": "Halaman tidak ditemukan",
+    "body": "Halaman ini tidak ditemukan. Kembali ke Beranda untuk melanjutkan.",
+    "home": "Kembali ke Beranda"
   },
   "footer": {
     "pages": "Halaman",
@@ -409,7 +411,7 @@
     "language": "Bahasa",
     "sound": "Suara",
     "motion": {
-      "label": "Gerak",
+      "label": "Gerakan",
       "system": "Sistem",
       "full": "Penuh",
       "reduced": "Dikurangi",
@@ -418,11 +420,11 @@
     "settings": {
       "dayNight": {
         "label": "Siang dan malam",
-        "hint": "Siklus langit 8 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."
+        "hint": "Siklus langit 8 menit yang serentak. Saat gerakan dikurangi, langit tetap malam kecuali diaktifkan di sini."
       },
       "openLinks": {
-        "label": "Buka tautan di",
-        "hint": "Tab baru dan tautan tanpa pilihan tampilan terbuka di sini",
+        "label": "Tampilan awal HQ",
+        "hint": "Menentukan tampilan awal di tab baru. Pilihan tampilan pada tautan tetap diutamakan.",
         "page": "Situs klasik",
         "3d": "3D"
       },
@@ -442,14 +444,14 @@
       "language": { "label": "Bahasa", "en": "English", "id": "Bahasa Indonesia" },
       "motion": {
         "label": "Gerakan",
-        "hint": "Sistem mengikuti perangkat Anda. Dikurangi memotong perjalanan dan transisi kamera.",
+        "hint": "Sistem mengikuti pengaturan perangkat. Dikurangi mengurangi animasi perjalanan dan kamera.",
         "system": "Sistem",
         "full": "Penuh",
         "reduced": "Dikurangi"
       },
       "quality": {
         "label": "Kualitas grafis",
-        "hint": "Lite menghemat baterai. Perubahan memuat ulang tampilan 3D.",
+        "hint": "Lite memakai lebih sedikit efek grafis. Mengubah kualitas memuat ulang tampilan 3D.",
         "auto": "Otomatis",
         "full": "Penuh",
         "lite": "Lite"
@@ -457,9 +459,9 @@
       "minimap": { "label": "Peta mini" },
       "sound": { "label": "Suara", "hint": "Mati membisukan semuanya (tombol M)." },
       "effects": { "label": "Efek suara" },
-      "music": { "label": "Musik" },
-      "ambience": { "label": "Suasana lantai", "hint": "Setiap lantai memutar trek sendiri sebagai pengganti musik latar." },
-      "musicVolume": { "label": "Volume musik" }
+      "music": { "label": "Musik latar" },
+      "ambience": { "label": "Suara latar tiap lantai", "hint": "Mengganti musik latar dengan suara khas tiap lantai. Pengaturannya terpisah dari Musik latar." },
+      "musicVolume": { "label": "Volume musik dan suara latar" }
     },
     "menu": "Menu",
     "menuTitle": "Menu",
@@ -535,8 +537,8 @@
     },
     "palette": {
       "title": "Palet perintah",
-      "label": "Cari Menu Rover, ruang, tahun, dan perintah",
-      "placeholder": "Cari pilihan Menu Rover, ruang, tahun, atau perintah",
+      "label": "Cari proyek, tulisan, ruang, tahun, dan perintah",
+      "placeholder": "Cari proyek, tulisan, atau tempat di HQ",
       "results": "Hasil",
       "empty": "Tidak ada hasil untuk \"{query}\"",
       "groups": {
@@ -648,7 +650,7 @@
     "locked": "Kunjungi semua {total} lantai ({seen}/{total})",
     "lockedName": "{floor} Kunjungi semua {total} lantai ({seen}/{total})",
     "lockedTitle": "Terkunci",
-    "unlock": "Anda sudah menemukan semuanya. Mau lihat cara tempat ini dibuat?",
+    "unlock": "Semua lantai utama sudah dikunjungi. Ruang Mesin terbuka. Mau lihat cara HQ ini dibuat?",
     "go": "Antar saya ke sana",
     "later": "Nanti",
     "lockedLine": "B1 masih terkunci: kunjungi semua {total} lantai dulu ({seen}/{total}).",
@@ -681,6 +683,8 @@
     "collapse": "Perkecil panel",
     "external": "Baca tulisan",
     "flow": "Alur data",
+    "flowTo": "ke",
+    "flowAsyncTo": "mengirim secara asinkron ke",
     "noArchitecture": "Tidak ada diagram arsitektur untuk ruang ini.",
     "onFloor": "Di {floor}",
     "seeOnL3": "Baca studi kasus di Labs",
@@ -741,7 +745,7 @@
   "work": {
     "title": "Karya",
     "keyProjects": "Proyek utama",
-    "allProjects": "Semua proyek",
+    "allProjects": "Proyek lainnya",
     "filters": "Filter proyek",
     "wing": "Bidang",
     "all": "Semua",
@@ -775,10 +779,10 @@
     "thinking": "Rover sedang berpikir . . .",
     "asOf": "Dijawab oleh AI dari isi situs ini, per {date}",
     "privacyTitle": "Privasi",
-    "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI, atau oleh Groq (tanpa penyimpanan data) sebagai cadangan saat Workers AI tidak tersedia atau kuotanya habis. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Pertanyaan yang tidak bisa dijawab disimpan secara privat paling lama 3 bulan, disamarkan dengan cara yang sama, agar topik yang belum ada bisa ditambahkan; yang dipublikasikan hanya jumlah dan topiknya. Tidak perlu akun. Ask AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",
+    "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI, atau oleh Groq (tanpa penyimpanan data) sebagai cadangan saat Workers AI tidak tersedia atau kuotanya habis. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas yang dikenali disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Pertanyaan yang tidak bisa dijawab disimpan secara privat paling lama 3 bulan, disamarkan dengan cara yang sama, agar topik yang belum ada bisa ditambahkan; yang dipublikasikan hanya jumlah dan topiknya. Percakapan disimpan di tab ini selama sesi browser. Hingga tiga tanya-jawab sebelumnya dapat ikut dikirim saat bertanya lagi. Menutup obrolan hanya menyembunyikannya. Obrolan baru mengosongkan percakapan di tab ini, bukan menghapus log layanan yang tersimpan. Tidak perlu akun. Tanya AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",
     "error": {
       "rateLimited": "Terlalu banyak pertanyaan untuk saat ini. Coba lagi dalam {minutes} menit.",
-      "offline": "Ask AI sedang tidak tersedia. Coba pencarian atau jelajahi halaman situs.",
+      "offline": "Tanya AI sedang tidak tersedia. Gunakan Cari atau jelajahi halaman situs.",
       "fallback": "Jawaban belum tersedia saat ini. Coba pencarian atau halaman Karya dan Perjalanan."
     },
     "palette": {
@@ -792,7 +796,7 @@
       "teaserDismiss": "Tutup",
       "title": "Asisten Rover",
       "subtitle": "Jawaban AI hanya dari isi situs ini",
-      "close": "Tutup chat",
+      "close": "Tutup obrolan",
       "newChat": "Obrolan baru",
       "threadLabel": "Percakapan",
       "welcome": "Halo! Temukan jawaban tentang karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Jawaban AI bersumber dari isi situs ini. Pilih topik atau ketik pertanyaan.",
@@ -818,7 +822,7 @@
       "career": "Karier",
       "contact": "Kontak",
       "perspectives": "Perspektif",
-      "about": "Tentang saya",
+      "about": "Tentang Kurniadi",
       "site": "Situs ini"
     },
     "cite": {
@@ -833,7 +837,7 @@
       "title": "Hubungi Kurniadi",
       "email": "Email",
       "linkedin": "LinkedIn",
-      "page": "Halaman kontak",
+      "page": "Tentang dan kontak",
       "label": "Detail kontak"
     },
     "hero": {
@@ -914,14 +918,14 @@
     "preview": {
       "issued": "Diterbitkan",
       "planned": "Direncanakan",
-      "renews": "Diperbarui",
+      "renews": "Berlaku hingga",
       "expiredOn": "Kedaluwarsa",
       "credentialId": "ID kredensial",
       "open": "Buka kredensial",
       "newTab": "terbuka di tab baru",
       "close": "Tutup",
       "noLink": "Tidak ada tautan kredensial publik.",
-      "pending": "Tautan kredensial muncul setelah ujian lulus."
+      "pending": "Tautan kredensial publik belum tersedia."
     },
     "wall": {
       "all": "Semua",
@@ -941,7 +945,7 @@
       "skip": "Lewati tutorial",
       "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Pengaturan.",
       "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
-      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk dua kali joystick untuk turbo, ketuk dua kali lagi untuk berhenti.",
+      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk dua kali joystick untuk mengaktifkan atau mematikan turbo.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
       "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
       "moved": "Mantap, kemudinya lancar!",
@@ -950,8 +954,8 @@
       "highlights": "Aula Sorotan di sisi timur merangkum karya pilihan {name}. Mau lihat?",
       "showMe": "Antar saya ke sana",
       "later": "Nanti saja",
-      "elevator": "Lift ini menuju semua lantai. Berhenti di pad panggil yang menyala di depannya untuk memilih lantai.",
-      "roverMenu": "Belum tahu mau ke mana? Menu Rover punya jalan pintas ke ruang-ruang terbaik.",
+      "elevator": "Berhenti di area menyala di depan lift, lalu pilih lantai.",
+      "roverMenu": "Belum tahu mau ke mana? Buka Menu Rover untuk memilih tujuan di HQ.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
       "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja."
@@ -965,7 +969,7 @@
     "hints": {
       "bubble": "Petunjuk: {label}",
       "kind": {
-        "door": "{label}: kemudikan masuk ke pintu untuk membukanya.",
+        "door": "{label}: arahkan rover ke pintu untuk membukanya.",
         "elevator-pad": "Berhenti di pad ini untuk memilih lantai.",
         "teleporter": "Berhenti di pad ini untuk teleport ke tahun lain.",
         "return-pad": "Berhenti di sini untuk kembali ke lift dalam sekejap.",
@@ -975,7 +979,7 @@
       },
       "object": {
         "highlights": "Aula Sorotan: karya pilihan {name} di satu tempat.",
-        "roverMenu": "Kios Menu Rover: jalan pintas ke ruang terbaik di HQ.",
+        "roverMenu": "Kios Menu Rover: pilihan tujuan di HQ.",
         "cv": "Kios CV: baca atau unduh CV.",
         "contact": "Stasiun komunikasi: semua cara menghubungi {name}.",
         "research": "Meja Riset: makalah lengkap dengan abstrak dan sitasi.",
@@ -1118,13 +1122,13 @@
   "stats": {
     "title": "Kunjungan",
     "observatory": "Observatorium Pengunjung",
-    "intro": "Jumlah kunjungan dan pertanyaan ke AI dihitung secara anonim dan diperbarui setiap 4 jam, termasuk data hari ini.",
+    "intro": "Estimasi kunjungan dan jumlah pertanyaan AI diperbarui setiap 4 jam, termasuk data hari ini hingga saat ini.",
     "approx": "sekitar {n}",
     "window": {
       "d30": "30 hari terakhir, termasuk hari ini",
       "all": "Sejak {date}"
     },
-    "source": "Cloudflare Web Analytics, estimasi sampel",
+    "source": "Estimasi kunjungan: data sampel Cloudflare Web Analytics",
     "updated": "Diperbarui setiap 4 jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
@@ -1160,7 +1164,7 @@
     },
     "topicsTitle": "Pertanyaan per topik",
     "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
-    "chipsTitle": "Contoh pertanyaan (kurasi)",
+    "chipsTitle": "Pertanyaan yang disarankan",
     "chipsNote": "Seberapa sering pertanyaan yang disarankan dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
     "chipCount": "{n} kali dipilih",
     "noChips": "Pertanyaan yang disarankan untuk topik ini belum pernah dipilih.",
@@ -1175,7 +1179,7 @@
       "code": "Kode"
     },
     "optOut": "Jangan hitung kunjungan saya",
-    "optOutHint": "Disimpan di browser ini. Do Not Track dan Global Privacy Control menghentikan beacon kunjungan dan performa.",
+    "optOutHint": "Disimpan di browser ini jika penyimpanan tersedia. Saat halaman dimuat, pilihan yang tersimpan memblokir beacon kunjungan dan performa serta Cloudflare Web Analytics. Mengaktifkannya juga membatalkan beacon kunjungan aktif. Skrip performa dan analitik yang sudah dimuat dapat tetap berjalan hingga halaman dimuat ulang. Do Not Track dan Global Privacy Control memblokir beacon kunjungan dan performa milik situs, bukan pemuat Web Analytics. Pilihan ini tidak menghapus log atau memengaruhi obrolan.",
     "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
     "openObservatory": "Observatorium Pengunjung di Lobi",
     "panel": {
@@ -1199,7 +1203,7 @@
     "live": {
       "title": "Telemetri situs ini",
       "visits": "Kunjungan, 30 hari terakhir",
-      "fps": "Sesi 3D di 55+ FPS",
+      "fps": "Sesi 3D: median 55+ FPS",
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
       "sessions": "{count} sesi 3D dalam sampel, 30 hari terakhir",

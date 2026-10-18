@@ -1,36 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { SITE_URL } from "@/lib/site";
 import { shareUrls } from "@/lib/view-param";
 
 type Kind = "classic" | "threeD";
+type ShareCopyState =
+  | { status: "idle" }
+  | { status: "copied"; kind: Kind }
+  | { status: "failed"; kind: Kind; value: string };
 
 export interface ShareLinksProps {
-  labels: { group: string; classic: string; threeD: string; copied: string };
+  labels: { group: string; classic: string; threeD: string; copied: string; failed: string };
   variant?: "page" | "menu";
   /** Class for each menu item button (the drawer's `MENU_ITEM`). */
   itemClassName?: string;
 }
 
-/** Copies the Classic or 3D address of the current page; the status text is announced to screen readers. */
+/** Copies the generated view link, or exposes that same value for manual copying. */
 export function ShareLinks({ labels, variant = "page", itemClassName }: ShareLinksProps) {
-  const [done, setDone] = useState<Kind | null>(null);
+  const [state, setState] = useState<ShareCopyState>({ status: "idle" });
+  const attempt = useRef(0);
+  const failureId = useId();
 
   useEffect(() => {
-    if (!done) return;
-    const id = window.setTimeout(() => setDone(null), 2000);
+    if (state.status !== "copied") return;
+    const id = window.setTimeout(() => setState({ status: "idle" }), 2000);
     return () => window.clearTimeout(id);
-  }, [done]);
+  }, [state]);
+
+  useEffect(() => () => { attempt.current += 1; }, []);
 
   const copy = async (kind: Kind) => {
+    const current = ++attempt.current;
+    const value = shareUrls(SITE_URL, window.location)[kind];
+    setState({ status: "idle" });
     try {
-      await navigator.clipboard.writeText(shareUrls(SITE_URL, window.location)[kind]);
-      setDone(kind);
+      await navigator.clipboard.writeText(value);
+      if (current === attempt.current) setState({ status: "copied", kind });
     } catch {
-      // Clipboard can be blocked; nothing else to offer here.
+      if (current === attempt.current) setState({ status: "failed", kind, value });
     }
   };
+
+  const recovery = state.status === "failed" && (
+    <div className="w-full min-w-0 space-y-2">
+      <p id={failureId} role="status" aria-live="polite" className="text-sm text-ink-2">{labels.failed}</p>
+      <input
+        type="text"
+        readOnly
+        tabIndex={0}
+        aria-labelledby={failureId}
+        value={state.value}
+        className="w-full min-w-0 rounded-lg border border-line-2 bg-surface px-3 py-2 font-mono text-sm text-ink"
+      />
+    </div>
+  );
 
   const items: { kind: Kind; label: string }[] = [
     { kind: "classic", label: labels.classic },
@@ -45,16 +70,17 @@ export function ShareLinks({ labels, variant = "page", itemClassName }: ShareLin
         className={variant === "menu" ? itemClassName : "pv-btn pv-btn-ghost"}
         onClick={() => void copy(kind)}
       >
-        <span aria-live="polite">{done === kind ? labels.copied : label}</span>
+        <span aria-live="polite">{state.status === "copied" && state.kind === kind ? labels.copied : label}</span>
       </button>
     );
-    return variant === "menu" ? <li key={kind}>{button}</li> : button;
+    return variant === "menu" ? <li key={kind}>{button}{state.status === "failed" && state.kind === kind && recovery}</li> : button;
   });
 
   if (variant === "menu") return <>{buttons}</>;
   return (
     <div role="group" aria-label={labels.group} className="flex flex-wrap gap-3">
       {buttons}
+      {recovery}
     </div>
   );
 }
