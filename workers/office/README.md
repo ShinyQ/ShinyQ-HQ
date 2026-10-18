@@ -19,7 +19,8 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   - `OFFICE_GITHUB_ACTORS` (`ShinyQ,Copilot`): GitHub logins whose same-repository pull requests count, besides
     authors with the OWNER, MEMBER or COLLABORATOR association.
 - Deploy: `deploy.yml` job "hq-office Worker", after a successful Pages upload (the same gates as the upload); a
-  commit without `workers/office/` skips it. Until the Worker first exists, `/api/office` answers mode "off".
+  commit without `workers/office/` skips it. The Pages binding `OFFICE` stays commented out in
+  the root `wrangler.toml` until the Worker exists (a Pages deploy fails on a binding to a missing Worker).
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
