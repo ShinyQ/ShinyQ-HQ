@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: implemented in the PR "ci: deploy on merge with auto-rollback" (third PR of the faster-CI work, after the
+Status: shipped in #200 (6b87ceb), 2026-10-18, the PR "ci: deploy on merge with auto-rollback" (third PR of the faster-CI work, after the
 test-suite trim and the affected-tests PR CI).
 
 **Goal:** A merge to `main` goes live in minutes, without waiting for the push CI on `main`, when the merged pull

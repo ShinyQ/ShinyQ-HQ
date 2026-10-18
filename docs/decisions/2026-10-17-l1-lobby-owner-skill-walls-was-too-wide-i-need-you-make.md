@@ -1,0 +1,5 @@
+# L1 Lobby
+
+- Date: 2026-10-17
+
+Owner: "the skill walls was too wide i need you to make it more neat and compact". The skills wall becomes 24 u wide (60 percent of 40 u) with its four groups in a 2x2 grid, same fonts, colors and glow. Owner follow-up the same day: "No i want it to show all but the space for each can be neat and conmpact": every skill shows (no "+N more"); a group longer than six items splits into two sub-columns inside its cell when its items fit half a cell, and each grid row is as tall as its tallest cell. Owner decision the same day: a new site-only skill group, Data science and ML (`ds`: pandas, NumPy, Matplotlib, Seaborn, Plotly, Streamlit, Jupyter, scikit-learn, PyTorch, Hugging Face Transformers, Keras, Sastrawi) after AI and LLM, and the wall shows every group. Final layout (owner, same day): 4 across by 2 down on a 40 u wall (AI and LLM, Data science and ML, Azure, Languages; Backend, Frontend, Data and messaging, DevOps), the wall and its title under one storey (at most 12.5 u), point-and-go hit box at the measured height.

@@ -22,7 +22,13 @@ Cloudflare Cron Worker).
   [`docs/superpowers/README.md`](docs/superpowers/README.md). Write a plan in `docs/superpowers/plans/` before
   starting a large change.
 - Keep docs current in the same PR: a changed rule updates its `docs/agents/<area>.md` (current state only, no
-  history); a new owner decision adds a dated row to `docs/decisions.md`.
+  history).
+- Conflict-free history (parallel PRs never edit the same lines; `tests/unit/docs-index.test.ts`):
+  - A new owner decision is a new file `docs/decisions/YYYY-MM-DD-slug.md` (format in `docs/decisions.md`);
+    never add rows to `docs/decisions.md`.
+  - A plan's state lives only in its own `Status:` line (`in review`, then `shipped in #N (sha), date`); there is
+    no plans table or count to edit in `docs/superpowers/README.md`.
+  - `bun scripts/docs-index.ts` prints both tables at read time; never commit its output.
 - Documentation split (owner decision):
   - `README.md` is a short, scannable overview (centered header with badges, the hero GIF, highlights, the floor
     guide, architecture, stack, quick start, routes, structure, CI budgets, docs index). Keep it under about 300
@@ -133,6 +139,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 | `bun run e2e:look` | Local look check of the canvas against a main build |
 | `bun scripts/visual-gate.ts --base HEAD --profile strict` | Look-preserving gate across 3 devices x 8 poses |
 | `bun run validate:content` | Schema, safety and Title Case check of the dataset |
+| `bun scripts/docs-index.ts` | Print the owner decisions log and the plans table (status, PRs, counts) from the files |
 | `bun run og:stills` | Regenerate the share card floor stills after a large floor change |
 | `bun run floor:thumbs` | Regenerate the elevator picker thumbnails (after `bun run build`; needs `cwebp`) |
 | `bun scripts/readme-hero.ts` | Regenerate the README hero GIF and stills |
@@ -165,7 +172,7 @@ Path by path: [folder-layout.md](docs/agents/folder-layout.md).
 | Folder | Contents |
 |---|---|
 | `content/` | Public dataset `site-content.json`, blog MDX, Ask knowledge files, safety lists, generated facts |
-| `docs/` | Feature and content guides, deploy and Ask runbooks, `agents/` rules, `decisions.md`, `superpowers/` plans and specs, design mockups, README media |
+| `docs/` | Feature and content guides, deploy and Ask runbooks, `agents/` rules, `decisions/` (one file per owner decision), `superpowers/` plans and specs, design mockups, README media |
 | `e2e/` | Playwright specs, helpers (`hq.ts`), budgets, the perf lane (`e2e/perf/`) |
 | `functions/` | Cloudflare Pages Functions: `/api/ask`, `/api/rum`, `/api/visit`, `/api/stats` |
 | `messages/` | UI strings, `en.json` and `id.json` |
@@ -200,7 +207,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [performance.md](docs/agents/performance.md) | Perf gates, measurement, RUM, fast verification, writing 3D tests |
 | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) | Scripts, dependencies, CI, deploy, build env, audio, Next.js notes |
 | [folder-layout.md](docs/agents/folder-layout.md) | Annotated folder layout |
-| [decisions.md](docs/decisions.md) | Dated owner decisions log |
+| [decisions.md](docs/decisions.md) | Dated owner decisions log: one file per decision in `docs/decisions/` |
 
 Other docs: [`docs/features.md`](docs/features.md), [`docs/content.md`](docs/content.md),
 [`docs/deploy.md`](docs/deploy.md), [`docs/ask-runbook.md`](docs/ask-runbook.md).

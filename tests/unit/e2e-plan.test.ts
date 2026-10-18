@@ -332,7 +332,7 @@ describe("specsForChanges", () => {
 
 describe("offline tooling and the remaining unmapped paths", () => {
   it("runs no e2e for offline scripts", () => {
-    for (const f of ["scripts/arrival-shots.ts", "scripts/ask-eval.ts", "scripts/b1-shots.ts", "scripts/brand-wordmark.py", "scripts/subset-fonts.sh", "scripts/readme-hero.ts", "scripts/refresh-facts.ts", "scripts/uptime.ts", "scripts/check-client-chunks.ts"]) {
+    for (const f of ["scripts/arrival-shots.ts", "scripts/ask-eval.ts", "scripts/b1-shots.ts", "scripts/brand-wordmark.py", "scripts/subset-fonts.sh", "scripts/readme-hero.ts", "scripts/refresh-facts.ts", "scripts/uptime.ts", "scripts/check-client-chunks.ts", "scripts/docs-index.ts"]) {
       expect(specsForChanges([f]), f).toEqual({ specs: [], unmatched: [] });
     }
   });

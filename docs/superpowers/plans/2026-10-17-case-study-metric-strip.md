@@ -1,8 +1,8 @@
-# Case-study metric strip (Round 9 P) Implementation Plan
+# Case-Study Metric Strip (Round 9 P) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: shipped (2026-10-17). Spec: Round 9 design, section 6 (coordinator's session plan `2026-10-17-round-9-design.md`).
+Status: shipped in #192 (ec12fe9), 2026-10-17. Spec: Round 9 design, section 6 (coordinator's session plan `2026-10-17-round-9-design.md`).
 
 Shipped with two deviations: the Classic strip goes 3 across from `md` (it reuses `FactRow`'s rule classes and gives wide values room), and `HEADLINE_MAX` lives in `selectors.ts` (client-safe), re-exported from `schema.ts`.
 
