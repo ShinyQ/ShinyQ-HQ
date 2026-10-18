@@ -22,18 +22,17 @@ export interface LedgerResult {
   context?: LocalizedText;
 }
 
-/** Results as a ledger: the number, what it measures and how it was measured. */
+/** Results as a ledger: ruled rows with the number in a fixed column, then what it measures and how it was measured. */
 export function MetricLedger({ results, locale }: { results: readonly LedgerResult[]; locale: Locale }) {
   return (
-    <ul className="grid grid-cols-2 border-b border-line lg:grid-cols-4">
+    <ul className="pv-rows pv-rows-closed">
       {results.map((r, i) => (
-        <li
-          key={i}
-          className={`flex flex-col gap-2.5 border-t border-line py-5 pr-4 lg:border-t-0 lg:py-7 lg:pr-6 ${i % 2 === 1 ? "border-l pl-4" : ""} ${i % 4 !== 0 ? "lg:border-l lg:pl-6" : "lg:border-l-0 lg:pl-0"}`}
-        >
-          <p className="pv-num text-[28px] sm:text-[36px] lg:text-[40px]">{r.value}</p>
-          <p className="text-sm leading-[21px] text-ink">{r.label[locale]}</p>
-          {r.context && <p className="text-[13px] leading-[19px] text-ink-3">{r.context[locale]}</p>}
+        <li key={i} className="grid gap-x-6 gap-y-2 py-5 sm:grid-cols-[13.5rem_minmax(0,1fr)] sm:items-baseline sm:py-6">
+          <p className="pv-num text-[30px] leading-none sm:text-[34px]">{r.value}</p>
+          <div className="min-w-0">
+            <p className="text-[15px] leading-[22px] text-ink">{r.label[locale]}</p>
+            {r.context && <p className="mt-1.5 max-w-[60ch] text-[13px] leading-[20px] text-ink-3">{r.context[locale]}</p>}
+          </div>
         </li>
       ))}
     </ul>
