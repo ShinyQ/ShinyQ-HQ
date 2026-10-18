@@ -58,8 +58,11 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, q
   const turnstileCalls: string[] = [];
   const pending: Promise<unknown>[] = [];
   const groqCalls: { url: string; model: unknown }[] = [];
+  const groqBodies: { messages: { role: string; content: string }[] }[] = [];
   const groqFetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    groqCalls.push({ url: String(url), model: JSON.parse(String(init?.body)).model });
+    const body = JSON.parse(String(init?.body));
+    groqCalls.push({ url: String(url), model: body.model });
+    groqBodies.push(body);
     return new Response(JSON.stringify({ choices: [{ message: { content: groq } }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }), { status: 200 });
   }) as typeof fetch;
   const client: ModelClient = {
@@ -111,7 +114,7 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, q
     await Promise.all(pending);
     return response;
   };
-  return { kv, events, modelCalls, modelInputs, groqCalls, turnstileCalls, call, env: fullEnv };
+  return { kv, events, modelCalls, modelInputs, groqCalls, groqBodies, turnstileCalls, call, env: fullEnv };
 }
 
 async function frames(response: Response): Promise<AskFrame[]> {
@@ -572,6 +575,19 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
     expect(s.modelInputs.at(-1)?.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
     expect(s.modelInputs.at(-1)?.messages[2].content).toBe(ANSWER);
     expect(s.events.at(-1)).toMatchObject({ doubles: [expect.any(Number), 1, 1] });
+  });
+
+  it("sends the same verified history to a Groq backup tier and signs its answer", async () => {
+    const s = setup({ answer: ANSWER });
+    const turn = await firstTurn(s);
+    const q = setup({ quota: true, groq: "Clearbox uses TypeScript.", env: { GROQ_API_KEY: "gsk_test" } });
+    const done = doneOf(await frames(await q.call({ body: { q: "What stack did it use?", locale: "en", history: [turn] } })));
+    expect(done.source).toBe("backup");
+    expect(done.sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const messages = q.groqBodies.at(-1)?.messages ?? [];
+    expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+    expect(messages[2].content).toBe(ANSWER);
+    expect(q.events.at(-1)).toMatchObject({ doubles: [expect.any(Number), 1, 1] });
   });
 
   it("drops a tampered answer, another panel language or a forged signature, and still answers", async () => {
