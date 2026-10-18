@@ -346,7 +346,7 @@ describe("spec-driven development post facts (R5-P11)", () => {
 
   it("matches the vendor portal repository and names Metrodata", () => {
     expect(post("en")).toContain("I opened all 179 pull requests and merged 142 of them.");
-    expect(post("id")).toContain("Saya membuka semua 179 pull request dan me-merge 142 di antaranya.");
+    expect(post("id")).toContain("Saya membuka semua 179 pull request dan menggabungkan 142 di antaranya.");
     expect(post("en")).toContain("4 October 2026, for Metrodata.");
     expect(post("id")).toContain("4 Oktober 2026 untuk Metrodata.");
     expect(post("en")).toContain("21 backend domains and 109 Alembic migrations.");
