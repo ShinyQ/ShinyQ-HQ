@@ -361,6 +361,30 @@ fallback pack without KV reads, for a KV incident).
 Vectorize or hybrid (BM25 plus embeddings) retrieval only after an offline recall@6 eval over the golden and curated
 questions shows BM25 missing expected chunks; out of scope here.
 
+### 4.13 Implementation notes (PR-B)
+
+Deviations from sections 4.3 to 4.10, decided while building:
+
+- **Fallback format:** `fallback.json` is the fallback *text* pack (13,528 bytes), indexed only when it is first served,
+  not a `StoredPack` indexed at isolate start: with its index it measured 30,774 bytes, over `FALLBACK_MAX_BYTES`,
+  and the happy path never needs it. `FALLBACK_MAX_BYTES` applies to the text pack.
+- **Pin metadata:** `pack-meta.json` also carries `packDate` (the status `asOf` when the pointer is unreadable).
+- **Tiers:** `pin` and `fallback` stay reported as such while reused from memory, so a degraded isolate shows on every
+  event; `memory` means a reused KV pack. A warm isolate whose pointer re-read fails keeps serving its loaded pack
+  (stale on error) instead of dropping to the fallback. A value that failed its checks is not read again by that isolate.
+- **Validation:** `validateStoredPack` also checks that `packVersion` matches the content hash and that the index equals
+  the one rebuilt from the text; the Function itself runs only the cheap checks (hash, schema, required chunks, index
+  lengths). `pin <version>` runs the same re-validation as `flip`.
+- **Cost measured:** SHA-256 of the 451 KB value 2 to 3.5 ms, parse 1.3 to 1.4 ms, hydrate 1.2 to 1.5 ms, once per
+  version per isolate (laptop under load); the Functions bundle went from 449,019 to 210,101 bytes.
+- **Rollback drills:** `rollback.yml` flips the pack only for the production Pages project, so a drill on a throwaway
+  project never moves the production pointer; the step runs after the Worker redeploys so its failure cannot skip them.
+- **Proof of the token (coordinator requirement 2026-10-19):** `ask-pack.ts verify` and `publish --dry-run true` write
+  only a `pack:probe` key (60 s TTL); `.github/workflows/ask-pack.yml` runs them on a dispatch from `main` in the
+  `production` environment. Pull requests never get the token, so the merge's own deploy is the first CI proof: it
+  publishes before `wrangler pages deploy` and fails red with production unchanged when KV refuses a write. Every
+  command exits 1 on any failed KV call, and the workflow steps run it unpiped or under `set -o pipefail`.
+
 ## 5. Docs touched
 
 `docs/agents/ask.md`, `docs/ask-runbook.md` (sections 1, 3, 5, 6, 14, 15, 15a, new 17 "Knowledge pack in KV"),
