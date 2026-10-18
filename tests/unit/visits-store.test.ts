@@ -19,8 +19,8 @@ describe("requestStats", () => {
     expect(statsState().snapshot).toEqual(STATS_FIXTURE);
   });
 
-  it("marks a snapshot older than 12 hours as delayed", async () => {
-    expect(await requestStats(async () => json(STATS_FIXTURE), () => updated + 72 * HOUR)).toMatchObject({ status: "ready", freshness: "delayed" });
+  it("marks a snapshot older than 6 hours as delayed", async () => {
+    expect(await requestStats(async () => json(STATS_FIXTURE), () => updated + 7 * HOUR)).toMatchObject({ status: "ready", freshness: "delayed" });
   });
 
   it.each([

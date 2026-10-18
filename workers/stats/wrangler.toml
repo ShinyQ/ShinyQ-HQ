@@ -14,11 +14,11 @@ compatibility_date = "2026-10-01"
 workers_dev = false
 preview_urls = false
 
-# Every 4 hours (UTC), 17 minutes past the hour: finalizes days an hour after they end and refreshes the snapshot
+# Every 2 hours (UTC), 17 minutes past the hour: finalizes days an hour after they end and refreshes the snapshot
 # with today so far. Off the top of the hour on purpose: the 04:00 and 12:00 runs of 2026-10-16 got a coarsely
 # sampled Web Analytics answer while a run at 12:15 got the exact one (README, "Finalized and provisional days").
 [triggers]
-crons = ["17 */4 * * *"]
+crons = ["17 */2 * * *"]
 
 # Same namespace as the Pages project's STATS_KV binding (wrangler.toml in the repo root): the ledger
 # `stats:days:v1` and the public snapshot `stats:v1`. KV namespace IDs are not secret.

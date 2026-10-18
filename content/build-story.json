@@ -68,7 +68,7 @@
           {
             "id": "cron",
             "label": "hq-stats Cron Worker",
-            "sublabel": { "en": "Every 4 hours", "id": "Setiap 4 jam" },
+            "sublabel": { "en": "Every 2 hours", "id": "Setiap 2 jam" },
             "layer": 2,
             "row": 5,
             "kind": "service",
@@ -121,8 +121,8 @@
           "id": "Pages Functions menangani Asisten Rover, beacon performa dan kunjungan, serta permintaan statistik publik."
         },
         {
-          "en": "A Cron Worker aggregates visit statistics into KV every four hours. The public stats show counts and topics, not raw logs or visitor-entered questions.",
-          "id": "Cron Worker merangkum statistik kunjungan ke KV setiap empat jam. Statistik publik menampilkan jumlah dan topik, bukan log mentah atau pertanyaan yang diketik pengunjung."
+          "en": "A Cron Worker aggregates visit statistics into KV every two hours. The public stats show counts and topics, not raw logs or visitor-entered questions.",
+          "id": "Cron Worker merangkum statistik kunjungan ke KV setiap dua jam. Statistik publik menampilkan jumlah dan topik, bukan log mentah atau pertanyaan yang diketik pengunjung."
         },
         {
           "en": "A merge to main triggers the deploy workflow. It can reuse a green pull request on the same tree; otherwise it waits for complete CI on main. A red main CI run rolls production back to the last good deployment.",

@@ -35,12 +35,13 @@ describe("askExpectedEnabled", () => {
 });
 
 describe("statsCheck", () => {
-  const fresh = { ...STATS_FIXTURE, updatedAt: "2026-10-15T00:00:00.000Z" };
+  const fresh = { ...STATS_FIXTURE, updatedAt: "2026-10-15T08:17:00.000Z" };
   it("uses the site's delayed threshold", () => expect(STATS_MAX_AGE_MS).toBe(DELAYED_AFTER_MS));
+  it("allows 3 missed 2-hour runs", () => expect(STATS_MAX_AGE_MS).toBe(6 * 3_600_000));
   it("passes a fresh snapshot", () => expect(statsCheck({ code: 200, body: fresh }, NOW).ok).toBe(true));
   it("fails a stale snapshot", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: "2026-10-12T00:00:00.000Z" } }, NOW)).toMatchObject({ ok: false, detail: expect.stringContaining("old") }));
-  it("passes at exactly 12 h old", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS).toISOString() } }, NOW).ok).toBe(true));
-  it("fails at 12 h plus one minute", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS - 60_000).toISOString() } }, NOW).ok).toBe(false));
+  it("passes at exactly 6 h old", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS).toISOString() } }, NOW).ok).toBe(true));
+  it("fails at 6 h plus one minute", () => expect(statsCheck({ code: 200, body: { ...fresh, updatedAt: new Date(NOW - STATS_MAX_AGE_MS - 60_000).toISOString() } }, NOW).ok).toBe(false));
   it("fails on 204", () => expect(statsCheck({ code: 204 }, NOW).ok).toBe(false));
   it("fails on an invalid body", () => expect(statsCheck({ code: 200, body: { v: 9 } }, NOW).ok).toBe(false));
 });
@@ -66,7 +67,7 @@ const healthy = () => ({
   "pages.dev/?": () => new Response(OG, { status: 200 }),
   "pages.dev/en?": () => new Response(OG, { status: 200 }),
   "/api/ask": () => Response.json({ enabled: true, asOf: "2026-10-15" }),
-  "/api/stats": () => Response.json({ ...STATS_FIXTURE, updatedAt: "2026-10-15T00:00:00.000Z" }),
+  "/api/stats": () => Response.json({ ...STATS_FIXTURE, updatedAt: "2026-10-15T08:17:00.000Z" }),
   "deploy.yml/runs": () => Response.json({ workflow_runs: [{ status: "completed", conclusion: "success", html_url: "u", created_at: "x" }] }),
 });
 const deps = (fetchImpl: typeof fetch): UptimeDeps => ({ fetch: fetchImpl, site: "https://kurniadi.pages.dev", repo: "o/r", token: "t", now: () => NOW });

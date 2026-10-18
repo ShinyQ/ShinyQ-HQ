@@ -1,6 +1,6 @@
 # hq-stats: public visit stats Cron Worker
 
-Job every 4 hours (`17 */4 * * *`, UTC: 17 minutes past 00, 04, 08, 12, 16 and 20 o'clock) behind the public visit stats
+Job every 2 hours (`17 */2 * * *`, UTC: 17 minutes past 00, 02, 04, 06, 08, 10, 12, 14, 16, 18, 20 and 22 o'clock) behind the public visit stats
 (Layer 1). It reads two sources with one read-only Account Analytics token, keeps one rollup per
 finalized UTC day, and writes the public snapshot (days so far, today included) that `GET /api/stats`
 (Pages Function, `functions/api/stats.ts`) serves.
@@ -51,17 +51,17 @@ flowchart LR
   those days changes, and older days stay without it (no data).
 - Run budget (routine run): 1 Web Analytics GraphQL request, 3 Analytics Engine SQL queries (asks,
   visits, perf; plus one perf backfill query at most), 2 KV reads (ledger and extra rows), and the snapshot write every run. The
-  ledger is written only when a day finalizes or perf is filled, so at most 2 KV writes per run and 12
-  a day.
+  ledger is written only when a day finalizes or perf is filled, so at most 2 KV writes per run and 24
+  a day (12 runs).
 
-Limits checked 2026-10-16:
+Limits checked 2026-10-19 (2-hour cadence):
 
 | Limit | Value | This Worker |
 |---|---|---|
-| GraphQL Analytics API | 300 queries per 5 minutes per user | 1 per run, 6 a day |
+| GraphQL Analytics API | 300 queries per 5 minutes per user | 1 per run, 12 a day |
 | Cron Triggers | several schedules per Worker | 1 schedule |
-| Workers KV (free plan) | 1,000 writes a day | at most 12 a day (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
-| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 queries per routine run (4 with a perf backfill), 18 to 24 a day |
+| Workers KV (free plan) | 1,000 writes a day | at most 24 a day, usually 13 (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
+| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 queries per routine run (4 with a perf backfill), 36 to 48 a day |
 
 ## Configuration
 
@@ -85,15 +85,15 @@ Workers Scripts Edit on the account.
   The token stays in the environment; the script never prints it.
 - Manual deploy (what runs today: `STATS_WORKER_DEPLOY=false` because the CI deploy token lacks Workers
   permissions; use the owner's wrangler login): from this folder, `bunx wrangler deploy` (this also
-  registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next 4-hour slot,
+  registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next 2-hour slot,
   `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
-- Rollout order for the 4-hour cadence: the uptime check allows a snapshot at most 12 h old, but the
-  previous daily Worker keeps running until it is redeployed, so merging first would fail the hourly check
-  from about 12:17 UTC on merge day. Deploy this Worker first (`bunx wrangler deploy`; safe because the
-  current site accepts the new snapshot, whose shape is unchanged), confirm a fresh `updatedAt` on
-  `/api/stats` (after the next 4-hour slot), then merge and deploy the site.
+- Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 6 h old
+  (3 missed 2-hour runs). Moving from 4 to 2 hours was safe in either order (a 4-hour Worker leaves the
+  snapshot at most about 4 h old); still redeploy this Worker right after the merge (`bunx wrangler deploy`)
+  and confirm `bunx wrangler triggers` or the dashboard shows `17 */2 * * *`. A slower cadence needs the
+  Worker first or a larger threshold.
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine
   SQL API with the existing `WA_TOKEN`, and `scripts/stats-token-check.ts` already checks that it can

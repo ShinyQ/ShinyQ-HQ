@@ -15,8 +15,8 @@ export const TOPIC_FILTERS: readonly TopicFilter[] = ["all", "work", "ai", "care
 export const PERIODS: readonly StatsPeriod[] = ["d30", "all"];
 
 const HOUR = 3_600_000;
-/** After this the stats show a "delayed" note (the snapshot refreshes every 4 hours). */
-export const DELAYED_AFTER_MS = 12 * HOUR;
+/** After this the stats show a "delayed" note (the snapshot refreshes every 2 hours, so 3 missed runs). */
+export const DELAYED_AFTER_MS = 6 * HOUR;
 /** After this every surface hides the stats. */
 export const HIDDEN_AFTER_MS = 7 * 24 * HOUR;
 

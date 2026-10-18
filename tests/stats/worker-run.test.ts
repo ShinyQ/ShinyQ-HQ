@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { parseStatsSnapshot, STATS_KEY } from "@/lib/stats/protocol";
 import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, runStats, WA_EXTRA_KEY } from "../../workers/stats/src/run";
@@ -172,7 +173,7 @@ describe("hq-stats run", () => {
     expect(finalizedThrough(Date.parse("2026-11-16T04:00:00Z"))).toBe("2026-11-15");
   });
 
-  it("includes today so far in the snapshot every 4 hours without storing it", async () => {
+  it("includes today so far in the snapshot on every run without storing it", async () => {
     const e = env();
     await runStats(e, AT("2026-11-16"), fakeApi({ wa: { "2026-11-15": { count: 10, visits: 4 } } }).fetcher, () => {});
     const before = e.STATS_KV.store.get(LEDGER_KEY);
@@ -461,10 +462,17 @@ describe("hq-stats run", () => {
     const e = env();
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher(String(input), init));
     try {
-      await worker.scheduled({ cron: "17 */4 * * *", scheduledTime: AT("2026-10-14") }, e);
+      await worker.scheduled({ cron: "17 */2 * * *", scheduledTime: AT("2026-10-14") }, e);
     } finally {
       spy.mockRestore();
     }
     expect(snapshotOf(e)!.updatedAt).toBe("2026-10-14T01:00:00.000Z");
+  });
+});
+
+describe("hq-stats schedule", () => {
+  it("runs every 2 hours, 17 minutes past the hour (owner decision 2026-10-19)", () => {
+    const toml = readFileSync("workers/stats/wrangler.toml", "utf8");
+    expect(toml).toMatch(/^crons = \["17 \*\/2 \* \* \*"\]$/m);
   });
 });
