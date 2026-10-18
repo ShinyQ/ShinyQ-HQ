@@ -21,8 +21,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 467.8 KB, about 2.2 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 444.1 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 468.3 KB, about 1.7 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 446.4 KB (measured 444.6 KB, about 1.8 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -36,6 +36,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction (was 11, plus 4 route chunks). See [page-view.md](page-view.md#navigation).
+
+Layout islands load their heavy parts on first use ([hud-and-drawer.md](hud-and-drawer.md#opening-overlays-and-modals)): the command palette with its search and the Rover menu are lazy chunks (about 5.4 KB and 2.4 KB gzip), and the audio engine (`engine.ts`, `synth.ts`, `music.ts`, about 3.8 KB gzip) loads only when the 3D view needs sound (`src/lib/audio/singleton.ts`, see `src/lib/audio/README.md`), so the Page View never downloads it and the 3D gate's no-interaction session does not either. The HUD index loads on open or at idle, and `GET /api/ask` once per tab session at most for the entry points ([ask.md](ask.md#availability)).
+
+- next-intl `experimental.messages.precompile` was tried and not kept: it compiles every import of `messages/*.json`, and server modules read those as raw strings (`hud/index-data.ts`, `seo.ts`, `og-cards.ts`, `jsonld.ts`, the Ask pack and others), so the export fails. It would drop the ICU parser chunk (about 12 KB gzip on every Classic page) once those modules read raw messages another way.
 
 JetBrains Mono (`jetbrains` in `src/app/fonts.ts`) stays preloaded with Inter and Archivo: it paints in the first viewport of every page.
 
@@ -69,8 +73,9 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 470 KB: measured 467.8 KB, about 2.2 KB of headroom.
-  - lite 446.4 KB: measured 444.1 KB, about 2.3 KB of headroom.
+  - full 470 KB: measured 468.3 KB, about 1.7 KB of headroom.
+  - lite 446.4 KB: measured 444.6 KB, about 1.8 KB of headroom.
+  - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 
