@@ -26,6 +26,7 @@ import { audio, useAudio } from "@/lib/audio";
 | `setAmbience` | `(on: boolean) => void` | Persists `localStorage["hq:ambience"]` (`"off"` disables, missing is on). Off fades the floor ambience out over `AMBIENCE_CROSSFADE` and stops it; on starts it when audible and a floor is set. While on with a floor set, the floor layer replaces the music (2 s crossfade); off crossfades back to the music (when the music toggle is on). |
 | `setFloor` | `(floor: AmbienceFloor \| null) => void` | The floor the ambience follows (`"L1"` to `"RF"`, and `"B1"`). Crossfades while sounding, is remembered while silent, `null` fades out and hands back to the music. `Experience` reports the store floor on mount and on every change, and on unmount pauses first, then reports `null`. |
 | `ambienceFloor` | `() => AmbienceFloor \| null` | The remembered floor (a probe). |
+| `playCounts` | `() => Readonly<Partial<Record<SoundName, number>>>` | How many times `play` was called per one-shot (a copy; counted before the mute and effects checks, so tests see calls while muted). A probe for tests, read through `window.__hq.audio().played`. |
 | `subscribe` | `(listener: () => void) => () => void` | Called on mute and setting changes. Shaped for `useSyncExternalStore`. |
 | `dispose` | `() => void` | Removes document listeners and closes the context. |
 | `useAudio` | `(engine?: AudioEngine) => { muted, setMuted, toggleMuted, play, setRumble }` | Client hook. Server render and hydration report `muted: true`. |
