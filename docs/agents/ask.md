@@ -8,6 +8,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - Visible name (owner decision): the chat panel is **Ask Rover Assistant** (ID **Asisten Rover**) and answers are labelled "Rover"; the floating launcher stays **Ask AI**. The `>_` terminal is the Rover menu, a separate feature (see [hud-and-drawer.md](hud-and-drawer.md#rover-menu-name)).
 - The internal name **Ask the HQ** stays in code, the Pages Function, workflows, scripts, the runbook and the design spec; so do `/api/ask` and the `hq:ask-*` keys.
+- Rover is also the small robot guide in the 3D tower. Distinguish that character from the separate chat panel when describing the site.
 
 ## Design and operations
 
@@ -26,6 +27,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   - keeps only links to the retrieved chunks' pages (context lines carry `[link: <url>]`), the top pages (`ASK_LINK_PAGES`) and, for older cached answers, the public repository;
   - scans the markdown (URLs included) and its plain text for blocked terms, forbidden patterns and secrets;
   - runs every other check on `markdownToPlain`.
+- Prompt guidance preserves each metric's population, sample size and evaluation conditions. Deployment alone is not evidence of a production measurement, and results from different evaluations are not a single trend.
+- The concise reply limit is five list items across the whole answer. Refusals do not repeat requests for personal details; project inquiries use the contact card. These are prompt instructions, not new runtime filters.
 
 ## Bindings, vars and secrets
 

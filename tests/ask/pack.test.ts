@@ -45,6 +45,8 @@ describe("knowledge pack", () => {
 
   it("describes the current tutorial and both boost inputs, not the removed tour", () => {
     const site = getSiteBuild();
+    expect(site.text.en).toMatch(/\bRover is a small robot guide\b/);
+    expect(site.text.id).toMatch(/\bRover adalah robot pemandu kecil\b/);
     expect(site.text.en).not.toMatch(/\btour\b/i);
     expect(site.text.id).not.toMatch(/\btur\b/i);
     expect(site.text.en).toMatch(/Shift[^.]*double-tap/i);
