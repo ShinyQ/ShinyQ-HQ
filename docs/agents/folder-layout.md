@@ -227,7 +227,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 #### Floor chunks
 
 - `src/experience/floors/floorChunks.ts`: pure, no React.
-  - `LAZY_FLOORS` (L3, L4, RF), `createFloorChunks` (state machine eager/idle/loading/ready/failed; failed counts as settled, a later load retries).
+  - `LAZY_FLOORS` (L3, L4, RF, B1) and `PUBLIC_LAZY_FLOORS` (L3, L4, RF), `createFloorChunks` (state machine eager/idle/loading/ready/failed; failed counts as settled, a later load retries).
   - The app instance `floorChunks`, `speculativePrefetchOn` (`?prefetch=off`), `rideChunkHold`, `floorChunksHandle` (`window.__hq.floorChunks`).
 - `src/experience/floors/chunks/`: one entry per lazy floor, the only importers of `Labs` / `Library` / `Roof` / `EngineRoom` and their floor-only HUD pieces.
   - `labs.ts` (L3: Labs, OpsBody, ReactorBody, HologramOverlay).

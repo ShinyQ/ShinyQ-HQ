@@ -33,6 +33,11 @@ export function floorRoute(floor: FloorId): string {
   return FLOOR_ROUTE[floor];
 }
 
+/** The floor a URL parses to for `floor`: floors sharing a route (B1 and L1 are both /{locale}) collapse to the first. */
+export function routeFloor(floor: FloorId): FloorId {
+  return (Object.keys(FLOOR_ROUTE) as FloorId[]).find((f) => FLOOR_ROUTE[f] === FLOOR_ROUTE[floor] && f !== "B1") ?? floor;
+}
+
 /** Parses a pathname plus query into HQ state, or null when it is not an HQ route. */
 export function parseHQUrl(pathname: string, search = ""): HQUrlState | null {
   const parts = pathname.replace(/\/+$/, "").split("/").filter(Boolean);

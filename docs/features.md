@@ -279,7 +279,7 @@ Route `/en/contact`. A walkable deck: a road from the elevator into a round plaz
 
 The basement under the Lobby: a workshop where each station explains one part of how this site was built. Its Classic counterpart is `/{locale}/build`; B1 has no route of its own (the URL stays `/{locale}`).
 
-- **Not yet for visitors.** Until the real unlock ships (PR 3) the floor is reachable only with the dev and test flag `?unlock=b1` (in production `?unlock=b1&debug=1`); without it nothing of B1 shows, loads or rides.
+- **Not yet for visitors.** For now the floor is reachable only with the dev and test flag `?unlock=b1` (in production `?unlock=b1&debug=1`); without it nothing of B1 shows, loads or rides.
 - **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
 - **Stations 1 to 5** (blueprint, build timeline, agent workbench, CI and gates, live dashboard) each open the Glass Drawer with the diagram, rounds, gate list, plan excerpt or numbers from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section. Bays 6 and 7 stay dark with a "Coming soon" plate.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum under the music.

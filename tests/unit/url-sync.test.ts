@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { floorRoute, parseHQUrl, serializeHQUrl, type HQUrlState } from "@/lib/url-sync";
+import { floorRoute, parseHQUrl, routeFloor, serializeHQUrl, type HQUrlState } from "@/lib/url-sync";
 
 describe("parseHQUrl", () => {
   it("parses floor routes", () => {
@@ -67,5 +67,12 @@ describe("serializeHQUrl", () => {
 
   it("exposes floor routes", () => {
     expect(floorRoute("L3")).toBe("/labs");
+  });
+
+  it("maps a floor to the floor its route parses to", () => {
+    expect(routeFloor("B1")).toBe("L1");
+    expect(routeFloor("L1")).toBe("L1");
+    expect(routeFloor("L3")).toBe("L3");
+    expect(parseHQUrl("/en")?.floor).toBe(routeFloor("B1"));
   });
 });

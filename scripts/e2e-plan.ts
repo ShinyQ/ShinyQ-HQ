@@ -87,7 +87,7 @@ export const RULES: Rule[] = [
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks): never part of the export.
   {
-    test: /^scripts\/(arrival-shots|ask-eval|b1-shots|ask-staleness|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
     specs: [],
   },
   // Build-time scans of the export: the script policy and the deploy rules.
@@ -328,7 +328,7 @@ export function specSeconds(durations: Durations | null | undefined, spec: strin
  */
 const ALSO_RULES: Rule[] = [
   {
-    test: /^src\/lib\/(floors\.ts|audio\/(engine|ambience)\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/hud\/dialog\/engine\.ts$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["engine-room"],
   },
 ];

@@ -40,16 +40,17 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Access
 
-- B1 is reachable only when the store's `b1Unlocked` is set (not persisted). In this PR the only way is the dev and test flag `?unlock=b1` (`src/experience/b1.ts`, applied by `Experience.startSession`): in a dev build, and in production only with `debug`, so `?unlock=b1&debug=1`.
-- Locked sessions show nothing of B1: no elevator or picker row, no Cmd-K entry, no tower floor, no chunk or drawer data request, and the store refuses a ride to it (`canEnterFloor`). A language-switch resume to B1 is dropped without the flag.
-- B1 has no route of its own: its URL stays `/{locale}`.
+- B1 is reachable only when the store's `b1Unlocked` is set (not persisted). For now the only way is the dev and test flag `?unlock=b1` (`src/experience/b1.ts`, applied by `Experience.startSession`): in a dev build, and in production only with `debug`, so `?unlock=b1&debug=1`.
+- Locked sessions show nothing of B1 and load none of it: no elevator or picker row, no Cmd-K entry, no tower floor, no chunk or drawer data request, and the store refuses a ride to it (`canEnterFloor`). A language-switch resume to B1 is dropped without the flag.
+- Locked sessions load no B1 chunk and no B1 drawer data, and mount no B1 DOM or scene objects. The bay titles (`ExperienceData.engine`, about 0.4 KB) and the B1 UI strings ride in the page data and client messages, and the main 3D path grew about 0.9 KB (layout, hum layer, store).
+- B1 has no route of its own: its URL stays `/{locale}`, and station drawers are remembered in the history entry. Browser Back closes an open station drawer (the popstate handler compares route floors with `routeFloor`, B1 being L1's `/{locale}`, not floor ids).
 
 ## Draw calls
 
 - Scene calls: the road kit, one merged mesh and its edges, two instanced holo draws and the floating sign pair.
 - Settled on B1: 45 scene calls and 8,100 triangles on lite, 48 and 9,015 on full, with 43 and 62 shader programs (`e2e/perf/baseline.json`).
 - `FLOOR_SCENE_CAPS.B1` caps it at 100; the worst ride to B1 draws up to 110 scene calls and 127 whole-frame calls (budget 150) and about 22k triangles at most.
-- The B1 chunk (EngineRoom, EngineBody) is 4.8 KB gzip (cap 16 KB).
+- The B1 chunk (EngineRoom, EngineBody) is 4.8 KB gzip (cap 16 KB). The cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
 
 ## Sky and sound
 

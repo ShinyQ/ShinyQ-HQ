@@ -1,6 +1,6 @@
 import type { FloorId, Locale, RoomId } from "@/content/schema";
 import { canonicalRoom } from "@/experience/missions/roomAliases";
-import { parseHQUrl, serializeHQUrl, type HQView } from "@/lib/url-sync";
+import { parseHQUrl, routeFloor, serializeHQUrl, type HQView } from "@/lib/url-sync";
 
 /** Minimal store surface (the real zustand store satisfies it). */
 export interface RoomUrlStore {
@@ -112,7 +112,7 @@ export function createRoomUrlSync({
     const parsed = parseHQUrl(env.location.pathname, env.location.search);
     const s = store.getState();
     if (!parsed) return;
-    if (parsed.floor !== (isReady(s.floor) ? s.floor : "L1")) {
+    if (parsed.floor !== routeFloor(isReady(s.floor) ? s.floor : "L1")) {
       // History from another floor: keep the URL on the floor the rover is on.
       resync();
       return;

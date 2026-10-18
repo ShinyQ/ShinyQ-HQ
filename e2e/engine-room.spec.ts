@@ -283,6 +283,35 @@ test.describe("the floor", () => {
     await waitForRoom(page, `B1:${target.id.split(":").at(-1)}`);
   });
 
+  test("browser Back closes an open station drawer on B1, as it does on a public floor", async ({ page }) => {
+    const open = (room: string) => page.evaluate((r) => (window as unknown as Probe).__hq.store.getState().openRoom(r), room);
+    const closed = () =>
+      page.waitForFunction(
+        () => {
+          const s = (window as unknown as Probe).__hq.store.getState() as unknown as { activeRoom: string | null; phase: string };
+          return s.activeRoom === null && s.phase === "explore";
+        },
+        undefined,
+        { timeout: 30_000 },
+      );
+    await enterB1Route(page);
+    // Control: the Lobby station closes on Back and the page stays on /en.
+    await open("L1:skills");
+    await waitForRoom(page, "L1:skills");
+    await page.goBack();
+    await closed();
+    expect(new URL(page.url()).pathname).toBe("/en");
+    await rideTo(page, "B1");
+    await open("B1:timeline");
+    await waitForRoom(page, "B1:timeline");
+    expect(new URL(page.url()).pathname).toBe("/en");
+    await page.goBack();
+    await closed();
+    expect((await snapshot(page)).floor).toBe("B1");
+    expect(new URL(page.url()).pathname).toBe("/en");
+    await expect(page.getByTestId("room-drawer")).toHaveCount(0);
+  });
+
   test("rides from the roof down to B1 and back up to the Lobby", async ({ page }) => {
     const errors = collectErrors(page);
     await enterB1Route(page);

@@ -300,8 +300,8 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - `floorY(id)` is `(floorIndex(id) - floorIndex("L1")) * FLOOR_GAP`, so L1 stays at y 0, every public floor keeps its height and B1 sits one gap below (y -14); ride time by index distance stays correct.
   - `PUBLIC_FLOORS` (`src/lib/floors.ts`, L1 to RF) is the list visitors tour: visit tracking, floor lines, missions, OG stills, picker thumbnails and the build dashboard never include B1.
   - `towerFloors(b1Unlocked)` is what the tower draws and the elevator serves (`PUBLIC_FLOORS`, plus B1 once unlocked); `shaftSpan(floors)` sizes the glass shaft (the old box while locked) and `ElevatorShaft` draws a stop label per drawn floor.
-- The store's `b1Unlocked` / `unlockB1()` gate the floor (not persisted in this PR; `?unlock=b1`, in production with `debug`: [B1 access](floor-b1-engine-room.md#access)). The elevator, deep links and a language-switch resume go through `canEnterFloor` (`src/experience/b1.ts`).
-- Locked sessions mount nothing of B1: no floor content, no chunk request, no drawer data.
+- The store's `b1Unlocked` / `unlockB1()` gate the floor (not persisted; for now only `?unlock=b1`, in production with `debug`: [B1 access](floor-b1-engine-room.md#access)). The elevator, deep links and a language-switch resume go through `canEnterFloor` (`src/experience/b1.ts`).
+- Locked sessions load no B1 chunk and no B1 drawer data, and mount no B1 DOM or scene objects. The bay titles (`ExperienceData.engine`, about 0.4 KB) and the B1 UI strings ride in the page data and client messages, and the main 3D path grew about 0.9 KB (layout, hum layer, store).
 - Below the Lobby there is no sky: while `underground(roverRuntime.y)` (y below `UNDERGROUND_BELOW`, -0.5) `SkyController` hides the sky group and holds night (probe `__hq.sky.underground`, see "Day and night").
 
 ### What mounts and draws

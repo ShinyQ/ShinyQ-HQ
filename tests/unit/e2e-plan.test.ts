@@ -69,8 +69,6 @@ describe("specsForChanges", () => {
       "src/hud/drawer/data-path.ts",
       "src/hud/drawer/bodies.tsx",
       "src/hud/drawer/DrawerHost.tsx",
-      "src/hud/dialog/engine.ts",
-      "src/lib/audio/engine.ts",
       "src/lib/audio/ambience.ts",
       "src/experience/tower/ElevatorShaft.tsx",
       "src/experience/tower/Tower.tsx",
@@ -111,7 +109,7 @@ describe("specsForChanges", () => {
   });
 
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
-    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "engine-room", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/dialog/FloorIntroLayer.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);

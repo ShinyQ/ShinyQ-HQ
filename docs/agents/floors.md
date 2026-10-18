@@ -28,7 +28,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - `arrivalOnly`: active only once an arrival or a deep-link spawn primed it, so driving back through never swings the camera;
   - the L2 zone adds `railYaw` (the rail camera due west of the rover, looking down the Career Road).
 - Zooms are the widest view whose camera stays east of the elevator shaft: constants per floor (`LOBBY.arrivalZoom` and `arrivalZoomPhone` on L1 (`src/experience/config.ts`), `CAREER_ROAD.arrivalZoom` on L2, the newsroom concept's `arrivalZoom` on L4, `ROOF_DECK.arrivalZoom` on RF, `ENGINE.arrivalZoom` on B1), capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
-- Deep links spawn on the arrival point on L3, L4, RF and B1 (`spawn`). L1 keeps the kiosk spawn and L2 the approach.
+- Deep links spawn on the arrival point on L3, L4 and RF (`spawn`); B1 has no route or deep link, so only arrivals (rides) put the rover there. L1 keeps the kiosk spawn and L2 the approach.
 
 ## Doors
 
