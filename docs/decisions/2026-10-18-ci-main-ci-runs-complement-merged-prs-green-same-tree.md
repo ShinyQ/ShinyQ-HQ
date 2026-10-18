@@ -1,0 +1,5 @@
+# CI
+
+- Date: 2026-10-18
+
+Main CI runs the complement of the merged PR's green same-tree run (owner decision; part 1 of `docs/superpowers/plans/2026-10-18-ci-main-complement.md`). Every CI run uploads a `ci-plan` record of what it covered; a push to `main` whose merged PR head has the merged tree and a green `pull_request` run with a readable record runs only the e2e specs, perf gates and Lighthouse URLs that run did not, and still uploads `ci-full`, since the two runs together cover everything; it merges the PR run's perf and Lighthouse reports so the baselines stay complete. No such run (another tree, no green run, no record, any error): a full run as before. Dispatches and the nightly stay full; the `complement_pr` dispatch input measures one. Before: the last four merges took 12.7 to 14.4 min wall and 118 to 137 runner-min on `main`; on run 39116733269, 8 e2e shards took 81 min, 4 perf shards 42 min and Lighthouse 8 min. Expected for a #210-like merge: about 95 runner-min and about 12 min wall, bounded by `memory-full` (a single 9.6 min test).
