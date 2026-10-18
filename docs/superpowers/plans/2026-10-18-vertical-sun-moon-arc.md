@@ -14,9 +14,10 @@ Status: in review, 2026-10-18 (owner request).
 
 - Owner request (verbatim): "the sun and moon for day cycle should be rotating from up to down not right to the left".
 - No em dashes (U+2014) anywhere: code, comments, docs, commit messages, PR text.
-- Keep `skyState` colors, `CYCLE_MS`, `SKY_PHASES`, fog, lights and bloom exactly as they are; only the orb directions (and so the dome's sun glow direction, `uSun`) change.
+- Owner addition (verbatim, relayed by the coordinator): "i think the orbit need to be reduce to 3-5 munites since not lots person stay into 10 munites". `CYCLE_MS` becomes 4 minutes (240,000 ms); transitions stay smooth (the sky is re-applied every frame the phase moves).
+- Keep `skyState` colors, `SKY_PHASES`, fog, lights and bloom exactly as they are; only the orb directions (and so the dome's sun glow direction, `uSun`) and the cycle length change.
 - `SKY.horizon` stays -0.6; the orb horizon fade in `applySky.ts` (`smoothstep(horizon - 0.06, horizon + 0.03, elevation)`) stays.
-- Starting values: `rise` 0.2 rad, `width` 0.06 rad, azimuth desktop 0, tablet -0.85, mobile -0.85 (tune from captures; tests read the constants, not literals).
+- Starting values: `rise` 0.2 rad, `width` 0.06 rad, azimuth desktop 0, tablet -0.85, mobile -0.85 (tune from captures; tests read the constants, not literals). Desktop captures after Task 1 put the midday sun under the profile card, so Task 2 sets `rise` 0.16 and desktop azimuth -0.2 (midday sun in the open sky between the profile card and the Visitor Observatory).
 - Azimuth convention: `dir = (sin az * cos e, sin e, cos az * cos e)`, az 0 is +z; increasing azimuth is to the camera's left.
 - The frame loop allocates nothing (`writeOrb` writes into the passed `Vector3`).
 - No new shader program, no new draw call, no change to `e2e/budgets.ts` or `e2e/perf/baseline.json`.
@@ -191,11 +192,19 @@ git commit -m "feat(sky): sun and moon ride a vertical arc facing the camera"
 In `e2e/daynight.spec.ts`, add `azimuth: number;` to `SkyRead`, read it in `readSky` (`const { phase, day, stars, still, source, fog, applied, azimuth } = ...; return { phase, day, stars, still, source, fog, applied, azimuth };`), and in the test "?sky=night and ?sky=day pin the phase ..." after `expect(day.fog, ...)` add:
 
 ```ts
-  // The desktop project's camera class puts the sun and moon arc at azimuth 0 (`SKY.azimuth.desktop`).
-  expect(day.azimuth).toBe(0);
+  // The desktop project's camera class puts the sun and moon arc at `SKY.azimuth.desktop` (-0.2).
+  expect(day.azimuth).toBe(-0.2);
 ```
 
-- [ ] **Step 2: Implement the runtime field and the controller wiring**
+- [ ] **Step 2: Implement the tuned values, the runtime field and the controller wiring**
+
+In `src/experience/sky/dayNight.ts` change the constant to:
+
+```ts
+export const SKY = { horizon: -0.6, rise: 0.16, width: 0.06, azimuth: { desktop: -0.2, tablet: -0.85, mobile: -0.85 } } as const;
+```
+
+and in its comment replace "Desktop: azimuth 0 (+z), the open void on the left of the L1 view (the camera looks along about -0.38 rad there)" with "Desktop: azimuth -0.2, the open sky on the left of the L1 view between the profile card and the Visitor Observatory (the camera looks along about -0.38 rad there)". Run `bunx vitest run tests/unit/day-night.test.ts tests/unit/sky-apply.test.ts` (the tests read the constants, so they still pass).
 
 In `src/experience/sky/skyRuntime.ts` add after `fog`:
 
@@ -227,7 +236,7 @@ In `src/experience/sky/SkyController.tsx`:
 
 ```md
 - Geometry: the sky is a dome whose horizon sits at `SKY.horizon` (-0.6 rad), because the follow cameras look 44 to 47 degrees down.
-  - The sun and the moon ride one tall, narrow ellipse on the sky sphere, opposite each other, so they move up and down (owner decision 2026-10-18): centered on the horizon at `SKY.azimuth` for the camera class (`skyAzimuth(device.camera)`: desktop 0, the open void on the left of the L1 view; tablet and phone -0.85, the open sky at the top left of the L1 portrait view), climbing `SKY.rise` (0.2 rad) above it and swinging `SKY.width` (0.06 rad) sideways where they cross it.
+  - The sun and the moon ride one tall, narrow ellipse on the sky sphere, opposite each other, so they move up and down (owner decision 2026-10-18): centered on the horizon at `SKY.azimuth` for the camera class (`skyAzimuth(device.camera)`: desktop -0.2, the open sky on the left of the L1 view between the profile card and the Visitor Observatory; tablet and phone -0.85, the open sky at the top left of the L1 portrait view), climbing `SKY.rise` (0.16 rad) above it and swinging `SKY.width` (0.06 rad) sideways where they cross it.
   - The sun rises on the left at dawn, tops out at midday, sinks straight down on the right at dusk and stays below the horizon at night; the moon does the same half a cycle later. `SkyController` re-applies the sky when the camera class changes. The dome's sun glow follows the sun direction.
 ```
 
@@ -242,7 +251,7 @@ In the probe bullet, change `` `{ phase, day, stars, still, source, fog, applied
 `docs/decisions.md`: add a row at the end of the table (same columns as the rows above it):
 
 ```md
-| 2026-10-18 | 3D | Owner request: "the sun and moon for day cycle should be rotating from up to down not right to the left". The sun and the moon now ride one tall, narrow ellipse centered on the dome horizon and facing the default camera (rise 0.2 rad, width 0.06 rad; azimuth 0 on desktop, -0.85 on tablets and phones), so they rise, climb and sink vertically, the sun rising on the left and setting on the right and the moon opposite. Timing, colors, fog, lights and bloom are unchanged; B1 still holds night with no sky. Supersedes the shallow arc around the tower of the Round 8 K day and night. |  |
+| 2026-10-18 | 3D | Owner request: "the sun and moon for day cycle should be rotating from up to down not right to the left". The sun and the moon now ride one tall, narrow ellipse centered on the dome horizon and facing the default camera (rise 0.16 rad, width 0.06 rad; azimuth -0.2 on desktop, -0.85 on tablets and phones), so they rise, climb and sink vertically, the sun rising on the left and setting on the right and the moon opposite. Colors, fog, lights and bloom are unchanged; B1 still holds night with no sky. Supersedes the shallow arc around the tower of the Round 8 K day and night. |  |
 ```
 
 - [ ] **Step 4: Verify**
@@ -256,7 +265,72 @@ git add src/experience/sky e2e/daynight.spec.ts docs/agents/3d-experience.md doc
 git commit -m "feat(sky): place the sun and moon arc per camera class"
 ```
 
-### Task 3: Capture tooling
+### Task 3: A 4 minute day and night cycle
+
+**Files:**
+- Modify: `src/experience/sky/dayNight.ts` (`CYCLE_MS` and its comment)
+- Modify: `tests/unit/day-night.test.ts` (the cycle test)
+- Modify: `e2e/daynight.spec.ts` (header comment, the `?sky=cycle` test title and its `cycle` constant)
+- Modify: `e2e/durations.json` (rename the key of that test, keep its value)
+- Modify: `messages/en.json`, `messages/id.json` (the day and night setting `hint`)
+- Modify: `README.md` (the Day and night highlight bullet), `docs/agents/3d-experience.md`, `docs/features.md`, `docs/decisions.md`
+
+**Interfaces:**
+- Consumes: nothing from earlier tasks.
+- Produces: `CYCLE_MS === 240_000`.
+
+- [ ] **Step 1: Write the failing test**
+
+In `tests/unit/day-night.test.ts` replace the first test with:
+
+```ts
+  it("runs a 4 minute cycle from clock time", () => {
+    expect(CYCLE_MS).toBe(240_000);
+    expect(clockPhase(0)).toBe(0);
+    expect(clockPhase(60_000)).toBeCloseTo(0.25);
+    expect(clockPhase(240_000 * 3 + 120_000)).toBeCloseTo(0.5);
+  });
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `bunx vitest run tests/unit/day-night.test.ts` (FAIL: `CYCLE_MS` is 480000).
+
+- [ ] **Step 3: Implement**
+
+In `src/experience/sky/dayNight.ts`:
+
+```ts
+/** One full day and night: 4 minutes, so a typical visit sees dawn, day, dusk and night (owner decision 2026-10-18; Round 8 K had 8). */
+export const CYCLE_MS = 4 * 60 * 1000;
+```
+
+In `e2e/daynight.spec.ts`: header comment "runs the 8 minute clock" becomes "runs the 4 minute clock"; the test title `"?sky=cycle follows the 8 minute wall clock"` becomes `"?sky=cycle follows the 4 minute wall clock"` and `const cycle = 8 * 60 * 1000;` becomes `const cycle = 4 * 60 * 1000;`. In `e2e/durations.json` rename the key `"daynight.spec.ts › ?sky=cycle follows the 8 minute wall clock"` to `"daynight.spec.ts › ?sky=cycle follows the 4 minute wall clock"` (same value).
+
+`messages/en.json` hint: `"A 4 minute sky cycle, the same for every visitor. Reduced motion keeps night unless this is on."`; `messages/id.json` hint: `"Siklus langit 4 menit, sama untuk setiap pengunjung. Gerakan dikurangi tetap malam kecuali ini aktif."`.
+
+Docs (replace "8 minute" / "8 minutes" / "8 min" with the 4 minute forms):
+- `README.md` line "**Day and night**: an 8 minute twilight ..." becomes "**Day and night**: a 4 minute twilight and neon night cycle from clock time, with a sun and moon that rise and set."
+- `docs/agents/3d-experience.md`: "The tower runs a 4 minute cycle from neon night to a deep twilight \"day\" (owner decisions 2026-10-17 and 2026-10-18)."; "`CYCLE_MS` is 4 minutes"; "`Date.now() % 4 min`".
+- `docs/features.md`: the status table row "cycles every 8 minutes" becomes "cycles every 4 minutes (2026-10-18; 8 at first)"; the section bullet "an 8 minute cycle driven by clock time (`Date.now() % 8 min`)" becomes "a 4 minute cycle driven by clock time (`Date.now() % 4 min`)".
+- `docs/decisions.md`: add a row after the vertical arc row:
+
+```md
+| 2026-10-18 | 3D | Owner request: "i think the orbit need to be reduce to 3-5 munites since not lots person stay into 10 munites". The day and night cycle (`CYCLE_MS`) goes from 8 to 4 minutes, so a typical visit sees dawn, day, dusk and night; the sky is still re-applied every frame the phase moves, so fog, lights and colors change smoothly. Supersedes the 8 minute cycle of Round 8 K (2026-10-17). |  |
+```
+
+- [ ] **Step 4: Verify**
+
+Run: `bunx vitest run tests/unit` (PASS, including the message key parity and em dash tests), `bun run typecheck`, then `bunx playwright test e2e/daynight.spec.ts -g "wall clock"` (PASS).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/experience/sky/dayNight.ts tests/unit/day-night.test.ts e2e/daynight.spec.ts e2e/durations.json messages/en.json messages/id.json README.md docs/agents/3d-experience.md docs/features.md docs/decisions.md
+git commit -m "feat(sky): a 4 minute day and night cycle"
+```
+
+### Task 4: Capture tooling
 
 **Files:**
 - Modify: `scripts/sky-shots.ts`
@@ -282,9 +356,9 @@ git add scripts/sky-shots.ts docs/agents/3d-experience.md
 git commit -m "chore(sky): sky-shots covers every floor and can render on the GPU"
 ```
 
-### Task 4: Captures, tuning and the pull request (controller)
+### Task 5: Captures, tuning and the pull request (controller)
 
-- [ ] Run a dev server (`bun run dev -- -p 3418`), capture main (before) and this branch (after): L1 at `night,dawn,0.4,day,0.6,dusk` on desktop and phone, every floor at `day,dusk`, B1 (`scripts/b1-shots.ts`). Build contact strips (PIL) in the session files folder, not in the repo.
+- [ ] Run a dev server (`bun run dev -- -p 3418`), capture main (before) and this branch (after): L1 at `night,dawn,0.4,day,0.6,dusk` on desktop and phone, every floor at `day,dusk`, B1 (`scripts/b1-shots.ts`), plus a short `?sky=cycle` sequence (one frame every few seconds) to show the 4 minute pace. Build contact strips (PIL) in the session files folder, not in the repo.
 - [ ] If an orb sits behind the HUD or geometry, tune `SKY.rise`, `SKY.width` or `SKY.azimuth` (tests read the constants), update the values in the docs and the decisions row, and re-capture.
 - [ ] `bun run verify:quick`, then `bun run e2e:changed`.
 - [ ] Wait for a free CI slot, push, open a ready-for-review PR (not merged), list this plan in `docs/superpowers/README.md` with its PR.
