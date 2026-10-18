@@ -71,7 +71,14 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 - `pv-wrap` container (1240 px), 12 columns from `lg`.
 - A 4-column sticky sidehead plus 8 columns of content (`SectionSplit`).
-- Ruled rows (`pv-rows`) instead of card grids.
+- Ruled rows (`pv-rows`) instead of card grids; counts and results are ruled facts too (the Work wing counts, the
+  case study Results ledger), never tiles.
+- Restraint (design refinement, spec `docs/superpowers/specs/2026-10-19-classic-design-refinement.md`):
+  - Dates and periods use `pv-date` (sentence case, tabular mono); `pv-data` capitals are for labels only.
+  - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
+    headline result is a `pv-result` block (value over label on a neutral hairline), pinned to the bottom.
+  - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
+  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`); the hero's headline and motto opt out.
 - Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
 
 ### Case study (`/labs/<slug>`)
@@ -103,13 +110,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 - `HomeHero` (`src/components/page/Hero.tsx`) starts with the owner portrait and the name.
 - Portrait: `Portrait` (`src/components/page/Portrait.tsx`):
-  - round, cyan ring and violet glow, 72/96/128 px
+  - round, cyan ring with one quiet cyan glow, 72/96/128 px
   - `loading="lazy"` with `fetchpriority="low"`, so it never loads under the boot cover (`content-visibility: hidden` keeps lazy images idle) and never becomes the LCP element
   - About shows it at 80/112 px beside its title
 - Name: no eyebrow, `.hx-name` up to 112 px.
 - Then the headline and the motto (`profile.subheadline`).
 - Then it composes:
-  - the CSS-only backdrop
+  - the CSS-only backdrop: a slow two-tone glow and a low, faint Neon Grid floor (no data packets, no glow on the name)
   - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
   - `AskHeroBar` (visible "Ask AI about my work" label) across the full width; no illustration beside the name (owner decision)
   - the `StatTicker` band
