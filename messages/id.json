@@ -444,7 +444,7 @@
       "language": { "label": "Bahasa", "en": "English", "id": "Bahasa Indonesia" },
       "motion": {
         "label": "Gerakan",
-        "hint": "Sistem mengikuti pengaturan perangkat. Dikurangi mengurangi animasi perjalanan dan kamera.",
+        "hint": "Sistem mengikuti pengaturan perangkat. Mode Dikurangi membatasi animasi perjalanan dan kamera.",
         "system": "Sistem",
         "full": "Penuh",
         "reduced": "Dikurangi"
