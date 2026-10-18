@@ -10,11 +10,14 @@ import * as dialog from "./store";
 import { useDialog } from "./store";
 
 const MOMENT = "b1-unlock";
+/** Re-offers per moment after a cancel, and how long the queue must stay idle first (a replayed tutorial queues its first line a tick after the cancel). */
+const MAX_RETRIES = 3;
+const IDLE_GRACE_MS = 300;
 
 /**
  * B1 Engine Room unlock (spec section 2): once the fifth public floor is reached (store `b1Moment`), a chime and
  * Rover's offer, "Take me there" (rides to B1) or "Later"; the elevator rows pulse meanwhile (FloorButtons). A
- * cancelled line (a tutorial replay) is offered again; a ride or the tour first waits. The chime plays once per
+ * cancelled line (a tutorial replay) is offered again, at most 3 times, once the dialog queue has been idle for a moment and the visitor is free, so it never queues ahead of the replayed tutorial; a ride or the tour first waits. The chime plays once per
  * moment, when the dialog is not paused. The moment is not persisted: a reload before the answer drops the offer
  * (the row stays lit and B1 is reachable from every picker, so nothing is lost). A locked visitor who followed
  * `/{locale}#B1` hears how to unlock it. Renders nothing. Strings live in the 3D-only `engine` namespace.
@@ -25,7 +28,11 @@ export function EngineUnlockLayer() {
   const free = useHQStore((s) => s.phase === "explore" && s.ride === null);
   const settled = useOnboardingSettled();
   const paused = useDialog((view) => view.paused);
+  const idle = useDialog((view) => view.id === null);
   const [retry, setRetry] = useState(0);
+  const [cancels, setCancels] = useState(0);
+  const cancelled = cancels > retry;
+  const retries = useRef(0);
   const chimed = useRef(false);
 
   useEffect(() => {
@@ -38,12 +45,23 @@ export function EngineUnlockLayer() {
   }, [t, settled]);
 
   useEffect(() => {
-    if (!moment) chimed.current = false;
-    else if (free && settled && !paused && !chimed.current) {
+    if (!moment) {
+      chimed.current = false;
+      retries.current = 0;
+    } else if (free && settled && !paused && !chimed.current) {
       chimed.current = true;
       audio.play("chime");
     }
   }, [moment, free, settled, paused]);
+
+  useEffect(() => {
+    if (!moment || !cancelled || !idle || !free || !settled) return;
+    const timer = window.setTimeout(() => {
+      if (dialog.dialog.busy()) return;
+      setRetry((n) => n + 1);
+    }, IDLE_GRACE_MS);
+    return () => window.clearTimeout(timer);
+  }, [moment, cancelled, idle, free, settled]);
 
   useEffect(() => {
     if (!moment || !free || !settled) return;
@@ -56,7 +74,10 @@ export function EngineUnlockLayer() {
       .then((result) => {
         if (!live) return;
         if (result.status === "cancelled") {
-          setRetry((n) => n + 1);
+          if (retries.current < MAX_RETRIES) {
+            retries.current += 1;
+            setCancels((n) => n + 1);
+          }
           return;
         }
         const s = getHQStore().getState();

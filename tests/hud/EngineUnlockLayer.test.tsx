@@ -111,16 +111,79 @@ describe("EngineUnlockLayer", () => {
   });
 
   it("offers the line again after a cancel (a tutorial replay) without chiming twice", async () => {
-    const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-    const say = vi
-      .spyOn(dialog, "say")
-      .mockResolvedValueOnce({ status: "cancelled", choice: null })
-      .mockReturnValue(new Promise(() => {}));
-    mount();
-    await act(async () => {});
-    expect(say).toHaveBeenCalledTimes(2);
-    expect(getHQStore().getState().b1Moment).toBe(true);
-    expect(play).toHaveBeenCalledTimes(1);
+    vi.useFakeTimers();
+    try {
+      const play = vi.spyOn(audio, "play").mockImplementation(() => {});
+      const say = vi
+        .spyOn(dialog, "say")
+        .mockResolvedValueOnce({ status: "cancelled", choice: null })
+        .mockReturnValue(new Promise(() => {}));
+      mount();
+      await act(async () => {});
+      expect(say).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(400);
+      });
+      expect(say).toHaveBeenCalledTimes(2);
+      expect(getHQStore().getState().b1Moment).toBe(true);
+      expect(play).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("speaks the offer only after a replayed tutorial line resolves", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(audio, "play").mockImplementation(() => {});
+      const spoken: string[] = [];
+      const realSay = dialog.say;
+      vi.spyOn(dialog, "say").mockImplementation((input, options) => {
+        spoken.push(options?.id ?? "?");
+        return realSay(input, options);
+      });
+      dialog.dialog.setInstant(true);
+      mount();
+      await act(async () => {});
+      expect(dialog.dialog.view.id).toBe("b1-unlock");
+      let tutorial: ReturnType<typeof dialog.say> | undefined;
+      await act(async () => {
+        dialog.cancelAllDialogs();
+        tutorial = realSay({ text: "Tutorial", choices: [{ id: "ok", label: "OK" }] }, { id: "tutorial" });
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(spoken).toEqual(["b1-unlock"]);
+      expect(dialog.dialog.view.id).toBe("tutorial");
+      await act(async () => {
+        dialog.dialog.choose("ok");
+        await tutorial;
+        await vi.advanceTimersByTimeAsync(400);
+      });
+      expect(spoken).toEqual(["b1-unlock", "b1-unlock"]);
+      expect(dialog.dialog.view.id).toBe("b1-unlock");
+    } finally {
+      dialog.cancelAllDialogs();
+      dialog.dialog.setInstant(false);
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops re-offering after three retries in one moment", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(audio, "play").mockImplementation(() => {});
+      const say = vi.spyOn(dialog, "say").mockResolvedValue({ status: "cancelled", choice: null });
+      mount();
+      for (let i = 0; i < 6; i += 1) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(400);
+        });
+      }
+      expect(say).toHaveBeenCalledTimes(4);
+      expect(getHQStore().getState().b1Moment).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("holds the locked line until the tour is settled", async () => {
