@@ -63,14 +63,15 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
   const hint = tEngine("locked", { seen, total: PUBLIC_FLOOR_COUNT });
   return floorRows(b1Unlocked).map(({ id, locked }) => {
     if (locked) {
-      // A locked row does nothing: no click, no hover or focus prefetch of the B1 chunk.
+      // A locked row does nothing: no click, no hover or focus prefetch of the B1 chunk. The hint shows as text on
+      // rail and sheet; as a title only where it is not visible.
       return (
         <button
           key={id}
           type="button"
           aria-disabled="true"
           aria-label={tEngine("lockedName", { floor: id, seen, total: PUBLIC_FLOOR_COUNT })}
-          title={hint}
+          title={variant === "rail" || sheet ? undefined : hint}
           data-floor={id}
           data-locked=""
           className={BUTTON[variant](false)}
