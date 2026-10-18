@@ -68,7 +68,7 @@ Code: `nav/pads.ts` (owner decision).
 
 - The Director runs the door latch over pads (`stepPadLatch`):
   - stop or slow on a pad, or stay `PAD.dwell` 0.6 s on a fast pass;
-  - primed on deep links, resumes and elevator arrivals, so a rover standing on a pad never opens it.
+  - primed on deep links, resumes, elevator arrivals and a beam's landing (on the jump frame, so a beam that also ends on that frame lands quietly), so a rover standing on a pad never opens it.
 - On trigger it sets `store.picker`: `{ kind: "floor" }` or `{ kind: "year", from }`.
 - Clicking a pad drives there through [point-and-go](#point-and-go), then opens the picker (at once when the rover already stands on it).
 - `PadPicker` (`src/hud/pads/`) lists, on the shared `Modal` with `sheet` (bottom sheet on phones):

@@ -326,6 +326,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       if (step.jump) {
         controller.teleport(beam.to, beam.heading);
         roverRuntime.cameraSnap = true;
+        // The pad it lands on stays quiet until the rover leaves it, also when the beam ends on the jump frame.
+        local.pad = primedPadLatch(layouts[s.floor].pads, beam.to);
       }
       // Progress stays in the motion clock; the store changes when the rover jumps and when the beam ends.
       if (step.beam && !step.jump) keepBeam(s.beam, step.beam);
