@@ -106,6 +106,8 @@ export interface AskEnv {
   ASK_BACKUP_MODELS?: string;
   ASK_ALLOWED_ORIGINS?: string;
   ASK_DAILY_CAP?: string;
+  /** Knowledge pack source: `kv` (default: pointer and value in ASK_KV) or `bundle` (the bundled fallback pack, no KV reads; for a KV incident). */
+  ASK_PACK_SOURCE?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET?: string;
   ASK_IP_SALT_SEED?: string;
