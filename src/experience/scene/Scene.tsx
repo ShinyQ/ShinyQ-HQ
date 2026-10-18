@@ -14,6 +14,7 @@ import { libraryLayoutInput } from "../floors/library/model";
 import { Rover } from "../rover/Rover";
 import { Tower, type TowerLabels } from "../tower/Tower";
 import { HintProbe } from "../hints/HintProbe";
+import { IntroVeil } from "../intro/IntroVeil";
 import { InteractLayer } from "../interact/InteractLayer";
 import type { InteractLabels } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
@@ -86,6 +87,7 @@ export const Scene = memo(function Scene({
       <TeleportBeam />
       <Director layouts={layouts} held={held} labels={labels.rover} onToggleLang={onToggleLang} />
       <CameraDirector held={held} railAxis={layouts.L2.road?.roads[0]?.points} layouts={layouts} />
+      <IntroVeil />
       <GlassClock />
       <QualityController tier={tier} coarse={coarse} gfx={gfx} />
       <ProgramWarmup tier={tier} />

@@ -35,6 +35,7 @@ import { continuationSteps, endContinuation, introTarget, isContinuing, setIntro
 import { onMissionState, register3DHost, runMissionSteps } from "./missions/bridge";
 import { create3DHost } from "./missions/host3d";
 import { useInputSources } from "./input/useInputSources";
+import { introRuntime } from "./intro/runtime";
 import { roverRuntime } from "./rover/runtime";
 import { interactRuntime } from "./interact/runtime";
 import { ridePrep } from "./tower/ridePrep";
@@ -176,6 +177,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
   (window as unknown as { __hq?: unknown }).__hq = {
     store,
     rover: roverRuntime,
+    // The 3D intro (wake and reveal orbit): timeline, reveal ring, Rover heading and face, veil, lit landmarks, skip.
+    intro: introRuntime,
     camera: () => [...roverRuntime.cameraPosition],
     layouts,
     interact: interactRuntime,

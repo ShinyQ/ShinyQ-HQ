@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { followPose, FOLLOW_LOOK_AHEAD, followForward } from "@/experience/camera/rigs";
-import { cubicBezierEase, FACE_Y, INTRO, introFace, introFog, introHeading, introPlan, introPose, revealRadius } from "@/experience/camera/intro";
+import { cubicBezierEase, decayVeil, FACE_Y, INTRO, introFace, introFog, introHeading, introPlan, introPose, reducedVeil, revealRadius, skipsIntro } from "@/experience/camera/intro";
 import { yawLooking } from "@/experience/camera/look";
 import { LOBBY, SHAFT } from "@/experience/config";
 import { OBSERVATORY_VIEW } from "@/experience/floors/lobby/observatoryLayout";
@@ -139,5 +139,38 @@ describe("intro timeline", () => {
     expect(ease(1)).toBe(1);
     expect(ease(0.5)).toBeCloseTo(0.5, 3);
     expect(ease(0.01)).toBeLessThan(0.01);
+  });
+});
+
+describe("intro skip and veil", () => {
+  it("drive, turn, zoom, reset view and Esc skip the intro, never the boot", () => {
+    for (const intent of ["move", "orbit", "zoom", "view", "cancel"]) {
+      expect(skipsIntro("intro", intent)).toBe(true);
+      expect(skipsIntro("boot", intent)).toBe(false);
+      expect(skipsIntro("explore", intent)).toBe(false);
+    }
+    for (const intent of ["interact", "elevator", "toggle", "palette", "scrub", "teleport", "open", "terminal"]) {
+      expect(skipsIntro("intro", intent)).toBe(false);
+    }
+  });
+
+  it("the reduced-motion veil clears linearly over INTRO.reduced", () => {
+    expect(reducedVeil(0)).toBe(1);
+    expect(reducedVeil(INTRO.reduced / 2)).toBeCloseTo(0.5, 6);
+    expect(reducedVeil(INTRO.reduced)).toBe(0);
+    expect(reducedVeil(INTRO.reduced + 1)).toBe(0);
+  });
+
+  it("the skip veil fades from full to 0 over INTRO.skipFade and stays at 0", () => {
+    let veil = 1;
+    const dt = 1 / 60;
+    let frames = 0;
+    while (veil > 0) {
+      veil = decayVeil(veil, dt);
+      frames++;
+    }
+    expect(frames).toBe(Math.ceil(INTRO.skipFade / dt - 1e-9));
+    expect(decayVeil(0, dt)).toBe(0);
+    expect(decayVeil(0.5, INTRO.skipFade / 2)).toBeCloseTo(0, 9);
   });
 });

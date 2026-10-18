@@ -177,3 +177,20 @@ export function introFog(camDistance: number, reveal: number, follow: { near: nu
   // Both edges ride the ring, so they reach the follow range before the ring turns off (no jump at revealEnd).
   return { near: Math.min(follow.near, camDistance + reveal + 1), far: Math.min(follow.far, camDistance + reveal + 13) };
 }
+
+/** Intents that skip the reveal orbit (drive, turn, zoom, reset view, Esc); the boot ignores them. */
+const SKIP_INTENTS: ReadonlySet<string> = new Set(["move", "orbit", "zoom", "view", "cancel"]);
+
+export function skipsIntro(phase: string, intent: string): boolean {
+  return phase === "intro" && SKIP_INTENTS.has(intent);
+}
+
+/** Reduced motion: the veil over the cut to the follow pose clears linearly over `INTRO.reduced`. */
+export function reducedVeil(t: number): number {
+  return Math.min(1, Math.max(0, 1 - t / INTRO.reduced));
+}
+
+/** After a skip (or the reduced-motion intro) the veil fades out over `INTRO.skipFade`. */
+export function decayVeil(veil: number, dt: number): number {
+  return Math.max(0, veil - dt / INTRO.skipFade);
+}

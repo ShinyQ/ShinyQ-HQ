@@ -217,7 +217,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           s.requestElevator(intent.to);
           break;
         case "cancel":
-          // Esc never skips the boot or the intro (owner decision); it stops elevator drives and scrub drives.
+          // Esc does nothing here in the boot or the intro (the camera's intro skip in CameraDirector handles Esc during
+          // the intro); otherwise it stops elevator drives and scrub drives.
           if (s.phase === "boot" || s.phase === "intro") break;
           // A beam (teleport, Return pad, into the car) always lands; Esc does not cut it short.
           if (s.beam) break;
