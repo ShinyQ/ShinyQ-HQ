@@ -60,7 +60,7 @@
     {
       "id": "work-banking",
       "topic": "work",
-      "q": { "en": "How did he build digital banking integrations?", "id": "Bagaimana dia membangun integrasi digital banking?" },
+      "q": { "en": "How did he build digital banking integrations?", "id": "Bagaimana dia membangun integrasi perbankan digital?" },
       "tags": ["work", "software"],
       "followUps": ["work-stack", "work-tickets", "ai-fraud"],
       "expect": ["project-digital-banking-integrations"]
@@ -76,7 +76,7 @@
     {
       "id": "work-stack",
       "topic": "work",
-      "q": { "en": "Which backend stack does he use most?", "id": "Stack backend apa yang paling sering dia pakai?" },
+      "q": { "en": "Which backend technologies does he list?", "id": "Teknologi backend apa saja yang dia cantumkan?" },
       "tags": ["skills", "software"],
       "followUps": ["work-best", "career-skills", "work-github"],
       "expect": ["skills-backend"]
@@ -140,7 +140,7 @@
     {
       "id": "ai-voice-latency",
       "topic": "ai",
-      "q": { "en": "What latency did the voice agent reach?", "id": "Berapa latency yang dicapai voice agent-nya?" },
+      "q": { "en": "What latency did the voice agent reach?", "id": "Berapa latensi yang dicapai voice agent-nya?" },
       "tags": ["ai", "voice"],
       "followUps": ["ai-voice-interrupt", "ai-fraud", "ai-llm-failures"],
       "expect": ["project-voice-ai-contact-center"]
@@ -293,7 +293,7 @@
     {
       "id": "career-skills",
       "topic": "career",
-      "q": { "en": "What are his strongest skills?", "id": "Apa keahlian terkuatnya?" },
+      "q": { "en": "What engineering skills does he list?", "id": "Keahlian engineering apa saja yang dia cantumkan?" },
       "tags": ["skills"],
       "followUps": ["work-stack", "career-certs", "ai-agents"],
       "expect": ["skills-*"]
@@ -397,7 +397,7 @@
     {
       "id": "contact-engagements",
       "topic": "contact",
-      "q": { "en": "What freelance engagements does he take?", "id": "Pekerjaan freelance seperti apa yang dia cari?" },
+      "q": { "en": "What freelance projects interest him?", "id": "Pekerjaan freelance seperti apa yang dia cari?" },
       "tags": ["contact", "career"],
       "followUps": ["contact-freelance", "contact-reach", "career-freelance"],
       "expect": ["perspective-freelance-engagements"]
@@ -429,7 +429,7 @@
     {
       "id": "persp-review",
       "topic": "perspectives",
-      "q": { "en": "What does he look for in code review?", "id": "Apa yang dia perhatikan saat code review?" },
+      "q": { "en": "What are his AI-agent code review principles?", "id": "Apa prinsipnya saat code review kode AI agent?" },
       "tags": ["perspectives", "agents"],
       "followUps": ["persp-agents", "persp-reliability", "work-security"],
       "expect": ["principles", "project-agent-orchestrated-delivery"]
@@ -461,7 +461,7 @@
     {
       "id": "persp-hype",
       "topic": "perspectives",
-      "q": { "en": "Which AI trends are overhyped?", "id": "Tren AI apa yang terlalu di-hype?" },
+      "q": { "en": "Which AI trends are overhyped?", "id": "Tren AI apa yang terlalu dibesar-besarkan?" },
       "tags": ["perspectives", "ai"],
       "followUps": ["persp-where-not-ai", "persp-replace"],
       "expect": ["perspective-ai-hype"]

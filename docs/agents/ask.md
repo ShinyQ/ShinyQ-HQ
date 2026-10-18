@@ -215,6 +215,7 @@ Spec section 13.
 - Questions about Kurniadi's written professional views are in scope: `isPerspectiveQuestion` in `functions/_lib/scope.ts` always retrieves the `principles` chunk.
 - The pack must stay under `PACK_MAX_BYTES` (256 KiB, measured and owner pre-approved, runbook section 15) with every draft approved.
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
+  - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
 - At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, so posts and projects still reach the context.
 - `tests/ask/scope.test.ts` checks retrieval with every draft approved.
 

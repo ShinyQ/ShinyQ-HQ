@@ -41,6 +41,16 @@ beforeAll(() => {
 const check = (answer: string, question = "What does he do?") =>
   checkAnswer({ answer, question, context: retrieve(pack, question, "en").context, packDate: pack.packDate, pack, vocabulary, safety });
 
+describe("fixed freelance guidance", () => {
+  it("uses ordinary Indonesian while retaining full-time work constraints", () => {
+    for (const message of [MESSAGES.lead, MESSAGES.leadRates]) {
+      expect(message.id).not.toMatch(/\bengagement\b/i);
+      expect(message.en).toMatch(/full-time/);
+      expect(message.id).toMatch(/penuh waktu/);
+    }
+  });
+});
+
 describe("PII scrubber (T10)", () => {
   it.each([
     ["mail me at jane.doe+x@example.co.id please", "mail me at [email] please"],

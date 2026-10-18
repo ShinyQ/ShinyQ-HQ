@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveFactVariants, resolveFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import type { DynamicFacts } from "@/content/dynamic-facts";
 import { scoreGolden, type GoldenItem } from "../../scripts/ask-eval";
+import golden from "./golden.json";
 
 const facts: DynamicFacts = {
   asOf: "2026-10-12",
@@ -10,6 +11,13 @@ const facts: DynamicFacts = {
 };
 
 describe("live-fact placeholders in the golden and red-team sets", () => {
+  it("scores the current latest technical post rather than older posts", () => {
+    const latest = golden.items.find((item) => item.id === "q20") as GoldenItem;
+    expect(latest.facts).toContain("2026-10-16");
+    expect(scoreGolden("The latest post explains Clearbox and Microsoft-Decision-1, published on 2026-10-16.", latest).pass).toBe(true);
+    expect(scoreGolden("The latest post is about voice agents and interruption latency.", latest).pass).toBe(false);
+  });
+
   it("resolves numbers to the site spelling and the plain form", () => {
     expect(resolveFacts("{{facts.github.contributionsLastYear}} contributions", facts)).toBe("7,542 contributions");
     expect(resolveFactVariants("{{facts.github.contributionsLastYear}}", facts)).toEqual(["7,542", "7542"]);

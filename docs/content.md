@@ -38,6 +38,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - Refresh the snapshot with `bun scripts/build-facts.ts --write` (needs a full git history; CI and deploy builds do this themselves, and local builds use the committed `content/generated/build-facts.json`).
 - Before and after captures live in `public/build-story/` (WebP, named `r<round>-before.webp` and `r<round>-after.webp`) and are referenced from the round's `shots` with alt text in both languages.
 - Ask the HQ keeps its own short note about the site in `content/ask/site-build.json`; it points visitors to this page.
+- Ask post chunks derive the latest-post discovery label from registry publication dates. Keep frontmatter and registry excerpts aligned, including sample limits that must survive the single-lead-paragraph knowledge window.
 
 ## Perspectives
 
