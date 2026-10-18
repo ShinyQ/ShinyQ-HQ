@@ -8,6 +8,7 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { DialogHost } from "@/components/DialogHost";
 import { getLibrary } from "@/content/load";
+import { previewCitations } from "@/content/citation";
 import { buildPaperPreview } from "@/content/papers";
 import type { Locale } from "@/content/schema";
 import { researchPublications } from "@/content/selectors";
@@ -102,17 +103,18 @@ describe("paper preview modal", () => {
     expect(within(dialog).getByTestId("paper-abstract")).toHaveAttribute("lang", "en");
     expect(dialog).toHaveTextContent("10 citations on Google Scholar");
 
-    expect(within(dialog).getByTestId("paper-citation")).toHaveTextContent(paper.citations.apa);
+    const citations = previewCitations(paper);
+    expect(within(dialog).getByTestId("paper-citation")).toHaveTextContent(citations.apa);
     await user.click(within(dialog).getByRole("button", { name: "Copy citation" }));
-    expect(writeText).toHaveBeenLastCalledWith(paper.citations.apa);
+    expect(writeText).toHaveBeenLastCalledWith(citations.apa);
     expect(await within(dialog).findByRole("status")).toHaveTextContent("Citation copied");
 
     await user.click(within(dialog).getByRole("button", { name: "BibTeX" }));
     expect(within(dialog).getByRole("button", { name: "BibTeX" })).toHaveAttribute("aria-pressed", "true");
     await user.click(within(dialog).getByRole("button", { name: "Copy citation" }));
-    expect(writeText).toHaveBeenLastCalledWith(paper.citations.bibtex);
+    expect(writeText).toHaveBeenLastCalledWith(citations.bibtex);
     await user.click(within(dialog).getByRole("button", { name: "IEEE" }));
-    expect(within(dialog).getByTestId("paper-citation")).toHaveTextContent(paper.citations.ieee);
+    expect(within(dialog).getByTestId("paper-citation")).toHaveTextContent(citations.ieee);
 
     const doi = within(dialog).getByRole("link", { name: /DOI 10\.1109\/icaibda53487\.2021\.9689712/ });
     expect(doi).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");

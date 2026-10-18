@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apaCitation, bibtexCitation, bibtexKey, entryType, ieeeCitation, scholarSearchUrl, splitName } from "@/content/citation";
+import { apaCitation, bibtexCitation, bibtexKey, citationsFor, entryType, ieeeCitation, previewCitations, scholarSearchUrl, splitName } from "@/content/citation";
 import { getLibrary, getProfile } from "@/content/load";
 import { buildPaperPreview } from "@/content/papers";
 import type { Publication } from "@/content/schema";
@@ -73,7 +73,9 @@ describe("paper previews", () => {
       expect(preview.abstract, pub.id).toBeTruthy();
       expect(preview.authors).toContain(self);
       expect(preview.scholar).toMatch(/^https:\/\/scholar\.google\.com\/scholar\?q=/);
-      for (const text of Object.values(preview.citations)) {
+      // The modal formats the same citations as the server would from the publication.
+      expect(previewCitations(preview)).toEqual(citationsFor(pub, self));
+      for (const text of Object.values(previewCitations(preview))) {
         expect(text).not.toMatch(/\u2014/);
         expect(text).toContain(pub.title.split(" ")[0]);
       }

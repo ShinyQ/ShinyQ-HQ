@@ -1,5 +1,5 @@
 import { createTranslator } from "next-intl";
-import { citationsFor, scholarSearchUrl, type PaperPreview } from "./citation";
+import { scholarSearchUrl, type PaperPreview } from "./citation";
 import { getLibrary, getProfile } from "./load";
 import type { Locale, Publication } from "./schema";
 import { publicationDate } from "./selectors";
@@ -42,6 +42,6 @@ export function buildPaperPreview(pub: Publication, locale: Locale): PaperPrevie
       pub.citations !== undefined && metrics
         ? t("citations", { count: pub.citations, source: metrics.source, date: formatYearMonth(metrics.asOf, locale) })
         : undefined,
-    citations: citationsFor(pub, self),
+    cite: { kind: pub.kind, ...(pub.pages ? { pages: pub.pages } : {}) },
   };
 }

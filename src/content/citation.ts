@@ -2,8 +2,8 @@ import type { Publication } from "./schema";
 
 /**
  * Paper preview modal data and citation formats. Pure and client-safe (type-only schema import):
- * the server builds a `PaperPreview` per paper (`buildPaperPreview` in `papers.ts`) and the modal
- * only renders it.
+ * the server builds a `PaperPreview` per paper (`buildPaperPreview` in `papers.ts`); the modal formats the
+ * citations itself (`previewCitations`), so the APA, IEEE and BibTeX text never repeats in a page's payload.
  */
 export interface PaperCitations {
   apa: string;
@@ -49,8 +49,12 @@ export interface PaperPreview {
   scholar: string;
   /** Localized citation count line with its source and date. */
   citationCount?: string;
-  citations: PaperCitations;
+  /** The two fields the citation formats need beyond the preview: the raw kind and the page range. */
+  cite: { kind: Publication["kind"]; pages?: string };
 }
+
+/** What the citation formats read from a publication. */
+export type CitationSource = Pick<Publication, "title" | "authors" | "kind" | "venue" | "publisher" | "year" | "pages" | "doi" | "url">;
 
 /** Google Scholar search URL for the exact title (no per-paper Scholar IDs in the dataset). */
 export function scholarSearchUrl(title: string): string {
@@ -98,7 +102,7 @@ const end = (text: string) => (/[.?!]$/.test(text) ? text : `${text}.`);
 const doiUrl = (doi: string) => `https://doi.org/${doi}`;
 
 /** APA 7 reference as plain text (titles kept in their published case). */
-export function apaCitation(pub: Publication, self: string): string {
+export function apaCitation(pub: CitationSource, self: string): string {
   const authors = pub.authors ?? [self];
   const names = joinList(authors.map(apaName), "&", true);
   const type = entryType(pub);
@@ -113,7 +117,7 @@ export function apaCitation(pub: Publication, self: string): string {
 }
 
 /** IEEE reference as plain text. */
-export function ieeeCitation(pub: Publication, self: string): string {
+export function ieeeCitation(pub: CitationSource, self: string): string {
   const authors = (pub.authors ?? [self]).map(ieeeName);
   const names = authors.length > 2 ? `${authors.slice(0, -1).join(", ")}, and ${authors[authors.length - 1]}` : authors.join(" and ");
   const type = entryType(pub);
@@ -128,7 +132,7 @@ export function ieeeCitation(pub: Publication, self: string): string {
 }
 
 /** Stable BibTeX key: first author's family name, year and first title word ("fattahila2021indonesian"). */
-export function bibtexKey(pub: Publication, self: string): string {
+export function bibtexKey(pub: CitationSource, self: string): string {
   const first = splitName((pub.authors ?? [self])[0]).family;
   const word = pub.title.split(/\s+/).find((w) => w.length > 3) ?? pub.title;
   const clean = (s: string) => s.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -138,7 +142,7 @@ export function bibtexKey(pub: Publication, self: string): string {
 const bibValue = (value: string) => `{${value.replace(/[{}]/g, "")}}`;
 
 /** BibTeX entry; acronyms in the title are braced so styles keep their case. */
-export function bibtexCitation(pub: Publication, self: string): string {
+export function bibtexCitation(pub: CitationSource, self: string): string {
   const type = entryType(pub);
   const title = pub.title.replace(/\b([A-Z][A-Za-z]*[A-Z][A-Za-z0-9-]*)\b/g, "{$1}");
   const fields: [string, string | undefined][] = [
@@ -159,6 +163,11 @@ export function bibtexCitation(pub: Publication, self: string): string {
   return `@${type}{${bibtexKey(pub, self)},\n${body.join(",\n")}\n}`;
 }
 
-export function citationsFor(pub: Publication, self: string): PaperCitations {
+export function citationsFor(pub: CitationSource, self: string): PaperCitations {
   return { apa: apaCitation(pub, self), ieee: ieeeCitation(pub, self), bibtex: bibtexCitation(pub, self) };
+}
+
+/** The citations of a preview, formatted on the client (the same text as `citationsFor` on the publication). */
+export function previewCitations(paper: PaperPreview): PaperCitations {
+  return citationsFor({ ...paper, kind: paper.cite.kind, pages: paper.cite.pages }, paper.self);
 }
