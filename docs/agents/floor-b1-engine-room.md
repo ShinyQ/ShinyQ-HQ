@@ -58,7 +58,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 ## Sky and sound
 
 - No sky underground: while `underground(roverY)` (rover y below `UNDERGROUND_BELOW`, -0.5) the sky group is hidden and the night state holds (`skyRuntime.underground`, `__hq.sky.underground`).
-- Ambience: a low machine hum layer (`AMBIENCE_LAYERS.B1` in `lib/audio/ambience.ts`: detuned sawtooth pairs on C2 and G2 under a lowpass, a band-passed noise bed and a soft relay tick every 3 to 6 s), crossfaded like the other floors.
+- Ambience: a low machine hum layer (`AMBIENCE_LAYERS.B1` in `lib/audio/ambience.ts`: detuned sawtooth pairs on C2 and G2 under a lowpass, a band-passed noise bed and a soft relay tick every 3 to 6 s), crossfaded like the other floors and, like them, replacing Deep Space Ambient while it plays. It sits about 6 dB under the other floor layers (owner, 2026-10-18): `B1_HUM_LEVEL = FLOOR_TONE_PEAK * B1_UNDER_FLOORS` (0.05 x 0.5), with the air bed and tick scaled with it.
 
 ## Tests and captures
 

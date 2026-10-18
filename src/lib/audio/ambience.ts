@@ -608,9 +608,17 @@ an air handling bed of band-passed noise, and a soft relay tick on G5 every 3 to
 
 /** C2 and G2: low, inside the pentatonic scale. */
 export const B1_HUM_MIDI = [36, 43] as const;
-const B1_HUM_LEVEL = 0.05;
-const B1_AIR_LEVEL = 0.03;
-const B1_TICK_PEAK = 0.025;
+/**
+ * The floor layers' tonal level, loudness matched at unity under `AMBIENCE_LEVEL`: the peak of L3's square plucks
+ * (L2's sawtooth pulse peaks at 0.047). The hum matched it at first.
+ */
+export const FLOOR_TONE_PEAK = L3_PEAK;
+/** About 6 dB under the floor layers (owner, 2026-10-18): half the amplitude, so the hum stays subtle. */
+export const B1_UNDER_FLOORS = 0.5;
+export const B1_HUM_LEVEL = FLOOR_TONE_PEAK * B1_UNDER_FLOORS;
+/** The air bed and the relay tick keep their balance to the hum (0.6 and 0.5 of it), so the whole layer drops. */
+const B1_AIR_LEVEL = B1_HUM_LEVEL * 0.6;
+const B1_TICK_PEAK = B1_HUM_LEVEL * 0.5;
 const B1_TICK_HZ = midiToHz(79);
 
 function createEngineLayer(ctx: BaseAudioContext, destination: AudioNode, random: () => number = Math.random): AmbienceLayer {

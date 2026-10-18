@@ -295,9 +295,9 @@ afterEach(() => {
 const FADE_MS = AMBIENCE_CROSSFADE * 1000 + 500;
 
 describe("floor ambience handoff (real engine and voice)", () => {
-  it("plays exactly one floor layer at a time from L1 to RF, and stops and disconnects the old ones", () => {
+  it("plays exactly one floor layer at a time from L1 to RF and B1, and stops and disconnects the old ones", () => {
     expect(audibleFloors()).toEqual(["L1"]);
-    for (const floor of ["L2", "L3", "L4", "RF"] as const) {
+    for (const floor of ["L2", "L3", "L4", "RF", "B1"] as const) {
       engine.setFloor(floor);
       advance(FADE_MS);
       expect(audibleFloors()).toEqual([floor]);
@@ -360,7 +360,7 @@ describe("floor ambience handoff (real engine and voice)", () => {
     // The floor was set before the first gesture, so the music never started under the layer.
     expect(musicAudible()).toBe(false);
     expect(runningDrones()).toBe(0);
-    for (const floor of ["L2", "L3", "L4", "RF", "L1"] as const) {
+    for (const floor of ["L2", "L3", "L4", "RF", "B1", "L1"] as const) {
       engine.setFloor(floor);
       advance(FADE_MS);
       expect(musicAudible()).toBe(false);
