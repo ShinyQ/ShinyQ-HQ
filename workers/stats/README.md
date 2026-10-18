@@ -83,16 +83,19 @@ Workers Scripts Edit on the account.
 - Dry run against production data (in-memory KV, prints the snapshot, writes nothing):
   `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
   The token stays in the environment; the script never prints it.
-- Manual deploy (what runs today: `STATS_WORKER_DEPLOY=false` because the CI deploy token lacks Workers
-  permissions; use the owner's wrangler login): from this folder, `bunx wrangler deploy` (this also
+- Deploys run in CI: `deploy.yml` (and `rollback.yml`) deploy this Worker on every production deploy
+  (the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit; `STATS_WORKER_DEPLOY` is unset). Check the
+  run's "hq-stats Worker" job, and the cron in the dashboard (Workers > hq-stats > Settings > Triggers).
+- Manual deploy (fallback only, with the owner's wrangler login and `STATS_WORKER_DEPLOY=false` set so CI
+  does not fight it): from this folder, `bunx wrangler deploy` (this also
   registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next 2-hour slot,
   `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
 - Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 6 h old
   (3 missed 2-hour runs). Moving from 4 to 2 hours was safe in either order (a 4-hour Worker leaves the
-  snapshot at most about 4 h old); still redeploy this Worker right after the merge (`bunx wrangler deploy`)
-  and confirm `bunx wrangler triggers` or the dashboard shows `17 */2 * * *`. A slower cadence needs the
+  snapshot at most about 4 h old); the merge's deploy redeploys this Worker;
+  confirm its "hq-stats Worker" job ran and the Worker's cron trigger shows `17 */2 * * *`. A slower cadence needs the
   Worker first or a larger threshold.
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine
