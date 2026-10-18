@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ComponentProps } from "react";
-import { Link } from "@/i18n/navigation";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { Link, useRouter } from "@/i18n/navigation";
 
 const QUIET_ATTRS = ["data-hq-boot", "data-hq"];
 
@@ -24,8 +24,36 @@ export function useQuietNav(): boolean {
   return quiet;
 }
 
-/** Locale link that does not prefetch while the page is hidden behind the boot cover or the tower (REPORT SP3). */
-export function QuietLink(props: ComponentProps<typeof Link>) {
+/**
+ * Locale link that prefetches on intent (pointer enter, focus or touchstart), never in the viewport, and never
+ * while the page is hidden behind the boot cover or the tower (REPORT SP3). An explicit `prefetch` prop keeps
+ * Next's own behavior for that link.
+ */
+export function QuietLink({ prefetch, onPointerEnter, onFocus, onTouchStart, ...props }: ComponentProps<typeof Link>) {
   const quiet = useQuietNav();
-  return <Link {...props} prefetch={quiet ? false : props.prefetch} />;
+  const router = useRouter();
+  const warmed = useRef(false);
+  const warm = () => {
+    if (prefetch !== undefined || quiet || warmed.current || typeof props.href !== "string") return;
+    warmed.current = true;
+    router.prefetch(props.href);
+  };
+  return (
+    <Link
+      {...props}
+      prefetch={quiet ? false : (prefetch ?? false)}
+      onPointerEnter={(e) => {
+        warm();
+        onPointerEnter?.(e);
+      }}
+      onFocus={(e) => {
+        warm();
+        onFocus?.(e);
+      }}
+      onTouchStart={(e) => {
+        warm();
+        onTouchStart?.(e);
+      }}
+    />
+  );
 }
