@@ -63,28 +63,27 @@ Status: in review.
 
 ## Measurements
 
-### Scope
+### Scope (current `e2e/durations.json`: 590 tests, 8624 median worker-seconds; 582 tests and 7637 s without `@nightly`)
 
-The 30 opted-in specs hold 300 of the 598 CI e2e tests and 7165 of the 9515 median worker-seconds in `e2e/durations.json`. The other 20 specs (perf-sensitive, pacing, manual driving, static pages) run unchanged.
+The 30 opted-in specs hold 291 of the 582 PR and `main` tests and 5904 of their 7637 median worker-seconds. The other 20 specs (perf-sensitive, pacing, manual driving, static pages) run unchanged, and so do the 8 `@nightly` tests.
 
-### Local (Apple M-series, 2 workers, a shared machine at load average 20 to 60)
+### Local, controlled (Apple M-series, 2 workers, the same build, back to back at load average 14 to 15)
 
-Back-to-back runs on one build are too noisy on this machine to rank specs (one spec moved by more than 2x between runs at the same speed), so the numbers that count are interleaved A/B pairs of the same spec at 4x then 1x:
+The 30 opted-in specs without `@nightly` (296 tests), all passing at both speeds:
 
-| Spec | 4x (s) | 1x (s) | Saved |
-|---|---|---|---|
-| `career` | 108.2 | 149.7 | 28% |
-| `b1-unlock` | 123.3 | 132.9 | 7% |
-| `engine-room` | 247.8 | 256.9 | 4% |
-| `drawer-solid` | 32.0 | 32.8 | 2% |
-| `floor-chunks` | 53.2 | 51.7 | -3% (chunk waits, real time by design) |
+| Speed | Wall | Worker-seconds |
+|---|---|---|
+| `E2E_SPEED=1` | 37.1 min | 4441 |
+| `E2E_SPEED=4` | 32.4 min | 3871 (-12.8%) |
 
-Per test in the full runs, the ride- and drive-heavy tests save the most: `workshop` forecourt routes 69 to 18 s, the `production` point-and-go room 66 to 21 s, `ambience` floor following 94 to 39 s, the `arrivals` desktop tour 132 to 73 s, the `spectacle` L4 signs 44 to 18 s, `pads` elevator pad 65 to 32 s.
+Ride- and drive-heavy specs save the most (`arrivals` -54%, `b1-unlock` -41%, `highlights` -38%, `interact` -36%, `ambience` -34%, `labs-data` -30%, `production` -29%); specs dominated by page loads, shader compiles and settles barely move, and single specs vary by up to 40% either way between runs. Projected on CI: 12.8% of 5904 s is about 760 worker-seconds per full run (about 9% of the e2e lane). The 3 CI runs below are the measurement that counts.
 
-Correctness: all 30 specs pass at 4x (294 tests); the one 4x failure on the first pass (`experience` boot and intro: a describe-wide real-speed hook also slowed the room deep-link test into its 30 s intro wait) is fixed by scoping real speed to the three intro tests that assert its length or catch it mid-flight. Two specs found real issues at 4x:
+An earlier pair of full runs on a busier machine (the 4x pass at load 40 to 60, the 1x pass at about 25) showed no saving; the load difference swamped the effect, so those numbers are not used.
 
-- `fast-return`: a beam could end on its jump frame, so the pad it landed on (the elevator call pad) was not latched and opened the floor picker. The Director now primes the pad latch on the jump frame. A real bug at real speed too: under reduced motion the beam is a 0.15 s cut with the jump at 0.075 s, so one slow frame does both. It shipped on its own in #222.
-- `fast-return` and `motion` assert the dolly's car heights (`distinctY`) and drive samples mid-flight: they stay at real speed.
+Correctness: two specs found issues at 4x:
+
+- `fast-return`: a beam could end on its jump frame, so the pad it landed on (the elevator call pad) was not latched and opened the floor picker. A real bug at real speed too: under reduced motion the beam is a 0.15 s cut with the jump at 0.075 s, so one slow frame does both. It shipped on its own in #222.
+- `fast-return` and `motion` assert the dolly's car heights (`distinctY`) and drive samples mid-flight: they stay at real speed. In `experience`, the intro tests that assert its length or skip it mid-flight run at real speed (`realAnimations`); the room deep link that plays the intro and rides on runs at 4x.
 
 ### CI
 
