@@ -303,6 +303,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # wrangler from the lockfile (devDependency, exact version; S4), never a runtime-resolved range.
+          # pipefail: a failed upload must fail this step (tee alone would hide wrangler's exit code).
+          set -o pipefail
           bunx wrangler pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash="$SHA" --commit-dirty=true | tee deploy.log
           URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
@@ -401,8 +403,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [resolve, deploy]
     # After the site deployed, like hq-stats, so it passes the same gates (fast path still open, complete green main
-    # CI) as the upload. The Pages service binding OFFICE does not need the Worker at upload time: until it exists
-    # (the first production deploy, about a minute) /api/office answers mode "off". rollback.yml rolls it back with
+    # CI) as the upload. The Pages service binding OFFICE stays commented out in wrangler.toml until the Worker exists
+    # (a Pages deploy fails on a binding to a missing Worker). rollback.yml rolls it back with
     # Pages. A commit without workers/office (a manual redeploy of an older one) skips it with a notice. The
     # repository variable OFFICE_WORKER_DEPLOY = "false" skips it. Runbook: workers/office/README.md.
     if: ${{ !cancelled() && needs.deploy.result == 'success' }}
