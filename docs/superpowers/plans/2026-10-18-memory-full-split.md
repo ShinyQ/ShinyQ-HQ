@@ -1,6 +1,6 @@
 # Memory-Full Split Implementation Plan
 
-Status: in review.
+Status: on hold (owner held it on 2026-10-18; branch `feat/memory-full-split` stays unpushed).
 
 **Goal:** Owner request: "Split memory-full into 2 or 3 parallel parts that keep the same total coverage (for example by floor groups or round-trip halves), so the main wall floor drops from about 12 min. memory-full stays on main and on PRs that touch memory paths. Not nightly-only." No test leaves the suite; the gate keeps its budget.
 
