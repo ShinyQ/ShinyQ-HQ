@@ -57,7 +57,7 @@ function report(name: string, value: unknown) {
   console.log(`[gpu] ${name} ${JSON.stringify(value)}`);
 }
 
-test("boot warms every floor: first arrivals add at most 3 programs each (full tier)", async ({ page }) => {
+test("boot warms every floor: first arrivals add at most 3 programs each (full tier) @nightly", async ({ page }) => {
   await firstSession(page);
   await expect
     .poll(() => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.warmFloors().sort()), { timeout: 120_000 })

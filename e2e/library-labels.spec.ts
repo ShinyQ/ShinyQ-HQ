@@ -98,7 +98,7 @@ for (const device of [
 ] as const) {
   test.describe(`L4 timeline labels (${device.id})`, () => {
     test.use(device.use);
-    test("never overlap, stay within the title cap and show each zone's sign", async ({ page }) => {
+    test("never overlap, stay within the title cap and show each zone's sign @nightly", async ({ page }) => {
       // Captures add the door poses and a measured window per pose.
       if (SHOTS) test.setTimeout(1_800_000);
       const errors = collectErrors(page);

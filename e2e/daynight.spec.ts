@@ -104,7 +104,7 @@ test("?sky=dawn sits between night and day", async ({ page }) => {
   expect(dawn.still).toBe(false);
 });
 
-test("day costs the same shader programs and scene draw calls as night on L1", async ({ page }) => {
+test("day costs the same shader programs and scene draw calls as night on L1 @nightly", async ({ page }) => {
   test.setTimeout(360_000);
   await asReturningVisitor(page);
   const measure = async (sky: string) => {

@@ -26,7 +26,7 @@ async function ride(page: Page, floor: string) {
   await waitForFloor(page, floor, 90_000);
 }
 
-test("10 Lobby to Roof round trips leave renderer memory at its baseline", async ({ page }) => {
+test("10 Lobby to Roof round trips leave renderer memory at its baseline @nightly", async ({ page }) => {
   await enterHQ(page);
   for (const floor of ["L2", "L3", "L4", "RF", "L1"]) await ride(page, floor);
   await readSettledGpuCounters(page);
