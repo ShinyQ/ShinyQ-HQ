@@ -98,7 +98,7 @@ export function countRooms(): number {
 export function buildExperienceData(locale: Locale, floorNames: Record<PublicFloor, string>): ExperienceData {
   getContent();
   const profile = getProfile();
-  const names: Record<FloorId, string> = { ...floorNames, B1: (locale === "en" ? en : id).floors.B1 };
+  const names: Record<FloorId, string> = { ...floorNames, B1: (locale === "en" ? en : id).engine.floor };
   return {
     locale,
     profile: {

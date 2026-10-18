@@ -14,6 +14,7 @@ export const CLIENT_NAMESPACES = [
   "cv",
   "dialog",
   "drawer",
+  "engine",
   "floors",
   "gallery",
   "hall",

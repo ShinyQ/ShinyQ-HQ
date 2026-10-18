@@ -30,7 +30,7 @@ export interface TowerLabels {
   career: CareerLabels;
   library: LibraryLabels;
   roof: RoofLabels;
-  /** B1 Engine Room floor words (`hud.engine`). */
+  /** B1 Engine Room floor words (`engine`). */
   engine: EngineLabels;
   /** "Back to elevator": the sign over Express Return pads (`hud.interact.returnPad`). */
   returnPad: string;

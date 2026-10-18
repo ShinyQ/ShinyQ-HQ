@@ -224,6 +224,7 @@ export default function Experience({
   startRoom,
 }: { data: ExperienceData; tier: GpuTier; onExit: () => void; onFirstFrame?: () => void; onCrash: () => void } & ExperienceStart) {
   const t = useTranslations("hud");
+  const tEngine = useTranslations("engine");
   const tHome = useTranslations("home");
   const tCommon = useTranslations("common");
   const tCerts = useTranslations("certs");
@@ -530,7 +531,7 @@ export default function Experience({
         about: t("world.about"),
         availability: t("world.availability"),
       },
-      engine: { title: t("engine.title"), subtitle: t("engine.subtitle"), soon: t("engine.soon") },
+      engine: { title: tEngine("title"), subtitle: tEngine("subtitle"), soon: tEngine("soon") },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
       interact: {
@@ -566,7 +567,7 @@ export default function Experience({
         metrics: tLibrary("topics.monument.target"),
       },
     }),
-    [t, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
+    [t, tEngine, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
   );
 
   return (

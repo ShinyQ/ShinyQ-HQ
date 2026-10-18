@@ -2047,7 +2047,7 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
               <p className="mt-2 text-sm text-ink-2">{r.summary}</p>
               {r.count && <p className="mt-3 text-[13px] text-ink-3">{r.count}</p>}
               {r.prs.length > 0 && (
-                <ul aria-label={r.listLabel} className="mt-1 flex flex-wrap gap-x-1">
+                <ul aria-label={r.listLabel} className="mt-1 flex flex-wrap gap-x-2">
                   {r.prs.map((p) => (
                     <li key={p.n}>
                       {p.href ? (

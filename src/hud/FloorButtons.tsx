@@ -7,6 +7,7 @@ import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import { floorRows } from "./floorRows";
+import { useFloorLabel } from "./useFloorLabel";
 
 /** Lit code circle of the current floor, in the floor's accent. */
 export const FLOOR_ACTIVE: Record<FloorId, string> = {
@@ -39,6 +40,7 @@ const BUTTON: Record<FloorButtonsVariant, (current: boolean) => string> = {
  */
 export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; variant: FloorButtonsVariant; onPick?: () => void }) {
   const t = useTranslations("hud");
+  const floorLabel = useFloorLabel();
   const floor = useHQStore((s) => s.floor);
   const target = useHQStore((s) => s.ride?.to ?? null);
   const b1Unlocked = useHQStore((s) => s.b1Unlocked);
@@ -47,7 +49,7 @@ export function FloorButtons({ data, variant, onPick }: { data: ExperienceData; 
   return floorRows(b1Unlocked).map(({ id }) => {
     const current = id === floor;
     const pending = id === target;
-    const label = t(`floorLabel.${id}`);
+    const label = floorLabel(id);
     const name = data.floors[id].name;
     const tone = current
       ? `${FLOOR_ACTIVE[id]} shadow-[0_0_14px_currentColor]`

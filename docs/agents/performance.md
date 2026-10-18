@@ -202,6 +202,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Every worker renders WebGL on the CPU, so more workers starve each other and make 3D tests time out; do not raise it.
   - Do not run two e2e suites at once on one machine.
 - Turbopack can serve stale CSS after large style or dependency changes: `rm -rf .next` before `verify:quick` if the export looks wrong.
+- Tailwind scans every file in the repo, docs included: a utility class written in a plan or a doc snippet ships in the stylesheet (budget 20,480 B). Use utilities the stylesheet already has.
+- B1 UI strings live in the 3D-only `engine` message namespace (`CLIENT_NAMESPACES`, not `LAYOUT_NAMESPACES`), so they never ride in the Classic pages' HTML (budget 80 KB). Read floor labels through `useFloorLabel`.
 - `e2e:*` serves `out/` from the last build, so rebuild after code changes (`verify:quick` does).
 
 ### CI shards

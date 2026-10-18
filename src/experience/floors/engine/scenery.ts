@@ -38,7 +38,7 @@ export interface EngineScenery {
   panels: PanelInstance[];
 }
 
-/** Floor words (hud.engine.*): the workbench title and subtitle, and the dark bays' plate. */
+/** Floor words (engine.*): the workbench title and subtitle, and the dark bays' plate. */
 export interface EngineLabels {
   title: string;
   subtitle: string;

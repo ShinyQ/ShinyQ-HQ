@@ -27,7 +27,6 @@
     "mobile": "Sections"
   },
   "floors": {
-    "B1": "Engine Room",
     "L1": "Lobby",
     "L2": "Career Archive",
     "L3": "Labs",
@@ -600,13 +599,7 @@
       "rotateRight": "Rotate right (E)",
       "reset": "Reset view (0)"
     },
-    "engine": {
-      "title": "Engine Room",
-      "subtitle": "How this site was built",
-      "soon": "Coming soon"
-    },
     "floorLabel": {
-      "B1": "Build",
       "L1": "Home",
       "L2": "Journey",
       "L3": "Work",
@@ -621,7 +614,6 @@
       "close": "Close",
       "here": "You are here",
       "floorDesc": {
-        "B1": "How this site was built: five stations",
         "L1": "Profile, the Highlights Hall, skills and certifications",
         "L2": "The Career Road: one plaza per year",
         "L3": "Product Engineering, AI Engineering, and Data and ML",
@@ -645,6 +637,14 @@
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console"
     }
+  },
+  "engine": {
+    "floor": "Engine Room",
+    "label": "Build",
+    "desc": "How this site was built: five stations",
+    "title": "Engine Room",
+    "subtitle": "How this site was built",
+    "soon": "Coming soon"
   },
   "drawer": {
     "label": "Room details",
