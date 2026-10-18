@@ -4,12 +4,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   collectStrings,
+  exportBuildIds,
   findBlockedTerms,
   findForbiddenPatterns,
   leafForbiddenPatterns,
   isAllowedTerm,
   loadAllowlist,
   loadBlocklist,
+  maskBuildTokens,
   parseBlocklist,
   scanBuildOutput,
 } from "@/content/safety";
@@ -81,6 +83,52 @@ describe("scanBuildOutput", () => {
       const hits = scanBuildOutput(dir, loadBlocklist({}));
       expect(hits.map((h) => h.file).sort()).toEqual(["chunk.css", "chunk.js", "chunk.md", "chunk.svg", path.join("en", "labs", "x.html")].sort());
       expect(hits.every((h) => h.terms.join() === "Sari Roti")).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("maskBuildTokens (machine-made tokens never match the blocklist)", () => {
+  const terms = loadBlocklist({});
+  const SMBC = "/(?<!Jenius \\()\\b[Ss][Mm][Bb][Cc]/";
+  const id = "Zvts-SMBCY1PG-LQ0qNlIp";
+
+  it("ignores a CSP or SRI hash, a data URI, the build id and chunk or media hashes that spell a term", () => {
+    const tokens = [
+      `<meta data-hq-csp content="script-src 'self' 'sha256-ugRkGroIxkNMt5injvZXW+SmBc/AxayFN5fnJYRyoT/gQ='">`,
+      `<link integrity="sha384-ab+NIK+cdEfGhIjKlMnOpQrStUvWxYz0123456789ab+/cdEfGhIjKlMnOpQrStUv">`,
+      `<img src="data:image/png;base64,iVBORw0+Zurich/+TTA+AAAA==">`,
+      `self.__next_f.push([1,"0:{\\"P\\":null,\\"b\\":\\"${id}\\"}"])`,
+      `<script src="/_next/static/${id}/_buildManifest.js"></script>`,
+      `<script src="/_next/static/chunks/smbc42u14tx9.js"></script>`,
+      `@font-face{src:url(../media/inter_latin1-s.p.smbcbnw3bn23.woff2)}`,
+    ];
+    expect(tokens.map((t) => findBlockedTerms(t, terms))).toEqual([[SMBC], ["/\\bNIK\\b/"], ["/\\bTTA\\b/", "Zurich"], [SMBC], [SMBC], [SMBC], [SMBC]]);
+    for (const t of tokens) expect(findBlockedTerms(maskBuildTokens(t, [id]), terms), t).toEqual([]);
+  });
+
+  it("still flags real occurrences next to tokens, in readable asset names and in prose", () => {
+    const real = [
+      `<p>Built for SMBC</p><meta content="'sha256-ugRkGroIxkNMt5injvZXWBNAx++ayFN5fnJYRyoT/gQ='">`,
+      `self.__next_f.push([1,"{\\"client\\":\\"Sari Roti\\",\\"b\\":\\"${id}\\"}"])`,
+      `<img src="/_next/static/media/mitsubishi-logo.4f2a9c1b7d3e.png">`,
+      `<img src="/_next/static/media/mitsubishi-logo.png">`,
+      `<script src="/_next/static/chunks/mitsubishi.js"></script>`,
+      `Our sha256-checked build for Zurich`,
+    ];
+    expect(real.map((t) => findBlockedTerms(maskBuildTokens(t, [id]), terms))).toEqual([[SMBC], ["Sari Roti"], ["Mitsubishi"], ["Mitsubishi"], ["Mitsubishi"], ["Zurich"]]);
+    expect(findBlockedTerms(maskBuildTokens("Jenius (SMBC Indonesia)", [id]), terms)).toEqual([]);
+  });
+
+  it("finds the build id directories of an export and masks them in scanBuildOutput", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "hq-out-"));
+    try {
+      for (const d of [id, "chunks", "media"]) mkdirSync(path.join(dir, "_next", "static", d), { recursive: true });
+      expect(exportBuildIds(dir)).toEqual([id]);
+      writeFileSync(path.join(dir, "page.html"), `<script src="/_next/static/${id}/_ssgManifest.js"></script><meta content="'sha256-x+SMBC/abcdefghijklmnopqrstuvwxyz0123456789='">`);
+      writeFileSync(path.join(dir, "leak.html"), `<script src="/_next/static/${id}/_ssgManifest.js"></script><p>Mitsubishi</p>`);
+      expect(scanBuildOutput(dir, terms)).toEqual([{ file: "leak.html", terms: ["Mitsubishi"] }]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
