@@ -48,8 +48,8 @@ export interface OrbitState {
   /** Rail yaw set by a view zone on the L2 rail rig; eased back to the side view on exit unless the visitor turned the rail by hand. */
   zoneRailYaw: number | null;
   /**
-   * The zone's own yaw when its camera-class view turned or pitched the camera off it (the B1 phone arrival): eased back
-   * to, with the pitch leveled, on exit, unless the visitor turned by hand meanwhile.
+   * The zone's own yaw when its camera-class view set a `pitch` (opt-in, only the B1 phone arrival): eased back to, with
+   * the pitch leveled, on exit, unless the visitor turned or tilted by hand meanwhile.
    */
   zoneTurn: number | null;
 }
@@ -124,6 +124,7 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
   } else {
     s.pitch = clamp(s.pitch + dpitch, s.pitchMin, s.pitchMax);
     s.pitchTarget = s.pitch;
+    if (dpitch !== 0) s.zoneTurn = null;
   }
   s.zoomTarget = s.zoom;
   s.easing = false;
@@ -203,6 +204,7 @@ export interface ViewZone {
   /**
    * Another yaw, zoom or pitch for a camera class (a phone frames a tall view where a desktop frames a wide one).
    * `pitch` is an offset from the rig's default elevation (`OrbitState.pitch`); without it the zone levels the pitch to 0.
+   * Defining `pitch` also opts into the turn-back on exit (`OrbitState.zoneTurn`); no other class view changes the camera on exit.
    */
   classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number; pitch?: number }>>;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
@@ -222,9 +224,12 @@ export interface ViewZone {
   travel?: Vec2;
 }
 
-/** The zone's own yaw when its class view turns or pitches the camera off it (`OrbitState.zoneTurn`), else null. */
+/**
+ * The zone's own yaw when its class view opts into the turn-back by defining a `pitch` (`OrbitState.zoneTurn`), else null.
+ * A class view that only turns or zooms (the L1 kiosk on tablets and phones) never turns back on exit.
+ */
 function turnOf(zone: ViewZone, view: ReturnType<typeof zoneView>): number | null {
-  return view.yaw !== zone.yaw || view.pitch !== undefined ? zone.yaw : null;
+  return view.pitch !== undefined ? zone.yaw : null;
 }
 
 /** The yaw, zoom and pitch a zone asks for on a camera class. */
@@ -312,7 +317,7 @@ function releaseRailZone(s: OrbitState): void {
   s.easing = true;
 }
 
-/** Eases a class view's turn back to its zone's own yaw and a level pitch (leaving the zone). */
+/** Eases an opted-in class view's turn back to its zone's own yaw and a level pitch (leaving the zone). */
 function releaseTurn(s: OrbitState): void {
   if (s.zoneTurn === null) return;
   s.yawTarget = nearestAngle(s.zoneTurn, s.yaw);

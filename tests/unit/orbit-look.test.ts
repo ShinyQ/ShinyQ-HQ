@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createOrbitState, primeZone, rotate, updateZone, yawLooking, zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW, orbitOffset } from "@/experience/camera/rigs";
+import { LOBBY } from "@/experience/config";
+import { lobbyObservatory } from "@/experience/floors/lobby/observatoryLayout";
 
 const unit = (x: number, z: number) => {
   const l = Math.hypot(x, z);
@@ -98,5 +100,37 @@ describe("per camera class views", () => {
     updateZone(s, null, false, "mobile");
     expect(s.yawTarget).toBeCloseTo(1.9);
     expect(s.zoneTurn).toBeNull();
+  });
+
+  it("keeps a visitor's own tilt when the rover leaves a turned class view", () => {
+    const s = createOrbitState();
+    primeZone(s, turned, "mobile");
+    rotate(s, 0, 0.1);
+    expect(s.zoneTurn).toBeNull();
+    const tilted = s.pitchTarget;
+    updateZone(s, null, false, "mobile");
+    expect(s.pitchTarget).toBe(tilted);
+    expect(s.yawTarget).toBeCloseTo(1.4);
+  });
+
+  it("never turns back for a class view without a pitch (the L1 kiosk on tablets and phones)", () => {
+    const kiosk = lobbyObservatory({ rect: LOBBY.observatory, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis }).zones.find((z) => z.id === "L1:kiosk")!;
+    for (const cls of ["tablet", "mobile"] as const) {
+      expect(zoneView(kiosk, cls).yaw).not.toBe(kiosk.yaw);
+      const s = createOrbitState();
+      primeZone(s, kiosk, cls);
+      const { yaw, pitch } = s;
+      expect(s.zoneTurn).toBeNull();
+      updateZone(s, null, false, cls);
+      expect(s.yawTarget).toBe(yaw);
+      expect(s.pitchTarget).toBe(pitch);
+      const e = createOrbitState();
+      e.yaw = e.yawTarget = 0.3;
+      updateZone(e, kiosk, false, cls);
+      const { yawTarget, pitchTarget } = e;
+      updateZone(e, null, false, cls);
+      expect(e.yawTarget).toBe(yawTarget);
+      expect(e.pitchTarget).toBe(pitchTarget);
+    }
   });
 });
