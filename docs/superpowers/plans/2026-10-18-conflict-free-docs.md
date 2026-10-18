@@ -1,6 +1,6 @@
 # Conflict-Free Decisions and Plans Docs Implementation Plan
 
-Status: in review, 2026-10-18 (coordinator request, user-directed).
+Status: in review in #224, 2026-10-18 (coordinator request, user-directed).
 
 **Goal:** Two pull requests that each add an owner decision and a plan never edit the same lines of any committed
 file, so parallel PRs stop forcing merge conflicts (and the full CI rerun each conflict costs: three times on #221).
