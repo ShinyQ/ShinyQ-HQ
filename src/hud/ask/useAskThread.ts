@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { askQuestion, isAskError, MAX_ANSWER_CHARS, sanitizeAnswer, type AskResult } from "@/ask/client";
 import type { AskEntry } from "@/ask/protocol";
 import { matchSuggestion } from "@/ask/suggestions";
-import { capThread, loadThread, messageId, saveThread, type ThreadMessage } from "@/ask/thread";
+import { capThread, historyFor, loadThread, messageId, saveThread, type ThreadMessage } from "@/ask/thread";
 import type { Locale } from "@/content/schema";
 import { setAskFace } from "@/experience/rover/askFace";
 import { audio } from "@/lib/audio";
@@ -24,15 +24,38 @@ export interface SendOptions {
   qid?: string;
 }
 
+/** The thread without answer signatures: nothing earlier goes back to the server as history. */
+const unsigned = (list: ThreadMessage[]) =>
+  list.some((m) => m.sig || m.sigLocale)
+    ? list.map((m) => {
+        if (!m.sig && !m.sigLocale) return m;
+        const next = { ...m };
+        delete next.sig;
+        delete next.sigLocale;
+        return next;
+      })
+    : list;
+
 /**
  * The chat thread: one question at a time (a new one aborts the previous), streamed into an
  * answer message, errors as system messages, saved to `sessionStorage` when settled. Each
- * question is sent on its own (no history goes to the server). Plays a throttled `click` per
- * chunk and, with `roverFace`, mirrors the state on the 3D rover's face.
+ * question carries the last signed turns of this locale (`historyFor`), and each answer keeps its
+ * signature; a locale change forgets every signature (the thread stays visible) and `clear` (New
+ * chat) empties the thread. Plays a throttled `click` per chunk and, with `roverFace`, mirrors the
+ * state on the 3D rover's face.
  */
 export function useAskThread(locale: Locale, { roverFace = false, ask = askQuestion }: { roverFace?: boolean; ask?: AskFn } = {}) {
   const [messages, setMessages] = useState<ThreadMessage[]>(() => loadThread());
   const [phase, setPhase] = useState<ThreadPhase>("idle");
+  const [signedLocale, setSignedLocale] = useState(locale);
+  if (signedLocale !== locale) {
+    setSignedLocale(locale);
+    setMessages(unsigned);
+  }
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const controller = useRef<AbortController | null>(null);
   const lastClick = useRef(0);
   const faceRef = useRef(roverFace);
@@ -59,6 +82,7 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
       const curated = qid ?? matchSuggestion(question)?.id;
       if (curated) user.qid = curated;
       const answerId = messageId();
+      const history = historyFor(messagesRef.current, locale);
       setMessages((list) => capThread([...list, user]));
       setPhase("thinking");
       face("thinking");
@@ -70,6 +94,7 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
           locale,
           source,
           ...(curated ? { chip: curated } : {}),
+          ...(history.length ? { history } : {}),
           signal: own.signal,
           onDelta: (delta) => {
             if (controller.current !== own) return;
@@ -118,6 +143,10 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
         if (result.cite) answer.cite = result.cite;
         if (result.contact) answer.contact = result.contact;
         if (curated) answer.qid = curated;
+        if (result.sig) {
+          answer.sig = result.sig;
+          answer.sigLocale = locale;
+        }
         if (at === -1) return capThread([...list, answer]);
         const next = [...list];
         next[at] = answer;

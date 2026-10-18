@@ -1,10 +1,12 @@
 /**
- * The visible Ask the HQ chat thread, kept in `sessionStorage` only (cleared when the tab closes,
- * never sent anywhere). The server still answers every question on its own: there is no
- * multi-turn context. Pure apart from the storage calls, which tolerate a missing or full store.
+ * The visible Ask the HQ chat thread, kept in `sessionStorage` only (cleared when the tab closes).
+ * Multi-turn memory (owner decision 2026-10-17): each question also carries the last
+ * `ASK_HISTORY_TURNS` signed turns (`historyFor`); the server verifies every signature and uses only
+ * those turns. Nothing else of the thread leaves the browser. Pure apart from the storage calls,
+ * which tolerate a missing or full store.
  */
-import type { AskClientError } from "./client";
-import { cleanTags, isAskCite, isAskContact, type AskContact, type AskOutcome, type AskTag } from "./protocol";
+import { cleanQuestion, type AskClientError } from "./client";
+import { ASK_HISTORY_ANSWER_MAX, ASK_HISTORY_TURNS, ASK_MAX_QUESTION, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskLocale, type AskOutcome, type AskTag, type AskTurn } from "./protocol";
 
 export const THREAD_KEY = "hq:ask-thread";
 /** Messages kept (user, answer and system lines together). */
@@ -28,6 +30,10 @@ export interface ThreadMessage {
   contact?: AskContact;
   error?: AskClientError;
   retryAfter?: number;
+  /** Server signature of this answer (`done` frame), sent back as history with the next question. */
+  sig?: string;
+  /** Panel locale the answer was signed for; history only goes back in the same locale. */
+  sigLocale?: AskLocale;
 }
 
 const ROLES: readonly ThreadRole[] = ["user", "assistant", "system"];
@@ -52,6 +58,8 @@ export function parseThread(raw: unknown): ThreadMessage[] {
     if (isAskContact(v.contact)) message.contact = { email: v.contact.email, linkedin: v.contact.linkedin };
     if (ERRORS.includes(v.error as AskClientError)) message.error = v.error as AskClientError;
     if (typeof v.retryAfter === "number" && Number.isFinite(v.retryAfter)) message.retryAfter = v.retryAfter;
+    if (isAskSig(v.sig)) message.sig = v.sig;
+    if (v.sigLocale === "en" || v.sigLocale === "id") message.sigLocale = v.sigLocale;
     out.push(message);
   }
   return out.slice(-THREAD_MAX);
@@ -62,6 +70,25 @@ export function capThread(messages: readonly ThreadMessage[]): ThreadMessage[] {
   const kept = messages.slice(-THREAD_MAX);
   while (kept.length && kept[0].role !== "user") kept.shift();
   return kept;
+}
+
+/**
+ * The signed turns to send with the next question: each answer that has a signature for `locale`
+ * and directly follows its question, the question cleaned exactly as `askQuestion` sends it (the
+ * server signed that text). Answers over `ASK_HISTORY_ANSWER_MAX` are skipped. The last
+ * `ASK_HISTORY_TURNS`, oldest first.
+ */
+export function historyFor(messages: readonly ThreadMessage[], locale: AskLocale): AskTurn[] {
+  const turns: AskTurn[] = [];
+  for (let i = 1; i < messages.length; i++) {
+    const user = messages[i - 1];
+    const answer = messages[i];
+    if (user.role !== "user" || answer.role !== "assistant" || !answer.sig || answer.sigLocale !== locale) continue;
+    if (answer.text.length > ASK_HISTORY_ANSWER_MAX) continue;
+    const q = cleanQuestion(user.text, ASK_MAX_QUESTION);
+    if (q) turns.push({ q, a: answer.text, sig: answer.sig });
+  }
+  return turns.slice(-ASK_HISTORY_TURNS);
 }
 
 export function loadThread(storage: Pick<Storage, "getItem"> | undefined = safeSession()): ThreadMessage[] {

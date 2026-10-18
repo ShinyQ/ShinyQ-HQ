@@ -3,6 +3,7 @@ import { checkAnswer, closestSource, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
+import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type AttemptFailure, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
@@ -25,6 +26,8 @@ export interface PipelineInput {
   client: ModelClient;
   models?: { primary: string; fallback?: string };
   timeouts?: Timeouts;
+  /** Earlier turns the handler verified (signed by this server), oldest first. */
+  history?: readonly HistoryTurn[];
 }
 
 export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "model_failed" | "model_decline";
@@ -47,6 +50,8 @@ export interface PipelineResult {
   cite?: string;
   /** Lead intent (owner request 2026-10-15): the `done` frame carries the contact card (`pack.contact`). */
   lead?: boolean;
+  /** Earlier turns that reached the model (after `usableHistory`); 0 for a first turn or a canned answer. */
+  historyUsed: number;
 }
 
 const OUTCOME_OF: Record<CannedKind, AskOutcome> = {
@@ -70,11 +75,30 @@ export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
   return indexPack(pack).vocabulary;
 }
 
+/**
+ * Earlier turns whose question would itself be declined never reach the model (multi-turn memory,
+ * owner decision 2026-10-17): a signed turn proves the server answered it, not that it was harmless.
+ */
+export function usableHistory(history: readonly HistoryTurn[], pack: KnowledgePack): HistoryTurn[] {
+  return history.filter((t) => {
+    const q = resolveNickname(t.q);
+    return !isHarmful(q) && !privateTopic(q) && !opinionAboutOthers(q, pack.orgs) && !isGeneralAssistantRequest(q);
+  });
+}
+
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
   const { locale, pack, vocabulary, safety, client } = input;
   // "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): routing, retrieval and the checks see his name; the model also sees the visitor's word.
   const question = resolveNickname(input.question);
   const modelQuestion = nicknameForModel(input.question);
+  const history = usableHistory(input.history ?? [], pack);
+  // A short or referring follow-up ("What stack did it use?") is routed and retrieved together with the previous question.
+  const anchor = followUpAnchor(input.question, history);
+  const routed = anchor ? resolveNickname(`${input.question} ${anchor}`) : question;
+  const either = <T>(check: (text: string) => T): T => {
+    const own = check(question);
+    return own || routed === question ? own : check(routed);
+  };
   // Deterministic routing first (T15, spec section 13, owner rules 2026-10-15): no retrieval, no model call, never cached.
   const early = (kind: CannedKind, reason?: PipelineReason, extra: Partial<PipelineResult> = {}): PipelineResult => ({
     text: canned(kind, locale),
@@ -85,43 +109,48 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     calledModel: false,
     chunkIds: [],
     tags: [],
+    historyUsed: 0,
     ...extra,
   });
-  if (isHarmful(question)) return early("decline", "harmful");
+  if (either(isHarmful)) return early("decline", "harmful");
   if (isCapabilityQuestion(question)) return early("capabilities", undefined, { tags: CAPABILITY_TAGS });
-  const lead = isLeadQuestion(question);
-  const personal = privateTopic(question);
+  // An earlier project inquiry never turns a request for general-assistant work into a lead.
+  if (!isLeadQuestion(question) && isGeneralAssistantRequest(question)) return early("decline", "general");
+  const lead = either(isLeadQuestion);
+  const personal = either(privateTopic);
   // A project inquiry that asks for a price gets no number, but still the invitation and the contact card.
   if (personal === "pay" && lead) return early("leadRates", undefined, { tags: ["contact"], lead: true });
   if (personal) return early("private", "private");
-  if (opinionAboutOthers(question, pack.orgs)) return early("others", "others");
-  if (!lead && isGeneralAssistantRequest(question)) return early("decline", "general");
+  if (either((q) => opinionAboutOthers(q, pack.orgs))) return early("others", "others");
+  if (!lead && either(isGeneralAssistantRequest)) return early("decline", "general");
 
-  const topic = lead ? undefined : routedTopic(question);
-  const { chunks, context } = retrieve(pack, question, locale, { topic, lead });
+  const topic = lead ? undefined : routedTopic(routed);
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, ...(anchor ? { anchor: resolveNickname(anchor) } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
-  const matches = lead ? leadMatches(pack, question) : [];
-  const messages = buildMessages(pack.packDate, context, modelQuestion, { ...(topic ? { topic } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) });
+  const matches = lead ? leadMatches(pack, routed) : [];
+  const routing = { ...(topic ? { topic } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
+  const messages = buildMessages(pack.packDate, context, modelQuestion, routing, history);
+  const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
   const generation = await generate(client, models, messages, input.timeouts);
   const leadFlag = lead ? { lead: true } : {};
   if (generation.source === "none") {
-    if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true };
-    return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags };
+    if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true, historyUsed };
+    return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, historyUsed };
   }
 
   const check = checkAnswer({
     answer: generation.text,
-    question,
+    question: routed,
     context,
     packDate: pack.packDate,
     pack,
     vocabulary,
     safety,
     chunks,
-    perspective: !lead && isPerspectiveQuestion(question),
-    site: !lead && isSiteQuestion(question),
+    perspective: !lead && isPerspectiveQuestion(routed),
+    site: !lead && isSiteQuestion(routed),
     ...(topic ? { topic } : {}),
     ...(lead ? { lead: { fit: matches.length > 0 } } : {}),
     locale,
@@ -143,13 +172,14 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       tags,
       ...(closest ? { cite: closest.url } : {}),
       ...leadFlag,
+      historyUsed,
     };
   }
   // The model's own refusal is replaced by the fixed one, which points back to what this assistant covers.
   // A project inquiry the model refuses or cannot place (no matching work) still gets the invitation and the card.
   if (check.outcome === "decline" || (lead && check.outcome === "unknown")) {
     const kind: CannedKind = lead ? "lead" : "decline";
-    return { text: canned(kind, locale), outcome: OUTCOME_OF[kind], source: "none", reason: "model_decline", raw: generation.text, failures: generation.failures, calledModel: true, chunkIds, tags: lead ? tags : [], ...leadFlag };
+    return { text: canned(kind, locale), outcome: OUTCOME_OF[kind], source: "none", reason: "model_decline", raw: generation.text, failures: generation.failures, calledModel: true, chunkIds, tags: lead ? tags : [], ...leadFlag, historyUsed };
   }
   return {
     text: check.text,
@@ -162,5 +192,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     tags,
     ...(check.cite ? { cite: check.cite } : {}),
     ...leadFlag,
+    historyUsed,
   };
 }
