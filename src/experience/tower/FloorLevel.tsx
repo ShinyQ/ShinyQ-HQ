@@ -15,7 +15,7 @@ import { PadGlow } from "../fx/PadGlow";
 import { registerFloorContent, registerFloorSlab } from "./floorRegistry";
 import { floorContentVisible } from "./near";
 import { floorReady } from "./ridePrep";
-import { contentVisible, introGhost } from "./visibility";
+import { contentVisible } from "./visibility";
 import { useDispose } from "../fx/useDispose";
 
 const SLAB_COLOR = "#07070f";
@@ -48,24 +48,23 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
   useFrame(() => {
     const { phase, ride } = getHQStore().getState();
     const exterior = phase === "boot" || phase === "intro";
-    // The exterior keeps every slab solid; the intro fly-in fades the slabs above the rover into ghosts (Round 9 M).
-    const fade = exterior ? introGhost(roverRuntime.introFly) : 1;
-    const above = fade > 0 && y > roverRuntime.y + 0.5;
+    // Slabs above the rover are ghosts in every phase, the boot and the intro orbit included.
+    const above = y > roverRuntime.y + 0.5;
     const ghost = above ? ceilingOpacity(roverRuntime.cameraBlend) : 1;
     if (slab.current) slab.current.visible = ghost > 0.01;
-    sceneProbes.ghosts[layout.id] = above && fade >= 1 && ghost > 0.01;
+    sceneProbes.ghosts[layout.id] = above && ghost > 0.01;
     if (fill.current) {
-      fill.current.opacity = above ? SOLID + (GHOST * ghost - SOLID) * fade : SOLID;
+      fill.current.opacity = above ? GHOST * ghost : SOLID;
       fill.current.depthWrite = !above;
     }
-    if (edge.current) edge.current.opacity = above ? 0.95 + (0.16 * ghost - 0.95) * fade : 0.95;
+    if (edge.current) edge.current.opacity = above ? 0.16 * ghost : 0.95;
     // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
     // still compiling waits for the car to move (tower/near.ts, R5 P6). On top of that, a ride draws only
-    // its target and the floors right under the car, and the exterior only L1 and L2 (tower/visibility.ts).
+    // its target and the floors right under the car, and the boot and intro only L1 (tower/visibility.ts).
     if (content.current) {
       content.current.visible =
         floorContentVisible({ floorY: y, roverY: roverRuntime.y, exterior, ride, ready: floorReady(layout.id) }) &&
-        contentVisible({ id: layout.id, floorY: y, roverY: roverRuntime.y, exterior, rideTo: ride?.to ?? null, introFly: roverRuntime.introFly });
+        contentVisible({ id: layout.id, floorY: y, roverY: roverRuntime.y, exterior, rideTo: ride?.to ?? null });
     }
   });
 

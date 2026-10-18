@@ -96,7 +96,7 @@ The same script sets these on every page before first paint:
   - Boot rover only starts once the log has typed out (`aria-disabled` until then, same pace with reduced motion).
 - The intro (`camera/rigs.ts`): a 1.9 s exterior orbit (`INTRO_ORBIT`), then a 1.7 s fly-in (`INTRO_FLY`) down to the follow pose behind the rover in one continuous move (Round 9 M).
   - The fly-in is a quadratic curve whose control point extends the follow offset past the follow pose (`INTRO_APPROACH`), on `easeInOutCubic` like the arrival glide (`introFlyProgress`), so it starts and lands at rest along the follow line.
-  - `roverRuntime.introFly` is its progress (0 to 1, -1 outside it). The slabs above the rover fade from solid to ghosts over its first 20 percent (`introGhost`, `INTRO_GHOST_BY` in `tower/visibility.ts`) and L2's detail stops drawing once it starts, so the camera never comes down onto an opaque slab. The fog eases from the exterior range to the follow range with it.
+  - `roverRuntime.introFly` is its progress (0 to 1, -1 outside it). The slabs above the rover are ghosts from the first boot frame (`tower/FloorLevel.tsx`) and only L1's detail draws in the boot and intro (`tower/visibility.ts`), so the camera never comes down onto an opaque slab. The fog eases from the exterior range to the follow range with it.
   - Landing beat: when the intro hands over, the rover hops, blinks (`roverRuntime.blinkUntil`) and beeps (silent with the sound off).
   - Drive, turn, zoom or reset input during the fly-in (never the orbit) hands over at once; the follow spring eases on from the drawn pose.
 - Reduced motion holds one still exterior shot (`reducedIntroPose`) for `INTRO_REDUCED` (2.5 s), then cuts to the follow camera.
@@ -307,11 +307,11 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ### What mounts and draws
 
-- Floors above the rover render as ghosts each frame (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`.
+- Floors above the rover render as ghosts each frame, the boot and the intro included (`tower/FloorLevel.tsx`), because the follow camera sits higher than `FLOOR_GAP`.
 - Only the current floor, the ride target and their neighbours mount content (`nearFloors` in `tower/near.ts`). The neighbours mount on idle after the first frames, so a deep link builds one floor first.
 - Content of floors below the rover is not drawn unless the elevator is moving (the opaque slab above hides it). Once the car is parked at the target (`opening`, `exiting`) the floors below hide again (`belowParkedCar` in `tower/near.ts`): the arrival glide starts low in the car, where the ride cull cannot prove them hidden.
 - Content visibility is one pure rule (`tower/visibility.ts`):
-  - the boot and intro exterior shows the Lobby's detail only;
+  - the boot and intro show the Lobby's detail only;
   - a ride shows its target floor and floors within one floor gap under the car;
   - so intro and ride peaks stay under 150 calls (`e2e/gpu.spec.ts`).
 

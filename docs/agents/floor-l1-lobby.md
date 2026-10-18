@@ -84,7 +84,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 - Shader materials are never culled by the ride cull ([3d-experience.md](3d-experience.md)).
 - The tall shapes are in the camera collision (`hallTall`, `FloorLayout.tall` on L1).
 - Reduced motion holds everything still.
-- `Lobby.tsx` builds the hall only after the intro, once the rover is on L1 or riding there, then keeps it.
+- `Lobby.tsx` builds the hall once the rover is on L1 or riding there (the boot card included, so the intro orbit shows it), then keeps it.
 - The skills wall and certification wall texts are one `BatchedLabels` each, which pays for the hall.
 - Budget: `RenderCounter` counts the full tier's composer passes apart from scene calls, and `e2e/highlights.spec.ts` caps L1 at 125 scene calls (`FLOOR_SCENE_CAPS`) from the plaza to the hall on both tiers.
 
@@ -131,3 +131,12 @@ Code: `floors/lobby/observatoryLayout.ts`.
 - `resetView` returns to the default north-west look.
 - The elevator rolls the rover on east from the shaft to `LOBBY.arrival`; the camera glides out of the car into the arrival zone ([Elevator arrival](3d-experience.md#elevator-arrival)). Under reduced motion the rover and the camera cut to it.
 - The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The session still spawns at the kiosk stop in `L1:kiosk` (a `prime` zone), not on the arrival point.
+
+## Intro reveal and beacons
+
+Code: `intro/landmarks.ts` (pure), `intro/IntroReveal.tsx`, `intro/IntroBeacons.tsx`, wired in `floors/Lobby.tsx`.
+
+- During the boot and the intro the Lobby is dark: each landmark sits in an `IntroReveal` with its floor rect (hologram and stats ring, skills wall, certification wall, kiosk, observatory, Highlights Hall) and switches on, with a quick neon flicker (on 0.06 s, off until 0.14 s), once the reveal ring around the rover reaches it (`revealDistance`). The grid and the lanes mask themselves in their shaders, so `Lanes` is not wrapped.
+- `IntroReveal` writes `visible` per frame from `introRuntime`, never through React state; hidden children are still compiled at boot, so switching on costs no hitch.
+- Beacons: `IntroBeacons` is one instanced holo mesh (`HOLO_MODE.beacon`, 5 instances, `aAlpha`) lying on the floor under the five `INTRO_LANDMARKS` (stats, skills, hall, observatory, elevator). After `INTRO.wake` each landmark pulses once (`beaconAlpha`, gone by 2 s) the first frame it projects within `|ndc.x| < 0.55`, `|ndc.y| < 0.75`, and its id goes into `introRuntime.lit`.
+- `Lobby` mounts the beacons only while `phase` is `intro`, and on the full tier only once the lazy composer exists: mounted earlier, the frame-3 precompile would build a second, canvas-target holo program.
