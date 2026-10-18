@@ -12,6 +12,11 @@ Status: in review
 
 ## Global Constraints
 
+- Performance review (coordinator, 2026-10-19), binding on Tasks 6, 9 and 13:
+  - Atlas textures: no mipmaps (`minFilter = LinearFilter`, `generateMipmaps = false`); never re-upload the whole atlas: update only the changed cell (a partial upload through `renderer.copyTextureToTexture` from a cell-sized canvas texture, or one small texture per desk if that costs no more draw calls), and cap face redraws at 5 fps on both tiers (desk screens and the wall stay at or below their stated rates).
+  - Frame loop: skip instance-matrix, colour and quad-position writes (and their `needsUpdate`) when no pose changed (every Rover asleep, or reduced motion), and wrap the per-frame work in `whenDrawn` per docs/agents/performance.md.
+  - Bytes: after the owner's +3 KB raise about 2.5 KB of session headroom remains; record the measured session totals in the PR and keep the main-path addition as small as the fallbacks allow.
+
 - Scope: spec section 4.1 only (PR 3 of 4). PR 1 (`src/lib/office/protocol.ts`, `src/lib/office/fixtures.ts`, `GET /api/office`) and PR 2 (local relay) are merged first; PR 4 adds the Classic home card (`/#office`) and the Ask note.
 - Geometry: arc centre (3.5, 10), desk radius 8, Rover radius 9.2, desk angles -51.3, -25.65, 0, 25.65, 51.3 degrees from +z toward +x (slot 0 west), desk 2.6 x 0.9 u with its top at y 0.95, wall 17 x 4 u (bottom y 0.6, frame 0.2, thickness 0.3) centred at x 3.5 with its plane at z 20.7 facing north, stop (3.5, 14.2); the slab is not extended (`LOBBY.bounds.maxZ` 21).
 - Clearances (unit tested): west Rover edge at least 3 u east of `kioskRect().maxX` (computed -8.35, gap 3.67); east Rover edge at least 2 u west of `HALL.lead[0]` (14, 15) (gap 2.32); stop at least 2 u in front of the middle desk (3.35); wall face at least 0.2 u behind the middle Rover (0.35); every office obstacle more than 1 u from every other L1 obstacle.
