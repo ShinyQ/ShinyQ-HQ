@@ -8,7 +8,8 @@ import { clientLabel, podLiveLink } from "@/content/selectors";
 import { topicTagsOf } from "../../functions/_lib/tags";
 import { isAskContact } from "./protocol";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
-import type { ChunkType, KnowledgeChunk, KnowledgePack } from "../../functions/_lib/types";
+import { PACK_SCHEMA, storePack } from "../../functions/_lib/pack-index";
+import type { ChunkType, KnowledgeChunk, KnowledgePack, StoredPack } from "../../functions/_lib/types";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
@@ -18,11 +19,16 @@ import id from "../../messages/id.json";
  */
 
 /**
- * Pack size cap. 200 KB until 2026-10-15, then 256 KiB (owner pre-approved) for the 30 endorsed
- * lifestyle, industry and policy perspectives, after measuring isolate start-up, memory and bundle
- * size (docs/ask-runbook.md section 15, "Pack budget").
+ * Text pack cap. 200 KB until 2026-10-15, 256 KiB until 2026-10-19, then 384 KiB when the pack moved out of the
+ * Function bundle into Workers KV (docs/decisions/2026-10-19-ask-kv-pack.md, runbook section 15, "Pack budget").
  */
-export const PACK_MAX_BYTES = 256 * 1024;
+export const PACK_MAX_BYTES = 384 * 1024;
+/** Cap of the stored value (`StoredPack`: the text pack plus its BM25 index), as uploaded to KV (`pack:v1:<version>`). */
+export const PACK_VALUE_MAX_BYTES = 768 * 1024;
+/** Cap of the bundled fallback pack (`functions/_generated/fallback.json`, a text pack indexed only when first served). */
+export const FALLBACK_MAX_BYTES = 24 * 1024;
+/** Chunks of the bundled fallback pack: who he is, what he does now, how to reach him and how the site was built. */
+export const FALLBACK_CHUNKS = ["profile", "now", "contact", "site-build", "principles"] as const;
 
 /**
  * Approach steps per project chunk by tier. The case study page keeps every step; the pack keeps
@@ -550,9 +556,22 @@ export function buildKnowledgePack(sources: PackSources): KnowledgePack {
   const entities = [...new Set([...employers, ...clients, ...products].map((name) => cleanText(name)))].sort();
   const orgs = [...new Set([...employers, ...clients].map((name) => cleanText(name)))].sort();
   const contact = { email: content.floors.roof.contact.email, linkedin: content.floors.roof.contact.linkedin };
-  const body = { packDate, chunks, entities, orgs, contact };
+  return versioned({ packDate, chunks, entities, orgs, contact });
+}
+
+/** Content-addressed `packVersion`: the first 16 hex characters of the SHA-256 of the pack body. */
+function versioned(body: Omit<KnowledgePack, "packVersion">): KnowledgePack {
   const packVersion = createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16);
   return { packVersion, ...body };
+}
+
+/**
+ * The bundled fallback pack (served when KV and the pin fail): `FALLBACK_CHUNKS` only, the same entities, orgs and
+ * contact card, and its own `packVersion`, so answer cache keys and history signatures never mix with the full pack.
+ */
+export function buildFallbackPack(pack: KnowledgePack): KnowledgePack {
+  const chunks = FALLBACK_CHUNKS.map((id) => pack.chunks.find((c) => c.id === id)).filter((c): c is KnowledgeChunk => Boolean(c));
+  return versioned({ packDate: pack.packDate, chunks, entities: pack.entities, orgs: pack.orgs, contact: pack.contact });
 }
 
 /** Build-time gates (spec section 4): no blocklisted term, size cap, required chunks present. */
@@ -570,4 +589,72 @@ export function validatePack(pack: KnowledgePack, blocklist: readonly string[]):
   const entityHits = findBlockedLabels(pack.entities.join("\n"), blocklist);
   if (entityHits.length) errors.push(`entity allowlist contains blocklisted terms: ${entityHits.join(", ")}`);
   return errors;
+}
+
+/** The bundle's pin (`functions/_generated/pack-meta.json`): the stored pack this build ships, hashed over its exact bytes. */
+export interface PackMeta {
+  schema: number;
+  version: string;
+  packDate: string;
+  /** SHA-256 hex of the exact `pack.json` text (the KV value). */
+  sha256: string;
+  bytes: number;
+}
+
+export function packMeta(json: string): PackMeta {
+  const stored = JSON.parse(json) as StoredPack;
+  return { schema: stored.schema, version: stored.pack.packVersion, packDate: stored.pack.packDate, sha256: createHash("sha256").update(json, "utf8").digest("hex"), bytes: Buffer.byteLength(json, "utf8") };
+}
+
+/**
+ * Gates of a stored pack value (build and `scripts/ask-pack.ts publish` / `flip`): JSON, byte cap, schema, the text pack
+ * checks of `validatePack`, a content-addressed `packVersion`, and an index identical to the one rebuilt from the text.
+ */
+export function validateStoredPack(json: string, blocklist: readonly string[], options: { maxBytes?: number } = {}): string[] {
+  const maxBytes = options.maxBytes ?? PACK_VALUE_MAX_BYTES;
+  const errors: string[] = [];
+  const bytes = Buffer.byteLength(json, "utf8");
+  if (bytes > maxBytes) errors.push(`stored pack is ${bytes} bytes, over the ${maxBytes} byte cap`);
+  let stored: StoredPack;
+  try {
+    stored = JSON.parse(json) as StoredPack;
+  } catch {
+    return [...errors, "stored pack is not valid JSON"];
+  }
+  if (!stored || typeof stored !== "object" || !stored.pack || !stored.index || !Array.isArray(stored.pack.chunks)) return [...errors, "stored pack is not a StoredPack"];
+  if (stored.schema !== PACK_SCHEMA) errors.push(`stored pack schema ${String(stored.schema)} is not ${PACK_SCHEMA}`);
+  const { pack, index } = stored;
+  errors.push(...validatePack(pack, blocklist));
+  const { packVersion, packDate, chunks, entities, orgs, contact } = pack;
+  if (versioned({ packDate, chunks, entities, orgs, contact }).packVersion !== packVersion) errors.push(`packVersion ${packVersion} does not match the pack content`);
+  if (!Array.isArray(index.terms) || !Array.isArray(index.postings) || index.terms.length !== index.postings.length) errors.push("index terms and postings differ in length");
+  if (!Array.isArray(index.len) || index.len.length !== chunks.length) errors.push("index lengths differ from the chunk count");
+  if (typeof index.vocabulary !== "string") errors.push("index vocabulary is not a string");
+  if (!errors.length && JSON.stringify(storePack(pack).index) !== JSON.stringify(index)) errors.push("index does not match the pack text");
+  return errors;
+}
+
+export interface PackArtifacts {
+  /** `functions/_generated/pack.json`: the KV value. */
+  json: string;
+  /** `functions/_generated/fallback.json`: the fallback text pack, bundled with the Function. */
+  fallbackJson: string;
+  /** `functions/_generated/pack-meta.json`: the bundle's pin. */
+  meta: PackMeta;
+  errors: string[];
+}
+
+/** The build outputs of a text pack: the stored value, the fallback pack and the pin, with every gate applied. */
+export function buildPackArtifacts(pack: KnowledgePack, blocklist: readonly string[]): PackArtifacts {
+  const json = JSON.stringify(storePack(pack));
+  const fallback = buildFallbackPack(pack);
+  const fallbackJson = JSON.stringify(fallback);
+  const fallbackBytes = Buffer.byteLength(fallbackJson, "utf8");
+  const errors = [
+    ...validateStoredPack(json, blocklist),
+    ...validatePack(fallback, blocklist).map((e) => `fallback: ${e}`),
+    ...(fallbackBytes > FALLBACK_MAX_BYTES ? [`fallback: pack is ${fallbackBytes} bytes, over the ${FALLBACK_MAX_BYTES} byte cap`] : []),
+    ...FALLBACK_CHUNKS.filter((id) => !fallback.chunks.some((c) => c.id === id)).map((id) => `fallback: missing chunk "${id}"`),
+  ];
+  return { json, fallbackJson, meta: packMeta(json), errors };
 }
