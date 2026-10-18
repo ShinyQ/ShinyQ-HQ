@@ -43,6 +43,8 @@ export const HOLO_MODE = {
   sky: 12,
   /** Sun and moon disc on a quad: instance color and `aAlpha`, `uParams.x` the disc radius, `uParams.y` the halo falloff, `uParams.z` the moon shadow offset (instance 1 only). */
   orb: 13,
+  /** Intro landmark beacon on the floor (instance scale = footprint): a rounded-rect neon rim with a faint inner wash and a scan, faded by `aAlpha`. */
+  beacon: 14,
 } as const;
 
 export type HoloMode = (typeof HOLO_MODE)[keyof typeof HOLO_MODE];
@@ -252,6 +254,16 @@ void main(){
     float halo = exp(-r * r * uParams.y) * (1. - smoothstep(.7, 1., r));
     col = c * (disc * 1.4 + halo * .45);
     a = (disc + halo * .5) * vAlpha;
+  } else if (uMode == 14) {
+    vec2 p = (vUv - .5) * vSize;
+    float r = min(vSize.x, vSize.y) * .5;
+    vec2 q = abs(p) - (vSize * .5 - r);
+    float d = length(max(q, 0.)) + min(max(q.x, q.y), 0.) - r;
+    float rim = exp(-d * d * 7.);
+    float wash = smoothstep(-3., 0., d) * step(d, 0.) * .22;
+    float scan = .75 + .25 * sin(uTime * 5. - length(p) * .9);
+    col = c * (rim * 1.5 + wash) * scan;
+    a = (rim * .85 + wash) * vAlpha;
   } else {
     float r = length(vUv - 0.5) * 2.;
     float d = 1. - smoothstep(0.5, 1., r);

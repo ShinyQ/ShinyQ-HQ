@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { INTRO_KEY, introSeen, lobbyStartPhase, markIntroSeen, type SessionLike } from "@/lib/intro-session";
-import { continuationSteps, endContinuation, introTarget, isContinuing, onContinuationChange, setIntroTarget, takeIntroTarget } from "@/experience/introContinue";
+import { continuationSteps, endContinuation, holdSkipDrive, introTarget, isContinuing, onContinuationChange, setIntroTarget, takeIntroTarget } from "@/experience/introContinue";
 
 const memory = () => {
   const data = new Map<string, string>();
@@ -97,5 +97,37 @@ describe("continuation listener", () => {
     off();
     setIntroTarget(null);
     expect(listener).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("drive input that skips the intro onto a deep link", () => {
+  /** Runs the latch over frames of [driving, introEnded, continuing]; returns whether each frame's drive input counts. */
+  const run = (frames: [boolean, boolean, boolean][]) => {
+    let latched = false;
+    return frames.map(([driving, ended, continuing]) => {
+      latched = holdSkipDrive(latched, driving, ended, continuing);
+      return driving && !latched;
+    });
+  };
+
+  it("ignores the held key until it is released once, then a new drive input counts (and cancels the mission)", () => {
+    expect(
+      run([
+        [true, true, true],
+        [true, false, true],
+        [true, false, true],
+        [false, false, true],
+        [true, false, true],
+      ]),
+    ).toEqual([false, false, false, false, true]);
+  });
+
+  it("leaves the drive input alone without a continuation or once the intro is long over", () => {
+    expect(run([[true, true, false], [true, false, false]])).toEqual([true, true]);
+    expect(run([[true, false, true], [true, false, true]])).toEqual([true, true]);
+  });
+
+  it("does not latch when nothing is held as the intro ends", () => {
+    expect(run([[false, true, true], [true, false, true]])).toEqual([false, true]);
   });
 });

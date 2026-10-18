@@ -20,7 +20,7 @@ function floorsNow(): CullFloor[] {
 }
 
 /**
- * Off during boot and intro (the exterior shot). Otherwise on: a floor below the rover only draws during
+ * Off during boot and intro (the wake and the reveal orbit). Otherwise on: a floor below the rover only draws during
  * a ride, plus the first frame after one (FloorLevel's visibility still holds the ride then), so outside
  * rides the cull finds nothing to test and costs a few checks per frame.
  */

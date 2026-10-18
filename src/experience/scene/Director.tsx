@@ -27,6 +27,8 @@ import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
+import { introRuntime } from "../intro/runtime";
+import { holdSkipDrive, isContinuing } from "../introContinue";
 import { boostOn, boostTuning, stepBoostLevel } from "../rover/boost";
 import { cameraRelative, type RoverTuning } from "../rover/movement";
 import { roverRuntime } from "../rover/runtime";
@@ -96,6 +98,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
   const state = useRef({
     controller: null as RoverController | null,
     pendingMove: null as { x: number; y: number } | null,
+    /** The drive input held when the intro ended onto a deep-link continuation, ignored until released (`holdSkipDrive`). */
+    skipDrive: false,
     blockedUntil: 0,
     arrivedUntil: 0,
     statusUntil: 0,
@@ -216,7 +220,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           s.requestElevator(intent.to);
           break;
         case "cancel":
-          // Esc never skips the boot or the intro (owner decision); it stops elevator drives and scrub drives.
+          // Esc does nothing here in the boot or the intro (the camera's intro skip in CameraDirector handles Esc during
+          // the intro); otherwise it stops elevator drives and scrub drives.
           if (s.phase === "boot" || s.phase === "intro") break;
           // A beam (teleport, Return pad, into the car) always lands; Esc does not cut it short.
           if (s.beam) break;
@@ -282,7 +287,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     renderProbe.record(renderStats.sceneCalls + renderStats.postCalls, renderStats.triangles);
 
     // Greet once the intro hands control to the visitor (the first-session tour is OnboardingLayer's). The landing
-    // beat of the fly-in (Round 9 M): the eyes blink and the rover beeps (silent when the sound is off).
+    // beat of the intro: the eyes blink and the rover beeps (silent when the sound is off).
     if (s.phase === "explore" && (local.prevPhase === "intro" || local.prevPhase === "boot")) {
       roverRuntime.status = labels.hello;
       local.statusUntil = now + 2;
@@ -290,6 +295,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       roverRuntime.blinkUntil = now + 0.18;
       audio.play("beep");
     }
+    const introEnded = local.prevPhase === "intro" && s.phase !== "intro";
     local.prevPhase = s.phase;
 
     if (roverRuntime.cancelFlash) {
@@ -313,7 +319,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     const stick = joystick.active ? { x: joystick.x, y: joystick.y } : null;
     const input = keys.x || keys.y ? keys : stick && (stick.x || stick.y) ? stick : null;
     if (input) intents.emit({ type: "move", x: input.x, y: input.y });
-    const move = local.pendingMove;
+    local.skipDrive = holdSkipDrive(local.skipDrive, local.pendingMove !== null, introEnded, isContinuing());
+    const move = local.skipDrive ? null : local.pendingMove;
     local.pendingMove = null;
     if (move && s.mission?.status === "running") cancelMission();
 
@@ -539,6 +546,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     roverRuntime.y = y;
     roverRuntime.z = pose.z;
     roverRuntime.heading = pose.heading;
+    const waking = s.phase === "boot" || s.phase === "intro";
+    if (waking && introRuntime.heading !== null) roverRuntime.heading = introRuntime.heading;
     roverRuntime.speed = pose.speed;
     roverRuntime.tilt = pose.tilt;
     // The camera holds third person while the rover follows a path (autopilot, scrub, mission leg, elevator approach).
@@ -552,6 +561,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
       blockedUntil: local.blockedUntil,
       arrivedUntil: local.arrivedUntil,
       ride: rideFace,
+      wake: waking ? introRuntime.face : null,
     });
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * README media: the animated hero (boot card, intro fly-in, a boosted drive on L1, an elevator ride to
+ * README media: the animated hero (boot card, intro, a boosted drive on L1, an elevator ride to
  * L3 Project Roads) and one settled still per floor, captured from the static export.
  *
  *   bun run build && bun scripts/readme-hero.ts     # needs ffmpeg and gifsicle (brew install ffmpeg gifsicle)
@@ -33,9 +33,9 @@ const OUT = "docs/readme";
 /** At or above 1024 px the HUD stays on one row; DPR 1.6 gives 1920x1080 frames to downscale. */
 const VIEWPORT = { width: 1200, height: 675 };
 const DPR = 1.6;
-/** Captured at 20 fps (the preview MP4); the GIF keeps 12 fps to stay small. */
+/** Captured at 20 fps (the preview MP4); the GIF keeps 10 fps, undithered, to stay under 6 MB. */
 const FPS = 20;
-const GIF_FPS = 12;
+const GIF_FPS = 10;
 const STRIDE = 60 / FPS;
 /** Optional camera keys held for a number of frames after settling (Q/E rotate, R/F tilt, -/+ zoom). */
 type Hold = { key: string; frames: number };
@@ -131,11 +131,12 @@ async function hero(browser: Browser) {
     // 1. Boot card: wait until the log has typed out, then hold it.
     await driveUntil(page, () => document.querySelector('[data-testid="boot"] button:not([aria-disabled="true"])') !== null, { maxFrames: 1200, batch: 10 });
     await waitForQuiet(page);
-    await record(page, 48);
+    await record(page, 24);
 
-    // 2. Intro fly-in to the spawn in front of the Rover menu kiosk (2x: its first half is the bare shell).
+    // 2. Intro: Rover wakes up, then the reveal orbit lands on the spawn in front of the Rover menu kiosk (3x: the
+    // orbit moves the whole frame, the costliest part of the GIF).
     await page.getByTestId("boot").getByRole("button", { name: "Boot rover" }).click();
-    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 2);
+    await recordUntil(page, () => (window as unknown as HQ).__hq.store.getState().phase === "explore", 600, STRIDE * 3);
     await record(page, 18);
 
     // 3. Boosted drive past the hologram (Shift + S: toward the camera from the spawn view), then a glide.
@@ -238,8 +239,8 @@ if (!framesOnly && !ONLY) {
   const input = ["-framerate", String(FPS), "-i", join(FRAMES, "%04d.png")];
   ff(...input, "-vf", "scale=1280:-2:flags=lanczos", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-preset", "slow", "-movflags", "+faststart", join(FRAMES, "hero.mp4"));
   const raw = join(FRAMES, "hero-raw.gif");
-  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`, "-loop", "0", raw);
-  const lossy = spawnSync("gifsicle", ["-O3", "--lossy=80", raw, "-o", join(OUT, "hero.gif")], { stdio: "inherit" });
+  ff(...input, "-vf", `fps=${GIF_FPS},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, "-loop", "0", raw);
+  const lossy = spawnSync("gifsicle", ["-O3", "--lossy=100", raw, "-o", join(OUT, "hero.gif")], { stdio: "inherit" });
   if (lossy.status !== 0) throw new Error("gifsicle failed");
   ff("-i", framePath(Math.round(shot * Number(process.env.HERO_STILL ?? 0.3))), "-vf", "scale=1600:-1:flags=lanczos", "-q:v", "3", join(OUT, "hero.jpg"));
   for (const f of readdirSync(OUT).sort()) console.log(`${f}: ${(statSync(join(OUT, f)).size / 1024).toFixed(0)} KB`);

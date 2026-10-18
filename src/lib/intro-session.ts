@@ -1,6 +1,7 @@
 /**
- * The full boot and intro play on the first 3D load of every browser session, on any route, and
- * cannot be skipped (owner decision, October 2026). The flag lives in sessionStorage: later 3D loads
+ * The boot and the intro play on the first 3D load of every browser session, on any route (owner
+ * decision, October 2026). The boot cannot be skipped; drive, turn, zoom, reset view or Esc input skips
+ * the intro to the follow view (owner decision, 2026-10-18). The flag lives in sessionStorage: later 3D loads
  * in the same tab open straight in, a new session (or tab) plays them again. Deep links and language
  * switches that start a new session play them too, then the rover continues to the linked floor or
  * room (`src/experience/introContinue.ts`).

@@ -6,7 +6,7 @@ import { Fog, PerspectiveCamera, Vector3 } from "three";
 import type { FloorId } from "@/content/schema";
 import { cameraShift, drawerLayout } from "@/hud/drawer/layout";
 import { getHQStore, type HQState } from "@/store/useHQStore";
-import { floorY } from "../config";
+import { floorY, LOBBY } from "../config";
 import { roadZAt } from "../floors/career/layout";
 import { intents, pitchAxisFromKeys, rotateAxisFromKeys } from "../input/intents";
 import { MAX_FRAME_DT } from "../rover/controller";
@@ -21,21 +21,18 @@ import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPers
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
 import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { introRuntime, resetIntroRuntime, setReveal } from "../intro/runtime";
+import { introModule } from "../intro/chunk";
+import type { IntroPlan } from "./intro";
 import {
   FOLLOW_LOOK_AHEAD,
   followForward,
   followPose,
   forwardOf,
   hologramShift,
-  INTRO_DURATION,
-  INTRO_ORBIT,
-  INTRO_REDUCED,
-  introFlyProgress,
-  introPose,
   pitchRange,
   railForward,
   railPose,
-  reducedIntroPose,
   selectRig,
   springFactor,
   type CameraPose,
@@ -92,10 +89,14 @@ export function CameraDirector({
     outPos: new Vector3(),
     outTarget: new Vector3(),
     shift: { x: 0, y: 0 },
-    /** Reduced motion: cut (no glide) from the still intro shot to the follow camera on the next frame. */
+    /** Rover position scratch for the intro fog distance. */
+    introAt: new Vector3(),
+    /** A skipped intro: cut (no glide) to the follow camera on the next frame. */
     cut: false,
-    /** Drive, turn, zoom or reset input during the intro fly-in: the visitor takes over on the next frame. */
-    takeover: false,
+    /** Drive, turn, zoom, reset or Esc input during the intro: the intro is skipped on the next frame. */
+    skip: false,
+    /** The intro timeline: rebuilt every boot frame (the end pose follows a resize), frozen from the first intro frame. */
+    plan: null as IntroPlan | null,
     /** Boost response this frame: FOV kick (degrees) and follow distance factor. */
     boost: { fovKick: 0, pull: 1 },
     /** Arrival glide out of the elevator car (Round 8 J): seconds since it started and the destination; null when none runs. */
@@ -109,11 +110,8 @@ export function CameraDirector({
       intents.on((intent) => {
         const { orbit } = local.current;
         const s = getHQStore().getState();
-        // Input during the intro fly-in (never during the exterior orbit, which nothing skips) hands the view over.
-        const l = local.current;
-        if (s.phase === "intro" && !s.reducedMotion && l.introStart !== null && l.now - l.introStart >= INTRO_ORBIT) {
-          if (intent.type === "move" || intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") l.takeover = true;
-        }
+        // Drive, turn, zoom, reset or Esc during the intro skips it (the boot ignores input).
+        if (introModule()?.skipsIntro(s.phase, intent.type)) local.current.skip = true;
         // Any turn, zoom or reset hands the arrival glide over to the normal camera, which eases on from the drawn pose.
         if (intent.type === "orbit" || intent.type === "zoom" || intent.type === "view") local.current.glide = null;
         const rail = selectRig(s.phase, s.floor) === "rail";
@@ -143,6 +141,14 @@ export function CameraDirector({
     l.now += dt;
     const cls = s.device.camera;
     const rig = selectRig(s.phase, s.floor);
+    // The intro chunk: Experience mounts the canvas of an intro session only once it loaded (intro/chunk.ts).
+    const intro = rig === "intro" ? introModule() : null;
+    // The phase can leave the intro without its last frame running here (the static tier, `recover`): drop its state.
+    if (rig !== "intro" && introRuntime.active) {
+      resetIntroRuntime();
+      l.introStart = null;
+      l.plan = null;
+    }
     const rail = rig === "rail";
     const roverTarget: Vec3 = [roverRuntime.x, roverRuntime.y + 1, roverRuntime.z];
 
@@ -218,8 +224,8 @@ export function CameraDirector({
 
     let desired: CameraPose;
     let snap = false;
-    /** Intro fly-in progress this frame (0 to 1), -1 outside it. */
-    let introFly = -1;
+    /** Fog range the intro sets this frame (applied with no smoothing), null outside it. "ring" follows the reveal from the drawn camera. */
+    let introFogMode: "ring" | "follow" | null = null;
     /** The rig the drawn pose belongs to: during a glide the destination's (the store still holds the origin floor until the ride ends). */
     const drawRail = glide ? glide.to === "L2" : rail;
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
@@ -248,29 +254,71 @@ export function CameraDirector({
       const f = followForward(cls, orbit.yaw);
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
       const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
+      const rover: Vec3 = [roverRuntime.x, roverRuntime.y, roverRuntime.z];
       snap = true;
-      if (s.phase === "boot") {
+      if (!intro) {
+        // Unreachable while the canvas waits for the chunk; without it the intro cannot play, so it ends on the follow pose.
+        desired = end;
+        if (s.phase === "intro") s.finishIntro();
+      } else if (s.phase === "boot") {
+        // The dark wake close-up, under any motion setting: Rover's face off, turned to the orbit's start, nothing revealed.
         l.introStart = null;
-        l.takeover = false;
-        desired = introPose(cls, 0, end);
+        l.skip = false;
+        l.plan = intro.introPlan(cls, rover, LOBBY.spawnHeading, end);
+        desired = intro.introPose(l.plan, 0);
+        introRuntime.active = true;
+        introRuntime.t = 0;
+        introRuntime.face = "off";
+        introRuntime.heading = l.plan.wakeHeading;
+        introRuntime.veil = 0;
+        setReveal(0, roverRuntime);
+        introFogMode = "ring";
+      } else if (l.skip) {
+        // Input skipped the intro: cut to the follow pose under a veil that fades out (IntroVeil).
+        const veil = s.reducedMotion && l.introStart !== null ? introRuntime.veil : 1;
+        s.finishIntro();
+        l.cut = true;
+        l.skip = false;
+        l.introStart = null;
+        l.plan = null;
+        resetIntroRuntime();
+        introRuntime.skipped = true;
+        introRuntime.veil = veil;
+        desired = end;
+        introFogMode = "follow";
       } else if (s.reducedMotion) {
-        // Reduced motion holds a still exterior shot for INTRO_REDUCED, then cuts to the follow camera.
-        l.introStart ??= l.now;
-        desired = reducedIntroPose(cls, end);
-        if (l.now - l.introStart >= INTRO_REDUCED) {
-          s.finishIntro();
-          l.cut = true;
+        // Reduced motion: cut to the follow pose with everything revealed under a veil that clears over INTRO.reduced.
+        desired = end;
+        if (l.introStart === null) {
+          l.introStart = l.now;
+          resetIntroRuntime();
         }
-      } else {
-        // The exterior orbit always runs; the fly-in then comes down to the follow pose in one move (Round 9 M). Input
-        // during the fly-in ends it early: the follow spring eases on from the drawn pose.
-        l.introStart ??= l.now;
         const t = l.now - l.introStart;
-        desired = introPose(cls, t, end);
-        introFly = introFlyProgress(t);
-        if (t >= INTRO_DURATION || l.takeover) {
+        introRuntime.veil = intro.reducedVeil(t);
+        if (t >= intro.INTRO.reduced) {
           s.finishIntro();
-          l.takeover = false;
+          introRuntime.veil = 0;
+          l.introStart = null;
+          l.plan = null;
+        }
+        introFogMode = "follow";
+      } else {
+        // The wake close-up, then the reveal orbit lands on the follow pose. The plan stays frozen from the first intro frame.
+        l.introStart ??= l.now;
+        l.plan ??= intro.introPlan(cls, rover, LOBBY.spawnHeading, end);
+        const t = l.now - l.introStart;
+        desired = intro.introPose(l.plan, t);
+        introRuntime.active = true;
+        introRuntime.t = t;
+        introRuntime.face = intro.introFace(t);
+        introRuntime.heading = intro.introHeading(l.plan, t);
+        setReveal(intro.revealRadius(t), roverRuntime);
+        introFogMode = "ring";
+        if (t >= intro.INTRO.duration) {
+          s.finishIntro();
+          resetIntroRuntime();
+          l.introStart = null;
+          l.plan = null;
         }
       }
     } else if (glide) {
@@ -370,20 +418,21 @@ export function CameraDirector({
     roverRuntime.cameraPosition = toVec3(l.outPos);
     roverRuntime.cameraBehind = cameraBehindHeading(roverRuntime.cameraPosition, [roverRuntime.x, roverRuntime.y, roverRuntime.z]);
     roverRuntime.arrivalGlide = glide ? glideProgress(glide.t) : -1;
-    roverRuntime.introFly = introFly;
     roverRuntime.cameraElevation = Math.atan2(l.outPos.y - l.outTarget.y, Math.hypot(l.outPos.x - l.outTarget.x, l.outPos.z - l.outTarget.z));
     if (scene.fog instanceof Fog) {
-      // Ease the linear fog range between rigs so the intro fly-in and the first-person glide do not pop.
+      // Ease the linear fog range between rigs so the first-person glide does not pop.
       // A glide uses the destination's range from its first frame (a cut into the car), so the fog does not pop when the ride ends.
       const fogRig = glide ? (drawRail ? "rail" : "follow") : rig;
       let { near: fogNear, far: fogFar } = sceneSettings(s.tier, focus ? "focus" : fp && orbit.blend >= 0.5 ? "first" : fogRig).fog;
-      // The intro fly-in brings the fog in from the exterior range to the follow range, so explore starts on it.
-      if (introFly >= 0) {
+      // The boot and the intro: everything past the reveal ring (as seen from the drawn camera) fades into the night,
+      // then the follow range, so explore starts on it.
+      if (introFogMode) {
         const follow = sceneSettings(s.tier, "follow").fog;
-        fogNear += (follow.near - fogNear) * introFly;
-        fogFar += (follow.far - fogFar) * introFly;
+        const range = introFogMode === "ring" && intro ? intro.introFog(l.outPos.distanceTo(l.introAt.set(roverRuntime.x, roverRuntime.y, roverRuntime.z)), introRuntime.reveal, follow) : follow;
+        fogNear = range.near;
+        fogFar = range.far;
       }
-      const kf = snap ? 1 : springFactor(dt);
+      const kf = snap || introFogMode ? 1 : springFactor(dt);
       scene.fog.near += (fogNear - scene.fog.near) * kf;
       scene.fog.far += (fogFar - scene.fog.far) * kf;
     }

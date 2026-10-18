@@ -36,6 +36,7 @@ const POSES: readonly Pose[] = [
   { name: "l3-labs", kind: "settled", path: "/en/labs" },
   { name: "l4-library", kind: "settled", path: "/en/library" },
   { name: "rf-contact", kind: "settled", path: "/en/contact" },
+  // Captured under reduced motion: 30 frames into the intro's fade into the follow view.
   { name: "intro-still", kind: "intro", path: "/en" },
   { name: "ride-up-l1-l2", kind: "ride", path: "/en", to: "L2" },
   { name: "ride-down-rf-l1", kind: "ride", path: "/en/contact", to: "L1" },
