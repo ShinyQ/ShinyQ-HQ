@@ -45,7 +45,9 @@ describe("intro timeline", () => {
       const first = introPose(plan, 0);
       const toFace = Math.hypot(first.position[0] - first.target[0], first.position[2] - first.target[2]);
       expect(toFace).toBeLessThan(3.5);
-      expect(first.target[1]).toBeCloseTo(FACE_Y, 1);
+      // The look point sits on the head, between the face screen's center and the head top, so the antenna stays in frame.
+      expect(first.target[1]).toBeGreaterThanOrEqual(FACE_Y);
+      expect(first.target[1]).toBeLessThan(FACE_Y + 0.5);
       expect(plan.sweep).toBeCloseTo(1.5 * Math.PI);
       expect(plan.wakeHeading).toBeCloseTo(plan.start);
       // The camera's angle around Rover never goes back.
@@ -83,6 +85,65 @@ describe("intro timeline", () => {
         const overWall = Math.abs(x - wall.x) < wall.w / 2 + 1 && Math.abs(z - wall.z) < wall.d / 2 + 1;
         if (overWall) expect(y).toBeGreaterThan(wall.h + 1);
       }
+    }
+  });
+
+  // The primed spawn views (the real first frames after the boot): desktop, tablet and phone.
+  const primed = cases.slice(2);
+  const pitchAt = (p: { position: number[]; target: number[] }) =>
+    (Math.atan2(p.position[1] - p.target[1], Math.hypot(p.position[0] - p.target[0], p.position[2] - p.target[2])) * 180) / Math.PI;
+  const sweptAt = (plan: ReturnType<typeof introPlan>, t: number) => {
+    let prev = plan.start;
+    let swept = 0;
+    for (let i = 1; i <= 400; i++) {
+      const p = introPose(plan, (t * i) / 400).position;
+      const a = Math.atan2(p[0] - rover[0], p[2] - rover[2]);
+      swept += Math.atan2(Math.sin(a - prev), Math.cos(a - prev));
+      prev = a;
+    }
+    return swept / plan.sweep;
+  };
+
+  it("frames the wake close-up slightly from above", () => {
+    for (const [cls, yaw, zoom] of primed) {
+      const first = introPose(introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom)), 0);
+      const pitch = pitchAt(first);
+      expect(pitch).toBeGreaterThan(5);
+      expect(pitch).toBeLessThan(20);
+    }
+  });
+
+  it("looks at the landmarks from the side at mid-orbit (pitch 32 to 45 degrees, like the follow camera)", () => {
+    const mid = (INTRO.wake + INTRO.duration) / 2;
+    for (const [cls, yaw, zoom] of primed) {
+      const plan = introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom));
+      for (let t = mid - 0.5; t <= mid + 0.5 + 1e-9; t += 0.05) {
+        const pitch = pitchAt(introPose(plan, t));
+        expect(pitch).toBeGreaterThanOrEqual(32);
+        expect(pitch).toBeLessThanOrEqual(45);
+      }
+    }
+  });
+
+  it("rises at least 4 u above the follow height, then descends onto it", () => {
+    for (const [cls, yaw, zoom] of primed) {
+      const end = endFor(cls, yaw, zoom);
+      const plan = introPlan(cls, rover, LOBBY.spawnHeading, end);
+      let top = -Infinity;
+      for (let i = 0; i <= 600; i++) top = Math.max(top, introPose(plan, (INTRO.duration * i) / 600).position[1]);
+      expect(top).toBeGreaterThanOrEqual(end.position[1] + 4);
+    }
+  });
+
+  it("spreads the sweep evenly and keeps only the last second for the landing", () => {
+    for (const [cls, yaw, zoom] of primed) {
+      const plan = introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom));
+      expect(sweptAt(plan, INTRO.duration - 1)).toBeGreaterThanOrEqual(0.85);
+      // Not front-loaded: about half the sweep by the middle of the orbit.
+      const half = sweptAt(plan, (INTRO.wake + INTRO.duration) / 2);
+      expect(half).toBeGreaterThan(0.4);
+      expect(half).toBeLessThan(0.6);
+      expect(sweptAt(plan, INTRO.duration)).toBeCloseTo(1, 6);
     }
   });
 

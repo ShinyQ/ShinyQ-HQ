@@ -9,11 +9,12 @@ const END = "\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n
 const REVEAL_GLSL = " uniform float uReveal; uniform vec2 uRevealAt;";
 /**
  * Intro reveal (needs the world xz varying `vW`): `lit` dims what the ring has not reached yet, `front` is the
- * bright wavefront plus a fainter trailing ring. At the off value (uReveal 1e5) `lit` is exactly 1 and `front`
- * exactly 0, so the output is bit-identical to the unmasked shader.
+ * bright wavefront (the floor lights coming on, with a near-white core on the grid) plus a fainter trailing ring,
+ * fading in over the first 8 u so the floor under Rover never flares during the wake close-up. At the off value
+ * (uReveal 1e5) `lit` is exactly 1 and `front` exactly 0, so the output is bit-identical to the unmasked shader.
  */
 const REVEAL_MASK =
-  "float rr = length(vW - uRevealAt); float lit = 1. - smoothstep(uReveal - 3., uReveal, rr); float e0 = (rr - uReveal) / 1.1; float e1 = (rr - uReveal + 7.) / 2.2; float front = exp(-e0 * e0) + .35 * exp(-e1 * e1);";
+  "float rr = length(vW - uRevealAt); float lit = 1. - smoothstep(uReveal - 3., uReveal, rr); float e0 = (rr - uReveal) / 1.5; float e1 = (rr - uReveal + 6.) / 2.6; float front = (exp(-e0 * e0) + .4 * exp(-e1 * e1)) * smoothstep(0., 8., uReveal);";
 
 const GLASS_VS =
   "varying vec3 vN; varying vec3 vV; varying vec2 vUv; void main(){ vUv = uv; vec4 mv = modelViewMatrix*vec4(position,1.); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }";
@@ -74,7 +75,7 @@ export function createGridFloorMaterial({ line, bg, radius, center = [0, 0] }: {
 float grid(vec2 p){ vec2 g = abs(fract(p-.5)-.5)/fwidth(p); return 1.-min(min(g.x,g.y),1.); }
 void main(){ float l1 = grid(vW), l5 = grid(vW/5.); float d = length(vW-uCenter)/uRadius; float fade = 1.-smoothstep(.45,1.,d);
   ${REVEAL_MASK}
-  vec3 c = uBg + uLine*(l1*.07 + l5*.2)*fade*lit + vec3(.012,.012,.03)*(1.-min(d,1.))*lit + uLine*(l1*.8 + l5*1.2 + .18)*front*step(rr, uReveal + 4.); gl_FragColor = vec4(c,1.);` + END,
+  vec3 c = uBg + uLine*(l1*.07 + l5*.2)*fade*lit + vec3(.012,.012,.03)*(1.-min(d,1.))*lit + (uLine*(l1*1.6 + l5*2.2 + .55) + vec3(.22,.25,.34)*exp(-e0*e0*2.))*front*step(rr, uReveal + 4.); gl_FragColor = vec4(c,1.);` + END,
   });
 }
 
@@ -95,7 +96,7 @@ export function createLaneMaterial(color: string, length: number): ShaderMateria
 void main(){ float y = abs(vUv.y-.5); float edge = smoothstep(.28,.44,y)*(1.-smoothstep(.44,.5,y));
   float dash = step(.55, fract(vUv.x*uLen*.5 - uTime*.9)) * (1.-smoothstep(.06,.14,y));
   ${REVEAL_MASK}
-  float a = (edge*.7 + dash*.45 + .05)*lit + front*.8*step(rr, uReveal + 4.); gl_FragColor = vec4(uColor*a*1.8, a);` + END,
+  float a = (edge*.7 + dash*.45 + .05)*lit + front*1.6*step(rr, uReveal + 4.); gl_FragColor = vec4(uColor*a*1.8, a);` + END,
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
