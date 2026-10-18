@@ -420,7 +420,7 @@
     "settings": {
       "dayNight": {
         "label": "Day and night",
-        "hint": "A shared 8-minute sky cycle. Reduced motion keeps the sky at night unless enabled here."
+        "hint": "A shared 4-minute sky cycle. Reduced motion keeps the sky at night unless enabled here."
       },
       "openLinks": {
         "label": "Default HQ view",

@@ -60,7 +60,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 
 ### Placement (decided on screen every frame)
 
-- `useLibrarySignPlacement` projects every plate (`projectPlate`).
+- `useLibrarySignPlacement` calls the pure frame `libraryLabelFrame` (`decor/signFrame.ts`), which projects every plate (`projectPlate`).
 - `placeLibraryLabels` (`signPlacement.ts`, pure) picks what shows:
   - priority: picked titles first, then sections (at most 4), years (3) and the other post titles, nearest to the rover first;
   - at most 6 titles on desktop and 4 on phones (width < 600);
@@ -97,7 +97,7 @@ Code: `LibraryLayout.end`, `NEWSROOM.end`, scene `EndPlaza.tsx`.
 
 No label may cover another (owner decision).
 
-- `useEndSignPlacement` projects each plate (yaw-facing, upright).
+- `useEndSignPlacement` calls the pure frame `endPlazaFrame` (`decor/signFrame.ts`), which projects each plate (yaw-facing, upright).
 - `placeLabels` (`fx/labelPlacement.ts`, pure) keeps:
   - the count headline, the monument plates (stacked in one column), the archive name and the picked topic;
   - then the other topic labels by priority (hovered orb, bigger topic, nearer), up to 8 (5 on phones), where they cover nothing.
@@ -114,6 +114,10 @@ No label may cover another (owner decision).
 ## Tests
 
 - `e2e/topics.spec.ts`: includes no label overlap from the approach, the camera zones and while orbiting, desktop and phone, by `polygonOverlap` of the quads.
+- `tests/unit/library-label-sweep.test.ts` (every PR, about 1 s): the same sweep and assertions as `e2e/library-labels.spec.ts`, without a renderer.
+  - The real layout and signs, the scene's own per-frame placement (`signFrame.ts`) and the follow camera as `CameraDirector` settles it (the autopilot route by `roadRoute`, view zones, look-ahead, offset scale, camera collision).
+  - Each pose is checked at 8 orbit angles of the end plaza's topic labels.
+  - A change to the camera rig, the view zones or the placement that the sweep does not follow shows as a gap between the two; the rendered spec stays the reference.
 - `e2e/library-labels.spec.ts`:
   - timeline label overlap under 2 percent of the smaller plate over the approach, the posts, mid-timeline and each zone, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
   - the title caps, no duplicate text, no label on the rover;

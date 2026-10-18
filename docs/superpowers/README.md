@@ -9,7 +9,7 @@ Plans are history: they record what was decided and built at the time, and later
 
 ## Plans
 
-85 plans: 54 shipped and still current, 24 shipped with a part later removed or replaced, 7 in review (see each plan's status line).
+89 plans: 55 shipped and still current, 24 shipped with a part later removed or replaced, 10 in review (see each plan's status line).
 
 | Plan | Status | PR |
 |---|---|---|
@@ -98,6 +98,10 @@ Plans are history: they record what was decided and built at the time, and later
 | [Test Suite Trim Implementation Plan](plans/2026-10-18-test-suite-trim.md) | in review | [#201](https://github.com/ShinyQ/ShinyQ-HQ/pull/201) |
 | [Ask Multi-Turn Memory Implementation Plan](plans/2026-10-17-ask-multi-turn.md) | in review |  |
 | [Ask Groq Backup Tiers Implementation Plan](plans/2026-10-18-ask-groq-backup-tiers.md) | shipped | [#210](https://github.com/ShinyQ/ShinyQ-HQ/pull/210) |
+| [CI: Main Runs the Complement, Narrower PR Perf and Lighthouse Implementation Plan](plans/2026-10-18-ci-main-complement.md) | in review |  |
+| [L4 Timeline Label Sweep as a Unit Test Implementation Plan](plans/2026-10-18-l4-label-sweep-unit.md) | shipped | [#219](https://github.com/ShinyQ/ShinyQ-HQ/pull/219) |
+| [Vertical Sun and Moon Arc Implementation Plan](plans/2026-10-18-vertical-sun-moon-arc.md) | in review | [#220](https://github.com/ShinyQ/ShinyQ-HQ/pull/220) |
+| [E2E Nightly Moves Implementation Plan](plans/2026-10-18-e2e-nightly-moves.md) | in review |  |
 
 ## Specs
 

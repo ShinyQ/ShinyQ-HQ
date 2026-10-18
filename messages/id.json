@@ -420,7 +420,7 @@
     "settings": {
       "dayNight": {
         "label": "Siang dan malam",
-        "hint": "Siklus langit 8 menit yang serentak. Saat gerakan dikurangi, langit tetap malam kecuali diaktifkan di sini."
+        "hint": "Siklus langit 4 menit yang serentak. Saat gerakan dikurangi, langit tetap malam kecuali diaktifkan di sini."
       },
       "openLinks": {
         "label": "Tampilan awal HQ",

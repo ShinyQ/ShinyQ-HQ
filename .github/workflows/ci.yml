@@ -10,12 +10,18 @@ name: CI
 # pull request needs from its changed paths: the affected e2e specs plus a PR smoke set on a shard count
 # sized from e2e/durations.json, the affected 3D perf tests (a --grep; memory-full only for memory paths)
 # and the affected Lighthouse URLs. Typecheck, lint, unit tests, the build, the safety scan and og:check
-# always run. Pushes to main, manual dispatches, the nightly schedule, the `full-ci` label, CI or
-# dependency changes, unmapped paths and any planner failure run everything: 8 e2e and 4 perf shards
-# (2 perf shards on pull requests, so the required checks keep the names `3D perf gates 1/2` and `2/2`). A heavy job never skips at the job level (a skipped matrix job would report an
+# always run. A push to main whose merged pull request passed CI on the same tree runs only the complement
+# of that PR run (its `ci-plan` record, scripts/ci-complement.ts) and merges the PR run's Lighthouse and perf
+# reports, so main still covers everything and keeps a full baseline. Manual dispatches (unless
+# `complement_pr` is set, a measurement), the nightly schedule, the `full-ci` label, CI or dependency
+# changes, unmapped paths, a push without such a PR run and any planner failure run everything: 8 e2e
+# and 4 perf shards (2 perf shards on pull requests, so the required checks keep the names `3D perf gates
+# 1/2` and `2/2`). A heavy job never skips at the job level (a skipped matrix job would report an
 # unexpanded check name and block the required checks): its steps skip and one "Not needed" step
-# passes. Complete runs upload the `ci-full` artifact for the deploy gate (scripts/ci-status.ts).
-# The nightly schedule runs the full pipeline on main every night, plus the nightly-only `nightly` job
+# passes. Complete runs (complement runs included) upload the `ci-full` artifact for the deploy gate
+# (scripts/ci-status.ts).
+# The nightly schedule runs the full pipeline on main every night, the nightly-only e2e tests (`@nightly`,
+# skipped by pull requests and pushes) included, plus the nightly-only `nightly` job
 # (also on a dispatch with the `nightly` input), which reads every job's result and opens, updates or
 # closes the one `ci-nightly` issue (scripts/ci-nightly.ts; writes only on main, a dry run elsewhere).
 # The strict visual gate (scripts/visual-gate.ts) is not here: it needs a real GPU and times out on the
@@ -31,9 +37,13 @@ on:
   workflow_dispatch:
     inputs:
       nightly:
-        description: Also run the ci-nightly issue report
+        description: Also run the nightly-only e2e tests (@nightly) and the ci-nightly issue report
         type: boolean
         default: false
+      complement_pr:
+        description: Plan the complement of this pull request's green CI run on the same tree, as a push to main does (measurement)
+        type: string
+        default: ""
 
 concurrency:
   # The nightly gets its own group so it never replaces a pending main push.
@@ -56,15 +66,19 @@ env:
 
 jobs:
   changes:
-    # Smart CI (owner decision 2026-10-17): which heavy jobs this run needs (scripts/ci-plan.ts). Pull
-    # requests get a selective plan from their changed paths; pushes, dispatches and the nightly
-    # schedule run everything, and so does any planner failure.
+    # Smart CI (owner decisions 2026-10-17 and 2026-10-18): which heavy jobs this run needs
+    # (scripts/ci-plan.ts). Pull requests get a selective plan from their changed paths; a push to main
+    # gets the complement of its merged PR's green run on the same tree; other pushes, dispatches and the
+    # nightly schedule run everything, and so does any planner failure. Every run uploads its record
+    # (`ci-plan`), which a later complement run reads.
     name: Plan CI
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
+      # Lists the PR's green CI runs and downloads their `ci-plan` record.
+      actions: read
     outputs:
       full: ${{ steps.plan.outputs.full }}
       e2e: ${{ steps.plan.outputs.e2e }}
@@ -77,6 +91,7 @@ jobs:
       perf_total: ${{ steps.plan.outputs.perf_total }}
       lighthouse: ${{ steps.plan.outputs.lighthouse }}
       lighthouse_urls: ${{ steps.plan.outputs.lighthouse_urls }}
+      source_run: ${{ steps.plan.outputs.source_run }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -98,7 +113,17 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          COMPLEMENT_PR: ${{ inputs.complement_pr }}
         run: bun scripts/ci-plan.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          # What this run covers; a push to main reads its merged PR run's record (scripts/ci-complement.ts).
+          name: ci-plan
+          path: ci-plan.json
+          retention-days: 30
+          if-no-files-found: warn
 
   check:
     name: Typecheck, lint, unit tests
@@ -243,14 +268,19 @@ jobs:
         # Duration-balanced test list (scripts/e2e-shard.ts, e2e/durations.json); keep the total in sync
         # e2e/deploy.spec.ts repeats the out/ scan with the private list.
         # E2E_FILES: the planned spec files and `file:line` smoke tests of a selective run; empty means every spec.
+        # NIGHTLY: the nightly-only tests (`@nightly` in the title, docs/agents/performance.md) run on the
+        # nightly schedule and on a dispatch with the `nightly` input; pull requests and pushes to main skip them.
         if: needs.changes.outputs.e2e != 'none'
         env:
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           E2E_FILES: ${{ needs.changes.outputs.e2e_files }}
           SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true }}
         run: |
+          skip=(--grep-invert @nightly)
+          if [ "$NIGHTLY" = "true" ]; then skip=(); fi
           # shellcheck disable=SC2086 # E2E_FILES splits into one argument per spec file on purpose.
-          bun run e2e:shard "$SHARD" $E2E_FILES
+          bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && needs.changes.outputs.e2e != 'none' }}
         with:
@@ -366,6 +396,20 @@ jobs:
           path: playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+      - name: The PR run's perf report (complement run)
+        # A complement run measured only the tests the PR run did not: add the PR run's measurements, so
+        # main's perf-report stays a full baseline for the next pull request.
+        if: needs.changes.outputs.source_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ needs.changes.outputs.source_run }}
+        run: |
+          if gh run download "$RUN" --repo "$REPO" --name perf-report --dir perf-report; then
+            echo "Merged the perf report of CI run $RUN."
+          else
+            echo "::notice::CI run $RUN has no perf-report artifact (it ran no perf gate)."
+          fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: needs.changes.outputs.perf != 'false'
         with:
@@ -373,16 +417,16 @@ jobs:
           path: perf-report
           merge-multiple: true
       - name: Main baseline for the 3D perf summary
-        if: needs.changes.outputs.perf != 'false'
+        if: needs.changes.outputs.perf != 'false' || needs.changes.outputs.source_run != ''
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash scripts/perf-base.sh perf-report base-perf ci.yml push
       - name: 3D perf summary
-        if: needs.changes.outputs.perf != 'false'
+        if: needs.changes.outputs.perf != 'false' || needs.changes.outputs.source_run != ''
         run: bun scripts/perf-summary.ts gates --head perf-report --base base-perf
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: needs.changes.outputs.perf != 'false'
+        if: needs.changes.outputs.perf != 'false' || needs.changes.outputs.source_run != ''
         with:
           # The next run's baseline when this run is on main.
           name: perf-report
@@ -392,7 +436,12 @@ jobs:
       - name: Mark a complete run (deploy gate)
         # scripts/ci-status.ts reuses only CI runs that ran every e2e test, every perf test and every Lighthouse URL.
         if: needs.changes.outputs.full == 'true'
-        run: echo "${{ github.sha }}" > ci-full.txt
+        env:
+          SHA: ${{ github.sha }}
+          SOURCE_RUN: ${{ needs.changes.outputs.source_run }}
+        run: |
+          echo "$SHA" > ci-full.txt
+          if [ -n "$SOURCE_RUN" ]; then echo "complement of CI run $SOURCE_RUN" >> ci-full.txt; fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.changes.outputs.full == 'true'
         with:
@@ -455,6 +504,22 @@ jobs:
           else
             bunx @lhci/cli@0.15.1 autorun
           fi
+      - name: The PR run's reports (complement run)
+        # A complement run measured only the URLs the PR run did not: add the PR run's reports, so main's
+        # lighthouse-reports stay a full baseline for the next pull request (cp -n keeps this run's files).
+        if: ${{ !cancelled() && needs.changes.outputs.source_run != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ needs.changes.outputs.source_run }}
+        run: |
+          mkdir -p .lighthouseci
+          if gh run download "$RUN" --repo "$REPO" --name lighthouse-reports --dir source-lhci; then
+            find source-lhci -maxdepth 1 -name 'lhr-*' -exec cp -n {} .lighthouseci/ \;
+            echo "Merged the Lighthouse reports of CI run $RUN."
+          else
+            echo "::notice::CI run $RUN has no lighthouse-reports artifact; the baseline covers only this run's URLs."
+          fi
       - name: Main baseline for the JS chunk diff
         if: ${{ !cancelled() && needs.changes.outputs.lighthouse != 'false' }}
         env:
@@ -465,7 +530,7 @@ jobs:
         if: ${{ !cancelled() && needs.changes.outputs.lighthouse != 'false' }}
         run: bun scripts/perf-summary.ts lhci --head .lighthouseci --base base-lhci
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ always() && needs.changes.outputs.lighthouse != 'false' }}
+        if: ${{ always() && (needs.changes.outputs.lighthouse != 'false' || needs.changes.outputs.source_run != '') }}
         with:
           name: lighthouse-reports
           path: .lighthouseci/

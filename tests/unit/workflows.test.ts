@@ -75,6 +75,18 @@ describe("smart CI (ci.yml)", () => {
     expect(job("build")).toContain("if: needs.changes.outputs.full == 'true'");
   });
 
+  it("records every plan and merges the PR run's reports into a complement run", () => {
+    expect(job("changes")).toContain("source_run: ${{ steps.plan.outputs.source_run }}");
+    expect(job("changes")).toContain("actions: read");
+    expect(job("changes")).toContain("SHA: ${{ github.sha }}");
+    expect(job("changes")).toContain("COMPLEMENT_PR: ${{ inputs.complement_pr }}");
+    expect(job("changes")).toMatch(/name: ci-plan\n\s+path: ci-plan\.json/);
+    expect(job("lighthouse")).toContain("--name lighthouse-reports --dir source-lhci");
+    expect(job("lighthouse")).toContain("if: ${{ always() && (needs.changes.outputs.lighthouse != 'false' || needs.changes.outputs.source_run != '') }}");
+    expect(job("build")).toContain("--name perf-report --dir perf-report");
+    expect(job("build")).toContain("complement of CI run $SOURCE_RUN");
+  });
+
   it("passes skipped heavy jobs with a Not needed step and fails safe on a missing plan output", () => {
     for (const id of ["e2e", "perf", "lighthouse"]) expect(job(id)).toContain("name: Not needed");
     expect(job("perf")).not.toContain("outputs.perf == 'true'");
@@ -93,6 +105,13 @@ describe("smart CI (ci.yml)", () => {
     expect(job("nightly")).toContain("NEEDS: ${{ toJSON(needs) }}");
     expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
     expect(job("nightly")).toContain("run: bun scripts/ci-nightly.ts");
+  });
+
+  it("skips the nightly-only e2e tests except on the nightly schedule or the nightly input", () => {
+    expect(job("e2e")).toContain("NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true }}");
+    expect(job("e2e")).toContain("skip=(--grep-invert @nightly)");
+    expect(job("e2e")).toContain('if [ "$NIGHTLY" = "true" ]; then skip=(); fi');
+    expect(job("e2e")).toContain('bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"');
   });
 });
 

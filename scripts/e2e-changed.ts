@@ -1,12 +1,13 @@
 /**
  * Runs the e2e specs that cover your changes (scripts/e2e-plan.ts maps paths to specs).
- * Usage: bun scripts/e2e-changed.ts [--base origin/main] [--smoke | --all] [--dry] [extra playwright args]
+ * Usage: bun scripts/e2e-changed.ts [--base origin/main] [--smoke | --all] [--nightly] [--dry] [extra playwright args]
  *
  * Changed paths = commits since the merge base with --base, plus staged, unstaged and untracked
- * files. Needs a current `out/` (`bun run build`, which `verify:quick` runs).
+ * files. Needs a current `out/` (`bun run build`, which `verify:quick` runs). Like a pull request run it skips the
+ * nightly-only tests (`@nightly`); `--nightly` runs them too.
  */
 import { existsSync } from "node:fs";
-import { SMOKE_SPECS, specsForChanges } from "./e2e-plan";
+import { NIGHTLY_TAG, SMOKE_SPECS, specsForChanges } from "./e2e-plan";
 
 function git(args: string[]): string[] {
   const result = Bun.spawnSync(["git", ...args], { stdout: "pipe", stderr: "pipe" });
@@ -35,6 +36,7 @@ function main() {
   const dry = take("--dry");
   const smoke = take("--smoke");
   const all = take("--all");
+  const nightly = take("--nightly");
   let base = "origin/main";
   const b = args.indexOf("--base");
   if (b >= 0) {
@@ -66,7 +68,8 @@ function main() {
     process.exit(1);
   }
   const files = specs === "all" ? [] : specs.map((s) => `e2e/${s}.spec.ts`);
-  const run = Bun.spawnSync(["bunx", "playwright", "test", ...files, ...args], { stdout: "inherit", stderr: "inherit" });
+  const skip = nightly ? [] : ["--grep-invert", NIGHTLY_TAG, "--pass-with-no-tests"];
+  const run = Bun.spawnSync(["bunx", "playwright", "test", ...files, ...skip, ...args], { stdout: "inherit", stderr: "inherit" });
   process.exit(run.exitCode ?? 1);
 }
 

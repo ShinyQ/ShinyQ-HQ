@@ -1,11 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Day and night review captures: L1 and L3 at the four sky phases (night, dawn, day, dusk) on desktop
- * (full tier, 1440x900) and phone (lite tier, 390x844 touch), from a dev server or the served export.
- * Each shot pins the phase with `?sky=<phase>` and lands in explore (intro already seen this session).
+ * Day and night review captures: floors L1 to RF (default L1 and L3) at the four sky phases (night, dawn, day,
+ * dusk) on desktop (full tier, 1440x900) and phone (lite tier, 390x844 touch), from a dev server or the served
+ * export. Each shot pins the phase with `?sky=<phase>` and lands in explore (intro already seen this session).
+ * `PHASES` accepts names or numbers (`PHASES=night,dawn,0.4,day,0.6,dusk`). `--gpu` uses the Metal GPU on macOS
+ * (the large desktop screenshot can time out under SwiftShader).
  *
  *   bun scripts/sky-shots.ts --base http://localhost:3000 --out screenshots/sky
- *   PHASES=night,day FLOORS=L1 DEVICES=desktop bun scripts/sky-shots.ts
+ *   PHASES=night,day FLOORS=L1,L2,L3,L4,RF DEVICES=desktop bun scripts/sky-shots.ts --gpu
  *
  * Writes <floor>-<phase>-<device>.png and metrics.json (scene calls, triangles, programs per shot).
  */
@@ -21,6 +23,7 @@ const flag = (name: string, fallback: string) => {
 const BASE = flag("--base", "http://localhost:3000");
 const OUT = flag("--out", "screenshots/sky");
 const SETTLE = Number(flag("--settle", "2500"));
+const GPU = args.includes("--gpu");
 const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
 const PHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 
@@ -30,11 +33,14 @@ const ALL_DEVICES = [
 ] as const;
 const ALL_FLOORS = [
   { id: "L1", path: "/en" },
+  { id: "L2", path: "/en/journey" },
   { id: "L3", path: "/en/labs" },
+  { id: "L4", path: "/en/library" },
+  { id: "RF", path: "/en/contact" },
 ] as const;
 const pick = <T extends { id: string }>(list: readonly T[], env: string | undefined) => (env ? list.filter((x) => env.split(",").includes(x.id)) : list);
 const DEVICES = pick(ALL_DEVICES, process.env.DEVICES);
-const FLOORS = pick(ALL_FLOORS, process.env.FLOORS);
+const FLOORS = process.env.FLOORS ? pick(ALL_FLOORS, process.env.FLOORS) : ALL_FLOORS.filter((f) => f.id === "L1" || f.id === "L3");
 const PHASES = (process.env.PHASES ?? "night,dawn,day,dusk").split(",");
 
 type Probe = { __hq?: { store: { getState(): { phase: string } }; rover: { drawCalls: number; triangles: number }; render?: { programs(): number } } };
@@ -49,7 +55,9 @@ async function noIdle(page: Page) {
 
 mkdirSync(OUT, { recursive: true });
 const metrics: Record<string, unknown> = {};
-const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+const browser = await chromium.launch({
+  args: GPU ? ["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-gpu"] : ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+});
 try {
   for (const d of DEVICES) {
     const context = await browser.newContext({ viewport: d.viewport, deviceScaleFactor: 1, hasTouch: d.touch, isMobile: d.touch, userAgent: d.ua });

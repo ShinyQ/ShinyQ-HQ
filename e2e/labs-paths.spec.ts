@@ -61,10 +61,14 @@ type LW = Window & {
   };
 };
 
+/**
+ * `arrival` tags the arrival test: the phone is its representative on PRs and main (the desktop's full tier stays
+ * covered there by the reactor drive), the desktop arrival runs nightly (`@nightly`).
+ */
 const SIZES = [
-  { name: "1440x900", width: 1440, height: 900, tier: "full", phone: false, zoom: 1.3 },
+  { name: "1440x900", width: 1440, height: 900, tier: "full", phone: false, zoom: 1.3, arrival: " @nightly" },
   // Phones zoom out further, but only so far that the follow camera stays east of the elevator shaft (LABS.overviewZoomPhone).
-  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: 1.45 },
+  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: 1.45, arrival: "" },
 ] as const;
 
 /** The point `distance` along road `id` from its first point (walks the polyline), or null without that road. */
@@ -144,7 +148,7 @@ async function lookFromAbove(page: Page) {
 
 for (const size of SIZES) {
   test.describe(`L3 three paths @ ${size.name} ${size.tier}`, () => {
-    test("arrival: the overview zone looks east at three separate boards, no sign repeats a wing name, the end mirrors, within the budget", async ({ browser }) => {
+    test(`arrival: the overview zone looks east at three separate boards, no sign repeats a wing name, the end mirrors, within the budget${size.arrival}`, async ({ browser }) => {
       const { context, page } = await openArrival(browser, size);
       const arrival = await page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.arrival!);
       const { rover } = await snapshot(page);

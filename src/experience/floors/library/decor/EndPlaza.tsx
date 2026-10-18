@@ -30,7 +30,7 @@ const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
-const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
+export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
 const COUNT_FONT = 0.62;
 /** Bottom of the monument's plate column (u above the floor). */

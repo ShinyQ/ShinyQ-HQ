@@ -13,7 +13,7 @@ import {
 import { waitForStablePrograms } from "./perf/helpers";
 
 /**
- * Day and night (Round 8 K): `?sky=` pins a phase or runs the 8 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
+ * Day and night (Round 8 K): `?sky=` pins a phase or runs the 4 minute clock, automation holds a still night (no stars, moon or sun, and the sky is not drawn, so visual baselines keep today's look),
  * a stored choice and the Motion setting decide for a human visitor, and the sky costs no extra shader
  * program or scene draw calls (`SkyController` writes colors and lights, the dome and the orbs reuse
  * the shared holo program). `__hq.sky` is the sky as last applied (src/experience/sky/skyRuntime.ts).
@@ -28,6 +28,7 @@ interface SkyRead {
   source: string;
   fog: number;
   applied: number;
+  azimuth: number;
 }
 
 type SkyWindow = Window & { __hq: { sky: SkyRead } };
@@ -35,8 +36,8 @@ type RenderWindow = Window & { __hq: { render: { programNames(): string[] } } };
 
 const readSky = (page: Page): Promise<SkyRead> =>
   page.evaluate(() => {
-    const { phase, day, stars, still, source, fog, applied } = (window as unknown as SkyWindow).__hq.sky;
-    return { phase, day, stars, still, source, fog, applied };
+    const { phase, day, stars, still, source, fog, applied, azimuth } = (window as unknown as SkyWindow).__hq.sky;
+    return { phase, day, stars, still, source, fog, applied, azimuth };
   });
 
 /** Waits until the controller applied the sky at least once and the source reflects the resolved mode. */
@@ -87,6 +88,8 @@ test("?sky=night and ?sky=day pin the phase: day has a different fog color and n
   expect(day.stars).toBe(0);
   expect(day.still).toBe(false);
   expect(day.fog, "the day fog color differs from night").not.toBe(night.fog);
+  // The desktop project's camera class puts the sun and moon arc at `SKY.azimuth.desktop` (-0.2).
+  expect(day.azimuth).toBe(-0.2);
 });
 
 test("?sky=dawn sits between night and day", async ({ page }) => {
@@ -101,7 +104,7 @@ test("?sky=dawn sits between night and day", async ({ page }) => {
   expect(dawn.still).toBe(false);
 });
 
-test("day costs the same shader programs and scene draw calls as night on L1", async ({ page }) => {
+test("day costs the same shader programs and scene draw calls as night on L1 @nightly", async ({ page }) => {
   test.setTimeout(360_000);
   await asReturningVisitor(page);
   const measure = async (sky: string) => {
@@ -121,7 +124,7 @@ test("day costs the same shader programs and scene draw calls as night on L1", a
   expect(Math.abs(day.peaks.sceneCalls - night.peaks.sceneCalls), `scene calls night ${night.peaks.sceneCalls}, day ${day.peaks.sceneCalls}`).toBeLessThanOrEqual(2);
 });
 
-test("?sky=cycle follows the 8 minute wall clock", async ({ page }) => {
+test("?sky=cycle follows the 4 minute wall clock", async ({ page }) => {
   await asReturningVisitor(page);
   await openSky(page, "cycle");
   await waitForSource(page, "clock");
@@ -129,7 +132,7 @@ test("?sky=cycle follows the 8 minute wall clock", async ({ page }) => {
     .poll(
       () =>
         page.evaluate(() => {
-          const cycle = 8 * 60 * 1000;
+          const cycle = 4 * 60 * 1000;
           const expected = (Date.now() % cycle) / cycle;
           const phase = (window as unknown as SkyWindow).__hq.sky.phase;
           const d = Math.abs(phase - expected);

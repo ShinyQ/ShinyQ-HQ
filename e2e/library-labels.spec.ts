@@ -12,6 +12,7 @@ import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBu
  * and the full tier drew about 3 frames a second here (6 minutes per CI run); the full-tier L4 budget is
  * gated by `e2e/perf/floors.spec.ts`. `L4_SHOTS=<dir>` also writes a screenshot per pose and the render numbers per
  * device; `L4_SHOTS_BASELINE=1` skips the checks that need the new placement (a run against `out-main`).
+ * `tests/unit/library-label-sweep.test.ts` runs the same poses and checks without a renderer (about 1 s).
  */
 // The rover drives per rendered frame, a few a second on SwiftShader (CI).
 test.describe.configure({ timeout: 600_000 });
@@ -97,7 +98,7 @@ for (const device of [
 ] as const) {
   test.describe(`L4 timeline labels (${device.id})`, () => {
     test.use(device.use);
-    test("never overlap, stay within the title cap and show each zone's sign", async ({ page }) => {
+    test("never overlap, stay within the title cap and show each zone's sign @nightly", async ({ page }) => {
       // Captures add the door poses and a measured window per pose.
       if (SHOTS) test.setTimeout(1_800_000);
       const errors = collectErrors(page);

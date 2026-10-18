@@ -231,12 +231,13 @@ async function labelCollisions(page: Page) {
 }
 
 for (const device of [
-  { id: "desktop", use: { viewport: { width: 1440, height: 900 } } },
-  { id: "phone", use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
+  // The phone is the representative on PRs and main (narrower caps, the most crowded screen); the desktop runs nightly.
+  { id: "desktop", tag: " @nightly", use: { viewport: { width: 1440, height: 900 } } },
+  { id: "phone", tag: "", use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
 ]) {
   test.describe(`end plaza labels (${device.id})`, () => {
     test.use(device.use);
-    test("never overlap on screen from the approach, the camera zones and while orbiting, a pick included", async ({ page }) => {
+    test(`never overlap on screen from the approach, the camera zones and while orbiting, a pick included${device.tag}`, async ({ page }) => {
       test.setTimeout(300_000);
       await enterFloorRoute(page, "/en/library");
       const { stop, end } = await page.evaluate(() => {

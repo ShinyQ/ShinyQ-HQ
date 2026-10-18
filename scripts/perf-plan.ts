@@ -69,6 +69,34 @@ export function perfKeysFor(files: readonly string[]): PerfKey[] {
   return ALL_PERF_KEYS.filter((k) => keys.has(k));
 }
 
+/**
+ * The server helper that builds the serialized 3D payload (`experienceDataFor`). It ships no client code: a module
+ * it reaches moves the perf gates only through the payload fields the floors render, so it is not a 3D importer.
+ */
+export const PAYLOAD_BUILDER = "src/experience/gate-data.ts";
+
+const LOBBY: readonly PerfKey[] = ["boot", "bytes", "floor:L1", "hover"];
+
+/**
+ * The module to gate map for shared (non-3D) modules, first match wins (scripts/ci-plan.ts `sharedPerfKeys`).
+ * A rule gives the keys a module moves on its own, in the payload included; the keys of the 3D files that import
+ * it are added on top. A module without a rule that reaches the payload builder gets ALL_BUT_MEMORY.
+ */
+const SHARED_PERF_RULES: [RegExp, readonly PerfKey[]][] = [
+  // Ask client, protocol and thread state: the HUD Ask dock, mounted on the boot path; no floor renders them
+  // (perspectives.ts only validates citations with src/ask/protocol.ts).
+  [/^src\/ask\//, ["boot", "bytes"]],
+  // Certifications reach the payload only as `certifications` (cert-views.ts), which the Lobby cert wall renders.
+  [/^src\/content\/(certs|cert-views)\.ts$/, LOBBY],
+  // `highlights`: the Lobby Highlights Hall and the HUD onboarding.
+  [/^src\/content\/highlights\.ts$/, LOBBY],
+];
+
+/** The keys of the first SHARED_PERF_RULES or PERF_RULES rule that names a shared module, or null when none does. */
+export function sharedRuleKeys(file: string): readonly PerfKey[] | null {
+  return (SHARED_PERF_RULES.find(([re]) => re.test(file)) ?? PERF_RULES.find(([re]) => re.test(file)))?.[1] ?? null;
+}
+
 /** Playwright `--grep` for the keys; `""` when the keys are every key (run the whole lane). Throws on no keys. */
 export function perfGrep(keys: readonly PerfKey[]): string {
   if (keys.length === 0) throw new Error("perfGrep: no perf keys (plan perf: false instead)");

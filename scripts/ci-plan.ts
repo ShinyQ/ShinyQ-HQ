@@ -3,24 +3,31 @@
  * CI work a pull request needs. Typecheck, lint, unit tests, the build (CSP hashes, public-safety scan,
  * og:check) and the secret scan always run. A pull request runs only the affected e2e specs (plus a small
  * smoke set when 3D or page code changed) on as many shards as their measured time needs, only the 3D perf
- * gates its 3D files can move, and only the Lighthouse URLs its files can move. Pushes, dispatches, the
- * nightly schedule, the `full-ci` label and any failure here run everything.
+ * gates its 3D files can move, and only the Lighthouse URLs its files can move. A push to main whose merged
+ * pull request passed CI on the same tree runs only the complement of that run (scripts/ci-complement.ts).
+ * Other pushes, dispatches, the nightly schedule, the `full-ci` label and any failure here run everything.
  *
  *   EVENT=pull_request REPO=owner/name PR=123 GH_TOKEN=... bun scripts/ci-plan.ts
+ *   EVENT=push REPO=owner/name SHA=<commit> GH_TOKEN=... bun scripts/ci-plan.ts
+ *   EVENT=workflow_dispatch COMPLEMENT_PR=123 REPO=owner/name SHA=<commit> GH_TOKEN=... bun scripts/ci-plan.ts
  *
- * Writes the planOutputs keys to $GITHUB_OUTPUT and a table to the job summary. Uses fetch and GH_TOKEN
- * only; no dependencies, so the job skips `bun install`.
+ * Writes the planOutputs keys to $GITHUB_OUTPUT, a table to the job summary and the run's record to
+ * ci-plan.json (the `ci-plan` artifact). Uses fetch, gh and GH_TOKEN only; no dependencies, so the job skips
+ * `bun install`.
  */
-import { appendFileSync, existsSync, readFileSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { locateTest, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
-import { ALL_PERF_KEYS, perfGrep, perfKeysFor, type PerfKey } from "./perf-plan";
+import { complementPlan, findSource, parseRecord, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
+import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
+import type { MergedPr } from "./merge-gate";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
 
 export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
 
 /** First match wins. Keep in sync with the class table in docs/agents/ci-and-deploy.md. */
 const CLASSES: [RegExp, ChangeClass][] = [
-  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
+  [/^\.github\/(workflows|actions)\/|^(package\.json|bun\.lock|bunfig\.toml|next\.config\.ts|playwright\.config\.ts|tsconfig\.json|lighthouserc\.json)$|^postcss\.config\.\w+$|^e2e\/(hq|routes|budgets)\.ts$|^e2e\/perf\/|^scripts\/(ci-plan|ci-complement|ci-status|merge-gate|e2e-plan|e2e-shard|perf-[\w-]+|serve-static|flaky-report)\.(ts|sh)$/, "ci"],
   [/^src\/(experience|hud|store|assets)\/|^public\/(floors|fonts)\//, "code3d"],
   [/^tests\/|^e2e\/durations\.json$|^(vitest\.config\.mts|eslint\.config\.mjs)$/, "tests"],
   [/^e2e\//, "e2e"],
@@ -57,9 +64,18 @@ function resolveImport(from: string, spec: string, read: (f: string) => string |
  * Every repo file reachable from `roots` through value, re-export, side-effect and dynamic imports, and
  * relative CSS `@import` (`dynamic: false` skips `import()`, for what a page loads before any lazy chunk).
  */
-export function importClosure(roots: readonly string[], read: (f: string) => string | null, options: { dynamic?: boolean } = {}): Set<string> {
+export function importClosure(
+  roots: readonly string[],
+  read: (f: string) => string | null,
+  options: { dynamic?: boolean; onEdge?: (from: string, to: string) => void } = {},
+): Set<string> {
   const seen = new Set<string>();
   const queue = [...roots];
+  const follow = (from: string, target: string | null) => {
+    if (!target) return;
+    options.onEdge?.(from, target);
+    if (!seen.has(target)) queue.push(target);
+  };
   while (queue.length) {
     const file = queue.pop()!;
     if (seen.has(file)) continue;
@@ -67,20 +83,56 @@ export function importClosure(roots: readonly string[], read: (f: string) => str
     if (source === null) continue;
     seen.add(file);
     if (file.endsWith(".css")) {
-      for (const m of source.matchAll(CSS_IMPORT)) {
-        const target = resolveImport(file, m[1], read);
-        if (target && !seen.has(target)) queue.push(target);
-      }
+      for (const m of source.matchAll(CSS_IMPORT)) follow(file, resolveImport(file, m[1], read));
       continue;
     }
     if (!/\.(ts|tsx|js|mjs)$/.test(file)) continue;
     for (const m of source.matchAll(IMPORT)) {
       if (m[2] !== undefined && options.dynamic === false) continue;
-      const target = resolveImport(file, m[1] ?? m[2] ?? m[3], read);
-      if (target && !seen.has(target)) queue.push(target);
+      follow(file, resolveImport(file, m[1] ?? m[2] ?? m[3], read));
     }
   }
   return seen;
+}
+
+/** Reverse import edges of the closure of `roots`: each reached file to the closure files that import it. */
+export function reverseImports(roots: readonly string[], read: (f: string) => string | null): Map<string, Set<string>> {
+  const importers = new Map<string, Set<string>>();
+  importClosure(roots, read, { onEdge: (from, to) => (importers.get(to) ?? importers.set(to, new Set()).get(to)!).add(from) });
+  return importers;
+}
+
+/**
+ * The 3D files (ROOTS) that import `file` directly or through a chain of non-3D files; the walk stops at each
+ * 3D file, so a module the Lobby imports reaches the Lobby, not everything that imports the Lobby.
+ */
+export function importing3d(file: string, importers: ReadonlyMap<string, ReadonlySet<string>>): string[] {
+  const found = new Set<string>();
+  const seen = new Set([file]);
+  const queue = [file];
+  while (queue.length) {
+    for (const from of importers.get(queue.pop()!) ?? []) {
+      if (seen.has(from)) continue;
+      seen.add(from);
+      if (ROOTS.test(from)) found.add(from);
+      else queue.push(from);
+    }
+  }
+  return [...found].sort();
+}
+
+/**
+ * The perf keys of a shared (non-3D) file: the keys an edit of the 3D files importing it would get (unknown 3D
+ * files: ALL_BUT_MEMORY), plus its SHARED_PERF_RULES keys. The payload builder counts through the rule, and as
+ * ALL_BUT_MEMORY without one. A file no 3D file imports gets none.
+ */
+export function sharedPerfKeys(file: string, importers: ReadonlyMap<string, ReadonlySet<string>>): PerfKey[] {
+  const via = importing3d(file, importers);
+  if (via.length === 0) return [];
+  const client = via.filter((f) => f !== PAYLOAD_BUILDER);
+  const own = sharedRuleKeys(file) ?? (client.length < via.length ? ALL_BUT_MEMORY : []);
+  const keys = new Set<PerfKey>([...perfKeysFor(client), ...own]);
+  return ALL_PERF_KEYS.filter((k) => keys.has(k));
 }
 
 export interface PlanOptions {
@@ -112,6 +164,8 @@ export interface CiPlan {
   lighthouse: false | "all" | string[];
   classes: Partial<Record<ChangeClass, string[]>>;
   reasons: string[];
+  /** A complement run: the green PR run on the same tree that covered the rest. */
+  source?: Source;
 }
 
 /** Lighthouse URL path to the page file that renders it (the measured URLs of lighthouserc.json, in its order). */
@@ -127,9 +181,6 @@ export const LIGHTHOUSE_PAGES: Readonly<Record<string, string>> = {
   "/en/build": "src/app/[locale]/build/page.tsx",
 };
 
-const MAX_E2E_SHARDS = 8;
-/** Seconds one e2e shard should take: 2 workers for about 4 minutes. */
-const SHARD_SECONDS = 2 * 240;
 const SPEC_FILE = /^e2e\/[^/]+\.spec\.ts$/;
 
 const defaultPages = (file: string): readonly string[] | "all" => (["ui", "code3d"].includes(classify(file)) ? "all" : []);
@@ -150,9 +201,9 @@ function classesOf(files: readonly string[]): Partial<Record<ChangeClass, string
 
 /**
  * `files` null means unknown (push, dispatch, schedule, or the PR file list failed): run everything.
- * `in3d` tells whether the 3D roots import a file (shared page code that can move the perf gates).
+ * `perf3d` gives the perf keys of a shared `src/` file the 3D roots import (`sharedPerfKeys`; [] when none).
  */
-export function planFor(files: readonly string[] | null, in3d: (file: string) => boolean, opts: PlanOptions = {}): CiPlan {
+export function planFor(files: readonly string[] | null, perf3d: (file: string) => readonly PerfKey[], opts: PlanOptions = {}): CiPlan {
   const event = opts.event ?? (files === null ? "other" : "pull_request");
   const perfShards = event === "pull_request" ? 2 : 4;
   const full = (classes: CiPlan["classes"], reasons: string[]): CiPlan => ({
@@ -212,14 +263,19 @@ export function planFor(files: readonly string[] | null, in3d: (file: string) =>
         const spec = /^e2e\/(.+)\.spec\.ts:/.exec(t)![1] as Spec;
         return sum + specSeconds(opts.durations, spec, titled.get(spec));
       }, 0);
-    e2eShards = seconds === 0 ? 1 : Math.min(MAX_E2E_SHARDS, Math.max(1, Math.ceil(seconds / SHARD_SECONDS)));
+    e2eShards = e2eShardsFor(seconds);
     if (seconds) reasons.push(`about ${Math.round(seconds)} worker-seconds of e2e: ${e2eShards} shard${e2eShards > 1 ? "s" : ""}`);
   }
 
-  // Perf: the 3D files, plus page code the 3D roots import.
-  const shared3d = (classes.ui ?? []).filter((f) => f.startsWith("src/") && in3d(f));
-  if (shared3d.length) reasons.push(`imported by the 3D roots: ${shared3d.join(", ")} (perf gates)`);
-  const keys = perfKeysFor([...(classes.code3d ?? []), ...shared3d]);
+  // Perf: the 3D files, plus the keys of the 3D files that import shared page code.
+  const keySet = new Set<PerfKey>(perfKeysFor(classes.code3d ?? []));
+  for (const f of (classes.ui ?? []).filter((f) => f.startsWith("src/"))) {
+    const shared = perf3d(f);
+    if (shared.length === 0) continue;
+    reasons.push(`imported by the 3D roots: ${f} (${shared.length === ALL_PERF_KEYS.length ? "every perf key" : shared.join(", ")})`);
+    for (const k of shared) keySet.add(k);
+  }
+  const keys = ALL_PERF_KEYS.filter((k) => keySet.has(k));
   const perf = keys.length ? keys : false;
   if (perf) reasons.push(perf.length === ALL_PERF_KEYS.length ? "3D perf gates: the whole lane" : `3D perf gates: ${perf.join(", ")}`);
 
@@ -272,7 +328,7 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     if (warmup && plan.lighthouse.every((p) => found.has(p))) lighthouseUrls = JSON.stringify([warmup, ...picked]);
   }
   return {
-    full: String(plan.full || (plan.e2e === "all" && perfAll && plan.lighthouse === "all")),
+    full: String(plan.full || plan.source !== undefined || (plan.e2e === "all" && perfAll && plan.lighthouse === "all")),
     e2e: plan.e2e === "all" ? "all" : specs.length || tests.length ? "specs" : "none",
     e2e_files: [...specs.map((s) => `e2e/${s}.spec.ts`).sort(), ...tests].join(" "),
     e2e_shards: range(plan.e2eShards),
@@ -283,6 +339,7 @@ export function planOutputs(plan: CiPlan, lhciUrls: readonly string[] = []): Rec
     perf_total: String(plan.perfShards),
     lighthouse: String(plan.lighthouse !== false),
     lighthouse_urls: lighthouseUrls,
+    source_run: plan.source ? String(plan.source.run) : "",
   };
 }
 
@@ -345,6 +402,55 @@ async function hasFullLabel(repo: string, pr: string, token: string): Promise<bo
   }
 }
 
+/**
+ * The complement plan of the green PR run `findSource` finds, else `fallback()` (a full plan) with the reason in
+ * front. Any lookup error falls back too, so a flaky API never blocks main.
+ */
+export async function lookupComplement(
+  find: () => Promise<SourceResult>,
+  fallback: () => CiPlan,
+  opts: { durations?: Durations | null; perfDurations?: Durations | null } = {},
+): Promise<CiPlan> {
+  let found: SourceResult;
+  try {
+    found = await find();
+  } catch (error) {
+    found = { ok: false, why: error instanceof Error ? error.message : String(error) };
+  }
+  if (found.ok) return complementPlan(found.record, found.source, { lighthousePaths: Object.keys(LIGHTHOUSE_PAGES), ...opts });
+  const plan = fallback();
+  plan.reasons.unshift(`full run: ${found.why}`);
+  return plan;
+}
+
+function apiDeps(repo: string, token: string): SourceDeps {
+  const get = async <T>(endpoint: string): Promise<T> => {
+    const response = await fetch(`https://api.github.com/repos/${repo}/${endpoint}`, { headers: apiHeaders(token), signal: AbortSignal.timeout(20_000) });
+    if (!response.ok) throw new Error(`GitHub API ${endpoint.split("?")[0]}: HTTP ${response.status}`);
+    return (await response.json()) as T;
+  };
+  return {
+    pullsFor: (sha) => get<MergedPr[]>(`commits/${sha}/pulls`),
+    pull: (n) => get<MergedPr>(`pulls/${n}`),
+    treeOf: async (sha) => (await get<{ commit: { tree: { sha: string } } }>(`commits/${sha}`)).commit.tree.sha,
+    greenRuns: async (headSha) => (await get<{ workflow_runs: GreenRun[] }>(`actions/workflows/ci.yml/runs?head_sha=${headSha}&status=success&per_page=20`)).workflow_runs,
+    record: async (runId) => {
+      const dir = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), "ci-plan-"));
+      try {
+        const out = Bun.spawnSync(["gh", "run", "download", String(runId), "--repo", repo, "--name", PLAN_ARTIFACT, "--dir", dir], { stdout: "pipe", stderr: "pipe", timeout: 60_000 });
+        if (out.exitCode !== 0) {
+          console.log(`::notice::gh run download ${runId} exited ${out.exitCode}: ${out.stderr.toString().trim().slice(-300).replace(/\r?\n/g, " ")}`);
+          return null;
+        }
+        const file = path.join(dir, PLAN_FILE);
+        return existsSync(file) ? parseRecord(readFileSync(file, "utf8")) : null;
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  };
+}
+
 function repoReader(root: string): (f: string) => string | null {
   return (f) => {
     const p = path.join(root, f);
@@ -379,9 +485,16 @@ function writeOutputs(outputs: Record<string, string>) {
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, Object.entries(outputs).map(([k, v]) => `${k}=${v}\n`).join(""));
 }
 
+/** The record of `plan` in the working directory, for the `ci-plan` artifact a later complement run reads. */
+function writeRecord(plan: CiPlan, outputs: Record<string, string>) {
+  writeFileSync(PLAN_FILE, JSON.stringify(recordFor(plan, outputs)));
+}
+
 async function main() {
-  const { EVENT, REPO, PR, GH_TOKEN } = process.env;
+  const { EVENT, REPO, PR, GH_TOKEN, SHA, COMPLEMENT_PR } = process.env;
   const event = EVENT === "pull_request" ? "pull_request" : "other";
+  const complementPr = COMPLEMENT_PR && /^[1-9]\d*$/.test(COMPLEMENT_PR) ? Number(COMPLEMENT_PR) : null;
+  const wantsComplement = EVENT === "push" || (complementPr !== null && event !== "pull_request");
   let files: string[] | null = null;
   let fullLabel = false;
   let note = "";
@@ -395,25 +508,40 @@ async function main() {
     }
     if (files) fullLabel = await hasFullLabel(REPO, PR, GH_TOKEN);
   }
+  if (COMPLEMENT_PR && complementPr === null && event !== "pull_request") note = `complement_pr "${COMPLEMENT_PR}" is not a pull request number`;
   const root = process.cwd();
   const read = repoReader(root);
-  const closure = files ? importClosure(listRoots(root), read) : new Set<string>();
-  const plan = planFor(files, (f) => closure.has(f), {
-    event,
-    fullLabel,
-    durations: readJson<DurationsFile>(read, "e2e/durations.json")?.e2e ?? null,
-    locate: locateFromDisk(root),
-    pages: files ? pagesFromRepo(read) : undefined,
-  });
-  if (note) plan.reasons.unshift(`full run: ${note}`);
+  const durations = readJson<DurationsFile>(read, "e2e/durations.json");
+  const importers = files ? reverseImports(listRoots(root), read) : new Map<string, Set<string>>();
+  const ownPlan = () => {
+    const p = planFor(files, (f) => sharedPerfKeys(f, importers), {
+      event,
+      fullLabel,
+      durations: durations?.e2e ?? null,
+      locate: locateFromDisk(root),
+      pages: files ? pagesFromRepo(read) : undefined,
+    });
+    if (note) p.reasons.unshift(`full run: ${note}`);
+    return p;
+  };
+  let plan: CiPlan;
+  if (!wantsComplement) plan = ownPlan();
+  else if (REPO && SHA && GH_TOKEN) {
+    plan = await lookupComplement(() => findSource(REPO, SHA, complementPr, apiDeps(REPO, GH_TOKEN)), ownPlan, { durations: durations?.e2e ?? null, perfDurations: durations?.perf ?? null });
+  } else {
+    plan = ownPlan();
+    plan.reasons.unshift("full run: REPO, SHA or GH_TOKEN is missing, so no merged pull request run to complement");
+  }
   const outputs = planOutputs(plan, lhciUrlsFrom(read));
   console.log(JSON.stringify({ outputs, reasons: plan.reasons, classes: plan.classes }, null, 2));
   writeOutputs(outputs);
+  writeRecord(plan, outputs);
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = Object.entries(plan.classes).map(([cls, list]) => `| \`${cls}\` | ${list!.length} | ${list!.slice(0, 5).map((f) => `\`${f}\``).join(", ")}${list!.length > 5 ? ", ..." : ""} |`);
     const summary = [
-      `### Smart CI plan: ${outputs.full === "true" ? "full run" : "selective run"}`,
+      `### Smart CI plan: ${plan.source ? "complement run" : outputs.full === "true" ? "full run" : "selective run"}`,
       "",
+      ...(plan.source ? [`Source: [CI run ${plan.source.run}](${plan.source.url}) of #${plan.source.pr}`, ""] : []),
       `e2e: **${outputs.e2e}** on ${outputs.e2e_total} shard(s)${outputs.e2e_files ? ` (${outputs.e2e_files})` : ""}`,
       `3D perf gates: **${outputs.perf}**${outputs.perf === "true" ? ` on ${outputs.perf_total} shard(s)${outputs.perf_grep ? `, grep \`${outputs.perf_grep}\`` : ", the whole lane"}` : ""}`,
       `Lighthouse: **${outputs.lighthouse}**${outputs.lighthouse === "true" ? (Array.isArray(plan.lighthouse) && outputs.lighthouse_urls ? ` (${plan.lighthouse.join(", ")})` : ", every URL") : ""}`,
@@ -430,6 +558,9 @@ if (import.meta.main) {
   main().catch((error) => {
     // Fail safe: an unexpected error plans a full run instead of blocking the PR.
     console.log(`::warning::Smart CI planner failed (${error instanceof Error ? error.message : String(error)}); running everything.`);
-    writeOutputs(planOutputs(planFor(null, () => false, { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" })));
+    const plan = planFor(null, () => [], { event: process.env.EVENT === "pull_request" ? "pull_request" : "other" });
+    const outputs = planOutputs(plan);
+    writeOutputs(outputs);
+    writeRecord(plan, outputs);
   });
 }

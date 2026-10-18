@@ -114,4 +114,11 @@ describe("perfGrep", () => {
       expect(titles.some((t) => re.test(t)), `${key}: ${re}`).toBe(true);
     }
   });
+
+  it("every perf title is matched by some key, so a partial run plus its complement skips none", () => {
+    const measured = Object.keys((JSON.parse(readFileSync("e2e/durations.json", "utf8")) as { perf?: Record<string, number> }).perf ?? {});
+    expect(measured.length).toBeGreaterThan(0);
+    const fragments = ALL_PERF_KEYS.map((key) => new RegExp(perfGrep([key] as PerfKey[])));
+    for (const t of [...perfTitles(), ...measured]) expect(fragments.some((re) => re.test(t)), t).toBe(true);
+  });
 });

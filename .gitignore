@@ -37,3 +37,5 @@ e2e/perf/*-snapshots/
 
 # Local cache of the impeccable editor hook (absolute local paths), never committed
 .impeccable/hook.cache.json
+# Smart CI plan record (bun scripts/ci-plan.ts writes it; CI uploads it as the ci-plan artifact)
+/ci-plan.json

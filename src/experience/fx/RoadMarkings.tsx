@@ -43,7 +43,7 @@ function chevronGeometry(): BufferGeometry {
 }
 
 const CHEVRON_VS = `attribute float aPhase; uniform float uTime; uniform float uPulse; varying float vGlow;
-void main(){ float wave = pow(.5 + .5*sin(aPhase*.45 - uTime*${PULSE_SPEED.toFixed(1)}*.45), 6.);
+void main(){ float wave = pow(max(.5 + .5*sin(aPhase*.45 - uTime*${PULSE_SPEED.toFixed(1)}*.45), 0.), 6.);
   vGlow = mix(.55, .35 + .9*wave, uPulse);
   gl_Position = projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.); }`;
 const CHEVRON_FS = `uniform vec3 uColor; varying float vGlow; void main(){ gl_FragColor = vec4(uColor*vGlow, min(1., vGlow)*.8);
