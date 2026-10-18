@@ -1,19 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { followPose, FOLLOW_LOOK_AHEAD, followForward } from "@/experience/camera/rigs";
 import { cubicBezierEase, FACE_Y, INTRO, introFace, introFog, introHeading, introPlan, introPose, revealRadius } from "@/experience/camera/intro";
+import { yawLooking } from "@/experience/camera/look";
 import { LOBBY, SHAFT } from "@/experience/config";
+import { OBSERVATORY_VIEW } from "@/experience/floors/lobby/observatoryLayout";
 import type { ViewportClass } from "@/experience/types";
 
 const rover: [number, number, number] = [LOBBY.spawn.x, 0, LOBBY.spawn.z];
-// The primed spawn views (L1:kiosk): desktop turned 0.62 rad, tablet and phone straight down the kiosk axis (zoom from observatoryLayout).
 const endFor = (cls: ViewportClass, yaw: number, zoom: number) => {
   const f = followForward(cls, yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   return followPose(cls, [rover[0] + f.x * ahead, 1, rover[2] + f.z * ahead], yaw, zoom);
 };
+const axisYaw = yawLooking(LOBBY.kioskAxis);
+// Two off-axis views, then the primed spawn views (L1:kiosk, observatoryLayout): desktop turned spawnTurn off the kiosk
+// axis, tablet and phone straight down it.
 const cases: [ViewportClass, number, number][] = [
   ["desktop", 0.9, 1.5],
   ["mobile", 0.3, 1.75],
+  ["desktop", axisYaw + OBSERVATORY_VIEW.spawnTurn, OBSERVATORY_VIEW.spawnZoom],
+  ["tablet", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.tablet],
+  ["mobile", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.mobile],
 ];
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
 
@@ -108,6 +115,22 @@ describe("intro timeline", () => {
     expect(dark.far).toBeLessThan(20);
     expect(dark.near).toBeGreaterThan(2.3);
     expect(introFog(40, Infinity, follow)).toEqual(follow);
+  });
+
+  it("keeps the fog continuous while the ring spreads and when it turns off", () => {
+    const follow = { near: 38, far: 80 };
+    for (const camDistance of [2.3, 20, 44]) {
+      let prev = introFog(camDistance, revealRadius(INTRO.revealStart), follow);
+      for (let i = 1; INTRO.revealStart + i / 60 < INTRO.revealEnd; i++) {
+        const fog = introFog(camDistance, revealRadius(INTRO.revealStart + i / 60), follow);
+        expect(fog.near).toBeGreaterThanOrEqual(prev.near);
+        expect(fog.far).toBeGreaterThanOrEqual(prev.far);
+        prev = fog;
+      }
+      const end = introFog(camDistance, revealRadius(INTRO.revealEnd), follow);
+      expect(end.near - prev.near).toBeLessThan(1);
+      expect(end.far - prev.far).toBeLessThan(1);
+    }
   });
 
   it("eases like a CSS cubic-bezier", () => {

@@ -174,6 +174,6 @@ export function revealRadius(t: number): number {
 /** Fog during the boot and the intro: everything farther than the ring (as seen from the camera) fades into the night. */
 export function introFog(camDistance: number, reveal: number, follow: { near: number; far: number }): { near: number; far: number } {
   if (!Number.isFinite(reveal)) return { ...follow };
-  const near = Math.min(follow.near, camDistance + reveal + 1);
-  return { near, far: Math.min(follow.far, near + 12) };
+  // Both edges ride the ring, so they reach the follow range before the ring turns off (no jump at revealEnd).
+  return { near: Math.min(follow.near, camDistance + reveal + 1), far: Math.min(follow.far, camDistance + reveal + 13) };
 }
