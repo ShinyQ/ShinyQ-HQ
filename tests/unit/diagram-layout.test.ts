@@ -8,8 +8,6 @@ import type { Architecture } from "@/content/schema";
 import { ArchitectureSchema } from "@/content/schema";
 import { diagramSummary, diagramTexts, resolveArchitecture, type ResolvedArchitecture } from "@/components/diagram/text";
 
-const texts = diagramTexts("en", (kind) => kind);
-
 const diagrams: [string, Architecture][] = [
   ...getPods().flatMap((p) => (p.architecture ? [[`pod:${p.slug}`, p.architecture] as [string, Architecture]] : [])),
   ...Object.entries(getPostDiagrams()).flatMap(([post, list]) =>
@@ -89,8 +87,8 @@ describe("diagram layout", () => {
     for (const resolved of [en, id]) {
       expect(resolved.nodes.every((n) => typeof n.label === "string")).toBe(true);
       expect(resolved.edges.every((e) => e.label === undefined || typeof e.label === "string")).toBe(true);
-      expect(resolved.nodes.map(({ label: _label, ...n }) => n)).toEqual(graph.nodes.map(({ label: _label, ...n }) => n));
-      expect(resolved.edges.map(({ label: _label, ...e }) => e)).toEqual(graph.edges.map(({ label: _label, ...e }) => e));
+      expect(resolved.nodes.map((node) => ({ ...node, label: undefined }))).toEqual(graph.nodes.map((node) => ({ ...node, label: undefined })));
+      expect(resolved.edges.map((edge) => ({ ...edge, label: undefined }))).toEqual(graph.edges.map((edge) => ({ ...edge, label: undefined })));
       expect(JSON.stringify(resolved)).not.toContain("[object Object]");
     }
     expect(id.nodes[1].label).toBe(graph.nodes[1].label);

@@ -33,7 +33,7 @@ describe("hologram board", () => {
     expect(en.nodes[0].label).toBe("Visitor browser");
     expect(id.nodes[0].label).toBe("Browser pengunjung");
     expect(id.nodes.every((n) => typeof n.label === "string")).toBe(true);
-    expect(id.nodes.map(({ label: _label, ...node }) => node)).toEqual(en.nodes.map(({ label: _label, ...node }) => node));
+    expect(id.nodes.map((node) => ({ ...node, label: undefined }))).toEqual(en.nodes.map((node) => ({ ...node, label: undefined })));
     expect(id.edges).toEqual(en.edges);
   });
 
