@@ -1,0 +1,34 @@
+# hq-office: the Agent Office Worker and its Durable Object (runbook: workers/office/README.md).
+#
+# Deployed by .github/workflows/deploy.yml (job "hq-office Worker", after the Pages upload) from this folder, and
+# redeployed by rollback.yml with Pages; it has its own config, separate from the Pages project in the repo root. No route, no workers.dev or preview URL: the
+# Pages Functions /api/office, /api/office/beat and /api/office/github reach it through the service binding OFFICE.
+#
+# Secrets never live here. deploy.yml sets them from production environment secrets on every deploy:
+#   OFFICE_INGEST_KEY      HMAC key of relay beats (the owner's Keychain holds the same value)
+#   GITHUB_WEBHOOK_SECRET  secret of the repository webhooks (GitHub secret OFFICE_GITHUB_WEBHOOK_SECRET)
+
+name = "hq-office"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+preview_urls = false
+
+# One Durable Object instance ("office") on the SQLite backend (the only backend on the free plan). The legacy
+# migrations form on purpose: the newer `exports` form cannot be undone once deployed.
+[[durable_objects.bindings]]
+name = "OFFICE_DO"
+class_name = "Office"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Office"]
+
+[vars]
+# Repositories whose names, branches and titles may show (and only once a webhook reported them public).
+OFFICE_REPO_ALLOWLIST = "ShinyQ/*"
+# GitHub logins whose same-repository pull requests may show (besides OWNER, MEMBER and COLLABORATOR authors).
+OFFICE_GITHUB_ACTORS = "ShinyQ,Copilot"
+
+[observability]
+enabled = true

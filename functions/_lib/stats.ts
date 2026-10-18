@@ -1,4 +1,5 @@
 import { parseStatsSnapshot, STATS_KEY } from "../../src/lib/stats/protocol";
+import { etagOf } from "./security";
 import type { PagesContext, StatsEnv } from "./types";
 
 /** Seconds a KV read stays cached at the reading location. */
@@ -7,12 +8,6 @@ const OK_CACHE = "public, max-age=600, stale-while-revalidate=3600";
 const EMPTY_CACHE = "public, max-age=300";
 
 const empty = () => new Response(null, { status: 204, headers: { "Cache-Control": EMPTY_CACHE } });
-
-async function etagOf(body: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
-  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  return `"${hex.slice(0, 32)}"`;
-}
 
 /**
  * `GET /api/stats`: the public visit stats snapshot (`StatsSnapshotV1`, src/lib/stats/protocol.ts) that

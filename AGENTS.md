@@ -181,7 +181,7 @@ Path by path: [folder-layout.md](docs/agents/folder-layout.md).
 | `scripts/` | Build steps, content and media tools, e2e planning, CI and deploy helpers |
 | `src/` | Next.js app (`app/`), components, content loaders, i18n, lib, the 3D experience (`experience/`), HUD (`hud/`), store |
 | `tests/` | Vitest: unit, HUD, content, Ask, stats, benches, helpers |
-| `workers/` | `workers/stats`: the `hq-stats` Cron Worker |
+| `workers/` | `workers/stats`: the `hq-stats` Cron Worker; `workers/office`: the `hq-office` Agent Office Worker |
 
 Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.json`, `playwright.config.ts`,
 `vitest.config.mts`, `eslint.config.mjs`, `tsconfig.json`.
@@ -205,6 +205,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [floor-b1-engine-room.md](docs/agents/floor-b1-engine-room.md) | B1 Engine Room: layout, scenery, station drawers, access, budget |
 | [ask.md](docs/agents/ask.md) | Ask the HQ: pipeline, scope routing, UI, pack, CSP, credentials, CI around it |
 | [stats.md](docs/agents/stats.md) | Public visit stats: pipeline, beacon, opt-out, display |
+| [office.md](docs/agents/office.md) | Agent Office: contract, privacy, hq-office Worker and Durable Object, relay, 3D office, Classic card |
 | [performance.md](docs/agents/performance.md) | Perf gates, measurement, RUM, fast verification, writing 3D tests |
 | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) | Scripts, dependencies, CI, deploy, build env, audio, Next.js notes |
 | [folder-layout.md](docs/agents/folder-layout.md) | Annotated folder layout |

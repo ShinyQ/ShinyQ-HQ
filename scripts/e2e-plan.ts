@@ -98,6 +98,8 @@ export const RULES: Rule[] = [
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
   { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
+  // Agent Office backend (part 1): unit tested in tests/office; the 3D office and the Classic card add their specs.
+  { test: /^functions\/(api\/office\/|_lib\/office\.ts$)|^src\/lib\/office\//, specs: [] },
   // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client
   // beacon and the opt-out aware Web Analytics guard run on every page.
   { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats|askStats))\.ts$|^workers\/|^scripts\/stats-/, specs: [] },

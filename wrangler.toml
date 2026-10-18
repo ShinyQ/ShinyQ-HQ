@@ -66,6 +66,14 @@ id = "88fb27f910f44e6393b8fd495d6a2c4f"
 # namespace_id = "1001"
 # simple = { limit = 8, period = 60 }
 
+# Agent Office (docs/agents/office.md, runbook workers/office/README.md): the hq-office Worker behind GET /api/office,
+# POST /api/office/beat and POST /api/office/github. deploy.yml deploys the Worker after the gated Pages upload; the
+# upload does not check the binding, and while the Worker is missing (the first deploy, about a minute) /api/office
+# answers mode "off". Calls through a service binding add no request charge.
+[[services]]
+binding = "OFFICE"
+service = "hq-office"
+
 [vars]
 # Kill switch. Anything but "true" hides the UI and makes /api/ask return 503 (docs/ask-runbook.md).
 # Turned on for the first production deploy on 2026-10-11 (owner approval).
@@ -94,3 +102,6 @@ RUM_ENABLED = "true"
 # (204) and makes /api/stats answer 204, which hides every stats view. On since the S1 pipeline (owner
 # approval 2026-10-14).
 STATS_ENABLED = "true"
+# Kill switch of the Agent Office. Anything but "true" makes GET /api/office answer {"v":1,"enabled":false} (the 3D
+# office and the Classic card hide) and drops beats and webhooks (204). On since part 1 (owner pre-approval 2026-10-18).
+OFFICE_ENABLED = "true"

@@ -1,7 +1,8 @@
 name: Deploy
 
 # Production deploy of the static export and the Pages Functions (Ask the HQ, the performance beacon,
-# the public visit stats) to Cloudflare Pages, then the hq-stats Cron Worker (workers/stats/).
+# the public visit stats) to Cloudflare Pages, then the hq-stats Cron Worker (workers/stats/) and the hq-office
+# Agent Office Worker (workers/office/).
 #
 # Runs on a push to main (a merge) and when dispatched:
 #   - push: the fast path (owner decision 2026-10-18). scripts/merge-gate.ts deploys at once, without waiting
@@ -395,10 +396,90 @@ jobs:
             WA_TOKEN
             WA_ACCOUNT_ID
 
+  office-worker:
+    name: hq-office Worker
+    runs-on: ubuntu-latest
+    needs: [resolve, deploy]
+    # After the site deployed, like hq-stats, so it passes the same gates (fast path still open, complete green main
+    # CI) as the upload. The Pages service binding OFFICE does not need the Worker at upload time: until it exists
+    # (the first production deploy, about a minute) /api/office answers mode "off". rollback.yml rolls it back with
+    # Pages. A commit without workers/office (a manual redeploy of an older one) skips it with a notice. The
+    # repository variable OFFICE_WORKER_DEPLOY = "false" skips it. Runbook: workers/office/README.md.
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
+    timeout-minutes: 10
+    environment:
+      name: production
+      deployment: false
+    permissions:
+      contents: read
+    steps:
+      - name: Check configuration
+        id: gate
+        env:
+          HAS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          SKIP: ${{ vars.OFFICE_WORKER_DEPLOY == 'false' }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OFFICE_WORKER_DEPLOY is false; the hq-office Worker is not deployed by this run."
+          elif [ "$HAS" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID is not set; skipping the hq-office Worker."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
+          ref: ${{ needs.resolve.outputs.sha }}
+      - name: Is the Worker in this commit?
+        id: present
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          if [ ! -f workers/office/wrangler.toml ]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::workers/office is not in ${SHA:0:7}; the hq-office Worker stays at its live version."
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: ./.github/actions/setup
+        if: steps.present.outputs.deploy == 'true'
+      - name: Build the safety list
+        if: steps.present.outputs.deploy == 'true'
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun scripts/build-knowledge.ts
+      - name: Deploy hq-office and set its secrets
+        if: steps.present.outputs.deploy == 'true'
+        working-directory: workers/office
+        # The deploy token and the Worker secrets only in this step (S4, H1); a missing secret is skipped, so the
+        # Worker answers 503 on that route until the owner adds it.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OFFICE_INGEST_KEY: ${{ secrets.OFFICE_INGEST_KEY }}
+          # Stored as OFFICE_GITHUB_WEBHOOK_SECRET: GitHub rejects secret names that start with GITHUB_.
+          GITHUB_WEBHOOK_SECRET: ${{ secrets.OFFICE_GITHUB_WEBHOOK_SECRET }}
+        run: |
+          bunx wrangler deploy
+          if [ -n "$OFFICE_INGEST_KEY" ]; then
+            printf '%s' "$OFFICE_INGEST_KEY" | bunx wrangler secret put OFFICE_INGEST_KEY > /dev/null
+          else
+            echo "::notice::OFFICE_INGEST_KEY is not set; POST /api/office/beat answers 503."
+          fi
+          if [ -n "$GITHUB_WEBHOOK_SECRET" ]; then
+            printf '%s' "$GITHUB_WEBHOOK_SECRET" | bunx wrangler secret put GITHUB_WEBHOOK_SECRET > /dev/null
+          else
+            echo "::notice::GITHUB_WEBHOOK_SECRET is not set; POST /api/office/github answers 503."
+          fi
+
   report:
     name: Report a failed deploy
     runs-on: ubuntu-latest
-    needs: [resolve, verify, site, e2e, deploy, stats-worker]
+    needs: [resolve, verify, site, e2e, deploy, stats-worker, office-worker]
     if: ${{ failure() }}
     permissions:
       issues: write

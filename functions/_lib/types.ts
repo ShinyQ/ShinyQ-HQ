@@ -123,6 +123,25 @@ export interface StatsEnv {
   STATS_KV?: KvNamespace;
 }
 
+/** A service binding to another Worker (the Agent Office: hq-office). */
+export interface ServiceBinding {
+  fetch(input: string | Request, init?: RequestInit): Promise<Response>;
+}
+
+/** The Cache API's default cache as Pages Functions see it (`caches.default`, per data center). */
+export interface EdgeCache {
+  match(request: Request): Promise<Response | undefined>;
+  put(request: Request, response: Response): Promise<void>;
+}
+
+/** Agent Office routes (docs/agents/office.md). */
+export interface OfficeEnv {
+  /** Kill switch: anything but "true" answers `{v:1, enabled:false}` and drops beats and webhooks. */
+  OFFICE_ENABLED?: string;
+  /** Service binding to the hq-office Worker. */
+  OFFICE?: ServiceBinding;
+}
+
 export interface PagesContext<E = AskEnv> {
   request: Request;
   env: E;

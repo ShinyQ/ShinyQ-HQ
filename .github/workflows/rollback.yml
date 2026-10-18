@@ -6,14 +6,16 @@ name: Rollback
 #   - red (failure or timed out): scripts/rollback.ts rolls Cloudflare Pages production back to the newest earlier
 #     production deployment that does not contain the failing commit and is not red itself (Pages rollback API;
 #     only when production serves the failing commit or a later, not green, commit built on it), redeploys the
-#     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false"). Before
-#     any of that it opens or updates the one `deploy-rollback` issue with the failing run; while it is open,
-#     deploy.yml takes no fast path: every merge waits for a green complete main CI. The outcome is commented there.
+#     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false") and the
+#     hq-office Worker when its sources differ (and OFFICE_WORKER_DEPLOY is not "false"; a commit without
+#     workers/office leaves it at the live version). Before any of that it opens or updates the one `deploy-rollback`
+#     issue with the failing run; while it is open, deploy.yml takes no fast path: every merge waits for a green
+#     complete main CI. The outcome is commented there.
 #   - green: closes the `deploy-rollback` issue once the green commit equals or follows the last failing one, then
 #     dispatches deploy.yml for the tip of main (a rollback may have left production behind main).
 # Only CI runs from pushes to main count (not the nightly, not dispatches). Dispatch it by hand for a drill:
 # `gh workflow run rollback.yml --ref main -f sha=<commit> [-f dry_run=false] [-f project=<drill project>]`;
-# dry_run (the default) does everything except the rollback call, the Worker deploy and the issue write.
+# dry_run (the default) does everything except the rollback call, the Worker deploys and the issue write.
 # Cloudflare secrets only in the steps that need them, from the main-only `production` environment (H1).
 
 on:
@@ -28,7 +30,7 @@ on:
         required: true
         type: string
       dry_run:
-        description: Decide and report only (no rollback call, no Worker deploy, no issue)
+        description: Decide and report only (no rollback call, no Worker deploys, no issue)
         required: false
         type: boolean
         default: true
@@ -142,6 +144,53 @@ jobs:
           packageManager: npm
           quiet: true
           command: deploy
+      - name: Did the hq-office Worker change?
+        id: office
+        if: steps.pages.outputs.action == 'rollback' || steps.pages.outputs.action == 'dry-run'
+        env:
+          TARGET: ${{ steps.pages.outputs.target_sha }}
+          LIVE: ${{ steps.pages.outputs.live_sha }}
+          SKIP: ${{ vars.OFFICE_WORKER_DEPLOY == 'false' }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "- hq-office Worker: OFFICE_WORKER_DEPLOY is false (deployed by hand), not touched." >> "$GITHUB_STEP_SUMMARY"
+          elif ! git cat-file -e "$TARGET:workers/office/wrangler.toml" 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "- hq-office Worker: \`${TARGET:0:7}\` has no workers/office, not touched; the Worker stays at its live version." >> "$GITHUB_STEP_SUMMARY"
+          elif git diff --quiet "$TARGET" "$LIVE" -- workers/office src/lib/office src/content/safety-match.ts functions/_lib/security.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "- hq-office Worker: unchanged between \`${TARGET:0:7}\` and \`${LIVE:0:7}\`, not touched." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "- hq-office Worker: changed since \`${TARGET:0:7}\`; redeploying it from there (dry run: $DRY_RUN)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # The hq-stats redeploy above already checked the target out when it ran.
+        if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true' && steps.worker.outputs.changed != 'true'
+        with:
+          persist-credentials: false
+          ref: ${{ steps.pages.outputs.target_sha }}
+          path: target
+      - name: Install the rollback target's dependencies
+        if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
+        working-directory: target
+        run: bun install --frozen-lockfile
+      - name: Build the safety list from the rollback target
+        if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
+        working-directory: target
+        env:
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun scripts/build-knowledge.ts
+      - name: Redeploy hq-office from the rollback target
+        if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
+        working-directory: target/workers/office
+        # Its secrets (OFFICE_INGEST_KEY, GITHUB_WEBHOOK_SECRET) persist across deploys; wrangler from the target's
+        # lockfile, as deploy.yml does. The deploy token only in this step (S4, H1).
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler deploy
       - name: Report on the deploy-rollback issue
         # Also when the rollback step failed (the comment then asks for a manual rollback); not for a bad sha input.
         if: ${{ !cancelled() && steps.pages.conclusion != 'skipped' }}

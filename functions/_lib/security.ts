@@ -7,6 +7,11 @@ export async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Strong ETag of a response body: the first 32 hex chars of its SHA-256, quoted (`/api/stats`, `/api/office`). */
+export async function etagOf(body: string): Promise<string> {
+  return `"${(await sha256Hex(body)).slice(0, 32)}"`;
+}
+
 function base64Url(bytes: ArrayBuffer): string {
   let binary = "";
   for (const b of new Uint8Array(bytes)) binary += String.fromCharCode(b);

@@ -184,6 +184,14 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
   5. Opens a `deploy-failed` issue on failure.
+- `office-worker` (deploy.yml) deploys the hq-office Worker after a successful Pages upload, like hq-stats, so it
+  passes the same gates, and sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment;
+  a commit without `workers/office/` skips it with a notice. Until the Worker first exists, `/api/office` answers
+  mode "off" (a Pages upload does not check the service binding). The rollback redeploys it from the rollback
+  target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,
+  `src/lib/office/`, `src/content/safety-match.ts`, `functions/_lib/security.ts` or `scripts/build-knowledge.ts`
+  (not a required check). `OFFICE_WORKER_DEPLOY = "false"` skips the deploy and the rollback redeploy.
+  Runbook: `workers/office/README.md`; rules: [office.md](office.md).
 - Rollback (`.github/workflows/rollback.yml`, `scripts/rollback.ts`), on every completed CI run from a push to `main`:
   - Red (failure or timed out):
     - first opens or updates the one `deploy-rollback` issue (failing run link; the last failing commit in a hidden marker), which closes the fast path, so no new fast-path upload can race the rollback;
