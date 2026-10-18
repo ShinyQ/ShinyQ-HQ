@@ -73,11 +73,11 @@ function clientGraphOf(entry: string): Set<string> {
 
 /**
  * The files that fetch each FETCHED_NAMESPACES namespace with their data and read it under their own nested
- * provider (the study guide dialog and its lazy reader). Only these files may read the namespace without the
+ * provider (the study guide dialog, its lazy reader and the reader toolbar). Only these files may read the namespace without the
  * layout or `ClientMessages` sending it; the same read anywhere else still has to be covered.
  */
 const FETCHING_FILES: Record<(typeof FETCHED_NAMESPACES)[number], readonly string[]> = {
-  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx"],
+  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx", "src/components/guides/GuideToolbar.tsx"],
 };
 const isFetchedRead = (rel: string, path: string) =>
   (FETCHING_FILES as Record<string, readonly string[] | undefined>)[path.split(".")[0]]?.includes(rel) ?? false;
@@ -138,7 +138,7 @@ describe("client message namespaces", () => {
 
   it("exempts a fetched namespace only inside the files that fetch it", () => {
     expect(Object.keys(FETCHING_FILES).sort()).toEqual([...FETCHED_NAMESPACES].sort());
-    expect(TEXTS.has(join(ROOT, FETCHING_FILES.guides[0]))).toBe(true);
+    for (const files of Object.values(FETCHING_FILES)) for (const rel of files) expect(TEXTS.has(join(ROOT, rel)), rel).toBe(true);
     const sources: Record<string, string> = {
       "src/components/guides/GuideDialog.tsx": `const t = useTranslations("guides"); const d = useTranslations("dialog.menu");`,
       "src/components/guides/GuideReader.tsx": `const t = useTranslations("guides.pageOf");`,
