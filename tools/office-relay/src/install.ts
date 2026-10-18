@@ -113,7 +113,8 @@ export function install(home: string, opts: { cli: string; runtime: string; now?
   const claude = mergeClaude(readJson(p.claude), p.bin);
   const codex = mergeCodex(readJson(p.codex), p.bin);
   mkdirSync(path.dirname(p.bin), { recursive: true });
-  writeFileSync(p.bin, `#!/bin/sh\nexec ${shq(opts.runtime)} ${shq(opts.cli)} "$@"\n`);
+  // From `/` and without .env files: the agent's repository (its bunfig.toml preload, its .env) never reaches the relay.
+  writeFileSync(p.bin, `#!/bin/sh\ncd / && exec ${shq(opts.runtime)} --no-env-file ${shq(opts.cli)} "$@"\n`);
   chmodSync(p.bin, 0o755);
   writeJson(p.copilot, copilotHooks(p.bin), stamp);
   writeJson(p.claude, claude, stamp);

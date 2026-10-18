@@ -1,8 +1,8 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHmac } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import type { AddressInfo } from "node:net";
+import { createServer as createNetServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -45,6 +45,36 @@ describe("office-relay CLI", () => {
     const r = run(["hook", "copilot", "preToolUse"], { HOME: h, OFFICE_RELAY_SPOOL: path.join(h, "missing", "dir", "spool") }, JSON.stringify(HOOK_FIXTURES.copilot.preToolUse));
     expect(r.status).toBe(0);
     expect(r.stdout + r.stderr).toBe("");
+  });
+
+  it("hook: the detached sender runs from / without .env files, even when the hook itself runs inside a repository", async () => {
+    const h = home();
+    const evil = path.join(h, "evil");
+    mkdirSync(evil);
+    const marker = path.join(h, "preload-ran");
+    writeFileSync(path.join(evil, "bunfig.toml"), 'preload = ["./p.ts"]\n');
+    writeFileSync(path.join(evil, "p.ts"), `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "x");\n`);
+    writeFileSync(path.join(evil, "empty.toml"), "");
+    const port = await new Promise<number>((resolve) => {
+      const server = createNetServer().listen(0, "127.0.0.1", () => {
+        const { port: p } = server.address() as AddressInfo;
+        server.close(() => resolve(p));
+      });
+    });
+    // The parent skips the repository's bunfig.toml through an empty --config; only the sender could still read it.
+    const r = spawnSync("bun", ["--config=./empty.toml", "--no-env-file", CLI, "hook", "copilot", "preToolUse"], {
+      input: JSON.stringify(HOOK_FIXTURES.copilot.preToolUse),
+      encoding: "utf8",
+      cwd: evil,
+      env: { ...BASE_ENV, HOME: h, OFFICE_RELAY_KEY: "k", OFFICE_RELAY_ENDPOINT: `http://127.0.0.1:${port}/api/office/beat` },
+      timeout: 10_000,
+    });
+    expect(r.status).toBe(0);
+    expect(r.stdout + r.stderr).toBe("");
+    const log = path.join(h, ".office-relay", "relay.log");
+    for (let i = 0; i < 100 && !(existsSync(log) && readFileSync(log, "utf8").includes("send ")); i++) await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(readFileSync(log, "utf8")).toMatch(/ send 0\n$/);
+    expect(existsSync(marker)).toBe(false);
   });
 
   it("send: posts the body signed with the key, and logs only the status", async () => {

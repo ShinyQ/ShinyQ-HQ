@@ -22,7 +22,8 @@ output and the raw session id never leave the machine.
    (the app is built on Copilot CLI; this confirms it loads `~/.copilot/hooks`).
 
 Every hook command is written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` (the directory
-single-quoted), so a hook never fails, even when Bun or the checkout is missing. Install and uninstall parse every
+single-quoted), so a hook never fails, even when Bun or the checkout is missing. The shim runs Bun from `/` with
+`--no-env-file`, so a project's `bunfig.toml` or `.env` never affects the relay. Install and uninstall parse every
 file before writing anything: a file they cannot parse aborts the command with exit code 1 and nothing changed.
 
 ## Use

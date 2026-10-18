@@ -2,8 +2,10 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createServer } from "node:net";
 import { describe, expect, it } from "vitest";
 import { CLAUDE_EVENTS, CODEX_EVENTS, copilotHooks, COPILOT_EVENTS, install, installed, installPaths, MARKER, uninstall } from "../../tools/office-relay/src/install";
+import { HOOK_FIXTURES } from "./fixtures";
 
 const opts = { cli: "/repo/tools/office-relay/src/cli.ts", runtime: "/opt/bun/bin/bun", now: 1_792_327_344_000 };
 const json = (file: string) => JSON.parse(readFileSync(file, "utf8"));
@@ -40,7 +42,7 @@ describe("install", () => {
     expect(codex.hooks.PreToolUse[0].matcher).toBe("^Bash$");
     expect(codex.hooks.Stop[0].hooks[0].async).toBe(true);
 
-    expect(readFileSync(p.bin, "utf8")).toBe(`#!/bin/sh\nexec '${opts.runtime}' '${opts.cli}' "$@"\n`);
+    expect(readFileSync(p.bin, "utf8")).toBe(`#!/bin/sh\ncd / && exec '${opts.runtime}' --no-env-file '${opts.cli}' "$@"\n`);
     expect(statSync(p.bin).mode & 0o111).not.toBe(0);
     expect(readdirSync(path.join(home, ".claude")).some((f) => f.startsWith("settings.json.office-backup-"))).toBe(true);
     expect(report.join("\n")).toContain("Codex: open /hooks");
@@ -77,7 +79,7 @@ describe("install", () => {
     expect(run.status).toBe(0);
     expect(run.stdout).toBe("");
     expect(run.stderr).toBe("");
-    expect(readFileSync(out, "utf8")).toBe(`${cli}\nhook\ncopilot\npreToolUse\n`);
+    expect(readFileSync(out, "utf8")).toBe(`--no-env-file\n${cli}\nhook\ncopilot\npreToolUse\n`);
     expect(existsSync(path.join(work, "relay-pwned"))).toBe(false);
     expect(existsSync(path.join(root, "relay-pwned"))).toBe(false);
   });
@@ -126,5 +128,36 @@ describe("install", () => {
     expect(readFileSync(p.copilot, "utf8")).toBe(copilotBefore);
     expect(readFileSync(p.bin, "utf8")).toBe(shimBefore);
     expect(readFileSync(p.codex, "utf8")).toBe("{ not json");
+  });
+
+  it("runs Bun from / without .env files, so the agent's repository cannot preload code or set relay overrides", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "relay-evil-"));
+    const [home, evil, relayHome] = ["home", "evil", "relay"].map((d) => path.join(root, d));
+    for (const dir of [home, evil]) mkdirSync(dir);
+    const marker = path.join(root, "preload-ran");
+    const spool = path.join(root, "evil-spool");
+    writeFileSync(path.join(evil, "bunfig.toml"), 'preload = ["./p.ts"]\n');
+    writeFileSync(path.join(evil, "p.ts"), `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "x");\nconsole.log("PRELOAD-RAN");\n`);
+    writeFileSync(path.join(evil, ".env"), `OFFICE_RELAY_SPOOL=${spool}\n`);
+    const bun = process.versions.bun ? process.execPath : spawnSync("which", ["bun"], { encoding: "utf8" }).stdout.trim();
+    install(home, { cli: path.resolve("tools/office-relay/src/cli.ts"), runtime: bun, now: opts.now });
+    // A closed 127.0.0.1 port: the detached sender gets a refused connection, never the network or the Keychain.
+    const port = await new Promise<number>((resolve) => {
+      const server = createServer().listen(0, "127.0.0.1", () => {
+        const { port: p } = server.address() as { port: number };
+        server.close(() => resolve(p));
+      });
+    });
+    const env = { PATH: process.env.PATH ?? "", NODE_ENV: "test" as const, HOME: home, OFFICE_RELAY_HOME: relayHome, OFFICE_RELAY_KEY: "k", OFFICE_RELAY_ENDPOINT: `http://127.0.0.1:${port}/api/office/beat` };
+    const line = json(installPaths(home).copilot).hooks.preToolUse[0].bash as string;
+    const run = spawnSync("/bin/sh", ["-c", line], { input: JSON.stringify(HOOK_FIXTURES.copilot.preToolUse), encoding: "utf8", cwd: evil, env, timeout: 10_000 });
+    expect(run.status).toBe(0);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toBe("");
+    const log = path.join(relayHome, "relay.log");
+    for (let i = 0; i < 100 && !(existsSync(log) && readFileSync(log, "utf8").includes("send ")); i++) await new Promise((r) => setTimeout(r, 50));
+    expect(readFileSync(log, "utf8")).toMatch(/ copilot preToolUse testing sent\n\S+ send 0\n$/);
+    expect(existsSync(marker)).toBe(false);
+    expect(existsSync(spool)).toBe(false);
   });
 });

@@ -41,7 +41,7 @@ function dispatch(body: string): void {
     appendFileSync(spool, `${body}\n`);
     return;
   }
-  const child = spawn(process.execPath, [SELF, "send"], { detached: true, stdio: "ignore", env: { ...process.env, OFFICE_BEAT: body } });
+  const child = spawn(process.execPath, ["--no-env-file", SELF, "send"], { cwd: "/", detached: true, stdio: "ignore", env: { ...process.env, OFFICE_BEAT: body } });
   child.on("error", () => undefined);
   child.unref();
 }

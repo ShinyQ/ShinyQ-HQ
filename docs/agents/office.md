@@ -77,6 +77,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   `office-relay hook <agent> <event>` (the event name comes from argv: Copilot's camelCase payloads carry none),
   written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` so a hook never fails, even without Bun
   or the checkout.
+  The shim runs Bun from `/` with `--no-env-file` (the detached sender too), so a project's `bunfig.toml` or `.env`
+  never affects the relay.
 - Mapping (`map.ts`, `command.ts`): tool names and the first words of a shell command only (at most three, after
   `env`, `time`, `sudo` and `nohup`); spec section 5. An answered ask tool maps to thinking; Needs Kurniadi comes only
   from a permission request or a needs-input notification. Tests: `tests/relay/map.test.ts` over
