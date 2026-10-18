@@ -570,7 +570,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;
 
-    if (now - local.lastSync > STORE_SYNC_S) {
+    // The store's mirror lags the same game distance at the test-only animation speed as at 1x.
+    if (now - local.lastSync > STORE_SYNC_S / speed) {
       local.lastSync = now;
       // Whole-frame totals (scene plus post passes), counted by RenderCounter.
       roverRuntime.drawCalls = renderStats.sceneCalls + renderStats.postCalls;

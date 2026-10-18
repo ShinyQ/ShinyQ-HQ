@@ -249,6 +249,7 @@ Functional specs run rides, drives, camera eases and the intro 4x faster in game
   - the autopilot (`RoverController.step` `speed`: the door approach, the arrival roll-on, point-and-go, missions) and the beam; manual driving stays real-time;
   - `CameraDirector`'s eases, the arrival glide and the intro clock; held Q/E/R/F and the zoom push idle stay real-time.
   - Decorative clocks (orbiting labels, shaders, rover idle), HUD timers and mission `say` pauses keep real time.
+  - The store's rover mirror (`setRover`, every `STORE_SYNC_S`) syncs `speed` times as often, so `snapshot().rover` lags the live pose by the same game distance as at 1x.
 - Fixture (`e2e/hq.ts`): a functional spec opts in with `test.beforeEach(({ context }) => fastAnimations(context))`. `E2E_SPEED` sets the speed (default 4; `E2E_SPEED=1` runs the same specs at real speed to measure or bisect); `PERF=1` makes `fastAnimations` a no-op.
 - `resetRenderPeaks` drops the page to real speed until `readRenderPeaks`, so every render-budget window measures at real speed.
 - A test that asserts pacing, a duration or a trajectory sampled frame by frame (the intro's length, the dolly's car heights `distinctY`, a closest approach, a mid-drive position window) calls `realAnimations(page | context)` before navigating, or `setAnimationSpeed(page, 1)` on a live page.

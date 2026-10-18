@@ -87,4 +87,6 @@ Correctness: two specs found issues at 4x:
 
 ### CI
 
+- Run 39164830803 (attempt 1, superseded): green, but `library-roof` "cv drives to the kiosk" passed only on retry: `snapshot().rover` read 1.77 u from the stop (tolerance 1.5). The store's rover mirror syncs every `STORE_SYNC_S` (0.1 s) of real time, and the mission opens the room while the rover still rolls at about 4.4 u/s of game speed, so at 4x a stale mirror can sit 1.76 u back (0.44 u at 1x; an offline drive simulation at every frame size arrives within 0.26 u). Fix: the mirror syncs every `STORE_SYNC_S / speed`. Its re-run on the old code was cancelled, and the 3-run proof restarted on the fix.
+
 Filled in from the 3 consecutive full CI runs (the e2e shard worker-seconds against the medians in `e2e/durations.json`, and the retries from `scripts/flaky-report.ts`).
