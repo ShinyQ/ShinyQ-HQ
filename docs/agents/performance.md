@@ -38,7 +38,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards: the whole lane on 4 shards on `main`, dispatches and the nightly; on a PR, 2 shards running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards: the whole lane on 4 shards on `main`, dispatches and the nightly; on a PR, 2 shards running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run one perf key locally with the same grep, for example `PERF=1 bunx playwright test --grep "L3 (full|lite): settled"`.
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
