@@ -231,6 +231,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "src/lib/office/protocol.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["tools/office-relay/src/hook.ts", "tools/office-relay/README.md"])).toEqual({ specs: [], unmatched: [] });
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {

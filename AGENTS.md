@@ -179,6 +179,7 @@ Path by path: [folder-layout.md](docs/agents/folder-layout.md).
 | `messages/` | UI strings, `en.json` and `id.json` |
 | `public/` | Static assets: brand, fonts, tech and company logos, media, CV, papers, floor thumbnails, OG inputs, `_headers`, `_redirects` |
 | `scripts/` | Build steps, content and media tools, e2e planning, CI and deploy helpers |
+| `tools/` | `tools/office-relay`: the local Agent Office relay and hook installer (runs on the owner's Mac) |
 | `src/` | Next.js app (`app/`), components, content loaders, i18n, lib, the 3D experience (`experience/`), HUD (`hud/`), store |
 | `tests/` | Vitest: unit, HUD, content, Ask, stats, benches, helpers |
 | `workers/` | `workers/stats`: the `hq-stats` Cron Worker; `workers/office`: the `hq-office` Agent Office Worker |

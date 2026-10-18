@@ -65,6 +65,11 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - The owner's photo (400 px PNG).
 - `public/_headers`, `public/_redirects`: Cloudflare Pages headers (CSP, caching, same-origin framing for /cv/*) and redirects (old CV paths).
 
+## tools/
+
+- `tools/office-relay/`: the Agent Office relay (Bun CLI) and its installer for the GitHub Copilot, Claude Code and
+  Codex hooks; runs on the owner's machine, never on the site. See [office.md](office.md#relay).
+
 ## scripts/
 
 ### Build and post-build
