@@ -144,24 +144,24 @@ test("a locked #B1 deep link stays on the Lobby and Rover says how to unlock it"
   await expect(page).toHaveURL(/\/en\?tier=lite$/);
 });
 
-test("Cmd-K has no B1 action while locked, and rides to B1 once unlocked", async ({ page }) => {
+test("Cmd-K has the B1 action in both states: locked it says the locked line, unlocked it rides to B1", async ({ page }) => {
   await open(page);
   const palette = page.getByRole("dialog", { name: "Command palette" });
+  const action = palette.getByRole("option").filter({ hasText: "Go to B1 Engine Room" });
   await page.keyboard.press("Control+k");
   await expect(palette).toBeVisible();
   await palette.getByRole("combobox").fill("Engine Room");
-  await expect(palette.getByRole("option").first()).toBeVisible();
-  await expect(palette.getByRole("option").filter({ hasText: /Go to B1/ })).toHaveCount(0);
-  await page.keyboard.press("Escape");
+  await expect(action).toBeVisible();
+  await page.keyboard.press("Enter");
   await expect(palette).toHaveCount(0);
+  await expect(page.locator('[data-testid="dialog-box"][data-line="b1-locked"]')).toContainText("visit all 5 floors first (1/5)");
   expect((await state(page)).floor).toBe("L1");
 
-  // The session-only unlock registers the action like a real one (the moment is covered above).
+  // The session-only unlock registers the same action like a real one (the moment is covered above).
   await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().unlockB1());
   await page.keyboard.press("Control+k");
   await expect(palette).toBeVisible();
   await palette.getByRole("combobox").fill("Engine Room");
-  const action = palette.getByRole("option").filter({ hasText: "Go to B1 Engine Room" });
   await expect(action).toBeVisible();
   await page.keyboard.press("Enter");
   await waitForFloor(page, "B1", 90_000);

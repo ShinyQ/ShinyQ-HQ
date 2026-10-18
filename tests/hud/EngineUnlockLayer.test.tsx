@@ -20,6 +20,7 @@ const mount = () =>
   );
 
 beforeEach(() => {
+  dialog.dialog.setInstant(true);
   markOnboarded("done");
   getHQStore().setState({ phase: "explore", floor: "RF", ride: null, b1Unlocked: true, b1Moment: true, floorsSeen: ["L1", "L2", "L3", "L4", "RF"] });
 });
@@ -27,21 +28,26 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   window.history.replaceState(null, "", "/");
+  dialog.cancelAllDialogs();
+  dialog.dialog.setInstant(false);
   getHQStore().setState({ b1Unlocked: false, b1Moment: false, floorsSeen: [] });
 });
 
 describe("EngineUnlockLayer", () => {
   it("chimes and asks once; Take me there rides to B1 and clears the moment", async () => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-    const say = vi.spyOn(dialog, "say").mockResolvedValue({ status: "done", choice: "go" });
+    const say = vi.spyOn(dialog, "say");
     const request = vi.spyOn(getHQStore().getState(), "requestElevator");
     mount();
     await act(async () => {});
+    expect(dialog.dialog.view.id).toBe("b1-unlock");
     expect(play).toHaveBeenCalledWith("chime");
     expect(say).toHaveBeenCalledTimes(1);
     const line = say.mock.calls[0][0] as { key: string; text: string; choices: { id: string; label: string }[] };
     expect(line).toMatchObject({ key: "b1-unlock", text: en.engine.unlock });
     expect(line.choices.map((c) => c.label)).toEqual([en.engine.go, en.engine.later]);
+    await act(async () => dialog.dialog.choose("go"));
+    expect(play).toHaveBeenCalledTimes(1);
     expect(getHQStore().getState().b1Moment).toBe(false);
     expect(request).toHaveBeenCalledWith("B1");
   });
@@ -65,6 +71,20 @@ describe("EngineUnlockLayer", () => {
     await act(async () => {});
     expect(say).toHaveBeenCalledTimes(1);
     expect(getHQStore().getState().b1Moment).toBe(true);
+  });
+
+  it("holds the offer while a mission runs and offers it once the mission ends", async () => {
+    const play = vi.spyOn(audio, "play").mockImplementation(() => {});
+    const say = vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));
+    getHQStore().setState({ mission: { id: "tour", step: 0, status: "running" } });
+    mount();
+    await act(async () => {});
+    expect(say).not.toHaveBeenCalled();
+    expect(play).not.toHaveBeenCalled();
+    act(() => getHQStore().setState({ mission: { id: "tour", step: 1, status: "done" } }));
+    await act(async () => {});
+    expect(say).toHaveBeenCalledTimes(1);
+    act(() => getHQStore().setState({ mission: null }));
   });
 
   it("tells a locked visitor who followed #B1 how to unlock it, and drops the hash", async () => {
@@ -98,7 +118,6 @@ describe("EngineUnlockLayer", () => {
 
   it("chimes once per moment: a locale change or a ride in between does not replay it", async () => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-    vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));
     const view = (locale: "en" | "id") => (
       <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : id}>
         <EngineUnlockLayer />
@@ -116,7 +135,6 @@ describe("EngineUnlockLayer", () => {
 
   it("does not chime while the dialog is paused, then chimes once when it resumes", async () => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-    vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));
     dialog.dialog.setPaused(true);
     try {
       mount();
@@ -134,13 +152,12 @@ describe("EngineUnlockLayer", () => {
     vi.useFakeTimers();
     try {
       const play = vi.spyOn(audio, "play").mockImplementation(() => {});
-      const say = vi
-        .spyOn(dialog, "say")
-        .mockResolvedValueOnce({ status: "cancelled", choice: null })
-        .mockReturnValue(new Promise(() => {}));
+      const say = vi.spyOn(dialog, "say");
       mount();
       await act(async () => {});
       expect(say).toHaveBeenCalledTimes(1);
+      expect(play).toHaveBeenCalledTimes(1);
+      await act(async () => dialog.cancelDialog("b1-unlock"));
       await act(async () => {
         await vi.advanceTimersByTimeAsync(400);
       });
@@ -221,13 +238,13 @@ describe("EngineUnlockLayer", () => {
     expect(say).toHaveBeenCalledTimes(1);
   });
 
-  it("adds Go to B1 Engine Room to Cmd-K only while unlocked and mounted", async () => {
+  it("registers Go to B1 Engine Room in Cmd-K in both states while mounted", async () => {
     vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));
     vi.spyOn(audio, "play").mockImplementation(() => {});
     getHQStore().setState({ b1Unlocked: false, b1Moment: false, floorsSeen: ["L1"] });
     const view = mount();
     await act(async () => {});
-    expect(hudActions()).toEqual([]);
+    expect(hudActions().map((a) => [a.id, a.label])).toEqual([["engine-room", en.engine.goTo]]);
     act(() => getHQStore().setState({ b1Unlocked: true }));
     expect(hudActions().map((a) => [a.id, a.label])).toEqual([["engine-room", en.engine.goTo]]);
     view.rerender(
@@ -238,5 +255,27 @@ describe("EngineUnlockLayer", () => {
     expect(hudActions().map((a) => [a.id, a.label])).toEqual([["engine-room", id.engine.goTo]]);
     view.unmount();
     expect(hudActions()).toEqual([]);
+  });
+
+  it("locked, running the Cmd-K action says the locked line with the progress and rides nowhere", async () => {
+    const say = vi.spyOn(dialog, "say").mockResolvedValue({ status: "done", choice: null });
+    getHQStore().setState({ b1Unlocked: false, b1Moment: false, floorsSeen: ["L1", "L2"] });
+    mount();
+    await act(async () => {});
+    expect(say).not.toHaveBeenCalled();
+    await act(async () => hudActions()[0].run());
+    expect(say).toHaveBeenCalledTimes(1);
+    expect(say.mock.calls[0][0]).toMatchObject({ key: "b1-locked", text: "B1 is still locked: visit all 5 floors first (2/5)." });
+    expect(getHQStore().getState()).toMatchObject({ ride: null, mission: null, floor: "RF" });
+  });
+
+  it("ignores #B1 off the Lobby route: no line, the hash stays", async () => {
+    getHQStore().setState({ b1Unlocked: false, b1Moment: false, floorsSeen: ["L1"] });
+    window.history.replaceState(null, "", "/en/projects#B1");
+    const say = vi.spyOn(dialog, "say").mockResolvedValue({ status: "done", choice: null });
+    mount();
+    await act(async () => {});
+    expect(say).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#B1");
   });
 });

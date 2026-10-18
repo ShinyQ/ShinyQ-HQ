@@ -191,7 +191,7 @@ test.describe("a locked session", () => {
     expect(b1Requests(requests)).toEqual([]);
   });
 
-  test("shows B1 only as a locked row in the elevator rail and the floor picker, and not in the command palette", async ({ page }) => {
+  test("shows B1 only as a locked row in the elevator rail and the floor picker, and the command palette action only explains it", async ({ page }) => {
     await enterHQ(page);
     await expectLockedRow(page);
     await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().openPicker({ kind: "floor" }));
@@ -208,7 +208,8 @@ test.describe("a locked session", () => {
     await expect(palette).toBeVisible();
     await palette.getByRole("combobox").fill("Engine Room");
     await expect(palette.getByRole("option").first()).toBeVisible();
-    await expect(palette.getByRole("option").filter({ hasText: /\bB1\b|Engine Room/i })).toHaveCount(0);
+    // The action exists while locked; running it says the locked line (e2e/b1-unlock.spec.ts) and never rides.
+    await expect(palette.getByRole("option").filter({ hasText: "Go to B1 Engine Room" })).toHaveCount(1);
   });
 
   test("phones: the floor sheet lists B1 locked, and lit once unlocked", async ({ browser }) => {
