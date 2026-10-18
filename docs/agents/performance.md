@@ -42,6 +42,8 @@ JetBrains Mono (`jetbrains` in `src/app/fonts.ts`) stays preloaded with Inter an
 - Classic site: the header (`>_` tool, EN/ID switch; on desktop also the site name, the nav floor labels and `Ctrl K`) and `pv-data` labels such as the floor eyebrow, filter labels and chip counts. Boot cover: its eyebrow, the role line and the boot log.
 - Dropping the preload would swap these from the fallback after first paint. Recheck with a first-viewport scan of computed `font-family` before changing it.
 
+CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27% fewer image bytes than lossless at the same look (SSIM >= 0.997); lossy WebP and AVIF were larger at that quality. Page 1 is eager with `fetchPriority="high"`, later pages `loading="lazy"` (Chrome still fetches page 2 at low priority after page 1: it sits within the lazy-load distance). See [content.md](content.md#cv).
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.

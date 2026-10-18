@@ -84,6 +84,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages.
 - CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser.
+- Each page ships as near-lossless WebP at 800, 1200 and 1600 px (visually identical to lossless, about 25% smaller). Page 1 loads eagerly (high priority on `/{locale}/cv`, where it is the LCP); later pages load lazily.
 - To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`). A unit test fails until the images match the PDF.
 
 ## Research papers

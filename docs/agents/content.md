@@ -33,6 +33,8 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 - Every CV entry point opens the in-site CV viewer modal instead of downloading (owner decision):
   - Use `<CvButton>` (`src/components/cv/CvButton.tsx`: a real link to `/{locale}/cv` that calls `openCv()`, so it works before hydration and with modifier keys) or `openCv()` from `src/hud/events.ts`.
   - The viewer (`CvViewer`, also the body of `/{locale}/cv`) shows pre-rendered page images (`CV_PAGES` from `@/lib/cv`, no PDF renderer in the browser).
+  - Page images: near-lossless WebP (`WEBP_NEAR_LOSSLESS` in `scripts/pdf-pages.ts`, one VP8L frame) at 800, 1200 and 1600 px, served through `srcset`. Lossy WebP and AVIF need more bytes for the same SSIM on text. `tests/content/cv.test.ts` holds a per-width byte budget (90, 150 and 200 KB).
+  - `PageViewer` loads page 1 eagerly (`fetchPriority="high"` on the `/cv` page, where it is the LCP) and every later page with `loading="lazy"`; all pages use `decoding="async"` (`tests/unit/page-srcset.test.tsx`).
   - Controls: zoom, the page count, a "Download PDF" link (`cvPdfPath` and `cvDownloadName`) and "Open in new tab".
 - Update the CV:
   - Replace the file under the same name and run `bun run cv:pages` (poppler and webp, e.g. `brew install poppler webp`).
