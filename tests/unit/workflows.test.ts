@@ -106,6 +106,13 @@ describe("smart CI (ci.yml)", () => {
     expect(job("nightly")).toContain("APPLY: ${{ github.ref == 'refs/heads/main' }}");
     expect(job("nightly")).toContain("run: bun scripts/ci-nightly.ts");
   });
+
+  it("skips the nightly-only e2e tests except on the nightly schedule or the nightly input", () => {
+    expect(job("e2e")).toContain("NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true }}");
+    expect(job("e2e")).toContain("skip=(--grep-invert @nightly)");
+    expect(job("e2e")).toContain('if [ "$NIGHTLY" = "true" ]; then skip=(); fi');
+    expect(job("e2e")).toContain('bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"');
+  });
 });
 
 describe("deploy on merge (deploy.yml, rollback.yml)", () => {

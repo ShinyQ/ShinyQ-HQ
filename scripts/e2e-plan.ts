@@ -310,19 +310,34 @@ export function locateTest(source: string, title: string): number | null {
   return null;
 }
 
+/**
+ * Tests whose title carries this tag run only in the nightly run (and on a dispatch with the `nightly` input): pull
+ * requests and pushes to main pass `--grep-invert @nightly` (ci.yml, `scripts/e2e-changed.ts`). Owner decision
+ * 2026-10-18; the list and the reasons are in docs/agents/performance.md.
+ */
+export const NIGHTLY_TAG = "@nightly";
+
+/** True for a test that runs only in the nightly run. */
+export const isNightlyTest = (id: string): boolean => id.includes(NIGHTLY_TAG);
+
 /** Seconds assumed for a spec with no measured test, and for a test with no measured duration. */
 export const UNKNOWN_SPEC_SECONDS = 150;
 export const UNKNOWN_TEST_SECONDS = 30;
 
-/** Estimated worker-seconds of a spec (sum of its durations), or of one test when `title` is given. */
+/**
+ * Estimated worker-seconds of a spec (sum of its durations), or of one test when `title` is given. Planned runs are
+ * pull requests and pushes to main, which skip the nightly-only tests, so their durations do not count.
+ */
 export function specSeconds(durations: Durations | null | undefined, spec: string, title?: string): number {
   const prefix = `${spec}.spec.ts › `;
-  const keys = Object.keys(durations ?? {}).filter((k) => k.startsWith(prefix));
+  const measured = Object.keys(durations ?? {}).filter((k) => k.startsWith(prefix));
+  const keys = measured.filter((k) => !isNightlyTest(k));
   if (title !== undefined) {
     const key = keys.find((k) => k.endsWith(` › ${title}`));
     return key ? durations![key] : UNKNOWN_TEST_SECONDS;
   }
-  return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : UNKNOWN_SPEC_SECONDS;
+  // A measured spec whose tests are all nightly-only costs nothing here; an unmeasured one gets the default.
+  return keys.length ? keys.reduce((sum, k) => sum + durations![k], 0) : measured.length ? 0 : UNKNOWN_SPEC_SECONDS;
 }
 
 export const MAX_E2E_SHARDS = 8;

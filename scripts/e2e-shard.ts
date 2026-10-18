@@ -18,7 +18,8 @@ const DURATIONS = path.join(import.meta.dir, "..", "e2e", "durations.json");
 
 function listTests(args: string[]): string[] {
   const env = { ...process.env, E2E_SHARD: "" };
-  const result = Bun.spawnSync(["bunx", "playwright", "test", "--list", "--reporter=json", ...args], { env, stdout: "pipe", stderr: "inherit" });
+  // A selection can match no test: a spec whose tests are all nightly-only under `--grep-invert @nightly`.
+  const result = Bun.spawnSync(["bunx", "playwright", "test", "--list", "--pass-with-no-tests", "--reporter=json", ...args], { env, stdout: "pipe", stderr: "inherit" });
   if (result.exitCode !== 0) throw new Error(`playwright --list failed with exit code ${result.exitCode}`);
   return listTestIds(JSON.parse(result.stdout.toString()) as { suites: ListSuite[] });
 }
