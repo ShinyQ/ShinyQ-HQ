@@ -139,6 +139,23 @@ export function scheduleBlip(ctx: BaseAudioContext, destination: AudioNode, when
   osc.stop(end + 0.005);
 }
 
+/** B1 unlock chime: C6, E6 and G6 sine notes 90 ms apart, each ringing about 600 ms (pentatonic, like the music's bells). */
+export function scheduleChime(ctx: BaseAudioContext, destination: AudioNode, when: number): void {
+  [1046.5, 1318.51, 1567.98].forEach((frequency, i) => {
+    const start = when + i * 0.09;
+    const end = start + 0.6;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(frequency, start);
+    envelope(gain, start, 0.12, 0.006, end);
+    osc.connect(gain).connect(destination);
+    cleanupOnEnded(osc, [osc, gain]);
+    osc.start(start);
+    osc.stop(end + 0.01);
+  });
+}
+
 export type OneShot = (ctx: BaseAudioContext, destination: AudioNode, when: number) => void;
 
 export const ONE_SHOTS: Record<SoundName, OneShot> = {
@@ -147,6 +164,7 @@ export const ONE_SHOTS: Record<SoundName, OneShot> = {
   whoosh: scheduleWhoosh,
   click: scheduleClick,
   blip: scheduleBlip,
+  chime: scheduleChime,
 };
 
 export interface LoopVoice {

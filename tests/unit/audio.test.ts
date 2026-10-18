@@ -10,7 +10,7 @@ import {
   type AudioEngineDeps,
 } from "@/lib/audio";
 import { AMBIENCE_CROSSFADE, type AmbienceVoice } from "@/lib/audio/ambience";
-import { rumbleTargets } from "@/lib/audio/synth";
+import { ONE_SHOTS, rumbleTargets } from "@/lib/audio/synth";
 import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
 
 class FakeStorage {
@@ -246,6 +246,10 @@ describe("audio engine: paused until the 3D view opens", () => {
 });
 
 describe("audio engine: one-shots", () => {
+  it("plays a short chime for the B1 unlock", () => {
+    expect(Object.keys(ONE_SHOTS)).toContain("chime");
+  });
+
   it.each(["beep", "ding", "whoosh", "click", "blip"] as const)("%s starts and stops its sources", (name) => {
     const { engine, ctx } = setup();
     engine.setMuted(false);

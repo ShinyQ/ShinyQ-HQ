@@ -1,7 +1,7 @@
 import type { AmbienceFloor } from "./ambience";
 
 export type { AmbienceFloor };
-export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip";
+export type SoundName = "beep" | "ding" | "whoosh" | "click" | "blip" | "chime";
 
 export interface AudioSettings {
   /** One-shots and the tread rumble. */

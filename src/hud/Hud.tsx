@@ -11,6 +11,7 @@ import { BootOverlay } from "./BootOverlay";
 // Rover's dialog rides in the 3D chunk (itself lazy): a second dynamic import here made Turbopack
 // regroup shared modules into Page View chunks (+7 KB JS on every page, over the Lighthouse budget).
 import DialogLayer from "./dialog/DialogLayer";
+import { EngineUnlockLayer } from "./dialog/EngineUnlockLayer";
 import { FloorIntroLayer } from "./dialog/FloorIntroLayer";
 import { HintLayer } from "./dialog/HintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
@@ -239,6 +240,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
         </>
       )}
       <FloorIntroLayer data={data} />
+      <EngineUnlockLayer />
       <FloorAnnouncer data={data} />
       <OnboardingLayer data={data} />
       <HintLayer name={firstName(data.profile.name)} />
