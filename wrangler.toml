@@ -68,12 +68,11 @@ id = "88fb27f910f44e6393b8fd495d6a2c4f"
 
 # Agent Office (docs/agents/office.md, runbook workers/office/README.md): the hq-office Worker behind GET /api/office,
 # POST /api/office/beat and POST /api/office/github. Calls through a service binding add no request charge.
-# Off until the hq-office Worker exists: a Pages deploy fails when a service binding names a missing Worker. Without
-# the binding /api/office answers mode "off" and the POST routes answer 503. Re-enable the block below in the PR that
-# deploys hq-office before the Pages upload.
-# [[services]]
-# binding = "OFFICE"
-# service = "hq-office"
+# Pages rejects a deploy whose service binding names a missing Worker, so deploy.yml deploys hq-office inside the
+# Pages job, after the gates and before the upload.
+[[services]]
+binding = "OFFICE"
+service = "hq-office"
 
 [vars]
 # Kill switch. Anything but "true" hides the UI and makes /api/ask return 503 (docs/ask-runbook.md).

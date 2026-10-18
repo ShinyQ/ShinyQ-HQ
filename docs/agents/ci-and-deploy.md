@@ -180,17 +180,17 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
      - It fails the deploy on a red CI, marker or not.
      - Without a complete CI result, or with the `rerun_e2e` input, it runs the 8 e2e shards itself first.
      - The weekly facts merge always lands here: it gets no push CI, and its PR was tested by a `workflow_dispatch` run, never reused by tree (`refresh-facts.yml` already gated the merge on that full run).
-  2. Builds, deploys `out/` plus `functions/`.
+  2. Builds, deploys the hq-office Worker (after the gates, before the upload: Pages rejects a binding to a missing Worker), then deploys `out/` plus `functions/`.
   3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
   5. Opens a `deploy-failed` issue on failure.
-- `office-worker` (deploy.yml) deploys the hq-office Worker after a successful Pages upload, like hq-stats, so it
-  passes the same gates, and sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment;
-  a commit without `workers/office/` skips it with a notice. The Pages binding `OFFICE` stays commented out until
-  the Worker exists (a Pages deploy fails on a binding to a missing Worker). The rollback redeploys it from the rollback
-  target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,
+- The deploy job (Cloudflare Pages production) deploys the hq-office Worker after the gates (fast path still open, complete green main CI) and the knowledge pack (which writes `functions/_generated/safety.json`), and before the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
+  It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment, in step env;
+  a commit without `workers/office/` skips it with a notice. The Worker step has `continue-on-error`, so a failure
+  does not stop the upload while the Worker exists; a check after the smoke check then fails the job (and opens the
+  `deploy-failed` issue). The rollback redeploys it from the rollback target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,
   `src/lib/office/`, `src/content/safety-match.ts`, `functions/_lib/security.ts` or `scripts/build-knowledge.ts`
-  (not a required check). `OFFICE_WORKER_DEPLOY = "false"` skips the deploy and the rollback redeploy.
+  (not a required check). `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps in the deploy job and the rollback redeploy.
   Runbook: `workers/office/README.md`; rules: [office.md](office.md).
 - Rollback (`.github/workflows/rollback.yml`, `scripts/rollback.ts`), on every completed CI run from a push to `main`:
   - Red (failure or timed out):

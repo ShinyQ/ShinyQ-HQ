@@ -18,9 +18,10 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
     reported them public);
   - `OFFICE_GITHUB_ACTORS` (`ShinyQ,Copilot`): GitHub logins whose same-repository pull requests count, besides
     authors with the OWNER, MEMBER or COLLABORATOR association.
-- Deploy: `deploy.yml` job "hq-office Worker", after a successful Pages upload (the same gates as the upload); a
-  commit without `workers/office/` skips it. The Pages binding `OFFICE` stays commented out in
-  the root `wrangler.toml` until the Worker exists (a Pages deploy fails on a binding to a missing Worker).
+- Deploy: `deploy.yml`, inside the Pages job ("Cloudflare Pages production"), after the gates and before the upload,
+  because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker; a commit without
+  `workers/office/` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
+  failed" then turns the job red.
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
@@ -60,8 +61,10 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 
 - Kill switch: set `OFFICE_ENABLED` to `"false"` in the root `wrangler.toml` and deploy; the site hides the office.
 - Rotate a key: update the GitHub secret (and the Keychain item or the webhook secret), then redeploy (Actions,
-  `deploy.yml`, Run workflow).
-- Skip the Worker deploy and its rollback redeploy: repository variable `OFFICE_WORKER_DEPLOY = "false"` (for
+  `deploy.yml`, Run workflow on `main`). There is no secrets-only refresh: the run rebuilds and redeploys everything
+  with the gates.
+- Skip the Worker steps inside the Pages job and its rollback redeploy: repository variable
+  `OFFICE_WORKER_DEPLOY = "false"` (for
   example while deploying by hand, from the repository root:
   `bun scripts/build-knowledge.ts && cd workers/office && bunx wrangler deploy`; the first step writes
   `functions/_generated/safety.json`, which the Worker bundles).
