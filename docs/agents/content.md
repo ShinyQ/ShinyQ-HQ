@@ -72,6 +72,10 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 
 ## Architecture diagrams
 
+- Authored node and optional edge labels accept a nonempty shared string or strict `{ en, id }` text. Legacy strings render verbatim in either locale.
+- Resolve a raw graph once for the requested locale before layout, accessible summaries and room-view serialization. Layout and client DTO labels remain strings; never mutate cached source graphs.
+- Node IDs, edge endpoints, ordering and group strings are structural. Groups remain shared membership/display keys, not localized captions.
+
 ### Blog architecture figures
 
 - A post embeds `<Architecture pod="<pod-slug>" caption="..." />` (the case study's diagram) or `<Architecture diagram="<id>" caption="..." />` (from `content/blog/diagrams.json`).
