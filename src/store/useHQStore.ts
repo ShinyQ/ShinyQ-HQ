@@ -274,6 +274,8 @@ export function createHQStore(storage?: StateStorage) {
         openRoom: (id, tab) => {
           // Rooms that moved (RF:visits is now L1:visits) open under their current id.
           const room = canonicalRoom(id);
+          // A locked B1 never opens a station (a Back into a stale history entry, a stray link): no drawer, no fetch.
+          if (!canEnterFloor(room.slice(0, room.indexOf(":")) as FloorId, get().b1Unlocked)) return;
           get().markVisited(room);
           const same = get().activeRoom === room;
           set({ activeRoom: room, phase: "room", drawerTab: tab ?? (same ? get().drawerTab : "overview"), readme: same && get().readme });

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { b1FromHash, floorProgress } from "@/experience/b1";
 import { audio } from "@/lib/audio";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
+import { registerHudAction } from "../hudActions";
+import { engineRoomAction } from "./engineRoomAction";
 import { useOnboardingSettled } from "./hooks";
 import * as dialog from "./store";
 import { useDialog } from "./store";
@@ -20,11 +22,14 @@ const IDLE_GRACE_MS = 300;
  * cancelled line (a tutorial replay) is offered again, at most 3 times, once the dialog queue has been idle for a moment and the visitor is free, so it never queues ahead of the replayed tutorial; a ride or the tour first waits. The chime plays once per
  * moment, when the dialog is not paused. The moment is not persisted: a reload before the answer drops the offer
  * (the row stays lit and B1 is reachable from every picker, so nothing is lost). A locked visitor who followed
- * `/{locale}#B1` hears how to unlock it. Renders nothing. Strings live in the 3D-only `engine` namespace.
+ * `/{locale}#B1` hears how to unlock it. Once unlocked, Cmd-K lists "Go to B1 Engine Room" while this layer is
+ * mounted (the 3D tower only). Renders nothing. Strings live in the 3D-only `engine` namespace.
  */
 export function EngineUnlockLayer() {
   const t = useTranslations("engine");
   const moment = useHQStore((s) => s.b1Moment);
+  const unlocked = useHQStore((s) => s.b1Unlocked);
+  const goTo = t("goTo");
   const free = useHQStore((s) => s.phase === "explore" && s.ride === null);
   const settled = useOnboardingSettled();
   const paused = useDialog((view) => view.paused);
@@ -34,6 +39,9 @@ export function EngineUnlockLayer() {
   const cancelled = cancels > retry;
   const retries = useRef(0);
   const chimed = useRef(false);
+
+  // The palette lives in the locale layout, which has no `engine` strings: hand it the resolved label.
+  useEffect(() => (unlocked ? registerHudAction(engineRoomAction(goTo)) : undefined), [unlocked, goTo]);
 
   useEffect(() => {
     if (!settled || !b1FromHash(undefined, window.location.hash)) return;

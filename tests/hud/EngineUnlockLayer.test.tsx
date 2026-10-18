@@ -8,6 +8,7 @@ import id from "../../messages/id.json";
 import { EngineUnlockLayer } from "@/hud/dialog/EngineUnlockLayer";
 import { markOnboarded, resetFlagMemory } from "@/hud/dialog/storage";
 import * as dialog from "@/hud/dialog/store";
+import { hudActions } from "@/hud/hudActions";
 import { audio } from "@/lib/audio";
 import { getHQStore } from "@/store/useHQStore";
 
@@ -199,5 +200,24 @@ describe("EngineUnlockLayer", () => {
     act(() => markOnboarded("done"));
     await act(async () => {});
     expect(say).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds Go to B1 Engine Room to Cmd-K only while unlocked and mounted", async () => {
+    vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));
+    vi.spyOn(audio, "play").mockImplementation(() => {});
+    getHQStore().setState({ b1Unlocked: false, b1Moment: false, floorsSeen: ["L1"] });
+    const view = mount();
+    await act(async () => {});
+    expect(hudActions()).toEqual([]);
+    act(() => getHQStore().setState({ b1Unlocked: true }));
+    expect(hudActions().map((a) => [a.id, a.label])).toEqual([["engine-room", en.engine.goTo]]);
+    view.rerender(
+      <NextIntlClientProvider locale="id" messages={id}>
+        <EngineUnlockLayer />
+      </NextIntlClientProvider>,
+    );
+    expect(hudActions().map((a) => [a.id, a.label])).toEqual([["engine-room", id.engine.goTo]]);
+    view.unmount();
+    expect(hudActions()).toEqual([]);
   });
 });

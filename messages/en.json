@@ -651,7 +651,8 @@
     "unlock": "You found everything. Want to see how this place was built?",
     "go": "Take me there",
     "later": "Later",
-    "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total})."
+    "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total}).",
+    "goTo": "Go to B1 Engine Room"
   },
   "drawer": {
     "label": "Room details",

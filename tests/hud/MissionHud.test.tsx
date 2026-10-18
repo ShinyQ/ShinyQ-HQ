@@ -9,6 +9,10 @@ import { getContent } from "@/content/load";
 import type { AskOptions, AskResult } from "@/ask/client";
 import type { AskStatus } from "@/ask/protocol";
 import { onHudCommand, openAsk, openPalette, openTerminal, type HudCommand } from "@/hud/events";
+import { engineRoomAction } from "@/hud/dialog/engineRoomAction";
+import { registerHudAction } from "@/hud/hudActions";
+import { register3DHost } from "@/experience/missions/bridge";
+import type { MissionHost } from "@/experience/missions/host";
 import { primeHudIndex } from "@/hud/index-client";
 import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
 import { MissionHud } from "@/hud/MissionHud";
@@ -172,6 +176,31 @@ describe("MissionHud on static pages", () => {
     } finally {
       delete document.documentElement.dataset.hq;
       getHQStore().getState().clearTopic();
+    }
+  });
+
+  it("lists Go to B1 Engine Room only while the 3D HUD registers it, and rides to B1", async () => {
+    const elevator = vi.fn(async () => {});
+    const host: MissionHost = { isStatic: false, elevator, driveTo: vi.fn(), openRoom: vi.fn(), say: vi.fn(), openPalette: vi.fn() };
+    const offHost = register3DHost(() => host, () => []);
+    try {
+      renderHud();
+      await userEvent.keyboard("{Control>}k{/Control}");
+      await userEvent.keyboard("engine room");
+      expect(screen.queryByRole("option", { name: en.engine.goTo })).toBeNull();
+      await userEvent.keyboard("{Escape}");
+      const off = registerHudAction(engineRoomAction(en.engine.goTo));
+      await userEvent.keyboard("{Control>}k{/Control}");
+      await userEvent.keyboard("engine room");
+      expect(screen.getByRole("option", { name: en.engine.goTo })).toBeInTheDocument();
+      await userEvent.keyboard("{Enter}");
+      await vi.waitFor(() => expect(elevator).toHaveBeenCalledWith("B1", expect.anything()));
+      act(() => off());
+      await userEvent.keyboard("{Control>}k{/Control}");
+      await userEvent.keyboard("engine room");
+      expect(screen.queryByRole("option", { name: en.engine.goTo })).toBeNull();
+    } finally {
+      offHost();
     }
   });
 

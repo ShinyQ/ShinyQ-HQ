@@ -1,4 +1,5 @@
 import type { LocalizedText, RoomId } from "@/content/schema";
+import type { HudAction } from "./hudActions";
 import type { HudIndex } from "./index-data";
 import type { PaletteActionId, PaletteEntry, PaletteGroup, PaletteSearchOptions } from "./palette-types";
 
@@ -35,6 +36,7 @@ const KIND_BONUS: Partial<Record<NonNullable<PaletteEntry["roomKind"]>, number>>
 export function buildPaletteEntries(
   index: Pick<HudIndex, "missions" | "rooms" | "years" | "actionLabels"> & Partial<Pick<HudIndex, "techs" | "wings" | "topics">>,
   actions: readonly PaletteActionId[],
+  hudActions: readonly HudAction[] = [],
 ): PaletteEntry[] {
   const entries: PaletteEntry[] = [];
 
@@ -83,6 +85,11 @@ export function buildPaletteEntries(
       keywords: ACTION_KEYWORDS[id],
       target: { type: "action", id },
     });
+  }
+
+  // The 3D HUD's actions arrive with their label in the visitor's locale and their own search terms.
+  for (const { id, label, keywords } of hudActions) {
+    entries.push({ key: `action:${id}`, group: "actions", title: { en: label, id: label }, keywords: [...keywords], target: { type: "hud", id } });
   }
 
   // Tech Reactor rows ("Show projects using Azure OpenAI"): actions, so they only show for a query.

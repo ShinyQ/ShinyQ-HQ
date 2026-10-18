@@ -11,6 +11,8 @@ export type PaletteTarget =
   | { type: "room"; id: RoomId }
   | { type: "year"; year: number; room: RoomId; path: string }
   | { type: "action"; id: PaletteActionId }
+  /** An action the 3D HUD registers while it applies (`hudActions.ts`), e.g. the B1 Engine Room ride once unlocked. */
+  | { type: "hud"; id: string }
   /** L3 Tech Reactor: pick a tech (its pods light up) and ride to the reactor. */
   | { type: "tech"; slug: string }
   /** An L3 wing: its directory panel in the 3D tower, the Work page filtered by it on the Classic site. */

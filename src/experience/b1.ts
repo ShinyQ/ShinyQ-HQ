@@ -54,3 +54,8 @@ export function watchFloorVisits(store: HQStore): () => void {
 export function b1FromHash(startFloor: FloorId | undefined, hash: string): "B1" | undefined {
   return !startFloor && /^#b1$/i.test(hash) ? "B1" : undefined;
 }
+
+/** The floor a session may start on: B1 (from `#B1`) only when unlocked; locked, the Lobby (Rover says why). */
+export function startFloor(requested: FloorId | undefined, b1Unlocked: boolean): FloorId | undefined {
+  return requested && canEnterFloor(requested, b1Unlocked) ? requested : undefined;
+}
