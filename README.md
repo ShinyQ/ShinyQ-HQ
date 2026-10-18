@@ -27,7 +27,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 <a href="https://kurniadi.pages.dev">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/readme/hero.jpg">
-    <img src="docs/readme/hero.gif" width="960" alt="Boot card, intro fly-in to the Lobby, a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
+    <img src="docs/readme/hero.gif" width="960" alt="Boot card, the intro (Rover wakes up and the camera orbits the Lobby as its landmarks light up), a boosted drive past the profile hologram, and an elevator ride up to the three L3 Project Roads directory boards">
   </picture>
 </a>
 
