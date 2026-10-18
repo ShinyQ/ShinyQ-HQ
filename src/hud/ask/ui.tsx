@@ -16,7 +16,7 @@ export function useAskErrorMessage() {
   };
 }
 
-/** "Answered by AI from this site, as of {date}". */
+/** "Rover's AI answer from this site, as of {date}". */
 export function AskAsOf({ asOf, locale, className }: { asOf?: string; locale: Locale; className?: string }) {
   const t = useTranslations("ask");
   if (!asOf || !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) return null;

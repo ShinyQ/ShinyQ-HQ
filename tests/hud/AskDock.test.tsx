@@ -279,7 +279,7 @@ describe("Ask dock chat", () => {
     expect(panel.querySelector("img")).toBeNull();
     expect(askMock.ask).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ q: "What is he building now?", locale: "en", source: "hero" }));
     // The provenance line comes with the final frame, after the streamed text.
-    await vi.waitFor(() => expect(within(panel).getByTestId("ask-thread")).toHaveTextContent("Answered by AI from this site, as of Oct 11, 2026"));
+    await vi.waitFor(() => expect(within(panel).getByTestId("ask-thread")).toHaveTextContent("Rover's AI answer from this site, as of Oct 11, 2026"));
     expect(within(panel).getByTestId("ask-thread")).toHaveAttribute("aria-live", "polite");
   });
 
