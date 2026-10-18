@@ -140,6 +140,12 @@ export function CameraDirector({
     l.now += dt;
     const cls = s.device.camera;
     const rig = selectRig(s.phase, s.floor);
+    // The phase can leave the intro without its last frame running here (the static tier, `recover`): drop its state.
+    if (rig !== "intro" && introRuntime.active) {
+      resetIntroRuntime();
+      l.introStart = null;
+      l.plan = null;
+    }
     const rail = rig === "rail";
     const roverTarget: Vec3 = [roverRuntime.x, roverRuntime.y + 1, roverRuntime.z];
 
