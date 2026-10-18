@@ -1,14 +1,22 @@
 import { createSpaceMusic, type MusicVoice } from "./music";
 import { ONE_SHOTS, createRumble, type RumbleVoice } from "./synth";
 import type { AmbienceVoice } from "./ambience";
+import {
+  AMBIENCE_STORAGE_KEY,
+  CLICK_RATE_LIMIT,
+  EFFECTS_STORAGE_KEY,
+  MUSIC_STORAGE_KEY,
+  MUSIC_VOLUME_STORAGE_KEY,
+  SOUND_STORAGE_KEY,
+  clamp01,
+  defaultStorage,
+  readMuted,
+  readSettings,
+  writeSetting,
+} from "./settings";
 import type { AmbienceFloor, AudioEngine, AudioEngineDeps, AudioSettings, SoundName } from "./types";
 
-export const SOUND_STORAGE_KEY = "hq:sound";
-export const EFFECTS_STORAGE_KEY = "hq:sfx";
-export const MUSIC_STORAGE_KEY = "hq:music";
-export const MUSIC_VOLUME_STORAGE_KEY = "hq:music-volume";
-export const AMBIENCE_STORAGE_KEY = "hq:ambience";
-export const CLICK_RATE_LIMIT = 20;
+export { AMBIENCE_STORAGE_KEY, CLICK_RATE_LIMIT, EFFECTS_STORAGE_KEY, MUSIC_STORAGE_KEY, MUSIC_VOLUME_STORAGE_KEY, SOUND_STORAGE_KEY };
 const CLICK_WINDOW_MS = 1000;
 /** Time constant of the master fade when muting or unmuting (seconds). */
 const FADE_TIME_CONSTANT = 0.03;
@@ -23,7 +31,6 @@ const VOLUME_TIME_CONSTANT = 0.05;
 export const SOUNDTRACK_CROSSFADE = 2;
 /** How long a fading voice (an ambience switched off, the music handing over) lives: the crossfade plus a margin. */
 const AMBIENCE_RETIRE_MS = SOUNDTRACK_CROSSFADE * 1000 + 100;
-const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
 /**
  * User-activation events. Browsers only let an AudioContext start inside one of these; on touch screens
  * that is the end of a tap (pointerup, touchend, click), not touchstart, so all of them are listened to.
@@ -37,15 +44,6 @@ function defaultCreateContext(): AudioContext | null {
   const w = window as unknown as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor };
   const Ctor = w.AudioContext ?? w.webkitAudioContext;
   return Ctor ? new Ctor() : null;
-}
-
-function defaultStorage(): AudioEngineDeps["storage"] {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
 }
 
 function defaultDoc(): AudioEngineDeps["doc"] {
@@ -68,8 +66,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   const loadAmbience = deps.loadAmbience ?? (() => import("./ambience"));
 
   const listeners = new Set<() => void>();
-  let muted = readMuted();
-  let settings: AudioSettings = readSettings();
+  let muted = readMuted(storage);
+  let settings: AudioSettings = readSettings(storage);
   /** Paused while the 3D view is closed (Page View, static tier): silent without touching the stored preference. */
   let paused = deps.paused ?? true;
   let disposed = false;
@@ -94,38 +92,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   let clickTimes: number[] = [];
   const played: Partial<Record<SoundName, number>> = {};
 
-  /** Sound is on by default; only a stored "off" (the visitor muted) keeps it muted. */
-  function readMuted(): boolean {
-    try {
-      return storage?.getItem(SOUND_STORAGE_KEY) === "off";
-    } catch {
-      return false;
-    }
-  }
-
-  function readSettings(): AudioSettings {
-    const get = (key: string) => {
-      try {
-        return storage?.getItem(key) ?? null;
-      } catch {
-        return null;
-      }
-    };
-    const volume = get(MUSIC_VOLUME_STORAGE_KEY);
-    return {
-      effects: get(EFFECTS_STORAGE_KEY) !== "off",
-      music: get(MUSIC_STORAGE_KEY) !== "off",
-      musicVolume: volume === null ? 1 : clamp01(Number(volume)),
-      ambience: get(AMBIENCE_STORAGE_KEY) !== "off",
-    };
-  }
-
   function write(key: string, value: string): void {
-    try {
-      storage?.setItem(key, value);
-    } catch {
-      // The in-memory setting still applies.
-    }
+    writeSetting(storage, key, value);
   }
 
   /** Replaces the settings object only when a value changes, so subscribers see a stable snapshot. */
@@ -147,11 +115,7 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   const silent = () => muted || paused || disposed;
 
   function persist(): void {
-    try {
-      storage?.setItem(SOUND_STORAGE_KEY, muted ? "off" : "on");
-    } catch {
-      // Storage may be full or blocked (private mode); the in-memory setting still applies.
-    }
+    writeSetting(storage, SOUND_STORAGE_KEY, muted ? "off" : "on");
   }
 
   function isHidden(): boolean {

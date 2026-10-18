@@ -1,14 +1,8 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
-import {
-  createAudioEngine,
-  useAudio,
-  useAudioSettings,
-  type AmbienceFloor,
-  type AudioEngine,
-  type AudioEngineDeps,
-} from "@/lib/audio";
+import { useAudio, useAudioSettings, type AmbienceFloor, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
+import { createAudioEngine } from "@/lib/audio/engine";
 import { AMBIENCE_CROSSFADE, type AmbienceVoice } from "@/lib/audio/ambience";
 import { ONE_SHOTS, rumbleTargets } from "@/lib/audio/synth";
 import { FakeAudioContext, FakeFilter, FakeGain } from "../helpers/fake-audio";
