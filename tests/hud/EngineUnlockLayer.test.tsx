@@ -77,6 +77,25 @@ describe("EngineUnlockLayer", () => {
     expect(window.location.hash).toBe("");
   });
 
+  it("waits for the free explore state before the locked #B1 line, keeping the hash until then", async () => {
+    getHQStore().setState({ phase: "intro", ride: { from: "L1", to: "L2", stage: "moving", t: 0 }, b1Unlocked: false, b1Moment: false, floorsSeen: ["L1"] });
+    window.history.replaceState(null, "", "/en#B1");
+    const say = vi.spyOn(dialog, "say").mockResolvedValue({ status: "done", choice: null });
+    mount();
+    await act(async () => {});
+    expect(say).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#B1");
+    act(() => getHQStore().setState({ phase: "explore" }));
+    await act(async () => {});
+    expect(say).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#B1");
+    act(() => getHQStore().setState({ ride: null }));
+    await act(async () => {});
+    expect(say).toHaveBeenCalledTimes(1);
+    expect(say.mock.calls[0][0]).toMatchObject({ key: "b1-locked", text: "B1 is still locked: visit all 5 floors first (1/5)." });
+    expect(window.location.hash).toBe("");
+  });
+
   it("chimes once per moment: a locale change or a ride in between does not replay it", async () => {
     const play = vi.spyOn(audio, "play").mockImplementation(() => {});
     vi.spyOn(dialog, "say").mockReturnValue(new Promise(() => {}));

@@ -245,6 +245,8 @@ test.describe("elevator", () => {
     const sheet = page.getByTestId("floor-sheet");
     // Five floors and the locked B1 row.
     await expect(sheet.locator("[data-floor]")).toHaveCount(6);
+    await expect(sheet.locator('[data-floor="B1"]')).toHaveAttribute("aria-disabled", "true");
+    await expect(sheet.locator('[data-floor="B1"]')).toHaveAccessibleName(/^B1 /);
     // Every text span in each row (the nav label and the floor name) fits its box.
     const clipped = await sheet.locator("[data-floor] span span").evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent));
     expect(clipped).toEqual([]);

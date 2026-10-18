@@ -126,6 +126,8 @@ test.describe("Corners menu and floor sheet on a phone", () => {
     const floors = page.getByTestId("floor-sheet");
     await expect(floors).toBeVisible();
     await expect(floors.locator("[data-floor]")).toHaveCount(6);
+    await expect(floors.locator('[data-floor="B1"]')).toHaveAttribute("aria-disabled", "true");
+    await expect(floors.locator('[data-floor="B1"]')).toHaveAccessibleName(/^B1 /);
     await floors.locator('[data-floor="B1"]').scrollIntoViewIfNeeded();
     for (const floor of ["RF", "L4", "L3", "L2", "L1", "B1"]) await expect(floors.locator(`[data-floor="${floor}"]`), floor).toBeInViewport();
     await floors.locator('[data-floor="L2"]').tap();

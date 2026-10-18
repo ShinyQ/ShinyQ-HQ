@@ -13,6 +13,9 @@ test.beforeEach(async ({ page }) => {
   await skipFloorLines(page);
 });
 
+const chimes = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __hq: { audio: () => { played: { chime?: number } } } }).__hq.audio().played.chime ?? 0);
+
 type Probe = Window & {
   __hq: { store: { getState: () => { floor: string; floorsSeen: string[]; b1Unlocked: boolean; b1Moment: boolean; unlockB1: () => void } }; floorChunks: { state: (id: string) => string } };
 };
@@ -44,6 +47,7 @@ test("a new visitor sees B1 locked with 1/5, the Lobby counted, and pressing it 
   await open(page);
   await expect(row(page)).toHaveAttribute("aria-disabled", "true");
   await expect(row(page)).toHaveAccessibleName("B1 Visit all 5 floors (1/5)");
+  // The row is aria-disabled (Playwright would wait for it to enable); force proves the press itself does nothing.
   await row(page).click({ force: true });
   const s = await state(page);
   expect(s.floor).toBe("L1");
@@ -66,9 +70,11 @@ test("the fifth floor unlocks B1 once: Rover offers the ride, the row lights up,
   await seedFloors(page, ["L1", "L2", "L3", "L4"]);
   await open(page);
   await expect(row(page)).toHaveAccessibleName("B1 Visit all 5 floors (4/5)");
+  expect(await chimes(page)).toBe(0);
   await rideTo(page, "RF");
   await expect(offer(page)).toBeVisible({ timeout: 60_000 });
   await expect(offer(page)).toContainText("You found everything");
+  await expect.poll(() => chimes(page)).toBe(1);
   await expect(row(page)).not.toHaveAttribute("aria-disabled");
   await expect(row(page)).toHaveAccessibleName(/^B1 Build: go to floor/);
   // Reduced motion: the same offer, no pulse on the row.
@@ -83,6 +89,8 @@ test("the fifth floor unlocks B1 once: Rover offers the ride, the row lights up,
   await expect(row(page)).not.toHaveAttribute("aria-disabled");
   await expect(row(page)).not.toHaveAttribute("data-locked");
   await expect(offer(page)).toHaveCount(0);
+  // The engine restarts with the page: no chime again, as the unlock moment is over.
+  expect(await chimes(page)).toBe(0);
 });
 
 test.describe("full motion", () => {

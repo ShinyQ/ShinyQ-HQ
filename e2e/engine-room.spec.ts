@@ -68,7 +68,7 @@ async function expectLockedRow(page: Page) {
   await expect(elevator(page).locator("[data-floor]")).toHaveCount(6);
   const b1 = elevator(page).locator('[data-floor="B1"]');
   await expect(b1).toHaveAttribute("aria-disabled", "true");
-  await expect(b1).toContainText("Visit all 5 floors");
+  await expect(b1).toHaveAccessibleName(/^B1 Visit all 5 floors/);
 }
 
 /** Every URL the page requests from now on. */
@@ -199,6 +199,7 @@ test.describe("a locked session", () => {
     await expect(picker).toBeVisible();
     await expect(picker.locator("[data-option]")).toHaveCount(6);
     await expect(picker.locator('[data-option="B1"]')).toHaveAttribute("aria-disabled", "true");
+    await expect(picker.locator('[data-option="B1"]')).toHaveAccessibleName(/^B1 /);
     await page.keyboard.press("Escape");
     await expect(picker).toHaveCount(0);
 
@@ -215,6 +216,7 @@ test.describe("a locked session", () => {
     await locked.page.getByTestId("floor-chip").tap();
     await expect(locked.page.getByTestId("floor-sheet").locator("[data-floor]")).toHaveCount(6);
     await expect(locked.page.getByTestId("floor-sheet").locator('[data-floor="B1"]')).toHaveAttribute("aria-disabled", "true");
+    await expect(locked.page.getByTestId("floor-sheet").locator('[data-floor="B1"]')).toHaveAccessibleName(/^B1 /);
     await locked.context.close();
 
     const open = await openPhone(browser, `&${B1_QUERY}`);

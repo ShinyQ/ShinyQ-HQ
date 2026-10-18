@@ -282,7 +282,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - At most 60 fps (`FRAME_CAP_FPS`): 90, 120 and 144 Hz displays skip refreshes, 60 Hz displays render every one, no idle cap.
 - Animate with `useFrame` deltas; never start another rAF loop or rely on `invalidate` in the scene.
 - `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused).
-- `__hq.audio()` is a read-only audio probe (`floor`, `ambience`, `muted`); see [Audio](ci-and-deploy.md#audio).
+- `__hq.audio()` is a read-only audio probe (`floor`, `ambience`, `muted`, `played`: one-shot request counts); see [Audio](ci-and-deploy.md#audio).
 - A runtime quality monitor must take 60 fps as the ceiling and restart its sample window across a pause: `scene/frameMonitor.ts` treats a gap above `pauseMs` (a paused loop, a hidden tab) as a pause.
 
 ### Pausing when covered

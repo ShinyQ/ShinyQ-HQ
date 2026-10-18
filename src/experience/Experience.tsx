@@ -191,8 +191,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     quality: qualityHandle,
     frames: () => framePacer.frames,
     clock: () => framePacer.elapsed,
-    // Read-only audio engine state (the floor the ambience follows, its setting, the mute).
-    audio: () => ({ floor: audio.ambienceFloor(), ambience: audio.getSettings().ambience, muted: audio.isMuted() }),
+    // Read-only audio engine state (the floor the ambience follows, its setting, the mute, one-shot request counts).
+    audio: () => ({ floor: audio.ambienceFloor(), ambience: audio.getSettings().ambience, muted: audio.isMuted(), played: audio.playCounts() }),
     motion: () => {
       const live = store.getState();
       return { ride: live.ride ? rideNow(live.ride) : null, beam: live.beam ? beamNow(live.beam) : null };

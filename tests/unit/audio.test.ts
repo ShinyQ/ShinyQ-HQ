@@ -227,6 +227,21 @@ describe("audio engine: paused outside the 3D view", () => {
   });
 });
 
+describe("audio engine: play counts", () => {
+  it("counts every requested one-shot, audible or not, and returns a copy", () => {
+    const { engine } = setup();
+    expect(engine.playCounts()).toEqual({});
+    engine.play("chime");
+    engine.setPaused(true);
+    engine.play("chime");
+    engine.play("ding");
+    const counts = engine.playCounts();
+    expect(counts).toEqual({ chime: 2, ding: 1 });
+    engine.play("ding");
+    expect(counts.ding).toBe(1);
+  });
+});
+
 describe("audio engine: paused until the 3D view opens", () => {
   it("starts paused: no context from gestures or one-shots on the Page View", () => {
     const storage = new FakeStorage();

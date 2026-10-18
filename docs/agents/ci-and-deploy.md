@@ -189,7 +189,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
   - It feeds the `musicBus`, so the music volume scales it, the master mute, pause and tab rules apply, and it never touches the effects path.
   - `Experience` reports the store floor with `audio.setFloor(floor)` (and, on unmount, pauses first and then reports `null`, so the music is not restarted for one fade); the "Floor ambience" setting (`hq:ambience`, `audio.setAmbience`) is its own toggle: the music toggle only matters while the ambience is off.
   - `tests/unit/audio-ambience-handoff.test.ts` runs the real engine and voice on a fake context that models gain automation and the node graph: exactly one floor layer audible after each change (also after quick hops mid-fade), none after a mute, pause, toggle off or dispose, and never the music under a layer.
-  - `window.__hq.audio()` is a read-only probe (`floor`, `ambience`, `muted`) for `e2e/ambience.spec.ts`; e2e never asserts on real sound output.
+  - `window.__hq.audio()` is a read-only probe (`floor`, `ambience`, `muted`, `played`: one-shot request counts, used for the B1 chime) for `e2e/ambience.spec.ts`; e2e never asserts on real sound output.
 - Sound is on by default (owner decision):
   - a missing `hq:sound` means on;
   - a stored `"off"` stays muted;

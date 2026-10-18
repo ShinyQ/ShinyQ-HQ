@@ -112,6 +112,8 @@ test.describe("pad pickers", () => {
     await expect(dialog).toBeVisible();
     // Five floors and the locked B1 option.
     await expect(dialog.locator("[data-option]")).toHaveCount(6);
+    await expect(dialog.locator('[data-option="B1"]')).toHaveAttribute("aria-disabled", "true");
+    await expect(dialog.locator('[data-option="B1"]')).toHaveAccessibleName(/^B1 /);
     await expect(dialog.locator('[data-option="L3"]')).toContainText(en.hud.floorLabel.L3);
     await expect(dialog.locator('[data-option="L2"]')).toHaveAttribute("aria-current", "true");
     await expect(dialog.locator('[data-option="L2"]')).toBeFocused();
