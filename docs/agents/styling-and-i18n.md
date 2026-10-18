@@ -18,12 +18,14 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 
 ### Client messages
 
-- The locale layout passes only `LAYOUT_NAMESPACES` to `NextIntlClientProvider`: what its client islands read (MissionHud, AskDock, DialogHost).
+- The locale layout passes only `LAYOUT_NAMESPACES` to `NextIntlClientProvider`: what its client islands read (MissionHud, AskDock, DialogHost), as namespaces or dotted sub-paths.
+  - Every Classic page carries this list, so keep it narrow: it names `hud.launcher`, `hud.palette`, `hud.status`, `hud.terminal` and `dialog.menu`, never all of `hud` or `dialog` (the 3D HUD's settings, pads, rooms and dialog layers reach the gate pages through `ClientMessages`).
+  - A new string read by a layout island goes under one of those paths, or adds its own path to the list; `pickMessages` keeps the original objects, so React dedupes them against a gate page's full namespaces.
 - Pages whose client islands read more (the 3D gate, Page View islands) wrap their content in `<ClientMessages>` (`src/components/ClientMessages.tsx`, all of `CLIENT_NAMESPACES`).
 - Both lists live in `src/i18n/client-messages.ts`.
 - Server-only namespaces (`seo`, `meta`, `nav`, `footer`, ...) never reach the RSC payload.
 - In client modules call `useTranslations` with a literal namespace (never `useMessages`).
-- `tests/unit/client-namespaces.test.ts` walks the client import graph and fails when a list misses a namespace or a page needs `ClientMessages`.
+- `tests/unit/client-namespaces.test.ts` walks the client import graph and fails when a list misses a namespace or path, lists one nothing reads, or a page needs `ClientMessages`.
 
 ### Links and dates
 
@@ -73,6 +75,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - `ink-3` is `#8b8b94` (not `#71717a`) to keep AA contrast on the void.
 - Utility classes: `.glass`, `.label` (mono uppercase metadata), `.link`, `.prose-hq` (MDX).
 - Accent classes must come from the static maps in `src/lib/accent.ts` so Tailwind can see them.
+- Tailwind generates utilities only from shipped sources: `globals.css` excludes `docs`, `e2e`, `tests`, `scripts`, `workers`, `functions` and the root guides with `@source not` (their words, such as Playwright `:visible` selectors or edge-stripe examples, used to add dead utilities to the shared stylesheet). A class written only in those folders is never generated.
 - HUD tokens shared with the 3D overlay (prototype values):
   - `.glass` (blur 18 px, drops the blur on coarse pointers), `.eyebrow`, `.chip` (+ `.chip-count`, `aria-pressed` inverts), `.card`
   - colors `line`, `line-2`, `surface`, `surface-2`
