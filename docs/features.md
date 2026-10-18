@@ -447,7 +447,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 - The pixel budget (`renderBudget` in `src/experience/scene/settings.ts`) keeps desktops at DPR up to 2 within 8.3 MP and skips composer MSAA from DPR 1.5 up; touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite).
 - A runtime safety net lowers DPR, then MSAA, then bloom only on sustained frame drops, at most twice a minute.
 - Shader programs compile before they are needed (every other floor during the boot on the full tier, each floor as it mounts), neighbouring floors mount on idle after the first frames, and the nav grids build in about a millisecond.
-- Floor content is disposed when it unmounts: `e2e/memory.spec.ts` drives 10 Lobby to Roof round trips and 5 Page View toggles (lite, reduced motion), `e2e/perf/memory-full.spec.ts` 3 round trips on the full tier with Motion Full (perf lane), and both expect the renderer's geometries, textures and shader programs back at their baseline.
+- Floor content is disposed when it unmounts: `e2e/memory.spec.ts` drives 10 Lobby to Roof round trips and 5 Page View toggles (lite, reduced motion), `e2e/perf/memory-full.spec.ts` 3 round trips on the full tier with Motion Full (perf lane, split into 3 parallel parts of one trip each), and both expect the renderer's geometries, textures and shader programs back at their baseline.
 - The canvas renders at most 60 frames per second (`scene/framePacer.ts`), so 90 to 144 Hz screens do not do twice the work.
 - Measurements: [`perf/r5-gpu.md`](perf/r5-gpu.md).
 

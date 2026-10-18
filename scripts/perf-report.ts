@@ -20,7 +20,7 @@ export type PerfEntry =
   | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF" | "B1", number>>; sessionTotal?: number }
   | { kind: "floor"; tier: Tier; floor: string; sceneCalls: number; postCalls: number; triangles: number; programs: number; geometries: number; textures: number }
   | { kind: "peak"; tier: Tier; scenario: string; sceneCalls: number; postCalls: number; triangles: number; frames: number }
-  | { kind: "memory"; tier: Tier; trips: number; before: GpuCountersEntry; after: GpuCountersEntry; heapDeltaBytes: number }
+  | { kind: "memory"; tier: Tier; part?: number; parts?: number; trips: number; before: GpuCountersEntry; after: GpuCountersEntry; heapDeltaBytes: number }
   | { kind: "timeline"; profile: string; scenario: string; run: number; release: string | null; marks: Record<string, number | null> };
 
 type EntryOf<K extends PerfEntry["kind"]> = Extract<PerfEntry, { kind: K }>;
@@ -49,7 +49,7 @@ export function entryId(e: PerfEntry): string {
     case "peak":
       return `peak-${e.tier}-${e.scenario}`;
     case "memory":
-      return `memory-${e.tier}`;
+      return e.part === undefined ? `memory-${e.tier}` : `memory-${e.tier}-part${e.part}`;
     case "timeline":
       return `timeline-${e.profile}-${e.scenario}-${e.run}`;
   }
@@ -206,7 +206,7 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
     out.markdown += "#### Memory after round trips (deltas)\n\n| Tier | Round trips | Geometries | Textures | Programs | JS heap |\n|---|---:|---:|---:|---:|---:|\n";
     for (const m of memory) {
       const d = (k: keyof GpuCountersEntry) => m.after[k] - m.before[k];
-      out.markdown += `| ${m.tier} | ${m.trips} | ${d("geometries")} | ${d("textures")} | ${d("programs")} | ${(m.heapDeltaBytes / (1024 * 1024)).toFixed(1)} MB |\n`;
+      out.markdown += `| ${m.tier}${m.part === undefined ? "" : ` (part ${m.part} of ${m.parts ?? "?"})`} | ${m.trips} | ${d("geometries")} | ${d("textures")} | ${d("programs")} | ${(m.heapDeltaBytes / (1024 * 1024)).toFixed(1)} MB |\n`;
     }
     out.markdown += "\n";
   }

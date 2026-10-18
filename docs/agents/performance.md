@@ -24,7 +24,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 466.2 KB, about 3.8 KB headroom) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 446.4 KB (measured 442.6 KB, about 3.8 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
-| Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
+| Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`, `fullTierParts`) | (3) Lobby to Roof round trips over (3) parallel parts, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
 | Visual gate, strict profile | per-pixel 0.1, at most 0.1% of pixels | `e2e/visual-gate.spec.ts` |
 | Page View LCP | 2 s | `lighthouserc.json` |
@@ -51,7 +51,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 | `bytes-3d` | 3D JS after the gate (see below) |
 | `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
-| `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
+| `memory-full` | full-tier memory gate (owner decision, see below) as `fullTierParts` tests; each part writes its `memory-full-part<N>` entry of the summary |
 
 #### `bytes-3d`
 
@@ -68,6 +68,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
 - `memory-full` (owner decision): `GPU_MEMORY_BUDGET.fullTierRoundTrips` (3) Lobby to Roof round trips on the full tier with Motion Full leave geometries, textures and programs at their baseline and the heap within the budget.
   - Its warm-up tour rides with Motion Full as well: a Motion Reduced warm-up left 2 geometries and a program for the first measured trips to build (a false failure in PR #201's CI).
+  - It runs as `GPU_MEMORY_BUDGET.fullTierParts` (3) independent tests, `... at its baseline (part N of 3)`, so the duration-balanced perf shards run them in parallel: each part repeats the enter, the warm-up tour and the shaped trip on a fresh page, then measures `fullTierRoundTrips / fullTierParts` (1) trip against the same gates. All parts carry the `round trips leave renderer memory` title fragment that the `memory` key of `scripts/perf-plan.ts` selects. Consecutive trips stay covered by the 10 lite trips of `e2e/memory.spec.ts`.
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite.
 - B1 memory: `e2e/memory.spec.ts` rides Lobby to B1 round trips in an unlocked session (`e2e/b1.ts`). The perf lane covers B1 in `floors.spec.ts` (settled, after a ride from the Lobby) and `peaks.spec.ts` (rides L1 to B1 and RF to B1, both tiers).
 - Both use the `e2e/hq.ts` memory helpers and the one budget. The baseline and the final read are settled (`readSettledGpuCounters`); the per-trip numbers are for the failure message only and read unsettled (`readGpuCounters`), so each trip still calls the elevator the moment the rover arrives.

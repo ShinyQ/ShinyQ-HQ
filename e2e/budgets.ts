@@ -55,7 +55,7 @@ export const PROGRAM_HEADROOM = 2;
  * Memory after round trips: GPU object deltas after `roundTrips` L1 to RF trips and JS heap growth after
  * a forced GC. Two gates use it: `e2e/memory.spec.ts` in the default suite (CI e2e shards; lite, reduced
  * motion: round trips and Page View toggles) and `e2e/perf/memory-full.spec.ts` in the perf lane (full tier,
- * Motion Full: `fullTierRoundTrips` round trips).
+ * Motion Full: `fullTierRoundTrips` round trips over `fullTierParts` tests).
  */
 export const GPU_MEMORY_BUDGET = {
   geometries: 0,
@@ -67,7 +67,13 @@ export const GPU_MEMORY_BUDGET = {
   /**
    * Round trips of the full-tier gate: a Motion Full ride on SwiftShader takes about 30 s in CI (10 trips took
    * 14.7 min in run 38609562257 and made the perf lane the critical path). A leak of one object per trip
-   * still shows as growth after the first trip.
+   * still shows as growth after the first trip. The total across the `fullTierParts` tests.
    */
   fullTierRoundTrips: 3,
+  /**
+   * Independent tests the full-tier gate splits into (owner request, plan 2026-10-18-memory-full-split): each part
+   * repeats the warm-up and baseline on a fresh page and measures `fullTierRoundTrips / fullTierParts` trips, so
+   * the duration-balanced perf shards run the parts in parallel (one 13-ride test took 9.6 min in CI).
+   */
+  fullTierParts: 3,
 } as const;

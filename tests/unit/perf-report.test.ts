@@ -107,6 +107,14 @@ describe("gates", () => {
     expect(s.markdown).toContain("| lite | 10 | 0 | 0 | 0 | 0.5 MB |");
   });
 
+  it("keeps one memory entry per part of the full-tier gate", () => {
+    const counters = { geometries: 127, textures: 33, programs: 69 };
+    const parts = [2, 1].map((part) => ({ kind: "memory", tier: "full", part, parts: 2, trips: 1, before: counters, after: counters, heapDeltaBytes: 0 }) as const);
+    expect(parts.map(entryId)).toEqual(["memory-full-part2", "memory-full-part1"]);
+    const s = renderGates(parts, []);
+    expect(s.markdown).toContain("| full (part 1 of 2) | 1 | 0 | 0 | 0 | 0.0 MB |\n| full (part 2 of 2) |");
+  });
+
   it("says so when there is nothing to report", () => {
     expect(renderGates([], []).markdown).toContain("No perf entries found.");
   });

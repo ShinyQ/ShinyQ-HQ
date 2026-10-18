@@ -99,6 +99,7 @@ Plans are history: they record what was decided and built at the time, and later
 | [Ask Multi-Turn Memory Implementation Plan](plans/2026-10-17-ask-multi-turn.md) | in review |  |
 | [Ask Groq Backup Tiers Implementation Plan](plans/2026-10-18-ask-groq-backup-tiers.md) | shipped | [#210](https://github.com/ShinyQ/ShinyQ-HQ/pull/210) |
 | [CI: Main Runs the Complement, Narrower PR Perf and Lighthouse Implementation Plan](plans/2026-10-18-ci-main-complement.md) | in review |  |
+| [Memory-Full Split Implementation Plan](plans/2026-10-18-memory-full-split.md) | in review |  |
 
 ## Specs
 

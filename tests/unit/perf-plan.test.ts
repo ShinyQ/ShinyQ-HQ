@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { GPU_MEMORY_BUDGET } from "../../e2e/budgets";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS, FLOORS, perfGrep, perfKeysFor, type PerfKey } from "../../scripts/perf-plan";
 
 const TIERS = ["lite", "full"];
@@ -18,7 +19,7 @@ function perfTitles(): string[] {
     else for (const tier of TIERS) titles.push(t.replace("${tier}", tier));
   }
   for (const t of templates(read("bytes-3d"))) for (const tier of TIERS) titles.push(t.replace("${tier}", tier).replace(/\$\{[^}]+\}/g, "450"));
-  titles.push(...templates(read("memory-full")));
+  for (const t of templates(read("memory-full"))) for (let part = 1; part <= GPU_MEMORY_BUDGET.fullTierParts; part++) titles.push(t.replace("${part}", String(part)).replace("${PARTS}", String(GPU_MEMORY_BUDGET.fullTierParts)));
   expect(titles.every((t) => !t.includes("${"))).toBe(true);
   return titles;
 }
@@ -120,5 +121,14 @@ describe("perfGrep", () => {
     expect(measured.length).toBeGreaterThan(0);
     const fragments = ALL_PERF_KEYS.map((key) => new RegExp(perfGrep([key] as PerfKey[])));
     for (const t of [...perfTitles(), ...measured]) expect(fragments.some((re) => re.test(t)), t).toBe(true);
+  });
+
+  it("selects every part of the full-tier memory gate with the memory key, and each part has a CI duration", () => {
+    const re = new RegExp(perfGrep(["memory"]));
+    const parts = perfTitles().filter((t) => re.test(t));
+    expect(parts).toHaveLength(GPU_MEMORY_BUDGET.fullTierParts);
+    const durations = JSON.parse(readFileSync("e2e/durations.json", "utf8")) as { perf: Record<string, number> };
+    for (const t of parts) expect(durations.perf[`memory-full.spec.ts › ${t}`], t).toBeGreaterThan(0);
+    for (const t of Object.keys(durations.perf)) if (t.startsWith("memory-full.spec.ts")) expect(parts, t).toContain(t.slice("memory-full.spec.ts › ".length));
   });
 });
