@@ -5,6 +5,7 @@ import { SUGGESTIONS } from "@/ask/suggestions";
 import { getContent } from "@/content/load";
 import { asksForPersonalData, claimsFit, consulting, containsCode, leaksPrompt } from "../../functions/_lib/checks";
 import { cacheKey, createAskHandler } from "../../functions/_lib/handler";
+import { staticPackSource } from "../../functions/_lib/pack-source";
 import { resetBreaker, resetMinuteWindow } from "../../functions/_lib/limits";
 import { MESSAGES } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
@@ -358,7 +359,7 @@ describe("contact card through the Function", () => {
       },
     };
     const env: AskEnv = { ASK_ENABLED: "true", ASK_ALLOWED_ORIGINS: "https://kurniadi.pages.dev", ASK_IP_SALT_SEED: "seed", AI: { run: async () => ({}) }, ASK_KV: kv };
-    const handler = createAskHandler({ pack, safety, now: () => Date.UTC(2026, 9, 15, 3), streamDelayMs: 0, client: () => client });
+    const handler = createAskHandler({ source: staticPackSource(pack), safety, now: () => Date.UTC(2026, 9, 15, 3), streamDelayMs: 0, client: () => client });
     const call = async (q: string, locale = "en") => {
       const pending: Promise<unknown>[] = [];
       const request = new Request("https://kurniadi.pages.dev/api/ask", { method: "POST", headers: { Origin: "https://kurniadi.pages.dev", "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.9" }, body: JSON.stringify({ q, locale }) });

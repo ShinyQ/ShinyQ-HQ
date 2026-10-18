@@ -101,6 +101,16 @@ describe("report", () => {
     expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).not.toContain("## Models");
   });
 
+  it("shows the pack tier table, drops unknown tiers and hides it before the KV pack", () => {
+    const md = formatReport({ weekOf: "2026-10-19", topics: [], outcomes: [], sources: [], tiers: [{ key: "memory", n: 8 }, { key: "kv", n: 1 }, { key: "fallback", n: 1 }, { key: "<x>", n: 5 }] });
+    expect(md).toContain("## Pack tier");
+    expect(md).toContain("| memory | 8 | 80% |");
+    expect(md).toContain("| fallback | 1 | 10% |");
+    expect(md).not.toContain("<x>");
+    expect(formatReport({ weekOf: "2026-10-19", topics: [], outcomes: [], sources: [], tiers: [] })).not.toContain("## Pack tier");
+    expect(QUERIES.tiers).toContain("blob12 AS key");
+  });
+
   it("says so when nothing was unanswered", () => {
     expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).toContain("None this week.");
   });

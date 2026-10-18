@@ -186,3 +186,9 @@ export function createPackSource(options: PackSourceOptions) {
 }
 
 export type PackSource = ReturnType<typeof createPackSource>;
+
+/** A source that always serves one in-memory pack (tests, `scripts/ask-eval.ts`): tier `memory`, no KV reads. */
+export function staticPackSource(pack: KnowledgePack): PackSource {
+  const loaded: LoadedPack = { pack, vocabulary: indexPack(pack).vocabulary, tier: "memory" };
+  return { load: async () => loaded, packDate: async () => pack.packDate };
+}

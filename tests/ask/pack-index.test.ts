@@ -7,8 +7,11 @@ import { expandTokens, tokenize } from "../../functions/_lib/text";
 import type { KnowledgePack, StoredPack } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
+const references = new WeakMap<KnowledgePack, ReturnType<typeof buildReference>>();
+const referenceIndex = (pack: KnowledgePack) => references.get(pack) ?? (references.set(pack, buildReference(pack)), references.get(pack)!);
+
 /** The pre-KV index, built per chunk from text (reference for the hydrated postings). */
-function referenceIndex(pack: KnowledgePack) {
+function buildReference(pack: KnowledgePack) {
   const tf: Map<string, number>[] = [];
   const len: number[] = [];
   const df = new Map<string, number>();
@@ -73,9 +76,8 @@ describe("stored pack index", () => {
     }
     expect(hydrated.index.vocabulary).toEqual(built.vocabulary);
     expect(hydrated.index.vocabulary.has("metrodata")).toBe(true);
-    pack.chunks.forEach((_, i) => {
-      for (const [term, tf] of ref.tf[i]) expect(hydrated.index.tfOf(i, term)).toBe(tf);
-    });
+    const mismatched = pack.chunks.flatMap((_, i) => [...ref.tf[i]].filter(([term, tf]) => hydrated.index.tfOf(i, term) !== tf).map(([term]) => `${i}:${term}`));
+    expect(mismatched).toEqual([]);
     expect(hydrated.index.tfOf(0, "zzz-not-a-term")).toBe(0);
   });
 
@@ -90,7 +92,7 @@ describe("stored pack index", () => {
       const fromText = scoreChunks(pack, q).map((r) => r.score);
       const fromStore = scoreChunks(hydrated.pack, q).map((r) => r.score);
       expect(fromStore, q).toEqual(fromText);
-      fromText.forEach((score, i) => expect(score, `${q} ${pack.chunks[i].id}`).toBeGreaterThanOrEqual(ref[i]));
+      expect(fromText.filter((score, i) => score < ref[i]), q).toEqual([]);
       for (const locale of ["en", "id"] as const) expect(retrieve(hydrated.pack, q, locale).chunks.map((c) => c.id), q).toEqual(retrieve(pack, q, locale).chunks.map((c) => c.id));
       expect(leadMatches(hydrated.pack, q).map((c) => c.id), q).toEqual(leadMatches(pack, q).map((c) => c.id));
     }
