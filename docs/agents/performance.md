@@ -129,6 +129,12 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   2. On yours: `E2E_PORT=<port> bun run e2e:look`
 - Canvas at desktop full 1440x900 and 2560x1440 and phone lite 390x844; at most 0.1% of pixels may differ.
 
+### Full-tier composer bytes
+
+- The full tier's composer uses `postprocessing` directly (`scene/postComposer.ts`, see [3d-experience.md](3d-experience.md#full-tier-post-processing)); `@react-three/postprocessing` bundled n8ao into the lazy `Effects` chunk.
+- Effect: the `Effects` chunk went from 23.9 to 16.0 KB gzip, so the full tier's main path (`bytes-3d`, `?prefetch=off`) and session total are 8.3 KB gzip smaller; lite does not load it (0.4 KB less from chunking).
+- Same look: the strict visual gate is pixel-equal within its tolerance on every pose. Guard: no chunk under `out/_next/static/chunks` contains `N8AO`.
+
 ### Per-frame work
 
 - Per-frame work (`useFrame`) should do nothing it does not need.

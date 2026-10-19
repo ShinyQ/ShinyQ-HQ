@@ -349,6 +349,15 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - `?gfx=dpr1.5,msaa0,bloom5,monitor-on|off` overrides it for measurements.
 - `?gfx=probe` mounts the black-frame probe (`scene/BlackFrameProbe.tsx`, a lazy chunk, never loaded otherwise; see [Shader math](#shader-math)).
 
+### Full-tier post-processing
+
+- `scene/Effects.tsx` (a lazy chunk, full tier only) builds the post chain with `postprocessing` directly (`usePostComposer`, `scene/postComposer.ts`):
+  - a HalfFloat `EffectComposer` (depth buffer, no stencil, MSAA from the pixel budget) and a `RenderPass`;
+  - then one `EffectPass`: mipmap bloom (ADD blend, `sceneSettings("full").bloom`, levels from the pixel budget, luminance smoothing 0.03) and ACES tone mapping.
+- While mounted, renderer tone mapping and `autoClear` are off (both restored on unmount). The composer renders at `useFrame` priority 1 and resizes on canvas size and DPR changes.
+- `postHandle` publishes the composer and the bloom in a layout effect, before the first composer frame; `QualityController` and the sky change MSAA, bloom levels and intensity on these objects without a rebuild.
+- `@react-three/postprocessing` is not a dependency: it bundled n8ao (about 8 KB gzip on the full tier) for this same setup, which `tests/hud/post-composer.test.tsx` pins (its defaults, one merged pass, renderer state, no import of the wrapper).
+
 ### Counting
 
 - `RenderCounter` (`src/experience/perf/`) splits `renderer.info` into scene calls and post passes every frame (`__hq.perf.stats`, peaks since `__hq.perf.resetPeaks()`, plus live programs, geometries and textures).

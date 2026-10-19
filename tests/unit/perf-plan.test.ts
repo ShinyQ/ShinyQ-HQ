@@ -71,6 +71,7 @@ describe("perfKeysFor", () => {
 
   it("runs the whole lane, memory included, for the render pipeline and floor mounting", () => {
     expect(perfKeysFor(["src/experience/scene/Effects.tsx"])).toEqual([...ALL_PERF_KEYS]);
+    expect(perfKeysFor(["src/experience/scene/postComposer.ts"])).toEqual([...ALL_PERF_KEYS]);
     expect(perfKeysFor(["src/experience/tower/Tower.tsx"])).toEqual([...ALL_PERF_KEYS]);
     expect(perfGrep(perfKeysFor(["src/experience/scene/Effects.tsx"]))).toBe("");
   });
