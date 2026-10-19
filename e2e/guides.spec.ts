@@ -148,6 +148,25 @@ test.describe("desktop", () => {
     await expect(dialog.getByRole("alert")).toHaveCount(0);
   });
 
+  test("a pdf.js worker that fails to load shows the error alert at once, and Retry starts a new worker", async ({ page }) => {
+    await openShelf(page);
+    let broken = true;
+    let blocked = 0;
+    // Turbopack's worker entry script: a 404 fires the Worker's `error`, which pdf.js itself never listens for.
+    await page.route("**/_next/static/chunks/turbopack-worker-*.js", (route) => {
+      if (!broken) return route.fallback();
+      blocked++;
+      return route.fulfill({ status: 404, body: "" });
+    });
+    await page.locator("#guides").getByTestId("guide-read").first().click();
+    const dialog = page.getByRole("dialog", { name: FIRST.title.en });
+    await expect(dialog.getByRole("alert")).toContainText("could not be opened", { timeout: 20_000 });
+    expect(blocked, "the worker entry was never requested: did its chunk name change?").toBeGreaterThan(0);
+    broken = false;
+    await dialog.getByTestId("guide-retry").click();
+    await expectRendered(page, 1);
+  });
+
   test("a certification preview opens its study guide in the reader", async ({ page }) => {
     await routeGuides(page, PAGES);
     await openPage(page, "/en/contact?tier=static");

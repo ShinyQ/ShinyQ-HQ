@@ -85,11 +85,13 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
   useEffect(() => {
     let live = true;
     let task: PDFDocumentLoadingTask | undefined;
+    let failed: Promise<never> | undefined;
     const open = async () => {
       const lib = await loadPdfjs();
       // A document closed a moment ago (fast close and reopen, Retry) finishes its destroy on the worker first.
       await afterDestroy();
       if (!live) return;
+      failed = workerFailure();
       // Range requests only: no streaming of the whole file and no background prefetch. No wasm, no XFA.
       task = lib.getDocument({ url: view.url, rangeChunkSize: 65536, disableAutoFetch: true, disableStream: true, enableXfa: false, useWasm: false, isOffscreenCanvasSupported: false });
       // pdf.js waits forever on a worker that never loads: race the open against its failure and a timeout.
@@ -98,7 +100,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
           const [first, outline] = await Promise.all([doc.getPage(1), doc.getOutline().catch(() => null)]);
           return { doc, first, outline };
         }),
-        workerFailure(),
+        failed,
       );
       const { width, height } = first.getViewport({ scale: 1 });
       if (live) setLoaded({ lib, doc, count: doc.numPages, base: { width, height }, chapters: flatten((outline ?? []) as OutlineItem[]) });
@@ -108,7 +110,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
     });
     return () => {
       live = false;
-      if (task) destroyTask(task);
+      if (task) destroyTask(task, failed);
     };
   }, [view.url]);
 

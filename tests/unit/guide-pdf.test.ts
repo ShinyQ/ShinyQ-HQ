@@ -163,6 +163,25 @@ describe("destroyTask and afterDestroy", () => {
     expect(waited).toBe(true);
   });
 
+  it("does not wait on a destroy whose worker failed (pdf.js would wait for that worker forever)", async () => {
+    const { afterDestroy, destroyTask } = await freshPdf();
+    destroyTask({ destroy: () => new Promise<void>(() => {}) }, Promise.reject(new Error("worker failed")));
+    await expect(afterDestroy()).resolves.toBeUndefined();
+  });
+
+  it("stops waiting for a hung destroy after the cap", async () => {
+    vi.useFakeTimers();
+    const { afterDestroy, destroyTask, DESTROY_WAIT_MS } = await freshPdf();
+    destroyTask({ destroy: () => new Promise<void>(() => {}) }, new Promise<never>(() => {}));
+    let waited = false;
+    const next = afterDestroy().then(() => (waited = true));
+    await vi.advanceTimersByTimeAsync(DESTROY_WAIT_MS - 1);
+    expect(waited).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await next;
+    expect(waited).toBe(true);
+  });
+
   it("does not block the next open on a destroy that fails", async () => {
     const { afterDestroy, destroyTask } = await freshPdf();
     destroyTask({ destroy: () => Promise.reject(new Error("gone")) });

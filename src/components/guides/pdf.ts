@@ -88,9 +88,15 @@ export function raceLoad<T>(load: Promise<T>, failed: Promise<never>, ms = OPEN_
 
 let destroying: Promise<void> = Promise.resolve();
 
-/** Destroys a loading task (and its document) and remembers it, so the next open can wait for it. */
-export function destroyTask(task: { destroy(): Promise<void> }): void {
-  const done = task.destroy().catch(() => {});
+/** The longest the next open waits for an earlier document's destroy. */
+export const DESTROY_WAIT_MS = 5_000;
+
+/**
+ * Destroys a loading task (and its document) and remembers it, so the next open can wait for it. `failed` is the
+ * failure of the worker the task used: pdf.js waits on a dead worker forever, so its destroy is not waited for.
+ */
+export function destroyTask(task: { destroy(): Promise<void> }, failed: Promise<never> = failure): void {
+  const done = raceLoad(task.destroy(), failed, DESTROY_WAIT_MS).catch(() => {});
   destroying = Promise.all([destroying, done]).then(() => undefined);
 }
 
