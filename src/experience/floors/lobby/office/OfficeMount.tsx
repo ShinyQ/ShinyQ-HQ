@@ -20,7 +20,7 @@ const SHELL = officeShellBoxes();
  * L1 Agent Office mount (main path). Always draws the furniture shell (2 calls on the programs the observatory
  * already uses), which matches the navgrid obstacles, so the rover never bumps into an invisible desk before the
  * chunk loads or if it fails. Every 0.5 s after the first frame went idle it asks `officeLoadWanted` (on L1 or
- * riding there, near the office, `?prefetch=off` respected) and starts the chunk (every office drawer open starts it too,
+ * riding there, near the office or on a mission bound for it, `?prefetch=off` respected) and starts the chunk (every office drawer open starts it too,
  * beside its own body chunk, `loadOfficeBody`). The live scene mounts once loaded and `ready` (the full tier's composer exists, like the
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
  * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays.
@@ -54,6 +54,7 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
       floor: s.floor,
       rideTo: s.ride?.to ?? null,
       at: s.ride ? LOBBY.arrival : roverRuntime,
+      mission: s.mission?.status === "running" ? s.mission.id : null,
     });
     if (want) void loadOffice().catch(() => null);
   });

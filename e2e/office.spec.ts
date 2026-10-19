@@ -23,7 +23,7 @@ import {
 import { STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
- * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk near the spawn, five
+ * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk near the wing, five
  * Rovers with their states and chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office. `/api/office` is answered from fixtures (Playwright route); waits
@@ -46,6 +46,8 @@ const trigger = (page: Page) =>
 const settled = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.settled() ?? 0);
 const feed = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.feed() ?? null);
 const chip = (page: Page, slot: number) => page.locator(`[data-testid="office-chip"][data-slot="${slot}"]`);
+/** On the lead road, just inside the Lobby edge: within OFFICE.loadRadius of the office stop. */
+const LEAD = { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 2 };
 
 /** Answers `/api/office` from a mutable reply, so a test can switch fixtures or fail the endpoint mid-run. */
 async function serveOffice(page: Page) {
@@ -76,9 +78,10 @@ async function atOffice(page: Page) {
 }
 
 /**
- * At the office stop the follow camera sits about 42 u from the chips, past their far band (`OFFICE_CHIP_FAR`), so
- * they show their first line only. From the stop, two zoom key steps (0.8 each, still third person) bring it to about
- * 27 u: the chips show their task lines (tests/unit/office-chip-placement.test.ts pins this pose on every class).
+ * At the office stop the follow camera sits about 35 u from the chips (1280 x 720), past their far band
+ * (`OFFICE_CHIP_FAR`), so they show their first line only. One zoom key step (0.8, still third person) brings the
+ * middle three near (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring all five, so
+ * desk 1's chip shows its task line too.
  */
 async function nearChips(page: Page) {
   await driveTo(page, LOBBY.officeWing.stop);
@@ -148,11 +151,12 @@ const glErrors = (page: Page) =>
   });
 
 test.describe("Agent Office (L1)", () => {
-  test("loads near the spawn after the first frame and shows five Rovers with their states and chips", async ({ page }) => {
+  test("loads once the rover heads into the wing and shows five Rovers with their states and chips", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
-    // The spawn is within OFFICE.loadRadius: the chunk loads on idle after the first frame, with no visit.
+    // The lead road is within OFFICE.loadRadius of the stop (the spawn is not): driving onto it loads the chunk, with no drawer.
+    await driveTo(page, LEAD);
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
@@ -168,15 +172,18 @@ test.describe("Agent Office (L1)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the speculative trigger loads the chunk on its first ask after the first frame went idle", async ({ page }) => {
+  test("the speculative trigger declines at the spawn and loads the chunk once the rover drives onto the lead road", async ({ page }) => {
     await serveOffice(page);
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
-    // Positive control for the ?prefetch=off test below: the first counted ask (the spawn is near the office) starts the load.
-    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(1);
-    expect((await trigger(page)).state).not.toBe("idle");
+    await waitForSceneLive(page);
+    // Positive control for the ?prefetch=off test below. The spawn is 30.8 u from the stop, outside OFFICE.loadRadius:
+    // three counted asks declined (an accepted ask leaves "idle" and stops the count).
+    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
+    expect(await trigger(page)).toMatchObject({ state: "idle" });
+    await driveTo(page, LEAD);
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
   });
 

@@ -96,10 +96,21 @@ export const OFFICE = {
   rover: { radius: 1 },
   /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`). */
   wall: { w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
-  /** `L1:office` view zone: zoom per camera class and the half size of its area around the stop. */
-  view: { zoom: 1.5, tablet: 1.25, mobile: 1.2, half: { x: 2, z: 1.4 } },
-  /** The chunk loads once the rover (or the elevator arrival point during a ride to L1) is this close to the stop. */
-  loadRadius: 40,
+  /**
+   * `L1:office` view zone per camera class (zoom, and pitch as an offset from the rig's elevation) and the half size of
+   * its area around the stop. The follow rig keeps its look target (the rover plus its look-ahead, over the desks) in
+   * the middle of the screen, so the sky over the wall is set by the zoom; each class takes the closest view that
+   * keeps the wall, the five desks and the Rover in frame, the chips far, one zoom step (two on a portrait screen)
+   * bringing the middle three near clear of each other, the wall and the HUD (tests/unit/office-chip-placement.test.ts).
+   * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
+   */
+  view: { desktop: { zoom: 1.24 }, tablet: { zoom: 1.15, pitch: -0.1 }, mobile: { zoom: 1.3, pitch: 0.1 }, half: { x: 2, z: 1.4 } },
+  /**
+   * The chunk loads once the rover is this close to the stop: on the lead road (its Lobby end is 24.5 u away) or in
+   * the wing, not at the spawn (30.8 u) or the elevator arrival (38.6 u). A ride or a drive of an office mission
+   * loads it at once (`officeLoadWanted`), and an office drawer loads it on open.
+   */
+  loadRadius: 25,
 } as const;
 
 export const OFFICE_ROOM = "L1:office" as RoomId;
@@ -195,7 +206,7 @@ export function officeStops(w: OfficeWing): Partial<Record<RoomId, Vec2>> {
   return Object.fromEntries(OFFICE_ROOMS.map((room) => [room, { x: w.stop.x, z: w.stop.z }]));
 }
 
-/** The office view: around the stop, looking south at the desks and the wall (tuned on the owner captures). */
+/** The office view: around the stop, looking south at the desks and the wall, per camera class (`OFFICE.view`). */
 export function officeZone(w: OfficeWing): ViewZone {
   const { stop } = w;
   const { view } = OFFICE;
@@ -203,7 +214,7 @@ export function officeZone(w: OfficeWing): ViewZone {
     id: "L1:office",
     area: { minX: stop.x - view.half.x, maxX: stop.x + view.half.x, minZ: stop.z - view.half.z, maxZ: stop.z + view.half.z },
     yaw: yawLooking({ x: 0, z: 1 }),
-    zoom: view.zoom,
-    classView: { tablet: { zoom: view.tablet }, mobile: { zoom: view.mobile } },
+    zoom: view.desktop.zoom,
+    classView: { tablet: { ...view.tablet }, mobile: { ...view.mobile } },
   };
 }

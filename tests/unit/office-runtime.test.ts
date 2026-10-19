@@ -17,4 +17,9 @@ describe("nextChipFar", () => {
     for (const d of [28.5, 27.5, 28.4, 27.2].map((x) => x - 28 + OFFICE_CHIP_FAR)) far = nextChipFar(far, d);
     expect(far).toBe(true);
   });
+
+  it("stays far on a phone at any distance (no room for task lines over the wall; the drawer shows them)", () => {
+    for (const far of [true, false]) for (const d of [5, OFFICE_CHIP_FAR, 40]) expect(nextChipFar(far, d, true)).toBe(true);
+    expect(nextChipFar(true, 5, false)).toBe(false);
+  });
 });

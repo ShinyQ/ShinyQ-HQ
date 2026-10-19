@@ -116,7 +116,7 @@ for (const tier of ["lite", "full"] as const) {
     if (hasChunks) {
       for (const floor of BYTES_3D_BUDGET.sessionFloors) floors[floor] = await measureFloor(page, floor, seen, mainPaths);
     }
-    // The Agent Office (L1) loads near the spawn in a normal session, but has its own cap outside the session total.
+    // The Agent Office (L1) loads when the rover heads into its wing (or on an office mission or drawer): its own cap, outside the session total.
     const office = await measureOffice(page, "load", seen, mainPaths);
     // Its drawer body is a second chunk, loaded only when an office drawer opens: incremental over the scene chunk.
     const officeBody = await measureOffice(page, "loadBody", seen, mainPaths);

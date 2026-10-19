@@ -13,8 +13,9 @@ import { officeRuntime, useChipFar } from "./runtime";
 /**
  * One chip over a Rover (the mock's `.tag`, in HUD tokens): a state dot (never an edge stripe) with
  * "<Agent> · <activity>", then the title or "Client project" and a CI progress bar, both dropped when far.
- * On phones a far chip is compact: the state dot alone in a 32 px pill (its label keeps the agent and activity),
- * so the five chips neither overlap nor run off the screen edges. OfficeScene moves it every frame (HintProbe pattern) through `officeRuntime.chips`. A click opens the
+ * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill (its label keeps the
+ * agent and activity), so the five chips neither overlap nor run off the screen edges or under the minimap; the
+ * desk's drawer shows the task. OfficeScene moves it every frame (HintProbe pattern) through `officeRuntime.chips`. A click opens the
  * Rover's drawer the way its point-and-go target does (drive to the office stop, then open).
  */
 function Chip({ rover }: { rover: OfficeRoverView }) {

@@ -103,9 +103,10 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(wingBounds()).toEqual({ minX: W.rect.minX, maxX: W.rect.maxX, minZ: W.lead.from, maxZ: W.rect.maxZ });
   });
 
-  it("floats the wing sign (upper case) over the lead road where it enters the wing, above the rover", () => {
+  it("floats the wing sign (upper case) over the lead road just before it enters the wing, above the rover", () => {
     const sign = officeSign("Agent Office", "#34d399");
-    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ });
+    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ - 2 });
+    expect(sign.z).toBeGreaterThan(W.lead.from);
     expect(sign.tilt ?? 0).toBe(0);
     expect(sign.y).toBeGreaterThan(5);
   });
@@ -248,8 +249,9 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     const zone = zoneAt("L1", W.stop, zones);
     expect(zone?.id).toBe("L1:office");
     expect(zone?.yaw).toBeCloseTo(yawLooking({ x: 0, z: 1 }));
-    expect(zoneView(zone!, "desktop").zoom).toBe(OFFICE.view.zoom);
-    expect(zoneView(zone!, "mobile").zoom).toBe(OFFICE.view.mobile);
+    expect(zoneView(zone!, "desktop")).toEqual({ yaw: zone!.yaw, zoom: OFFICE.view.desktop.zoom, pitch: undefined });
+    expect(zoneView(zone!, "tablet")).toEqual({ yaw: zone!.yaw, ...OFFICE.view.tablet });
+    expect(zoneView(zone!, "mobile")).toEqual({ yaw: zone!.yaw, ...OFFICE.view.mobile });
     expect(zoneAt("L1", l1.spawn, zones)?.id).toBe("L1:kiosk");
     expect(zones.filter((z) => z.prime).map((z) => z.id)).toEqual(["L1:kiosk"]);
   });

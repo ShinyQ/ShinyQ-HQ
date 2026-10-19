@@ -479,7 +479,8 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
 /**
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
  * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern),
- * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges and under the HUD's top bar, and writes the probes. A chip's size is
+ * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges and under the HUD's top bar (far on
+ * phones at any distance), and writes the probes. A chip's size is
  * read only when it can change (a new element, its far flag, the phone layout or the feed). Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
@@ -560,7 +561,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         tmp.half[slot] = el.offsetWidth / 2;
         tmp.h[slot] = el.offsetHeight;
       }
-      setChipFar(slot, nextChipFar(far, camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z))));
+      setChipFar(slot, nextChipFar(far, camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z)), mobile));
       tmp.v.project(camera);
       const edge = tmp.half[slot] + 8;
       const x = Math.min(Math.max(((tmp.v.x + 1) / 2) * size.width, edge), size.width - edge);

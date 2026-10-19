@@ -31,12 +31,14 @@ export function wingBounds(): Rect {
 }
 
 /**
- * The floating wing sign over the lead road where it enters the wing (the shared `FloatingSigns`; nothing on the
- * floor), as high as the hall's gate sign, so the follow camera sees the rover under it.
+ * The floating wing sign over the lead road, 2 u before it enters the wing (the shared `FloatingSigns`; nothing on the
+ * floor), as high as the hall's gate sign, so the follow camera sees the rover under it. From the office stop the
+ * view looks south over it: 2 u into the Lobby it stays under the screen's bottom edge on every camera class, never
+ * a sliver under a phone's joystick (tests/unit/office-chip-placement.test.ts).
  */
 export function officeSign(text: string, color: string): SignSpec {
   const { lead, rect } = LOBBY.officeWing;
-  return { text: text.toUpperCase(), x: lead.x, y: 8.1, z: rect.minZ, color, fontSize: 0.75, letterSpacing: 0.08 };
+  return { text: text.toUpperCase(), x: lead.x, y: 8.1, z: rect.minZ - 2, color, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
 /**
