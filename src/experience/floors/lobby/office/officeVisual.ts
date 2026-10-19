@@ -1,5 +1,6 @@
 import { STATE_TONE } from "@/lib/office/model";
-import type { OfficeState } from "@/lib/office/protocol";
+import type { OfficeGithubStatus, OfficeState } from "@/lib/office/protocol";
+import { COLORS } from "../../../config";
 
 /**
  * Agent Office state looks (owner design D5, the approved mock's state table, eyes and pose switch): a face, a
@@ -24,6 +25,16 @@ export const OFFICE_STATE_STYLE: Record<OfficeState, OfficeStateStyle> = {
   done: { color: STATE_TONE.done, face: "happy", screen: "check" },
   failed: { color: STATE_TONE.failed, face: "oops", screen: "cross" },
   asleep: { color: STATE_TONE.asleep, face: "sleep", screen: "off" },
+};
+
+/** GitHub board status colors (the screen wall and the GitHub drawer). Here, not in `officeWall.ts`, so the drawer body chunk stays off the canvas code. */
+export const STATUS_COLOR: Record<OfficeGithubStatus, string> = {
+  running: "#60a5fa",
+  success: COLORS.green,
+  failure: "#f87171",
+  merged: COLORS.violet,
+  opened: COLORS.cyan,
+  pushed: "#8a93b5",
 };
 
 /** Body offset (y), pitch toward the desk (rx, positive leans forward), sway (ry), roll (rz), arm angles about x (negative raises) and the antenna tip scale. */

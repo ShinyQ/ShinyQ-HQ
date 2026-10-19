@@ -5,7 +5,9 @@ import { ROOT, staticClosure } from "../helpers/import-graph";
 
 const DIR = "src/experience/floors/lobby/office";
 const ENTRY = `${DIR}/scene.ts`;
-/** Office-only modules: the chunk entry reaches them; the main 3D path never does. */
+/** The drawer body entry: a second lazy chunk, loaded only when an office drawer opens. */
+const BODY = `${DIR}/body.ts`;
+/** Office-only modules: the scene entry reaches them; the main 3D path never does. */
 const OFFICE_ONLY = [
   ENTRY,
   `${DIR}/live.ts`,
@@ -18,10 +20,11 @@ const OFFICE_ONLY = [
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
-  `${DIR}/OfficeBody.tsx`,
   "src/lib/office/poll.ts",
   "src/lib/office/model.ts",
 ];
+/** Office-only modules reached from the drawer body entry only (never from the scene entry). */
+const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`];
 /** The main-path part of the office: the loader, the mount with the furniture shell and the layout. */
 const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
 
@@ -38,7 +41,7 @@ describe("Agent Office chunk boundary", () => {
   it("keeps the office-only code out of the main 3D chunk and the gate", () => {
     for (const entry of ["src/experience/Experience.tsx", "src/experience/ExperienceGate.tsx"]) {
       const main = staticClosure(entry);
-      expect(OFFICE_ONLY.filter((f) => main.has(f)), entry).toEqual([]);
+      expect([...OFFICE_ONLY, ...BODY_ONLY].filter((f) => main.has(f)), entry).toEqual([]);
     }
   });
 
@@ -56,25 +59,35 @@ describe("Agent Office chunk boundary", () => {
     for (const name of ["officeShellBoxes", "officeBounds"]) expect(layout, name).not.toMatch(new RegExp(`export function ${name}\\b`));
   });
 
-  it("lets no main-path file under src/experience or src/hud import a value from the office chunk", () => {
-    const chunk = staticClosure(ENTRY);
+  it("lets no main-path file under src/experience or src/hud import a value from the office chunks", () => {
+    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY)]);
     const offenders = [...files(join(ROOT, "src/experience")), ...files(join(ROOT, "src/hud"))]
-      .filter((f) => !chunk.has(f))
-      .filter((f) => OFFICE_ONLY.some((only) => staticClosure(f).has(only)));
+      .filter((f) => !chunks.has(f))
+      .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY].some((only) => staticClosure(f).has(only)));
     expect(offenders).toEqual([]);
     // One closure per file under two folders: slower than the default 5 s on a busy machine.
   }, 60_000);
 
-  it("reaches every office-only module from the entry, imported dynamically from chunk.ts only", () => {
+  it("reaches every office-only module from its entry, imported dynamically from chunk.ts only", () => {
     const chunk = staticClosure(ENTRY);
     expect(OFFICE_ONLY.filter((f) => !chunk.has(f))).toEqual([]);
-    expect(readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8")).toContain(`import("./scene")`);
-    // A relative `./scene` is the office entry only from inside the office folder (the intro chunk has its own).
-    const importers = files(join(ROOT, "src")).filter((f) => {
-      const text = readFileSync(join(ROOT, f), "utf8");
-      return /import\(\s*["'][^"']*office\/scene["']\s*\)/.test(text) || (f.startsWith(`${DIR}/`) && /import\(\s*["']\.\/scene["']\s*\)/.test(text));
-    });
-    expect(importers).toEqual([`${DIR}/chunk.ts`]);
+    // The drawer body is its own chunk: the scene never pulls it in.
+    expect(BODY_ONLY.filter((f) => chunk.has(f))).toEqual([]);
+    const body = staticClosure(BODY);
+    expect(BODY_ONLY.filter((f) => !body.has(f))).toEqual([]);
+    // Turbopack copies a module shared by the two async chunks into each one: the body stays off the canvas and 3D code.
+    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
+    expect(sceneOnly.filter((f) => body.has(f))).toEqual([]);
+    const loader = readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8");
+    expect(loader.match(/import\(\s*["'][^"']*["']\s*\)/g)).toEqual([`import("./scene")`, `import("./body")`]);
+    // A relative `./scene` or `./body` is an office entry only from inside the office folder (the intro chunk has its own scene).
+    for (const name of ["scene", "body"]) {
+      const importers = files(join(ROOT, "src")).filter((f) => {
+        const text = readFileSync(join(ROOT, f), "utf8");
+        return new RegExp(`import\\(\\s*["'][^"']*office/${name}["']\\s*\\)`).test(text) || (f.startsWith(`${DIR}/`) && new RegExp(`import\\(\\s*["']\\./${name}["']\\s*\\)`).test(text));
+      });
+      expect(importers, name).toEqual([`${DIR}/chunk.ts`]);
+    }
   });
 
   it("starts the speculative load only after the first frame went idle and with prefetch on (`?prefetch=off`)", () => {

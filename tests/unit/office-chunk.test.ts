@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
-import { officeChunkState, officeHandle, officeLoadWanted, officeModule } from "@/experience/floors/lobby/office/chunk";
+import { loadOfficeBody, officeChunkState, officeHandle, officeLoadWanted, officeModule } from "@/experience/floors/lobby/office/chunk";
+
+// The drawer body chunk, stubbed: the real one renders React with next-intl (tests/hud/OfficeBody.test.tsx).
+vi.mock("@/experience/floors/lobby/office/body", () => ({ OfficeBody: () => null }));
 
 const base = { idle: true, state: "idle", prefetch: true, floor: "L1", rideTo: null, at: LOBBY.spawn } as const;
 
@@ -23,5 +26,14 @@ describe("Agent Office chunk trigger", () => {
     expect(officeModule()).toBeNull();
     expect(officeHandle.state()).toBe("idle");
     expect(officeHandle.test()).toBeNull();
+  });
+
+  it("loads the drawer body as its own chunk, once, without loading the scene chunk", async () => {
+    const first = loadOfficeBody();
+    expect(loadOfficeBody()).toBe(first);
+    expect(typeof (await first).OfficeBody).toBe("function");
+    await officeHandle.loadBody();
+    expect(officeChunkState()).toBe("idle");
+    expect(officeModule()).toBeNull();
   });
 });

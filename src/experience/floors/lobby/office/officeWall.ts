@@ -4,7 +4,7 @@ import { COLORS } from "../../../config";
 import type { OfficeTranslate } from "../officeLayout";
 import { circlePath, type CanvasFonts } from "./officeAtlas";
 import { chipLines, type OfficeView, type OfficeViewMode } from "./officeModel";
-import { OFFICE_STATE_STYLE } from "./officeVisual";
+import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
 /**
  * The screen wall (owner decision D1): as seen from the plaza, mission control on the left half (the mode with
@@ -13,15 +13,6 @@ import { OFFICE_STATE_STYLE } from "./officeVisual";
  */
 export const WALL_BASE = { w: 1280, h: 300 } as const;
 export const WALL_CANVAS = { full: { w: 1280, h: 300 }, lite: { w: 1024, h: 240 } } as const;
-
-export const STATUS_COLOR: Record<OfficeGithubStatus, string> = {
-  running: "#60a5fa",
-  success: COLORS.green,
-  failure: "#f87171",
-  merged: COLORS.violet,
-  opened: COLORS.cyan,
-  pushed: "#8a93b5",
-};
 
 const MODE_COLOR: Record<OfficeViewMode, string> = { live: COLORS.green, "semi-live": COLORS.violet, off: "#8a93b5", offline: "#f87171" };
 

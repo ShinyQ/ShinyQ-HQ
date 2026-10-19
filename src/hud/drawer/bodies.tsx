@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import type { Locale } from "@/content/schema";
 import type { RoomView } from "@/content/room-views/types";
 import { floorChunks } from "@/experience/floors/floorChunks";
-import { loadOffice } from "@/experience/floors/lobby/office/chunk";
+import { loadOfficeBody } from "@/experience/floors/lobby/office/chunk";
 import type { RoomKind } from "@/experience/missions/rooms";
 import { MetricTiles, Sections } from "./blocks";
 import { lazyFromChunk } from "../lazyFromChunk";
@@ -35,8 +35,8 @@ const ReactorBody = chunkBody(() => floorChunks.load("L3").then((m) => m.Reactor
 const ResearchBody = chunkBody(() => floorChunks.load("L4").then((m) => m.ResearchBody));
 const TopicsBody = chunkBody(() => floorChunks.load("L4").then((m) => m.TopicsBody));
 const EngineBody = chunkBody(() => floorChunks.load("B1").then((m) => m.EngineBody));
-// L1 Agent Office: its own lazy chunk (not a floor chunk); opening an office room loads it.
-const OfficeBody = chunkBody(() => loadOffice().then((m) => m.OfficeBody));
+// L1 Agent Office: the drawer body is its own lazy chunk (not a floor chunk, not the office scene); opening an office room loads it.
+const OfficeBody = chunkBody(() => loadOfficeBody().then((m) => m.OfficeBody));
 
 /**
  * Custom bodies for the drawer's single-pane variant, by room kind. Floors that need more than the

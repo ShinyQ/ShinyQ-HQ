@@ -13,8 +13,7 @@ import { getHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
 import { officeLive, useOfficeFeed } from "./live";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
-import { OFFICE_STATE_STYLE } from "./officeVisual";
-import { STATUS_COLOR } from "./officeWall";
+import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
 // Existing classes only (no new Tailwind utilities: the CSS budget rides on every page).
 const HEAD = "label text-ink-2";
