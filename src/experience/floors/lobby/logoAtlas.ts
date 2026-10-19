@@ -24,6 +24,33 @@ export function atlasLayout(srcs: readonly (string | null)[], cell = ATLAS_CELL)
   return { srcs: unique, cols, rows, cell };
 }
 
+/**
+ * Whether `createImageBitmap` can decode the atlas with the options it needs (straight alpha, no color
+ * conversion, rows flipped). Same gate as three's GLTFLoader (r186): Safari before 17 and Firefox before 98
+ * ignore or mishandle those options, so they take the <img> path.
+ */
+export function canDecodeAtlasBitmap(userAgent: string | undefined, hasCreateImageBitmap: boolean): boolean {
+  if (!hasCreateImageBitmap) return false;
+  if (!userAgent) return true;
+  if (/^((?!chrome|android).)*safari/i.test(userAgent)) {
+    const version = userAgent.match(/Version\/(\d+)/);
+    if (!version || Number.parseInt(version[1], 10) < 17) return false;
+  }
+  if (userAgent.includes("Firefox")) {
+    const version = userAgent.match(/Firefox\/(\d+)\./);
+    if (!version || Number.parseInt(version[1], 10) < 98) return false;
+  }
+  return true;
+}
+
+/**
+ * Texture flags for each decode path. The bitmap is decoded with its rows flipped already (WebGL ignores
+ * UNPACK_FLIP_Y for an ImageBitmap); the <img> is flipped on upload. Both keep straight alpha.
+ */
+export function atlasTextureFlags(bitmap: boolean): { flipY: boolean; premultiplyAlpha: boolean } {
+  return { flipY: !bitmap, premultiplyAlpha: false };
+}
+
 /** Every logo the L1 walls draw, in atlas order: the skills wall items first, then the certification issuers. */
 export function wallLogoSrcs(data: { skills: readonly { logos: readonly (string | null)[] }[]; certifications: readonly { logo: string | null }[] }): (string | null)[] {
   return [...data.skills.flatMap((g) => g.logos), ...data.certifications.map((c) => c.logo)];

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture } from "three";
 import atlas from "../../logo-atlas.json";
-import { quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
+import { atlasTextureFlags, canDecodeAtlasBitmap, quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
 
 /** Layout of the prebuilt logo atlas (scripts/logo-atlas.ts): every L1 wall logo, in the order of `wallLogoSrcs`. */
 export const LOGO_ATLAS: AtlasLayout = atlas;
@@ -24,15 +24,16 @@ const closeBitmap = (image: unknown) => {
 /**
  * Decodes the atlas off the main thread into a straight-alpha, vertically flipped ImageBitmap: the
  * texels WebGL received from the canvas atlas, without the synchronous re-decode Chrome does when an
- * <img> is uploaded with straight alpha. Browsers without createImageBitmap use the <img> and flipY.
+ * <img> is uploaded with straight alpha. Browsers without a reliable createImageBitmap (none, Safari
+ * before 17, Firefox before 98: `canDecodeAtlasBitmap`) use the <img> and flipY.
  */
 async function loadAtlasImage(texture: Texture): Promise<void> {
-  if (typeof createImageBitmap === "function") {
+  const bitmap = canDecodeAtlasBitmap(typeof navigator === "undefined" ? undefined : navigator.userAgent, typeof createImageBitmap === "function");
+  Object.assign(texture, atlasTextureFlags(bitmap));
+  if (bitmap) {
     const response = await fetch(atlas.file);
     if (!response.ok) throw new Error(`logo atlas: HTTP ${response.status}`);
     texture.image = await createImageBitmap(await response.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
-    // WebGL ignores UNPACK_FLIP_Y for an ImageBitmap; the decode above flipped it already.
-    texture.flipY = false;
     return;
   }
   const img = new Image();

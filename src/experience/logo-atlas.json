@@ -3,8 +3,6 @@
   "cols": 8,
   "rows": 8,
   "cell": 128,
-  "pad": 8,
-  "sources": "918dbb857df9",
   "srcs": [
     "/tech/agent-framework.webp",
     "/tech/langgraph.svg",

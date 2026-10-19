@@ -7,8 +7,10 @@
  * coarser grid that looks the same (`quantize`) and stored as lossless WebP: about 41% fewer bytes than the
  * exact pixels, where lossy WebP (4:2:0 chroma) visibly smears thin colored edges.
  *
- *   bun scripts/logo-atlas.ts          regenerate public/atlas/logos.<hash>.webp and src/experience/logo-atlas.json
- *   bun scripts/logo-atlas.ts --check  fail when the committed atlas misses a logo or a logo file changed (bun run build)
+ *   bun scripts/logo-atlas.ts          regenerate public/atlas/logos.<hash>.webp, src/experience/logo-atlas.json
+ *                                      (what the runtime reads) and scripts/logo-atlas.lock.json (build-side sources hash)
+ *   bun scripts/logo-atlas.ts --check  fail when the committed atlas misses a logo, a logo file changed or the
+ *                                      quantization, encode or rasterize settings changed (bun run build)
  *
  * Generated files are committed (like scripts/troika-fonts.ts): the build needs no browser, the dev
  * server serves them as is, and the output only changes when a wall logo does.
@@ -23,14 +25,33 @@ const root = process.cwd();
 const PUBLIC = path.join(root, "public");
 const OUT = path.join(PUBLIC, "atlas");
 const MANIFEST = path.join(root, "src", "experience", "logo-atlas.json");
+const LOCK = path.join(root, "scripts", "logo-atlas.lock.json");
 
+/** The client manifest, bundled into the 3D path: only what the walls need to load the image and map UVs. */
 export interface LogoAtlasManifest extends AtlasLayout {
   /** Public URL of the atlas image (content-hashed name). */
   file: string;
-  pad: number;
-  /** Hash of the cell size, padding and every source logo (path and bytes), to spot a stale atlas. */
+}
+
+/** Build-side record of what the committed atlas was made from (never bundled). */
+export interface LogoAtlasLock {
+  /** The atlas this record belongs to. */
+  file: string;
+  /** `sourcesHash` when the atlas was generated. */
   sources: string;
 }
+
+/** Bump when `rasterize` draws differently, so `--check` fails until the atlas is regenerated. */
+export const RASTER_VERSION = 1;
+
+/** Grid steps of `quantize`: RGB of SVG cells, RGB of raster cells (already lossy sources), partial alpha. */
+export const QUANT = { svg: 4, raster: 8, alpha: 5 } as const;
+
+/**
+ * Lossless WebP encode. exact: keep the RGB of transparent pixels, which texture filtering blends into logo
+ * edges. effort 6 with quality 100 is the slowest, smallest lossless setting (cwebp -z 9).
+ */
+export const WEBP = { lossless: true, exact: true, effort: 6, quality: 100 } as const;
 
 const sha = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 
@@ -40,8 +61,10 @@ export function expectedLayout(): AtlasLayout {
   return atlasLayout(wallLogoSrcs(data), ATLAS_CELL);
 }
 
+/** Hash of everything the atlas pixels depend on: grid, padding, raster, quantization and encode settings, every logo (path and bytes). */
 export function sourcesHash(layout: AtlasLayout, publicDir = PUBLIC): string {
-  const h = createHash("sha256").update(`${layout.cell}:${atlasPad(layout.cell)}:${layout.cols}x${layout.rows}\n`);
+  const settings = JSON.stringify({ raster: RASTER_VERSION, quant: QUANT, webp: WEBP });
+  const h = createHash("sha256").update(`${layout.cell}:${atlasPad(layout.cell)}:${layout.cols}x${layout.rows}:${settings}\n`);
   for (const src of layout.srcs) {
     const file = path.join(publicDir, src);
     if (!existsSync(file)) throw new Error(`logo ${src} is missing under public/`);
@@ -51,12 +74,13 @@ export function sourcesHash(layout: AtlasLayout, publicDir = PUBLIC): string {
 }
 
 /** Problems with the committed atlas against today's content and logo files; empty when it is fresh. */
-export function atlasProblems(manifest: LogoAtlasManifest, publicDir = PUBLIC): string[] {
+export function atlasProblems(manifest: LogoAtlasManifest, lock: LogoAtlasLock, publicDir = PUBLIC): string[] {
   const layout = expectedLayout();
   const problems: string[] = [];
   if (JSON.stringify(manifest.srcs) !== JSON.stringify(layout.srcs)) problems.push("the wall logos changed (srcs differ)");
-  if (manifest.cols !== layout.cols || manifest.rows !== layout.rows || manifest.cell !== layout.cell || manifest.pad !== atlasPad(layout.cell)) problems.push("the atlas grid changed");
-  if (problems.length === 0 && manifest.sources !== sourcesHash(layout, publicDir)) problems.push("a logo file changed (sources hash differs)");
+  if (manifest.cols !== layout.cols || manifest.rows !== layout.rows || manifest.cell !== layout.cell) problems.push("the atlas grid changed");
+  if (lock.file !== manifest.file) problems.push("scripts/logo-atlas.lock.json belongs to another atlas");
+  if (problems.length === 0 && lock.sources !== sourcesHash(layout, publicDir)) problems.push("a logo file or an atlas setting changed (sources hash differs)");
   const file = path.join(publicDir, manifest.file);
   if (!existsSync(file)) problems.push(`${manifest.file} is missing`);
   else if (!manifest.file.includes(`.${sha(readFileSync(file)).slice(0, 10)}.`)) problems.push(`${manifest.file} does not match its content hash`);
@@ -125,9 +149,6 @@ export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
   }
 }
 
-/** Grid steps of `quantize`: RGB of SVG cells, RGB of raster cells (already lossy sources), partial alpha. */
-export const QUANT = { svg: 4, raster: 8, alpha: 5 } as const;
-
 /**
  * Rounds the straight-alpha atlas pixels so lossless WebP compresses them better while the walls look the
  * same: RGB to multiples of 4 (SVG logos, smooth gradients) or 8 (raster logos), partial alpha to multiples
@@ -164,23 +185,24 @@ async function generate() {
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const pixels = quantize(data, info.width, layout);
   const raw = { raw: { width: info.width, height: info.height, channels: 4 as const } };
-  // exact: keep the RGB of transparent pixels, which texture filtering blends into logo edges. effort 6 with
-  // quality 100 is the slowest, smallest lossless setting (cwebp -z 9).
-  const webp = await sharp(pixels, raw).webp({ lossless: true, exact: true, effort: 6, quality: 100 }).toBuffer();
+  const webp = await sharp(pixels, raw).webp(WEBP).toBuffer();
   if (!pixels.equals(await sharp(webp).ensureAlpha().raw().toBuffer())) throw new Error("the WebP atlas does not round-trip the quantized pixels");
   mkdirSync(OUT, { recursive: true });
   const name = `logos.${sha(webp).slice(0, 10)}.webp`;
   writeFileSync(path.join(OUT, name), webp);
   for (const f of readdirSync(OUT)) if (f !== name) rmSync(path.join(OUT, f));
-  const manifest: LogoAtlasManifest = { file: `/atlas/${name}`, cols: layout.cols, rows: layout.rows, cell: layout.cell, pad: atlasPad(layout.cell), sources, srcs: layout.srcs };
+  const manifest: LogoAtlasManifest = { file: `/atlas/${name}`, cols: layout.cols, rows: layout.rows, cell: layout.cell, srcs: layout.srcs };
+  const lock: LogoAtlasLock = { file: manifest.file, sources };
   writeFileSync(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(LOCK, `${JSON.stringify(lock, null, 2)}\n`);
   const sourceBytes = layout.srcs.reduce((n, src) => n + readFileSync(path.join(PUBLIC, src)).length, 0);
   console.log(`${manifest.file}: ${layout.srcs.length} logos, ${layout.cols}x${layout.rows} cells of ${layout.cell} px, ${webp.length} bytes (sources ${sourceBytes} bytes)`);
 }
 
 if (import.meta.main) {
   if (process.argv.includes("--check")) {
-    const problems = existsSync(MANIFEST) ? atlasProblems(JSON.parse(readFileSync(MANIFEST, "utf8")) as LogoAtlasManifest) : ["src/experience/logo-atlas.json is missing"];
+    const missing = [MANIFEST, LOCK].filter((f) => !existsSync(f)).map((f) => `${path.relative(root, f)} is missing`);
+    const problems = missing.length > 0 ? missing : atlasProblems(JSON.parse(readFileSync(MANIFEST, "utf8")) as LogoAtlasManifest, JSON.parse(readFileSync(LOCK, "utf8")) as LogoAtlasLock);
     if (problems.length > 0) {
       console.error(`logo atlas is stale: ${problems.join("; ")}. Run: bun scripts/logo-atlas.ts`);
       process.exit(1);

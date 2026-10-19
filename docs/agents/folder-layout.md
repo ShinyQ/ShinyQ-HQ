@@ -53,7 +53,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - The symbols cut is the troika fallback (arrows, shapes), so nothing loads from a CDN.
   - LICENSE files stay in `public/fonts/`.
 - `public/tech/`: tech logos (svg/webp, see its README for sources), resolved by `src/content/tech.ts`.
-- `public/atlas/`: the L1 wall logo atlas, `logos.<hash>.webp` (quantized, lossless WebP, content-hashed), written with its manifest `src/experience/logo-atlas.json` by `bun run logo:atlas`, committed.
+- `public/atlas/`: the L1 wall logo atlas, `logos.<hash>.webp` (quantized, lossless WebP, content-hashed), written with its client manifest `src/experience/logo-atlas.json` and the build-side `scripts/logo-atlas.lock.json` by `bun run logo:atlas`, committed.
 - `public/logos/`: company and school logos (TimelineEntry.logo), 128 px webp.
 - `public/media/<pod-slug>/`: pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide) + NN-name.w1200.webp (1200 wide, `scripts/media-sizes.ts`).
 - `public/media/production/`: the masked Grafana probe dashboard of "How I run AI in production" (same three sizes as the pod galleries; `scripts/media-sizes.ts` covers it).
