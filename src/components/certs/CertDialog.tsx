@@ -6,6 +6,10 @@ import type { CertView } from "@/content/certs";
 import { Modal } from "../Modal";
 import { IssuerMark } from "./IssuerMark";
 
+// The study guide reader's dialog rides in this chunk: the cert card's "Read study guide" swaps to it at once, and
+// DialogHost needs no lazy entry of its own on every page (Classic JS budget).
+export { default as GuideDialog } from "../guides/GuideDialog";
+
 const STATUS_CLASS = { earned: "text-green", "in-progress": "text-amber", expired: "text-ink-3" } as const;
 
 /**

@@ -20,15 +20,19 @@ vi.mock("next/dynamic", () => ({
     };
   },
 }));
-// Stand-ins for the lazy dialog chunks: the cert card's action is a `[data-hq-guide]` button, as in the real CertDialog.
+// Stand-ins for the lazy dialog chunks: the cert card's action is a `[data-hq-guide]` button inside an `aria-modal`
+// dialog, as in the real CertDialog (on the shared Modal).
 vi.mock("@/components/dialog-loaders", () => ({
   loadCvDialog: async () => ({ default: () => null }),
   loadPaperDialog: async () => ({ default: () => null }),
   loadCertDialog: async () => ({
+    GuideDialog: (await import("@/components/guides/GuideDialog")).default,
     default: ({ cert }: { cert: CertView }) => (
-      <button type="button" data-testid="cert-read" data-hq-guide={cert.guide ?? ""}>
-        Read study guide
-      </button>
+      <div role="dialog" aria-modal="true">
+        <button type="button" data-testid="cert-read" data-hq-guide={cert.guide ?? ""}>
+          Read study guide
+        </button>
+      </div>
     ),
   }),
 }));
