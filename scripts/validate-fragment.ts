@@ -89,6 +89,7 @@ for (const leaf of [
   ...collectStrings(data),
   ...(perspectivesData === undefined ? [] : collectStrings(perspectivesData, "perspectives")),
   ...(siteBuildData === undefined ? [] : collectStrings(siteBuildData, "site-build")),
+  ...(guidesData === undefined ? [] : collectStrings(guidesData, "study-guides")),
 ]) {
   const hits = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
   if (hits.length > 0) {
