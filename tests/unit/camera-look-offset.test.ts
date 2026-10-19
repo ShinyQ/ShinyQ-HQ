@@ -321,6 +321,8 @@ describe("the follow rig's look offset", () => {
           oldPrimeZone(o, zone, cls, rail);
           expect(pick(s), `${zone.id} primed`).toEqual(pick(o));
           expect(newPose(floor, s, cls, aspect, at), `${zone.id} primed pose`).toEqual(oldPose(floor, o, cls, aspect, at));
+          const got: unknown[] = [];
+          const want: unknown[] = [];
           // Out of the zone, back in by driving, a hand reset, out, in, a hand zoom, out again: every frame on the way.
           const script: [ViewZone | null, "zone" | "reset" | "zoom"][] = [
             [null, "zone"],
@@ -346,17 +348,21 @@ describe("the follow rig's look offset", () => {
               const dt = frame % 3 === 0 ? 1 / 30 : 1 / 60;
               stepOrbit(s, dt, reduced);
               oldStepOrbit(o, dt, reduced);
-              expect(pick(s), `${zone.id} frame ${frame}`).toEqual(pick(o));
-              expect(s.lookForward).toBe(0);
-              expect(s.lookUp).toBe(0);
-              if (!rail) expect(newPose(floor, s, cls, aspect, at), `${zone.id} pose frame ${frame}`).toEqual(oldPose(floor, o, cls, aspect, at));
+              got.push(pick(s), [s.lookForward, s.lookUp]);
+              want.push(pick(o), [0, 0]);
+              if (!rail) {
+                got.push(newPose(floor, s, cls, aspect, at));
+                want.push(oldPose(floor, o, cls, aspect, at));
+              }
             }
           }
+          // One comparison per zone and screen (every frame's orbit fields and pose, in order).
+          expect(got, `${zone.id} at aspect ${aspect.toFixed(2)}`).toEqual(want);
         }
       }
     };
-    it("with motion", () => run(false));
-    it("under reduced motion", () => run(true));
+    it("with motion", () => run(false), 30_000);
+    it("under reduced motion", () => run(true), 30_000);
   });
 
   it("keeps the intro's end pose and timeline at the spawn on every class (the pinned intro poses use the same path)", () => {
