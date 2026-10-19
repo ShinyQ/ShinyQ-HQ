@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSy
 import { homedir } from "node:os";
 import path from "node:path";
 import type { Sent } from "./beat";
+import type { LastTool } from "./map";
 
 export interface RelayConfig {
   endpoint: string;
@@ -79,6 +80,22 @@ export function readSent(paths: RelayPaths, session: string): Sent | null {
 export function writeSent(paths: RelayPaths, session: string, sent: Sent): void {
   ensure(paths.sessions);
   writeFileSync(sentFile(paths, session), JSON.stringify(sent), { mode: 0o600 });
+}
+
+const toolFile = (paths: RelayPaths, session: string) => path.join(paths.sessions, `${session.slice(0, 32)}.tool.json`);
+
+export function readLastTool(paths: RelayPaths, session: string): LastTool | null {
+  try {
+    const raw = JSON.parse(readFileSync(toolFile(paths, session), "utf8")) as Partial<LastTool>;
+    return typeof raw.tool === "string" && typeof raw.at === "number" ? { tool: raw.tool, at: raw.at } : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastTool(paths: RelayPaths, session: string, last: LastTool): void {
+  ensure(paths.sessions);
+  writeFileSync(toolFile(paths, session), JSON.stringify(last), { mode: 0o600 });
 }
 
 /** One line per decision (agent, event, state, outcome); never payload text. Rotates at 256 KB. */

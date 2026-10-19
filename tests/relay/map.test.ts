@@ -41,6 +41,7 @@ describe("mapEvent", () => {
       userPromptSubmitted: ["thinking", "planning"],
       preToolUse: ["testing", "testing"],
       preToolUseCi: ["ci", "ci"],
+      preToolUseMcp: null,
       postToolUseEdit: ["working", "editing"],
       postToolUseView: ["reviewing", "reading"],
       postToolUseBash: ["thinking", "planning"],

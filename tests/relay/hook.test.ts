@@ -99,3 +99,77 @@ describe("runHook", () => {
     expect(a).toMatch(/^[0-9a-f]{64}$/);
   });
 });
+
+describe("runHook: Copilot permission checks", () => {
+  const cp = HOOK_FIXTURES.copilot;
+  const json = (p: Record<string, unknown>) => JSON.stringify(p);
+  const states = (sent: string[]) => sent.map((b) => JSON.parse(b).state);
+
+  it("keeps the desk working when an auto-approved permissionRequest follows the preToolUse (the reported sequence)", () => {
+    const { d, sent, tick, home } = deps();
+    const shell = { ...cp.preToolUse, toolArgs: { command: "gh run watch 123 --exit-status" } };
+    expect(runHook("copilot", "preToolUse", json(shell), d)).toBe("sent");
+    tick(92);
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequest), d)).toBe("ignored");
+    tick(60_000);
+    expect(runHook("copilot", "postToolUse", json(cp.postToolUseBash), d)).toBe("sent");
+    expect(states(sent)).toEqual(["ci", "thinking"]);
+    const log = readFileSync(path.join(home, ".office-relay", "relay.log"), "utf8");
+    expect(log).toContain("copilot permissionRequest after-tool ignored");
+    for (const secret of PLANTED) expect(log).not.toContain(secret);
+  });
+
+  it("also covers tools the office does not map, such as MCP tools", () => {
+    const { d, sent, tick } = deps();
+    expect(runHook("copilot", "preToolUse", json(cp.preToolUseMcp), d)).toBe("ignored");
+    tick(300);
+    expect(runHook("copilot", "permissionRequest", json({ ...cp.permissionRequest, toolName: "github-mcp-server-get_file_contents" }), d)).toBe("ignored");
+    expect(sent).toEqual([]);
+  });
+
+  it("shows Needs Kurniadi for a permissionRequest with no recent preToolUse", () => {
+    const { d, sent } = deps();
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequest), d)).toBe("sent");
+    expect(states(sent)).toEqual(["input"]);
+  });
+
+  it("shows Needs Kurniadi when the permissionRequest comes too late, for another tool or in another session", () => {
+    const late = deps();
+    runHook("copilot", "preToolUse", json(cp.preToolUse), late.d);
+    late.tick(2_000);
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequest), late.d)).toBe("sent");
+    expect(states(late.sent)).toEqual(["testing", "input"]);
+
+    const other = deps();
+    runHook("copilot", "preToolUse", json(cp.preToolUseMcp), other.d);
+    other.tick(92);
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequest), other.d)).toBe("sent");
+    expect(states(other.sent)).toEqual(["input"]);
+
+    const session = deps();
+    runHook("copilot", "preToolUse", json(cp.preToolUse), session.d);
+    session.tick(92);
+    expect(runHook("copilot", "permissionRequest", json({ ...cp.permissionRequest, sessionId: "another-session" }), session.d)).toBe("sent");
+    expect(states(session.sent)).toEqual(["testing", "input"]);
+  });
+
+  it("shows Needs Kurniadi when Copilot really prompts (the permission_prompt notification)", () => {
+    const { d, sent, tick } = deps();
+    runHook("copilot", "preToolUse", json(cp.preToolUse), d);
+    tick(92);
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequest), d)).toBe("ignored");
+    tick(200);
+    expect(runHook("copilot", "notification", json(cp.notification), d)).toBe("sent");
+    expect(states(sent)).toEqual(["testing", "input"]);
+  });
+
+  it("keeps Claude and Codex permission requests as Needs Kurniadi (they fire only when a prompt is shown)", () => {
+    for (const agent of ["claude", "codex"] as const) {
+      const { d, sent, tick } = deps();
+      runHook(agent, "PreToolUse", json(HOOK_FIXTURES[agent].PreToolUse), d);
+      tick(92);
+      expect(runHook(agent, "PermissionRequest", json(HOOK_FIXTURES[agent].PermissionRequest), d)).toBe("sent");
+      expect(states(sent)).toEqual(["testing", "input"]);
+    }
+  });
+});
