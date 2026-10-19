@@ -27,6 +27,11 @@ describe("Agent Office rooms and copy", () => {
       expect(views["L1:office-desk-5"].next).toBeUndefined();
       expect(views["L1:visits"].next).toBeUndefined();
       expect(views["L1:office-desk-3"].title).toBe(locale === "en" ? "Desk 3" : "Meja 3");
+      // A standing note per view: the drawer's generic fallback shows it if the office chunk fails to load.
+      const m = locale === "en" ? en : id;
+      expect(views["L1:office"].sections).toEqual([{ body: m.office["3d"].hooks }]);
+      expect(views["L1:office-github"].sections).toEqual([{ body: m.office["3d"].githubNote }]);
+      for (let slot = 0; slot < 5; slot++) expect(views[`L1:office-desk-${slot + 1}`].sections).toEqual([{ body: m.office.privacy }]);
     });
   }
 

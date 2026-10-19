@@ -7,7 +7,7 @@ import en from "../../messages/en.json";
 import type { RoomView } from "@/content/room-views/types";
 import type { OfficeFeed } from "@/lib/office/poll";
 import { getHQStore } from "@/store/useHQStore";
-import { statesA, statesB } from "../../e2e/office-fixtures";
+import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed, want: vi.fn() }));
 vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } }));
@@ -43,6 +43,9 @@ const body = (office: NonNullable<RoomView["office"]>, id = "L1:office") =>
     </NextIntlClientProvider>,
   );
 const o = en.office["3d"];
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+/** An external link's accessible name: its text, then "(opens in a new tab)" (the arrow is hidden from screen readers). */
+const external = (text: string) => new RegExp(`^${escape(text)}\\s*\\(${escape(en.common.external)}\\)$`);
 
 beforeEach(() => {
   live.feed = { status: "ready", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
@@ -62,6 +65,7 @@ describe("Agent Office drawers", () => {
     expect(screen.getByTestId("office-task")).toHaveTextContent("Agent office scene");
     expect(screen.getByTestId("office-repo")).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ");
     expect(screen.getByTestId("office-repo")).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByRole("link", { name: external("ShinyQ/ShinyQ-HQ") })).toHaveAttribute("target", "_blank");
     expect(screen.getByTestId("office-body")).toHaveTextContent("14 min");
     expect(screen.getAllByTestId("office-recent")).toHaveLength(2);
     expect(screen.getByTestId("office-body")).toHaveTextContent(en.office.privacy);
@@ -94,8 +98,77 @@ describe("Agent Office drawers", () => {
     const rows = screen.getAllByTestId("office-feed-row");
     expect(rows.map((r) => r.dataset.status)).toEqual(["running", "merged"]);
     expect(within(rows[0]).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "7");
-    expect(within(rows[1]).getByRole("link", { name: "feat: agent office" })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pulls");
+    expect(within(rows[1]).getByRole("link", { name: external("feat: agent office") })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pulls");
+    expect(within(rows[1]).getByRole("link")).toHaveAttribute("target", "_blank");
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.githubNote);
+  });
+
+  it("stops wanting the drawer poll when it closes", () => {
+    const { unmount } = body({ panel: "summary" });
+    expect(live.want).toHaveBeenLastCalledWith("drawer", true);
+    unmount();
+    expect(live.want).toHaveBeenLastCalledWith("drawer", false);
+  });
+
+  it("says the board is empty when there is no public activity", () => {
+    const now = Date.now();
+    live.feed = { status: "ready", snapshot: { ...statesA(now), github: [] }, fetchedAt: now };
+    body({ panel: "github" }, "L1:office-github");
+    expect(screen.queryByTestId("office-feed")).toBeNull();
+    expect(screen.getByTestId("office-body")).toHaveTextContent(o.wall.empty);
+  });
+
+  it("never links a feed item or a repository outside github.com", () => {
+    const now = Date.now();
+    const snap = officeSnapshot([officeDesk(0, "copilot", "working", "editing", now, { repo: "https://evil.example/x", title: "Unsafe repo" })], now);
+    snap.github = [{ kind: "pr", status: "opened", repo: "ShinyQ/ShinyQ-HQ", title: "Unsafe link", at: now - 60_000, url: "https://evil.example/x" }];
+    live.feed = { status: "ready", snapshot: snap, fetchedAt: now };
+    body({ panel: "github" }, "L1:office-github");
+    const row = screen.getByTestId("office-feed-row");
+    expect(row).toHaveTextContent("Unsafe link");
+    expect(within(row).queryByRole("link")).toBeNull();
+    cleanup();
+    body({ panel: "desk", slot: 0 }, "L1:office-desk-1");
+    expect(screen.getByTestId("office-task")).toHaveTextContent("Unsafe repo");
+    expect(screen.queryByTestId("office-repo")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  for (const status of ["idle", "loading"] as const) {
+    it(`shows a loading line, not an empty office, before the first snapshot (${status})`, () => {
+      live.feed = { status, snapshot: null, fetchedAt: 0 };
+      for (const office of [{ panel: "summary" }, { panel: "github" }, { panel: "desk", slot: 0 }] as const) {
+        body(office);
+        expect(screen.getByTestId("office-notice")).toHaveTextContent(o.drawer.loading);
+        expect(screen.getByTestId("office-body")).not.toHaveTextContent(o.wall.empty);
+        expect(screen.getByTestId("office-body")).not.toHaveTextContent(o.offDuty);
+        expect(screen.queryAllByTestId("office-agent")).toHaveLength(0);
+        cleanup();
+      }
+    });
+  }
+
+  it("says the live office is off when it is disabled, even with an old snapshot", () => {
+    live.feed = { status: "disabled", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
+    body({ panel: "summary" });
+    expect(screen.getByTestId("office-notice")).toHaveTextContent(o.drawer.disabled);
+    expect(screen.queryAllByTestId("office-agent")).toHaveLength(0);
+    expect(screen.queryByTestId("office-offline")).toBeNull();
+  });
+
+  it("says the office is offline without claiming a last known activity when the first fetch failed", () => {
+    live.feed = { status: "offline", snapshot: null, fetchedAt: 0 };
+    body({ panel: "github" }, "L1:office-github");
+    expect(screen.getByTestId("office-notice")).toHaveTextContent(o.drawer.offlineEmpty);
+    expect(screen.getByTestId("office-body")).not.toHaveTextContent(o.drawer.offline);
+    expect(screen.getByTestId("office-body")).not.toHaveTextContent(o.wall.empty);
+    expect(screen.queryByTestId("office-offline")).toBeNull();
+  });
+
+  it("renders no desk for a slot outside the five", () => {
+    body({ panel: "desk", slot: 7 }, "L1:office-desk-8");
+    expect(screen.getByTestId("office-body")).toBeInTheDocument();
+    expect(screen.queryByTestId("office-state")).toBeNull();
   });
 
   it("says so when the office is offline and keeps the last known activity", () => {

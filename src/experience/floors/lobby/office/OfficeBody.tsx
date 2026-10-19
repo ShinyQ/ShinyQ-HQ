@@ -2,10 +2,12 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { RoomView } from "@/content/room-views/types";
 import type { Locale } from "@/content/schema";
 import type { RoomBodyProps } from "@/hud/drawer/bodies";
-import { MetricTiles } from "@/hud/drawer/blocks";
+import { External, MetricTiles } from "@/hud/drawer/blocks";
 import { sinceLabel } from "@/lib/office/model";
+import type { OfficeFeed } from "@/lib/office/poll";
 import type { OfficeGithubItem } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
@@ -18,6 +20,8 @@ import { STATUS_COLOR } from "./officeWall";
 const HEAD = "label text-ink-2";
 const ROW = "rounded-xl border border-glass-border bg-white/[0.03] p-3";
 const NOTE = "text-[13px] leading-5 text-ink-2";
+
+type OfficePanel = NonNullable<RoomView["office"]>["panel"];
 
 function useNow(ms: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -62,9 +66,9 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
         </Field>
         {repo && (
           <Field label={t("3d.drawer.repo")}>
-            <a className="link" href={repo} target="_blank" rel="noopener noreferrer" data-testid="office-repo">
+            <External href={repo} testId="office-repo">
               {rover.repo}
-            </a>
+            </External>
           </Field>
         )}
         {rover.since !== null && <Field label={t("3d.drawer.since")}>{sinceLabel(rover.since, locale, now)}</Field>}
@@ -84,7 +88,6 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
           </ul>
         </section>
       )}
-      <p className={NOTE}>{t("privacy")}</p>
     </>
   );
 }
@@ -124,8 +127,6 @@ function SummaryPanel({ office }: { office: OfficeView }) {
           />
         </section>
       )}
-      <p className={NOTE}>{t("3d.hooks")}</p>
-      <p className={NOTE}>{t("privacy")}</p>
     </>
   );
 }
@@ -140,9 +141,7 @@ function GithubRow({ item, locale, now }: { item: OfficeGithubItem; locale: Loca
       <p className="flex items-center gap-2 text-ink">
         <Dot color={color} />
         {url ? (
-          <a className="link" href={url} target="_blank" rel="noopener noreferrer">
-            {item.title}
-          </a>
+          <External href={url}>{item.title}</External>
         ) : (
           item.title
         )}
@@ -166,20 +165,34 @@ function GithubRow({ item, locale, now }: { item: OfficeGithubItem; locale: Loca
 
 function GithubPanel({ items, locale, now }: { items: readonly OfficeGithubItem[]; locale: Locale; now: number }) {
   const t = useTranslations("office");
+  return items.length ? (
+    <ul className="space-y-2" data-testid="office-feed">
+      {items.map((item, i) => (
+        <GithubRow key={`${item.url}-${i}`} item={item} locale={locale} now={now} />
+      ))}
+    </ul>
+  ) : (
+    <p className="text-[15px] leading-6 text-ink-2">{t("3d.wall.empty")}</p>
+  );
+}
+
+/** The panel's standing notes (how the data arrives, what never leaves the machine), shown in every feed state. */
+function PanelNotes({ panel }: { panel: OfficePanel }) {
+  const t = useTranslations("office");
+  if (panel === "github") return <p className={NOTE}>{t("3d.githubNote")}</p>;
   return (
     <>
-      {items.length ? (
-        <ul className="space-y-2" data-testid="office-feed">
-          {items.map((item, i) => (
-            <GithubRow key={`${item.url}-${i}`} item={item} locale={locale} now={now} />
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[15px] leading-6 text-ink-2">{t("3d.wall.empty")}</p>
-      )}
-      <p className={NOTE}>{t("3d.githubNote")}</p>
+      {panel === "summary" && <p className={NOTE}>{t("3d.hooks")}</p>}
+      <p className={NOTE}>{t("privacy")}</p>
     </>
   );
+}
+
+/** No data to show yet or any more: the first fetch is pending or failed, or the live office is switched off. */
+function feedNotice(feed: OfficeFeed): "loading" | "offlineEmpty" | "disabled" | null {
+  if (feed.status === "disabled") return "disabled";
+  if (feed.snapshot) return null;
+  return feed.status === "offline" ? "offlineEmpty" : "loading";
 }
 
 /**
@@ -198,20 +211,31 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
   }, []);
   const panel = view.office;
   if (!panel) return null;
+  const notice = feedNotice(feed);
+  const rover = panel.panel === "desk" ? office.rovers[panel.slot ?? 0] : undefined;
   return (
     <div className="grid gap-6" data-testid="office-body" data-panel={panel.panel}>
-      {feed.status === "offline" && (
-        <p className={NOTE} role="status" data-testid="office-offline">
-          {t("3d.drawer.offline")}
+      {notice ? (
+        <p className="text-[15px] leading-6 text-ink-2" role="status" data-testid="office-notice">
+          {t(`3d.drawer.${notice}`)}
         </p>
-      )}
-      {panel.panel === "desk" ? (
-        <DeskPanel rover={office.rovers[panel.slot ?? 0]} updatedAt={office.updatedAt} locale={locale} now={now} />
-      ) : panel.panel === "github" ? (
-        <GithubPanel items={office.github} locale={locale} now={now} />
       ) : (
-        <SummaryPanel office={office} />
+        <>
+          {feed.status === "offline" && (
+            <p className={NOTE} role="status" data-testid="office-offline">
+              {t("3d.drawer.offline")}
+            </p>
+          )}
+          {panel.panel === "desk" ? (
+            rover && <DeskPanel rover={rover} updatedAt={office.updatedAt} locale={locale} now={now} />
+          ) : panel.panel === "github" ? (
+            <GithubPanel items={office.github} locale={locale} now={now} />
+          ) : (
+            <SummaryPanel office={office} />
+          )}
+        </>
       )}
+      <PanelNotes panel={panel.panel} />
     </div>
   );
 }
