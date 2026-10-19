@@ -1,6 +1,7 @@
 # L4 Writing: Study Vault
 
 - Date: 2026-10-19
+- PR: [#247](https://github.com/ShinyQ/ShinyQ-HQ/pull/247)
 
 Owner-approved placement and behavior of the 3D Study Vault (study guides PR 2): a small round plaza off the L4 end
 plaza, reached by its own road from the ring road's south-east vertex, with its own stop and camera zone (`L4:vault`,
