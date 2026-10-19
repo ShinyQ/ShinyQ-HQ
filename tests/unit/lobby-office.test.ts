@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { RoomIdSchema } from "@/content/schema";
 import { yawLooking } from "@/experience/camera/look";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
-import { buildFloorLayouts, kioskRect, LOBBY, ROVER } from "@/experience/config";
+import { buildFloorLayouts, kioskRect, LOBBY, ROVER, ROVER_HEIGHT } from "@/experience/config";
+import { signPlate } from "@/experience/fx/signLayout";
 import { HALL } from "@/experience/floors/lobby/hallLayout";
 import {
   isOfficeRoom,
@@ -103,12 +104,14 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(wingBounds()).toEqual({ minX: W.rect.minX, maxX: W.rect.maxX, minZ: W.lead.from, maxZ: W.rect.maxZ });
   });
 
-  it("floats the wing sign (upper case) over the lead road just before it enters the wing, above the rover", () => {
+  it("floats the wing sign (upper case) over the wing plaza's centre, on the stop's axis, above the rover", () => {
     const sign = officeSign("Agent Office", "#34d399");
-    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ - 5 });
-    expect(sign.z).toBeGreaterThan(W.lead.from);
+    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.plaza.center.z });
+    expect(sign.z).toBeGreaterThan(W.rect.minZ);
+    expect(sign.z).toBeLessThan(W.stop.z);
     expect(sign.tilt ?? 0).toBe(0);
-    expect(sign.y).toBeGreaterThan(5);
+    // The plate's bottom edge clears the rover driving under it.
+    expect(sign.y - signPlate(sign).h / 2).toBeGreaterThan(ROVER_HEIGHT + 0.5);
   });
 
   it("meets the space rules: the desk boxes touch each other and the wall or keep 6 u, and keep 6 u to the wing's side edges", () => {

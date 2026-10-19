@@ -31,15 +31,15 @@ export function wingBounds(): Rect {
 }
 
 /**
- * The floating wing sign over the lead road, 5 u before it enters the wing (the shared `FloatingSigns`; nothing on the
- * floor), as high as the hall's gate sign, so the follow camera sees the rover under it. From the office stop the
- * view looks south over it: 5 u into the Lobby it stays under the screen's bottom edge on every camera class (the
- * portrait view tilts down with its look offset), never a sliver under a phone's joystick
- * (tests/unit/office-chip-placement.test.ts).
+ * The floating wing sign over the wing plaza's centre (the shared `FloatingSigns`; nothing on the floor), low enough
+ * that the rover still drives under it. No spot over the lead road keeps the plate whole in every frame it shows up
+ * in, so it stands where it does (tests/unit/office-chip-placement.test.ts): from the primed spawn it is whole on the
+ * landscape screens and out of the portrait ones (never a sliver at an edge), from the office stop it is whole in
+ * front of the rover on every camera class, and on the lead road it reads ahead of the rover.
  */
 export function officeSign(text: string, color: string): SignSpec {
-  const { lead, rect } = LOBBY.officeWing;
-  return { text: text.toUpperCase(), x: lead.x, y: 8.1, z: rect.minZ - 5, color, fontSize: 0.75, letterSpacing: 0.08 };
+  const { lead, plaza } = LOBBY.officeWing;
+  return { text: text.toUpperCase(), x: lead.x, y: 4.5, z: plaza.center.z, color, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
 /**

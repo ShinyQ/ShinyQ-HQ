@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { cameraWorld, clampCamera } from "@/experience/camera/collision";
 import { CAMERA_FAR, CAMERA_NEAR } from "@/experience/camera/firstPerson";
 import { followOffsetScale } from "@/experience/camera/offset";
-import { createOrbitState, primeZone, setPitchRange, stepOrbit, zoneAt, zoomBy } from "@/experience/camera/orbit";
+import { createOrbitState, primeZone, setPitchRange, stepOrbit, yawLooking, zoneAt, zoomBy } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/experience/camera/rigs";
 import { buildFloorLayouts, floorY, LOBBY, ROVER_HEIGHT } from "@/experience/config";
+import { yawTowards } from "@/experience/fx/facing";
+import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
@@ -98,20 +100,20 @@ const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobil
 const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.34], tablet: [0, 0.34], mobile: [0.18, 0.22] };
 
 /**
- * The settled follow camera at the office stop, zoomed in by `steps` zoom key presses (0.8 each): a hand zoom hands the
- * framing back, so the zone's look offset (portrait screens) has eased out at the near pose.
+ * The settled follow camera with the rover at `at`, as `CameraDirector` builds it: primed in the view zone there (the
+ * office stop, the spawn), zoomed in by `steps` zoom key presses (0.8 each; a hand zoom hands the framing back, so the
+ * zone's look offset on portrait screens has eased out at the near pose), or turned by hand to `yaw` (the approach).
  */
-function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera {
+function followCamera(width: number, height: number, at: { x: number; z: number; heading?: number }, steps = 0, yaw?: number): PerspectiveCamera {
   const cls = cameraClass(width, height);
   const orbit = createOrbitState();
   setPitchRange(orbit, pitchRange(cls, "follow"));
-  const zone = zoneAt("L1", W.stop, floor.viewZones);
-  expect(zone?.id).toBe("L1:office");
-  primeZone(orbit, zone, cls);
+  primeZone(orbit, zoneAt("L1", at, floor.viewZones), cls);
+  if (yaw !== undefined) orbit.yaw = orbit.yawTarget = yaw;
   for (let i = 0; i < steps; i++) zoomBy(orbit, 0.8, false);
   for (let i = 0; i < 300 && orbit.easing; i++) stepOrbit(orbit, 1 / 60, false);
   expect(orbit.easing).toBe(false);
-  const rover: [number, number, number] = [W.stop.x, floorY("L1") + 1, W.stop.z];
+  const rover: [number, number, number] = [at.x, floorY("L1") + 1, at.z];
   const f = followForward(cls, orbit.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const pose = followPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], orbit.yaw, orbit.zoom * followOffsetScale(cls, width / height), orbit.pitch, orbit.lookForward, orbit.lookUp);
@@ -121,6 +123,12 @@ function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera
   camera.updateMatrixWorld();
   camera.updateProjectionMatrix();
   return camera;
+}
+
+/** The settled follow camera at the office stop (in the `L1:office` view zone), zoomed in by `steps` zoom key presses. */
+function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera {
+  expect(zoneAt("L1", W.stop, floor.viewZones)?.id).toBe("L1:office");
+  return followCamera(width, height, W.stop, steps);
 }
 
 /** Screen box (CSS px) of world points. */
@@ -137,6 +145,27 @@ function boxOf(camera: PerspectiveCamera, size: { width: number; height: number 
     box.y1 = Math.max(box.y1, py);
   }
   return box;
+}
+
+/**
+ * The wing sign's plate on screen (`FloatingSigns` turns it to the camera, yaw only): its `signPlate` size plus 0.1 u for
+ * the rim; null when any corner is behind the camera.
+ */
+const SIGN = officeSign("Agent Office", "#fff");
+function signBox(camera: PerspectiveCamera, size: { width: number; height: number }): ScreenBox | null {
+  const plate = signPlate(SIGN);
+  const yaw = yawTowards({ x: SIGN.x, z: SIGN.z }, { x: camera.position.x, z: camera.position.z });
+  const [hw, hh] = [plate.w / 2 + 0.1, plate.h / 2 + 0.1];
+  const corners = [-1, 1].flatMap((sx) => [-1, 1].map((sy) => [SIGN.x + sx * hw * Math.cos(yaw), SIGN.y + sy * hh, SIGN.z - sx * hw * Math.sin(yaw)] as const));
+  if (corners.some(([x, y, z]) => new Vector3(x, y, z).project(camera).z >= 1)) return null;
+  return boxOf(camera, size, corners);
+}
+
+/** Whole on screen at least `margin` px inside every edge, or wholly off it by as much: never a sliver at an edge. */
+function signFraming(box: ScreenBox, size: { width: number; height: number }, margin = 8): "in" | "out" | "clipped" {
+  if (box.x1 < -margin || box.x0 > size.width + margin || box.y1 < -margin || box.y0 > size.height + margin) return "out";
+  if (box.x0 >= margin && box.x1 <= size.width - margin && box.y0 >= margin && box.y1 <= size.height - margin) return "in";
+  return "clipped";
 }
 
 /** The whole screen wall, frame included (both text panels fill it). */
@@ -260,10 +289,25 @@ describe("Agent Office chips at the office stop", () => {
       expect(rover!.y1, "rover over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
       expect(wall.y0 / height, "sky over the wall").toBeLessThanOrEqual(SKY[cls][1]);
       expect(wall.y0 / height, "sky over the wall").toBeGreaterThanOrEqual(SKY[cls][0]);
-      // The wing sign behind the rover (its plate, generously 7 u by 1.6 u) stays under the bottom edge, never a sliver under the joystick.
-      const sign = officeSign("Agent Office", "#fff");
-      const plate = boxOf(camera, size, [-3.5, 3.5].flatMap((dx) => [-0.8, 0.8].map((dy) => [sign.x + dx, sign.y + dy, sign.z] as const)));
-      expect(plate.y0, "wing sign under the bottom edge").toBeGreaterThan(height);
+      // The wing sign in front of the rover is whole on screen, under the rover and the desks, clear of the HUD boxes.
+      const sign = signBox(camera, size);
+      expect(sign).not.toBeNull();
+      expect(signFraming(sign!, size), "wing sign at the stop").toBe("in");
+      expect(sign!.y0, "wing sign under the rover").toBeGreaterThanOrEqual(rover!.y1);
+      expect(sign!.y0, "wing sign under the desks").toBeGreaterThanOrEqual(desks.y1);
+      for (const { id, box } of hudBoxes(size, coarse)) expect(boxesOverlap(sign!, box), `wing sign on the ${id}`).toBe(false);
+    });
+
+    it("show the wing sign whole or not at all from the primed spawn, and whole between the HUD bars on the lead road (the approach)", () => {
+      const spawn = signBox(followCamera(width, height, { ...LOBBY.spawn, heading: LOBBY.spawnHeading }), size);
+      if (spawn) expect(signFraming(spawn, size), "wing sign at the spawn").not.toBe("clipped");
+      // On the lead road at the Lobby plaza's edge, heading into the wing, the view turned south (scripts/office-shots.ts `approach`).
+      const approach = signBox(followCamera(width, height, { x: W.lead.x, z: W.rect.minZ - 6, heading: 0 }, 0, yawLooking({ x: 0, z: 1 })), size);
+      expect(approach).not.toBeNull();
+      expect(signFraming(approach!, size), "wing sign on the approach").toBe("in");
+      expect(approach!.y1, "wing sign over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
+      // A landscape phone (390 px tall) shows it at the top centre, 8 px above the top bar's bottom line (y 54 to 78).
+      if (height > 390) expect(approach!.y0, "wing sign under the top bar").toBeGreaterThanOrEqual(hudBar(size));
     });
 
     it("never cover the screen wall, a desk screen or the visitor's rover, and stay on screen under the HUD's bars", () => {
