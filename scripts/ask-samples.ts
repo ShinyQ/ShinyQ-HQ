@@ -85,7 +85,9 @@ async function main() {
     const answeredBy = result.calledModel ? (result.model ?? result.source) : "no model call (fixed reply)";
     const meta = [`${result.outcome}`, result.reason ? `reason ${result.reason}` : "", result.cite ? `cite ${result.cite}` : ""].filter(Boolean).join(", ");
     rows.push(`| ${i + 1} | ${sample.kind} | ${sample.lang.toUpperCase()} | ${cell(sample.q)} | ${cell(redactBlockedText(result.text, safety.blocklist))} | ${cell(answeredBy)} | ${cell(meta)} |`);
-    console.log(`${i + 1}. [${sample.lang}] ${sample.kind}: ${result.outcome}${result.reason ? ` (${result.reason})` : ""} by ${answeredBy}`);
+    // The failure trail names the model and the reason only (never a key or a response body).
+    const trail = result.failures.map((f) => `${f.model}: ${f.reason}`).join(" > ");
+    console.log(`${i + 1}. [${sample.lang}] ${sample.kind}: ${result.outcome}${result.reason ? ` (${result.reason})` : ""} by ${answeredBy}${trail ? ` [${trail}]` : ""}`);
   }
   const report = [
     `# Ask the HQ samples: ${label}`,
