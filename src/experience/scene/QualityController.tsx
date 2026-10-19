@@ -59,7 +59,7 @@ export function QualityController({ tier, coarse, gfx }: { tier: GpuTier; coarse
     last.current = now;
     const s = getHQStore().getState();
     // Idle cadence frames (30 fps or on demand, idle.ts) are not slow frames.
-    if (document.hidden || framePacer.idleFrame || s.phase === "boot" || s.phase === "intro" || s.ride || s.beam) {
+    if (document.hidden || framePacer.cadence < 60 || s.phase === "boot" || s.phase === "intro" || s.ride || s.beam) {
       m.hold(now);
       return;
     }

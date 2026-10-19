@@ -40,7 +40,6 @@ import { destinationReady, ridePrep } from "../tower/ridePrep";
 import { beamNow, clearBeam, clearRide, keepBeam, keepRide, rideNow } from "../tower/rideClock";
 import { finishRideStats, formatRideSummary, startRideStats, stepRideStats, type RideStats } from "../tower/rideStats";
 import type { FloorLayout, Vec2 } from "../types";
-import { wakeFrameAt } from "./framePacer";
 import { renderProbe } from "./renderProbe";
 
 const BLOCKED_FACE_S = 0.6;
@@ -571,8 +570,6 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     });
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;
-    // On-demand frames (idle.ts): the status line clears on time (the blocked and arrived faces end inside the 1 s busy window).
-    if (local.statusUntil > now) wakeFrameAt(local.statusUntil);
 
     // The store's mirror lags the same game distance at the test-only animation speed as at 1x.
     if (now - local.lastSync > STORE_SYNC_S / speed) {

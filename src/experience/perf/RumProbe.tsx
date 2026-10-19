@@ -20,7 +20,7 @@ export default function RumProbe({ tier, path }: { tier: RumTier; path: RumPath 
 
   useFrame((_, dt) => {
     // Idle cadence frames (30 fps or on demand) say nothing about how fast the device renders.
-    if (framePacer.idleFrame) return;
+    if (framePacer.cadence < 60) return;
     session.frame(dt * 1000, performance.now(), markTime(PERF_MARKS.explore), document.visibilityState === "visible");
   });
 

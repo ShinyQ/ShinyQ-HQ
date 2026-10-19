@@ -3,16 +3,12 @@
 import { advance, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import { audio } from "@/lib/audio";
-import { subscribeDayNight } from "@/lib/day-night";
 import { getHQStore } from "@/store/useHQStore";
-import { ACTIVITY_EVENTS } from "../rover/activity";
+import { activity } from "../rover/activity";
 import { roverRuntime } from "../rover/runtime";
 import { watchCover } from "./coverWatch";
-import { framePacer, invalidateFrames, pacerTick, pauseFrames, resetPacer, setPacerCadence, wakeFrameAt } from "./framePacer";
-import { IDLE_HEARTBEAT_MS, idleCadence, idleRuntime, noteActivity, observeFrame, resetIdle, sceneBusy } from "./idle";
-
-/** Input that wakes the canvas to 60 fps (window, capture phase). */
-const WAKE_EVENTS = [...ACTIVITY_EVENTS, "resize"] as const;
+import { framePacer, idleRuntime, invalidateFrames, pacerTick, pauseFrames, resetPacer, setPacerCadence } from "./framePacer";
+import { idleCadence, observeFrame, resetIdle, sceneBusy } from "./idle";
 
 /**
  * Drives the canvas (`frameloop="never"`): one R3F `advance` per paced frame, so `useFrame`
@@ -27,37 +23,31 @@ export function FrameLoop() {
     resetPacer(framePacer);
     resetIdle(performance.now());
     // R3F invalidates on prop changes, mounts and text syncs (a no-op with frameloop "never"): render them at any cadence.
-    const r3fInvalidate = get().invalidate;
-    set({ invalidate: invalidateFrames });
-    const pose = [0, 0, 0, 0];
+    set({ invalidate: () => invalidateFrames() });
     let raf = 0;
+    let seq = activity.seq;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
+      // Input (the rover's activity counter: keys, pointer, wheel, touch, intents) counts from this frame on.
+      if (activity.seq !== seq) {
+        seq = activity.seq;
+        idleRuntime.lastActivity = now;
+      }
       const s = getHQStore().getState();
       setPacerCadence(framePacer, idleCadence(idleRuntime, now, s.reducedMotion, s.floor), now);
       const t = pacerTick(framePacer, now);
       if (t === null) return;
       const state = get();
       advance(t, true, state);
-      const r = roverRuntime;
-      pose[0] = r.x;
-      pose[1] = r.y;
-      pose[2] = r.z;
-      pose[3] = r.heading;
-      observeFrame(state.camera, pose, sceneBusy(s, r), now);
-      wakeFrameAt(t + IDLE_HEARTBEAT_MS / 1000);
+      observeFrame(state.camera, sceneBusy(s, roverRuntime), now);
     };
     raf = requestAnimationFrame(loop);
-    // Any input, store change, resize or Day and night change: 60 fps from the next animation frame.
+    // A store change (hover, ride, room, setting) or a resize: 60 fps from the next animation frame.
     const wake = () => {
-      const now = performance.now();
-      noteActivity(now);
-      setPacerCadence(framePacer, 60, now);
+      idleRuntime.lastActivity = performance.now();
     };
-    const options = { capture: true, passive: true } as const;
-    for (const type of WAKE_EVENTS) window.addEventListener(type, wake, options);
+    addEventListener("resize", wake);
     const stopStore = getHQStore().subscribe(wake);
-    const stopDayNight = subscribeDayNight(wake);
     const stopWatching = watchCover((covered) => {
       pauseFrames(covered);
       // The Director sets the rumble every frame; while it is paused the engine hum must not hang on.
@@ -65,12 +55,10 @@ export function FrameLoop() {
     });
     return () => {
       cancelAnimationFrame(raf);
-      for (const type of WAKE_EVENTS) window.removeEventListener(type, wake, options);
+      removeEventListener("resize", wake);
       stopStore();
-      stopDayNight();
       stopWatching();
       pauseFrames(false);
-      set({ invalidate: r3fInvalidate });
     };
   }, [get, set]);
   return null;

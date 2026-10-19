@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPacer, FRAME_INTERVAL_MS, FRAME_SLACK_MS, invalidatePacer, pacerTick, requestPacerWake, resetPacer, setPacerCadence, setPacerPaused, type Pacer } from "@/experience/scene/framePacer";
+import { createPacer, FRAME_INTERVAL_MS, FRAME_SLACK_MS, invalidateFrames, pacerTick, resetPacer, setPacerCadence, setPacerPaused, wakeFrameAt, type Pacer } from "@/experience/scene/framePacer";
 
 /** Feeds `seconds` of rAF timestamps at `hz` (optionally jittered) and returns the R3F clock values of rendered frames. */
 function run(p: Pacer, hz: number, seconds: number, { start = 1000, jitter = 0 } = {}) {
@@ -103,7 +103,8 @@ describe("idle cadence", () => {
   it("cadence 30 renders every other refresh of a 60 Hz display", () => {
     const p = createPacer();
     pacerTick(p, 0);
-    expect(setPacerCadence(p, 30, 1)).toBe(true);
+    setPacerCadence(p, 30, 1);
+    expect(p.cadence).toBe(30);
     const rendered = vclock(p, 1000 / 60, 600);
     expect(rendered.filter(Boolean).length).toBe(300);
     expect(rendered.every((r, i) => r === (i % 2 === 1))).toBe(true);
@@ -123,9 +124,20 @@ describe("idle cadence", () => {
     pacerTick(p, 0);
     setPacerCadence(p, 0, 0);
     expect(ticks(p, 1, 5000)).toEqual([]);
-    invalidatePacer(p);
+    invalidateFrames(p);
     const rendered = ticks(p, 5001, 1000);
     expect(rendered).toEqual([5001]);
+  });
+
+  it("at 30 fps an invalidation renders the next tick and restarts the 30 fps rhythm from there", () => {
+    const p = createPacer();
+    pacerTick(p, 0);
+    setPacerCadence(p, 30, 0);
+    expect(pacerTick(p, 1000 / 30)).not.toBeNull();
+    invalidateFrames(p);
+    expect(pacerTick(p, 3000 / 60)).not.toBeNull();
+    expect(pacerTick(p, 4000 / 60)).toBeNull();
+    expect(pacerTick(p, 5000 / 60)).not.toBeNull();
   });
 
   it("cadence 0 renders at a requested wake time, in clock seconds", () => {
@@ -133,7 +145,7 @@ describe("idle cadence", () => {
     pacerTick(p, 1000);
     setPacerCadence(p, 0, 1000);
     // The clock is 0 at the 1000 ms frame: a wake at clock 0.5 s is the tick at or after 1500 ms.
-    requestPacerWake(p, 0.5);
+    wakeFrameAt(0.5, p);
     const rendered = ticks(p, 1000 + 1000 / 60, 2000);
     expect(rendered.length).toBe(1);
     expect(rendered[0]).toBeGreaterThanOrEqual(1500 - FRAME_SLACK_MS);
@@ -145,9 +157,9 @@ describe("idle cadence", () => {
     const p = createPacer();
     pacerTick(p, 0);
     setPacerCadence(p, 0, 0);
-    requestPacerWake(p, 2);
-    requestPacerWake(p, 1);
-    requestPacerWake(p, 3);
+    wakeFrameAt(2, p);
+    wakeFrameAt(1, p);
+    wakeFrameAt(3, p);
     const rendered = ticks(p, 1000 / 60, 5000);
     expect(rendered.length).toBe(1);
     expect(rendered[0]).toBeGreaterThanOrEqual(1000 - FRAME_SLACK_MS);
@@ -162,7 +174,8 @@ describe("idle cadence", () => {
       ticks(p, 1000 / 60, 3000);
       const before = p.frames;
       const now = 3000 + 5;
-      expect(setPacerCadence(p, 60, now)).toBe(true);
+      setPacerCadence(p, 60, now);
+      expect(p.cadence).toBe(60);
       expect(pacerTick(p, now + 1)).not.toBeNull();
       expect(ticks(p, now + 1 + 1000 / 60, 1000).length).toBe(60);
       expect(p.frames).toBe(before + 61);
@@ -177,53 +190,19 @@ describe("idle cadence", () => {
     expect(a).toBeNull();
     expect(pacerTick(p, 2000 / 60)).toBeCloseTo(1 / 30, 6);
     setPacerCadence(p, 0, 40);
-    requestPacerWake(p, 1.5);
+    wakeFrameAt(1.5, p);
     expect(ticks(p, 50, 3000).length).toBe(1);
     expect(p.elapsed).toBeGreaterThanOrEqual(1.5 - FRAME_SLACK_MS / 1000);
     expect(p.elapsed).toBeLessThan(1.5 + 1 / 60);
     const shown = p.elapsed;
     setPacerPaused(p, true, 3100);
-    invalidatePacer(p);
+    invalidateFrames(p);
     expect(ticks(p, 3100, 2000)).toEqual([]);
     setPacerPaused(p, false, 5100);
     setPacerCadence(p, 60, 5100);
     const t = pacerTick(p, 5101)!;
     expect(t - shown).toBeGreaterThan(0.016);
     expect(t - shown).toBeLessThan(0.02);
-  });
-
-  it("marks frames paced at an idle cadence (and the first one after) so frame-time monitors skip them", () => {
-    const p = createPacer();
-    pacerTick(p, 0);
-    pacerTick(p, 1000 / 60);
-    expect(p.idleFrame).toBe(false);
-    setPacerCadence(p, 30, 20);
-    pacerTick(p, 3000 / 60);
-    expect(p.idleFrame).toBe(true);
-    setPacerCadence(p, 60, 60);
-    pacerTick(p, 61);
-    expect(p.idleFrame).toBe(true);
-    pacerTick(p, 61 + 1000 / 60);
-    expect(p.idleFrame).toBe(false);
-  });
-
-  it.each([
-    [0, 60],
-    [30, 60],
-    [0, 30],
-  ] as const)("the first frame after a switch from %i to %i gets a normal one-frame delta, not the idle gap", (from, to) => {
-    const p = createPacer();
-    pacerTick(p, 0);
-    setPacerCadence(p, from, 0);
-    // A long on-demand gap (or the last 30 fps frame) lies behind; input arrives at 600 ms.
-    if (from === 30) pacerTick(p, 1000 / 30);
-    const before = p.elapsed;
-    const now = 600;
-    setPacerCadence(p, to, now);
-    const t = pacerTick(p, now + 1000 / 60)!;
-    expect(t).not.toBeNull();
-    expect(t - before).toBeGreaterThan(0);
-    expect(t - before).toBeLessThanOrEqual((1000 / to + 1000 / 60 + FRAME_SLACK_MS) / 1000);
   });
 
   it("back to 60 renders on the very next tick even when the input's timestamp is a little later than the frame's", () => {
@@ -238,10 +217,12 @@ describe("idle cadence", () => {
     expect(t!).toBeLessThanOrEqual(1 / 60 + 1e-9);
   });
 
-  it("returns false when the cadence does not change; a new canvas starts at 60", () => {
+  it("changes nothing when the cadence does not change; a new canvas starts at 60", () => {
     const p = createPacer();
     expect(p.cadence).toBe(60);
-    expect(setPacerCadence(p, 60, 0)).toBe(false);
+    const before = { ...p };
+    setPacerCadence(p, 60, 0);
+    expect(p).toEqual(before);
     setPacerCadence(p, 0, 0);
     resetPacer(p);
     expect(p.cadence).toBe(60);

@@ -15,7 +15,6 @@ type IdleWindow = Window & {
     frames: () => number;
     clock: () => number;
     cadence: () => number;
-    idleQuiet: () => boolean;
     idle: { enabled: boolean; lastActivity: number; stillSince: number };
     rover: { x: number; z: number; heading: number };
     store: { getState: () => { pointHint: boolean; setPointHint: (on: boolean) => void } };
@@ -23,6 +22,14 @@ type IdleWindow = Window & {
 };
 
 const cadence = (page: Page) => page.evaluate(() => (window as unknown as IdleWindow).__hq.cadence());
+
+/** The scene is quiet (no input and nothing moved for IDLE_AFTER_MS, 1 s) and the cadence is opted in. */
+const quiet = (page: Page) =>
+  page.evaluate(() => {
+    const idle = (window as unknown as IdleWindow).__hq.idle;
+    const now = performance.now();
+    return idle.enabled && now - idle.lastActivity >= 1000 && now - idle.stillSince >= 1000;
+  });
 
 async function optIn(page: Page) {
   await page.evaluate(() => {
@@ -80,7 +87,7 @@ test("automation keeps 60 fps unless a test opts in", async ({ page }) => {
     )
     .toBe(true);
   expect(await page.evaluate(() => (window as unknown as IdleWindow).__hq.idle.enabled)).toBe(false);
-  expect(await page.evaluate(() => (window as unknown as IdleWindow).__hq.idleQuiet())).toBe(false);
+  expect(await quiet(page)).toBe(false);
   expect(await cadence(page)).toBe(60);
 });
 
@@ -147,7 +154,7 @@ test("reduced motion: the first frame after input on demand has a one-frame delt
           if (quietTicks < 15) return void requestAnimationFrame(wait);
           const clock = h.clock();
           const sentAt = performance.now();
-          window.dispatchEvent(new KeyboardEvent("keydown", { key: "x", code: "KeyX" }));
+          document.dispatchEvent(new KeyboardEvent("keydown", { key: "x", code: "KeyX" }));
           const after = (now: number) => {
             if (h.frames() === frames) return void requestAnimationFrame(after);
             // At most the time from the key to the frame that showed it plus one 60 fps frame (and rAF slack).
@@ -170,11 +177,11 @@ test("the Lobby keeps 60 fps for its data packets; under reduced motion the holo
   await enterHQ(page);
   await optIn(page);
   // The scene must really be idle (quiet), so 60 here is the Lobby's idle cadence, not a busy scene.
-  await expect.poll(() => page.evaluate(() => (window as unknown as IdleWindow).__hq.idleQuiet()), { timeout: 60_000 }).toBe(true);
+  await expect.poll(() => quiet(page), { timeout: 60_000 }).toBe(true);
   expect(await cadence(page)).toBe(60);
   const { rendered } = await renderOver(page, 30);
   expect(rendered, "every animation frame renders").toBeGreaterThanOrEqual(28);
-  expect(await page.evaluate(() => (window as unknown as IdleWindow).__hq.idleQuiet()), "still quiet").toBe(true);
+  expect(await quiet(page), "still quiet").toBe(true);
 
   await chooseMotion(page, "reduced");
   await page.reload();

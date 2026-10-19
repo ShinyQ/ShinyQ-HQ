@@ -34,8 +34,8 @@ import { createBodyState, stepBody } from "./bodyDynamics";
 import { activity, bumpActivity, watchActivity } from "./activity";
 import { askFace } from "./askFace";
 import { MAX_FRAME_DT } from "./controller";
-import { faceFrame, faceWakeAt } from "./faces";
-import { createIdleState, idleEligible, idleWakeAt, stepIdle } from "./idle";
+import { faceFrame } from "./faces";
+import { createIdleState, idleEligible, stepIdle } from "./idle";
 import { drawBlob, drawFace, FACE_H, FACE_W } from "./faceTexture";
 import { prepareFade, setFadeOpacity } from "./fade";
 import { roverRuntime } from "./runtime";
@@ -253,9 +253,8 @@ export function Rover({ tier }: { tier: GpuTier }) {
     }
 
     if (tip.current) tip.current.scale.setScalar(Math.sin(t * 5) > 0 ? 1 : 0.55);
-    // On-demand frames (reduced motion, idle): render when the antenna, the eyes, the face or the idle machine change next.
-    const after = (until: number) => (until > t ? until : Number.POSITIVE_INFINITY);
-    wakeFrameAt(Math.min((Math.floor((t * 5) / Math.PI) + 1) * (Math.PI / 5), l.nextBlink, after(l.blinkUntil), after(r.blinkUntil), after(r.flagUntil), faceWakeAt(r.face, t), idleWakeAt(l.idle)));
+    // On-demand frames (scene/idle.ts): render when the antenna flips (every pi/5 s) or the eyes blink or open.
+    wakeFrameAt(Math.min((Math.floor((t * 5) / Math.PI) + 1) * (Math.PI / 5), l.blinkUntil > t ? l.blinkUntil : l.nextBlink));
 
     if (flag.current) {
       const visible = t < r.flagUntil;

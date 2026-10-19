@@ -155,14 +155,6 @@ export function stepIdle(s: IdleState, i: IdleInput): IdleOutput {
   return out;
 }
 
-/** Clock time (s) of the machine's next change (a sequence start, its next step or its end): an on-demand frame then. */
-export function idleWakeAt(s: IdleState): number {
-  if (!s.primed) return Number.POSITIVE_INFINITY;
-  if (s.active < 0) return s.startAt;
-  const steps = IDLE_SEQUENCES[s.active];
-  return s.start + (s.next < steps.length ? steps[s.next].at : sequenceEnd(steps));
-}
-
 export interface EligibleInput {
   phase: string;
   missionRunning: boolean;

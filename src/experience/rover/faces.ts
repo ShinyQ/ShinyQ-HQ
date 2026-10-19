@@ -32,12 +32,6 @@ export interface FaceFrame {
   key: string;
 }
 
-/** Clock time (s) at which an animated face (boot cursor, driving scroll, thinking dots) shows its next frame; Infinity for still faces. */
-export function faceWakeAt(face: RoverFace, t: number): number {
-  const rate = face === "boot" ? 5 : face === "driving" || face === "autopilot" ? 8 : face === "thinking" ? 3 : 0;
-  return rate ? (Math.floor(t * rate) + 1) / rate : Number.POSITIVE_INFINITY;
-}
-
 /** Text drawn on the rover screen for a face at time `t` (seconds). */
 export function faceFrame(face: RoverFace, t: number, opts: { blinking?: boolean; status?: string } = {}): FaceFrame {
   if (face === "off") return { lines: [""], key: "off" };

@@ -17,7 +17,7 @@ export function PerfProbe() {
   const gl = useThree((s) => s.gl);
   useFrame((_, dt) => {
     // FPS is the active rate: idle cadence frames (30 fps or on demand) are left out.
-    if (!framePacer.idleFrame) live.sampler.push(dt * 1000);
+    if (framePacer.cadence === 60) live.sampler.push(dt * 1000);
     live.dpr = gl.getPixelRatio();
     live.width = gl.domElement.width;
     live.height = gl.domElement.height;
