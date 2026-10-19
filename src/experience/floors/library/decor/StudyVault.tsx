@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { BoxGeometry, Color, InstancedBufferAttribute, InstancedMesh, MathUtils, Matrix4, PlaneGeometry, RingGeometry, Sphere, Vector3, type BufferGeometry, type ShaderMaterial } from "three";
+import { BoxGeometry, Color, InstancedBufferAttribute, InstancedMesh, MathUtils, Matrix4, PlaneGeometry, RingGeometry, Sphere, type BufferGeometry, type ShaderMaterial } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
 import { neonColor } from "../../../fx/materials";
@@ -39,15 +39,13 @@ type Item = [Matrix4, string, number];
  * and then their covers go before the other transparent passes, so the spine plates (end plaza signs, sorted by their
  * own group's far origin) draw over the covers they stand in front of.
  */
-function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean) {
+export function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean) {
   const full = tier === "full";
   const { books, stop, center } = vault;
   const n = books.length;
   const V = NEWSROOM.end.vault;
   const shift = new Matrix4().makeTranslation(-center.x, 0, -center.z);
   const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / n, z: m.z + b.at.z / n }), { x: 0, z: 0 });
-  // Around the books' middle, wide enough for the track's ends (the farthest piece).
-  const bounds = new Sphere(new Vector3(mid.x - center.x, 2, mid.z - center.z), V.arc + TRACK.half);
   const mesh = (geometry: BufferGeometry, material: ShaderMaterial, items: Item[], order = 0) => {
     const m = new InstancedMesh(geometry, material, items.length);
     items.forEach(([matrix, color, level], i) => {
@@ -55,7 +53,6 @@ function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean)
       m.setColorAt(i, C.set(color).multiplyScalar(level));
     });
     m.renderOrder = order;
-    m.boundingSphere = bounds;
     m.raycast = NO_RAYCAST;
     return m;
   };
@@ -85,6 +82,10 @@ function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean)
       ]),
     );
   }
+  // One sphere around every instance of every mesh (the book bodies' spheres hold their open covers), so the vault culls as one at any book count.
+  const bounds = new Sphere();
+  meshes.forEach((m) => (m.computeBoundingSphere(), bounds.union(m.boundingSphere!)));
+  for (const m of meshes) m.boundingSphere = bounds;
   const materials = meshes.map((m) => m.material as ShaderMaterial);
   return {
     meshes,

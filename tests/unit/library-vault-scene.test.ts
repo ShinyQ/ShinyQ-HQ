@@ -1,13 +1,14 @@
-import { Matrix4, Vector3 } from "three";
+import { Matrix4, Vector3, type InstancedMesh } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { bookMatrix, coverMatrix, coverOpen, issuerTone, ISSUER_TONE, plinthMatrix, VAULT_SCENE } from "@/experience/floors/library/decor/vault";
 import { endPlazaSigns } from "@/experience/floors/library/decor/EndPlaza";
+import { vaultMeshes } from "@/experience/floors/library/decor/StudyVault";
 import { END_SIGN_NEAR, VAULT_PRIORITY, vaultZone } from "@/experience/floors/library/decor/signFrame";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { orbSlots } from "@/experience/floors/library/topics";
-import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { libraryLayoutInput, type LibraryVault } from "@/experience/floors/library/model";
 
 /**
  * The L4 Study Vault scene's pure helpers (`decor/vault.ts`): how far each book's cover opens with the rover's distance,
@@ -193,4 +194,46 @@ describe("the vault's signs", () => {
     expect(VAULT_PRIORITY.inside.vault).toBeGreaterThan(2000);
     expect(VAULT_PRIORITY.near.guide).toBeLessThan(0);
   });
+});
+
+describe("the vault's culling sphere", () => {
+  const input = libraryLayoutInput(data.library);
+  const guides = input.guides!;
+  /** The vault with `n` guides (the real ones repeated, fresh slugs) through the layout builder. */
+  const withGuides = (n: number): LibraryVault =>
+    buildLibraryLayout({ ...input, guides: Array.from({ length: n }, (_, i) => ({ ...guides[i % guides.length], slug: `g${i}` })) }).end!.vault!;
+
+  /** Every vertex of every instance (floor-local, relative to the vault's group origin), covers also half and fully open. */
+  function points(v: LibraryVault, meshes: InstancedMesh[], shift: Matrix4): Vector3[] {
+    const out: Vector3[] = [];
+    const m = new Matrix4();
+    const each = (mesh: InstancedMesh, matrix: Matrix4) => {
+      const pos = mesh.geometry.getAttribute("position");
+      for (let k = 0; k < pos.count; k++) out.push(new Vector3().fromBufferAttribute(pos, k).applyMatrix4(matrix));
+    };
+    for (const mesh of meshes) for (let i = 0; i < mesh.count; i++) each(mesh, (mesh.getMatrixAt(i, m), m.clone()));
+    for (const open of [0.5, 1]) for (const book of v.books) each(meshes[1], coverMatrix(book, open, new Matrix4()).premultiply(shift));
+    return out;
+  }
+
+  for (const [label, v] of [
+    ["the real guides", vault],
+    ["7 guides", withGuides(7)],
+    ["8 guides", withGuides(8)],
+  ] as const)
+    for (const tier of ["full", "lite"] as const)
+      it(`holds every book, plinth, cover (open too), track dash and pool with ${label} on ${tier}`, () => {
+        const kit = vaultMeshes(v, tier, false);
+        try {
+          expect(kit.meshes).toHaveLength(tier === "full" ? 4 : 3);
+          const sphere = kit.meshes[0].boundingSphere!;
+          for (const mesh of kit.meshes) expect(mesh.boundingSphere).toBe(sphere);
+          const pts = points(v, kit.meshes, kit.shift);
+          expect(pts.length).toBeGreaterThan(0);
+          const far = Math.max(...pts.map((p) => p.distanceTo(sphere.center)));
+          expect(far).toBeLessThanOrEqual(sphere.radius + 1e-6);
+        } finally {
+          kit.dispose();
+        }
+      });
 });
