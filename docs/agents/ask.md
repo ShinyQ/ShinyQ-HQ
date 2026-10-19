@@ -310,6 +310,7 @@ Security S3, H1 (owner decision).
   - nightly `ask-eval.yml`;
   - weekly `refresh-facts.yml` and `content-gap.yml`;
   - hourly `uptime.yml` ([`docs/deploy.md`](../deploy.md) section 16).
+- `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).
 - `content-gap.yml` puts counts and topics only in its public issue and artifact, never question text (security S8, owner decision). The owner reads questions locally with `bun scripts/content-gap.ts --questions`.
 - Action pinning (owner decision): every workflow and the setup action pin each action by full commit SHA with a `# vX.Y.Z` comment; Dependabot updates both.
 - `wrangler` is an exact devDependency, so workflows and docs call `bunx wrangler` from the lockfile, never `bunx wrangler@<range>`, and the hq-stats `wranglerVersion` matches it (`tests/unit/workflows.test.ts`).
