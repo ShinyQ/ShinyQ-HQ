@@ -6,12 +6,12 @@ import type { CertView } from "@/content/certs";
 import type { PaperPreview } from "@/content/citation";
 import { onHudCommand, type HudCommand } from "@/hud/events";
 import { audio } from "@/lib/audio";
-import { loadCertDialog, loadCvDialog, loadGuideDialog, loadPaperDialog } from "./dialog-loaders";
+import { loadCertDialog, loadCvDialog, loadPaperDialog } from "./dialog-loaders";
 
 const CvDialog = dynamic(loadCvDialog, { ssr: false });
 const PaperDialog = dynamic(loadPaperDialog, { ssr: false });
 const CertDialog = dynamic(loadCertDialog, { ssr: false });
-const GuideDialog = dynamic(loadGuideDialog, { ssr: false });
+const GuideDialog = dynamic(() => import("./guides/GuideDialog"), { ssr: false });
 
 type Open =
   | { kind: "cv" }
@@ -38,31 +38,37 @@ function toOpen(command: HudCommand): Open {
 /**
  * Site-wide modals (CV viewer, paper previews, certification previews, the study guide reader), mounted once in the
  * locale layout outside #site-shell so they also open over the 3D tower and the room drawer. Opened with `openCv()`,
- * `openPaper(paper, { read? })`, `openCert(cert)` and `openGuide(slug)` (`hq:hud` commands); the chunks load on first
- * use. Focus returns to the opener: a command that replaces an open dialog (the cert card's "Read study guide") keeps
- * the first dialog's opener, since the button that sent it unmounts with its dialog.
+ * `openPaper(paper, { read? })` and `openCert(cert)` (`hq:hud` commands); the study guide reader opens on the "guide"
+ * command or a click on any `[data-hq-guide]` button. The chunks load on first use. Focus returns to the opener: a
+ * dialog that replaces an open one (the cert card's "Read study guide") keeps the first dialog's opener, since the
+ * button that sent it unmounts with its dialog.
  */
 export function DialogHost() {
   const [open, setOpen] = useState<Open>(null);
   const opener = useRef<HTMLElement | null>(null);
   const isOpen = useRef(false);
 
-  useEffect(
-    () =>
-      onHudCommand((command) => {
-        const next = toOpen(command);
-        if (!next) return;
-        // The palette closes as it runs "View CV", so its input is gone by then: focus falls back to the page.
-        if (!isOpen.current) {
-          const active = document.activeElement;
-          opener.current = active instanceof HTMLElement && active !== document.body ? active : null;
-        }
-        isOpen.current = true;
-        audio.play("click");
-        setOpen(next);
-      }),
-    [],
-  );
+  useEffect(() => {
+    const show = (next: Open, from: Element | null) => {
+      if (!next) return;
+      // The palette closes as it runs "View CV", so its input is gone by then: focus falls back to the page.
+      if (!isOpen.current) opener.current = from instanceof HTMLElement && from !== document.body ? from : null;
+      isOpen.current = true;
+      audio.play("click");
+      setOpen(next);
+    };
+    // Server-rendered "Read" buttons (the `/library` shelf, the cert card) carry `data-hq-guide`; no island per button.
+    const onClick = (event: MouseEvent) => {
+      const button = (event.target as Element).closest?.("[data-hq-guide]");
+      if (button) show({ kind: "guide", slug: button.getAttribute("data-hq-guide")! }, button);
+    };
+    const off = onHudCommand((command) => show(toOpen(command), document.activeElement));
+    document.addEventListener("click", onClick);
+    return () => {
+      off();
+      document.removeEventListener("click", onClick);
+    };
+  }, []);
 
   const close = useCallback(() => {
     setOpen(null);

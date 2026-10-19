@@ -163,7 +163,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - PaperDialog (lazy modal: abstract, APA/IEEE/BibTeX, DOI and Scholar links, "Read the paper").
   - PaperReader (PageViewer with a paper PDF, PaperNotice), PaperTrigger, PaperReadLink.
 - `src/components/guides/`: study guides.
-  - GuideShelf (server: the `/library#guides` cards) with the GuideActions island (Read, Download PDF).
+  - GuideShelf (server: the `/library#guides` cards with server-rendered Read, a `data-hq-guide` button `DialogHost` opens, and Download PDF).
   - GuideDialog (lazy modal in DialogHost: fetches /data/guides/{locale}.json, loading and error states, then imports the reader).
   - GuideReader (lazy chunk, `GuideReader.module.css`), GuidePage, GuideThumbs, GuideToolbar, ui; `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules), `data-path.ts`.
 - `src/components/page/`: Page View building blocks.

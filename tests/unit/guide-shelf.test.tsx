@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GuideActions } from "@/components/guides/GuideActions";
+import { DialogHost } from "@/components/DialogHost";
 import { GuideCard, GuideShelf, type GuideCardLabels } from "@/components/guides/GuideShelf";
 import type { GuideView } from "@/content/guides";
-import { HUD_EVENT, type HudCommand } from "@/hud/events";
 import en from "../../messages/en.json";
 
 // GuideShelf's section wrapper pulls in next-intl navigation, which Vitest cannot resolve: render its children only.
@@ -17,47 +16,25 @@ vi.mock("next-intl/server", () => ({
     String((en[namespace] as Record<string, string>)[key]).replace(/\{(\w+)\}/g, (_, name: string) => String(values[name])),
 }));
 
+vi.mock("@/lib/audio", () => ({ audio: { play: vi.fn() } }));
+vi.mock("next/dynamic", () => ({
+  default: (load: () => Promise<{ default: ComponentType<Record<string, unknown>> }>) => {
+    const Lazy = lazy(load);
+    return function Dynamic(props: Record<string, unknown>) {
+      return (
+        <Suspense fallback={null}>
+          <Lazy {...props} />
+        </Suspense>
+      );
+    };
+  },
+}));
+// Stand-in for the lazy reader chunk (pdf.js does not run under jsdom).
+vi.mock("@/components/guides/GuideDialog", () => ({
+  default: ({ slug }: { slug: string }) => <div data-testid="guide-dialog" data-slug={slug} />,
+}));
+
 afterEach(() => cleanup());
-
-const actions = {
-  slug: "example-guide",
-  title: "Example Study Guide",
-  downloadUrl: "/api/guides/example-guide?v=abc&download=1",
-  file: "example-guide.pdf",
-  readLabel: "Read",
-  downloadLabel: "Download PDF",
-};
-
-function listen() {
-  const commands: HudCommand[] = [];
-  const handler = (event: Event) => commands.push((event as CustomEvent<HudCommand>).detail);
-  window.addEventListener(HUD_EVENT, handler);
-  return { commands, stop: () => window.removeEventListener(HUD_EVENT, handler) };
-}
-
-describe("GuideActions", () => {
-  it("renders a same-origin download link with download and no target", () => {
-    render(<GuideActions {...actions} />);
-    const link = screen.getByRole("link", { name: /Download PDF/ });
-    expect(link).toHaveAttribute("href", actions.downloadUrl);
-    expect(link.getAttribute("href")).toMatch(/^\/api\/guides\//);
-    expect(link).toHaveAttribute("download", actions.file);
-    expect(link).not.toHaveAttribute("target");
-    expect(link).toHaveClass("pv-btn");
-  });
-
-  it("opens the guide reader with an hq:hud guide command", () => {
-    const { commands, stop } = listen();
-    render(<GuideActions {...actions} />);
-    const read = screen.getByTestId("guide-read");
-    expect(read).toHaveClass("pv-btn", "pv-btn-primary");
-    expect(read).toHaveAccessibleName(/^Read/);
-    expect(read).toHaveAccessibleName(/Example Study Guide/);
-    fireEvent.click(read);
-    stop();
-    expect(commands).toEqual([{ type: "guide", slug: "example-guide" }]);
-  });
-});
 
 const view: GuideView = {
   slug: "example-guide",
@@ -139,5 +116,43 @@ describe("GuideShelf", () => {
     const note = screen.getByText(en.guides.independent);
     expect(note).toHaveClass("pv-small", "text-ink-3");
     expect(note.closest("li")).toBeNull();
+  });
+});
+
+describe("GuideCard actions", () => {
+  it("renders a same-origin download link with download and no target", () => {
+    render(
+      <ul>
+        <GuideCard view={view} labels={labels} />
+      </ul>,
+    );
+    const link = screen.getByRole("link", { name: /Download PDF/ });
+    expect(link).toHaveAttribute("href", view.downloadUrl);
+    expect(link.getAttribute("href")).toMatch(/^\/api\/guides\//);
+    expect(link).toHaveAttribute("download", view.file);
+    expect(link).not.toHaveAttribute("target");
+    expect(link).toHaveAccessibleName(/Example Study Guide/);
+    expect(link).toHaveClass("pv-btn", "pv-btn-ghost");
+  });
+
+  it("renders Read as server markup that DialogHost opens with a delegated click", async () => {
+    render(
+      <>
+        <ul>
+          <GuideCard view={view} labels={labels} />
+        </ul>
+        <DialogHost />
+      </>,
+    );
+    const read = screen.getByTestId("guide-read");
+    expect(read).toHaveAttribute("type", "button");
+    expect(read).toHaveAttribute("data-hq-guide", "example-guide");
+    expect(read).toHaveAttribute("aria-haspopup", "dialog");
+    expect(read).toHaveClass("pv-btn", "pv-btn-primary");
+    expect(read).toHaveAccessibleName(/^Read/);
+    expect(read).toHaveAccessibleName(/Example Study Guide/);
+    expect(screen.queryByTestId("guide-dialog")).toBeNull();
+    fireEvent.click(read);
+    await waitFor(() => expect(screen.getByTestId("guide-dialog")).toHaveAttribute("data-slug", "example-guide"));
   });
 });

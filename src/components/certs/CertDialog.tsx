@@ -3,8 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 import type { CertView } from "@/content/certs";
-import { openGuide } from "@/hud/events";
-import { preloadGuideDialog } from "../dialog-loaders";
 import { Modal } from "../Modal";
 import { IssuerMark } from "./IssuerMark";
 
@@ -13,7 +11,7 @@ const STATUS_CLASS = { earned: "text-green", "in-progress": "text-amber", expire
 /**
  * Certification preview card (lazy chunk, opened by `DialogHost` on the `hq:hud` "cert" command from
  * Page View cards and rows or a 3D Lobby badge): issuer, exam code, full name, status, dates,
- * credential ID, "Read study guide" when the certification has one (the `hq:hud` "guide" command: `DialogHost`
+ * credential ID, "Read study guide" when the certification has one (a `[data-hq-guide]` button: `DialogHost`'s delegated click
  * swaps this card for the reader and keeps the original opener for focus return, so it never closes first) and
  * "Open credential" in a new tab. Credential sites are never framed (they refuse
  * framing and the CSP keeps `frame-src 'self'`), and there is no "Verified" style label.
@@ -65,12 +63,10 @@ export default function CertDialog({ cert, onClose }: { cert: CertView; onClose:
           {cert.guide && (
             <button
               type="button"
+              data-hq-guide={cert.guide}
               data-testid="cert-read-guide"
               aria-haspopup="dialog"
               className="pv-btn pv-btn-primary"
-              onPointerEnter={preloadGuideDialog}
-              onFocus={preloadGuideDialog}
-              onClick={() => openGuide(cert.guide!)}
             >
               {t("preview.readGuide")}
             </button>

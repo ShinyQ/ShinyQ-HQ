@@ -38,7 +38,6 @@ export const openTerminal = () => sendHudCommand({ type: "terminal" });
 export const openCv = () => sendHudCommand({ type: "cv" });
 export const openPaper = (paper: PaperPreview, options: { read?: boolean } = {}) => sendHudCommand({ type: "paper", paper, ...options });
 export const openCert = (cert: CertView) => sendHudCommand({ type: "cert", cert });
-export const openGuide = (slug: string) => sendHudCommand({ type: "guide", slug });
 export const enterHq = () => sendHudCommand({ type: "enter3d" });
 export const openAsk = (q?: string, options: { topic?: AskTopic; source?: AskEntry } = {}) => sendHudCommand({ type: "ask", q, ...options });
 

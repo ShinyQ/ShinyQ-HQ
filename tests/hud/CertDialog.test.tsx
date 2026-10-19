@@ -7,7 +7,6 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import CertDialog from "@/components/certs/CertDialog";
 import type { CertView } from "@/content/certs";
-import { HUD_EVENT, type HudCommand } from "@/hud/events";
 
 afterEach(() => cleanup());
 
@@ -79,10 +78,8 @@ describe("CertDialog (R5 P10)", () => {
       ["en", en, "Read study guide"],
       ["id", id, "Baca panduan belajar"],
     ] as const) {
+      // DialogHost opens the reader from the delegated `[data-hq-guide]` click (tests/hud/DialogHost.test.tsx).
       it(`${locale}: with a guide, a primary Read button opens the guide without closing the card first`, () => {
-        const commands: HudCommand[] = [];
-        const handler = (event: Event) => commands.push((event as CustomEvent<HudCommand>).detail);
-        window.addEventListener(HUD_EVENT, handler);
         const onClose = vi.fn();
         render(
           <NextIntlClientProvider locale={locale} messages={messages}>
@@ -95,9 +92,9 @@ describe("CertDialog (R5 P10)", () => {
         const open = screen.getByTestId("cert-open");
         expect(open).not.toHaveClass("pv-btn-primary");
         expect(read.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(read).toHaveAttribute("data-hq-guide", "example-guide");
+        expect(read).toHaveAttribute("aria-haspopup", "dialog");
         fireEvent.click(read);
-        window.removeEventListener(HUD_EVENT, handler);
-        expect(commands).toEqual([{ type: "guide", slug: "example-guide" }]);
         expect(onClose).not.toHaveBeenCalled();
       });
     }

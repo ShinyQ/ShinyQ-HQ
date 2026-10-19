@@ -4,7 +4,6 @@ import { SectionSplit } from "@/components/page/Layout";
 import { guideViews } from "@/content/guide-views";
 import type { GuideView } from "@/content/guides";
 import type { Locale } from "@/content/schema";
-import { GuideActions } from "./GuideActions";
 
 /** Issuer tones for the dot and the domain bar; any other issuer stays neutral. */
 const ISSUER_TONE: Record<string, { dot: DotTone; bar: string }> = {
@@ -68,7 +67,17 @@ export function GuideCard({ view, labels }: { view: GuideView; labels: GuideCard
         </ul>
       </div>
       <div className="mt-auto pt-5">
-        <GuideActions slug={view.slug} title={view.title} downloadUrl={view.downloadUrl} file={view.file} readLabel={labels.read} downloadLabel={labels.download} />
+        {/* Server markup: `DialogHost` opens the reader from any `[data-hq-guide]` click, so the shelf ships no island. */}
+        <div className="flex flex-wrap gap-3">
+          <button type="button" data-hq-guide={view.slug} data-testid="guide-read" aria-haspopup="dialog" className="pv-btn pv-btn-primary">
+            {labels.read}
+            <span className="sr-only">: {view.title}</span>
+          </button>
+          <a href={view.downloadUrl} download={view.file} className="pv-btn pv-btn-ghost">
+            {labels.download}
+            <span className="sr-only">: {view.title}</span>
+          </a>
+        </div>
       </div>
     </li>
   );
