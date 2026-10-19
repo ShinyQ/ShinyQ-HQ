@@ -16,14 +16,15 @@ export function getFloorContent(id: FloorId): Group | null {
   return groups.get(id) ?? null;
 }
 
-const slabs = new Map<FloorId, Mesh>();
+const slabs = new Map<FloorId, readonly Mesh[]>();
+const NONE: readonly Mesh[] = [];
 
-/** FloorLevel registers its slab fill mesh: the occluder the ride cull tests against (rideCull.ts). */
-export function registerFloorSlab(id: FloorId, mesh: Mesh | null): void {
-  if (mesh) slabs.set(id, mesh);
+/** FloorLevel registers its slab fill meshes (the main rect first, then each wing): the occluders the ride cull tests against (rideCull.ts). */
+export function registerFloorSlab(id: FloorId, meshes: readonly Mesh[] | null): void {
+  if (meshes?.length) slabs.set(id, meshes);
   else slabs.delete(id);
 }
 
-export function getFloorSlab(id: FloorId): Mesh | null {
-  return slabs.get(id) ?? null;
+export function getFloorSlabs(id: FloorId): readonly Mesh[] {
+  return slabs.get(id) ?? NONE;
 }

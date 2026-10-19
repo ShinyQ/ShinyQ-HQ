@@ -3,6 +3,7 @@ import { distanceToRect } from "./collision";
 import { padHalf } from "./doors";
 import { buildNavGrid, isWalkable, type NavGrid } from "./navgrid";
 import { PAD } from "./pads";
+import { inSlab, slabEdges } from "./slab";
 import { inPlaza, projectOnSegment, ROAD, roadSegments, type RoadNetwork } from "./road";
 
 /**
@@ -23,6 +24,8 @@ import { inPlaza, projectOnSegment, ROAD, roadSegments, type RoadNetwork } from 
 
 export interface SpaceInput {
   bounds: Rect;
+  /** Slab wings (`FloorLayout.wings`): the slab is the union, and its joints are not edges. */
+  wings?: readonly Rect[];
   obstacles: readonly Rect[];
   doors: readonly DoorTrigger[];
   network: RoadNetwork;
@@ -88,8 +91,8 @@ function samples(a: Vec2, b: Vec2, step = 0.5): Vec2[] {
   return Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + ((b.x - a.x) * i) / n, z: a.z + ((b.z - a.z) * i) / n }));
 }
 
-/** Navgrid that only admits floor at least `clear` wide (a rover circle of clear / 2). */
-export function wideGrid(input: Pick<SpaceInput, "bounds" | "obstacles">, clear = SPACE_RULES.clear): NavGrid {
+/** Navgrid that only admits floor at least `clear` wide (a rover circle of clear / 2), across every slab rect. */
+export function wideGrid(input: Pick<SpaceInput, "bounds" | "wings" | "obstacles">, clear = SPACE_RULES.clear): NavGrid {
   return buildNavGrid(input, clear / 2, 0.5);
 }
 
@@ -139,7 +142,8 @@ function flood(g: NavGrid, start: Vec2): Uint8Array {
 /** Every violated space rule (empty when the layout is roomy enough). */
 export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RULES): SpaceViolation[] {
   const out: SpaceViolation[] = [];
-  const { bounds, obstacles, doors, network } = input;
+  const { obstacles, doors, network } = input;
+  const edges = slabEdges(input);
 
   for (const road of network.roads) {
     if (road.width < rules.roadWidth - EPS) out.push({ rule: "road-width", detail: `road ${road.id} is ${fmt(road.width)} u wide (min ${rules.roadWidth})` });
@@ -179,9 +183,9 @@ export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RUL
       if (gap > EPS && gap < rules.clear - EPS)
         out.push({ rule: "obstacle-gap", detail: `${fmt(gap)} u between ${rectLabel(obstacles[i])} and ${rectLabel(obstacles[j])}` });
     }
+    // Against the slab's outer edges only: a joint between two slab rects is open floor.
     const o = obstacles[i];
-    const edges = [o.minX - bounds.minX, bounds.maxX - o.maxX, o.minZ - bounds.minZ, bounds.maxZ - o.maxZ];
-    const tight = edges.find((d) => d > EPS && d < rules.clear - EPS);
+    const tight = edges.map((e) => rectGap(o, e)).find((d) => d > EPS && d < rules.clear - EPS);
     if (tight !== undefined) out.push({ rule: "bounds-gap", detail: `${fmt(tight)} u between ${rectLabel(o)} and the slab edge` });
   }
 
@@ -202,7 +206,7 @@ export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RUL
 }
 
 /** Wide floor (rules.clear) flooded from the start, and whether it comes within `rules.doorReach` of a point. */
-function reachFrom(input: Pick<SpaceInput, "bounds" | "obstacles" | "start">, rules: SpaceRules): { startOk: boolean; reachable: (p: Vec2) => boolean } {
+function reachFrom(input: Pick<SpaceInput, "bounds" | "wings" | "obstacles" | "start">, rules: SpaceRules): { startOk: boolean; reachable: (p: Vec2) => boolean } {
   const grid = wideGrid(input, rules.clear);
   const reach = flood(grid, input.start);
   const reachable = (p: Vec2) => {
@@ -224,6 +228,7 @@ function reachFrom(input: Pick<SpaceInput, "bounds" | "obstacles" | "start">, ru
 /** What the pad rules need: floors without a road kit (L1, L4, RF) pass no network. */
 export interface PadSpaceInput {
   bounds: Rect;
+  wings?: readonly Rect[];
   obstacles: readonly Rect[];
   doors: readonly DoorTrigger[];
   network?: RoadNetwork;
@@ -245,12 +250,12 @@ function distanceToDoorPad(door: DoorTrigger, p: Vec2): number {
 /** Every violated pad rule (empty when every pad sits on open, reachable floor away from roads, doors and spurs). */
 export function padViolations(input: PadSpaceInput, rules: SpaceRules = SPACE_RULES): SpaceViolation[] {
   const out: SpaceViolation[] = [];
-  const { bounds, obstacles, doors, network, pads } = input;
+  const { obstacles, doors, network, pads } = input;
   const { startOk, reachable } = reachFrom(input, rules);
   for (const pad of pads) {
     const r = pad.radius ?? PAD.radius;
     const p = pad.at;
-    if (p.x - r < bounds.minX - EPS || p.x + r > bounds.maxX + EPS || p.z - r < bounds.minZ - EPS || p.z + r > bounds.maxZ + EPS)
+    if (!inSlab(p, input, r - EPS))
       out.push({ rule: "pad-bounds", detail: `pad ${pad.id} at (${fmt(p.x)}, ${fmt(p.z)}) leaves the slab` });
     const hit = obstacles.find((o) => distanceToRect(p, o) < r + rules.spurClear - EPS);
     if (hit) out.push({ rule: "pad-blocked", detail: `pad ${pad.id} is closer than ${fmt(r + rules.spurClear)} u to obstacle ${rectLabel(hit)}` });

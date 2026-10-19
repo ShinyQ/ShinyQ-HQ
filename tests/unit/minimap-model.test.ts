@@ -49,6 +49,34 @@ describe("minimap model", () => {
     const map = buildFloorMap(layouts.L1, [door("L1:door:a", "L1:profile", 2, 0), stray], []);
     expect(map.rooms.map((r) => r.id)).toEqual(["L1:door:a"]);
   });
+  it("draws a plain slab as one rect with no outline path", () => {
+    const map = buildFloorMap(layouts.L1, [], []);
+    const b = layouts.L1.bounds;
+    expect(map.slab).toEqual([{ x: b.minX, z: b.minZ, w: b.maxX - b.minX, d: b.maxZ - b.minZ }]);
+    expect(map.outline).toBe("");
+    expect(map.area).toBe("");
+  });
+  it("covers a slab with a wing: one rect per slab rect, the view boxes them all and the outline skips the joint", () => {
+    const b = layouts.L1.bounds;
+    const wing = { minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 30 };
+    const map = buildFloorMap({ ...layouts.L1, wings: [wing] }, [], []);
+    expect(map.slab).toEqual([
+      { x: b.minX, z: b.minZ, w: b.maxX - b.minX, d: b.maxZ - b.minZ },
+      { x: -12, z: b.maxZ, w: 30, d: 30 },
+    ]);
+    // The view boxes the slab (wing included) padded 2 u; the shaft sits inside it on L1.
+    const plain = buildFloorMap(layouts.L1, [], []).view;
+    expect(map.view.minZ + map.view.depth).toBe(wing.maxZ + 2);
+    expect([map.view.minX, map.view.minZ, map.view.width]).toEqual([plain.minX, plain.minZ, plain.width]);
+    // The fill is one path of every rect (no seam at the joint).
+    expect(map.area).toBe(`M ${b.minX} ${b.minZ} L ${b.maxX} ${b.minZ} L ${b.maxX} ${b.maxZ} L ${b.minX} ${b.maxZ} Z M -12 ${b.maxZ} L 18 ${b.maxZ} L 18 ${b.maxZ + 30} L -12 ${b.maxZ + 30} Z`);
+    expect(map.outline).toMatch(/^(M -?[\d.]+ -?[\d.]+ L -?[\d.]+ -?[\d.]+ ?)+$/);
+    const segments = map.outline.trim().split(/ (?=M)/).map((d) => d.match(/-?[\d.]+/g)!.map(Number));
+    expect(segments).toHaveLength(8);
+    // No segment runs along the joint (z = bounds.maxZ, x -12 to 18).
+    const joint = segments.filter(([x1, z1, x2, z2]) => z1 === b.maxZ && z2 === b.maxZ && Math.min(x1, x2) < 18 && Math.max(x1, x2) > -12);
+    expect(joint).toEqual([]);
+  });
   it("floors without a road network still get a view", () => {
     const map = buildFloorMap(layouts.L2, [], []);
     expect(map.roads).toEqual([]);

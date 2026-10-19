@@ -58,6 +58,26 @@ describe("Minimap", () => {
     expect(svg).toHaveAttribute("viewBox", "-22 -22 44 44");
     expect(svg.querySelector("[data-map='rover']")?.getAttribute("transform")).toContain("rotate(180)");
     expect(svg.querySelectorAll("[data-map='room']")).toHaveLength(2);
+    // A plain slab: one rounded rect, no slab group.
+    expect(svg.querySelector("[data-map='slab']")).toBeNull();
+  });
+
+  it("draws a slab with a wing as one filled path and an outline without the joint", () => {
+    const b = layouts.L1.bounds;
+    const winged = { ...layouts, L1: { ...layouts.L1, wings: [{ minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 30 }] } };
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <Minimap data={data} layouts={winged} size="desktop" />
+      </NextIntlClientProvider>,
+    );
+    const slab = screen.getByTestId("minimap").querySelector("[data-map='slab']")!;
+    const paths = slab.querySelectorAll("path");
+    expect(paths).toHaveLength(2);
+    expect(slab.querySelectorAll("rect")).toHaveLength(0);
+    expect(paths[0].getAttribute("d")!.match(/M /g)).toHaveLength(2);
+    expect(paths[0]).not.toHaveAttribute("stroke");
+    expect(paths[1]).toHaveAttribute("fill", "none");
+    expect(paths[1].getAttribute("d")!.match(/M /g)).toHaveLength(8);
   });
 
   it("follows the 10 Hz rover mirror", () => {

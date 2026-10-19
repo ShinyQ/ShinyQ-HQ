@@ -22,6 +22,7 @@ import {
 import { pickVolume, volumePoint } from "@/experience/interact/pick";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, nearestWalkable } from "@/experience/nav/navgrid";
+import { inSlab } from "@/experience/nav/slab";
 
 type Messages = typeof en;
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
@@ -277,17 +278,14 @@ describe("interactablesFor on the real content", () => {
       const list = items[floor];
       expect(new Set(list.map((i) => i.id)).size, floor).toBe(list.length);
       const grid = buildNavGrid(layouts[floor], ROVER.radius);
-      const slab = layouts[floor].bounds;
       for (const item of list) {
         expect(item.floor, item.id).toBe(floor);
         expect(item.label.trim(), item.id).not.toBe("");
         const b = item.bounds;
         expect(b.maxX - b.minX, item.id).toBeGreaterThan(0);
         expect(b.maxZ - b.minZ, item.id).toBeGreaterThan(0);
-        expect(b.minX, item.id).toBeGreaterThanOrEqual(slab.minX - 1e-6);
-        expect(b.maxX, item.id).toBeLessThanOrEqual(slab.maxX + 1e-6);
-        expect(b.minZ, item.id).toBeGreaterThanOrEqual(slab.minZ - 1e-6);
-        expect(b.maxZ, item.id).toBeLessThanOrEqual(slab.maxZ + 1e-6);
+        // Every corner on the slab (the bounds or a wing).
+        for (const x of [b.minX, b.maxX]) for (const z of [b.minZ, b.maxZ]) expect(inSlab({ x, z }, layouts[floor], -1e-6), item.id).toBe(true);
         expect(item.height ?? 1, item.id).toBeGreaterThan(0);
         const near = nearestWalkable(grid, item.at);
         expect(near, item.id).not.toBeNull();

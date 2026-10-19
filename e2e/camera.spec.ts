@@ -396,11 +396,12 @@ async function lowView(page: Page): Promise<LowView> {
         type V3 = { x: number; y: number; z: number };
         type Gl = { render: (s: unknown, c: unknown) => void; getRenderTarget: () => unknown; getContext: () => WebGL2RenderingContext };
         type Cam = { position: V3; fov: number; matrixWorld: { elements: number[] } };
+        type R = { minX: number; maxX: number; minZ: number; maxZ: number };
         const w = window as unknown as {
           __hq: {
             render: { gl: Gl };
             store: { getState: () => { floor: string } };
-            layouts: Record<string, { bounds: { minX: number; maxX: number; minZ: number; maxZ: number } }>;
+            layouts: Record<string, { bounds: R; wings?: R[] }>;
             rover: { y: number; cameraElevation: number; cameraYaw: number };
           };
         };
@@ -437,12 +438,14 @@ async function lowView(page: Page): Promise<LowView> {
           const half = (cam.fov * Math.PI) / 360;
           const dir = { x: forward.x * Math.cos(half) - up.x * Math.sin(half), y: forward.y * Math.cos(half) - up.y * Math.sin(half), z: forward.z * Math.cos(half) - up.z * Math.sin(half) };
           const s = w.__hq.store.getState();
-          const b = w.__hq.layouts[s.floor].bounds;
+          // Every slab rect: the bounds plus any wings.
+          const layout = w.__hq.layouts[s.floor];
+          const rects = [layout.bounds, ...(layout.wings ?? [])];
           const p = cam.position;
-          const inside = (x: number, z: number) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+          const inside = (x: number, z: number) => rects.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
           const t = dir.y < 0 ? (w.__hq.rover.y - p.y) / dir.y : Infinity;
           const onSlab = inside(p.x, p.z) || (Number.isFinite(t) && inside(p.x + dir.x * t, p.z + dir.z * t));
-          const offSlab = Math.max(b.minX - p.x, p.x - b.maxX, b.minZ - p.z, p.z - b.maxZ, 0);
+          const offSlab = Math.min(...rects.map((b) => Math.max(b.minX - p.x, p.x - b.maxX, b.minZ - p.z, p.z - b.maxZ, 0)));
           resolve({ onSlab, offSlab, flatRows, rows: sampled, elevation: w.__hq.rover.cameraElevation, yaw: w.__hq.rover.cameraYaw });
         };
       }),

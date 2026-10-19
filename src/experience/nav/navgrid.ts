@@ -1,5 +1,6 @@
 import type { Rect, Vec2 } from "../types";
 import { distanceToRect } from "./collision";
+import { slabBox, slabInsetRects, type SlabShape } from "./slab";
 
 export interface NavGrid {
   minX: number;
@@ -16,23 +17,28 @@ const DI = [1, -1, 0, 0, 1, 1, -1, -1];
 const DJ = [0, 0, 1, -1, 1, -1, 1, -1];
 
 /**
- * Builds the per-floor grid from the slab bounds and obstacles inflated by the rover radius. Each
- * obstacle only visits the cells its inflated rect can reach (cells x obstacles was about 84 ms for
- * all floors on a 4x throttled phone).
+ * Builds the per-floor grid over the slab's box (`slabBox`: the bounds plus any wings) from the slab
+ * rects inset by the rover radius (`slabInsetRects`: a joint between touching rects is open floor) and
+ * obstacles inflated by it. Each obstacle only visits the cells its inflated rect can reach (cells x
+ * obstacles was about 84 ms for all floors on a 4x throttled phone).
  */
-export function buildNavGrid({ bounds, obstacles }: { bounds: Rect; obstacles: readonly Rect[] }, radius: number, cell = 1): NavGrid {
+export function buildNavGrid(layout: SlabShape & { obstacles: readonly Rect[] }, radius: number, cell = 1): NavGrid {
+  const { obstacles } = layout;
+  const bounds = slabBox(layout);
   const cols = Math.max(1, Math.ceil((bounds.maxX - bounds.minX) / cell));
   const rows = Math.max(1, Math.ceil((bounds.maxZ - bounds.minZ) / cell));
   const walkable = new Uint8Array(cols * rows);
   const eps = 1e-6;
   const cx = (i: number) => bounds.minX + (i + 0.5) * cell;
   const cz = (j: number) => bounds.minZ + (j + 0.5) * cell;
-  for (let j = 0; j < rows; j++) {
-    const z = cz(j);
-    if (z < bounds.minZ + radius - eps || z > bounds.maxZ - radius + eps) continue;
-    for (let i = 0; i < cols; i++) {
-      const x = cx(i);
-      if (x >= bounds.minX + radius - eps && x <= bounds.maxX - radius + eps) walkable[j * cols + i] = 1;
+  for (const r of slabInsetRects(layout, radius)) {
+    for (let j = 0; j < rows; j++) {
+      const z = cz(j);
+      if (z < r.minZ - eps || z > r.maxZ + eps) continue;
+      for (let i = 0; i < cols; i++) {
+        const x = cx(i);
+        if (x >= r.minX - eps && x <= r.maxX + eps) walkable[j * cols + i] = 1;
+      }
     }
   }
   const p = { x: 0, z: 0 };

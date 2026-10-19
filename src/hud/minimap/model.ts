@@ -1,6 +1,7 @@
 import type { FloorId, RoomId } from "@/content/schema";
 import { LOBBY, SHAFT } from "@/experience/config";
 import type { Interactable } from "@/experience/interact/registry";
+import { slabBox, slabEdges, slabRects } from "@/experience/nav/slab";
 import type { FloorLayout, Vec2 } from "@/experience/types";
 
 /**
@@ -28,10 +29,14 @@ export interface MapRoom {
 
 export interface FloorMap {
   floor: FloorId;
-  /** Layout bounds plus the shaft, padded 2 u. */
+  /** The slab's box (bounds and wings) plus the shaft, padded 2 u. */
   view: MapView;
-  /** Walkable slab footprint (the backdrop, so a floor without roads still shows its shape). */
-  slab: { x: number; z: number; w: number; d: number };
+  /** Walkable slab footprint, one rect per slab rect (the backdrop, so a floor without roads still shows its shape). */
+  slab: { x: number; z: number; w: number; d: number }[];
+  /** With wings: the slab's outer edges as one SVG path (no stroke across a joint); "" for a plain slab. */
+  outline: string;
+  /** With wings: every slab rect as one SVG path, filled in one go so no seam shows at a joint; "" for a plain slab. */
+  area: string;
   /** SVG path data in world units (x right, z down: north-up). */
   roads: { d: string; width: number }[];
   /** Centers and sizes; `round` plazas are ellipses w x d. */
@@ -70,7 +75,7 @@ function path(points: readonly Vec2[], closed: boolean): string {
 }
 
 export function buildFloorMap(layout: FloorLayout, items: readonly Interactable[], visited: readonly RoomId[]): FloorMap {
-  const { bounds } = layout;
+  const bounds = slabBox(layout);
   const half = SHAFT.size / 2;
   const minX = Math.min(bounds.minX, SHAFT.x - half) - PAD;
   const maxX = Math.max(bounds.maxX, SHAFT.x + half) + PAD;
@@ -100,7 +105,13 @@ export function buildFloorMap(layout: FloorLayout, items: readonly Interactable[
   return {
     floor: layout.id,
     view: { minX, minZ, width: maxX - minX, depth: maxZ - minZ },
-    slab: { x: bounds.minX, z: bounds.minZ, w: bounds.maxX - bounds.minX, d: bounds.maxZ - bounds.minZ },
+    slab: slabRects(layout).map((r) => ({ x: r.minX, z: r.minZ, w: r.maxX - r.minX, d: r.maxZ - r.minZ })),
+    outline: layout.wings?.length ? slabEdges(layout).map((e) => path([{ x: e.minX, z: e.minZ }, { x: e.maxX, z: e.maxZ }], false)).join(" ") : "",
+    area: layout.wings?.length
+      ? slabRects(layout)
+          .map((r) => path([{ x: r.minX, z: r.minZ }, { x: r.maxX, z: r.minZ }, { x: r.maxX, z: r.maxZ }, { x: r.minX, z: r.maxZ }], true))
+          .join(" ")
+      : "",
     roads,
     plazas,
     rings,

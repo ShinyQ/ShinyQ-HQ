@@ -19,6 +19,7 @@ import { RideCull } from "./RideCullHooks";
 import { ReturnPadSign } from "../fx/ReturnPadSign";
 import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
+import { slabBox } from "../nav/slab";
 import { BoxEdges } from "./primitives";
 import { precompileFloor } from "../scene/precompile";
 import { beginFloorPrep, endFloorPrep, finishFloorPrep } from "./ridePrep";
@@ -71,13 +72,13 @@ function FloorPrep({ floor }: { floor: FloorId }) {
   return null;
 }
 
-/** Outline around the shaft and every floor except the long L2 corridor, which runs out of the tower on purpose. */
+/** Outline around the shaft and every floor's slab box (wings included) except the long L2 corridor, which runs out of the tower on purpose. */
 function towerFrame(layouts: Record<FloorId, FloorLayout>) {
-  const ids: FloorId[] = ["L1", "L3", "L4", "RF"];
-  const minX = Math.min(SHAFT.x - SHAFT.size / 2, ...ids.map((id) => layouts[id].bounds.minX)) - 2;
-  const maxX = Math.max(...ids.map((id) => layouts[id].bounds.maxX)) + 2;
-  const minZ = Math.min(...ids.map((id) => layouts[id].bounds.minZ)) - 2;
-  const maxZ = Math.max(...ids.map((id) => layouts[id].bounds.maxZ)) + 2;
+  const boxes = (["L1", "L3", "L4", "RF"] as const).map((id) => slabBox(layouts[id]));
+  const minX = Math.min(SHAFT.x - SHAFT.size / 2, ...boxes.map((b) => b.minX)) - 2;
+  const maxX = Math.max(...boxes.map((b) => b.maxX)) + 2;
+  const minZ = Math.min(...boxes.map((b) => b.minZ)) - 2;
+  const maxZ = Math.max(...boxes.map((b) => b.maxZ)) + 2;
   return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
 }
 

@@ -364,11 +364,12 @@ export function pathBetween(net: RoadNetwork, a: Vec2, b: Vec2, graph: RoadGraph
   return out;
 }
 
-/** Whether an autopilot drive follows the floor's road: always when it has one, unless `roadZone` limits it to drives into or out of that zone. */
-export function routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect }, from: Vec2, to: Vec2): boolean {
+/** Whether an autopilot drive follows the floor's road: always when it has one, unless `roadZone` limits it to drives into or out of those zones. */
+export function routeUsesRoad(layout: { road?: RoadNetwork; roadZone?: Rect | readonly Rect[] }, from: Vec2, to: Vec2): boolean {
   if (!layout.road) return false;
-  const z = layout.roadZone;
-  if (!z) return true;
-  const inside = (p: Vec2) => p.x >= z.minX && p.x <= z.maxX && p.z >= z.minZ && p.z <= z.maxZ;
+  const zone = layout.roadZone;
+  if (!zone) return true;
+  const zones: readonly Rect[] = "minX" in zone ? [zone] : zone;
+  const inside = (p: Vec2) => zones.some((z) => p.x >= z.minX && p.x <= z.maxX && p.z >= z.minZ && p.z <= z.maxZ);
   return inside(from) || inside(to);
 }

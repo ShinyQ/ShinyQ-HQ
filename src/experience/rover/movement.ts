@@ -1,4 +1,5 @@
 import { resolveCircle } from "../nav/collision";
+import type { SlabShape } from "../nav/slab";
 import type { Rect, Vec2 } from "../types";
 
 export interface RoverPose {
@@ -22,9 +23,9 @@ export interface RoverTuning {
   maxTilt: number;
 }
 
-export interface RoverWorld {
+/** What the rover collides with: obstacles and the slab (the bounds plus any wings, `nav/slab.ts`). */
+export interface RoverWorld extends SlabShape {
   obstacles: readonly Rect[];
-  bounds: Rect;
 }
 
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -60,7 +61,7 @@ export function stepRover(pose: RoverPose, desire: Vec2 | null, dt: number, t: R
     targetSpeed > pose.speed ? Math.min(targetSpeed, pose.speed + t.accel * dt) : Math.max(targetSpeed, pose.speed - t.braking * dt);
 
   const next = { x: pose.x + Math.sin(heading) * speed * dt, z: pose.z + Math.cos(heading) * speed * dt };
-  const resolved = resolveCircle(next, t.radius, world.obstacles, world.bounds);
+  const resolved = resolveCircle(next, t.radius, world.obstacles, world);
   const travelled = Math.hypot(resolved.x - pose.x, resolved.z - pose.z);
   const blocked = speed > 0.5 && travelled < speed * dt * 0.3;
 

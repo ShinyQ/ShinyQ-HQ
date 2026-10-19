@@ -77,7 +77,7 @@ describe("camera collision", () => {
   it("leaves the default follow and L2 cameras alone on every floor", () => {
     const layouts = buildFloorLayouts(8);
     for (const layout of Object.values(layouts)) {
-      const w: CameraWorld = { floorY: 0, bounds: layout.bounds, obstacles: layout.obstacles };
+      const w: CameraWorld = { floorY: 0, bounds: layout.bounds, wings: layout.wings, obstacles: layout.obstacles };
       for (const p of [layout.spawn, layout.approach]) {
         const follow = followPose("desktop", [p.x, 1, p.z]);
         expect(clampCamera(follow.target, follow.position, w, follow.target, follow.fov)).toBe(follow.position);
@@ -167,5 +167,29 @@ describe("camera world", () => {
     }
     expect(total).toBeGreaterThan(30);
     expect(moved).toBe(0);
+  });
+});
+
+describe("camera collision on a slab with a wing", () => {
+  // Main slab plus a wing on part of its south edge (x -4 to 8): an L shape.
+  const L: CameraWorld = { floorY: 0, bounds: { minX: -20, maxX: 20, minZ: -20, maxZ: 20 }, wings: [{ minX: -4, maxX: 8, minZ: 20, maxZ: 50 }], obstacles: [] };
+
+  it("counts the wing as slab and the missing corner as off it", () => {
+    expect(cameraBlocked([2, 1.5, 35], L)).toBe(false);
+    expect(cameraBlocked([2, 1.5, 20], L)).toBe(false);
+    expect(cameraBlocked([14, 1.5, 35], L)).toBe(true);
+    expect(cameraBlocked([14, CAMERA_CLEARANCE.edge + 0.1, 35], L)).toBe(false);
+    expect(cameraWorld({ bounds: L.bounds, wings: L.wings, obstacles: [] }, 0).wings).toEqual(L.wings);
+  });
+
+  it("sees the wing's floor from a low camera and pulls a camera in from the missing corner", () => {
+    const target: Vec3 = [2, 1, 40];
+    expect(viewOnSlab([2, 3, 30], target, L, 40)).toBe(true);
+    const cam: Vec3 = [18, 3, 40];
+    expect(viewOnSlab(cam, target, L, 40)).toBe(false);
+    const out = clampCamera(target, cam, L, target, 40);
+    expect(out).not.toBe(cam);
+    expect(viewOnSlab(out, target, L, 40)).toBe(true);
+    expect(out[0]).toBeLessThan(18);
   });
 });

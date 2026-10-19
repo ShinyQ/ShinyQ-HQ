@@ -65,7 +65,14 @@ const StaticLayers = memo(function StaticLayers({ map, labels, roomRadius }: { m
   const doorLabels = labels && labelsDoors(map.rooms);
   return (
     <>
-      <rect x={slab.x} y={slab.z} width={slab.w} height={slab.d} rx={1.5} fill="var(--color-surface-2)" stroke="var(--color-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      {map.outline ? (
+        <g data-map="slab">
+          <path d={map.area} fill="var(--color-surface-2)" />
+          <path d={map.outline} fill="none" stroke="var(--color-line)" strokeWidth={1} strokeLinecap="square" vectorEffect="non-scaling-stroke" />
+        </g>
+      ) : (
+        <rect x={slab[0].x} y={slab[0].z} width={slab[0].w} height={slab[0].d} rx={1.5} fill="var(--color-surface-2)" stroke="var(--color-line)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      )}
       <g fill="var(--color-ink-3)" opacity={0.18}>
         {map.fixtures.map((f, i) => (
           <rect key={i} x={f.x} y={f.z} width={f.w} height={f.d} />

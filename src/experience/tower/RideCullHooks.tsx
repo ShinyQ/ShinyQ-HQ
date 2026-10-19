@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { getHQStore } from "@/store/useHQStore";
 import { FLOOR_IDS, floorY } from "../config";
 import { roverRuntime } from "../rover/runtime";
-import { getFloorContent, getFloorSlab } from "./floorRegistry";
+import { getFloorContent, getFloorSlabs } from "./floorRegistry";
 import { belowParkedCar } from "./near";
 import { installRideCull, type CullFloor } from "./rideCull";
 
@@ -16,7 +16,14 @@ import { installRideCull, type CullFloor } from "./rideCull";
  */
 function floorsNow(): CullFloor[] {
   const { ride } = getHQStore().getState();
-  return FLOOR_IDS.map((id) => ({ content: getFloorContent(id), slab: getFloorSlab(id), hide: belowParkedCar(floorY(id), roverRuntime.y, ride) }));
+  const out: CullFloor[] = [];
+  for (const id of FLOOR_IDS) {
+    const slabs = getFloorSlabs(id);
+    out.push({ content: getFloorContent(id), slab: slabs[0] ?? null, hide: belowParkedCar(floorY(id), roverRuntime.y, ride) });
+    // A wing's slab occludes too; it has no content of its own.
+    for (let i = 1; i < slabs.length; i++) out.push({ content: null, slab: slabs[i] });
+  }
+  return out;
 }
 
 /**

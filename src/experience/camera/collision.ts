@@ -1,9 +1,10 @@
 import { FLOOR_GAP, SHAFT, SHAFT_EAST_FACE } from "../config";
+import { inSlabXZ, type SlabShape } from "../nav/slab";
 import type { FloorLayout, Rect } from "../types";
 import type { Vec3 } from "./rigs";
 
 /**
- * Cheap camera collision (owner request, round 5): no physics, just the floor height, the slab bounds
+ * Cheap camera collision (owner request, round 5): no physics, just the floor height, the slab (bounds and wings)
  * and the floor's obstacle rects as columns. Only cameras below `obstacle` height can be blocked, so
  * the default third-person poses (18 u and more above the rover) never move.
  */
@@ -23,9 +24,8 @@ export interface TallObstacle extends Rect {
   h: number;
 }
 
-export interface CameraWorld {
+export interface CameraWorld extends SlabShape {
   obstacles: readonly Rect[];
-  bounds: Rect;
   floorY: number;
   /** Columns that block the camera up to their own height. */
   tall?: readonly TallObstacle[];
@@ -47,9 +47,9 @@ export const SHAFT_COLUMN: TallObstacle = {
   h: FLOOR_GAP,
 };
 
-/** The camera's collision world for a floor at `floorY`: its obstacles, slab bounds, tall columns and the elevator shaft. */
-export function cameraWorld(layout: Pick<FloorLayout, "obstacles" | "bounds" | "tall">, floorY: number): CameraWorld {
-  return { obstacles: layout.obstacles, bounds: layout.bounds, floorY, tall: [...(layout.tall ?? []), SHAFT_COLUMN] };
+/** The camera's collision world for a floor at `floorY`: its obstacles, slab (bounds and wings), tall columns and the elevator shaft. */
+export function cameraWorld(layout: Pick<FloorLayout, "obstacles" | "bounds" | "wings" | "tall">, floorY: number): CameraWorld {
+  return { obstacles: layout.obstacles, bounds: layout.bounds, wings: layout.wings, floorY, tall: [...(layout.tall ?? []), SHAFT_COLUMN] };
 }
 
 const inside = (x: number, z: number, o: Rect, r: number) => x > o.minX - r && x < o.maxX + r && z > o.minZ - r && z < o.maxZ + r;
@@ -61,21 +61,19 @@ export function cameraBlocked(p: Vec3, w: CameraWorld): boolean {
   const r = CAMERA_CLEARANCE.radius;
   if (w.tall?.some((t) => h < t.h && inside(x, z, t, r))) return true;
   if (h >= CAMERA_CLEARANCE.obstacle) return false;
-  const b = w.bounds;
-  if (h < CAMERA_CLEARANCE.edge && (x < b.minX || x > b.maxX || z < b.minZ || z > b.maxZ)) return true;
+  if (h < CAMERA_CLEARANCE.edge && !inSlabXZ(x, z, w)) return true;
   return w.obstacles.some((o) => inside(x, z, o, r));
 }
 
-const onSlab = (x: number, z: number, b: Rect) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
 
 /**
  * True when the bottom edge of the view (vertical `fov`, degrees) lands on the slab: the camera stands on it, or
- * the bottom-center ray (aimed at `target`, tilted down by half the FOV) meets the floor plane inside the bounds.
+ * the bottom-center ray (aimed at `target`, tilted down by half the FOV) meets the floor plane on the slab (any rect).
  * Off the slab a low camera would otherwise look past the slab edge into the void under it: a black band at the
  * bottom of the view that pops on and off as the camera crosses the edge (Round 9 M).
  */
 export function viewOnSlab(camera: Vec3, target: Vec3, w: CameraWorld, fov: number): boolean {
-  if (onSlab(camera[0], camera[2], w.bounds)) return true;
+  if (inSlabXZ(camera[0], camera[2], w)) return true;
   const dx = target[0] - camera[0];
   const dz = target[2] - camera[2];
   const run = Math.hypot(dx, dz);
@@ -84,7 +82,7 @@ export function viewOnSlab(camera: Vec3, target: Vec3, w: CameraWorld, fov: numb
   if (h <= 0 || down <= 0) return false;
   if (run < 1e-9 || down >= Math.PI / 2) return false;
   const d = h / Math.tan(down);
-  return onSlab(camera[0] + (dx / run) * d, camera[2] + (dz / run) * d, w.bounds);
+  return inSlabXZ(camera[0] + (dx / run) * d, camera[2] + (dz / run) * d, w);
 }
 
 const STEPS = 32;
@@ -111,7 +109,7 @@ function startParam(target: Vec3, camera: Vec3, from: Vec3): number {
  * crosses at the start) is skipped.
  */
 export function clampCamera(target: Vec3, camera: Vec3, w: CameraWorld, from: Vec3 = target, fov?: number): Vec3 {
-  const offSlab = fov !== undefined && !onSlab(camera[0], camera[2], w.bounds);
+  const offSlab = fov !== undefined && !inSlabXZ(camera[0], camera[2], w);
   if (camera[1] - w.floorY >= blockHeight(w) && !offSlab) return camera;
   const blocked = (p: Vec3) => cameraBlocked(p, w) || (fov !== undefined && !viewOnSlab(p, target, w, fov));
   let t0 = startParam(target, camera, from);
