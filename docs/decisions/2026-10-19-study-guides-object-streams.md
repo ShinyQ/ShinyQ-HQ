@@ -1,6 +1,7 @@
 # Content: study guides
 
 - Date: 2026-10-19
+- PR: [#245](https://github.com/ShinyQ/ShinyQ-HQ/pull/245)
 
 The study guide PDFs are prepared with object streams (`qpdf --object-streams=generate`) instead of linearization,
 replacing that part of the 2026-10-19 study guides decision. Measured on production, a linearized guide (qpdf flattens
