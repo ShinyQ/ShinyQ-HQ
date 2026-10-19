@@ -65,12 +65,30 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>
+      {/* One text block for Largest Contentful Paint (styles in globals.css): the cover's first paint stays the LCP
+          once the HUD hint mounts under it. Inline spans (role paragraph) split by <br /> render the same pixels as
+          four stacked paragraphs in Chrome, Safari and Firefox, and keep the lines apart in copy and innerText. */}
       {p.who && (
         <div className="hq-boot-who" data-testid="boot-who">
-          <p className="text-lg leading-6 font-bold text-ink">{p.who.name}</p>
-          <p className="text-sm font-semibold text-cyan">{p.who.headline}</p>
-          {p.who.motto && <p className="mt-1 text-sm leading-5 text-ink-2">{p.who.motto}</p>}
-          <p className="mt-1 font-mono text-xs leading-5 text-ink-3">{p.who.role}</p>
+          <span role="paragraph" className="text-lg leading-6 font-bold text-ink">
+            {p.who.name}
+          </span>
+          <br />
+          <span role="paragraph" className="text-sm font-semibold text-cyan">
+            {p.who.headline}
+          </span>
+          {p.who.motto && (
+            <>
+              <br />
+              <span role="paragraph" className="hq-boot-gap text-sm leading-5 text-ink-2">
+                {p.who.motto}
+              </span>
+            </>
+          )}
+          <br />
+          <span role="paragraph" className="hq-boot-gap font-mono text-xs leading-5 text-ink-3">
+            {p.who.role}
+          </span>
         </div>
       )}
       <ol className="hq-boot-log mt-5" aria-hidden={deco}>

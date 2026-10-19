@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { devices, expect, test, type Page } from "@playwright/test";
 import { addScriptPolicy, sitePolicy } from "../scripts/csp-policy";
-import { asHumanBrowser, asReturningVisitor, collectErrors, waitForHQ, fastAnimations } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, waitForFrames, waitForHQ, fastAnimations } from "./hq";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
 
@@ -255,4 +255,48 @@ test("boot card: the overlay keeps the card in place, Boot rover stays required,
   expect(page.url()).toMatch(/\/en\?tier=lite&view=classic$/);
   expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBe(0);
   expect(errors).toEqual([]);
+});
+
+test("game-first LCP: a returning phone visit keeps the boot card as the LCP after the HUD hint mounts under the cover", async ({ browser }) => {
+  const context = await browser.newContext({ ...devices["Pixel 7"] });
+  await fastAnimations(context);
+  const page = await context.newPage();
+  await asReturningVisitor(page);
+  await page.addInitScript(() => {
+    const w = window as unknown as { __lcp: { at: number; size: number; el: string; hint: boolean; who: boolean }[]; __cover: number | null; __hint: boolean };
+    w.__lcp = [];
+    w.__cover = null;
+    w.__hint = false;
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as unknown as { startTime: number; size: number; element: Element | null }[]) {
+        w.__lcp.push({ at: e.startTime, size: e.size, el: e.element ? `${e.element.tagName}:${e.element.getAttribute("data-testid")}:${e.element.isConnected}` : "null", hint: !!e.element?.closest("[data-testid='hint']"), who: !!e.element?.closest("[data-testid='boot-who']") });
+      }
+    }).observe({ type: "largest-contentful-paint", buffered: true });
+    // The boot cover's title carries elementtiming: its render time is the cover's first paint.
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as unknown as { identifier: string; renderTime: number }[]) if (e.identifier === "hq-headline" && w.__cover === null) w.__cover = e.renderTime;
+    }).observe({ type: "element", buffered: true });
+    new MutationObserver((_, observer) => {
+      if (!document.querySelector("[data-testid='hint']")) return;
+      w.__hint = true;
+      observer.disconnect();
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto("/en?tier=lite", { waitUntil: "commit" });
+  await waitForHQ(page);
+  // The hint mounts with the HUD under the cover (and leaves a phone after 6 s): wait until it was in the DOM, then for its paint to be reported.
+  await page.waitForFunction(() => (window as unknown as { __hint: boolean }).__hint, null, { timeout: 60_000 });
+  await page.waitForFunction(() => !document.documentElement.hasAttribute("data-hq-boot"), null, { timeout: 60_000 });
+  await waitForFrames(page, 10);
+  const { lcp, cover } = await page.evaluate(() => {
+    const w = window as unknown as { __lcp: { at: number; size: number; el: string; hint: boolean; who: boolean }[]; __cover: number | null };
+    return { lcp: w.__lcp, cover: w.__cover };
+  });
+  expect(cover, "the boot cover title painted").not.toBeNull();
+  expect(lcp.length, "an LCP entry").toBeGreaterThan(0);
+  const last = lcp.at(-1)!;
+  expect(last.hint, JSON.stringify(lcp)).toBe(false);
+  expect(last.who, JSON.stringify(lcp)).toBe(true);
+  expect(last.at, JSON.stringify({ lcp, cover })).toBeLessThanOrEqual(cover! + 1000);
+  await context.close();
 });
