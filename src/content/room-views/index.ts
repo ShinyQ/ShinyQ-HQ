@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { ROOM_DATA_FLOORS, roomFloor } from "@/hud/drawer/data-path";
+import { shortHash } from "@/lib/content-hash";
 import type { FloorId, Locale } from "../schema";
 import { buildCareerViews } from "./career";
 import { buildEngineViews } from "./engine";
@@ -36,11 +36,11 @@ export function buildFloorRoomViews(locale: Locale, floor: FloorId): RoomViews {
 
 const versions = new Map<Locale, Record<FloorId, string>>();
 
-/** Content hash per floor file (first 12 hex chars of the sha256 of its JSON body, like `hudIndexVersion`): the file's `?v=`. */
+/** Content hash per floor file (`shortHash` of its JSON body): the file's `?v=`. */
 export function roomDataVersions(locale: Locale): Record<FloorId, string> {
   let found = versions.get(locale);
   if (!found) {
-    const hash = (floor: FloorId) => createHash("sha256").update(JSON.stringify(buildFloorRoomViews(locale, floor))).digest("hex").slice(0, 12);
+    const hash = (floor: FloorId) => shortHash(buildFloorRoomViews(locale, floor));
     found = Object.fromEntries(ROOM_DATA_FLOORS.map((floor) => [floor, hash(floor)])) as Record<FloorId, string>;
     versions.set(locale, found);
   }

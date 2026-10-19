@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import type { LocalizedText, Mission, RoomId, SiteContent, Wing } from "@/content/schema";
@@ -9,6 +8,7 @@ import type { ReactorRingId } from "@/content/tech-rings";
 import { orderPods, podHasGallery } from "@/content/selectors";
 import { buildLabsLayout, LABS_WINGS } from "@/experience/floors/labs/layout";
 import { buildTopicIndex, topicRooms } from "@/content/topic-index";
+import { shortHash } from "@/lib/content-hash";
 
 /** A Cmd-K "Show projects using X" row: the Tech Reactor pick it makes. */
 export interface HudTech {
@@ -133,5 +133,5 @@ export function buildHudIndex(content: SiteContent): HudIndex {
 
 /** Short content hash of the index, appended to its URL so a cached copy never outlives a deploy. */
 export function hudIndexVersion(index: HudIndex): string {
-  return createHash("sha256").update(JSON.stringify(index)).digest("hex").slice(0, 12);
+  return shortHash(index);
 }

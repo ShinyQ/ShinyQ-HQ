@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import { getTranslations } from "next-intl/server";
 import { buildExperienceData } from "@/content/experience";
 import type { Locale } from "@/content/schema";
+import { shortHash } from "@/lib/content-hash";
 import type { ExperienceData } from "./types";
 
 /**
@@ -15,5 +15,5 @@ export async function experienceDataFor(locale: Locale): Promise<ExperienceData>
 
 /** Short content hash of a locale's 3D page data, appended to its URL so a cached copy never outlives a deploy. */
 export async function experienceDataVersion(locale: Locale): Promise<string> {
-  return createHash("sha256").update(JSON.stringify(await experienceDataFor(locale))).digest("hex").slice(0, 12);
+  return shortHash(await experienceDataFor(locale));
 }
