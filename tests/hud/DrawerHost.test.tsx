@@ -4,8 +4,9 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
-import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
-import { primeEngineViews, primeRoomViews } from "@/hud/drawer/data";
+import { buildFloorRoomViews } from "@/content/room-views";
+import { markFirstFrame, resetFirstFrame } from "@/experience/boot-signals";
+import { primeFloorViews, setRoomDataVersions } from "@/hud/drawer/data";
 import { DrawerHost } from "@/hud/drawer/DrawerHost";
 import { getHQStore } from "@/store/useHQStore";
 
@@ -84,44 +85,71 @@ describe("DrawerHost", () => {
   });
 });
 
-describe("DrawerHost B1 data", () => {
-  const shared = buildRoomViews("en");
-  const engine = buildEngineRoomViews("en");
+describe("DrawerHost room data per floor", () => {
   const requested: string[] = [];
+  const rooms = () => requested.filter((url) => url.startsWith("/data/rooms/"));
+  const FLOORS = ["L1", "L2", "L3", "L4", "RF", "B1"] as const;
+  const clear = () => {
+    for (const floor of FLOORS) primeFloorViews("en", floor, null);
+  };
 
   beforeEach(() => {
     requested.length = 0;
-    primeRoomViews("en", null);
-    primeEngineViews("en", null);
+    clear();
+    resetFirstFrame();
+    setRoomDataVersions("en", { L1: "v1", L2: "v2", L3: "v3", L4: "v4", RF: "vf", B1: "vb" });
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string) => {
         requested.push(url);
-        return Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes("/b1-") ? engine : shared) });
+        const floor = (url.includes("/b1-") ? "B1" : /-(\w\w)\.json/.exec(url)![1]) as (typeof FLOORS)[number];
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(buildFloorRoomViews("en", floor)) });
       }),
     );
-    getHQStore().setState({ phase: "explore", activeRoom: null, b1Unlocked: false });
+    getHQStore().setState({ phase: "explore", activeRoom: null, b1Unlocked: false, floor: "L1", ride: null });
   });
 
   afterEach(() => {
-    primeRoomViews("en", null);
-    primeEngineViews("en", null);
-    getHQStore().setState({ b1Unlocked: false });
+    clear();
+    resetFirstFrame();
+    getHQStore().setState({ b1Unlocked: false, floor: "L1", ride: null });
   });
 
-  it("never requests the B1 file in a locked session, even after a room opens", async () => {
+  it("opens a room from its floor's file only, and never the B1 file in a locked session", async () => {
     renderHost();
     act(() => getHQStore().getState().openRoom("L1:visits"));
     await screen.findByTestId("room-drawer");
-    expect(requested.filter((url) => url.startsWith("/data/rooms/"))).toEqual(["/data/rooms/en.json"]);
+    expect(rooms()).toEqual(["/data/rooms/en-L1.json?v=v1"]);
   });
 
-  it("opens a B1 station from the separate file, merged over the shared views", async () => {
-    getHQStore().setState({ b1Unlocked: true });
+  it("opens a deep-linked room on another floor from that floor's file", async () => {
+    renderHost();
+    act(() => getHQStore().getState().openRoom("L3:reactor"));
+    await screen.findByTestId("room-drawer");
+    expect(rooms()).toEqual(["/data/rooms/en-L3.json?v=v3"]);
+  });
+
+  it("opens a B1 station from the separate file alone", async () => {
+    getHQStore().setState({ b1Unlocked: true, floor: "B1" });
     renderHost();
     act(() => getHQStore().getState().openRoom("B1:timeline"));
     const drawer = await screen.findByTestId("room-drawer");
     await vi.waitFor(() => expect(drawer.querySelector("[data-engine-station='timeline']")).not.toBeNull());
-    expect(requested.filter((url) => url.startsWith("/data/rooms/")).sort()).toEqual(["/data/rooms/b1-en.json", "/data/rooms/en.json"]);
+    expect(rooms()).toEqual(["/data/rooms/b1-en.json?v=vb"]);
+  });
+
+  it("prefetches only the rover's floor on idle, then a ride target when the rover heads there", async () => {
+    getHQStore().setState({ b1Unlocked: true });
+    renderHost();
+    expect(rooms()).toEqual([]);
+    act(() => markFirstFrame());
+    await vi.waitFor(() => expect(rooms()).toEqual(["/data/rooms/en-L1.json?v=v1"]));
+    act(() => getHQStore().setState({ ride: { from: "L1", to: "L4" } as never }));
+    await vi.waitFor(() => expect(rooms()).toEqual(["/data/rooms/en-L1.json?v=v1", "/data/rooms/en-L4.json?v=v4"]));
+    act(() => getHQStore().setState({ ride: null, floor: "L4" }));
+    // A room on a prefetched floor opens without another request.
+    act(() => getHQStore().getState().openRoom("L4:research"));
+    await screen.findByTestId("room-drawer");
+    expect(rooms()).toHaveLength(2);
   });
 });

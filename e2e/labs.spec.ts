@@ -125,6 +125,15 @@ test.describe("L3 Labs in 3D", () => {
     const drawer = page.getByRole("dialog", { name: /.+/ }).and(page.getByTestId("room-drawer"));
     await expect(drawer).toBeVisible();
     await expect(drawer.getByRole("tab")).toHaveText(Object.values(en.drawer.tabs));
+    // The pod's drawer comes from the L3 file alone, versioned by its content hash.
+    const roomFiles = await page.evaluate(() =>
+      performance
+        .getEntriesByType("resource")
+        .map((e) => new URL(e.name))
+        .filter((u) => u.pathname.startsWith("/data/rooms/"))
+        .map((u) => `${u.pathname}${u.search}`),
+    );
+    expect(roomFiles).toEqual([expect.stringMatching(/^\/data\/rooms\/en-L3\.json\?v=[0-9a-f]{12}$/)]);
     await drawer.getByRole("tab", { name: "Results" }).click();
     await expect(drawer.getByTestId("metric").first()).toBeVisible();
     // Next pod in the wing replaces the URL.

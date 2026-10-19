@@ -8,7 +8,7 @@ import { intents } from "@/experience/input/intents";
 import { ACCENT_TEXT } from "@/lib/accent";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { MetricTiles } from "./drawer/RoomDrawer";
-import { useRoomViews } from "./drawer/DrawerHost";
+import { useFloorViews } from "./drawer/DrawerHost";
 
 function subscribeResize(onChange: () => void) {
   window.addEventListener("resize", onChange);
@@ -41,7 +41,8 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
   const tDrawer = useTranslations("drawer");
   const phase = useHQStore((s) => s.phase);
   const activeRoom = useHQStore((s) => s.activeRoom);
-  const views = useRoomViews(locale);
+  // Hero pods (and their holograms) are L3 rooms: the L3 drawer file.
+  const views = useFloorViews(locale, "L3");
   const panel = useRef<HTMLDivElement>(null);
   const portrait = useSyncExternalStore(subscribeResize, () => window.innerHeight > window.innerWidth, () => false);
   const ready = views && views !== "error" ? views : null;

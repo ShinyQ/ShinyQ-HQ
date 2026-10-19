@@ -1,11 +1,11 @@
 import { GUIDES_FILE, type GuidesData } from "@/components/guides/data-path";
 import { guideViews } from "@/content/guide-views";
 import { getContent } from "@/content/load";
-import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
+import { buildFloorRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
 import { EXPERIENCE_DATA_FILE } from "@/experience/data-client";
 import { experienceDataFor } from "@/experience/gate-data";
-import { ENGINE_ROOMS_FILE, ROOMS_FILE } from "@/hud/drawer/data-path";
+import { ROOM_DATA_FLOORS, ROOMS_FILE } from "@/hud/drawer/data-path";
 import { HUD_INDEX_FILE } from "@/hud/index-path";
 import { buildHudIndex } from "@/hud/index-data";
 import en from "../../../../messages/en.json";
@@ -17,17 +17,17 @@ export const dynamicParams = false;
 const MESSAGES = { en, id } as const;
 
 /**
- * Pre-renders client data at build time: the Glass Drawer content (out/data/rooms/{locale}.json),
- * the B1 Engine Room drawers (out/data/rooms/b1-{locale}.json, fetched only when B1 is unlocked),
- * the HUD index (out/data/hud/index.json, rooms and missions for the palette and terminal) and the
- * 3D page data (out/data/experience/{locale}.json, fetched by ExperienceGate with the 3D chunk),
+ * Pre-renders client data at build time: the Glass Drawer content, one file per floor
+ * (out/data/rooms/{locale}-{floor}.json, fetched floor by floor with a `?v=` content hash), the B1 Engine Room
+ * drawers (out/data/rooms/b1-{locale}.json, fetched only when B1 is unlocked), the HUD index
+ * (out/data/hud/index.json, rooms and missions for the palette and terminal) and the 3D page data
+ * (out/data/experience/{locale}.json, fetched by ExperienceGate with the 3D chunk),
  * which the pages fetch after hydration instead of inlining it into every HTML file, and the study guides
  * (out/data/guides/{locale}.json: the guide views plus the `guides` strings, fetched by the guide dialog).
  */
 export function generateStaticParams() {
   return [
-    ...LOCALES.map((locale) => ({ path: ["rooms", ROOMS_FILE(locale)] })),
-    ...LOCALES.map((locale) => ({ path: ["rooms", ENGINE_ROOMS_FILE(locale)] })),
+    ...LOCALES.flatMap((locale) => ROOM_DATA_FLOORS.map((floor) => ({ path: ["rooms", ROOMS_FILE(locale, floor)] }))),
     { path: ["hud", HUD_INDEX_FILE] },
     ...LOCALES.map((locale) => ({ path: ["guides", GUIDES_FILE(locale)] })),
     ...LOCALES.map((locale) => ({ path: ["experience", EXPERIENCE_DATA_FILE(locale)] })),
@@ -49,8 +49,8 @@ export async function GET(_request: Request, { params }: RouteContext<"/data/[..
   }
   if (kind !== "rooms") return new Response("Not found", { status: 404 });
   for (const locale of LOCALES) {
-    if (file === ROOMS_FILE(locale)) return Response.json(buildRoomViews(locale));
-    if (file === ENGINE_ROOMS_FILE(locale)) return Response.json(buildEngineRoomViews(locale));
+    const floor = ROOM_DATA_FLOORS.find((f) => file === ROOMS_FILE(locale, f));
+    if (floor) return Response.json(buildFloorRoomViews(locale, floor));
   }
   return new Response("Not found", { status: 404 });
 }

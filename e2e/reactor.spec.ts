@@ -30,7 +30,7 @@ const probe = (page: Page) =>
 const signs = (page: Page) => page.evaluate(() => ((window as unknown as RW).__hq.probes.signs["labs-reactor-signs"] ?? []).map((s) => s.text));
 
 async function reactorView(page: Page): Promise<View["reactor"]> {
-  const res = await page.request.get("/data/rooms/en.json");
+  const res = await page.request.get("/data/rooms/en-L3.json");
   return ((await res.json()) as Record<string, View>)["L3:reactor"].reactor;
 }
 

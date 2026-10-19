@@ -276,6 +276,11 @@ export const RULES: Rule[] = [
   // The shared joystick double-tap helper (the boost toggle test).
   { test: /^e2e\/touch\.ts$/, specs: ["boost"] },
   // HUD over the canvas.
+  // Glass Drawer data per floor (loader, file names and versions, the data route): every floor's deep links and the per-floor fetches.
+  {
+    test: /^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/content\/room-views\/index\.ts$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics", "career", "library-roof"],
+  },
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },

@@ -27,6 +27,17 @@ async function open(page: Page, url: string) {
   await waitForSceneLive(page);
 }
 
+/** Glass Drawer files this page requested (path and `?v=`), in request order. */
+const roomFiles = (page: Page) =>
+  page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .map((e) => new URL(e.name))
+      .filter((u) => u.pathname.startsWith("/data/rooms/"))
+      .map((u) => `${u.pathname}${u.search}`),
+  );
+const roomFile = (floor: string) => new RegExp(`^/data/rooms/en-${floor}\\.json\\?v=[0-9a-f]{12}$`);
+
 const firstFrameAt = (page: Page) => page.evaluate(() => performance.getEntriesByName("hq:first-frame")[0]?.startTime ?? null);
 
 test("loads every floor chunk on idle after the first frame", async ({ page }) => {
@@ -40,6 +51,25 @@ test("loads every floor chunk on idle after the first frame", async ({ page }) =
     const at = await page.evaluate((f) => (window as unknown as ChunkWindow).__hq.floorChunks.requestedAt(f), id);
     expect(at, `${id} was requested before the first frame`).toBeGreaterThanOrEqual(frame!);
   }
+});
+
+test("drawer data: the Lobby loads only its floor's file on idle, a ride its target's, a room its own floor's", async ({ page }) => {
+  await open(page, "/en?tier=lite");
+  // Idle has passed once every floor chunk is in (both wait on afterFirstFrameIdle).
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as ChunkWindow).__hq.floorChunks.snapshot()), { timeout: 30_000 })
+    .toMatchObject({ L3: "ready", L4: "ready", RF: "ready" });
+  await expect.poll(() => roomFiles(page), { timeout: 30_000 }).toHaveLength(1);
+  expect((await roomFiles(page))[0]).toMatch(roomFile("L1"));
+  await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L4"]').click();
+  await waitForFloor(page, "L4", 90_000);
+  await expect.poll(() => roomFiles(page), { timeout: 30_000 }).toHaveLength(2);
+  expect((await roomFiles(page))[1]).toMatch(roomFile("L4"));
+  await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (room: string) => void } } } }).__hq.store.getState().openRoom("L3:reactor"));
+  await expect(page.getByTestId("room-drawer")).toBeVisible({ timeout: 30_000 });
+  const files = await roomFiles(page);
+  expect(files).toHaveLength(3);
+  expect(files[2]).toMatch(roomFile("L3"));
 });
 
 test("a deep link requests its floor chunk before the first frame and builds the floor", async ({ page }) => {
