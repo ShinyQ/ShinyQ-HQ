@@ -398,7 +398,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Analytics and public visit stats
 
-- Cloudflare Web Analytics runs on production builds only.
+- Cloudflare Web Analytics runs on production builds only; its beacon loads after the page and its scripts, on idle.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
 - Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 2 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
 - "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off.
