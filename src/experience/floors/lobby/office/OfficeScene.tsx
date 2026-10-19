@@ -112,6 +112,8 @@ function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   const g = new BufferGeometry();
   g.setAttribute("position", new BufferAttribute(positions, 3).setUsage(DynamicDrawUsage));
   g.setAttribute("uv", new BufferAttribute(uvs, 2));
+  // Unused by the basic material, but three keys programs on HAS_NORMAL: with it the quads share the wall's program.
+  g.setAttribute("normal", new BufferAttribute(new Float32Array(QUADS * 12), 3));
   g.setIndex(index);
   // The faces move with their Rovers: one fixed sphere around the whole office, so culling never trusts stale bounds.
   const b = officeBounds();
