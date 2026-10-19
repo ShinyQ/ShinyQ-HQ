@@ -79,6 +79,11 @@ export function sliceItems<T>(items: readonly T[], spec: string | undefined, now
   return items.filter((_, i) => i % m === n - 1);
 }
 
+/** A golden run's pass mark: the full set's allowed misses (items minus passThreshold) apply to any slice of it. */
+export function goldenThreshold(run: number, total: number, passThreshold = total): number {
+  return Math.max(0, run - Math.max(0, total - passThreshold));
+}
+
 /** Estimated neurons of a Workers AI run: model calls times NEURONS_PER_CALL. */
 export function estimateNeurons(calls: number): { calls: number; neurons: number; share: number } {
   const neurons = calls * NEURONS_PER_CALL;
@@ -143,6 +148,8 @@ const REFUSAL = [
   "hanya menjawab",
   "only talk about",
 ];
+/** Fewest words an Indonesian answer needs before its language is checked. */
+export const MIN_LANGUAGE_WORDS = 6;
 const ID_HINT = ["yang", "dan", "dia", "adalah", "di ", "dengan", "proyek", "untuk", "saya", "tidak"];
 
 /** Lowercase, curly quotes and hyphen variants folded, decimal and thousands commas as dots. */
@@ -178,7 +185,11 @@ export function scoreGolden(answer: string, item: GoldenItem, result: Pick<Pipel
   if (e.cite === false && result.cite) notes.push("unexpected cite");
   // Answers start with their content, never with an interjection such as "Beep!" (owner decision 2026-10-19).
   if (startsWithInterjection(markdownToPlain(answer))) notes.push("starts with an interjection");
-  if ((item.lang === "id" || e.lang === "id") && ID_HINT.reduce((n, w) => n + a.split(w).length - 1, 0) < 2) notes.push("not Indonesian");
+  // A short fragment of names or numbers ("Jakarta, Indonesia.") reads the same in both languages, so it is checked
+  // only when it holds an English function word ("Email him or use LinkedIn.").
+  const words = a.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
+  const english = /\b(?:the|and|he|him|his|is|are|or|with|to|for|it|use)\b/.test(a);
+  if ((item.lang === "id" || e.lang === "id") && (words >= MIN_LANGUAGE_WORDS || english) && ID_HINT.reduce((n, w) => n + a.split(w).length - 1, 0) < 2) notes.push("not Indonesian");
   return { pass: notes.length === 0, notes };
 }
 
@@ -488,7 +499,7 @@ async function main() {
   const goldenCount = items.filter((i) => !isRedTeam(i)).length;
   const threshold =
     set === "golden"
-      ? Math.min(data.passThreshold ?? items.length, items.length)
+      ? goldenThreshold(items.length, data.items.length, data.passThreshold)
       : set === "suggestions"
         ? Math.ceil(items.length * SUGGESTIONS_PASS_RATIO)
         : set === "smoke"
