@@ -1,6 +1,6 @@
 # L4 Study Vault and in-app study guide reader (design)
 
-Status: PR 1 shipped in #243 (039af05) and #245 (7d8fa97), 2026-10-19; PR 2 in review
+Status: shipped in #243 (039af05), #245 (7d8fa97) and #247 (1a397f4), 2026-10-19
 
 Date: 2026-10-19. Owner-approved design. Repo: ShinyQ/ShinyQ-HQ (main 633750e or later).
 
