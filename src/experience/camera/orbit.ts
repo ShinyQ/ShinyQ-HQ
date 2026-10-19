@@ -41,6 +41,8 @@ export interface OrbitState {
   easing: boolean;
   /** View zone the rover is in, if any. */
   zone: string | null;
+  /** The camera class the zone's view was applied for: a device rotation that changes it re-applies the zone's view (`updateZone`). */
+  zoneCls: ViewportClass | undefined;
   /** Zone in which the visitor rotated by hand; no auto-face there until the rover leaves it. */
   suppressedZone: string | null;
   /** Zoom set by a view zone; restored to 1 on exit unless the visitor zoomed by hand meanwhile. */
@@ -97,6 +99,7 @@ export function createOrbitState(): OrbitState {
     pushIdle: 0,
     easing: false,
     zone: null,
+    zoneCls: undefined,
     suppressedZone: null,
     zoneZoom: null,
     zoneRailYaw: null,
@@ -321,6 +324,7 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
 export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass, rail = false): void {
   const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined, pitch: undefined, lookOffset: undefined };
   s.zone = zone?.id ?? null;
+  s.zoneCls = cls;
   s.suppressedZone = null;
   s.yaw = s.yawTarget = view.yaw;
   s.zoom = s.zoomTarget = view.zoom ?? 1;
@@ -377,15 +381,50 @@ function releaseTurn(s: OrbitState): void {
 }
 
 /**
+ * A device rotation in a zone (the camera class changed, `from` to `to`): re-applies the parts of the zone's view that
+ * differ between the two classes, as entering it would, so a portrait look offset, pitch or zoom does not stay on a
+ * landscape screen. Nothing when the zone applied nothing on entry (reduced motion, first person) or the visitor turned
+ * by hand in it; a hand zoom keeps its zoom and its released look offset. Zones whose view is the same on both classes
+ * are untouched.
+ */
+function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: ViewportClass, reduced: boolean): void {
+  const was = zoneView(zone, from);
+  const view = zoneView(zone, to);
+  const offset = (v: typeof view) => [v.lookOffset?.forward ?? 0, v.lookOffset?.up ?? 0];
+  const [f0, u0] = offset(was);
+  const [f1, u1] = offset(view);
+  if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
+  if (was.yaw === view.yaw && was.zoom === view.zoom && was.pitch === view.pitch && f0 === f1 && u0 === u1) return;
+  if (view.yaw !== was.yaw) s.yawTarget = nearestAngle(view.yaw, s.yaw);
+  if (view.pitch !== was.pitch) s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
+  s.zoneTurn = turnOf(zone, view);
+  // A hand zoom set `zoneZoom` to null (and released the look offset): the visitor keeps that framing.
+  if (was.zoom === undefined || s.zoneZoom !== null) {
+    if (view.zoom !== was.zoom) {
+      s.zoomTarget = view.zoom ?? 1;
+      s.zoneZoom = view.zoom ?? null;
+    }
+    aimAt(s, view.lookOffset);
+  }
+  s.easing = true;
+}
+
+/**
  * Tracks the zone the rover is in. Entering a zone eases the camera to face its feature, unless
  * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
  * Leaving clears the block. On the rail rig a zone's `railYaw` eases the rail in the same way and back to
- * the nearest side view on leaving, unless the visitor turned the rail by hand meanwhile.
+ * the nearest side view on leaving, unless the visitor turned the rail by hand meanwhile. A camera class change inside
+ * the same zone (a device rotation) re-applies its view for the new class (`reclassZone`).
  */
 export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass, rail = false): void {
   const id = zone?.id ?? null;
-  if (id === s.zone) return;
+  if (id === s.zone) {
+    if (zone && cls && s.zoneCls && cls !== s.zoneCls) reclassZone(s, zone, s.zoneCls, cls, reduced);
+    if (cls) s.zoneCls = cls;
+    return;
+  }
   s.zone = id;
+  s.zoneCls = cls;
   if (!zone) {
     s.suppressedZone = null;
     if (s.zoneZoom !== null) {

@@ -520,3 +520,101 @@ describe("the office zone's look offset eases in and out with the zone", () => {
     expect(pose.target[1]).toBe(plain.target[1]);
   });
 });
+
+describe("a device rotation in a zone (the camera class changes) re-applies the zone's view for the new class", () => {
+  const office = layouts.L1.viewZones!.find((z) => z.id === "L1:office")!;
+  const settle = (s: OrbitState, reduced = false) => {
+    for (let i = 0; i < 300 && s.easing; i++) stepOrbit(s, 1 / 60, reduced);
+  };
+  /** The orbit at the office stop on `cls`, settled, then `then`'s class reported to `updateZone` as `CameraDirector` does (its pitch range first). */
+  const rotateAtStop = (cls: ViewportClass, then: ViewportClass, before?: (s: OrbitState) => void, reduced = false) => {
+    const s = createOrbitState();
+    setPitchRange(s, pitchRange(cls, "follow"));
+    updateZone(s, office, reduced, cls);
+    settle(s, reduced);
+    before?.(s);
+    settle(s, reduced);
+    setPitchRange(s, pitchRange(then, "follow"));
+    updateZone(s, office, reduced, then);
+    settle(s, reduced);
+    return s;
+  };
+  const landed = (s: OrbitState, cls: ViewportClass) => {
+    const view = zoneView(office, cls);
+    expect(s.zone).toBe("L1:office");
+    expect(s.zoneCls).toBe(cls);
+    expect(s.zoom).toBeCloseTo(view.zoom!, 9);
+    expect(s.pitch).toBeCloseTo(Math.max(s.pitchMin, Math.min(s.pitchMax, view.pitch ?? 0)), 9);
+    expect(s.lookForward).toBeCloseTo(view.lookOffset?.forward ?? 0, 9);
+    expect(s.lookUp).toBeCloseTo(view.lookOffset?.up ?? 0, 9);
+    expect(s.zoneTurn).toBe(view.pitch !== undefined ? office.yaw : null);
+    expect(s.easing).toBe(false);
+  };
+
+  it("portrait to landscape at the office stop drops the portrait look offset, pitch and zoom, and back again", () => {
+    for (const then of ["tablet", "desktop"] as const) {
+      const s = rotateAtStop("mobile", then);
+      landed(s, then);
+      setPitchRange(s, pitchRange("mobile", "follow"));
+      updateZone(s, office, false, "mobile");
+      settle(s);
+      landed(s, "mobile");
+    }
+    landed(rotateAtStop("desktop", "tablet"), "tablet");
+  });
+
+  it("eases the change (no snap)", () => {
+    const s = rotateAtStop("mobile", "mobile");
+    setPitchRange(s, pitchRange("tablet", "follow"));
+    updateZone(s, office, false, "tablet");
+    expect(s.easing).toBe(true);
+    stepOrbit(s, 1 / 60, false);
+    expect(s.lookForward).toBeLessThan(0);
+    expect(s.lookForward).toBeGreaterThan(OFFICE.view.mobile.lookOffset.forward);
+  });
+
+  it("keeps a hand zoom's zoom and released offset and a hand turn's framing, and does nothing under reduced motion", () => {
+    const zoomed = rotateAtStop("mobile", "tablet", (s) => zoomBy(s, 0.8, false));
+    expect(zoomed.zoom).toBeCloseTo(OFFICE.view.mobile.zoom * 0.8, 9);
+    expect(zoomed.lookForward).toBe(0);
+    expect(zoomed.pitch).toBeCloseTo(Math.max(zoomed.pitchMin, Math.min(zoomed.pitchMax, OFFICE.view.tablet.pitch)), 9);
+    const turned = rotateAtStop("mobile", "tablet", (s) => rotate(s, 0.3, 0));
+    const before = rotateAtStop("mobile", "mobile", (s) => rotate(s, 0.3, 0));
+    expect(turned.zoom).toBe(before.zoom);
+    expect(turned.lookForward).toBe(before.lookForward);
+    expect(turned.yaw).toBe(before.yaw);
+    const reduced = rotateAtStop("mobile", "tablet", undefined, true);
+    expect([reduced.zoom, reduced.lookForward]).toEqual([1, 0]);
+    const s = createOrbitState();
+    primeZone(s, office, "mobile");
+    const primed = { zoom: s.zoom, pitch: s.pitch, lookForward: s.lookForward };
+    updateZone(s, office, true, "tablet");
+    stepOrbit(s, 1 / 60, true);
+    expect({ zoom: s.zoom, pitch: s.pitch, lookForward: s.lookForward }).toEqual(primed);
+  });
+
+  it("leaves every zone whose view is the same on both classes untouched, float for float", () => {
+    let compared = 0;
+    for (const { zone } of zones)
+      for (const from of CLASSES)
+        for (const to of CLASSES) {
+          if (from === to || JSON.stringify(zoneView(zone, from)) !== JSON.stringify(zoneView(zone, to))) continue;
+          const s = createOrbitState();
+          const o = createOrbitState();
+          for (const x of [s, o]) {
+            setPitchRange(x, pitchRange(from, "follow"));
+            updateZone(x, zone, false, from);
+            for (let i = 0; i < 20; i++) stepOrbit(x, 1 / 60, false);
+          }
+          updateZone(s, zone, false, to);
+          updateZone(o, zone, false, from);
+          for (let i = 0; i < 60; i++) {
+            stepOrbit(s, 1 / 60, false);
+            stepOrbit(o, 1 / 60, false);
+          }
+          expect({ ...s, zoneCls: undefined }, `${zone.id} ${from} to ${to}`).toEqual({ ...o, zoneCls: undefined });
+          compared += 1;
+        }
+    expect(compared).toBeGreaterThan(40);
+  });
+});
