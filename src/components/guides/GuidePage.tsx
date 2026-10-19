@@ -1,7 +1,7 @@
 "use client";
 
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask, TextLayer } from "pdfjs-dist";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import styles from "./GuideReader.module.css";
 
 type Pdfjs = typeof import("pdfjs-dist");
@@ -20,6 +20,8 @@ export interface GuidePageProps {
   active: boolean;
   label: string;
   failedLabel: string;
+  /** The per-page retry button's label. */
+  retryLabel: string;
 }
 
 /** Zeroes a canvas so iOS Safari frees its backing store at once, then removes it. */
@@ -32,10 +34,12 @@ export function releaseCanvas(canvas: HTMLCanvasElement) {
 /**
  * One page slot: a white sheet with the page canvas and the pdf.js text layer (selectable, searchable text).
  * Draws while `active`, into a fresh canvas swapped in when done, so a zoom never flashes blank; cancels the
- * in-flight render on a new scale or unmount; releases the canvas when it leaves the render window.
+ * in-flight render on a new scale or unmount; releases the canvas when it leaves the render window. A failed draw
+ * shows `failedLabel` with a retry button that draws the page again.
  */
-export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, scale, ratio, active, label, failedLabel }: GuidePageProps) {
+export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, scale, ratio, active, label, failedLabel, retryLabel }: GuidePageProps) {
   const slot = useRef<HTMLDivElement>(null);
+  const [attempt, setAttempt] = useState(0);
   const host = useRef<HTMLDivElement>(null);
   const text = useRef<HTMLDivElement>(null);
 
@@ -96,7 +100,7 @@ export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, s
       task?.cancel();
       layer?.cancel();
     };
-  }, [lib, doc, n, scale, ratio, active, label]);
+  }, [lib, doc, n, scale, ratio, active, label, attempt]);
 
   useEffect(() => {
     const hostEl = host.current;
@@ -112,7 +116,20 @@ export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, s
       <span aria-hidden="true" className={styles.slotNumber}>
         {n}
       </span>
-      <p className={styles.failed}>{failedLabel}</p>
+      <div className={styles.failed}>
+        <p>{failedLabel}</p>
+        <button
+          type="button"
+          className="pv-btn pv-btn-primary"
+          onClick={() => {
+            if (slot.current) delete slot.current.dataset.failed;
+            setAttempt((a) => a + 1);
+          }}
+          data-testid="guide-page-retry"
+        >
+          {retryLabel}
+        </button>
+      </div>
       <div ref={host} />
       <div ref={text} className={styles.textLayer} />
     </div>

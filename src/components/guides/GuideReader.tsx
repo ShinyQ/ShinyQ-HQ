@@ -315,6 +315,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
                   active={drawnSet.has(n)}
                   label={t("pageOf", { page: n, count: loaded.count })}
                   failedLabel={t("pageFailed")}
+                  retryLabel={t("retry")}
                 />
               ))}
             </div>
