@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
 import { kioskRect, LOBBY } from "../config";
 import type { ExperienceData, GpuTier, Rect } from "../types";
@@ -15,6 +15,8 @@ import type { HallLabels } from "./lobby/hallContent";
 import { HALL } from "./lobby/hallLayout";
 import { HighlightsHall } from "./lobby/HighlightsHall";
 import { Lanes } from "./lobby/Lanes";
+import { atlasLayout, wallLogoSrcs } from "./lobby/logoAtlas";
+import { useLogoAtlas } from "./lobby/LogoQuads";
 import { MissionKiosk, type KioskLabels } from "./lobby/MissionKiosk";
 import type { ObservatoryLabels } from "./lobby/observatory";
 import { ProfileHologram } from "./lobby/ProfileHologram";
@@ -78,6 +80,8 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
   const observing = useHQStore((s) => s.phase === "room" && s.activeRoom === VISITS_ROOM);
   const intro = useHQStore((s) => s.phase === "intro");
   const composerLive = useComposerLive(tier);
+  const atlas = useMemo(() => atlasLayout(wallLogoSrcs(data)), [data]);
+  const atlasTexture = useLogoAtlas();
   // From the intro chunk, loaded before the canvas mounts in a session that plays the intro (intro/chunk.ts).
   const IntroBeacons = introModule()?.IntroBeacons;
   useEffect(() => {
@@ -91,10 +95,10 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
         <StatsRing key={stats.length} stats={stats} />
       </IntroReveal>
       <IntroReveal rect={REVEAL.skills}>
-        <SkillsWall skills={data.skills} title={labels.skillsTitle} />
+        <SkillsWall skills={data.skills} atlas={atlas} atlasTexture={atlasTexture} title={labels.skillsTitle} />
       </IntroReveal>
       <IntroReveal rect={REVEAL.certs}>
-        <CertWall certifications={data.certifications} labels={labels.certs} tier={tier} />
+        <CertWall certifications={data.certifications} atlas={atlas} atlasTexture={atlasTexture} labels={labels.certs} tier={tier} />
       </IntroReveal>
       <IntroReveal rect={REVEAL.kiosk}>
         <MissionKiosk missions={data.missions} labels={labels.kiosk} />

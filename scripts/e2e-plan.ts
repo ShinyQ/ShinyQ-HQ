@@ -222,7 +222,7 @@ export const RULES: Rule[] = [
   // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
   { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
   // The prebuilt L1 wall logo atlas (scripts/logo-atlas.ts) draws on the Lobby walls only.
-  { test: /^src\/experience\/floors\/lobby\/|^public\/atlas\/|^src\/experience\/logo-atlas\.json$|^scripts\/logo-atlas\.ts$/, specs: ["experience", "highlights"] },
+  { test: /^src\/experience\/floors\/lobby\/|^public\/atlas\/|^src\/experience\/logo-atlas\.ts$|^scripts\/logo-atlas\.(ts|lock\.json)$/, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   // Missions: the runner, the 3D host and the reworked missions (highlights drives to the hall, journey rides to L2).
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof", "highlights", "career"] },

@@ -2,12 +2,16 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { ATLAS_CELL, atlasLayout, atlasTextureFlags, canDecodeAtlasBitmap, cellUv, quadBuffers, wallLogoSrcs } from "@/experience/floors/lobby/logoAtlas";
-import manifest from "@/experience/logo-atlas.json";
+import { LOCALES } from "@/content/locales";
+import { Texture } from "three";
+import { ATLAS_CELL, atlasFlipY, atlasLayout, canDecodeAtlasBitmap, cellUv, quadBuffers, wallLogoSrcs } from "@/experience/floors/lobby/logoAtlas";
+import { LOGO_ATLAS_FILE } from "@/experience/logo-atlas";
 import lock from "../../scripts/logo-atlas.lock.json";
-import { atlasProblems, expectedLayout, QUANT, sourcesHash } from "../../scripts/logo-atlas";
+import { atlasProblems, expectedLayout, manifestSource, QUANT, readManifest, sourcesHash } from "../../scripts/logo-atlas";
 
-const data = () => buildExperienceData("en", { L1: "Lobby", L2: "Career", L3: "Labs", L4: "Library", RF: "Roof" });
+const manifest = { file: LOGO_ATLAS_FILE };
+
+const data = (locale: (typeof LOCALES)[number] = "en") => buildExperienceData(locale, { L1: "Lobby", L2: "Career", L3: "Labs", L4: "Library", RF: "Roof" });
 
 describe("skills wall logo atlas", () => {
   it("dedupes logos and skips nulls", () => {
@@ -45,13 +49,15 @@ describe("skills wall logo atlas", () => {
 });
 
 describe("prebuilt L1 logo atlas (scripts/logo-atlas.ts)", () => {
-  it("holds every skills and certification wall logo in the runtime layout order", () => {
-    const d = data();
-    const layout = atlasLayout(wallLogoSrcs(d));
-    expect(manifest.srcs, "stale atlas: run bun scripts/logo-atlas.ts").toEqual(layout.srcs);
-    expect([manifest.cols, manifest.rows, manifest.cell]).toEqual([layout.cols, layout.rows, ATLAS_CELL]);
-    for (const c of d.certifications) if (c.logo) expect(manifest.srcs).toContain(c.logo);
-    for (const g of d.skills) for (const src of g.logos) if (src) expect(manifest.srcs).toContain(src);
+  it("holds every skills and certification wall logo in the runtime layout order, in every locale", () => {
+    for (const locale of LOCALES) {
+      const d = data(locale);
+      const layout = atlasLayout(wallLogoSrcs(d));
+      expect(lock.srcs, "stale atlas: run bun scripts/logo-atlas.ts").toEqual(layout.srcs);
+      expect(layout.cell).toBe(ATLAS_CELL);
+      for (const c of d.certifications) if (c.logo) expect(lock.srcs).toContain(c.logo);
+      for (const g of d.skills) for (const src of g.logos) if (src) expect(lock.srcs).toContain(src);
+    }
   });
 
   it("is fresh: same logo bytes, content-hashed file name, one cell per logo at 128 px", () => {
@@ -65,11 +71,14 @@ describe("prebuilt L1 logo atlas (scripts/logo-atlas.ts)", () => {
     // VP8L (lossless) header: 14-bit width and height minus one.
     expect(bytes.subarray(12, 16).toString("latin1")).toBe("VP8L");
     const bits = bytes.readUInt32LE(21);
-    expect([(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1]).toEqual([manifest.cols * manifest.cell, manifest.rows * manifest.cell]);
+    const { cols, rows, cell } = expectedLayout();
+    expect([(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1]).toEqual([cols * cell, rows * cell]);
   });
 
-  it("ships only what the runtime needs in the client manifest", () => {
-    expect(Object.keys(manifest).sort()).toEqual(["cell", "cols", "file", "rows", "srcs"]);
+  it("ships only the hashed file name in the client manifest; the layout comes from content", () => {
+    const file = path.join(process.cwd(), "src", "experience", "logo-atlas.ts");
+    expect(readFileSync(file, "utf8")).toBe(manifestSource(manifest));
+    expect(readManifest(file)).toEqual(manifest);
     expect(lock.file).toBe(manifest.file);
   });
 
@@ -87,6 +96,7 @@ describe("prebuilt L1 logo atlas (scripts/logo-atlas.ts)", () => {
     expect(sourcesHash(layout)).toBe(before);
     expect(atlasProblems(manifest, { ...lock, sources: "000000000000" })).toEqual(["a logo file or an atlas setting changed (sources hash differs)"]);
     expect(atlasProblems(manifest, { ...lock, file: "/atlas/logos.0000000000.webp" })).toContain("scripts/logo-atlas.lock.json belongs to another atlas");
+    expect(atlasProblems(manifest, { ...lock, srcs: [...lock.srcs].reverse() })).toContain("the wall logos changed (srcs differ)");
   });
 });
 
@@ -115,7 +125,8 @@ describe("logo atlas decode path", () => {
   });
 
   it("flips the <img> on upload and never the pre-flipped bitmap, straight alpha on both", () => {
-    expect(atlasTextureFlags(false)).toEqual({ flipY: true, premultiplyAlpha: false });
-    expect(atlasTextureFlags(true)).toEqual({ flipY: false, premultiplyAlpha: false });
+    expect(atlasFlipY(false)).toBe(true);
+    expect(atlasFlipY(true)).toBe(false);
+    expect(new Texture().premultiplyAlpha).toBe(false);
   });
 });

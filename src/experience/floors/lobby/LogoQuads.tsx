@@ -2,108 +2,77 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture } from "three";
-import atlas from "../../logo-atlas.json";
-import { atlasTextureFlags, canDecodeAtlasBitmap, quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
+import { LOGO_ATLAS_FILE } from "../../logo-atlas";
+import { atlasFlipY, canDecodeAtlasBitmap, quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
 
-/** Layout of the prebuilt logo atlas (scripts/logo-atlas.ts): every L1 wall logo, in the order of `wallLogoSrcs`. */
-export const LOGO_ATLAS: AtlasLayout = atlas;
-
-interface SharedAtlas {
-  texture: Texture;
-  users: number;
-  ready: Promise<Texture>;
-  released: boolean;
-}
-
-let shared: SharedAtlas | null = null;
-
-const closeBitmap = (image: unknown) => {
-  if (typeof ImageBitmap !== "undefined" && image instanceof ImageBitmap) image.close();
-};
+// Only an ImageBitmap has close(); the <img> fallback has none.
+const closeBitmap = (image: unknown) => (image as { close?: () => void } | null)?.close?.();
 
 /**
  * Decodes the atlas off the main thread into a straight-alpha, vertically flipped ImageBitmap: the
  * texels WebGL received from the canvas atlas, without the synchronous re-decode Chrome does when an
  * <img> is uploaded with straight alpha. Browsers without a reliable createImageBitmap (none, Safari
- * before 17, Firefox before 98: `canDecodeAtlasBitmap`) use the <img> and flipY.
+ * before 17, Firefox before 98: `canDecodeAtlasBitmap`) use the <img> and flipY. Straight alpha is the
+ * Texture default (premultiplyAlpha false). Runs in an effect, so `navigator` exists.
  */
 async function loadAtlasImage(texture: Texture): Promise<void> {
-  const bitmap = canDecodeAtlasBitmap(typeof navigator === "undefined" ? undefined : navigator.userAgent, typeof createImageBitmap === "function");
-  Object.assign(texture, atlasTextureFlags(bitmap));
+  const bitmap = canDecodeAtlasBitmap(navigator.userAgent, typeof createImageBitmap === "function");
+  texture.flipY = atlasFlipY(bitmap);
   if (bitmap) {
-    const response = await fetch(atlas.file);
-    if (!response.ok) throw new Error(`logo atlas: HTTP ${response.status}`);
-    texture.image = await createImageBitmap(await response.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
+    // An error response is no image, so createImageBitmap rejects it like a failed fetch.
+    texture.image = await createImageBitmap(await (await fetch(LOGO_ATLAS_FILE)).blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
     return;
   }
   const img = new Image();
-  img.decoding = "async";
-  img.src = atlas.file;
+  img.src = LOGO_ATLAS_FILE;
   await img.decode();
   texture.image = img;
 }
 
 /**
- * One texture for both walls, decoded before upload. Same texels and settings as the runtime canvas
- * atlas it replaces (sRGB, anisotropy 4, flipped rows, straight alpha, mipmaps).
+ * The logo atlas texture both walls share (the Lobby calls this once and passes it down), decoded before
+ * upload; null until it has loaded (or when it failed to load). Same texels and settings as the runtime
+ * canvas atlas it replaces (sRGB, anisotropy 4, flipped rows, straight alpha, mipmaps). Unmounting
+ * disposes it (the next mount loads it again, from the HTTP cache).
  */
-function acquire(): SharedAtlas {
-  if (!shared) {
-    const texture = new Texture();
-    texture.colorSpace = SRGBColorSpace;
-    texture.anisotropy = 4;
-    const entry: SharedAtlas = { texture, users: 0, released: false, ready: Promise.resolve(texture) };
-    entry.ready = loadAtlasImage(texture).then(() => {
-      if (entry.released) closeBitmap(texture.image);
-      else texture.needsUpdate = true;
-      return texture;
-    });
-    shared = entry;
-  }
-  shared.users++;
-  return shared;
-}
-
-/** The last wall to unmount disposes the texture (the next mount loads it again, from the HTTP cache). */
-function release(entry: SharedAtlas) {
-  entry.users--;
-  if (entry.users > 0) return;
-  entry.released = true;
-  entry.texture.dispose();
-  closeBitmap(entry.texture.image);
-  if (shared === entry) shared = null;
-}
-
-/** The shared logo atlas texture, or null until it has loaded (or when it failed to load). */
 export function useLogoAtlas(): Texture | null {
   const [texture, setTexture] = useState<Texture | null>(null);
   useEffect(() => {
     let live = true;
-    const entry = acquire();
-    entry.ready.then(
-      (t) => live && setTexture(t),
+    const t = new Texture();
+    t.colorSpace = SRGBColorSpace;
+    t.anisotropy = 4;
+    loadAtlasImage(t).then(
+      () => {
+        if (!live) return closeBitmap(t.image);
+        t.needsUpdate = true;
+        setTexture(t);
+      },
       () => undefined,
     );
     return () => {
       live = false;
-      release(entry);
+      t.dispose();
+      closeBitmap(t.image);
     };
   }, []);
   return texture;
 }
 
-/** Every logo on the skills wall as one mesh (one draw call) over the prebuilt logo atlas. */
-export function LogoQuads({ quads, z = 0 }: { quads: LogoQuad[]; z?: number }) {
-  const texture = useLogoAtlas();
+/**
+ * Every logo on the skills wall as one mesh (one draw call) over the prebuilt logo atlas `texture`. `atlas`
+ * is `atlasLayout(wallLogoSrcs(data))`, the order scripts/logo-atlas.ts drew the cells in.
+ */
+export function LogoQuads({ atlas, texture, quads, z = 0 }: { atlas: AtlasLayout; texture: Texture | null; quads: LogoQuad[]; z?: number }) {
   const geometry = useMemo(() => {
-    const { positions, uvs, indices } = quadBuffers(LOGO_ATLAS, quads, z);
+    const { positions, uvs, indices } = quadBuffers(atlas, quads, z);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("uv", new BufferAttribute(uvs, 2));
     g.setIndex(new BufferAttribute(indices, 1));
     g.computeBoundingSphere();
     return g;
-  }, [quads, z]);
+  }, [atlas, quads, z]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
   return (

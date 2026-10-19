@@ -2,7 +2,7 @@
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh } from "three";
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh, type Texture } from "three";
 import { issuerTabs } from "@/content/certs";
 import { openCert } from "@/hud/events";
 import { useHQStore } from "@/store/useHQStore";
@@ -13,8 +13,7 @@ import { roverRuntime } from "../../rover/runtime";
 import type { ExperienceData, GpuTier } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
 import { arcPoint, CERT_PAGE_SIZE, CERT_WALL, certPage, certPanelHalf, certSlots, faceYaw, tabAngles, type CertSlot } from "./layout";
-import { orientedQuadBuffers } from "./logoAtlas";
-import { LOGO_ATLAS, useLogoAtlas } from "./LogoQuads";
+import { orientedQuadBuffers, type AtlasLayout } from "./logoAtlas";
 
 type Cert = ExperienceData["certifications"][number];
 
@@ -73,22 +72,21 @@ function badgeOutlines(slots: CertSlot[], certs: Cert[], boost: number): BufferG
 }
 
 /** Issuer logos of the visible badges as one mesh over the prebuilt logo atlas (one draw call). */
-function BadgeLogos({ slots, certs }: { slots: CertSlot[]; certs: Cert[] }) {
-  const texture = useLogoAtlas();
+function BadgeLogos({ atlas, texture, slots, certs }: { atlas: AtlasLayout; texture: Texture | null; slots: CertSlot[]; certs: Cert[] }) {
   const geometry = useMemo(() => {
     const quads = slots.flatMap((slot, i) => {
       const src = certs[i].logo;
       if (!src) return [];
       return [{ src, center: badgePoint(slot, -badge.w / 2 + LOGO.inset, badge.h / 2 - LOGO.inset, 0.02), yaw: faceYaw(slot.a), size: LOGO.size }];
     });
-    const { positions, uvs, indices } = orientedQuadBuffers(LOGO_ATLAS, quads);
+    const { positions, uvs, indices } = orientedQuadBuffers(atlas, quads);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("uv", new BufferAttribute(uvs, 2));
     g.setIndex(new BufferAttribute(indices, 1));
     g.computeBoundingSphere();
     return g;
-  }, [slots, certs]);
+  }, [atlas, slots, certs]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
   return (
@@ -179,7 +177,7 @@ function Panel({ half }: { half: number }) {
  * card (`openCert`, shown by `DialogHost`), never a third-party page in a frame. Badges are instanced, their outlines,
  * logos and every text (title, tabs, badges, pager) are one mesh each, so the wall stays near 15 draw calls at any count.
  */
-export function CertWall({ certifications, labels, tier }: { certifications: Cert[]; labels: CertLabels; tier: GpuTier }) {
+export function CertWall({ certifications, atlas, atlasTexture, labels, tier }: { certifications: Cert[]; atlas: AtlasLayout; atlasTexture: Texture | null; labels: CertLabels; tier: GpuTier }) {
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const tabs = useMemo(() => issuerTabs(certifications), [certifications]);
   const [tabIndex, setTabIndex] = useState(0);
@@ -318,7 +316,7 @@ export function CertWall({ certifications, labels, tier }: { certifications: Cer
       <lineSegments geometry={outlines} raycast={() => null}>
         <lineBasicMaterial vertexColors transparent opacity={0.85} toneMapped={false} />
       </lineSegments>
-      <BadgeLogos slots={slots} certs={shown} />
+      <BadgeLogos atlas={atlas} texture={atlasTexture} slots={slots} certs={shown} />
       <BatchedLabels labels={texts} name="cert-labels" renderOrder={4} />
       {page.pages > 1 && (
         <>

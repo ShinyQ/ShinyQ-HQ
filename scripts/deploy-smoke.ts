@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
-import logoAtlas from "../src/experience/logo-atlas.json";
+import { LOGO_ATLAS_FILE } from "../src/experience/logo-atlas";
 import troikaFonts from "../src/experience/troika-fonts.json";
 import cvPages from "../content/generated/cv-pages.json";
 import { parseStatsSnapshot } from "../src/lib/stats/protocol";
@@ -49,7 +49,7 @@ export function cacheProblems(observed: Record<string, string | null>): string[]
 export function cacheSamples(root = process.cwd()): string[] {
   const content = JSON.parse(readFileSync(path.join(root, "content", "site-content.json"), "utf8")) as { floors: { labs: { pods: { assets: { src: string }[] }[] } } };
   const cover = content.floors.labs.pods.find((p) => p.assets.length > 0)!.assets[0].src;
-  return [troikaFonts.sans, logoAtlas.file, "/tech/docker.svg", cover, "/floors/L1.webp", cvPages.pages[0].src];
+  return [troikaFonts.sans, LOGO_ATLAS_FILE, "/tech/docker.svg", cover, "/floors/L1.webp", cvPages.pages[0].src];
 }
 
 export interface Expected {

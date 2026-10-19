@@ -32,24 +32,16 @@ export function atlasLayout(srcs: readonly (string | null)[], cell = ATLAS_CELL)
 export function canDecodeAtlasBitmap(userAgent: string | undefined, hasCreateImageBitmap: boolean): boolean {
   if (!hasCreateImageBitmap) return false;
   if (!userAgent) return true;
-  if (/^((?!chrome|android).)*safari/i.test(userAgent)) {
-    const version = userAgent.match(/Version\/(\d+)/);
-    if (!version || Number.parseInt(version[1], 10) < 17) return false;
-  }
-  if (userAgent.includes("Firefox")) {
-    const version = userAgent.match(/Firefox\/(\d+)\./);
-    if (!version || Number.parseInt(version[1], 10) < 98) return false;
-  }
-  return true;
+  // Major version, 0 when the agent does not say.
+  const major = (re: RegExp) => +(userAgent.match(re)?.[1] ?? 0);
+  return !(/^((?!chrome|android).)*safari/i.test(userAgent) && major(/Version\/(\d+)/) < 17) && !(userAgent.includes("Firefox") && major(/Firefox\/(\d+)\./) < 98);
 }
 
 /**
- * Texture flags for each decode path. The bitmap is decoded with its rows flipped already (WebGL ignores
- * UNPACK_FLIP_Y for an ImageBitmap); the <img> is flipped on upload. Both keep straight alpha.
+ * `texture.flipY` for each decode path. The bitmap is decoded with its rows flipped already (WebGL ignores
+ * UNPACK_FLIP_Y for an ImageBitmap); the <img> is flipped on upload.
  */
-export function atlasTextureFlags(bitmap: boolean): { flipY: boolean; premultiplyAlpha: boolean } {
-  return { flipY: !bitmap, premultiplyAlpha: false };
-}
+export const atlasFlipY = (bitmap: boolean) => !bitmap;
 
 /** Every logo the L1 walls draw, in atlas order: the skills wall items first, then the certification issuers. */
 export function wallLogoSrcs(data: { skills: readonly { logos: readonly (string | null)[] }[]; certifications: readonly { logo: string | null }[] }): (string | null)[] {
