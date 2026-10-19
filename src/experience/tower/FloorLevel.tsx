@@ -7,6 +7,9 @@ import { getHQStore } from "@/store/useHQStore";
 import { ceilingOpacity } from "../camera/firstPerson";
 import { floorY, SLAB_THICKNESS } from "../config";
 import { roverRuntime } from "../rover/runtime";
+import type { FloorId } from "@/content/schema";
+import { MAX_FRAME_DT } from "../rover/controller";
+import { animationSpeed } from "../scene/animationSpeed";
 import type { FloorLayout } from "../types";
 import { slabBox, slabRects } from "../nav/slab";
 import { GridFloor } from "../fx/GridFloor";
@@ -15,6 +18,7 @@ import { ProximityGlow } from "../fx/ProximityGlow";
 import { PadGlow } from "../fx/PadGlow";
 import { registerFloorContent, registerFloorSlab } from "./floorRegistry";
 import { floorContentVisible } from "./near";
+import { ghostOutlineHidden, ghostOutlineOpacity, stepGhostOutline } from "./ghostOutline";
 import { floorReady } from "./ridePrep";
 import { slabOutline } from "./slabOutline";
 import { contentVisible } from "./visibility";
@@ -34,16 +38,30 @@ function ghostFill(fill: MeshBasicMaterial, above: boolean, ghost: number) {
  * One floor slab (one box and one grid per slab rect: the bounds plus any wings) with accent edges and
  * its content. Floors above the rover turn into ghosts each frame so the follow camera, which sits
  * higher than FLOOR_GAP, can look down through them. In first person (round 5) the ghosts
- * fade out and hide, so no ceiling hangs over the rover's eyes. The slab takes no
+ * fade out and hide, so no ceiling hangs over the rover's eyes. A ghost's outline also fades out while the rover is
+ * in an area of its floor that looks under the slabs above (the L1 office wing: tower/ghostOutline.ts). The slab takes no
  * clicks: the rover only drives to point-and-go targets (interact/InteractLayer.tsx).
  */
-export function FloorLevel({ layout, near, children }: { layout: FloorLayout; near: boolean; children?: ReactNode }) {
+export function FloorLevel({
+  layout,
+  layouts,
+  near,
+  children,
+}: {
+  layout: FloorLayout;
+  /** Every floor's layout: the rover's floor marks where the floors above hide their ghost outline. */
+  layouts?: Record<FloorId, FloorLayout>;
+  near: boolean;
+  children?: ReactNode;
+}) {
   const y = floorY(layout.id);
   const { bounds, wings, accent } = layout;
   const edge = useRef<LineBasicMaterial>(null);
   const content = useRef<Group>(null);
   const slab = useRef<Group>(null);
   const slabFills = useRef<(Mesh | null)[]>([]);
+  /** The ghost outline's hide amount (0 shown, 1 hidden), eased by `stepGhostOutline`. */
+  const outline = useRef(0);
   // Every rect's box and grid, the grids faded as one floor around the slab's box.
   const rects = useMemo(
     () =>
@@ -63,8 +81,8 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
   const edges = useMemo(() => slabOutline({ bounds, wings }, SLAB_THICKNESS), [bounds, wings]);
   useDispose(edges);
 
-  useFrame(() => {
-    const { phase, ride } = getHQStore().getState();
+  useFrame((_, rawDt) => {
+    const { phase, ride, floor, reducedMotion } = getHQStore().getState();
     const exterior = phase === "boot" || phase === "intro";
     // Slabs above the rover are ghosts in every phase, the boot and the intro orbit included.
     const above = y > roverRuntime.y + 0.5;
@@ -72,7 +90,9 @@ export function FloorLevel({ layout, near, children }: { layout: FloorLayout; ne
     if (slab.current) slab.current.visible = ghost > 0.01;
     sceneProbes.ghosts[layout.id] = above && ghost > 0.01;
     ghostFill(fill, above, ghost);
-    if (edge.current) edge.current.opacity = above ? 0.16 * ghost : 0.95;
+    const hidden = ghostOutlineHidden(layout.id, roverRuntime, layouts?.[floor]);
+    outline.current = stepGhostOutline(outline.current, hidden, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reducedMotion);
+    if (edge.current) edge.current.opacity = above ? 0.16 * ghost * ghostOutlineOpacity(outline.current) : 0.95;
     // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
     // still compiling waits for the car to move (tower/near.ts, R5 P6). On top of that, a ride draws only
     // its target and the floors right under the car, and the boot and intro only L1 (tower/visibility.ts).

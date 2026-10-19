@@ -266,6 +266,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       ),
       arrival: LOBBY.arrival,
       wings: [wing.rect],
+      // From the office wing the camera looks south under the L2 slab edge: the floors above drop their ghost outline there.
+      hideGhostAbove: [wing.rect],
       // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera
       // zones; the Visitor Observatory's door and the spawn and observatory views (floors/lobby/observatoryLayout.ts);
       // the elevator arrival view.

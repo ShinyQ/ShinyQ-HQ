@@ -240,6 +240,8 @@ export interface ViewZone {
    * eased in and out like the zoom; a class view's own wins). Zones without it keep the plain follow pose, float for float.
    */
   lookOffset?: LookOffset;
+  /** Floors above the rover drop their ghost outline while it is in this zone (tower/ghostOutline.ts; the L1 office stop). */
+  hideGhostAbove?: true;
   /** Applied at once on the first frame and through the boot and the intro (`primeZone`): the L1 session spawn. */
   prime?: boolean;
   /**

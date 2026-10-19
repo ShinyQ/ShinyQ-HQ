@@ -224,5 +224,7 @@ export function officeZone(w: OfficeWing): ViewZone {
     yaw: yawLooking({ x: 0, z: 1 }),
     zoom: view.desktop.zoom,
     classView: { tablet: { ...view.tablet }, mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } } },
+    // The view looks south past the L1 slab edge, under the L2 slab: its ghost outline hides here (tower/ghostOutline.ts).
+    hideGhostAbove: true,
   };
 }

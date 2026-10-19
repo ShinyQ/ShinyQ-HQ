@@ -84,6 +84,11 @@ export interface FloorLayout {
   arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
   viewZones?: ViewZone[];
+  /**
+   * Areas where the floors above drop their ghost outline while the rover stands in them (tower/ghostOutline.ts;
+   * L1: the office wing, whose view looks south under the L2 slab edge). Elsewhere the outline stays.
+   */
+  hideGhostAbove?: readonly Rect[];
   /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
   listStop?: Vec2;
   /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars); checked before `listStop`. */

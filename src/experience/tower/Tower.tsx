@@ -137,7 +137,7 @@ export function Tower({
         const isNear = near.includes(id);
         const content = isNear ? floorContent(id) : null;
         return (
-          <FloorLevel key={id} layout={layouts[id]} near={isNear}>
+          <FloorLevel key={id} layout={layouts[id]} layouts={layouts} near={isNear}>
             {content && (
               <Suspense fallback={null}>
                 {content}
