@@ -28,6 +28,8 @@ describe("ci-plan classify", () => {
     ["workers/stats/src/index.ts", "functions"],
     ["e2e/pageview.spec.ts", "e2e"],
     ["scripts/refresh-facts.ts", "tooling"],
+    ["tools/office-relay/src/cli.ts", "tooling"],
+    ["tools/office-relay/README.md", "tooling"],
     ["content/site-content.json", "content"],
     ["content/posts/a.mdx", "content"],
     ["public/media/x/1.webp", "content"],

@@ -34,7 +34,7 @@ const CLASSES: [RegExp, ChangeClass][] = [
   [/^content\/|^public\/(media|papers|cv)\//, "content"],
   [/^functions\/|^workers\/|^wrangler\.toml$/, "functions"],
   [/^scripts\/(build-knowledge|defer-scripts|root-redirect|check-client-chunks|csp-hashes|csp-policy)\.ts$/, "ui"],
-  [/^scripts\//, "tooling"],
+  [/^scripts\/|^tools\//, "tooling"],
   [/^src\/|^messages\/|^public\//, "ui"],
   [/^docs\/|^\.github\/|\.md$|^LICENSE$|^\.[\w.-]+$/, "docs"],
 ];

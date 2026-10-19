@@ -204,8 +204,8 @@ Pack note so Ask can answer "what is the Agent Office" and "is it live" (no live
 | CI failed | postToolUseFailure on a CI command, or the desk's watched run fails (webhook) | x_x | slump with a shake | cross and the failed job name (public repositories only) |
 | Asleep | no beat for 3 min (15 min while running tests, waiting on CI or needing Kurniadi), sessionEnd, or Done after 20 s | closed eyes | slumped, screen off | sleep |
 
-Command matching uses the tool name and the first two words of the command only, evaluated locally; the command text
-is never sent. **Correction:** the mock's question card showed the agent's question; that is prompt text (D3), so the
+Command matching uses the tool name and the first words (at most three, after wrappers such as env or time) of the
+command only, evaluated locally; the command text is never sent. **Correction:** the mock's question card showed the agent's question; that is prompt text (D3), so the
 card shows only "Waiting for Kurniadi".
 
 ## 6. Privacy and security
