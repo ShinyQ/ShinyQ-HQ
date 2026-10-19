@@ -1,8 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { LineBasicMaterial, LineSegments } from "three";
 import type { FloorId } from "@/content/schema";
-import { useHQStore } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS, floorY, SHAFT, towerFloors } from "../config";
 import { CareerArchive, type CareerLabels } from "../floors/CareerArchive";
 import type { LabsLabels } from "../floors/Labs";
@@ -19,7 +21,12 @@ import { RideCull } from "./RideCullHooks";
 import { ReturnPadSign } from "../fx/ReturnPadSign";
 import { FloorLevel } from "./FloorLevel";
 import { nearFloors } from "./near";
+import { slabBox } from "../nav/slab";
 import { BoxEdges } from "./primitives";
+import { inLookUnderArea, ghostOutlineOpacity, stepGhostOutline } from "./ghostOutline";
+import { roverRuntime } from "../rover/runtime";
+import { MAX_FRAME_DT } from "../rover/controller";
+import { animationSpeed } from "../scene/animationSpeed";
 import { precompileFloor } from "../scene/precompile";
 import { beginFloorPrep, endFloorPrep, finishFloorPrep } from "./ridePrep";
 import { PREPARE_TIMEOUT } from "./elevator";
@@ -71,14 +78,37 @@ function FloorPrep({ floor }: { floor: FloorId }) {
   return null;
 }
 
-/** Outline around the shaft and every floor except the long L2 corridor, which runs out of the tower on purpose. */
+/** Outline around the shaft and every floor's slab box (wings included) except the long L2 corridor, which runs out of the tower on purpose. */
 function towerFrame(layouts: Record<FloorId, FloorLayout>) {
-  const ids: FloorId[] = ["L1", "L3", "L4", "RF"];
-  const minX = Math.min(SHAFT.x - SHAFT.size / 2, ...ids.map((id) => layouts[id].bounds.minX)) - 2;
-  const maxX = Math.max(...ids.map((id) => layouts[id].bounds.maxX)) + 2;
-  const minZ = Math.min(...ids.map((id) => layouts[id].bounds.minZ)) - 2;
-  const maxZ = Math.max(...ids.map((id) => layouts[id].bounds.maxZ)) + 2;
+  const boxes = (["L1", "L3", "L4", "RF"] as const).map((id) => slabBox(layouts[id]));
+  const minX = Math.min(SHAFT.x - SHAFT.size / 2, ...boxes.map((b) => b.minX)) - 2;
+  const maxX = Math.max(...boxes.map((b) => b.maxX)) + 2;
+  const minZ = Math.min(...boxes.map((b) => b.minZ)) - 2;
+  const maxZ = Math.max(...boxes.map((b) => b.maxZ)) + 2;
   return { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, w: maxX - minX, d: maxZ - minZ };
+}
+
+const FRAME_OPACITY = 0.22;
+
+/**
+ * The tower frame (one draw call). Its far bottom edge (under the L3 slab's south end) runs across the whole office
+ * view at the horizon, so it fades out like the ghost outline of the floors above while the rover is in an area that
+ * looks out under them (`inLookUnderArea`: the L1 office wing and stop), a cut under reduced motion, and leaves the
+ * draw once faded.
+ */
+function TowerFrame({ layouts, frame }: { layouts: Record<FloorId, FloorLayout>; frame: ReturnType<typeof towerFrame> }) {
+  const lines = useRef<LineSegments>(null);
+  const hide = useRef(0);
+  useFrame((_, rawDt) => {
+    const l = lines.current;
+    if (!l) return;
+    const { floor, reducedMotion } = getHQStore().getState();
+    hide.current = stepGhostOutline(hide.current, inLookUnderArea(roverRuntime, layouts[floor]), Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reducedMotion);
+    const shown = ghostOutlineOpacity(hide.current);
+    (l.material as LineBasicMaterial).opacity = FRAME_OPACITY * shown;
+    l.visible = shown > 0.01;
+  });
+  return <BoxEdges ref={lines} size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={FRAME_OPACITY} />;
 }
 
 export function Tower({
@@ -136,7 +166,7 @@ export function Tower({
         const isNear = near.includes(id);
         const content = isNear ? floorContent(id) : null;
         return (
-          <FloorLevel key={id} layout={layouts[id]} near={isNear}>
+          <FloorLevel key={id} layout={layouts[id]} layouts={layouts} near={isNear}>
             {content && (
               <Suspense fallback={null}>
                 {content}
@@ -150,7 +180,7 @@ export function Tower({
       <ElevatorShaft layouts={layouts} near={shaftNear} floors={floors} />
       <DrawnWork />
       <RideCull />
-      <BoxEdges size={[frame.w, FRAME_TOP + 1, frame.d]} position={[frame.x, FRAME_TOP / 2 - 0.5, frame.z]} color={COLORS.grid} opacity={0.22} />
+      <TowerFrame layouts={layouts} frame={frame} />
     </group>
   );
 }

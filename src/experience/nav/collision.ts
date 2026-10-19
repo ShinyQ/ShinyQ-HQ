@@ -1,4 +1,5 @@
 import type { Rect, Vec2 } from "../types";
+import { clampToSlab, type SlabShape } from "./slab";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -9,15 +10,21 @@ export function distanceToRect(p: Vec2, r: Rect): number {
   return Math.hypot(dx, dz);
 }
 
+const slabPoint: Vec2 = { x: 0, z: 0 };
+
 /**
- * Resolves a circle against inflated AABBs and the floor bounds by pushing it
- * out along the contact normal, which makes the rover slide along walls.
+ * Resolves a circle against inflated AABBs and the floor slab (its bounds plus any wings, inset by the
+ * radius through `clampToSlab`) by pushing it out along the contact normal, which makes the rover slide
+ * along walls.
  */
-export function resolveCircle(p: Vec2, radius: number, obstacles: readonly Rect[], bounds: Rect): Vec2 {
+export function resolveCircle(p: Vec2, radius: number, obstacles: readonly Rect[], slab: SlabShape): Vec2 {
   let { x, z } = p;
   for (let pass = 0; pass < 3; pass++) {
-    x = clamp(x, bounds.minX + radius, bounds.maxX - radius);
-    z = clamp(z, bounds.minZ + radius, bounds.maxZ - radius);
+    slabPoint.x = x;
+    slabPoint.z = z;
+    clampToSlab(slabPoint, slab, radius, slabPoint);
+    x = slabPoint.x;
+    z = slabPoint.z;
     let moved = false;
     for (const o of obstacles) {
       const cx = clamp(x, o.minX, o.maxX);
@@ -43,10 +50,10 @@ export function resolveCircle(p: Vec2, radius: number, obstacles: readonly Rect[
     }
     if (!moved) break;
   }
-  return {
-    x: clamp(x, bounds.minX + radius, bounds.maxX - radius),
-    z: clamp(z, bounds.minZ + radius, bounds.maxZ - radius),
-  };
+  slabPoint.x = x;
+  slabPoint.z = z;
+  clampToSlab(slabPoint, slab, radius, slabPoint);
+  return { x: slabPoint.x, z: slabPoint.z };
 }
 
 export function collides(p: Vec2, radius: number, obstacles: readonly Rect[]): boolean {

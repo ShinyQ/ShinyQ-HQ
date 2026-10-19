@@ -23,12 +23,12 @@ describe("Highlights Hall layout", () => {
     expect(l1.approach).toEqual({ x: -21, z: 0 });
   });
 
-  it("passes the space rules with the real Lobby; only the skills wall, which predates them, sits near the slab edge", () => {
+  it("passes the space rules with the real Lobby and its office wing; only the skills wall, which predates them, sits near the slab edge", () => {
     const [, skills] = l1.obstacles;
     // The Visitor Observatory's door (south-west corner) is reached on the navgrid like the rest of the Lobby,
     // not on the hall road: tests/unit/lobby-observatory.test.ts checks its pad.
     const hallDoors = l1.doors!.filter((d) => d.room !== "L1:visits");
-    const violations = spaceViolations({ bounds: l1.bounds, obstacles: l1.obstacles, doors: hallDoors, network: l1.road!, start: l1.approach, pads: l1.pads });
+    const violations = spaceViolations({ bounds: l1.bounds, wings: l1.wings, obstacles: l1.obstacles, doors: hallDoors, network: l1.road!, start: l1.approach, pads: l1.pads });
     expect(violations.map((v) => `${v.rule}: ${v.detail}`)).toEqual([
       `bounds-gap: 2.00 u between ${label(skills)} and the slab edge`,
     ]);

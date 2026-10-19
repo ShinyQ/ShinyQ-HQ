@@ -303,7 +303,7 @@ describe("MissionHud with the 3D HUD open", () => {
     renderHud();
     act(() => openTerminal());
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(8);
+    expect(options).toHaveLength(9);
     expect(options.filter((o) => /tutorial|hints/i.test(o.textContent ?? ""))).toEqual([]);
     off();
   });

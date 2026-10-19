@@ -38,7 +38,7 @@ export interface OfficeRecent {
 }
 
 export interface OfficeDesk {
-  /** 0 to 4, west to east along the console arc. */
+  /** 0 to 4, east to west along the console arc (left to right from the office stop). */
   slot: number;
   agent: OfficeAgent;
   state: OfficeState;

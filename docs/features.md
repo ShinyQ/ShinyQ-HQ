@@ -64,8 +64,9 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Black frame fix | 2026-10-18: no more single pure-black frames on L1 at a low camera (a NaN from the glass shader blacked out the bloomed frame); `?gfx=probe` logs any black frame and its cause on the device | Done |
 | Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card | In review |
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
-| Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | In review |
-| Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | In review |
+| Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
+| Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
+| Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | In review |
 | Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
 | Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
 
@@ -217,6 +218,18 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates, refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
 - The observatory drawer carries a **Don't count my visits** switch, stored only in this browser.
 
+### Agent Office
+
+`L1:office` (summary), `L1:office-github` and `L1:office-desk-1` to `-5` in the office's own south wing of the Lobby, down a lead road from the plaza under an "Agent Office" sign, also in the Rover menu ("Watch the AI agents at work") and Cmd-K.
+
+- One continuous curved console of five desks around the office stop, a Rover behind each desk facing you (Desk 1 on the left from the office), and a screen wall behind them: mission control (counts, who is working now, today) and the public GitHub board.
+- Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
+- A chip for each Rover at the office stop (or with an office drawer open), in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones always just the state dot; the desk's drawer shows the task).
+- From the office stop a portrait screen looks down at the console (about 20% sky over the wall, every desk in view), and the outline of the floor above and the tower frame hide while you are in the wing, so no line crosses the view; the wing sign fades out at the stop, and the live Rovers fade in when the office loads.
+- Click a Rover, its chip or a wall half to drive to the office and open its drawer: the summary, the GitHub board, or one desk (agent, activity, task, repository, time in state, recent activity).
+- It loads on its own once you drive onto the lead road or into the wing, start the office mission or head for an office room (from the elevator ride on), or open one of its drawers; a visit that never heads south never downloads it. It polls only while the office is in view or one of its drawers is open.
+- Semi-live (GitHub only), resting (off) and offline modes put every Rover to sleep; reduced motion holds every Rover still.
+
 ## L1 Highlights Hall
 
 Behind the certifications wall, a road past its south end leads under a gateway arch into the hall.
@@ -340,6 +353,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 2 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
+- `/api/office`: the Agent Office snapshot (`GET`, always 200 JSON) with an ETag (304 on a match) and `max-age=5, stale-while-revalidate=30`; the L1 office polls it while in view. `POST /api/office/beat` and `/api/office/github` take the signed relay beats and GitHub webhooks ([office.md](agents/office.md)).
 - `/api/guides/{slug}`: a study guide PDF from the private R2 bucket (Pages Function, `GET` and `HEAD`): byte ranges, ETag, `?v=<version>` for a year of immutable caching, `?download=1` for an attachment. Runbook: [`study-guides-runbook.md`](study-guides-runbook.md).
 
 ## Search and link previews
@@ -468,7 +482,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 457.3 KB gzip per tier; session total full 486.3 KB, lite 470.6 KB | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 465.1 KB gzip per tier; session total full 494.1 KB, lite 478.3 KB | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.

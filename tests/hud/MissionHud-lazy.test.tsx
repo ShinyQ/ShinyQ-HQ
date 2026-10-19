@@ -195,8 +195,8 @@ describe("MissionHud before the HUD index has loaded", () => {
     expect(screen.queryByRole("dialog", { name: en.hud.terminal.title })).toBeNull();
     await release();
     const menu = await screen.findByRole("dialog", { name: en.hud.terminal.title });
-    // Eight entries: the missions plus "Explore on my own".
-    expect(menu.querySelectorAll("[role='option']")).toHaveLength(8);
+    // The missions plus "Explore on my own".
+    expect(menu.querySelectorAll("[role='option']")).toHaveLength(getContent().missions.length + 1);
   });
 
   it("hovering a launcher starts the index download with the chunk", () => {

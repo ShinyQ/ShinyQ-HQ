@@ -62,13 +62,21 @@ export function orbitOffset(offset: Vec3, yaw: number, pitch: number): Vec3 {
   return [(ox * c + oz * s) * horizontal, vertical, (-ox * s + oz * c) * horizontal];
 }
 
-/** Follow camera orbiting `target` (see `orbitOffset`). */
-export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0): CameraPose {
+/**
+ * Follow camera orbiting `target` (see `orbitOffset`). A view zone's look offset (`ViewZone.lookOffset`, eased by the
+ * orbit) then moves only the look target, the camera stays: `lookForward` along the camera's horizontal forward,
+ * `lookUp` along y, both scaled by `zoom` like the camera offset, so the view tilts by the same angle at any distance.
+ * Without one (both 0) the pose is exactly the plain orbit, the `target` array itself included.
+ */
+export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0, lookForward = 0, lookUp = 0): CameraPose {
   const { fov, offset } = FOLLOW[cls];
   const [rx, ry, rz] = orbitOffset(offset, yaw, pitch);
+  const position: Vec3 = [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom];
+  if (lookForward === 0 && lookUp === 0) return { position, target, fov };
+  const f = followForward(cls, yaw);
   return {
-    position: [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom],
-    target,
+    position,
+    target: [target[0] + f.x * lookForward * zoom, target[1] + lookUp * zoom, target[2] + f.z * lookForward * zoom],
     fov,
   };
 }

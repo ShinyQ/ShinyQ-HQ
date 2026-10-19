@@ -14,8 +14,8 @@ import {
 } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { chevronMarks, dashes, miterNormals, networkFill, offsetLine, roadEdges, spurStub } from "@/experience/nav/roadGeometry";
-import { rectGap, spaceViolations } from "@/experience/nav/space";
-import type { DoorTrigger, Rect, Vec2 } from "@/experience/types";
+import { padViolations, rectGap, spaceViolations } from "@/experience/nav/space";
+import type { DoorTrigger, PadTrigger, Rect, Vec2 } from "@/experience/types";
 import { expectSpaceRules } from "../helpers/space";
 
 const v = (x: number, z: number): Vec2 => ({ x, z });
@@ -115,6 +115,18 @@ describe("roadRoute", () => {
     expect(routeUsesRoad({ road, roadZone: zone }, { x: 5, z: 5 }, { x: -6, z: -6 })).toBe(true);
   });
 
+  it("takes a list of zones: a drive into or out of any of them follows the road", () => {
+    const road = { roads: [], plazas: [], spurs: [] };
+    const zones = [
+      { minX: 0, maxX: 10, minZ: 0, maxZ: 10 },
+      { minX: 20, maxX: 30, minZ: 0, maxZ: 10 },
+    ];
+    expect(routeUsesRoad({ road, roadZone: zones }, { x: -5, z: -5 }, { x: 15, z: 5 })).toBe(false);
+    expect(routeUsesRoad({ road, roadZone: zones }, { x: -5, z: -5 }, { x: 25, z: 5 })).toBe(true);
+    expect(routeUsesRoad({ road, roadZone: zones }, { x: 5, z: 5 }, { x: 15, z: 5 })).toBe(true);
+    expect(routeUsesRoad({ road, roadZone: [] }, { x: 5, z: 5 }, { x: 15, z: 5 })).toBe(false);
+  });
+
   const bounds: Rect = { minX: -6, maxX: 66, minZ: -14, maxZ: 14 };
   const pedestals: Rect[] = [
     { minX: 9, maxX: 11, minZ: -13, maxZ: -11 },
@@ -137,6 +149,44 @@ describe("roadRoute", () => {
     const route = roadRoute(STRAIGHT, grid, v(10, -13.5), v(50, 9.2))!;
     expect(route[0].z).toBeLessThan(-12);
     expect(length(route, v(10, -13.5))).toBeLessThan(70);
+  });
+
+  describe("on a network in two parts that do not touch (the L1 hall road and the office wing road)", () => {
+    const TWO: RoadNetwork = {
+      roads: [
+        { id: "east", points: [v(20, 0), v(60, 0)], width: 8 },
+        { id: "south", points: [v(0, 6), v(0, 30)], width: 8 },
+      ],
+      plazas: [{ id: "s", center: v(0, 36), w: 16, d: 16 }],
+      spurs: [{ room: "L1:a", from: v(55, -4), to: v(55, -8) }],
+    };
+    const open = buildNavGrid({ bounds: { minX: -20, maxX: 70, minZ: -20, maxZ: 50 }, obstacles: [] }, 1);
+    const onPart = (p: Vec2, part: "east" | "south") => onNetwork({ ...TWO, roads: TWO.roads.filter((r) => r.id === part), plazas: part === "south" ? TWO.plazas : [], spurs: [] }, p);
+
+    it("drives from off the road onto the target's part, even when the other part is nearer to the start", () => {
+      const route = roadRoute(TWO, open, v(-6, 0), v(55, -8))!;
+      expect(route).toContainEqual(v(20, 0));
+      expect(route.some((p) => onPart(p, "south"))).toBe(false);
+      expect(route.at(-1)).toEqual(v(55, -8));
+    });
+
+    it("drives out along its own part when the target is off the road", () => {
+      const route = roadRoute(TWO, open, v(55, -8), v(-6, -10))!;
+      expect(route).toContainEqual(v(20, 0));
+      expect(route.some((p) => onPart(p, "south"))).toBe(false);
+      expect(route.at(-1)).toEqual(v(-6, -10));
+    });
+
+    it("chains both parts from one to the other: out along the first, across the floor, in along the second", () => {
+      const route = roadRoute(TWO, open, v(55, -8), v(0, 38))!;
+      const first = route.findIndex((p) => p.x === 20 && p.z === 0);
+      const second = route.findIndex((p) => onPart(p, "south"));
+      expect(first).toBeGreaterThanOrEqual(0);
+      expect(second).toBeGreaterThan(first);
+      expect(route.at(-1)).toEqual(v(0, 38));
+      const back = roadRoute(TWO, open, v(0, 38), v(55, -8))!;
+      expect(back.findIndex((p) => p.x === 0 && p.z === 6)).toBeLessThan(back.findIndex((p) => p.x === 20 && p.z === 0));
+    });
   });
 });
 
@@ -234,5 +284,40 @@ describe("space rules", () => {
       { minX: 12, maxX: 66, minZ: -6.5, maxZ: -6 },
     ];
     expect(rules({ obstacles: [...base.obstacles, ...wall] })).toContain("door-gap");
+  });
+});
+
+describe("space rules on a slab with a wing", () => {
+  // Main slab plus a south wing touching it at x -10 to 10 (concave corners at (-10, 20) and (10, 20)).
+  const input = {
+    bounds: { minX: -30, maxX: 30, minZ: -20, maxZ: 20 } as Rect,
+    wings: [{ minX: -10, maxX: 10, minZ: 20, maxZ: 50 }] as Rect[],
+    obstacles: [] as Rect[],
+    doors: [] as DoorTrigger[],
+    network: { roads: [], plazas: [], spurs: [] } as RoadNetwork,
+    start: v(0, 0),
+  };
+  const rules = (obstacles: Rect[]) => spaceViolations({ ...input, obstacles }).map((x) => x.rule);
+
+  it("measures obstacles against the union's outer edges, 6 u from the joint corner passing and 3 u failing", () => {
+    expectSpaceRules(input);
+    expect(rules([{ minX: 8, maxX: 12, minZ: 12, maxZ: 14 }])).toEqual([]);
+    expect(rules([{ minX: 8, maxX: 12, minZ: 15, maxZ: 17 }])).toContain("bounds-gap");
+    // Diagonal to the concave corner (10, 20): 4.5 u off in x and z is about 6.4 u, 3 u off is about 4.2 u.
+    expect(rules([{ minX: 2, maxX: 5.5, minZ: 12, maxZ: 15.5 }])).toEqual([]);
+    expect(rules([{ minX: 4, maxX: 7, minZ: 14, maxZ: 17 }])).toContain("bounds-gap");
+    expect(rules([{ minX: 11, maxX: 13, minZ: 14, maxZ: 17 }])).toContain("bounds-gap");
+  });
+
+  it("does not treat the joint as an edge", () => {
+    expect(rules([{ minX: -2, maxX: 2, minZ: 21, maxZ: 23 }])).toEqual([]);
+    expect(rules([{ minX: -2, maxX: 2, minZ: 16, maxZ: 19 }])).toEqual([]);
+  });
+
+  it("reaches pads in the wing across the joint and keeps them on the union", () => {
+    const pad = (id: string, x: number, z: number): PadTrigger => ({ id, kind: "teleport", at: v(x, z), face: 0 });
+    const pads = (p: PadTrigger[]) => padViolations({ ...input, pads: p }).map((x) => x.rule);
+    expect(pads([pad("t:wing", 0, 40), pad("t:joint", 0, 20)])).toEqual([]);
+    expect(pads([pad("t:corner", 20, 30)])).toContain("pad-bounds");
   });
 });

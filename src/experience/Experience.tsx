@@ -65,6 +65,7 @@ import { isHighlightRoom } from "./floors/lobby/stations";
 import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { floorChunks, floorChunksHandle } from "./floors/floorChunks";
+import { officeHandle } from "./floors/lobby/office/chunk";
 import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -72,6 +73,7 @@ import { sceneProbes } from "./fx/probes";
 import { rideCullStats } from "./tower/rideCull";
 import { useStatsAfterFirstFrame } from "./visits3d";
 import { VISITS_ROOM } from "./floors/lobby/visitsRoom";
+import { isOfficeRoom } from "./floors/lobby/officeLayout";
 
 const COARSE_QUERY = "(pointer: coarse)";
 
@@ -186,6 +188,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     memory: memoryCounts,
     // Floor chunk states and loads (Round 7 B).
     floorChunks: floorChunksHandle,
+    // The lazy Agent Office chunk (L1): load, state and its test hooks (e2e/office.spec.ts, the bytes gate).
+    office: officeHandle,
     ridePrep,
     probes: sceneProbes,
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
@@ -279,6 +283,7 @@ function ExperienceView({
   // The drawer files' `?v=`, set before any child effect (the drawer, holograms, deep links) can fetch one.
   setRoomDataVersions(data.locale, data.roomData);
   const tStats = useTranslations("stats");
+  const tOffice = useTranslations("office");
   // Public visit stats (the L1 Visitor Observatory, its ring tile and drawer): one fetch after the first frame.
   useStatsAfterFirstFrame();
   const world = useRef<HTMLDivElement>(null);
@@ -450,8 +455,9 @@ function ExperienceView({
     // The Tech Reactor keeps /labs too (its pick lives in the hash, see createReactorHashSync), and so does the
     // Ops Control Room (the Classic site shows it on /contact#production) and the Visitor Observatory (/contact#visits).
     // B1 Engine Room stations keep the floor URL (/{locale}) and are remembered in the history entry.
+    // The Agent Office rooms keep /{locale} too.
     return (room: RoomId) =>
-      !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && !room.startsWith("B1:") && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
+      !isOfficeRoom(room) && !isHighlightRoom(room) && room !== REACTOR_ROOM && room !== OPS_ROOM && room !== VISITS_ROOM && !room.startsWith("B1:") && (!room.startsWith("L4:") || hosted.has(room)) && (!room.startsWith("L2:") || career.has(room));
   }, [data.library.posts, data.career.years]);
   useRoomUrlSync(data.locale, hasPage);
   // Topic Constellation pick in the hash (`#library-topic=<slug>`), like the Tech Reactor below.
@@ -533,6 +539,8 @@ function ExperienceView({
           cvHint: tHall("cvHint"),
           hall: tHall("hall"),
         },
+        office: tOffice,
+        officeSign: t("rooms.office"),
       },
       labs: {
         directory: tDrawer("directory"),
@@ -607,6 +615,7 @@ function ExperienceView({
           topics: t("rooms.topics"),
           visits: t("rooms.visits"),
           ops: t("rooms.ops"),
+          office: t("rooms.office"),
         },
         reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
         metrics: tLibrary("topics.monument.target"),
@@ -614,7 +623,7 @@ function ExperienceView({
         studyVault: t("interact.studyVault"),
       },
     }),
-    [t, tEngine, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],
+    [t, tEngine, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, tOffice, metrics, data.locale],
   );
 
   return (

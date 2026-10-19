@@ -17,7 +17,7 @@ export interface GpuCountersEntry {
 
 /** One JSON file in perf-report/ (written by `writePerfEntry` in e2e/perf/helpers.ts). */
 export type PerfEntry =
-  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF" | "B1", number>>; sessionTotal?: number }
+  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF" | "B1", number>>; sessionTotal?: number; office?: number; officeBody?: number }
   | { kind: "floor"; tier: Tier; floor: string; sceneCalls: number; postCalls: number; triangles: number; programs: number; geometries: number; textures: number }
   | { kind: "peak"; tier: Tier; scenario: string; sceneCalls: number; postCalls: number; triangles: number; frames: number }
   | { kind: "memory"; tier: Tier; trips: number; before: GpuCountersEntry; after: GpuCountersEntry; heapDeltaBytes: number }
@@ -176,6 +176,8 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
       const total = e.sessionTotal === undefined ? "" : ` Session total with every public floor chunk (B1 excluded): ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.session[e.tier])}.`;
       if (parts.length) out.markdown += `Floor chunks (loaded on demand): ${parts.join(", ")}.${total}\n\n`;
     }
+    if (e.office !== undefined) out.markdown += `Agent Office chunk (L1, lazy, not in the session total): ${kb(e.office)} of ${kb(BYTES_3D_BUDGET.office)}.\n\n`;
+    if (e.officeBody !== undefined) out.markdown += `Agent Office drawer body (on drawer open): ${kb(e.officeBody)} of ${kb(BYTES_3D_BUDGET.officeBody)}.\n\n`;
     out.warnings.push(...s.warnings);
   }
 

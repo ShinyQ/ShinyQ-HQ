@@ -59,14 +59,20 @@ describe("parseGithubEvent", () => {
     expect(parseGithubEvent("workflow_run", run("completed", "success"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ status: "success" });
     expect(parseGithubEvent("workflow_run", run("completed", "timed_out"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ status: "failure" });
     expect(parseGithubEvent("workflow_run", run("completed", "cancelled"), ALLOW, BLOCK)?.changes[0]).toMatchObject({ status: "cancelled" });
-    const job = { repository: repository(), workflow_job: { id: 7, run_id: 42, name: "E2E shard 3/8", status: "completed", conclusion: "failure" } };
-    expect(parseGithubEvent("workflow_job", job, ALLOW, BLOCK)?.changes).toEqual([{ type: "job", runId: 42, jobId: "7", name: "E2E shard 3/8", status: "failed" }]);
+    const job = { repository: repository(), workflow_job: { id: 7, run_id: 42, run_attempt: 2, name: "E2E shard 3/8", status: "completed", conclusion: "failure" } };
+    expect(parseGithubEvent("workflow_job", job, ALLOW, BLOCK)?.changes).toEqual([{ type: "job", runId: 42, attempt: 2, jobId: "7", name: "E2E shard 3/8", status: "failed" }]);
   });
 
   it("maps run_attempt, defaulting to 1 when missing or not a positive integer", () => {
     const run = (attempt: unknown) => ({ repository: repository(), workflow_run: { id: 42, run_attempt: attempt, name: "CI", head_branch: "feat/x", head_repository: headRepo, status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } });
     expect(parseGithubEvent("workflow_run", run(3), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "run", attempt: 3 });
     for (const bad of [undefined, 0, -1, 1.5, "2", null]) expect(parseGithubEvent("workflow_run", run(bad), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "run", attempt: 1 });
+  });
+
+  it("maps a job's run_attempt, defaulting to 1 when missing or not a positive integer", () => {
+    const job = (attempt: unknown) => ({ repository: repository(), workflow_job: { id: 7, run_id: 42, run_attempt: attempt, name: "Lint", status: "in_progress", conclusion: null } });
+    expect(parseGithubEvent("workflow_job", job(3), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "job", attempt: 3 });
+    for (const bad of [undefined, 0, -1, 1.5, "2", null]) expect(parseGithubEvent("workflow_job", job(bad), ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "job", attempt: 1 });
   });
 
   it("maps pull requests, default-branch pushes and deployments", () => {

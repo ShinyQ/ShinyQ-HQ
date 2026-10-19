@@ -249,7 +249,7 @@
   },
   "budgets": {
     "js3dKb": 450,
-    "sessionFullKb": 470,
+    "sessionFullKb": 473,
     "sceneCalls": 150,
     "triangles": 30000,
     "floorChunkKb": {

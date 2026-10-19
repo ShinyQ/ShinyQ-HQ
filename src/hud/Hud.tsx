@@ -19,6 +19,7 @@ import { firstName } from "./dialog/onboarding";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { InteractStatus } from "./InteractStatus";
+import { OfficeLayer } from "./OfficeLayer";
 import { lazyFromChunk } from "./lazyFromChunk";
 import { AskPill } from "./ask/AskPill";
 import { launcher, TopBar } from "./Controls";
@@ -201,6 +202,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
     <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
       <CutFade />
       <BeamFade />
+      <OfficeLayer />
       {phase === "boot" ? (
         <BootOverlay who={{ name: data.profile.name, headline: data.profile.headline, motto: data.profile.motto, role: data.profile.role }} />
       ) : phase === "hologram" ? (

@@ -33,7 +33,7 @@ describe("floor pads in the real layouts", () => {
       const l = layouts[id];
       const grid = buildNavGrid(l, ROVER.radius);
       for (const pad of l.pads ?? []) expect(isWalkable(grid, pad.at), pad.id).toBe(true);
-      expectPadRules({ bounds: l.bounds, obstacles: l.obstacles, doors: l.doors ?? [], network: l.road, start: l.approach, pads: l.pads ?? [] });
+      expectPadRules({ bounds: l.bounds, wings: l.wings, obstacles: l.obstacles, doors: l.doors ?? [], network: l.road, start: l.approach, pads: l.pads ?? [] });
     }
   });
 

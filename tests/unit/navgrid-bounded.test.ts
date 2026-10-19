@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FloorId } from "@/content/schema";
 import { ROVER } from "@/experience/config";
 import { buildNavGrid, componentsOf, findPath, nearestWalkable, pathStats } from "@/experience/nav/navgrid";
+import { slabBox } from "@/experience/nav/slab";
 import type { Vec2 } from "@/experience/types";
 import * as legacy from "../helpers/navgrid-legacy";
 import { realLayouts } from "../helpers/real-layouts";
@@ -17,7 +18,7 @@ describe("findPath returns exactly what the pre-round-5 implementation returned"
     it(`on ${id}: 60 seeded pairs (some off the slab or inside obstacles), spawn, approach and every door`, () => {
       const layout = layouts[id];
       const grid = buildNavGrid(layout, ROVER.radius);
-      const { minX, maxX, minZ, maxZ } = layout.bounds;
+      const { minX, maxX, minZ, maxZ } = slabBox(layout);
       const rand = rng(id.charCodeAt(0) * 131 + id.charCodeAt(1));
       const point = (): Vec2 => ({ x: minX - 3 + rand() * (maxX - minX + 6), z: minZ - 3 + rand() * (maxZ - minZ + 6) });
       const pairs: [Vec2, Vec2][] = [

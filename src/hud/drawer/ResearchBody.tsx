@@ -1,22 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 import { PaperReadLink } from "@/components/paper/PaperReadLink";
 import { PaperTrigger } from "@/components/paper/PaperTrigger";
 import type { RoomResearchItem } from "@/content/room-views/types";
 import type { RoomBodyProps } from "./bodies";
-
-function External({ href, children, className = "link" }: { href: string; children: ReactNode; className?: string }) {
-  const tc = useTranslations("common");
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
-      {children}
-      <span aria-hidden="true"> &#8599;</span>
-      <span className="sr-only"> ({tc("external")})</span>
-    </a>
-  );
-}
+import { External } from "./blocks";
 
 /** Author list with the owner's name highlighted. */
 export function Authors({ authors, self }: { authors: readonly string[]; self: string }) {

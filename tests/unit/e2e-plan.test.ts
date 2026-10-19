@@ -300,8 +300,31 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/api/guides/[slug].ts", "functions/_lib/guides.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
-    expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "src/lib/office/protocol.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
     expect(specsForChanges(["tools/office-relay/src/hook.ts", "tools/office-relay/README.md"])).toEqual({ specs: [], unmatched: [] });
+  });
+
+  it("maps the Agent Office to its spec, the 3D experience and the Lobby specs", () => {
+    const office = ["experience", "highlights", "hud-corners", "interact", "office", "onboarding"];
+    for (const f of [
+      "src/experience/floors/lobby/officeLayout.ts",
+      "src/experience/floors/lobby/officeShell.ts",
+      "src/experience/floors/lobby/office/OfficeScene.tsx",
+      "src/experience/floors/lobby/office/OfficeMount.tsx",
+      "src/experience/floors/lobby/office/OfficeBody.tsx",
+      "src/experience/floors/lobby/office/body.ts",
+      "src/lib/office/poll.ts",
+      "src/lib/office/model.ts",
+      "src/lib/office/protocol.ts",
+      "src/lib/office/fixtures.ts",
+      "e2e/office-fixtures.ts",
+    ])
+      expect(specsForChanges([f]).specs, f).toEqual(office);
+    // The chips host keeps the HUD folder rule's specs on top.
+    expect(specsForChanges(["src/hud/OfficeLayer.tsx"]).specs).toEqual(["drawer-solid", "experience", "highlights", "hud", "hud-corners", "interact", "missions", "office", "onboarding"]);
+    // A spec file runs itself only (SPEC_FILE in specsForChanges).
+    expect(specsForChanges(["e2e/office.spec.ts"]).specs).toEqual(["office"]);
+    expect(specsForChanges(["scripts/office-shots.ts"]).specs).toEqual([]);
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {

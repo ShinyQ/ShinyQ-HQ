@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route, rideTo } from "../b1";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
+import { LOBBY } from "../../src/experience/config";
 import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
@@ -39,9 +40,27 @@ const FLOORS = [
 
 const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 
+type OfficeWindow = { __hq: { office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } } };
+
+/**
+ * The Agent Office chunk loads only near its wing (or on an office mission or drawer); load it and wait until it shows, so L1 (and B1, ridden
+ * from the Lobby) always measure the same programs. A build without the office (a main build) skips this.
+ */
+async function settleOffice(page: Page) {
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office?.load());
+  await page.waitForFunction(
+    () => {
+      const hq = (window as unknown as OfficeWindow).__hq;
+      return !hq.office || hq.probes.office?.loaded === true;
+    },
+    null,
+    { timeout: 60_000 },
+  );
+}
+
 /**
  * Settles, then gates the floor's draw calls, triangles and programs. `pose` names a view other than the arrival
- * (the L4 Study Vault stop): it is held to the same floor caps and program baseline, and reported as a settled peak
+ * (the L4 Study Vault stop, the L1 Agent Office stop): it is held to the same floor caps and program baseline, and reported as a settled peak
  * (`settled-<floor>-<pose>`), so the program baseline keeps one entry per floor.
  */
 async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string) {
@@ -69,6 +88,7 @@ for (const tier of ["lite", "full"] as const) {
   for (const { floor, path } of FLOORS) {
     test(`${floor} ${tier}: settled draw calls and shader programs`, async ({ page }) => {
       await enterFloorRoute(page, path, { tier });
+      if (floor === "L1") await settleOffice(page);
       await measureFloor(page, tier, floor);
     });
   }
@@ -86,7 +106,15 @@ for (const tier of ["lite", "full"] as const) {
   test(`B1 ${tier}: settled draw calls and shader programs`, async ({ page }) => {
     // B1 has no route: unlock it on the Lobby and ride down (its baseline includes the Lobby's programs).
     await enterB1Route(page, "/en", tier);
+    await settleOffice(page);
     await rideTo(page, "B1");
     await measureFloor(page, tier, "B1");
+  });
+  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
+    await enterFloorRoute(page, "/en", { tier });
+    await settleOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    // Same cap and program baseline as the L1 spawn; reported as the settled-L1-office peak (the spawn entry is the L1 baseline).
+    await measureFloor(page, tier, "L1", "office");
   });
 }

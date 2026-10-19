@@ -12,24 +12,24 @@ const wall: Rect = { minX: -0.5, maxX: 0.5, minZ: -6, maxZ: 10 };
 describe("resolveCircle", () => {
   it("slides along a wall instead of stopping", () => {
     // Moving diagonally into the wall's west face: x is pushed back, z is kept.
-    const p = resolveCircle({ x: -1, z: 2 }, 1, [wall], bounds);
+    const p = resolveCircle({ x: -1, z: 2 }, 1, [wall], { bounds });
     expect(p.x).toBeCloseTo(-1.5);
     expect(p.z).toBeCloseTo(2);
   });
 
   it("pushes a circle out of a box along the shortest axis", () => {
-    const p = resolveCircle({ x: 0.2, z: 5 }, 1, [wall], bounds);
+    const p = resolveCircle({ x: 0.2, z: 5 }, 1, [wall], { bounds });
     expect(p.x).toBeCloseTo(1.5);
     expect(p.z).toBeCloseTo(5);
   });
 
   it("resolves corners radially", () => {
-    const p = resolveCircle({ x: 0.9, z: -6.3 }, 1, [wall], bounds);
+    const p = resolveCircle({ x: 0.9, z: -6.3 }, 1, [wall], { bounds });
     expect(distanceToRect(p, wall)).toBeCloseTo(1);
   });
 
   it("keeps the circle inside the floor bounds", () => {
-    expect(resolveCircle({ x: 50, z: -50 }, 1, [], bounds)).toEqual({ x: 9, z: -9 });
+    expect(resolveCircle({ x: 50, z: -50 }, 1, [], { bounds })).toEqual({ x: 9, z: -9 });
   });
 
   it("reports collisions", () => {
@@ -134,7 +134,8 @@ describe("buildNavGrid", () => {
   it("matches the reference build on every real floor", () => {
     const data = buildExperienceData("en", { L1: "", L2: "", L3: "", L4: "", RF: "" });
     const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) });
-    for (const layout of Object.values(layouts)) {
+    // The reference knows one rect: L1's office wing is checked in tests/unit/slab-regression.test.ts.
+    for (const layout of Object.values(layouts).filter((l) => !l.wings?.length)) {
       expect(buildNavGrid(layout, ROVER.radius).walkable).toEqual(reference(layout, ROVER.radius));
     }
   });
@@ -142,5 +143,36 @@ describe("buildNavGrid", () => {
   it("matches the reference with fractional cells and obstacles past the bounds", () => {
     const input = { bounds, obstacles: [wall, { minX: 8.7, maxX: 14, minZ: -12, maxZ: -7.3 }, { minX: -3.2, maxX: -3.1, minZ: 2.05, maxZ: 2.06 }] };
     for (const cell of [0.5, 0.75, 1, 1.3]) expect(buildNavGrid(input, 0.9, cell).walkable).toEqual(reference(input, 0.9, cell));
+  });
+});
+
+describe("multi-rect slab (wings)", () => {
+  // Main slab plus a wing on part of its south edge (x -2 to 6): an L shape.
+  const L = { bounds, wings: [{ minX: -2, maxX: 6, minZ: 10, maxZ: 30 }] as Rect[], obstacles: [] as Rect[] };
+
+  it("paths across the joint and never walks the missing corner", () => {
+    const grid = buildNavGrid(L, 1);
+    expect(grid.rows).toBe(40);
+    expect(isWalkable(grid, { x: 2.5, z: 10.5 })).toBe(true);
+    expect(isWalkable(grid, { x: 2.5, z: 9.5 })).toBe(true);
+    const path = findPath(grid, { x: -8, z: -8 }, { x: 2, z: 27 })!;
+    expect(path.at(-1)).toEqual({ x: 2, z: 27 });
+    let prev = { x: -8, z: -8 };
+    for (const p of path) {
+      expect(segmentClear(grid, prev, p)).toBe(true);
+      prev = p;
+    }
+    for (let j = 0; j < grid.rows; j++)
+      for (let i = 0; i < grid.cols; i++) {
+        const x = grid.minX + (i + 0.5) * grid.cell;
+        const z = grid.minZ + (j + 0.5) * grid.cell;
+        if (z > 10 && (x < -2 || x > 6)) expect(grid.walkable[j * grid.cols + i]).toBe(0);
+      }
+  });
+
+  it("keeps the rover off the missing corner and lets it drive over the joint", () => {
+    expect(resolveCircle({ x: 8, z: 20 }, 1, [], L)).toEqual({ x: 5, z: 20 });
+    expect(resolveCircle({ x: 2, z: 10 }, 1, [], L)).toEqual({ x: 2, z: 10 });
+    expect(resolveCircle({ x: 2, z: 40 }, 1, [], L)).toEqual({ x: 2, z: 29 });
   });
 });

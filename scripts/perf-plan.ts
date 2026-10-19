@@ -49,6 +49,12 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
     ALL_PERF_KEYS,
   ],
   [/^src\/experience\/prototype\//, []],
+  // The office's shared client modules (the 3D office chunk and, later, the Classic card; the protocol also reaches
+  // the main path through the Lobby room views): the bytes gate, L1 and B1 (its gate loads the office before the ride).
+  // src/lib/office/fixtures.ts ships no client code (tests and e2e only), so it moves no gate.
+  [/^src\/lib\/office\/(poll|model|protocol)\.ts$/, ["bytes", "floor:L1", "floor:B1"]],
+  // The office scene, its drawer body and its main path layout and shell: the Lobby keys plus B1.
+  [/^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)/, ["boot", "bytes", "floor:L1", "floor:B1", "hover"]],
   [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)|^public\/atlas\/|^src\/experience\/logo-atlas\.ts$/, ["bytes", "floor:L1", "boot", "hover"]],
   [/^src\/experience\/floors\/(career\/|CareerArchive\.tsx$)/, ["bytes", "floor:L2", "ride:L2"]],
   [/^src\/experience\/floors\/(labs\/|Labs\.tsx$)/, ["bytes", "floor:L3", "ride:L3"]],

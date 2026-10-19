@@ -22,6 +22,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 | `L1:profile`, `L1:stats`, `L1:skills`, `L1:certifications` | | | |
 | `L1:highlights-about`, `L1:highlights-projects`, `L1:highlights-experience`, `L1:highlights-contact` | `highlights` | landing anchors `/#intro`, `/#work`, `/#journey`, `/#contact` | [Highlights Hall](floor-l1-lobby.md) stations |
 | `L1:visits` | `visits` | `/contact#visits` (the Classic section), also its floor path | Visitor Observatory, see below |
+| `L1:office` | `office` | `/#office` (the Classic home card, Agent Office part 4), also its floor path | Agent Office summary; `L1:office-github` and `L1:office-desk-1` to `-5` have views but no catalog entry |
 | `L2:workshop` | | | its keywords list every project and repo |
 | `L3:reactor` | `reactor` | `/labs#all-projects` | the [Tech Reactor](floor-l3-labs.md); no route of its own, so it keeps `/labs` like the hall stations |
 | `L3:ops` | `ops` | `/contact#production` | the Ops Control Room, see below |
@@ -42,6 +43,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
   - No route of its own (`hasPage` false, it keeps `/{locale}`).
   - Deep links `/{locale}#visits` and the old `/{locale}/contact#visits` resolve through `visitsRoomFromHash` (`floors/lobby/visitsRoom.ts`).
   - Drawer body: `VisitsBody`.
+- The Agent Office rooms (`L1:office`, `L1:office-github`, `L1:office-desk-<n>`) keep `/{locale}` (`isOfficeRoom` in `hasPage`); their chips are HTML over the canvas (`hud/OfficeLayer.tsx`), see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office).
 - Moved room ids resolve through `canonicalRoom` (`missions/roomAliases.ts`): `RF:visits` to `L1:visits`, then `currentRoom` for retired benches.
   - `openRoom`, `goToRoom` and the drawer history sync apply it, so old history entries, cached drawer links and recent rooms keep working.
 - `L3:ops`, the Ops Control Room ("How I run AI in production"):
@@ -331,6 +333,12 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - No bubble during missions, autopilot, rides, beams, pickers, drawers, the Ask panel, while Rover talks or while point-and-go has a hovered or tap-selected target.
 - Toggle: the "Hints" switch in the settings panel and Cmd-K ("hints: on/off" toast).
 
+### Agent Office chips
+
+- `OfficeLayer` (`src/hud/OfficeLayer.tsx`, main path, a few lines, mounted by `Hud`) renders the office scene chunk's `OfficeChips` only once that chunk is loaded and the rover is on L1, not riding, while exploring or with a drawer open; it never loads the chunk itself.
+- `OfficeChips` (in the chunk) renders five chip buttons; `OfficeScene` moves them every frame like `HintProbe` moves its bubble (through `officeRuntime.chips`). A chip click drives to the office stop and opens that Rover's desk drawer (`goToRoom`).
+- Chip content, the near/far band, the compact phone chips and the edge clamp: [floor-l1-lobby.md](floor-l1-lobby.md#agent-office).
+
 ### Copy
 
 - Every spoken line is at most 110 characters (`tests/unit/dialog-copy.test.ts`).
@@ -400,6 +408,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 | `highlights` | `HighlightsBody`: cards from `RoomView.cards` ride to their room with `goToRoom`; the contact station reuses `ContactBody` and `CvBody` from `RoofBody` |
 | `research` | `ResearchBody`, fed by the optional `RoomView.research`: `items` with authors, venue, DOI, summary, dated citations and `preview` (the paper preview modal data); `self` (the owner's name to highlight); `profiles`; `metrics` |
 | `engine` | `EngineBody` (B1 chunk, fed by `RoomView.engine`): the station's own block (blueprint diagram, build rounds, gate list, plan excerpt or dashboard tiles) around the generic sections, plus the link to its Classic `/build` section |
+| `office` | `OfficeBody` (its own lazy chunk `floors/lobby/office/body.ts` through `loadOfficeBody`, not a floor chunk and not the office scene chunk; fed by `RoomView.office` and the live feed): the summary (agents, today, notes), the GitHub board (status dots, links, progress) or one Rover's desk (state, agent, activity, task or "Client project (private, details hidden)", public repository link, time in state, last update, recent activity, the privacy note); loading, disabled and offline notices. Its mount polls (reason "drawer") and starts or retries the office scene chunk |
 | posts | the generic renderer with a "Read post" footer action (Medium posts: "Read the post" in a new tab) |
 
 ### Layout

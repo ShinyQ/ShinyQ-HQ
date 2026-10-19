@@ -68,12 +68,14 @@ export interface OfficeDoc {
   feed: FeedRecord[];
   publicRepos: string[];
   deliveries: string[];
+  /** Cancelled runs (newest first, `TIMING.runsKept` at most), so a late delivery of the same attempt cannot bring one back. Absent in older stored documents. */
+  cancelled: { id: number; attempt: number }[];
   today: OfficeToday;
 }
 
 export type GithubChange =
   | { type: "run"; id: number; attempt: number; branch: string; title: string; url: string; status: RunStatus }
-  | { type: "job"; runId: number; jobId: string; name: string; status: JobStatus }
+  | { type: "job"; runId: number; attempt: number; jobId: string; name: string; status: JobStatus }
   | { type: "pr"; number: number; branch: string; title: string; url: string; action: "opened" | "merged" }
   | { type: "push"; sha: string; title: string; url: string }
   | { type: "deploy"; id: number; title: string; url: string; status: "running" | "success" | "failure" }
@@ -101,7 +103,7 @@ const zeroToday = (now: number): OfficeToday => ({ day: wibDay(now), tasksDone: 
 const rollToday = (today: OfficeToday, now: number): OfficeToday => (today.day === wibDay(now) ? today : zeroToday(now));
 
 export function emptyDoc(now: number): OfficeDoc {
-  return { v: 1, sessions: [], runs: [], prs: [], feed: [], publicRepos: [], deliveries: [], today: zeroToday(now) };
+  return { v: 1, sessions: [], runs: [], prs: [], feed: [], publicRepos: [], deliveries: [], cancelled: [], today: zeroToday(now) };
 }
 
 const LONG_WAITS: readonly OfficeState[] = ["testing", "ci", "input"];
@@ -193,7 +195,10 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
       const prev = doc.runs.find((r) => r.id === c.id);
       // GitHub does not order deliveries: an older attempt, or a late "running" of a completed attempt, changes nothing.
       if (prev && (c.attempt < prev.attempt || (c.attempt === prev.attempt && c.status === "running" && prev.status !== "running"))) return doc;
-      if (c.status === "cancelled") return { ...doc, runs: doc.runs.filter((r) => r.id !== c.id), feed: doc.feed.filter((f) => f.key !== key) };
+      // A cancelled run is removed, so its record is what stops a late delivery of that attempt from recreating it.
+      if (!prev && doc.cancelled.some((x) => x.id === c.id && x.attempt >= c.attempt)) return doc;
+      const others = doc.cancelled.filter((x) => x.id !== c.id);
+      if (c.status === "cancelled") return { ...doc, runs: doc.runs.filter((r) => r.id !== c.id), feed: doc.feed.filter((f) => f.key !== key), cancelled: [{ id: c.id, attempt: c.attempt }, ...others].slice(0, TIMING.runsKept) };
       const restart = prev !== undefined && c.attempt > prev.attempt;
       const run: RunRecord = { id: c.id, attempt: c.attempt, repo, branch: c.branch, title: c.title, url: c.url, status: c.status, jobs: restart ? {} : (prev?.jobs ?? {}), ...(!restart && prev?.failedJob ? { failedJob: prev.failedJob } : {}), updated: now };
       const counted = c.status !== "running" && (!prev || prev.status === "running" || restart);
@@ -201,11 +206,11 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
       const sessions = c.status === "failure" ? doc.sessions.map((s) => (s.state === "ci" && s.repo === repo && s.branch === c.branch ? failSession(s, now) : s)) : doc.sessions;
       const progress = c.status === "running" ? progressOf(run) : undefined;
       const feed = upsertFeed(doc.feed, { key, kind: "run", status: c.status, repo, title: c.title, at: now, url: c.url, ...(progress ? { progress } : {}) });
-      return { ...doc, runs: [run, ...doc.runs.filter((r) => r.id !== c.id)], today, sessions, feed };
+      return { ...doc, runs: [run, ...doc.runs.filter((r) => r.id !== c.id)], cancelled: others, today, sessions, feed };
     }
     case "job": {
       const run = doc.runs.find((r) => r.id === c.runId && r.repo === repo);
-      if (!run) return doc;
+      if (!run || c.attempt < run.attempt) return doc;
       const updated: RunRecord = { ...run, jobs: { ...run.jobs, [c.jobId]: c.status }, ...(c.status === "failed" ? { failedJob: c.name } : {}), updated: now };
       const progress = progressOf(updated);
       const feed = doc.feed.map((f) => (f.key === `run:${run.id}` && f.status === "running" && progress ? { ...f, progress } : f));
@@ -239,6 +244,7 @@ export function applyGithub(doc: OfficeDoc, update: GithubUpdate, delivery: stri
   let next: OfficeDoc = {
     ...doc,
     today: rollToday(doc.today, now),
+    cancelled: doc.cancelled ?? [],
     publicRepos: privatized || doc.publicRepos.includes(update.repo) ? doc.publicRepos : [...doc.publicRepos, update.repo].slice(-TIMING.publicReposKept),
     deliveries: delivery ? [...doc.deliveries, delivery].slice(-TIMING.deliveriesKept) : doc.deliveries,
   };

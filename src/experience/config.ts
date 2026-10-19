@@ -10,6 +10,7 @@ import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
+import { officeObstacles, officeRoad, officeStops, officeTall, officeWing, officeZone } from "./floors/lobby/officeLayout";
 import {
   KIOSK_AXIS,
   KIOSK_CENTER,
@@ -18,6 +19,7 @@ import {
   KIOSK_WIDTH,
   LOBBY_HOLOGRAM,
   LOBBY_OBSERVATORY,
+  LOBBY_SOUTH_EDGE,
   LOBBY_SPAWN,
   LOBBY_SPAWN_HEADING,
 } from "./floors/lobby/spawn";
@@ -101,6 +103,9 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   maxZ: cz + d / 2,
 });
 
+/** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
+const LOBBY_BOUNDS = { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: LOBBY_SOUTH_EDGE } as const;
+
 /**
  * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on
  * its axis (z = 0, like the door at (-24, 0)), so the lane ring and the slab line up with the
@@ -108,8 +113,7 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
  * tests/unit/lobby-layout.test.ts.
  */
 export const LOBBY = {
-  /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
-  bounds: { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 },
+  bounds: LOBBY_BOUNDS,
   /** Session spawn: the kiosk stop, in front of the Rover menu screen (floors/lobby/kiosk.ts `kioskStop`). */
   spawn: LOBBY_SPAWN,
   /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
@@ -148,6 +152,11 @@ export const LOBBY = {
   /** Visitor Observatory (`L1:visits`) footprint; `h` is the globe top, a camera collision column. */
   observatory: { ...LOBBY_OBSERVATORY, h: 7.4 },
   laneRadius: 12,
+  /**
+   * The Agent Office wing (owner decision 2026-10-20): a slab wing south of the Lobby with its lead road, plaza and
+   * stop, all derived from the Lobby's south edge (floors/lobby/officeLayout.ts `OFFICE_WING`), so it moves with it.
+   */
+  officeWing: officeWing(LOBBY_BOUNDS.maxZ),
 } as const;
 
 /** Rover height used for clearance checks (antenna tip included). */
@@ -233,7 +242,8 @@ export function kioskRect(): Rect {
 
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
-  const { hologram, skillsWall, certWall, observatory: o } = LOBBY;
+  const { hologram, skillsWall, certWall, observatory: o, officeWing: wing } = LOBBY;
+  const office = officeRoad(wing);
   const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis });
   const layouts: Record<FloorId, FloorLayout> = {
     // B1 Engine Room: the aisle, seven bays and the workbench (floors/engine/layout.ts).
@@ -249,20 +259,28 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           kioskRect(),
           ...HALL_LAYOUT.obstacles,
           { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
+          // Agent Office wing: the desk row (three touching boxes) and the screen wall (floors/lobby/officeLayout.ts).
+          ...officeObstacles(wing),
         ],
         LOBBY.spawn,
       ),
       arrival: LOBBY.arrival,
+      wings: [wing.rect],
+      // From the office wing the camera looks south under the L2 slab edge: the floors above drop their ghost outline there.
+      hideGhostAbove: [wing.rect],
       // Highlights Hall: station doors, the passage road (used only for drives into or out of the hall) and camera
       // zones; the Visitor Observatory's door and the spawn and observatory views (floors/lobby/observatoryLayout.ts);
       // the elevator arrival view.
       doors: [...HALL_LAYOUT.doors, observatory.door],
-      road: HALL_LAYOUT.network,
-      roadZone: HALL_LAYOUT.zone,
-      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone()],
+      // The office wing's lead road and plaza join the hall's network (two separate parts; `roadRoute` drives between them).
+      road: { ...HALL_LAYOUT.network, roads: [...HALL_LAYOUT.network.roads, office.road], plazas: [...HALL_LAYOUT.network.plazas, office.plaza] },
+      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan],
+      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone(), officeZone(wing)],
+      // Every Agent Office room drives to the office stop (the rooms have no door).
+      stops: officeStops(wing),
       // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
-      // card) and the observatory globe.
-      tall: [...hallTall(), LOBBY.observatory],
+      // card), the observatory globe and the Agent Office screen wall.
+      tall: [...hallTall(), LOBBY.observatory, officeTall(wing)],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

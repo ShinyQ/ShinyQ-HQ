@@ -43,8 +43,15 @@ export interface PadTrigger {
 
 export interface FloorLayout {
   id: FloorId;
-  /** Walkable slab footprint. */
+  /** Main walkable slab rect (with `wings`, the slab is their union: `nav/slab.ts`). */
   bounds: Rect;
+  /**
+   * Slab extensions: rects that touch `bounds` along part of an edge and never overlap it or each other. The
+   * shared joint is open floor. No three rects may share a corner (the inset union bridges pairwise joints
+   * only, so such a vertex would hide an invisible post). Navgrid, collision, space rules, camera, slab mesh and minimap
+   * cover the union (`slabRects`, `slabBox`, `inSlab`, `clampToSlab`).
+   */
+  wings?: readonly Rect[];
   /** Elevator door on the shaft face. */
   door: Vec2;
   /** Where the rover parks to call the elevator (3 u in front of the door). */
@@ -68,14 +75,20 @@ export interface FloorLayout {
   /** Walkable floors: roads, plazas and spurs. Autopilot (missions, point-and-go, rides) follows them (`roadRoute`). */
   road?: RoadNetwork;
   /**
-   * Limits `road` to drives that start or end inside this rect (L1: the Highlights Hall east of the
-   * certification wall); other drives on the floor use the navgrid. Unset: every drive follows the road.
+   * Limits `road` to drives that start or end inside this rect or one of these rects (L1: the Highlights
+   * Hall east of the certification wall); other drives on the floor use the navgrid. Unset: every drive
+   * follows the road.
    */
-  roadZone?: Rect;
+  roadZone?: Rect | readonly Rect[];
   /** After an elevator ride the rover rolls on to this point (along the road); a mission or input takes over at once. */
   arrival?: Vec2;
   /** Data-driven camera view zones (added to the static `VIEW_ZONES` in camera/orbit.ts). */
   viewZones?: ViewZone[];
+  /**
+   * Areas where the floors above drop their ghost outline while the rover stands in them (tower/ghostOutline.ts;
+   * L1: the office wing, whose view looks south under the L2 slab edge). Elsewhere the outline stays.
+   */
+  hideGhostAbove?: readonly Rect[];
   /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
   listStop?: Vec2;
   /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars); checked before `listStop`. */

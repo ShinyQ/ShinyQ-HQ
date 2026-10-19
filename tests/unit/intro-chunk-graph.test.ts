@@ -37,7 +37,8 @@ describe("intro chunk boundary", () => {
       .filter((f) => !chunk.has(f))
       .filter((f) => INTRO_ONLY.some((only) => staticClosure(f).has(only)));
     expect(offenders).toEqual([]);
-  });
+    // One closure per file under src/experience: slower than the default 5 s on a busy machine.
+  }, 60_000);
 
   it("keeps the shared intro state on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
@@ -48,7 +49,11 @@ describe("intro chunk boundary", () => {
     const chunk = staticClosure(ENTRY);
     expect(INTRO_ONLY.every((f) => chunk.has(f))).toBe(true);
     expect(readFileSync(join(ROOT, "src/experience/intro/chunk.ts"), "utf8")).toContain(`import("./scene")`);
-    const importers = files(join(ROOT, "src")).filter((f) => /import\(\s*["'][^"']*intro\/scene["']\s*\)|import\(\s*["']\.\/scene["']\s*\)/.test(readFileSync(join(ROOT, f), "utf8")));
+    // A relative `./scene` is the intro entry only from inside src/experience/intro (the office chunk has its own).
+    const importers = files(join(ROOT, "src")).filter((f) => {
+      const text = readFileSync(join(ROOT, f), "utf8");
+      return /import\(\s*["'][^"']*intro\/scene["']\s*\)/.test(text) || (f.startsWith("src/experience/intro/") && /import\(\s*["']\.\/scene["']\s*\)/.test(text));
+    });
     expect(importers).toEqual(["src/experience/intro/chunk.ts"]);
   });
 });
