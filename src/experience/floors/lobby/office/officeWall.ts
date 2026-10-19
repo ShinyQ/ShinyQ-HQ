@@ -85,10 +85,14 @@ export function wallModel(view: OfficeView, t: OfficeTranslate, locale: "en" | "
   };
 }
 
+/** The spinner frame (2 fps) while a run is running, else 0. */
+export function wallSpin(m: WallModel, t: number): number {
+  return m.rows.some((r) => r.status === "running") ? Math.floor(t * 2) : 0;
+}
+
 /** Redraw key: the content, plus a 2 fps spinner frame while a run is running. */
 export function wallKey(m: WallModel, t: number): string {
-  const spin = m.rows.some((r) => r.status === "running") ? Math.floor(t * 2) : 0;
-  return `${JSON.stringify(m)}|${spin}`;
+  return `${JSON.stringify(m)}|${wallSpin(m, t)}`;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
