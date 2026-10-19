@@ -150,6 +150,44 @@ describe("roadRoute", () => {
     expect(route[0].z).toBeLessThan(-12);
     expect(length(route, v(10, -13.5))).toBeLessThan(70);
   });
+
+  describe("on a network in two parts that do not touch (the L1 hall road and the office wing road)", () => {
+    const TWO: RoadNetwork = {
+      roads: [
+        { id: "east", points: [v(20, 0), v(60, 0)], width: 8 },
+        { id: "south", points: [v(0, 6), v(0, 30)], width: 8 },
+      ],
+      plazas: [{ id: "s", center: v(0, 36), w: 16, d: 16 }],
+      spurs: [{ room: "L1:a", from: v(55, -4), to: v(55, -8) }],
+    };
+    const open = buildNavGrid({ bounds: { minX: -20, maxX: 70, minZ: -20, maxZ: 50 }, obstacles: [] }, 1);
+    const onPart = (p: Vec2, part: "east" | "south") => onNetwork({ ...TWO, roads: TWO.roads.filter((r) => r.id === part), plazas: part === "south" ? TWO.plazas : [], spurs: [] }, p);
+
+    it("drives from off the road onto the target's part, even when the other part is nearer to the start", () => {
+      const route = roadRoute(TWO, open, v(-6, 0), v(55, -8))!;
+      expect(route).toContainEqual(v(20, 0));
+      expect(route.some((p) => onPart(p, "south"))).toBe(false);
+      expect(route.at(-1)).toEqual(v(55, -8));
+    });
+
+    it("drives out along its own part when the target is off the road", () => {
+      const route = roadRoute(TWO, open, v(55, -8), v(-6, -10))!;
+      expect(route).toContainEqual(v(20, 0));
+      expect(route.some((p) => onPart(p, "south"))).toBe(false);
+      expect(route.at(-1)).toEqual(v(-6, -10));
+    });
+
+    it("chains both parts from one to the other: out along the first, across the floor, in along the second", () => {
+      const route = roadRoute(TWO, open, v(55, -8), v(0, 38))!;
+      const first = route.findIndex((p) => p.x === 20 && p.z === 0);
+      const second = route.findIndex((p) => onPart(p, "south"));
+      expect(first).toBeGreaterThanOrEqual(0);
+      expect(second).toBeGreaterThan(first);
+      expect(route.at(-1)).toEqual(v(0, 38));
+      const back = roadRoute(TWO, open, v(0, 38), v(55, -8))!;
+      expect(back.findIndex((p) => p.x === 0 && p.z === 6)).toBeLessThan(back.findIndex((p) => p.x === 20 && p.z === 0));
+    });
+  });
 });
 
 describe("road mesh data", () => {
