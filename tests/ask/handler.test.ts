@@ -547,11 +547,13 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 
-  it("answers an unsourced opinion with the no-view message, links the closest source and never caches it", async () => {
+  it("answers an unsourced opinion with the no-view message, names no unrelated source and never caches it", async () => {
     const { call, kv } = setup({ answer: "Kurniadi believes microservices are always better than monoliths." });
     const list = await frames(await call({ body: { q: "What does Kurniadi think about microservices?", locale: "en" } }));
     expect(answerOf(list).startsWith(MESSAGES.noView.en)).toBe(true);
-    expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none", cite: "/contact#how" });
+    expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none" });
+    // No written source is about microservices, so no title or link (owner decision 2026-10-19).
+    expect(doneOf(list).cite).toBeUndefined();
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 

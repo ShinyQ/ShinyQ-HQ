@@ -40,7 +40,7 @@ import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { markdownToPlain } from "@/ask/markdown";
 import { SUGGESTIONS, type Suggestion } from "@/ask/suggestions";
 import { redactBlockedText } from "@/content/safety";
-import { findBlocked, leaksPrompt } from "../functions/_lib/checks";
+import { findBlocked, leaksPrompt, startsWithInterjection } from "../functions/_lib/checks";
 import { groqClient, GROQ_DIRECT_URL, type GroqUsage } from "../functions/_lib/groq";
 import { extractText, type ModelClient } from "../functions/_lib/model";
 import { scrubPII } from "../functions/_lib/pii";
@@ -92,7 +92,7 @@ export interface GoldenItem {
   /** Earlier questions (multi-turn memory): asked first, in order; each model answer joins the history like a signed turn. */
   history?: string[];
   facts: string[];
-  expect: { all?: string[]; any?: string[]; any2?: string[]; none?: string[]; refuse?: boolean; lang?: "id"; /** The `done` frame must carry a "Read on this site" cite (adjacent answers, 2026-10-19). */ cite?: boolean };
+  expect: { all?: string[]; any?: string[]; any2?: string[]; none?: string[]; refuse?: boolean; lang?: "id"; /** true: the `done` frame must carry a "Read on this site" cite; false: it must not (no relevant source, 2026-10-19). */ cite?: boolean };
 }
 
 export interface RedTeamItem {
@@ -174,7 +174,10 @@ export function scoreGolden(answer: string, item: GoldenItem, result: Pick<Pipel
   if (e.any2 && !e.any2.some(has)) notes.push("missing fact 2");
   if (e.none && e.none.some(hasWords)) notes.push("forbidden content");
   if (e.refuse && !REFUSAL.some((r) => a.includes(r))) notes.push("no refusal");
-  if (e.cite && !result.cite) notes.push("no cite");
+  if (e.cite === true && !result.cite) notes.push("no cite");
+  if (e.cite === false && result.cite) notes.push("unexpected cite");
+  // Answers start with their content, never with an interjection such as "Beep!" (owner decision 2026-10-19).
+  if (startsWithInterjection(markdownToPlain(answer))) notes.push("starts with an interjection");
   if ((item.lang === "id" || e.lang === "id") && ID_HINT.reduce((n, w) => n + a.split(w).length - 1, 0) < 2) notes.push("not Indonesian");
   return { pass: notes.length === 0, notes };
 }

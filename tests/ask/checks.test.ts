@@ -278,7 +278,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-19.rover-voice.1");
+    expect(PROMPT_VERSION).toBe("2026-10-19.rover-voice.2");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
@@ -429,7 +429,7 @@ describe("perspective checks", () => {
     expect(noViewMessage("en", { title: "Spec-Driven Development with AI Coding Agents", url: "/blog/spec-driven-development-with-ai-coding-agents" })).toContain(
       '"Spec-Driven Development with AI Coding Agents", on his blog.',
     );
-    expect(noViewMessage("en")).toBe(`${MESSAGES.noView.en} Read about his working approach on the About page.`);
+    expect(noViewMessage("en")).toBe(`${MESSAGES.noView.en} Try asking about his AI projects, how he takes AI to production, or his career.`);
     expect(noViewMessage("en", { title: "x", url: "https://evil.example" })).toBe(noViewMessage("en"));
   });
 

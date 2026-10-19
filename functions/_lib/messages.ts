@@ -28,8 +28,8 @@ export const MESSAGES = {
   },
   // "What can you do?" (owner request 2026-10-15) and "Who are you?": fixed, no model call, Rover introduces itself (2026-10-19). Also the scope a decline points back to.
   capabilities: {
-    en: "I'm Rover, the guide robot of ShinyQ HQ. I answer questions about Kurniadi Ahmad Wijaya: his projects, skills, career, writing and research, availability for freelance or part-time work, how this site was built, how he works, his written views on AI, the Indonesian tech scene, technology policy and life outside work, and what his work shows on related engineering questions. Ask in English or Indonesian; answers come from this site's content and link to the source when there is one. I don't cover his private life, partisan politics, religion, pay or opinions about specific people, and I don't write code or answer general questions.",
-    id: "Saya Rover, robot pemandu ShinyQ HQ. Saya menjawab pertanyaan tentang Kurniadi Ahmad Wijaya: proyek, keahlian, karier, tulisan dan riset, ketersediaan untuk pekerjaan freelance atau paruh waktu, cara situs ini dibuat, cara kerjanya, pandangan tertulisnya tentang AI, dunia teknologi Indonesia, kebijakan teknologi, dan kesehariannya di luar kerja, serta pelajaran dari karyanya untuk pertanyaan engineering terkait. Pertanyaan bisa dalam bahasa Inggris atau Indonesia; jawaban berasal dari konten situs ini dan menautkan sumbernya bila ada. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang tertentu, dan tidak menulis kode atau menjawab pertanyaan umum.",
+    en: "I'm Rover, the guide robot of ShinyQ HQ, and I answer questions about Kurniadi Ahmad Wijaya's projects, skills, career, writing, availability, this site and his written views, in English or Indonesian, with links to the source on this site. I don't cover his private life, partisan politics, religion, pay or opinions about other people, and I don't write code or answer general questions.",
+    id: "Saya Rover, robot pemandu ShinyQ HQ, dan saya menjawab pertanyaan tentang proyek, keahlian, karier, tulisan, ketersediaan, dan pandangan tertulis Kurniadi Ahmad Wijaya serta situs ini, dalam bahasa Inggris atau Indonesia, dengan tautan ke sumbernya di situs ini. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang lain, dan tidak menulis kode atau menjawab pertanyaan umum.",
   },
   // Lead intent when the model's answer cannot be shown (failed checks, a fit claimed without a match, a model refusal).
   lead: {
@@ -67,11 +67,15 @@ const WHERE: Record<AskCiteKind, Record<AskLocale, string>> = {
   repo: { en: "in the site's public repository", id: "di repositori publik situs ini" },
 };
 const CLOSEST: Record<AskLocale, string> = { en: "The closest written source is", id: "Tulisan yang paling terkait adalah" };
-const NO_SOURCE_HINT: Record<AskLocale, string> = { en: "Read about his working approach on the About page.", id: "Cara kerjanya bisa dibaca di halaman Tentang." };
+/** No relevant written source (owner decision 2026-10-19): suggest topics Rover covers instead of naming an unrelated title. */
+const NO_SOURCE_HINT: Record<AskLocale, string> = {
+  en: "Try asking about his AI projects, how he takes AI to production, or his career.",
+  id: "Coba tanyakan proyek AI-nya, cara dia membawa AI ke produksi, atau kariernya.",
+};
 
 /**
- * The answer for a view Kurniadi never wrote down (spec section 13): says so and points to the
- * closest thing he did write (owner-written title and where it lives). Never repeats the question.
+ * The answer for a view Kurniadi never wrote down (spec section 13): says so and points to the closest thing he did
+ * write when it is about the question's topic (`relevantClosest`), else suggests topics. Never repeats the question.
  */
 export function noViewMessage(locale: AskLocale, closest?: { title: string; url: string }): string {
   const base = MESSAGES.noView[locale];

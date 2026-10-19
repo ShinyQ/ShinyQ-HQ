@@ -4,7 +4,8 @@ import { ASK_REPO_CITE, isAskCite, type AskLocale, type AskOutcome } from "../..
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
-import { tokenize } from "./text";
+import { indexPack } from "./pack-index";
+import { expandTokens, tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./types";
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
@@ -174,6 +175,22 @@ export function sanitizeAnswer(raw: string, links: ReadonlySet<string> = DEFAULT
     });
   }
   return text;
+}
+
+/** A stock interjection or Rover opener at the start of an answer ("Beep!", "Beep boop,", "Rolling over to his projects:"). */
+const OPENER = /^\s*(?:\*{1,2}|_)?(?:(?:beep|boop|bleep|bloop|bzzt|whirr+|vroom|zap|ding)(?:[\s-]+(?:beep|boop|bleep|bloop))*(?:\*{1,2}|_)?\s*[!.,:]+|(?:rolling|zooming|scanning|beaming|whirring)\b[^.!?:\n]{0,40}[:!]+)(?:\*{1,2}|_)?\s*/i;
+
+export function startsWithInterjection(text: string): boolean {
+  return OPENER.test(text);
+}
+
+/**
+ * Factual answers start with their content (owner decision 2026-10-19): a leading interjection is removed and the
+ * next letter capitalized. Greetings and declines are canned, so they keep theirs.
+ */
+export function stripOpener(text: string): string {
+  const rest = text.replace(OPENER, "");
+  return rest === text || !rest ? text : rest.charAt(0).toUpperCase() + rest.slice(1);
 }
 
 /** Link targets an answer may keep: the top pages plus every retrieved chunk's page (site paths locale-less, the repository as itself). */
@@ -416,6 +433,43 @@ export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLoca
   return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url };
 }
 
+/** Question words that frame a question rather than name its topic (EN/ID), on top of words in more than a fifth of the chunks. */
+const FRAME_TERMS = new Set(
+  (
+    "kurniadi think thinks thought view views opinion opinions stance believe believes would what when where why which how ever bad good idea ideas better worse best worst versus vs should shouldn use used using work works written write wrote does do did is are " +
+    "apa pendapat pandangan menurut tentang kapan mana mengapa kenapa bagaimana bukan pilihan tepat sebaiknya seharusnya tidak dipakai digunakan memakai menggunakan baik buruk lebih dibanding dibandingkan ide"
+  ).split(" "),
+);
+/** Share of chunks above which a term is too common to name a question's topic ("ai", "data"). */
+const TOPIC_COMMON_SHARE = 0.2;
+
+/**
+ * The closest written source only when it is about the question's topic (owner decision 2026-10-19): the question's
+ * topic terms (frame words and terms in more than a fifth of the chunks aside) must all exist in the pack, and the
+ * chosen source must contain one of them; the source with the most specific overlap wins. Otherwise undefined, and
+ * the no-view reply suggests topics instead of a title. The blockchain question has no topic term in the pack.
+ */
+export function relevantClosest(pack: KnowledgePack, question: string, chunks: readonly KnowledgeChunk[], locale: AskLocale, options: { adjacent?: boolean } = {}): { title: string; url: string } | undefined {
+  const index = indexPack(pack);
+  const n = pack.chunks.length;
+  // A plural the pack only has in the singular ("LLMs") counts as the singular.
+  const singular = (t: string) => (!index.df[t] && t.length > 3 && t.endsWith("s") && index.df[t.slice(0, -1)] ? t.slice(0, -1) : t);
+  const terms = [...new Set(expandTokens(tokenize(question)).map(singular))].filter((t) => !FRAME_TERMS.has(t) && (index.df[t] ?? 0) <= n * TOPIC_COMMON_SHARE);
+  if (!terms.length || terms.some((t) => !index.df[t])) return undefined;
+  const allowed = options.adjacent ? ["post", "talk", "project", "publication", "principle"] : ["post", "talk", "principle", "publication"];
+  let best: { chunk: KnowledgeChunk; score: number } | undefined;
+  for (const chunk of chunks) {
+    if (!allowed.includes(chunk.type) || chunk.keywords.includes("personal") || !isAskCite(chunk.url)) continue;
+    const i = pack.chunks.indexOf(chunk);
+    if (i < 0) continue;
+    const score = terms.reduce((sum, t) => sum + (index.tf[i][t] ? Math.log(1 + n / index.df[t]) : 0), 0);
+    if (score > 0 && (!best || score > best.score)) best = { chunk, score };
+  }
+  if (!best?.chunk.url) return undefined;
+  const chunk = best.chunk;
+  return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url as string };
+}
+
 /** Code in an answer (T6, owner rule 2026-10-15: never a general coding assistant). Markdown fences are already stripped. */
 const CODE: RegExp[] = [
   /\b(?:def|function|fn|func) \w+\s*\(|=>\s*[{(\w]|\b(?:const|let|var) \w+\s*=|\bimport \w+(?:,? ?\{[^}]*\})? from\b|\bfrom \w+ import\b|\bSELECT\b[\s\S]{0,60}\bFROM\b|\bconsole\.log\(|\bprint\(|\breturn [^.]{0,40};|\{\s*\}|;\s*\}/,
@@ -485,7 +539,7 @@ export interface CheckInput {
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
 export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
-  const markdown = sanitizeAnswer(answer, answerLinkPaths(chunks));
+  const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
   // Both forms: the markdown carries the link URLs, the plain text joins words that marks split ("SM**BC**").

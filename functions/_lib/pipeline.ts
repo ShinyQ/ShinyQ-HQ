@@ -1,5 +1,5 @@
 import type { AskLocale, AskOutcome, AskSource, AskTag } from "../../src/ask/protocol";
-import { checkAnswer, closestSource, firstPersonVoice, type CheckFailure } from "./checks";
+import { checkAnswer, firstPersonVoice, relevantClosest, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
@@ -175,7 +175,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   if (!check.ok) {
     // A project inquiry whose answer cannot be shown still gets the invitation and the card; safety replacements stay.
     const replacement: CannedKind = lead && check.replacement !== "restricted" ? "lead" : check.replacement;
-    const closest = replacement === "noView" ? closestSource(chunks, locale, { adjacent }) : undefined;
+    const closest = replacement === "noView" ? relevantClosest(pack, routed, chunks, locale, { adjacent }) : undefined;
     return {
       text: replacement === "noView" ? noViewMessage(locale, closest) : canned(replacement, locale),
       outcome: OUTCOME_OF[replacement],
@@ -195,7 +195,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
   // An adjacent question the model declines or cannot answer from CONTEXT gets the no-view reply naming his closest work.
   if (adjacent && (check.outcome === "decline" || check.outcome === "unknown")) {
-    const closest = closestSource(chunks, locale, { adjacent: true });
+    const closest = relevantClosest(pack, routed, chunks, locale, { adjacent: true });
     return { text: noViewMessage(locale, closest), outcome: "unknown", source: "none", reason: "unsourced", raw: generation.text, failures: generation.failures, ...modelOf, calledModel: true, chunkIds, tags, ...(closest ? { cite: closest.url } : {}), historyUsed };
   }
   // The model's own refusal is replaced by the fixed one, which points back to what this assistant covers.

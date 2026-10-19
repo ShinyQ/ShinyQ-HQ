@@ -77,9 +77,11 @@ describe("capabilities ('What can you do?')", () => {
   });
 
   it("covers every topic the owner listed, both languages, and what it will not discuss", () => {
-    for (const word of ["projects", "skills", "career", "writing", "research", "freelance", "this site was built", "how he works", "AI", "Indonesian tech", "life outside work", "English or Indonesian", "source", "don't cover", "don't write code", "related engineering questions"]) {
+    // Two sentences (owner decision 2026-10-19): who Rover is and what it answers, then what it does not cover.
+    for (const word of ["Rover", "projects", "skills", "career", "writing", "availability", "this site", "written views", "English or Indonesian", "source", "don't cover", "don't write code"]) {
       expect(MESSAGES.capabilities.en).toContain(word);
     }
+    for (const locale of ["en", "id"] as const) expect(MESSAGES.capabilities[locale].split(/(?<=\.)\s+/)).toHaveLength(2);
     expect(MESSAGES.capabilities.id).toContain("bahasa Inggris atau Indonesia");
     expect(MESSAGES.capabilities.id).not.toMatch(/\b(?:Anda|kamu)\b/i);
   });

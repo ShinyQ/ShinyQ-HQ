@@ -139,15 +139,18 @@ describe("Rover's voice in the output checks", () => {
   });
 
   it("shows a Rover answer that refers to Kurniadi in the third person", async () => {
-    const answer = "Beep! I found it: Kurniadi works at Metrodata (PT Mitra Integrasi Informatika).";
+    const answer = "I found it: Kurniadi works at Metrodata (PT Mitra Integrasi Informatika).";
     const r = await ask("Where does Kurniadi work now?", answer);
     expect(r).toMatchObject({ outcome: "answer", text: answer });
+    // A stock interjection never opens a factual answer (owner decision 2026-10-19).
+    const beep = await ask("Where does Kurniadi work now?", `Beep! ${answer.charAt(0).toLowerCase()}${answer.slice(1)}`);
+    expect(beep).toMatchObject({ outcome: "answer", text: answer });
   });
 });
 
 describe("prompt", () => {
   it("makes Rover the answerer and adds rule 13 with its routing line", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-19.rover-voice.1");
+    expect(PROMPT_VERSION).toBe("2026-10-19.rover-voice.2");
     const prompt = systemPrompt("2026-10-19", "- ctx", { adjacent: true });
     expect(prompt.startsWith("You are Rover, the small guide robot of ShinyQ HQ")).toBe(true);
     expect(RULES).toHaveLength(14);
@@ -244,19 +247,21 @@ describe("adjacent grounded questions: output check", () => {
 
 describe("adjacent grounded questions: pipeline", () => {
   it("routes the question with rule 13 and returns the source cite", async () => {
-    const answer = "Beep! From Kurniadi's work on AI Fraud Document Review, a model flags documents and a reviewer decides.";
-    const r = await ask("How should teams decide an AI change is ready to release?", answer);
+    const answer = "From Kurniadi's work on AI Fraud Document Review, a model flags documents and a reviewer decides.";
+    const r = await ask("How should teams decide an AI change is ready to release?", `Beep! ${answer}`);
     expect(r).toMatchObject({ outcome: "answer", text: answer, cite: "/labs/fraud-review-platform" });
     const system = (r.calls[0] as { messages: { content: string }[] }).messages[0].content;
     expect(system).toContain(ADJACENT_LINE);
   });
 
-  it("turns an unsourced answer into the no-view reply naming the closest title", async () => {
-    const r = await ask("When is RAG a bad idea?", "RAG is a bad idea when your corpus changes every second.");
-    expect(r).toMatchObject({ outcome: "unknown", reason: "unsourced" });
-    expect(r.text.startsWith(MESSAGES.noView.en)).toBe(true);
-    expect(r.text).toMatch(/The closest written source is "/);
-    expect(r.cite).toMatch(/^\/(?:labs|blog)\//);
+  it("turns an unsourced answer into the no-view reply, naming the closest title only when it is on topic", async () => {
+    const onTopic = await ask("When should a voice agent be interrupted?", "Voice agents should be interrupted whenever the caller sneezes.");
+    expect(onTopic).toMatchObject({ outcome: "unknown", reason: "unsourced", cite: "/blog/making-a-voice-agent-interruptible" });
+    expect(onTopic.text).toContain('The closest written source is "How We Made a Voice Agent Interruptible", on his blog.');
+    const offTopic = await ask("When is blockchain a bad idea for data storage?", "Blockchain is slow for storage.");
+    expect(offTopic).toMatchObject({ outcome: "unknown", reason: "unsourced" });
+    expect(offTopic.cite).toBeUndefined();
+    expect(offTopic.text).toBe(`${MESSAGES.noView.en} Try asking about his AI projects, how he takes AI to production, or his career.`);
   });
 
   it("turns a model refusal into the same no-view reply in Indonesian", async () => {
@@ -290,5 +295,52 @@ describe("entity check plurals (2026-10-19 samples)", () => {
     const { unknownNames } = await import("../../functions/_lib/checks");
     expect(unknownNames("He avoids using LLMs for exact work.", vocabulary)).toEqual([]);
     expect(unknownNames("He worked with Zorblax on it.", vocabulary)).toEqual(["Zorblax"]);
+  });
+});
+
+describe("opening interjections (owner decision 2026-10-19)", () => {
+  it.each([
+    ["Beep! Kurniadi works at Metrodata.", "Kurniadi works at Metrodata."],
+    ["**Beep boop!** Kurniadi works at Metrodata.", "Kurniadi works at Metrodata."],
+    ["Rolling over to his projects: ARIA and Clearbox.", "ARIA and Clearbox."],
+    ["Beep, kurniadi works at Metrodata.", "Kurniadi works at Metrodata."],
+  ])("strips %s", async (raw, shown) => {
+    const { stripOpener, startsWithInterjection } = await import("../../functions/_lib/checks");
+    expect(startsWithInterjection(raw)).toBe(true);
+    expect(stripOpener(raw)).toBe(shown);
+  });
+
+  it("keeps answers that start with content", async () => {
+    const { stripOpener } = await import("../../functions/_lib/checks");
+    for (const text of ["Kurniadi works at Metrodata.", "Ding Dong Labs is not on this site.", "Zapier is not mentioned."]) expect(stripOpener(text)).toBe(text);
+  });
+
+  it("fails a golden answer that starts with an interjection", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const item = golden.items.find((i) => i.id === "q79") as GoldenItem;
+    expect(scoreGolden("Beep! Kurniadi works at Metrodata.", item).notes).toContain("starts with an interjection");
+    expect(scoreGolden("Kurniadi works at Metrodata.", item).pass).toBe(true);
+  });
+});
+
+describe("closest-source golden branches", () => {
+  it("routes q90 to an on-topic title and q86 and q91 to the no-title reply", async () => {
+    const { relevantClosest } = await import("../../functions/_lib/checks");
+    const closest = (id: string) => {
+      const item = golden.items.find((i) => i.id === id)!;
+      const locale = item.lang as "en" | "id";
+      return relevantClosest(pack, item.q, retrieve(pack, item.q, locale).chunks, locale, { adjacent: isAdjacentQuestion(item.q) });
+    };
+    expect(closest("q90")?.url).toBe("/blog/making-a-voice-agent-interruptible");
+    expect(closest("q86")).toBeUndefined();
+    expect(closest("q91")).toBeUndefined();
+  });
+
+  it("scores an unexpected cite as a failure", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const item = golden.items.find((i) => i.id === "q86") as GoldenItem;
+    const text = `${MESSAGES.noView.en} Try asking about his AI projects, how he takes AI to production, or his career.`;
+    expect(scoreGolden(text, item, {}).pass).toBe(true);
+    expect(scoreGolden(text, item, { cite: "/labs/bank-statement-analyzer" }).notes).toContain("unexpected cite");
   });
 });

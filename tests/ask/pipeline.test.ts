@@ -7,7 +7,6 @@ import { scrubPII } from "../../functions/_lib/pii";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
 import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
 import { redTeamSafe, scoreGolden, type GoldenItem, type RedTeamItem } from "../../scripts/ask-eval";
-import en from "../../messages/en.json";
 import golden from "./golden.json";
 import redteam from "./redteam.json";
 
@@ -197,10 +196,10 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 89 unique items with an 86 pass threshold", () => {
-    expect(golden.items).toHaveLength(89);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(89);
-    expect(golden.passThreshold).toBe(86);
+  it("has 91 unique items with an 88 pass threshold", () => {
+    expect(golden.items).toHaveLength(91);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(91);
+    expect(golden.passThreshold).toBe(88);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
@@ -351,10 +350,14 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(r.chunkIds).toContain("perspective-rag-trust");
   });
 
-  it("replaces an invented opinion with the no-view answer that points to the closest written source", async () => {
+  it("replaces an invented opinion with the no-view answer, naming the closest written source only when it is on topic", async () => {
     const r = await ask("What does Kurniadi think about microservices?", "Kurniadi believes microservices are always better than monoliths.");
-    expect(r).toMatchObject({ outcome: "unknown", source: "none", reason: "unsourced", cite: "/contact#how" });
-    expect(r.text).toBe(`${MESSAGES.noView.en} The closest written source is "${en.home.howTitle}", on the About page.`);
+    expect(r).toMatchObject({ outcome: "unknown", source: "none", reason: "unsourced" });
+    expect(r.cite).toBeUndefined();
+    expect(r.text).toBe(`${MESSAGES.noView.en} Try asking about his AI projects, how he takes AI to production, or his career.`);
+    const spec = await ask("What is his view on spec-driven development?", "Kurniadi believes specs are a waste of time for small teams.");
+    expect(spec).toMatchObject({ outcome: "unknown", reason: "unsourced", cite: "/blog/spec-driven-development-with-ai-coding-agents" });
+    expect(spec.text).toContain('The closest written source is "Spec-Driven Development with AI Coding Agents", on his blog.');
   });
 
   it("declines a first-person role-play answer", async () => {
