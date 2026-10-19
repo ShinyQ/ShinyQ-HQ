@@ -104,7 +104,8 @@ describe("Agent Office chunk boundary", () => {
   });
 
   it("starts the 3D office beside the body when an office drawer opens (a user action, so even with `?prefetch=off`)", () => {
-    const bodies = readFileSync(join(ROOT, "src/hud/drawer/bodies.tsx"), "utf8");
-    expect(bodies).toMatch(/const OfficeBody = chunkBody\(\(\) => \{\s*void loadOffice\(\)\.catch\(\(\) => null\);\s*return loadOfficeBody\(\)/);
+    const body = readFileSync(join(ROOT, `${DIR}/OfficeBody.tsx`), "utf8");
+    expect(body).toMatch(/officeLive\.want\("drawer", true\);[^}]*void loadOffice\(\)\.catch\(\(\) => null\);/);
+    expect(readFileSync(join(ROOT, "src/hud/drawer/bodies.tsx"), "utf8")).toMatch(/const OfficeBody = chunkBody\(\(\) => loadOfficeBody\(\)/);
   });
 });

@@ -11,6 +11,7 @@ import type { OfficeFeed } from "@/lib/office/poll";
 import type { OfficeGithubItem } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
+import { loadOffice } from "./chunk";
 import { officeLive, useOfficeFeed } from "./live";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
@@ -206,6 +207,8 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
   const now = useNow(5000);
   useEffect(() => {
     officeLive.want("drawer", true);
+    // Opening a drawer is a user action: start (or retry) the 3D office too, even with `?prefetch=off`.
+    void loadOffice().catch(() => null);
     return () => officeLive.want("drawer", false);
   }, []);
   const panel = view.office;

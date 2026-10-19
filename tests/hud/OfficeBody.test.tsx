@@ -11,6 +11,8 @@ import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-f
 
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed, want: vi.fn() }));
 vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } }));
+const chunk = vi.hoisted(() => ({ loadOffice: vi.fn(() => Promise.resolve()) }));
+vi.mock("@/experience/floors/lobby/office/chunk", () => ({ loadOffice: chunk.loadOffice }));
 // The drawer blocks import the localized Link (next-intl navigation), which needs the Next.js router.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
@@ -101,6 +103,13 @@ describe("Agent Office drawers", () => {
     expect(within(rows[1]).getByRole("link", { name: external("feat: agent office") })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pulls");
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("target", "_blank");
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.githubNote);
+  });
+
+  it("starts the 3D office on every drawer open (a user action, so even with `?prefetch=off`)", () => {
+    chunk.loadOffice.mockClear();
+    body({ panel: "summary" }).unmount();
+    body({ panel: "github" });
+    expect(chunk.loadOffice).toHaveBeenCalledTimes(2);
   });
 
   it("stops wanting the drawer poll when it closes", () => {
