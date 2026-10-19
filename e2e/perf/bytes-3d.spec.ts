@@ -15,7 +15,8 @@ import { writePerfEntry } from "./helpers";
  * every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in a normal
  * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 470 KB, lite 446.4 KB).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
- * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap.
+ * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office chunk
+ * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -25,6 +26,17 @@ type FloorChunks = { __hq: { floorChunks?: { load: (id: string) => Promise<void>
 /** Bytes of the script chunks a floor load added on top of the Page View and the paths already counted; the loaded paths join `counted`. */
 async function measureFloor(page: Page, floor: FloorChunkId, seen: Set<string>, counted: Set<string>): Promise<number> {
   const loaded = await recordTransfers(page, () => page.evaluate((f) => (window as unknown as FloorChunks).__hq.floorChunks!.load(f), floor), 2000);
+  const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
+  for (const t of loaded) counted.add(t.path);
+  return bytes;
+}
+
+type OfficeLoad = { __hq: { office?: { load: () => Promise<void> } } };
+
+/** Bytes of the Agent Office chunk on top of the Page View, the main path and the floor chunks already counted; null on a build without it. */
+async function measureOffice(page: Page, seen: Set<string>, counted: Set<string>): Promise<number | null> {
+  if (!(await page.evaluate(() => Boolean((window as unknown as OfficeLoad).__hq.office)))) return null;
+  const loaded = await recordTransfers(page, () => page.evaluate(() => (window as unknown as OfficeLoad).__hq.office!.load()), 2000);
   const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
   for (const t of loaded) counted.add(t.path);
   return bytes;
@@ -98,6 +110,8 @@ for (const tier of ["lite", "full"] as const) {
     if (hasChunks) {
       for (const floor of BYTES_3D_BUDGET.sessionFloors) floors[floor] = await measureFloor(page, floor, seen, mainPaths);
     }
+    // The Agent Office (L1) loads near the spawn in a normal session, but has its own cap outside the session total.
+    const office = await measureOffice(page, seen, mainPaths);
     await context.close();
 
     // B1 only loads when unlocked. It is a near floor of the Lobby, so it may arrive during the main path even with
@@ -132,11 +146,12 @@ for (const tier of ["lite", "full"] as const) {
     const total = sum(js);
     const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
     const sessionTotal = total + floorsTotal;
-    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors: { ...floors, ...(b1 === null ? {} : { B1: b1 }) }, sessionTotal } : {}) });
+    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors: { ...floors, ...(b1 === null ? {} : { B1: b1 }) }, sessionTotal } : {}), ...(office === null ? {} : { office }) });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
     if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
     if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
+    if (office !== null) console.log(`Agent Office chunk (${tier}): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), not in the session total`);
 
     if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
     expect(total, "no 3D JavaScript measured: did the gate load the 3D chunk?").toBeGreaterThan(BYTES_3D_BUDGET.minExpected);
@@ -149,6 +164,10 @@ for (const tier of ["lite", "full"] as const) {
     if (b1 !== null) {
       expect(b1, "B1 chunk: did __hq.floorChunks.load fetch any script in an unlocked session?").toBeGreaterThan(0);
       expect(b1, `B1 chunk ${kb(b1)} is over its ${kb(BYTES_3D_BUDGET.floors.B1)} cap`).toBeLessThan(BYTES_3D_BUDGET.floors.B1);
+    }
+    if (office !== null) {
+      expect(office, "Agent Office chunk: did __hq.office.load fetch any script?").toBeGreaterThan(0);
+      expect(office, `Agent Office chunk ${kb(office)} is over its ${kb(BYTES_3D_BUDGET.office)} cap`).toBeLessThan(BYTES_3D_BUDGET.office);
     }
     if (hasChunks) expect(sessionTotal, `main + floor chunks ${kb(sessionTotal)} is over the ${kb(BYTES_3D_BUDGET.session[tier])} session cap (${tier})`).toBeLessThan(BYTES_3D_BUDGET.session[tier]);
   });

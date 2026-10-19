@@ -102,6 +102,12 @@ describe("gates", () => {
     expect(s.markdown).toContain("Session total with every public floor chunk (B1 excluded): 425.5 KB of 446.4 KB.");
   });
 
+  it("reports the Agent Office chunk against its own cap, outside the session total", () => {
+    const entry = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, office: 9.5 * 1024 } as const;
+    const s = renderGates([entry], []);
+    expect(s.markdown).toContain("Agent Office chunk (L1, lazy, not in the session total): 9.5 KB of 14.0 KB.");
+  });
+
   it("renders P3's memory entries", () => {
     const s = renderGates([{ kind: "memory", tier: "lite", trips: 10, before: { geometries: 400, textures: 30, programs: 26 }, after: { geometries: 400, textures: 30, programs: 26 }, heapDeltaBytes: 512 * 1024 }], []);
     expect(s.markdown).toContain("| lite | 10 | 0 | 0 | 0 | 0.5 MB |");

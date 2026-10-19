@@ -31,12 +31,16 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
+ * The L1 Agent Office chunk (`floors/lobby/office/scene.ts`) is measured after the session floors and held to `office`
+ * (owner decision 2026-10-19), outside the session total.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
+  /** L1 Agent Office chunk (lazy, near the office or on an office drawer), incremental over the main path and the session floors. */
+  office: 14 * 1024,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   session: { lite: Math.round(446.4 * 1024), full: 470 * 1024 },
