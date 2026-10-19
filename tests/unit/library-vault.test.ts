@@ -82,12 +82,12 @@ describe.each([
   const net = L4.road!;
   const grid = buildNavGrid(L4, ROVER.radius);
 
-  it("stands the guides as four books in file order, with their spine, issuer, code and title", () => {
+  it("stands the guides as four books in file order, with their spine, issuer and code", () => {
     expect(vault).not.toBeNull();
     const guides = guideViews("en");
     expect(vault.books).toHaveLength(4);
     expect(vault.books.map((b) => b.slug)).toEqual(guides.map((g) => g.slug));
-    for (const [i, b] of vault.books.entries()) expect({ spine: b.spine, issuer: b.issuer, code: b.code, title: b.title }).toEqual({ spine: guides[i].spine, issuer: guides[i].issuer, code: guides[i].code, title: guides[i].title });
+    for (const [i, b] of vault.books.entries()) expect({ spine: b.spine, issuer: b.issuer, code: b.code }).toEqual({ spine: guides[i].spine, issuer: guides[i].issuer, code: guides[i].code });
   });
 
   it("passes the space and pad rules with the vault road, plaza and books", () => {

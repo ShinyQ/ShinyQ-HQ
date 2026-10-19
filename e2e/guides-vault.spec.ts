@@ -131,7 +131,7 @@ for (const device of [
           return { ...c, settled: c.gap < 0.02 && c.min > 0.4 };
         }, { message: `${device.id}: covers at the stop` })
         .toMatchObject({ settled: true, books: guides.guides.length });
-      expect((await vaultProbe(page)).spines, `${device.id}: spine signs`).toBe(guides.guides.length);
+      await expect.poll(async () => (await vaultProbe(page)).spines, { message: `${device.id}: spine signs` }).toBe(guides.guides.length);
 
       // Point at the book: its cover swings fully open (at once under reduced motion).
       const point = await clickablePoint(page, BOOK, device.safe);

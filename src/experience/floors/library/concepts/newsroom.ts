@@ -194,9 +194,8 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     { x: end.x + radius, z: end.z + radius },
     { x: end.x - radius, z: end.z - radius },
     { x: returnPad.x, z: returnPad.z + 1.5 },
-    ...(vault ? [around(vault.center, vault.radius)].flatMap((r) => [{ x: r.minX, z: r.minZ }, { x: r.maxX, z: r.maxZ }]) : []),
   ];
-  const bounds = floorBounds([...stations.map((s) => s.rect), ...extra], points, LIBRARY_FLOOR.margin);
+  const bounds = floorBounds([...stations.map((s) => s.rect), ...extra, ...(vault ? [around(vault.center, vault.radius)] : [])], points, LIBRARY_FLOOR.margin);
   const spawn: Vec2 = { x: N.arrival.x, z: N.arrival.z };
   const floor = libraryFloor({
     bounds,
@@ -279,16 +278,7 @@ function studyVault(end: Vec2, guides: readonly LibraryGuideInput[]): LibraryVau
     const facing = { x: -Math.cos(a), z: -Math.sin(a) };
     const hx = (Math.abs(facing.z) * V.book.w + Math.abs(facing.x) * V.book.d) / 2;
     const hz = (Math.abs(facing.x) * V.book.w + Math.abs(facing.z) * V.book.d) / 2;
-    return {
-      slug: g.slug,
-      spine: g.spine,
-      issuer: g.issuer,
-      code: g.code,
-      title: g.title,
-      at,
-      facing,
-      rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz },
-    };
+    return { ...g, at, facing, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
   });
   const shelf: Rect = {
     minX: Math.min(...books.map((b) => b.rect.minX)),
