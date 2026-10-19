@@ -34,7 +34,6 @@ export interface LibraryGuideInput {
   spine: string;
   issuer: string;
   code: string | null;
-  title: string;
 }
 
 export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
@@ -44,7 +43,7 @@ export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
     models: library.models.length,
     talks: library.talks.length,
     metrics: Boolean(library.researchMetrics),
-    guides: library.guides.map(({ slug, spine, issuer, code, title }) => ({ slug, spine, issuer, code, title })),
+    guides: library.guides,
   };
 }
 
