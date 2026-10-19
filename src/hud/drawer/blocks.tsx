@@ -1,8 +1,21 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import type { RoomLinkItem, RoomMetric, RoomSection } from "@/content/room-views/types";
 import { Link } from "@/i18n/navigation";
+
+/** An outside link that opens in a new tab: an arrow for sighted readers, "opens in a new tab" for screen readers. */
+export function External({ href, children, className = "link", testId }: { href: string; children: ReactNode; className?: string; testId?: string }) {
+  const tc = useTranslations("common");
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className} data-testid={testId}>
+      {children}
+      <span aria-hidden="true"> &#8599;</span>
+      <span className="sr-only"> ({tc("external")})</span>
+    </a>
+  );
+}
 
 /**
  * Result cards. `fluid` sizes the grid by its container (the drawer body), not the viewport: two
