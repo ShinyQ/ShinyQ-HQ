@@ -130,13 +130,15 @@ flowchart LR
 - `GET` and `HEAD` only (405 otherwise, `Allow: GET, HEAD`).
 - Slug allowlist from `content/study-guides.json` (the Function imports that small file directly, never
   `site-content.json`). Unknown slug: 404 `text/plain`.
-- R2 key `<slug>/<version>.pdf`. Missing object or no binding: 404 (and a `console.error` for the binding case).
+- R2 key `<slug>/<version>.pdf`: the version named by a well-formed `?v=` (12 lowercase hex), else the current
+  version from the file. Missing object or no binding: 404 (and a `console.error` for the binding case).
 - `ETag`: the R2 `httpEtag`. `If-None-Match` match: 304 with the ETag and cache headers.
 - `Range: bytes=a-b`, `a-`, `-n`: 206 with `Content-Range`; unsatisfiable: 416 with `Content-Range: bytes */size`;
   multiple ranges: the whole file (200). `Accept-Ranges: bytes` always.
 - Headers: `Content-Type: application/pdf`, `Content-Length`, `Content-Disposition: inline; filename="<file>"`
   (`attachment` with `?download=1`), `X-Content-Type-Options: nosniff`, `Cache-Control: no-transform` plus
-  `public, max-age=31536000, immutable` when `?v=` equals the current version, else `public, max-age=300`.
+  `public, max-age=31536000, immutable` for a well-formed `?v=` whose object exists (the bytes under a version key
+  never change, so a reader opened before a deploy keeps its version), else `public, max-age=300`.
   `no-transform` keeps Cloudflare from compressing the body, which would break byte ranges.
 - The Function sets `Content-Security-Policy: frame-ancestors 'none'` and `X-Content-Type-Options: nosniff` itself:
   Cloudflare Pages never applies `_headers` to Function responses, so `_headers` gets no `/api/guides/*` block (an
@@ -150,7 +152,8 @@ flowchart LR
   sheet `Modal` already provides.
 - `GuideReader` imports `pdfjs-dist` dynamically. The worker is `new Worker(new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url), { type: "module" })`
   passed as `GlobalWorkerOptions.workerPort`, so it is a hashed same-origin asset. `getDocument({ url,
-  rangeChunkSize: 65536, disableAutoFetch: true, disableStream: false, isEvalSupported: false })`.
+  rangeChunkSize: 65536, disableAutoFetch: true, disableStream: true, enableXfa: false, useWasm: false,
+  isOffscreenCanvasSupported: false })`: range requests only, so only the pages read are fetched.
 - Pages: a vertical scroll of page slots sized from page 1's viewport (all pages are A4), so the scroll height is
   known before any page renders. An `IntersectionObserver` renders the visible pages plus one before and after,
   and releases canvases more than 4 pages away (`canvas.width = 0`), so memory stays flat on phones. Canvas pixel
@@ -210,7 +213,8 @@ flowchart LR
 - Reader: a failed data fetch or `getDocument` failure shows the error state with Retry and Download; a failed
   page render shows a per-page retry; a failed chunk import shows the error state (the next open retries).
 - Offline or no Function (the static e2e server): the e2e specs route `/api/guides/*` to a small committed
-  fixture PDF (`e2e/fixtures/guide-fixture.pdf`, three generated pages, no owner content).
+  fixture PDF generated in memory by `e2e/fixtures/guide-pdf.ts` (three pages, no owner content, nothing
+  committed).
 
 ## Testing
 
