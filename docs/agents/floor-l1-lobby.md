@@ -1,6 +1,6 @@
 # L1 Lobby
 
-The L1 Lobby floor: the certification wall, the Highlights Hall, the Rover menu kiosk and the Lobby camera views.
+The L1 Lobby floor: the certification wall, the Highlights Hall, the Rover menu kiosk, the Agent Office and the Lobby camera views.
 Index: [AGENTS.md](../../AGENTS.md).
 
 Related: floor rules shared by every floor live in [floors.md](floors.md); the Visitor Observatory (`L1:visits`) is described in [stats.md](stats.md) and [hud-and-drawer.md](hud-and-drawer.md).
@@ -101,6 +101,61 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 - An open station keeps `/{locale}` (`hasPage` false).
 - The stations are point-and-go targets `L1:station:highlights-<station>` (kind `station`, `open-room`), registered by `HighlightsHall` with `registerExtraInteractables` (`hallInteract.ts`); see [floors.md](floors.md).
 - The registry's L1 built-ins do not derive targets from L1 doors.
+
+## Agent Office
+
+Design: owner decisions D1 to D7 ([2026-10-18](../decisions/2026-10-18-agent-office.md)); backend, contract and privacy in [office.md](office.md). Code: `floors/lobby/officeLayout.ts` (pure layout, rooms, stops, view zone; config.ts imports it, so it stays import-light), `floors/lobby/officeShell.ts` (3D-only: `officeShellBoxes`, `officeBounds`), `floors/lobby/office/` (the mount, the loader and two lazy chunks), shared client modules `src/lib/office/poll.ts` and `src/lib/office/model.ts`.
+
+### Layout
+
+- South plaza strip (D7), slab unchanged (`OFFICE.slabEdge` equals `LOBBY.bounds.maxZ` 21): five desks (2.6 x 0.9 u, top at y 0.95) on an arc around (3.5, 10), desk radius 8, at 51.3, 25.65, 0, -25.65 and -51.3 degrees from +z toward +x (`OFFICE.angles`). Slot 0 (Desk 1) is the east end: the office stop looks south, so Desk 1 is the leftmost Rover from there, in the drawer's order.
+- Each Rover stands 1.2 u behind its desk (radius 9.2), facing the plaza; four cable trays run along the arc between the desks; a 17 x 4 u screen wall (frame 0.2 u, bottom at y 0.6, 0.3 u thick) stands on the south edge with its plane at z 20.7, facing north.
+- Obstacles (`officeObstacles`): one per desk and Rover (the end ones reach back to the wall, so no pocket behind the row is reachable) and the wall (to the slab edge). The wall frame is a camera column (`FloorLayout.tall`, `officeTall`). The concave floor in front of the desks is open.
+- Stop (3.5, 14.2) for every office room (`FloorLayout.stops`, `officeStops`); view zone `L1:office` around it looks south (zoom 1.3, tablets 1.25, phones 1.2).
+- Clearances (`tests/unit/lobby-office.test.ts`): 3.67 u east of the kiosk, 2.32 u west of the hall lead road start, the stop 3.35 u in front of the middle desk, the wall 0.35 u behind the middle Rover, every office obstacle more than 1 u from every other L1 obstacle.
+- Space rules: the office is one fixture whose inner gaps are by design ([owner decision](../decisions/2026-10-19-agent-office-space-rules.md)); `tests/unit/highlights-layout.test.ts` checks the Lobby's space rules without it.
+
+### Chunks and mounting
+
+- `OfficeMount` (main path, in an `IntroReveal` with `officeBounds()`) always draws the furniture shell (desk tops, legs, cable trays, wall frame: `MergedBoxes` and `MergedEdges`), so the navgrid never holds an invisible desk, before the chunk loads or if it fails.
+- Two lazy chunks, loaded by `office/chunk.ts` (its two `import()` calls are the only references to them):
+  - the scene (`office/scene.ts`, `loadOffice`): `OfficeScene`, `OfficeChips` and the live feed's test hooks. Every 0.5 s after the first frame went idle (`afterFirstFrameIdle`), `OfficeMount` asks `officeLoadWanted`: on L1 or riding there, within `OFFICE.loadRadius` (40 u) of the stop (the rover, or `LOBBY.arrival` during a ride; the spawn is inside it), speculative prefetch on. `?prefetch=off` never loads it on its own; a failed speculative load is not retried by the trigger.
+  - the drawer body (`office/body.ts`, `loadOfficeBody`): `OfficeBody`, loaded only when an office drawer opens. Its mount effect also starts (or retries) the scene load on every open, even with `?prefetch=off`.
+- Neither is a floor chunk or on the first-frame path. Never import their modules statically from the `Experience.tsx` closure (`tests/unit/office-chunk-graph.test.ts`).
+- The live scene mounts once loaded, on L1 (or riding there), with the full tier's composer live (`useComposerLive`), never in the middle of the intro (a load during the boot card mounts at once, so the reveal ring switches it on). Once mounted it stays. `INTRO_LANDMARKS` stays at five.
+- `OfficeReady` precompiles and pins the office's programs like `HallReady`, then sets `__hq.probes.office.loaded`.
+
+### Rendering (7 scene calls, no new program)
+
+- Main path (2): shell solids and shell edges, on the observatory's programs.
+- Scene chunk (5):
+  - Rover parts and treads: two instanced unit-box meshes on `MeshStandardMaterial` with `alphaHash` (the player Rover's wheel program).
+  - Faces (128 x 96 cells) and desk screens (256 x 160 cells): one quad mesh on one 1024 x 512 canvas atlas, the player face's material settings. The quads carry a `normal` attribute (unused by the basic material) so they share the wall's program.
+  - Glow: one instanced holo mesh (`HOLO_MODE.dot`): antenna tips, halos and CI progress dots.
+  - Screen wall: one quad with its own canvas (1280 x 300 full, 1024 x 240 lite).
+- Atlas: no mipmaps, `LinearFilter`. The first paint draws every cell and uploads the whole atlas once; after that only cells whose frame key changed repaint into a cell-sized canvas copied into place with `renderer.copyTextureToTexture`. Faces redraw at most 5 fps (`FACE_FPS_MAX`, both tiers), desk screens at most 10 fps full and 5 fps lite.
+- Wall: checked twice a second; its model rebuilds only when the feed or the locale changed or a second passed, and the texture redraws only when its content or spinner changed.
+- Per-frame work runs only while the office is in view on L1 (a frustum test of its bounds every 0.5 s, `officeRuntime.inView`). Instance-matrix, face-quad and glow writes are skipped when no pose, glow key or camera changed, and run through `whenDrawn`; the atlas paints only while the office is drawn (`shownInScene`), and the wall redraws through `whenDrawn`.
+- Reduced motion holds still poses and crossfades faces and screens over 0.4 s on a state change (full motion cuts).
+- Measured with the office loaded: L1 settled 93 scene calls lite and 95 full (cap 125, +7), about 880 more triangles, programs unchanged.
+
+### States, chips and rooms
+
+- Nine states (D5): `OFFICE_STATE_STYLE` (`office/officeVisual.ts`: face, desk screen and tone per state) with the tones in `STATE_TONE` (`src/lib/office/model.ts`); `STATUS_COLOR` (GitHub board statuses) lives in `officeVisual.ts` too, so the drawer body chunk stays off the canvas code. The input screen shows "Waiting for Kurniadi", never a question or prompt; the working screen scrolls invented code. Every Rover sleeps when the office is off, disabled or offline; a desk without a session (every desk when semi-live, GitHub only) is an off-duty Rover asleep.
+- HTML chips (`OfficeChips` in the scene chunk, mounted by `hud/OfficeLayer.tsx` on the main path once the chunk is loaded, on L1, not riding, while exploring or with a drawer open) follow the Rovers (HintProbe pattern, moved by `OfficeScene` through `officeRuntime.chips`):
+  - a state dot, "<Agent> · <activity>", then the title or "Client project" and a CI progress bar; the task line is the chip's `aria-describedby`;
+  - near/far band 27/29 u from the camera (`OFFICE_CHIP_FAR` 28, `OFFICE_CHIP_FAR_BAND` 1): a far chip shows the agent and activity only;
+  - on phones a far chip is compact (the state dot alone in a 32 px pill, its label keeps the agent and activity), and every chip is clamped 8 px inside the screen edges;
+  - a hidden chip is written once, then left alone until it comes back into view; all chips hide on phones while a drawer is open.
+- Rooms: `L1:office` (the summary half of the wall, the east half seen from the plaza), `L1:office-github` (the west half), `L1:office-desk-1` to `-5` (per Rover); point-and-go targets `L1:station:office`, `L1:station:office-github`, `L1:station:office-desk-<n>` (registered by `OfficeScene` with `registerExtraInteractables`, `office/interact.ts`), all driving to the stop; a chip click does the same. Every office room keeps `/{locale}` (`isOfficeRoom`). The Rover menu mission `office` ("Watch the AI agents at work") opens the summary.
+- Polling (`src/lib/office/poll.ts` through `office/live.ts`): every 10 s while a desk of a live snapshot is awake, 30 s when semi-live, off, all asleep or without a snapshot; only while the office is in view on L1 (reason "view") or an office drawer is open ("drawer") and the tab is visible; visitor input resets a 10 minute idle stop, and the tab turning visible fetches at once; after errors the last snapshot stays 60 s, then "offline".
+
+### Probes and tests
+
+- `__hq.office`: `load()`, `loadBody()`, `state()`, `asks()` (trigger asks after the first frame went idle: the `?prefetch=off` proof), `test()` once loaded (`feed`, `poll`, `advance`, `wanted`, `settled`).
+- `__hq.probes.office`: `loaded`, `desks`, `states`, `mode`, `wallFrames`, `chips`, `bob`, `inView`, `polling`.
+- Unit: `lobby-office`, `office-rooms`, `office-model`, `office-poll`, `office-visual`, `office-rig`, `office-atlas`, `office-frame`, `office-view`, `office-wall`, `office-runtime`, `office-chunk`, `office-live`, `office-interact`, `office-chunk-graph`; jsdom: `tests/hud/OfficeChips.test.tsx`, `tests/hud/OfficeBody.test.tsx`. E2E: `e2e/office.spec.ts` with snapshots from `e2e/office-fixtures.ts`; perf: the L1 and B1 gates load the office first, plus the office stop spot ([performance.md](performance.md)).
+- Owner captures: `bun scripts/office-shots.ts` (not committed).
 
 ## Rover menu kiosk
 

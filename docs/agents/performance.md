@@ -21,8 +21,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 467.8 KB, about 2.2 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 444.1 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
+| L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 13.9 KB) | `e2e/budgets.ts` |
+| L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5.8 KB) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 473 KB (measured 470.7 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 449.4 KB (measured 447.1 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -60,10 +62,13 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 470 KB: measured 467.8 KB, about 2.2 KB of headroom.
-  - lite 446.4 KB: measured 444.1 KB, about 2.3 KB of headroom.
+  - full 473 KB: measured 470.7 KB, about 2.3 KB of headroom (main path 443.4 KB).
+  - lite 449.4 KB: measured 447.1 KB, about 2.3 KB of headroom (main path 419.8 KB).
+  - Raised by 3 KB on 2026-10-19 for the L1 Agent Office's main-path mount, loader and chips host (+2.5 KB on the main path; [owner decision](../decisions/2026-10-19-agent-office-3d-budgets.md)).
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
+- Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 13.9 KB); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 5.8 KB). The scene loads near the spawn in a normal session, but both caps are their own, outside the session total (owner decision 2026-10-19).
+  - The office also costs the Classic site a little: `/en` JS 237,008 B of 245,760 B (+822 B: the office layout `config.ts` needs for the L1 navgrid ships in the shared page chunk because `useHQStore` imports `config.ts`; the 3D-only shell helpers live in `officeShell.ts` so they do not) and `/en` HTML 56,099 B (+1,078 B, the `office` strings in `CLIENT_NAMESPACES`; `/en/quick` unchanged).
 
 #### Memory gates
 
@@ -169,6 +174,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 
 - `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`; the Cmd-K files (`hudActions`, `search`, `palette-types`, `MissionHud`) add `b1-unlock`; so do the unlock's producers (`src/store/`, `Experience.tsx`, `ExperienceGate.tsx`, `src/lib/audio/engine.ts`).
 - `scripts/b1-shots.ts` (like the other capture scripts) is offline tooling: it runs no spec.
+- `scripts/office-shots.ts` (the Agent Office owner captures: the nine states, the drawers and the modes at 1440x900, 820x1180 and 390x844 on both tiers, `/api/office` answered from `e2e/office-fixtures.ts`) is offline tooling too.
 - The perf planner (`scripts/perf-plan.ts`, PR CI only) maps the lazy B1 files (`floors/engine/**`, `EngineRoom.tsx`, `chunks/engine.ts`, `EngineBody`, `room-views/engine.ts`) to `bytes`, `floor:B1` and `ride:B1`. `floors/engine/layout.ts` and `src/experience/b1.ts` are on the main 3D path (the tower, the registry and the store read them), so they keep the full lane. The office's shared client modules (`src/lib/office/{poll,model,protocol}.ts`) map to `bytes`, `floor:L1` and `floor:B1` (the B1 gate loads the office before the ride); `src/lib/office/fixtures.ts` ships no client code and moves no gate. The office's 3D files (`floors/lobby/office/**`, `officeLayout`, `officeShell`) take the Lobby keys plus `floor:B1`.
 - Options: `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`).
 - When you add a spec or a folder, add its rule (a unit test checks every spec is known).
@@ -239,6 +245,10 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Name UI by its message key (`en.hud.launcher.askRover`), not literal text, so a rename breaks the typecheck instead of a test run.
 - `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas).
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
+- Agent Office tests drive the lazy chunk through `__hq.office` ([floor-l1-lobby.md](floor-l1-lobby.md#probes-and-tests)), never through time:
+  - `load()` and `loadBody()` load the scene and drawer body chunks; `state()` is the scene chunk's state; `asks()` counts the speculative trigger's asks after the first frame went idle (a `?prefetch=off` test proves the trigger ran yet `state()` stayed `idle`).
+  - `test()` (once loaded): `poll()` fetches now (and lets its one fetch land while nothing wants the poller), `settled()` counts settled fetches (wait for it to grow: a 204 keeps the feed unchanged), `advance(ms)` skews the poller's clock to cross the 60 s keep-last window, `feed()` and `wanted()` read the state.
+  - Answer `/api/office` with a route from `e2e/office-fixtures.ts` or `OFFICE_FIXTURES`.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
 
 ### Keeping the suite lean

@@ -1,0 +1,5 @@
+# Budgets
+
+- Date: 2026-10-19
+
+Owner approval for the 3D L1 Agent Office (part 3 of the [Agent Office design](2026-10-18-agent-office.md)): both 3D session caps (`BYTES_3D_BUDGET.session`, main path plus the public floor chunks) rise by 3 KB for the office's main-path mount, loader and chips host, full 470 to 473 KB and lite 446.4 to 449.4 KB (the 2026-10-16 caps had about 1.9 KB full and 2.0 KB lite of headroom; the office adds 2.5 KB to the main path, measured at 443.4 KB full and 419.8 KB lite, session 470.7 and 447.1 KB). The office's live scene is its own lazy chunk (`floors/lobby/office/scene.ts`) with its own cap, `BYTES_3D_BUDGET.office` 14 KB gzip (measured 13.9 KB), measured after the session floors and kept outside the session total. Its drawer body (`floors/lobby/office/body.ts`, loaded only on an office drawer open) is a second lazy chunk held to `BYTES_3D_BUDGET.officeBody` 6 KB gzip (measured 5.8 KB), incremental over the scene chunk: a sanity gate set by the implementation, not a separate owner number.

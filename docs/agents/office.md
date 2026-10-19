@@ -4,6 +4,9 @@ The L1 Agent Office: AI coding agents shown live as Rovers at desks, plus public
 [`2026-10-18-agent-office-design.md`](../superpowers/specs/2026-10-18-agent-office-design.md); decision
 [`2026-10-18-agent-office.md`](../decisions/2026-10-18-agent-office.md).
 
+The 3D office on L1 (layout, lazy chunks, rendering, chips, rooms, polling, probes) is described in
+[floor-l1-lobby.md](floor-l1-lobby.md#agent-office).
+
 Index: [AGENTS.md](../../AGENTS.md).
 
 ## Backend

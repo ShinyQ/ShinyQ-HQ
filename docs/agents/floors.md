@@ -115,6 +115,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 - Never import `Labs`, `Library`, `Roof`, `EngineRoom` or those HUD pieces statically anywhere in the closure of `Experience.tsx`.
   - `tests/unit/floor-chunks-graph.test.ts` (`tests/helpers/import-graph.ts`) fails otherwise.
 - New floor-only HUD code goes into that floor's chunk entry and is reached through `lazyFloors.tsx` or the entry's exports.
+- Not floor chunks: the L1 Agent Office loads its own two lazy chunks (the scene `floors/lobby/office/scene.ts` and the drawer body `floors/lobby/office/body.ts`, both through `floors/lobby/office/chunk.ts`), with their own trigger and caps; see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office). Never import their modules statically from the `Experience.tsx` closure (`tests/unit/office-chunk-graph.test.ts`).
 
 ### Mounting
 
@@ -132,7 +133,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 
 ### Lazy HUD pieces
 
-- Drawer bodies for ops, reactor, research and topics are lazy (fallback "Loading room", the generic sections if the chunk fails).
+- Drawer bodies for ops, reactor, research and topics are lazy (fallback "Loading room", the generic sections if the chunk fails); so is the Agent Office's `OfficeBody`, in its own chunk.
 - `VisitsBody` loads `VisitsPanel` through the Contact page's dynamic import.
 - The README renderer (`hud/drawer/ascii.ts`) loads when the README view first opens.
 - Hologram overlay and the drawer's chunk bodies go through `lazyFromChunk` (`hud/lazyFromChunk.ts`):
@@ -159,7 +160,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 415.4 KB and full 439.0 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions).
+- Measured: main 3D path lite 419.8 KB and full 443.4 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions); the Agent Office scene chunk 13.9 KB and its drawer body 5.8 KB.
 
 ## Fast return
 

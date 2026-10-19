@@ -121,6 +121,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `scripts/dev-shots.ts`: captures the dev-only L4 concepts prototype at 1440x900, 834x1112 and 390x844 (needs bun run dev; CONCEPTS, SHOTS, WIDTHS, BASE_URL).
 - `scripts/capture-dev.ts`: owner review captures (dev routes or the served export) at 1440x900, 834x1112 and 390x844 with draw call metrics.
 - `scripts/readme-hero.ts`: README media from the served export on the virtual frame clock (`e2e/vclock.ts`): the hero GIF (ffmpeg plus gifsicle, under 6 MB), its still and the floor stills in docs/readme/.
+- `scripts/office-shots.ts`: Agent Office owner captures (the nine states, the summary, GitHub and desk drawers, semi-live and off) on a served export with `/api/office` answered from fixtures, at 1440x900, 820x1180 and 390x844 on both tiers; never committed.
 
 ## src/
 
@@ -199,7 +200,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - labels.ts (server: chip and floor labels).
 - `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
 - `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts.
-- `src/lib/office/`: the Agent Office contract (`protocol.ts`) and fixtures (`fixtures.ts`).
+- `src/lib/office/`: the Agent Office client contract (`protocol.ts`), fixtures (`fixtures.ts`), poller (`poll.ts`, `POLL`) and shared model (`model.ts`: `STATE_TONE`, counts, desk titles), shared by the 3D office and the Classic card; no React, no three.
 - `src/lib/brand-mark.ts`: the rover brand mark (owner decision).
   - Geometry, colors and SVG bodies for every variant.
   - `RoverMark` (src/components/RoverMark.tsx) inlines it in the header.
@@ -271,6 +272,10 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
   - kiosk.ts (Rover menu kiosk parts, lines, the radial spoke end and the spawn stop).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
+  - officeLayout.ts (the Agent Office layout, rooms, obstacles, stops and view zone; config.ts imports it, so it stays import-light and reaches the Classic page chunk through the store), officeShell.ts (3D-only: `officeShellBoxes`, `officeBounds`) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
+    - main path: `OfficeMount.tsx` (the furniture shell and the load trigger), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`), `runtime.ts` (in-view flag, chip elements and anchors, near/far flags);
+    - the scene chunk `scene.ts`: `OfficeScene.tsx` (Rovers, atlas, glow, wall, chip placement), `OfficeChips.tsx`, `live.ts` (the poller and `officeTest`), the pure modules `officeModel.ts`, `officeVisual.ts` (`OFFICE_STATE_STYLE`, `STATUS_COLOR`, poses), `officeRig.ts`, `officeAtlas.ts`, `officeFrame.ts`, `officeWall.ts` and `interact.ts`;
+    - the drawer body chunk `body.ts`: `OfficeBody.tsx`.
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
   - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT, stationOf, gatePillars).
@@ -360,6 +365,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
+| Agent Office | `office.spec.ts`: the lazy chunk near the spawn and its trigger, `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, the L1 budget at the office (lite); snapshots from `e2e/office-fixtures.ts` |
 | RF roof deck | `roof.spec.ts` |
 | Missions + axe | missions |
 | Floor pads and pickers | `pads.spec.ts` |
@@ -371,6 +377,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 ### e2e/ support and perf lane
 
 - `e2e/budgets.ts`: every 3D CI threshold (render, bytes, programs, memory).
+- `e2e/office-fixtures.ts`: Agent Office snapshots for `office.spec.ts` and `scripts/office-shots.ts` (the nine states over two snapshots, one private desk without a title, one off-duty slot).
 - `e2e/durations.json`: median seconds per test of both lanes from CI logs (`bun run e2e:durations`), for the CI shard split.
 - `e2e/perf/`: perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`).
   - bytes-3d, floors (+ baseline.json), peaks, memory-full (the memory gate on the full tier with Motion Full), nightly timeline, local look check.

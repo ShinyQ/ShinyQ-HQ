@@ -1,0 +1,5 @@
+# L1 Lobby
+
+- Date: 2026-10-19
+
+Owner approval of a space-rule exception for the 3D L1 Agent Office ([design decision](2026-10-18-agent-office.md)): the curved row of five desks with their Rovers and the screen wall is one fixture with its own clearance tests, not five obstacles held to the 6 u `SPACE_RULES` (any concave row of five desks breaks the pairwise rule). Its inner gaps (0.1 to 4.2 u), its 3.89 u to the Rover menu kiosk and its 2.32 u to the Highlights Hall lead road are below 6 u by design. In exchange, `tests/unit/lobby-office.test.ts` asserts that the rover drives around it (the stop in its concave front is reachable from the spawn and the elevator, and no pocket behind the desks is), the camera does not clip (the wall is a camera column), and the kiosk and the hall road stay reachable (the west Rover edge at least 3 u east of the kiosk, the east Rover edge at least 2 u west of the hall lead road, the stop at least 2 u in front of the middle desk, every office obstacle more than 1 u from every other L1 obstacle); `tests/unit/highlights-layout.test.ts` checks the Lobby's space rules without the office.
