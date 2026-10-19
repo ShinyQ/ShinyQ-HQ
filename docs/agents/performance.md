@@ -91,7 +91,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
-- Images are reported (`other.image`), not capped. The L1 skills and certification wall logos are one prebuilt lossless WebP atlas (`scripts/logo-atlas.ts`, [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one request instead of one per logo; never go back to fetching logos one by one from 3D code.
+- Images are reported (`other.image`), not capped. The L1 skills and certification wall logos are one prebuilt lossless WebP atlas (`scripts/logo-atlas.ts`, [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one request instead of one per logo (58 today), cached as immutable. It costs more bytes than the sources (about 212 KB against about 81 KB of gzipped SVG and WebP on the wire): a 128 px raster of every logo, kept lossless so the walls look the same. Never go back to fetching logos one by one from 3D code.
 
 #### Study guide reader
 

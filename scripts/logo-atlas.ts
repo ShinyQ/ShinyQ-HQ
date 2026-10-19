@@ -129,8 +129,9 @@ async function generate() {
   const layout = expectedLayout();
   const sources = sourcesHash(layout);
   const png = await rasterize(layout);
-  // exact: keep the RGB of transparent pixels, which texture filtering blends into logo edges.
-  const webp = await sharp(png).webp({ lossless: true, exact: true, effort: 6 }).toBuffer();
+  // exact: keep the RGB of transparent pixels, which texture filtering blends into logo edges. effort 6 with
+  // quality 100 is the slowest, smallest lossless setting (cwebp -z 9).
+  const webp = await sharp(png).webp({ lossless: true, exact: true, effort: 6, quality: 100 }).toBuffer();
   const [a, b] = await Promise.all([sharp(png).ensureAlpha().raw().toBuffer(), sharp(webp).ensureAlpha().raw().toBuffer()]);
   if (!a.equals(b)) throw new Error("the WebP atlas does not round-trip the canvas pixels");
   mkdirSync(OUT, { recursive: true });
