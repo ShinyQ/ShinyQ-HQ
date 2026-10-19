@@ -77,6 +77,12 @@
     line-height: 1.08;
   }
 
+  /* Project cards share one title size on the landing and on Work. */
+  .pv-h3-card {
+    font-size: clamp(21px, 1.6vw, 23px);
+    line-height: 1.18;
+  }
+
   .pv-num {
     font-weight: 700;
     font-stretch: 72%;
@@ -89,12 +95,42 @@
     font-size: clamp(18px, 1.45vw, 21px);
     line-height: 1.55;
     color: var(--color-ink);
-    max-width: 62ch;
+    max-width: 30em;
+    text-wrap: pretty;
+  }
+
+  /* A reading column (the 8 of 12 columns of a case study or a Journey entry) is already the measure, so its lead
+     runs the column's full width and lines up with the ruled lists below it. */
+  .pv-col .pv-lead {
+    max-width: none;
   }
 
   .pv-body {
     color: var(--color-ink-2);
     max-width: 68ch;
+    text-wrap: pretty;
+  }
+
+  /* Card copy: scanned, not read, so it is set tighter than body text. */
+  .pv-card-text {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--color-ink-2);
+    max-width: 60ch;
+    text-wrap: pretty;
+  }
+
+  /* A headline result at the foot of a card: the value over its label, on a neutral hairline. */
+  .pv-result {
+    border-top: 1px solid var(--color-line);
+    padding-top: 14px;
+  }
+
+  .pv-result-label {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--color-ink-2);
   }
 
   .pv-small {
@@ -109,6 +145,17 @@
     line-height: 16px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Dates and periods: the data mono as a value, not a label (sentence case, tabular figures, no extra tracking). */
+  .pv-date {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
     color: var(--color-ink-3);
   }
 
@@ -324,17 +371,16 @@
     text-underline-offset: 5px;
   }
 
-  /* Owner portrait: round, near-black behind transparent edges, cyan ring with a soft violet glow. */
+  /* Owner portrait: round, near-black behind transparent edges, a cyan ring with one quiet glow. */
   .pv-portrait {
     flex: none;
     border-radius: 9999px;
     object-fit: cover;
     background: #0b0b14;
-    border: 2px solid rgb(34 211 238 / 0.7);
+    border: 2px solid rgb(34 211 238 / 0.6);
     box-shadow:
       0 0 0 4px rgb(5 5 12 / 0.9),
-      0 0 28px -4px rgb(34 211 238 / 0.55),
-      0 0 48px -12px var(--color-violet);
+      0 0 32px -10px rgb(34 211 238 / 0.5);
   }
 
   /* Header */
@@ -418,9 +464,12 @@
   }
 
   /* Sticky filter bar under the header (68 px on desktop, 60 px plus the 49 px tab row below lg). */
+  /* A flat bar (no frosted glass or drop shadow): the hairline and a near-opaque fill that keeps it legible when sticky. */
   .pv-filters {
     z-index: 20;
-    border-radius: 14px;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--color-void) 94%, transparent);
   }
 
   /* Phones keep the bar in flow: sticky, it would cover a sixth of the screen. */
@@ -517,7 +566,6 @@
     line-height: 16px;
     padding: 2px 7px;
     border-radius: 6px;
-    background: var(--color-surface-2);
     border: 1px solid var(--color-line);
     color: var(--color-ink-2);
   }

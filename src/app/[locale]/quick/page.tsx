@@ -41,7 +41,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
       <JsonLd data={pageJsonLd(locale, "/quick")} />
       <PageIntro title={t("title")} lead={t("intro")} />
       <nav aria-labelledby="toc-title" className="pv-wrap mt-10">
-        <div className="glass pv-filters overflow-x-auto px-3 py-2">
+        <div className="pv-filters overflow-x-auto px-3 py-2">
           <h2 id="toc-title" className="sr-only">
             {t("toc")}
           </h2>

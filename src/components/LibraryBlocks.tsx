@@ -48,7 +48,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
       {lead && first && (
         <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]" {...topicAttrs(first.slug)}>
           <p className="pv-data flex flex-wrap gap-x-4">
-            <span>{formatDate(first.date, locale)}</span>
+            <span className="pv-date">{formatDate(first.date, locale)}</span>
             <PostMeta post={first} locale={locale} />
           </p>
           <h3 className="pv-h3 pv-h3-l mt-4">
@@ -68,7 +68,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
       <ul className={`pv-rows pv-rows-closed ${lead ? "mt-6" : ""}`}>
         {rows.map((post) => (
           <li key={post.slug} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[120px_minmax(0,1fr)_100px] md:py-6" {...topicAttrs(post.slug)}>
-            <p className="pv-data md:pt-1.5">{formatDate(post.date, locale)}</p>
+            <p className="pv-date md:pt-1.5">{formatDate(post.date, locale)}</p>
             <div className="min-w-0">
               <h3 className="pv-h3 pv-row-title">
                 <PostTitle post={post} locale={locale} className="" />
@@ -98,7 +98,7 @@ export async function PublicationList({ publications, locale }: { publications: 
     <ul className="pv-rows pv-rows-closed">
       {sorted.map((pub) => (
         <li key={pub.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[70px_minmax(0,1fr)]" {...topicAttrs(pub.id)}>
-          <p className="pv-data md:pt-1">{pub.year}</p>
+          <p className="pv-date md:pt-1">{pub.year}</p>
           <div className="min-w-0">
             <p className="font-semibold text-ink">
               {pub.url ? (
@@ -127,7 +127,7 @@ export async function TalkList({ talks, locale }: { talks: readonly Talk[]; loca
     <ul className="pv-rows pv-rows-closed">
       {sorted.map((talk) => (
         <li key={talk.id} className="grid gap-x-6 gap-y-1 py-4 md:grid-cols-[90px_minmax(0,1fr)_100px]" {...topicAttrs(talk.id)}>
-          <p className="pv-data md:pt-1">{formatYearMonth(talk.date, locale)}</p>
+          <p className="pv-date md:pt-1">{formatYearMonth(talk.date, locale)}</p>
           <div className="min-w-0">
             <p className="font-semibold text-ink">{talk.title[locale]}</p>
             <p className="pv-small mt-1">{talk.event}</p>

@@ -41,7 +41,7 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
           decoding="async"
           className="aspect-[16/10]"
         />
-        <span className="pv-data hx-shots">{th("featuredShots", { count: pod.assets.length })}</span>
+        <span className="hx-shots">{th("featuredShots", { count: pod.assets.length })}</span>
       </div>
       <ul className="hx-film" aria-hidden="true">
         {film.map((image, i) => (
@@ -57,21 +57,22 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
       </ul>
       <p className="pv-data flex flex-wrap items-center gap-x-4 gap-y-1">
         <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-        <span>{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
+        <span className="pv-date">{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
         {pod.client && <span>{clientLabel(pod.client, locale)}</span>}
       </p>
-      <h3 className="pv-h3 pv-feature-title">
+      <h3 className="pv-h3 pv-h3-card pv-feature-title">
         <Link href={`/labs/${pod.slug}`} className="pv-stretch">
           {pod.title[locale]}
         </Link>
       </h3>
-      <p className="pv-body">{pod.tagline[locale]}</p>
+      <p className="pv-card-text">{pod.tagline[locale]}</p>
       <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
         {result && (
-          <p className="pv-small">
-            <span className="pv-num text-[22px]">{result.value}</span> {result.label[locale]}
-          </p>
+          <div className="pv-result">
+            <p className="pv-num text-[24px]">{result.value}</p>
+            <p className="pv-result-label">{result.label[locale]}</p>
+          </div>
         )}
       </div>
     </article>

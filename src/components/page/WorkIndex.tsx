@@ -38,7 +38,7 @@ export function WorkIndex({ pods, minStack = 2, children }: { pods: readonly Pic
   return (
     <>
       <div className="pv-wrap mt-10 lg:mt-14">
-        <div role="search" aria-label={t("filters")} className="glass pv-filters flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
+        <div role="search" aria-label={t("filters")} className="pv-filters flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2">
           <div role="group" aria-labelledby="filter-wing" className="flex flex-wrap items-center gap-1.5">
             <span id="filter-wing" className="pv-data mr-1">
               {t("wing")}

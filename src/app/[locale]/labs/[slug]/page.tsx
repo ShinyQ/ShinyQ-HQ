@@ -109,7 +109,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
         </header>
 
         <div className="pv-wrap grid gap-6 lg:grid-cols-12">
-          <div className="min-w-0 lg:col-span-8">
+          <div className="pv-col min-w-0 lg:col-span-8">
             {detail && (
               <Chapter id="results" title={t("results")}>
                 <MetricLedger results={pod.results} locale={locale} />

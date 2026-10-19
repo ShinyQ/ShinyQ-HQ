@@ -161,7 +161,8 @@ Open `/en` and press **Boot rover**.
 The Classic site (internally the Page View) is the permanent no-WebGL fallback and the version crawlers see.
 
 - Architecture figures use native EN/ID node and edge labels where authored, consistently across case studies, technical posts, the build page and B1 drawers. Shared technical identities and legacy string labels remain supported.
-- The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
+- The home opens on a calm first screen: the name over a slow glow and a low Neon Grid floor (CSS only, still under reduced motion).
+- Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result on a hairline at the bottom, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
