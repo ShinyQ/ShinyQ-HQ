@@ -23,7 +23,8 @@ import { StatsRing } from "./lobby/StatsRing";
 import { VISITS_ROOM } from "./lobby/visitsRoom";
 import { VisitsStation } from "./lobby/VisitsStation";
 import { OfficeMount } from "./lobby/office/OfficeMount";
-import { officeBounds, type OfficeTranslate } from "./lobby/officeLayout";
+import type { OfficeTranslate } from "./lobby/officeLayout";
+import { officeBounds } from "./lobby/officeShell";
 
 export interface LobbyLabels {
   skillsTitle: string;

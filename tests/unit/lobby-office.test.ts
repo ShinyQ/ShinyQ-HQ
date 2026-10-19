@@ -8,15 +8,14 @@ import {
   isOfficeRoom,
   OFFICE,
   OFFICE_ROOMS,
-  officeBounds,
   officeDeskRoom,
   officeObstacles,
-  officeShellBoxes,
   officeSlots,
   officeTall,
   officeWallRect,
   turnedHalf,
 } from "@/experience/floors/lobby/officeLayout";
+import { officeBounds, officeShellBoxes } from "@/experience/floors/lobby/officeShell";
 import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
 import { rectGap, wideGrid } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";

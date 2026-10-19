@@ -9,7 +9,8 @@ import { roverRuntime } from "../../../rover/runtime";
 import type { GpuTier } from "../../../types";
 import { speculativePrefetchOn } from "../../floorChunks";
 import { MergedBoxes, MergedEdges } from "../../roof/kit";
-import { officeShellBoxes, type OfficeTranslate } from "../officeLayout";
+import type { OfficeTranslate } from "../officeLayout";
+import { officeShellBoxes } from "../officeShell";
 import { loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
 
 /** One stable list, so MergedBoxes and MergedEdges build their geometry once. */

@@ -23,7 +23,7 @@ const OFFICE_ONLY = [
   "src/lib/office/model.ts",
 ];
 /** The main-path part of the office: the loader, the mount with the furniture shell and the layout. */
-const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/hud/OfficeLayer.tsx"];
+const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
 
 function files(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -45,6 +45,15 @@ describe("Agent Office chunk boundary", () => {
   it("keeps the loader, the mount and the layout on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
     for (const f of MAIN) expect(main.has(f), f).toBe(true);
+  });
+
+  it("keeps the 3D-only office helpers and the mount out of the Classic site's shared page chunk (the store reaches config.ts)", () => {
+    const classic = staticClosure("src/store/useHQStore.ts");
+    expect(classic.has("src/experience/floors/lobby/officeLayout.ts")).toBe(true);
+    const threeD = MAIN.filter((f) => !f.endsWith("officeLayout.ts"));
+    expect(threeD.filter((f) => classic.has(f))).toEqual([]);
+    const layout = readFileSync(join(ROOT, "src/experience/floors/lobby/officeLayout.ts"), "utf8");
+    for (const name of ["officeShellBoxes", "officeBounds"]) expect(layout, name).not.toMatch(new RegExp(`export function ${name}\\b`));
   });
 
   it("lets no main-path file under src/experience or src/hud import a value from the office chunk", () => {
