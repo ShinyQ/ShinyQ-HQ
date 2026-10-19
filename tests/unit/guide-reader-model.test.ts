@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GUIDE_PAGE_KEY } from "@/content/guides";
-import { canvasScale, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage, ZOOM_STEPS } from "@/components/guides/reader-model";
+import { canvasScale, canvasPixelCap, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage, ZOOM_STEPS } from "@/components/guides/reader-model";
 
 describe("guide reader model", () => {
   it("snaps zoom to the next step either way and stops at the ends", () => {
@@ -44,14 +44,37 @@ describe("guide reader model", () => {
   it("scales to the css width and caps the device ratio at 2 and the long side at 4096", () => {
     expect(canvasScale(595, 595, 1)).toEqual({ scale: 1, ratio: 1 });
     expect(canvasScale(595, 595, 3)).toEqual({ scale: 1, ratio: 2 });
-    const big = canvasScale(2400, 600, 2, 4096, 800);
+    const big = canvasScale(2400, 600, 2, 4096, 800, Number.POSITIVE_INFINITY);
     expect(big.scale).toBe(4);
     expect(800 * big.scale * big.ratio).toBeLessThanOrEqual(4096);
     expect(big.ratio).toBeCloseTo(4096 / 3200);
-    const huge = canvasScale(5000, 500, 2, 4096, 500);
+    const huge = canvasScale(5000, 500, 2, 4096, 500, Number.POSITIVE_INFINITY);
     expect(Math.max(500, 500) * huge.scale * huge.ratio).toBeLessThanOrEqual(4096);
     expect(canvasScale(0, 595, 2).scale).toBeGreaterThan(0);
     expect(canvasScale(595, 595, Number.NaN).ratio).toBe(1);
+  });
+
+  it("keeps a canvas within the pixel budget (5,242,880 by default, like the pdf.js viewer on phones)", () => {
+    const pixels = (w: number, h: number, r: { scale: number; ratio: number }) => Math.floor(w * r.scale * r.ratio) * Math.floor(h * r.scale * r.ratio);
+    // A4 at zoom 3 on a 390 px phone at DPR 3: 1098 x 1553 CSS px, so ratio 2 would be about 6.8 MP.
+    const phone = canvasScale(366 * 3, 595, 3, 4096, 842);
+    expect(pixels(595, 842, phone)).toBeLessThanOrEqual(5_242_880);
+    expect(phone.ratio).toBeLessThan(2);
+    expect(phone.ratio).toBeGreaterThan(1.7);
+    // Within budget the device ratio stands.
+    expect(canvasScale(366, 595, 2, 4096, 842).ratio).toBe(2);
+    // A smaller budget lowers the ratio further, and an explicit one is honoured exactly.
+    const small = canvasScale(1000, 595, 2, 4096, 842, 1_000_000);
+    expect(pixels(595, 842, small)).toBeLessThanOrEqual(1_000_000);
+    expect(small.ratio).toBeCloseTo(Math.sqrt(1_000_000 / (1000 * (842 * 1000) / 595)));
+    // The side cap still applies when it is the tighter one.
+    const tall = canvasScale(2000, 100, 2, 4096, 2000, Number.POSITIVE_INFINITY);
+    expect(2000 * tall.scale * tall.ratio).toBeLessThanOrEqual(4096);
+  });
+
+  it("picks the canvas pixel cap: the phone budget on touch screens, a larger one with a fine pointer", () => {
+    expect(canvasPixelCap(true)).toBe(5_242_880);
+    expect(canvasPixelCap(false)).toBe(16_777_216);
   });
 
   it("maps reader keys", () => {

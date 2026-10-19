@@ -35,15 +35,33 @@ export function releasable(drawn: readonly number[], current: number, keep = 4):
   return drawn.filter((page) => Math.abs(page - current) > keep);
 }
 
+/** Canvas pixel budgets: the pdf.js viewer's iOS and Android limit, and a larger one for desktops. */
+export const PHONE_CANVAS_PIXELS = 5_242_880;
+export const DESKTOP_CANVAS_PIXELS = 16_777_216;
+
+/** The canvas pixel budget for a coarse (touch) or fine pointer. */
+export function canvasPixelCap(coarse: boolean): number {
+  return coarse ? PHONE_CANVAS_PIXELS : DESKTOP_CANVAS_PIXELS;
+}
+
 /**
  * The pdf.js viewport scale that fits `cssWidth`, and the backing store ratio: the device pixel ratio capped
- * at 2, lowered further so the canvas's long side stays within `maxSide` (iOS Safari drops larger canvases).
+ * at 2, lowered further so the canvas's long side stays within `maxSide` (iOS Safari drops larger canvases) and
+ * its area within `maxPixels` (several drawn pages at zoom 3 would otherwise exhaust a phone's canvas memory).
  */
-export function canvasScale(cssWidth: number, pageWidthPt: number, dpr: number, maxSide = 4096, pageHeightPt = 842): { scale: number; ratio: number } {
+export function canvasScale(
+  cssWidth: number,
+  pageWidthPt: number,
+  dpr: number,
+  maxSide = 4096,
+  pageHeightPt = 842,
+  maxPixels = PHONE_CANVAS_PIXELS,
+): { scale: number; ratio: number } {
   const scale = Math.max(0.1, cssWidth) / Math.max(1, pageWidthPt);
   const device = Number.isFinite(dpr) && dpr > 0 ? Math.min(dpr, 2) : 1;
-  const longSide = Math.max(pageWidthPt, pageHeightPt) * scale;
-  return { scale, ratio: Math.min(device, maxSide / longSide) };
+  const width = Math.max(1, pageWidthPt) * scale;
+  const height = Math.max(1, pageHeightPt) * scale;
+  return { scale, ratio: Math.min(device, maxSide / Math.max(width, height), Math.sqrt(maxPixels / (width * height))) };
 }
 
 export type ReaderAction = "next" | "prev" | "first" | "last" | "zoomIn" | "zoomOut" | "fit";

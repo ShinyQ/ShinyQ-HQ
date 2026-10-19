@@ -9,7 +9,7 @@ import { GuidePage } from "./GuidePage";
 import { GuideThumbs } from "./GuideThumbs";
 import { GuideToolbar, type Chapter } from "./GuideToolbar";
 import { destPage, loadPdfjs } from "./pdf";
-import { canvasScale, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage } from "./reader-model";
+import { canvasPixelCap, canvasScale, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage } from "./reader-model";
 import { GuideSkeleton } from "./ui";
 
 export interface GuideReaderProps {
@@ -67,6 +67,8 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
   const [current, setCurrent] = useState(1);
   const [drawn, setDrawn] = useState<number[]>([]);
   const [dpr] = useState(() => window.devicePixelRatio || 1);
+  // Touch screens get the phone canvas budget (the pdf.js viewer's iOS and Android limit).
+  const [maxPixels] = useState(() => canvasPixelCap(window.matchMedia?.("(pointer: coarse)").matches ?? false));
   const scroller = useRef<HTMLDivElement>(null);
   const fail = useRef(onError);
   const currentRef = useRef(1);
@@ -113,7 +115,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
   const count = loaded?.count ?? 0;
   const base = loaded?.base;
   const fitWidth = Math.min(MAX_FIT, Math.max(120, avail - 2 * PAD_X));
-  const { scale, ratio } = base ? canvasScale(fitWidth * zoom, base.width, dpr, 4096, base.height) : { scale: 1, ratio: 1 };
+  const { scale, ratio } = base ? canvasScale(fitWidth * zoom, base.width, dpr, 4096, base.height, maxPixels) : { scale: 1, ratio: 1 };
   const slotW = base && avail > 0 ? base.width * scale : 0;
   const slotH = base ? base.height * scale : 0;
   const stride = slotH + GAP;

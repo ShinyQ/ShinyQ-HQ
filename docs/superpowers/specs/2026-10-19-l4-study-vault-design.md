@@ -157,7 +157,8 @@ flowchart LR
 - Pages: a vertical scroll of page slots sized from page 1's viewport (all pages are A4), so the scroll height is
   known before any page renders. An `IntersectionObserver` renders the visible pages plus one before and after,
   and releases canvases more than 4 pages away (`canvas.width = 0`), so memory stays flat on phones. Canvas pixel
-  ratio is `min(devicePixelRatio, 2)` and capped at 4096 px on the long side (iOS canvas limits).
+  ratio is `min(devicePixelRatio, 2)`, capped at 4096 px on the long side and at 5,242,880 pixels per canvas on
+  touch screens (16,777,216 with a fine pointer), like the pdf.js viewer's iOS and Android limit.
 - Text layer: pdf.js `TextLayer` over each rendered page, so text is selectable and searchable with the browser's
   find. Styles for the text layer live in a CSS module imported by the reader chunk (not the global stylesheet).
 - Toolbar: back (close), title, page input "n / N", previous and next, zoom out, zoom in, fit width, chapters (the
