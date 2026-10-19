@@ -63,6 +63,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over (replaced by the wake and reveal orbit intro, 2026-10-18) | Done |
 | Black frame fix | 2026-10-18: no more single pure-black frames on L1 at a low camera (a NaN from the glass shader blacked out the bloomed frame); `?gfx=probe` logs any black frame and its cause on the device | Done |
 | Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card | In review |
+| L1 more room | 2026-10-19: the Lobby grows to 54 u deep (lane ring r 13.5, stats ring r 11, cert arc r 23.5, kiosk at 22.5 u, skills wall flush north), every L1 obstacle pair 6 u apart, hall 5 u east; intro and spawn views retuned | In review |
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
@@ -204,6 +205,8 @@ Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer.
 ## L1 Lobby
 
 Route `/en`. The stats ring, the skills wall and the certifications wall surround the plaza in front of the elevator.
+
+- **More room** (owner, 2026-10-19): the Lobby slab is 54 u deep (was 42), the lane ring and the stats ring are wider, and the skills wall, the certifications wall, the kiosk and the Visitor Observatory moved out so every walkway around the ring is at least 6 u; the Highlights Hall moved 5 u east and grew with the slab. Same components, content and behavior.
 
 - **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (Round 9 R: every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging.
