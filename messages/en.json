@@ -664,7 +664,9 @@
       "go": "Go to {label}",
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
-      "console": "Time console"
+      "console": "Time console",
+      "studyGuide": "Read the {code} study guide",
+      "studyVault": "Study Vault"
     }
   },
   "engine": {

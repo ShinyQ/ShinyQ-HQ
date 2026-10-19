@@ -39,6 +39,7 @@ export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
       if (action.command === "terminal") return "roverMenu";
       if (action.command === "cv") return "viewCv";
       if (action.command.startsWith("palette:")) return "browse";
+      if (action.command.startsWith("guide:")) return "open";
       return "go";
   }
 }
