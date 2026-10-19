@@ -96,7 +96,7 @@ function Pending({ titleId, onClose, onRetry }: { titleId: string; onClose: () =
       <Header title={t("readGuide")} titleId={titleId} closeLabel={t("close")} onClose={onClose} />
       <div className="min-h-0 flex-1 overflow-y-auto" aria-busy={!onRetry} data-testid={onRetry ? "guide-error" : "guide-loading"}>
         {onRetry ? (
-          <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
+          <div role="alert" className="flex flex-col items-center gap-4 px-4 py-10 text-center">
             <span aria-hidden="true" className="text-2xl text-amber">
               !
             </span>

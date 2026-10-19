@@ -130,6 +130,24 @@ test.describe("desktop", () => {
     }
   });
 
+  test("a PDF that fails to load shows the error alert, and Retry renders page 1 once the guide answers", async ({ page }) => {
+    await openShelf(page);
+    let broken = true;
+    // Registered after routeGuides, so it answers first; `fallback` hands the request to the fixture route.
+    await page.route("**/api/guides/**", (route) =>
+      broken ? route.fulfill({ status: 500, contentType: "text/plain", body: "Upstream error" }) : route.fallback(),
+    );
+    await page.locator("#guides").getByTestId("guide-read").first().click();
+    const dialog = page.getByRole("dialog", { name: FIRST.title.en });
+    await expect(dialog.getByRole("alert")).toContainText("could not be opened", { timeout: 30_000 });
+    await expect(dialog.getByTestId("guide-download")).toBeVisible();
+    broken = false;
+    await dialog.getByTestId("guide-retry").click();
+    await expectRendered(page, 1);
+    await expect(slot(page, 1)).toContainText("Fixture page 1");
+    await expect(dialog.getByRole("alert")).toHaveCount(0);
+  });
+
   test("a certification preview opens its study guide in the reader", async ({ page }) => {
     await routeGuides(page, PAGES);
     await openPage(page, "/en/contact?tier=static");

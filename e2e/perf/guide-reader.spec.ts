@@ -45,13 +45,16 @@ test("the study guide reader stays under its chunk and worker caps, off the page
   });
 
   await openPage(page, "/en/library?tier=static#guides");
-  await page.waitForLoadState("networkidle");
+  const read = page.locator("#guides").getByTestId("guide-read").first();
+  await expect(read).toBeVisible();
+  await page.waitForFunction(() => document.readyState === "complete");
+
+  // The snapshot of the initial load is taken right before the click: every script fetched until now counts.
+  clicked = true;
   const initial = (await Promise.all(before)).filter((f): f is Js => f !== null);
   expect(initial.length).toBeGreaterThan(0);
   for (const f of initial) expect(/pdfjs|pdf\.worker/.test(f.path) || f.body.includes("pdfjs"), `${f.path} carries pdf.js before the Read click`).toBe(false);
-
-  clicked = true;
-  await page.locator("#guides").getByTestId("guide-read").first().click();
+  await read.click();
   await expect(page.locator('[data-testid="guide-page"][data-page="1"]')).toHaveAttribute("data-rendered", "true", { timeout: 60_000 });
   const loaded = (await Promise.all(after)).filter((f): f is Js => f !== null);
 
