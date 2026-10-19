@@ -39,7 +39,8 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
    ```
 
    For each file it runs the safety scan (below), rewrites the PDF's Info dictionary (title, subject, author),
-   linearizes it with a deterministic ID (`qpdf --linearize --deterministic-id`, then `--check-linearization`), writes
+   packs its small objects into object streams with a deterministic ID (`qpdf --object-streams=generate
+   --deterministic-id`, then `qpdf --check`; never `--linearize`, see "Why object streams" below), writes
    `.study-guides/<slug>.pdf`, records `pages`, `bytes` and `version` in the JSON and renders the page 1 cover
    (480 px wide webp). The deterministic ID means preparing the same source again should give the same bytes and
    version; if the version changes anyway, treat it as a replacement (below).
@@ -119,3 +120,11 @@ Textbook examples that trip the blocklist but carry no owner data are listed in 
 `scripts/study-guides.ts` and are removed from the text before the scan. Add a phrase there only after reading it
 in context, quote it exactly (as short as it can be and still unique) and note the review date in the comment;
 never add a bare blocklist term.
+
+## Why object streams, not linearization
+
+qpdf flattens the page tree when it linearizes, and pdf.js then reads every page object to open the file: on a
+linearized guide that was 51 range requests and 3.3 MB of 4.4 MB before page 1 (8.9 s on production). With the page
+dictionaries and outline items packed in object streams, pdf.js opens each guide in 3 or 4 range requests and
+draws page 1 after about 0.2 MB. Re-check with a range probe (`pdfjs-dist` `PDFDataRangeTransport` counting
+`requestDataRange` calls) after changing how the files are prepared.

@@ -97,7 +97,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/pdf-pages.ts`: shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts.
 - `scripts/cv-pages.ts`: `cv:pages`: renders the CV PDF to page webps + content/generated/cv-pages.json (needs poppler and webp locally).
 - `scripts/paper-pages.ts`: `paper:pages`: checks each paper PDF's text for personal data (PERSONAL_DATA_PATTERNS) and blocklisted names, then renders page webps + content/generated/paper-pages.json.
-- `scripts/study-guides.ts`: `prepare` (safety scan, PDF metadata, linearize, version, cover), `upload` (wrangler R2 put into `hq-study-guides`) and `check` for the study guide PDFs; runbook [../study-guides-runbook.md](../study-guides-runbook.md).
+- `scripts/study-guides.ts`: `prepare` (safety scan, PDF metadata, object streams, version, cover), `upload` (wrangler R2 put into `hq-study-guides`) and `check` for the study guide PDFs; runbook [../study-guides-runbook.md](../study-guides-runbook.md).
 - `scripts/floor-thumbs.ts`: `floor:thumbs` step 2: converts the "floor thumbnail" captures (e2e/screenshots.spec.ts) into public/floors/*.webp (needs webp).
 
 ### E2E planning and perf reports
