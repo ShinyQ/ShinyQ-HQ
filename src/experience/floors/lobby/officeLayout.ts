@@ -97,14 +97,22 @@ export const OFFICE = {
   /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`). */
   wall: { w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
   /**
-   * `L1:office` view zone per camera class (zoom, and pitch as an offset from the rig's elevation) and the half size of
-   * its area around the stop. The follow rig keeps its look target (the rover plus its look-ahead, over the desks) in
-   * the middle of the screen, so the sky over the wall is set by the zoom; each class takes the closest view that
-   * keeps the wall, the five desks and the Rover in frame, the chips far, one zoom step (two on a portrait screen)
-   * bringing the middle three near clear of each other, the wall and the HUD (tests/unit/office-chip-placement.test.ts).
+   * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
+   * size of its area around the stop. The follow rig keeps its look target (the rover plus its look-ahead, over the
+   * desks) in the middle of the screen, so on a landscape screen the sky over the wall is set by the zoom; each class
+   * takes the closest view that keeps the wall, the five desks and the Rover in frame, the chips far, one zoom step (two
+   * on a portrait screen) bringing the middle three near clear of each other, the wall and the HUD
+   * (tests/unit/office-chip-placement.test.ts). A portrait screen (the mobile class: 390 x 844, 820 x 1180) also moves
+   * its look target 6.25 u toward the camera (`lookOffset`, owner decision 2026-10-20): the view tilts down and the sky
+   * over the wall drops from 38% to about 20%; a hand zoom hands the framing back (the offset eases out).
    * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
    */
-  view: { desktop: { zoom: 1.24 }, tablet: { zoom: 1.15, pitch: -0.1 }, mobile: { zoom: 1.3, pitch: 0.1 }, half: { x: 2, z: 1.4 } },
+  view: {
+    desktop: { zoom: 1.24 },
+    tablet: { zoom: 1.15, pitch: -0.1 },
+    mobile: { zoom: 1.3, pitch: 0.2, lookOffset: { forward: -6.25 } },
+    half: { x: 2, z: 1.4 },
+  },
   /**
    * The chunk loads once the rover is this close to the stop: on the lead road (its Lobby end is 24.5 u away) or in
    * the wing, not at the spawn (30.8 u) or the elevator arrival (38.6 u). A ride or a drive of an office mission
@@ -215,6 +223,6 @@ export function officeZone(w: OfficeWing): ViewZone {
     area: { minX: stop.x - view.half.x, maxX: stop.x + view.half.x, minZ: stop.z - view.half.z, maxZ: stop.z + view.half.z },
     yaw: yawLooking({ x: 0, z: 1 }),
     zoom: view.desktop.zoom,
-    classView: { tablet: { ...view.tablet }, mobile: { ...view.mobile } },
+    classView: { tablet: { ...view.tablet }, mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } } },
   };
 }

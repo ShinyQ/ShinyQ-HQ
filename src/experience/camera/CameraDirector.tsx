@@ -239,10 +239,10 @@ export function CameraDirector({
         const axisZ = roadZAt(railAxis, roverRuntime.x);
         return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null);
       }
-      // Look slightly ahead of the rover so more of the floor in front is visible.
+      // Look slightly ahead of the rover so more of the floor in front is visible; a zone's eased look offset moves the target only.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      return followPose(cls, [roverTarget[0] + forward.x * ahead, roverTarget[1], roverTarget[2] + forward.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch);
+      return followPose(cls, [roverTarget[0] + forward.x * ahead, roverTarget[1], roverTarget[2] + forward.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch, orbit.lookForward, orbit.lookUp);
     };
     // Boost: widen and pull back a little (third person), a smaller FOV kick in first person; never under reduced motion.
     boostView(roverRuntime.boost, orbit.blend, !s.reducedMotion && !focus && rig !== "intro", l.boost);
@@ -256,7 +256,7 @@ export function CameraDirector({
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const f = followForward(cls, orbit.yaw);
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch);
+      const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch, orbit.lookForward, orbit.lookUp);
       const rover: Vec3 = [roverRuntime.x, roverRuntime.y, roverRuntime.z];
       snap = true;
       if (!intro) {

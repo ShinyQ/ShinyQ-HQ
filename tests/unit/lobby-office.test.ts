@@ -105,7 +105,7 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
 
   it("floats the wing sign (upper case) over the lead road just before it enters the wing, above the rover", () => {
     const sign = officeSign("Agent Office", "#34d399");
-    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ - 2 });
+    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ - 5 });
     expect(sign.z).toBeGreaterThan(W.lead.from);
     expect(sign.tilt ?? 0).toBe(0);
     expect(sign.y).toBeGreaterThan(5);

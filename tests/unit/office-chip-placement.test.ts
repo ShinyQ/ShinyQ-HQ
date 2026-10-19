@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { cameraWorld, clampCamera } from "@/experience/camera/collision";
 import { CAMERA_FAR, CAMERA_NEAR } from "@/experience/camera/firstPerson";
 import { followOffsetScale } from "@/experience/camera/offset";
-import { createOrbitState, primeZone, setPitchRange, zoneAt, zoomBy } from "@/experience/camera/orbit";
+import { createOrbitState, primeZone, setPitchRange, stepOrbit, zoneAt, zoomBy } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/experience/camera/rigs";
 import { buildFloorLayouts, floorY, LOBBY, ROVER_HEIGHT } from "@/experience/config";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
@@ -88,15 +88,19 @@ const SIZES = [
 const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobile: 2 };
 
 /**
- * The most sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 33.1%
- * desktop, 32.7% tablet, 38.2% portrait). The follow rig keeps its look target (the rover plus its look-ahead, over the
- * desks) in the middle of the screen, so the wall's top edge sits a third of the way down whatever the zoom: closer
- * views push the end desks off a 390 px phone before the sky drops much, and the owner's 20% for portrait screens would
- * need a rig change (a look target nearer the wall or a vertical frame offset), out of this zone's reach.
+ * The sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 33.1% desktop,
+ * 32.7% tablet, 20.4% portrait). The follow rig keeps its look target (the rover plus its look-ahead, over the desks)
+ * in the middle of the screen, so on a landscape screen the wall's top edge sits a third of the way down whatever the
+ * zoom (most of that band holds the two chip rows). A portrait screen (390 x 844, 820 x 1180) moves the look target
+ * toward the camera (`OFFICE.view.mobile.lookOffset`, owner decision 2026-10-20: about 20%, at most about 22%, with the
+ * five desks and the Rover in frame).
  */
-const SKY: Record<ViewportClass, number> = { desktop: 0.34, tablet: 0.34, mobile: 0.39 };
+const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.34], tablet: [0, 0.34], mobile: [0.18, 0.22] };
 
-/** The settled follow camera at the office stop, zoomed in by `steps` zoom key presses (0.8 each). */
+/**
+ * The settled follow camera at the office stop, zoomed in by `steps` zoom key presses (0.8 each): a hand zoom hands the
+ * framing back, so the zone's look offset (portrait screens) has eased out at the near pose.
+ */
 function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera {
   const cls = cameraClass(width, height);
   const orbit = createOrbitState();
@@ -105,10 +109,12 @@ function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera
   expect(zone?.id).toBe("L1:office");
   primeZone(orbit, zone, cls);
   for (let i = 0; i < steps; i++) zoomBy(orbit, 0.8, false);
+  for (let i = 0; i < 300 && orbit.easing; i++) stepOrbit(orbit, 1 / 60, false);
+  expect(orbit.easing).toBe(false);
   const rover: [number, number, number] = [W.stop.x, floorY("L1") + 1, W.stop.z];
   const f = followForward(cls, orbit.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
-  const pose = followPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], orbit.yaw, orbit.zoom * followOffsetScale(cls, width / height), orbit.pitch);
+  const pose = followPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], orbit.yaw, orbit.zoom * followOffsetScale(cls, width / height), orbit.pitch, orbit.lookForward, orbit.lookUp);
   const camera = new PerspectiveCamera(pose.fov, width / height, CAMERA_NEAR, CAMERA_FAR);
   camera.position.set(...clampCamera(pose.target, pose.position, world, rover, pose.fov));
   camera.lookAt(...pose.target);
@@ -237,7 +243,7 @@ describe("Agent Office chips at the office stop", () => {
     const cls = cameraClass(width, height);
     const compact = viewportClass(width, height) === "mobile";
 
-    it("frames the whole wall, the five desks and the visitor's rover, with little sky over the wall", () => {
+    it("frames the whole wall, the five desks and the visitor's rover, with little sky over the wall (about 20% on a portrait screen)", () => {
       const camera = stopCamera(width, height);
       const wall = wallBox(camera, size);
       expect(wall.x0, "wall left edge").toBeGreaterThanOrEqual(0);
@@ -252,7 +258,8 @@ describe("Agent Office chips at the office stop", () => {
       expect(rover!.x0).toBeGreaterThanOrEqual(0);
       expect(rover!.x1).toBeLessThanOrEqual(width);
       expect(rover!.y1, "rover over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
-      expect(wall.y0 / height, "sky over the wall").toBeLessThanOrEqual(SKY[cls]);
+      expect(wall.y0 / height, "sky over the wall").toBeLessThanOrEqual(SKY[cls][1]);
+      expect(wall.y0 / height, "sky over the wall").toBeGreaterThanOrEqual(SKY[cls][0]);
       // The wing sign behind the rover (its plate, generously 7 u by 1.6 u) stays under the bottom edge, never a sliver under the joystick.
       const sign = officeSign("Agent Office", "#fff");
       const plate = boxOf(camera, size, [-3.5, 3.5].flatMap((dx) => [-0.8, 0.8].map((dy) => [sign.x + dx, sign.y + dy, sign.z] as const)));
