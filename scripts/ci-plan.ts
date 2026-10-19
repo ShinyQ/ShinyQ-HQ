@@ -361,6 +361,11 @@ export const HOME_URL = "/en";
  * font setup and the message selection (`src/i18n/`: which namespaces each page inlines).
  */
 const PER_PAGE = /^src\/app\/(.+\/)?(layout|template)\.tsx$|\.css$|^src\/app\/fonts\.ts$|^src\/i18n\//;
+/**
+ * Lazy Classic panels: their own chunk, loaded when the card nears the viewport, so the static closures miss them,
+ * yet their classes ship in the shared stylesheet and the panel shapes the card the home page reserves room for.
+ */
+const HOME_LAZY = /^src\/components\/office\//;
 const BLOG_URL = Object.keys(LIGHTHOUSE_PAGES).find((p) => p.startsWith("/en/blog/"))!;
 const BUILD_URL = "/en/build";
 
@@ -382,6 +387,7 @@ export function pagesFromRepo(read: (f: string) => string | null): (file: string
     if (classify(file) === "ui" && file.startsWith("scripts/")) return "all";
     if (layouts.has(file) && PER_PAGE.test(file)) return "all";
     const own = pageClosures.filter(([, closure]) => closure.has(file)).map(([url]) => url);
+    if (HOME_LAZY.test(file) && !own.includes(HOME_URL)) return [HOME_URL, ...own];
     if (!layouts.has(file)) return own;
     // Shared by the layout and every page (the content loader, metadata helpers): the home page measures it.
     return own.length === pageClosures.length ? [HOME_URL] : [...new Set([HOME_URL, ...own])];

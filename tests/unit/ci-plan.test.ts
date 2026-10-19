@@ -406,5 +406,9 @@ describe("ci-plan Lighthouse pages", () => {
     expect(pages("public/media/a.webp")).toEqual([]);
     expect(pages("functions/api/ask.ts")).toEqual([]);
     expect(pages("src/experience/floors/labs/OpsRoom.tsx")).toEqual([]);
+    // The Classic office card: the shell is in the home page's static imports, the panel is a lazy chunk the home
+    // page loads near the viewport (its classes ship in the shared stylesheet), so the home page measures both.
+    expect(pages("src/components/office/OfficeSection.tsx")).toEqual(["/en", "/id"]);
+    expect(pages("src/components/office/OfficePanel.tsx")).toEqual(["/en"]);
   });
 });
