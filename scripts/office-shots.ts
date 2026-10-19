@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Agent Office captures for the owner's review (part 3 of the office): the nine Rover states over two fixtures
+ * Agent Office captures for the owner's review (part 3 of the office): the spawn view (the ghost outline of the floors
+ * above, kept there), the nine Rover states over two fixtures
  * (the first one also zoomed in to the near pose: the chips show their task lines, compact on a phone), the summary,
  * GitHub and Rover drawers, and the semi-live and off modes, at 1440x900, 1280x720, 820x1180 (touch tablet), 390x844
  * and 844x390 (phones) on the full and lite tiers,
@@ -95,13 +96,16 @@ try {
       await waitForHQ(page);
       await waitForPhase(page, "explore", SLOW);
       await waitForSceneLive(page, SLOW);
+      const name = (shot: string) => join(out, `${shot}-${tier}-${vp.width}x${vp.height}.png`);
+      // The spawn view: the floors above keep their ghost outline here (it hides only in the office wing).
+      await settle(page);
+      await page.screenshot({ path: name("spawn") });
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
       await waitFor("the office chunk", async () => (await probe(page)).loaded);
       await driveTo(page, LOBBY.officeWing.stop, SLOW);
       await settle(page);
       await waitFor("office polling", async () => (await probe(page)).polling);
       const home = await camera(page);
-      const name = (shot: string) => join(out, `${shot}-${tier}-${vp.width}x${vp.height}.png`);
 
       await show(page, reply, statesA(Date.now()), "live", STATES_A);
       await page.screenshot({ path: name("states-a") });
