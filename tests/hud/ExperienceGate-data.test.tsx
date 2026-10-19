@@ -2,7 +2,6 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { lazy, Suspense, type ComponentType } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExperienceData, GpuTier } from "@/experience/types";
 import { loadExperienceData, resetExperienceData } from "@/experience/data-client";
@@ -16,18 +15,6 @@ vi.mock("@/experience/intro/chunk", () => ({ loadIntro: () => Promise.resolve(nu
 // The real 3D chunk needs WebGL: a stand-in records the data it was mounted with.
 vi.mock("@/experience/Experience", () => ({
   default: ({ data }: { data: ExperienceData }) => <div data-testid="hq-stub" data-locale={data.locale} />,
-}));
-vi.mock("next/dynamic", () => ({
-  default: (loader: () => Promise<{ default: ComponentType<object> }>) => {
-    const Lazy = lazy(loader);
-    return function Dynamic(props: object) {
-      return (
-        <Suspense fallback={null}>
-          <Lazy {...props} />
-        </Suspense>
-      );
-    };
-  },
 }));
 
 const { ExperienceGate } = await import("@/experience/ExperienceGate");
