@@ -326,6 +326,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `HintProbe` (in the canvas, no draw calls) picks the nearest point-and-go target within 5 u of its `at` (`nearestHint`, sticky to 6 u).
   - Source: `hintItems()` (`src/experience/hints/source.ts`: `interactRuntime.items`, the only read of the registry here).
+  - Targets that share one approach point carry a `group` (the L4 Study Vault's books): `hintTargets` folds them into one bubble under the group's id and label (`L4:vault`, object line `vault`), whose Go only drives to the shared point (an unhandled command, so no book opens). Hover tags and clicks stay per target.
   - Every frame it moves the HUD bubble (`HintLayer`) over `hintAnchor`: above point-and-go's hover label; in first person at most 0.9 u above eye height, so a near target's bubble stays in view.
 - Enter, a tap or a click opens `dialog.hints.kind.<kind>` (with the registry `label`) or an object line (`HINT_OBJECTS`, keyed by registry id such as `L1:pad:elevator`, `RF:station:cv`, `L1:station:highlights-about`).
 - Go emits point-and-go's `{ type: "interact", item }`, so it drives and acts exactly like a click.

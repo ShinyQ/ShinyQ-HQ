@@ -10,7 +10,7 @@ import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/expe
 import { buildFloorLayouts, floorY, ROVER } from "@/experience/config";
 import { stationTitles } from "@/experience/floors/library/decor/common";
 import { endPlazaSigns, PEDESTAL_OBSTACLE, type EndPlazaLabels } from "@/experience/floors/library/decor/EndPlaza";
-import { createLibraryFrame, endPlazaFrame, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
+import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, type LibraryZone } from "@/experience/floors/library/model";
@@ -68,6 +68,7 @@ const endLabels: EndPlazaLabels = {
       }
     : null,
   archive: en.hud.interact.archive,
+  vault: en.hud.interact.studyVault,
 };
 const plaza = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), endLabels, null);
 const plazaSizes = plaza.signs.map(signPlate);
@@ -162,7 +163,7 @@ class Drive {
 /** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`. */
 function frame(drive: Drive, camera: PerspectiveCamera, angle: number) {
   const v = new Vector3();
-  const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v });
+  const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v, vault: vaultZone(drive.pos, layout.end!.vault) });
   const work = createLibraryFrame();
   const lib = libraryLabelFrame(work, { camera, signs: timeline.signs, meta: timeline.meta, half, origin: { x: 0, y: FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, size: drive.size, endBoxes: end.boxes, v });
   const plates: Plate[] = [];
@@ -187,18 +188,18 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
   it("never overlap, stay within the title cap and show each zone's sign", () => {
     const drive = new Drive(size);
     const visited: string[] = [];
-    /** Audits every orbit angle at the current pose; returns every plate shown at any of them. */
-    const check = (pose: string) => {
+    /** Audits every orbit angle at the current pose; returns the plates shown at each angle (in `ANGLES` order). */
+    const checkAngles = (pose: string) => {
       visited.push(pose);
       const camera = drive.camera();
-      const shown: Plate[] = [];
-      for (const angle of ANGLES) {
+      return ANGLES.map((angle) => {
         const { plates, rover } = frame(drive, camera, angle);
         expect(audit(plates, titleCap, rover), `${id} ${pose} at orbit ${angle.toFixed(2)}`).toEqual({ hits: [], onRover: [], overCap: 0, twice: [] });
-        shown.push(...plates);
-      }
-      return shown;
+        return plates;
+      });
     };
+    /** Every plate shown at any orbit angle of the current pose. */
+    const check = (pose: string) => checkAngles(pose).flat();
 
     check("approach");
     drive.to({ x: 8, z: 0 });
@@ -226,6 +227,18 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
       }
       expect(seen, `${id}: ${ZONE_SIGN[zone]} sign on the approach, road or door pose of the ${zone} zone (${visited.join(", ")})`).toBe(true);
     }
+
+    // The Study Vault: from its stop every book's spine and the "Study Vault" sign show at every orbit angle (they
+    // outrank the topics there, so the orbiting topic labels never push one off).
+    const vault = layout.end!.vault!;
+    drive.to(floor.stops!["L4:vault"]!);
+    const sign = en.hud.interact.studyVault.toUpperCase();
+    expect(vault.books.length, `${id}: vault books`).toBeGreaterThan(0);
+    checkAngles("vault").forEach((atVault, i) => {
+      const at = `${id} vault at orbit ${ANGLES[i].toFixed(2)}`;
+      expect(vault.books.filter((book) => !atVault.some((p) => p.kind === "guide" && p.text === book.spine)).map((b) => b.spine), `${at}: spines not shown`).toEqual([]);
+      expect(atVault.some((p) => p.kind === "vault" && p.text === sign), `${at}: the Study Vault sign`).toBe(true);
+    });
   });
 });
 

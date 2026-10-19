@@ -40,20 +40,21 @@
     position: absolute;
     inset: -20% -10% 0;
     background:
-      radial-gradient(40% 45% at 78% 32%, rgb(167 139 250 / 0.22), transparent 70%),
-      radial-gradient(36% 42% at 16% 18%, rgb(34 211 238 / 0.16), transparent 70%);
+      radial-gradient(40% 45% at 78% 32%, rgb(167 139 250 / 0.14), transparent 70%),
+      radial-gradient(36% 42% at 16% 18%, rgb(34 211 238 / 0.09), transparent 70%);
     animation: hx-drift 18s ease-in-out 0.5s infinite alternate both;
   }
 
-  /* Neon Grid floor in perspective, rolling toward the visitor one cell per loop. */
+  /* Neon Grid floor in perspective, rolling toward the visitor one cell per loop. It stays low and faint, so its
+     horizon sits under the hero's content instead of through the Ask bar. */
   .hx-ground {
     position: absolute;
     left: -50%;
     right: -50%;
     bottom: 0;
-    height: 60%;
+    height: 42%;
     perspective: 520px;
-    mask-image: linear-gradient(to top, #000 15%, transparent 90%);
+    mask-image: linear-gradient(to top, #000 10%, transparent 85%);
   }
 
   .hx-ground-grid {
@@ -62,45 +63,16 @@
     transform-origin: 50% 100%;
     transform: rotateX(64deg);
     background-image:
-      linear-gradient(rgb(99 102 241 / 0.4) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(99 102 241 / 0.4) 1px, transparent 1px);
+      linear-gradient(rgb(99 102 241 / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(99 102 241 / 0.3) 1px, transparent 1px);
     background-size: 56px 56px;
     animation: hx-run 3.2s linear 0.5s infinite both;
-  }
-
-  /* Data packets crossing the screen behind the text. */
-  .hx-packet {
-    position: absolute;
-    left: 0;
-    width: 88px;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, var(--color-cyan));
-    opacity: 0;
-    animation: hx-packet 9s linear 0.5s infinite backwards;
-  }
-
-  .hx-packet:nth-of-type(1) {
-    top: 24%;
-    animation-delay: 1s;
-  }
-
-  .hx-packet:nth-of-type(2) {
-    top: 52%;
-    animation-delay: 4s;
-    background: linear-gradient(90deg, transparent, var(--color-violet));
-  }
-
-  .hx-packet:nth-of-type(3) {
-    top: 71%;
-    animation-delay: 6.5s;
   }
 
   /* The LCP element: static, solid color (no gradient text, no entrance animation). */
   .hx-name {
     font-size: clamp(44px, 8vw, 112px);
     line-height: 0.9;
-    text-shadow: 0 0 48px rgb(34 211 238 / 0.22);
   }
 
   /* Shown only where 3D can run; the head script sets html[data-hq-3d] before first paint. */
@@ -194,14 +166,16 @@
     position: relative;
   }
 
+  /* Screenshot count: a small quiet plate in the cover's corner. */
   .hx-shots {
     position: absolute;
-    right: 12px;
-    bottom: 12px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    background: rgb(5 5 12 / 0.8);
-    color: var(--color-ink);
+    right: 10px;
+    bottom: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgb(5 5 12 / 0.72);
+    font: 500 11px/16px var(--font-mono);
+    color: var(--color-ink-2);
   }
 
   .hx-film {
@@ -236,21 +210,6 @@
     }
   }
 
-  @keyframes hx-packet {
-    0% {
-      transform: translateX(-10vw);
-      opacity: 0;
-    }
-    12%,
-    80% {
-      opacity: 0.9;
-    }
-    100% {
-      transform: translateX(110vw);
-      opacity: 0;
-    }
-  }
-
   @keyframes hx-marquee {
     to {
       transform: translateX(calc(-100% - 48px));
@@ -259,7 +218,7 @@
 
   /* Automation and crawlers (html[data-hq-still], ambientStill in src/lib/boot-first.ts) get the still frame.
      Hover or keyboard focus inside the marquee holds it, so a stat can be read in place. */
-  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-packet, .hx-tick-track),
+  html[data-hq-still] .hx :is(.hx-glow, .hx-ground-grid, .hx-tick-track),
   .hx-tick-view:is(:hover, :focus-within) .hx-tick-track {
     animation-play-state: paused;
   }
@@ -275,7 +234,6 @@
     }
   }
 
-  .hx-packet,
   .hx-tick-track[aria-hidden="true"] {
     @variant motion-reduce {
       display: none;

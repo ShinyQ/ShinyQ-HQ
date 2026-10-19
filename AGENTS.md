@@ -155,8 +155,8 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 
 | Budget | Limit |
 |---|---|
-| 3D JS on the first-frame path (`?prefetch=off`, per tier) | under 450 KB gzip |
-| 3D session total (main path plus the public floor chunks) | full 473 KB, lite 449.4 KB gzip |
+| 3D JS on the first-frame path (`?prefetch=off`, per tier) | under 456.7 KB gzip |
+| 3D session total (main path plus the public floor chunks) | full 485.7 KB, lite 469.9 KB gzip |
 | Floor chunks (incremental) | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip |
 | Agent Office chunks (L1, lazy, outside the session total) | scene 14 KB, drawer body 6 KB gzip |
 | Scene draw calls per frame, any floor | under 150 (L1 125, RF 79, B1 100); at most 20 post passes |
@@ -165,7 +165,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Memory gates | zero growth in geometries, textures and programs; under 2 MB JS heap growth |
 | Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 82 KB |
 | Study guide reader (on the Read click) | chunk 160 KB, worker 400 KB gzip |
-| Ask knowledge pack | `PACK_MAX_BYTES` 256 KiB |
+| Ask knowledge pack (Workers KV) | text `PACK_MAX_BYTES` 384 KiB, stored value 768 KiB, bundled fallback 24 KiB |
 | README hero GIF | under 6 MB |
 
 ## Folder map
@@ -203,7 +203,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [floor-l1-lobby.md](docs/agents/floor-l1-lobby.md) | L1 Lobby: certification wall, Highlights Hall, kiosk, views |
 | [floor-l2-career.md](docs/agents/floor-l2-career.md) | L2 Career Road, Workshop, rail floors |
 | [floor-l3-labs.md](docs/agents/floor-l3-labs.md) | L3 Project Roads, Data and ML spine, Ops Control Room, Tech Reactor |
-| [floor-l4-library.md](docs/agents/floor-l4-library.md) | L4 Writing: newsroom, timeline, end plaza, Topic Constellation |
+| [floor-l4-library.md](docs/agents/floor-l4-library.md) | L4 Writing: newsroom, timeline, end plaza, Topic Constellation, Study Vault |
 | [floor-rf-roof.md](docs/agents/floor-rf-roof.md) | RF roof deck |
 | [floor-b1-engine-room.md](docs/agents/floor-b1-engine-room.md) | B1 Engine Room: layout, scenery, station drawers, access, budget |
 | [ask.md](docs/agents/ask.md) | Ask the HQ: pipeline, scope routing, UI, pack, CSP, credentials, CI around it |

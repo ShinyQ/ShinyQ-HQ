@@ -2,6 +2,8 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { ASK_MAX_TAGS, ASK_TAGS, type AskFrame } from "@/ask/protocol";
 import { SUGGESTIONS } from "@/ask/suggestions";
+import { createPackSource, staticPackSource, type PackSource } from "../../functions/_lib/pack-source";
+import { buildFallbackPack, buildPackArtifacts } from "@/ask/pack";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
 import { findBlocked } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
@@ -46,11 +48,13 @@ interface Setup {
   quota?: boolean;
   /** Groq answer text (status 200) for the injected Groq fetch. */
   groq?: string;
+  /** Pack source (default: the repo pack from memory). */
+  source?: (kv: MemoryKv) => PackSource;
 }
 
 const QUOTA_MESSAGE = "3036: You have used up your daily free allocation of 10,000 neurons";
 
-function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, quota, groq = "Kurniadi works at Metrodata as an engineer." }: Setup = {}) {
+function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, quota, groq = "Kurniadi works at Metrodata as an engineer.", source }: Setup = {}) {
   const kv = new MemoryKv();
   const events: { blobs?: string[] }[] = [];
   const modelCalls: string[] = [];
@@ -91,7 +95,7 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, q
     ...env,
   };
   const handler = createAskHandler({
-    pack,
+    source: source ? source(kv) : staticPackSource(pack),
     safety,
     now: () => NOW,
     streamDelayMs: 0,
@@ -382,10 +386,10 @@ describe("privacy (T10)", () => {
     const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
     const { call, events } = setup();
     await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
-    expect(events[0].blobs).toHaveLength(11);
+    expect(events[0].blobs).toHaveLength(12);
     expect(events[0].blobs?.[6]).toBe("pill");
     expect(events[0].blobs?.slice(7, 9)).toEqual(["work", "work-best"]);
-    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", ""]);
+    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory"]);
   });
 
   it("derives the topic from the answer tags for typed questions and drops a chip id that does not match", async () => {
@@ -405,7 +409,7 @@ describe("privacy (T10)", () => {
     const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
     expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
     expect(events[0].blobs?.[0]).toBe("rejected");
-    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", ""]);
+    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory"]);
   });
 });
 
@@ -428,7 +432,7 @@ describe("Groq backup tiers", () => {
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toHaveLength(1);
     const again = doneOf(await frames(await call()));
     expect(again.source).toBe("cache");
-    expect(events[1].blobs?.slice(9)).toEqual(["", ""]);
+    expect(events[1].blobs?.slice(9, 11)).toEqual(["", ""]);
     expect(groqCalls).toHaveLength(1);
   });
 
@@ -547,11 +551,13 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 
-  it("answers an unsourced opinion with the no-view message, links the closest source and never caches it", async () => {
+  it("answers an unsourced opinion with the no-view message, names no unrelated source and never caches it", async () => {
     const { call, kv } = setup({ answer: "Kurniadi believes microservices are always better than monoliths." });
     const list = await frames(await call({ body: { q: "What does Kurniadi think about microservices?", locale: "en" } }));
     expect(answerOf(list).startsWith(MESSAGES.noView.en)).toBe(true);
-    expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none", cite: "/contact#how" });
+    expect(doneOf(list)).toMatchObject({ outcome: "unknown", source: "none" });
+    // No written source is about microservices, so no title or link (owner decision 2026-10-19).
+    expect(doneOf(list).cite).toBeUndefined();
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 
@@ -649,5 +655,41 @@ describe("multi-turn memory (owner decision 2026-10-17)", () => {
     const body = JSON.stringify({ q: "x".repeat(300), locale: "en", history });
     expect(body.length).toBeLessThan(8192);
     expect((await s.call({ body })).status).toBe(200);
+  });
+});
+
+describe("knowledge pack source", () => {
+  it("dates the status from the pack source", async () => {
+    const dated: PackSource = { ...staticPackSource(pack), packDate: async () => "2027-01-02" };
+    const { call } = setup({ source: () => dated });
+    expect(await (await call({ method: "GET" })).json()).toMatchObject({ enabled: true, asOf: "2027-01-02" });
+  });
+
+  it("logs the serving tier as blob12 and answers from the fallback pack when KV holds no pack", async () => {
+    const fallback = buildFallbackPack(pack);
+    const { meta } = buildPackArtifacts(pack, safety.blocklist);
+    const { call, events, kv } = setup({ source: () => createPackSource({ fallback, pin: meta, now: () => NOW }) });
+    const response = await call({ body: { q: "Where does he work now?", locale: "en" } });
+    const done = doneOf(await frames(response));
+    expect(done).toMatchObject({ outcome: "answer", asOf: fallback.packDate });
+    expect(events[0].blobs?.[4]).toBe(fallback.packVersion);
+    expect(events[0].blobs?.[11]).toBe("fallback");
+    // The answer cache keys on the fallback's own version, never the full pack's.
+    expect([...kv.store.keys()]).toContain(await cacheKey(fallback.packVersion, "en", "Where does he work now?"));
+  });
+
+  it("serves the KV pack when the pointer and value are published", async () => {
+    const artifacts = buildPackArtifacts(pack, safety.blocklist);
+    const { call, events } = setup({
+      source: (kv) => {
+        kv.store.set("pack:current", JSON.stringify(artifacts.meta));
+        kv.store.set(`pack:v1:${artifacts.meta.version}`, artifacts.json);
+        return createPackSource({ fallback: buildFallbackPack(pack), pin: artifacts.meta, now: () => NOW });
+      },
+    });
+    await (await call()).text();
+    await (await call({ body: { q: "What does he do now?", locale: "en" } })).text();
+    expect(events.map((e) => e.blobs?.[11])).toEqual(["kv", "memory"]);
+    expect(events[0].blobs?.[4]).toBe(pack.packVersion);
   });
 });

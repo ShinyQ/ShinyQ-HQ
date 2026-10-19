@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BYTES_3D_BUDGET } from "../../e2e/budgets";
 import {
   chunkName,
   entryId,
@@ -80,7 +81,8 @@ describe("gates", () => {
   it("renders bytes, floors and peaks with deltas against main and warns near a budget", () => {
     const s = renderGates(head, base);
     expect(s.markdown).toContain("#### 3D JS after the gate (lite)");
-    expect(s.markdown).toContain("Total 380.0 KB, 84% of 450.0 KB, no main baseline.");
+    const cap = BYTES_3D_BUDGET.failAt;
+    expect(s.markdown).toContain(`Total 380.0 KB, ${Math.round(((380 * 1024) / cap) * 100)}% of ${(cap / 1024).toFixed(1)} KB, no main baseline.`);
     expect(s.markdown).toContain("Other 3D-path bytes: font 136.0 KB, json 49.8 KB.");
     expect(s.markdown).toContain("| full | L1 | 136 (+2) | 18 | 16103 | 52 | 410 | 37 |");
     expect(s.markdown).toContain("| lite | intro | 140 | 0 | 20000 | 75 |");
@@ -98,8 +100,8 @@ describe("gates", () => {
     const full = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, floors, sessionTotal: 445.5 * 1024 } as const;
     const lite = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, floors, sessionTotal: 425.5 * 1024 } as const;
     const s = renderGates([full, lite], []);
-    expect(s.markdown).toContain("Session total with every public floor chunk (B1 excluded): 445.5 KB of 473.0 KB.");
-    expect(s.markdown).toContain("Session total with every public floor chunk (B1 excluded): 425.5 KB of 449.4 KB.");
+    expect(s.markdown).toContain(`Session total with every public floor chunk (B1 excluded): 445.5 KB of ${(BYTES_3D_BUDGET.session.full / 1024).toFixed(1)} KB.`);
+    expect(s.markdown).toContain(`Session total with every public floor chunk (B1 excluded): 425.5 KB of ${(BYTES_3D_BUDGET.session.lite / 1024).toFixed(1)} KB.`);
   });
 
   it("reports the Agent Office chunk against its own cap, outside the session total", () => {

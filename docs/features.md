@@ -57,6 +57,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Corners HUD | Round 8 I (2026-10-17): phones and tablets keep controls in the corners (floor chip, menu, joystick double-tap boost, Reset view), a settings panel (language, Open links in, motion, graphics quality, day and night, minimap, sound, music and its volume, floor ambience), a round minimap with a floor overview, a slim Rover toast on phones | Done |
 | L3-style arrivals | Round 8 J (2026-10-17): every floor's elevator arrival rolls the rover east to a per-floor arrival point (L1 hologram, L2 Career Road, L3 hub, L4 timeline lane, RF plaza mast) with the camera behind it, after a 1.5 s glide out of the car | Done |
 | Rover idle | Round 9 O (2026-10-17): after 15 s with no input and the rover parked, it looks around, blinks, hops or spins and beeps once (sound on); the sequence varies and stops at once on any input; never during missions, point-and-go, rides, the elevator picker or the drawer; reduced motion blinks only; no new mesh, material or shader program | Done |
+| Ask: Rover's voice | 2026-10-19: Ask answers as Rover, the HQ's guide robot (light voice, Kurniadi always in the third person); requests to speak as Kurniadi or to drop the rules are declined; related professional questions such as "Where should AI not be used?" are answered only from his case studies, posts and written views, with a "Read on this site" link | Done |
 | Ask memory | 2026-10-17: Ask remembers the last 3 turns of a conversation (signed by the server, so a visitor cannot forge an answer), a short follow-up like "What stack did it use?" is understood from the previous question, and a **New chat** button starts over | Done |
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over (replaced by the wake and reveal orbit intro, 2026-10-18) | Done |
@@ -66,7 +67,8 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
 | Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | In review |
-| Study guides | 2026-10-19 (PR 1 of 2): the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card; PR 2 adds the 3D Study Vault on L4 | In review |
+| Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
+| Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
 
 ## Controls and first visit
 
@@ -162,7 +164,8 @@ Open `/en` and press **Boot rover**.
 The Classic site (internally the Page View) is the permanent no-WebGL fallback and the version crawlers see.
 
 - Architecture figures use native EN/ID node and edge labels where authored, consistently across case studies, technical posts, the build page and B1 drawers. Shared technical identities and legacy string labels remain supported.
-- The home opens on a cinematic first screen: the name over an animated Neon Grid (CSS only, still under reduced motion).
+- The home opens on a calm first screen: the name over a slow glow and a low Neon Grid floor (CSS only, still under reduced motion).
+- Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result on a hairline at the bottom, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
@@ -290,7 +293,10 @@ Route `/en/library`.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
 - **Read my writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
-- **Study guides**: today on the Classic Writing page and in the certification card ([Classic site](#classic-site)); a 3D Study Vault off the end plaza is planned (PR 2 of the study guides spec).
+- **Study Vault**: a road from the end plaza's ring road leads south-east to a small round plaza where the four certification study guides stand as tall holo books on an arc, each on a low plinth over a dashed floor track, in its issuer's tone (Microsoft cyan, GitHub violet, Google amber) with its exam code on the spine and a STUDY VAULT sign above.
+  - Covers slide out and swing open as the rover comes near (half open from the vault stop, fully open next to a book or when you point at it); reduced motion snaps them, and the lite tier drops the light pools.
+  - Click a book (tap, then Go, on touch screens) to drive to the vault and read that guide in the same in-site reader as the Classic Writing page ([Classic site](#classic-site)); one "!" hint bubble introduces the vault.
+  - The spine signs show only near the vault and never cover another label.
 
 ### Topic Constellation
 
@@ -367,6 +373,8 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### Where
 
 - The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, and the Cmd-K "Ask AI" row. The chat panel is titled **Ask Rover Assistant** (ID **Asisten Rover**) and its answers are labelled Rover; the floating button stays **Ask AI**.
+- Rover answers in its own light voice ("I found...", at most one "Beep!"), always about Kurniadi in the third person, and never speaks as him.
+- Related professional questions ("Where should AI not be used?", "When is RAG a bad idea?") are answered only from what his work shows, citing the case study, post or written view; without one, Rover says he hasn't written about it and names the closest title.
 - A "Try asking" row offers 3 curated questions from different topics, and topic pills (Work, AI, Career, Contact, Perspectives, About me, This site) expand into 4 of a bank of 102 curated questions (`content/ask/suggestions.json`); both are a random sample, fixed for the page session, and a question already asked never comes back. Each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
 - The thread is kept in `sessionStorage` only. The assistant remembers the last 3 turns, so follow-ups such as "What stack did it use?" or "And before that?" work; **New chat** (ID **Obrolan baru**) clears the thread and the memory, and so does switching the language.
 - **What can you do?** (also a Contact pill, ID "Apa saja yang bisa ditanyakan di sini?") lists what the assistant covers, the two languages, sources, and what it will not discuss.
@@ -374,7 +382,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### How
 
-- A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`).
+- A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`). The pack lives in Workers KV as versioned, immutable values with a precomputed BM25 index behind a `pack:current` pointer that every deploy moves and every rollback moves back; each isolate keeps it in memory, checks its SHA-256, and falls back to the deployed version or a small bundled pack (who he is, what he does now, contact, how the site was built, his principles) when KV fails.
 - It then calls Workers AI through AI Gateway `shinyq-hq`: **Gemma 4 26B** (`@cf/google/gemma-4-26b-a4b-it`, thinking off), falling back once to **Mistral Small 3.1** on error, timeout or an empty answer.
 - Earlier turns travel with the question: each answer carries the server's signature (HMAC), and only verified turns reach the model, as earlier messages it may use for context but never as instructions. A short follow-up is scope-checked and retrieved together with the question it refers to.
 - Groq is the backup when Workers AI fails or runs out of its daily quota. A quota error (3036) also skips Mistral, and the Groq backup tiers answer until 00:00 UTC: **Qwen 3.8 27B** (`qwen/qwen3.8-27b`, a Groq preview model), then **gpt-oss-120b** (`openai/gpt-oss-120b`). Groq is called through the same AI Gateway, only when the `GROQ_API_KEY` secret exists, with the same prompt, retrieval and output checks. Without a working tier the visitor sees the fallback message.
@@ -394,7 +402,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
 - `ask-eval.yml` runs the golden set and the red-team set against the real models nightly.
-- `content-gap.yml` reports unanswered questions weekly.
+- `content-gap.yml` reports unanswered questions weekly, and which pack tier served (memory, KV, the pinned version or the fallback).
 - `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
 
@@ -472,7 +480,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 450 KB gzip per tier | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 456.7 KB gzip per tier; session total full 485.7 KB, lite 469.9 KB | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.

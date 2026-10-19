@@ -125,12 +125,34 @@ export function libraryLabelFrame(
 /** Free topic labels shown at once: desktop, phone. */
 export const END_LABEL_MAX = { wide: 8, narrow: 5 } as const;
 /** Horizontal camera distance (u) under which an end plaza sign hides: it would fill the screen. */
-export const END_SIGN_NEAR: Record<EndSignMeta["kind"], number> = { topic: 8, count: 11, monument: 0, archive: 0 };
+export const END_SIGN_NEAR: Record<EndSignMeta["kind"], number> = { topic: 8, count: 11, monument: 0, archive: 0, guide: 0, vault: 0 };
+
+/**
+ * Priority of the Study Vault's signs (spines, then the "Study Vault" sign): above every topic label while the rover is
+ * in the vault plaza, below them on the vault's road and the ring road near its entry. Farther away (the constellation's
+ * view) they never show, so that view keeps exactly its labels. Topic priorities are between 0 and about 1000 (hovered).
+ */
+export const VAULT_PRIORITY = { inside: { guide: 20_000, vault: 10_000 }, near: { guide: -1_000, vault: -2_000 } } as const;
+
+/** Where the Study Vault's signs may show this frame, by the rover's place (`vaultZone`). */
+export type VaultZone = "inside" | "near" | "far";
+
+/**
+ * The rover's place relative to the Study Vault (floor-local): `inside` its plaza, `near` (on its road, or within 2 u
+ * past the road's start on the ring) or `far`.
+ */
+export function vaultZone(rover: Vec2 | null | undefined, vault: { center: Vec2; radius: number; entry: Vec2 } | null | undefined): VaultZone {
+  if (!rover || !vault) return "far";
+  const d = Math.hypot(rover.x - vault.center.x, rover.z - vault.center.z);
+  if (d <= vault.radius) return "inside";
+  return d <= Math.hypot(vault.entry.x - vault.center.x, vault.entry.z - vault.center.z) + 2 ? "near" : "far";
+}
 
 /**
  * Places the end plaza signs for one frame: the count headline, the monument plates, the archive name and the
- * picked topic always show; the other topic labels show by priority (hovered, then bigger topics, then nearer
- * ones) up to `END_LABEL_MAX`, only where they cover nothing. `obstacles` (floor-local around `origin`) take their
+ * picked topic always show; the other topic labels and the Study Vault's signs show by priority (the vault's first
+ * while the rover is in the vault plaza, after the topics near it, never far from it: `VAULT_PRIORITY`; topics by
+ * hovered, then bigger topics, then nearer ones) up to `END_LABEL_MAX`, only where they cover nothing. `obstacles` (floor-local around `origin`) take their
  * screen box first, so no label covers them. Returns the candidates, the plate quads, the shown flags and the shown
  * sign boxes (for the timeline placement).
  */
@@ -148,8 +170,11 @@ export function endPlazaFrame(input: {
   obstacles: readonly { x: number; z: number; r: number; h: number }[];
   size: ScreenSize;
   v: Vector3;
+  /** The rover's place relative to the Study Vault (`vaultZone`; default far): its signs outrank the topic labels inside, follow them near, never show far. */
+  vault?: VaultZone;
 }): { candidates: LabelCandidate[]; quads: ScreenQuad[]; shown: boolean[]; boxes: ScreenBox[] } {
   const { camera, signs, sizes, meta, origin, angle, hovered, obstacles, size, v } = input;
+  const zone = input.vault ?? "far";
   const { width, height } = size;
   const pad = LIBRARY_SIGN.boxPad;
   const quads: ScreenQuad[] = [];
@@ -159,14 +184,16 @@ export function endPlazaFrame(input: {
     const wx = origin.x + local.x;
     const wz = origin.z + local.z;
     const d = Math.hypot(camera.position.x - wx, camera.position.z - wz);
-    const fixed = m.kind !== "topic" || Boolean(m.picked);
-    if (d < END_SIGN_NEAR[m.kind]) return { box: null, priority: 0, fixed };
+    const vaultSign = m.kind === "guide" || m.kind === "vault";
+    const fixed = !(vaultSign || m.kind === "topic") || Boolean(m.picked);
+    if (d < END_SIGN_NEAR[m.kind] || (vaultSign && zone === "far")) return { box: null, priority: 0, fixed };
     const projected = projectPlate(camera, { x: wx, y: origin.y + s.y, z: wz }, { w: (sizes[i].w / 2) * pad, h: (sizes[i].h / 2) * pad }, size, v);
     if (!projected) return { box: null, priority: 0, fixed };
     quads[i] = projected.quad;
     if (!projected.onScreen) return { box: null, priority: 0, fixed };
     const box = projected.box;
-    const priority = m.kind !== "topic" ? 0 : (hovered === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
+    // A vault sign got here only inside or near the vault.
+    const priority = vaultSign ? VAULT_PRIORITY[zone as "near"][m.kind as "vault"] + 50 / (1 + d) : m.kind !== "topic" ? 0 : (hovered === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
     return { box, priority, fixed };
   });
   // Obstacles take their screen box first (fixed, never drawn), so no label sits over them.

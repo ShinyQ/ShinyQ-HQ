@@ -26,7 +26,7 @@ export async function TimelineRow({
       data-type={entry.type}
       className="grid gap-x-6 gap-y-1.5 py-5 [--pv-hover:var(--color-amber)] md:grid-cols-[150px_minmax(0,1fr)_120px] md:py-6"
     >
-      <p className="pv-data md:pt-1.5">{formatPeriod(entry.start, entry.end, locale)}</p>
+      <p className="pv-date md:pt-1.5">{formatPeriod(entry.start, entry.end, locale)}</p>
       <div className="min-w-0">
         {note && <p className="pv-data mb-1">{note}</p>}
         <Heading className="pv-h3 pv-row-title">

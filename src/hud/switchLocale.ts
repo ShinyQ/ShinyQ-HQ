@@ -1,5 +1,5 @@
 import type { FloorId, Locale } from "@/content/schema";
-import { READY_FLOORS } from "@/experience/config";
+import { READY_FLOORS } from "@/experience/floorOrder";
 import { LOCALE_STORAGE_KEY } from "@/i18n/locale";
 import { serializeHQUrl } from "@/lib/url-sync";
 import { getHQStore } from "@/store/useHQStore";

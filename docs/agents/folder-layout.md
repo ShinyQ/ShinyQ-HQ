@@ -32,8 +32,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `functions/api/office/` (`index.ts`, `beat.ts`, `github.ts`): Agent Office routes (GET /api/office, POST beats and
   webhooks) forwarding to the hq-office Worker through the service binding OFFICE (`functions/_lib/office.ts`).
 - `functions/api/guides/[slug].ts`: GET and HEAD /api/guides/<slug>, a study guide PDF from R2 `GUIDES` with byte ranges, ETag and versioned caching (`functions/_lib/guides.ts`).
-- `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval.
-- `functions/_generated/`: gitignored: knowledge pack + safety lists from `scripts/build-knowledge.ts`.
+- `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval, the stored pack index (`pack-index.ts`) and the pack source (`pack-source.ts`: memory, KV, pin, fallback).
+- `functions/_generated/`: gitignored, from `scripts/build-knowledge.ts`: `pack.json` (the stored knowledge pack, uploaded to KV, never bundled), `fallback.json` (bundled fallback pack), `pack-meta.json` (the bundle's pin) and `safety.json`.
 - `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit, /api/stats and /api/guides (source of truth once deployed; no secrets).
 - `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
 - `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
@@ -80,10 +80,11 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/serve-static.ts`: serves out/ like Cloudflare Pages, incl. simple _redirects (e2e, Lighthouse).
 - `scripts/defer-scripts.ts`: post-build (part of `build`): swaps the Next.js chunk tags in out/**/*.html for one loader that requests them after first contentful paint (LCP).
 - `scripts/root-redirect.ts`: post-build (part of `build`): copies the `/` language redirect (`#hq-root-redirect`) to the top of <head> in out/index.html, so it runs before the stylesheet (`__hqRedirect` guard).
-- `scripts/check-client-chunks.ts`: post-build (part of `build`): fails when zod (`_zod`), `readFileSync` or `site-content` appears in out/_next/static/chunks.
+- `scripts/check-client-chunks.ts`: post-build (part of `build`): fails when zod (`_zod`), `readFileSync` or `site-content` appears in out/_next/static/chunks, or when a chunk any exported page loads carries a floor layout (a view zone id per layout module, `FLOOR_LAYOUT_MARKERS`).
 - `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
 - `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
 - `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+- `scripts/ask-pack.ts`: publishes the knowledge pack to Workers KV and flips, pins or rolls back its pointer (deploy.yml, rollback.yml; runbook section 17).
 - `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
 
 ### Fonts, brand and content
@@ -141,7 +142,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
+- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
 
 ### src/assets/
 
@@ -232,6 +233,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### src/experience/
 
 - `src/experience/`: 3D experience (see "3D experience" in [3d-experience.md](3d-experience.md)).
+- `src/experience/floorOrder.ts`: `FLOOR_IDS`, `READY_FLOORS`, `floorIndex` (imports `@/lib/floors` and types only; the store and the Classic HUD read it, `config.ts` re-exports it).
 
 #### Perf
 
@@ -239,6 +241,10 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - perfOverlayOn is the one flag parser, also for the Director's ride console line.
   - Overlay and probe are static imports in the 3D chunk that mount only with the flag or in a sampled session: a dynamic import inside the 3D chunk can make Turbopack regroup shared modules into the Page View bundle.
   - The floor chunks were measured against that risk and cost the Classic site +381 B (see "Floor chunks" in [floors.md](floors.md)).
+
+#### Gate data
+
+- `src/experience/gate-data.ts` (server only): `experienceDataFor(locale)`, the 3D page data, and `experienceDataVersion(locale)`, its content hash for the gate's URL. `src/experience/data-client.ts`: `loadExperienceData(locale, version)`, the gate's fetch of `/data/experience/{locale}.json`.
 
 #### Sky
 
@@ -286,6 +292,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP).
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
   - kiosk.ts (Rover menu kiosk parts, lines, the radial spoke end and the spawn stop).
+  - spawn.ts (the kiosk axis, `LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING`; types only, the store reads it; `LOBBY` in config.ts builds on it).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
   - officeLayout.ts (the Agent Office wing offsets and `officeWing`, layout, rooms, obstacles, stops, view zone and road; config.ts imports it, so it stays import-light and reaches the Classic page chunk through the store), officeShell.ts (3D-only: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
     - main path: `OfficeMount.tsx` (the furniture shell and the load trigger), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`), `runtime.ts` (in-view flag, chip elements and anchors, near/far flags);

@@ -194,7 +194,7 @@ Code: `floors/lobby/kiosk.ts`. The kiosk lines up straight, radially into the ho
 - Lane spoke (`Lanes.tsx`): one straight radial segment ending 0.4 u in front of its front (`kioskLaneEnd`).
 - Obstacle and pick volume: the axis-aligned box of the turned footprint (`kioskRect` in config.ts, `kioskBounds`).
 - Point-and-go stop: `kioskStop()`, on the axis 3 u in front of the screen.
-- Session spawn: that stop (`LOBBY.spawn`, heading `LOBBY.spawnHeading` toward the screen), so the first rover placement is in front of the kiosk (owner decision).
+- Session spawn: that stop (`LOBBY.spawn`, heading `LOBBY.spawnHeading` toward the screen; both from `floors/lobby/spawn.ts`, with the kiosk axis, so the store reads them without the floor layouts), so the first rover placement is in front of the kiosk (owner decision).
 - `tests/unit/kiosk.test.ts` checks the shared yaw, the centering, the straight spoke and the spawn.
 
 ## Lobby views

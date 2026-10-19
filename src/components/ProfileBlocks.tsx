@@ -34,7 +34,7 @@ export function AwardList({ awards, locale }: { awards: readonly Award[]; locale
     <ul className="pv-rows pv-rows-closed">
       {awards.map((award) => (
         <li key={award.id} className="grid gap-x-6 gap-y-1 py-3.5 sm:grid-cols-[90px_minmax(0,1fr)]">
-          <span className="pv-data sm:pt-1">{formatYearMonth(award.date, locale)}</span>
+          <span className="pv-date sm:pt-1">{formatYearMonth(award.date, locale)}</span>
           <span>
             <span className="font-semibold text-ink">{award.placement[locale]}</span>
             <span className="text-ink-2">

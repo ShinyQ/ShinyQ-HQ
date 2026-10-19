@@ -8,9 +8,10 @@ name: Rollback
 #     only when production serves the failing commit or a later, not green, commit built on it), redeploys the
 #     hq-stats Worker from that commit when workers/stats/ differs (and STATS_WORKER_DEPLOY is not "false") and the
 #     hq-office Worker when its sources differ (and OFFICE_WORKER_DEPLOY is not "false"; a commit without
-#     workers/office leaves it at the live version). Before any of that it opens or updates the one `deploy-rollback`
-#     issue with the failing run; while it is open, deploy.yml takes no fast path: every merge waits for a green
-#     complete main CI. The outcome is commented there.
+#     workers/office leaves it at the live version), then flips the Ask knowledge pack pointer to the target's pack
+#     (scripts/ask-pack.ts rollback; production project only). Before any of that it opens or updates the one
+#     `deploy-rollback` issue with the failing run; while it is open, deploy.yml takes no fast path: every merge
+#     waits for a green complete main CI. The outcome is commented there.
 #   - green: closes the `deploy-rollback` issue once the green commit equals or follows the last failing one, then
 #     dispatches deploy.yml for the tip of main (a rollback may have left production behind main).
 # Only CI runs from pushes to main count (not the nightly, not dispatches). Dispatch it by hand for a drill:
@@ -191,6 +192,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bunx wrangler deploy
+      - name: Install dependencies (Ask knowledge pack)
+        if: (steps.pages.outputs.action == 'rollback' || steps.pages.outputs.action == 'dry-run') && env.CF_PAGES_PROJECT == vars.CF_PAGES_PROJECT
+        run: bun install --frozen-lockfile
+      - name: Flip the Ask knowledge pack to the rollback target's
+        # The pointer follows the code (pack:commit:<target>); a target older than the KV pack, or a pruned pack, leaves
+        # it. Never for a drill project: the namespace is production's. After the Worker redeploys, so a failure here
+        # cannot skip them. SAFETY_BLOCKLIST: flip re-validates the value with the private terms too.
+        if: (steps.pages.outputs.action == 'rollback' || steps.pages.outputs.action == 'dry-run') && env.CF_PAGES_PROJECT == vars.CF_PAGES_PROJECT
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+          TARGET: ${{ steps.pages.outputs.target_sha }}
+        run: |
+          set -o pipefail
+          bun scripts/ask-pack.ts rollback --commit "$TARGET" --dry-run "$DRY_RUN" | tee pack-rollback.log
+          echo "- Ask knowledge pack: $(tail -n1 pack-rollback.log)" >> "$GITHUB_STEP_SUMMARY"
       - name: Report on the deploy-rollback issue
         # Also when the rollback step failed (the comment then asks for a manual rollback); not for a bad sha input.
         if: ${{ !cancelled() && steps.pages.conclusion != 'skipped' }}

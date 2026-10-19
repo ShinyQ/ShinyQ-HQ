@@ -196,6 +196,19 @@ describe("parseCommand", () => {
     expect(parseCommand("open:L4:")).toBeNull();
   });
 
+  it("opens a study guide by slug", () => {
+    expect(parseCommand("guide:ai-103")).toEqual({ type: "guide", slug: "ai-103" });
+    expect(parseCommand("guide:google-gen-ai-leader")).toEqual({ type: "guide", slug: "google-gen-ai-leader" });
+    expect(parseCommand("guide:")).toBeNull();
+    expect(parseCommand("guide:a")).toBeNull();
+    expect(parseCommand("guide:AI-103")).toBeNull();
+    expect(parseCommand("guide:ai_103")).toBeNull();
+    expect(parseCommand("guide:../ai-103")).toBeNull();
+    expect(parseCommand("guide:ai-103:x")).toBeNull();
+    expect(parseCommand(`guide:${"a".repeat(41)}`)).toBeNull();
+    expect(parseCommand(`guide:${"a".repeat(40)}`)).toEqual({ type: "guide", slug: "a".repeat(40) });
+  });
+
   it("ignores anything else", () => {
     expect(parseCommand("palette:nope")).toBeNull();
     expect(parseCommand("launch")).toBeNull();
@@ -280,6 +293,24 @@ describe("performInteract", () => {
     await performInteract(board, d);
     expect(d.runSteps).toHaveBeenCalledWith("interact:L3:board:software", [{ kind: "drive", to: { x: -10.7, z: -9.5 } }]);
     expect(d.command).toHaveBeenCalledWith({ type: "palette", filter: "pods" });
+  });
+
+  it("drives to the vault stop, then opens the study guide reader", async () => {
+    const d = deps();
+    const book: Interactable = {
+      ...pod,
+      id: "L4:vault:ai-103",
+      floor: "L4",
+      kind: "station",
+      label: "Read the AI-103 study guide",
+      at: { x: 97.5, z: 14.5 },
+      height: 4.2,
+      action: { type: "command", command: "guide:ai-103" },
+    };
+    await expect(performInteract(book, d)).resolves.toBe("done");
+    expect(d.runSteps).toHaveBeenCalledWith("interact:L4:vault:ai-103", [{ kind: "drive", to: { x: 97.5, z: 14.5 } }]);
+    expect(d.command).toHaveBeenCalledExactlyOnceWith({ type: "guide", slug: "ai-103" });
+    expect(d.goToRoom).not.toHaveBeenCalled();
   });
 
   it("only drives for an unknown command", async () => {

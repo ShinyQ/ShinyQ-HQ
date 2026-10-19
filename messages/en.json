@@ -665,7 +665,9 @@
       "go": "Go to {label}",
       "hintFine": "Click a glowing object to go there.",
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
-      "console": "Time console"
+      "console": "Time console",
+      "studyGuide": "Read the {code} study guide",
+      "studyVault": "Study Vault"
     }
   },
   "engine": {
@@ -805,7 +807,7 @@
   },
   "ask": {
     "thinking": "Rover is thinking . . .",
-    "asOf": "Answered by AI from this site, as of {date}",
+    "asOf": "Rover's AI answer from this site, as of {date}",
     "privacyTitle": "Privacy",
     "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to three earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
@@ -823,11 +825,11 @@
       "teaser": "Questions about Kurniadi's work, projects or career?",
       "teaserDismiss": "Dismiss",
       "title": "Ask Rover Assistant",
-      "subtitle": "AI answers from this site only",
+      "subtitle": "Rover (AI) answers from this site",
       "close": "Close chat",
       "newChat": "New chat",
       "threadLabel": "Conversation",
-      "welcome": "Hi! Find answers about Kurniadi's work, projects, career, approach or how to reach him. AI answers use the content on this site. Pick a topic or type a question.",
+      "welcome": "Hi, I'm Rover! Ask about Kurniadi's work, projects, career, approach or how to reach him. I answer with AI from this site. Pick a topic or type a question.",
       "you": "You",
       "hq": "Rover",
       "startersLabel": "Try asking",
@@ -1014,7 +1016,8 @@
         "research": "The Research desk: papers with abstracts and citations.",
         "workshop": "The Workshop: side projects and public repositories.",
         "timeConsole": "The time console: beam to any year, or back to the elevator.",
-        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry."
+        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry.",
+        "vault": "The Study Vault: {name}'s certification study guides as books. Pick one to read it."
       },
       "go": {
         "open": "Open",

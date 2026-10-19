@@ -1,8 +1,10 @@
 # L4 Study Vault and in-app study guide reader (design)
 
-Status: in review
+Status: shipped in #243 (039af05), #245 (7d8fa97) and #247 (1a397f4), 2026-10-19
 
 Date: 2026-10-19. Owner-approved design. Repo: ShinyQ/ShinyQ-HQ (main 633750e or later).
+
+Plans: [PR 1](../plans/2026-10-19-l4-study-guides-pr1.md) (R2, reader, Classic shelf, CertDialog), [PR 2](../plans/2026-10-19-l4-study-vault-pr2.md) (the 3D Study Vault).
 
 ## Owner request (verbatim)
 

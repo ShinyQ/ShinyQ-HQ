@@ -1,7 +1,8 @@
 import { askLinkTarget } from "../../src/ask/links";
 import { ASK_REPO_CITE } from "../../src/ask/protocol";
+import { ADJACENT_SOURCE_TYPES } from "./checks";
 import { indexPack } from "./pack-index";
-import { isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
+import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 
@@ -20,6 +21,11 @@ export const PERSPECTIVE_CAP = 3;
 export const LEAD_INCLUDE = "contact";
 /** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
 export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+/** Chunks every adjacent answer gets (owner decision 2026-10-19): who he is and his rules of work, the most general lessons he wrote. */
+export const ADJACENT_INCLUDE = ["profile", "principles"] as const;
+/** Added to case studies, posts and talks for an adjacent question, so his written views do not crowd them out. */
+export const ADJACENT_BOOST = 2;
+const ADJACENT_BOOSTED: ReadonlySet<string> = new Set(["project", "post", "talk"]);
 /** Most matching past projects or jobs a lead answer is grounded in (owner request: 1 to 3). */
 export const LEAD_MATCH_CAP = 3;
 /** A lead match needs two specific terms in common, or one specific term with at least this BM25 score. */
@@ -79,15 +85,17 @@ export function scoreChunks(pack: KnowledgePack, question: string): { chunk: Kno
   const index = indexPack(pack);
   const terms = [...new Set(expandTokens(tokenize(question)))];
   const n = pack.chunks.length;
+  // Term at a time over the postings: each chunk still sums its terms in question order, so scores match a per-chunk loop.
+  const bm25 = new Float64Array(n);
+  for (const term of terms) {
+    const postings = index.postingsOf(term);
+    const df = postings.size;
+    if (!df) continue;
+    const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
+    for (const [i, tf] of postings) bm25[i] += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
+  }
   return pack.chunks.map((chunk, i) => {
-    let score = 0;
-    for (const term of terms) {
-      const df = index.df[term];
-      const tf = index.tf[i][term];
-      if (!df || !tf) continue;
-      const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
-      score += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
-    }
+    let score = bm25[i];
     for (const term of terms) if (INTENTS[term]?.(chunk)) score += INTENT_WEIGHT[term] ?? INTENT_BOOST;
     // A project or post named in the question ("the voice AI project") beats one that only shares its words.
     if (score > 0 && (chunk.type === "project" || chunk.type === "post")) score += TITLE_BOOST * titleTerms(chunk).filter((t) => terms.includes(t)).length;
@@ -108,8 +116,9 @@ export const hasTopic = (chunk: KnowledgeChunk, topic: RoutedTopic) => chunk.typ
 export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChunk[] {
   const index = indexPack(pack);
   const n = pack.chunks.length;
-  const all = [...new Set(expandTokens(tokenize(question)))].filter((t) => !LEAD_STOP.has(t) && (index.df[t] ?? 0) > 0);
-  const specific = new Set(all.filter((t) => index.df[t] <= n * LEAD_COMMON_SHARE));
+  const df = (t: string) => index.df.get(t) ?? 0;
+  const all = [...new Set(expandTokens(tokenize(question)))].filter((t) => !LEAD_STOP.has(t) && df(t) > 0);
+  const specific = new Set(all.filter((t) => df(t) <= n * LEAD_COMMON_SHARE));
   if (!specific.size) return [];
   return pack.chunks
     .map((chunk, i) => {
@@ -119,15 +128,15 @@ export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChu
       let own = 0;
       let peak = 0;
       for (const term of all) {
-        const tf = index.tf[i][term];
+        const tf = index.tfOf(i, term);
         if (!tf) continue;
         shared++;
         if (specific.has(term)) {
           own++;
           peak = Math.max(peak, tf);
         }
-        const df = index.df[term];
-        score += (Math.log(1 + (n - df + 0.5) / (df + 0.5)) * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
+        const d = df(term);
+        score += (Math.log(1 + (n - d + 0.5) / (d + 0.5)) * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
       }
       // One term alone fits only when the project is about it (repeated), not when it is mentioned once or twice.
       return own >= 1 && (shared >= 2 || (score >= LEAD_STRONG_SCORE && peak >= LEAD_STRONG_TF)) ? { chunk, score } : null;
@@ -145,14 +154,16 @@ export interface RetrieveOptions {
   lead?: boolean;
   /** Earlier questions a follow-up refers to (`followUpAnchor`): their best chunks come first, so "What stack did it use?" finds the project, not every skill. */
   anchor?: string;
+  /** A related professional question (`isAdjacentQuestion`): his principles, then only his case studies, posts, talks, papers and written views. */
+  adjacent?: boolean;
 }
 
 /** Chunks the anchor itself retrieves first (multi-turn memory). */
 export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
-export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question) }): Retrieved {
-  const { topic, lead, anchor } = options;
+export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
+  const { topic, lead, anchor, adjacent } = options;
   const scored = scoreChunks(pack, question);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -180,6 +191,19 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
       if (chunk.type === "perspective" || chunk.type === "principle") continue;
       add(chunk);
     }
+  } else if (adjacent) {
+    // Related professional questions: his principles, then his case studies, posts, talks, papers and written views only.
+    ADJACENT_INCLUDE.forEach((id) => add(byId(id)));
+    let perspectives = 0;
+    scored
+      .filter((r) => r.score > 0 && ADJACENT_SOURCE_TYPES.has(r.chunk.type))
+      .map((r) => ({ chunk: r.chunk, score: r.score + (ADJACENT_BOOSTED.has(r.chunk.type) ? ADJACENT_BOOST : 0) }))
+      .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+      .forEach(({ chunk }) => {
+        if (picked.length >= TOP_K + ADJACENT_INCLUDE.length || picked.includes(chunk)) return;
+        if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) return;
+        picked.push(chunk);
+      });
   } else {
     const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
     always.forEach((id) => add(byId(id)));

@@ -12,10 +12,10 @@ import { TimelineRow } from "@/components/page/Timeline";
 import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
-import { buildExperienceData } from "@/content/experience";
 import { DYNAMIC_STATS, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
 import { moreKeyProjects, pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatYearMonth } from "@/lib/format";
@@ -32,7 +32,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "home" });
   const tc = await getTranslations({ locale, namespace: "common" });
-  const tf = await getTranslations({ locale, namespace: "floors" });
   const tj = await getTranslations({ locale, namespace: "journey" });
   const tl = await getTranslations({ locale, namespace: "library" });
   const ts = await getTranslations({ locale, namespace: "stats" });
@@ -46,7 +45,6 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     .filter((e) => e.type === "job" || e.type === "freelance")
     .slice(-4)
     .reverse();
-  const experience = buildExperienceData(locale, { L1: tf("L1"), L2: tf("L2"), L3: tf("L3"), L4: tf("L4"), RF: tf("RF") });
   const status = [
     {
       label: t("currentRole"),
@@ -59,7 +57,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
   return (
     <ClientMessages>
-      <ExperienceGate data={experience} />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} />
       <HomeHero
         locale={locale}
         ticker={
@@ -135,7 +133,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       </SectionSplit>
 
       <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec">
-        <h2 id="closing-title" className="pv-d-l max-w-[18ch] text-[clamp(34px,4.6vw,64px)]">
+        <h2 id="closing-title" className="pv-d-l max-w-[22ch] text-[clamp(30px,3.2vw,44px)] leading-[1.02]">
           {roof.availability[locale]}
         </h2>
         <a

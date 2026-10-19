@@ -151,4 +151,98 @@ describe("deploy on merge (deploy.yml, rollback.yml)", () => {
   it("defaults the drill to a dry run", () => {
     expect(rollback).toMatch(/dry_run:[\s\S]*?default: true/);
   });
+
+  describe("Ask knowledge pack in KV", () => {
+    const stepsOf = (job: string) => job.split(/\n(?=      - )/);
+    const deploySteps = stepsOf(deployJob("deploy"));
+    const at = (needle: string) => deploySteps.findIndex((step) => step.includes(needle));
+
+    it("publishes before the Pages deploy, flips after it and before the smoke check, and flips back on a failure", () => {
+      const publish = at("bun scripts/ask-pack.ts publish --commit");
+      const pages = at("bunx wrangler pages deploy");
+      const flip = at('bun scripts/ask-pack.ts flip "$VERSION"');
+      const smoke = at("bun scripts/deploy-smoke.ts");
+      const back = at('bun scripts/ask-pack.ts flip "$PREVIOUS"');
+      expect(at("bun scripts/build-knowledge.ts")).toBeLessThan(publish);
+      expect([publish, pages, flip, smoke, back].every((i) => i >= 0)).toBe(true);
+      expect(publish).toBeLessThan(pages);
+      expect(pages).toBeLessThan(flip);
+      expect(flip).toBeLessThan(smoke);
+      expect(smoke).toBeLessThan(back);
+      expect(deploySteps[back]).toMatch(/if: failure\(\) && steps\.flip\.outcome == 'success'/);
+    });
+
+    it("passes the Cloudflare secrets to the pack steps in step env only, and step outputs through env", () => {
+      for (const needle of ["ask-pack.ts publish", 'ask-pack.ts flip "$VERSION"', 'ask-pack.ts flip "$PREVIOUS"']) {
+        const step = deploySteps[at(needle)];
+        expect(step, needle).toMatch(/\n        env:\n[\s\S]*CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
+        expect(step.split("run:")[1], needle).not.toContain("${{");
+      }
+      expect(deployJob("deploy").split("    steps:")[0]).not.toContain("secrets.");
+    });
+
+    it("rolls the pack back after the Pages rollback and the Worker redeploys, for the production project only", () => {
+      const steps = stepsOf(rollbackJob("rollback"));
+      const find = (needle: string) => steps.findIndex((step) => step.includes(needle));
+      const pack = find("bun scripts/ask-pack.ts rollback --commit");
+      expect(pack).toBeGreaterThan(find("bun scripts/rollback.ts pages"));
+      expect(pack).toBeGreaterThan(find("Redeploy hq-office"));
+      expect(pack).toBeLessThan(find("bun scripts/rollback.ts report"));
+      expect(steps[pack]).toContain("env.CF_PAGES_PROJECT == vars.CF_PAGES_PROJECT");
+      expect(steps[pack]).toContain('--dry-run "$DRY_RUN"');
+      expect(steps[pack]).toContain("CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}");
+      expect(steps[pack - 1]).toContain("bun install --frozen-lockfile");
+    });
+
+    it("fails red on a KV error: every piped pack command runs under pipefail", () => {
+      const packSteps = [...deploySteps, ...stepsOf(rollbackJob("rollback"))].filter((step) => step.includes("scripts/ask-pack.ts"));
+      expect(packSteps.length).toBeGreaterThanOrEqual(4);
+      for (const step of packSteps) {
+        expect(step).not.toContain("continue-on-error");
+        expect(step).not.toMatch(/ask-pack\.ts[^\n]*\|\|/);
+        if (/ask-pack\.ts[^\n]*\|/.test(step)) expect(step).toMatch(/set -[a-z]*o pipefail|shell: bash/);
+      }
+    });
+
+    it("offers a dispatch-only check of the token's KV access in the production environment", () => {
+      const check = read(path.join(dir, "ask-pack.yml"));
+      expect(check).toMatch(/on:\n  workflow_dispatch:/);
+      expect(check).not.toMatch(/pull_request|push:|schedule:/);
+      expect(check).toContain("if: github.ref == 'refs/heads/main'");
+      expect(check).toMatch(/environment:\n      name: production\n      deployment: false/);
+      expect(check.split("    steps:")[0]).not.toContain("secrets.");
+      expect(check).toContain("set -euo pipefail");
+      for (const mode of ["verify", "dry-run", "status"]) expect(check).toContain(`${mode})`);
+      expect(check).toContain('publish --commit "$GITHUB_SHA" --dry-run true');
+    });
+  });
+});
+
+describe("Ask samples (ask-samples.yml)", () => {
+  const samples = read(path.join(dir, "ask-samples.yml"));
+  const steps = samples.split("    steps:")[1].split(/\n(?=      - )/);
+
+  it("is dispatch-only, read-only and runs in the production environment", () => {
+    expect(samples).toMatch(/\non:\n  workflow_dispatch:\n/);
+    expect(samples).not.toMatch(/^\s+(schedule|push|pull_request\w*|workflow_run):/m);
+    expect(samples).toMatch(/\npermissions:\n  contents: read\n/);
+    expect(samples).toMatch(/environment:\n      name: production\n      deployment: false/);
+  });
+
+  it("validates the ref as a branch head of this repository before checking it out", () => {
+    const validate = steps.findIndex((step) => step.includes("git ls-remote --exit-code --heads"));
+    const checkout = steps.findIndex((step) => /uses:\s*actions\/checkout@/.test(step));
+    expect(validate).toBeGreaterThanOrEqual(0);
+    expect(validate).toBeLessThan(checkout);
+    expect(steps[checkout]).toContain("repository: ${{ github.repository }}");
+    expect(steps[checkout]).toContain("ref: ${{ inputs.ref }}");
+    expect(samples).not.toMatch(/run:[^\n]*\$\{\{\s*inputs\./);
+  });
+
+  it("passes GROQ_API_KEY only to the sample step and no other secret", () => {
+    expect([...samples.matchAll(/secrets\.(\w+)/g)].map(([, name]) => name)).toEqual(["GROQ_API_KEY"]);
+    const withKey = steps.filter((step) => step.includes("secrets.GROQ_API_KEY"));
+    expect(withKey).toHaveLength(1);
+    expect(withKey[0]).toContain("run: bun scripts/ask-samples.ts --groq");
+  });
 });

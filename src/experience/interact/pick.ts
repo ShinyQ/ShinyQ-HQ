@@ -117,21 +117,26 @@ export type InteractCommand =
   | { type: "cv" }
   | { type: "reactor"; ring: ReactorRingId }
   /** Opens a room's drawer where the rover stands (the L4 research monument opens the Research desk). */
-  | { type: "open"; room: RoomId };
+  | { type: "open"; room: RoomId }
+  /** Opens a certification study guide in the in-site reader (the L4 Study Vault books). */
+  | { type: "guide"; slug: string };
 
 const PALETTE_FILTERS: readonly PaletteFilter[] = ["pods", "rooms", "posts"];
 
 const OPEN_ROOM = /^open:((?:L1|L2|L3|L4|RF):[a-z0-9-]+)$/;
+const GUIDE = /^guide:([a-z0-9-]{2,40})$/;
 
 /**
- * `"terminal"`, `"cv"`, `"palette:<pods|rooms|posts>"`, `"reactor:<ring>"` (Tech Reactor drawer on a ring)
- * or `"open:<room id>"` (that room's drawer in place); anything else is null.
+ * `"terminal"`, `"cv"`, `"palette:<pods|rooms|posts>"`, `"reactor:<ring>"` (Tech Reactor drawer on a ring),
+ * `"open:<room id>"` (that room's drawer in place) or `"guide:<slug>"` (the study guide reader); anything else is null.
  */
 export function parseCommand(command: string): InteractCommand | null {
   if (command === "terminal") return { type: "terminal" };
   if (command === "cv") return { type: "cv" };
   const open = OPEN_ROOM.exec(command);
   if (open) return { type: "open", room: open[1] as RoomId };
+  const guide = GUIDE.exec(command);
+  if (guide) return { type: "guide", slug: guide[1] };
   const [head, filter] = command.split(":");
   if (head === "palette" && PALETTE_FILTERS.includes(filter as PaletteFilter)) return { type: "palette", filter: filter as PaletteFilter };
   if (head === "reactor" && (REACTOR_RINGS as readonly string[]).includes(filter)) return { type: "reactor", ring: filter as ReactorRingId };

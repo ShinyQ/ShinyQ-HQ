@@ -50,6 +50,25 @@ export interface KnowledgePack {
   contact: AskContact;
 }
 
+/**
+ * The pack as stored in Workers KV (`pack:v1:<packVersion>`) and bundled as `functions/_generated/*.json`: the text pack
+ * plus its precomputed BM25 index, so an isolate never tokenizes the pack (spec 2026-10-19 section 4.3).
+ */
+export interface StoredPack {
+  schema: 1;
+  pack: KnowledgePack;
+  index: {
+    /** BM25 terms, sorted. */
+    terms: string[];
+    /** Per term: `[chunkIndex, tf, chunkIndex, tf, ...]`. */
+    postings: number[][];
+    /** Tokens per chunk. */
+    len: number[];
+    /** Entity-check words, space-joined. */
+    vocabulary: string;
+  };
+}
+
 /** Output safety data compiled at build time from the public-safety blocklist (includes private terms; never public). */
 export interface SafetyData {
   /** Plain terms (case-insensitive, word boundaries) and /regex/ terms (case-sensitive), as in content/safety-blocklist*.txt. */
@@ -87,6 +106,8 @@ export interface AskEnv {
   ASK_BACKUP_MODELS?: string;
   ASK_ALLOWED_ORIGINS?: string;
   ASK_DAILY_CAP?: string;
+  /** Knowledge pack source: `kv` (default: pointer and value in ASK_KV) or `bundle` (the bundled fallback pack, no KV reads; for a KV incident). */
+  ASK_PACK_SOURCE?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET?: string;
   ASK_IP_SALT_SEED?: string;

@@ -7,7 +7,8 @@ import { parseHistory, signTurn, verifyHistory } from "./history";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, modelBreaker, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
 import { scrubPII } from "./pii";
-import { packVocabulary, runPipeline, type PipelineReason } from "./pipeline";
+import type { LoadedPack, PackSource } from "./pack-source";
+import { runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
 import { isLeadQuestion, resolveNickname } from "./scope";
@@ -15,11 +16,11 @@ import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./text";
-import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
+import type { AskEnv, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
-const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "unsourced", "model_decline", "fit", "consulting"]);
+const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "persona", "injection", "unsourced", "model_decline", "fit", "consulting"]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
@@ -30,7 +31,8 @@ const STREAM_PIECE = 24;
 const STREAM_DELAY_MS = 15;
 
 export interface HandlerDeps {
-  pack: KnowledgePack;
+  /** Resolves the knowledge pack per request (functions/_lib/pack-source.ts: memory, KV, pin, fallback). */
+  source: Pick<PackSource, "load" | "packDate">;
   safety: SafetyData;
   /** Overrides (tests): clock, Turnstile fetch, model client. */
   now?: () => number;
@@ -164,13 +166,13 @@ interface EventData {
  * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
  * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
  * topic, chip id (these two feed the public visit stats), answering model id (blob10), failure trail
- * `model:reason > model:reason` cut at 200 characters (blob11). Appended so older queries keep working.
- * Doubles: latency, count, earlier turns sent to the model.
+ * `model:reason > model:reason` cut at 200 characters (blob11), pack tier that served (blob12: memory, kv, pin,
+ * fallback). Appended so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
  */
-function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
+function logEvent(env: AskEnv, loaded: LoadedPack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200)],
+      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier],
       doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
@@ -180,17 +182,15 @@ function logEvent(env: AskEnv, pack: KnowledgePack, e: EventData) {
 }
 
 export function createAskHandler(deps: HandlerDeps) {
-  const { pack, safety } = deps;
-  // Index at module load (isolate startup), not on the first request.
-  const vocabulary = packVocabulary(pack);
+  const { source, safety } = deps;
   const now = deps.now ?? (() => Date.now());
   const delay = deps.streamDelayMs ?? STREAM_DELAY_MS;
 
-  function status(env: AskEnv): Response {
+  async function status(env: AskEnv): Promise<Response> {
     const body: AskStatus = {
       enabled: enabled(env),
       turnstileSiteKey: turnstileOn(env) ? (env.TURNSTILE_SITE_KEY ?? null) : null,
-      asOf: pack.packDate,
+      asOf: await source.packDate(env),
       maxLength: ASK_MAX_QUESTION,
     };
     return json(body, body.enabled ? 200 : 503, { "Cache-Control": "public, max-age=60" });
@@ -212,6 +212,10 @@ export function createAskHandler(deps: HandlerDeps) {
     const body = parseBody(raw);
     if (!body) return fail(400, "bad_request");
 
+    // 2b. The knowledge pack (isolate memory when warm; never throws, the bundled fallback is the floor).
+    const loaded = await source.load(env);
+    const { pack, vocabulary } = loaded;
+
     // 3. Turnstile, or the signed 30-minute session cookie from an earlier check.
     const ip = request.headers.get("CF-Connecting-IP") ?? "";
     const visitor = await visitorHash(ip || "unknown", env.ASK_IP_SALT_SEED, started);
@@ -219,7 +223,7 @@ export function createAskHandler(deps: HandlerDeps) {
     if (turnstileOn(env) && !(await hasValidSession(request, env.ASK_COOKIE_KEY, visitor, started))) {
       const hostname = new URL(request.url).hostname;
       if (!(await verifyTurnstile(body.token, env.TURNSTILE_SECRET as string, ip, hostname, deps.fetcher))) {
-        logEvent(env, pack, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", entry: body.entry, latencyMs: now() - started });
+        logEvent(env, loaded, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", entry: body.entry, latencyMs: now() - started });
         return fail(403, "turnstile");
       }
       if (env.ASK_COOKIE_KEY) responseHeaders["Set-Cookie"] = await issueSession(env.ASK_COOKIE_KEY, visitor, started);
@@ -253,7 +257,7 @@ export function createAskHandler(deps: HandlerDeps) {
         const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
-        logEvent(env, pack, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
+        logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
@@ -297,7 +301,7 @@ export function createAskHandler(deps: HandlerDeps) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, pack, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
+    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;
@@ -309,7 +313,13 @@ export function createAskHandler(deps: HandlerDeps) {
 
   return async function onRequest(context: PagesContext): Promise<Response> {
     const method = context.request.method;
-    if (method === "GET" || method === "HEAD") return status(context.env);
+    if (method === "GET" || method === "HEAD") {
+      try {
+        return await status(context.env);
+      } catch {
+        return fail(503, "paused");
+      }
+    }
     if (method === "POST") {
       try {
         return await post(context);

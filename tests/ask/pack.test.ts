@@ -3,7 +3,7 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
-import { buildKnowledgePack, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, SITE_BUILD_PAGE, SITE_CHUNK, stackKeywords, validatePack } from "@/ask/pack";
+import { buildKnowledgePack, buildPackArtifacts, leadParagraphs, PACK_APPROACH_STEPS, PACK_MAX_BYTES, PACK_VALUE_MAX_BYTES, packApproachSteps, POST_LEAD_PARAGRAPHS, sanitizePackText, SITE_BUILD_PAGE, SITE_CHUNK, stackKeywords, validatePack } from "@/ask/pack";
 import { ASK_REPO_CITE, isAskCite } from "@/ask/protocol";
 import { getContent, getPerspectivesFile, getSiteBuild } from "@/content/load";
 import { SITE_BUILD_SOURCE } from "@/content/schema";
@@ -55,10 +55,10 @@ describe("knowledge pack", () => {
     expect(site.text.id).toContain("?view=classic");
   });
 
-  it("has the required chunks, stays under the 256 KiB cap and is versioned by content", () => {
+  it("has the required chunks, stays under the 384 KiB cap and is versioned by content", () => {
     for (const id of ["profile", "now", "contact"]) expect(pack.chunks.some((c) => c.id === id)).toBe(true);
-    expect(PACK_MAX_BYTES).toBe(256 * 1024);
-    expect(Buffer.byteLength(JSON.stringify(pack))).toBeLessThan(256 * 1024);
+    expect(PACK_MAX_BYTES).toBe(384 * 1024);
+    expect(Buffer.byteLength(JSON.stringify(pack))).toBeLessThan(PACK_MAX_BYTES);
     expect(pack.packVersion).toMatch(/^[0-9a-f]{16}$/);
     const again = buildRepoPack("2026-10-11").pack;
     expect(again.packVersion).toBe(pack.packVersion);
@@ -272,6 +272,9 @@ describe("perspectives and principles in the pack", () => {
     const built = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries });
     expect(built.errors).toEqual([]);
     expect(Buffer.byteLength(JSON.stringify(built.pack))).toBeLessThan(PACK_MAX_BYTES);
+    const artifacts = buildPackArtifacts(built.pack, built.safety.blocklist);
+    expect(artifacts.errors).toEqual([]);
+    expect(artifacts.meta.bytes).toBeLessThan(PACK_VALUE_MAX_BYTES);
   });
 
   it("drops instruction-like sentences from perspective text (T2)", () => {

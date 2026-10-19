@@ -1,0 +1,77 @@
+name: Ask the HQ samples
+
+# Dispatch-only: answers the 10 sample questions of `scripts/ask-samples.ts` on the Groq tier for a
+# branch of this repository, and writes the Q&A pairs to the job summary and the `ask-samples` artifact.
+# The `production` environment allows only main, so this file lives on main and is dispatched with
+#   gh workflow run ask-samples.yml --ref main -f ref=<branch>
+# The branch must be a head of this repository (never a fork) and must contain the script.
+# Only the sample step receives GROQ_API_KEY; no Cloudflare token or other secret is in the job (H1).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch of this repository to sample (it must contain scripts/ask-samples.ts)
+        required: true
+        type: string
+      model:
+        description: Groq model id
+        required: false
+        type: string
+        default: qwen/qwen3.8-27b
+
+concurrency:
+  group: ask-samples
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  samples:
+    name: Sample answers (Groq)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      deployment: false
+    steps:
+      - name: Validate inputs
+        env:
+          REF: ${{ inputs.ref }}
+          MODEL: ${{ inputs.model }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! printf '%s' "$REF" | grep -Eq '^[A-Za-z0-9._/-]{1,200}$' || [[ "$REF" == *..* ]]; then
+            echo "::error::ref must be a branch name ([A-Za-z0-9._/-], no '..')."
+            exit 1
+          fi
+          if ! printf '%s' "$MODEL" | grep -Eq '^[A-Za-z0-9._/-]{1,100}$'; then
+            echo "::error::model must match [A-Za-z0-9._/-]{1,100}."
+            exit 1
+          fi
+          if ! git ls-remote --exit-code --heads "https://github.com/${REPO}.git" "refs/heads/$REF" > /dev/null; then
+            echo "::error::ref is not a branch of ${REPO}."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Sample answers
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL: ${{ inputs.model }}
+        run: bun scripts/ask-samples.ts --groq "$MODEL" --out ask-samples.md
+      - name: Job summary
+        if: ${{ always() && hashFiles('ask-samples.md') != '' }}
+        run: cat ask-samples.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: ask-samples
+          path: ask-samples.md
+          retention-days: 14
+          if-no-files-found: ignore

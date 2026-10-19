@@ -15,16 +15,16 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), per tier | under 450 KB gzip | `e2e/budgets.ts` (`BYTES_3D_BUDGET`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 456.7 KB gzip (measured full 456.1 KB, lite 440.3 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
-| B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
+| B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 5.0 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
 | L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 14,289 B of 14,336 B) | `e2e/budgets.ts` |
 | L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5,996 B of 6,144 B) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 473 KB (measured 471.0 KB, about 2.0 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 449.4 KB (measured 447.4 KB, about 2.0 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 485.7 KB (measured 485.1 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 469.9 KB (measured 469.3 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -53,6 +53,13 @@ The Cloudflare Web Analytics beacon (production builds only) is requested last: 
 
 CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27% fewer image bytes than lossless at the same look (SSIM >= 0.997); lossy WebP and AVIF were larger at that quality. Page 1 is eager with `fetchPriority="high"`, later pages `loading="lazy"` (Chrome still fetches page 2 at low priority after page 1: it sits within the lazy-load distance). See [content.md](content.md#cv).
 
+### Classic bundle and the floor layouts
+
+- No chunk an exported page loads carries a floor layout: `experience/config.ts` imports every layout (L1 hall, L2 Career Road, L3 Project Roads and ops, L4 newsroom, RF, B1, the road kit), so only the 3D path may import it.
+- Classic-reachable code (the store `src/store/useHQStore.ts`, `hud/drawer/DrawerHost.tsx`, `hud/switchLocale.ts`) reads the floor order from `src/experience/floorOrder.ts` and the Lobby spawn from `src/experience/floors/lobby/spawn.ts`; both import only `@/lib/floors` and types.
+- Guards: `tests/unit/floor-order.test.ts` (static import graph of those modules) and `scripts/check-client-chunks.ts` in `bun run build` (fails when a page chunk holds a layout's view zone id, `FLOOR_LAYOUT_MARKERS`).
+- The floor layouts (about 22 KB gzip) load only after the 3D gate, on the 3D main path; the 3D caps include them (owner decision, option A: [2026-10-19-floor-order-out-of-classic.md](../decisions/2026-10-19-floor-order-out-of-classic.md), with the measured numbers).
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
@@ -67,21 +74,22 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L1 and B1 load the Agent Office chunk first, and an unrecorded L1 spot at the office stop holds the same cap and baseline (L1 measured 101 lite and 103 full at the spawn, 51 and 53 at the office stop; cap 125) |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L4 also at the Study Vault stop (same caps and L4 program baseline, reported as the settled peak `settled-L4-vault`); L1 and B1 load the Agent Office chunk first, and an L1 spot at the office stop holds the same cap and baseline (reported as `settled-L1-office`; L1 measured 101 lite and 103 full at the spawn, 51 and 53 at the office stop; cap 125) |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 | `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
 
 #### `bytes-3d`
 
-- Main path: 3D JS after the gate under 450 KB gzip per tier, measured with `?prefetch=off` so it is the main path only.
-  - 450 KB gates the critical path before the first frame (`?prefetch=off`).
+- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 456.7 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
+  - It gates the critical path before the first frame. Measured: full 456.1 KB, lite 440.3 KB (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 473 KB: measured 471.0 KB, about 2.0 KB of headroom (main path 443.8 KB).
-  - lite 449.4 KB: measured 447.4 KB, about 2.0 KB of headroom (main path 420.1 KB).
-  - Raised by 3 KB on 2026-10-19 for the L1 Agent Office's main-path mount, loader and chips host (+2.5 KB on the main path; [owner decision](../decisions/2026-10-19-agent-office-3d-budgets.md)).
+  - full 485.7 KB: measured 485.1 KB (main 456.1 KB plus floor chunks 29.0 KB).
+  - lite 469.9 KB: measured 469.3 KB (main 440.3 KB plus floor chunks 29.0 KB).
+  - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, and the floor layouts out of the Classic bundle); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
+  - Floor chunks measured L3 13.9 KB, L4 11.8 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
@@ -113,12 +121,24 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   2. `bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json`
 - `KNOWN_OVER` in `e2e/perf/peaks.spec.ts` lists peaks over budget waiting for a fix (expected failures). Remove an id as soon as it passes.
 
+### 3D page data off the gated pages
+
+- The gated pages (`/{locale}`, journey, labs, library, contact and their room pages) do not serialize `ExperienceData` into the HTML or the RSC payload (about 8 to 9 KB gzip per document; numbers in [the decision](../decisions/2026-10-19-3d-page-data-static-json.md)).
+- The data is static versioned JSON, `/data/experience/{locale}.json?v=<hash>` (about 9.4 KB gzip), fetched by `ExperienceGate` in parallel with the 3D chunk (`src/experience/data-client.ts`); the Classic site and the static tier never download it. Detail: [3d-experience.md](3d-experience.md#experiencedata).
+- The 3D bytes gate counts scripts only, so its numbers do not move; the JSON shows under `json` in its report. Guard: no exported HTML or `.txt` file may carry the payload (check with `grep -rl roomCount out --include=*.html --include=*.txt`).
+
 ### Look check
 
 - Before and after any render-path change:
   1. On a main build in `out-main/`: `E2E_DIR=out-main E2E_PORT=<port> bun run e2e:look --update-snapshots`
   2. On yours: `E2E_PORT=<port> bun run e2e:look`
 - Canvas at desktop full 1440x900 and 2560x1440 and phone lite 390x844; at most 0.1% of pixels may differ.
+
+### Full-tier composer bytes
+
+- The full tier's composer uses `postprocessing` directly (`scene/postComposer.ts`, see [3d-experience.md](3d-experience.md#full-tier-post-processing)); `@react-three/postprocessing` bundled n8ao into the lazy `Effects` chunk.
+- The `Effects` chunk is about 16 KB gzip and loads only on the full tier (the wrapper's version was about 24 KB; numbers in [the floor order decision](../decisions/2026-10-19-floor-order-out-of-classic.md)).
+- Same look: the strict visual gate is pixel-equal within its tolerance on every pose. Manual check after a dependency change: no chunk under `out/_next/static/chunks` contains `N8AO` (`grep -l N8AO out/_next/static/chunks/*.js` prints nothing).
 
 ### Per-frame work
 
@@ -190,6 +210,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/floors/{floorChunks,floorPrefetch,lazyFloors,FloorChunkPrefetch}` and `floors/chunks/**` | `floor-chunks`, `ride`, `experience`, `labs` and `library-roof` |
 | `src/experience/tower/**`, `scene/Director.tsx`, `scene/precompile.ts` and `text-config.ts` | `ride` and `experience` |
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
+| `src/experience/data-client.ts` (with `ExperienceGate.tsx`) and `src/app/data/**` (the static client data, the 3D page data included) | `boot-first`, `experience` and more (`src/app/data/**` also `labs` and `library-roof`) |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
 | `src/hud/dialog/{EngineUnlockLayer,engineRoomAction}`, `hud/{floorRows,FloorButtons}` and `hud/pads/**` | `b1-unlock`, `hud-corners`, `hud` and `pads` (the specs they matched before stay through `ALSO_RULES`) |
@@ -197,9 +218,10 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
 | `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
-| `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
+| `src/experience/config.ts`, `floorOrder.ts`, `floors/lobby/spawn.ts` (also the kiosk specs), `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
+| The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |

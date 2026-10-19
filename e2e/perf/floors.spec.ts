@@ -58,15 +58,21 @@ async function settleOffice(page: Page) {
   );
 }
 
-async function measureFloor(page: Page, tier: "lite" | "full", floor: string, { record = true }: { record?: boolean } = {}) {
+/**
+ * Settles, then gates the floor's draw calls, triangles and programs. `pose` names a view other than the arrival
+ * (the L4 Study Vault stop, the L1 Agent Office stop): it is held to the same floor caps and program baseline, and reported as a settled peak
+ * (`settled-<floor>-<pose>`), so the program baseline keeps one entry per floor.
+ */
+async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string) {
   await waitForCameraSettle(page);
   const programs = await waitForStablePrograms(page);
   const peaks = await expectRenderBudget(page);
   const gpu = await readGpuCounters(page);
-  if (record) writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
+  if (pose) writePerfEntry({ kind: "peak", tier, scenario: `settled-${floor}-${pose}`, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, frames: peaks.frames });
+  else writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
   // Floors P2's precompile has warmed (programs pinned): explains a program count that differs between runs.
   const warm = await page.evaluate(() => (window as unknown as { __hq: { render?: { warmFloors(): string[] } } }).__hq.render?.warmFloors().sort().join(",") ?? "");
-  console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
+  console.log(`${floor}${pose ? ` ${pose}` : ""} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
 
   if (tier === "lite") expect(peaks.postCalls, "lite has no composer").toBe(0);
   else expect(peaks.postCalls, "the full tier composer must render").toBeGreaterThan(0);
@@ -86,6 +92,17 @@ for (const tier of ["lite", "full"] as const) {
       await measureFloor(page, tier, floor);
     });
   }
+  // The Study Vault's own view (owner request 2026-10-19): its books, covers, track and pools plus the spine signs,
+  // which ride the end plaza sign group and draw only near the vault. Same caps and program baseline as L4.
+  test(`L4 ${tier}: settled draw calls and shader programs at the Study Vault stop`, async ({ page }) => {
+    test.setTimeout(540_000);
+    await enterFloorRoute(page, "/en/library", { tier });
+    const stop = await page.evaluate(() => (window as unknown as { __hq: { layouts: Record<string, { stops?: Record<string, { x: number; z: number }> }> } }).__hq.layouts.L4.stops?.["L4:vault"]);
+    expect(stop, "no Study Vault stop on L4").toBeDefined();
+    // At real speed (the perf lane): the drive down the timeline takes a while on SwiftShader.
+    await driveTo(page, stop!, 240_000);
+    await measureFloor(page, tier, "L4", "vault");
+  });
   test(`B1 ${tier}: settled draw calls and shader programs`, async ({ page }) => {
     // B1 has no route: unlock it on the Lobby and ride down (its baseline includes the Lobby's programs).
     await enterB1Route(page, "/en", tier);
@@ -97,7 +114,7 @@ for (const tier of ["lite", "full"] as const) {
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
     await driveTo(page, LOBBY.officeWing.stop);
-    // Same cap and program baseline as the L1 spawn; not recorded (the spawn entry is the L1 baseline).
-    await measureFloor(page, tier, "L1", { record: false });
+    // Same cap and program baseline as the L1 spawn; reported as the settled-L1-office peak (the spawn entry is the L1 baseline).
+    await measureFloor(page, tier, "L1", "office");
   });
 }

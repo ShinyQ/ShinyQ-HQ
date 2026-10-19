@@ -4,7 +4,8 @@ import { ASK_REPO_CITE, isAskCite, type AskLocale, type AskOutcome } from "../..
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
-import { tokenize } from "./text";
+import { indexPack } from "./pack-index";
+import { expandTokens, tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./types";
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
@@ -99,6 +100,8 @@ export const FORBIDDEN_OUTPUT = [
 const COMMON_CAPS = new Set(
   [
     "i i'm i've i'd anda kamu yes no sorry maaf english indonesian indonesia bahasa ok okay cmd ctrl k kurniadi ahmad wijaya shiny shinyq hq ai page view classic site situs klasik work journey writing about contact",
+    // Rover, the guide robot that answers (owner decision 2026-10-19), and its one personality touch.
+    "rover beep",
     // Dates in the pack are YYYY-MM, so answers spell out month and day names.
     "january february march april may june july august september october november december jan feb mar apr jun jul aug sep sept oct nov dec",
     "januari februari maret mei juni juli agustus oktober desember agu okt des",
@@ -174,6 +177,22 @@ export function sanitizeAnswer(raw: string, links: ReadonlySet<string> = DEFAULT
   return text;
 }
 
+/** A stock interjection or Rover opener at the start of an answer ("Beep!", "Beep boop,", "Rolling over to his projects:"). */
+const OPENER = /^\s*(?:\*{1,2}|_)?(?:(?:beep|boop|bleep|bloop|bzzt|whirr+|vroom|zap|ding)(?:[\s-]+(?:beep|boop|bleep|bloop))*(?:\*{1,2}|_)?\s*[!.,:]+|(?:rolling|zooming|scanning|beaming|whirring)\b[^.!?:\n]{0,40}[:!]+)(?:\*{1,2}|_)?\s*/i;
+
+export function startsWithInterjection(text: string): boolean {
+  return OPENER.test(text);
+}
+
+/**
+ * Factual answers start with their content (owner decision 2026-10-19): a leading interjection is removed and the
+ * next letter capitalized. Greetings and declines are canned, so they keep theirs.
+ */
+export function stripOpener(text: string): string {
+  const rest = text.replace(OPENER, "");
+  return rest === text || !rest ? text : rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
 /** Link targets an answer may keep: the top pages plus every retrieved chunk's page (site paths locale-less, the repository as itself). */
 export function answerLinkPaths(chunks: readonly KnowledgeChunk[]): Set<string> {
   const out = new Set(ASK_LINK_PAGES);
@@ -241,7 +260,9 @@ export function unknownEmployers(text: string, entities: readonly string[]): str
 export function unknownNames(text: string, vocabulary: ReadonlySet<string>, extra: ReadonlySet<string> = new Set()): string[] {
   return properNouns(text).filter((word) => {
     const parts = word.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
-    return parts.some((part) => !vocabulary.has(part) && !COMMON_CAPS.has(part) && !extra.has(part) && !/^\d+$/.test(part));
+    // A plural of a known word ("LLMs" for "LLM") is known too.
+    const known = (part: string) => vocabulary.has(part) || (part.length > 3 && part.endsWith("s") && vocabulary.has(part.slice(0, -1)));
+    return parts.some((part) => !known(part) && !COMMON_CAPS.has(part) && !extra.has(part) && !/^\d+$/.test(part));
   });
 }
 
@@ -258,6 +279,8 @@ const BENIGN = [
   "Kurniadi: his work, projects, career, skills, education, writing and how to contact him.",
   "I can only answer questions about Kurniadi and his work.",
   "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
+  "I'm Rover, the guide robot of ShinyQ HQ.",
+  "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views.",
 ];
 const ruleShingles = (() => {
   const benign = new Set(BENIGN.flatMap(shingles));
@@ -279,18 +302,30 @@ export function defamatoryWords(text: string, context: string): string[] {
   return [...new Set((text.match(DEFAMATORY) ?? []).map((w) => w.toLowerCase()))].filter((w) => !new RegExp(`\\b${w}\\b`).test(allowed));
 }
 
-/** First-person voice as Kurniadi (T18). Quoted text is his written words and does not count. */
-const FIRST_PERSON: RegExp[] = [
-  /\b(?:I|I'm|I've)\s+(?:think|believe|prefer|feel|always|never|like|love|hate|wrote|built|define|chose|learned|shipped|own)\b/,
-  /\b[Mm]y\s+(?:principles?|views?|opinions?|approach|code|projects?|career|team|manager|boss|clients?|salary|family|work)\b/,
-  /\bas Kurniadi\b(?!['\u2019]s)/i,
-  /\b(?:menurut saya|prinsip saya|pendapat saya|pandangan saya)\b/i,
-  /\bsaya\s+(?:pikir|rasa|percaya|lebih suka|lebih memilih|selalu|menulis|membangun|memakai|menggunakan|me-review|bekerja)\b/i,
-];
+/**
+ * First-person voice as Kurniadi (T18). Rover, the answering guide robot, may say "I" for itself (owner decision
+ * 2026-10-19), but only in its guide phrases; any other "I", "my", "aku" or "saya" clause counts as speaking as
+ * Kurniadi (an allow-list, security review 2026-10-19: a list of forbidden verbs is always incomplete). Quoted text
+ * is his written words and does not count; curly apostrophes are folded first.
+ */
+const ROVER_I =
+  /^I(?:'m|\s+am)\s+(?:Rover|the (?:HQ's |small )?guide|a (?:small )?guide|only|not|just|sorry|afraid|unable|happy to)\b|^I(?:'ll|\s+will|'d|\s+would)\s+(?:point|show|take|guide|roll|answer|be happy)\b|^I(?:'ve|\s+have)\s+(?:found|checked|looked|searched|no)\b|^I(?:'d|\s+would)?\s+(?:suggest|recommend)\s+(?:asking|trying|checking|looking|reading|exploring|starting)\b|^I\s+(?:answer|found|find|can|could|can't|cannot|couldn't|don't|do not|didn't|did not|only|have no|haven't|see|checked|looked|searched|scanned|spotted)\b/;
+const ROVER_MY = /^[Mm]y\s+(?:map|maps|sensors?|circuits?|scanner|wheels|tour|antenna|search|apologies|name is Rover)\b/;
+/** "saya" as an object ("ke saya") or Rover's own guide verbs ("Saya Rover", "saya menemukan"). */
+const SAYA_BEFORE = /(?:^|\s)(?:ke|kepada|dari|oleh|untuk|pada|bagi|dengan|jawaban|peta|sensor)\s+$/i;
+const SAYA_AFTER = /^saya\s+(?:Rover|robot|menemukan|temukan|bisa|dapat|hanya|belum (?:menemukan|punya|memiliki)|cek|periksa|lihat|arahkan|tunjukkan|jawab|menjawab|akan (?:menunjukkan|mengarahkan|tunjukkan|jawab)|tidak (?:bisa|dapat|menemukan|membahas|menulis|punya informasi|memiliki informasi|tahu))\b/i;
+const SELF_ID = /\bKurniadi here\b|\b(?:my name is|I'm|I am) Kurniadi\b|\bas Kurniadi\b(?!['\u2019]s)|\b(?:nama saya|saya(?: adalah)?) Kurniadi\b|\baku\b/i;
 
 export function firstPersonVoice(text: string): boolean {
-  const unquoted = text.replace(/"[^"]*"|\u201C[^\u201D]*\u201D/g, " ");
-  return FIRST_PERSON.some((re) => re.test(unquoted));
+  const unquoted = text.replace(/[\u2018\u2019\u02BC]/g, "'").replace(/"[^"]*"|\u201C[^\u201D]*\u201D/g, " ");
+  if (SELF_ID.test(unquoted)) return true;
+  for (const m of unquoted.matchAll(/\bI(?=['\s])/g)) if (!ROVER_I.test(unquoted.slice(m.index, m.index + 60))) return true;
+  for (const m of unquoted.matchAll(/\b[Mm]y\s/g)) if (!ROVER_MY.test(unquoted.slice(m.index, m.index + 40))) return true;
+  for (const m of unquoted.matchAll(/\bsaya\b/gi)) {
+    if (SAYA_BEFORE.test(unquoted.slice(Math.max(0, m.index - 20), m.index))) continue;
+    if (!SAYA_AFTER.test(unquoted.slice(m.index, m.index + 60))) return true;
+  }
+  return false;
 }
 
 /** Wording that attributes an opinion to Kurniadi; such an answer needs a written source even for a factual question. */
@@ -311,7 +346,13 @@ export function claimsOpinion(text: string): boolean {
 /** Chunk types that hold Kurniadi's own written views. Posts tagged "personal" never count (spec section 13). */
 export const SOURCE_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>(["perspective", "principle", "post", "talk"]);
 
-const isSource = (chunk: KnowledgeChunk) => SOURCE_TYPES.has(chunk.type) && !chunk.keywords.includes("personal");
+/**
+ * Sources an adjacent answer may cite (owner decision 2026-10-19): his written views plus his case studies and
+ * papers. A lesson from a project is "what his work shows", never his opinion (that still needs `SOURCE_TYPES`).
+ */
+export const ADJACENT_SOURCE_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>([...SOURCE_TYPES, "project", "publication"]);
+
+const isSource = (chunk: KnowledgeChunk, types: ReadonlySet<ChunkType> = SOURCE_TYPES) => types.has(chunk.type) && !chunk.keywords.includes("personal");
 
 /** Quoted titles in a source's localized text (How I work and principle titles, a post or perspective title), else its title. */
 export function sourceTitles(chunk: KnowledgeChunk, locale: AskLocale): string[] {
@@ -336,22 +377,98 @@ function contentRuns(text: string): string[] {
  * not enough, so a made-up opinion that borrows one phrase does not pass.
  */
 export function citedSource(answer: string, chunks: readonly KnowledgeChunk[], locale: AskLocale): KnowledgeChunk | undefined {
+  return citedSources(answer, chunks, locale)[0];
+}
+
+/** Every retrieved source of `types` the answer cites (same rule as `citedSource`; a project also by its title). */
+export function citedSources(answer: string, chunks: readonly KnowledgeChunk[], locale: AskLocale, types: ReadonlySet<ChunkType> = SOURCE_TYPES): KnowledgeChunk[] {
   const folded = ` ${fold(answer)} `;
   const runs = new Set(contentRuns(answer));
-  return chunks.filter(isSource).find((chunk) => {
-    if (sourceTitles(chunk, locale).some((title) => fold(title).length >= 8 && folded.includes(` ${fold(title)} `))) return true;
-    const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
-    return [...runs].filter((run) => own.has(run)).length >= 2;
-  });
+  const named = (title: string) => fold(title).length >= 8 && folded.includes(` ${fold(title)} `);
+  return chunks
+    .filter((chunk) => isSource(chunk, types))
+    .filter((chunk) => {
+      if (sourceTitles(chunk, locale).some(named)) return true;
+      if (chunk.type !== "perspective" && chunk.type !== "principle" && named(chunk.title)) return true;
+      const own = new Set(contentRuns(locale === "id" ? chunk.text_id : chunk.text_en));
+      return [...runs].filter((run) => own.has(run)).length >= 2;
+    });
+}
+
+/** Words an adjacent answer may add around CONTEXT: Rover's voice, framing ("his work shows") and common function words. */
+const FRAMING = new Set(
+  (
+    "rover beep kurniadi work works worked shows show showed project projects case study studies written view views post posts title lesson lessons from his he him according closest source sources read site say says said also but so like see keep keeps use uses used one ones both while rather instead because which when where what why how should would could can may might not no yes hasn hasn't has have had been being written wrote writes note notes found " +
+    "karya menunjukkan proyek studi kasus pandangan tertulis tulisan pelajaran dari menurut sumber situs bahwa tetapi namun ia dia belum sudah juga karena saat ketika sebaiknya seharusnya bisa dapat tidak bukan menulis tulis ditulis"
+  ).split(" "),
+);
+/** Least share of an adjacent answer's own words that must come from CONTEXT or the question (security review 2026-10-19: a named title alone is not grounding). */
+export const ADJACENT_MIN_GROUNDED = 0.65;
+/** Wording of general knowledge, which an adjacent answer must never use (rule 13). */
+const GENERALITY = /(?:in general|generally(?: speaking)?|typically|in most cases|as a rule of thumb|industry best practice|secara umum|pada umumnya|umumnya)/i;
+
+/**
+ * Share of an answer's content words (framing and the question's own words aside) that appear in CONTEXT; a word
+ * also counts when CONTEXT has a word with the same first five letters ("reviewers", "reviewer").
+ */
+export function groundedShare(answer: string, context: string, question = ""): number {
+  const ctx = new Set(tokenize(context));
+  const stems = new Set([...ctx].filter((t) => t.length >= 5).map((t) => t.slice(0, 5)));
+  const asked = new Set(tokenize(question));
+  const words = [...new Set(tokenize(answer.replace(/[\u2018\u2019]/g, "'")))].filter((t) => !FRAMING.has(t) && !asked.has(t) && !/^\d+$/.test(t));
+  if (!words.length) return 1;
+  return words.filter((t) => ctx.has(t) || (t.length >= 5 && stems.has(t.slice(0, 5)))).length / words.length;
 }
 
 /**
  * The first retrieved written source with a citable path, for the no-view answer. Perspectives are
  * skipped: they have no page of their own, so their question is not a title a visitor can find.
  */
-export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale): { title: string; url: string } | undefined {
-  const chunk = chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
-  return chunk?.url ? { title: sourceTitles(chunk, locale)[0], url: chunk.url } : undefined;
+export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale, options: { adjacent?: boolean } = {}): { title: string; url: string } | undefined {
+  // An adjacent question always retrieves his principles: name a case study, post, talk or paper first.
+  const chunk = options.adjacent
+    ? (chunks.find((c) => isSource(c, ADJACENT_SOURCE_TYPES) && ["post", "talk", "project", "publication"].includes(c.type) && isAskCite(c.url)) ?? chunks.find((c) => c.type === "principle" && isAskCite(c.url)))
+    : chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
+  if (!chunk?.url) return undefined;
+  return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url };
+}
+
+/** Question words that frame a question rather than name its topic (EN/ID), on top of words in more than a fifth of the chunks. */
+const FRAME_TERMS = new Set(
+  (
+    "kurniadi think thinks thought view views opinion opinions stance believe believes would what when where why which how ever bad good idea ideas better worse best worst versus vs should shouldn use used using work works written write wrote does do did is are " +
+    "apa pendapat pandangan menurut tentang kapan mana mengapa kenapa bagaimana bukan pilihan tepat sebaiknya seharusnya tidak dipakai digunakan memakai menggunakan baik buruk lebih dibanding dibandingkan ide"
+  ).split(" "),
+);
+/** Share of chunks above which a term is too common to name a question's topic ("ai", "data"). */
+const TOPIC_COMMON_SHARE = 0.2;
+
+/**
+ * The closest written source only when it is about the question's topic (owner decision 2026-10-19): the question's
+ * topic terms (frame words and terms in more than a fifth of the chunks aside) must all exist in the pack, and the
+ * chosen source must contain one of them; the source with the most specific overlap wins. Otherwise undefined, and
+ * the no-view reply suggests topics instead of a title. The blockchain question has no topic term in the pack.
+ */
+export function relevantClosest(pack: KnowledgePack, question: string, chunks: readonly KnowledgeChunk[], locale: AskLocale, options: { adjacent?: boolean } = {}): { title: string; url: string } | undefined {
+  const index = indexPack(pack);
+  const n = pack.chunks.length;
+  // A plural the pack only has in the singular ("LLMs") counts as the singular.
+  const df = (t: string) => index.df.get(t) ?? 0;
+  const singular = (t: string) => (!df(t) && t.length > 3 && t.endsWith("s") && df(t.slice(0, -1)) ? t.slice(0, -1) : t);
+  const terms = [...new Set(expandTokens(tokenize(question)).map(singular))].filter((t) => !FRAME_TERMS.has(t) && df(t) <= n * TOPIC_COMMON_SHARE);
+  if (!terms.length || terms.some((t) => !df(t))) return undefined;
+  const allowed = options.adjacent ? ["post", "talk", "project", "publication", "principle"] : ["post", "talk", "principle", "publication"];
+  let best: { chunk: KnowledgeChunk; score: number } | undefined;
+  for (const chunk of chunks) {
+    if (!allowed.includes(chunk.type) || chunk.keywords.includes("personal") || !isAskCite(chunk.url)) continue;
+    const i = pack.chunks.indexOf(chunk);
+    if (i < 0) continue;
+    const score = terms.reduce((sum, t) => sum + (index.tfOf(i, t) ? Math.log(1 + n / df(t)) : 0), 0);
+    if (score > 0 && (!best || score > best.score)) best = { chunk, score };
+  }
+  if (!best?.chunk.url) return undefined;
+  const chunk = best.chunk;
+  return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url as string };
 }
 
 /** Code in an answer (T6, owner rule 2026-10-15: never a general coding assistant). Markdown fences are already stripped. */
@@ -413,6 +530,8 @@ export interface CheckInput {
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
   lead?: { fit: boolean };
+  /** A related professional question (`isAdjacentQuestion`): the answer must cite his work from CONTEXT (rule 13). */
+  adjacent?: boolean;
   locale?: AskLocale;
 }
 
@@ -420,8 +539,8 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, locale = "en" }: CheckInput): CheckResult {
-  const markdown = sanitizeAnswer(answer, answerLinkPaths(chunks));
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
+  const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
   // Both forms: the markdown carries the link URLs, the plain text joins words that marks split ("SM**BC**").
@@ -454,6 +573,15 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
   // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
   if (lead) return { ok: true, text: markdown, outcome };
+  // A related professional question is answered only from his work (rule 13): it must cite a retrieved case study,
+  // post, talk, paper or written view, and a lesson told as his opinion must cite his written view (rule 8).
+  if (adjacent && outcome === "answer") {
+    if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "noView" };
+    const cited = citedSources(text, chunks, locale, ADJACENT_SOURCE_TYPES).filter((c) => !claimsOpinion(text) || SOURCE_TYPES.has(c.type));
+    if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    const linked = cited.find((c) => isAskCite(c.url));
+    return linked?.url ? { ok: true, text: markdown, outcome, cite: linked.url } : { ok: true, text: markdown, outcome };
+  }
   // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
   // Lifestyle and policy (routed topics) must follow one of that topic's perspectives.
   if (outcome === "answer" && (perspective || topic || claimsOpinion(text))) {

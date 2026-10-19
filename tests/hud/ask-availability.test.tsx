@@ -97,3 +97,28 @@ describe("Ask status on demand", () => {
     expect(sessionStorage.getItem(ASK_STATUS_CACHE_KEY)).toBeNull();
   });
 });
+
+describe("idle status check teardown (main CI 2026-10-19: window is not defined after teardown)", () => {
+  it("cancels a pending idle check on reset, so nothing runs after teardown", async () => {
+    sessionStorage.removeItem(ASK_STATUS_CACHE_KEY);
+    renderDock();
+    await act(async () => {});
+    cleanup();
+    resetAskAvailability();
+    await pastIdle();
+    expect(status.fetch).not.toHaveBeenCalled();
+  });
+
+  it("skips the check when the window is gone by the time the timer fires", async () => {
+    const { scheduleAskStatus } = await import("@/hud/ask/availability");
+    sessionStorage.removeItem(ASK_STATUS_CACHE_KEY);
+    scheduleAskStatus(10);
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(() => vi.advanceTimersByTime(50)).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(status.fetch).not.toHaveBeenCalled();
+  });
+});

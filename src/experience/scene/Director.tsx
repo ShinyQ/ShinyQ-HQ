@@ -10,7 +10,7 @@ import { scrubSign } from "../camera/rigs";
 import { CAR, floorY, ROVER } from "../config";
 import { roadZAt, scrubTarget } from "../floors/career/layout";
 import { floorChunks, rideChunkHold } from "../floors/floorChunks";
-import { openCv, openPalette, openTerminal } from "@/hud/events";
+import { openCv, openPalette, openTerminal, sendHudCommand } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { intents, moveVectorFromKeys, type Intent } from "../input/intents";
 import { REACTOR_ROOM } from "../floors/labs/techReactor";
@@ -207,6 +207,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
                 store.getState().setReactorRing(command.ring);
                 store.getState().openRoom(REACTOR_ROOM);
               } else if (command.type === "open") store.getState().openRoom(command.room);
+              else if (command.type === "guide") sendHudCommand({ type: "guide", slug: command.slug });
               else openCv();
             },
             beamHome: () => {

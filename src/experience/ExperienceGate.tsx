@@ -9,6 +9,7 @@ import { BOOT_ATTR, releaseBootCover } from "@/lib/boot-first";
 import { introSeen } from "@/lib/intro-session";
 import { chooseView, currentView, VIEW_EVENT } from "@/lib/view-pref";
 import { b1FromHash } from "./b1";
+import { loadExperienceData, peekExperienceData } from "./data-client";
 import { opsRoomFromHash } from "./floors/labs/opsHash";
 import { gateStartRoom } from "./floors/lobby/stations";
 import { visitsRoomFromHash } from "./floors/lobby/visitsRoom";
@@ -17,7 +18,7 @@ import { loadIntro } from "./intro/chunk";
 import { claimAutoOpen } from "./missions/bridge";
 import type { Recovery } from "./recovery";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import type { FloorId, RoomId } from "@/content/schema";
+import type { FloorId, Locale, RoomId } from "@/content/schema";
 import type { ExperienceData } from "./types";
 
 /** The 3D chunk; a session that plays the intro loads the intro chunk alongside it (Experience waits for both). */
@@ -28,20 +29,31 @@ const loadExperience = () => {
 const Experience = dynamic(loadExperience, { ssr: false });
 
 // Boot-first visits (html[data-hq-boot], set by the inline head script) start the 3D chunk download
-// during hydration instead of after the tier probe.
-if (typeof document !== "undefined" && document.documentElement.hasAttribute(BOOT_ATTR)) void loadExperience();
+// during hydration instead of after the tier probe (the gate's first render starts the page data with it).
+const bootFirst = () => typeof document !== "undefined" && document.documentElement.hasAttribute(BOOT_ATTR);
+if (bootFirst()) loadExperience().catch(() => undefined);
 
 const onFirstFrame = () => releaseBootCover("ready");
 
 /**
  * Decides the GPU tier on the client and lazy-loads the 3D experience on top
  * of the server-rendered page. Static tier, page view and server render all
- * leave the HTML page untouched.
+ * leave the HTML page untouched. The 3D page data is a static file
+ * (`/data/experience/{locale}.json?v=<version>`, src/experience/data-client.ts) fetched alongside the 3D chunk;
+ * `version` is its content hash (`experienceDataVersion`), the only part of it the page's HTML carries.
  */
 const loadRecovery = () => import("./recovery");
 
-export function ExperienceGate({ data, startFloor, startRoom }: { data: ExperienceData; startFloor?: FloorId; startRoom?: RoomId }) {
+export function ExperienceGate({ locale, version, startFloor, startRoom }: { locale: Locale; version: string; startFloor?: FloorId; startRoom?: RoomId }) {
   const t = useTranslations("hud");
+  // A boot-first visit starts the fetch during hydration, like the 3D chunk above.
+  const [data, setData] = useState<ExperienceData | null>(() => {
+    if (typeof window !== "undefined" && bootFirst()) loadExperienceData(locale, version).catch(() => undefined);
+    return null;
+  });
+  // Data that arrived before the tier was decided (the boot-first fetch), or on an earlier mount or page of this
+  // page load, renders at once: no extra commit between the tier and the 3D chunk.
+  const ready = (data?.locale === locale ? data : null) ?? (typeof window === "undefined" ? null : peekExperienceData(locale, version));
   const detectedTier = useQualityTier(useGateTier());
   const [view, setView] = useState<"3d" | "page">(() => (typeof window === "undefined" ? "3d" : currentView()));
   // `/{locale}#highlights-<station>` opens that Highlights Hall station, `/{locale}#visits` and
@@ -78,6 +90,25 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
     window.requestAnimationFrame(() => document.getElementById("main")?.focus({ preventScroll: true }));
   }, []);
   const immersive = tier !== null && tier !== "static" && view === "3d";
+
+  // The tower needs its data: fetch it in parallel with the 3D chunk (Experience renders once both are in). A
+  // failed fetch is a crash (one automatic retry on the next mount, then the static page with "Retry 3D").
+  useEffect(() => {
+    if (!immersive || ready) return;
+    let live = true;
+    loadExperience().catch(() => undefined);
+    loadExperienceData(locale, version).then(
+      (loaded) => {
+        if (live) setData(loaded);
+      },
+      () => {
+        if (live) onCrash();
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [immersive, ready, locale, version, mount, onCrash]);
 
   // The boot card's "Classic site" is a real `?view=classic` link (works before hydration); once hydrated, switch without a reload.
   useEffect(() => {
@@ -166,10 +197,12 @@ export function ExperienceGate({ data, startFloor, startRoom }: { data: Experien
 
   if (view === "page") return <BackTo3D onBack={back3D} label={t("back3d")} hint={t("back3dHint")} />;
 
+  if (!ready) return null;
+
   return createPortal(
     <Experience
       key={`${mount}:${tier}`}
-      data={data}
+      data={ready}
       tier={tier}
       startFloor={hashFloor}
       startRoom={startRoom ?? hashRoom}

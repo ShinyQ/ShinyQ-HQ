@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
@@ -70,7 +70,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
 
   return (
     <ClientMessages>
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L3" startRoom={`L3:${pod.slug}`} />
       <JsonLd data={pageJsonLd(locale, `/labs/${pod.slug}`)} />
       <article>
         <header className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
@@ -109,7 +109,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
         </header>
 
         <div className="pv-wrap grid gap-6 lg:grid-cols-12">
-          <div className="min-w-0 lg:col-span-8">
+          <div className="pv-col min-w-0 lg:col-span-8">
             {detail && (
               <Chapter id="results" title={t("results")}>
                 <MetricLedger results={pod.results} locale={locale} />

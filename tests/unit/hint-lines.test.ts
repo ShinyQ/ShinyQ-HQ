@@ -34,10 +34,14 @@ describe("hint lines", () => {
       "L2:station:workshop": "workshop",
       "L2:station:time-console": "timeConsole",
       "L3:door:ops": "ops",
+      "L4:vault": "vault",
     });
     expect(hintObjectKey(item({ id: "RF:station:cv", floor: "RF", action: { type: "open-room", room: "RF:cv" } }))).toBe("cv");
     expect(hintObjectKey(item({ id: "L1:kiosk:ask-rover", kind: "kiosk", action: { type: "command", command: "terminal" } }))).toBe("roverMenu");
     expect(hintObjectKey(item({}))).toBeNull();
+    // The Study Vault's one bubble (its books folded by `hintTargets`), whose Go only drives to the stop.
+    expect(hintObjectKey(item({ id: "L4:vault", floor: "L4", action: { type: "command", command: "settle" } }))).toBe("vault");
+    expect(hintGoKey(item({ id: "L4:vault", floor: "L4", action: { type: "command", command: "settle" } }))).toBe("go");
   });
 
   it("names the Go choice after the action", () => {
@@ -50,6 +54,7 @@ describe("hint lines", () => {
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:pods" } }))).toBe("browse");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:posts" } }))).toBe("browse");
     expect(hintGoKey(item({ action: { type: "command", command: "cv" } }))).toBe("viewCv");
+    expect(hintGoKey(item({ action: { type: "command", command: "guide:ai-103" } }))).toBe("open");
     expect(hintGoKey(item({ action: { type: "command", command: "unknown" } }))).toBe("go");
   });
 

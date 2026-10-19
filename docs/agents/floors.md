@@ -8,7 +8,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 
 ## Ready floors
 
-- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
+- `READY_FLOORS` in `src/experience/floorOrder.ts` (re-exported by `config.ts`) lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
   - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set (visiting all five public floors; [B1 access](floor-b1-engine-room.md#access)). Its elevator row is always listed, locked until then.
 - URL sync writes floor routes only for ready floors.
   - Placeholders keep `/{locale}`, and the HUD links to their HTML page.
@@ -171,7 +171,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 420.1 KB and full 443.8 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions); the Agent Office scene chunk 13.9 KB and its drawer body 5.8 KB.
+- Measured: main 3D path lite 440.3 KB and full 456.1 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 469.3 KB and full 485.1 KB, under their caps of 469.9 and 485.7 KB; the Agent Office scene chunk 13.9 KB and its drawer body 5.8 KB, outside the session total ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 
@@ -331,6 +331,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
   | `bounds`, `height` | pick volume |
   | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
+  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
@@ -346,7 +347,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - The HUD minimap reads `buildFloorLayouts` and `interactRuntime.items` (`subscribe`, `setItems`): a floor change that alters roads or targets shows up on the minimap and the overview automatically, with no map code to touch (see [Minimap](hud-and-drawer.md#minimap)).
 - Never put navigation `onClick` or hover handlers on scene objects.
   - L1 certification badges and pills and L4 research paper plates keep their own clicks (they open previews, not drives).
-- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument).
+- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument), `guide:<slug>` (the study guide reader through the `guide` HUD command; the L4 Study Vault books, `L4:vault:<slug>`, which drive to the vault stop first).
 
 ### Rendering and actions
 

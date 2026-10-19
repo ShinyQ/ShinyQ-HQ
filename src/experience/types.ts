@@ -203,6 +203,8 @@ export interface LibraryData {
   talks: { id: string; title: string; event: string; date: string; role: "speaker" | "author" | "trainer" }[];
   /** Topic Constellation (build-time topic index, `TOPICS` order): label for this locale, item count and the L4 rooms it lights. */
   topics: LibraryTopic[];
+  /** Certification study guides (`content/study-guides.json`, file order): the books of the end plaza's Study Vault. */
+  guides: { slug: string; spine: string; issuer: string; code: string | null }[];
 }
 
 /** One topic of the L4 Topic Constellation. */

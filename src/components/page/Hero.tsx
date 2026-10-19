@@ -30,9 +30,6 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
         <div className="hx-ground">
           <div className="hx-ground-grid" />
         </div>
-        <i className="hx-packet" />
-        <i className="hx-packet" />
-        <i className="hx-packet" />
       </div>
       <section aria-labelledby="hero-title" className="pv-wrap hx-main grid flex-1 content-start py-10 sm:py-14 md:pt-16 lg:content-center lg:pt-14">
         <div className="min-w-0">
@@ -42,8 +39,8 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
               {profile.name}
             </h1>
           </div>
-          <p className="pv-lead mt-7 font-semibold">{profile.headline[locale]}</p>
-          <p className="pv-lead mt-1 text-ink-2">{profile.subheadline[locale]}</p>
+          <p className="pv-lead mt-7 max-w-none font-semibold">{profile.headline[locale]}</p>
+          <p className="pv-lead mt-1 max-w-none text-ink-2">{profile.subheadline[locale]}</p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
             <QuietLink href="/labs" className="pv-btn pv-btn-ghost">

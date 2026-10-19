@@ -45,7 +45,7 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
   [/^src\/experience\/(floors\/engine\/layout|b1)\.ts$/, ALL_BUT_MEMORY],
   [/^src\/experience\/(floors\/(engine\/|EngineRoom\.tsx$|chunks\/engine\.ts$)|b1\.ts$)|^src\/hud\/drawer\/EngineBody\.tsx$|^src\/content\/room-views\/engine\.ts$/, ["bytes", "floor:B1", "ride:B1"]],
   [
-    /^src\/experience\/(scene\/(Effects|Scene|memoryProbe|sharedResources|postHandle|quality|QualityController|qualityStore)\.tsx?|fx\/(useDispose|geometry|materials|holoFx)\.ts|floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?|floors\/chunks\/|tower\/(FloorLevel|Tower|near)\.tsx?|Experience\.tsx|qualityRemount\.ts|CanvasBoundary\.tsx|recovery\.ts)/,
+    /^src\/experience\/(scene\/(Effects|postComposer|Scene|memoryProbe|sharedResources|postHandle|quality|QualityController|qualityStore)\.tsx?|fx\/(useDispose|geometry|materials|holoFx)\.ts|floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?|floors\/chunks\/|tower\/(FloorLevel|Tower|near)\.tsx?|Experience\.tsx|qualityRemount\.ts|CanvasBoundary\.tsx|recovery\.ts)/,
     ALL_PERF_KEYS,
   ],
   [/^src\/experience\/prototype\//, []],

@@ -1,9 +1,9 @@
 import { OFFICE_AGENTS, parseOfficeBeat, type OfficeAgent } from "../../../src/lib/office/protocol";
 import { buildBeat, shouldSend } from "./beat";
 import type { GitInfo } from "./git";
-import { mapEvent, payloadCwd, rawSessionId } from "./map";
+import { isPermissionCheck, mapEvent, payloadCwd, rawSessionId, toolName } from "./map";
 import { sessionHash } from "./session";
-import { appendLog, isPaused, loadConfig, loadSalt, readSent, writeSent, type RelayPaths } from "./store";
+import { appendLog, isPaused, loadConfig, loadSalt, readLastTool, readSent, writeLastTool, writeSent, type RelayPaths } from "./store";
 
 export interface HookDeps {
   paths: RelayPaths;
@@ -32,14 +32,21 @@ export function runHook(agent: string, event: string, stdin: string, deps: HookD
     return "ignored";
   }
   const safeEvent = event.replace(/[^A-Za-z]/g, "").slice(0, 32);
+  const now = deps.now();
+  const sessionOf = () => sessionHash(agent, rawSessionId(payload) ?? `${payloadCwd(payload) ?? "unknown"}`, loadSalt(paths));
+  // Copilot's permissionRequest right after the preToolUse of the same tool is a permission check, not a prompt (map.ts).
+  const copilotEvent = agent === "copilot" ? safeEvent.toLowerCase() : "";
+  if (copilotEvent === "pretooluse") writeLastTool(paths, sessionOf(), { tool: toolName(payload).slice(0, 120), at: now });
+  if (copilotEvent === "permissionrequest" && isPermissionCheck(readLastTool(paths, sessionOf()), toolName(payload).slice(0, 120), now)) {
+    appendLog(paths, `${agent} ${safeEvent} after-tool ignored`);
+    return "ignored";
+  }
   const mapped = mapEvent(agent, safeEvent, payload);
   if (!mapped) {
     appendLog(paths, `${agent} ${safeEvent} ignored`);
     return "ignored";
   }
-  const now = deps.now();
-  const raw = rawSessionId(payload) ?? `${payloadCwd(payload) ?? "unknown"}`;
-  const session = sessionHash(agent, raw, loadSalt(paths));
+  const session = sessionOf();
   const cwd = payloadCwd(payload);
   const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now });
   if (!parseOfficeBeat(beat)) {
