@@ -1,6 +1,7 @@
 # Performance
 
 - Date: 2026-10-19
+- PR: [#257](https://github.com/ShinyQ/ShinyQ-HQ/pull/257)
 
 Owner request (perf assessment item 3): "useHQStore imports @/experience/config, which pulls every floor layout into Classic (25.4 KB gz). Move FLOOR_IDS, floorIndex and the Lobby spawn to a tiny module. Owner decision: moving these bytes from Classic into the 3D path is fine if the 3D session caps still pass. Combine with item 7 to win the bytes back on 3D. Do not raise any budget without asking me." The move pushed the 3D path over its caps, so the owner decided (verbatim): "option A is approved. Ship item 3 and raise the three 3D caps (first frame, full session, lite session) by the moved floor-layout bytes, about +22 KB, then tighten them by whatever item 7 wins back. Two other PRs raise the same caps: Study Vault #247 (+about 0.6 KB) and Agent Office PR3 (full 473, lite 449.4). The caps add up, so whoever merges later rebases on main, re-measures, and sets each cap to the measured value plus about 0.6 KB of headroom. Record it in the decision entry with the measured numbers."
 
