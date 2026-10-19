@@ -4,7 +4,7 @@ import { ceilingOpacity, FIRST_PERSON } from "@/experience/camera/firstPerson";
 import { buildFloorLayouts, floorY, LOBBY } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
-import { ghostOutlineHidden, ghostOutlineOpacity, stepGhostOutline } from "@/experience/tower/ghostOutline";
+import { ghostOutlineHidden, ghostOutlineOpacity, inLookUnderArea, stepGhostOutline } from "@/experience/tower/ghostOutline";
 
 /**
  * Owner decision 2026-10-20 (option a): the ghost outline of the floors above the rover (the amber L2 line that
@@ -62,6 +62,26 @@ describe("ghostOutlineHidden", () => {
     expect(ghostOutlineHidden("L2", on("L1", { x: 102, z: 2 }), layout)).toBe(true);
     expect(ghostOutlineHidden("L2", on("L1", { x: 106, z: 2 }), layout)).toBe(false);
     expect(ghostOutlineHidden("L2", on("L1", { x: 102, z: 2 }), { viewZones: [{ ...zone, hideGhostAbove: undefined }] })).toBe(false);
+  });
+});
+
+describe("inLookUnderArea (the tower frame's rule, the same areas as the ghost outline)", () => {
+  it("holds in the office wing and at the office stop, so the frame's far edge leaves the office view", () => {
+    for (const p of [W.stop, W.plaza.center, { x: W.rect.minX + 0.5, z: W.rect.minZ + 0.5 }, { x: W.rect.maxX - 0.5, z: W.rect.maxZ - 0.5 }])
+      expect(inLookUnderArea(p, L1), `${p.x}, ${p.z}`).toBe(true);
+  });
+
+  it("does not hold at the spawn, the elevator arrival, on the lead road, in every other zone or on another floor", () => {
+    const zones = (L1.viewZones ?? []).filter((z) => z.id !== "L1:office");
+    for (const p of [LOBBY.spawn, LOBBY.arrival, { x: W.lead.x, z: W.lead.from + 1 }, { x: W.lead.x, z: W.rect.minZ - 0.5 }, ...zones.map((z) => ({ x: (z.area.minX + z.area.maxX) / 2, z: (z.area.minZ + z.area.maxZ) / 2 }))])
+      expect(inLookUnderArea(p, L1), `${p.x}, ${p.z}`).toBe(false);
+    for (const id of ["L2", "L3", "L4", "RF", "B1"] as const) expect(inLookUnderArea(W.stop, layouts[id]), id).toBe(false);
+    expect(inLookUnderArea(W.stop, undefined)).toBe(false);
+  });
+
+  it("is the ghost outline's area: ghostOutlineHidden adds only the floor-above rule", () => {
+    for (const p of [W.stop, LOBBY.spawn, { x: W.lead.x, z: W.rect.minZ - 0.5 }, W.plaza.center])
+      expect(ghostOutlineHidden("L2", on("L1", p), L1)).toBe(inLookUnderArea(p, L1));
   });
 });
 

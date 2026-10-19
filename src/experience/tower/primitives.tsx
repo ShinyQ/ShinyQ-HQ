@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, type ReactNode } from "react";
-import { BoxGeometry, BufferGeometry, EdgesGeometry, Float32BufferAttribute } from "three";
+import { useEffect, useMemo, type ReactNode, type Ref } from "react";
+import { BoxGeometry, BufferGeometry, EdgesGeometry, Float32BufferAttribute, type LineSegments } from "three";
 import { useHQStore } from "@/store/useHQStore";
 import { getGlassMaterial, glassSidesGeometry, rimGeometry, rimThickness } from "../fx/geometry";
 import { neonColor } from "../fx/materials";
@@ -19,14 +19,29 @@ export const FONTS = {
 type V3 = [number, number, number];
 
 /** Neon edge lines of a box (one draw call). Boosted above 1.0 on the full tier so they bloom. */
-export function BoxEdges({ size, position, color, opacity = 0.95, boost = 1.4 }: { size: V3; position?: V3; color: string; opacity?: number; boost?: number }) {
+export function BoxEdges({
+  size,
+  position,
+  color,
+  opacity = 0.95,
+  boost = 1.4,
+  ref,
+}: {
+  size: V3;
+  position?: V3;
+  color: string;
+  opacity?: number;
+  boost?: number;
+  /** The line object, for a caller that fades it (the tower frame). */
+  ref?: Ref<LineSegments>;
+}) {
   const [w, h, d] = size;
   const tier = useHQStore((s) => s.tier);
   const geometry = useMemo(() => new EdgesGeometry(new BoxGeometry(w, h, d)), [w, h, d]);
   const neon = useMemo(() => neonColor(color, boost, tier), [color, boost, tier]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return (
-    <lineSegments geometry={geometry} position={position}>
+    <lineSegments ref={ref} geometry={geometry} position={position}>
       <lineBasicMaterial color={neon} transparent opacity={opacity} toneMapped={false} />
     </lineSegments>
   );

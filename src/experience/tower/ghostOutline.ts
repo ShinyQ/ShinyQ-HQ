@@ -14,16 +14,24 @@ import type { FloorLayout, Rect } from "../types";
 
 const within = (r: Rect, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
 
+type HideLayout = { hideGhostAbove?: FloorLayout["hideGhostAbove"]; viewZones?: readonly ViewZone[] } | undefined;
+
 /**
  * True while `floor`'s ghost outline should hide: `floor` is above the rover (the `FloorLevel` ghost rule) and the
  * rover stands in one of its floor layout's `hideGhostAbove` rects or flagged view zones. No allocation (every frame).
  */
-export function ghostOutlineHidden(
-  floor: FloorId,
-  rover: { x: number; y: number; z: number },
-  layout: { hideGhostAbove?: FloorLayout["hideGhostAbove"]; viewZones?: readonly ViewZone[] } | undefined,
-): boolean {
-  if (!layout || floorY(floor) <= rover.y + 0.5) return false;
+export function ghostOutlineHidden(floor: FloorId, rover: { x: number; y: number; z: number }, layout: HideLayout): boolean {
+  return floorY(floor) > rover.y + 0.5 && inLookUnderArea(rover, layout);
+}
+
+/**
+ * True while the rover stands in one of its floor layout's `hideGhostAbove` rects or flagged view zones (the L1 office
+ * wing and stop), where the view looks out under the slabs above: the ghost outlines of the floors above hide there,
+ * and so does the tower frame (`Tower`), whose far bottom edge drew an indigo line across the office view at the
+ * horizon. No allocation (every frame).
+ */
+export function inLookUnderArea(rover: { x: number; z: number }, layout: HideLayout): boolean {
+  if (!layout) return false;
   const rects = layout.hideGhostAbove;
   if (rects) for (let i = 0; i < rects.length; i++) if (within(rects[i], rover.x, rover.z)) return true;
   const zones = layout.viewZones;
