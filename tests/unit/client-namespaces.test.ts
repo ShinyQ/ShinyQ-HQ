@@ -107,6 +107,18 @@ const covers = (list: readonly string[], path: string) => list.some((l) => path 
 const missingFrom = (used: Map<string, string>, list: readonly string[]) =>
   [...used].filter(([ns]) => !covers(list, ns)).map(([ns, rel]) => `${ns} (${rel})`);
 
+/**
+ * Whether a module that reads the namespace of a SERVER_PATHS entry (`office`) may read the server-only sub-path
+ * (`classic`): a key starting with it in any quote (`t("classic.title")`, `t('classic.x')`, `` t(`classic.${k}`) ``,
+ * `t.raw("classic")`), or a `t.raw` whose key is not a plain string literal (it could resolve to the sub-path).
+ */
+function readsServerPath(source: string, path: string): boolean {
+  const [ns, ...rest] = path.split(".");
+  const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!new RegExp(`\\buseTranslations\\(\\s*["'\`]${esc(ns)}["'\`]\\s*\\)`).test(source)) return false;
+  return new RegExp(`["'\`]${esc(rest.join("."))}(\\.|["'\`])`).test(source) || /\.raw\(\s*(?!(["'])[^"'`$]*\1\s*\))/.test(source);
+}
+
 describe("client message namespaces", () => {
   const allClient = closure([...TEXTS.keys()].filter(isClient));
   const LOCALE = join(SRC, "app/[locale]");
@@ -176,10 +188,8 @@ describe("client message namespaces", () => {
     const { used } = namespacesOf(allClient, { paths: true });
     expect([...used].filter(([p]) => covers(SERVER_PATHS, p)).map(([p, rel]) => `${p} (${rel})`)).toEqual([]);
     for (const path of SERVER_PATHS) {
-      const [ns, ...rest] = path.split(".");
       // A client module reading the namespace never reads the server-only keys (`t("classic.title")`).
-      const readers = [...allClient].filter((f) => new RegExp(`useTranslations\\(["'\`]${ns}["'\`]\\)`).test(text(f)));
-      expect(readers.filter((f) => text(f).includes(`"${rest.join(".")}.`)).map((f) => relative(ROOT, f))).toEqual([]);
+      expect([...allClient].filter((f) => readsServerPath(text(f), path)).map((f) => relative(ROOT, f))).toEqual([]);
       for (const messages of [en, id]) expect(path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], messages), path).toBeDefined();
     }
     const before = JSON.stringify(en);
@@ -191,6 +201,25 @@ describe("client message namespaces", () => {
     expect(Object.keys(office).sort()).toEqual(Object.keys(en.office).filter((k) => k !== "classic").sort());
     expect(office["3d"]).toBe(en.office["3d"]);
     expect(client.hud).toBe(en.hud);
+  });
+
+  it("catches every way a client module could read a server-only path", () => {
+    const reader = (body: string) => `const t = useTranslations("office");\n${body}`;
+    for (const body of [
+      't("classic.title")',
+      "t('classic.title')",
+      "t(`classic.${key}`)",
+      't.raw("classic")',
+      "t.raw('classic.counts')",
+      "t.raw(key)",
+      "t.raw(`${key}`)",
+    ])
+      expect(readsServerPath(reader(body), "office.classic"), body).toBe(true);
+    expect(readsServerPath("const t = useTranslations('office');\nt(`classic.title`)", "office.classic")).toBe(true);
+    for (const body of ['t("3d.offDuty")', 't("classicist")', 't.raw("3d.github")', 't(`activity.${a}`)'])
+      expect(readsServerPath(reader(body), "office.classic"), body).toBe(false);
+    // Only modules that read the namespace count: another namespace's "classic" key is fine.
+    expect(readsServerPath('const t = useTranslations("hud");\nt("classic.title")', "office.classic")).toBe(false);
   });
 
   it("names namespaces that exist in both locales, and picks only those", () => {
