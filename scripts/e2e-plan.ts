@@ -276,11 +276,6 @@ export const RULES: Rule[] = [
   // The shared joystick double-tap helper (the boost toggle test).
   { test: /^e2e\/touch\.ts$/, specs: ["boost"] },
   // HUD over the canvas.
-  // Glass Drawer data per floor (loader, file names and versions, the data route): every floor's deep links and the per-floor fetches.
-  {
-    test: /^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/content\/room-views\/index\.ts$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
-    specs: ["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics", "career", "library-roof"],
-  },
   { test: /^src\/hud\/drawer\//, specs: ["labs", "gallery", "career", "library-roof", "drawer-solid", "hud", "lifecycle", "view-links"] },
   { test: /^src\/hud\/(RoverTerminal|MissionHud|CommandPalette)\.tsx$|^src\/hud\/(search|events|palette-types)\.ts$/, specs: ["ask", "experience", "missions", "drawer-solid", "lifecycle"] },
   { test: /^src\/hud\//, specs: ["experience", "missions", "drawer-solid", "hud"] },
@@ -398,6 +393,11 @@ const ALSO_RULES: Rule[] = [
   {
     test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["engine-room"],
+  },
+  // Glass Drawer data per floor (loader, file names and versions, the data route): every floor's deep links and the per-floor fetches.
+  {
+    test: /^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/content\/room-views\/index\.ts$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics", "career", "library-roof"],
   },
 ];
 

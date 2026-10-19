@@ -174,6 +174,9 @@ describe("specsForChanges", () => {
     for (const file of ["src/hud/drawer/data.ts", "src/hud/drawer/data-path.ts", "src/content/room-views/index.ts", "src/app/data/[...path]/route.ts"]) {
       expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics"]));
     }
+    // On top of their first matching rule, never instead of it.
+    expect(specsForChanges(["src/hud/drawer/data.ts"]).specs).toEqual(expect.arrayContaining(["drawer-solid", "gallery", "view-links"]));
+    expect(specsForChanges(["src/content/room-views/index.ts"]).specs).toEqual(expect.arrayContaining(["pageview", "static-routes"]));
     // The extra spec is added on top of the existing mapping, never instead of it.
     expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(expect.arrayContaining(["hud-corners", "experience"]));
     expect(specsForChanges(["src/experience/floors/floorChunks.ts"]).specs).toEqual(expect.arrayContaining(["floor-chunks", "ride"]));

@@ -26,6 +26,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
 
 - Room ids are `${FloorId}:${slug}` (`L3:voice-ai-contact-center`, `L2:jenius-2024`, `RF:contact`).
 - `id === slug` for pods and timeline entries.
+- The prefix also picks the Glass Drawer data file: a room's view ships in `/data/rooms/{locale}-{floor}.json` of its prefix (B1: `b1-{locale}.json`), see [hud-and-drawer.md](hud-and-drawer.md#builders-and-data). A room shown on another floor still lives in its prefix's file.
 
 ## CV
 

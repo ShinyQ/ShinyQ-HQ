@@ -143,7 +143,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
+- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content, one file per floor: /data/rooms/{locale}-{floor}.json (L1 to RF) and /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), each fetched with a `?v=` content hash, /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
 
 ### src/assets/
 
