@@ -148,6 +148,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 ### Frame rate and timeline
 
 - Never gate time: SwiftShader FPS and timings are noise.
+- A parked scene renders at the idle cadence (30 fps or on demand, [3d-experience.md](3d-experience.md#idle-cadence)); it is off under automation, so specs and the perf lane count 60 fps frames. Measure it on a real GPU with `navigator.webdriver` hidden: `__hq.frames()` over 5 s parked and the CDP `Performance.getMetrics` TaskDuration delta (main-thread busy time).
 - Frame rate is checked on real devices with `?perf=1` and in the field with the RUM beacon.
   - The `?perf=1` overlay shows FPS p50/p10, frame p95, scene and post calls, GPU objects, tier and renderer, DPR and pixels, and a sixth line with the last elevator ride from `window.__hq.ridePrep.lastRide`.
   - It mounts only with the flag (about 1 KB inside the 3D chunk, never on the Page View).
@@ -215,11 +216,11 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
 | `src/experience/config.ts`, `floorOrder.ts`, `floors/lobby/spawn.ts` (also the kiosk specs), `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
-| `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
-| `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
+| `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle` and `idle-cadence`) |
+| `src/experience/rover/{idle,activity}.ts` | `rover-idle` (`idle.ts` adds `idle-cadence`) |
 | The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
-| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
+| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch,idle}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` (the scene files add `idle-cadence`) |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
 | `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `b1-unlock`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
