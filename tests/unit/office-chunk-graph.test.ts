@@ -17,11 +17,12 @@ const OFFICE_ONLY = [
   `${DIR}/officeWall.ts`,
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
+  `${DIR}/OfficeChips.tsx`,
   "src/lib/office/poll.ts",
   "src/lib/office/model.ts",
 ];
 /** The main-path part of the office: the loader, the mount with the furniture shell and the layout. */
-const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts"];
+const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/hud/OfficeLayer.tsx"];
 
 function files(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
