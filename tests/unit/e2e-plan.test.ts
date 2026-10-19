@@ -68,11 +68,39 @@ describe("specsForChanges", () => {
       expect(plan.unmatched, file).toEqual([]);
       expect(plan.specs, file).toContain("guides");
     }
-    expect(specsForChanges(["src/components/certs/CertDialog.tsx"]).specs).toEqual(["experience", "guides", "pageview", "static-routes"]);
-    expect(specsForChanges(["content/study-guides.json"]).specs).toEqual(["guides", "pageview", "seo", "static-routes"]);
+    expect(specsForChanges(["src/components/certs/CertDialog.tsx"]).specs).toEqual(["experience", "guides", "guides-vault", "pageview", "static-routes"]);
+    expect(specsForChanges(["content/study-guides.json"]).specs).toEqual(["guides", "guides-vault", "pageview", "seo", "static-routes"]);
     expect(specsForChanges(["src/components/certs/Certifications.tsx"]).specs).not.toContain("guides");
     // The Function is unit tested; the specs answer /api/guides/* with a fixture PDF.
     expect(specsForChanges(["functions/_lib/guides.ts"]).specs).toEqual([]);
+  });
+
+  it("maps the L4 Study Vault, its book targets and the reader to the guides-vault spec, on top of their own specs", () => {
+    for (const file of [
+      "src/experience/floors/library/decor/StudyVault.tsx",
+      "src/experience/floors/library/decor/vault.ts",
+      "src/experience/floors/library/layout.ts",
+      "src/experience/floors/library/model.ts",
+      "src/experience/floors/library/concepts/newsroom.ts",
+      "src/experience/floors/Library.tsx",
+      "src/experience/interact/registry.ts",
+      "src/experience/interact/pick.ts",
+      "src/hud/events.ts",
+      "src/components/guides/GuideReader.tsx",
+      "src/components/guides/GuideDialog.tsx",
+      "src/components/DialogHost.tsx",
+      "e2e/fixtures/guide-pdf.ts",
+      "e2e/guides-vault.spec.ts",
+    ]) {
+      const plan = specsForChanges([file]);
+      expect(plan.unmatched, file).toEqual([]);
+      expect(plan.specs, file).toContain("guides-vault");
+    }
+    expect(specsForChanges(["src/experience/floors/library/decor/vault.ts"]).specs).toEqual(["arrivals", "fast-return", "guides-vault", "library-labels", "library-roof", "spectacle", "topics"]);
+    expect(specsForChanges(["e2e/guides-vault.spec.ts"]).specs).toEqual(["guides-vault"]);
+    expect(specsForChanges(["e2e/fixtures/guide-pdf.ts"]).specs).toEqual(["guides", "guides-vault"]);
+    // Library code the vault does not touch keeps its own specs only.
+    expect(specsForChanges(["src/experience/floors/library/topics.ts"]).specs).not.toContain("guides-vault");
   });
 
   it("maps the rover idle code to the rover-idle spec", () => {
@@ -167,7 +195,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
   });
   it("maps point-and-go code to the interact spec and the specs that click targets", () => {
-    expect(specsForChanges(["src/experience/interact/registry.ts"]).specs).toEqual(["career", "experience", "fast-return", "interact", "pads"]);
+    expect(specsForChanges(["src/experience/interact/registry.ts"]).specs).toEqual(["career", "experience", "fast-return", "guides-vault", "interact", "pads"]);
     expect(specsForChanges(["src/hud/InteractStatus.tsx"]).specs).toEqual(["career", "experience", "fast-return", "interact", "pads"]);
     expect(specsForChanges(["e2e/interact.spec.ts"]).specs).toEqual(["interact"]);
   });
@@ -195,7 +223,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/fx/holoFx.ts"]).specs).toEqual(["career", "daynight", "labs", "library-labels", "library-roof", "spectacle", "visits"]);
     expect(specsForChanges(["src/experience/sky/SkyController.tsx"]).specs).toEqual(["daynight", "engine-room", "experience"]);
     expect(specsForChanges(["src/lib/day-night.ts"]).specs).toEqual(["daynight", "experience"]);
-    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "library-labels", "library-roof", "spectacle", "topics"]);
+    expect(specsForChanges(["src/experience/floors/library/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "guides-vault", "library-labels", "library-roof", "spectacle", "topics"]);
     expect(specsForChanges(["src/experience/fx/labelPlacement.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/experience/fx/plateProjection.ts"]).specs).toEqual(["library-labels", "topics"]);
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);

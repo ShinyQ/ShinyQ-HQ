@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import guides from "../content/study-guides.json";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
 import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames, fastAnimations } from "./hq";
@@ -25,7 +26,7 @@ type Vec2 = { x: number; z: number };
 type LW = Window & {
   __hq: {
     probes: { library?: { labels: Box[] }; topics?: { labels: Box[] } };
-    layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] } }>;
+    layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] }; stops?: Record<string, Vec2> }>;
     store: { getState: () => { phase: string; activeRoom: string | null } };
     interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
     rover: { x: number; z: number };
@@ -37,6 +38,9 @@ const BASELINE = Boolean(process.env.L4_SHOTS_BASELINE);
 /** Zone sign texts, as `zoneSignSpecs` writes them (`library.*` messages, uppercase). */
 const ZONE_SIGN = { research: en.library.research.toUpperCase(), models: en.library.publications.toUpperCase(), talks: en.library.talks.toUpperCase() } as const;
 const ZONE_ROOM = { research: "L4:research", models: "L4:publications", talks: "L4:talks" } as const;
+/** The Study Vault's sign (uppercase, like the other end plaza names) and its books' spines (`study-guides.json`). */
+const VAULT_SIGN = en.hud.interact.studyVault.toUpperCase();
+const VAULT_SPINES = guides.guides.map((g) => g.spine.replace(/\s+/g, " "));
 type Zone = keyof typeof ZONE_ROOM;
 
 /** Shown timeline and end plaza plates (alpha above 0.5); the library probe is absent in builds before the declutter. */
@@ -197,6 +201,18 @@ for (const device of [
           shown ||= await zoneSignShown(zone, pose);
         }
         if (!BASELINE) expect(shown, `${device.id}: ${ZONE_SIGN[zone]} sign on the approach, road or door pose of the ${zone} zone`).toBe(true);
+      }
+
+      // The Study Vault stop: every book's spine and the "Study Vault" sign show over the books, clear of each other
+      // and of the topic labels (the vault's signs outrank the topics there). Builds before the vault have no stop.
+      const vaultStop = await page.evaluate(() => (window as unknown as LW).__hq.layouts.L4.stops?.["L4:vault"] ?? null);
+      if (vaultStop) {
+        await driveTo(page, vaultStop);
+        const atVault = await check("vault");
+        if (!BASELINE) {
+          expect(atVault.filter((b) => b.kind === "guide").map((b) => b.text.replace(/\s+/g, " ")).sort(), `${device.id}: spines at the vault`).toEqual([...VAULT_SPINES].sort());
+          expect(atVault.some((b) => b.kind === "vault" && b.text === VAULT_SIGN), `${device.id}: the Study Vault sign`).toBe(true);
+        }
       }
 
       test.info().annotations.push({ type: "max overlap", description: `${device.id}: ${(worst * 100).toFixed(2)}% of the smaller plate` });

@@ -188,18 +188,18 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
   it("never overlap, stay within the title cap and show each zone's sign", () => {
     const drive = new Drive(size);
     const visited: string[] = [];
-    /** Audits every orbit angle at the current pose; returns every plate shown at any of them. */
-    const check = (pose: string) => {
+    /** Audits every orbit angle at the current pose; returns the plates shown at each angle (in `ANGLES` order). */
+    const checkAngles = (pose: string) => {
       visited.push(pose);
       const camera = drive.camera();
-      const shown: Plate[] = [];
-      for (const angle of ANGLES) {
+      return ANGLES.map((angle) => {
         const { plates, rover } = frame(drive, camera, angle);
         expect(audit(plates, titleCap, rover), `${id} ${pose} at orbit ${angle.toFixed(2)}`).toEqual({ hits: [], onRover: [], overCap: 0, twice: [] });
-        shown.push(...plates);
-      }
-      return shown;
+        return plates;
+      });
     };
+    /** Every plate shown at any orbit angle of the current pose. */
+    const check = (pose: string) => checkAngles(pose).flat();
 
     check("approach");
     drive.to({ x: 8, z: 0 });
@@ -228,12 +228,17 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
       expect(seen, `${id}: ${ZONE_SIGN[zone]} sign on the approach, road or door pose of the ${zone} zone (${visited.join(", ")})`).toBe(true);
     }
 
-    // The Study Vault: from its stop every book's spine and the "Study Vault" sign show (they outrank the topics there).
+    // The Study Vault: from its stop every book's spine and the "Study Vault" sign show at every orbit angle (they
+    // outrank the topics there, so the orbiting topic labels never push one off).
     const vault = layout.end!.vault!;
     drive.to(floor.stops!["L4:vault"]!);
-    const atVault = check("vault");
-    for (const book of vault.books) expect(atVault.some((p) => p.kind === "guide" && p.text === book.spine), `${id}: ${book.spine} spine at the vault`).toBe(true);
-    expect(atVault.some((p) => p.kind === "vault" && p.text === en.hud.interact.studyVault.toUpperCase()), `${id}: the Study Vault sign`).toBe(true);
+    const sign = en.hud.interact.studyVault.toUpperCase();
+    expect(vault.books.length, `${id}: vault books`).toBeGreaterThan(0);
+    checkAngles("vault").forEach((atVault, i) => {
+      const at = `${id} vault at orbit ${ANGLES[i].toFixed(2)}`;
+      expect(vault.books.filter((book) => !atVault.some((p) => p.kind === "guide" && p.text === book.spine)).map((b) => b.spine), `${at}: spines not shown`).toEqual([]);
+      expect(atVault.some((p) => p.kind === "vault" && p.text === sign), `${at}: the Study Vault sign`).toBe(true);
+    });
   });
 });
 
