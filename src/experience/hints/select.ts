@@ -31,19 +31,14 @@ export const GROUP_HINT_COMMAND = "settle";
  */
 export function hintTargets(items: readonly Interactable[]): readonly Interactable[] {
   if (!items.some((item) => item.group)) return items;
-  const out: Interactable[] = [];
   const seen = new Set<string>();
-  for (const item of items) {
+  return items.flatMap((item) => {
     const group = item.group;
-    if (!group) {
-      out.push(item);
-      continue;
-    }
-    if (seen.has(group.id)) continue;
+    if (!group) return [item];
+    if (seen.has(group.id)) return [];
     seen.add(group.id);
-    out.push({ ...item, id: group.id, label: group.label, action: { type: "command", command: GROUP_HINT_COMMAND }, group: undefined });
-  }
-  return out;
+    return [{ ...item, id: group.id, label: group.label, action: { type: "command", command: GROUP_HINT_COMMAND }, group: undefined }];
+  });
 }
 
 /** The one target to show a bubble for: nearest within `HINT.radius`, sticky within `HINT.keep`. */
