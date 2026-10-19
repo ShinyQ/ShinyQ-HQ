@@ -7,7 +7,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ## Gate and tiers
 
-- `ExperienceGate({ data, startFloor?, startRoom? })` (client) runs on these routes; pages get `data` from `experienceDataFor(locale)` (`src/experience/gate-data.ts`).
+- `ExperienceGate({ locale, version, startFloor?, startRoom? })` (client) runs on these routes; pages pass `version={await experienceDataVersion(locale)}` (`src/experience/gate-data.ts`), and the gate fetches the 3D page data itself (see [ExperienceData](#experiencedata)).
 
   | Route | Prop |
   |---|---|
@@ -154,7 +154,14 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 
 ### ExperienceData
 
-- The 3D chunk gets its content as a serializable `ExperienceData` prop from the server page, so it never bundles `site-content.json` or zod.
+- The 3D chunk gets its content as a serializable `ExperienceData` prop, so it never bundles `site-content.json` or zod.
+- Static versioned JSON, never the page's RSC payload (about 9 KB gzip less on every gated page):
+  - The build writes `experienceDataFor(locale)` (`src/experience/gate-data.ts`, floor names localized from `messages`) to `/data/experience/{locale}.json` (`src/app/data/[...path]/route.ts`).
+  - The page passes only `experienceDataVersion(locale)`, a 12-character content hash; the gate fetches `/data/experience/{locale}.json?v=<hash>` (`loadExperienceData` in `src/experience/data-client.ts`: one fetch per locale and page load, forgotten after a failure), so the 1 h `/data/*` cache never outlives a deploy.
+  - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate starts the chunk at the same time). `Experience` mounts only once the data is in.
+  - A failed fetch is a crash ([Crash recovery](#crash-recovery)): one automatic retry on the next mount, then the static page with "Retry 3D" (which fetches again). The boot cover is released with the static tier (or by its 8 s timeout), never left up.
+  - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
+  - Dev routes (`/{locale}/dev/*`) still pass `experienceDataFor(locale)` to their prototype loaders directly.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.
@@ -351,6 +358,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ## Crash recovery
 
 - `CanvasBoundary` (around the R3F canvas, which rethrows creation and render errors) and the `webglcontextlost` listener call `onCrash`.
+- So does a failed fetch of the 3D page data (`/data/experience/{locale}.json`); the remount fetches it again.
 - `ExperienceGate` remounts the 3D view once on a fresh canvas, after the tab is visible again (`whenVisible`).
 - A second failure sets the static tier and shows the notice with a "Retry 3D" button (`hud.retry3d`, `data-testid="retry-3d"`).
   - `recovery.ts`: `afterFailure`, `manualRetry`, `settled`; store `recover(tier)`.

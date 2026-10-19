@@ -65,6 +65,7 @@
 /og/*
   Cache-Control: public, max-age=86400
 
-# Glass Drawer content (src/app/data). Rebuilt with every deploy.
+# Glass Drawer content, the HUD index and the 3D page data (src/app/data). Rebuilt with every deploy; the
+# clients add a `?v=` content hash where a stale copy would break (the HUD index, the 3D page data).
 /data/*
   Cache-Control: public, max-age=3600

@@ -8,7 +8,7 @@ import { TopicFilter } from "@/components/page/TopicFilter";
 import { guideViews } from "@/content/guide-views";
 import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "@/content/load";
 import { isResearch } from "@/content/selectors";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { seoMetadata } from "@/lib/seo";
@@ -43,7 +43,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   return (
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/library")} />
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L4" />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L4" />
       <PageIntro
         marker={<Marker accent="white">L4 · {tf("L4")}</Marker>}
         title={tw("title")}

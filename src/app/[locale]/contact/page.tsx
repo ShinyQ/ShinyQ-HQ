@@ -10,7 +10,7 @@ import { Portrait } from "@/components/page/Portrait";
 import { ProductionSection } from "@/components/page/Production";
 import { VisitsSection } from "@/components/stats/VisitsSection";
 import { getProfile, getRoof, getSkills } from "@/content/load";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
@@ -45,7 +45,7 @@ export default async function ContactPage({ params }: PageProps<"/[locale]/conta
   return (
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/contact")} />
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="RF" />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="RF" />
       <header className="pv-wrap grid gap-10 pt-8 sm:pt-12 lg:grid-cols-12 lg:gap-6 lg:pt-16">
         <div className="min-w-0 lg:col-span-7">
           <p className="pv-data mb-5">

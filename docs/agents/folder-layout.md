@@ -141,7 +141,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
+- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
 
 ### src/assets/
 
@@ -240,6 +240,10 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - perfOverlayOn is the one flag parser, also for the Director's ride console line.
   - Overlay and probe are static imports in the 3D chunk that mount only with the flag or in a sampled session: a dynamic import inside the 3D chunk can make Turbopack regroup shared modules into the Page View bundle.
   - The floor chunks were measured against that risk and cost the Classic site +381 B (see "Floor chunks" in [floors.md](floors.md)).
+
+#### Gate data
+
+- `src/experience/gate-data.ts` (server only): `experienceDataFor(locale)`, the 3D page data, and `experienceDataVersion(locale)`, its content hash for the gate's URL. `src/experience/data-client.ts`: `loadExperienceData(locale, version)`, the gate's fetch of `/data/experience/{locale}.json`.
 
 #### Sky
 

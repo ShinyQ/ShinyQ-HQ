@@ -11,7 +11,7 @@ import { getContent, getPod, getTimeline, getTimelineEntry } from "@/content/loa
 import { LOCALES } from "@/content/schema";
 import { adjacent } from "@/content/selectors";
 import { ExperienceGate } from "@/experience/ExperienceGate";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
@@ -47,7 +47,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
   return (
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, `/journey/${entry.slug}`)} />
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" startRoom={`L2:${entry.slug}`} />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L2" startRoom={`L2:${entry.slug}`} />
       <article className="pv-wrap pt-6 sm:pt-10 lg:pt-14">
         <CrumbLink crumb={{ href: "/journey", label: t("navTitle") }} />
         <div className="mt-5 lg:w-3/4">

@@ -3,6 +3,8 @@ import { guideViews } from "@/content/guide-views";
 import { getContent } from "@/content/load";
 import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
+import { EXPERIENCE_DATA_FILE } from "@/experience/data-client";
+import { experienceDataFor } from "@/experience/gate-data";
 import { ENGINE_ROOMS_FILE, ROOMS_FILE } from "@/hud/drawer/data-path";
 import { HUD_INDEX_FILE } from "@/hud/index-path";
 import { buildHudIndex } from "@/hud/index-data";
@@ -16,8 +18,9 @@ const MESSAGES = { en, id } as const;
 
 /**
  * Pre-renders client data at build time: the Glass Drawer content (out/data/rooms/{locale}.json),
- * the B1 Engine Room drawers (out/data/rooms/b1-{locale}.json, fetched only when B1 is unlocked)
- * and the HUD index (out/data/hud/index.json, rooms and missions for the palette and terminal),
+ * the B1 Engine Room drawers (out/data/rooms/b1-{locale}.json, fetched only when B1 is unlocked),
+ * the HUD index (out/data/hud/index.json, rooms and missions for the palette and terminal) and the
+ * 3D page data (out/data/experience/{locale}.json, fetched by ExperienceGate with the 3D chunk),
  * which the pages fetch after hydration instead of inlining it into every HTML file, and the study guides
  * (out/data/guides/{locale}.json: the guide views plus the `guides` strings, fetched by the guide dialog).
  */
@@ -27,6 +30,7 @@ export function generateStaticParams() {
     ...LOCALES.map((locale) => ({ path: ["rooms", ENGINE_ROOMS_FILE(locale)] })),
     { path: ["hud", HUD_INDEX_FILE] },
     ...LOCALES.map((locale) => ({ path: ["guides", GUIDES_FILE(locale)] })),
+    ...LOCALES.map((locale) => ({ path: ["experience", EXPERIENCE_DATA_FILE(locale)] })),
   ];
 }
 
@@ -38,6 +42,10 @@ export async function GET(_request: Request, { params }: RouteContext<"/data/[..
     if (!locale) return new Response("Not found", { status: 404 });
     const data: GuidesData = { guides: guideViews(locale), messages: { guides: MESSAGES[locale].guides } };
     return Response.json(data);
+  }
+  if (kind === "experience") {
+    const locale = LOCALES.find((l) => file === EXPERIENCE_DATA_FILE(l));
+    return locale ? Response.json(await experienceDataFor(locale)) : new Response("Not found", { status: 404 });
   }
   if (kind !== "rooms") return new Response("Not found", { status: 404 });
   for (const locale of LOCALES) {

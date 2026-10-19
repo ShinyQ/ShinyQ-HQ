@@ -116,6 +116,12 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   2. `bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json`
 - `KNOWN_OVER` in `e2e/perf/peaks.spec.ts` lists peaks over budget waiting for a fix (expected failures). Remove an id as soon as it passes.
 
+### 3D page data off the gated pages
+
+- The gated pages (`/{locale}`, journey, labs, library, contact and their room pages) no longer serialize `ExperienceData` into the HTML and the RSC payload: each HTML and RSC `.txt` document is about 8 to 9.2 KB gzip (5.9 to 7.4 KB br) smaller, `/en` 55.3 to 46.4 KB gzip, `/en/labs` 71.7 to 62.7 KB.
+- The data is static versioned JSON, `/data/experience/{locale}.json?v=<hash>` (about 9.4 KB gzip), fetched by `ExperienceGate` in parallel with the 3D chunk (`src/experience/data-client.ts`); the Classic site and the static tier never download it. Detail: [3d-experience.md](3d-experience.md#experiencedata).
+- The 3D bytes gate counts scripts only, so its numbers do not move; the JSON shows under `json` in its report. Guard: no exported HTML or `.txt` file may carry the payload (check with `grep -rl roomCount out --include=*.html --include=*.txt`).
+
 ### Look check
 
 - Before and after any render-path change:
@@ -193,6 +199,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/floors/{floorChunks,floorPrefetch,lazyFloors,FloorChunkPrefetch}` and `floors/chunks/**` | `floor-chunks`, `ride`, `experience`, `labs` and `library-roof` |
 | `src/experience/tower/**`, `scene/Director.tsx`, `scene/precompile.ts` and `text-config.ts` | `ride` and `experience` |
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
+| `src/experience/data-client.ts` (with `ExperienceGate.tsx`) and `src/app/data/**` (the static client data, the 3D page data included) | `boot-first`, `experience` and more (`src/app/data/**` also `labs` and `library-roof`) |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
 | `src/hud/dialog/**` and `src/experience/hints/**` | `onboarding`, `experience` and `camera` |
 | `src/hud/dialog/{EngineUnlockLayer,engineRoomAction}`, `hud/{floorRows,FloorButtons}` and `hud/pads/**` | `b1-unlock`, `hud-corners`, `hud` and `pads` (the specs they matched before stay through `ALSO_RULES`) |
