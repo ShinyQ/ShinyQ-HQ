@@ -119,7 +119,7 @@ The office has its own south wing of the L1 slab ([owner decision](../decisions/
 | Office stop (every office room) | (3, S + 16.5) |
 | Desk arc centre | (3, S + 11) |
 | Screen wall centre line | S + 24.7, its footprint flush with the wing's south edge |
-| Wing sign | over the lead road at (3, S - 2), y 8.1 |
+| Wing sign | over the lead road at (3, S - 5), y 8.1 |
 | Reveal (`wingBounds`) | x -12 to 18, z S - 8 to S + 25 |
 
 - One continuous console: five desks (4.05 x 0.9 u, top at y 0.95) on an arc of radius 11 at 40, 20, 0, -20 and -40 degrees from +z toward +x (`OFFICE.angles`); the width closes the 20 degree step at the desks' back edge, so neighbours meet. Each Rover stands behind its desk (radius 12.2) facing the arc centre. Slot 0 (Desk 1) is the east end: the office stop looks south, so Desk 1 is the leftmost Rover from there, in the drawer's order. The 17 x 4 u screen wall (frame 0.2 u, bottom at y 0.6, 0.3 u thick) faces north, 0.35 u behind the middle Rover's back.
@@ -128,13 +128,14 @@ The office has its own south wing of the L1 slab ([owner decision](../decisions/
 - Reveal: `REVEAL.wing` (`wingBounds()`, the wing reaching north over the lead span) wraps the wing road, the sign and `OfficeMount`; the intro orbit is unchanged.
 - View zone `L1:office`: a 4 x 2.8 u area around the stop (`OFFICE.view.half`) looking south (+z), per camera class (`cameraClass`):
 
-  | Class | Zoom | Pitch |
-  |---|---|---|
-  | desktop (1440 x 900, 1280 x 720, 1180 x 820) | 1.24 | none (levels on exit, no turn-back) |
-  | tablet (landscape phones, 640 to 1023 px wide landscape screens) | 1.15 | -0.1 |
-  | mobile (portrait screens, phones and tablets) | 1.3 | 0.1 |
+  | Class | Zoom | Pitch | Look offset | Sky over the wall |
+  |---|---|---|---|---|
+  | desktop (1440 x 900, 1280 x 720, 1180 x 820) | 1.24 | none (levels on exit, no turn-back) | none | 33.1% |
+  | tablet (landscape phones, 640 to 1023 px wide landscape screens) | 1.15 | -0.1 | none | 32.7% |
+  | mobile (portrait screens, phones and tablets: 390 x 844, 820 x 1180) | 1.3 | 0.2 | `{ forward: -6.25 }` | 20.4% |
 
-  A `pitch` opts into the turn-back ([3d-experience.md](3d-experience.md)). Each class takes the closest view that keeps the wall, the five desks and the Rover in frame, the chips far, and the near pose (one zoom step, two on a portrait screen) clear. The sky over the wall is about 33% on desktop and 38% on portrait screens: the follow rig keeps its look target (the rover plus its look-ahead, over the desks) at the screen centre, so only a rig change could frame it lower.
+  A `pitch` opts into the turn-back ([3d-experience.md](3d-experience.md)). Each class takes the closest view that keeps the wall, the five desks and the Rover in frame, the chips far, and the near pose (one zoom step, two on a portrait screen) clear. The follow rig keeps its look target (the rover plus its look-ahead, over the desks) at the screen centre, so on a landscape screen the wall's top sits about a third of the way down (most of that band holds the two chip rows). A portrait screen moves its look target 6.25 u toward the camera (`ViewZone.lookOffset`, [Orbit](3d-experience.md#orbit), owner decision [2026-10-20](../decisions/2026-10-20-office-look-offset-ghost-outline.md)): the view tilts down to about 20% sky (at most 22% by test) with the five desks and the Rover in frame; a hand zoom eases the offset out, so the near pose is the plain one (31.5% sky). The tilted view reaches closer to the camera, so the wing sign hangs at S - 5, under the bottom edge on every class (`office-chip-placement`).
+- Ghost outline: from the wing the view looks south past the L1 slab edge, under the L2 slab, whose ghost outline (amber) crossed the office view. The floors above hide their outline while the rover is in the wing (`FloorLayout.hideGhostAbove: [wing rect]`) or the `L1:office` zone (`hideGhostAbove: true`), fading over the ghost floors' 0.45 s curve and cutting under reduced motion; on the lead road, at the spawn and everywhere else the outline stays ([3d-experience.md](3d-experience.md#orbit), `tower/ghostOutline.ts`).
 - Clearances under the full 6 u `SPACE_RULES` (`tests/unit/lobby-office.test.ts`, `tests/unit/highlights-layout.test.ts` checks the Lobby with the wing): the row boxes touch each other and the wall, the two end boxes keep 10.46 u apart and 6.09 u from the wing's side edges, the wall frame 6.3 u; the observatory corner (-18, S) keeps 6 u to the wing's west edge; nothing stands within 6 u of x 18 to 24 at z S (the hall lead road after the L1 re-spacing); the lead road stays off the hall's road zone and clear of the kiosk. The stop sits on 6 u wide floor (`wideGrid`), reachable from the spawn and the elevator, 5.5 u in front of the middle desk, 3.72 u from the middle box and 8.2 u from the wall.
 - `tests/unit/lobby-office.test.ts` also builds the wing for S = 27 (every z shifts by +6, every x stays).
 
