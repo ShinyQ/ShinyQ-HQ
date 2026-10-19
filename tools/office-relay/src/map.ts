@@ -39,7 +39,26 @@ function asObject(x: unknown): Record<string, unknown> | null {
   return typeof x === "object" && x !== null && !Array.isArray(x) ? (x as Record<string, unknown>) : null;
 }
 
-const toolName = (p: Record<string, unknown>) => (str(p.toolName) || str(p.tool_name)).toLowerCase();
+export const toolName = (p: Record<string, unknown>) => (str(p.toolName) || str(p.tool_name)).toLowerCase();
+
+/** How long after a Copilot `preToolUse` its `permissionRequest` still counts as that tool call's permission check. */
+export const PERMISSION_CHECK_MS = 1500;
+
+/** The last Copilot `preToolUse` of a session (kept on disk, because every hook call is its own process). */
+export interface LastTool {
+  tool: string;
+  at: number;
+}
+
+/**
+ * Copilot fires `permissionRequest` before its permission service decides (rules, session approvals, allow-all,
+ * autopilot), so it follows the `preToolUse` of nearly every tool call, and its payload says nothing about the
+ * outcome. Such a request is a permission check, not a prompt: a prompt the user must answer comes as the
+ * `permission_prompt` notification. A request with no matching `preToolUse` just before it still means Needs Kurniadi.
+ */
+export function isPermissionCheck(last: LastTool | null, tool: string, now: number): boolean {
+  return last !== null && tool !== "" && last.tool === tool && now - last.at >= 0 && now - last.at <= PERMISSION_CHECK_MS;
+}
 
 /** The shell command of a tool event, in every agent's shape (`toolArgs` object or JSON string, `tool_input.command` string or argv). */
 export function toolCommand(p: Record<string, unknown>): string {

@@ -20,7 +20,9 @@ export const HOOK_FIXTURES: Record<OfficeAgent, Record<string, Record<string, un
     postToolUseView: copilot({ toolName: "view", toolArgs: { path: `${CWD}/src/login.ts` }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseBash: copilot({ toolName: "bash", toolArgs: { command: SECRET_CMD }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseFailureCi: copilot({ toolName: "bash", toolArgs: { command: "gh pr checks 230 --watch" }, error: OUTPUT }),
-    permissionRequest: copilot({ toolName: "bash", toolArgs: { command: SECRET_CMD } }),
+    preToolUseMcp: copilot({ toolName: "github-mcp-server-get_file_contents", toolArgs: { path: `${CWD}/src/login.ts` } }),
+    // The shape Copilot CLI 1.0.97 sends (captured): `toolInput`, not `toolArgs`, and nothing about auto-approval.
+    permissionRequest: copilot({ hookName: "permissionRequest", toolName: "bash", toolInput: { command: SECRET_CMD }, permissionSuggestions: [] }),
     notification: { ...copilot({}), hook_event_name: "Notification", message: PROMPT, notification_type: "permission_prompt" },
     notificationIdle: { ...copilot({}), hook_event_name: "Notification", message: "idle", notification_type: "agent_idle" },
     agentStop: copilot({ transcriptPath: `${CWD}/transcript.jsonl`, stopReason: "end_turn" }),
