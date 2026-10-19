@@ -32,6 +32,7 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
   if (mod && onL1 && ready && !intro && !mounted) setMounted(true);
   const idle = useRef(false);
   const next = useRef(0);
+  const prefetch = useRef<boolean | null>(null);
   useEffect(
     () =>
       afterFirstFrameIdle(() => {
@@ -40,13 +41,14 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
     [],
   );
   useFrame(({ clock }) => {
-    if (clock.elapsedTime < next.current) return;
+    if (clock.elapsedTime < next.current || officeChunkState() !== "idle") return;
     next.current = clock.elapsedTime + 0.5;
+    prefetch.current ??= speculativePrefetchOn(window.location.search);
     const s = getHQStore().getState();
     const want = officeLoadWanted({
       idle: idle.current,
       state: officeChunkState(),
-      prefetch: speculativePrefetchOn(window.location.search),
+      prefetch: prefetch.current,
       floor: s.floor,
       rideTo: s.ride?.to ?? null,
       at: s.ride ? LOBBY.arrival : roverRuntime,

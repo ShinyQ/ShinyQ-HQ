@@ -58,18 +58,24 @@ describe("Agent Office chunk boundary", () => {
     const chunk = staticClosure(ENTRY);
     expect(OFFICE_ONLY.filter((f) => !chunk.has(f))).toEqual([]);
     expect(readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8")).toContain(`import("./scene")`);
-    const importers = files(join(ROOT, "src")).filter((f) => /import\(\s*["'][^"']*office\/scene["']\s*\)|import\(\s*["']\.\/scene["']\s*\)/.test(readFileSync(join(ROOT, f), "utf8")));
-    expect(importers.filter((f) => f.startsWith(DIR) || f.includes("office"))).toEqual([`${DIR}/chunk.ts`]);
+    // A relative `./scene` is the office entry only from inside the office folder (the intro chunk has its own).
+    const importers = files(join(ROOT, "src")).filter((f) => {
+      const text = readFileSync(join(ROOT, f), "utf8");
+      return /import\(\s*["'][^"']*office\/scene["']\s*\)/.test(text) || (f.startsWith(`${DIR}/`) && /import\(\s*["']\.\/scene["']\s*\)/.test(text));
+    });
+    expect(importers).toEqual([`${DIR}/chunk.ts`]);
   });
 
   it("starts the speculative load only after the first frame went idle and with prefetch on (`?prefetch=off`)", () => {
     const mount = readFileSync(join(ROOT, `${DIR}/OfficeMount.tsx`), "utf8");
-    // The idle flag flips only inside the afterFirstFrameIdle callback.
+    // The idle flag starts false and flips only inside the afterFirstFrameIdle callback.
+    expect(mount).toMatch(/const idle = useRef\(false\)/);
     expect(mount.match(/idle\.current = true/g)).toHaveLength(1);
     expect(mount).toMatch(/afterFirstFrameIdle\(\(\) => \{\s*idle\.current = true;\s*\}\)/);
     // The one loadOffice call is gated by officeLoadWanted fed with that flag and speculativePrefetchOn.
     expect(mount.match(/loadOffice\(\)/g)).toHaveLength(1);
-    expect(mount).toMatch(/const want = officeLoadWanted\(\{\s*idle: idle\.current,[^}]*prefetch: speculativePrefetchOn\(window\.location\.search\),/);
+    expect(mount).toMatch(/const want = officeLoadWanted\(\{\s*idle: idle\.current,[^}]*prefetch: prefetch\.current,/);
+    expect(mount).toMatch(/prefetch\.current \?\?= speculativePrefetchOn\(window\.location\.search\)/);
     expect(mount).toMatch(/if \(want\) void loadOffice\(\)/);
   });
 });
