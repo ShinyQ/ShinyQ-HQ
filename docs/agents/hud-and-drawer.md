@@ -376,9 +376,16 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 ### Builders and data
 
 - One builder per floor in `src/content/room-views/` (`lobby`, `career`, `labs`, `library`, `roof`), aggregated by `buildRoomViews(locale)`.
-- Exported at build time to `/data/rooms/{locale}.json`.
-- The secret B1 station views (`engine.ts`, `buildEngineRoomViews`) are a separate file, `/data/rooms/b1-{locale}.json`, never part of the shared one. `DrawerHost` fetches it (`loadEngineViews`) only when `b1Unlocked` is set or a `B1:` room opens, and merges it over the shared views.
-- The drawer fetches it once (`loadRoomViews`), after the first 3D frame on idle or when a room opens first, so pages do not grow.
+- Exported at build time as one file per locale and floor, `/data/rooms/{locale}-{floor}.json` (`buildFloorRoomViews`; L1 to RF). A room lives in the file of its id prefix (`roomFloor`: `L1:highlights-about` in L1, `L3:reactor` in L3), and the drawer's prev/next arrows never leave a floor (a unit test checks both).
+  - The secret B1 station views (`engine.ts`, `buildEngineRoomViews`) keep their own file, `/data/rooms/b1-{locale}.json`.
+  - File names and URLs: `ROOMS_FILE` and `roomsUrl` in `hud/drawer/data-path.ts`, shared by the route and the client.
+- Version: every file is fetched with `?v=<hash>`, the first 12 hex chars of the sha256 of its body (`shortHash` from `src/lib/content-hash.ts` via `roomDataVersions(locale)`, memoized per locale). The hashes ride in `ExperienceData.roomData`, so in the experience JSON and never in the HTML; `Experience` hands them to the loader (`setRoomDataVersions`) during its render, before any child effect fetches. Without one (dev prototypes) the plain path is fetched.
+- Client loader (`hud/drawer/data.ts`): `loadFloorViews(locale, floor)` (one fetch per locale and floor, a failed load is forgotten so the next call refetches), `loadRoomView(locale, room)` (its floor's file only), `peekFloorViews` (synchronous, once loaded). There is no all-floors loader: nothing needs every floor.
+- What loads when (pages never grow):
+  - an open room loads its floor's file at once (deep links before the first frame), through `useFloorViews` in `DrawerHost`;
+  - after the first 3D frame on idle: the rover's floor, then a ride's target floor as the rover heads there, and the B1 file once B1 is unlocked (like its floor chunk). Other floors load only on demand. A locked Lobby session fetches only the L1 file;
+  - a locked session never fetches the B1 file (no B1 floor, ride or room);
+  - the hologram (`HologramOverlay`, `HologramStage`) reads the L3 file, the paper preview (`openPaperFor`) and `#library-topic=` the L4 file, `#labs-tech=` the L3 file.
 - A floor phase owns its builder file; a test checks that every catalog room has a view.
 
 ### Custom bodies

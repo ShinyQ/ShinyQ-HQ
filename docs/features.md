@@ -455,7 +455,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 - zod stays on the server (`src/content/locales.ts`); the build fails when `_zod`, `readFileSync` or `site-content` reaches a client chunk.
 - Lighthouse CI warms up on a throwaway URL first.
 - Unhashed files have explicit cache rules (`public/_headers`); troika fonts are content-hashed and immutable.
-- The game-first boot downloads only what the first 3D frame needs: the hidden page is skipped with `content-visibility`, header links do not prefetch, room data waits for the first frame and idle.
+- The game-first boot downloads only what the first 3D frame needs: the hidden page is skipped with `content-visibility`, header links do not prefetch, room data waits for the first frame and idle, then loads one floor at a time (the rover's floor, a ride's target, an opened room's floor), versioned by a content hash.
 - The boot card names the owner and offers the Classic site. The Page View never starts audio.
 - Numbers against the round 5 starting point: initial JS 235.2 to 203.8 KB, bytes before the first 3D frame 1082.1 to 680.7 KB, troika fonts 139 to 58 KB.
 

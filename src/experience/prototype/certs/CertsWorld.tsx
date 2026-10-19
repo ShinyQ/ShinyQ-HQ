@@ -2,13 +2,15 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ToneMappingMode } from "postprocessing";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ACESFilmicToneMapping } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import "../../text-config";
 import { LOBBY } from "../../config";
 import { CertWall, type CertLabels } from "../../floors/lobby/CertWall";
 import { Lanes } from "../../floors/lobby/Lanes";
+import { atlasLayout, wallLogoSrcs } from "../../floors/lobby/logoAtlas";
+import { useLogoAtlas } from "../../floors/lobby/LogoQuads";
 import { SkillsWall } from "../../floors/lobby/SkillsWall";
 import { GridFloor } from "../../fx/GridFloor";
 import { Rover } from "../../rover/Rover";
@@ -52,6 +54,8 @@ function PrototypeEffects() {
 export default function CertsWorld({ data, certs, labels, tier, mobile }: { data: ExperienceData; certs: ExperienceData["certifications"]; labels: CertLabels; tier: GpuTier; mobile: boolean }) {
   const [ready, setReady] = useState(false);
   const settings = sceneSettings(tier);
+  const atlas = useMemo(() => atlasLayout(wallLogoSrcs(data)), [data]);
+  const atlasTexture = useLogoAtlas();
   useEffect(() => {
     roverRuntime.x = ROVER_AT.x;
     roverRuntime.z = ROVER_AT.z;
@@ -70,8 +74,8 @@ export default function CertsWorld({ data, certs, labels, tier, mobile }: { data
         <CameraRig mobile={mobile} />
         <GridFloor width={b.maxX - b.minX} depth={b.maxZ - b.minZ} center={[(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2]} />
         <Lanes packets={tier === "full" ? 28 : 12} />
-        <SkillsWall skills={data.skills} title="Skills" />
-        <CertWall certifications={certs} labels={labels} tier={tier} />
+        <SkillsWall skills={data.skills} atlas={atlas} atlasTexture={atlasTexture} title="Skills" />
+        <CertWall certifications={certs} atlas={atlas} atlasTexture={atlasTexture} labels={labels} tier={tier} />
         <Rover tier={tier} />
         {tier === "full" && (
           <PrototypeEffects />

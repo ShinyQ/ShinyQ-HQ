@@ -16,3 +16,5 @@ Icons used by `src/content/tech.ts` (`getTechLogo`). Files are named by registry
 | Owner's previous portfolio | remaining `*.webp` rasters | Trimmed and padded to 96 x 96. |
 
 Names without a usable logo render as text chips and are listed in `TEXT_ONLY_TECH`.
+
+The 3D Lobby walls draw these logos from one prebuilt atlas (`public/atlas/`): after adding, removing or replacing a logo the skills or certification wall shows, run `bun run logo:atlas` and commit its output.

@@ -10,7 +10,7 @@ export interface FilterUrlStore<S> {
 export interface FilterUrlEnv<V> {
   history: Pick<History, "replaceState" | "state">;
   location: { pathname: string; search: string; hash: string };
-  /** The drawer data the deep link resolves against (`/data/rooms/{locale}.json`). */
+  /** The drawer data the deep link resolves against (its floor's file, `/data/rooms/{locale}-{floor}.json`). */
   load: () => Promise<V | undefined>;
   /** Defers a write until other store listeners (room and floor URL sync) have written theirs. */
   defer?: (fn: () => void) => void;

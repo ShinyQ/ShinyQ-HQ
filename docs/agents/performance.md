@@ -15,14 +15,14 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 457.3 KB gzip (measured full 456.7 KB, lite 441.0 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 457.3 KB gzip (measured full 457.0 KB, lite 441.3 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 5.0 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 486.3 KB (measured 485.7 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 470.6 KB (measured 470.0 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 486.3 KB (measured 486.1 KB, about 0.2 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 470.6 KB (measured 470.3 KB, about 0.3 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -80,17 +80,19 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 #### `bytes-3d`
 
 - Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 457.3 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 456.7 KB, lite 441.0 KB (the full tier adds the lazy `Effects` chunk).
+  - It gates the critical path before the first frame. Measured: full 457.0 KB, lite 441.3 KB (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 486.3 KB: measured 485.7 KB (main 456.7 KB plus floor chunks 29.0 KB).
-  - lite 470.6 KB: measured 470.0 KB (main 441.0 KB plus floor chunks 29.0 KB).
+  - full 486.3 KB: measured 486.1 KB (main 457.0 KB plus floor chunks 29.0 KB).
+  - lite 470.6 KB: measured 470.3 KB (main 441.3 KB plus floor chunks 29.0 KB).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 11.8 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
+- JSON is reported (`other.json`), not capped. The Glass Drawer data is split per floor ([hud-and-drawer.md](hud-and-drawer.md#builders-and-data)), so a Lobby session fetches only the L1 file on idle (7.1 KB gzip of JSON, was 74.2 KB with the single 340 KB rooms file; the split costs the main path about 0.16 KB gzip).
+- Images are reported (`other.image`), not capped. The L1 skills and certification wall logos are one prebuilt WebP atlas (quantized, then lossless) (`scripts/logo-atlas.ts`, [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one request instead of one per logo (58 today), cached as immutable. It costs more bytes than the sources (about 126 KB against about 81 KB of gzipped SVG and WebP on the wire): a 128 px raster of every logo, quantized only as far as the walls still look the same (lossy WebP smears thin colored edges). Never go back to fetching logos one by one from 3D code.
 
 #### Study guide reader
 
@@ -228,7 +230,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |
 
-- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`; the Cmd-K files (`hudActions`, `search`, `palette-types`, `MissionHud`) add `b1-unlock`; so do the unlock's producers (`src/store/`, `Experience.tsx`, `ExperienceGate.tsx`, `src/lib/audio/engine.ts`).
+- `ALSO_RULES` in `scripts/e2e-plan.ts` add specs on top of the first matching rule: shared files that the B1 Engine Room touched (floor rows and picker, drawer data and host, audio, the sky controller, the tower and shaft, chunk loading and prefetch, the data route) keep their own specs and add `engine-room`; the drawer data per floor (`hud/drawer/{data,data-path}.ts`, `DrawerHost.tsx`, `content/room-views/index.ts`, the data route) adds `floor-chunks` and every floor's deep-link specs (`labs`, `highlights`, `visits`, `production`, `reactor`, `topics`, `career`, `library-roof`); the Cmd-K files (`hudActions`, `search`, `palette-types`, `MissionHud`) add `b1-unlock`; so do the unlock's producers (`src/store/`, `Experience.tsx`, `ExperienceGate.tsx`, `src/lib/audio/engine.ts`).
 - `scripts/b1-shots.ts` (like the other capture scripts) is offline tooling: it runs no spec.
 - The perf planner (`scripts/perf-plan.ts`, PR CI only) maps the lazy B1 files (`floors/engine/**`, `EngineRoom.tsx`, `chunks/engine.ts`, `EngineBody`, `room-views/engine.ts`) to `bytes`, `floor:B1` and `ride:B1`. `floors/engine/layout.ts` and `src/experience/b1.ts` are on the main 3D path (the tower, the registry and the store read them), so they keep the full lane.
 - Options: `--dry` prints the plan, `--base <ref>` changes the base, extra args go to Playwright (`bun run e2e:changed --headed`).

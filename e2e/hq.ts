@@ -206,6 +206,19 @@ export function collectErrors(page: Page) {
   return errors;
 }
 
+/**
+ * Records the Glass Drawer files (`/data/rooms/*`, path and `?v=`) the page requests, in request order. Call it before
+ * `page.goto`; a request listener, unlike resource timing, cannot miss a file once the timing buffer is full.
+ */
+export function trackRoomFiles(page: Page): () => string[] {
+  const files: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith("/data/rooms/")) files.push(`${url.pathname}${url.search}`);
+  });
+  return () => [...files];
+}
+
 export async function snapshot(page: Page): Promise<HQSnapshot> {
   return page.evaluate(() => {
     const hq = (window as unknown as HQWindow).__hq;

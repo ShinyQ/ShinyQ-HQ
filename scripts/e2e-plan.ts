@@ -221,7 +221,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
   // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
   { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
-  { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
+  // The prebuilt L1 wall logo atlas (scripts/logo-atlas.ts) draws on the Lobby walls only.
+  { test: /^src\/experience\/floors\/lobby\/|^public\/atlas\/|^src\/experience\/logo-atlas\.ts$|^scripts\/logo-atlas\.(ts|lock\.json)$/, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   // Missions: the runner, the 3D host and the reworked missions (highlights drives to the hall, journey rides to L2).
   { test: /^src\/experience\/missions\//, specs: ["missions", "experience", "library-roof", "highlights", "career"] },
@@ -392,6 +393,11 @@ const ALSO_RULES: Rule[] = [
   {
     test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["engine-room"],
+  },
+  // Glass Drawer data per floor (loader, file names and versions, the drawer host prefetch, the data route): every floor's deep links and the per-floor fetches.
+  {
+    test: /^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/DrawerHost\.tsx$|^src\/content\/room-views\/index\.ts$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics", "career", "library-roof"],
   },
 ];
 

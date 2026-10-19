@@ -55,7 +55,7 @@ const probe = (page: Page) =>
 const signs = (page: Page) => page.evaluate(() => ((window as unknown as TW).__hq.probes.signs["library-end-signs"] ?? []).map((s) => s.text.replace(/\s+/g, " ")));
 
 async function topicOf(page: Page, slug: string) {
-  const res = await page.request.get("/data/rooms/en.json");
+  const res = await page.request.get("/data/rooms/en-L4.json");
   const view = ((await res.json()) as Record<string, View>)["L4:topics"].topics;
   const topic = view.topics.find((t) => t.slug === slug)!;
   return { ...topic, rooms: [...new Set(topic.items.map((i) => i.room))].sort() };

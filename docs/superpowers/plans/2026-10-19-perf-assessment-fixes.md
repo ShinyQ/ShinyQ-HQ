@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review (owner request 2026-10-19; five PRs, A to E).
+Status: shipped in #244 (f8390a5), #246 (ec3e6e9), #257 (82f721d), #259 (f28d5f8) and #260, 2026-10-19 (owner request; items 3 and 11 shipped under owner budget decisions, see docs/decisions/2026-10-19-floor-order-out-of-classic.md and docs/decisions/2026-10-19-idle-frame-cadence.md).
 
 **Goal:** Fix the twelve findings of the 2026-10-19 performance assessment (measured on main 633750e) without any visible change: same layout, typography, colors, motion, 3D visuals and copy.
 
