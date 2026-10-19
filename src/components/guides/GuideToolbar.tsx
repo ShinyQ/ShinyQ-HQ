@@ -30,6 +30,20 @@ export interface GuideToolbarProps {
 }
 
 /**
+ * Props for a control that reaches a limit (first or last page, smallest or largest zoom). It stays focusable with
+ * `aria-disabled` instead of `disabled`: a focused button that turns `disabled` drops focus to the body, out of the
+ * dialog's Tab trap and away from the reader's shortcuts.
+ */
+function limit(off: boolean, run: () => void) {
+  return {
+    "aria-disabled": off,
+    onClick: () => {
+      if (!off) run();
+    },
+  };
+}
+
+/**
  * The reader toolbar above the pages: Close, title, Chapters and Download on the first row; the page input,
  * Prev and Next, and the zoom buttons on the second (so it fits a 360 px phone). Every target is at least 44 px.
  */
@@ -108,21 +122,20 @@ export function GuideToolbar({ title, titleId, count, current, zoom, chapters, d
         <span className="pv-data shrink-0 text-ink-2" data-testid="guide-page-count">
           / {count ?? "-"}
         </span>
-        <button type="button" className={BUTTON} onClick={() => onGo(current - 1)} disabled={!ready || current <= 1} aria-label={t("prev")} data-testid="guide-prev">
+        <button type="button" className={BUTTON} {...limit(!ready || current <= 1, () => onGo(current - 1))} aria-label={t("prev")} data-testid="guide-prev">
           <span aria-hidden="true">&#8249;</span>
         </button>
-        <button type="button" className={BUTTON} onClick={() => onGo(current + 1)} disabled={!ready || current >= total} aria-label={t("next")} data-testid="guide-next">
+        <button type="button" className={BUTTON} {...limit(!ready || current >= total, () => onGo(current + 1))} aria-label={t("next")} data-testid="guide-next">
           <span aria-hidden="true">&#8250;</span>
         </button>
         <span className="ml-auto flex gap-1.5">
-          <button type="button" className={BUTTON} onClick={() => onZoom(-1)} disabled={!ready || zoom <= ZOOM_STEPS[0]} aria-label={t("zoomOut")} data-testid="guide-zoom-out">
+          <button type="button" className={BUTTON} {...limit(!ready || zoom <= ZOOM_STEPS[0], () => onZoom(-1))} aria-label={t("zoomOut")} data-testid="guide-zoom-out">
             <span aria-hidden="true">&#8722;</span>
           </button>
           <button
             type="button"
             className={BUTTON}
-            onClick={() => onZoom(1)}
-            disabled={!ready || zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+            {...limit(!ready || zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1], () => onZoom(1))}
             aria-label={t("zoomIn")}
             data-testid="guide-zoom-in"
           >

@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 
 /** Shared bits of the study guide dialog and reader (no strings, so no `guides` reads here). */
 export const BUTTON =
-  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line-2 px-2 text-sm font-semibold text-ink transition hover:border-ink-2 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line-2 px-2 text-sm font-semibold text-ink transition hover:border-ink-2 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:opacity-40";
 
 /** Loading skeleton: the guide's cover when the view is known, else a blank sheet. */
 export function GuideSkeleton({ cover }: { cover?: string }) {
