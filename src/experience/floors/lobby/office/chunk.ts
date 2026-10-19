@@ -21,8 +21,8 @@ const set = (next: OfficeChunkState) => {
 
 /**
  * Loads the office chunk once per page (one shared promise). Rejects when the import fails and forgets the promise,
- * so the next request (`__hq.office.load()`) retries; the speculative trigger never retries a failed load. An office
- * drawer loads only its body (`loadOfficeBody`). This import() is the only reference to the chunk entry.
+ * so the next request (`__hq.office.load()`) retries; the speculative trigger never retries a failed load. Opening an
+ * office drawer starts it too, beside its body (`loadOfficeBody`). This import() is the only reference to the chunk entry.
  */
 export function loadOffice(): Promise<OfficeModule> {
   if (!pending) {

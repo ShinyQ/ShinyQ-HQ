@@ -102,4 +102,9 @@ describe("Agent Office chunk boundary", () => {
     expect(mount).toMatch(/prefetch\.current \?\?= speculativePrefetchOn\(window\.location\.search\)/);
     expect(mount).toMatch(/if \(want\) void loadOffice\(\)/);
   });
+
+  it("starts the 3D office beside the body when an office drawer opens (a user action, so even with `?prefetch=off`)", () => {
+    const bodies = readFileSync(join(ROOT, "src/hud/drawer/bodies.tsx"), "utf8");
+    expect(bodies).toMatch(/const OfficeBody = chunkBody\(\(\) => \{\s*void loadOffice\(\)\.catch\(\(\) => null\);\s*return loadOfficeBody\(\)/);
+  });
 });
