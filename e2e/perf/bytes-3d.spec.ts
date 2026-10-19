@@ -13,7 +13,7 @@ import { writePerfEntry } from "./helpers";
  * images are reported. The main path is measured with `?prefetch=off`; then each public on-demand floor
  * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at 450 KB; main plus
  * every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in a normal
- * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 470 KB, lite 446.4 KB).
+ * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 473 KB, lite 449.4 KB).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
  * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office chunk
  * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total.
