@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import guides from "../content/study-guides.json";
-import { routeGuides } from "./fixtures/guide-pdf";
+import { guidePdf, routeGuides, serveGuides } from "./fixtures/guide-pdf";
 import { openPage } from "./hq";
 
 /**
@@ -51,7 +52,7 @@ test.describe("desktop", () => {
     await expect(slot(page, 1)).toContainText("Fixture page 1");
     await expect(reader).toHaveAttribute("data-current-page", "1");
     // pdf.js read the fixture by byte ranges after the first request.
-    expect(log.statuses).toContain(206);
+    expect(log.requests.map((r) => r.status)).toContain(206);
 
     await page.getByTestId("guide-next").click();
     await expect(reader).toHaveAttribute("data-current-page", "2");
@@ -75,39 +76,58 @@ test.describe("desktop", () => {
     await expect(read).toBeFocused();
   });
 
-  test("open, chapters and download stay in the page: a same-origin PDF attachment, no new tab", async ({ page, context }) => {
-    let opened = 0;
-    context.on("page", () => opened++);
-    await openShelf(page);
-    const card = page.locator("#guides li").filter({ has: page.getByTestId("guide-read") }).first();
-    const shelfDownload = card.locator("a[download]");
-    await expect(shelfDownload).toHaveAttribute("download", FIRST.file);
-    await openFirst(page);
+  test("open, chapters and download stay in the page: a same-origin PDF attachment, no new tab", async ({ page, context, baseURL }) => {
+    // Real HTTP, not page.route: Chromium fetches an `<a download>` outside request interception (see serveGuides).
+    const server = await serveGuides(baseURL!, PAGES);
+    try {
+      let opened = 0;
+      context.on("page", () => opened++);
+      await openPage(page, `${server.origin}/en/library?tier=static#guides`);
+      const card = page.locator("#guides li").filter({ has: page.getByTestId("guide-read") }).first();
+      const shelfDownload = card.locator("a[download]");
+      await expect(shelfDownload).toHaveAttribute("download", FIRST.file);
+      await openFirst(page);
 
-    await page.getByTestId("guide-chapters").click();
-    const chapters = page.getByTestId("guide-chapter-list");
-    await expect(chapters.getByRole("button")).toHaveCount(PAGES);
-    await chapters.getByRole("button", { name: "Chapter 4" }).click();
-    await expect(chapters).toHaveCount(0);
-    await expect(readerOf(page)).toHaveAttribute("data-current-page", "4");
-    await expectRendered(page, 4);
+      await page.getByTestId("guide-chapters").click();
+      const chapters = page.getByTestId("guide-chapter-list");
+      await expect(chapters.getByRole("button")).toHaveCount(PAGES);
+      await chapters.getByRole("button", { name: "Chapter 4" }).click();
+      await expect(chapters).toHaveCount(0);
+      await expect(readerOf(page)).toHaveAttribute("data-current-page", "4");
+      await expectRendered(page, 4);
 
-    const download = page.getByTestId("guide-download");
-    for (const anchor of [download, shelfDownload]) {
-      await expect(anchor).toHaveAttribute("download", FIRST.file);
-      expect(await anchor.getAttribute("target")).toBeNull();
-      const href = new URL((await anchor.getAttribute("href"))!, page.url());
-      expect(href.origin).toBe(new URL(page.url()).origin);
-      expect(href.pathname).toBe(`/api/guides/${FIRST.slug}`);
-      expect(href.searchParams.get("download")).toBe("1");
+      const download = page.getByTestId("guide-download");
+      for (const anchor of [download, shelfDownload]) {
+        await expect(anchor).toHaveAttribute("download", FIRST.file);
+        expect(await anchor.getAttribute("target")).toBeNull();
+        const href = new URL((await anchor.getAttribute("href"))!, page.url());
+        expect(href.origin).toBe(new URL(page.url()).origin);
+        expect(href.pathname).toBe(`/api/guides/${FIRST.slug}`);
+        expect(href.searchParams.get("download")).toBe("1");
+      }
+      expect(server.requests.some((r) => new URL(r.url).searchParams.has("download"))).toBe(false);
+
+      const [file] = await Promise.all([page.waitForEvent("download"), download.click()]);
+      expect(await file.failure()).toBeNull();
+      const bytes = readFileSync(await file.path());
+      expect(bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+      expect(bytes.equals(Buffer.from(guidePdf(PAGES)))).toBe(true);
+      expect(file.suggestedFilename()).toBe(FIRST.file);
+
+      const served = server.requests.filter((r) => new URL(r.url).searchParams.get("download") === "1");
+      expect(served).toHaveLength(1);
+      expect(new URL(served[0].url).pathname).toBe(`/api/guides/${FIRST.slug}`);
+      expect(served[0].status).toBe(200);
+      expect(served[0].disposition).toBe(`attachment; filename="${FIRST.file}"`);
+      expect(served[0].body.equals(bytes)).toBe(true);
+
+      await expect(page.getByTestId("guide-dialog")).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe("/en/library");
+      expect(opened).toBe(0);
+      expect(context.pages()).toHaveLength(1);
+    } finally {
+      await server.close();
     }
-    const [file] = await Promise.all([page.waitForEvent("download"), download.click()]);
-    expect(file.suggestedFilename()).toMatch(/\.pdf$/);
-    expect(new URL(file.url()).searchParams.get("download")).toBe("1");
-    await expect(page.getByTestId("guide-dialog")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/en/library");
-    expect(opened).toBe(0);
-    expect(context.pages()).toHaveLength(1);
   });
 
   test("a certification preview opens its study guide in the reader", async ({ page }) => {
