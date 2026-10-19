@@ -7,8 +7,8 @@ import { ROVER_MARK_3D, roverMarkExtent } from "./roverMark3d";
  * panel sizes to its content, so a few certifications do not leave it half empty.
  */
 export const CERT_WALL = {
-  /** Badge plane radius from the hologram center; the panel sits `inset` behind it. */
-  radius: 19.6,
+  /** Badge plane radius from the hologram center (`LOBBY.certWall.radius`); the panel sits `inset` behind it. */
+  radius: LOBBY.certWall.radius,
   inset: 0.35,
   badge: { w: 1.9, h: 1.5 },
   gap: { x: 0.3, y: 0.28 },

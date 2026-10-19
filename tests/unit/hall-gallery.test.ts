@@ -66,7 +66,7 @@ describe("Highlights Hall gallery: gateway arch", () => {
   it("is passable: the opening is walkable and every station route from the spawn runs through it", () => {
     const grid = buildNavGrid(l1, ROVER.radius);
     const o = gateOpening();
-    // Rover radius plus one grid cell from each pillar; the 8 u road (z 11 to 19) fits inside.
+    // Rover radius plus one grid cell from each pillar; the 8 u road (z 17 to 25) fits inside.
     for (let z = o.minZ + ROVER.radius + 1; z <= o.maxZ - ROVER.radius - 1; z += 0.5) expect(isWalkable(grid, { x: o.x, z }), `z ${z}`).toBe(true);
     const graph = buildRoadGraph(l1.road!);
     for (const s of HALL_LAYOUT.stations) {
@@ -77,11 +77,13 @@ describe("Highlights Hall gallery: gateway arch", () => {
   });
 
   it("fires the curtain only for an eastward pass inside the opening", () => {
-    expect(gateCrossed({ x: 30, z: 15 }, { x: 34, z: 15 })).toBe(true);
-    expect(gateCrossed({ x: 34, z: 15 }, { x: 30, z: 15 })).toBe(false);
-    expect(gateCrossed({ x: 30, z: 5 }, { x: 34, z: 5 })).toBe(false);
-    expect(gateCrossed({ x: 31, z: 15 }, { x: 32.9, z: 15 })).toBe(false);
-    expect(gateCrossed({ x: 32.9, z: 15 }, { x: 33, z: 15 })).toBe(true);
+    // The gate stands at x 38 over the lead road (z 21).
+    expect(HALL.gate.x).toBe(38);
+    expect(gateCrossed({ x: 35, z: 21 }, { x: 39, z: 21 })).toBe(true);
+    expect(gateCrossed({ x: 39, z: 21 }, { x: 35, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 35, z: 11 }, { x: 39, z: 11 })).toBe(false);
+    expect(gateCrossed({ x: 36, z: 21 }, { x: 37.9, z: 21 })).toBe(false);
+    expect(gateCrossed({ x: 37.9, z: 21 }, { x: 38, z: 21 })).toBe(true);
   });
 });
 
@@ -167,7 +169,7 @@ describe("Highlights Hall gallery: lights and camera", () => {
     expect(cameraBlocked([m.box.x, 6, m.box.z], world)).toBe(true);
     expect(cameraBlocked([contactBeacon().mast.x, 8.5, contactBeacon().mast.z], world)).toBe(true);
     // Under the gate lintel, in the opening, the camera is free.
-    expect(cameraBlocked([HALL.gate.x, 4, 15], world)).toBe(false);
+    expect(cameraBlocked([HALL.gate.x, 4, HALL.lead[0].z], world)).toBe(false);
   });
 
   it("builds faces that read left to right toward `out`", () => {

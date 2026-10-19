@@ -3,6 +3,7 @@ import type { SignSpec } from "../../fx/signLayout";
 import type { GpuTier, Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
 import { gatePillars, HALL, stationOf } from "./hallLayout";
+import { LOBBY_SLAB } from "./slab";
 
 /**
  * Highlights Hall gallery (spectacle round, docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md
@@ -55,7 +56,8 @@ export function arcFace(origin: Face, u: number, radius: number): Face {
 // ---------------------------------------------------------------- 01 About me: holo pedestal
 
 export const ABOUT = {
-  center: { x: 37, z: -19.5 },
+  /** Middle of the about station, 1.5 u in from the north slab edge. */
+  center: { x: (HALL.stations.about.minX + HALL.stations.about.maxX) / 2, z: -LOBBY_SLAB.halfZ + 1.5 },
   base: { r: 1.5, h: 0.35 },
   column: { r: 0.75, h: 1.25 },
   /** The portrait hologram disc: center height and radius. */
@@ -89,7 +91,8 @@ export function statTiles(count: number = ABOUT.tiles.u.length): StatTile[] {
 
 // ---------------------------------------------------------------- 02 Top projects: monoliths
 
-export const MONOLITH = { u: [-5.4, 0, 5.4], w: 4.9, d: 0.5, h: 7.6, arc: 16, backZ: -20.4 } as const;
+/** `backZ`: the middle monolith's center line, 0.6 u in from the north slab edge. */
+export const MONOLITH = { u: [-5.4, 0, 5.4], w: 4.9, d: 0.5, h: 7.6, arc: 16, backZ: -LOBBY_SLAB.halfZ + 0.6 } as const;
 /** Screenshot on each monolith (16:10), and the text lines below it. */
 export const SHOT = { y: 4.6, w: 4.4, h: 2.75 } as const;
 
@@ -160,7 +163,8 @@ export const BEACON = {
     { y: 5.8, w: 1.2 },
     { y: 7.8, w: 0.9 },
   ],
-  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, z: 18.35 },
+  /** `z`: the card's center, 2.65 u in from the south slab edge. */
+  card: { u: -1.3, w: 10, y: 1.4, h: 4.4, d: 0.15, z: LOBBY_SLAB.halfZ - 2.65 },
 } as const;
 
 export interface ContactBeacon {
@@ -218,7 +222,8 @@ export function gateSign(text: string): SignSpec {
   return { text: text.toUpperCase(), x: HALL.gate.x, y: HALL.gate.signY, z: (o.minZ + o.maxZ) / 2, color: HALL.tone.about, fontSize: 0.75, letterSpacing: 0.08 };
 }
 
-export const FOUNTAIN = { x: 46, z: 3, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;
+/** The light fountain marks the hall plaza center. */
+export const FOUNTAIN = { x: HALL.plaza.x, z: HALL.plaza.z, ring: 2.2, rings: [1.6, 2.6], beams: { full: 12, lite: 6 }, spin: 0.15 } as const;
 
 /** Light colors (the station tones, HALL.tone, plus the fountain cyan). */
 const CYAN = "#22d3ee";

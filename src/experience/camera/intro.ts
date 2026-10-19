@@ -10,7 +10,8 @@ export const INTRO = {
   faceOn: 0.8,
   revealStart: 0.55,
   revealEnd: 3.0,
-  revealReach: 80,
+  /** Past the far corner of the Highlights Hall from the spawn (about 86 u since more room, 2026-10-19). */
+  revealReach: 90,
   sweep: 1.5 * Math.PI,
   turn: [1.3, 2.6] as const,
   reduced: 0.9,

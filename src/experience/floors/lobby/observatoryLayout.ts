@@ -23,8 +23,9 @@ export const OBSERVATORY_VIEW = {
    * axis (hologram, rover, kiosk, observatory in one column), zoomed out a little more.
    */
   spawnTurn: 0.62,
-  spawnZoom: 1.5,
-  spawnZoomNarrow: { tablet: 1.6, mobile: 1.75 },
+  /** Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. */
+  spawnZoom: 1.7,
+  spawnZoomNarrow: { tablet: 1.8, mobile: 1.95 },
   /** Half size of the spawn zone around the kiosk stop. */
   spawnHalf: 2.5,
 } as const;
