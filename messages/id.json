@@ -1197,7 +1197,7 @@
     "state": { "working": "Bekerja", "thinking": "Berpikir", "reviewing": "Meninjau", "testing": "Menjalankan tes", "ci": "Menunggu CI", "input": "Butuh Kurniadi", "done": "Selesai", "failed": "CI gagal", "asleep": "Tidur" },
     "activity": { "editing": "Mengedit", "planning": "Merencanakan", "reading": "Membaca", "testing": "Menguji", "building": "Build", "shell": "Menjalankan perintah", "ci": "Memantau CI", "git": "Memakai git", "asking": "Bertanya ke Kurniadi", "finished": "Selesai", "failed": "Gagal", "resting": "Istirahat" },
     "clientProject": "Proyek klien",
-    "privacy": "Hanya jenis aktivitas yang keluar dari mesin Kurniadi. Judul tugas hanya tampil untuk repositori publik; kode, prompt, path file, dan nama klien tidak pernah.",
+    "privacy": "Hanya agen, statusnya, dan jenis aktivitasnya yang keluar dari mesin Kurniadi, ditambah repositori, branch, dan judul tugas untuk repositori publik. Kode, prompt, path file, dan nama klien tidak pernah keluar.",
     "3d": {
       "subtitle": "Agen AI coding secara live dan aktivitas GitHub publik",
       "agentFull": { "copilot": "GitHub Copilot", "claude": "Claude Code", "codex": "OpenAI Codex" },
@@ -1210,7 +1210,7 @@
       "mode": { "live": "LIVE", "semi": "SEMI-LIVE", "off": "ISTIRAHAT", "offline": "OFFLINE" },
       "wall": { "control": "MISSION CONTROL", "active": "AKTIF", "thinking": "BERPIKIR", "waiting": "MENUNGGU", "asleep": "TIDUR", "now": "Sekarang", "resting": "Semua agen sedang istirahat. Aktivitas GitHub publik ada di papan.", "today": "Hari ini: tugas selesai {tasks} · PR di-merge {prs} · CI hijau {green} dari {runs}", "github": "GITHUB", "githubSub": "Repositori publik", "empty": "Belum ada aktivitas publik" },
       "drawer": { "agent": "Agen", "activity": "Aktivitas", "task": "Tugas", "repo": "Repositori", "since": "Dalam status ini", "updated": "Pembaruan terakhir", "recent": "Aktivitas terbaru", "agents": "Agen", "today": "Hari ini", "tasksDone": "Tugas selesai", "prsMerged": "PR di-merge", "ciGreen": "Run CI hijau", "none": "Tidak ada saat ini", "offline": "Kantor sedang offline. Ini aktivitas terakhir yang diketahui." },
-      "hooks": "Langsung dari hook agen di mesin Kurniadi, diperbarui setiap 10 detik selama Anda melihat.",
+      "hooks": "Langsung dari hook agen di mesin Kurniadi, diperbarui setiap beberapa detik selama Anda melihat.",
       "githubNote": "Dari webhook GitHub publik. Repositori privat tidak pernah muncul di sini.",
       "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "desk": "Meja {n}: {agent}" },
       "github": {

@@ -1197,7 +1197,7 @@
     "state": { "working": "Working", "thinking": "Thinking", "reviewing": "Reviewing", "testing": "Running tests", "ci": "Waiting on CI", "input": "Needs Kurniadi", "done": "Done", "failed": "CI failed", "asleep": "Asleep" },
     "activity": { "editing": "Editing", "planning": "Planning", "reading": "Reading", "testing": "Testing", "building": "Building", "shell": "Running commands", "ci": "Watching CI", "git": "Using git", "asking": "Asking Kurniadi", "finished": "Finished", "failed": "Failed", "resting": "Resting" },
     "clientProject": "Client project",
-    "privacy": "Only the activity type leaves Kurniadi's machine. Task titles show for public repositories only; code, prompts, file paths and client names never do.",
+    "privacy": "Only the agent, its state and the activity type leave Kurniadi's machine, plus the repository, branch and task title for public repositories. Code, prompts, file paths and client names never do.",
     "3d": {
       "subtitle": "Live AI coding agents and public GitHub activity",
       "agentFull": { "copilot": "GitHub Copilot", "claude": "Claude Code", "codex": "OpenAI Codex" },
@@ -1210,7 +1210,7 @@
       "mode": { "live": "LIVE", "semi": "SEMI-LIVE", "off": "RESTING", "offline": "OFFLINE" },
       "wall": { "control": "MISSION CONTROL", "active": "ACTIVE", "thinking": "THINKING", "waiting": "WAITING", "asleep": "ASLEEP", "now": "Now", "resting": "Every agent is resting. Public GitHub work is on the board.", "today": "Today: tasks done {tasks} · PRs merged {prs} · CI green {green} of {runs}", "github": "GITHUB", "githubSub": "Public repositories", "empty": "No public activity yet" },
       "drawer": { "agent": "Agent", "activity": "Activity", "task": "Task", "repo": "Repository", "since": "In this state", "updated": "Last update", "recent": "Recent activity", "agents": "Agents", "today": "Today", "tasksDone": "Tasks done", "prsMerged": "PRs merged", "ciGreen": "CI runs green", "none": "Nothing right now", "offline": "The office is offline. This is the last known activity." },
-      "hooks": "Live from agent hooks on Kurniadi's machine, refreshed every 10 seconds while you watch.",
+      "hooks": "Live from agent hooks on Kurniadi's machine, refreshed every few seconds while you watch.",
       "githubNote": "From public GitHub webhooks. Private repositories never appear here.",
       "target": { "office": "Agent Office: summary", "github": "Agent Office: GitHub board", "desk": "Desk {n}: {agent}" },
       "github": {
