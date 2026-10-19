@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { BOOT_RELEASED_ATTR } from "@/lib/boot-first";
 import { markTime, PERF_MARKS } from "@/lib/perf-marks";
 import type { RumPath, RumTier } from "@/lib/rum/protocol";
+import { framePacer } from "../scene/framePacer";
 import { RUM_ENDPOINT, RumSession } from "./rum";
 import { RUM_SESSION_KEY } from "./rumDecision";
 
@@ -18,6 +19,8 @@ export default function RumProbe({ tier, path }: { tier: RumTier; path: RumPath 
   const [session] = useState(() => new RumSession({ tier, path }));
 
   useFrame((_, dt) => {
+    // Idle cadence frames (30 fps or on demand) say nothing about how fast the device renders.
+    if (framePacer.idleFrame) return;
     session.frame(dt * 1000, performance.now(), markTime(PERF_MARKS.explore), document.visibilityState === "visible");
   });
 

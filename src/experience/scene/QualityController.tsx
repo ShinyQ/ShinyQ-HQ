@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { getHQStore } from "@/store/useHQStore";
 import type { GpuTier } from "../types";
 import { createMonitor, MONITOR_FULL, MONITOR_LITE, type FrameMonitor } from "./frameMonitor";
+import { framePacer } from "./framePacer";
 import { postHandle } from "./postHandle";
 import { qualityAt, qualityLadder } from "./quality";
 import { qualityDebug, qualityStore } from "./qualityStore";
@@ -57,7 +58,8 @@ export function QualityController({ tier, coarse, gfx }: { tier: GpuTier; coarse
     const dt = last.current === null ? 0 : now - last.current;
     last.current = now;
     const s = getHQStore().getState();
-    if (document.hidden || s.phase === "boot" || s.phase === "intro" || s.ride || s.beam) {
+    // Idle cadence frames (30 fps or on demand, idle.ts) are not slow frames.
+    if (document.hidden || framePacer.idleFrame || s.phase === "boot" || s.phase === "intro" || s.ride || s.beam) {
       m.hold(now);
       return;
     }

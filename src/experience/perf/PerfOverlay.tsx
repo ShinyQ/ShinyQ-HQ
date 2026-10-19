@@ -3,6 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
+import { framePacer } from "../scene/framePacer";
 import { ridePrep } from "../tower/ridePrep";
 import { FrameSampler } from "./frames";
 import { perfLines } from "./lines";
@@ -15,7 +16,8 @@ const live = { sampler: new FrameSampler(240), dpr: 1, width: 0, height: 0 };
 export function PerfProbe() {
   const gl = useThree((s) => s.gl);
   useFrame((_, dt) => {
-    live.sampler.push(dt * 1000);
+    // FPS is the active rate: idle cadence frames (30 fps or on demand) are left out.
+    if (!framePacer.idleFrame) live.sampler.push(dt * 1000);
     live.dpr = gl.getPixelRatio();
     live.width = gl.domElement.width;
     live.height = gl.domElement.height;

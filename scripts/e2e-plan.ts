@@ -36,6 +36,7 @@ export const ALL_SPECS = [
   "highlights",
   "hud",
   "hud-corners",
+  "idle-cadence",
   "interact",
   "labs",
   "labs-data",
@@ -170,7 +171,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "gpu", "memory", "ride"] },
   { test: /^src\/experience\/tower\/(Tower|near)\.tsx?$/, specs: ["experience", "gpu", "memory", "ride"] },
   // Frame loop, cover pauses, crash recovery and the ride/beam clock (round 5).
-  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "lifecycle", "pads"] },
+  { test: /^src\/experience\/(scene\/(FrameLoop|framePacer|cover|coverWatch|idle)\.tsx?|CanvasBoundary\.tsx|recovery\.ts)$/, specs: ["experience", "idle-cadence", "lifecycle", "pads"] },
   { test: /^src\/experience\/tower\/rideClock\.ts$/, specs: ["experience", "gpu", "lifecycle", "pads", "ride"] },
 
   // "How I run AI in production" (2026-10-14): the L3 Ops Control Room, its drawer body and live panel, and the About section.
@@ -241,8 +242,9 @@ export const RULES: Rule[] = [
   // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone (the floor order and the Lobby spawn live apart).
   { test: /^src\/experience\/(config|floorOrder)\.ts$/, specs: ["experience", "arrivals"] },
   // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
-  { test: /^src\/experience\/rover\/(idle|activity)\.ts$/, specs: ["rover-idle"] },
-  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "camera", "experience"] },
+  { test: /^src\/experience\/rover\/idle\.ts$/, specs: ["rover-idle", "idle-cadence"] },
+  { test: /^src\/experience\/rover\/activity\.ts$/, specs: ["rover-idle"] },
+  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "idle-cadence", "camera", "experience"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/fade\.ts$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
