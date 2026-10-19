@@ -34,10 +34,14 @@ export interface IdleClock {
   stillSince: number;
 }
 
-/** 60 until nothing moved and nothing was touched for IDLE_AFTER_MS, then the floor's idle cadence. */
+/** Nothing moved and nothing was touched for IDLE_AFTER_MS (`__hq.idleQuiet()` in tests). */
+export function isQuiet(c: IdleClock, now: number): boolean {
+  return c.enabled && now - c.lastActivity >= IDLE_AFTER_MS && now - c.stillSince >= IDLE_AFTER_MS;
+}
+
+/** 60 until the scene is quiet, then the floor's idle cadence. */
 export function idleCadence(c: IdleClock, now: number, reducedMotion: boolean, floor: FloorId): Cadence {
-  if (!c.enabled || now - c.lastActivity < IDLE_AFTER_MS || now - c.stillSince < IDLE_AFTER_MS) return 60;
-  return IDLE_CADENCE[reducedMotion ? "reduced" : "full"][floor] ?? 60;
+  return isQuiet(c, now) ? (IDLE_CADENCE[reducedMotion ? "reduced" : "full"][floor] ?? 60) : 60;
 }
 
 /** Idle: the canvas renders below 60 fps now. */

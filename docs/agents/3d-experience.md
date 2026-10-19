@@ -303,7 +303,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - At most 60 fps (`FRAME_CAP_FPS`): 90, 120 and 144 Hz displays skip refreshes, 60 Hz displays render every one.
   - The pacer's cadence is 60, 30 or 0 (on demand); the idle detector picks it (see "Idle cadence" below).
 - Animate with `useFrame` deltas; never start another rAF loop. R3F's `invalidate` (prop changes, mounts, text syncs) renders the next animation frame at any cadence (`invalidateFrames`).
-- `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused; at any cadence it advances by the wall time between rendered frames).
+- `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused; at any cadence it advances by the wall time between rendered frames, and a switch to a faster cadence drops the idle gap like a resume, so the first frame after input has a normal one-frame delta).
 - `__hq.audio()` is a read-only audio probe (`floor`, `ambience`, `muted`, `played`: one-shot request counts); see [Audio](ci-and-deploy.md#audio).
 - A runtime quality monitor must take 60 fps as the ceiling and restart its sample window across a pause: `scene/frameMonitor.ts` treats a gap above `pauseMs` (a paused loop, a hidden tab) as a pause.
 
@@ -317,7 +317,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - Any input, store change, resize or Day and night change brings 60 fps back on the next animation frame.
 - A new animation that judders at 30 fps (fast translation, scrolling text) on L2 or B1 changes that floor's full-motion entry to 60; one that keeps moving under reduced motion changes its floor's reduced entry to 30. A new time-driven change under reduced motion (a blink, a timer) calls `wakeFrameAt(clockSeconds)` from its `useFrame`.
 - Frames paced at an idle cadence (and the first one after) set `framePacer.idleFrame`: the quality monitor holds, and the RUM probe and the `?perf=1` FPS skip them.
-- Off under automation (`navigator.webdriver`), so e2e frame counts, `BUDGET_WINDOW`, the perf lane and the virtual clock see 60 fps; specs that hide the flag (`asHumanBrowser`) get the visitor's cadence. A test opts in with `window.__hq.idle.enabled = true`; `__hq.cadence()` reads the cadence (`e2e/idle-cadence.spec.ts`).
+- Off under automation (`navigator.webdriver`), so e2e frame counts, `BUDGET_WINDOW`, the perf lane and the virtual clock see 60 fps; specs that hide the flag (`asHumanBrowser`) get the visitor's cadence. A test opts in with `window.__hq.idle.enabled = true`; `__hq.cadence()` reads the cadence and `__hq.idleQuiet()` whether the scene is quiet (`e2e/idle-cadence.spec.ts`, which waits on these, never on time).
 
 ### Pausing when covered
 

@@ -54,7 +54,7 @@ import { onWorldMissed } from "./interact/missed";
 import { Scene, type SceneLabels } from "./scene/Scene";
 import { FrameLoop } from "./scene/FrameLoop";
 import { framePacer } from "./scene/framePacer";
-import { idleRuntime } from "./scene/idle";
+import { idleRuntime, isQuiet } from "./scene/idle";
 import { memoryCounts, trackRenderer } from "./scene/memoryProbe";
 import { releaseSharedResources } from "./scene/sharedResources";
 import { parseGfxOverride, renderBudget, sceneSettings, withOverride } from "./scene/settings";
@@ -199,6 +199,7 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // Idle frame cadence (scene/idle.ts): 60, 30 or 0 (on demand); tests opt in with `idle.enabled = true`.
     cadence: () => framePacer.cadence,
     idle: idleRuntime,
+    idleQuiet: () => isQuiet(idleRuntime, performance.now()),
     // Read-only audio engine state (the floor the ambience follows, its setting, the mute, one-shot request counts).
     audio: () => ({ floor: audio.ambienceFloor(), ambience: audio.getSettings().ambience, muted: audio.isMuted(), played: audio.playCounts() }),
     motion: () => {

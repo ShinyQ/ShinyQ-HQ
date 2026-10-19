@@ -5,8 +5,8 @@
  * nothing while paused (a panel covers the canvas, coverWatch.ts), and at the idle cadence `idle.ts`
  * picks while nothing moves: 30 fps, or 0 (on demand: a frame only after `invalidatePacer` or at a wake a
  * scene component requested in clock seconds). The clock handed to R3F counts rendered time: the wall
- * time between rendered frames at any cadence, never the paused time, so a pause never shows up as one
- * long frame. Pure (no React, no three), so Vitest runs it in node.
+ * time between rendered frames at any cadence, never the paused time nor the idle gap before a faster
+ * cadence, so a pause or an input after an on-demand spell never shows up as one long frame. Pure (no React, no three), so Vitest runs it in node.
  */
 export const FRAME_CAP_FPS = 60;
 export const FRAME_INTERVAL_MS = 1000 / FRAME_CAP_FPS;
@@ -66,7 +66,7 @@ export function pacerTick(p: Pacer, now: number): number | null {
     return rendered(p);
   }
   if (!p.dirty && now < (p.cadence === 0 ? p.wake : p.next) - FRAME_SLACK_MS) return null;
-  p.elapsed += (now - p.last) / 1000;
+  p.elapsed += Math.max(0, now - p.last) / 1000;
   p.last = now;
   // A steady cadence; after a stall, a hidden tab or an off-beat frame start a fresh one instead of catching up.
   const onBeat = p.cadence !== 0 && !p.dirty && now - p.next < interval;
@@ -94,13 +94,17 @@ export function setPacerPaused(p: Pacer, paused: boolean, now: number): boolean 
   return true;
 }
 
-/** Sets the cadence; back to 60 renders on the next tick. True when it changed. */
+/**
+ * Sets the cadence; back to 60 renders on the next tick. Going faster drops the idle gap from the clock, like a
+ * resume: the first frame after the switch gets a normal frame's delta, so the rover and the camera never jump a
+ * whole on-demand gap. True when it changed.
+ */
 export function setPacerCadence(p: Pacer, cadence: Cadence, now: number): boolean {
   if (p.cadence === cadence) return false;
   p.cadence = cadence;
-  if (p.last >= 0) {
-    if (cadence === 60) p.next = now;
-    else if (cadence === 30) p.next = p.last + intervalOf(30);
+  if (p.last >= 0 && cadence !== 0) {
+    p.last = Math.max(p.last, now - intervalOf(cadence));
+    p.next = cadence === 60 ? p.last : p.last + intervalOf(30);
   }
   return true;
 }

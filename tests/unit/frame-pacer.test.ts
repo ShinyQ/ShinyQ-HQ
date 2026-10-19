@@ -207,6 +207,37 @@ describe("idle cadence", () => {
     expect(p.idleFrame).toBe(false);
   });
 
+  it.each([
+    [0, 60],
+    [30, 60],
+    [0, 30],
+  ] as const)("the first frame after a switch from %i to %i gets a normal one-frame delta, not the idle gap", (from, to) => {
+    const p = createPacer();
+    pacerTick(p, 0);
+    setPacerCadence(p, from, 0);
+    // A long on-demand gap (or the last 30 fps frame) lies behind; input arrives at 600 ms.
+    if (from === 30) pacerTick(p, 1000 / 30);
+    const before = p.elapsed;
+    const now = 600;
+    setPacerCadence(p, to, now);
+    const t = pacerTick(p, now + 1000 / 60)!;
+    expect(t).not.toBeNull();
+    expect(t - before).toBeGreaterThan(0);
+    expect(t - before).toBeLessThanOrEqual((1000 / to + 1000 / 60 + FRAME_SLACK_MS) / 1000);
+  });
+
+  it("back to 60 renders on the very next tick even when the input's timestamp is a little later than the frame's", () => {
+    const p = createPacer();
+    pacerTick(p, 0);
+    setPacerCadence(p, 0, 0);
+    // rAF timestamps are the frame start, so an input handled in that frame can read a later performance.now().
+    setPacerCadence(p, 60, 1005);
+    const t = pacerTick(p, 1000);
+    expect(t).not.toBeNull();
+    expect(t!).toBeGreaterThan(0);
+    expect(t!).toBeLessThanOrEqual(1 / 60 + 1e-9);
+  });
+
   it("returns false when the cadence does not change; a new canvas starts at 60", () => {
     const p = createPacer();
     expect(p.cadence).toBe(60);
