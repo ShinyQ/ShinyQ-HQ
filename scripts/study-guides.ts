@@ -1,7 +1,7 @@
 /**
  * Study guides (L4 Study Vault): prepares the owner's PDFs and uploads them to the private R2 bucket.
  *
- *   bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...   rewrite metadata, linearize, version, cover, safety scan
+ *   bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...   rewrite metadata, object streams, version, cover, safety scan
  *   bun scripts/study-guides.ts upload [<slug> ...]             put the prepared files into R2 (`bunx wrangler`)
  *   bun scripts/study-guides.ts check                           prepared files match content/study-guides.json
  *
@@ -93,8 +93,11 @@ function prepare(pairs: string[]) {
       const patch = path.join(scratch, `${slug}.json`);
       writeFileSync(patch, JSON.stringify(infoPatch(infoId, title, subject)));
       const out = preparedFile(slug);
-      run("qpdf", [source, `--update-from-json=${patch}`, "--linearize", "--deterministic-id", out]);
-      run("qpdf", ["--check-linearization", out]);
+      // Object streams, not linearization: qpdf flattens the page tree when it linearizes, and pdf.js then fetches
+      // every page object across the file to open it (51 range requests, 3.3 MB of 4.4 MB before page 1). With the
+      // small objects (page dictionaries, outline items) packed in object streams it opens in 3 requests (0.16 MB).
+      run("qpdf", [source, `--update-from-json=${patch}`, "--object-streams=generate", "--deterministic-id", out]);
+      run("qpdf", ["--check", out]);
 
       const info = run("pdfinfo", [out]);
       if (!info.includes(`Title:           ${title}`)) throw new Error(`${slug}: metadata did not update`);

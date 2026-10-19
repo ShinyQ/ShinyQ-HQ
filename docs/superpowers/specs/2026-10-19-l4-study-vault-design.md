@@ -27,7 +27,7 @@ better if user can read it on the app without open link or new tab"
    layer, page navigation, zoom and fit width, keyboard, a thumbnail rail on desktop, a full-screen sheet on phones,
    last-page memory in `localStorage`; built on the shared `Modal` and `DialogHost` (focus trap, Esc, `aria-modal`
    pauses 3D input). Works on iOS Safari, Android Chrome, desktop and tablet.
-4. Storage: a private R2 bucket `hq-study-guides`. PDFs are linearized (`qpdf --linearize`) with fixed metadata
+4. Storage: a private R2 bucket `hq-study-guides`. PDFs are linearized (`qpdf --linearize`) with fixed metadata (superseded 2026-10-19: object streams instead, see the decision `2026-10-19-study-guides-object-streams`)
    before upload. Served through a same-origin Pages Function `/api/guides/[slug]` with an R2 binding in
    `wrangler.toml`: Range (206), ETag and If-None-Match (304), long immutable cache on versioned URLs,
    `Content-Type: application/pdf`, `Content-Disposition: inline` (`attachment` for `?download=1`), a slug
@@ -64,7 +64,7 @@ better if user can read it on the app without open link or new tab"
 ```mermaid
 flowchart LR
   subgraph Build
-    S[scripts/study-guides.ts] -->|qpdf metadata + linearize| R2[(R2 hq-study-guides)]
+    S[scripts/study-guides.ts] -->|qpdf metadata + object streams| R2[(R2 hq-study-guides)]
     S -->|pages, bytes, version| J[content/study-guides.json]
     S -->|page 1 WebP| C[public/study-guides/*.webp]
   end
@@ -81,7 +81,7 @@ flowchart LR
 
 | Unit | Purpose | Depends on |
 |---|---|---|
-| `scripts/study-guides.ts` | Prepare (metadata, linearize, version hash, covers, safety scan of the text) and upload with `bunx wrangler r2 object put`; writes the machine fields of `content/study-guides.json` | qpdf, pdftoppm, pdftotext, cwebp, wrangler |
+| `scripts/study-guides.ts` | Prepare (metadata, object streams, version hash, covers, safety scan of the text) and upload with `bunx wrangler r2 object put`; writes the machine fields of `content/study-guides.json` | qpdf, pdftoppm, pdftotext, cwebp, wrangler |
 | `content/study-guides.json` + `src/content/guides.ts` | The dataset (zod schema in `schema.ts`, loader `getStudyGuides()`), pure view helpers (`guideView`, `guideUrl`, `guideDownloadUrl`, `weightLabel`) | content schema |
 | `functions/_lib/guides.ts`, `functions/api/guides/[slug].ts` | The R2 proxy: allowlist, Range, conditional requests, headers | R2 binding `GUIDES` |
 | `/data/guides/{locale}.json` (existing data route) | Locale-resolved guide views plus the `guides` UI strings, fetched by the reader on open, so no reader text rides in every page's HTML | dataset, messages |
@@ -116,7 +116,7 @@ flowchart LR
 }
 ```
 
-- `version`: the first 12 hex digits of the SHA-256 of the prepared (linearized) file; the R2 key is
+- `version`: the first 12 hex digits of the SHA-256 of the prepared file; the R2 key is
   `<slug>/<version>.pdf`, so a new upload never overwrites a cached object.
 - `weight`: `[min, max]` percent; `[n, n]` reads "about n%" (the Google guide's "~30%").
 - Titles stay in English in both locales (exam titles are technical terms); summaries and domain labels are

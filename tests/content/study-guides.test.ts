@@ -93,9 +93,9 @@ describe("guide views", () => {
       code: "AI-103",
       summary: raw103.summary.en,
       editionLabel: "Oct 2026",
-      sizeLabel: "4.4 MB",
-      url: "/api/guides/ai-103?v=171f309183a7",
-      downloadUrl: "/api/guides/ai-103?v=171f309183a7&download=1",
+      sizeLabel: sizeLabel(raw103.bytes),
+      url: `/api/guides/ai-103?v=${raw103.version}`,
+      downloadUrl: `/api/guides/ai-103?v=${raw103.version}&download=1`,
     });
     expect(v.domains[0]).toEqual({ label: raw103.domains[0].label.en, weight: [25, 30], weightLabel: "25-30%" });
     const idView = id.find((g) => g.slug === "ai-103")!;
