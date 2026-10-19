@@ -54,7 +54,7 @@ async function openHQ(browser: Browser, vp: Viewport, path = "/en") {
 
 /**
  * Visible, enabled controls in the HUD (buttons, links, inputs, the joystick), minus the minimap, dialogs and the
- * Agent Office chips (world labels over the L1 Rovers, near the spawn; not Corners controls).
+ * Agent Office chips (world labels over the L1 Rovers, shown only at the office stop; not Corners controls).
  */
 async function visibleControls(page: Page): Promise<string[]> {
   return page.evaluate(() => {

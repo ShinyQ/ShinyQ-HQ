@@ -80,8 +80,8 @@ async function atOffice(page: Page) {
 /**
  * At the office stop the follow camera sits about 35 u from the chips (1280 x 720), past their far band
  * (`OFFICE_CHIP_FAR`), so they show their first line only. One zoom key step (0.8, still third person) brings the
- * middle three near (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring all five, so
- * desk 1's chip shows its task line too.
+ * middle three near (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring desk 1's as
+ * well, so desks 1 to 4 show their task lines (desk 5's chip is not checked).
  */
 async function nearChips(page: Page) {
   await driveTo(page, LOBBY.officeWing.stop);

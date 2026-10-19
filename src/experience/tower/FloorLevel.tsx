@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import { MeshBasicMaterial, type Group, type LineBasicMaterial, type Mesh } from "three";
+import { MeshBasicMaterial, type Group, type LineBasicMaterial, type LineSegments, type Mesh } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { ceilingOpacity } from "../camera/firstPerson";
 import { floorY, SLAB_THICKNESS } from "../config";
@@ -57,6 +57,7 @@ export function FloorLevel({
   const y = floorY(layout.id);
   const { bounds, wings, accent } = layout;
   const edge = useRef<LineBasicMaterial>(null);
+  const edgeLines = useRef<LineSegments>(null);
   const content = useRef<Group>(null);
   const slab = useRef<Group>(null);
   const slabFills = useRef<(Mesh | null)[]>([]);
@@ -92,7 +93,10 @@ export function FloorLevel({
     ghostFill(fill, above, ghost);
     const hidden = ghostOutlineHidden(layout.id, roverRuntime, layouts?.[floor]);
     outline.current = stepGhostOutline(outline.current, hidden, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reducedMotion);
-    if (edge.current) edge.current.opacity = above ? 0.16 * ghost * ghostOutlineOpacity(outline.current) : 0.95;
+    const shown = above ? ghostOutlineOpacity(outline.current) : 1;
+    if (edge.current) edge.current.opacity = above ? 0.16 * ghost * shown : 0.95;
+    // A hidden outline leaves the draw instead of drawing at opacity 0.
+    if (edgeLines.current) edgeLines.current.visible = shown > 0.01;
     // Ghosts above, hidden under the current slab unless the elevator runs, and a floor below that is
     // still compiling waits for the car to move (tower/near.ts, R5 P6). On top of that, a ride draws only
     // its target and the floors right under the car, and the boot and intro only L1 (tower/visibility.ts).
@@ -127,7 +131,7 @@ export function FloorLevel({
             <boxGeometry args={[r.w, SLAB_THICKNESS, r.d]} />
           </mesh>
         ))}
-        <lineSegments geometry={edges}>
+        <lineSegments ref={edgeLines} geometry={edges}>
           <lineBasicMaterial ref={edge} color={accent} transparent opacity={0.95} toneMapped={false} />
         </lineSegments>
       </group>
