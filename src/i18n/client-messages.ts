@@ -17,7 +17,6 @@ export const CLIENT_NAMESPACES = [
   "engine",
   "floors",
   "gallery",
-  "guides",
   "hall",
   "home",
   "hud",
@@ -56,9 +55,10 @@ export const LAYOUT_NAMESPACES = [
 /**
  * Namespaces whose lazy dialog fetches them with its data and passes them through its own nested
  * `NextIntlClientProvider`: the study guide dialog reads `guides` from `/data/guides/{locale}.json`. The layout and
- * the pages may reach such a dialog through `DialogHost` without carrying the namespace, so it never joins
- * LAYOUT_NAMESPACES; Page View islands that read it directly (the `/library` shelf) still need `ClientMessages`.
- * The namespace test exempts only the fetching files (its `FETCHING_FILES`), never the whole namespace.
+ * the pages reach such a dialog through `DialogHost` without carrying the namespace, so it joins neither
+ * LAYOUT_NAMESPACES nor CLIENT_NAMESPACES (server components such as the `/library` shelf read it with
+ * `getTranslations`). The namespace test exempts only the fetching files (its `FETCHING_FILES`), never the whole
+ * namespace: any other client island that reads it must add it back to CLIENT_NAMESPACES and use `ClientMessages`.
  */
 export const FETCHED_NAMESPACES = ["guides"] as const;
 

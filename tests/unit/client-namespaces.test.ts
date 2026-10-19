@@ -118,7 +118,8 @@ describe("client message namespaces", () => {
   });
 
   it("CLIENT_NAMESPACES lists exactly what client modules read", () => {
-    const { used, problems } = namespacesOf(allClient);
+    // A fetched namespace read only by the files that fetch it never needs `ClientMessages`.
+    const { used, problems } = namespacesOf(allClient, { fetched: true });
     expect(problems).toEqual([]);
     expect(missingFrom(used, CLIENT_NAMESPACES)).toEqual([]);
     expect(CLIENT_NAMESPACES.filter((ns) => !used.has(ns))).toEqual([]);
@@ -133,7 +134,8 @@ describe("client message namespaces", () => {
     expect(LAYOUT_NAMESPACES).not.toContain("dialog");
     // Dialogs that fetch their own strings (the study guide reader) keep them off every page's HTML.
     for (const ns of FETCHED_NAMESPACES) expect((LAYOUT_NAMESPACES as readonly string[]).some((l) => l === ns || l.startsWith(`${ns}.`))).toBe(false);
-    for (const ns of FETCHED_NAMESPACES) expect(CLIENT_NAMESPACES).toContain(ns);
+    // Nor in `ClientMessages`: no island under it reads them, so they would only add bytes to every wrapped page.
+    for (const ns of FETCHED_NAMESPACES) expect(CLIENT_NAMESPACES).not.toContain(ns);
   });
 
   it("exempts a fetched namespace only inside the files that fetch it", () => {
