@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Matrix4, Vector3 } from "three";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
-import { CHIP_LIFT, chipAnchor, GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
+import { CHIP_LIFT, chipAnchor, GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const slots = officeSlots();
@@ -65,6 +65,28 @@ describe("Agent Office Rover rig", () => {
     expect(scale.x).toBe(0);
     writeGlow(slots[0], frame, "asleep", null, 1, 0, true, OFFICE.stop, matrices, colors);
     expect(Math.abs(colors[0] - new Color("#3b3f5c").r)).toBeLessThan(1e-5);
+  });
+
+  it("clamps the lit CI dots to the ring when progress is out of range", () => {
+    const matrices = new Float32Array(GLOW_PER_ROVER * 16);
+    const colors = new Float32Array(GLOW_PER_ROVER * 3);
+    const frame = roverFrame(slots[0], stillPose("ci"), new Matrix4());
+    const tone = new Color(OFFICE_STATE_STYLE.ci.color);
+    const litCount = () => Array.from({ length: OFFICE_ROVER.progress.count }, (_, i) => Math.abs(colors[(2 + i) * 3] - tone.r) < 1e-5).filter(Boolean).length;
+    writeGlow(slots[0], frame, "ci", { done: 30, total: 12 }, 1, 0, true, OFFICE.stop, matrices, colors);
+    expect(litCount()).toBe(OFFICE_ROVER.progress.count);
+    writeGlow(slots[0], frame, "ci", { done: -3, total: 12 }, 1, 0, true, OFFICE.stop, matrices, colors);
+    expect(litCount()).toBe(0);
+  });
+
+  it("keys glow writes on state, progress and the moving dot run, so an unchanged pose never freezes them", () => {
+    expect(glowKey("working", null, true, 1)).not.toBe(glowKey("ci", null, true, 1));
+    expect(glowKey("testing", null, false, 0)).not.toBe(glowKey("testing", null, false, 0.2));
+    expect(glowKey("testing", null, true, 0)).toBe(glowKey("testing", null, true, 5.3));
+    expect(glowKey("ci", { done: 3, total: 12 }, true, 0)).not.toBe(glowKey("ci", { done: 6, total: 12 }, true, 0));
+    expect(glowKey("ci", { done: 3, total: 12 }, false, 0)).toBe(glowKey("ci", { done: 3, total: 12 }, false, 4.4));
+    expect(glowKey("asleep", null, true, 0.1)).toBe(glowKey("asleep", null, true, 9.7));
+    expect(glowKey("asleep", null, false, 0.1)).toBe(glowKey("asleep", null, false, 9.7));
   });
 
   it("anchors the chip above the head", () => {

@@ -5,7 +5,7 @@ import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "
 
 /**
  * Instance matrices and quad corners for the office Rovers, written in place every frame the office is in view
- * (no allocation: module temporaries). Chest, head, two arms and the antenna stalk share one instanced mesh,
+ * (no allocation in the write functions: module temporaries and constant tables; `glowKey` builds a short string). Chest, head, two arms and the antenna stalk share one instanced mesh,
  * the treads another; the faces and desk screens are corners of one merged quad mesh; the antenna tips, the
  * halos and the progress dots are one instanced holo mesh.
  */
@@ -27,6 +27,9 @@ const ONE = new Vector3(1, 1, 1);
 const C = new Color();
 const FLAT = new Quaternion().setFromEuler(new Euler(-Math.PI / 2, 0, 0));
 const SLEEP_TIP = "#3b3f5c";
+/** Quad corner signs: bottom left, bottom right, top right, top left. */
+const QUAD_X = [-0.5, 0.5, 0.5, -0.5] as const;
+const QUAD_Y = [-0.5, -0.5, 0.5, 0.5] as const;
 type Part = readonly [number, number, number, number, number, number];
 
 /** The Rover's frame: its spot, turned to face the arc centre, plus the pose (bob, pitch, sway, roll). */
@@ -40,23 +43,23 @@ function box(frame: Matrix4, part: Part, target: Float32Array, index: number): v
   M.multiplyMatrices(frame, A).toArray(target, index * 16);
 }
 
+function arm(frame: Matrix4, side: number, angle: number, parts: Float32Array, index: number): void {
+  const R = OFFICE_ROVER;
+  // Shoulder pivot: turn about x, then the arm reaches forward half its length.
+  A.makeTranslation(side * R.shoulder.x, R.shoulder.y, R.shoulder.z);
+  A.multiply(B.makeRotationX(angle));
+  A.multiply(B.makeTranslation(0, 0, R.arm.d / 2));
+  A.multiply(B.makeScale(R.arm.w, R.arm.h, R.arm.d));
+  M.multiplyMatrices(frame, A).toArray(parts, index * 16);
+}
+
 export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, slot: number, treads: Float32Array): void {
   const R = OFFICE_ROVER;
   const at = slot * PARTS_PER_ROVER;
   box(frame, R.chest, parts, at);
   box(frame, R.head, parts, at + 1);
-  const arms: readonly [number, number][] = [
-    [-1, p.armL],
-    [1, p.armR],
-  ];
-  arms.forEach(([side, angle], i) => {
-    // Shoulder pivot: turn about x, then the arm reaches forward half its length.
-    A.makeTranslation(side * R.shoulder.x, R.shoulder.y, R.shoulder.z);
-    A.multiply(B.makeRotationX(angle));
-    A.multiply(B.makeTranslation(0, 0, R.arm.d / 2));
-    A.multiply(B.makeScale(R.arm.w, R.arm.h, R.arm.d));
-    M.multiplyMatrices(frame, A).toArray(parts, (at + 2 + i) * 16);
-  });
+  arm(frame, -1, p.armL, parts, at + 2);
+  arm(frame, 1, p.armR, parts, at + 3);
   box(frame, R.stalk, parts, at + 4);
   box(frame, R.treads[0], treads, slot * TREADS_PER_ROVER);
   box(frame, R.treads[1], treads, slot * TREADS_PER_ROVER + 1);
@@ -64,9 +67,7 @@ export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, s
 
 /** Four corners (bottom left, bottom right, top right, top left, counter-clockwise from the front) of a w x h quad facing the frame's +z. */
 function writeQuad(frame: Matrix4, cx: number, cy: number, cz: number, w: number, h: number, positions: Float32Array, quad: number): void {
-  const xs = [-w / 2, w / 2, w / 2, -w / 2];
-  const ys = [-h / 2, -h / 2, h / 2, h / 2];
-  for (let k = 0; k < 4; k++) V.set(cx + xs[k], cy + ys[k], cz).applyMatrix4(frame).toArray(positions, (quad * 4 + k) * 3);
+  for (let k = 0; k < 4; k++) V.set(cx + QUAD_X[k] * w, cy + QUAD_Y[k] * h, cz).applyMatrix4(frame).toArray(positions, (quad * 4 + k) * 3);
 }
 
 export function writeFace(frame: Matrix4, positions: Float32Array, quad: number): void {
@@ -81,6 +82,27 @@ export function writeDeskScreen(slot: OfficeSlot, positions: Float32Array, quad:
   DESK.multiply(A.makeTranslation(DESK_SCREEN.x, DESK_SCREEN.y, DESK_SCREEN.z));
   DESK.multiply(A.makeRotationY(DESK_SCREEN.toe));
   writeQuad(DESK, 0, 0, 0, DESK_SCREEN.w, DESK_SCREEN.h, positions, quad);
+}
+
+/** CI dots lit from done of total, clamped to the ring; -1 when the ring shows the moving run instead. */
+function litDots(state: OfficeState, progress: OfficeProgress | null): number {
+  const n = OFFICE_ROVER.progress.count;
+  if (state !== "ci" || !progress || progress.total <= 0) return -1;
+  return Math.min(n, Math.max(0, Math.round((progress.done / progress.total) * n)));
+}
+
+/** The moving run's first dot (fixed under reduced motion). */
+const dotHead = (reduced: boolean, t: number): number => (reduced ? 0 : Math.floor(t * 6) % OFFICE_ROVER.progress.count);
+
+/**
+ * Changes whenever `writeGlow`'s tone, lit dot count or moving-run head would change (state, progress, reduced
+ * motion and time), so the frame loop can skip glow colour writes when neither this key nor the pose changed.
+ * The camera-turned tip is not keyed: it must still be rewritten when the camera moves (Task 9 handles that).
+ */
+export function glowKey(state: OfficeState, progress: OfficeProgress | null, reduced: boolean, t: number): string {
+  if (state !== "ci" && state !== "testing") return state;
+  const lit = litDots(state, progress);
+  return lit >= 0 ? `${state}:lit${lit}` : `${state}:run${dotHead(reduced, t)}`;
 }
 
 /**
@@ -111,8 +133,8 @@ export function writeGlow(
   C.set(tone).multiplyScalar(asleep ? 0.08 : 0.35).toArray(colors, (base + 1) * 3);
   const n = R.progress.count;
   const show = state === "ci" || state === "testing";
-  const lit = state === "ci" && progress && progress.total > 0 ? Math.round((progress.done / progress.total) * n) : -1;
-  const head = reduced ? 0 : Math.floor(t * 6) % n;
+  const lit = litDots(state, progress);
+  const head = dotHead(reduced, t);
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     T.set(slot.rover.x + Math.sin(a) * R.progress.r, R.progress.y, slot.rover.z + Math.cos(a) * R.progress.r);

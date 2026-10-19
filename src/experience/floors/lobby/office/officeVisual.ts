@@ -66,7 +66,7 @@ export function stillPose(state: OfficeState): OfficePose {
   }
 }
 
-/** The pose at time `t` (s): typing bob, head tilt, side to side, leaning in, idle sway, a raised arm, a hop, a slump with a shake, a sleepy breath. */
+/** The pose at time `t` (s): typing bob, head tilt, side to side, leaning in, idle sway, a raised arm, a hop, a slump with a shake. Asleep holds its slump in both motion settings (no breath), so a sleeping office costs no writes. */
 export function pose(state: OfficeState, t: number, phase: number, reduced: boolean): OfficePose {
   const p = stillPose(state);
   if (reduced) return p;
@@ -98,9 +98,6 @@ export function pose(state: OfficeState, t: number, phase: number, reduced: bool
     case "failed":
       p.rz = Math.sin(t * 20) * (Math.sin(t * 1.5 + phase) > 0.8 ? 0.04 : 0);
       break;
-    case "asleep":
-      p.y += Math.sin(t * 1.1 + phase) * 0.015;
-      break;
     default:
       break;
   }
@@ -113,7 +110,11 @@ export function poseOffset(state: OfficeState, p: OfficePose): number {
   return Math.max(Math.abs(p.y - s.y), Math.abs(p.rx - s.rx), Math.abs(p.ry - s.ry), Math.abs(p.rz - s.rz));
 }
 
-/** True when any pose field differs: the frame loop skips instance, colour and quad writes when no Rover's pose changed. */
+/**
+ * True when any pose field differs. Covers only what the pose drives: the Rover's instance matrices, its face quad
+ * and its chip anchor (and the tip's scale). Glow colours and dots also depend on state, progress and time: check
+ * `glowKey` (officeRig) for those.
+ */
 export function poseChanged(a: OfficePose, b: OfficePose): boolean {
   return a.y !== b.y || a.rx !== b.rx || a.ry !== b.ry || a.rz !== b.rz || a.armL !== b.armL || a.armR !== b.armR || a.tipScale !== b.tipScale;
 }

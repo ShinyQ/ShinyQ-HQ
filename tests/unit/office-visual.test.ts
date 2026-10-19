@@ -22,10 +22,15 @@ describe("Agent Office state looks (owner design D5)", () => {
 
   it("animates the moving states with full motion: typing bob, sway, hop, shake", () => {
     const moves = (s: (typeof OFFICE_STATES)[number]) => Math.max(...TIMES.map((t) => poseOffset(s, pose(s, t, slotPhase(1), false))));
-    for (const s of ["working", "thinking", "reviewing", "ci", "input", "done", "asleep"] as const) expect(moves(s), s).toBeGreaterThan(0.005);
+    for (const s of ["working", "thinking", "reviewing", "ci", "input", "done"] as const) expect(moves(s), s).toBeGreaterThan(0.005);
     expect(Math.max(...TIMES.map((t) => pose("done", t, 0, false).y))).toBeGreaterThan(0.3);
     expect(Math.max(...TIMES.map((t) => Math.abs(pose("working", t, 0, false).armL)))).toBeGreaterThan(0.2);
     expect(Math.max(...TIMES.map((t) => pose("thinking", t, 0, false).tipScale))).toBeGreaterThan(1.3);
+  });
+
+  it("holds a sleeping Rover still in both motion settings (a slump, no breath)", () => {
+    for (const reduced of [false, true]) expect(pose("asleep", 0.3, slotPhase(1), reduced)).toEqual(pose("asleep", 4.1, slotPhase(1), reduced));
+    expect(pose("asleep", 2.2, slotPhase(3), false)).toEqual(stillPose("asleep"));
   });
 
   it("raises an arm for input, both arms when done, leans in for tests and slumps when failed or asleep", () => {
@@ -46,6 +51,7 @@ describe("Agent Office state looks (owner design D5)", () => {
   it("reports an unchanged pose so the frame loop can skip instance writes (reduced motion, static states)", () => {
     for (const s of OFFICE_STATES) expect(poseChanged(pose(s, 0.1, slotPhase(0), true), pose(s, 7.3, slotPhase(0), true)), s).toBe(false);
     expect(poseChanged(pose("testing", 0.1, 0, false), pose("testing", 3.2, 0, false))).toBe(false);
+    expect(poseChanged(pose("asleep", 0.1, slotPhase(2), false), pose("asleep", 0.117, slotPhase(2), false))).toBe(false);
     expect(poseChanged(pose("working", 0.1, 0, false), pose("working", 0.2, 0, false))).toBe(true);
     expect(poseChanged(stillPose("working"), { ...stillPose("working"), tipScale: 1.2 })).toBe(true);
     expect(poseChanged(stillPose("working"), { ...stillPose("working"), armR: -0.1 })).toBe(true);
