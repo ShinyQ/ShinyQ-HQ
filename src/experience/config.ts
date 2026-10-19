@@ -9,6 +9,7 @@ import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
+import { officeObstacles, officeStops, officeTall, officeZone } from "./floors/lobby/officeLayout";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
@@ -277,6 +278,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           kioskRect(),
           ...HALL_LAYOUT.obstacles,
           { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
+          // Agent Office (D1, D7): one obstacle per desk and Rover, then the screen wall (floors/lobby/officeLayout.ts).
+          ...officeObstacles(),
         ],
         LOBBY.spawn,
       ),
@@ -287,10 +290,12 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       doors: [...HALL_LAYOUT.doors, observatory.door],
       road: HALL_LAYOUT.network,
       roadZone: HALL_LAYOUT.zone,
-      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone()],
+      viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone(), officeZone()],
+      // Every Agent Office room drives to the office stop (the rooms have no door).
+      stops: officeStops(),
       // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
-      // card) and the observatory globe.
-      tall: [...hallTall(), LOBBY.observatory],
+      // card), the observatory globe and the Agent Office screen wall.
+      tall: [...hallTall(), LOBBY.observatory, officeTall()],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).
