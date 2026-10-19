@@ -2,7 +2,7 @@ name: Uptime
 
 # Hourly production check (Round 7 E; owner decision: every hour, not every 15 minutes).
 # scripts/uptime.ts checks / and /en (200 with og tags), GET /api/ask status (no model call, no AI
-# quota), GET /api/stats (a snapshot at most 12 h old) and the newest deploy.yml result on main.
+# quota), GET /api/stats (a snapshot at most 6 h old) and the newest deploy.yml result on main.
 # A failing check is retried once after 60 s; then one issue labelled `uptime` is opened or updated,
 # and closed with a recovery comment once every check passes (GitHub emails the owner on both).
 # No secrets: the job token reads Actions runs and writes issues. Runbook: docs/deploy.md section 16.

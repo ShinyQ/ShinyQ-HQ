@@ -54,7 +54,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles, plus the Rover menu (`>_`) with shortcuts to the best rooms.
 - **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, with Mistral and Groq fallbacks) and Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
-- **Public visit stats**: a rollup every 4 hours by a Cron Worker, shown as a hologram globe in the Lobby.
+- **Public visit stats**: a rollup every 2 hours by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
 - **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR that touches 3D code, on `main` and nightly.
 
@@ -91,7 +91,7 @@ flowchart TB
     wa["Web Analytics"]
   end
 
-  cron["hq-stats Cron Worker<br/>4-hour rollup"]
+  cron["hq-stats Cron Worker<br/>2-hour rollup"]
 
   subgraph ghbox["GitHub Actions"]
     ci["CI: unit, e2e x4,<br/>3D perf x2, Lighthouse"] -->|green build| deploy["Deploy<br/>dispatch only"]
@@ -203,7 +203,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/build` | How this site was built: blueprint, build rounds, AI agent workflow, quality gates, measured numbers | |
 | `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
-| `/api/stats` | Public visit stats snapshot, refreshed every 4 hours (200 or 204) | |
+| `/api/stats` | Public visit stats snapshot, refreshed every 2 hours (200 or 204) | |
 
 Section anchors, filters and deep links per route: [docs/features.md](docs/features.md#routes).
 
@@ -213,7 +213,7 @@ Section anchors, filters and deep links per route: [docs/features.md](docs/featu
 content/         dataset, blog MDX, Ask suggestions, perspectives, blocklists, generated facts
 messages/        UI strings (en, id)
 functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats
-workers/stats/   hq-stats Cron Worker: public visit stats rollup every 4 hours into KV
+workers/stats/   hq-stats Cron Worker: public visit stats rollup every 2 hours into KV
 src/
   app/           routes ([locale] pages, "/" redirect, OG cards, 404)
   components/    Classic site UI, modals, CV and paper viewers

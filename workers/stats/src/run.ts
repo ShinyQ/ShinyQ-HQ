@@ -130,7 +130,7 @@ async function backfillPerf(cfg: SourceConfig, days: readonly DayRollup[], missi
 }
 
 /**
- * One run (every 4 hours, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
+ * One run (every 2 hours, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
  * backfill window on the first run) from one Web Analytics pass and the same Analytics Engine queries.
  * Days that ended at least `SETTLE_MS` ago are finalized: appended to the ledger once and never fetched
  * again, but only from an unsampled, consistent Web Analytics answer (`waExact`; else they stay provisional

@@ -11,7 +11,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Design: appendix 06 section 4.1; Worker runbook `workers/stats/README.md`; deploy [`docs/deploy.md`](../deploy.md) section 13.
 - Owner decisions:
   - public numbers with no thresholds;
-  - updated every 4 hours (cron `17 */4 * * *` UTC): finalized complete UTC days plus today so far;
+  - updated every 2 hours (cron `17 */2 * * *` UTC): finalized complete UTC days plus today so far;
   - countries as dots only (ISO alpha-2, never `XX` or `T1`);
   - the label "visits" / "kunjungan" (never visitors);
   - a "Don't count my visits" switch.
@@ -32,7 +32,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Cron Worker
 
-- The Cron Worker `hq-stats` (`workers/stats/`, `17 */4 * * *` UTC, scheduled only, `workers_dev = false`) reads:
+- The Cron Worker `hq-stats` (`workers/stats/`, `17 */2 * * *` UTC, scheduled only, `workers_dev = false`) reads:
   - Web Analytics: GraphQL `rumPageloadEventsAdaptiveGroups`, filtered by siteTag, `bot: 0` and `WA_HOSTS`;
   - Analytics Engine: `ask_events`, `visit_events`, `SUM(_sample_interval)`.
 - It appends one rollup per finalized UTC day to the KV ledger `stats:days:v1` and writes `stats:v1` (today so far included, never stored).
@@ -93,7 +93,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 
 ### Data and freshness
 
-- Data: the daily snapshot `StatsSnapshotV1` from `GET /api/stats` (S1's pipeline; 200 with the snapshot, or 204).
+- Data: the 2-hour snapshot `StatsSnapshotV1` from `GET /api/stats` (S1's pipeline; 200 with the snapshot, or 204).
 - Display code imports the contract through `@/lib/visits/contract` (it re-exports S1's `@/lib/stats/protocol` and `@/lib/stats/fixtures`).
 - A 204 means no snapshot yet (before the first cron run) and hides quietly.
 - `requestStats()` fetches once per page:
@@ -102,14 +102,14 @@ Owner plan "Public visit stats, Layer 1", S2.
   - when the Contact section nears the viewport (never under the 3D tower).
 - Freshness (`freshness` in `model.ts`):
   - invalid bodies, a 204, errors and snapshots older than 7 days are `hidden` everywhere;
-  - older than 48 hours shows the "delayed" note.
+  - older than 6 hours (`DELAYED_AFTER_MS`, 3 missed runs) shows the "delayed" note.
 
 ### Owner rules for the copy
 
 - Numbers show now (no thresholds).
 - Countries are dots only (never a number per country, the table lists names).
 - The label is "visits" / "kunjungan".
-- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled estimates") and "Updated every 4 hours" (`stats.updated`).
+- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled estimates") and "Updated every 2 hours" (`stats.updated`).
 - Copy lives in `messages/*.json` `stats`.
 - Numbers go through `formatCount` (exact below 10,000, CLDR compact above: "12.3K", "12,3 rb"; ID uses a no-break space) and `formatCountLong` for screen readers.
 

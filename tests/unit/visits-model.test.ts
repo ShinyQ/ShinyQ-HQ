@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseStatsSnapshot, STATS_FIXTURE, STATS_FIXTURE_EMPTY } from "@/lib/visits/contract";
 import { STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
-import { formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, perfView, visitsView } from "@/lib/visits/model";
+import { DELAYED_AFTER_MS, formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, perfView, visitsView } from "@/lib/visits/model";
 
 const HOUR = 3_600_000;
 const at = (iso: string, hours: number) => Date.parse(iso) + hours * HOUR;
@@ -26,11 +26,14 @@ describe("parseStatsSnapshot (S1 contract, as the display uses it)", () => {
 
 describe("freshness", () => {
   const u = STATS_FIXTURE.updatedAt;
-  it("is fresh within 12 hours of the last update", () => {
+  it("is fresh within 6 hours of the last update (3 missed 2-hour runs)", () => {
+    expect(DELAYED_AFTER_MS).toBe(6 * HOUR);
     expect(freshness(STATS_FIXTURE, at(u, 1))).toBe("fresh");
-    expect(freshness(STATS_FIXTURE, at(u, 11))).toBe("fresh");
+    expect(freshness(STATS_FIXTURE, at(u, 5))).toBe("fresh");
+    expect(freshness(STATS_FIXTURE, at(u, 6))).toBe("fresh");
   });
-  it("is delayed after 12 hours and hidden after 7 days", () => {
+  it("is delayed after 6 hours and hidden after 7 days", () => {
+    expect(freshness(STATS_FIXTURE, at(u, 6.1))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 13))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 - 1))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 + 1))).toBe("hidden");

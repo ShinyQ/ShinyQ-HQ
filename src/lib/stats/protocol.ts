@@ -1,5 +1,5 @@
 /**
- * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written every 4 hours by
+ * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written every 2 hours by
  * the `hq-stats` Cron Worker (workers/stats/) and read by the 3D HQ and the Classic site. Pure and
  * client-safe: no imports, a hand-written validator (no zod on the client).
  *
@@ -58,7 +58,7 @@ export interface StatsPerf {
 
 export interface StatsSnapshotV1 {
   v: 1;
-  /** ISO time of the Worker run that wrote this snapshot (every 4 hours); the data includes today so far. */
+  /** ISO time of the Worker run that wrote this snapshot (every 2 hours); the data includes today so far. */
   updatedAt: string;
   /** First rollup day (YYYY-MM-DD), the "since launch" date. */
   since: string;
