@@ -12,28 +12,52 @@ interface SharedAtlas {
   texture: Texture;
   users: number;
   ready: Promise<Texture>;
+  released: boolean;
 }
 
 let shared: SharedAtlas | null = null;
 
+const closeBitmap = (image: unknown) => {
+  if (typeof ImageBitmap !== "undefined" && image instanceof ImageBitmap) image.close();
+};
+
 /**
- * One texture for both walls, decoded before upload. Same settings as the runtime canvas atlas it
- * replaces (sRGB, anisotropy 4, flipY, straight alpha, mipmaps).
+ * Decodes the atlas off the main thread into a straight-alpha, vertically flipped ImageBitmap: the
+ * texels WebGL received from the canvas atlas, without the synchronous re-decode Chrome does when an
+ * <img> is uploaded with straight alpha. Browsers without createImageBitmap use the <img> and flipY.
+ */
+async function loadAtlasImage(texture: Texture): Promise<void> {
+  if (typeof createImageBitmap === "function") {
+    const response = await fetch(atlas.file);
+    if (!response.ok) throw new Error(`logo atlas: HTTP ${response.status}`);
+    texture.image = await createImageBitmap(await response.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
+    // WebGL ignores UNPACK_FLIP_Y for an ImageBitmap; the decode above flipped it already.
+    texture.flipY = false;
+    return;
+  }
+  const img = new Image();
+  img.decoding = "async";
+  img.src = atlas.file;
+  await img.decode();
+  texture.image = img;
+}
+
+/**
+ * One texture for both walls, decoded before upload. Same texels and settings as the runtime canvas
+ * atlas it replaces (sRGB, anisotropy 4, flipped rows, straight alpha, mipmaps).
  */
 function acquire(): SharedAtlas {
   if (!shared) {
     const texture = new Texture();
     texture.colorSpace = SRGBColorSpace;
     texture.anisotropy = 4;
-    const img = new Image();
-    img.decoding = "async";
-    img.src = atlas.file;
-    const ready = img.decode().then(() => {
-      texture.image = img;
-      texture.needsUpdate = true;
+    const entry: SharedAtlas = { texture, users: 0, released: false, ready: Promise.resolve(texture) };
+    entry.ready = loadAtlasImage(texture).then(() => {
+      if (entry.released) closeBitmap(texture.image);
+      else texture.needsUpdate = true;
       return texture;
     });
-    shared = { texture, users: 0, ready };
+    shared = entry;
   }
   shared.users++;
   return shared;
@@ -43,7 +67,9 @@ function acquire(): SharedAtlas {
 function release(entry: SharedAtlas) {
   entry.users--;
   if (entry.users > 0) return;
+  entry.released = true;
   entry.texture.dispose();
+  closeBitmap(entry.texture.image);
   if (shared === entry) shared = null;
 }
 
