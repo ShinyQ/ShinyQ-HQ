@@ -2,10 +2,14 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
+import type { Group, Material, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { afterFirstFrameIdle } from "../../../boot-signals";
 import { COLORS, LOBBY } from "../../../config";
+import { sceneProbes } from "../../../fx/probes";
+import { MAX_FRAME_DT } from "../../../rover/controller";
 import { roverRuntime } from "../../../rover/runtime";
+import { animationSpeed } from "../../../scene/animationSpeed";
 import type { GpuTier } from "../../../types";
 import { speculativePrefetchOn } from "../../floorChunks";
 import { MergedBoxes, MergedEdges } from "../../roof/kit";
@@ -16,6 +20,42 @@ import { countOfficeAsk, loadOffice, officeChunkState, officeLoadWanted, useOffi
 /** One stable list, so MergedBoxes and MergedEdges build their geometry once. */
 const SHELL = officeShellBoxes();
 
+/** The live scene fades in over this long once it shows (s), so the Rovers and the wall never pop in. */
+export const OFFICE_FADE_IN = 0.25;
+
+/** A material's opacity the fade scales: the holo shader's `uOpacity` uniform, else a hashed-alpha material's opacity. */
+interface FadeSlot {
+  material: Material;
+  uniform: { value: number } | undefined;
+  base: number;
+}
+
+/**
+ * Every material under the live scene the fade can scale without a new program: hashed-alpha materials (`alphaHash`
+ * keeps them opaque, so opacity only changes a uniform) and holo shaders (`uOpacity`). Read once, when the scene shows.
+ */
+export function officeFadeSlots(root: Object3D): FadeSlot[] {
+  const seen = new Set<Material>();
+  const out: FadeSlot[] = [];
+  root.traverse((o) => {
+    const m = (o as { material?: Material }).material;
+    if (!m || seen.has(m)) return;
+    seen.add(m);
+    const uniform = (m as { uniforms?: Record<string, { value: unknown }> }).uniforms?.uOpacity as { value: number } | undefined;
+    if (uniform) out.push({ material: m, uniform, base: uniform.value });
+    else if (m.alphaHash) out.push({ material: m, uniform: undefined, base: m.opacity });
+  });
+  return out;
+}
+
+/** Scales every slot to `k` (0 to 1) of its own opacity. */
+export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
+  for (const s of slots) {
+    if (s.uniform) s.uniform.value = s.base * k;
+    else s.material.opacity = s.base * k;
+  }
+}
+
 /**
  * L1 Agent Office mount (main path). Always draws the furniture shell (2 calls on the programs the observatory
  * already uses), which matches the navgrid obstacles, so the rover never bumps into an invisible desk before the
@@ -23,7 +63,8 @@ const SHELL = officeShellBoxes();
  * riding there, near the office or on a mission bound for it, `?prefetch=off` respected) and starts the chunk (every office drawer open starts it too,
  * beside its own body chunk, `loadOfficeBody`). The live scene mounts once loaded and `ready` (the full tier's composer exists, like the
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
- * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays.
+ * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays; it fades in over
+ * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
  */
 export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTranslate; ready: boolean }) {
   const mod = useOfficeModule();
@@ -34,6 +75,8 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
   const idle = useRef(false);
   const next = useRef(0);
   const prefetch = useRef<boolean | null>(null);
+  const live = useRef<Group>(null);
+  const fade = useRef<{ t: number; slots: FadeSlot[] | null }>({ t: 0, slots: null });
   useEffect(
     () =>
       afterFirstFrameIdle(() => {
@@ -41,6 +84,15 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
       }),
     [],
   );
+  // The fade-in (frame deltas, a cut under reduced motion), from the frame the live scene shows (`OfficeReady`).
+  useFrame((_, rawDt) => {
+    const f = fade.current;
+    const g = live.current;
+    if (f.t >= OFFICE_FADE_IN || !g || !sceneProbes.office.loaded) return;
+    f.slots ??= officeFadeSlots(g);
+    f.t = getHQStore().getState().reducedMotion ? OFFICE_FADE_IN : f.t + Math.min(rawDt, MAX_FRAME_DT) * animationSpeed();
+    setOfficeFade(f.slots, Math.min(1, f.t / OFFICE_FADE_IN));
+  });
   useFrame(({ clock }) => {
     if (clock.elapsedTime < next.current || officeChunkState() !== "idle") return;
     next.current = clock.elapsedTime + 0.5;
@@ -63,7 +115,11 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
     <group name="agent-office">
       <MergedBoxes boxes={SHELL} color="#0b1020" emissive={COLORS.cyan} emissiveIntensity={0.05} />
       <MergedEdges boxes={SHELL} color={COLORS.cyan} tier={tier} opacity={0.6} />
-      {Scene && <Scene tier={tier} t={t} />}
+      {Scene && (
+        <group ref={live}>
+          <Scene tier={tier} t={t} />
+        </group>
+      )}
     </group>
   );
 }
