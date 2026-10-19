@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getContent } from "@/content/load";
-import { buildRoomViews } from "@/content/room-views";
+import { buildFloorRoomViews, buildRoomViews } from "@/content/room-views";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { OFFICE_ROOMS } from "@/experience/floors/lobby/officeLayout";
 import { structuralLabels } from "@/hud/index-data";
@@ -32,6 +32,14 @@ describe("Agent Office rooms and copy", () => {
       expect(views["L1:office"].sections).toEqual([{ body: m.office["3d"].hooks }]);
       expect(views["L1:office-github"].sections).toEqual([{ body: m.office["3d"].githubNote }]);
       for (let slot = 0; slot < 5; slot++) expect(views[`L1:office-desk-${slot + 1}`].sections).toEqual([{ body: m.office.privacy }]);
+    });
+
+    it(`ships every office view in the L1 room data file, and in no other floor's (${locale})`, () => {
+      const l1 = buildFloorRoomViews(locale, "L1");
+      for (const room of OFFICE_ROOMS) expect(l1[room]?.sections?.length, room).toBe(1);
+      for (const floor of ["L2", "L3", "L4", "RF", "B1"] as const) {
+        expect(Object.values(buildFloorRoomViews(locale, floor)).some((view) => view.kind === "office"), floor).toBe(false);
+      }
     });
   }
 
