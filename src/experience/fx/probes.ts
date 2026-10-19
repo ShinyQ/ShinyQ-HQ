@@ -32,6 +32,8 @@ export const sceneProbes = {
   hallGate: { sweeps: 0, active: false },
   /** L3 Ops Control Room: mounted, and the live panel (this site's telemetry) with its rows when shown. */
   ops: { mounted: false, live: false, rows: [] as string[] },
+  /** L1 Agent Office (lazy chunk): compiled and shown, Rovers, their states in slot order, the view mode, wall redraws, chips on screen, the largest pose offset from the still pose (0 under reduced motion), in view, polling. */
+  office: { loaded: false, desks: 0, states: [] as string[], mode: "off", wallFrames: 0, chips: 0, bob: 0, inView: false, polling: false },
 };
 
 type TextLike = Object3D & { text?: unknown; textRenderInfo?: unknown; _members?: Map<Object3D & { text?: string }, unknown> };

@@ -65,6 +65,7 @@ import { isHighlightRoom } from "./floors/lobby/stations";
 import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { floorChunks, floorChunksHandle } from "./floors/floorChunks";
+import { officeHandle } from "./floors/lobby/office/chunk";
 import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -187,6 +188,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     memory: memoryCounts,
     // Floor chunk states and loads (Round 7 B).
     floorChunks: floorChunksHandle,
+    // The lazy Agent Office chunk (L1): load, state and its test hooks (e2e/office.spec.ts, the bytes gate).
+    office: officeHandle,
     ridePrep,
     probes: sceneProbes,
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
