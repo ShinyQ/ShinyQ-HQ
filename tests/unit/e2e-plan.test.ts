@@ -233,6 +233,26 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "src/lib/office/protocol.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
   });
 
+  it("maps the Agent Office to its spec, the 3D experience and the Lobby specs", () => {
+    const office = ["experience", "highlights", "interact", "office", "onboarding"];
+    for (const f of [
+      "src/experience/floors/lobby/officeLayout.ts",
+      "src/experience/floors/lobby/officeShell.ts",
+      "src/experience/floors/lobby/office/OfficeScene.tsx",
+      "src/experience/floors/lobby/office/OfficeMount.tsx",
+      "src/experience/floors/lobby/office/OfficeBody.tsx",
+      "src/experience/floors/lobby/office/body.ts",
+      "src/lib/office/poll.ts",
+      "src/lib/office/model.ts",
+      "src/hud/OfficeLayer.tsx",
+      "e2e/office-fixtures.ts",
+    ])
+      expect(specsForChanges([f]).specs, f).toEqual(office);
+    // A spec file runs itself only (SPEC_FILE in specsForChanges).
+    expect(specsForChanges(["e2e/office.spec.ts"]).specs).toEqual(["office"]);
+    expect(specsForChanges(["scripts/office-shots.ts"]).specs).toEqual([]);
+  });
+
   it("runs a changed spec itself and skips docs and unit tests", () => {
     expect(specsForChanges(["e2e/career.spec.ts", "docs/deploy.md", "tests/unit/rover.test.ts"]).specs).toEqual(["career"]);
     expect(specsForChanges(["AGENTS.md"]).specs).toEqual([]);

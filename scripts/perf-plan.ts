@@ -47,6 +47,8 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
     ALL_PERF_KEYS,
   ],
   [/^src\/experience\/prototype\//, []],
+  // The office's shared client modules (the 3D office chunk and, later, the Classic card): the bytes gate and L1.
+  [/^src\/lib\/office\/(poll|model)\.ts$/, ["bytes", "floor:L1"]],
   [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)/, ["bytes", "floor:L1", "boot", "hover"]],
   [/^src\/experience\/floors\/(career\/|CareerArchive\.tsx$)/, ["bytes", "floor:L2", "ride:L2"]],
   [/^src\/experience\/floors\/(labs\/|Labs\.tsx$)/, ["bytes", "floor:L3", "ride:L3"]],

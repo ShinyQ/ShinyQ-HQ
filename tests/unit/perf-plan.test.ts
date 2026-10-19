@@ -24,6 +24,18 @@ function perfTitles(): string[] {
 }
 
 describe("perfKeysFor", () => {
+  it("selects the bytes gate and the L1 gates for the office's shared client modules and its scene", () => {
+    expect(perfKeysFor(["src/lib/office/poll.ts"])).toEqual(["bytes", "floor:L1"]);
+    expect(perfKeysFor(["src/lib/office/model.ts"])).toEqual(["bytes", "floor:L1"]);
+    for (const file of [
+      "src/experience/floors/lobby/office/OfficeScene.tsx",
+      "src/experience/floors/lobby/office/OfficeBody.tsx",
+      "src/experience/floors/lobby/office/body.ts",
+      "src/experience/floors/lobby/officeShell.ts",
+    ])
+      expect(perfKeysFor([file]), file).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+  });
+
   it("selects the floor, its rides and the bytes gate for L3 code", () => {
     expect(perfKeysFor(["src/experience/floors/labs/OpsRoom.tsx"])).toEqual(["bytes", "floor:L3", "ride:L3"]);
     expect(perfKeysFor(["src/experience/floors/Labs.tsx"])).toEqual(["bytes", "floor:L3", "ride:L3"]);

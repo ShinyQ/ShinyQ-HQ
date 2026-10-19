@@ -44,6 +44,7 @@ export const ALL_SPECS = [
   "memory",
   "missions",
   "motion",
+  "office",
   "onboarding",
   "pads",
   "pageview",
@@ -89,7 +90,7 @@ export const RULES: Rule[] = [
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
   {
-    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|docs-index|intro-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|docs-index|intro-shots|media-sizes|office-shots|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|subset-fonts|title-case|uptime|check-client-chunks)\./,
     specs: [],
   },
   // Build-time scans of the export: the script policy and the deploy rules.
@@ -98,6 +99,14 @@ export const RULES: Rule[] = [
   // Ask the HQ: the Pages Function, its client, the knowledge pack builder and the UI that only it uses.
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
   { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
+  // L1 Agent Office (3D, part 3 of the office): the layout and the shell on the main path, the lazy scene and drawer
+  // body chunks, the shared poller and model, the HUD chips host and the e2e fixtures. The spawn is within the
+  // office's load radius, so the Lobby specs (point-and-go, the tour) see the office too. Before the backend rule,
+  // which keeps the rest of src/lib/office/ (the protocol and the fixtures) unit tested only.
+  {
+    test: /^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)|^src\/lib\/office\/(poll|model)\.ts$|^src\/hud\/OfficeLayer\.tsx$|^e2e\/office-fixtures\.ts$/,
+    specs: ["office", "experience", "highlights", "interact", "onboarding"],
+  },
   // Agent Office backend (part 1): unit tested in tests/office; the 3D office and the Classic card add their specs.
   { test: /^functions\/(api\/office\/|_lib\/office\.ts$)|^src\/lib\/office\//, specs: [] },
   // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client

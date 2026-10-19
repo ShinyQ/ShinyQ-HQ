@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route, rideTo } from "../b1";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
-import { enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
+import { OFFICE } from "../../src/experience/floors/lobby/officeLayout";
+import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
 
@@ -39,12 +40,30 @@ const FLOORS = [
 
 const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 
-async function measureFloor(page: Page, tier: "lite" | "full", floor: string) {
+type OfficeWindow = { __hq: { office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } } };
+
+/**
+ * The Agent Office chunk loads near the spawn on idle; load it and wait until it shows, so L1 (and B1, ridden
+ * from the Lobby) always measure the same programs. A build without the office (a main build) skips this.
+ */
+async function settleOffice(page: Page) {
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office?.load());
+  await page.waitForFunction(
+    () => {
+      const hq = (window as unknown as OfficeWindow).__hq;
+      return !hq.office || hq.probes.office?.loaded === true;
+    },
+    null,
+    { timeout: 60_000 },
+  );
+}
+
+async function measureFloor(page: Page, tier: "lite" | "full", floor: string, { record = true }: { record?: boolean } = {}) {
   await waitForCameraSettle(page);
   const programs = await waitForStablePrograms(page);
   const peaks = await expectRenderBudget(page);
   const gpu = await readGpuCounters(page);
-  writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
+  if (record) writePerfEntry({ kind: "floor", tier, floor, sceneCalls: peaks.sceneCalls, postCalls: peaks.postCalls, triangles: peaks.triangles, programs, geometries: gpu.geometries, textures: gpu.textures });
   // Floors P2's precompile has warmed (programs pinned): explains a program count that differs between runs.
   const warm = await page.evaluate(() => (window as unknown as { __hq: { render?: { warmFloors(): string[] } } }).__hq.render?.warmFloors().sort().join(",") ?? "");
   console.log(`${floor} ${tier}: ${peaks.sceneCalls} scene + ${peaks.postCalls} post, ${peaks.triangles} tris, ${programs} programs (warm: ${warm || "none"}), ${gpu.geometries} geometries, ${gpu.textures} textures`);
@@ -63,13 +82,22 @@ for (const tier of ["lite", "full"] as const) {
   for (const { floor, path } of FLOORS) {
     test(`${floor} ${tier}: settled draw calls and shader programs`, async ({ page }) => {
       await enterFloorRoute(page, path, { tier });
+      if (floor === "L1") await settleOffice(page);
       await measureFloor(page, tier, floor);
     });
   }
   test(`B1 ${tier}: settled draw calls and shader programs`, async ({ page }) => {
     // B1 has no route: unlock it on the Lobby and ride down (its baseline includes the Lobby's programs).
     await enterB1Route(page, "/en", tier);
+    await settleOffice(page);
     await rideTo(page, "B1");
     await measureFloor(page, tier, "B1");
+  });
+  test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
+    await enterFloorRoute(page, "/en", { tier });
+    await settleOffice(page);
+    await driveTo(page, OFFICE.stop);
+    // Same cap and program baseline as the L1 spawn; not recorded (the spawn entry is the L1 baseline).
+    await measureFloor(page, tier, "L1", { record: false });
   });
 }
