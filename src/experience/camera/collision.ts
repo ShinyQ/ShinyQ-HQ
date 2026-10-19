@@ -65,7 +65,6 @@ export function cameraBlocked(p: Vec3, w: CameraWorld): boolean {
   return w.obstacles.some((o) => inside(x, z, o, r));
 }
 
-
 /**
  * True when the bottom edge of the view (vertical `fov`, degrees) lands on the slab: the camera stands on it, or
  * the bottom-center ray (aimed at `target`, tilted down by half the FOV) meets the floor plane on the slab (any rect).

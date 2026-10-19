@@ -57,6 +57,7 @@ function bridge(a: Rect, b: Rect, inset: number): Rect | null {
   return null;
 }
 
+// Keyed by the wings array; one entry per inset, so insets must come from a small fixed set (radii, not per-frame values).
 const insetCache = new WeakMap<readonly Rect[], { bounds: Rect; inset: number; rects: readonly Rect[] }[]>();
 
 /**

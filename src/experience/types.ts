@@ -46,8 +46,9 @@ export interface FloorLayout {
   /** Main walkable slab rect (with `wings`, the slab is their union: `nav/slab.ts`). */
   bounds: Rect;
   /**
-   * Slab extensions: rects that touch `bounds` (or another wing) along part of an edge and never overlap
-   * it. The shared joint is open floor. Navgrid, collision, space rules, camera, slab mesh and minimap
+   * Slab extensions: rects that touch `bounds` along part of an edge and never overlap it or each other. The
+   * shared joint is open floor. No three rects may share a corner (the inset union bridges pairwise joints
+   * only, so such a vertex would hide an invisible post). Navgrid, collision, space rules, camera, slab mesh and minimap
    * cover the union (`slabRects`, `slabBox`, `inSlab`, `clampToSlab`).
    */
   wings?: readonly Rect[];
