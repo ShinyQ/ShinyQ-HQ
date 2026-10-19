@@ -17,12 +17,14 @@ const NEUTRAL_TONE = { dot: "muted", bar: "bg-ink-3" } as const;
 export interface GuideCardLabels {
   /** "{count} pages", already resolved for this guide. */
   pages: string;
+  /** "Edition {date}", already resolved for this guide. */
+  edition: string;
   domains: string;
   read: string;
   download: string;
 }
 
-/** One study guide: cover, issuer and exam code, title, summary, size, exam domain weights, Read and Download. */
+/** One study guide: cover, issuer and exam code, title, pages, size and edition, summary, exam domain weights, Read and Download. */
 export function GuideCard({ view, labels }: { view: GuideView; labels: GuideCardLabels }) {
   const tone = ISSUER_TONE[view.issuer] ?? NEUTRAL_TONE;
   const domainsId = `guide-${view.slug}-domains`;
@@ -39,7 +41,7 @@ export function GuideCard({ view, labels }: { view: GuideView; labels: GuideCard
           </p>
           <h3 className="pv-h3 mt-3">{view.title}</h3>
           <p className="pv-data mt-3">
-            {labels.pages} · {view.sizeLabel}
+            {labels.pages} · {view.sizeLabel} · {labels.edition}
           </p>
         </div>
       </div>
@@ -72,7 +74,10 @@ export function GuideCard({ view, labels }: { view: GuideView; labels: GuideCard
   );
 }
 
-/** The Classic "Study guides" shelf on the Writing page (`#guides`): one card per guide, in file order. */
+/**
+ * The Classic "Study guides" shelf on the Writing page (`#guides`): one card per guide, in file order, then a note
+ * that the guides are independent material. Server-rendered: its `guides` strings never ship to the client.
+ */
 export async function GuideShelf({ locale, guides = guideViews(locale) }: { locale: Locale; guides?: GuideView[] }) {
   if (guides.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "library" });
@@ -84,10 +89,17 @@ export async function GuideShelf({ locale, guides = guideViews(locale) }: { loca
           <GuideCard
             key={view.slug}
             view={view}
-            labels={{ pages: tg("pages", { count: view.pages }), domains: tg("domains"), read: tg("read"), download: tg("download") }}
+            labels={{
+              pages: tg("pages", { count: view.pages }),
+              edition: tg("edition", { date: view.editionLabel }),
+              domains: tg("domains"),
+              read: tg("read"),
+              download: tg("download"),
+            }}
           />
         ))}
       </ul>
+      <p className="pv-small mt-4 text-ink-3">{tg("independent")}</p>
     </SectionSplit>
   );
 }

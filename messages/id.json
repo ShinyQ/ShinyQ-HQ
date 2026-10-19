@@ -246,7 +246,6 @@
     "read": "Baca",
     "readGuide": "Baca panduan belajar",
     "download": "Unduh PDF",
-    "downloadHint": "PDF, {size}",
     "close": "Tutup pembaca",
     "loading": "Membuka panduan belajar",
     "error": "Panduan belajar tidak dapat dibuka.",

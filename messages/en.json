@@ -246,7 +246,6 @@
     "read": "Read",
     "readGuide": "Read the study guide",
     "download": "Download PDF",
-    "downloadHint": "PDF, {size}",
     "close": "Close the reader",
     "loading": "Opening the study guide",
     "error": "The study guide could not be opened.",

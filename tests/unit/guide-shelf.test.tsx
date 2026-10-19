@@ -1,14 +1,21 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GuideActions } from "@/components/guides/GuideActions";
-import { GuideCard, type GuideCardLabels } from "@/components/guides/GuideShelf";
+import { GuideCard, GuideShelf, type GuideCardLabels } from "@/components/guides/GuideShelf";
 import type { GuideView } from "@/content/guides";
 import { HUD_EVENT, type HudCommand } from "@/hud/events";
+import en from "../../messages/en.json";
 
-// GuideShelf's section wrapper pulls in next-intl navigation, which Vitest cannot resolve; the card does not need it.
-vi.mock("@/components/page/Layout", () => ({ SectionSplit: () => null }));
+// GuideShelf's section wrapper pulls in next-intl navigation, which Vitest cannot resolve: render its children only.
+vi.mock("@/components/page/Layout", () => ({ SectionSplit: ({ children }: { children: ReactNode }) => children }));
+// Server translations from the real English messages, with `{name}` placeholders filled in.
+vi.mock("next-intl/server", () => ({
+  getTranslations: async ({ namespace }: { namespace: keyof typeof en }) => (key: string, values: Record<string, unknown> = {}) =>
+    String((en[namespace] as Record<string, string>)[key]).replace(/\{(\w+)\}/g, (_, name: string) => String(values[name])),
+}));
 
 afterEach(() => cleanup());
 
@@ -76,7 +83,7 @@ const view: GuideView = {
   ],
 };
 
-const labels: GuideCardLabels = { pages: "120 pages", domains: "Exam domains", read: "Read", download: "Download PDF" };
+const labels: GuideCardLabels = { pages: "120 pages", edition: "Edition Oct 2026", domains: "Exam domains", read: "Read", download: "Download PDF" };
 
 describe("GuideCard", () => {
   it("shows a decorative lazy cover, the issuer and code, the title, the summary and the size", () => {
@@ -96,7 +103,7 @@ describe("GuideCard", () => {
     expect(card).toHaveTextContent("Microsoft");
     expect(card).toHaveTextContent("EX-100");
     expect(card).toHaveTextContent("A fictional guide for the test.");
-    expect(card).toHaveTextContent("120 pages · 4.4 MB");
+    expect(card).toHaveTextContent("120 pages · 4.4 MB · Edition Oct 2026");
     expect(within(card).getByTestId("guide-read")).toBeInTheDocument();
   });
 
@@ -121,5 +128,16 @@ describe("GuideCard", () => {
       </ul>,
     );
     expect(screen.getAllByRole("listitem")[0]).not.toHaveTextContent("EX-100");
+  });
+});
+
+describe("GuideShelf", () => {
+  it("labels each card with its pages and edition and ends with the independent material note", async () => {
+    render(await GuideShelf({ locale: "en", guides: [view] }));
+    const card = screen.getAllByRole("listitem")[0];
+    expect(card).toHaveTextContent("120 pages · 4.4 MB · Edition Oct 2026");
+    const note = screen.getByText(en.guides.independent);
+    expect(note).toHaveClass("pv-small", "text-ink-3");
+    expect(note.closest("li")).toBeNull();
   });
 });
