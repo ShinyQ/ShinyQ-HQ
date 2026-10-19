@@ -26,7 +26,7 @@ export function setChipFar(slot: number, far: boolean): void {
   for (const listener of farListeners) listener();
 }
 
-const subscribeFar = (listener: () => void) => {
+export const subscribeChipFar = (listener: () => void): (() => void) => {
   farListeners.add(listener);
   return () => {
     farListeners.delete(listener);
@@ -34,5 +34,5 @@ const subscribeFar = (listener: () => void) => {
 };
 
 export function useChipFar(slot: number): boolean {
-  return useSyncExternalStore(subscribeFar, () => officeRuntime.far[slot], () => false);
+  return useSyncExternalStore(subscribeChipFar, () => officeRuntime.far[slot], () => false);
 }

@@ -11,6 +11,13 @@ const poller = createOfficePoller({ now: () => Date.now() + clock.skew });
 const wants = new Set<string>();
 const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;
+/** Unsubscribes the test hook's one-shot listener (set while its unwanted fetch is in flight). */
+let release: (() => void) | null = null;
+
+function settle(): void {
+  release?.();
+  release = null;
+}
 
 function attach(): () => void {
   const touch = () => poller.touch();
@@ -35,6 +42,7 @@ export const officeLive = {
     else wants.delete(reason);
     const after = wants.size > 0;
     if (after && !before) {
+      settle();
       detach = attach();
       poller.start();
     } else if (!after && before) {
@@ -43,7 +51,8 @@ export const officeLive = {
       detach = null;
     }
   },
-  polling: (): boolean => wants.size > 0,
+  /** Whether any reason wants the poller (it may still have stopped for idleness). */
+  wanted: (): boolean => wants.size > 0,
 };
 
 const subscribe = (onChange: () => void) => poller.subscribe(onChange);
@@ -52,17 +61,26 @@ export function useOfficeFeed(): OfficeFeed {
   return useSyncExternalStore(subscribe, poller.feed, poller.feed);
 }
 
-/** `__hq.office.test()` (Playwright): the feed, a fetch now, and a clock skew to cross the keep-last window. */
+/**
+ * `__hq.office.test()` (Playwright): the feed, a fetch now, and a clock skew to cross the keep-last window. While
+ * nothing wants the poller, poll() lets its one fetch land and stops the poller after the first settled feed.
+ */
 export const officeTest = {
   feed: (): OfficeFeed => poller.feed(),
   poll(): void {
+    settle();
     poller.stop();
     poller.start();
-    if (!wants.size) poller.stop();
+    if (wants.size) return;
+    release = poller.subscribe((feed) => {
+      if (feed.status === "loading") return;
+      settle();
+      if (!wants.size) poller.stop();
+    });
   },
   advance(ms: number): void {
     clock.skew += ms;
     officeTest.poll();
   },
-  polling: (): boolean => wants.size > 0,
+  wanted: (): boolean => wants.size > 0,
 };
