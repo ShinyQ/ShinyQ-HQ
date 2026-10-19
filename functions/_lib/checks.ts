@@ -453,16 +453,17 @@ export function relevantClosest(pack: KnowledgePack, question: string, chunks: r
   const index = indexPack(pack);
   const n = pack.chunks.length;
   // A plural the pack only has in the singular ("LLMs") counts as the singular.
-  const singular = (t: string) => (!index.df[t] && t.length > 3 && t.endsWith("s") && index.df[t.slice(0, -1)] ? t.slice(0, -1) : t);
-  const terms = [...new Set(expandTokens(tokenize(question)).map(singular))].filter((t) => !FRAME_TERMS.has(t) && (index.df[t] ?? 0) <= n * TOPIC_COMMON_SHARE);
-  if (!terms.length || terms.some((t) => !index.df[t])) return undefined;
+  const df = (t: string) => index.df.get(t) ?? 0;
+  const singular = (t: string) => (!df(t) && t.length > 3 && t.endsWith("s") && df(t.slice(0, -1)) ? t.slice(0, -1) : t);
+  const terms = [...new Set(expandTokens(tokenize(question)).map(singular))].filter((t) => !FRAME_TERMS.has(t) && df(t) <= n * TOPIC_COMMON_SHARE);
+  if (!terms.length || terms.some((t) => !df(t))) return undefined;
   const allowed = options.adjacent ? ["post", "talk", "project", "publication", "principle"] : ["post", "talk", "principle", "publication"];
   let best: { chunk: KnowledgeChunk; score: number } | undefined;
   for (const chunk of chunks) {
     if (!allowed.includes(chunk.type) || chunk.keywords.includes("personal") || !isAskCite(chunk.url)) continue;
     const i = pack.chunks.indexOf(chunk);
     if (i < 0) continue;
-    const score = terms.reduce((sum, t) => sum + (index.tf[i][t] ? Math.log(1 + n / index.df[t]) : 0), 0);
+    const score = terms.reduce((sum, t) => sum + (index.tfOf(i, t) ? Math.log(1 + n / df(t)) : 0), 0);
     if (score > 0 && (!best || score > best.score)) best = { chunk, score };
   }
   if (!best?.chunk.url) return undefined;
