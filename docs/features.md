@@ -224,8 +224,8 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 - One continuous curved console of five desks around the office stop, a Rover behind each desk facing you (Desk 1 on the left from the office), and a screen wall behind them: mission control (counts, who is working now, today) and the public GitHub board.
 - Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
-- A chip for each Rover, in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones always just the state dot; the desk's drawer shows the task).
-- From the office stop a portrait screen looks down at the console (about 20% sky over the wall, every desk in view), and the outline of the floor above hides while you are in the wing, so no line crosses the view.
+- A chip for each Rover at the office stop (or with an office drawer open), in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones always just the state dot; the desk's drawer shows the task).
+- From the office stop a portrait screen looks down at the console (about 20% sky over the wall, every desk in view), and the outline of the floor above and the tower frame hide while you are in the wing, so no line crosses the view; the wing sign fades out at the stop, and the live Rovers fade in when the office loads.
 - Click a Rover, its chip or a wall half to drive to the office and open its drawer: the summary, the GitHub board, or one desk (agent, activity, task, repository, time in state, recent activity).
 - It loads on its own once you drive onto the lead road or into the wing, start the office mission or head for an office room (from the elevator ride on), or open one of its drawers; a visit that never heads south never downloads it. It polls only while the office is in view or one of its drawers is open.
 - Semi-live (GitHub only), resting (off) and offline modes put every Rover to sleep; reduced motion holds every Rover still.
@@ -482,7 +482,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 462.9 KB gzip per tier; session total full 491.9 KB, lite 476.1 KB | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 464.8 KB gzip per tier; session total full 493.7 KB, lite 478.0 KB | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.
