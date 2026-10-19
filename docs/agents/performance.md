@@ -86,9 +86,10 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 #### Study guide reader
 
 - `e2e/perf/guide-reader.spec.ts` (perf key `guides`) opens `/en/library?tier=static#guides` with the fixture PDF (`e2e/fixtures/guide-pdf.ts`), clicks Read and gzip-sizes every script loaded after the click:
-  - `GUIDE_READER_BUDGET.chunk`, 160 KB: the main-thread JS (the dialog and reader chunks plus pdf.js), measured 140.8 KB;
+  - `GUIDE_READER_BUDGET.chunk`, 160 KB: the main-thread JS (the dialog and reader chunks plus pdf.js), measured 142.1 KB;
   - `GUIDE_READER_BUDGET.worker`, 400 KB: the pdf.js worker with its Turbopack bootstrap (the entry plus the chunks in its `#params`), measured 361.3 KB (the pdf.js 6.4 worker alone is about 354 KB);
-  - no script loaded before the click carries pdf.js.
+  - no script loaded before the click carries pdf.js (the snapshot of the initial load is taken right before the click, after a state wait, never `networkidle`).
+- The caps measure the modern path (Chromium). The legacy pdf.js build and worker (`pdfjs-dist/legacy/build/`, picked by `needsLegacyPdfjs` in `pdf.ts`) are separate lazy assets loaded only by browsers that lack a built-in the modern build calls; they are about 147 KB and 379 KB gzip and are not capped.
 - The key is not 3D: `pagePerfKeys` in `scripts/perf-plan.ts` maps the reader's page code (`src/components/guides/`, `src/content/guides.ts`, `DialogHost.tsx`, `dialog-loaders.ts`, the `/library` page) to `guides`, and `scripts/ci-plan.ts` adds it to a PR's perf keys. Run it alone with `PERF=1 bunx playwright test --grep "the study guide reader stays"`.
 - `tests/unit/guide-chunks-graph.test.ts` (every PR) walks the static imports of `src/experience/Experience.tsx` and `src/app/[locale]/layout.tsx` and fails when either reaches `GuideReader.tsx`, `pdf.ts` or any static `pdfjs-dist` import; it also checks that `GuideDialog` imports the reader and `pdf.ts` imports pdf.js dynamically. So the reader adds nothing to the 3D bytes or the Classic pages' initial load.
 

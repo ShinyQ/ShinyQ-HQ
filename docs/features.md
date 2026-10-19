@@ -181,7 +181,9 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
   - **Read** opens the in-site reader in a dialog; the certification preview card (Classic cards and rows, and the 3D Lobby's certifications wall) shows **Read study guide** for a certification that has a guide and swaps itself for the reader, so focus returns to the original card or badge on close.
   - The reader is pdf.js in a lazy chunk, loaded on the click (hovering or focusing the button preloads the dialog): it fetches only the pages read, by byte range, from `/api/guides/<slug>`. Pages fit the width and draw as they scroll near, with selectable text; zoom steps from 50% to 300%; a page box with Previous and Next; Chapters from the PDF outline; a thumbnail rail on wide screens; Download PDF.
   - Keys on the pages: Page Down, Right arrow and Space for the next page, Page Up, Left arrow and Shift+Space for the previous one, Home and End, `+`, `-` and `0` (fit width). Esc closes.
-  - The last page read is remembered per guide (`localStorage` `hq:guide:<slug>`). A failed load shows an error with Try again and the download.
+  - The thumbnail rail is one tab stop: Up and Down arrows, Home and End move between thumbnails, Enter or Space opens that page.
+  - The last page read is remembered per guide (`localStorage` `hq:guide:<slug>`). A failed load (including a pdf.js worker that never starts, or no answer within 45 seconds) shows an error with Try again and the download; a page that fails to draw shows Try again in its own slot.
+  - Browsers without the newest JavaScript built-ins the modern pdf.js build needs (older iOS Safari) get the legacy pdf.js build and worker instead, loaded only there.
   - Nothing of the reader or pdf.js loads before the click, on any Classic page or in the 3D tower.
 
 ## Glass Drawer
