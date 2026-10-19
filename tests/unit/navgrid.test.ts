@@ -134,7 +134,8 @@ describe("buildNavGrid", () => {
   it("matches the reference build on every real floor", () => {
     const data = buildExperienceData("en", { L1: "", L2: "", L3: "", L4: "", RF: "" });
     const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, career: careerLayoutInput(data.career) });
-    for (const layout of Object.values(layouts)) {
+    // The reference knows one rect: L1's office wing is checked in tests/unit/slab-regression.test.ts.
+    for (const layout of Object.values(layouts).filter((l) => !l.wings?.length)) {
       expect(buildNavGrid(layout, ROVER.radius).walkable).toEqual(reference(layout, ROVER.radius));
     }
   });

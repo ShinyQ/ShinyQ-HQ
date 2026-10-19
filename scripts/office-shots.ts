@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { chromium, type Page } from "@playwright/test";
 import { asReturningVisitor, driveTo, skipFloorLines, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
 import { STATES_A, STATES_B, statesA, statesB } from "../e2e/office-fixtures";
+import { LOBBY } from "../src/experience/config";
 import { OFFICE } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
 
@@ -93,7 +94,7 @@ try {
       await waitForSceneLive(page, SLOW);
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
       await waitFor("the office chunk", async () => (await probe(page)).loaded);
-      await driveTo(page, OFFICE.stop, SLOW);
+      await driveTo(page, LOBBY.officeWing.stop, SLOW);
       await settle(page);
       await waitFor("office polling", async () => (await probe(page)).polling);
       const home = await camera(page);
@@ -102,8 +103,11 @@ try {
       await show(page, reply, statesA(Date.now()), "live", STATES_A);
       await page.screenshot({ path: name("states-a") });
 
-      // Zoom key steps (as e2e/office.spec.ts `nearChips`) until the chips leave their far band and show the task line.
+      // As e2e/office.spec.ts `nearChips`: 6 u on toward the desks (the wing stop stands about 16 u from the wall), then
+      // zoom key steps until the chips leave their far band and show the task line.
       // The middle three: a chip off screen (the end ones on a phone) keeps its far flag.
+      await driveTo(page, { x: LOBBY.officeWing.stop.x + 1.5, z: LOBBY.officeWing.stop.z + 6 }, SLOW);
+      await settle(page);
       const near = async () => (await Promise.all([1, 2, 3].map((slot) => chip(page, slot).getAttribute("data-far")))).every((far) => far === "false");
       for (let i = 0; i < 8 && !(await near()); i++) {
         await page.keyboard.press("=");
@@ -114,8 +118,9 @@ try {
       await page.screenshot({ path: name("states-a-near") });
       // A hand zoom suppresses the office view zone until the rover leaves it: reset, step out and come back.
       await page.keyboard.press("0");
-      await driveTo(page, { x: OFFICE.stop.x, z: OFFICE.stop.z - 2 * OFFICE.view.half.z - 2 }, SLOW);
-      await driveTo(page, OFFICE.stop, SLOW);
+      const { stop } = LOBBY.officeWing;
+      await driveTo(page, { x: stop.x, z: stop.z - 2 * OFFICE.view.half.z - 2 }, SLOW);
+      await driveTo(page, stop, SLOW);
       await settle(page);
       const back = await camera(page);
       if (Math.hypot(back[0] - home[0], back[1] - home[1], back[2] - home[2]) > 0.5) console.warn(`office shots: the office view did not come back (${home} to ${back})`);

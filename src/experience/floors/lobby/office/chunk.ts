@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { LOBBY } from "../../../config";
 import { OFFICE } from "../officeLayout";
 import type * as OfficeBodyChunk from "./body";
 import type * as OfficeChunk from "./scene";
@@ -91,7 +92,8 @@ export interface OfficeLoadInput {
 /** The speculative trigger: after the first frame on idle, on L1 or riding there, within `OFFICE.loadRadius` of the stop. */
 export function officeLoadWanted({ idle, state: chunk, prefetch, floor, rideTo, at }: OfficeLoadInput): boolean {
   if (!idle || chunk !== "idle" || !prefetch || (rideTo ?? floor) !== "L1") return false;
-  return Math.hypot(at.x - OFFICE.stop.x, at.z - OFFICE.stop.z) <= OFFICE.loadRadius;
+  const { stop } = LOBBY.officeWing;
+  return Math.hypot(at.x - stop.x, at.z - stop.z) <= OFFICE.loadRadius;
 }
 
 let asks = 0;

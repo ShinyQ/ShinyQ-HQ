@@ -5,7 +5,7 @@ import { CAMERA_FAR, CAMERA_NEAR } from "@/experience/camera/firstPerson";
 import { followOffsetScale } from "@/experience/camera/offset";
 import { createOrbitState, primeZone, setPitchRange, zoneAt, zoomBy } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/experience/camera/rigs";
-import { buildFloorLayouts, floorY } from "@/experience/config";
+import { buildFloorLayouts, floorY, LOBBY } from "@/experience/config";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
@@ -23,7 +23,8 @@ import { cameraClass, viewportClass } from "@/lib/viewport";
 
 const floor = buildFloorLayouts(8).L1;
 const world = cameraWorld(floor, floorY("L1"));
-const slots = officeSlots();
+const W = LOBBY.officeWing;
+const slots = officeSlots(W);
 /**
  * Chip sizes (px): a far chip (one 32 px pill, `min-h-8`, wider than any head line), a near one (conservative: the
  * pill, the task line and the CI bar), a phone's compact far dot (32 x 32).
@@ -43,11 +44,11 @@ function stopCamera(width: number, height: number, steps = 0): PerspectiveCamera
   const cls = cameraClass(width, height);
   const orbit = createOrbitState();
   setPitchRange(orbit, pitchRange(cls, "follow"));
-  const zone = zoneAt("L1", OFFICE.stop, floor.viewZones);
+  const zone = zoneAt("L1", W.stop, floor.viewZones);
   expect(zone?.id).toBe("L1:office");
   primeZone(orbit, zone, cls);
   for (let i = 0; i < steps; i++) zoomBy(orbit, 0.8, false);
-  const rover: [number, number, number] = [OFFICE.stop.x, floorY("L1") + 1, OFFICE.stop.z];
+  const rover: [number, number, number] = [W.stop.x, floorY("L1") + 1, W.stop.z];
   const f = followForward(cls, orbit.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const pose = followPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], orbit.yaw, orbit.zoom * followOffsetScale(cls, width / height), orbit.pitch);
@@ -77,7 +78,8 @@ function boxOf(camera: PerspectiveCamera, size: { width: number; height: number 
 
 /** The whole screen wall, frame included (both text panels fill it). */
 function wallBox(camera: PerspectiveCamera, size: { width: number; height: number }): ScreenBox {
-  const { x, z, w, h, bottom, frame } = OFFICE.wall;
+  const { x, z } = W.wall;
+  const { w, h, bottom, frame } = OFFICE.wall;
   const xs = [x - w / 2 - frame, x + w / 2 + frame];
   const ys = [bottom - frame, bottom + h + frame];
   return boxOf(camera, size, xs.flatMap((px) => ys.map((py) => [px, py, z] as const)));
@@ -108,7 +110,7 @@ describe("Agent Office chips at the office stop", () => {
     const top = wall.bottom + wall.h + wall.frame;
     expect(officeRuntime.anchors.map((a) => a.x)).toEqual(slots.map((s) => s.rover.x));
     for (const a of officeRuntime.anchors) {
-      expect(a.z).toBeCloseTo(wall.z - wall.t / 2);
+      expect(a.z).toBeCloseTo(W.wall.z - wall.t / 2);
       expect(a.y).toBeGreaterThanOrEqual(top + CHIP_ROW.gap - 1e-9);
     }
     // Neighbours never share a row.
@@ -123,7 +125,7 @@ describe("Agent Office chips at the office stop", () => {
       const camera = stopCamera(width, height);
       const wall = wallBox(camera, size);
       const desks = deskScreenBoxes(camera, size);
-      const rover = roverScreenBox(camera, OFFICE.stop, floorY("L1"), size, new Vector3(), { x0: 0, y0: 0, x1: 0, y1: 0 });
+      const rover = roverScreenBox(camera, W.stop, floorY("L1"), size, new Vector3(), { x0: 0, y0: 0, x1: 0, y1: 0 });
       expect(rover).not.toBeNull();
       const boxes: ScreenBox[] = [];
       for (const s of slots) {

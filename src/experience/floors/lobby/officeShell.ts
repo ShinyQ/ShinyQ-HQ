@@ -1,16 +1,21 @@
+import { LOBBY } from "../../config";
+import type { SignSpec } from "../../fx/signLayout";
 import type { Rect } from "../../types";
 import type { Box } from "../roof/solids";
-import { OFFICE, officeObstacles, officeSlots, onArc } from "./officeLayout";
+import { OFFICE, officeObstacles, officeSlots, onArc, type OfficeSlot } from "./officeLayout";
 
 /**
- * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk). Kept out of `officeLayout.ts`, which
- * the Classic site's shared page chunk carries through `useHQStore` and config.ts, so they cost the Classic JS
- * budget nothing (tests/unit/office-chunk-graph.test.ts).
+ * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
+ * Kept out of `officeLayout.ts`, which the Classic site's shared page chunk carries through `useHQStore` and
+ * config.ts, so they cost the Classic JS budget nothing (tests/unit/office-chunk-graph.test.ts).
  */
 
-/** Everything the office covers: the intro reveal rect and the in-view test. */
+/** The five desks and Rovers in the wing. */
+export const OFFICE_SLOTS: readonly OfficeSlot[] = officeSlots(LOBBY.officeWing);
+
+/** Everything the office covers: the in-view test. */
 export function officeBounds(): Rect {
-  const rects = officeObstacles();
+  const rects = officeObstacles(LOBBY.officeWing);
   return {
     minX: Math.min(...rects.map((r) => r.minX)),
     maxX: Math.max(...rects.map((r) => r.maxX)),
@@ -19,14 +24,30 @@ export function officeBounds(): Rect {
   };
 }
 
+/** The intro reveal rect of the wing: the wing slab reaching north over the lead road's span in the Lobby (the wing is wider than the road). */
+export function wingBounds(): Rect {
+  const { rect, lead } = LOBBY.officeWing;
+  return { ...rect, minZ: lead.from };
+}
+
+/**
+ * The floating wing sign over the lead road where it enters the wing (the shared `FloatingSigns`; nothing on the
+ * floor), as high as the hall's gate sign, so the follow camera sees the rover under it.
+ */
+export function officeSign(text: string, color: string): SignSpec {
+  const { lead, rect } = LOBBY.officeWing;
+  return { text: text.toUpperCase(), x: lead.x, y: 8.1, z: rect.minZ, color, fontSize: 0.75, letterSpacing: 0.08 };
+}
+
 /**
  * The furniture drawn on the main path (so the obstacles always show, before the chunk and if it fails):
  * five desk tops, two legs each, four cable trays along the arc between the desks, and the wall frame.
  */
 export function officeShellBoxes(): Box[] {
   const { desk, wall } = OFFICE;
+  const w = LOBBY.officeWing;
   const out: Box[] = [];
-  const slots = officeSlots();
+  const slots = OFFICE_SLOTS;
   for (const s of slots) {
     out.push({ x: s.desk.x, y: desk.top - desk.slab, z: s.desk.z, w: desk.w, h: desk.slab, d: desk.d, yaw: s.yaw });
     for (const side of [-1, 1]) {
@@ -39,10 +60,10 @@ export function officeShellBoxes(): Box[] {
     const a = slots[i].theta;
     const b = slots[i + 1].theta;
     const mid = (a + b) / 2;
-    const at = onArc(mid, OFFICE.deskRadius);
+    const at = onArc(w, mid, OFFICE.deskRadius);
     const chord = 2 * OFFICE.deskRadius * Math.sin(Math.abs(b - a) / 2);
     out.push({ x: at.x, y: 0, z: at.z, w: chord - desk.w + 0.2, h: 0.06, d: 0.3, yaw: mid + Math.PI });
   }
-  out.push({ x: wall.x, y: 0, z: wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
+  out.push({ x: w.wall.x, y: 0, z: w.wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
   return out;
 }

@@ -8,98 +8,224 @@ import {
   isOfficeRoom,
   OFFICE,
   OFFICE_ROOMS,
+  OFFICE_WING,
   officeDeskRoom,
   officeObstacles,
+  officeRoad,
   officeSlots,
+  officeStops,
   officeTall,
   officeWallRect,
+  officeWing,
+  officeZone,
   turnedHalf,
+  type OfficeWing,
 } from "@/experience/floors/lobby/officeLayout";
-import { officeBounds, officeShellBoxes } from "@/experience/floors/lobby/officeShell";
-import { buildNavGrid, findPath, isWalkable } from "@/experience/nav/navgrid";
-import { rectGap, wideGrid } from "@/experience/nav/space";
-import type { Rect } from "@/experience/types";
+import { OFFICE_SLOTS, officeBounds, officeShellBoxes, officeSign, wingBounds } from "@/experience/floors/lobby/officeShell";
+import { buildNavGrid, findPath, isWalkable, nearestWalkable } from "@/experience/nav/navgrid";
+import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
+import { roadRoute } from "@/experience/nav/roadRoute";
+import { inSlab, slabRects } from "@/experience/nav/slab";
+import { rectGap, SPACE_RULES, spaceViolations, wideGrid } from "@/experience/nav/space";
+import type { Rect, Vec2 } from "@/experience/types";
 
 const l1 = buildFloorLayouts(8).L1;
-const slots = officeSlots();
-const same = (a: Rect, b: Rect) => a.minX === b.minX && a.maxX === b.maxX && a.minZ === b.minZ && a.maxZ === b.maxZ;
+const W = LOBBY.officeWing;
+const S = LOBBY.bounds.maxZ;
+const slots = officeSlots(W);
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
+const leadRect = (w: OfficeWing): Rect => ({ minX: w.lead.x - w.lead.width / 2, maxX: w.lead.x + w.lead.width / 2, minZ: w.lead.from, maxZ: w.lead.to });
 
-describe("Agent Office layout (owner decisions D1 and D7)", () => {
-  it("puts five desks on one arc around (3.5, 10), east to west (desk 1 leftmost from the office stop), equally spaced, each facing the arc centre", () => {
+describe("Agent Office wing (owner decision 2026-10-20)", () => {
+  it("is one named wing derived from the Lobby's south edge: the L1 slab gains it, the main rect stays", () => {
+    expect(W).toEqual(officeWing(S));
+    expect(W.rect).toEqual({ minX: -12, maxX: 18, minZ: S, maxZ: S + 30 });
+    expect(l1.bounds).toEqual(LOBBY.bounds);
+    expect(l1.wings).toEqual([W.rect]);
+    expect(W.stop).toEqual({ x: 3, z: S + 13 });
+    expect(W.plaza.center).toEqual({ x: 3, z: S + 12 });
+    expect(Math.min(W.plaza.w, W.plaza.d)).toBeGreaterThanOrEqual(SPACE_RULES.plaza);
+    // The wing touches the Lobby along part of its south edge, never at a corner, and keeps 6 u from the observatory.
+    expect(W.rect.minX).toBeGreaterThan(LOBBY.bounds.minX);
+    expect(W.rect.maxX).toBeLessThan(LOBBY.bounds.maxX);
+    expect(W.rect.minX).toBeGreaterThanOrEqual(-12);
+    expect(W.rect.minX - LOBBY.observatory.maxX).toBeGreaterThanOrEqual(SPACE_RULES.clear);
+  });
+
+  it("moves with the Lobby edge: built for S = 27 every z shifts by +6 and every x stays", () => {
+    const a = officeWing(21);
+    const b = officeWing(27);
+    const shift = (r: Rect): Rect => ({ ...r, minZ: r.minZ + 6, maxZ: r.maxZ + 6 });
+    const at = (p: Vec2): Vec2 => ({ x: p.x, z: p.z + 6 });
+    expect(b.rect).toEqual(shift(a.rect));
+    expect(b.zone).toEqual(a.zone.map(shift));
+    expect(b.lead).toEqual({ ...a.lead, from: a.lead.from + 6, to: a.lead.to + 6 });
+    expect(b.plaza).toEqual({ ...a.plaza, center: at(a.plaza.center) });
+    expect(b.stop).toEqual(at(a.stop));
+    expect(b.arc).toEqual(at(a.arc));
+    expect(b.wall).toEqual(at(a.wall));
+    expect(officeObstacles(b)).toEqual(officeObstacles(a).map(shift));
+    expect(officeTall(b)).toEqual({ ...shift(officeTall(a)), h: officeTall(a).h });
+    for (const [i, s] of officeSlots(b).entries()) {
+      const o = officeSlots(a)[i];
+      expect(s.desk.x).toBeCloseTo(o.desk.x, 9);
+      expect(s.desk.z).toBeCloseTo(o.desk.z + 6, 9);
+      expect(s.yaw).toBe(o.yaw);
+    }
+    expect(Object.values(officeStops(b))).toEqual(Object.values(officeStops(a)).map((p) => at(p!)));
+    expect(officeZone(b).area).toEqual(shift(officeZone(a).area));
+    const [ra, rb] = [officeRoad(a), officeRoad(b)];
+    expect(rb.road.points).toEqual(ra.road.points.map(at));
+    expect(rb.plaza.center).toEqual(at(ra.plaza.center));
+  });
+
+  it("leads in from the Lobby plaza: 8 u wide inside x -3 to 9, south of the lane ring, off the hall road zone, clear of the kiosk", () => {
+    const { road, plaza } = officeRoad(W);
+    expect(road.width).toBeGreaterThanOrEqual(SPACE_RULES.roadWidth);
+    const r = leadRect(W);
+    expect(r.minX).toBeGreaterThanOrEqual(-3);
+    expect(r.maxX).toBeLessThanOrEqual(9);
+    expect(rectGap(r, HALL.zone)).toBeGreaterThan(0);
+    // It starts on the Lobby floor south of the lane ring (its whole width) and ends inside the wing plaza.
+    const h = LOBBY.hologram;
+    for (const x of [r.minX, r.maxX]) expect(Math.hypot(x - h.x, W.lead.from - h.z)).toBeGreaterThan(LOBBY.laneRadius);
+    expect(W.lead.from).toBeLessThan(S);
+    expect(W.lead.to).toBeGreaterThan(plaza.center.z - plaza.d / 2);
+    expect(W.lead.to).toBeLessThan(plaza.center.z);
+    expect(rectGap(r, kioskRect())).toBeGreaterThanOrEqual(SPACE_RULES.clear);
+    // The road network carries it, and the road zone covers the wing and the lead's span in the Lobby.
+    expect(l1.road!.roads).toContainEqual(road);
+    expect(l1.road!.plazas).toContainEqual(plaza);
+    expect(l1.roadZone).toEqual([HALL.zone, ...W.zone]);
+    // The intro reveal rect: the wing reaching north over the lead road (narrower than the wing).
+    expect(r.minX).toBeGreaterThanOrEqual(W.rect.minX);
+    expect(r.maxX).toBeLessThanOrEqual(W.rect.maxX);
+    expect(wingBounds()).toEqual({ minX: W.rect.minX, maxX: W.rect.maxX, minZ: W.lead.from, maxZ: W.rect.maxZ });
+  });
+
+  it("floats the wing sign (upper case) over the lead road where it enters the wing, above the rover", () => {
+    const sign = officeSign("Agent Office", "#34d399");
+    expect(sign).toMatchObject({ text: "AGENT OFFICE", x: W.lead.x, z: W.rect.minZ });
+    expect(sign.tilt ?? 0).toBe(0);
+    expect(sign.y).toBeGreaterThan(5);
+  });
+
+  it("meets the space rules: the desk boxes touch each other and the wall or keep 6 u, and keep 6 u to the wing's side edges", () => {
+    const office = officeObstacles(W);
+    expect(office).toHaveLength(4);
+    for (const o of office) expect(l1.obstacles).toContainEqual(o);
+    for (let i = 0; i < office.length; i++)
+      for (let j = i + 1; j < office.length; j++) {
+        const gap = rectGap(office[i], office[j]);
+        expect(gap === 0 || gap >= SPACE_RULES.clear, `${i} ${j}: ${gap}`).toBe(true);
+      }
+    // Flush with the wing's south edge, inside the wing, 6 u from its side edges.
+    for (const o of office) {
+      expect(o.maxZ).toBe(W.rect.maxZ);
+      expect(inside(o, W.rect)).toBe(true);
+      expect(o.minX - W.rect.minX).toBeGreaterThanOrEqual(SPACE_RULES.clear);
+      expect(W.rect.maxX - o.maxX).toBeGreaterThanOrEqual(SPACE_RULES.clear);
+    }
+    // Every office obstacle against every other L1 obstacle and the slab's outer edges: no violation.
+    const violations = spaceViolations({ bounds: l1.bounds, wings: l1.wings, obstacles: l1.obstacles, doors: [], network: { roads: [officeRoad(W).road], plazas: [], spurs: [] }, start: l1.approach });
+    const officeLabels = office.map((o) => `${o.minX.toFixed(2)}..${o.maxX.toFixed(2)} x ${o.minZ.toFixed(2)}`);
+    expect(violations.filter((v) => officeLabels.some((l) => v.detail.includes(l))).map((v) => v.detail)).toEqual([]);
+    expect(violations.filter((v) => v.rule === "road-blocked")).toEqual([]);
+  });
+
+  it("puts five desks on one arc on the stop's axis, east to west (desk 1 leftmost from the office stop), equally spaced, each facing the arc centre", () => {
     expect(slots.map((s) => s.slot)).toEqual([0, 1, 2, 3, 4]);
-    expect(slots[2].desk.x).toBeCloseTo(3.5);
-    expect(slots[2].desk.z).toBeCloseTo(18);
-    expect(slots[0].desk.x).toBeCloseTo(9.743, 2);
-    expect(slots[0].desk.z).toBeCloseTo(15, 2);
-    expect(slots[4].desk.x).toBeCloseTo(-2.743, 2);
-    expect(slots[4].desk.z).toBeCloseTo(15, 2);
+    expect(W.arc.x).toBe(W.stop.x);
+    expect(slots[2].desk.x).toBeCloseTo(W.stop.x);
     const gaps = slots.slice(1).map((s, i) => Math.hypot(s.desk.x - slots[i].desk.x, s.desk.z - slots[i].desk.z));
     for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0], 6);
     for (const s of slots) {
-      expect(Math.hypot(s.desk.x - OFFICE.center.x, s.desk.z - OFFICE.center.z)).toBeCloseTo(OFFICE.deskRadius);
-      expect(Math.hypot(s.rover.x - OFFICE.center.x, s.rover.z - OFFICE.center.z)).toBeCloseTo(OFFICE.roverRadius);
-      const dx = OFFICE.center.x - s.desk.x;
-      const dz = OFFICE.center.z - s.desk.z;
-      const d = Math.hypot(dx, dz);
+      expect(Math.hypot(s.desk.x - W.arc.x, s.desk.z - W.arc.z)).toBeCloseTo(OFFICE.deskRadius);
+      expect(Math.hypot(s.rover.x - W.arc.x, s.rover.z - W.arc.z)).toBeCloseTo(OFFICE.roverRadius);
+      const dx = W.arc.x - s.desk.x;
+      const dz = W.arc.z - s.desk.z;
       // Forward is (sin yaw, cos yaw), like the rover and `Box.yaw`.
-      expect((Math.sin(s.yaw) * dx + Math.cos(s.yaw) * dz) / d).toBeCloseTo(1);
+      expect((Math.sin(s.yaw) * dx + Math.cos(s.yaw) * dz) / Math.hypot(dx, dz)).toBeCloseTo(1);
     }
     // The stop camera looks toward +z, so +x is on the left of the screen: desk 1 (slot 0) is the east end.
     for (let i = 1; i < slots.length; i++) expect(slots[i].desk.x).toBeLessThan(slots[i - 1].desk.x);
+    expect(OFFICE_SLOTS).toEqual(slots);
   });
 
-  it("stands the screen wall on the south edge, centred on the arc, clear of the middle Rover's back", () => {
-    const wall = officeWallRect();
-    expect((wall.minX + wall.maxX) / 2).toBeCloseTo(OFFICE.center.x);
+  it("stands the screen wall flush with the wing's south edge, facing north, centred on the arc, clear of the middle Rover's back", () => {
+    const wall = officeWallRect(W);
+    expect((wall.minX + wall.maxX) / 2).toBeCloseTo(W.arc.x);
     expect(wall.maxX - wall.minX).toBeCloseTo(OFFICE.wall.w + 2 * OFFICE.wall.frame);
-    expect(OFFICE.slabEdge).toBe(LOBBY.bounds.maxZ);
-    expect(wall.maxZ).toBe(LOBBY.bounds.maxZ);
-    expect(wall.minZ).toBeCloseTo(OFFICE.wall.z - OFFICE.wall.t / 2);
+    expect(wall.maxZ).toBe(W.rect.maxZ);
+    expect(W.rect.maxZ).toBe(S + OFFICE_WING.depth);
+    expect(wall.minZ).toBeCloseTo(W.wall.z - OFFICE.wall.t / 2);
     expect(wall.minZ - (slots[2].rover.z + OFFICE.rover.radius)).toBeGreaterThanOrEqual(0.2);
-    expect(l1.tall).toContainEqual(officeTall());
-    expect(officeTall().h).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
+    expect(l1.tall).toContainEqual(officeTall(W));
+    expect(officeTall(W).h).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
   });
 
-  it("stays on the slab and the D7 strip, clear of the kiosk, the observatory, the lane ring and the hall lead road", () => {
+  it("keeps the office in the wing, its stop on the wing plaza in front of the desks", () => {
     const b = officeBounds();
-    expect(inside(b, LOBBY.bounds)).toBe(true);
-    expect(b.minX).toBeGreaterThanOrEqual(-6);
-    expect(b.maxX).toBeLessThanOrEqual(13);
-    expect(b.minZ).toBeGreaterThanOrEqual(12);
-    expect(slots[4].rover.x - OFFICE.rover.radius - kioskRect().maxX).toBeGreaterThanOrEqual(3);
-    expect(HALL.lead[0].x - (slots[0].rover.x + OFFICE.rover.radius)).toBeGreaterThanOrEqual(2);
-    expect(rectGap(b, LOBBY.observatory)).toBeGreaterThan(10);
-    const h = LOBBY.hologram;
-    const nearest = Math.hypot(Math.max(b.minX - h.x, 0, h.x - b.maxX), Math.max(b.minZ - h.z, 0, h.z - b.maxZ));
-    expect(nearest).toBeGreaterThan(LOBBY.laneRadius + ROVER.radius);
+    expect(inside(b, W.rect)).toBe(true);
+    const p = W.plaza;
+    expect(Math.abs(W.stop.x - p.center.x)).toBeLessThanOrEqual(p.w / 2);
+    expect(Math.abs(W.stop.z - p.center.z)).toBeLessThanOrEqual(p.d / 2);
+    // The plaza stays clear of the desk row.
+    expect(rectGap({ minX: p.center.x - p.w / 2, maxX: p.center.x + p.w / 2, minZ: p.center.z - p.d / 2, maxZ: p.center.z + p.d / 2 }, b)).toBeGreaterThan(0);
+    for (const s of slots) expect(s.desk.z).toBeGreaterThan(W.stop.z + 2);
   });
 
-  it("adds one obstacle per desk and Rover plus the wall, more than 1 u from every other Lobby obstacle", () => {
-    const office = officeObstacles();
-    expect(office).toHaveLength(6);
-    for (const o of office) expect(l1.obstacles).toContainEqual(o);
-    const others = l1.obstacles.filter((o) => !office.some((x) => same(x, o)));
-    expect(others.length).toBe(l1.obstacles.length - office.length);
-    for (const o of office) for (const other of others) expect(rectGap(o, other), JSON.stringify(other)).toBeGreaterThan(1);
-  });
-
-  it("keeps the stop walkable, reachable from the spawn and the elevator, and 2 u or more in front of the middle desk", () => {
+  it("keeps the stop on 6 u wide floor, reachable from the spawn and the elevator through it", () => {
+    const wide = wideGrid(l1);
+    expect(isWalkable(wide, W.stop)).toBe(true);
+    for (const from of [l1.spawn, l1.approach]) {
+      // The spawn stands 3 u in front of the kiosk screen: start from the nearest 6 u wide floor.
+      const start = nearestWalkable(wide, from)!;
+      expect(Math.hypot(start.x - from.x, start.z - from.z)).toBeLessThan(4);
+      expect(findPath(wide, start, W.stop)?.at(-1), JSON.stringify(from)).toEqual(W.stop);
+    }
     const grid = buildNavGrid(l1, ROVER.radius);
-    expect(isWalkable(grid, OFFICE.stop)).toBe(true);
-    expect(findPath(grid, l1.spawn, OFFICE.stop)).not.toBeNull();
-    expect(findPath(grid, l1.approach, OFFICE.stop)).not.toBeNull();
-    // Drives from the spawn to the hall still pass east of the office.
-    expect(findPath(grid, l1.spawn, HALL.lead[0])).not.toBeNull();
-    const front = OFFICE.center.z + OFFICE.deskRadius - OFFICE.desk.d / 2;
-    expect(front - OFFICE.stop.z).toBeGreaterThanOrEqual(2);
-    // 6 u wide floor (the space rules' rover circle) reaches within 4 u of the stop.
-    expect(isWalkable(wideGrid(l1), { x: OFFICE.stop.x, z: OFFICE.stop.z - 1.2 })).toBe(true);
+    expect(isWalkable(grid, W.stop)).toBe(true);
+    // Drives from the spawn to the hall still reach it.
+    expect(findPath(grid, l1.spawn, HALL.lead[0])?.at(-1)).toEqual(HALL.lead[0]);
+  });
+
+  it("follows the wing road into the wing and back out, and the hall road into the hall", () => {
+    const graph = buildRoadGraph(l1.road!);
+    const grid = buildNavGrid(l1, ROVER.radius);
+    expect(routeUsesRoad(l1, l1.spawn, W.stop)).toBe(true);
+    const route = roadRoute(l1.road!, grid, l1.spawn, W.stop, graph)!;
+    expect(route.at(-1)).toEqual(W.stop);
+    // On the lead road's centre line through the joint into the wing.
+    expect(route.some((p) => p.x === W.lead.x && p.z <= W.lead.from + 2)).toBe(true);
+    expect(route.some((p) => p.x === W.lead.x && p.z >= W.lead.to - 1e-9)).toBe(true);
+    const back = roadRoute(l1.road!, grid, W.stop, l1.approach, graph)!;
+    expect(back.some((p) => p.x === W.lead.x && Math.abs(p.z - W.lead.from) < 1e-9)).toBe(true);
+    // From the hall: out along the hall road, then in along the wing road.
+    const about = l1.doors!.find((d) => d.room === "L1:highlights-about")!.at;
+    const across = roadRoute(l1.road!, grid, about, W.stop, graph)!;
+    const hallEnd = across.findIndex((p) => p.x === HALL.lead[0].x && p.z === HALL.lead[0].z);
+    const wingIn = across.findIndex((p) => p.x === W.lead.x && p.z < S);
+    expect(hallEnd).toBeGreaterThanOrEqual(0);
+    expect(wingIn).toBeGreaterThan(hallEnd);
+    expect(across.at(-1)).toEqual(W.stop);
   });
 
   it("leaves no pocket behind the desks that the rover could reach", () => {
     const grid = buildNavGrid(l1, ROVER.radius);
-    for (const p of [{ x: -3, z: 18.5 }, { x: 10, z: 18.5 }, { x: 3.5, z: 20.4 }]) expect(isWalkable(grid, p), JSON.stringify(p)).toBe(false);
+    for (const p of [
+      { x: slots[4].rover.x, z: slots[4].rover.z + 1.5 },
+      { x: slots[0].rover.x, z: slots[0].rover.z + 1.5 },
+      { x: W.wall.x, z: W.rect.maxZ - 0.6 },
+    ])
+      expect(isWalkable(grid, p), JSON.stringify(p)).toBe(false);
+  });
+
+  it("is on the slab the minimap and point-and-go read: the wing's floor counts, the corners beside it do not", () => {
+    expect(slabRects(l1)).toEqual([LOBBY.bounds, W.rect]);
+    expect(inSlab(W.stop, l1)).toBe(true);
+    expect(inSlab({ x: W.rect.minX - 1, z: S + 5 }, l1)).toBe(false);
+    expect(inSlab({ x: W.rect.maxX + 1, z: S + 5 }, l1)).toBe(false);
   });
 
   it("names the rooms, stops every office drive at the stop and turns the camera south there", () => {
@@ -108,13 +234,13 @@ describe("Agent Office layout (owner decisions D1 and D7)", () => {
     for (const room of OFFICE_ROOMS) {
       expect(RoomIdSchema.safeParse(room).success, room).toBe(true);
       expect(isOfficeRoom(room)).toBe(true);
-      expect(l1.stops?.[room]).toEqual(OFFICE.stop);
+      expect(l1.stops?.[room]).toEqual(W.stop);
     }
     expect(isOfficeRoom("L1:visits")).toBe(false);
     expect(isOfficeRoom("L1:officer")).toBe(false);
     expect(isOfficeRoom(null)).toBe(false);
     const zones = l1.viewZones ?? [];
-    const zone = zoneAt("L1", OFFICE.stop, zones);
+    const zone = zoneAt("L1", W.stop, zones);
     expect(zone?.id).toBe("L1:office");
     expect(zone?.yaw).toBeCloseTo(yawLooking({ x: 0, z: 1 }));
     expect(zoneView(zone!, "desktop").zoom).toBe(OFFICE.view.zoom);
@@ -126,7 +252,7 @@ describe("Agent Office layout (owner decisions D1 and D7)", () => {
   it("draws the furniture shell inside the obstacles: 5 desk tops, 10 legs, 4 cable trays and the wall frame", () => {
     const boxes = officeShellBoxes();
     expect(boxes).toHaveLength(20);
-    const obstacles = officeObstacles();
+    const obstacles = officeObstacles(W);
     for (const b of boxes.filter((box) => box.h > 0.1)) {
       const h = turnedHalf(b.w, b.d, b.yaw ?? 0);
       const r = { minX: b.x - h.x, maxX: b.x + h.x, minZ: b.z - h.z, maxZ: b.z + h.z };

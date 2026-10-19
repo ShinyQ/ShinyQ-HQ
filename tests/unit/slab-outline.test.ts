@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, EdgesGeometry, type BufferGeometry } from "three";
-import { SLAB_THICKNESS } from "@/experience/config";
+import { LOBBY, SLAB_THICKNESS } from "@/experience/config";
 import { slabOutline } from "@/experience/tower/slabOutline";
 import { realLayouts } from "../helpers/real-layouts";
 
@@ -15,7 +15,7 @@ function segments(g: BufferGeometry, at: [number, number, number] = [0, 0, 0]): 
 
 describe("slab outline", () => {
   it("draws exactly the 12 box edges the old EdgesGeometry drew for every floor without wings", () => {
-    for (const [id, layout] of Object.entries(realLayouts())) {
+    for (const [id, layout] of Object.entries(realLayouts()).filter(([, l]) => !l.wings?.length)) {
       const b = layout.bounds;
       const old = new EdgesGeometry(new BoxGeometry(b.maxX - b.minX, SLAB_THICKNESS, b.maxZ - b.minZ));
       const now = slabOutline(layout, SLAB_THICKNESS);
@@ -35,5 +35,20 @@ describe("slab outline", () => {
     });
     expect(onJoint).toEqual([]);
     expect(s).toContain("-2.0000,-1.0000,10.0000 -2.0000,0.0000,10.0000");
+  });
+
+  it("draws L1 with the Agent Office wing as one T-shaped outline with no edge along the joint", () => {
+    const l1 = realLayouts().L1;
+    const wing = LOBBY.officeWing.rect;
+    expect(l1.wings).toEqual([wing]);
+    const s = segments(slabOutline(l1, SLAB_THICKNESS));
+    // 8 outer edges (the Lobby's south edge in two pieces) at the top and the bottom, plus 8 turns.
+    expect(s).toHaveLength(24);
+    const onJoint = s.filter((k) => {
+      const [p, q] = k.split(" ").map((e) => e.split(",").map(Number));
+      return p[2] === wing.minZ && q[2] === wing.minZ && Math.min(p[0], q[0]) < wing.maxX && Math.max(p[0], q[0]) > wing.minX;
+    });
+    expect(onJoint).toEqual([]);
+    for (const x of [wing.minX, wing.maxX]) expect(s).toContain(`${x.toFixed(4)},${(-SLAB_THICKNESS).toFixed(4)},${wing.minZ.toFixed(4)} ${x.toFixed(4)},0.0000,${wing.minZ.toFixed(4)}`);
   });
 });

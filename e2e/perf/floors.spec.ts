@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route, rideTo } from "../b1";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
-import { OFFICE } from "../../src/experience/floors/lobby/officeLayout";
+import { LOBBY } from "../../src/experience/config";
 import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
@@ -96,7 +96,7 @@ for (const tier of ["lite", "full"] as const) {
   test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
-    await driveTo(page, OFFICE.stop);
+    await driveTo(page, LOBBY.officeWing.stop);
     // Same cap and program baseline as the L1 spawn; not recorded (the spawn entry is the L1 baseline).
     await measureFloor(page, tier, "L1", { record: false });
   });

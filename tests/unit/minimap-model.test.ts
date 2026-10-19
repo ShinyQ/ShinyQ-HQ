@@ -50,7 +50,7 @@ describe("minimap model", () => {
     expect(map.rooms.map((r) => r.id)).toEqual(["L1:door:a"]);
   });
   it("draws a plain slab as one rect with no outline path", () => {
-    const map = buildFloorMap(layouts.L1, [], []);
+    const map = buildFloorMap({ ...layouts.L1, wings: undefined }, [], []);
     const b = layouts.L1.bounds;
     expect(map.slab).toEqual([{ x: b.minX, z: b.minZ, w: b.maxX - b.minX, d: b.maxZ - b.minZ }]);
     expect(map.outline).toBe("");
@@ -65,7 +65,7 @@ describe("minimap model", () => {
       { x: -12, z: b.maxZ, w: 30, d: 30 },
     ]);
     // The view boxes the slab (wing included) padded 2 u; the shaft sits inside it on L1.
-    const plain = buildFloorMap(layouts.L1, [], []).view;
+    const plain = buildFloorMap({ ...layouts.L1, wings: undefined }, [], []).view;
     expect(map.view.minZ + map.view.depth).toBe(wing.maxZ + 2);
     expect([map.view.minX, map.view.minZ, map.view.width]).toEqual([plain.minX, plain.minZ, plain.width]);
     // The fill is one path of every rect (no seam at the joint).

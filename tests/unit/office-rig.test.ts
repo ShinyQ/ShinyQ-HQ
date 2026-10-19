@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Color, Matrix4, Vector3 } from "three";
+import { LOBBY } from "@/experience/config";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
-const slots = officeSlots();
+const W = LOBBY.officeWing;
+const slots = officeSlots(W);
 const corner = (a: Float32Array, quad: number, k: number) => new Vector3().fromArray(a, (quad * 4 + k) * 3);
 
 describe("Agent Office Rover rig", () => {
@@ -45,7 +47,7 @@ describe("Agent Office Rover rig", () => {
       const br = corner(positions, s.slot, 1);
       const tl = corner(positions, s.slot, 3);
       const n = new Vector3().subVectors(br, bl).cross(new Vector3().subVectors(tl, bl)).normalize();
-      const toCentre = new Vector3(OFFICE.center.x - s.desk.x, 0, OFFICE.center.z - s.desk.z).normalize();
+      const toCentre = new Vector3(W.arc.x - s.desk.x, 0, W.arc.z - s.desk.z).normalize();
       expect(n.dot(toCentre)).toBeGreaterThan(0.85);
     }
     expect(DESK_SCREEN.y - DESK_SCREEN.h / 2).toBeGreaterThanOrEqual(OFFICE.desk.top);
@@ -55,15 +57,15 @@ describe("Agent Office Rover rig", () => {
     const matrices = new Float32Array(GLOW_PER_ROVER * 16);
     const colors = new Float32Array(GLOW_PER_ROVER * 3);
     const frame = roverFrame(slots[0], stillPose("ci"), new Matrix4());
-    writeGlow(slots[0], frame, "ci", { done: 6, total: 12 }, 1, 0, true, OFFICE.stop, matrices, colors);
+    writeGlow(slots[0], frame, "ci", { done: 6, total: 12 }, 1, 0, true, W.stop, matrices, colors);
     // Float32 colors: compare the red channel with a tolerance (unlit dots are the tone at 15%).
     const tone = new Color(OFFICE_STATE_STYLE.ci.color);
     const lit = Array.from({ length: OFFICE_ROVER.progress.count }, (_, i) => Math.abs(colors[(2 + i) * 3] - tone.r) < 1e-5).filter(Boolean).length;
     expect(lit).toBe(OFFICE_ROVER.progress.count / 2);
-    writeGlow(slots[0], frame, "working", null, 1, 0, true, OFFICE.stop, matrices, colors);
+    writeGlow(slots[0], frame, "working", null, 1, 0, true, W.stop, matrices, colors);
     const scale = new Vector3().setFromMatrixScale(new Matrix4().fromArray(matrices, 2 * 16));
     expect(scale.x).toBe(0);
-    writeGlow(slots[0], frame, "asleep", null, 1, 0, true, OFFICE.stop, matrices, colors);
+    writeGlow(slots[0], frame, "asleep", null, 1, 0, true, W.stop, matrices, colors);
     expect(Math.abs(colors[0] - new Color("#3b3f5c").r)).toBeLessThan(1e-5);
   });
 
@@ -73,9 +75,9 @@ describe("Agent Office Rover rig", () => {
     const frame = roverFrame(slots[0], stillPose("ci"), new Matrix4());
     const tone = new Color(OFFICE_STATE_STYLE.ci.color);
     const litCount = () => Array.from({ length: OFFICE_ROVER.progress.count }, (_, i) => Math.abs(colors[(2 + i) * 3] - tone.r) < 1e-5).filter(Boolean).length;
-    writeGlow(slots[0], frame, "ci", { done: 30, total: 12 }, 1, 0, true, OFFICE.stop, matrices, colors);
+    writeGlow(slots[0], frame, "ci", { done: 30, total: 12 }, 1, 0, true, W.stop, matrices, colors);
     expect(litCount()).toBe(OFFICE_ROVER.progress.count);
-    writeGlow(slots[0], frame, "ci", { done: -3, total: 12 }, 1, 0, true, OFFICE.stop, matrices, colors);
+    writeGlow(slots[0], frame, "ci", { done: -3, total: 12 }, 1, 0, true, W.stop, matrices, colors);
     expect(litCount()).toBe(0);
   });
 

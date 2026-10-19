@@ -1,21 +1,84 @@
 import type { RoomId } from "@/content/schema";
 import { yawLooking } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
+import type { Plaza, Road } from "../../nav/road";
 import type { Rect, Vec2 } from "../../types";
 
 /**
- * L1 Agent Office (owner decisions D1 and D7, 2026-10-18): one curved console row of five desks with a Rover
- * behind each (facing the plaza) and a screen wall on the south edge of the plaza strip (x about -6 to 13,
- * z 12 to 21). Pure and import-light: config.ts reads it (obstacles, camera column, stops, the view zone),
- * the main-path `OfficeMount` draws the furniture shell from it, and the lazy office chunk places the rest.
- * tests/unit/lobby-office.test.ts asserts every clearance.
+ * L1 Agent Office (owner decisions D1 and D7, 2026-10-18; the south wing, 2026-10-20): its own wing of the L1
+ * slab south of the Lobby, reached by a lead road from the Lobby plaza into a wing plaza, with one curved console
+ * row of five desks (a Rover behind each, facing the plaza) backed against a screen wall on the wing's south edge.
+ * Pure and import-light: config.ts reads it (`LOBBY.officeWing`, obstacles, camera column, stops, the view zone,
+ * the road), the main-path `OfficeMount` draws the furniture shell from it, and the lazy office chunk places the
+ * rest. tests/unit/lobby-office.test.ts asserts every clearance.
  */
 
 /** Resolves a key of the `office` messages namespace (Experience passes its translator for that namespace down to the Lobby). */
 export type OfficeTranslate = (key: string, values?: Record<string, string | number>) => string;
 
+/**
+ * The wing as offsets from S, the Lobby slab's south edge (`LOBBY.bounds.maxZ`): config.ts imports this module, so
+ * it cannot import config.ts; `officeWing(S)` builds `LOBBY.officeWing` there, the one source every reader uses.
+ * x values are absolute (the stop's axis is x 3, inside the Lobby plaza's x -3 to 9 window), z values add to S.
+ */
+export const OFFICE_WING = {
+  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 30. */
+  minX: -12,
+  maxX: 18,
+  depth: 30,
+  /** The axis of the lead road, the plaza, the stop and the desk arc. */
+  x: 3,
+  /** Lead road: 8 u wide, from the Lobby plaza south of the lane ring (S - 8) to 2 u inside the wing plaza (S + 6). */
+  lead: { width: 8, from: -8, to: 6 },
+  plaza: { z: 12, w: 18, d: 16 },
+  stop: 13,
+  /** Desk arc centre: the middle Rover's back stays 0.35 u in front of the wall frame. */
+  arc: 19,
+  /** The screen wall's centre line, 0.3 u in front of the wing's south edge (its footprint reaches back to it). */
+  wall: 29.7,
+} as const;
+
+export interface OfficeWing {
+  rect: Rect;
+  lead: { x: number; width: number; from: number; to: number };
+  plaza: { center: Vec2; w: number; d: number };
+  stop: Vec2;
+  /** Drives that start or end in here follow the wing road (`FloorLayout.roadZone`): the wing and the lead road's span in the Lobby. */
+  zone: readonly Rect[];
+  /** Desk arc centre. */
+  arc: Vec2;
+  /** The screen wall's centre line in plan. */
+  wall: Vec2;
+}
+
+/** The office wing for a Lobby whose south edge is at z `s`. */
+export function officeWing(s: number): OfficeWing {
+  const W = OFFICE_WING;
+  const lead = { x: W.x, width: W.lead.width, from: s + W.lead.from, to: s + W.lead.to };
+  return {
+    rect: { minX: W.minX, maxX: W.maxX, minZ: s, maxZ: s + W.depth },
+    lead,
+    plaza: { center: { x: W.x, z: s + W.plaza.z }, w: W.plaza.w, d: W.plaza.d },
+    stop: { x: W.x, z: s + W.stop },
+    zone: [
+      { minX: W.minX, maxX: W.maxX, minZ: s, maxZ: s + W.depth },
+      { minX: W.x - W.lead.width / 2, maxX: W.x + W.lead.width / 2, minZ: lead.from, maxZ: s },
+    ],
+    arc: { x: W.x, z: s + W.arc },
+    wall: { x: W.x, z: s + W.wall },
+  };
+}
+
+/** The wing's road: the lead road and the wing plaza (config.ts merges them into the L1 network). */
+export function officeRoad(w: OfficeWing): { road: Road; plaza: Plaza } {
+  const { lead, plaza } = w;
+  return {
+    road: { id: "office-lead", points: [{ x: lead.x, z: lead.from }, { x: lead.x, z: lead.to }], width: lead.width },
+    plaza: { id: "office", center: { ...plaza.center }, w: plaza.w, d: plaza.d },
+  };
+}
+
 export const OFFICE = {
-  center: { x: 3.5, z: 10 },
   deskRadius: 8,
   roverRadius: 9.2,
   /**
@@ -26,16 +89,12 @@ export const OFFICE = {
   /** Tangential width, radial depth, top height, top slab and leg thickness. */
   desk: { w: 2.6, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
   rover: { radius: 1 },
-  /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, its plane at z 20.7 facing north. */
-  wall: { x: 3.5, z: 20.7, w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
-  /** Point-and-go stop of every office room, in the concave front of the row. */
-  stop: { x: 3.5, z: 14.2 },
+  /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`). */
+  wall: { w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
   /** `L1:office` view zone: zoom per camera class and the half size of its area around the stop. */
   view: { zoom: 1.3, tablet: 1.25, mobile: 1.2, half: { x: 2, z: 1.4 } },
   /** The chunk loads once the rover (or the elevator arrival point during a ride to L1) is this close to the stop. */
   loadRadius: 40,
-  /** `LOBBY.bounds.maxZ` (config.ts imports this module, so it cannot import config.ts). */
-  slabEdge: 21,
 } as const;
 
 export const OFFICE_ROOM = "L1:office" as RoomId;
@@ -61,8 +120,8 @@ export interface OfficeSlot {
 }
 
 const DEG = Math.PI / 180;
-/** The point at angle `theta` (radians from +z toward +x) and radius `r` around the arc centre. */
-export const onArc = (theta: number, r: number): Vec2 => ({ x: OFFICE.center.x + r * Math.sin(theta), z: OFFICE.center.z + r * Math.cos(theta) });
+/** The point at angle `theta` (radians from +z toward +x) and radius `r` around the wing's arc centre. */
+export const onArc = (w: OfficeWing, theta: number, r: number): Vec2 => ({ x: w.arc.x + r * Math.sin(theta), z: w.arc.z + r * Math.cos(theta) });
 
 /** Half extents of a w x d box turned by `yaw` (local x is the width, local z the depth). */
 export function turnedHalf(w: number, d: number, yaw: number): Vec2 {
@@ -71,11 +130,11 @@ export function turnedHalf(w: number, d: number, yaw: number): Vec2 {
   return { x: (w / 2) * c + (d / 2) * s, z: (w / 2) * s + (d / 2) * c };
 }
 
-export function officeSlots(): OfficeSlot[] {
+export function officeSlots(w: OfficeWing): OfficeSlot[] {
   return OFFICE.angles.map((deg, slot) => {
     const theta = deg * DEG;
-    const desk = onArc(theta, OFFICE.deskRadius);
-    const rover = onArc(theta, OFFICE.roverRadius);
+    const desk = onArc(w, theta, OFFICE.deskRadius);
+    const rover = onArc(w, theta, OFFICE.roverRadius);
     const yaw = theta + Math.PI;
     const h = turnedHalf(OFFICE.desk.w, OFFICE.desk.d, yaw);
     const r = OFFICE.rover.radius;
@@ -95,36 +154,47 @@ export function officeSlots(): OfficeSlot[] {
   });
 }
 
-/** The wall frame's footprint, reaching back to the slab edge (no sliver of floor behind it). */
-export function officeWallRect(): Rect {
-  const { x, z, w, t, frame } = OFFICE.wall;
-  return { minX: x - w / 2 - frame, maxX: x + w / 2 + frame, minZ: z - t / 2, maxZ: OFFICE.slabEdge };
+/** The wall frame's footprint, reaching back to the wing's south edge (no sliver of floor behind it). */
+export function officeWallRect(w: OfficeWing): Rect {
+  const { wall } = OFFICE;
+  return { minX: w.wall.x - wall.w / 2 - wall.frame, maxX: w.wall.x + wall.w / 2 + wall.frame, minZ: w.wall.z - wall.t / 2, maxZ: w.rect.maxZ };
 }
 
 /**
- * Navgrid obstacles: one per desk and Rover (the end ones reach back to the wall, so the rover cannot drive
- * around the row into the space behind it), then the wall. The concave floor in front of the desks stays open.
+ * Navgrid obstacles, flush with the wing's south edge so the row and the wall are one solid block (no floor
+ * behind the desks): the middle three desks and Rovers as one box, the end desks each as a box that touches it,
+ * then the wall. The space rules hold: neighbours touch, the two end boxes keep the middle box's width (about
+ * 10 u) apart, and every box keeps 6 u from the wing's side edges. The concave floor in front stays open.
  */
-export function officeObstacles(): Rect[] {
-  const wall = officeWallRect();
-  const slots = officeSlots();
-  const last = slots.length - 1;
-  return [...slots.map((s) => (s.slot === 0 || s.slot === last ? { ...s.rect, maxZ: wall.minZ } : s.rect)), wall];
+export function officeObstacles(w: OfficeWing): Rect[] {
+  const s = officeSlots(w);
+  const edge = w.rect.maxZ;
+  const mid = s.slice(1, -1).map((x) => x.rect);
+  const middle = { minX: Math.min(...mid.map((r) => r.minX)), maxX: Math.max(...mid.map((r) => r.maxX)), minZ: Math.min(...mid.map((r) => r.minZ)), maxZ: edge };
+  const east = s[0].rect;
+  const west = s[s.length - 1].rect;
+  return [
+    { minX: middle.maxX, maxX: east.maxX, minZ: east.minZ, maxZ: edge },
+    middle,
+    { minX: west.minX, maxX: middle.minX, minZ: west.minZ, maxZ: edge },
+    officeWallRect(w),
+  ];
 }
 
 /** Camera collision column: the wall frame. */
-export function officeTall(): Rect & { h: number } {
-  return { ...officeWallRect(), h: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame };
+export function officeTall(w: OfficeWing): Rect & { h: number } {
+  return { ...officeWallRect(w), h: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame };
 }
 
 /** Where `drive` stops for every office room (`FloorLayout.stops`). */
-export function officeStops(): Partial<Record<RoomId, Vec2>> {
-  return Object.fromEntries(OFFICE_ROOMS.map((room) => [room, { x: OFFICE.stop.x, z: OFFICE.stop.z }]));
+export function officeStops(w: OfficeWing): Partial<Record<RoomId, Vec2>> {
+  return Object.fromEntries(OFFICE_ROOMS.map((room) => [room, { x: w.stop.x, z: w.stop.z }]));
 }
 
 /** The office view: around the stop, looking south at the desks and the wall (tuned on the owner captures). */
-export function officeZone(): ViewZone {
-  const { stop, view } = OFFICE;
+export function officeZone(w: OfficeWing): ViewZone {
+  const { stop } = w;
+  const { view } = OFFICE;
   return {
     id: "L1:office",
     area: { minX: stop.x - view.half.x, maxX: stop.x + view.half.x, minZ: stop.z - view.half.z, maxZ: stop.z + view.half.z },

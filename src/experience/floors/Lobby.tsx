@@ -1,11 +1,13 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useHQStore } from "@/store/useHQStore";
-import { kioskRect, LOBBY } from "../config";
+import { FLOOR_COLOR, kioskRect, LOBBY } from "../config";
 import type { ExperienceData, GpuTier, Rect } from "../types";
+import { FloatingSigns } from "../fx/FloatingSign";
 import { sceneProbes } from "../fx/probes";
+import { RoadMarkings } from "../fx/RoadMarkings";
 import { introModule } from "../intro/chunk";
 import { IntroReveal } from "../intro/IntroReveal";
 import { postHandle } from "../scene/postHandle";
@@ -23,8 +25,8 @@ import { StatsRing } from "./lobby/StatsRing";
 import { VISITS_ROOM } from "./lobby/visitsRoom";
 import { VisitsStation } from "./lobby/VisitsStation";
 import { OfficeMount } from "./lobby/office/OfficeMount";
-import type { OfficeTranslate } from "./lobby/officeLayout";
-import { officeBounds } from "./lobby/officeShell";
+import { officeRoad, type OfficeTranslate } from "./lobby/officeLayout";
+import { officeSign, wingBounds } from "./lobby/officeShell";
 
 export interface LobbyLabels {
   skillsTitle: string;
@@ -37,6 +39,8 @@ export interface LobbyLabels {
   observatory: ObservatoryLabels;
   /** The `office` namespace translator (Agent Office: wall, screens, targets; the lazy chunk resolves its own keys). */
   office: OfficeTranslate;
+  /** The floating sign over the office wing's lead road (`hud.rooms.office`). */
+  officeSign: string;
 }
 
 const box = (cx: number, cz: number, w: number, d: number): Rect => ({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 });
@@ -49,8 +53,12 @@ const REVEAL = {
   kiosk: kioskRect(),
   observatory: LOBBY.observatory,
   hall: { minX: HALL.zone.minX, maxX: HALL.zone.maxX, minZ: LOBBY.bounds.minZ, maxZ: LOBBY.bounds.maxZ },
-  office: officeBounds(),
+  wing: wingBounds(),
 } satisfies Record<string, Rect>;
+
+/** The office wing's lead road and plaza, drawn with the hall's road kit (`RoadMarkings`). */
+const WING = officeRoad(LOBBY.officeWing);
+const WING_ROAD = { roads: [WING.road], plazas: [WING.plaza], spurs: [] };
 
 /**
  * The Highlights Hall builds once the visitor is (or rides) on L1, and then stays. Every session that boots on
@@ -86,6 +94,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
   const composerLive = useComposerLive(tier);
   // From the intro chunk, loaded before the canvas mounts in a session that plays the intro (intro/chunk.ts).
   const IntroBeacons = introModule()?.IntroBeacons;
+  const wingSigns = useMemo(() => [officeSign(labels.officeSign, FLOOR_COLOR.L1)], [labels.officeSign]);
   useEffect(() => {
     sceneProbes.spectacle.ringTiles = stats.length;
   }, [stats.length]);
@@ -111,8 +120,20 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
           <VisitsStation labels={labels.observatory} locale={data.locale} tier={tier} reducedMotion={reducedMotion} active={observing} />
         </Suspense>
       </IntroReveal>
-      {/* Agent Office (D1, D7): the shell always, the live office from its lazy chunk (floors/lobby/office/). */}
-      <IntroReveal rect={REVEAL.office}>
+      {/*
+        Agent Office wing: its lead road, plaza and sign (the hall's road kit and sign programs; on the full tier only once
+        the composer exists, like the beacons, so no canvas-target variant compiles), the office shell always, the live
+        office from its lazy chunk (floors/lobby/office/).
+      */}
+      <IntroReveal rect={REVEAL.wing}>
+        {composerLive && (
+          <>
+            <RoadMarkings network={WING_ROAD} color={FLOOR_COLOR.L1} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
+            <Suspense fallback={null}>
+              <FloatingSigns signs={wingSigns} name="office-wing-sign" tier={tier} />
+            </Suspense>
+          </>
+        )}
         <OfficeMount tier={tier} t={labels.office} ready={composerLive} />
       </IntroReveal>
       {hall && (

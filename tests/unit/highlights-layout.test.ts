@@ -4,7 +4,6 @@ import { followPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
 import { HALL, HALL_LAYOUT, shouldLoadShots, stationOf } from "@/experience/floors/lobby/hallLayout";
 import { HIGHLIGHT_STATIONS, highlightRoom } from "@/experience/floors/lobby/stations";
-import { officeObstacles } from "@/experience/floors/lobby/officeLayout";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
@@ -24,16 +23,12 @@ describe("Highlights Hall layout", () => {
     expect(l1.approach).toEqual({ x: -21, z: 0 });
   });
 
-  it("passes the space rules with the real Lobby; only the skills wall, which predates them, sits near the slab edge", () => {
+  it("passes the space rules with the real Lobby and its office wing; only the skills wall, which predates them, sits near the slab edge", () => {
     const [, skills] = l1.obstacles;
     // The Visitor Observatory's door (south-west corner) is reached on the navgrid like the rest of the Lobby,
     // not on the hall road: tests/unit/lobby-observatory.test.ts checks its pad.
     const hallDoors = l1.doors!.filter((d) => d.room !== "L1:visits");
-    // The Agent Office is one fixture whose inner gaps are by design (owner approval, docs/decisions/2026-10-19-agent-office-space-rules.md);
-    // tests/unit/lobby-office.test.ts checks its own clearances.
-    const office = officeObstacles();
-    const obstacles = l1.obstacles.filter((o) => !office.some((x) => x.minX === o.minX && x.maxX === o.maxX && x.minZ === o.minZ && x.maxZ === o.maxZ));
-    const violations = spaceViolations({ bounds: l1.bounds, obstacles, doors: hallDoors, network: l1.road!, start: l1.approach, pads: l1.pads });
+    const violations = spaceViolations({ bounds: l1.bounds, wings: l1.wings, obstacles: l1.obstacles, doors: hallDoors, network: l1.road!, start: l1.approach, pads: l1.pads });
     expect(violations.map((v) => `${v.rule}: ${v.detail}`)).toEqual([
       `bounds-gap: 2.00 u between ${label(skills)} and the slab edge`,
     ]);

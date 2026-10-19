@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { FloorId } from "@/content/schema";
 import { cameraBlocked, cameraWorld, clampCamera, viewOnSlab, CAMERA_CLEARANCE, type CameraWorld } from "@/experience/camera/collision";
 import type { Vec3 } from "@/experience/camera/rigs";
-import { floorY, ROVER } from "@/experience/config";
+import { floorY, LOBBY, ROVER } from "@/experience/config";
 import { resolveCircle } from "@/experience/nav/collision";
-import { buildNavGrid } from "@/experience/nav/navgrid";
+import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { spaceViolations } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
 import * as legacy from "../helpers/navgrid-legacy";
@@ -144,7 +144,8 @@ const rng = (seed: number) => {
 
 describe("a slab without wings behaves exactly as the single-rect code did", () => {
   const layouts = realLayouts();
-  for (const id of Object.keys(layouts) as FloorId[]) {
+  // L1 carries the Agent Office wing (checked below, away from the joint).
+  for (const id of (Object.keys(layouts) as FloorId[]).filter((f) => !layouts[f].wings?.length)) {
     const layout = layouts[id];
     const { bounds } = layout;
 
@@ -210,4 +211,42 @@ describe("a slab without wings behaves exactly as the single-rect code did", () 
       }
     });
   }
+});
+
+describe("L1 with the Agent Office wing behaves as the single-rect code did away from the joint", () => {
+  const layout = realLayouts().L1;
+  const { bounds } = layout;
+  const wing = LOBBY.officeWing.rect;
+  /** Within `m` of the joint's span (the wing's north edge on the Lobby's south edge), where the wing opens the floor. */
+  const nearJoint = (p: Vec2, m: number) => Math.abs(p.z - wing.minZ) <= m && p.x >= wing.minX - m && p.x <= wing.maxX + m;
+
+  it("has exactly the office wing", () => {
+    expect(layout.wings).toEqual([wing]);
+    expect(layout.wings!.length).toBe(1);
+  });
+
+  it("keeps every navgrid cell of the main rect away from the joint", () => {
+    for (const radius of [ROVER.radius, 3]) {
+      const cell = radius === 3 ? 0.5 : 1;
+      const grid = buildNavGrid(layout, radius, cell);
+      const old = legacy.buildNavGrid(layout, radius, cell);
+      for (let idx = 0; idx < old.walkable.length; idx++) {
+        const p = { x: old.minX + ((idx % old.cols) + 0.5) * old.cell, z: old.minZ + (Math.floor(idx / old.cols) + 0.5) * old.cell };
+        if (nearJoint(p, radius + cell)) continue;
+        expect(isWalkable(grid, p), JSON.stringify([radius, p])).toBe(old.walkable[idx] === 1);
+      }
+    }
+  });
+
+  it("gives the same rover collision on 400 seeded samples inside the main rect away from the joint", () => {
+    const rand = rng(4242);
+    let checked = 0;
+    for (let k = 0; k < 400; k++) {
+      const p = { x: bounds.minX + rand() * (bounds.maxX - bounds.minX), z: bounds.minZ + rand() * (bounds.maxZ - bounds.minZ) };
+      if (nearJoint(p, ROVER.radius + 1)) continue;
+      checked++;
+      expect(resolveCircle(p, ROVER.radius, layout.obstacles, layout), JSON.stringify(p)).toEqual(oldResolveCircle(p, ROVER.radius, layout.obstacles, bounds));
+    }
+    expect(checked).toBeGreaterThan(300);
+  });
 });

@@ -10,7 +10,10 @@ const base = { idle: true, state: "idle", prefetch: true, floor: "L1", rideTo: n
 
 describe("Agent Office chunk trigger", () => {
   it("loads after the first frame went idle, on L1 (or riding there) near the office, with prefetch on, once", () => {
-    expect(Math.hypot(LOBBY.spawn.x - OFFICE.stop.x, LOBBY.spawn.z - OFFICE.stop.z)).toBeLessThan(OFFICE.loadRadius);
+    const { stop } = LOBBY.officeWing;
+    // The trigger measures to the wing's stop: the spawn and the elevator arrival point are both within the radius.
+    expect(Math.hypot(LOBBY.spawn.x - stop.x, LOBBY.spawn.z - stop.z)).toBeLessThan(OFFICE.loadRadius);
+    expect(Math.hypot(LOBBY.arrival.x - stop.x, LOBBY.arrival.z - stop.z)).toBeLessThan(OFFICE.loadRadius);
     expect(officeLoadWanted(base)).toBe(true);
     expect(officeLoadWanted({ ...base, idle: false })).toBe(false);
     expect(officeLoadWanted({ ...base, prefetch: false })).toBe(false);
@@ -18,7 +21,8 @@ describe("Agent Office chunk trigger", () => {
     expect(officeLoadWanted({ ...base, floor: "L3" })).toBe(false);
     expect(officeLoadWanted({ ...base, floor: "L3", rideTo: "L1", at: LOBBY.arrival })).toBe(true);
     expect(officeLoadWanted({ ...base, rideTo: "L4" })).toBe(false);
-    expect(officeLoadWanted({ ...base, at: { x: OFFICE.stop.x + OFFICE.loadRadius + 1, z: OFFICE.stop.z } })).toBe(false);
+    expect(officeLoadWanted({ ...base, at: { x: stop.x + OFFICE.loadRadius + 1, z: stop.z } })).toBe(false);
+    expect(officeLoadWanted({ ...base, at: { x: stop.x, z: stop.z + OFFICE.loadRadius - 1 } })).toBe(true);
   });
 
   it("starts idle with no module and no test hooks", () => {

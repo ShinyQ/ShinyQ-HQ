@@ -39,8 +39,9 @@ import { precompileObject } from "../../../scene/precompile";
 import { renderProbe } from "../../../scene/renderProbe";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier } from "../../../types";
-import { OFFICE, officeSlots, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { officeBounds } from "../officeShell";
+import { LOBBY } from "../../../config";
+import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
+import { OFFICE_SLOTS, officeBounds } from "../officeShell";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
@@ -131,7 +132,7 @@ function restInstances(slots: readonly OfficeSlot[]) {
   for (const s of slots) {
     roverFrame(s, p, FRAME);
     writeRover(FRAME, p, parts, s.slot, treads);
-    writeGlow(s, FRAME, "asleep", null, 1, 0, true, OFFICE.stop, glow, colors);
+    writeGlow(s, FRAME, "asleep", null, 1, 0, true, LOBBY.officeWing.stop, glow, colors);
   }
   return { parts, treads, glow, colors };
 }
@@ -340,7 +341,7 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const quads = useMemo(() => atlasQuads(slots), [slots]);
   useDispose(quads);
   const rest = useMemo(() => restInstances(slots), [slots]);
-  const writes = useMemo(() => new RoverWrites(slots.length, stillPose("asleep"), glowKey("asleep", null, true, 0), OFFICE.stop), [slots]);
+  const writes = useMemo(() => new RoverWrites(slots.length, stillPose("asleep"), glowKey("asleep", null, true, 0), LOBBY.officeWing.stop), [slots]);
   const texts = useMemo((): ScreenTexts => ({ waiting: t("3d.waiting"), jobs: (done, total) => t("3d.jobs", { done, total }), sleep: "z Z" }), [t]);
   const group = useRef<Group>(null);
   const parts = useRef<InstancedMesh>(null);
@@ -469,7 +470,7 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
       material={material}
       raycast={NO_RAYCAST}
       name="office-wall"
-      position={[OFFICE.wall.x, OFFICE.wall.bottom + OFFICE.wall.h / 2, OFFICE.wall.z - OFFICE.wall.t / 2 - 0.01]}
+      position={[LOBBY.officeWing.wall.x, OFFICE.wall.bottom + OFFICE.wall.h / 2, LOBBY.officeWing.wall.z - OFFICE.wall.t / 2 - 0.01]}
       rotation={[0, Math.PI, 0]}
     />
   );
@@ -583,7 +584,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
-  const slots = useMemo(() => officeSlots(), []);
+  const slots = OFFICE_SLOTS;
   const agents = view.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
     const names = agents.split(",");

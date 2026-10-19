@@ -535,6 +535,7 @@ function ExperienceView({
           hall: tHall("hall"),
         },
         office: tOffice,
+        officeSign: t("rooms.office"),
       },
       labs: {
         directory: tDrawer("directory"),
