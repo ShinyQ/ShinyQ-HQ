@@ -50,7 +50,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 ### Boot card
 
 - The boot card names the owner at first paint: name, headline, motto and current role from content (`BootWho`, the role line from `roleLine` in `@/content/selectors`).
-  - The owner block paints as one text block, the game-first LCP ([performance.md](performance.md#game-first-lcp)); keep its paragraphs `display: contents` and its spacing in `.hq-boot-who` and `.hq-boot-gap`, not in margins.
+  - The owner block paints as one text block, the game-first LCP ([performance.md](performance.md#game-first-lcp)); keep its lines as inline `<span role="paragraph">` split by `<br />`, with the spacing in `.hq-boot-who` and `.hq-boot-gap`, never block paragraphs, flex items or margins.
 - It carries a small "Classic site" link (`hud.pageView`, with the HUD's `PageViewIcon`):
   - A real `?view=classic` link (works before hydration): the head script decides Classic from the explicit parameter and keeps it in the URL.
   - `ExperienceGate` handles it without a reload once hydrated (`data-hq-page-link`).
