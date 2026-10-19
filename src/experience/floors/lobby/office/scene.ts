@@ -3,3 +3,4 @@
  * code imports nothing from here but types (tests/unit/office-chunk-graph.test.ts).
  */
 export { officeTest } from "./live";
+export { OfficeScene } from "./OfficeScene";
