@@ -62,8 +62,8 @@ describe("RoverTerminal", () => {
       ...missions.map((m, i) => `[${i + 1}]${m.label.en}`),
       `[esc]${en.hud.terminal.driveMyself}`,
     ]);
-    expect(options).toHaveLength(8);
-    expect(dialog).toHaveTextContent("Pick: 1 to 7 or arrows + Enter · Close: Esc");
+    expect(options).toHaveLength(9);
+    expect(dialog).toHaveTextContent("Pick: 1 to 8 or arrows + Enter · Close: Esc");
   });
 
   it("focuses the mission list on open", () => {
@@ -195,7 +195,7 @@ describe("terminal helpers", () => {
 
   it("lists the Rover menu in catalog order, at most 9", () => {
     const all = getContent().missions;
-    expect(orderTerminalMissions(all).map((m) => m.id)).toEqual(["work", "highlights", "journey", "projects", "blog", "cv", "hire"]);
+    expect(orderTerminalMissions(all).map((m) => m.id)).toEqual(["work", "highlights", "journey", "projects", "blog", "cv", "hire", "office"]);
     expect(orderTerminalMissions(all).map((m) => m.label.en)).toEqual([
       "Explore the work",
       "See the highlights",
@@ -204,6 +204,7 @@ describe("terminal helpers", () => {
       "Read the writing",
       "View CV",
       "Discuss a role or project",
+      "Watch the AI agents at work",
     ]);
     expect(orderTerminalMissions([...all, ...all.map((m) => ({ ...m, id: `${m.id}-x`, order: m.order + 10 }))])).toHaveLength(9);
   });

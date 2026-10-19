@@ -3,7 +3,7 @@ import { clientKeywords, groupEntriesByYear, isResearch, orderPods } from "@/con
 import type { DrawerTab, FloorId, LocalizedText, RoomId, SiteContent, Tier, Wing } from "@/content/schema";
 import { TOPICS } from "@/content/topic-map";
 
-export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops" | "engine";
+export type RoomKind = "lobby" | "highlights" | "career" | "workshop" | "pod" | "reactor" | "post" | "shelf" | "research" | "topics" | "roof" | "visits" | "ops" | "engine" | "office";
 
 /** One addressable room. Serializable: built on the server and passed to client HUD components. */
 export interface RoomInfo {
@@ -55,7 +55,8 @@ export type StructuralRoom =
   | "reactor"
   | "topics"
   | "visits"
-  | "ops";
+  | "ops"
+  | "office";
 export type StructuralLabels = Record<StructuralRoom, LocalizedText>;
 
 export const FLOOR_PATHS: Record<FloorId, string> = {
@@ -210,6 +211,19 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
     keywords: ["visits", "kunjungan", "stats", "statistics", "statistik", "analytics", "analitik", "traffic", "countries", "negara", "observatory", "observatorium", "globe", "lobby"],
     path: "/contact#visits",
     floorPath: "/contact#visits",
+    surpriseWeight: 0,
+  });
+
+  // L1 Agent Office (owner design 2026-10-18): live AI coding agents and public GitHub activity on the south plaza.
+  // Its drawers keep /{locale} (`isOfficeRoom`); the Classic home card is `#office` (Agent Office part 4).
+  add({
+    floor: "L1",
+    slug: "office",
+    kind: "office",
+    title: labels.office,
+    keywords: ["agent office", "kantor agen", "agents", "agen", "AI agents", "Copilot", "Claude Code", "Codex", "GitHub", "CI", "live", "mission control", "lobby"],
+    path: "/#office",
+    floorPath: "/#office",
     surpriseWeight: 0,
   });
 

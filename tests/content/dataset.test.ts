@@ -187,6 +187,7 @@ describe("content/site-content.json", () => {
       "RF:contact",
       "RF:cv",
       "L1:highlights-about",
+      "L1:office",
     ]);
     const missing = content.missions.flatMap((m) =>
       m.steps.flatMap((s) => {

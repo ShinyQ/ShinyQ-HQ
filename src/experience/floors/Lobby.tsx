@@ -22,6 +22,7 @@ import { SkillsWall } from "./lobby/SkillsWall";
 import { StatsRing } from "./lobby/StatsRing";
 import { VISITS_ROOM } from "./lobby/visitsRoom";
 import { VisitsStation } from "./lobby/VisitsStation";
+import type { OfficeTranslate } from "./lobby/officeLayout";
 
 export interface LobbyLabels {
   skillsTitle: string;
@@ -32,6 +33,8 @@ export interface LobbyLabels {
   hall: HallLabels;
   /** The Visitor Observatory panel (`stats.*`). */
   observatory: ObservatoryLabels;
+  /** The `office` namespace translator (Agent Office: wall, screens, targets; the lazy chunk resolves its own keys). */
+  office: OfficeTranslate;
 }
 
 const box = (cx: number, cz: number, w: number, d: number): Rect => ({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 });

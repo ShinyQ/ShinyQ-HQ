@@ -23,6 +23,7 @@ export const CLIENT_NAMESPACES = [
   "journey",
   "labs",
   "library",
+  "office",
   "paper",
   "production",
   "proto",

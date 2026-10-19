@@ -3,14 +3,15 @@ import { getCertifications, getProfile, getSkills, getStats } from "../load";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
 import { visitsLabels } from "@/lib/visits/labels";
-import { chain, chipLogos, messages, roomId, single } from "./shared";
+import { OFFICE_DESKS } from "@/lib/office/protocol";
+import { chain, chipLogos, fill, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** L1 Lobby: profile hologram, stats ring, skills wall, certifications wall and the Visitor Observatory (`VisitsBody`). */
 export function buildLobbyViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const profile = getProfile();
-  return chain([
+  const lobby = chain([
     single({
       id: roomId("L1", "profile"),
       kind: "lobby",
@@ -70,5 +71,19 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       page: "/contact#visits",
       visits: visitsLabels(locale),
     }),
+  ]);
+  return [...lobby, ...buildOfficeViews(locale)];
+}
+
+/** L1 Agent Office: the summary half of the wall, the GitHub half and one drawer per desk (`OfficeBody`, live data on the client). */
+function buildOfficeViews(locale: Locale): RoomView[] {
+  const m = messages(locale);
+  const o = m.office["3d"];
+  return chain([
+    single({ id: roomId("L1", "office"), kind: "office", title: m.hud.rooms.office, subtitle: o.subtitle, accent: "cyan", office: { panel: "summary" } }),
+    single({ id: roomId("L1", "office-github"), kind: "office", title: o.githubTitle, subtitle: o.subtitle, accent: "green", office: { panel: "github" } }),
+    ...Array.from({ length: OFFICE_DESKS }, (_, slot) =>
+      single({ id: roomId("L1", `office-desk-${slot + 1}`), kind: "office", title: fill(o.desk, { n: String(slot + 1) }), subtitle: o.subtitle, accent: "cyan", office: { panel: "desk", slot } }),
+    ),
   ]);
 }

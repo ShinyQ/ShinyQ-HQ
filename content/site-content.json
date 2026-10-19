@@ -10590,6 +10590,28 @@
           "room": "RF:contact"
         }
       ]
+    },
+    {
+      "id": "office",
+      "order": 7,
+      "label": {
+        "en": "Watch the AI agents at work",
+        "id": "Lihat agen AI bekerja"
+      },
+      "steps": [
+        {
+          "kind": "elevator",
+          "floor": "L1"
+        },
+        {
+          "kind": "drive",
+          "to": "L1:office"
+        },
+        {
+          "kind": "open",
+          "room": "L1:office"
+        }
+      ]
     }
   ]
 }

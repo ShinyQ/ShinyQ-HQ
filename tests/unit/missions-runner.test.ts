@@ -53,6 +53,7 @@ describe("mission runner: catalog", () => {
     hire: ["elevator RF", "drive RF:contact", "open RF:contact"],
     cv: ["elevator RF", "drive RF:cv", "open RF:cv"],
     blog: ["elevator L4", "palette posts"],
+    office: ["elevator L1", "drive L1:office", "open L1:office"],
   };
 
   it("covers every mission in the content catalog", () => {
