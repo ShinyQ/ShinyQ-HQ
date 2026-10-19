@@ -355,7 +355,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - a HalfFloat `EffectComposer` (depth buffer, no stencil, MSAA from the pixel budget) and a `RenderPass`;
   - then one `EffectPass`: mipmap bloom (ADD blend, `sceneSettings("full").bloom`, levels from the pixel budget, luminance smoothing 0.03) and ACES tone mapping.
 - While mounted, renderer tone mapping and `autoClear` are off (both restored on unmount). The composer renders at `useFrame` priority 1 and resizes on canvas size and DPR changes.
-- `postHandle` publishes the composer and the bloom in a layout effect, before the first composer frame; `QualityController` and the sky change MSAA, bloom levels and intensity on these objects without a rebuild.
+- One layout effect builds and disposes the composer (never `useMemo` plus a disposing effect: StrictMode's simulated remount in `bun run dev` would dispose the live composer and draw nothing). `postHandle` reads it through getters set in a layout effect, before the first composer frame; `QualityController` and the sky change MSAA, bloom levels and intensity on these objects without a rebuild.
 - `@react-three/postprocessing` is not a dependency: it bundled n8ao (about 8 KB gzip on the full tier) for this same setup, which `tests/hud/post-composer.test.tsx` pins (its defaults, one merged pass, renderer state, no import of the wrapper).
 
 ### Counting

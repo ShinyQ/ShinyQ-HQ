@@ -2,9 +2,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanup, render } from "@testing-library/react";
-import { BlendFunction, BloomEffect, EffectPass, KernelSize, RenderPass, ToneMappingEffect, ToneMappingMode } from "postprocessing";
+import { BlendFunction, BloomEffect, EffectComposer, EffectPass, KernelSize, RenderPass, ToneMappingEffect, ToneMappingMode } from "postprocessing";
 import { ACESFilmicToneMapping, HalfFloatType, NoToneMapping, PerspectiveCamera, Scene, SRGBColorSpace, type Vector2 } from "three";
+import { StrictMode, type RefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import Effects from "@/experience/scene/Effects";
+import { postHandle } from "@/experience/scene/postHandle";
 import { usePostComposer, type PostComposer, type PostComposerOptions } from "@/experience/scene/postComposer";
 
 type FrameCallback = (state: { gl: FakeRenderer }, delta: number) => void;
@@ -42,21 +45,24 @@ class FakeRenderer {
 
 const FULL: PostComposerOptions = { multisampling: 4, levels: 8, bloom: { threshold: 0.6, intensity: 0.9, radius: 0.45 }, toneMapping: ToneMappingMode.ACES_FILMIC };
 
-function mount(options: PostComposerOptions = FULL) {
+function mount(options: PostComposerOptions = FULL, { strict = false } = {}) {
   const gl = new FakeRenderer();
   const camera = new PerspectiveCamera();
   r3f.state = { gl, scene: new Scene(), camera };
   r3f.frames = [];
-  const out: { post: PostComposer | null } = { post: null };
+  const out: { ref: RefObject<PostComposer | null> | null } = { ref: null };
   function Probe() {
-    out.post = usePostComposer(options);
+    out.ref = usePostComposer(options);
     return null;
   }
-  const view = render(<Probe />);
-  return { gl, camera, view, post: out.post! };
+  const view = render(strict ? <StrictMode><Probe /></StrictMode> : <Probe />);
+  return { gl, camera, view, ref: out.ref!, post: out.ref!.current! };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("full-tier composer (plain postprocessing, same setup as @react-three/postprocessing 3.2)", () => {
   it("builds a HalfFloat composer with a depth buffer, no stencil and the requested MSAA", () => {
@@ -160,5 +166,42 @@ describe("full-tier composer (plain postprocessing, same setup as @react-three/p
       .filter((file) => /\.tsx?$/.test(file))
       .filter((file) => /from "@react-three\/postprocessing"|import\("@react-three\/postprocessing"\)/.test(readFileSync(join("src", file), "utf8")));
     expect(importers).toEqual([]);
+  });
+
+  it("survives StrictMode: the simulated remount disposes its throwaway composer and renders a fresh, complete one", () => {
+    const dispose = vi.spyOn(EffectComposer.prototype, "dispose");
+    const { gl, ref, view } = mount(FULL, { strict: true });
+    const post = ref.current!;
+    expect(post.composer.passes).toHaveLength(2);
+    expect(post.composer.passes[1]).toBeInstanceOf(EffectPass);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(dispose.mock.contexts[0]).not.toBe(post.composer);
+    expect(gl.autoClear).toBe(false);
+    expect(gl.toneMapping).toBe(NoToneMapping);
+    const render = vi.spyOn(post.composer, "render").mockImplementation(() => {});
+    r3f.frames.at(-1)!.callback({ gl }, 0.016);
+    expect(render).toHaveBeenCalledTimes(1);
+    view.unmount();
+    expect(dispose).toHaveBeenCalledTimes(2);
+    expect(dispose.mock.contexts[1]).toBe(post.composer);
+    expect(ref.current).toBeNull();
+    expect(gl.autoClear).toBe(true);
+    expect(gl.toneMapping).toBe(ACESFilmicToneMapping);
+  });
+
+  it("Effects publishes the live composer and bloom through postHandle after mount, StrictMode included, and clears it on unmount", () => {
+    for (const strict of [false, true]) {
+      r3f.state = { gl: new FakeRenderer(), scene: new Scene(), camera: new PerspectiveCamera() };
+      r3f.frames = [];
+      const view = render(strict ? <StrictMode><Effects multisampling={4} levels={8} /></StrictMode> : <Effects multisampling={4} levels={8} />);
+      const composer = postHandle.get()?.composer();
+      const bloom = postHandle.get()?.bloom();
+      expect(composer?.passes).toHaveLength(2);
+      expect((composer!.passes[1] as unknown as { effects: unknown[] }).effects[0]).toBe(bloom);
+      expect(bloom?.mipmapBlurPass.levels).toBe(8);
+      expect(bloom?.intensity).toBeCloseTo(0.9);
+      view.unmount();
+      expect(postHandle.get()).toBeNull();
+    }
   });
 });

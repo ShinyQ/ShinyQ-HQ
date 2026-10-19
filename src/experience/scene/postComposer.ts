@@ -1,10 +1,9 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import { BlendFunction, BloomEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, type ToneMappingMode } from "postprocessing";
 import { HalfFloatType, NoToneMapping, Vector2, type Camera, type Scene, type WebGLRenderer } from "three";
-import { useDispose } from "../fx/useDispose";
 
 export interface PostComposerOptions {
   /** MSAA samples of the composer's frame buffers. */
@@ -20,19 +19,25 @@ export interface PostComposer {
   bloom: BloomEffect;
 }
 
-const glSize = new Vector2();
+/** A mounted composer plus the canvas size it last applied (-1 until the first frame sizes it). */
+interface LivePost extends PostComposer {
+  size: Vector2;
+  width: number;
+  height: number;
+  dpr: number;
+}
 
-function createPost(gl: WebGLRenderer, scene: Scene, camera: Camera, { multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping }: PostComposerOptions): PostComposer {
+function createPost(gl: WebGLRenderer, scene: Scene, camera: Camera, { multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping }: PostComposerOptions): LivePost {
   // The constructor turns the renderer's autoClear off; holdRenderer owns that switch.
   const autoClear = gl.autoClear;
   const composer = new EffectComposer(gl, { multisampling, frameBufferType: HalfFloatType });
   gl.autoClear = autoClear;
   composer.addPass(new RenderPass(scene, camera));
-  gl.getSize(glSize);
-  composer.setSize(glSize.width, glSize.height);
+  const size = gl.getSize(new Vector2());
+  composer.setSize(size.width, size.height);
   const bloom = new BloomEffect({ blendFunction: BlendFunction.ADD, mipmapBlur: true, levels, luminanceThreshold: threshold, intensity, radius });
   composer.addPass(new EffectPass(camera, bloom, new ToneMappingEffect({ mode: toneMapping })));
-  return { composer, bloom };
+  return { composer, bloom, size, width: -1, height: -1, dpr: -1 };
 }
 
 /** Renderer tone mapping and autoClear off while a composer is mounted; the cleanup restores what it changed. */
@@ -58,42 +63,41 @@ function holdRenderer(gl: WebGLRenderer): () => void {
  * - renderer tone mapping off and `autoClear` off while mounted (the composer clears its own targets),
  *   both restored on unmount; each frame renders at `useFrame` priority 1 with `autoClear` on, resizing on
  *   canvas size and DPR changes.
+ * One layout effect builds and disposes the composer, so StrictMode's simulated remount builds a fresh one;
+ * it runs at commit, before the first frame. The returned ref holds it while mounted (null before and after).
  * Options are fixed per mount: a change builds a new composer, so runtime tweaks (MSAA, bloom levels) go
- * straight to the returned objects.
+ * straight to the composer and bloom.
  */
-export function usePostComposer({ multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping }: PostComposerOptions): PostComposer {
+export function usePostComposer({ multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping }: PostComposerOptions): RefObject<PostComposer | null> {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
-  const post = useMemo(
-    () => createPost(gl, scene, camera, { multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping }),
-    [gl, scene, camera, multisampling, levels, threshold, intensity, radius, toneMapping],
-  );
-  // Disposes the passes too, and the effect pass disposes its effects.
-  useDispose(post.composer);
+  const live = useRef<LivePost | null>(null);
 
-  useLayoutEffect(() => holdRenderer(gl), [gl]);
-
-  // What the frame renders and the size it last applied (-1 until the first frame sizes it).
-  const live = useRef({ composer: null as EffectComposer | null, width: -1, height: -1, dpr: -1 });
   useLayoutEffect(() => {
-    live.current = { composer: post.composer, width: -1, height: -1, dpr: -1 };
+    const post = createPost(gl, scene, camera, { multisampling, levels, bloom: { threshold, intensity, radius }, toneMapping });
+    const release = holdRenderer(gl);
+    live.current = post;
     return () => {
-      live.current = { composer: null, width: -1, height: -1, dpr: -1 };
+      if (live.current === post) live.current = null;
+      release();
+      // Disposes the passes too, and the effect pass disposes its effects.
+      post.composer.dispose();
     };
-  }, [post]);
+  }, [gl, scene, camera, multisampling, levels, threshold, intensity, radius, toneMapping]);
+
   useFrame((state, delta) => {
+    const post = live.current;
+    if (!post) return;
     const renderer = state.gl;
-    const current = live.current;
-    const composer = current.composer;
-    if (!composer) return;
-    renderer.getSize(glSize);
+    const { composer, size } = post;
+    renderer.getSize(size);
     const dpr = renderer.getPixelRatio();
-    if (glSize.width !== current.width || glSize.height !== current.height || dpr !== current.dpr) {
-      composer.setSize(glSize.width, glSize.height);
-      current.width = glSize.width;
-      current.height = glSize.height;
-      current.dpr = dpr;
+    if (size.width !== post.width || size.height !== post.height || dpr !== post.dpr) {
+      composer.setSize(size.width, size.height);
+      post.width = size.width;
+      post.height = size.height;
+      post.dpr = dpr;
     }
     const autoClear = renderer.autoClear;
     renderer.autoClear = true;
@@ -101,5 +105,5 @@ export function usePostComposer({ multisampling, levels, bloom: { threshold, int
     renderer.autoClear = autoClear;
   }, 1);
 
-  return post;
+  return live;
 }
