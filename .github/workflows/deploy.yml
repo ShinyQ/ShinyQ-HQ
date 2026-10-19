@@ -340,6 +340,15 @@ jobs:
           else
             echo "::notice::GITHUB_WEBHOOK_SECRET is not set; POST /api/office/github answers 503."
           fi
+      - name: Publish the Ask knowledge pack to KV
+        id: publish
+        if: steps.gate.outputs.enabled == 'true'
+        # Uploads this build's pack value (validated, immutable, never flipped here) before the new code goes live, so
+        # the new Function always finds its pinned version (spec 2026-10-19 section 4.5). The deploy token only here (H1).
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bun scripts/ask-pack.ts publish --commit "$SHA"
       - name: Deploy to Cloudflare Pages
         id: deploy
         if: steps.gate.outputs.enabled == 'true'
@@ -354,11 +363,28 @@ jobs:
           bunx wrangler pages deploy out --project-name="$CF_PAGES_PROJECT" --branch=main --commit-hash="$SHA" --commit-dirty=true | tee deploy.log
           URL=$(grep -Eo 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -n1)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Flip the Ask knowledge pack pointer
+        id: flip
+        if: steps.gate.outputs.enabled == 'true'
+        # Right after the upload, before the smoke check (which compares the status asOf with this pack's date).
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION: ${{ steps.publish.outputs.version }}
+        run: bun scripts/ask-pack.ts flip "$VERSION"
       - name: Smoke-check production
         if: steps.gate.outputs.enabled == 'true'
         env:
           NEXT_PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
         run: bun scripts/deploy-smoke.ts --site "$NEXT_PUBLIC_SITE_URL" --timeout 300
+      - name: Flip the Ask knowledge pack pointer back
+        # The smoke check (or a later step) failed after the flip: production keeps serving the previous pack.
+        if: failure() && steps.flip.outcome == 'success' && steps.publish.outputs.previous != '' && steps.publish.outputs.previous != steps.publish.outputs.version
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PREVIOUS: ${{ steps.publish.outputs.previous }}
+        run: bun scripts/ask-pack.ts flip "$PREVIOUS"
       - name: hq-office Worker deploy failed
         if: steps.office_deploy.outcome == 'failure'
         run: |
@@ -370,11 +396,14 @@ jobs:
           URL: ${{ steps.deploy.outputs.url }}
           FAST: ${{ needs.verify.outputs.fast }}
           PR: ${{ needs.verify.outputs.pr }}
+          PACK: ${{ steps.publish.outputs.version }}
+          PREVIOUS_PACK: ${{ steps.publish.outputs.previous }}
         run: |
           {
             echo "Deployed \`$SHA\` to Cloudflare Pages project \`$CF_PAGES_PROJECT\`; the smoke check passed."
             echo ""
             echo "- Deployment: $URL"
+            echo "- Ask knowledge pack: \`$PACK\` (previous \`${PREVIOUS_PACK:-none}\`)"
             echo "- Production: $NEXT_PUBLIC_SITE_URL"
             if [ "$FAST" = "true" ]; then echo "- Fast path: #$PR (main CI still runs; rollback.yml rolls back if it fails)"; fi
           } >> "$GITHUB_STEP_SUMMARY"

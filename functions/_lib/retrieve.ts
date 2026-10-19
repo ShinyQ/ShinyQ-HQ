@@ -85,15 +85,17 @@ export function scoreChunks(pack: KnowledgePack, question: string): { chunk: Kno
   const index = indexPack(pack);
   const terms = [...new Set(expandTokens(tokenize(question)))];
   const n = pack.chunks.length;
+  // Term at a time over the postings: each chunk still sums its terms in question order, so scores match a per-chunk loop.
+  const bm25 = new Float64Array(n);
+  for (const term of terms) {
+    const postings = index.postingsOf(term);
+    const df = postings.size;
+    if (!df) continue;
+    const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
+    for (const [i, tf] of postings) bm25[i] += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
+  }
   return pack.chunks.map((chunk, i) => {
-    let score = 0;
-    for (const term of terms) {
-      const df = index.df[term];
-      const tf = index.tf[i][term];
-      if (!df || !tf) continue;
-      const idf = Math.log(1 + (n - df + 0.5) / (df + 0.5));
-      score += (idf * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
-    }
+    let score = bm25[i];
     for (const term of terms) if (INTENTS[term]?.(chunk)) score += INTENT_WEIGHT[term] ?? INTENT_BOOST;
     // A project or post named in the question ("the voice AI project") beats one that only shares its words.
     if (score > 0 && (chunk.type === "project" || chunk.type === "post")) score += TITLE_BOOST * titleTerms(chunk).filter((t) => terms.includes(t)).length;
@@ -114,8 +116,9 @@ export const hasTopic = (chunk: KnowledgeChunk, topic: RoutedTopic) => chunk.typ
 export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChunk[] {
   const index = indexPack(pack);
   const n = pack.chunks.length;
-  const all = [...new Set(expandTokens(tokenize(question)))].filter((t) => !LEAD_STOP.has(t) && (index.df[t] ?? 0) > 0);
-  const specific = new Set(all.filter((t) => index.df[t] <= n * LEAD_COMMON_SHARE));
+  const df = (t: string) => index.df.get(t) ?? 0;
+  const all = [...new Set(expandTokens(tokenize(question)))].filter((t) => !LEAD_STOP.has(t) && df(t) > 0);
+  const specific = new Set(all.filter((t) => df(t) <= n * LEAD_COMMON_SHARE));
   if (!specific.size) return [];
   return pack.chunks
     .map((chunk, i) => {
@@ -125,15 +128,15 @@ export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChu
       let own = 0;
       let peak = 0;
       for (const term of all) {
-        const tf = index.tf[i][term];
+        const tf = index.tfOf(i, term);
         if (!tf) continue;
         shared++;
         if (specific.has(term)) {
           own++;
           peak = Math.max(peak, tf);
         }
-        const df = index.df[term];
-        score += (Math.log(1 + (n - df + 0.5) / (df + 0.5)) * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
+        const d = df(term);
+        score += (Math.log(1 + (n - d + 0.5) / (d + 0.5)) * tf * (K1 + 1)) / (tf + K1 * (1 - B + (B * index.len[i]) / index.avgLen));
       }
       // One term alone fits only when the project is about it (repeated), not when it is mentioned once or twice.
       return own >= 1 && (shared >= 2 || (score >= LEAD_STRONG_SCORE && peak >= LEAD_STRONG_TF)) ? { chunk, score } : null;

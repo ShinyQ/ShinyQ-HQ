@@ -67,6 +67,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | In review |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | In review |
 | Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
+| Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
 
 ## Controls and first visit
 
@@ -368,7 +369,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### How
 
-- A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`).
+- A Cloudflare Pages Function (`functions/api/ask.ts`, pipeline in `functions/_lib/`) retrieves from a knowledge pack built at build time from the public content (`src/ask/pack.ts`). The pack lives in Workers KV as versioned, immutable values with a precomputed BM25 index behind a `pack:current` pointer that every deploy moves and every rollback moves back; each isolate keeps it in memory, checks its SHA-256, and falls back to the deployed version or a small bundled pack (who he is, what he does now, contact, how the site was built, his principles) when KV fails.
 - It then calls Workers AI through AI Gateway `shinyq-hq`: **Gemma 4 26B** (`@cf/google/gemma-4-26b-a4b-it`, thinking off), falling back once to **Mistral Small 3.1** on error, timeout or an empty answer.
 - Earlier turns travel with the question: each answer carries the server's signature (HMAC), and only verified turns reach the model, as earlier messages it may use for context but never as instructions. A short follow-up is scope-checked and retrieved together with the question it refers to.
 - Groq is the backup when Workers AI fails or runs out of its daily quota. A quota error (3036) also skips Mistral, and the Groq backup tiers answer until 00:00 UTC: **Qwen 3.8 27B** (`qwen/qwen3.8-27b`, a Groq preview model), then **gpt-oss-120b** (`openai/gpt-oss-120b`). Groq is called through the same AI Gateway, only when the `GROQ_API_KEY` secret exists, with the same prompt, retrieval and output checks. Without a working tier the visitor sees the fallback message.
@@ -388,7 +389,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
 - `ask-eval.yml` runs the golden set and the red-team set against the real models nightly.
-- `content-gap.yml` reports unanswered questions weekly.
+- `content-gap.yml` reports unanswered questions weekly, and which pack tier served (memory, KV, the pinned version or the fallback).
 - `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
 

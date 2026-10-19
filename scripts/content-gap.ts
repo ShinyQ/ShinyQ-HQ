@@ -6,9 +6,10 @@
  *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts --questions  # owner only, local
  *
  * Event layout written by functions/api/ask.ts: blobs [outcome, locale, source,
- * scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip, model, failureTrail], doubles
+ * scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip, model, failureTrail, packTier], doubles
  * [latencyMs, 1]. `entry` is the UI entry point (hero, dock, pill, followup, terminal, palette);
- * `model` (blob10) is the model that answered; the failure trail (blob11) lists the tiers that failed first. Only "unknown" events carry
+ * `model` (blob10) is the model that answered; the failure trail (blob11) lists the tiers that failed first; the pack tier
+ * (blob12) is where the knowledge pack came from (memory, kv, pin, fallback; empty before the KV pack). Only "unknown" events carry
  * the (already PII-scrubbed) question; "rejected" events are requests stopped before the model
  * (Turnstile, Origin, limits) and do not count as questions.
  *
@@ -98,7 +99,11 @@ export interface Report {
   entries?: CountRow[];
   /** Model that answered (blob10), e.g. a Workers AI or Groq model id; empty for cache and canned answers. */
   models?: CountRow[];
+  /** Knowledge pack tier that served (blob12): memory, kv, pin, fallback. `pin` or `fallback` means KV is degraded. */
+  tiers?: CountRow[];
 }
+
+const PACK_TIERS = ["memory", "kv", "pin", "fallback"];
 
 function percent(part: number, total: number): string {
   return total ? `${Math.round((part / total) * 100)}%` : "0%";
@@ -140,6 +145,12 @@ export function formatReport(report: Report): string {
     lines.push("", "## Entry points", "", "| Entry point | Count | Share |", "|---|---|---|");
     for (const r of [...report.entries].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z]/g, "") || "(none)"} | ${r.n} | ${percent(r.n, total)} |`);
   }
+  const tiers = (report.tiers ?? []).filter((r) => PACK_TIERS.includes(r.key) && r.n > 0);
+  if (tiers.length) {
+    const served = tiers.reduce((sum, r) => sum + r.n, 0);
+    lines.push("", "## Pack tier", "", "| Tier | Count | Share |", "|---|---|---|");
+    for (const r of [...tiers].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, served)} |`);
+  }
   if (report.reasons?.length) {
     lines.push("", "## Rejections and replaced answers", "", "| Reason | Count |", "|---|---|");
     for (const r of [...report.reasons].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z0-9_-]/gi, "")} | ${r.n} |`);
@@ -180,6 +191,7 @@ export const QUERIES = {
   reasons: "SELECT blob6 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob6 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   models: "SELECT blob10 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   entries: "SELECT blob7 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  tiers: "SELECT blob12 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob12 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
 };
 
 async function sql(account: string, token: string, query: string): Promise<CountRow[]> {
@@ -223,10 +235,10 @@ async function main() {
     process.stdout.write(formatPrivateQuestions(groupQuestions(await sql(account, token, QUESTIONS_QUERY)), loadBlocklist()));
     return;
   }
-  const [topics, outcomes, sources, reasons, entries, models] = await Promise.all(
-    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models].map((query) => sql(account, token, query)),
+  const [topics, outcomes, sources, reasons, entries, models, tiers] = await Promise.all(
+    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models, QUERIES.tiers].map((query) => sql(account, token, query)),
   );
-  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models });
+  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models, tiers });
   const unknownTotal = outcomes.find((r) => r.key === "unknown")?.n ?? 0;
   writeFileSync(process.env.CONTENT_GAP_REPORT || "content-gap-report.md", report);
   console.log(report);

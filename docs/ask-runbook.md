@@ -5,18 +5,18 @@ Operations guide for the "Ask the HQ" assistant. Design and threat model: [`docs
 ## 1. Architecture in one screen
 
 - The site stays a static export. The only dynamic route is `POST /api/ask`, a Cloudflare Pages Function (`functions/api/ask.ts`, logic in `functions/_lib/`), deployed together with `out/` by `wrangler pages deploy` from the repo root.
-- The knowledge pack is built from public site content by `scripts/build-knowledge.ts` (part of `bun run build`) into `functions/_generated/` (gitignored) and bundled into the Function, never served as a file.
+- The knowledge pack is built from public site content by `scripts/build-knowledge.ts` (part of `bun run build`) into `functions/_generated/` (gitignored), never served as a file. Since 2026-10-19 it lives in Workers KV (section 17): `deploy.yml` uploads it as an immutable, versioned value and points `pack:current` at it; the Function reads it per isolate (memory, KV, the bundle's pinned version, then a small bundled fallback pack). Only the fallback pack, the pin and the safety lists are bundled.
 - Request pipeline (spec 7.4): kill switch and circuit breaker, method/type/size/Origin checks, Turnstile (or the signed 30-minute `hq_ask` cookie), rate limits (8/min and 40/day per salted IP hash, 600/day global), input cleanup and PII scrub, KV cache lookup, retrieval, model call through AI Gateway (Gemma 4, one fallback to Mistral Small 3.1, then the Groq backup tiers, section 12), output checks, cache store, anonymized Analytics Engine event, SSE stream.
 
 | Piece | Name | Where it is set |
 | --- | --- | --- |
 | Pages project | `kurniadi` (production branch `main`) | dashboard |
 | Workers AI binding | `AI` | `wrangler.toml` `[ai]` |
-| KV namespace | `shinyq-hq-ask`, binding `ASK_KV` (`ans:` answers, `rl:` counters, `cb:until` breaker, `mb:<key>` per-model pauses) | `wrangler.toml` |
+| KV namespace | `shinyq-hq-ask`, binding `ASK_KV` (`ans:` answers, `rl:` counters, `cb:until` breaker, `mb:<key>` per-model pauses, `pack:` knowledge pack, section 17) | `wrangler.toml` |
 | Analytics Engine | dataset `ask_events`, binding `ASK_EVENTS` | `wrangler.toml` |
 | AI Gateway | `shinyq-hq` (cache 7 days, logs on, 600 requests per day fixed window) | `scripts/provision-ask.ts` |
 | Turnstile | widget `shinyq-hq-ask`, invisible, `kurniadi.pages.dev` and `kurniadi.dev` | `scripts/provision-ask.ts`, site key in `wrangler.toml` |
-| Vars | `ASK_ENABLED`, `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_BACKUP_MODELS`, `ASK_GATEWAY_ID`, `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP` | `wrangler.toml` `[vars]` |
+| Vars | `ASK_ENABLED`, `ASK_PRIMARY`, `ASK_FALLBACK`, `ASK_BACKUP_MODELS`, `ASK_GATEWAY_ID`, `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP`, `ASK_PACK_SOURCE` | `wrangler.toml` `[vars]` |
 | Secrets | `TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`, `GROQ_API_KEY` (optional) | `wrangler pages secret put` (production environment) |
 | Optional binding | `ASK_RL` rate limiter (`[[ratelimits]]`), commented out until Pages supports it | `wrangler.toml` |
 
@@ -64,9 +64,14 @@ By hand, from the repo root of a clean `main` (the Function is bundled from `fun
 git switch main && git pull
 bun install --frozen-lockfile
 bun run verify:quick                         # typecheck, lint, unit tests, build (build includes the knowledge pack)
+export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...   # the deploy token (Pages and KV Storage: Edit)
+bun scripts/ask-pack.ts publish --commit "$(git rev-parse HEAD)"   # upload the pack to KV (prints its version)
 bunx wrangler pages deploy out --project-name=kurniadi --branch=main \
   --commit-hash="$(git rev-parse HEAD)" --commit-message="$(git log -1 --format=%s)" --commit-dirty=true
+bun scripts/ask-pack.ts flip <version>       # point pack:current at the new pack
 ```
+
+Skipping `publish` and `flip` is safe (the new code serves the current pointer's pack, or its pin, or the fallback pack) but leaves Ask on the older content.
 
 `--branch=main` matters: without it wrangler uses the current git branch and the upload becomes a preview without secrets. A deploy fails if the KV ID in `wrangler.toml` points at a missing namespace; rerun the provisioning script.
 
@@ -108,11 +113,14 @@ Expect streamed `data: {"delta": ...}` frames and a final `{"done": true, ...}` 
 
 Set `ASK_ENABLED = "false"` in `wrangler.toml` and redeploy (section 3). The endpoint returns 503 and the UI hides the Ask entry points. The dashboard cannot change vars that `wrangler.toml` owns, so a redeploy is the way. Fastest path from any machine with the repo: edit the line, `bun run build`, deploy. The Pages "Rollback" to an earlier deployment (dashboard > Deployments) also works if that deployment had Ask off.
 
+KV incident (pack tier `fallback` or `pin` in the content-gap report, or KV errors): set `ASK_PACK_SOURCE = "bundle"` and redeploy. Ask then answers from the bundled fallback pack (who he is, what he does now, contact, how the site was built, his principles) with no KV reads for the pack; answers, counters and the breaker still use KV and fail soft. Set it back to `"kv"` when KV is healthy.
+
 The circuit breaker trips on its own (more than half of 5 minutes of model calls failing or blocked) and pauses for 15 minutes; delete the `cb:until` key to clear it early.
 
 ## 6. Cache purge
 
-- Automatic: the cache key is `packVersion + PROMPT_VERSION + locale + normalized question`, so any content change (new pack) or a `PROMPT_VERSION` bump in `functions/_lib/prompt.ts` makes every old entry unreachable; they expire after 7 days.
+- Automatic: the cache key is `packVersion + PROMPT_VERSION + locale + normalized question`, so any content change (new pack) or a `PROMPT_VERSION` bump in `functions/_lib/prompt.ts` makes every old entry unreachable; they expire after 7 days. The fallback pack has its own `packVersion`, so its answers never mix with the full pack's; a pointer flip or rollback switches keys with it.
+- Never delete `pack:` keys with the `ans:` purge below; use `bun scripts/ask-pack.ts` (section 17).
 - KV, by hand:
 
 ```sh
@@ -239,7 +247,7 @@ Symptom: the weekly Models table or blob11 shows `qwen/qwen3.8-27b:unavailable` 
 
 - 2FA on Cloudflare and GitHub: confirmed on 2026-10-11.
 - Monthly: Cloudflare audit log review (Manage Account > Audit Log) and the list of API tokens (`cf accounts tokens list`); delete anything unused.
-- Token expiry calendar: `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` and `CLOUDFLARE_API_TOKEN` ("shinyq-hq Pages deploy", Cloudflare Pages Edit only) all expire 2027-01-09. Renew a week before (`docs/deploy.md` for the deploy token).
+- Token expiry calendar: `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` and `CLOUDFLARE_API_TOKEN` ("shinyq-hq Pages deploy": Cloudflare Pages Edit, plus Workers KV Storage: Edit for the knowledge pack since 2026-10-19, section 17) all expire 2027-01-09. Renew a week before (`docs/deploy.md` for the deploy token).
 - Never paste secrets into issues, PRs, chats or commits; gitleaks runs on every PR.
 
 ## 14. Free-tier limits and how the design respects them
@@ -248,7 +256,7 @@ Symptom: the weekly Models table or blob11 shows `qwen/qwen3.8-27b:unavailable` 
 | --- | --- | --- |
 | Workers AI: 10,000 neurons per day | about 12 neurons per Gemma answer, about 42 per Mistral fallback | 600 model calls per day (AI Gateway rate limit and `ASK_DAILY_CAP`), KV and gateway caches; when the quota runs out (error 3036) Mistral is skipped and Groq answers until 00:00 UTC, then the fallback message if Groq is out too |
 | Groq Free, per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count) | one request per backup attempt, only after Workers AI failed; Qwen 3.8 27B first, then gpt-oss-120b | a 429 or 413 pauses that model for `retry-after` (60 s by default), an auth failure for 1 hour, a missing model for 6 hours; the stable prompt prefix is cached by Groq; calls through the AI Gateway also count against its 600 per day limit |
-| Workers KV: 100,000 reads and 1,000 writes per day | each uncached answer writes up to 3 keys (visitor counter, global counter, cache entry) | above about 330 uncached answers per day KV writes fail soft (counted as allowed, answer not cached); the AI Gateway 600/day limit stays the hard global cap |
+| Workers KV: 100,000 reads and 1,000 writes per day | each uncached answer writes up to 3 keys (visitor counter, global counter, cache entry); the knowledge pack costs at most 1 pointer read per isolate per minute plus 1 value read per cold isolate, and about 4 writes and 1 delete per deploy (value, commit, index, pointer, a pruned version); 10 versions of about 450 KB use 4.5 MB of the 1 GB | above about 330 uncached answers per day KV writes fail soft (counted as allowed, answer not cached); the AI Gateway 600/day limit stays the hard global cap; a failed pack read retries after 10 s, not per request |
 | Pages Functions: 100,000 requests per day (shared Workers quota) | one request per question | per-visitor limits 8/min and 40/day, Turnstile |
 | Analytics Engine | one data point per question | free; 3 months of retention |
 | AI Gateway: free plan | 10 gateways, logs as in section 11 | one gateway |
@@ -279,7 +287,19 @@ Cap raise (2026-10-15, owner pre-approved up to 256 KiB "if latency and bundle l
 | Heap after start | 1.8 MB | 2.8 MB |
 | Retrieval per question, warm | 0.08 ms | 0.08 ms |
 
-All far inside the Workers limits (3 MB compressed script on Free, 128 MB memory, 1 s start-up CPU) and invisible next to the model call (seconds). The cap is not raised again without a new measurement and an owner note; past 256 KiB, trim first (deviation 8).
+All far inside the Workers limits (3 MB compressed script on Free, 128 MB memory, 1 s start-up CPU) and invisible next to the model call (seconds).
+
+KV pack (2026-10-19, owner-approved, decision `2026-10-19-ask-kv-pack`): the pack left the Function bundle for Workers KV with a precomputed BM25 index, so the caps became `PACK_MAX_BYTES` 384 KiB (text pack), `PACK_VALUE_MAX_BYTES` 768 KiB (stored value with its index) and `FALLBACK_MAX_BYTES` 24 KiB (bundled fallback text pack). Measured on the 166-chunk pack (Node 24, M-series laptop under load, medians; `tests/bench/pack-parse.bench.ts` prints the parse numbers):
+
+| Measure | Bundled pack (before) | KV pack (after) |
+| --- | --- | --- |
+| Text pack / stored value | 259,282 B | 259,282 B / 451,232 B (index: 5,102 terms) |
+| Fallback pack (bundled) | none | 13,528 B |
+| Functions bundle, `wrangler pages functions build` (gzip) | 449,019 B (133,036) | 210,101 B (62,801) |
+| Work per new isolate | tokenize and index at start, 18 to 22 ms | first request: SHA-256 2 to 3.5 ms, `JSON.parse` 1.3 to 1.4 ms, hydrate 1.2 to 1.5 ms |
+| Module evaluation of the bundle (Node, 3 runs) | 114 to 219 ms, heap 10.1 MB | 26 to 46 ms, heap 5.0 MB |
+
+A warm isolate adds nothing; a cold one adds one or two KV reads (location cache: milliseconds; central storage: tens to a few hundred milliseconds), far below the model call. Past these caps, trim first (deviation 8) and measure again with an owner note.
 
 ## 15a. Capabilities, leads and scope routing (owner request 2026-10-15)
 
@@ -300,6 +320,40 @@ Questions about ShinyQ HQ itself ("How was this site built?", "What tech stack d
 - Facts only, each one backed by the repository (package versions, `wrangler.toml`, CI workflows); `tests/ask/pack.test.ts` checks the Next.js and React majors and the model names. Update the note in the same PR when the stack, hosting, the assistant, the test gates or the visitor controls change, and keep golden q45 to q47, q69, q70 and q76 (the B1 Engine Room) true. Content-only edits need no `PROMPT_VERSION` bump.
 - Check: `bun run validate:content`, then `bun run test tests/content tests/ask`.
 
+## 17. Knowledge pack in KV
+
+Spec: [`2026-10-19-ask-kv-pack-and-rover-voice-design.md`](superpowers/specs/2026-10-19-ask-kv-pack-and-rover-voice-design.md) section 4. Script: `scripts/ask-pack.ts` (fetch only, KV REST API; the namespace is the `ASK_KV` id in `wrangler.toml`). It needs `CLOUDFLARE_API_TOKEN` with **Workers KV Storage: Edit** and `CLOUDFLARE_ACCOUNT_ID`; a 401 or 403 prints "add Workers KV Storage: Edit to CLOUDFLARE_API_TOKEN".
+
+| Key | Value | Written by |
+| --- | --- | --- |
+| `pack:v1:<version>` | the stored pack (text plus BM25 index), immutable; `v1` is `PACK_SCHEMA` | `publish` (never overwritten: an existing value must have the same SHA-256) |
+| `pack:current` | pointer `{ schema, version, packDate, sha256, bytes, commit, publishedAt }` | `flip`, `pin`, `rollback` |
+| `pack:index` | the last 10 published versions, newest first | `publish` (prunes older values, never the current pointer or the new version) |
+| `pack:commit:<sha>` | the version deployed with that commit, 400 days | `publish` |
+
+Flow (`deploy.yml`, production environment, step-level secrets): build, `publish --commit <sha>` (validates the value with the private blocklist, checks it against `pack-meta.json`, uploads it, no flip), `wrangler pages deploy`, `flip <version>`, smoke check (status `asOf` equals the pin's `packDate`); when the smoke check fails after the flip, the pointer flips back to the previous version. Between the upload and the flip (about a minute) the new code serves the previous pack, or its own pin when the schema changed.
+
+Commands:
+
+```sh
+export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...
+bun scripts/ask-pack.ts status                          # pointer, index, stored and missing values
+bun scripts/ask-pack.ts pin <version>                   # serve an older published version (re-read and re-validated first)
+bun scripts/ask-pack.ts rollback --commit <sha> --dry-run true   # what a rollback to that commit would flip
+bun scripts/ask-pack.ts rollback --commit <sha>         # flip to the pack deployed with that commit
+bun scripts/ask-pack.ts verify                          # token access only (probe key), changes nothing
+bun scripts/ask-pack.ts publish --commit <sha> --dry-run true   # validate and plan a publish, probe key only
+```
+
+- Rollback: `rollback.yml` runs `ask-pack.ts rollback --commit <target>` after a real Pages rollback (dry runs print the plan; never for a drill project). A target older than the KV pack, an expired `pack:commit` key or a pruned version leaves the pointer; the rolled-back code then serves the current pointer's pack when it can parse it, else its pin, else its fallback.
+- Pointer changes take up to about 2 minutes everywhere (KV location cache 60 s plus the per-isolate 60 s); answer caches key on `packVersion`, so nothing mixes.
+- Bad pack in production: `pin <last good version>` (from `status`), then fix the content in a PR. New content is never published without a deploy: `publish` uploads only what the checked-out commit built.
+- KV incident: `ASK_PACK_SOURCE = "bundle"` (section 5).
+- Monitoring: the weekly content-gap report's "Pack tier" table (blob12). `memory` and `kv` are normal; any `pin` means the pointer's value failed its checks; `fallback` means KV failed or held no valid pack. Check `status`, then `pin` or `ASK_PACK_SOURCE`.
+- Proving the deploy token (merge gate for the KV pack): after adding **Workers KV Storage: Edit** to `CLOUDFLARE_API_TOKEN`, and after every rotation, run `gh workflow run ask-pack.yml --ref main -f mode=dry-run` (or `-f mode=verify`): it writes and deletes only `pack:probe`, validates and plans the publish, and goes red on any failed KV call. Pull requests never get the token (H1), so the first proof on a branch is impossible by design; on the merge itself, `deploy.yml` publishes before `wrangler pages deploy`, so a missing permission fails the deploy red (and opens `deploy-failed`) with production unchanged. Fix the token and rerun the deploy.
+- Every `ask-pack.ts` command exits 1 on a failed KV call (any non-2xx except a 404 read or delete), a failed check or a bad argument, and the workflow steps run it unpiped or under `set -o pipefail`, so a KV write failure always turns the job red.
+- Integrity: the Function serves a value only when its SHA-256 equals the pointer's, its schema matches and its required chunks and index lengths hold; only the deploy token writes `pack:` keys, and the safety blocklist stays bundled with the code.
+
 ## Deviations from the plan
 
 Deliberate differences from `docs/superpowers/specs/2026-10-11-ask-hq-design.md`, with the reason for each:
@@ -313,7 +367,7 @@ Deliberate differences from `docs/superpowers/specs/2026-10-11-ask-hq-design.md`
 | 5 | Declines and fallbacks are not cached | Only checked `answer` outcomes are cached; unknowns are not cached either, and a cached text is re-checked against the blocklist on read | Unknowns feed the content-gap report and change as content grows |
 | 6 | Entity allowlist check | Two heuristics: every mid-sentence capitalized word must exist in the pack vocabulary (or the question, for refusals), and "worked at X" must name an employer, freelance client or product. A defamation word check (fired, stole, korupsi, ...) was added | There is no reliable company-name detector without a model; these catch the benchmark failure modes (invented employers, people, accusations) |
 | 7 | One client-name message with the project's sector label | One generic message ("I can't share client names or private details. Projects for clients are described by sector on this site.") | The blocked answer does not say which project it was about |
-| 8 | Pack holds BM25 statistics | The pack holds text only; BM25 statistics and the vocabulary are built once per isolate at module load | Keeps the pack under its cap (200 KB until 2026-10-15, then 256 KiB for the 30 endorsed perspectives, section 15; about 197 KB before them with all 15 perspectives approved and the `production` chunk); near the cap, trim repo or post text first. Since 2026-10-12 project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS`); since 2026-10-14 one step each (featured was 2), which made room for the `production` chunk (posts were already short, so trimming them saved under 100 bytes); for the Data and ML pods (also 2026-10-14) no tagline in project chunks, one lead paragraph per post and pod-linked repositories only in their project chunk; for the `site-build` chunk (2026-10-15) project chunks keep only the stack keywords that carry a topic tag (`stackKeywords`) |
+| 8 | Pack holds BM25 statistics | Since 2026-10-19 the KV value holds the text pack plus its BM25 postings and vocabulary (built at build time, section 17); until then the pack held text only and every isolate indexed it at start | Keeps the pack under its cap (200 KB until 2026-10-15, then 256 KiB for the 30 endorsed perspectives, then 384 KiB text and 768 KiB stored once it moved to KV, section 15; about 197 KB before them with all 15 perspectives approved and the `production` chunk); near the cap, trim repo or post text first. Since 2026-10-12 project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS`); since 2026-10-14 one step each (featured was 2), which made room for the `production` chunk (posts were already short, so trimming them saved under 100 bytes); for the Data and ML pods (also 2026-10-14) no tagline in project chunks, one lead paragraph per post and pod-linked repositories only in their project chunk; for the `site-build` chunk (2026-10-15) project chunks keep only the stack keywords that carry a topic tag (`stackKeywords`) |
 | 9 | `profile.now.updatedAt` drives the staleness check | No schema change: the "now" chunk is built from `profile.currentRole` and `roof.availability`; the pack date is the newer of the last git change to `content/` and `dynamic-facts.asOf` | Avoids touching `content/site-content.json` while PR #27 is open |
 | 10 | Function integration tests with `wrangler pages dev` and a mocked `AI` binding | Vitest drives `createAskHandler` with in-memory KV, Analytics Engine and model mocks (`tests/ask/handler.test.ts`); the bundle was also smoke-tested once in workerd with `wrangler pages dev` and a mocked model (status, Turnstile, cookie, cache hit, SSE, Origin) | No wrangler dependency in CI, and the remote `AI` binding needs a Cloudflare token |
 | 11 | Rate limits by IP hash | Same, plus the optional `ASK_RL` rate limiting binding (commented out in `wrangler.toml`) | Pages support for `[[ratelimits]]` is still rolling out; the in-memory window is per isolate |

@@ -32,8 +32,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `functions/api/office/` (`index.ts`, `beat.ts`, `github.ts`): Agent Office routes (GET /api/office, POST beats and
   webhooks) forwarding to the hq-office Worker through the service binding OFFICE (`functions/_lib/office.ts`).
 - `functions/api/guides/[slug].ts`: GET and HEAD /api/guides/<slug>, a study guide PDF from R2 `GUIDES` with byte ranges, ETag and versioned caching (`functions/_lib/guides.ts`).
-- `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval.
-- `functions/_generated/`: gitignored: knowledge pack + safety lists from `scripts/build-knowledge.ts`.
+- `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval, the stored pack index (`pack-index.ts`) and the pack source (`pack-source.ts`: memory, KV, pin, fallback).
+- `functions/_generated/`: gitignored, from `scripts/build-knowledge.ts`: `pack.json` (the stored knowledge pack, uploaded to KV, never bundled), `fallback.json` (bundled fallback pack), `pack-meta.json` (the bundle's pin) and `safety.json`.
 - `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit, /api/stats and /api/guides (source of truth once deployed; no secrets).
 - `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
 - `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
@@ -84,6 +84,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
 - `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
 - `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+- `scripts/ask-pack.ts`: publishes the knowledge pack to Workers KV and flips, pins or rolls back its pointer (deploy.yml, rollback.yml; runbook section 17).
 - `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
 
 ### Fonts, brand and content

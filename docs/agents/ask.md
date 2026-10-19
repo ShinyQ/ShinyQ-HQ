@@ -22,14 +22,27 @@ Owner decision 2026-10-19 ([decision](../decisions/2026-10-19-ask-rover-voice.md
 
 ## Design and operations
 
-- Design: [`docs/superpowers/specs/2026-10-11-ask-hq-design.md`](../superpowers/specs/2026-10-11-ask-hq-design.md).
+- Design: [`docs/superpowers/specs/2026-10-11-ask-hq-design.md`](../superpowers/specs/2026-10-11-ask-hq-design.md); the
+  knowledge pack in Workers KV: [`2026-10-19-ask-kv-pack-and-rover-voice-design.md`](../superpowers/specs/2026-10-19-ask-kv-pack-and-rover-voice-design.md) section 4.
 - Operations (provisioning, deploy, kill switch, rotation, incidents): [`docs/ask-runbook.md`](../ask-runbook.md).
 
 ## Code
 
 - Function: `functions/api/ask.ts` and `functions/_lib/` (no new runtime dependencies, T12).
 - Client and protocol: `src/ask/`.
-- Pack builder: `scripts/build-knowledge.ts` (runs in `build` and `typecheck`), writing `functions/_generated/` (gitignored, never served).
+- Pack builder: `scripts/build-knowledge.ts` (runs in `build` and `typecheck`), writing `functions/_generated/` (gitignored, never served):
+  - `pack.json`: the stored pack (`StoredPack`: the text pack plus its precomputed BM25 index, `storePack` in `functions/_lib/pack-index.ts`), the Workers KV value; never imported by the Function;
+  - `fallback.json`: the fallback text pack (`FALLBACK_CHUNKS`: profile, now, contact, site-build, principles; its own `packVersion`), bundled and indexed only when served;
+  - `pack-meta.json`: the bundle's pin `{ schema, version, packDate, sha256, bytes }` of `pack.json`;
+  - `safety.json`: the output blocklist, always bundled, never in KV, so a KV write can never relax the output checks.
+- Pack source (`functions/_lib/pack-source.ts`), per request, never throwing:
+  - memory (the pointer is re-read at most every 60 s per isolate), then KV `pack:current` (`cacheTtl` 60) and `pack:v1:<version>` (`cacheTtl` 86,400);
+  - a value is served only when its SHA-256 equals the pointer's, its `schema` is `PACK_SCHEMA` and its shape holds (required chunks, index lengths); otherwise the bundle's pin (`pack-meta.json`), then the fallback pack;
+  - a failed KV read keeps the isolate's loaded pack (or the fallback) and stays off KV for 10 s; concurrent requests share one load; a rejected value is not read again by the isolate;
+  - `ASK_PACK_SOURCE = "bundle"` (or no `ASK_KV`) serves the fallback pack with no KV reads;
+  - the tier (`memory`, `kv`, `pin`, `fallback`) is Analytics Engine blob12; `pin` and `fallback` stay visible while reused from memory.
+- Publishing: `scripts/ask-pack.ts` (`publish`, `flip`, `pin`, `rollback`, `status`) over the KV REST API, run by `deploy.yml` and `rollback.yml` only (runbook section 17). Pack content never changes without a deploy.
+- Never import `pack.json` into the Function, and never read the pack from `getContent()` at runtime: the handler gets it from its `source` (`staticPackSource(pack)` in tests and evals).
 - Answers are a safe markdown subset: paragraphs, lists, bold, italic, inline code, allowlisted links.
   - Parsed by `src/ask/markdown.ts`, rendered as React elements by `src/hud/ask/AskMarkdown.tsx` (never HTML).
   - Links allowlisted by `src/ask/links.ts`.
@@ -47,7 +60,7 @@ All bindings and vars live in `wrangler.toml`.
 | Name | Kind | Notes |
 |---|---|---|
 | `AI` | binding | |
-| `ASK_KV` | binding | KV `shinyq-hq-ask` |
+| `ASK_KV` | binding | KV `shinyq-hq-ask`: answers, counters, breaker and the knowledge pack (`pack:` keys, written only by `scripts/ask-pack.ts`) |
 | `ASK_EVENTS` | binding | Analytics Engine `ask_events` |
 | `PERF_EVENTS` | binding | Analytics Engine `perf_events`, the RUM beacon, kill switch `RUM_ENABLED` |
 | `GUIDES` | binding | R2 `hq-study-guides` (private), the study guide PDFs behind `/api/guides/<slug>` ([content.md](content.md#study-guides), [runbook](../study-guides-runbook.md)); the bucket must exist before a deploy that carries the binding |
@@ -57,12 +70,15 @@ All bindings and vars live in `wrangler.toml`.
 | `ASK_BACKUP_MODELS` | var | Groq backup models, comma list, in order; default `qwen/qwen3.8-27b,openai/gpt-oss-120b` |
 | `ASK_GATEWAY_ID` | var | `shinyq-hq` |
 | `TURNSTILE_SITE_KEY`, `ASK_ALLOWED_ORIGINS`, `ASK_DAILY_CAP` | var | |
+| `ASK_PACK_SOURCE` | var | `kv` (default) or `bundle` (fallback pack only, no KV reads; KV incident kill switch) |
 
 - Secrets (`TURNSTILE_SECRET`, `ASK_IP_SALT_SEED`, `ASK_COOKIE_KEY`, and the optional `GROQ_API_KEY`) only via `wrangler pages secret put`, never in the repo.
 
 ## Deploy
 
 - Deploy from the repo root so `functions/` is bundled: `bun run build`, then `bunx wrangler pages deploy out --project-name=kurniadi --branch=main`.
+- `deploy.yml` publishes the pack (`ask-pack.ts publish --commit`) before `wrangler pages deploy`, flips `pack:current` right after it and flips back when the smoke check fails; `rollback.yml` flips to the rolled-back commit's pack (`pack:commit:<sha>`). A deploy by hand runs `bun scripts/ask-pack.ts publish --commit "$(git rev-parse HEAD)"` before the upload and `flip <version>` after it (runbook section 17).
+- The deploy token `CLOUDFLARE_API_TOKEN` needs Workers KV Storage: Edit (account) on top of its Pages and Workers permissions; without it the publish step fails with that hint.
 
 ## Content release checklist
 
@@ -196,7 +212,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
 - No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
 - Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
-- Logging: Analytics Engine `ask_events` blob10 is the answering model id and blob11 the failure trail (`model:reason > ...`, 200 characters at most); the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints a Models table.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most) and blob12 the pack tier; the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models and Pack tier tables.
 - Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks
@@ -229,7 +245,7 @@ Spec section 13.
 ### Retrieval and pack size
 
 - Questions about Kurniadi's written professional views are in scope: `isPerspectiveQuestion` in `functions/_lib/scope.ts` always retrieves the `principles` chunk.
-- The pack must stay under `PACK_MAX_BYTES` (256 KiB, measured and owner pre-approved, runbook section 15) with every draft approved.
+- The text pack must stay under `PACK_MAX_BYTES` (384 KiB) and the stored value under `PACK_VALUE_MAX_BYTES` (768 KiB) with every draft approved; the fallback text pack under `FALLBACK_MAX_BYTES` (24 KiB). Measured, owner-approved budgets (runbook section 15, decision 2026-10-19).
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
   - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
 - At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, so posts and projects still reach the context.
