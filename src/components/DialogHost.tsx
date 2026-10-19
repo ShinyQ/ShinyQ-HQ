@@ -25,13 +25,15 @@ const DIALOGS = /^(cv|paper|cert|guide)$/;
 export function DialogHost() {
   const [open, setOpen] = useState<Open>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const isOpen = useRef(false);
 
   useEffect(() => {
     const show = (next: HudCommand, from: Element | null) => {
       if (!DIALOGS.test(next.type)) return;
       // The palette closes as it runs "View CV", so its input is gone by then: focus falls back to the page.
       // A dialog that replaces an open one (sent from inside it) keeps the first dialog's opener.
-      if (!from?.closest("[aria-modal]")) opener.current = from instanceof HTMLElement && from !== document.body ? from : null;
+      if (!isOpen.current) opener.current = from instanceof HTMLElement && from !== document.body ? from : null;
+      isOpen.current = true;
       audio.play("click");
       setOpen(next as Open);
     };
@@ -50,6 +52,7 @@ export function DialogHost() {
 
   const close = useCallback(() => {
     setOpen(null);
+    isOpen.current = false;
     const target = opener.current;
     opener.current = null;
     requestAnimationFrame(() => {
