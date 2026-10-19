@@ -160,13 +160,13 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 - The 3D chunk gets its content as a serializable `ExperienceData` prop, so it never bundles `site-content.json` or zod.
 - Static versioned JSON, never the page's RSC payload (about 9 KB gzip less on every gated page):
   - The build writes `experienceDataFor(locale)` (`src/experience/gate-data.ts`, floor names localized from `messages`) to `/data/experience/{locale}.json` (`src/app/data/[...path]/route.ts`).
-  - The page passes only `experienceDataVersion(locale)`, a 12-character content hash; the gate fetches `/data/experience/{locale}.json?v=<hash>` (`loadExperienceData` in `src/experience/data-client.ts`: one fetch per locale and page load, forgotten after a failure), so the 1 h `/data/*` cache never outlives a deploy.
+  - The page passes only `experienceDataVersion(locale)`, a 12-character content hash (`shortHash` in `src/lib/content-hash.ts`, shared with the HUD index and room data versions); the gate fetches `/data/experience/{locale}.json?v=<hash>` (`loadExperienceData` in `src/experience/data-client.ts`: one fetch per locale and page load, forgotten after a failure), so the 1 h `/data/*` cache never outlives a deploy.
   - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate starts the chunk at the same time). `Experience` mounts only once the data is in.
   - A failed fetch is a crash ([Crash recovery](#crash-recovery)): one automatic retry on the next mount, then the static page with "Retry 3D" (which fetches again). The boot cover is released with the static tier (or by its 8 s timeout), never left up.
   - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
   - Dev routes (`/{locale}/dev/*`) still pass `experienceDataFor(locale)` to their prototype loaders directly.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
-- `roomData` carries the content hash of each floor's Glass Drawer file (its `?v=`, [hud-and-drawer.md](hud-and-drawer.md#builders-and-data)); the drawer content itself never rides in the page.
+- `roomData` carries the content hash of each floor's Glass Drawer file (its `?v=`, [hud-and-drawer.md](hud-and-drawer.md#builders-and-data)); like the rest of `ExperienceData` it rides in the experience JSON, never in the HTML, and the drawer content itself is never in either.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.
   - The L1 skills wall draws them as one merged quad mesh over the prebuilt logo atlas it shares with the certification wall (`floors/lobby/LogoQuads.tsx`, pure layout in `logoAtlas.ts`, built by `scripts/logo-atlas.ts`; see [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one draw call in total.

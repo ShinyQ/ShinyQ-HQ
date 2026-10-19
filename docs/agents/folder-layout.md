@@ -208,6 +208,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `src/lib/`: format (Intl dates), accent class maps, gpu-tier, url-sync, viewport.
 - `src/lib/boot-first.ts`: game-first load: inline head script, shouldBootFirst, releaseBootCover.
+- `src/lib/content-hash.ts`: `shortHash`, the 12-character `?v=` content hash of the build-time `/data/*` files (HUD index, 3D page data, room data per floor); server only.
 - `src/lib/perf-marks.ts`: User Timing marks of the game-first timeline (hq:boot-release, hq:first-frame, hq:intro-start, hq:intro-end, hq:explore, hq:first-drawer).
 - `src/lib/visits/`: public visit stats display (S2).
   - contract.ts (re-exports S1's StatsSnapshotV1, validator and fixtures).
