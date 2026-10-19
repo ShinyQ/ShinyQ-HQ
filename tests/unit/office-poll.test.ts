@@ -37,7 +37,7 @@ describe("createOfficePoller", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe(OFFICE_PATH);
-    expect(calls[0].init).toEqual({ headers: { accept: "application/json" }, credentials: "omit" });
+    expect(calls[0].init).toEqual({ headers: { accept: "application/json" }, credentials: "omit", signal: expect.any(AbortSignal) });
     expect(poller.feed()).toMatchObject({ status: "ready", fetchedAt: T0 });
     expect(seen.map((f) => f.status)).toEqual(["loading", "ready"]);
     await vi.advanceTimersByTimeAsync(POLL.activeMs);
@@ -131,5 +131,99 @@ describe("createOfficePoller", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(calls).toHaveLength(2);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("createOfficePoller robustness", () => {
+  /** A fetch stand-in whose calls stay pending until the test resolves them; it rejects when its signal aborts. */
+  function deferredFetch() {
+    const pending: { resolve: (r: Reply) => void; signal?: AbortSignal | null }[] = [];
+    const fetcher = vi.fn(
+      (_url: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+          pending.push({
+            signal: init?.signal,
+            resolve: (r) => resolve({ status: r.status, json: async () => r.body ?? null } as unknown as Response),
+          });
+        }),
+    );
+    return { fetcher: fetcher as unknown as typeof fetch, pending };
+  }
+
+  it("drops a result that lands after stop() and keeps the newer snapshot across stop() then start()", async () => {
+    const pending: ((r: Reply) => void)[] = [];
+    // This stand-in ignores the abort signal, so a late answer from the first request really lands.
+    const fetcher = vi.fn(
+      () => new Promise<Response>((resolve) => pending.push((r) => resolve({ status: r.status, json: async () => r.body ?? null } as unknown as Response))),
+    ) as unknown as typeof fetch;
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const listener = vi.fn();
+    poller.subscribe(listener);
+    poller.stop();
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pending).toHaveLength(2);
+    const older = statesA(T0 - 5_000);
+    const newer = asleep(T0);
+    pending[1]({ status: 200, body: newer });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().snapshot).toEqual(newer);
+    expect(listener).toHaveBeenCalledTimes(1);
+    pending[0]({ status: 200, body: older });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().snapshot).toEqual(newer);
+    expect(listener).toHaveBeenCalledTimes(1);
+    poller.stop();
+    listener.mockClear();
+    await vi.advanceTimersByTimeAsync(POLL.restingMs * 2);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("stop() aborts the request in flight and no listener fires after it", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    const listener = vi.fn();
+    poller.subscribe(listener);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    listener.mockClear();
+    poller.stop();
+    expect(pending[0].signal?.aborted).toBe(true);
+    pending[0].resolve({ status: 200, body: statesA(T0) });
+    await vi.advanceTimersByTimeAsync(POLL.restingMs);
+    expect(listener).not.toHaveBeenCalled();
+    expect(poller.feed().status).toBe("loading");
+  });
+
+  it("aborts a hung request after 10 s and follows the error path", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 1);
+    expect(poller.feed().status).toBe("loading");
+    await vi.advanceTimersByTimeAsync(1);
+    expect(pending[0].signal?.aborted).toBe(true);
+    expect(poller.feed().status).toBe("offline");
+    await vi.advanceTimersByTimeAsync(POLL.restingMs);
+    expect(pending).toHaveLength(2);
+  });
+
+  it("keeps polling when a listener throws", async () => {
+    const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
+    const poller = createOfficePoller({ fetcher });
+    const after = vi.fn();
+    poller.subscribe(() => {
+      throw new Error("listener failed");
+    });
+    poller.subscribe(after);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().status).toBe("ready");
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(calls).toHaveLength(2);
+    expect(after).toHaveBeenCalledTimes(3);
   });
 });

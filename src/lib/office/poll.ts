@@ -18,7 +18,7 @@ export interface OfficeFeed {
 export interface OfficePoller {
   /** Begin polling now (idempotent). */
   start(): void;
-  /** Stop timers (keeps the last feed). */
+  /** Stop timers and abort the request in flight (keeps the last feed). */
   stop(): void;
   /** Visitor input: resets the 10 min idle stop, restarts if it had stopped for idleness. */
   touch(): void;
@@ -59,29 +59,46 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   let lastTouch = 0;
   let timer: unknown = null;
   let generation = 0;
+  let inflight: AbortController | null = null;
 
   const set = (next: OfficeFeed) => {
     current = next;
-    for (const listener of listeners) listener(next);
+    for (const listener of listeners) {
+      try {
+        listener(next);
+      } catch {
+        // A failing subscriber must not stop the polling loop.
+      }
+    }
   };
   const clear = () => {
     if (timer !== null) clearTimer(timer);
     timer = null;
   };
 
-  async function load(): Promise<void> {
+  /** One request; its result is dropped when stop() or a restart changed the generation while it was in flight. */
+  async function load(gen: number): Promise<void> {
     if (current.status === "idle") set({ ...current, status: "loading" });
+    const controller = new AbortController();
+    inflight = controller;
+    // A hung request becomes an error after activeMs, so the keep-last then offline rule still applies.
+    const abortTimer = setTimer(() => controller.abort(), POLL.activeMs);
     try {
-      const res = await fetcher(OFFICE_PATH, { headers: { accept: "application/json" }, credentials: "omit" });
+      const res = await fetcher(OFFICE_PATH, { headers: { accept: "application/json" }, credentials: "omit", signal: controller.signal });
       if (res.status !== 200) throw new Error(`GET ${OFFICE_PATH}: ${res.status}`);
       const parsed = parseOfficeResponse(await res.json());
       if (!parsed) throw new Error(`GET ${OFFICE_PATH}: invalid body`);
+      if (gen !== generation) return;
       set(parsed.enabled ? { status: "ready", snapshot: parsed, fetchedAt: now() } : { status: "disabled", snapshot: null, fetchedAt: now() });
     } catch {
+      if (gen !== generation) return;
       // The last good snapshot stays "ready" for keepLastMs, then the feed reports offline (it keeps the snapshot
       // for the last known GitHub events).
       const keep = current.snapshot !== null && now() - current.fetchedAt < POLL.keepLastMs;
       set({ ...current, status: keep ? "ready" : "offline" });
+    } finally {
+      clearTimer(abortTimer);
+      if (inflight === controller) inflight = null;
     }
   }
 
@@ -93,7 +110,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
       idleStopped = true;
       return;
     }
-    if (visible()) await load();
+    if (visible()) await load(gen);
     if (!running || gen !== generation) return;
     timer = setTimer(() => void tick(gen), pollInterval(current));
   }
@@ -112,6 +129,8 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
       idleStopped = false;
       generation += 1;
       clear();
+      inflight?.abort();
+      inflight = null;
     },
     touch() {
       lastTouch = now();
