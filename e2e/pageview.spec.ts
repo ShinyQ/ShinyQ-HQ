@@ -104,7 +104,8 @@ test("case study keeps its anchors and table of contents", async ({ page }) => {
 
 test("Home keeps the deep-link anchors used by the room catalog", async ({ page }) => {
   await openPage(page, staticTier("/en"));
-  for (const id of ["stats", "skills", "certifications"]) await expect(page.locator(`#${id}`)).toBeAttached();
+  // `office`: the Agent Office room's Classic page (`/#office`, src/experience/missions/rooms.ts).
+  for (const id of ["stats", "office", "skills", "certifications"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await openPage(page, staticTier("/en/contact"));
   for (const id of ["cv", "channels"]) await expect(page.locator(`#${id}`)).toBeAttached();
 });

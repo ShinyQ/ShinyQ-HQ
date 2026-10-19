@@ -5,7 +5,7 @@ import type { Locale } from "@/content/locales";
 import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
 import { createOfficePoller, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
 import type { OfficeGithubStatus } from "@/lib/office/protocol";
-import { fill, type OfficeCardLabels } from "./labels";
+import { fill, OFFICE_RESERVE, type OfficeCardLabels } from "./labels";
 
 export interface OfficePanelProps {
   locale: Locale;
@@ -18,6 +18,8 @@ export interface OfficePanelProps {
 
 const GITHUB_SHOWN = 4;
 const COUNTS: readonly (keyof OfficeCounts)[] = ["active", "thinking", "waiting", "asleep"];
+/** Hairline rules of the counts strip: 2 by 2 below `md` (the Indonesian labels do not fit four across), one row from `md`. */
+const COUNT_RULES = ["", "border-l pl-4", "border-t md:border-t-0 md:border-l md:pl-4", "border-l border-t pl-4 md:border-t-0"];
 const ICON: Record<OfficeGithubStatus, string> = { running: "\u25cc", success: "\u2713", failure: "\u2715", merged: "\u2713", opened: "\u25cb", pushed: "\u2191" };
 const ICON_TONE: Record<OfficeGithubStatus, string> = {
   running: "text-cyan",
@@ -91,7 +93,8 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
             : labels.live;
 
   return (
-    <div ref={root} className="min-h-80">
+    // The busy card's height until the first answer; then the card's own height.
+    <div ref={root} className={snap || feed.status === "offline" ? undefined : OFFICE_RESERVE}>
       <p data-testid="office-live" className="pv-date flex items-center gap-2">
         <Dot tone={live ? STATE_TONE.done : STATE_TONE.asleep} />
         {/* Only the state is announced: the minute clock would re-announce the line on every poll. */}
@@ -100,9 +103,9 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
       </p>
       {snap && (
         <>
-          <dl className="mt-6 grid grid-cols-4 border-y border-line">
+          <dl className="mt-6 grid grid-cols-2 border-y border-line md:grid-cols-4">
             {COUNTS.map((key, i) => (
-              <div key={key} data-testid={`office-count-${key}`} className={`flex flex-col-reverse gap-2.5 py-4 ${i > 0 ? "border-l border-line pl-4" : ""}`}>
+              <div key={key} data-testid={`office-count-${key}`} className={`flex flex-col-reverse gap-2.5 border-line py-4 ${COUNT_RULES[i]}`}>
                 <dt className="pv-data">{labels.counts[key]}</dt>
                 <dd className="pv-num text-[28px] leading-none">{counts[key]}</dd>
               </div>

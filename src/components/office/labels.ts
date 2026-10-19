@@ -29,3 +29,9 @@ export interface OfficeCardLabels {
 export function fill(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
 }
+
+/**
+ * The height a busy card takes (five desks, four GitHub rows; measured at 360 to 1920 px, EN and ID), held while the
+ * card loads so the first snapshot never pushes the sections below down (CLS). A quieter snapshot is shorter.
+ */
+export const OFFICE_RESERVE = "min-h-[1138px] md:min-h-[945px] lg:min-h-[965px] xl:min-h-[945px]";

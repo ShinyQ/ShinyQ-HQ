@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import type { Locale } from "@/content/locales";
 import type { OfficeFeedStatus } from "@/lib/office/poll";
-import type { OfficeCardLabels } from "./labels";
+import { OFFICE_RESERVE, type OfficeCardLabels } from "./labels";
 import type { OfficePanelProps } from "./OfficePanel";
 
 const loadPanel = () => import("./OfficePanel").then((m) => m.OfficePanel);
@@ -50,7 +50,7 @@ export function OfficeLazy({ locale, labels }: { locale: Locale; labels: OfficeC
   }, []);
   if (!Panel)
     return (
-      <p ref={anchor} className="pv-data min-h-80 text-ink-3">
+      <p ref={anchor} className={`pv-data text-ink-3 ${OFFICE_RESERVE}`}>
         {labels.loading}
       </p>
     );

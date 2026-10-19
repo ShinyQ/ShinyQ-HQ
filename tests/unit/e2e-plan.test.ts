@@ -313,18 +313,24 @@ describe("specsForChanges", () => {
       "src/experience/floors/lobby/office/OfficeMount.tsx",
       "src/experience/floors/lobby/office/OfficeBody.tsx",
       "src/experience/floors/lobby/office/body.ts",
-      "src/lib/office/poll.ts",
-      "src/lib/office/model.ts",
-      "src/lib/office/protocol.ts",
-      "src/lib/office/fixtures.ts",
       "e2e/office-fixtures.ts",
     ])
       expect(specsForChanges([f]).specs, f).toEqual(office);
+    // The shared modules feed the Classic card too.
+    for (const f of ["src/lib/office/poll.ts", "src/lib/office/model.ts", "src/lib/office/protocol.ts", "src/lib/office/fixtures.ts"])
+      expect(specsForChanges([f]).specs, f).toEqual(["experience", "highlights", "hud-corners", "interact", "office", "office-classic", "onboarding"]);
     // The chips host keeps the HUD folder rule's specs on top.
     expect(specsForChanges(["src/hud/OfficeLayer.tsx"]).specs).toEqual(["drawer-solid", "experience", "highlights", "hud", "hud-corners", "interact", "missions", "office", "onboarding"]);
     // A spec file runs itself only (SPEC_FILE in specsForChanges).
     expect(specsForChanges(["e2e/office.spec.ts"]).specs).toEqual(["office"]);
     expect(specsForChanges(["scripts/office-shots.ts"]).specs).toEqual([]);
+  });
+
+  it("runs the Classic office spec for the card", () => {
+    expect(specsForChanges(["src/components/office/OfficePanel.tsx"]).specs).toEqual(["office-classic", "pageview"]);
+    expect(specsForChanges(["src/components/office/OfficeLazy.tsx", "src/components/office/OfficeSection.tsx", "src/components/office/labels.ts"]).specs).toEqual(["office-classic", "pageview"]);
+    expect(specsForChanges(["src/app/[locale]/page.tsx"]).specs).toContain("office-classic");
+    expect(specsForChanges(["e2e/office-classic.spec.ts"]).specs).toEqual(["office-classic"]);
   });
 
   it("runs a changed spec itself and skips docs and unit tests", () => {

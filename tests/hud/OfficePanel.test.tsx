@@ -4,7 +4,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OfficeLazy, OfficeShell } from "@/components/office/OfficeLazy";
 import { OfficePanel } from "@/components/office/OfficePanel";
-import type { OfficeCardLabels } from "@/components/office/labels";
+import { OFFICE_RESERVE, type OfficeCardLabels } from "@/components/office/labels";
 import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficePoller } from "@/lib/office/poll";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
@@ -109,6 +109,29 @@ describe("OfficePanel", () => {
     expect(screen.getByTestId("office-privacy")).toBeTruthy();
   });
 
+  it("holds the busy card's height until the first answer, then takes its own", () => {
+    const { poller, push } = fakePoller({ status: "loading", snapshot: null, fetchedAt: 0 });
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const root = screen.getByTestId("office-live").parentElement!;
+    expect(root.className).toBe(OFFICE_RESERVE);
+    push(ready(OFFICE_FIXTURES.off as OfficeSnapshotV1));
+    expect(root.className).toBe("");
+    push({ status: "offline", snapshot: null, fetchedAt: 0 });
+    expect(root.className).toBe("");
+  });
+
+  it("rules the counts 2 by 2 below md and in one row from md", () => {
+    const { poller } = fakePoller(ready(OFFICE_FIXTURES.busy as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(screen.getByTestId("office-count-active").parentElement!.className).toContain("grid-cols-2 ");
+    expect(screen.getByTestId("office-count-active").parentElement!.className).toContain("md:grid-cols-4");
+    const rules = ["active", "thinking", "waiting", "asleep"].map((k) => screen.getByTestId(`office-count-${k}`).className.split(" "));
+    expect(rules[1]).toEqual(expect.arrayContaining(["border-l", "pl-4"]));
+    expect(rules[2]).toEqual(expect.arrayContaining(["border-t", "md:border-t-0", "md:border-l", "md:pl-4"]));
+    expect(rules[2]).not.toContain("border-l");
+    expect(rules[3]).toEqual(expect.arrayContaining(["border-l", "border-t", "md:border-t-0"]));
+  });
+
   it("stops the poller on unmount", () => {
     const { poller, calls } = fakePoller(ready(OFFICE_FIXTURES.quiet as OfficeSnapshotV1));
     const { unmount } = render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
@@ -177,7 +200,7 @@ describe("OfficeLazy", () => {
     const section = screen.getByTestId("office-section");
     expect(section).toBeVisible();
     expect(section).toHaveAttribute("data-status", "idle");
-    expect(screen.getByText(labels.loading)).toBeTruthy();
+    expect(screen.getByText(labels.loading).className).toContain(OFFICE_RESERVE);
     expect(fetcher).not.toHaveBeenCalled();
     io.fire(true);
     await waitFor(() => expect(screen.getByTestId("office-privacy")).toBeTruthy());

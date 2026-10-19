@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
 import { CvButton } from "@/components/cv/CvButton";
 import { PostList } from "@/components/LibraryBlocks";
+import { OfficeSection } from "@/components/office/OfficeSection";
 import { FeaturedProject } from "@/components/page/Featured";
 import { HomeHero } from "@/components/page/Hero";
 import { SectionSplit, SectionWide } from "@/components/page/Layout";
@@ -111,6 +112,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           </CvButton>
         </div>
       </SectionSplit>
+
+      <OfficeSection locale={locale} />
 
       <SectionSplit id="journey" title={t("journeyTitle")} intro={tj("intro")} more={{ href: "/journey", label: t("fullJourney") }}>
         <ul className="pv-rows pv-rows-closed">
