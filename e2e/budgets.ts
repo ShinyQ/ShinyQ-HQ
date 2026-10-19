@@ -23,13 +23,14 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 
 /**
  * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB. `failAt` gates the critical
- * path before the first frame (`?prefetch=off`), one cap for both tiers set by the larger, full: 461.6 KB (measured
- * 461.0 KB full, 445.3 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
+ * path before the first frame (`?prefetch=off`), one cap for both tiers set by the larger, full: 462.2 KB (measured
+ * 461.6 KB full, 445.9 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks) has its own
- * cap per tier: full 490.6 KB (measured 490.0 KB), lite 474.8 KB (measured 474.2 KB). Owner budget rule (decisions
+ * cap per tier: full 491.1 KB (measured 490.5 KB), lite 475.4 KB (measured 474.8 KB). Owner budget rule (decisions
  * 2026-10-16 and 2026-10-19, relayed for the L1 Agent Office 2026-10-19/20): each cap is the measured value plus about
- * 0.6 KB, re-set when the office merged main after the floor layouts left the Classic bundle (measured at that merge).
+ * 0.6 KB, re-set when the office merged main after the floor layouts left the Classic bundle and again for the office's look
+ * offset and ghost outline rule on the main path (2026-10-20).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
@@ -38,7 +39,7 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * when an office drawer opens) is measured after the scene chunk and held to the `officeBody` sanity cap.
  */
 export const BYTES_3D_BUDGET = {
-  failAt: Math.round(461.6 * 1024),
+  failAt: Math.round(462.2 * 1024),
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
@@ -48,7 +49,7 @@ export const BYTES_3D_BUDGET = {
   officeBody: 6 * 1024,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
-  session: { lite: Math.round(474.8 * 1024), full: Math.round(490.6 * 1024) },
+  session: { lite: Math.round(475.4 * 1024), full: Math.round(491.1 * 1024) },
 } as const;
 
 /**

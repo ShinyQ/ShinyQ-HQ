@@ -15,7 +15,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 461.6 KB gzip (measured full 461.0 KB, lite 445.3 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 462.2 KB gzip (measured full 461.6 KB, lite 445.9 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
@@ -23,8 +23,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
 | L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 14,290 B of 14,336 B) | `e2e/budgets.ts` |
 | L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5,996 B of 6,144 B) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 490.6 KB (measured 490.0 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 474.8 KB (measured 474.2 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 491.1 KB (measured 490.5 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 475.4 KB (measured 474.8 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -81,13 +81,13 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 
 #### `bytes-3d`
 
-- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 461.6 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 461.0 KB, lite 445.3 KB (the full tier adds the lazy `Effects` chunk).
+- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 462.2 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
+  - It gates the critical path before the first frame. Measured: full 461.6 KB, lite 445.9 KB (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 490.6 KB: measured 490.0 KB (main 461.0 KB plus floor chunks 28.9 KB).
-  - lite 474.8 KB: measured 474.2 KB (main 445.3 KB plus floor chunks 28.9 KB).
+  - full 491.1 KB: measured 490.5 KB (main 461.6 KB plus floor chunks 28.9 KB).
+  - lite 475.4 KB: measured 474.8 KB (main 445.9 KB plus floor chunks 28.9 KB).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, and the floor layouts out of the Classic bundle; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 11.7 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
