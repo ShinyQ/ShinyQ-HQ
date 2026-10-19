@@ -6,7 +6,7 @@
 
 export const FLOORS = ["L1", "L2", "L3", "L4", "RF", "B1"] as const;
 export type Floor = (typeof FLOORS)[number];
-export type PerfKey = "bytes" | "boot" | "hover" | "boost" | "memory" | `floor:${Floor}` | `ride:${Floor}`;
+export type PerfKey = "bytes" | "boot" | "hover" | "boost" | "memory" | "guides" | `floor:${Floor}` | `ride:${Floor}`;
 
 /** Every key, in canonical (sorted) order. */
 export const ALL_PERF_KEYS: readonly PerfKey[] = [
@@ -14,6 +14,7 @@ export const ALL_PERF_KEYS: readonly PerfKey[] = [
   "boot",
   "bytes",
   ...FLOORS.map((f) => `floor:${f}` as const),
+  "guides",
   "hover",
   "memory",
   ...FLOORS.map((f) => `ride:${f}` as const),
@@ -33,6 +34,7 @@ function fragment(key: PerfKey): string {
     hover: "hovering a target",
     boost: "boosting stays",
     memory: "round trips leave renderer memory",
+    guides: "the study guide reader stays",
   };
   return fixed[key];
 }
@@ -95,6 +97,17 @@ const SHARED_PERF_RULES: [RegExp, readonly PerfKey[]][] = [
 /** The keys of the first SHARED_PERF_RULES or PERF_RULES rule that names a shared module, or null when none does. */
 export function sharedRuleKeys(file: string): readonly PerfKey[] | null {
   return (SHARED_PERF_RULES.find(([re]) => re.test(file)) ?? PERF_RULES.find(([re]) => re.test(file)))?.[1] ?? null;
+}
+
+/**
+ * Page code behind the study guide reader gate (`e2e/perf/guide-reader.spec.ts`, key `guides`): the reader, pdf.js
+ * loading and the dialogs and page that open it. Not 3D code, so scripts/ci-plan.ts adds the key on its own.
+ */
+const GUIDE_READER_FILES = /^src\/components\/guides\/|^src\/content\/guides\.ts$|^src\/components\/(DialogHost\.tsx|dialog-loaders\.ts)$|^src\/app\/\[locale\]\/library\/page\.tsx$/;
+
+/** The non-3D perf keys a page file moves (`guides` for the study guide reader), [] for any other file. */
+export function pagePerfKeys(file: string): PerfKey[] {
+  return GUIDE_READER_FILES.test(file) ? ["guides"] : [];
 }
 
 /** Playwright `--grep` for the keys; `""` when the keys are every key (run the whole lane). Throws on no keys. */

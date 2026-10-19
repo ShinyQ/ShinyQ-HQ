@@ -81,4 +81,8 @@ describe("Content-Security-Policy (public/_headers)", () => {
     expect(cspOf(papers)).toEqual(["frame-ancestors 'none'"]);
     expect(papers).not.toContain("! X-Frame-Options");
   });
+
+  it("has no rule for Pages Function paths, which _headers never reaches (the Functions set their own headers)", () => {
+    expect(headers.split(/\r?\n/).filter((line) => /^\/api\//.test(line))).toEqual([]);
+  });
 });

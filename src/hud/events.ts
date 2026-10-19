@@ -24,6 +24,8 @@ export type HudCommand =
   | { type: "paper"; paper: PaperPreview; read?: boolean }
   /** Certification preview card (issuer, dates, credential ID, "Open credential"), see `DialogHost`. */
   | { type: "cert"; cert: CertView }
+  /** In-site study guide reader (pdf.js over `/api/guides/<slug>`), see `DialogHost`; may replace an open cert card. */
+  | { type: "guide"; slug: string }
   /** Page View to the 3D tower (the landing's "Enter the 3D HQ"), handled by `ExperienceGate` like Back to 3D. */
   | { type: "enter3d" };
 

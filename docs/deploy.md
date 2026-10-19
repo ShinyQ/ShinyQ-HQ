@@ -140,7 +140,7 @@ Moving from repository secrets: set each one in the environment first (an enviro
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) and R2 access for the `GUIDES` binding (section 19) |
 | `CF_EVAL_TOKEN` | Yes, for evals | Workers AI Read, AI Gateway Read, Account Analytics Read: Ask evals and the content-gap report; also the hq-stats Worker's `WA_TOKEN` until `CF_STATS_TOKEN` exists |
 | `CF_STATS_TOKEN` | Recommended | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
@@ -256,6 +256,7 @@ Files in `public/` are copied to `out/` by `next build`, and Cloudflare Pages re
 - Caching of unhashed files: `/brand/*` one week; `/fonts/*` one year `immutable` (troika cuts are content-hashed, Task 4 of round 5 P1); `/tech/*` one week plus `stale-while-revalidate` one day; `/media/*`, `/floors/*`, `/logos/*` one day plus `stale-while-revalidate` one week; `/cv/*` one hour and `/papers/*` one day, both `must-revalidate` so a replaced CV or paper never shows stale; `/og/*` one day. Two rules must never both set `Cache-Control` for one file (Cloudflare joins the values; `tests/unit/cache-headers.test.ts`). `scripts/deploy-smoke.ts` checks one file per prefix after each deploy. Splats only work at the end of a path, so per-route images such as `/en/opengraph-image` keep the default caching.
 - `/`: `Link` hreflang alternates (en, id, x-default).
 - HTML keeps the Cloudflare default (revalidated on every request), so a new deploy is visible at once.
+- Pages Functions (`/api/*`): Cloudflare Pages never applies `_headers` to a Function's response, not even `/*`, so each Function sets its own headers. `/api/guides/<slug>` sets `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff` and its `Cache-Control` in `functions/_lib/guides.ts` (`tests/unit/guides-function.test.ts`); `_headers` has no rule for it.
 
 `public/_redirects`:
 
@@ -287,6 +288,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | KV | `STATS_KV` | Public visit stats: ledger of finalized days `stats:days:v1` and snapshot `stats:v1` |
 | Worker | `hq-stats` | Public visit stats Cron Worker (`17 */2 * * *` UTC, every 2 hours, no route), `workers/stats/` |
 | Web Analytics | `kurniadi.pages.dev` (manual), `kurniadi.dev` (automatic) | Page views |
+| R2 | `hq-study-guides` | Study guide PDFs (private, no `r2.dev` URL, no custom domain), binding `GUIDES`, served by `/api/guides/<slug>` (section 19) |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
 | API tokens | `shinyq-hq Pages deploy` (`CLOUDFLARE_API_TOKEN`), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | All expire 2027-01-09; rotate before then (`docs/ask-runbook.md`) |
@@ -440,3 +442,12 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 - `GET /api/office` answers with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).
 - First setup, webhooks, key rotation and the kill switch (`OFFICE_ENABLED`): `workers/office/README.md`.
+
+## 19. Study guides (R2)
+
+The study guide reader reads PDFs from the private R2 bucket `hq-study-guides` through the Pages Function `functions/api/guides/[slug].ts`, bound as `GUIDES` in `wrangler.toml` beside the other bindings. Uploads, replacements and checks: [`study-guides-runbook.md`](study-guides-runbook.md).
+
+- The bucket must exist before any deploy that carries the binding: Pages validates the bindings in `wrangler.toml` when `wrangler pages deploy` uploads, and a missing bucket fails the deploy. It exists (created 2026-10-19, with the four guides uploaded), so this matters only for a new account or project.
+- The deploy token (`CLOUDFLARE_API_TOKEN`) needs R2 access in this account (Account, Workers R2 Storage; Read should be enough, since CI only binds the bucket and never writes to it: uploads are done by the owner's `wrangler login`). Owner action: none if the token already has it; otherwise add the permission in My Profile > API Tokens > edit "shinyq-hq Pages deploy" (the token value stays the same) and rerun `gh workflow run deploy.yml --ref main`.
+- Keep the bucket private: never turn on its `r2.dev` URL or attach a custom domain. The Function is the only way in.
+- Check after a deploy: `curl -sI "https://kurniadi.pages.dev/api/guides/gh-600?v=<version>"` answers 200 with `application/pdf` and `accept-ranges: bytes` (the version is in `content/study-guides.json`). A 404 for every guide with "GUIDES binding missing" in the Function log means the binding did not apply.

@@ -163,6 +163,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Shader programs per floor | `e2e/perf/baseline.json` plus 2 |
 | Memory gates | zero growth in geometries, textures and programs; under 2 MB JS heap growth |
 | Classic site (Lighthouse CI) | LCP 2 s, CLS 0.01, TBT 200 ms; JS 240 KB, CSS 20,480 B, fonts 60 KB, HTML 82 KB |
+| Study guide reader (on the Read click) | chunk 160 KB, worker 400 KB gzip |
 | Ask knowledge pack | `PACK_MAX_BYTES` 256 KiB |
 | README hero GIF | under 6 MB |
 
@@ -175,7 +176,7 @@ Path by path: [folder-layout.md](docs/agents/folder-layout.md).
 | `content/` | Public dataset `site-content.json`, blog MDX, Ask knowledge files, safety lists, generated facts |
 | `docs/` | Feature and content guides, deploy and Ask runbooks, `agents/` rules, `decisions/` (one file per owner decision), `superpowers/` plans and specs, design mockups, README media |
 | `e2e/` | Playwright specs, helpers (`hq.ts`), budgets, the perf lane (`e2e/perf/`) |
-| `functions/` | Cloudflare Pages Functions: `/api/ask`, `/api/rum`, `/api/visit`, `/api/stats` |
+| `functions/` | Cloudflare Pages Functions: `/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/api/guides` |
 | `messages/` | UI strings, `en.json` and `id.json` |
 | `public/` | Static assets: brand, fonts, tech and company logos, media, CV, papers, floor thumbnails, OG inputs, `_headers`, `_redirects` |
 | `scripts/` | Build steps, content and media tools, e2e planning, CI and deploy helpers |
@@ -213,7 +214,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [decisions.md](docs/decisions.md) | Dated owner decisions log: one file per decision in `docs/decisions/` |
 
 Other docs: [`docs/features.md`](docs/features.md), [`docs/content.md`](docs/content.md),
-[`docs/deploy.md`](docs/deploy.md), [`docs/ask-runbook.md`](docs/ask-runbook.md).
+[`docs/deploy.md`](docs/deploy.md), [`docs/ask-runbook.md`](docs/ask-runbook.md), [`docs/study-guides-runbook.md`](docs/study-guides-runbook.md).
 
 ## Next.js version notes
 

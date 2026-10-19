@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ALL_BUT_MEMORY, ALL_PERF_KEYS, FLOORS, perfGrep, perfKeysFor, type PerfKey } from "../../scripts/perf-plan";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, FLOORS, pagePerfKeys, perfGrep, perfKeysFor, type PerfKey } from "../../scripts/perf-plan";
 
 const TIERS = ["lite", "full"];
 const read = (spec: string) => readFileSync(`e2e/perf/${spec}.spec.ts`, "utf8");
@@ -19,6 +19,7 @@ function perfTitles(): string[] {
   }
   for (const t of templates(read("bytes-3d"))) for (const tier of TIERS) titles.push(t.replace("${tier}", tier).replace(/\$\{[^}]+\}/g, "450"));
   titles.push(...templates(read("memory-full")));
+  titles.push(...templates(read("guide-reader")));
   expect(titles.every((t) => !t.includes("${"))).toBe(true);
   return titles;
 }
@@ -88,6 +89,16 @@ describe("perfKeysFor", () => {
     expect(perfKeysFor(["src/experience/rover/boost.ts"])).toEqual(["boost", "boot", "bytes"]);
     expect(perfKeysFor(["src/experience/floors/lobby/kiosk.ts"])).toEqual(["boot", "bytes", "floor:L1", "hover"]);
     expect(perfKeysFor(["src/experience/floors/filterHash.ts"])).toEqual(["bytes", "floor:L3", "floor:L4"]);
+  });
+});
+
+describe("pagePerfKeys", () => {
+  it("selects the study guide reader gate for the reader, its loaders and the page that hosts the shelf", () => {
+    for (const file of ["src/components/guides/GuideReader.tsx", "src/components/guides/pdf.ts", "src/content/guides.ts", "src/components/DialogHost.tsx", "src/components/dialog-loaders.ts", "src/app/[locale]/library/page.tsx"]) {
+      expect(pagePerfKeys(file), file).toEqual(["guides"]);
+    }
+    for (const file of ["src/components/page/Hero.tsx", "content/study-guides.json", "src/components/certs/CertDialog.tsx"]) expect(pagePerfKeys(file), file).toEqual([]);
+    expect(new RegExp(perfGrep(["guides"])).test("the study guide reader stays under its chunk and worker caps, off the page's initial load")).toBe(true);
   });
 });
 

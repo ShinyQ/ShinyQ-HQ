@@ -2,9 +2,10 @@ import raw from "../../content/site-content.json";
 import factsRaw from "../../content/generated/dynamic-facts.json";
 import perspectivesRaw from "../../content/perspectives.json";
 import siteBuildRaw from "../../content/ask/site-build.json";
+import studyGuidesRaw from "../../content/study-guides.json";
 import { DynamicFactsSchema, type DynamicFacts } from "./dynamic-facts";
 import { publishedPerspectives } from "./perspectives";
-import { PerspectivesFileSchema, SiteBuildSchema, SiteContentSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteBuild, type SiteContent, type Stat, type Wing } from "./schema";
+import { PerspectivesFileSchema, SiteBuildSchema, SiteContentSchema, StudyGuidesFileSchema, type Locale, type Perspective, type PerspectivesFile, type LocalizedText, type SiteBuild, type SiteContent, type Stat, type StudyGuidesFile, type Wing } from "./schema";
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 import { buildTechIndex, type TechIndex } from "./tech-index";
 import { buildTopicIndex, type TopicIndex } from "./topic-index";
@@ -49,6 +50,14 @@ let cachedSiteBuild: SiteBuild | undefined;
 export function getSiteBuild(): SiteBuild {
   cachedSiteBuild ??= SiteBuildSchema.parse(siteBuildRaw);
   return cachedSiteBuild;
+}
+
+let cachedStudyGuides: StudyGuidesFile | undefined;
+
+/** The study guides file (content/study-guides.json), parsed once. Invalid data throws, which fails `next build`. */
+export function getStudyGuides(): StudyGuidesFile {
+  cachedStudyGuides ??= StudyGuidesFileSchema.parse(studyGuidesRaw);
+  return cachedStudyGuides;
 }
 
 /** Stats whose value comes from the live facts, so the stats ring, Page View and Ask agree. */

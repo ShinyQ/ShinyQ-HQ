@@ -23,6 +23,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 468.3 KB, about 1.7 KB headroom) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 446.4 KB (measured 444.6 KB, about 1.8 KB headroom) | `e2e/budgets.ts` |
+| Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -67,6 +68,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
+| `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
 
 #### `bytes-3d`
 
@@ -80,6 +82,16 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
+
+#### Study guide reader
+
+- `e2e/perf/guide-reader.spec.ts` (perf key `guides`) opens `/en/library?tier=static#guides` with the fixture PDF (`e2e/fixtures/guide-pdf.ts`), clicks Read and gzip-sizes every script loaded after the click:
+  - `GUIDE_READER_BUDGET.chunk`, 160 KB: the main-thread JS (the dialog and reader chunks plus pdf.js), measured 142.1 KB;
+  - `GUIDE_READER_BUDGET.worker`, 400 KB: the pdf.js worker with its Turbopack bootstrap (the entry plus the chunks in its `#params`), measured 361.3 KB (the pdf.js 6.4 worker alone is about 354 KB);
+  - no script loaded before the click carries pdf.js (the snapshot of the initial load is taken right before the click, after a state wait, never `networkidle`).
+- The caps measure the modern path (Chromium). The legacy pdf.js build and worker (`pdfjs-dist/legacy/build/`, picked by `needsLegacyPdfjs` in `pdf.ts`) are separate lazy assets loaded only by browsers that lack a built-in the modern build calls; they are about 147 KB and 379 KB gzip and are not capped.
+- The key is not 3D: `pagePerfKeys` in `scripts/perf-plan.ts` maps the reader's page code (`src/components/guides/`, `src/content/guides.ts`, `DialogHost.tsx`, `dialog-loaders.ts`, the `/library` page) to `guides`, and `scripts/ci-plan.ts` adds it to a PR's perf keys. Run it alone with `PERF=1 bunx playwright test --grep "the study guide reader stays"`.
+- `tests/unit/guide-chunks-graph.test.ts` (every PR) walks the static imports of `src/experience/Experience.tsx` and `src/app/[locale]/layout.tsx` and fails when either reaches `GuideReader.tsx`, `pdf.ts` or any static `pdfjs-dist` import; it also checks that `GuideDialog` imports the reader and `pdf.ts` imports pdf.js dynamically. So the reader adds nothing to the 3D bytes or the Classic pages' initial load.
 
 #### Memory gates
 

@@ -288,6 +288,17 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(shared).toMatchObject({ perf: [...ALL_BUT_MEMORY], lighthouse: "all" });
   });
 
+  it("study guide reader code: the guides spec plus the reader's own perf gate, no 3D keys", () => {
+    const plan = planFor(["src/components/guides/GuideReader.tsx"], none, opts);
+    expect(plan.e2e).toContain("guides");
+    expect(plan.perf).toEqual(["guides"]);
+    expect(plan.reasons).toContain("perf gate of page code: src/components/guides/GuideReader.tsx (guides)");
+    expect(planOutputs(plan, lhciUrls).perf_grep).toBe("(the study guide reader stays)");
+    const cert = planFor(["src/components/certs/CertDialog.tsx", "content/study-guides.json"], none, opts);
+    expect(cert.e2e).toEqual(expect.arrayContaining(["guides", "pageview"]));
+    expect(cert.perf).toBe(false);
+  });
+
   it("unions the shared keys with the 3D file keys and lists each shared module", () => {
     const perf3d = (f: string) => (f === "src/ask/protocol.ts" ? (["boot", "bytes"] as const) : []);
     const plan = planFor(["src/ask/protocol.ts", "src/experience/floors/labs/OpsRoom.tsx", "src/components/page/Hero.tsx"], perf3d, opts);

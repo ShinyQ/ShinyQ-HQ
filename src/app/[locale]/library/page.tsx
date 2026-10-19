@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
+import { GuideShelf } from "@/components/guides/GuideShelf";
 import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
 import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TopicFilter } from "@/components/page/TopicFilter";
+import { guideViews } from "@/content/guide-views";
 import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "@/content/load";
 import { isResearch } from "@/content/selectors";
 import { experienceDataFor } from "@/experience/gate-data";
@@ -28,11 +30,13 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   const posts = getPosts();
   const research = library.publications.filter((p) => isResearch(p.kind));
   const models = library.publications.filter((p) => !isResearch(p.kind));
+  const guides = guideViews(locale);
   const sections = [
     { id: "posts", label: t("posts"), count: posts.length },
     { id: "research", label: t("research"), count: research.length },
     { id: "publications", label: t("publications"), count: models.length },
     { id: "talks", label: t("talks"), count: library.talks.length },
+    { id: "guides", label: t("guides"), count: guides.length },
   ];
   // The Topic Constellation's topics (L4), as a filter over every row below.
   const topics = getTopicIndex().topics.map((x) => ({ slug: x.slug, label: tt(`names.${x.slug}`), count: x.items.length }));
@@ -73,6 +77,8 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
           <TalkList talks={library.talks} locale={locale} />
         </SectionSplit>
       </TopicFilter>
+      {/* Study guides carry no topics, so they sit after the filtered rows. */}
+      <GuideShelf locale={locale} guides={guides} />
     </ClientMessages>
   );
 }

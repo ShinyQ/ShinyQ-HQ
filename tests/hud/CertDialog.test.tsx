@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
@@ -27,6 +27,7 @@ const cert = (status: CertView["status"]): CertView => ({
   credentialId: null,
   shortLabel: null,
   featured: false,
+  guide: null,
 });
 
 describe("CertDialog (R5 P10)", () => {
@@ -69,4 +70,53 @@ describe("CertDialog (R5 P10)", () => {
       expect(within(dialog).getByText(label)).toHaveClass("pv-mark", tone);
     });
   }
+
+  describe("study guide action", () => {
+    const earned = { ...cert("earned"), url: "https://example.org/credential" };
+
+    for (const [locale, messages, label] of [
+      ["en", en, "Read study guide"],
+      ["id", id, "Baca panduan belajar"],
+    ] as const) {
+      // DialogHost opens the reader from the delegated `[data-hq-guide]` click (tests/hud/DialogHost.test.tsx).
+      it(`${locale}: with a guide, a primary Read button opens the guide without closing the card first`, () => {
+        const onClose = vi.fn();
+        render(
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <CertDialog cert={{ ...earned, guide: "example-guide" }} onClose={onClose} />
+          </NextIntlClientProvider>,
+        );
+        const read = screen.getByTestId("cert-read-guide");
+        expect(read).toHaveTextContent(label);
+        expect(read).toHaveClass("pv-btn", "pv-btn-primary");
+        const open = screen.getByTestId("cert-open");
+        expect(open).not.toHaveClass("pv-btn-primary");
+        expect(read.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(read).toHaveAttribute("data-hq-guide", "example-guide");
+        expect(read).toHaveAttribute("aria-haspopup", "dialog");
+        fireEvent.click(read);
+        expect(onClose).not.toHaveBeenCalled();
+      });
+    }
+
+    it("without a guide renders no Read button and keeps the credential link primary", () => {
+      render(
+        <NextIntlClientProvider locale="en" messages={en}>
+          <CertDialog cert={earned} onClose={vi.fn()} />
+        </NextIntlClientProvider>,
+      );
+      expect(screen.queryByTestId("cert-read-guide")).toBeNull();
+      expect(screen.getByTestId("cert-open")).toHaveClass("pv-btn-primary");
+    });
+
+    it("with a guide and no credential link still offers the guide", () => {
+      render(
+        <NextIntlClientProvider locale="en" messages={en}>
+          <CertDialog cert={{ ...cert("in-progress"), guide: "example-guide" }} onClose={vi.fn()} />
+        </NextIntlClientProvider>,
+      );
+      expect(screen.getByTestId("cert-read-guide")).toBeInTheDocument();
+      expect(screen.getByText("No public credential link yet.")).toBeInTheDocument();
+    });
+  });
 });

@@ -10,6 +10,7 @@ const perspectives = JSON.parse(read("content", "perspectives.json"));
 const siteBuild = JSON.parse(read("content", "ask", "site-build.json"));
 const postDiagrams = JSON.parse(read("content", "blog", "diagrams.json"));
 const buildStory = JSON.parse(read("content", "build-story.json"));
+const studyGuides = JSON.parse(read("content", "study-guides.json"));
 const blogFiles = readdirSync(path.join(root, "content", "blog")).filter((f) => f.endsWith(".mdx"));
 const messageFiles = readdirSync(path.join(root, "messages")).filter((f) => f.endsWith(".json"));
 
@@ -57,6 +58,15 @@ describe("public-safety lint", () => {
       const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
+    expect(hits).toEqual([]);
+  });
+
+  it("finds no blocklisted term or forbidden pattern in content/study-guides.json (the study guide shelf and reader)", () => {
+    const hits = collectStrings(studyGuides, "study-guides").flatMap((leaf) => {
+      const found = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+      return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
+    });
+    expect(collectStrings(studyGuides).length).toBeGreaterThan(20);
     expect(hits).toEqual([]);
   });
 

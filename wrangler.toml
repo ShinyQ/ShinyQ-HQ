@@ -58,6 +58,13 @@ dataset = "visit_events"
 binding = "STATS_KV"
 id = "88fb27f910f44e6393b8fd495d6a2c4f"
 
+# R2 bucket "hq-study-guides" (private, no r2.dev URL): the study guide PDFs served by /api/guides/<slug>
+# (functions/api/guides/[slug].ts). Keys are <slug>/<version>.pdf; upload with scripts/study-guides.ts
+# (docs/study-guides-runbook.md).
+[[r2_buckets]]
+binding = "GUIDES"
+bucket_name = "hq-study-guides"
+
 # Optional Workers rate limiting binding (8 requests per 60 s per visitor hash). Pages support is
 # still rolling out, so it stays off; the Function falls back to its in-memory and KV limiters.
 # Uncomment once `wrangler pages deploy` accepts it.

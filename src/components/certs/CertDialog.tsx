@@ -6,12 +6,18 @@ import type { CertView } from "@/content/certs";
 import { Modal } from "../Modal";
 import { IssuerMark } from "./IssuerMark";
 
+// The study guide reader's dialog rides in this chunk: the cert card's "Read study guide" swaps to it at once, and
+// DialogHost needs no lazy entry of its own on every page (Classic JS budget).
+export { default as GuideDialog } from "../guides/GuideDialog";
+
 const STATUS_CLASS = { earned: "text-green", "in-progress": "text-amber", expired: "text-ink-3" } as const;
 
 /**
  * Certification preview card (lazy chunk, opened by `DialogHost` on the `hq:hud` "cert" command from
  * Page View cards and rows or a 3D Lobby badge): issuer, exam code, full name, status, dates,
- * credential ID and "Open credential" in a new tab. Credential sites are never framed (they refuse
+ * credential ID, "Read study guide" when the certification has one (a `[data-hq-guide]` button: `DialogHost`'s delegated click
+ * swaps this card for the reader and keeps the original opener for focus return, so it never closes first) and
+ * "Open credential" in a new tab. Credential sites are never framed (they refuse
  * framing and the CSP keeps `frame-src 'self'`), and there is no "Verified" style label.
  */
 export default function CertDialog({ cert, onClose }: { cert: CertView; onClose: () => void }) {
@@ -57,9 +63,26 @@ export default function CertDialog({ cert, onClose }: { cert: CertView; onClose:
             </>
           )}
         </dl>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          {cert.guide && (
+            <button
+              type="button"
+              data-hq-guide={cert.guide}
+              data-testid="cert-read-guide"
+              aria-haspopup="dialog"
+              className="pv-btn pv-btn-primary"
+            >
+              {t("preview.readGuide")}
+            </button>
+          )}
           {cert.url ? (
-            <a href={cert.url} target="_blank" rel="noopener noreferrer" className="pv-btn pv-btn-primary" data-testid="cert-open">
+            <a
+              href={cert.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`pv-btn ${cert.guide ? "pv-btn-ghost" : "pv-btn-primary"}`}
+              data-testid="cert-open"
+            >
               {t("preview.open")}
               <span aria-hidden="true">&nbsp;&#8599;</span>
               <span className="sr-only"> ({t("preview.newTab")})</span>
