@@ -39,6 +39,7 @@ function labelsFrom(m: Messages): InteractLabels {
     reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
     metrics: m.library.topics.monument.target,
     studyGuide: (code) => m.hud.interact.studyGuide.replace("{code}", code),
+    studyVault: m.hud.interact.studyVault,
   };
 }
 
@@ -284,6 +285,8 @@ describe("interactablesFor on the real content", () => {
       expect(item.at).toEqual(vault.stop);
       expect(item.bounds).toEqual(book.rect);
       expect(item.label).toBe(`Read the ${book.code ?? book.spine} study guide`);
+      // One hint bubble for the whole vault (they share the stop).
+      expect(item.group).toEqual({ id: "L4:vault", label: "Study Vault" });
     });
     expect(books.find((b) => b.id === "L4:vault:ai-103")?.label).toBe("Read the AI-103 study guide");
     expect(books.find((b) => b.id === "L4:vault:google-gen-ai-leader")?.label).toBe("Read the Gen AI Leader study guide");

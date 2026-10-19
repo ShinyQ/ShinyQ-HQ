@@ -13,7 +13,7 @@ import { REACTOR } from "../floors/labs/reactor";
 import { REACTOR_ROOM, reactorStop, ringBands, ringById } from "../floors/labs/techReactor";
 import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
 import { VISITS_ROOM } from "../floors/lobby/visitsRoom";
-import { NEWSROOM } from "../floors/library/concepts/newsroom";
+import { NEWSROOM, VAULT_ROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
 import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
 import { TOPICS_ROOM } from "../floors/library/topicHash";
@@ -63,6 +63,11 @@ export interface Interactable {
   /** Bottom of the pick volume (u above the floor, default 0): stacked targets such as the Tech Reactor rings. */
   base?: number;
   action: InteractAction;
+  /**
+   * Targets sharing one approach point (the L4 Study Vault's books): the hint bubble shows once for the group, under
+   * its id and label (`hintTargets` in hints/select.ts); hover tags and clicks stay per target.
+   */
+  group?: { id: string; label: string };
 }
 
 /** UI labels for targets without a content title (`hud.pads.floorTitle`, `hud.interact.*`, `hud.launcher.roverMenu`, `hud.rooms`). */
@@ -83,6 +88,8 @@ export interface InteractLabels {
   metrics: string;
   /** L4 Study Vault books ("Read the AI-103 study guide", `hud.interact.studyGuide`): the exam code, else the spine. */
   studyGuide: (code: string) => string;
+  /** The L4 Study Vault as a whole (`hud.interact.studyVault`): its books' hint bubble. */
+  studyVault: string;
 }
 
 export interface InteractData {
@@ -333,6 +340,7 @@ function endItems(library: LibraryLayout, data: InteractData): Interactable[] {
 /**
  * The L4 Study Vault (owner request 2026-10-19): one target per book, each driving to the vault stop and then
  * opening that study guide in the reader. The vault has no catalog room, so these are commands, never `open-room`.
+ * They share the stop, so they form one hint group (one bubble for the vault, not one for the first book).
  */
 function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] {
   const vault = library.end?.vault;
@@ -347,6 +355,7 @@ function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] 
       bounds: bare(book.rect),
       height: NEWSROOM.end.vault.book.h,
       action: { type: "command", command: `guide:${book.slug}` },
+      group: { id: VAULT_ROOM, label: data.labels.studyVault },
     }),
   );
 }

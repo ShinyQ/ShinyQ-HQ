@@ -18,6 +18,34 @@ export const HINT = {
 
 const distance = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.z - b.z);
 
+/**
+ * Go of a group's bubble: a command no feature handles (`parseCommand` gives null), so point-and-go only drives to the
+ * group's shared approach point (and its camera view) without opening any one of the targets.
+ */
+export const GROUP_HINT_COMMAND = "settle";
+
+/**
+ * The hint candidates: grouped targets (`Interactable.group`, the L4 Study Vault's books, which share one approach
+ * point) become one target under the group's id and label, at the first member's approach point, whose Go only drives
+ * there. Without groups the list comes back as it is.
+ */
+export function hintTargets(items: readonly Interactable[]): readonly Interactable[] {
+  if (!items.some((item) => item.group)) return items;
+  const out: Interactable[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    const group = item.group;
+    if (!group) {
+      out.push(item);
+      continue;
+    }
+    if (seen.has(group.id)) continue;
+    seen.add(group.id);
+    out.push({ ...item, id: group.id, label: group.label, action: { type: "command", command: GROUP_HINT_COMMAND }, group: undefined });
+  }
+  return out;
+}
+
 /** The one target to show a bubble for: nearest within `HINT.radius`, sticky within `HINT.keep`. */
 export function nearestHint<T extends { id: string; at: Vec2 }>(items: readonly T[], rover: Vec2, current: T | null = null): T | null {
   let best: T | null = null;

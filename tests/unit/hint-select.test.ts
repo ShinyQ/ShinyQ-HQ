@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { labelAnchor } from "@/experience/interact/pick";
 import type { Interactable } from "@/experience/hints/source";
-import { HINT, hintAnchor, nearestHint } from "@/experience/hints/select";
+import { GROUP_HINT_COMMAND, HINT, hintAnchor, hintTargets, nearestHint } from "@/experience/hints/select";
+import { parseCommand } from "@/experience/interact/pick";
 import { hintRuntime, setHintTarget, subscribeHintTarget } from "@/experience/hints/runtime";
 
 const at = (id: string, x: number, z = 0) => ({ id, at: { x, z } });
@@ -23,6 +24,38 @@ describe("nearestHint", () => {
     const drifting = at("a", 5.5);
     expect(nearestHint([drifting], origin, drifting)?.id).toBe("a");
     expect(nearestHint([at("a", 6.5)], origin, a)).toBeNull();
+  });
+});
+
+describe("hintTargets", () => {
+  const target = (id: string, x: number, group?: Interactable["group"]): Interactable => ({
+    id,
+    floor: "L4",
+    kind: "station",
+    label: id,
+    at: { x, z: 0 },
+    bounds: { minX: x + 4, maxX: x + 6, minZ: -1, maxZ: 1 },
+    action: { type: "command", command: `guide:${id}` },
+    ...(group ? { group } : {}),
+  });
+  const vault = { id: "L4:vault", label: "Study Vault" };
+
+  it("folds targets sharing an approach point into one bubble for their group, whose Go opens none of them", () => {
+    const items = [target("L4:station:metrics", 20), target("gh-600", 2, vault), target("ai-103", 2, vault), target("ai-901", 2, vault)];
+    const out = hintTargets(items);
+    expect(out.map((i) => i.id)).toEqual(["L4:station:metrics", "L4:vault"]);
+    const group = out[1];
+    expect(group).toMatchObject({ label: "Study Vault", at: { x: 2, z: 0 }, kind: "station", action: { type: "command", command: GROUP_HINT_COMMAND } });
+    expect(group.group).toBeUndefined();
+    // Point-and-go drives to the stop and runs nothing (no study guide opens).
+    expect(parseCommand(GROUP_HINT_COMMAND)).toBeNull();
+    // So the nearest bubble at the stop is the vault's, never the first book's.
+    expect(nearestHint(out, { x: 2, z: 1 })?.id).toBe("L4:vault");
+  });
+
+  it("keeps a list without groups as it is", () => {
+    const items = [target("a", 0), target("b", 3)];
+    expect(hintTargets(items)).toBe(items);
   });
 });
 

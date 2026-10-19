@@ -1015,7 +1015,8 @@
         "research": "Meja Riset: makalah lengkap dengan abstrak dan sitasi.",
         "workshop": "Workshop: proyek sampingan dan repositori publik.",
         "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift.",
-        "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini."
+        "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini.",
+        "vault": "Study Vault: panduan belajar sertifikasi {name} dalam bentuk buku. Pilih satu untuk membacanya."
       },
       "go": {
         "open": "Buka",

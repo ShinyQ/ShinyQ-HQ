@@ -318,6 +318,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
   | `bounds`, `height` | pick volume |
   | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
+  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
