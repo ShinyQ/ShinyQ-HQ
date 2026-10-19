@@ -11,7 +11,7 @@ import { speculativePrefetchOn } from "../../floorChunks";
 import { MergedBoxes, MergedEdges } from "../../roof/kit";
 import type { OfficeTranslate } from "../officeLayout";
 import { officeShellBoxes } from "../officeShell";
-import { loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
+import { countOfficeAsk, loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
 
 /** One stable list, so MergedBoxes and MergedEdges build their geometry once. */
 const SHELL = officeShellBoxes();
@@ -45,6 +45,7 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
     if (clock.elapsedTime < next.current || officeChunkState() !== "idle") return;
     next.current = clock.elapsedTime + 0.5;
     prefetch.current ??= speculativePrefetchOn(window.location.search);
+    if (idle.current) countOfficeAsk();
     const s = getHQStore().getState();
     const want = officeLoadWanted({
       idle: idle.current,

@@ -32,11 +32,18 @@ import { STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 test.describe.configure({ timeout: 180_000 });
 
 type OfficeProbe = { loaded: boolean; desks: number; states: string[]; mode: string; wallFrames: number; chips: number; bob: number; inView: boolean; polling: boolean };
-type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void };
-type OfficeWindow = Window & { __hq: { probes: { office: OfficeProbe }; office: { load(): Promise<void>; state(): string; test(): OfficeHooks | null } } };
+type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number };
+type OfficeWindow = Window & { __hq: { probes: { office: OfficeProbe }; office: { load(): Promise<void>; state(): string; asks(): number; test(): OfficeHooks | null } } };
 
 const probe = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office);
 const chunkState = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.state());
+/** The trigger's asks after the first frame went idle and the chunk state, read in one go (one frame's view). */
+const trigger = (page: Page) =>
+  page.evaluate(() => {
+    const office = (window as unknown as OfficeWindow).__hq.office;
+    return { asks: office.asks(), state: office.state() };
+  });
+const settled = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.settled() ?? 0);
 const feed = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.feed() ?? null);
 const chip = (page: Page, slot: number) => page.locator(`[data-testid="office-chip"][data-slot="${slot}"]`);
 
@@ -84,21 +91,48 @@ async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>,
   await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(states);
 }
 
-type GlWindow = Window & { __hq: { render: { gl: { getContext(): WebGLRenderingContext; copyTextureToTexture: (...args: unknown[]) => unknown } | null } }; __officeCopies?: number };
+type AtlasTexture = { version: number; image: { width: number; height: number } };
+type Copy = { toAtlas: boolean; whole: boolean; at: string };
+type GlWindow = Window & {
+  __hq: {
+    clock(): number;
+    render: {
+      gl: { getContext(): WebGLRenderingContext; copyTextureToTexture: (...args: unknown[]) => unknown } | null;
+      scene: { getObjectByName(name: string): { material: { map: AtlasTexture } } | undefined } | null;
+    };
+  };
+  __officeCopies?: Copy[];
+};
 
-/** Counts the renderer's partial texture uploads (the office atlas cells) from now on. */
-async function countCopies(page: Page) {
+/** The office atlas texture (the `office-screens` quads' map): its version moves only on a whole upload. */
+const atlasVersion = (page: Page) => page.evaluate(() => (window as unknown as GlWindow).__hq.render.scene!.getObjectByName("office-screens")!.material.map.version);
+
+/** Records the renderer's partial texture uploads from now on: into the atlas or not, from a whole-atlas-sized source or not, and where. */
+async function recordCopies(page: Page) {
   await page.evaluate(() => {
     const w = window as unknown as GlWindow;
     const gl = w.__hq.render.gl!;
+    const atlas = w.__hq.render.scene!.getObjectByName("office-screens")!.material.map;
     const copy = gl.copyTextureToTexture;
-    w.__officeCopies = 0;
+    w.__officeCopies = [];
     gl.copyTextureToTexture = function (this: unknown, ...args: unknown[]) {
-      w.__officeCopies! += 1;
+      const [src, dst, , at] = args as [AtlasTexture, AtlasTexture, unknown, { x: number; y: number } | null];
+      const whole = src.image.width >= atlas.image.width && src.image.height >= atlas.image.height;
+      w.__officeCopies!.push({ toAtlas: dst === atlas, whole, at: at ? `${at.x},${at.y}` : "" });
       return copy.apply(this, args);
     };
   });
-  return () => page.evaluate(() => (window as unknown as GlWindow).__officeCopies ?? 0);
+  return () => page.evaluate(() => (window as unknown as GlWindow).__officeCopies ?? []);
+}
+
+/** The distinct atlas cells the recorded copies patched. */
+const cellsOf = (copies: Copy[]) => [...new Set(copies.map((c) => c.at))].sort();
+
+/** Waits until the scene clock (`__hq.clock()`) moved on by `seconds` from now. */
+async function waitForSceneSeconds(page: Page, seconds: number) {
+  const clock = () => page.evaluate(() => (window as unknown as GlWindow).__hq.clock());
+  const from = await clock();
+  await expect.poll(clock, { timeout: 30_000 }).toBeGreaterThan(from + seconds);
 }
 
 /** Drains the GL error flags; returns the ones raised since the last read (0 is GL_NO_ERROR). */
@@ -131,19 +165,29 @@ test.describe("Agent Office (L1)", () => {
     expect(errors).toEqual([]);
   });
 
+  test("the speculative trigger loads the chunk on its first ask after the first frame went idle", async ({ page }) => {
+    await serveOffice(page);
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    // Positive control for the ?prefetch=off test below: the first counted ask (the spawn is near the office) starts the load.
+    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(1);
+    expect((await trigger(page)).state).not.toBe("idle");
+    await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
+  });
+
   test("never loads on its own with ?prefetch=off; an office drawer loads the body and starts the scene", async ({ page }) => {
     await serveOffice(page);
     await asReturningVisitor(page);
-    // The stats fetch starts on the same `afterFirstFrameIdle` signal as the office's speculative trigger.
-    const idle = page.waitForRequest("**/api/stats");
     await page.goto("/en?tier=lite&prefetch=off");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    await idle;
-    // The trigger asks every 0.5 s of scene clock: 120 rendered frames after the idle signal give it several asks.
-    await waitForFrames(page, 120);
-    expect(await chunkState(page)).toBe("idle");
+    // `asks` counts the trigger's asks (every 0.5 s of scene clock) made after the first frame went idle, while the
+    // chunk is idle: three of them declined (an accepted ask leaves "idle" and stops the count).
+    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
+    expect(await trigger(page)).toMatchObject({ state: "idle" });
     await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office"));
     await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "summary", { timeout: 60_000 });
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
@@ -151,9 +195,11 @@ test.describe("Agent Office (L1)", () => {
 
   test("a state change repaints only the changed atlas cells on the GPU, without GL errors", async ({ page }) => {
     const errors = collectErrors(page);
-    const gl: string[] = [];
+    // Every console error and GL warning, except a resource that failed to load (a 404 of an optional asset).
+    const consoleErrors: string[] = [];
     page.on("console", (msg) => {
-      if (/GL_INVALID_|INVALID_(ENUM|VALUE|OPERATION|FRAMEBUFFER_OPERATION)/.test(msg.text())) gl.push(msg.text());
+      const text = msg.text();
+      if (/GL_INVALID_|INVALID_(ENUM|VALUE|OPERATION|FRAMEBUFFER_OPERATION)/.test(text) || (msg.type() === "error" && !/^Failed to load resource\b.*\b404\b/.test(text))) consoleErrors.push(text);
     });
     // Reduced motion holds every face and screen still, so a cell is repainted only when its state changes.
     await chooseMotion(page, "reduced");
@@ -161,13 +207,27 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    const copies = await countCopies(page);
+    // Let the crossfade from the first states (every desk changed) run out before recording.
+    await waitForSceneSeconds(page, 1.5);
+    const version = await atlasVersion(page);
+    const copies = await recordCopies(page);
     await glErrors(page);
-    await show(page, office, statesB(Date.now()), STATES_B);
-    await expect.poll(copies, { timeout: 30_000 }).toBeGreaterThan(0);
-    await waitForFrames(page, 4);
+    // Only desk 3 (slot 2) changes: its face and its screen, two cells.
+    const now = Date.now();
+    const one = statesA(now);
+    one.desks[2] = statesB(now).desks[2];
+    const states = STATES_A.map((s, i) => (i === 2 ? STATES_B[2] : s));
+    await show(page, office, one, states);
+    await expect.poll(async () => cellsOf(await copies()).length, { timeout: 30_000 }).toBe(2);
+    // The crossfade (reduced motion: stepped) runs out well within a second of scene clock; nothing else repaints.
+    await waitForSceneSeconds(page, 1.5);
+    const all = await copies();
+    expect(cellsOf(all)).toHaveLength(2);
+    expect(all.every((c) => c.toAtlas && !c.whole)).toBe(true);
+    // No whole atlas re-upload after priming.
+    expect(await atlasVersion(page)).toBe(version);
     expect(await glErrors(page)).toEqual([]);
-    expect(gl).toEqual([]);
+    expect(consoleErrors).toEqual([]);
     expect(errors).toEqual([]);
   });
 
@@ -251,10 +311,13 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    const before = (await feed(page))!.fetchedAt;
+    // Read after the switch: any fetch from here on answers 204, so a background poll cannot move the stamp.
     office.set(null, 204);
+    const before = (await feed(page))!.fetchedAt;
+    const count = await settled(page);
     await pollNow(page);
-    await waitForFrames(page, 4);
+    // The 204 settled (the feed listeners ran) and kept the last snapshot.
+    await expect.poll(() => settled(page)).toBeGreaterThan(count);
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
     expect((await probe(page)).states).toEqual(STATES_A);
     office.set(null, 500);

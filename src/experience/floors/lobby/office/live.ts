@@ -13,6 +13,11 @@ const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;
 /** Unsubscribes the test hook's one-shot listener (set while its unwanted fetch is in flight). */
 let release: (() => void) | null = null;
+/** Fetches that settled (any status but loading), for the test hook: a 204 keeps the feed as it was. */
+let settled = 0;
+poller.subscribe((feed) => {
+  if (feed.status !== "loading") settled += 1;
+});
 
 function settle(): void {
   release?.();
@@ -62,7 +67,7 @@ export function useOfficeFeed(): OfficeFeed {
 }
 
 /**
- * `__hq.office.test()` (Playwright): the feed, a fetch now, and a clock skew to cross the keep-last window. While
+ * `__hq.office.test()` (Playwright): the feed, a fetch now, a clock skew to cross the keep-last window and the settled fetch count. While
  * nothing wants the poller, poll() lets its one fetch land and stops the poller after the first settled feed.
  */
 export const officeTest = {
@@ -83,4 +88,5 @@ export const officeTest = {
     officeTest.poll();
   },
   wanted: (): boolean => wants.size > 0,
+  settled: (): number => settled,
 };

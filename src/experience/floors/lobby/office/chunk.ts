@@ -94,10 +94,18 @@ export function officeLoadWanted({ idle, state: chunk, prefetch, floor, rideTo, 
   return Math.hypot(at.x - OFFICE.stop.x, at.z - OFFICE.stop.z) <= OFFICE.loadRadius;
 }
 
-/** `window.__hq.office` (Playwright and the perf lane): load, load the drawer body, the chunk state and the chunk's test hooks once loaded. */
+let asks = 0;
+
+/** OfficeMount counts each trigger ask made after the first frame went idle (e2e proof that `?prefetch=off` held). */
+export function countOfficeAsk(): void {
+  asks += 1;
+}
+
+/** `window.__hq.office` (Playwright and the perf lane): load, load the drawer body, the chunk state, the trigger's idle asks and the chunk's test hooks once loaded. */
 export const officeHandle = {
   load: (): Promise<void> => loadOffice().then(() => undefined),
   loadBody: (): Promise<void> => loadOfficeBody().then(() => undefined),
   state: officeChunkState,
+  asks: (): number => asks,
   test: () => loaded?.officeTest ?? null,
 };

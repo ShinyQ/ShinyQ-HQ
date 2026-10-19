@@ -49,6 +49,19 @@ describe("Agent Office live feed (3D)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("counts every settled fetch (a kept snapshot included) for the test hook", async () => {
+    vi.resetModules();
+    const fresh = await import("@/experience/floors/lobby/office/live");
+    expect(fresh.officeTest.settled()).toBe(0);
+    fresh.officeTest.poll();
+    expect(fresh.officeTest.settled()).toBe(0);
+    await vi.waitFor(() => expect(fresh.officeTest.settled()).toBe(1));
+    fetchMock.mockResolvedValueOnce({ status: 204, json: async () => null });
+    fresh.officeTest.poll();
+    await vi.waitFor(() => expect(fresh.officeTest.settled()).toBe(2));
+    expect(fresh.officeTest.feed().status).toBe("ready");
+  });
+
   it("lets the test hook's fetch land while nothing wants the poller, then stops it", async () => {
     vi.resetModules();
     const fresh = await import("@/experience/floors/lobby/office/live");
