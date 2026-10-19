@@ -65,3 +65,21 @@ export function sinceLabel(ms: number, locale: "en" | "id", now: number): string
   if (hours < 48) return `${n.format(hours)} ${u.h}`;
   return `${n.format(Math.floor(hours / 24))} ${u.d}`;
 }
+
+const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+
+/** The repository page for an allowlisted public repository ("owner/name"), checked again on the client. */
+export function safeRepoUrl(repo: string | null): string | null {
+  if (!repo || !REPO.test(repo) || repo.split("/").some((part) => /^\.+$/.test(part))) return null;
+  return `https://github.com/${repo}`;
+}
+
+/** A GitHub feed link, only when it is an https URL on github.com. */
+export function safeGithubUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === "github.com" ? u.href : null;
+  } catch {
+    return null;
+  }
+}

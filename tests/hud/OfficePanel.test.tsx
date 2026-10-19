@@ -128,6 +128,31 @@ describe("OfficePanel", () => {
     expect(calls.at(-1)).toBe("stop");
   });
 
+  it("links a GitHub item only to github.com, else shows its title as plain text", () => {
+    const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
+    const [first, second, ...rest] = busy.github;
+    const github = [{ ...first, title: "Off-site item", url: "https://evil.example/github.com/pull/1" }, second, ...rest];
+    const { poller } = fakePoller(ready({ ...busy, github }));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const [off, on] = screen.getAllByTestId("office-github");
+    expect(off.textContent).toContain("Off-site item");
+    expect(off.querySelector("a")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Off-site item" })).toBeNull();
+    expect(on.querySelector("a")).toHaveAttribute("href", second.url);
+    expect(document.querySelectorAll('a[href*="evil.example"]')).toHaveLength(0);
+  });
+
+  it("announces the live state without the minute clock, which stays visible but hidden from the live region", () => {
+    const { poller, push } = fakePoller(ready(OFFICE_FIXTURES.busy as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe(labels.live);
+    expect(status.textContent).not.toMatch(/\d{2}[:.]\d{2}/);
+    expect(screen.getByTestId("office-live").textContent).toMatch(/updated \d{2}:\d{2}/);
+    push({ status: "ready", snapshot: OFFICE_FIXTURES.busy as OfficeSnapshotV1, fetchedAt: OFFICE_FIXTURE_NOW + 60_000 });
+    expect(screen.getByRole("status").textContent).toBe(labels.live);
+  });
+
   it("shows the resting line, no desks and no GitHub items when the office is off", () => {
     const { poller } = fakePoller(ready(OFFICE_FIXTURES.off as OfficeSnapshotV1));
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);

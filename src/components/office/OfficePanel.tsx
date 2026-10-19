@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/content/locales";
-import { deskTitle, officeCounts, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
+import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
 import { createOfficePoller, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
 import type { OfficeGithubStatus } from "@/lib/office/protocol";
 import { fill, type OfficeCardLabels } from "./labels";
@@ -88,13 +88,15 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
           ? labels.semiLive
           : snap.mode === "off"
             ? labels.resting
-            : `${labels.live} \u00b7 ${fill(labels.updated, { time: clock(locale, feed.fetchedAt) })}`;
+            : labels.live;
 
   return (
     <div ref={root} className="min-h-80">
-      <p data-testid="office-live" role="status" className="pv-date flex items-center gap-2">
+      <p data-testid="office-live" className="pv-date flex items-center gap-2">
         <Dot tone={live ? STATE_TONE.done : STATE_TONE.asleep} />
-        {line}
+        {/* Only the state is announced: the minute clock would re-announce the line on every poll. */}
+        <span role="status">{line}</span>
+        {live && <span aria-hidden="true">{`\u00b7 ${fill(labels.updated, { time: clock(locale, feed.fetchedAt) })}`}</span>}
       </p>
       {snap && (
         <>
@@ -133,19 +135,26 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
             <p className="mt-3 text-ink-2">{labels.noGithub}</p>
           ) : (
             <ul className="pv-rows pv-rows-closed mt-3">
-              {snap.github.slice(0, GITHUB_SHOWN).map((g) => (
-                <li key={`${g.kind}-${g.url}-${g.at}`} data-testid="office-github" className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-3">
-                  <span aria-hidden="true" className={ICON_TONE[g.status]}>
-                    {ICON[g.status]}
-                  </span>
-                  <a href={g.url} rel="noopener noreferrer" target="_blank" className="pv-row-title min-w-0 truncate text-ink">
-                    {g.title}
-                  </a>
-                  <span className="pv-date">
-                    {labels.status[g.status]} {"\u00b7"} {sinceLabel(g.at, locale, t)}
-                  </span>
-                </li>
-              ))}
+              {snap.github.slice(0, GITHUB_SHOWN).map((g) => {
+                const href = safeGithubUrl(g.url);
+                return (
+                  <li key={`${g.kind}-${g.url}-${g.at}`} data-testid="office-github" className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-3">
+                    <span aria-hidden="true" className={ICON_TONE[g.status]}>
+                      {ICON[g.status]}
+                    </span>
+                    {href ? (
+                      <a href={href} rel="noopener noreferrer" target="_blank" className="pv-row-title min-w-0 truncate text-ink">
+                        {g.title}
+                      </a>
+                    ) : (
+                      <span className="min-w-0 truncate text-ink">{g.title}</span>
+                    )}
+                    <span className="pv-date">
+                      {labels.status[g.status]} {"\u00b7"} {sinceLabel(g.at, locale, t)}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
 

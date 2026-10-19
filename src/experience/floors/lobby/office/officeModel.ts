@@ -5,6 +5,9 @@ import type { OfficeTranslate } from "../officeLayout";
 import type { ScreenInput } from "./officeAtlas";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
 
+// The link checks live in the shared model, so the Classic card uses them without this floor module.
+export { safeGithubUrl, safeRepoUrl } from "@/lib/office/model";
+
 /**
  * The 3D office's view of a feed: always five Rovers (a slot without a session is an off-duty Rover asleep),
  * every Rover asleep when the office is off, disabled or offline, and only protocol fields (owner decision D3).
@@ -81,22 +84,4 @@ export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { head: strin
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {
   const style = OFFICE_STATE_STYLE[r.state];
   return { kind: style.screen, color: style.color, activity: r.agent ? t(`activity.${r.activity}`) : t("3d.offDuty"), progress: r.progress, job: r.job };
-}
-
-const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
-
-/** The repository page for an allowlisted public repository ("owner/name"), checked again on the client. */
-export function safeRepoUrl(repo: string | null): string | null {
-  if (!repo || !REPO.test(repo) || repo.split("/").some((part) => /^\.+$/.test(part))) return null;
-  return `https://github.com/${repo}`;
-}
-
-/** A GitHub feed link, only when it is an https URL on github.com. */
-export function safeGithubUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    return u.protocol === "https:" && u.hostname === "github.com" ? u.href : null;
-  } catch {
-    return null;
-  }
 }

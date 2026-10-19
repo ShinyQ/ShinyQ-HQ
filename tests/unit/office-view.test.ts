@@ -2,6 +2,7 @@ import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
+import * as shared from "@/lib/office/model";
 import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
 import en from "../../messages/en.json";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
@@ -64,15 +65,8 @@ describe("Agent Office view model", () => {
     expect(screenInput(failed, t)).toMatchObject({ kind: "cross", job: "Build, CV and e2e" });
   });
 
-  it("links only well-formed public GitHub repositories and github.com URLs", () => {
-    expect(safeRepoUrl("ShinyQ/ShinyQ-HQ")).toBe("https://github.com/ShinyQ/ShinyQ-HQ");
-    expect(safeRepoUrl("ShinyQ/../x")).toBeNull();
-    expect(safeRepoUrl("ShinyQ/..")).toBeNull();
-    expect(safeRepoUrl("javascript:alert(1)")).toBeNull();
-    expect(safeRepoUrl(null)).toBeNull();
-    expect(safeGithubUrl("https://github.com/ShinyQ/ShinyQ-HQ/pull/1")).toBe("https://github.com/ShinyQ/ShinyQ-HQ/pull/1");
-    expect(safeGithubUrl("http://github.com/x")).toBeNull();
-    expect(safeGithubUrl("https://evil.example/github.com")).toBeNull();
-    expect(safeGithubUrl("not a url")).toBeNull();
+  it("links through the shared, Classic-safe URL checks (src/lib/office/model.ts)", () => {
+    expect(safeRepoUrl).toBe(shared.safeRepoUrl);
+    expect(safeGithubUrl).toBe(shared.safeGithubUrl);
   });
 });
