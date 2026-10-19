@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Matrix4, Vector3 } from "three";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
-import { CHIP_LIFT, chipAnchor, GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
+import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const slots = officeSlots();
@@ -87,11 +87,5 @@ describe("Agent Office Rover rig", () => {
     expect(glowKey("ci", { done: 3, total: 12 }, false, 0)).toBe(glowKey("ci", { done: 3, total: 12 }, false, 4.4));
     expect(glowKey("asleep", null, true, 0.1)).toBe(glowKey("asleep", null, true, 9.7));
     expect(glowKey("asleep", null, false, 0.1)).toBe(glowKey("asleep", null, false, 9.7));
-  });
-
-  it("anchors the chip above the head", () => {
-    const out = { x: 0, y: 0, z: 0 };
-    chipAnchor(roverFrame(slots[3], stillPose("working"), new Matrix4()), out);
-    expect(out).toEqual({ x: expect.closeTo(slots[3].rover.x, 5), y: expect.closeTo(CHIP_LIFT, 5), z: expect.closeTo(slots[3].rover.z, 5) });
   });
 });

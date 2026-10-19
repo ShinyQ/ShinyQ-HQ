@@ -1,7 +1,14 @@
 import { useSyncExternalStore } from "react";
 import { OFFICE_DESKS } from "@/lib/office/protocol";
-import { officeSlots } from "../officeLayout";
-import { CHIP_LIFT } from "./officeRig";
+import { OFFICE, officeSlots } from "../officeLayout";
+
+/**
+ * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, at their Rovers'
+ * x, the middle ones a `step` higher each (an arc, so neighbours never share a row): from the office stop, on every
+ * camera class, they sit in the empty space over the wall and never cover its text, a desk screen or the visitor's
+ * rover (tests/unit/office-chip-placement.test.ts).
+ */
+export const CHIP_ROW = { gap: 0.35, step: 1.3 } as const;
 
 /** A chip farther than this from the camera shows its first line only (the mock's `.tag.far`). */
 export const OFFICE_CHIP_FAR = 28;
@@ -15,13 +22,17 @@ export function nextChipFar(far: boolean, dist: number): boolean {
 
 /**
  * Shared between the office scene (in the canvas) and its HUD chips, mutated outside React render: whether the
- * office is in view, the chip elements the scene moves every frame (HintProbe pattern), their world anchors
- * above each Rover, and whether each chip is far.
+ * office is in view, the chip elements the scene moves every frame (HintProbe pattern), their fixed world anchors
+ * over the screen wall, and whether each chip is far.
  */
 export const officeRuntime = {
   inView: false,
   chips: Array.from({ length: OFFICE_DESKS }, (): HTMLElement | null => null),
-  anchors: officeSlots().map((s) => ({ x: s.rover.x, y: CHIP_LIFT, z: s.rover.z })),
+  anchors: officeSlots().map((s) => ({
+    x: s.rover.x,
+    y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame + CHIP_ROW.gap + CHIP_ROW.step * Math.min(s.slot, OFFICE_DESKS - 1 - s.slot),
+    z: OFFICE.wall.z - OFFICE.wall.t / 2,
+  })),
   far: Array.from({ length: OFFICE_DESKS }, () => false),
 };
 

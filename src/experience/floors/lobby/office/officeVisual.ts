@@ -122,8 +122,8 @@ export function poseOffset(state: OfficeState, p: OfficePose): number {
 }
 
 /**
- * True when any pose field differs. Covers only what the pose drives: the Rover's instance matrices, its face quad
- * and its chip anchor (and the tip's scale). Glow colours and dots also depend on state, progress and time: check
+ * True when any pose field differs. Covers only what the pose drives: the Rover's instance matrices and its face
+ * quad (and the tip's scale; the chip anchors stay still). Glow colours and dots also depend on state, progress and time: check
  * `glowKey` (officeRig) for those.
  */
 export function poseChanged(a: OfficePose, b: OfficePose): boolean {

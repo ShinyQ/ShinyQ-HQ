@@ -12,8 +12,6 @@ import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "
 export const PARTS_PER_ROVER = 5;
 export const TREADS_PER_ROVER = 2;
 export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count;
-/** The HTML chip floats this high above the Rover's spot (above the antenna). */
-export const CHIP_LIFT = 2.75;
 
 const M = new Matrix4();
 const A = new Matrix4();
@@ -142,12 +140,4 @@ export function writeGlow(
     const on = lit >= 0 ? i < lit : (i - head + n) % n < 4;
     C.set(tone).multiplyScalar(on ? 1 : 0.15).toArray(colors, (base + 2 + i) * 3);
   }
-}
-
-/** The chip anchor above the Rover (it follows the bob and the hop). */
-export function chipAnchor(frame: Matrix4, out: { x: number; y: number; z: number }): void {
-  V.set(0, CHIP_LIFT, 0).applyMatrix4(frame);
-  out.x = V.x;
-  out.y = V.y;
-  out.z = V.z;
 }

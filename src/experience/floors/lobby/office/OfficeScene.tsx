@@ -46,7 +46,7 @@ import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { AtlasClock, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
-import { chipAnchor, GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
+import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, pose, poseOffset, slotPhase, STILL_T, stillPose } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { nextChipFar, officeRuntime, setChipFar } from "./runtime";
@@ -364,8 +364,6 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const fps = SCREEN_FPS[tier === "full" ? "full" : "lite"];
 
   useEffect(() => {
-    // The chips start over the sleeping Rovers (their anchors are written again only when a pose changes).
-    for (const s of slots) chipAnchor(roverFrame(s, stillPose("asleep"), FRAME), officeRuntime.anchors[s.slot]);
     const g = group.current;
     return () => {
       if (g) forgetDrawn(g);
@@ -384,7 +382,7 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     for (const r of view.rovers) {
       const p = pose(r.state, now, slotPhase(r.slot), reduced);
       bob = Math.max(bob, poseOffset(r.state, p));
-      if (writes.pose(r.slot, p)) chipAnchor(roverFrame(slots[r.slot], p, FRAME), officeRuntime.anchors[r.slot]);
+      writes.pose(r.slot, p);
       writes.glow(r.slot, glowKey(r.state, r.progress, reduced, now));
     }
     writes.camera(camera.position.x, camera.position.z);
@@ -480,7 +478,7 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
 /**
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
  * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern),
- * clamped 8 px inside the screen edges, and writes the probes. A chip's width is read only when it can change (a
+ * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges, and writes the probes. A chip's width is read only when it can change (a
  * new element, its far flag, the phone layout or the feed). Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
