@@ -65,7 +65,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L4 also at the Study Vault stop (same caps and L4 program baseline, reported as the settled peak `settled-L4-vault`) |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 | `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
@@ -195,6 +195,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
+| The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
