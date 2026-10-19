@@ -93,7 +93,7 @@ export const RULES: Rule[] = [
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
   {
-    test: /^scripts\/(arrival-shots|ask-eval|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|docs-index|intro-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|study-guides|subset-fonts|title-case|uptime|check-client-chunks)\./,
+    test: /^scripts\/(arrival-shots|ask-eval|ask-samples|ask-staleness|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|dev-shots|docs-index|intro-shots|media-sizes|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|study-guides|subset-fonts|title-case|uptime|check-client-chunks)\./,
     specs: [],
   },
   // Build-time scans of the export: the script policy and the deploy rules.
