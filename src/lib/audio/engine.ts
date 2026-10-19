@@ -9,6 +9,7 @@ import {
   MUSIC_VOLUME_STORAGE_KEY,
   SOUND_STORAGE_KEY,
   clamp01,
+  defaultCreateContext,
   defaultStorage,
   readMuted,
   readSettings,
@@ -36,15 +37,6 @@ const AMBIENCE_RETIRE_MS = SOUNDTRACK_CROSSFADE * 1000 + 100;
  * that is the end of a tap (pointerup, touchend, click), not touchstart, so all of them are listened to.
  */
 const GESTURE_EVENTS = ["pointerdown", "pointerup", "keydown", "touchend", "click"] as const;
-
-type AudioContextCtor = new () => AudioContext;
-
-function defaultCreateContext(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor };
-  const Ctor = w.AudioContext ?? w.webkitAudioContext;
-  return Ctor ? new Ctor() : null;
-}
 
 function defaultDoc(): AudioEngineDeps["doc"] {
   return typeof document === "undefined" ? null : document;
@@ -300,6 +292,8 @@ export function createAudioEngine(deps: Partial<AudioEngineDeps> = {}): AudioEng
   if (!muted) {
     for (const type of GESTURE_EVENTS) doc?.addEventListener(type, onGesture, true);
   }
+  // The facade already created (and resumed, inside the gesture) the context: build the graph and start now.
+  if (deps.started) onGesture();
 
   /** Fades the master bus out, then suspends the context (muted or paused). */
   function fadeOut(): void {

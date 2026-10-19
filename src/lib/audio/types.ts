@@ -58,4 +58,10 @@ export interface AudioEngineDeps {
   paused: boolean;
   /** Loads the ambience module on demand (a separate chunk). Tests inject a fake. */
   loadAmbience: () => Promise<Pick<typeof import("./ambience"), "createAmbience">>;
+  /**
+   * A user gesture already happened and `createContext` returns the context made inside it (the `audio` facade
+   * creates and resumes it while the engine chunk loads): the engine builds its graph and starts at creation,
+   * as if that gesture reached its own listeners.
+   */
+  started: boolean;
 }

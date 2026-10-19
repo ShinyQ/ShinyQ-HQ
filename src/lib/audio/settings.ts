@@ -1,8 +1,9 @@
 import type { AudioEngineDeps, AudioSettings } from "./types";
 
 /**
- * Storage keys and parsing of the audio settings, shared by the engine and the lazy `audio` facade (which
- * answers and persists them before the engine chunk has loaded).
+ * Storage keys and parsing of the audio settings, and the AudioContext factory, shared by the engine and the
+ * lazy `audio` facade (which answers and persists the settings, and creates the context inside the first
+ * gesture, before the engine chunk has loaded).
  */
 export const SOUND_STORAGE_KEY = "hq:sound";
 export const EFFECTS_STORAGE_KEY = "hq:sfx";
@@ -15,6 +16,16 @@ export const CLICK_RATE_LIMIT = 20;
 type Storage = AudioEngineDeps["storage"];
 
 export const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1);
+
+type AudioContextCtor = new () => AudioContext;
+
+/** The browser's AudioContext (`webkitAudioContext` on older Safari), or null where Web Audio is missing. */
+export function defaultCreateContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { AudioContext?: AudioContextCtor; webkitAudioContext?: AudioContextCtor };
+  const Ctor = w.AudioContext ?? w.webkitAudioContext;
+  return Ctor ? new Ctor() : null;
+}
 
 export function defaultStorage(): Storage {
   if (typeof window === "undefined") return null;

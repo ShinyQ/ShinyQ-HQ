@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AudioEngineDeps } from "@/lib/audio";
 import { createAudioEngine } from "@/lib/audio/engine";
-import { createAudioFacade } from "@/lib/audio/singleton";
+import { QUEUED_SOUND_MAX_AGE_MS, createAudioFacade } from "@/lib/audio/singleton";
 import { FakeAudioContext } from "../helpers/fake-audio";
 
 /**
@@ -37,6 +37,8 @@ class FakeDoc {
 }
 
 function setup({ activation = false } = {}) {
+  const user = { active: activation };
+  const clock = { t: 0 };
   const storage = new FakeStorage();
   const doc = new FakeDoc();
   const contexts: FakeAudioContext[] = [];
@@ -52,15 +54,20 @@ function setup({ activation = false } = {}) {
   const load = vi.fn(() => gate.then(() => ({ createAudioEngine })));
   const facade = createAudioFacade({
     load,
-    hasActivation: () => activation,
-    deps: { storage, doc: doc as unknown as AudioEngineDeps["doc"], createContext, now: () => 0, loadAmbience: () => new Promise(() => {}) },
+    hasActivation: () => user.active,
+    deps: { storage, doc: doc as unknown as AudioEngineDeps["doc"], createContext, now: () => clock.t, loadAmbience: () => new Promise(() => {}) },
   });
   const arrive = async () => {
     release();
     await gate;
     await Promise.resolve();
   };
-  return { facade, storage, doc, load, createContext, contexts, arrive };
+  /** A user gesture: the browser grants the activation, then the event reaches the listeners. */
+  const gesture = (type: string) => {
+    user.active = true;
+    doc.fire(type);
+  };
+  return { facade, storage, doc, load, createContext, contexts, arrive, clock, gesture };
 }
 
 describe("audio facade (lazy engine)", () => {
@@ -140,18 +147,81 @@ describe("audio facade (lazy engine)", () => {
     expect(facade.isMuted()).toBe(true);
   });
 
-  it("without an activation, waits for the first pointer, touch or key press in the 3D view", async () => {
-    const { facade, doc, load, createContext, contexts, arrive } = setup();
+  it("a gesture before a late chunk: the one context starts inside the gesture, and the engine adopts it", async () => {
+    const { facade, load, createContext, contexts, arrive, clock, gesture } = setup();
     facade.setPaused(false);
     expect(load).not.toHaveBeenCalled();
-    doc.fire("pointerdown");
+    // The Boot tap: the download starts and the context is created and resumed inside the gesture (Safari).
+    gesture("pointerdown");
     expect(load).toHaveBeenCalledTimes(1);
+    expect(createContext).toHaveBeenCalledTimes(1);
+    expect(contexts[0].resume).toHaveBeenCalledTimes(1);
+    expect(contexts[0].state).toBe("running");
+    // The tap's own sound, requested while the chunk is still on its way.
+    facade.play("beep");
+    gesture("click");
+    expect(createContext).toHaveBeenCalledTimes(1);
+    // The chunk arrives late, outside any gesture.
+    clock.t = QUEUED_SOUND_MAX_AGE_MS - 100;
     await arrive();
-    // The engine's own gesture listeners take the rest of the gesture and start the sound.
+    expect(createContext).toHaveBeenCalledTimes(1);
+    const ctx = contexts[0];
+    expect(ctx.state).toBe("running");
+    // The music started (three triangle drones) and the queued beep played (square tones).
+    expect(ctx.oscillators.filter((o) => o.type === "triangle").length).toBeGreaterThanOrEqual(3);
+    expect(ctx.oscillators.some((o) => o.type === "square")).toBe(true);
+    expect(facade.playCounts()).toEqual({ beep: 1 });
+    // Later sounds go straight to the engine on the same context.
+    facade.play("ding");
+    expect(createContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a queued one-shot older than QUEUED_SOUND_MAX_AGE_MS, but the music still starts", async () => {
+    const { facade, contexts, arrive, clock, gesture } = setup();
+    facade.setPaused(false);
+    gesture("touchend");
+    facade.play("beep");
+    clock.t = QUEUED_SOUND_MAX_AGE_MS + 1;
+    await arrive();
+    const ctx = contexts[0];
+    expect(ctx.oscillators.some((o) => o.type === "square")).toBe(false);
+    expect(ctx.oscillators.filter((o) => o.type === "triangle").length).toBeGreaterThanOrEqual(3);
+    expect(facade.playCounts()).toEqual({ beep: 1 });
+  });
+
+  it("an unmute before the engine arrives starts the context inside that click", async () => {
+    const { facade, storage, createContext, contexts, arrive, gesture } = setup();
+    storage.map.set("hq:sound", "off");
+    facade.setPaused(false);
+    // Muted: the press downloads the engine but makes no context.
+    gesture("pointerdown");
     expect(createContext).not.toHaveBeenCalled();
-    doc.fire("pointerup");
+    facade.setMuted(false);
     expect(createContext).toHaveBeenCalledTimes(1);
     expect(contexts[0].resume).toHaveBeenCalled();
+    await arrive();
+    expect(createContext).toHaveBeenCalledTimes(1);
+    expect(facade.isMuted()).toBe(false);
+    expect(contexts[0].oscillators.filter((o) => o.type === "triangle").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("pausing before the engine arrives suspends the early context; the engine adopts it silent", async () => {
+    const { facade, createContext, contexts, arrive, gesture } = setup();
+    facade.setPaused(false);
+    gesture("pointerdown");
+    facade.setPaused(true);
+    expect(contexts[0].suspend).toHaveBeenCalled();
+    await arrive();
+    expect(createContext).toHaveBeenCalledTimes(1);
+    expect(contexts[0].oscillators).toHaveLength(0);
+  });
+
+  it("dispose closes a context the facade still holds alone", () => {
+    const { facade, contexts, gesture } = setup();
+    facade.setPaused(false);
+    gesture("keydown");
+    facade.dispose();
+    expect(contexts[0].close).toHaveBeenCalled();
   });
 
   it("stops waiting for a gesture when the 3D view pauses again before one came", () => {

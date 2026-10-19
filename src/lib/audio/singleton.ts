@@ -5,6 +5,7 @@ import {
   MUSIC_VOLUME_STORAGE_KEY,
   SOUND_STORAGE_KEY,
   clamp01,
+  defaultCreateContext,
   defaultStorage,
   readMuted,
   readSettings,
@@ -15,11 +16,21 @@ import type { AmbienceFloor, AudioEngine, AudioEngineDeps, AudioSettings, SoundN
 type EngineModule = Pick<typeof import("./engine"), "createAudioEngine">;
 
 /**
- * Events that start the engine download while the 3D view is open and the page has no user activation yet.
- * They come first in a tap or a key press, so the engine (and its own gesture listeners) is usually up before
- * the `pointerup`, `touchend` or `click` of the same gesture starts the sound.
+ * Gestures that start the engine download while the 3D view is open, and inside which the facade creates and
+ * resumes the one AudioContext (Safari starts a context only inside a gesture, and the chunk may arrive after
+ * it). The same activation events as the engine's own listeners, plus `touchstart` to start the download at the
+ * beginning of a tap; the listeners stay until the engine takes over.
  */
-const WAKE_EVENTS = ["pointerdown", "touchstart", "keydown"] as const;
+const WAKE_EVENTS = ["pointerdown", "touchstart", "pointerup", "keydown", "touchend", "click"] as const;
+
+/**
+ * One-shots requested while the engine loads play when it arrives if they are at most this old (ms). A one-shot
+ * is feedback for what just happened (a 25 to 780 ms beep, ding, whoosh or chime): a second late it still reads
+ * as the answer to the tap that caused it (a first chunk download on a slow phone network takes a few hundred
+ * ms); later it would sound like a reaction to something else, so it is dropped. The music and the floor
+ * ambience are not one-shots: they start whenever the engine arrives.
+ */
+export const QUEUED_SOUND_MAX_AGE_MS = 1000;
 
 export interface AudioFacadeOptions {
   /** Loads the engine module (a separate chunk). Tests inject a fake. */
@@ -39,15 +50,20 @@ function defaultHasActivation(): boolean {
 /** One-shots requested while the engine loads are played when it arrives (a burst of clicks is capped). */
 const MAX_QUEUED = 4;
 
+const defaultNow = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
 /**
  * The app-wide `audio`: the `AudioEngine` API, with the engine itself (engine.ts, synth.ts, music.ts) in a
  * lazy chunk that loads on the first call that needs sound. Sound needs the 3D view (the Page View is always
  * paused, so it never loads the engine) and a user activation (browsers keep an AudioContext silent before
  * one): while unpaused, the first pointer, touch or key press loads it, and so does a one-shot or a moving
- * rover once the page already had an activation (a click opened the tower). Until the engine exists the
- * facade answers from storage and keeps what callers set: mute and the settings are persisted at once (the
- * engine reads them when it is created); the pause state, the floor, the rumble speed and the one-shots
- * requested while it loads are handed over when it arrives; every one-shot is counted for `playCounts`.
+ * rover once the page already had an activation (a click opened the tower). There is still exactly one
+ * AudioContext: when a gesture (or an unmute) comes before the engine, the facade creates and resumes it inside
+ * that gesture and the engine adopts it (`started`), so a slow chunk never makes the first tap silent. Until the
+ * engine exists the facade answers from storage and keeps what callers set: mute and the settings are persisted
+ * at once (the engine reads them when it is created); the pause state, the floor, the rumble speed and the
+ * recent one-shots (`QUEUED_SOUND_MAX_AGE_MS`) are handed over when it arrives; every one-shot is counted for
+ * `playCounts`.
  */
 export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine {
   const loadModule = options.load ?? (() => import("./engine"));
@@ -55,6 +71,8 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
   const deps = options.deps ?? {};
   const storage = () => (deps.storage !== undefined ? deps.storage : defaultStorage());
   const doc = () => (deps.doc !== undefined ? deps.doc : typeof document === "undefined" ? null : document);
+  const createContext: () => AudioContext | null = deps.createContext ?? defaultCreateContext;
+  const now = deps.now ?? defaultNow;
 
   let instance: AudioEngine | null = null;
   let engineModule: EngineModule | null = null;
@@ -70,7 +88,10 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
   let floor: AmbienceFloor | null = null;
   let rumble = 0;
   let counts: Partial<Record<SoundName, number>> = {};
-  let queued: SoundName[] = [];
+  let queued: { name: SoundName; at: number }[] = [];
+  /** The context made inside a gesture before the engine arrived; the engine adopts it. */
+  let context: AudioContext | null = null;
+  let contextUnavailable = false;
   let muted: boolean | null = null;
   let settings: AudioSettings | null = null;
 
@@ -82,7 +103,12 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
 
   function create(): void {
     if (instance || !engineModule || !wanted) return;
-    const engine = engineModule.createAudioEngine({ ...deps, paused });
+    const made = context;
+    const engine = engineModule.createAudioEngine({
+      ...deps,
+      paused,
+      ...(made ? { createContext: () => made, started: true } : {}),
+    });
     instance = engine;
     stopWaking();
     // What storage could not keep (private mode) still wins over the engine's defaults.
@@ -97,9 +123,10 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
     if (floor !== null) engine.setFloor(floor);
     if (rumble) engine.setRumble(rumble);
     offEngine = engine.subscribe(notify);
-    const replay = queued;
+    const fresh = now() - QUEUED_SOUND_MAX_AGE_MS;
+    const replay = queued.filter((sound) => sound.at >= fresh);
     queued = [];
-    for (const name of replay) {
+    for (const { name } of replay) {
       replayed[name] = (replayed[name] ?? 0) + 1;
       engine.play(name);
     }
@@ -131,7 +158,32 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
     else void download();
   }
 
+  /**
+   * Creates the one AudioContext (once) and resumes it. Called inside a gesture, so Safari lets it run even
+   * though the engine that will use it is still downloading. Nothing while muted or paused.
+   */
+  function startContext(): void {
+    if (instance || paused || storedMuted() || contextUnavailable) return;
+    if (!context) {
+      try {
+        context = createContext();
+      } catch {
+        context = null;
+      }
+      if (!context) {
+        contextUnavailable = true;
+        return;
+      }
+    }
+    if (context.state === "suspended") context.resume()?.catch(() => {});
+  }
+
+  function suspendContext(): void {
+    if (context && context.state !== "closed") context.suspend()?.catch(() => {});
+  }
+
   function wake(): void {
+    startContext();
     load();
   }
 
@@ -162,7 +214,7 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
       if (instance) return instance.play(name);
       counts = { ...counts, [name]: (counts[name] ?? 0) + 1 };
       if (!audible()) return;
-      if (queued.length < MAX_QUEUED) queued.push(name);
+      if (queued.length < MAX_QUEUED) queued.push({ name, at: now() });
       load();
     },
     setRumble(speed) {
@@ -175,6 +227,12 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
       const changed = next !== storedMuted();
       muted = next;
       writeSetting(storage(), SOUND_STORAGE_KEY, next ? "off" : "on");
+      // An unmute comes from a click or the M key: start the context inside it, as the engine would.
+      if (next) suspendContext();
+      else if (!paused) {
+        startContext();
+        load();
+      }
       if (changed) notify();
     },
     setPaused(next) {
@@ -183,6 +241,7 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
       if (next) {
         queued = [];
         stopWaking();
+        suspendContext();
       } else startWaking();
     },
     isPaused: () => (instance ? instance.isPaused() : paused),
@@ -231,8 +290,12 @@ export function createAudioFacade(options: AudioFacadeOptions = {}): AudioEngine
     dispose() {
       offEngine?.();
       offEngine = null;
+      // The engine closes the context it adopted; one the facade still holds alone is closed here.
+      if (!instance && context && context.state !== "closed") context.close()?.catch(() => {});
       instance?.dispose();
       instance = null;
+      context = null;
+      contextUnavailable = false;
       stopWaking();
       listeners.clear();
       wanted = false;
