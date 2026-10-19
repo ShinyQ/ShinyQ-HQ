@@ -202,7 +202,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [floor-l1-lobby.md](docs/agents/floor-l1-lobby.md) | L1 Lobby: certification wall, Highlights Hall, kiosk, views |
 | [floor-l2-career.md](docs/agents/floor-l2-career.md) | L2 Career Road, Workshop, rail floors |
 | [floor-l3-labs.md](docs/agents/floor-l3-labs.md) | L3 Project Roads, Data and ML spine, Ops Control Room, Tech Reactor |
-| [floor-l4-library.md](docs/agents/floor-l4-library.md) | L4 Writing: newsroom, timeline, end plaza, Topic Constellation |
+| [floor-l4-library.md](docs/agents/floor-l4-library.md) | L4 Writing: newsroom, timeline, end plaza, Topic Constellation, Study Vault |
 | [floor-rf-roof.md](docs/agents/floor-rf-roof.md) | RF roof deck |
 | [floor-b1-engine-room.md](docs/agents/floor-b1-engine-room.md) | B1 Engine Room: layout, scenery, station drawers, access, budget |
 | [ask.md](docs/agents/ask.md) | Ask the HQ: pipeline, scope routing, UI, pack, CSP, credentials, CI around it |
