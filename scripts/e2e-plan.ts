@@ -31,6 +31,7 @@ export const ALL_SPECS = [
   "floor-chunks",
   "gallery",
   "gpu",
+  "guides",
   "highlights",
   "hud",
   "hud-corners",
@@ -85,6 +86,8 @@ export const RULES: Rule[] = [
   { test: /^e2e\/durations\.json$/, specs: [] },
   // Perf lane (PERF=1): `bun run e2e:perf` and the CI `3D perf gates` job run it, never the regular suite.
   { test: /^e2e\/perf\//, specs: [] },
+  // The generated study guide PDF (with its byte-range route) only the guides specs use.
+  { test: /^e2e\/fixtures\/guide-pdf\.ts$/, specs: ["guides"] },
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
@@ -361,6 +364,11 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // Study guides: the shelf, the reader, its data and views, and the dialogs that open it (e2e/guides.spec.ts).
+  {
+    test: /^src\/components\/guides\/|^src\/content\/guide[\w-]*\.ts$|^content\/study-guides\.json$|^src\/components\/(certs\/CertDialog|DialogHost)\.tsx$|^src\/components\/dialog-loaders\.ts$|^src\/app\/\[locale\]\/library\/page\.tsx$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    specs: ["guides"],
+  },
   // The B1 unlock files (PR 3) keep the specs of the rules they used to match.
   { test: /^src\/hud\/dialog\/(EngineUnlockLayer\.tsx|engineRoomAction\.ts)$/, specs: ["onboarding", "experience", "camera"] },
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["onboarding", "experience", "arrivals"] },
