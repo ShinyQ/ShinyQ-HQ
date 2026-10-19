@@ -22,20 +22,25 @@ export type OfficeTranslate = (key: string, values?: Record<string, string | num
  * x values are absolute (the stop's axis is x 3, inside the Lobby plaza's x -3 to 9 window), z values add to S.
  */
 export const OFFICE_WING = {
-  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 30. */
+  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 25. */
   minX: -12,
   maxX: 18,
-  depth: 30,
+  depth: 25,
   /** The axis of the lead road, the plaza, the stop and the desk arc. */
   x: 3,
-  /** Lead road: 8 u wide, from the Lobby plaza south of the lane ring (S - 8) to 2 u inside the wing plaza (S + 6). */
+  /** Lead road: 8 u wide, from the Lobby plaza south of the lane ring (S - 8) to 4.5 u inside the wing plaza (S + 6). */
   lead: { width: 8, from: -8, to: 6 },
-  plaza: { z: 12, w: 18, d: 16 },
-  stop: 13,
+  /** Wing plaza (S + 1.5 to S + 17.5): it stops short of the end desks, which reach forward on both sides of the stop. */
+  plaza: { z: 9.5, w: 18, d: 16 },
+  /**
+   * The stop stands in the concave front of the row, 5.5 u from the arc centre toward the desks: close enough that the
+   * follow camera's look target lands near the wall, which leaves the chips room over it (office-chip-placement).
+   */
+  stop: 16.5,
   /** Desk arc centre: the middle Rover's back stays 0.35 u in front of the wall frame. */
-  arc: 19,
+  arc: 11,
   /** The screen wall's centre line, 0.3 u in front of the wing's south edge (its footprint reaches back to it). */
-  wall: 29.7,
+  wall: 24.7,
 } as const;
 
 export interface OfficeWing {
@@ -43,8 +48,8 @@ export interface OfficeWing {
   lead: { x: number; width: number; from: number; to: number };
   plaza: { center: Vec2; w: number; d: number };
   stop: Vec2;
-  /** Drives that start or end in here follow the wing road (`FloorLayout.roadZone`): the wing and the lead road's span in the Lobby. */
-  zone: readonly Rect[];
+  /** The lead road's span in the Lobby (S - 8 to S): with `rect`, where drives follow the wing road (`FloorLayout.roadZone`). */
+  leadSpan: Rect;
   /** Desk arc centre. */
   arc: Vec2;
   /** The screen wall's centre line in plan. */
@@ -60,10 +65,7 @@ export function officeWing(s: number): OfficeWing {
     lead,
     plaza: { center: { x: W.x, z: s + W.plaza.z }, w: W.plaza.w, d: W.plaza.d },
     stop: { x: W.x, z: s + W.stop },
-    zone: [
-      { minX: W.minX, maxX: W.maxX, minZ: s, maxZ: s + W.depth },
-      { minX: W.x - W.lead.width / 2, maxX: W.x + W.lead.width / 2, minZ: lead.from, maxZ: s },
-    ],
+    leadSpan: { minX: W.x - W.lead.width / 2, maxX: W.x + W.lead.width / 2, minZ: lead.from, maxZ: s },
     arc: { x: W.x, z: s + W.arc },
     wall: { x: W.x, z: s + W.wall },
   };
@@ -79,20 +81,23 @@ export function officeRoad(w: OfficeWing): { road: Road; plaza: Plaza } {
 }
 
 export const OFFICE = {
-  deskRadius: 8,
-  roverRadius: 9.2,
+  deskRadius: 11,
+  roverRadius: 12.2,
   /**
    * Desk angles (degrees from +z toward +x), slot 0 at the east end: the stop camera looks toward +z, so +x is
    * on the left of the screen and desk 1 is the leftmost Rover from the office stop, like the drawer's list.
    */
-  angles: [51.3, 25.65, 0, -25.65, -51.3],
-  /** Tangential width, radial depth, top height, top slab and leg thickness. */
-  desk: { w: 2.6, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
+  angles: [40, 20, 0, -20, -40],
+  /**
+   * Tangential width, radial depth, top height, top slab and leg thickness. The width closes the 20 degree step at
+   * the desks' back edge (2 (11 + 0.45) tan 10 deg = 4.04), so the five desks read as one continuous console.
+   */
+  desk: { w: 4.05, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
   rover: { radius: 1 },
   /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`). */
   wall: { w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
   /** `L1:office` view zone: zoom per camera class and the half size of its area around the stop. */
-  view: { zoom: 1.3, tablet: 1.25, mobile: 1.2, half: { x: 2, z: 1.4 } },
+  view: { zoom: 1.5, tablet: 1.25, mobile: 1.2, half: { x: 2, z: 1.4 } },
   /** The chunk loads once the rover (or the elevator arrival point during a ride to L1) is this close to the stop. */
   loadRadius: 40,
 } as const;
@@ -161,22 +166,21 @@ export function officeWallRect(w: OfficeWing): Rect {
 }
 
 /**
- * Navgrid obstacles, flush with the wing's south edge so the row and the wall are one solid block (no floor
- * behind the desks): the middle three desks and Rovers as one box, the end desks each as a box that touches it,
- * then the wall. The space rules hold: neighbours touch, the two end boxes keep the middle box's width (about
- * 10 u) apart, and every box keeps 6 u from the wing's side edges. The concave floor in front stays open.
+ * Navgrid obstacles, flush with the wing's south edge (the floor behind the console is closed, no pocket): each end
+ * desk and its Rover as one box, the middle three as the box between them, then the wall. Neighbouring desks touch
+ * (the console is continuous), so the boxes touch too; the two end boxes keep the middle box's width (about 10 u)
+ * apart and 6 u from the wing's side edges. The middle box starts at the front of desks 2 and 4, so the concave
+ * floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
  */
 export function officeObstacles(w: OfficeWing): Rect[] {
-  const s = officeSlots(w);
+  const s = officeSlots(w).map((x) => x.rect);
   const edge = w.rect.maxZ;
-  const mid = s.slice(1, -1).map((x) => x.rect);
-  const middle = { minX: Math.min(...mid.map((r) => r.minX)), maxX: Math.max(...mid.map((r) => r.maxX)), minZ: Math.min(...mid.map((r) => r.minZ)), maxZ: edge };
-  const east = s[0].rect;
-  const west = s[s.length - 1].rect;
+  const east = s[0];
+  const west = s[s.length - 1];
   return [
-    { minX: middle.maxX, maxX: east.maxX, minZ: east.minZ, maxZ: edge },
-    middle,
-    { minX: west.minX, maxX: middle.minX, minZ: west.minZ, maxZ: edge },
+    { ...east, maxZ: edge },
+    { minX: west.maxX, maxX: east.minX, minZ: Math.min(...s.slice(1, -1).map((r) => r.minZ)), maxZ: edge },
+    { ...west, maxZ: edge },
     officeWallRect(w),
   ];
 }

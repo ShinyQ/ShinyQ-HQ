@@ -2,7 +2,7 @@ import { LOBBY } from "../../config";
 import type { SignSpec } from "../../fx/signLayout";
 import type { Rect } from "../../types";
 import type { Box } from "../roof/solids";
-import { OFFICE, officeObstacles, officeSlots, onArc, type OfficeSlot } from "./officeLayout";
+import { OFFICE, officeObstacles, officeSlots, type OfficeSlot } from "./officeLayout";
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
@@ -41,28 +41,19 @@ export function officeSign(text: string, color: string): SignSpec {
 
 /**
  * The furniture drawn on the main path (so the obstacles always show, before the chunk and if it fails):
- * five desk tops, two legs each, four cable trays along the arc between the desks, and the wall frame.
+ * five desk tops (neighbours meet, one continuous console), two legs each, and the wall frame.
  */
 export function officeShellBoxes(): Box[] {
   const { desk, wall } = OFFICE;
   const w = LOBBY.officeWing;
   const out: Box[] = [];
-  const slots = OFFICE_SLOTS;
-  for (const s of slots) {
+  for (const s of OFFICE_SLOTS) {
     out.push({ x: s.desk.x, y: desk.top - desk.slab, z: s.desk.z, w: desk.w, h: desk.slab, d: desk.d, yaw: s.yaw });
     for (const side of [-1, 1]) {
       // Local x is (cos yaw, -sin yaw) in floor x and z.
       const off = side * (desk.w / 2 - 0.2);
       out.push({ x: s.desk.x + off * Math.cos(s.yaw), y: 0, z: s.desk.z - off * Math.sin(s.yaw), w: desk.leg, h: desk.top - desk.slab, d: desk.d * 0.8, yaw: s.yaw });
     }
-  }
-  for (let i = 0; i + 1 < slots.length; i++) {
-    const a = slots[i].theta;
-    const b = slots[i + 1].theta;
-    const mid = (a + b) / 2;
-    const at = onArc(w, mid, OFFICE.deskRadius);
-    const chord = 2 * OFFICE.deskRadius * Math.sin(Math.abs(b - a) / 2);
-    out.push({ x: at.x, y: 0, z: at.z, w: chord - desk.w + 0.2, h: 0.06, d: 0.3, yaw: mid + Math.PI });
   }
   out.push({ x: w.wall.x, y: 0, z: w.wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
   return out;

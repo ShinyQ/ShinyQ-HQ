@@ -11,10 +11,10 @@ describe("nextChipFar", () => {
 
   it("holds its value while the camera hovers at the threshold", () => {
     let far = false;
-    for (const d of [27.5, 28.5, 27.6, 28.4, 28.9]) far = nextChipFar(far, d);
+    for (const d of [27.5, 28.5, 27.6, 28.4, 28.9].map((x) => x - 28 + OFFICE_CHIP_FAR)) far = nextChipFar(far, d);
     expect(far).toBe(false);
     far = true;
-    for (const d of [28.5, 27.5, 28.4, 27.2]) far = nextChipFar(far, d);
+    for (const d of [28.5, 27.5, 28.4, 27.2].map((x) => x - 28 + OFFICE_CHIP_FAR)) far = nextChipFar(far, d);
     expect(far).toBe(true);
   });
 });

@@ -76,19 +76,16 @@ async function atOffice(page: Page) {
 }
 
 /**
- * At the wing's office stop the follow camera sits about 45 u from the chips, past their far band (`OFFICE_CHIP_FAR`),
- * so they show their first line only. Driving 6 u on toward the desks (out of the office view: the camera keeps
- * facing south and eases to zoom 1) and two zoom key steps (0.8 each, still third person) bring it to about 21 u
- * from the first two chips.
+ * At the office stop the follow camera sits about 42 u from the chips, past their far band (`OFFICE_CHIP_FAR`), so
+ * they show their first line only. From the stop, two zoom key steps (0.8 each, still third person) bring it to about
+ * 27 u: the chips show their task lines (tests/unit/office-chip-placement.test.ts pins this pose on every class).
  */
 async function nearChips(page: Page) {
-  const { stop } = LOBBY.officeWing;
-  await driveTo(page, { x: stop.x + 1.5, z: stop.z + 6 });
+  await driveTo(page, LOBBY.officeWing.stop);
   await waitForCameraSettle(page);
   for (let i = 0; i < 2; i++) await page.keyboard.press("=");
   await waitForCameraSettle(page);
-  await expect(chip(page, 0)).toHaveAttribute("data-far", "false");
-  await expect(chip(page, 1)).toHaveAttribute("data-far", "false");
+  for (const slot of [0, 1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
 }
 
 async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, body: unknown, states: readonly string[]) {
@@ -160,12 +157,11 @@ test.describe("Agent Office (L1)", () => {
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
     expect((await probe(page)).desks).toBe(5);
-    // From the office view every chip is on screen; close in (below) the middle ones rise over the top edge.
-    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await nearChips(page);
     await expect(chip(page, 0)).toContainText(`${en.office.agent.copilot} · ${en.office.activity.editing}`);
     await expect(chip(page, 0)).toContainText("Agent office scene");
     await expect(chip(page, 1)).toContainText(en.office.clientProject);
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expect.poll(async () => (await probe(page)).wallFrames).toBeGreaterThan(0);
     await show(page, office, statesB(Date.now()), STATES_B);
     await expect(chip(page, 4)).toContainText(en.office["3d"].offDuty);

@@ -103,11 +103,8 @@ try {
       await show(page, reply, statesA(Date.now()), "live", STATES_A);
       await page.screenshot({ path: name("states-a") });
 
-      // As e2e/office.spec.ts `nearChips`: 6 u on toward the desks (the wing stop stands about 16 u from the wall), then
-      // zoom key steps until the chips leave their far band and show the task line.
-      // The middle three: a chip off screen (the end ones on a phone) keeps its far flag.
-      await driveTo(page, { x: LOBBY.officeWing.stop.x + 1.5, z: LOBBY.officeWing.stop.z + 6 }, SLOW);
-      await settle(page);
+      // As e2e/office.spec.ts `nearChips`, from the stop: zoom key steps until the chips leave their far band and show
+      // the task line. The middle three: a chip off screen (the end ones on a phone) keeps its far flag.
       const near = async () => (await Promise.all([1, 2, 3].map((slot) => chip(page, slot).getAttribute("data-far")))).every((far) => far === "false");
       for (let i = 0; i < 8 && !(await near()); i++) {
         await page.keyboard.press("=");

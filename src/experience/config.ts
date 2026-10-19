@@ -299,7 +299,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       doors: [...HALL_LAYOUT.doors, observatory.door],
       // The office wing's lead road and plaza join the hall's network (two separate parts; `roadRoute` drives between them).
       road: { ...HALL_LAYOUT.network, roads: [...HALL_LAYOUT.network.roads, office.road], plazas: [...HALL_LAYOUT.network.plazas, office.plaza] },
-      roadZone: [HALL_LAYOUT.zone, ...wing.zone],
+      roadZone: [HALL_LAYOUT.zone, wing.rect, wing.leadSpan],
       viewZones: [...HALL_LAYOUT.viewZones, ...observatory.zones, lobbyArrivalZone(), officeZone(wing)],
       // Every Agent Office room drives to the office stop (the rooms have no door).
       stops: officeStops(wing),
