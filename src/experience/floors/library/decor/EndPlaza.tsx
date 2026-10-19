@@ -18,7 +18,7 @@ import { LineBatch } from "../../labs/lines";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryLayout } from "../model";
 import { useEndSignPlacement } from "./useEndSignPlacement";
-import { issuerTone, VAULT_SCENE } from "./vault";
+import { issuerTone } from "./vault";
 import { CONSTELLATION, constellationSpin, orbitAt, orbSlots, topicLinks, topicPickOf, type OrbSlot } from "../topics";
 
 const NO_RAYCAST = () => null;
@@ -30,7 +30,10 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
-const VAULT_TITLE_COLOR = "#e0f2fe";
+/** Study Vault spines: from the book's center to just in front of its spine face (u); their middle stands 3.1 u up, 8 characters a line. */
+const SPINE_AHEAD = NEWSROOM.end.vault.book.d / 2 + 0.6;
+/** The "Study Vault" sign: its height (u) over the middle of the arc and how far behind the books. */
+const VAULT_TITLE = { y: 5.9, behind: 1.2 };
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
 export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
@@ -143,26 +146,23 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
   }
   const vault = end.vault;
   if (vault) {
-    const { d } = NEWSROOM.end.vault.book;
-    const S = VAULT_SCENE.spine;
-    for (const book of vault.books) {
-      const ahead = d / 2 + VAULT_SCENE.spine.ahead;
+    const { books, stop } = vault;
+    for (const book of books) {
       signs.push({
-        text: wrapSign(book.spine, S.wrap),
-        x: book.at.x + book.facing.x * ahead - end.center.x,
-        y: S.y,
-        z: book.at.z + book.facing.z * ahead - end.center.z,
+        text: wrapSign(book.spine, 8),
+        x: book.at.x + book.facing.x * SPINE_AHEAD - end.center.x,
+        y: 3.1,
+        z: book.at.z + book.facing.z * SPINE_AHEAD - end.center.z,
         color: issuerTone(book.issuer),
-        fontSize: S.font,
+        fontSize: 0.36,
         font: FONTS.monoBold,
       });
       meta.push({ kind: "guide", slug: book.slug });
     }
-    // Over the middle of the arc, a little behind the books.
-    const n = vault.books.length;
-    const mid = vault.books.reduce((m, b) => ({ x: m.x + b.at.x / n, z: m.z + b.at.z / n, fx: m.fx + b.facing.x / n, fz: m.fz + b.facing.z / n }), { x: 0, z: 0, fx: 0, fz: 0 });
-    const T = VAULT_SCENE.title;
-    signs.push({ text: labels.vault.toUpperCase(), x: mid.x - mid.fx * T.behind - end.center.x, y: T.y, z: mid.z - mid.fz * T.behind - end.center.z, color: VAULT_TITLE_COLOR, fontSize: T.font, font: FONTS.monoBold });
+    // Over the middle of the arc, a little behind the books (away from the stop, which is the arc's center).
+    const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / books.length, z: m.z + b.at.z / books.length }), { x: 0, z: 0 });
+    const k = 1 + VAULT_TITLE.behind / NEWSROOM.end.vault.arc;
+    signs.push({ text: labels.vault.toUpperCase(), x: stop.x + (mid.x - stop.x) * k - end.center.x, y: VAULT_TITLE.y, z: stop.z + (mid.z - stop.z) * k - end.center.z, color: "#e0f2fe", fontSize: 0.5, font: FONTS.monoBold });
     meta.push({ kind: "vault" });
   }
   return { signs, meta };

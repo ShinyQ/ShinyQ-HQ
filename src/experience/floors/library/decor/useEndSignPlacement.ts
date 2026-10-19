@@ -74,18 +74,14 @@ export function useEndSignPlacement({
     const a = alpha.current;
     const k = reducedMotion ? 1 : Math.min(1, dt * FADE_RATE);
     const probe: { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[] = [];
-    let spines = 0;
     for (let i = 0; i < signs.length; i++) {
       const target = shown[i] ? 1 : 0;
       a[i] += (target - a[i]) * k;
       const box = candidates[i].box;
-      if (shown[i] && box && a[i] > 0.5) {
-        probe.push({ text: signs[i].text.replace(/\s+/g, " "), kind: meta[i].kind, ...box, quad: quads[i] });
-        if (meta[i].kind === "guide") spines += 1;
-      }
+      if (shown[i] && box && a[i] > 0.5) probe.push({ text: signs[i].text.replace(/\s+/g, " "), kind: meta[i].kind, ...box, quad: quads[i] });
     }
     sceneProbes.topics.labels = probe;
-    sceneProbes.vault.spines = spines;
+    sceneProbes.vault.spines = probe.filter((p) => p.kind === "guide").length;
   });
 
   return alpha;

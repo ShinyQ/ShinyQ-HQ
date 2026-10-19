@@ -184,16 +184,16 @@ export function endPlazaFrame(input: {
     const wx = origin.x + local.x;
     const wz = origin.z + local.z;
     const d = Math.hypot(camera.position.x - wx, camera.position.z - wz);
-    const fixed = (m.kind !== "topic" && m.kind !== "guide" && m.kind !== "vault") || Boolean(m.picked);
     const vaultSign = m.kind === "guide" || m.kind === "vault";
+    const fixed = !(vaultSign || m.kind === "topic") || Boolean(m.picked);
     if (d < END_SIGN_NEAR[m.kind] || (vaultSign && zone === "far")) return { box: null, priority: 0, fixed };
     const projected = projectPlate(camera, { x: wx, y: origin.y + s.y, z: wz }, { w: (sizes[i].w / 2) * pad, h: (sizes[i].h / 2) * pad }, size, v);
     if (!projected) return { box: null, priority: 0, fixed };
     quads[i] = projected.quad;
     if (!projected.onScreen) return { box: null, priority: 0, fixed };
     const box = projected.box;
-    const priority =
-      vaultSign && zone !== "far" ? VAULT_PRIORITY[zone][m.kind as "guide" | "vault"] + 50 / (1 + d) : m.kind !== "topic" ? 0 : (hovered === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
+    // A vault sign got here only inside or near the vault.
+    const priority = vaultSign ? VAULT_PRIORITY[zone as "near"][m.kind as "vault"] + 50 / (1 + d) : m.kind !== "topic" ? 0 : (hovered === m.slug ? 1000 : 0) + (m.count ?? 0) * 10 + 50 / (1 + d);
     return { box, priority, fixed };
   });
   // Obstacles take their screen box first (fixed, never drawn), so no label sits over them.
