@@ -26,6 +26,7 @@ import { boostFxConfig } from "../fx/boostConfig";
 import { BoostFx } from "../fx/BoostFx";
 import { neonColor } from "../fx/materials";
 import { useDispose } from "../fx/useDispose";
+import { wakeFrameAt } from "../scene/framePacer";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
 import { BOOST } from "./boost";
@@ -252,6 +253,8 @@ export function Rover({ tier }: { tier: GpuTier }) {
     }
 
     if (tip.current) tip.current.scale.setScalar(Math.sin(t * 5) > 0 ? 1 : 0.55);
+    // On-demand frames (scene/idle.ts): render when the antenna flips (every pi/5 s) or the eyes blink or open.
+    wakeFrameAt(Math.min((Math.floor((t * 5) / Math.PI) + 1) * (Math.PI / 5), l.blinkUntil > t ? l.blinkUntil : l.nextBlink));
 
     if (flag.current) {
       const visible = t < r.flagUntil;

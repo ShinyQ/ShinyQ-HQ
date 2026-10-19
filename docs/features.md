@@ -81,6 +81,7 @@ Open `/en` and press **Boot rover**.
 - With reduced motion the camera does not move: the intro is a 0.9 s fade into the view behind Rover.
 - A deep link such as `/en/labs/<slug>` then rides on to its floor or room.
 - Add `?tier=lite` or `?tier=static` to force a tier.
+- Known-weak integrated GPUs (Intel HD and UHD Graphics, low-end Mali, Adreno 5xx and below) start on lite; the graphics quality setting can still pick full.
 
 ### Driving
 
@@ -467,7 +468,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 456.7 KB gzip per tier; session total full 485.7 KB, lite 469.9 KB | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 457.3 KB gzip per tier; session total full 486.3 KB, lite 470.6 KB | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.

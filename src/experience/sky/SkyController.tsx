@@ -11,6 +11,7 @@ import { createHoloMaterial, HOLO_MODE } from "../fx/holoFx";
 import { neonColor } from "../fx/materials";
 import { useDispose } from "../fx/useDispose";
 import { useUniformTime } from "../fx/useUniformTime";
+import { wakeFrameAt } from "../scene/framePacer";
 import { postHandle } from "../scene/postHandle";
 import { sceneSettings } from "../scene/settings";
 import type { GpuTier } from "../types";
@@ -101,7 +102,7 @@ export function SkyController({ tier }: { tier: GpuTier }) {
   const state = useMemo(() => createSkyState(), []);
   const scratch = useMemo(() => new Object3D(), []);
 
-  useFrame(({ scene }) => {
+  useFrame(({ scene, clock }) => {
     // B1 is underground: hide the dome and the orbs and hold the night state (phase 0 is today's look) until the rover is back above the Lobby.
     const below = underground(roverRuntime.y);
     if (below !== under.current) {
@@ -125,6 +126,8 @@ export function SkyController({ tier }: { tier: GpuTier }) {
       bloomWritten.current = bloom;
     }
     const m = mode.current;
+    // On-demand frames (idle.ts): the running day and night clock still moves the sun and moon (about 5 CSS px a second), so 4 frames a second.
+    if (m.phase === null && !under.current) wakeFrameAt(clock.elapsedTime + 0.25);
     const phase = under.current ? 0 : (m.phase ?? clockPhase(Date.now()));
     if (last.current !== null && Math.abs(phase - last.current) <= EPSILON) return;
     last.current = phase;
