@@ -18,8 +18,11 @@ export const OFFICE = {
   center: { x: 3.5, z: 10 },
   deskRadius: 8,
   roverRadius: 9.2,
-  /** Desk angles (degrees from +z toward +x), slot 0 at the west end. */
-  angles: [-51.3, -25.65, 0, 25.65, 51.3],
+  /**
+   * Desk angles (degrees from +z toward +x), slot 0 at the east end: the stop camera looks toward +z, so +x is
+   * on the left of the screen and desk 1 is the leftmost Rover from the office stop, like the drawer's list.
+   */
+  angles: [51.3, 25.65, 0, -25.65, -51.3],
   /** Tangential width, radial depth, top height, top slab and leg thickness. */
   desk: { w: 2.6, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
   rover: { radius: 1 },

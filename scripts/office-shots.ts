@@ -98,7 +98,7 @@ try {
       await page.screenshot({ path: name("states-a") });
 
       // Zoom key steps (as e2e/office.spec.ts `nearChips`) until the chips leave their far band and show the task line.
-      // The middle chip: a chip off screen (the west and east ones on a phone) keeps its far flag.
+      // The middle chip: a chip off screen (the end ones on a phone) keeps its far flag.
       for (let i = 0; i < 8 && (await chip(page, 2).getAttribute("data-far")) !== "false"; i++) {
         await page.keyboard.press("=");
         await settle(page);

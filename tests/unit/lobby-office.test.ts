@@ -26,13 +26,13 @@ const same = (a: Rect, b: Rect) => a.minX === b.minX && a.maxX === b.maxX && a.m
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
 
 describe("Agent Office layout (owner decisions D1 and D7)", () => {
-  it("puts five desks on one arc around (3.5, 10), west to east, equally spaced, each facing the arc centre", () => {
+  it("puts five desks on one arc around (3.5, 10), east to west (desk 1 leftmost from the office stop), equally spaced, each facing the arc centre", () => {
     expect(slots.map((s) => s.slot)).toEqual([0, 1, 2, 3, 4]);
     expect(slots[2].desk.x).toBeCloseTo(3.5);
     expect(slots[2].desk.z).toBeCloseTo(18);
-    expect(slots[0].desk.x).toBeCloseTo(-2.743, 2);
+    expect(slots[0].desk.x).toBeCloseTo(9.743, 2);
     expect(slots[0].desk.z).toBeCloseTo(15, 2);
-    expect(slots[4].desk.x).toBeCloseTo(9.743, 2);
+    expect(slots[4].desk.x).toBeCloseTo(-2.743, 2);
     expect(slots[4].desk.z).toBeCloseTo(15, 2);
     const gaps = slots.slice(1).map((s, i) => Math.hypot(s.desk.x - slots[i].desk.x, s.desk.z - slots[i].desk.z));
     for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0], 6);
@@ -45,7 +45,8 @@ describe("Agent Office layout (owner decisions D1 and D7)", () => {
       // Forward is (sin yaw, cos yaw), like the rover and `Box.yaw`.
       expect((Math.sin(s.yaw) * dx + Math.cos(s.yaw) * dz) / d).toBeCloseTo(1);
     }
-    for (let i = 1; i < slots.length; i++) expect(slots[i].desk.x).toBeGreaterThan(slots[i - 1].desk.x);
+    // The stop camera looks toward +z, so +x is on the left of the screen: desk 1 (slot 0) is the east end.
+    for (let i = 1; i < slots.length; i++) expect(slots[i].desk.x).toBeLessThan(slots[i - 1].desk.x);
   });
 
   it("stands the screen wall on the south edge, centred on the arc, clear of the middle Rover's back", () => {
@@ -66,8 +67,8 @@ describe("Agent Office layout (owner decisions D1 and D7)", () => {
     expect(b.minX).toBeGreaterThanOrEqual(-6);
     expect(b.maxX).toBeLessThanOrEqual(13);
     expect(b.minZ).toBeGreaterThanOrEqual(12);
-    expect(slots[0].rover.x - OFFICE.rover.radius - kioskRect().maxX).toBeGreaterThanOrEqual(3);
-    expect(HALL.lead[0].x - (slots[4].rover.x + OFFICE.rover.radius)).toBeGreaterThanOrEqual(2);
+    expect(slots[4].rover.x - OFFICE.rover.radius - kioskRect().maxX).toBeGreaterThanOrEqual(3);
+    expect(HALL.lead[0].x - (slots[0].rover.x + OFFICE.rover.radius)).toBeGreaterThanOrEqual(2);
     expect(rectGap(b, LOBBY.observatory)).toBeGreaterThan(10);
     const h = LOBBY.hologram;
     const nearest = Math.hypot(Math.max(b.minX - h.x, 0, h.x - b.maxX), Math.max(b.minZ - h.z, 0, h.z - b.maxZ));
@@ -131,6 +132,10 @@ describe("Agent Office layout (owner decisions D1 and D7)", () => {
       const r = { minX: b.x - h.x, maxX: b.x + h.x, minZ: b.z - h.z, maxZ: b.z + h.z };
       expect(obstacles.some((o) => inside(r, o)), JSON.stringify(b)).toBe(true);
     }
+    // The 4 cable trays (flat boxes) bridge the gaps between neighbouring desks with a positive width.
+    const trays = boxes.filter((b) => b.h < 0.07 && b.y === 0);
+    expect(trays).toHaveLength(4);
+    for (const t of trays) expect(t.w).toBeGreaterThan(0);
     const top = Math.max(...boxes.map((b) => b.y + b.h));
     expect(top).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
   });

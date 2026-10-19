@@ -40,7 +40,7 @@ export function officeShellBoxes(): Box[] {
     const b = slots[i + 1].theta;
     const mid = (a + b) / 2;
     const at = onArc(mid, OFFICE.deskRadius);
-    const chord = 2 * OFFICE.deskRadius * Math.sin((b - a) / 2);
+    const chord = 2 * OFFICE.deskRadius * Math.sin(Math.abs(b - a) / 2);
     out.push({ x: at.x, y: 0, z: at.z, w: chord - desk.w + 0.2, h: 0.06, d: 0.3, yaw: mid + Math.PI });
   }
   out.push({ x: wall.x, y: 0, z: wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
