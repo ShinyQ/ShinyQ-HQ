@@ -5,3 +5,4 @@
 export { officeTest } from "./live";
 export { OfficeScene } from "./OfficeScene";
 export { OfficeChips } from "./OfficeChips";
+export { OfficeBody } from "./OfficeBody";

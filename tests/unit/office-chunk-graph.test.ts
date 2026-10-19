@@ -18,6 +18,7 @@ const OFFICE_ONLY = [
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
+  `${DIR}/OfficeBody.tsx`,
   "src/lib/office/poll.ts",
   "src/lib/office/model.ts",
 ];
