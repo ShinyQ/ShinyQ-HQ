@@ -43,7 +43,7 @@ const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 type OfficeWindow = { __hq: { office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } } };
 
 /**
- * The Agent Office chunk loads near the spawn on idle; load it and wait until it shows, so L1 (and B1, ridden
+ * The Agent Office chunk loads only near its wing (or on an office mission or drawer); load it and wait until it shows, so L1 (and B1, ridden
  * from the Lobby) always measure the same programs. A build without the office (a main build) skips this.
  */
 async function settleOffice(page: Page) {

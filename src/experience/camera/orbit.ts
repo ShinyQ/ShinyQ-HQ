@@ -48,7 +48,7 @@ export interface OrbitState {
   /** Rail yaw set by a view zone on the L2 rail rig; eased back to the side view on exit unless the visitor turned the rail by hand. */
   zoneRailYaw: number | null;
   /**
-   * The zone's own yaw when its camera-class view set a `pitch` (opt-in, only the B1 phone arrival): eased back to, with
+   * The zone's own yaw when its camera-class view set a `pitch` (opt-in: the B1 phone arrival, the L1 office on tablets and phones): eased back to, with
    * the pitch leveled, on exit, unless the visitor turned or tilted by hand meanwhile.
    */
   zoneTurn: number | null;
