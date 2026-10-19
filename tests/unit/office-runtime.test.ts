@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
-import { OFFICE_CHIP_FAR, nextChipFar } from "@/experience/floors/lobby/office/runtime";
 import { OFFICE, OFFICE_ROOMS } from "@/experience/floors/lobby/officeLayout";
-import { atOfficeStop, officeChipsHere, wingSignHidden } from "@/experience/floors/lobby/officeShell";
+import { atOfficeStop, nextChipFar, OFFICE_CHIP_FAR, officeChipsHere, wingSignHidden } from "@/experience/floors/lobby/officeShell";
 import { roverRuntime } from "@/experience/rover/runtime";
 
 describe("nextChipFar", () => {

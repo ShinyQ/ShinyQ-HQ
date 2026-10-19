@@ -11,8 +11,7 @@ import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
-import { officeChipsHere, officeSign, wingSignHidden } from "@/experience/floors/lobby/officeShell";
-import { CHIP_ROW, nextChipFar, OFFICE_CHIP_FAR, OFFICE_CHIP_FAR_BAND, OFFICE_CHIP_TOP, officeRuntime } from "@/experience/floors/lobby/office/runtime";
+import { CHIP_ROW, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_FAR, OFFICE_CHIP_FAR_BAND, OFFICE_CHIP_TOP, officeChipsHere, officeSign, wingSignHidden } from "@/experience/floors/lobby/officeShell";
 import { boxesOverlap, type ScreenBox } from "@/experience/fx/labelPlacement";
 import type { ViewportClass } from "@/experience/types";
 import { hudLayout } from "@/hud/layout";
@@ -201,7 +200,7 @@ const hudTop = (size: { width: number; height: number }) => OFFICE_CHIP_TOP[view
  * from it, its top never above the HUD's top bar.
  */
 function chipBox(camera: PerspectiveCamera, size: { width: number; height: number }, slot: number, chip: { w: number; h: number }): ScreenBox | null {
-  const a = officeRuntime.anchors[slot];
+  const a = OFFICE_CHIP_ANCHORS[slot];
   const v = new Vector3(a.x, a.y, a.z).project(camera);
   if (!(v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1)) return null;
   const edge = chip.w / 2 + 8;
@@ -212,7 +211,7 @@ function chipBox(camera: PerspectiveCamera, size: { width: number; height: numbe
 
 /** Distance from the camera to a chip's anchor. */
 const anchorDistance = (camera: PerspectiveCamera, slot: number) => {
-  const a = officeRuntime.anchors[slot];
+  const a = OFFICE_CHIP_ANCHORS[slot];
   return camera.position.distanceTo(new Vector3(a.x, a.y, a.z));
 };
 
@@ -258,14 +257,14 @@ describe("Agent Office chips at the office stop", () => {
   it("anchor still on the wall's front face over its frame, at each Rover's x, in two rows (no pose moves them)", () => {
     const { wall } = OFFICE;
     const top = wall.bottom + wall.h + wall.frame;
-    expect(officeRuntime.anchors.map((a) => a.x)).toEqual(slots.map((s) => s.rover.x));
-    for (const a of officeRuntime.anchors) {
+    expect(OFFICE_CHIP_ANCHORS.map((a) => a.x)).toEqual(slots.map((s) => s.rover.x));
+    for (const a of OFFICE_CHIP_ANCHORS) {
       expect(a.z).toBeCloseTo(W.wall.z - wall.t / 2);
       expect(a.y).toBeGreaterThanOrEqual(top + CHIP_ROW.gap - 1e-9);
       expect(a.y).toBeLessThanOrEqual(top + CHIP_ROW.gap + CHIP_ROW.step + 1e-9);
     }
     // Neighbours never share a row.
-    for (let i = 1; i < slots.length; i++) expect(Math.abs(officeRuntime.anchors[i].y - officeRuntime.anchors[i - 1].y)).toBeCloseTo(CHIP_ROW.step);
+    for (let i = 1; i < slots.length; i++) expect(Math.abs(OFFICE_CHIP_ANCHORS[i].y - OFFICE_CHIP_ANCHORS[i - 1].y)).toBeCloseTo(CHIP_ROW.step);
   });
 
   describe.each(SIZES)("$id ($width x $height)", ({ width, height, coarse }) => {
@@ -379,7 +378,7 @@ describe("Agent Office chips at the office stop", () => {
       for (const { slot, box } of chipBoxes(camera, size)) {
         if (!box) continue;
         expect(box.y0, `slot ${slot} at ${width} x ${height} under the top row`).toBeGreaterThanOrEqual(hudBar(size));
-        const a = officeRuntime.anchors[slot];
+        const a = OFFICE_CHIP_ANCHORS[slot];
         const raw = ((1 - new Vector3(a.x, a.y, a.z).project(camera).y) / 2) * height;
         if (raw - (box.y1 - box.y0) < hudTop(size)) {
           clamped += 1;

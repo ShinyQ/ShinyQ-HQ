@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box3,
   BoxGeometry,
@@ -10,12 +10,10 @@ import {
   CanvasTexture,
   DynamicDrawUsage,
   Frustum,
-  LinearFilter,
   Matrix4,
   MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
-  SRGBColorSpace,
   Sphere,
   Texture,
   Vector2,
@@ -41,7 +39,7 @@ import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { OFFICE_SLOTS, officeBounds, officeChipsHere } from "../officeShell";
+import { canvasTexture, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, OFFICE_SLOTS, officeBounds, officeChipsHere, useCanvasFonts } from "../officeShell";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
@@ -50,7 +48,7 @@ import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "
 import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, pose, poseOffset, slotPhase, STILL_T, stillPose } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
-import { nextChipFar, OFFICE_CHIP_TOP, officeRuntime, setChipFar } from "./runtime";
+import { officeRuntime, setChipFar } from "./runtime";
 
 const NO_RAYCAST = () => null;
 const QUADS = 10;
@@ -58,42 +56,6 @@ const QUADS = 10;
 const SCREEN_FPS = { full: 10, lite: 5 } as const;
 const FRAME = new Matrix4();
 const ORIGIN = new Vector2();
-
-function cssFont(variable: string, fallback: string): string {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
-  return value ? `${value}, ${fallback}` : fallback;
-}
-
-/** Reads the site fonts for canvas text, again once web fonts are ready (then `onReady` forces a redraw). */
-function useCanvasFonts(onReady: () => void): RefObject<CanvasFonts> {
-  const fonts = useRef<CanvasFonts>({ mono: "monospace", sans: "sans-serif" });
-  useEffect(() => {
-    const read = () => {
-      fonts.current.mono = cssFont("--font-jetbrains", "monospace");
-      fonts.current.sans = cssFont("--font-inter", "sans-serif");
-      onReady();
-    };
-    read();
-    void document.fonts?.ready.then(read);
-  }, [onReady]);
-  return fonts;
-}
-
-/** A canvas texture that is only ever drawn whole or patched: no mipmaps, linear filtering (performance review). */
-function flatTexture(texture: Texture): Texture {
-  texture.colorSpace = SRGBColorSpace;
-  texture.generateMipmaps = false;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  return texture;
-}
-
-function makeCanvas(w: number, h: number): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  return c;
-}
 
 /** Five faces then five desk screens as one merged quad mesh (one draw call, one atlas). */
 function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
@@ -329,12 +291,12 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   }, [tier]);
   useDispose(glow);
   // Version 0 until the first frame paints every cell and uploads it once; after that only changed cells upload.
-  const atlas = useMemo(() => flatTexture(new Texture(makeCanvas(ATLAS.w, ATLAS.h))), []);
+  const atlas = useMemo(() => canvasTexture(ATLAS.w, ATLAS.h), []);
   useDispose(atlas);
   // Cell-sized sources for the partial uploads (never drawn as textures themselves).
-  const faceSrc = useMemo(() => flatTexture(new Texture(makeCanvas(atlasCell(0).w, atlasCell(0).h))), []);
+  const faceSrc = useMemo(() => canvasTexture(atlasCell(0).w, atlasCell(0).h), []);
   useDispose(faceSrc);
-  const screenSrc = useMemo(() => flatTexture(new Texture(makeCanvas(atlasCell(ATLAS_CELLS / 2).w, atlasCell(ATLAS_CELLS / 2).h))), []);
+  const screenSrc = useMemo(() => canvasTexture(atlasCell(ATLAS_CELLS / 2).w, atlasCell(ATLAS_CELLS / 2).h), []);
   useDispose(screenSrc);
   const screens = useMemo(() => new MeshBasicMaterial({ map: atlas, color: neonColor("#ffffff", 1.6, tier), toneMapped: false, alphaHash: true }), [atlas, tier]);
   useDispose(screens);
@@ -421,7 +383,7 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
   const size = WALL_CANVAS[tier === "full" ? "full" : "lite"];
   const reduced = useHQStore((s) => s.reducedMotion);
   const locale = useHQStore((s) => s.locale);
-  const texture = useMemo(() => flatTexture(new CanvasTexture(makeCanvas(size.w, size.h))), [size]);
+  const texture = useMemo(() => canvasTexture(size.w, size.h, CanvasTexture), [size]);
   useDispose(texture);
   const plane = useMemo(() => new PlaneGeometry(OFFICE.wall.w, OFFICE.wall.h), []);
   useDispose(plane);
@@ -541,7 +503,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         tmp.shown[slot] = false;
         tmp.wFar[slot] = null;
       }
-      const a = officeRuntime.anchors[slot];
+      const a = OFFICE_CHIP_ANCHORS[slot];
       tmp.v.set(a.x, a.y, a.z);
       const on = chipsHere && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
       if (!on) {

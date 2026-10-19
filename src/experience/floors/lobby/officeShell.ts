@@ -1,3 +1,5 @@
+import { useEffect, useRef, type RefObject } from "react";
+import { LinearFilter, SRGBColorSpace, Texture } from "three";
 import { LOBBY } from "../../config";
 import type { SignSpec } from "../../fx/signLayout";
 import { distanceToRect } from "../../nav/collision";
@@ -10,6 +12,8 @@ import { isOfficeRoom, OFFICE, officeObstacles, officeSlots, officeZone, type Of
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
  * Kept out of `officeLayout.ts`, which the Classic site's shared page chunk carries through the drawer bodies and the
  * office loader (`office/chunk.ts`), so they cost the Classic JS budget nothing (tests/unit/office-chunk-graph.test.ts).
+ * The chip placement constants and the canvas helpers the lazy office scene uses live here too: the main path carries
+ * them, so the office chunk stays under its byte cap.
  */
 
 /** The five desks and Rovers in the wing. */
@@ -89,4 +93,73 @@ export function officeShellBoxes(): Box[] {
   }
   out.push({ x: w.wall.x, y: 0, z: w.wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
   return out;
+}
+
+/**
+ * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, at their Rovers'
+ * x, desks 2 and 4 a `step` higher (two rows, so neighbours never share one and the row stays low): from the office
+ * stop, on every camera class, they sit in the empty space over the wall and never cover its text, a desk screen or
+ * the visitor's rover, and zoomed in until the middle three show their task lines (desktops and tablets; a phone keeps
+ * them compact, `OfficeWatch`) they still clear the wall, each other and the HUD (tests/unit/office-chip-placement.test.ts).
+ */
+export const CHIP_ROW = { gap: 0.2, step: 2.2 } as const;
+
+/** The chips' world anchors (`CHIP_ROW`), one per slot. */
+export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({
+  x: s.rover.x,
+  y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame + CHIP_ROW.gap + CHIP_ROW.step * (s.slot % 2),
+  z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2,
+}));
+
+/** A chip's top never goes above this (px): under the HUD's top bar (62 px desktop, 58 px phones), so `OfficeWatch` clamps there. */
+export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
+
+/** A chip farther than this from the camera shows its first line only (the mock's `.tag.far`). */
+export const OFFICE_CHIP_FAR = 30;
+/** Half-width of the near/far band, so a camera hovering at the threshold does not flip the chip every frame. */
+export const OFFICE_CHIP_FAR_BAND = 1;
+
+/**
+ * The next far flag for a chip at `dist` from the camera: far above 31, near below 29, unchanged between. On a phone
+ * (`phone`) always far: there is no room for task lines over the wall, and the desk's drawer shows them.
+ */
+export function nextChipFar(far: boolean, dist: number, phone = false): boolean {
+  return phone || (far ? dist > OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND : dist > OFFICE_CHIP_FAR + OFFICE_CHIP_FAR_BAND);
+}
+
+/** A site font for canvas text: the CSS variable's value, then `fallback`. */
+function cssFont(variable: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+  return value ? `${value}, ${fallback}` : fallback;
+}
+
+/** Reads the site fonts for canvas text (the office atlas and wall), again once web fonts are ready (then `onReady` forces a redraw). */
+export function useCanvasFonts(onReady: () => void): RefObject<{ mono: string; sans: string }> {
+  const fonts = useRef({ mono: "monospace", sans: "sans-serif" });
+  useEffect(() => {
+    const read = () => {
+      fonts.current.mono = cssFont("--font-jetbrains", "monospace");
+      fonts.current.sans = cssFont("--font-inter", "sans-serif");
+      onReady();
+    };
+    read();
+    void document.fonts?.ready.then(read);
+  }, [onReady]);
+  return fonts;
+}
+
+/**
+ * A texture on a fresh `w` x `h` canvas that is only ever drawn whole or patched: no mipmaps, linear filtering
+ * (performance review). `Kind` is `Texture` (uploaded once primed) or `CanvasTexture` (uploaded at once).
+ */
+export function canvasTexture(w: number, h: number, Kind: new (canvas: HTMLCanvasElement) => Texture = Texture): Texture {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const texture = new Kind(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.generateMipmaps = false;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  return texture;
 }

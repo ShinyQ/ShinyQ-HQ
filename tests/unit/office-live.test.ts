@@ -8,6 +8,7 @@ vi.stubGlobal("fetch", fetchMock);
 
 const { officeLive, officeTest } = await import("@/experience/floors/lobby/office/live");
 const { officeRuntime, setChipFar, subscribeChipFar } = await import("@/experience/floors/lobby/office/runtime");
+const { OFFICE_CHIP_ANCHORS } = await import("@/experience/floors/lobby/officeShell");
 
 afterEach(() => {
   officeLive.want("view", false);
@@ -78,7 +79,7 @@ describe("Agent Office live feed (3D)", () => {
   });
 
   it("anchors a chip over every Rover and notifies far changes once", () => {
-    expect(officeRuntime.anchors).toHaveLength(5);
+    expect(OFFICE_CHIP_ANCHORS).toHaveLength(5);
     expect(officeRuntime.chips).toEqual([null, null, null, null, null]);
     const listener = vi.fn();
     const unsubscribe = subscribeChipFar(listener);
