@@ -152,3 +152,32 @@ describe("deploy on merge (deploy.yml, rollback.yml)", () => {
     expect(rollback).toMatch(/dry_run:[\s\S]*?default: true/);
   });
 });
+
+describe("Ask samples (ask-samples.yml)", () => {
+  const samples = read(path.join(dir, "ask-samples.yml"));
+  const steps = samples.split("    steps:")[1].split(/\n(?=      - )/);
+
+  it("is dispatch-only, read-only and runs in the production environment", () => {
+    expect(samples).toMatch(/\non:\n  workflow_dispatch:\n/);
+    expect(samples).not.toMatch(/^\s+(schedule|push|pull_request\w*|workflow_run):/m);
+    expect(samples).toMatch(/\npermissions:\n  contents: read\n/);
+    expect(samples).toMatch(/environment:\n      name: production\n      deployment: false/);
+  });
+
+  it("validates the ref as a branch head of this repository before checking it out", () => {
+    const validate = steps.findIndex((step) => step.includes("git ls-remote --exit-code --heads"));
+    const checkout = steps.findIndex((step) => /uses:\s*actions\/checkout@/.test(step));
+    expect(validate).toBeGreaterThanOrEqual(0);
+    expect(validate).toBeLessThan(checkout);
+    expect(steps[checkout]).toContain("repository: ${{ github.repository }}");
+    expect(steps[checkout]).toContain("ref: ${{ inputs.ref }}");
+    expect(samples).not.toMatch(/run:[^\n]*\$\{\{\s*inputs\./);
+  });
+
+  it("passes GROQ_API_KEY only to the sample step and no other secret", () => {
+    expect([...samples.matchAll(/secrets\.(\w+)/g)].map(([, name]) => name)).toEqual(["GROQ_API_KEY"]);
+    const withKey = steps.filter((step) => step.includes("secrets.GROQ_API_KEY"));
+    expect(withKey).toHaveLength(1);
+    expect(withKey[0]).toContain("run: bun scripts/ask-samples.ts --groq");
+  });
+});
