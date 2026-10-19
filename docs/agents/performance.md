@@ -21,8 +21,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 13.9 KB) | `e2e/budgets.ts` |
-| L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5.8 KB) | `e2e/budgets.ts` |
+| L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 14,289 B of 14,336 B) | `e2e/budgets.ts` |
+| L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5,996 B of 6,144 B) | `e2e/budgets.ts` |
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 473 KB (measured 471.0 KB, about 2.0 KB headroom) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 449.4 KB (measured 447.4 KB, about 2.0 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
@@ -67,7 +67,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L1 and B1 load the Agent Office chunk first, and an unrecorded L1 spot at the office stop holds the same cap and baseline |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L1 and B1 load the Agent Office chunk first, and an unrecorded L1 spot at the office stop holds the same cap and baseline (L1 measured 101 lite and 103 full at the spawn, 51 and 53 at the office stop; cap 125) |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 | `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
@@ -85,7 +85,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
-- Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 13.9 KB); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 5.8 KB). The scene loads near the spawn in a normal session, but both caps are their own, outside the session total (owner decision 2026-10-19).
+- Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 14,289 B); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 5,996 B). Both caps are their own, outside the session total (owner decision 2026-10-19); the scene loads only within 25 u of the office stop (the lead road and the wing), on an office-bound mission or an office drawer, never at the spawn ([L1 Agent Office](floor-l1-lobby.md#chunks-and-mounting)).
   - The office also costs the Classic site a little: `/en` JS 237,008 B of 245,760 B (+822 B: the office layout `config.ts` needs for the L1 navgrid ships in the shared page chunk because `useHQStore` imports `config.ts`; the 3D-only shell helpers live in `officeShell.ts` so they do not) and `/en` HTML 56,099 B (+1,078 B, the `office` strings in `CLIENT_NAMESPACES`; `/en/quick` unchanged).
 
 #### Study guide reader

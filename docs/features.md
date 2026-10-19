@@ -65,7 +65,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
-| Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); the Classic card is part 4 | In review |
+| Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | In review |
 | Study guides | 2026-10-19 (PR 1 of 2): the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card; PR 2 adds the 3D Study Vault on L4 | In review |
 
 ## Controls and first visit
@@ -216,13 +216,13 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 ### Agent Office
 
-`L1:office` (summary), `L1:office-github` and `L1:office-desk-1` to `-5` on the south plaza strip, also in the Rover menu ("Watch the AI agents at work") and Cmd-K.
+`L1:office` (summary), `L1:office-github` and `L1:office-desk-1` to `-5` in the office's own south wing of the Lobby, down a lead road from the plaza under an "Agent Office" sign, also in the Rover menu ("Watch the AI agents at work") and Cmd-K.
 
-- A curved console row of five desks, a Rover behind each desk facing you (Desk 1 on the left from the office), and a screen wall behind them: mission control (counts, who is working now, today) and the public GitHub board.
+- One continuous curved console of five desks around the office stop, a Rover behind each desk facing you (Desk 1 on the left from the office), and a screen wall behind them: mission control (counts, who is working now, today) and the public GitHub board.
 - Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
-- A chip for each Rover, in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones just the state dot).
+- A chip for each Rover, in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones always just the state dot; the desk's drawer shows the task).
 - Click a Rover, its chip or a wall half to drive to the office and open its drawer: the summary, the GitHub board, or one desk (agent, activity, task, repository, time in state, recent activity).
-- It loads on its own after the first frame when you are near it on L1 (the session starts within reach), and polls only while the office is in view or one of its drawers is open.
+- It loads on its own once you drive onto the lead road or into the wing, start the office mission or head for an office room (from the elevator ride on), or open one of its drawers; a visit that never heads south never downloads it. It polls only while the office is in view or one of its drawers is open.
 - Semi-live (GitHub only), resting (off) and offline modes put every Rover to sleep; reduced motion holds every Rover still.
 
 ## L1 Highlights Hall

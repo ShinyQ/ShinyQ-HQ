@@ -19,6 +19,17 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 - `buildFloorLayouts(yearCount, extras: LayoutExtras = {})` builds every floor layout.
 - Each floor adds its own optional input field to `LayoutExtras` (`types.ts`; for example `labs` and `career`), never a new positional parameter.
 
+### Multi-rect slabs (wings)
+
+- `FloorLayout.bounds` is the main slab rect; optional `FloorLayout.wings` lists extensions (L1: the [Agent Office wing](floor-l1-lobby.md#agent-office)). A wing touches the slab (or another wing) along part of an edge and never overlaps it; the shared joint is open floor, not an edge.
+- No three rects may share a corner: the inset union bridges pairwise joints only, so such a vertex would hide an invisible post.
+- Pure helpers in `src/experience/nav/slab.ts` serve every reader of the walkable shape; a floor without wings takes the plain rect path in each (frozen by `tests/unit/slab-regression.test.ts` on every floor):
+  - `slabRects` (`[bounds, ...wings]`), `slabBox` (their bounding box), `inSlab` / `inSlabXZ` (optionally with `inset` u of floor around the point);
+  - `clampToSlab(p, s, inset, out)`: the nearest point of the inset union, allocation-free (collision and the camera call it per frame);
+  - `slabInsetRects` (each rect inset plus one bridge across each joint; a concave corner keeps the square inset, a little stricter than the rounded one; cached per wings array, so insets come from a small fixed set);
+  - `slabEdges` (the outer edges of the union, joints left out) and `slabCorners` (where the outline turns).
+- Consumers: the navgrid (`buildNavGrid` over `slabBox`), collision (`resolveCircle`), the space rules (`bounds-gap` against `slabEdges`, `pad-bounds`, `wideGrid`, `reachFrom`), the camera (`cameraWorld` carries the wings; `cameraBlocked`, `viewOnSlab`, `clampCamera`), the slab mesh (`tower/FloorLevel.tsx`: one box and one grid per rect faded as one floor, one outline from `tower/slabOutline.ts` with no edge across a joint; the ride cull gets every rect as an occluder), `Tower.tsx` (`slabBox`) and the minimap (one fill path of every rect plus an outline path of the outer edges). A wing costs 2 draw calls on its floor (its box and grid).
+
 ### Arrival
 
 - Every floor sets `FloorLayout.arrival` (Round 8 J): where the rover rolls on after an elevator ride, heading east along the floor's main axis. Ride, glide and camera rules: [Elevator arrival](3d-experience.md#elevator-arrival).
@@ -28,7 +39,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - `arrivalOnly`: active only once an arrival or a deep-link spawn primed it, so driving back through never swings the camera;
   - the L2 zone adds `railYaw` (the rail camera due west of the rover, looking down the Career Road).
 - Zooms are the widest view whose camera stays east of the elevator shaft: constants per floor (`LOBBY.arrivalZoom` and `arrivalZoomPhone` on L1 (`src/experience/config.ts`), `CAREER_ROAD.arrivalZoom` on L2, the newsroom concept's `arrivalZoom` on L4, `ROOF_DECK.arrivalZoom` on RF, `ENGINE.arrivalZoom` on B1), capped per camera class by `shaftClearZoom`; `tests/unit/arrivals.test.ts` asserts the clearance, the framing and the free roll-on path at four sizes.
-- B1 phones (camera class mobile) turn the arrival camera off east (`ENGINE.arrivalPhone`, a `classView` yaw, zoom and pitch; the pitch opts into the turn-back on leaving, no other floor uses it): a portrait view down the aisle cuts every station sign. The arrivals test checks that this view keeps the first two station signs whole, with a font at least 10 px tall, and its camera east of the shaft.
+- B1 phones (camera class mobile) turn the arrival camera off east (`ENGINE.arrivalPhone`, a `classView` yaw, zoom and pitch; the pitch opts into the turn-back on leaving, as on the L1 Agent Office's tablet and portrait views): a portrait view down the aisle cuts every station sign. The arrivals test checks that this view keeps the first two station signs whole, with a font at least 10 px tall, and its camera east of the shaft.
 - Deep links spawn on the arrival point on L3, L4 and RF (`spawn`); B1 has no route; its one deep link, `/{locale}#B1` (only when unlocked), also spawns on the arrival point. L1 keeps the kiosk spawn and L2 the approach.
 
 ## Doors
@@ -236,7 +247,7 @@ Design: [spectacle floor ends and hall](../superpowers/specs/2026-10-13-spectacl
 
 ## Road kit
 
-Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L2, L3, L4 and RF are built on this kit (see the per-floor files); L1 uses it only for the Highlights Hall road.
+Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L2, L3, L4 and RF are built on this kit (see the per-floor files); L1 uses it only for the Highlights Hall road and the Agent Office wing road.
 
 - Guided tours were removed with their engine, HUD and URL flag; old links with the flag are ignored. Do not reintroduce them.
 
@@ -251,9 +262,10 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - Helpers:
   - `pathBetween(net, a, b)` returns waypoints along the road (excluding `a`);
   - `roadRoute(net, grid, from, to)` (`nav/roadRoute.ts`) adds navgrid legs on and off the road and falls back to `findPath`;
+    - a network may come in parts that do not touch (L1: the hall road and the office wing road), where `pathBetween` finds no route: an end on the network keeps to its own part; a drive between two parts leaves the first where it comes nearest the target and joins the second at its nearest point, with a navgrid leg between; an end off the network joins the other end's part; same-part routes are unchanged;
     - it lives apart from the road kit so the navgrid stays out of the store's always-loaded chunk (floor layouts import `road.ts`);
   - also `projectOnRoad`, `sampleRoad`, `onNetwork`, `networkBounds`, `buildRoadGraph`.
-- `FloorLayout.roadZone` limits a floor's road to drives that start or end inside it (`routeUsesRoad`).
+- `FloorLayout.roadZone` (one rect or a list) limits a floor's road to drives that start or end inside it or one of them (`routeUsesRoad`). L1: `[the hall zone, the office wing rect, the wing's lead span]`.
 
 ### Opting in
 
@@ -272,7 +284,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 
 - roads at least 8 u wide, plazas at least 16 u;
 - roads clear of obstacles over their full width, spurs by the rover radius;
-- obstacles either touching or at least 6 u apart (also from the slab edge);
+- obstacles either touching or at least 6 u apart (also from the slab edges: the outer edges of the slab and its wings, never a joint);
 - every door has a spur ending on its pad;
 - 6 u wide floor connects the start to within 4 u of every pad.
 - Layouts with floor pads pass them as `pads` (see [pad rules](#pad-rules)).

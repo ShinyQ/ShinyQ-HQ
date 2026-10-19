@@ -287,7 +287,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
   - kiosk.ts (Rover menu kiosk parts, lines, the radial spoke end and the spawn stop).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
-  - officeLayout.ts (the Agent Office layout, rooms, obstacles, stops and view zone; config.ts imports it, so it stays import-light and reaches the Classic page chunk through the store), officeShell.ts (3D-only: `officeShellBoxes`, `officeBounds`) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
+  - officeLayout.ts (the Agent Office wing offsets and `officeWing`, layout, rooms, obstacles, stops, view zone and road; config.ts imports it, so it stays import-light and reaches the Classic page chunk through the store), officeShell.ts (3D-only: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
     - main path: `OfficeMount.tsx` (the furniture shell and the load trigger), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`), `runtime.ts` (in-view flag, chip elements and anchors, near/far flags);
     - the scene chunk `scene.ts`: `OfficeScene.tsx` (Rovers, atlas, glow, wall, chip placement), `OfficeChips.tsx`, `live.ts` (the poller and `officeTest`), the pure modules `officeModel.ts`, `officeVisual.ts` (`OFFICE_STATE_STYLE`, `STATUS_COLOR`, poses), `officeRig.ts`, `officeAtlas.ts`, `officeFrame.ts`, `officeWall.ts` and `interact.ts`;
     - the drawer body chunk `body.ts`: `OfficeBody.tsx`.
@@ -301,10 +301,12 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 #### Systems
 
+- `src/experience/tower/`: the tower around the floors: Tower.tsx, FloorLevel.tsx (per floor one slab box and grid per slab rect and one outline, ghost fades), slabOutline.ts (pure: the outline segments, none across a wing joint), ElevatorShaft.tsx and elevator.ts, the ride cull (rideCull.ts, RideCullHooks.tsx, slabShadow.ts), floorRegistry.ts, near.ts and visibility.ts.
 - `src/experience/missions/`: pure mission system: host.ts (MissionHost), rooms.ts, runner.ts, surprise.ts, staticHost.ts, bridge.ts and host3d.ts (3D wiring).
 - `src/experience/nav/`: pure navigation.
   - navgrid, collision, doors.
-  - road.ts (road kit, pathBetween, roadRoute), roadGeometry.ts (road mesh data), space.ts (space rules, pad rules).
+  - slab.ts (multi-rect slabs: `slabRects`, `slabBox`, `inSlab`, `clampToSlab`, `slabInsetRects`, `slabEdges`, `slabCorners`; see [floors.md](floors.md#multi-rect-slabs-wings)).
+  - road.ts (road kit, pathBetween), roadRoute.ts (road waypoints with navgrid legs, across network parts that do not touch; 3D-only), roadGeometry.ts (road mesh data), space.ts (space rules, pad rules).
   - pads.ts (floor pads, the pad latch), teleport.ts (L2 teleport beam timeline).
 - `src/experience/hints/`: "!" hint bubbles: source.ts (the only registry read), pure select.ts (nearestHint, hintAnchor), runtime.ts, HintProbe.tsx (no draw calls).
 - `src/experience/interact/`: point-and-go.
@@ -380,7 +382,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 | L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
-| Agent Office | `office.spec.ts`: the lazy chunk near the spawn and its trigger, `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, the L1 budget at the office (lite); snapshots from `e2e/office-fixtures.ts` |
+| Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no task line, zoomed in), the L1 budget at the office (lite); snapshots from `e2e/office-fixtures.ts` |
 | RF roof deck | `roof.spec.ts` |
 | Missions + axe | missions |
 | Floor pads and pickers | `pads.spec.ts` |
