@@ -167,7 +167,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
 | `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `b1-unlock`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
-| L1 Agent Office: `floors/lobby/office/**` (scene and drawer body chunks), `officeLayout`, `officeShell`, `src/lib/office/{poll,model,protocol,fixtures}.ts`, `hud/OfficeLayer.tsx` (plus its HUD specs: `experience`, `missions`, `drawer-solid`, `hud`), `e2e/office-fixtures.ts` | `office`, `experience`, `highlights`, `interact` and `onboarding` (the office Functions and the Worker are unit tested only) |
+| L1 Agent Office: `floors/lobby/office/**` (scene and drawer body chunks), `officeLayout`, `officeShell`, `src/lib/office/{poll,model,protocol,fixtures}.ts`, `hud/OfficeLayer.tsx` (plus its HUD specs: `experience`, `missions`, `drawer-solid`, `hud`), `e2e/office-fixtures.ts` | `office`, `experience`, `highlights`, `interact`, `onboarding` and `hud-corners` (the office Functions and the Worker are unit tested only) |
 | `e2e/hq.ts`, `playwright.config.ts`, `package.json`, `bun.lock` or `next.config.ts` | the full suite |
 | unmapped paths | adds the smoke specs |
 | docs and unit tests | nothing |

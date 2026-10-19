@@ -234,7 +234,7 @@ describe("specsForChanges", () => {
   });
 
   it("maps the Agent Office to its spec, the 3D experience and the Lobby specs", () => {
-    const office = ["experience", "highlights", "interact", "office", "onboarding"];
+    const office = ["experience", "highlights", "hud-corners", "interact", "office", "onboarding"];
     for (const f of [
       "src/experience/floors/lobby/officeLayout.ts",
       "src/experience/floors/lobby/officeShell.ts",
@@ -250,7 +250,7 @@ describe("specsForChanges", () => {
     ])
       expect(specsForChanges([f]).specs, f).toEqual(office);
     // The chips host keeps the HUD folder rule's specs on top.
-    expect(specsForChanges(["src/hud/OfficeLayer.tsx"]).specs).toEqual(["drawer-solid", "experience", "highlights", "hud", "interact", "missions", "office", "onboarding"]);
+    expect(specsForChanges(["src/hud/OfficeLayer.tsx"]).specs).toEqual(["drawer-solid", "experience", "highlights", "hud", "hud-corners", "interact", "missions", "office", "onboarding"]);
     // A spec file runs itself only (SPEC_FILE in specsForChanges).
     expect(specsForChanges(["e2e/office.spec.ts"]).specs).toEqual(["office"]);
     expect(specsForChanges(["scripts/office-shots.ts"]).specs).toEqual([]);

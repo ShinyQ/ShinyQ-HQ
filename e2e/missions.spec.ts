@@ -141,7 +141,8 @@ for (const viewport of [
     const box = (await menu.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 0.5);
-    await expect(menu.getByRole("option")).toHaveCount(8);
+    // Every mission plus "explore on my own".
+    await expect(menu.getByRole("option")).toHaveCount(data.missions.length + 1);
     await expect(menu.getByRole("button", { name: en.hud.terminal.close })).toBeInViewport();
     await expect(menu.getByRole("option").last()).toBeInViewport();
   });

@@ -102,10 +102,11 @@ export const RULES: Rule[] = [
   // L1 Agent Office (3D, part 3 of the office): the layout and the shell on the main path, the lazy scene and drawer
   // body chunks, the shared client modules (the poller, the model, the protocol the scene and the room views import,
   // the fixtures the e2e snapshots share), the HUD chips host and the e2e fixtures. The spawn is within the office's
-  // load radius, so the Lobby specs (point-and-go, the tour) see the office too. Before the backend rule below.
+  // load radius, so the Lobby specs (point-and-go, the tour, the Corners control counts with the chips) see the office
+  // too. Before the backend rule below.
   {
     test: /^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)|^src\/lib\/office\/(poll|model|fixtures|protocol)\.ts$|^src\/hud\/OfficeLayer\.tsx$|^e2e\/office-fixtures\.ts$/,
-    specs: ["office", "experience", "highlights", "interact", "onboarding"],
+    specs: ["office", "experience", "highlights", "interact", "onboarding", "hud-corners"],
   },
   // Agent Office backend (part 1): unit tested in tests/office; the 3D office and the Classic card add their specs.
   { test: /^functions\/(api\/office\/|_lib\/office\.ts$)|^src\/lib\/office\//, specs: [] },

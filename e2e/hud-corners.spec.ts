@@ -49,14 +49,17 @@ async function openHQ(browser: Browser, vp: Viewport, path = "/en") {
   return { context, page };
 }
 
-/** Visible, enabled controls in the HUD (buttons, links, inputs, the joystick), minus the minimap and dialogs. */
+/**
+ * Visible, enabled controls in the HUD (buttons, links, inputs, the joystick), minus the minimap, dialogs and the
+ * Agent Office chips (world labels over the L1 Rovers, near the spawn; not Corners controls).
+ */
 async function visibleControls(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const hud = document.querySelector("[data-testid='hud']");
     if (!hud) return [];
     const nodes = [...hud.querySelectorAll<HTMLElement>("button, a[href], input, [data-testid='joystick']")];
     return nodes
-      .filter((el) => !el.closest("[data-testid='minimap'], [role='dialog']"))
+      .filter((el) => !el.closest("[data-testid='minimap'], [role='dialog'], [data-testid='office-chips']"))
       .filter((el) => !(el as HTMLButtonElement).disabled)
       .filter((el) => {
         const r = el.getBoundingClientRect();
