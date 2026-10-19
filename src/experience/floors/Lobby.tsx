@@ -22,7 +22,8 @@ import { SkillsWall } from "./lobby/SkillsWall";
 import { StatsRing } from "./lobby/StatsRing";
 import { VISITS_ROOM } from "./lobby/visitsRoom";
 import { VisitsStation } from "./lobby/VisitsStation";
-import type { OfficeTranslate } from "./lobby/officeLayout";
+import { OfficeMount } from "./lobby/office/OfficeMount";
+import { officeBounds, type OfficeTranslate } from "./lobby/officeLayout";
 
 export interface LobbyLabels {
   skillsTitle: string;
@@ -47,6 +48,7 @@ const REVEAL = {
   kiosk: kioskRect(),
   observatory: LOBBY.observatory,
   hall: { minX: HALL.zone.minX, maxX: HALL.zone.maxX, minZ: LOBBY.bounds.minZ, maxZ: LOBBY.bounds.maxZ },
+  office: officeBounds(),
 } satisfies Record<string, Rect>;
 
 /**
@@ -107,6 +109,10 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
         <Suspense fallback={null}>
           <VisitsStation labels={labels.observatory} locale={data.locale} tier={tier} reducedMotion={reducedMotion} active={observing} />
         </Suspense>
+      </IntroReveal>
+      {/* Agent Office (D1, D7): the shell always, the live office from its lazy chunk (floors/lobby/office/). */}
+      <IntroReveal rect={REVEAL.office}>
+        <OfficeMount tier={tier} t={labels.office} ready={composerLive} />
       </IntroReveal>
       {hall && (
         <IntroReveal rect={REVEAL.hall}>

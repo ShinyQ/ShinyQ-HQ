@@ -37,7 +37,8 @@ describe("intro chunk boundary", () => {
       .filter((f) => !chunk.has(f))
       .filter((f) => INTRO_ONLY.some((only) => staticClosure(f).has(only)));
     expect(offenders).toEqual([]);
-  });
+    // One closure per file under src/experience: slower than the default 5 s on a busy machine.
+  }, 60_000);
 
   it("keeps the shared intro state on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
