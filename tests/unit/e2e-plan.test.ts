@@ -49,6 +49,32 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("maps the study guide shelf, reader, data and the dialogs that open it to the guides spec, on top of their own specs", () => {
+    for (const file of [
+      "src/components/guides/GuideReader.tsx",
+      "src/components/guides/GuideShelf.tsx",
+      "src/content/guides.ts",
+      "src/content/guide-views.ts",
+      "content/study-guides.json",
+      "src/components/certs/CertDialog.tsx",
+      "src/components/DialogHost.tsx",
+      "src/components/dialog-loaders.ts",
+      "src/app/[locale]/library/page.tsx",
+      "src/app/data/[...path]/route.ts",
+      "e2e/fixtures/guide-pdf.ts",
+      "e2e/guides.spec.ts",
+    ]) {
+      const plan = specsForChanges([file]);
+      expect(plan.unmatched, file).toEqual([]);
+      expect(plan.specs, file).toContain("guides");
+    }
+    expect(specsForChanges(["src/components/certs/CertDialog.tsx"]).specs).toEqual(["experience", "guides", "pageview", "static-routes"]);
+    expect(specsForChanges(["content/study-guides.json"]).specs).toEqual(["guides", "pageview", "seo", "static-routes"]);
+    expect(specsForChanges(["src/components/certs/Certifications.tsx"]).specs).not.toContain("guides");
+    // The Function is unit tested; the specs answer /api/guides/* with a fixture PDF.
+    expect(specsForChanges(["functions/_lib/guides.ts"]).specs).toEqual([]);
+  });
+
   it("maps the rover idle code to the rover-idle spec", () => {
     expect(specsForChanges(["src/experience/rover/idle.ts"]).specs).toEqual(["rover-idle"]);
     expect(specsForChanges(["src/experience/rover/activity.ts"]).specs).toEqual(["rover-idle"]);
@@ -229,8 +255,10 @@ describe("specsForChanges", () => {
 
   it("runs no e2e for the RUM Function", () => {
     expect(specsForChanges(["functions/api/rum.ts", "functions/_lib/rum.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["functions/api/guides/[slug].ts", "functions/_lib/guides.ts"]).specs).toEqual([]);
     expect(specsForChanges(["functions/_lib/handler.ts"]).specs).toEqual(["ask"]);
     expect(specsForChanges(["functions/api/office/index.ts", "functions/_lib/office.ts", "workers/office/src/state.ts"]).specs).toEqual([]);
+    expect(specsForChanges(["tools/office-relay/src/hook.ts", "tools/office-relay/README.md"])).toEqual({ specs: [], unmatched: [] });
   });
 
   it("maps the Agent Office to its spec, the 3D experience and the Lobby specs", () => {

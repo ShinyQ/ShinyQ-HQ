@@ -1,7 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
-import { asReturningVisitor, skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, hoverTarget, interactablesOf, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { asReturningVisitor, skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, hoverTarget, interactablesOf, openPage, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L3 Data and ML spine (owner request 2026-10-14; Round 7 G: three paths): the data pods dock along the

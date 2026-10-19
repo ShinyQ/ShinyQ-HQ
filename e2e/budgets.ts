@@ -50,6 +50,13 @@ export const BYTES_3D_BUDGET = {
   session: { lite: Math.round(449.4 * 1024), full: 473 * 1024 },
 } as const;
 
+/**
+ * Study guide reader (gzip bytes, `e2e/perf/guide-reader.spec.ts`), downloaded only on the Read click: `chunk` is
+ * the main-thread JS (the dialog and reader chunks plus pdf.js, measured 140.8 KB), `worker` the pdf.js worker
+ * with its Turbopack bootstrap (measured 361.3 KB; pdf.js 6.4's worker alone is about 354 KB).
+ */
+export const GUIDE_READER_BUDGET = { chunk: 160 * 1024, worker: 400 * 1024 } as const;
+
 /** Lighthouse CI script budget per Page View page (`resource-summary:script:size` in lighthouserc.json). */
 export const PAGE_JS_BUDGET = 245_760;
 

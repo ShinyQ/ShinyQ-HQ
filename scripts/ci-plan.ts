@@ -21,7 +21,7 @@ import path from "node:path";
 import { complementPlan, findSource, parseRecord, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
 import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import type { MergedPr } from "./merge-gate";
-import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
+import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
 
 export type ChangeClass = "ci" | "code3d" | "ui" | "functions" | "e2e" | "tooling" | "content" | "docs" | "tests" | "other";
 
@@ -34,7 +34,7 @@ const CLASSES: [RegExp, ChangeClass][] = [
   [/^content\/|^public\/(media|papers|cv)\//, "content"],
   [/^functions\/|^workers\/|^wrangler\.toml$/, "functions"],
   [/^scripts\/(build-knowledge|defer-scripts|root-redirect|check-client-chunks|csp-hashes|csp-policy)\.ts$/, "ui"],
-  [/^scripts\//, "tooling"],
+  [/^scripts\/|^tools\//, "tooling"],
   [/^src\/|^messages\/|^public\//, "ui"],
   [/^docs\/|^\.github\/|\.md$|^LICENSE$|^\.[\w.-]+$/, "docs"],
 ];
@@ -274,6 +274,13 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
     if (shared.length === 0) continue;
     reasons.push(`imported by the 3D roots: ${f} (${shared.length === ALL_PERF_KEYS.length ? "every perf key" : shared.join(", ")})`);
     for (const k of shared) keySet.add(k);
+  }
+  // Page code with a perf gate of its own (the study guide reader's chunk and worker caps).
+  for (const f of classes.ui ?? []) {
+    const own = pagePerfKeys(f);
+    if (own.length === 0) continue;
+    reasons.push(`perf gate of page code: ${f} (${own.join(", ")})`);
+    for (const k of own) keySet.add(k);
   }
   const keys = ALL_PERF_KEYS.filter((k) => keySet.has(k));
   const perf = keys.length ? keys : false;

@@ -28,6 +28,8 @@ describe("ci-plan classify", () => {
     ["workers/stats/src/index.ts", "functions"],
     ["e2e/pageview.spec.ts", "e2e"],
     ["scripts/refresh-facts.ts", "tooling"],
+    ["tools/office-relay/src/cli.ts", "tooling"],
+    ["tools/office-relay/README.md", "tooling"],
     ["content/site-content.json", "content"],
     ["content/posts/a.mdx", "content"],
     ["public/media/x/1.webp", "content"],
@@ -284,6 +286,17 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(page.e2e).toContain("pageview");
     const shared = planFor(["src/lib/audio/engine.ts"], (f) => (f === "src/lib/audio/engine.ts" ? ALL_BUT_MEMORY : []), opts);
     expect(shared).toMatchObject({ perf: [...ALL_BUT_MEMORY], lighthouse: "all" });
+  });
+
+  it("study guide reader code: the guides spec plus the reader's own perf gate, no 3D keys", () => {
+    const plan = planFor(["src/components/guides/GuideReader.tsx"], none, opts);
+    expect(plan.e2e).toContain("guides");
+    expect(plan.perf).toEqual(["guides"]);
+    expect(plan.reasons).toContain("perf gate of page code: src/components/guides/GuideReader.tsx (guides)");
+    expect(planOutputs(plan, lhciUrls).perf_grep).toBe("(the study guide reader stays)");
+    const cert = planFor(["src/components/certs/CertDialog.tsx", "content/study-guides.json"], none, opts);
+    expect(cert.e2e).toEqual(expect.arrayContaining(["guides", "pageview"]));
+    expect(cert.perf).toBe(false);
   });
 
   it("unions the shared keys with the 3D file keys and lists each shared module", () => {

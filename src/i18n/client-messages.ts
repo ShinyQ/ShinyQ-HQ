@@ -53,6 +53,16 @@ export const LAYOUT_NAMESPACES = [
   "paper",
 ] as const;
 
+/**
+ * Namespaces whose lazy dialog fetches them with its data and passes them through its own nested
+ * `NextIntlClientProvider`: the study guide dialog reads `guides` from `/data/guides/{locale}.json`. The layout and
+ * the pages reach such a dialog through `DialogHost` without carrying the namespace, so it joins neither
+ * LAYOUT_NAMESPACES nor CLIENT_NAMESPACES (server components such as the `/library` shelf read it with
+ * `getTranslations`). The namespace test exempts only the fetching files (its `FETCHING_FILES`), never the whole
+ * namespace: any other client island that reads it must add it back to CLIENT_NAMESPACES and use `ClientMessages`.
+ */
+export const FETCHED_NAMESPACES = ["guides"] as const;
+
 /** Picks top-level namespaces or dotted sub-paths (`hud.palette`), keeping the nesting and the original objects. */
 export function pickMessages(messages: AbstractIntlMessages, paths: readonly string[]): AbstractIntlMessages {
   const picked: AbstractIntlMessages = {};

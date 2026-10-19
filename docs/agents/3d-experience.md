@@ -50,6 +50,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 ### Boot card
 
 - The boot card names the owner at first paint: name, headline, motto and current role from content (`BootWho`, the role line from `roleLine` in `@/content/selectors`).
+  - The owner block paints as one text block, the game-first LCP ([performance.md](performance.md#game-first-lcp)); keep its lines as inline `<span role="paragraph">` split by `<br />`, with the spacing in `.hq-boot-who` and `.hq-boot-gap`, never block paragraphs, flex items or margins.
 - It carries a small "Classic site" link (`hud.pageView`, with the HUD's `PageViewIcon`):
   - A real `?view=classic` link (works before hydration): the head script decides Classic from the explicit parameter and keeps it in the URL.
   - `ExperienceGate` handles it without a reload once hydrated (`data-hq-page-link`).
@@ -66,7 +67,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - `#site-shell` also stays `visibility: hidden` while `html[data-hq]` is set (tower open), so the page never paints under it and never becomes a late LCP.
 - Both states also set `content-visibility: hidden`, so the hidden page's lazy images and link prefetches never start.
-- Header, nav, crumb and hero links use `QuietLink` (`prefetch={false}` while hidden).
+- Header, nav, crumb, hero and section "more" links use `QuietLink`: no viewport prefetch, and no intent prefetch while hidden (`useQuietNav`); see [page-view.md](page-view.md#navigation).
 - The Glass Drawer data loads after the first frame on idle (`afterFirstFrameIdle` in `src/experience/boot-signals.ts`) or at once when a room opens.
 
 ### Flags on every page
@@ -558,4 +559,5 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `probe` | only with `?gfx=probe`: `{ checked, black }`, frames checked and the black frames found (see [Shader math](#shader-math)) |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.
+- Test-only animation speed: `window.__hqE2ESpeed` under `navigator.webdriver` (read by `animationSpeed()`, `scene/animationSpeed.ts`) speeds up rides, autopilot drives, beams, camera eases and the intro for functional specs; never for visitors, the perf lane or the memory gates. Details: [performance.md](performance.md#animation-speed).
 - The rover hides during the hologram view; pod labels too.

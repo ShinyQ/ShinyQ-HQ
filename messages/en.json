@@ -240,6 +240,31 @@
     "boardCount": "{count, plural, one {# project} other {# projects}}",
     "boardMore": "+{count} more"
   },
+  "guides": {
+    "eyebrow": "Study guide",
+    "pages": "{count} pages",
+    "read": "Read",
+    "readGuide": "Read the study guide",
+    "download": "Download PDF",
+    "close": "Close the reader",
+    "loading": "Opening the study guide",
+    "error": "The study guide could not be opened.",
+    "retry": "Try again",
+    "page": "Page",
+    "pageOf": "Page {page} of {count}",
+    "pageInput": "Go to page",
+    "prev": "Previous page",
+    "next": "Next page",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitWidth": "Fit width",
+    "chapters": "Chapters",
+    "thumbnails": "Page thumbnails",
+    "domains": "Exam domains",
+    "edition": "Edition {date}",
+    "pageFailed": "This page could not be drawn.",
+    "independent": "Independent study material, not an official exam guide."
+  },
   "library": {
     "title": "Library",
     "intro": "My writing, research publications, published models and teaching materials.",
@@ -260,6 +285,8 @@
     },
     "research": "Research",
     "researchIntro": "My peer-reviewed papers and BSc thesis publication.",
+    "guides": "Study guides",
+    "guidesIntro": "The study guides written while preparing each certification exam, readable right here.",
     "authors": "Authors",
     "doi": "DOI",
     "pdf": "PDF",
@@ -926,7 +953,8 @@
       "newTab": "opens in a new tab",
       "close": "Close",
       "noLink": "No public credential link.",
-      "pending": "No public credential link yet."
+      "pending": "No public credential link yet.",
+      "readGuide": "Read study guide"
     },
     "wall": {
       "all": "All",

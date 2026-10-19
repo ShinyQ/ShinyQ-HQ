@@ -14,6 +14,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - [CV](#cv)
 - [Research papers](#research-papers)
 - [Paper PDFs](#paper-pdfs)
+- [Study guides](#study-guides)
 - [Public safety](#public-safety)
 
 ## Dataset and posts
@@ -75,7 +76,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - They sort themselves (earned newest first) and any number fits:
   - Page View shows featured cards plus a dense list (issuer chips, status filter and search from 10 certifications on).
   - The 3D Lobby shows a curved wall with issuer tabs and paging.
-- Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed.
+- Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed. A certification with a study guide (`certId` in `content/study-guides.json`) also gets "Read study guide", which opens the in-site reader ([Study guides](#study-guides)).
 - New issuers get a logo through `src/content/tech.ts` (`public/tech/`).
 - A certification without an exam code (Google's Generative AI Leader) leaves `code` out and may set `shortLabel` (at most 16 characters, for example "Gen AI Leader"), which fills the featured card's big title slot on the Classic site and is never shown as a code; featured cards prefer certifications with a code, so pin a new code-less one with `featured: true`.
 - When a certification is added, also update the `microsoft-certifications` fact (count and codes), the `certification-desk-2026` journey entry and the Ask golden set (`tests/ask/golden.json`). The weekly live-facts job checks every `credentialUrl` (Microsoft Learn, Credly) for reachability.
@@ -84,6 +85,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages.
 - CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser.
+- Each page ships as near-lossless WebP at 800, 1200 and 1600 px (visually identical to lossless, about 25% smaller). Page 1 loads eagerly (high priority on `/{locale}/cv`, where it is the LCP); later pages load lazily.
 - To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`). A unit test fails until the images match the PDF.
 
 ## Research papers
@@ -98,6 +100,19 @@ A paper or thesis with `document` in `site-content.json` gets "Read the paper" (
 1. **Check the publisher's posting rule.** IEEE allows the authors' accepted manuscript with IEEE's notice, never the publisher's final PDF, so IEEE papers must use `version: "manuscript"` and `notice: "ieee"` (the schema enforces both; the notice and the DOI link render next to the reader). Today the ICAIBDA 2021 e-wallet paper is the authors' manuscript; the ICICyTA 2021 COVID-19 paper has no hosted PDF because only the IEEE final version exists. Its accepted manuscript can be added later the same way.
 2. **Redact personal data first**: student or staff IDs, home addresses, phone numbers, signatures and QR codes that link to them. Rasterize the affected pages with the regions blacked out (so no text is left to extract) and keep the other pages as they are; never commit the unredacted original. Use `version: "redacted"`. The thesis PDF (`sentiboard-bsc-thesis`) was redacted this way on pages 1 to 4.
 3. **Render the pages.** Save it as `public/papers/{file}.pdf` (`file` = the publication id), add `"document": { "file", "version", "notice"? }` and run `bun run paper:pages` (needs `pdftoppm`, `pdftotext` and `cwebp`). It refuses a PDF whose text still holds personal data patterns or blocklisted names, then writes `public/papers/{file}/` (1400 px webp per page) and `content/generated/paper-pages.json`; `tests/content/papers.test.ts` fails until the images match the PDF.
+
+## Study guides
+
+The owner's certification study guides (today AI-103, AI-901, GH-600 and Google Generative AI Leader) are read in the site's own pdf.js reader: from the Study guides shelf on the Writing page (`/library#guides`) and from "Read study guide" in a certification's preview card. Step by step: [`study-guides-runbook.md`](study-guides-runbook.md).
+
+- **Dataset**: `content/study-guides.json`, a separate file (zod `StudyGuidesFileSchema`), one entry per guide in shelf order.
+  - Written by hand: `slug`, `certId` (a `certifications[].id`; it links the guide to its certification card), `code` (or `null`), `spine` (at most 14 characters, for the planned 3D vault's book spines), `issuer`, `title` and `summary` (`{ en, id }`; titles in Title Case with no first person), `edition` (`YYYY-MM`), `file` (the download file name) and 1 to 8 exam `domains` (`weight` `[min, max]` percent and a `{ en, id }` label).
+  - Written by the script: `pages`, `bytes`, `version` (12 hex characters of the prepared file's sha256) and `cover`.
+- **Prepare and upload**: `bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...` scans the text, rewrites the PDF metadata, packs it into object streams (range friendly for pdf.js), records the machine fields and renders the cover; `bun scripts/study-guides.ts upload [<slug> ...]` puts the prepared files into the private R2 bucket `hq-study-guides` as `<slug>/<version>.pdf`; `check` compares the prepared files with the JSON. Needs `qpdf`, poppler and `cwebp` (`brew install qpdf poppler webp`) and `bunx wrangler login`.
+- **Covers**: page 1 of each prepared PDF, 480 px wide webp in `public/study-guides/<slug>.webp`, committed.
+- **Never commit a PDF.** The source and prepared PDFs stay out of the repository (prepared copies go to the gitignored `.study-guides/`); the site serves them only through `/api/guides/<slug>`.
+- **Replacing a guide** gives it a new version and key; delete the old object only after the new deploy is live (runbook).
+- **Safety**: `prepare` refuses text with a blocklisted term or a phone number; reviewed textbook phrases that trip the list sit in `BENIGN_PHRASES` in the script.
 
 ## Public safety
 

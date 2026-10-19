@@ -107,7 +107,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 | `content` | `content/`, `public/media/`, `public/papers/`, `public/cv/` | none | no | affected URLs (`site-content.json` and `content/generated/`: all; posts: the blog URL) |
 | `functions` | `functions/`, `workers/`, `wrangler.toml` | mapped specs | no | no |
 | `ui` | build scripts: `scripts/{build-knowledge,defer-scripts,root-redirect,check-client-chunks,csp-hashes,csp-policy}.ts` | mapped specs plus the PR smoke set | no | all URLs |
-| `tooling` | other `scripts/` | mapped specs | no | no |
+| `tooling` | other `scripts/`, `tools/` | mapped specs | no | no |
 | `ui` | other `src/`, `messages/`, other `public/` | mapped specs plus the PR smoke set | affected perf tests, only for `src/` files the 3D roots import: the keys of the 3D files that import them | affected URLs |
 | `docs` | `docs/`, other `.github/`, `*.md`, `LICENSE`, root dotfiles | none | no | no |
 | `other` | anything unmatched | full run | full run | full run |
@@ -119,6 +119,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 - Shared `src/` modules (`sharedPerfKeys` in `scripts/ci-plan.ts`): a `ui` file reachable from the 3D roots (`src/experience`, `src/hud`, `src/store`) through value, re-export, side-effect or dynamic imports (type-only imports do not count) gets the keys of the 3D files that import it, directly or through a chain of non-3D files (the walk stops at the first 3D file), so a module only the Lobby imports selects the Lobby gates, one only the HUD imports the bytes gate, one `Experience.tsx` imports every gate.
   - The payload builder `src/experience/gate-data.ts` (server-only, `experienceDataFor`) is not a 3D importer: a module it reaches moves the floors through the serialized payload, so it gets its module to gate rule (`SHARED_PERF_RULES` in `scripts/perf-plan.ts`: `src/ask/` to `boot` and `bytes`, `src/content/{certs,cert-views,highlights}.ts` to the Lobby gates), else the whole lane except `memory-full`. Rule keys add to the keys of the client 3D files that import the module.
   - Safe fallback: a 3D importer `PERF_RULES` does not know (for example `src/experience/config.ts`) gives the whole lane except `memory-full`, as before.
+- Page code with its own perf gate (`pagePerfKeys` in `scripts/perf-plan.ts`): the study guide reader's files (`src/components/guides/`, `src/content/guides.ts`, `DialogHost.tsx`, `dialog-loaders.ts`, the `/library` page) add the `guides` key (`e2e/perf/guide-reader.spec.ts`, [performance.md](performance.md#study-guide-reader)), whether or not the 3D roots reach them.
 - Lighthouse URLs (`pagesFromRepo` in `scripts/ci-plan.ts`; static imports only, dynamic `import()` does not count):
   - every URL: `messages/`, `public/fonts/`, `public/brand/`, the `ui` build scripts, `content/site-content.json` and `content/generated/` (but `build-facts.json`: `/en/build`), and in the app layouts' static closure the layouts and templates, stylesheets, `src/app/fonts.ts` and `src/i18n/` (the message selection): they change what each page ships differently. `lighthouserc.json` (budgets) is a `ci` file, so a full run;
   - the home page `/en`: any other module in the layouts' closure, since it lands in a chunk every page loads the same way; plus the measured pages whose own closure reaches it, unless every page does (the content loader, metadata helpers);
@@ -231,6 +232,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   - a stored `"off"` stays muted;
   - the context starts on the first user gesture.
 - The engine starts paused; `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent (no AudioContext at all) without changing the stored choice.
+- The engine itself (`engine.ts`, `synth.ts`, `music.ts`, about 3.8 KB gzip) is a lazy chunk behind the `audio` facade (`src/lib/audio/singleton.ts`): it loads on the first call that needs sound in the unpaused 3D view (a pointer, touch or key press, or a one-shot or a moving rover after a user activation). Never import `@/lib/audio/engine` outside tests; the facade answers and persists the settings and hands its state to the engine when it arrives (details in `src/lib/audio/README.md`). Still one `AudioContext`: a gesture or an unmute before the engine arrives makes the facade create and resume it inside that gesture (Safari needs that), and the engine adopts it. No idle warm-up of the chunk (the 3D session caps have about 1.7 KB of headroom).
 
 ## Next.js version notes
 

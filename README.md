@@ -78,7 +78,7 @@ flowchart TB
 
   subgraph pagesbox["Cloudflare Pages"]
     pages["Static export<br/>HTML, 3D chunk, room data"]
-    fn["Pages Functions<br/>/api/ask, /api/rum<br/>/api/visit, /api/stats"]
+    fn["Pages Functions<br/>/api/ask, /api/rum<br/>/api/visit, /api/stats<br/>/api/guides/{slug}"]
   end
 
   subgraph aibox["AI"]
@@ -198,12 +198,13 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/quick` | Quick view: everything on one page | |
 | `/{locale}/journey`, `/journey/{slug}` | Career Archive 2019 to 2026 and the Workshop | L2 Career Road; a slug opens that room |
 | `/{locale}/labs`, `/labs/{slug}` | Case studies, `?wing=software\|ai\|data` filter | L3 Project Roads; a slug opens that pod |
-| `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, `?topic=` filter | L4 Newsroom and the Topic Constellation |
+| `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, study guides, `?topic=` filter | L4 Newsroom and the Topic Constellation |
 | `/{locale}/contact` | About, contact, "How I run AI in production", visit stats, CV, certifications | RF roof deck |
 | `/{locale}/build` | How this site was built: blueprint, build rounds, AI agent workflow, quality gates, measured numbers | |
 | `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
 | `/api/stats` | Public visit stats snapshot, refreshed every 2 hours (200 or 204) | |
+| `/api/guides/{slug}` | Study guide PDF from a private R2 bucket, by byte range (`GET`, `HEAD`) | |
 
 Section anchors, filters and deep links per route: [docs/features.md](docs/features.md#routes).
 
@@ -212,7 +213,7 @@ Section anchors, filters and deep links per route: [docs/features.md](docs/featu
 ```text
 content/         dataset, blog MDX, Ask suggestions, perspectives, blocklists, generated facts
 messages/        UI strings (en, id)
-functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats
+functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}
 workers/stats/   hq-stats Cron Worker: public visit stats rollup every 2 hours into KV
 src/
   app/           routes ([locale] pages, "/" redirect, OG cards, 404)

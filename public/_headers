@@ -58,6 +58,9 @@
   Content-Security-Policy: frame-ancestors 'none'
   Cache-Control: public, max-age=86400, must-revalidate
 
+# No rules for /api/* (Pages Functions): Cloudflare Pages never applies _headers to a Function's response, so
+# each Function sets its own headers (the study guide PDFs: functions/_lib/guides.ts, frame-ancestors 'none').
+
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*
   Cache-Control: public, max-age=86400

@@ -20,3 +20,14 @@ export function greetingKey(hour: number, locale: Locale): GreetingKey {
 export function orderTerminalMissions(missions: readonly Mission[]): Mission[] {
   return [...missions].sort((a, b) => a.order - b.order).slice(0, 9);
 }
+
+export const TERMINAL_SEEN_KEY = "hq:terminal-seen";
+
+/** Records that the Rover menu was opened (it lives here, not in the lazy RoverTerminal chunk, so MissionHud can call it). */
+export function markTerminalSeen() {
+  try {
+    localStorage.setItem(TERMINAL_SEEN_KEY, "1");
+  } catch {
+    // Storage can be unavailable (private mode); the terminal may auto-open again.
+  }
+}

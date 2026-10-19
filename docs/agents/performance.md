@@ -25,6 +25,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5.8 KB) | `e2e/budgets.ts` |
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 473 KB (measured 470.7 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 449.4 KB (measured 447.1 KB, about 2.3 KB headroom) | `e2e/budgets.ts` |
+| Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |
@@ -36,6 +37,21 @@ Index: [AGENTS.md](../../AGENTS.md).
 | RUM sampling (`RUM_RATE`) | 25% of 3D sessions | `src/experience/perf/rumDecision.ts` |
 
 Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
+
+Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction (was 11, plus 4 route chunks). See [page-view.md](page-view.md#navigation).
+
+Layout islands load their heavy parts on first use ([hud-and-drawer.md](hud-and-drawer.md#opening-overlays-and-modals)): the command palette with its search and the Rover menu are lazy chunks (about 5.4 KB and 2.4 KB gzip), and the audio engine (`engine.ts`, `synth.ts`, `music.ts`, about 3.8 KB gzip) loads only when the 3D view needs sound (`src/lib/audio/singleton.ts`, see `src/lib/audio/README.md`), so the Page View never downloads it and the 3D gate's no-interaction session does not either. The HUD index loads on open or at idle, and `GET /api/ask` once per tab session at most for the entry points ([ask.md](ask.md#availability)).
+
+- next-intl `experimental.messages.precompile` was tried and not kept: it compiles every import of `messages/*.json`, and server modules read those as raw strings (`hud/index-data.ts`, `seo.ts`, `og-cards.ts`, `jsonld.ts`, the Ask pack and others), so the export fails. It would drop the ICU parser chunk (about 12 KB gzip on every Classic page) once those modules read raw messages another way.
+
+JetBrains Mono (`jetbrains` in `src/app/fonts.ts`) stays preloaded with Inter and Archivo: it paints in the first viewport of every page.
+
+- Classic site: the header (`>_` tool, EN/ID switch; on desktop also the site name, the nav floor labels and `Ctrl K`) and `pv-data` labels such as the floor eyebrow, filter labels and chip counts. Boot cover: its eyebrow, the role line and the boot log.
+- Dropping the preload would swap these from the fallback after first paint. Recheck with a first-viewport scan of computed `font-family` before changing it.
+
+The Cloudflare Web Analytics beacon (production builds only) is requested last: after the `load` event, after the deferred app chunk scripts are inserted (requested; at most 1 s after `load`) and then on idle (500 ms deadline), so it is requested after the HTML, CSS, fonts and every app chunk. See [stats.md](stats.md#cloudflare-web-analytics-beacon).
+
+CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27% fewer image bytes than lossless at the same look (SSIM >= 0.997); lossy WebP and AVIF were larger at that quality. Page 1 is eager with `fetchPriority="high"`, later pages `loading="lazy"` (Chrome still fetches page 2 at low priority after page 1: it sits within the lazy-load distance). See [content.md](content.md#cv).
 
 ### Perf lane (`e2e/perf/`)
 
@@ -54,6 +70,7 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 | `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L1 and B1 load the Agent Office chunk first, and an unrecorded L1 spot at the office stop holds the same cap and baseline |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
+| `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
 
 #### `bytes-3d`
 
@@ -65,10 +82,21 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
   - full 473 KB: measured 470.7 KB, about 2.3 KB of headroom (main path 443.4 KB).
   - lite 449.4 KB: measured 447.1 KB, about 2.3 KB of headroom (main path 419.8 KB).
   - Raised by 3 KB on 2026-10-19 for the L1 Agent Office's main-path mount, loader and chips host (+2.5 KB on the main path; [owner decision](../decisions/2026-10-19-agent-office-3d-budgets.md)).
+  - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
 - Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 13.9 KB); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 5.8 KB). The scene loads near the spawn in a normal session, but both caps are their own, outside the session total (owner decision 2026-10-19).
   - The office also costs the Classic site a little: `/en` JS 237,008 B of 245,760 B (+822 B: the office layout `config.ts` needs for the L1 navgrid ships in the shared page chunk because `useHQStore` imports `config.ts`; the 3D-only shell helpers live in `officeShell.ts` so they do not) and `/en` HTML 56,099 B (+1,078 B, the `office` strings in `CLIENT_NAMESPACES`; `/en/quick` unchanged).
+
+#### Study guide reader
+
+- `e2e/perf/guide-reader.spec.ts` (perf key `guides`) opens `/en/library?tier=static#guides` with the fixture PDF (`e2e/fixtures/guide-pdf.ts`), clicks Read and gzip-sizes every script loaded after the click:
+  - `GUIDE_READER_BUDGET.chunk`, 160 KB: the main-thread JS (the dialog and reader chunks plus pdf.js), measured 142.1 KB;
+  - `GUIDE_READER_BUDGET.worker`, 400 KB: the pdf.js worker with its Turbopack bootstrap (the entry plus the chunks in its `#params`), measured 361.3 KB (the pdf.js 6.4 worker alone is about 354 KB);
+  - no script loaded before the click carries pdf.js (the snapshot of the initial load is taken right before the click, after a state wait, never `networkidle`).
+- The caps measure the modern path (Chromium). The legacy pdf.js build and worker (`pdfjs-dist/legacy/build/`, picked by `needsLegacyPdfjs` in `pdf.ts`) are separate lazy assets loaded only by browsers that lack a built-in the modern build calls; they are about 147 KB and 379 KB gzip and are not capped.
+- The key is not 3D: `pagePerfKeys` in `scripts/perf-plan.ts` maps the reader's page code (`src/components/guides/`, `src/content/guides.ts`, `DialogHost.tsx`, `dialog-loaders.ts`, the `/library` page) to `guides`, and `scripts/ci-plan.ts` adds it to a PR's perf keys. Run it alone with `PERF=1 bunx playwright test --grep "the study guide reader stays"`.
+- `tests/unit/guide-chunks-graph.test.ts` (every PR) walks the static imports of `src/experience/Experience.tsx` and `src/app/[locale]/layout.tsx` and fails when either reaches `GuideReader.tsx`, `pdf.ts` or any static `pdfjs-dist` import; it also checks that `GuideDialog` imports the reader and `pdf.ts` imports pdf.js dynamically. So the reader adds nothing to the 3D bytes or the Classic pages' initial load.
 
 #### Memory gates
 
@@ -109,6 +137,16 @@ Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
   - It mounts only with the flag (about 1 KB inside the 3D chunk, never on the Page View).
   - `perfOverlayOn` in `experience/perf/lines.ts` is the one parser of the flag.
 - The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@nightly`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
+
+### Game-first LCP
+
+- On a game-first visit the LCP is the boot card's owner block (`boot-who`), painted with the SSR boot cover; nothing that mounts later under the cover may become a larger candidate.
+  - Chrome records a text block once, at its first paint, grouped by the nearest non-anonymous block; a later, larger block replaces the candidate until the first input. Content painted under the opaque cover counts (no occlusion), and an opacity or visibility reveal counts at the reveal.
+  - The HUD (with the controls hint, about 17,400 px2 on a phone) mounts under the cover with the 3D chunk, about 5 s in on a returning slow-4G phone; it used to become the LCP there.
+  - The owner block's lines are inline `<span role="paragraph">` split by `<br />` inside one block with zero font size and line height (`.hq-boot-who` in `globals.css`; the 4 px gaps are a bottom-aligned inline block, `.hq-boot-gap`), so their text forms one candidate (about 39,000 px2 at 390 x 844, 50,000 px2 at 1440 x 900) with the same pixels as four stacked paragraphs in Chrome, Safari and Firefox, paragraph roles in all three accessibility trees and one line per row in plain-text copy and `innerText`.
+  - Rejected: `display: contents` paragraphs in a flex column (one candidate in Chrome, but lines collapse in Firefox, which takes the line height of text in a `display: contents` element from its block, and a `<br />` there shifts lines in Safari); `display: inline` paragraphs with the `<br />` inside them (the paragraph's empty fragment after the break adds its line height in Chrome).
+- `e2e/boot-first.spec.ts` ("game-first LCP", Pixel 7, lite, returning visitor) asserts the last LCP entry is the owner block and lands within 1 s of the cover title's paint (`elementtiming` `hq-headline`).
+- Measure a change near the cover or the HUD with a throttled returning visit (slow 4G, 4x CPU) and read every `largest-contentful-paint` entry, not just the last.
 
 ### RUM beacon
 
@@ -250,6 +288,22 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `test()` (once loaded): `poll()` fetches now (and lets its one fetch land while nothing wants the poller), `settled()` counts settled fetches (wait for it to grow: a 204 keeps the feed unchanged), `advance(ms)` skews the poller's clock to cross the 60 s keep-last window, `feed()` and `wanted()` read the state.
   - Answer `/api/office` with a route from `e2e/office-fixtures.ts` or `OFFICE_FIXTURES`.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
+
+### Animation speed
+
+Functional specs run rides, drives, camera eases and the intro 4x faster in game time; the perf lane and the memory gates never do (owner experiment, [decisions.md](../decisions.md)).
+
+- Runtime: `animationSpeed()` (`src/experience/scene/animationSpeed.ts`) is 1 unless `navigator.webdriver` is set and a fixture set `window.__hqE2ESpeed` (at most `MAX_ANIMATION_SPEED`, 8). It is read once per frame and multiplies the time after the per-frame caps, so a slow SwiftShader frame still moves 4x:
+  - the ride stages (`advanceRide` `speed`); the closed-door waits (`held`, `PREPARE_TIMEOUT`, `chunkHeld`) stay on real frame time, so the car never moves before the floor is ready;
+  - the autopilot (`RoverController.step` `speed`: the door approach, the arrival roll-on, point-and-go, missions) and the beam; manual driving stays real-time;
+  - `CameraDirector`'s eases, the arrival glide and the intro clock; held Q/E/R/F and the zoom push idle stay real-time.
+  - Decorative clocks (orbiting labels, shaders, rover idle), HUD timers and mission `say` pauses keep real time.
+  - The store's rover mirror (`setRover`, every `STORE_SYNC_S`) syncs `speed` times as often, so `snapshot().rover` lags the live pose by the same game distance as at 1x.
+- Fixture (`e2e/hq.ts`): a functional spec opts in with `test.beforeEach(({ context }) => fastAnimations(context))`. `E2E_SPEED` sets the speed (default 4; `E2E_SPEED=1` runs the same specs at real speed to measure or bisect); `PERF=1` makes `fastAnimations` a no-op.
+- `resetRenderPeaks` drops the page to real speed until `readRenderPeaks`, so every render-budget window measures at real speed.
+- A test that asserts pacing, a duration or a trajectory sampled frame by frame (the intro's length, the dolly's car heights `distinctY`, a closest approach, a mid-drive position window) calls `realAnimations(page | context)` before navigating, or `setAnimationSpeed(page, 1)` on a live page.
+- Never opted in (a unit test checks the first four): `e2e/perf/**`, `memory.spec.ts`, `gpu.spec.ts`, `ride.spec.ts`; also `motion.spec.ts` and `fast-return.spec.ts` (they sample the dolly and the drive mid-flight), `perf-probes`, `daynight`, `rover-idle`, `lifecycle`, `boost` (manual driving), the visual and screenshot specs and the static-page specs.
+- Add `fastAnimations` to a new spec only when its assertions are end states (a floor, a room, a pose after settling), and run it at `E2E_SPEED=1` and the default once before pushing.
 
 ### Keeping the suite lean
 

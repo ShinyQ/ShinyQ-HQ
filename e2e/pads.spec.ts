@@ -18,7 +18,11 @@ import {
   waitForPhase,
   waitForRoverMove,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 180_000 });
 

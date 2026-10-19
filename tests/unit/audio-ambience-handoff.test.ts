@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAudioEngine, type AmbienceFloor, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
-import { SOUNDTRACK_CROSSFADE } from "@/lib/audio/engine";
+import type { AmbienceFloor, AudioEngine, AudioEngineDeps } from "@/lib/audio";
+import { SOUNDTRACK_CROSSFADE, createAudioEngine } from "@/lib/audio/engine";
 import * as ambienceModule from "@/lib/audio/ambience";
 import { AMBIENCE_CROSSFADE, AMBIENCE_FLOORS } from "@/lib/audio/ambience";
 

@@ -63,8 +63,10 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Black frame fix | 2026-10-18: no more single pure-black frames on L1 at a low camera (a NaN from the glass shader blacked out the bloomed frame); `?gfx=probe` logs any black frame and its cause on the device | Done |
 | Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card | In review |
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
-| Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | In review |
+| Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
+| Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
 | Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); the Classic card is part 4 | In review |
+| Study guides | 2026-10-19 (PR 1 of 2): the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card; PR 2 adds the 3D Study Vault on L4 | In review |
 
 ## Controls and first visit
 
@@ -175,6 +177,15 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
   - Text lives in `content/build-story.json`; every number comes from a snapshot taken at build time (`content/generated/build-facts.json`), shown with its date and commit, and the page links the public repository.
   - Ask the HQ answers about the site with a "Read on this site" link to it.
 - The Rover menu never opens on its own; the **Rover menu** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
+- **Study guides** (`/{locale}/library#guides`, a chip in the Writing page's section nav, after Talks):
+  - One card per certification study guide: the page 1 cover, issuer and exam code, title, summary, page count, file size and edition, and the exam domain weights, with **Read** and **Download PDF** (a same-origin download, never a new tab). A note under the cards says the guides are independent study material, not official exam guides.
+  - **Read** opens the in-site reader in a dialog; the certification preview card (Classic cards and rows, and the 3D Lobby's certifications wall) shows **Read study guide** for a certification that has a guide and swaps itself for the reader, so focus returns to the original card or badge on close.
+  - The reader is pdf.js in a lazy chunk, loaded on the click (hovering or focusing the button preloads the dialog): it fetches only the pages read, by byte range, from `/api/guides/<slug>`. Pages fit the width and draw as they scroll near, with selectable text; zoom steps from 50% to 300%; a page box with Previous and Next; Chapters from the PDF outline; a thumbnail rail on wide screens; Download PDF.
+  - Keys on the pages: Page Down, Right arrow and Space for the next page, Page Up, Left arrow and Shift+Space for the previous one, Home and End, `+`, `-` and `0` (fit width). Esc closes.
+  - The thumbnail rail is one tab stop: Up and Down arrows, Home and End move between thumbnails, Enter or Space opens that page.
+  - The last page read is remembered per guide (`localStorage` `hq:guide:<slug>`). A failed load (including a pdf.js worker that never starts, or no answer within 45 seconds) shows an error with Try again and the download; a page that fails to draw shows Try again in its own slot.
+  - Browsers without the newest JavaScript built-ins the modern pdf.js build needs (older iOS Safari) get the legacy pdf.js build and worker instead, loaded only there.
+  - Nothing of the reader or pdf.js loads before the click, on any Classic page or in the 3D tower.
 
 ## Glass Drawer
 
@@ -279,6 +290,7 @@ Route `/en/library`.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
 - **Read my writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
+- **Study guides**: today on the Classic Writing page and in the certification card ([Classic site](#classic-site)); a 3D Study Vault off the end plaza is planned (PR 2 of the study guides spec).
 
 ### Topic Constellation
 
@@ -323,7 +335,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/journey`, `/{locale}/journey/{slug}`: Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door).
 - `/{locale}/labs`, `/{locale}/labs/{slug}`: Product Engineering, AI Engineering and Data and ML case studies (`?wing=software|ai|data` filters the list); in 3D, L3 Project Roads (a slug deep link opens that pod at its door).
 - `/{locale}#B1`: the Lobby route with a B1 deep link; in 3D it starts on the B1 Engine Room when unlocked (see [B1 Engine Room](#b1-engine-room)).
-- `/{locale}/library`, `/{locale}/blog/{slug}`: blog, publications, models, talks; in 3D, L4 Writing. A post's drawer mirrors its `/blog/{slug}` URL, which is the article page.
+- `/{locale}/library`, `/{locale}/blog/{slug}`: blog, publications, models, talks and the study guides shelf (`#guides`); in 3D, L4 Writing. A post's drawer mirrors its `/blog/{slug}` URL, which is the article page.
 - `/{locale}/contact`: Roof. About, contact channels, availability, "How I work" and the CV.
   - "How I run AI in production" (`#production`): the owner-approved observability approach, proof tiles, a masked Grafana probe dashboard and alert rule, and the five case studies; in 3D the hash rides to the L3 Ops Control Room.
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
@@ -334,6 +346,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 2 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
 - `/api/office`: the Agent Office snapshot (`GET`, always 200 JSON) with an ETag (304 on a match) and `max-age=5, stale-while-revalidate=30`; the L1 office polls it while in view. `POST /api/office/beat` and `/api/office/github` take the signed relay beats and GitHub webhooks ([office.md](agents/office.md)).
+- `/api/guides/{slug}`: a study guide PDF from the private R2 bucket (Pages Function, `GET` and `HEAD`): byte ranges, ETag, `?v=<version>` for a year of immutable caching, `?download=1` for an attachment. Runbook: [`study-guides-runbook.md`](study-guides-runbook.md).
 
 ## Search and link previews
 
@@ -410,7 +423,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Analytics and public visit stats
 
-- Cloudflare Web Analytics runs on production builds only.
+- Cloudflare Web Analytics runs on production builds only; its beacon loads after the page and its scripts, on idle.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
 - Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 2 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
 - "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off.

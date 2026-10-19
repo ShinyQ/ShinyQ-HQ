@@ -1,9 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForRoom } from "./hq";
+import { collectErrors, enterFloorRoute, enterHQ, openPage, skipFloorLines, snapshot, waitForRoom, fastAnimations } from "./hq";
 import enMessages from "../messages/en.json";
 import content from "../content/site-content.json";
 import { buildRoofLayout } from "../src/experience/floors/roof/layout";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 150_000 });
 

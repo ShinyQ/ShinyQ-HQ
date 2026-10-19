@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
 import { openPalette, openTerminal } from "./events";
+import { preloadPalette, preloadTerminal } from "./lazy-hud";
 
 const noop = () => () => {};
 const isApple = () => /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent);
@@ -17,6 +18,7 @@ const CTRL_CHIP_COMPACT = "lg:max-[1100px]:hidden";
  * Header entry points: the Rover menu (the Rover Terminal and its missions) and the command palette (⌘K).
  * `compactShortcut` hides the "Ctrl K" chip from 1024 to 1099 px (the search button keeps its icon and name).
  * `parts` picks the buttons (the tablet Corners bar shows search only; the Rover menu lives in its menu).
+ * Hover or focus starts the download of the lazy palette or terminal chunk, so the click opens it at once.
  */
 export function HudLaunchers({
   buttonClassName,
@@ -33,7 +35,7 @@ export function HudLaunchers({
   return (
     <div className="flex items-center gap-1.5">
       {parts.includes("roverMenu") && (
-        <button type="button" onClick={openTerminal} className={button} aria-haspopup="dialog" data-onboard="rover-menu">
+        <button type="button" onClick={openTerminal} onPointerEnter={preloadTerminal} onFocus={preloadTerminal} className={button} aria-haspopup="dialog" data-onboard="rover-menu">
           <span aria-hidden="true" className="font-mono text-cyan">
             &gt;_
           </span>
@@ -44,6 +46,8 @@ export function HudLaunchers({
         <button
           type="button"
           onClick={() => openPalette()}
+          onPointerEnter={preloadPalette}
+          onFocus={preloadPalette}
           className={button}
           aria-haspopup="dialog"
           aria-label={t("searchShortcut", { shortcut })}

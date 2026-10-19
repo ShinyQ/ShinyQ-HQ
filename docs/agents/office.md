@@ -73,3 +73,35 @@ Index: [AGENTS.md](../../AGENTS.md).
 ### Tests
 
 - `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/unit/office-deploy.test.ts`.
+
+## Relay
+
+- `tools/office-relay/` (Bun CLI, guide in its README): the local privacy boundary. Hooks call
+  `office-relay hook <agent> <event>` (the event name comes from argv: Copilot's camelCase payloads carry none),
+  written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` so a hook never fails, even without Bun
+  or the program.
+  The shim runs Bun from `/` with `--no-env-file` (the detached sender too), so a project's `bunfig.toml` or `.env`
+  never affects the relay.
+- The relay never runs from a checkout: `install` bundles `cli.ts` and everything it imports (`bun build --target=bun`)
+  into `~/.hq-office-relay/office-relay.js`, and the shim runs that file with the absolute path of the Bun that ran the
+  install. The detached sender spawns the same file (`import.meta.url` in a Bun bundle is the bundle itself). Reinstall
+  to update; `status` shows the program and its install time.
+- Mapping (`map.ts`, `command.ts`): tool names and the first words of a shell command only (at most three, after
+  `env`, `time`, `sudo` and `nohup`); spec section 5. An answered ask tool maps to thinking; Needs Kurniadi comes only
+  from a permission request or a needs-input notification. Tests: `tests/relay/map.test.ts` over
+  `tests/relay/fixtures.ts` (payloads of all three agents with planted secrets).
+- Git data from `.git` files only (`git.ts`, worktrees included); titles from branch names (`title.ts`); a branch
+  outside `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title (`beat.ts`); the session id is an HMAC with a
+  local salt (`session.ts`). Relay files live in `~/.office-relay/` (the OS home when `HOME` is empty).
+- Hook path (`hook.ts`): local work, dedupe per session with a 15 s keepalive (`beat.ts`), then a detached `send`
+  child, dispatched before the beat is recorded as sent; `hook` and `send` always exit 0 with empty stdout (a failing
+  Copilot `preToolUse` hook would deny the tool).
+- Sender (`send.ts`): Keychain item `hq-office-ingest` (account `office-relay`), `X-Office-Signature`, 2 s timeout to
+  `https://kurniadi.pages.dev/api/office/beat` by default; logs the status only.
+- Installer (`install.ts`): `~/.copilot/hooks/office.json`, merges `~/.claude/settings.json` and `~/.codex/hooks.json`
+  (async handlers, backups, only entries containing `office-relay hook` are replaced); install and uninstall parse
+  every file (and install builds the bundle) before writing and exit 1 on failure; uninstall also removes the program
+  and keeps `~/.office-relay/`. Codex needs a trust in `/hooks`.
+- `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`
+  and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
+- Never add a beat field, a log field or a debug mode that records payload text.

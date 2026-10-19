@@ -25,6 +25,7 @@ import { buildRoadGraph, routeUsesRoad, type RoadGraph } from "../nav/road";
 import { roadRoute } from "../nav/roadRoute";
 import { advanceBeam, startBeam } from "../nav/teleport";
 import { MAX_FRAME_DT, RoverController } from "../rover/controller";
+import { animationSpeed } from "./animationSpeed";
 import { askFace } from "../rover/askFace";
 import { faceFor } from "../rover/faces";
 import { introRuntime } from "../intro/runtime";
@@ -273,6 +274,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
 
   useFrame((three, rawDt) => {
     const dt = Math.min(rawDt, MAX_FRAME_DT);
+    // 1 outside e2e: rides, beams and autopilot drives run faster in game time; manual driving stays real-time.
+    const speed = animationSpeed();
     const local = state.current;
     local.typicalDt = trackFrameDt(local.typicalDt, rawDt);
     // Shared clock with the rover mesh (flag, hop and blink timers).
@@ -329,7 +332,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     // motion makes it a 150 ms fade cut (BeamFade in the HUD).
     if (s.beam) {
       const beam = beamNow(s.beam);
-      const step = advanceBeam(beam, dt, s.reducedMotion);
+      const step = advanceBeam(beam, dt * speed, s.reducedMotion);
       if (step.jump) {
         controller.teleport(beam.to, beam.heading);
         roverRuntime.cameraSnap = true;
@@ -406,7 +409,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
               if (path?.length) controller.setPath(path, true);
               else atDoor = true;
             }
-            const result = controller.step(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from });
+            const result = controller.step(dt, null, { tuning, autopilotSpeed: ROVER.autopilotSpeed, world: from, speed });
             if (result.arrived) atDoor = true;
           }
         }
@@ -431,6 +434,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           ready: destinationReady(ride.to),
           hold: rideChunkHold(floorChunks, ride.to),
           cap: rideCap(local.typicalDt),
+          speed,
         });
         // Progress within a stage stays in the motion clock; the store changes when a stage starts or the ride ends.
         if (next && next.stage === ride.stage) keepRide(stored, next);
@@ -474,7 +478,7 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
           request.state = "driving";
         } else request.state = "done";
       }
-      const result = controller.step(dt, manual, { tuning: driveTuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor] });
+      const result = controller.step(dt, manual, { tuning: driveTuning, autopilotSpeed: ROVER.autopilotSpeed, world: layouts[s.floor], speed: manual ? 1 : speed });
       if (manual) roverRuntime.target = null;
       if (request?.state === "driving" && (result.arrived || result.blocked || manual || !controller.following)) request.state = "done";
       if (result.arrived) {
@@ -566,7 +570,8 @@ export function Director({ layouts, held, labels, onToggleLang }: DirectorProps)
     if (liveRide) roverRuntime.status = `to ${liveRide.to}`;
     else if (now > local.statusUntil) roverRuntime.status = undefined;
 
-    if (now - local.lastSync > STORE_SYNC_S) {
+    // The store's mirror lags the same game distance at the test-only animation speed as at 1x.
+    if (now - local.lastSync > STORE_SYNC_S / speed) {
       local.lastSync = now;
       // Whole-frame totals (scene plus post passes), counted by RenderCounter.
       roverRuntime.drawCalls = renderStats.sceneCalls + renderStats.postCalls;

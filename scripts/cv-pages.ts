@@ -5,16 +5,16 @@
  *   bun run cv:pages
  *
  * Writes `public/cv/pages/{fileName}-{n}.webp` (1600 px wide), `{fileName}-{n}-1200.webp` (1200 px wide,
- * what a 390 px DPR 3 phone needs instead of the 1600 one), `{fileName}-{n}-800.webp` (800 px wide)
- * and the manifest `content/generated/cv-pages.json` (page sizes plus the PDF's sha256, which
- * `tests/content/cv.test.ts` compares with the committed PDF). The output is committed, so CI and
- * the build need no PDF tooling. Needs poppler (`pdftoppm`) and libwebp (`cwebp`) on the PATH
- * (macOS: `brew install poppler webp`).
+ * what a 390 px DPR 3 phone needs instead of the 1600 one), `{fileName}-{n}-800.webp` (800 px wide),
+ * all near-lossless (`WEBP_NEAR_LOSSLESS`), and the manifest `content/generated/cv-pages.json` (page
+ * sizes plus the PDF's sha256, which `tests/content/cv.test.ts` compares with the committed PDF).
+ * The output is committed, so CI and the build need no PDF tooling. Needs poppler (`pdftoppm`) and
+ * libwebp (`cwebp`) on the PATH (macOS: `brew install poppler webp`).
  */
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pngSize, renderPng, sha256 as fileSha256, toWebp } from "./pdf-pages";
+import { WEBP_NEAR_LOSSLESS, pngSize, renderPng, sha256 as fileSha256, toWebp } from "./pdf-pages";
 
 export const CV_PAGE_WIDTHS = { large: 1600, medium: 1200, small: 800 } as const;
 
@@ -60,9 +60,9 @@ function main() {
       const name = `${fileName}-${n}.webp`;
       const nameMedium = `${fileName}-${n}-${CV_PAGE_WIDTHS.medium}.webp`;
       const nameSmall = `${fileName}-${n}-${CV_PAGE_WIDTHS.small}.webp`;
-      toWebp(png, path.join(outDir, name));
-      toWebp(medium[i], path.join(outDir, nameMedium));
-      toWebp(small[i], path.join(outDir, nameSmall));
+      toWebp(png, path.join(outDir, name), WEBP_NEAR_LOSSLESS);
+      toWebp(medium[i], path.join(outDir, nameMedium), WEBP_NEAR_LOSSLESS);
+      toWebp(small[i], path.join(outDir, nameSmall), WEBP_NEAR_LOSSLESS);
       const big = pngSize(png);
       const mid = pngSize(medium[i]);
       const little = pngSize(small[i]);

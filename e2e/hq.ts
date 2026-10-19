@@ -42,6 +42,45 @@ type HQWindow = Window & {
   };
 };
 
+/** The test-only animation speed flag (`src/experience/scene/animationSpeed.ts`) and the speed a render-peak window put aside. */
+type SpeedWindow = Window & { __hqE2ESpeed?: number; __hqE2EPeakSpeed?: number };
+
+/**
+ * Animation speed of the functional specs that opt in with `fastAnimations` (docs/agents/performance.md, "Animation
+ * speed"): elevator rides, autopilot drives, beams, camera eases and the intro run this many times faster in game
+ * time. `E2E_SPEED=1` runs them at real speed (to measure or to bisect a failure); the perf lane (`PERF=1`) always
+ * runs at real speed.
+ */
+export const ANIMATION_SPEED = process.env.PERF ? 1 : Math.max(1, Number(process.env.E2E_SPEED ?? 4) || 1);
+
+/**
+ * Opts a page or context into the test-only animation speed before any page script runs. Call it from a functional
+ * spec's `beforeEach`, never from the perf lane or a memory spec (a unit test checks). Waits stay on state.
+ */
+export async function fastAnimations(target: Page | BrowserContext, speed = ANIMATION_SPEED) {
+  if (process.env.PERF) return;
+  await target.addInitScript((s) => {
+    (window as unknown as SpeedWindow).__hqE2ESpeed = s;
+  }, Math.max(1, speed));
+}
+
+/**
+ * Puts a test of a fast spec back on real speed (the later init script wins): for a test that asserts pacing, a
+ * duration or a trajectory sampled frame by frame (the intro's length, the dolly's car heights, a closest approach).
+ */
+export async function realAnimations(target: Page | BrowserContext) {
+  await fastAnimations(target, 1);
+}
+
+/** Changes the animation speed of the live page (1 is real speed), for a test step that samples motion mid-flight. */
+export async function setAnimationSpeed(page: Page, speed: number) {
+  await page.evaluate((s) => {
+    const w = window as unknown as SpeedWindow;
+    w.__hqE2ESpeed = s;
+    delete w.__hqE2EPeakSpeed;
+  }, speed);
+}
+
 /**
  * Marks the visitor as returning: the boot and the intro already played this session (`hq:intro`),
  * the first-session tour ran (`hq:onboarded`) and hint bubbles are off (`hq:hints`), so any route
@@ -195,14 +234,31 @@ export interface RenderPeaks {
   frames: number;
 }
 
+/**
+ * Starts a render-peak window. A window always measures at real speed: a page that runs the test-only animation
+ * speed drops to 1 here and gets its speed back in `readRenderPeaks`.
+ */
 export async function resetRenderPeaks(page: Page) {
-  await page.evaluate(() => (window as unknown as HQWindow).__hq.perf.resetPeaks());
+  await page.evaluate(() => {
+    const w = window as unknown as HQWindow & SpeedWindow;
+    if (w.__hqE2ESpeed !== undefined && w.__hqE2EPeakSpeed === undefined) {
+      w.__hqE2EPeakSpeed = w.__hqE2ESpeed;
+      w.__hqE2ESpeed = 1;
+    }
+    w.__hq.perf.resetPeaks();
+  });
 }
 
 export async function readRenderPeaks(page: Page): Promise<RenderPeaks> {
   return page.evaluate(() => {
-    const s = (window as unknown as HQWindow).__hq.perf.stats;
-    return { sceneCalls: s.peakSceneCalls, postCalls: s.peakPostCalls, triangles: s.peakTriangles, minSceneCalls: s.minSceneCalls, frames: s.peakFrames };
+    const w = window as unknown as HQWindow & SpeedWindow;
+    const s = w.__hq.perf.stats;
+    const peaks = { sceneCalls: s.peakSceneCalls, postCalls: s.peakPostCalls, triangles: s.peakTriangles, minSceneCalls: s.minSceneCalls, frames: s.peakFrames };
+    if (w.__hqE2EPeakSpeed !== undefined) {
+      w.__hqE2ESpeed = w.__hqE2EPeakSpeed;
+      delete w.__hqE2EPeakSpeed;
+    }
+    return peaks;
   });
 }
 

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { Accent, Locale, Stat } from "@/content/schema";
-import { Link } from "@/i18n/navigation";
 import { QuietLink } from "../QuietLink";
 import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
@@ -97,9 +96,9 @@ export function SectionSplit({
         {intro && <p>{intro}</p>}
         {more && (
           <p className="mt-5">
-            <Link href={more.href} className="pv-go">
+            <QuietLink href={more.href} className="pv-go">
               {more.label}
-            </Link>
+            </QuietLink>
           </p>
         )}
       </div>
@@ -131,9 +130,9 @@ export function SectionWide({
           {title}
         </h2>
         {more && (
-          <Link href={more.href} className="pv-go">
+          <QuietLink href={more.href} className="pv-go">
             {more.label}
-          </Link>
+          </QuietLink>
         )}
         {note && <p className="pv-data">{note}</p>}
       </div>

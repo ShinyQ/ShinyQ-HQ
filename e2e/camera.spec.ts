@@ -17,10 +17,14 @@ import {
   waitForPhase,
   waitForRoverMove,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
 import en from "../messages/en.json";
 import { FIRST_PERSON } from "../src/experience/camera/firstPerson";
 import { PITCH_LIMITS } from "../src/experience/camera/rigs";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Round 5 camera work (P7): 360 degree orbit everywhere, pitch from just above the floor to near

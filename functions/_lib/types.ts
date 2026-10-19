@@ -142,6 +142,36 @@ export interface OfficeEnv {
   OFFICE?: ServiceBinding;
 }
 
+/** Byte range of an R2 read (the subset of the Workers R2 API the guides Function uses). */
+export interface R2Range {
+  offset?: number;
+  length?: number;
+  suffix?: number;
+}
+
+export interface R2ObjectBody {
+  size: number;
+  httpEtag: string;
+  body: ReadableStream;
+  range?: R2Range;
+}
+
+export interface R2ObjectHead {
+  size: number;
+  httpEtag: string;
+}
+
+export interface R2Bucket {
+  head(key: string): Promise<R2ObjectHead | null>;
+  get(key: string, options?: { range?: R2Range }): Promise<R2ObjectBody | null>;
+}
+
+/** Bindings of the study guides Function (functions/api/guides/[slug].ts). */
+export interface GuidesEnv {
+  /** R2 bucket hq-study-guides: keys `<slug>/<version>.pdf`. */
+  GUIDES?: R2Bucket;
+}
+
 export interface PagesContext<E = AskEnv> {
   request: Request;
   env: E;

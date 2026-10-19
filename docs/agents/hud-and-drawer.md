@@ -55,7 +55,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 
 - The HUD index (`HudIndex`: rooms, missions, years; `src/hud/index-data.ts`) is built on the server so zod and the dataset never ship to the client.
 - It is exported as a static file (`/data/hud/index.json`, from `src/app/data`), not as a layout prop: every layout client prop is inlined into every HTML file and sits on the LCP path.
-- `MissionHud` fetches it after hydration (`useHudIndex` in `src/hud/index-client.ts`) and sets `html[data-hydrated]` once it loaded.
+- `MissionHud` fetches it on demand (`src/hud/index-client.ts`): when the palette or the Rover menu opens, when `goToRoom` or `runMissionSteps` waits for the runner (`onRunnerRequest` in `missions/bridge.ts`), else once the page is idle after `load` (`scheduleHudIndex`: `requestIdleCallback`, 2 s timeout). It sets `html[data-hydrated]` once the index loaded (or failed).
   - The URL carries `hudIndexVersion`, so the 1 h `/data/*` cache never outlives a deploy.
 - `goToRoom` and `runMissionSteps` wait up to 5 s for the runner.
 - HUD components get data through props.
@@ -77,6 +77,11 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
 - The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
+
+### Controls hint
+
+- `HintBar` (`src/hud/Hud.tsx`, `data-testid="hint"`) is a plain text panel in the bottom band's center column under point-and-go's status, shown outside the intro and an open room while no Rover line is open: `hud.hintFine` with a fine pointer, `hud.hintCoarse` on touch, `hud.career.scrubHint` on L2 with touch. On phones it leaves after 6 s.
+- It mounts with the HUD, under the SSR boot cover on a returning visit, so its first paint is an LCP candidate. Keep it smaller than the boot card's owner block (the game-first LCP, see [performance.md](performance.md#game-first-lcp)); do not merge it into a larger text block.
 
 ### Settings registry
 
@@ -112,6 +117,8 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - From anywhere, through `src/hud/events.ts` (window `hq:hud` events):
   - `openPalette(filter?)`, `openTerminal()`.
+  - The command palette (`PaletteHost`, with `CommandPalette` and `search.ts`) and the Rover menu (`RoverTerminal`) are lazy chunks (`src/hud/lazy-hud.ts`): `MissionHud` mounts each on its first open (React.lazy through `lazyFromChunk`, `Suspense` fallback null, so the closed state renders nothing as before) and keeps it mounted. `HudLaunchers` warms the chunk and the HUD index on hover or focus. Until the index settles the palette shows no "No results" line and keeps an Enter (pressed in it or typed while its chunk loaded) for the first result once the index arrives; the Rover menu waits for the index, at most 2 s (`TERMINAL_INDEX_WAIT_MS`), instead of opening without missions. A failed chunk closes the overlay; the next open retries.
+  - The shortcuts work on the first press: keys typed after Ctrl K, Cmd K or `/` while the palette chunk loads are kept (`src/hud/typeahead.ts`) and seed its query on mount; an Enter typed then runs the top result. A window capture listener registered at layout mount takes them first and stops them, so no other key handler (the 3D drive and language keys, Rover's dialog box) sees them.
   - `enterHq()`: Page View to the 3D tower, handled by `ExperienceGate` like Back to 3D.
 - `openCv()`, `openPaper(preview)` and `openCert(view)` open the site-wide modals in `DialogHost`.
   - `DialogHost` is mounted in the locale layout outside `#site-shell`, so the modals work over the 3D tower and the room drawer; chunks load on first use.
@@ -157,6 +164,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:hall-gate` | `floors/lobby/gateSweep.ts` | the Highlights Hall gateway light curtain swept this session |
 | `hq:ask-thread` | Ask dock | chat thread, last 20 messages |
 | `hq:ask-teaser` | Ask dock | teaser shown this session |
+| `hq:ask-status` | `src/hud/ask/availability.ts` | the last "enabled" `GET /api/ask` status and when it arrived (JSON); stands in for the idle check for 10 minutes, see [Ask availability](ask.md#availability) |
 | `hq:ask-seed` | Ask dock | pill sampling seed for this page session (a 32-bit unsigned integer, `readAskSeed` in `src/ask/suggestions.ts`); `order` keeps bank order for tests |
 
 - Tests and screenshots that must not see the tour or the bubbles use `asReturningVisitor` (it sets `hq:onboarded=done` and `hq:hints=off`) or set `hq:onboarded` next to `hq:terminal-seen`.

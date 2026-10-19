@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { rideTo, seedFloors } from "./b1";
-import { asReturningVisitor, chooseMotion, skipFloorLines, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, chooseMotion, skipFloorLines, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * B1 Engine Room, PR 3: the locked row and its progress, the unlock moment (reached for real, never through the

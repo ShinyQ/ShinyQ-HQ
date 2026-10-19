@@ -28,8 +28,12 @@ import {
   waitForRoom,
   waitForRoverMove,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
 import { FLOOR_SCENE_CAPS } from "./budgets";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L1 Highlights Hall (docs/superpowers/plans/2026-10-12-highlights-hall.md): the passage past the
