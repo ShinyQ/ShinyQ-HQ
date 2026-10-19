@@ -1,3 +1,4 @@
+import type { RoomId } from "@/content/schema";
 import type { Plaza, Road, RoadNetwork } from "../../../nav/road";
 import { coreRect, ringRoadEntry, ringRoadPoints } from "../../../nav/ringRoad";
 import { TOPICS_ROOM } from "../topicHash";
@@ -19,7 +20,10 @@ import {
   type DockItem,
   type LibraryLayout,
   type LibraryLayoutInput,
+  type LibraryGuideInput,
   type LibraryStation,
+  type LibraryVault,
+  type VaultBook,
 } from "../model";
 
 /**
@@ -73,8 +77,44 @@ export const NEWSROOM = {
     zoom: 1.35,
     /** How far west of the constellation stop an eastbound rover already gets its view (along the timeline). */
     approach: 8,
+    /**
+     * The Study Vault (owner request 2026-10-19), only with study guides: a road from a ring road vertex out along
+     * its diagonal to a small round plaza, the stop on the plaza's ring side and the guides as tall books on an arc
+     * around the stop on the plaza's east rim, each facing the stop; the camera at the stop looks east at them, like
+     * the floor's other end plaza views. South-east, so it stays clear of the Return pad (south-west of it), the
+     * archive board (east rim) and the monument (north rim); `tests/unit/library-vault.test.ts` checks the space
+     * rules, a 3 u clearance from each of them and the framing of all four books on every screen class.
+     *
+     * The arc runs north to south, so the books' common footprint (`LibraryVault.shelf`, the one obstacle) is a thin
+     * axis-aligned strip: one obstacle per book would leave gaps under the 6 u clear floor rule between them.
+     */
+    vault: {
+      /** Ring road vertex the vault road starts on: 6 of 16 is 135 degrees, south-east. */
+      entryVertex: 6,
+      /** Vault plaza center from the end plaza center, along the entry's diagonal: the two rims stay 1 u apart. */
+      distance: 22,
+      /** Round plaza diameter (`ROAD.minPlaza`). */
+      plaza: 16,
+      /** The stop stands this far from the vault plaza center, toward the ring, on the road. */
+      stopInset: 1.5,
+      /**
+       * The books stand on an arc of this radius around the stop, centered due east of it, `spacing` apart along the
+       * arc (file order north to south, left to right on screen); the road's end keeps its half width clear of them.
+       */
+      arc: 8,
+      spacing: 3,
+      /** Book: thickness (the spine) along the arc, depth toward the stop, height (a tall camera column). */
+      book: { w: 1.2, d: 2.6, h: 4.2 },
+      /** Camera zone half size around the stop, and its zooms: all four books in view, phones included. */
+      zone: 2.5,
+      zoom: 1.15,
+      zoomPhone: 0.95,
+    },
   },
 } as const;
+
+/** The Study Vault stop and camera zone (a stop with a view, no drawer: no catalog room). */
+export const VAULT_ROOM = "L4:vault" as RoomId;
 
 export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const N = NEWSROOM;
@@ -140,14 +180,21 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
       }
     : null;
   const returnPad = { x: end.x + E.returnPad.dx, z: end.z + E.returnPad.dz };
+  const vault = studyVault(end, input.guides ?? []);
+  if (vault) {
+    roads.push({ id: "vault", points: [vault.entry, vault.center], width: LIBRARY_FLOOR.road });
+    network.plazas.push({ id: "vault", center: vault.center, w: E.vault.plaza, d: E.vault.plaza, round: true });
+  }
+  const books = vault?.books.map((b) => b.rect) ?? [];
 
-  const extra: Rect[] = [wall, ...(board ? [board.rect] : []), core, ...(monument ? [monument.rect] : [])];
+  const extra: Rect[] = [wall, ...(board ? [board.rect] : []), core, ...(monument ? [monument.rect] : []), ...(vault ? [vault.shelf] : [])];
   const points = [
     { x: P.x - N.plaza.w / 2, z: P.z - N.plaza.d / 2 },
     { x: P.x + N.plaza.w / 2, z: P.z + N.plaza.d / 2 },
     { x: end.x + radius, z: end.z + radius },
     { x: end.x - radius, z: end.z - radius },
     { x: returnPad.x, z: returnPad.z + 1.5 },
+    ...(vault ? [around(vault.center, vault.radius)].flatMap((r) => [{ x: r.minX, z: r.minZ }, { x: r.maxX, z: r.maxZ }]) : []),
   ];
   const bounds = floorBounds([...stations.map((s) => s.rect), ...extra], points, LIBRARY_FLOOR.margin);
   const spawn: Vec2 = { x: N.arrival.x, z: N.arrival.z };
@@ -183,11 +230,18 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
       },
       ...(monument ? [{ id: "L4:metrics", area: around(monument.stop, 2.5), yaw: E.lookNorth, zoom: 1.2 }] : []),
       ...(board ? [{ id: "L4:board:archive", area: around(board.stop, 2), yaw: E.lookEast }] : []),
+      // The Study Vault: from the stop, look east at the books (any heading), zoomed out so all four fit.
+      ...(vault ? [{ id: VAULT_ROOM, area: around(vault.stop, E.vault.zone), yaw: E.lookEast, zoom: E.vault.zoom, classView: { mobile: { zoom: E.vault.zoomPhone } } }] : []),
     ],
     returnPad,
-    stops: { [TOPICS_ROOM]: ringStop },
-    // The pedestal with its topic cloud, the monument and the board block a low camera up to their height.
-    tall: [{ ...core, h: E.coreHeight }, ...(monument ? [{ ...monument.rect, h: E.monument.h }] : []), ...(board ? [{ ...board.rect, h: N.board.h }] : [])],
+    stops: { [TOPICS_ROOM]: ringStop, ...(vault ? { [VAULT_ROOM]: vault.stop } : {}) },
+    // The pedestal with its topic cloud, the monument, the board and the vault books block a low camera up to their height.
+    tall: [
+      { ...core, h: E.coreHeight },
+      ...(monument ? [{ ...monument.rect, h: E.monument.h }] : []),
+      ...(board ? [{ ...board.rect, h: N.board.h }] : []),
+      ...books.map((r) => ({ ...r, h: E.vault.book.h })),
+    ],
   });
 
   return {
@@ -201,8 +255,48 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     centerpiece: { x: N.wall.x, z: wall.maxZ },
     links: tagLinks(input),
     extras: { wall, years },
-    end: { center: end, core, ringStop, monument, returnPad },
+    end: { center: end, core, ringStop, monument, returnPad, vault },
   };
+}
+
+/**
+ * The Study Vault off the end plaza (`NEWSROOM.end.vault`): the plaza center and the stop on the entry's diagonal, and
+ * the books on an arc around the stop centered due east of it, in file order north to south (left to right as the
+ * camera looks east), each turned with its spine toward the stop. Null without guides, so the floor stays as it was.
+ */
+function studyVault(end: Vec2, guides: readonly LibraryGuideInput[]): LibraryVault | null {
+  if (!guides.length) return null;
+  const V = NEWSROOM.end.vault;
+  const entry = ringRoadPoints(end, NEWSROOM.end.ring, NEWSROOM.end.segments)[V.entryVertex];
+  const len = Math.hypot(entry.x - end.x, entry.z - end.z);
+  const dir = { x: (entry.x - end.x) / len, z: (entry.z - end.z) / len };
+  const center = { x: end.x + dir.x * V.distance, z: end.z + dir.z * V.distance };
+  const stop = { x: center.x - dir.x * V.stopInset, z: center.z - dir.z * V.stopInset };
+  const step = V.spacing / V.arc;
+  const books = guides.map((g, i): VaultBook => {
+    const a = (i - (guides.length - 1) / 2) * step;
+    const at = { x: stop.x + Math.cos(a) * V.arc, z: stop.z + Math.sin(a) * V.arc };
+    const facing = { x: -Math.cos(a), z: -Math.sin(a) };
+    const hx = (Math.abs(facing.z) * V.book.w + Math.abs(facing.x) * V.book.d) / 2;
+    const hz = (Math.abs(facing.x) * V.book.w + Math.abs(facing.z) * V.book.d) / 2;
+    return {
+      slug: g.slug,
+      spine: g.spine,
+      issuer: g.issuer,
+      code: g.code,
+      title: g.title,
+      at,
+      facing,
+      rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz },
+    };
+  });
+  const shelf: Rect = {
+    minX: Math.min(...books.map((b) => b.rect.minX)),
+    maxX: Math.max(...books.map((b) => b.rect.maxX)),
+    minZ: Math.min(...books.map((b) => b.rect.minZ)),
+    maxZ: Math.max(...books.map((b) => b.rect.maxZ)),
+  };
+  return { center, stop, entry, books, shelf, radius: V.plaza / 2 };
 }
 
 const around = (p: Vec2, r: number): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
