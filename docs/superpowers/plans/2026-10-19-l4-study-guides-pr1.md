@@ -1,6 +1,6 @@
 # L4 Study Guides, PR1: R2 Function, Data, Reader, Classic Shelf and CertDialog Implementation Plan
 
-Status: in review (#243)
+Status: shipped in #243 (039af05), 2026-10-19
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
