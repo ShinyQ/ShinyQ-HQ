@@ -54,7 +54,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 ### Classic bundle and the floor layouts
 
 - No chunk an exported page loads carries a floor layout: `experience/config.ts` imports every layout (L1 hall, L2 Career Road, L3 Project Roads and ops, L4 newsroom, RF, B1, the road kit), so only the 3D path may import it.
-- Classic-reachable code (the store `src/store/useHQStore.ts`, `hud/drawer/DrawerHost.tsx`, `hud/Hud.tsx`, `hud/switchLocale.ts`) reads the floor order from `src/experience/floorOrder.ts` and the Lobby spawn from `src/experience/floors/lobby/spawn.ts`; both import only `@/lib/floors` and types.
+- Classic-reachable code (the store `src/store/useHQStore.ts`, `hud/drawer/DrawerHost.tsx`, `hud/switchLocale.ts`) reads the floor order from `src/experience/floorOrder.ts` and the Lobby spawn from `src/experience/floors/lobby/spawn.ts`; both import only `@/lib/floors` and types.
 - Guards: `tests/unit/floor-order.test.ts` (static import graph of those modules) and `scripts/check-client-chunks.ts` in `bun run build` (fails when a page chunk holds a layout's view zone id, `FLOOR_LAYOUT_MARKERS`).
 - The floor layouts (about 22 KB gzip) load only after the 3D gate, on the 3D main path; the 3D caps include them (owner decision, option A: [2026-10-19-floor-order-out-of-classic.md](../decisions/2026-10-19-floor-order-out-of-classic.md), with the measured numbers).
 
@@ -119,7 +119,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 
 ### 3D page data off the gated pages
 
-- The gated pages (`/{locale}`, journey, labs, library, contact and their room pages) no longer serialize `ExperienceData` into the HTML and the RSC payload: each HTML and RSC `.txt` document is about 8 to 9.2 KB gzip (5.9 to 7.4 KB br) smaller, `/en` 55.3 to 46.4 KB gzip, `/en/labs` 71.7 to 62.7 KB.
+- The gated pages (`/{locale}`, journey, labs, library, contact and their room pages) do not serialize `ExperienceData` into the HTML or the RSC payload (about 8 to 9 KB gzip per document; numbers in [the decision](../decisions/2026-10-19-3d-page-data-static-json.md)).
 - The data is static versioned JSON, `/data/experience/{locale}.json?v=<hash>` (about 9.4 KB gzip), fetched by `ExperienceGate` in parallel with the 3D chunk (`src/experience/data-client.ts`); the Classic site and the static tier never download it. Detail: [3d-experience.md](3d-experience.md#experiencedata).
 - The 3D bytes gate counts scripts only, so its numbers do not move; the JSON shows under `json` in its report. Guard: no exported HTML or `.txt` file may carry the payload (check with `grep -rl roomCount out --include=*.html --include=*.txt`).
 
@@ -133,7 +133,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 ### Full-tier composer bytes
 
 - The full tier's composer uses `postprocessing` directly (`scene/postComposer.ts`, see [3d-experience.md](3d-experience.md#full-tier-post-processing)); `@react-three/postprocessing` bundled n8ao into the lazy `Effects` chunk.
-- Effect: the `Effects` chunk went from 23.9 to 16.0 KB gzip, so the full tier's main path (`bytes-3d`, `?prefetch=off`) and session total are 8.3 KB gzip smaller; lite does not load it (0.4 KB less from chunking).
+- The `Effects` chunk is about 16 KB gzip and loads only on the full tier (the wrapper's version was about 24 KB; numbers in [the floor order decision](../decisions/2026-10-19-floor-order-out-of-classic.md)).
 - Same look: the strict visual gate is pixel-equal within its tolerance on every pose. Manual check after a dependency change: no chunk under `out/_next/static/chunks` contains `N8AO` (`grep -l N8AO out/_next/static/chunks/*.js` prints nothing).
 
 ### Per-frame work
