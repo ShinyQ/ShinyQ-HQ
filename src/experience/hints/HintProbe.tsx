@@ -8,7 +8,7 @@ import { FIRST_PERSON } from "../camera/firstPerson";
 import { floorY } from "../config";
 import { roverRuntime } from "../rover/runtime";
 import { hintRuntime, setHintTarget } from "./runtime";
-import { HINT, hintAnchor, nearestHint } from "./select";
+import { HINT, hintAnchor, hintTargets, nearestHint } from "./select";
 import { hintItems } from "./source";
 
 /** First person: the bubble floats this far (u) above the rover's eye height at most. */
@@ -19,7 +19,8 @@ const FIRST_PERSON_BUBBLE = 0.9;
  * bubble over its anchor every frame. No bubble while the rover is not free (ride, beam, any autopilot
  * drive: missions, point-and-go) or while a target is hovered or tap-selected (point-and-go's
  * label and Go chip own that moment). In first person the bubble floats just above eye height, so a
- * near target's bubble stays in view. Renders nothing: no draw calls.
+ * near target's bubble stays in view. Grouped targets sharing one approach point (the L4 Study Vault's books) get one
+ * bubble for the group (`hintTargets`). Renders nothing: no draw calls.
  */
 export function HintProbe() {
   const next = useRef(0);
@@ -32,7 +33,7 @@ export function HintProbe() {
       const s = getHQStore().getState();
       const pilot = roverRuntime.autopilot;
       const free = s.phase === "explore" && !s.ride && !s.beam && !s.hover && (!pilot || pilot.state === "done");
-      const items = hintItems().filter((item) => item.floor === s.floor);
+      const items = hintTargets(hintItems().filter((item) => item.floor === s.floor));
       const pick = free ? nearestHint(items, roverRuntime, hintRuntime.target?.item ?? null) : null;
       setHintTarget(pick ? { item: pick, anchor: hintAnchor(pick, floorY(s.floor)) } : null);
     }

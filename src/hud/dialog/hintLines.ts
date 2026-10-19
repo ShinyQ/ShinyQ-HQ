@@ -14,6 +14,8 @@ export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "L2:station:workshop": "workshop",
   "L2:station:time-console": "timeConsole",
   "L3:door:ops": "ops",
+  // The Study Vault's books share one bubble (`hintTargets`), under the vault's id.
+  "L4:vault": "vault",
 };
 
 export function hintObjectKey(item: Pick<Interactable, "id">): string | null {
@@ -39,6 +41,7 @@ export function hintGoKey(item: Pick<Interactable, "action">): HintGoKey {
       if (action.command === "terminal") return "roverMenu";
       if (action.command === "cv") return "viewCv";
       if (action.command.startsWith("palette:")) return "browse";
+      if (action.command.startsWith("guide:")) return "open";
       return "go";
   }
 }

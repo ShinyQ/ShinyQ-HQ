@@ -159,7 +159,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 415.4 KB and full 439.0 KB gzip; floor chunks L3 13.9, L4 9.9, RF 3.3, B1 4.8 KB (B1 only in unlocked sessions).
+- Measured: main 3D path lite 417.7 KB and full 441.3 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 446.7 KB and full 470.4 KB, under their caps of 447.3 and 471 KB ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 
@@ -318,6 +318,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
   | `bounds`, `height` | pick volume |
   | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
+  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
@@ -333,7 +334,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - The HUD minimap reads `buildFloorLayouts` and `interactRuntime.items` (`subscribe`, `setItems`): a floor change that alters roads or targets shows up on the minimap and the overview automatically, with no map code to touch (see [Minimap](hud-and-drawer.md#minimap)).
 - Never put navigation `onClick` or hover handlers on scene objects.
   - L1 certification badges and pills and L4 research paper plates keep their own clicks (they open previews, not drives).
-- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument).
+- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument), `guide:<slug>` (the study guide reader through the `guide` HUD command; the L4 Study Vault books, `L4:vault:<slug>`, which drive to the vault stop first).
 
 ### Rendering and actions
 

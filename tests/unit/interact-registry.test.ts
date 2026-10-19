@@ -38,6 +38,8 @@ function labelsFrom(m: Messages): InteractLabels {
     rooms: m.hud.rooms,
     reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
     metrics: m.library.topics.monument.target,
+    studyGuide: (code) => m.hud.interact.studyGuide.replace("{code}", code),
+    studyVault: m.hud.interact.studyVault,
   };
 }
 
@@ -270,6 +272,35 @@ describe("interactablesFor on the real content", () => {
     expect(monument).toMatchObject({ kind: "station", label: "Research metrics", action: { type: "command", command: "open:L4:research" } });
     expect(monument.at).toEqual(library.end!.monument!.stop);
     expect(setup("id").items.L4.find((i) => i.id === "L4:station:topics")?.label).toBe("Konstelasi Topik");
+  });
+
+  it("adds one Study Vault target per book: drive to the vault stop, then open its study guide", () => {
+    const vault = buildLibraryLayout(libraryLayoutInput(experience.library)).end!.vault!;
+    expect(vault.books).toHaveLength(4);
+    const books = items.L4.filter((i) => i.id.startsWith("L4:vault:"));
+    expect(books.map((b) => b.id)).toEqual(vault.books.map((b) => `L4:vault:${b.slug}`));
+    vault.books.forEach((book, i) => {
+      const item = books[i];
+      expect(item).toMatchObject({ floor: "L4", kind: "station", height: 4.2, action: { type: "command", command: `guide:${book.slug}` } });
+      expect(item.at).toEqual(vault.stop);
+      expect(item.bounds).toEqual(book.rect);
+      expect(item.label).toBe(`Read the ${book.code ?? book.spine} study guide`);
+      // One hint bubble for the whole vault (they share the stop).
+      expect(item.group).toEqual({ id: "L4:vault", label: "Study Vault" });
+    });
+    expect(books.find((b) => b.id === "L4:vault:ai-103")?.label).toBe("Read the AI-103 study guide");
+    expect(books.find((b) => b.id === "L4:vault:google-gen-ai-leader")?.label).toBe("Read the Gen AI Leader study guide");
+    expect(setup("id").items.L4.find((i) => i.id === "L4:vault:ai-103")?.label).toBe("Baca panduan belajar AI-103");
+  });
+
+  it("adds no Study Vault targets without study guides", () => {
+    const bare = { ...experience, library: { ...experience.library, guides: [] } };
+    const noGuides = buildFloorLayouts(experience.years.length, {
+      labs: bare.labs.pods,
+      career: careerLayoutInput(bare.career),
+      library: libraryLayoutInput(bare.library),
+    });
+    expect(interactablesFor("L4", noGuides, { ...data, experience: bare }).some((i) => i.id.startsWith("L4:vault:"))).toBe(false);
   });
 
   it("keeps ids unique, footprints on the slab and every approach point on drivable floor", () => {

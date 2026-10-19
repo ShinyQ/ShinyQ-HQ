@@ -8,7 +8,7 @@ import type { LibraryConcept, LibraryLayout, LibraryLayoutInput } from "./model"
  */
 export const LIBRARY_CONCEPT: LibraryConcept = "newsroom";
 
-const EMPTY: LibraryLayoutInput = { posts: [], research: 0, models: 0, talks: 0 };
+const EMPTY: LibraryLayoutInput = { posts: [], research: 0, models: 0, talks: 0, guides: [] };
 
 /**
  * The real L4 floor: the picked concept's layout, with `floor.listStop` set so rooms without a door

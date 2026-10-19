@@ -96,6 +96,7 @@ describe("end plaza signs", () => {
       pieces: (count: number, topic: string) => `${count} pieces on ${topic}`,
       monument: { citations: "13", citationsLabel: "Citations", hIndex: "2", hIndexLabel: "h-index", source: "Google Scholar · as of Oct 2026" },
       archive: "Post archive",
+      vault: "Study Vault",
     };
     const slots = orbSlots(topics);
     const { signs, meta } = endPlazaSigns(layout, topics, slots, labels, topicPickOf(topic("voice-ai")));

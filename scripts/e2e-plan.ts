@@ -32,6 +32,7 @@ export const ALL_SPECS = [
   "gallery",
   "gpu",
   "guides",
+  "guides-vault",
   "highlights",
   "hud",
   "hud-corners",
@@ -87,7 +88,7 @@ export const RULES: Rule[] = [
   // Perf lane (PERF=1): `bun run e2e:perf` and the CI `3D perf gates` job run it, never the regular suite.
   { test: /^e2e\/perf\//, specs: [] },
   // The generated study guide PDF (with its byte-range route) only the guides specs use.
-  { test: /^e2e\/fixtures\/guide-pdf\.ts$/, specs: ["guides"] },
+  { test: /^e2e\/fixtures\/guide-pdf\.ts$/, specs: ["guides", "guides-vault"] },
   // Not part of the site or the e2e suite.
   { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
@@ -367,7 +368,12 @@ const ALSO_RULES: Rule[] = [
   // Study guides: the shelf, the reader, its data and views, and the dialogs that open it (e2e/guides.spec.ts).
   {
     test: /^src\/components\/guides\/|^src\/content\/guide[\w-]*\.ts$|^content\/study-guides\.json$|^src\/components\/(certs\/CertDialog|DialogHost)\.tsx$|^src\/components\/dialog-loaders\.ts$|^src\/app\/\[locale\]\/library\/page\.tsx$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
-    specs: ["guides"],
+    specs: ["guides", "guides-vault"],
+  },
+  // The L4 Study Vault (e2e/guides-vault.spec.ts): its layout and scene, the book targets and the hq:hud command they send.
+  {
+    test: /^src\/experience\/floors\/library\/(decor\/(StudyVault\.tsx|vault\.ts)|layout\.ts|model\.ts|concepts\/newsroom\.ts)$|^src\/experience\/floors\/Library\.tsx$|^src\/experience\/interact\/(registry|pick)\.ts$|^src\/hud\/events\.ts$/,
+    specs: ["guides-vault"],
   },
   // The B1 unlock files (PR 3) keep the specs of the rules they used to match.
   { test: /^src\/hud\/dialog\/(EngineUnlockLayer\.tsx|engineRoomAction\.ts)$/, specs: ["onboarding", "experience", "camera"] },

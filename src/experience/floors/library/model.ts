@@ -24,6 +24,16 @@ export interface LibraryLayoutInput {
   talks: number;
   /** Research metrics are published (the end plaza's monument shows them). */
   metrics?: boolean;
+  /** Certification study guides in file order: the Study Vault's books (none: no vault). */
+  guides?: readonly LibraryGuideInput[];
+}
+
+/** One study guide as the layout needs it (the book's spine sign and its point-and-go label read these). */
+export interface LibraryGuideInput {
+  slug: string;
+  spine: string;
+  issuer: string;
+  code: string | null;
 }
 
 export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
@@ -33,6 +43,7 @@ export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
     models: library.models.length,
     talks: library.talks.length,
     metrics: Boolean(library.researchMetrics),
+    guides: library.guides,
   };
 }
 
@@ -120,6 +131,34 @@ export interface LibraryEnd {
   monument: { rect: Rect; center: Vec2; stop: Vec2 } | null;
   /** Express Return pad (`FloorLayout.returnPad`). */
   returnPad: Vec2;
+  /** The Study Vault off the ring road (south-east), with the study guides as books; null without guides. */
+  vault: LibraryVault | null;
+}
+
+/** A study guide standing as a tall book in the Study Vault. */
+export interface VaultBook extends LibraryGuideInput {
+  /** Footprint center. */
+  at: Vec2;
+  /** Unit direction from the book toward the vault stop: the spine faces this way. */
+  facing: Vec2;
+  /** Axis-aligned bounds of the turned footprint: a tall camera column and the pick bounds (the books' rects never overlap). */
+  rect: Rect;
+}
+
+/** The Study Vault (owner request 2026-10-19): a round plaza at the end of a short road off the ring road. */
+export interface LibraryVault {
+  /** Vault plaza center (where its road ends). */
+  center: Vec2;
+  /** The rover's stop facing the books (`stops["L4:vault"]`), on the road on the ring side of the center. */
+  stop: Vec2;
+  /** The ring road vertex the vault road starts on. */
+  entry: Vec2;
+  /** File order, left to right as seen from the stop. */
+  books: VaultBook[];
+  /** Bounds of every book's `rect`: the one obstacle the books add (6 u clear floor rule). */
+  shelf: Rect;
+  /** Vault plaza radius. */
+  radius: number;
 }
 
 export const roomOfPost = (slug: string): RoomId => `L4:${slug}` as RoomId;

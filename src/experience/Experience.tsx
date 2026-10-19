@@ -560,6 +560,7 @@ function ExperienceView({
               }
             : null,
           archive: t("interact.archive"),
+          vault: t("interact.studyVault"),
         },
       },
       roof: {
@@ -604,6 +605,8 @@ function ExperienceView({
         },
         reactorRing: (ring: ReactorRingId) => tReactor("ringTarget", { ring: tReactor(`rings.${ring}`) }),
         metrics: tLibrary("topics.monument.target"),
+        studyGuide: (code: string) => t("interact.studyGuide", { code }),
+        studyVault: t("interact.studyVault"),
       },
     }),
     [t, tEngine, tHome, tCommon, tCerts, tDrawer, tLibrary, tContact, tLabs, tHall, tReactor, tStats, metrics, data.locale],

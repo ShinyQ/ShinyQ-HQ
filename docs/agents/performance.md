@@ -19,10 +19,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
-| B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 4.8 KB) | `e2e/budgets.ts` |
+| B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 5.0 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 470 KB (measured 468.3 KB, about 1.7 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 446.4 KB (measured 444.6 KB, about 1.8 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 471 KB (measured 470.4 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 447.3 KB (measured 446.7 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -65,7 +65,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2 |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L4 also at the Study Vault stop (same caps and L4 program baseline, reported as the settled peak `settled-L4-vault`) |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 | `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
@@ -77,8 +77,9 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 470 KB: measured 468.3 KB, about 1.7 KB of headroom.
-  - lite 446.4 KB: measured 444.6 KB, about 1.8 KB of headroom.
+  - full 471 KB: measured 470.4 KB (main 441.3 KB plus floor chunks 29.0 KB); the owner raised it for the Study Vault (2026-10-19) to the measured total plus about 0.6 KB.
+  - lite 447.3 KB: measured 446.7 KB (main 417.7 KB plus floor chunks 29.0 KB); raised by the same owner decision.
+  - Floor chunks measured L3 13.9 KB, L4 11.8 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
@@ -195,6 +196,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
+| The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
 | `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |

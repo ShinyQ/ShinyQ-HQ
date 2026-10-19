@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import guides from "../content/study-guides.json";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
 import {
@@ -276,6 +277,13 @@ for (const device of [
       await driveTo(page, monument);
       const atMonument = await check("monument");
       expect(atMonument.filter((b) => b.kind === "monument")).toHaveLength(5);
+      // The Study Vault stop (camera zone looking east at the books): every spine and the vault sign show, over the
+      // topic labels still on screen, and nothing covers them.
+      const vault = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:vault"]);
+      await driveTo(page, vault);
+      const atVault = await check("vault");
+      expect(atVault.filter((b) => b.kind === "guide").map((b) => b.text.replace(/\s+/g, " ")).sort()).toEqual(guides.guides.map((g) => g.spine).sort());
+      expect(atVault.some((b) => b.kind === "vault" && b.text === en.hud.interact.studyVault.toUpperCase())).toBe(true);
     });
   });
 }
