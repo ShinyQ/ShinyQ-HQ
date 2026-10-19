@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { CLIENT_NAMESPACES, FETCHED_NAMESPACES, LAYOUT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
+import { CLIENT_NAMESPACES, FETCHED_NAMESPACES, LAYOUT_NAMESPACES, omitMessages, pickMessages, SERVER_PATHS } from "@/i18n/client-messages";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
@@ -169,6 +169,28 @@ describe("client message namespaces", () => {
       if (missing.length) wrong.push(`${relative(ROOT, page)}: ${missing.join(", ")}`);
     }
     expect(wrong).toEqual([]);
+  });
+
+  it("keeps the server-only sub-paths (SERVER_PATHS) out of ClientMessages and out of every client module", () => {
+    expect(SERVER_PATHS).toContain("office.classic");
+    const { used } = namespacesOf(allClient, { paths: true });
+    expect([...used].filter(([p]) => covers(SERVER_PATHS, p)).map(([p, rel]) => `${p} (${rel})`)).toEqual([]);
+    for (const path of SERVER_PATHS) {
+      const [ns, ...rest] = path.split(".");
+      // A client module reading the namespace never reads the server-only keys (`t("classic.title")`).
+      const readers = [...allClient].filter((f) => new RegExp(`useTranslations\\(["'\`]${ns}["'\`]\\)`).test(text(f)));
+      expect(readers.filter((f) => text(f).includes(`"${rest.join(".")}.`)).map((f) => relative(ROOT, f))).toEqual([]);
+      for (const messages of [en, id]) expect(path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], messages), path).toBeDefined();
+    }
+    const before = JSON.stringify(en);
+    const client = omitMessages(pickMessages(en, CLIENT_NAMESPACES), SERVER_PATHS);
+    expect(JSON.stringify(en)).toBe(before);
+    expect(client.office).not.toHaveProperty("classic");
+    const office = client.office as Record<string, unknown>;
+    // The rest of the namespace stays, as the same objects.
+    expect(Object.keys(office).sort()).toEqual(Object.keys(en.office).filter((k) => k !== "classic").sort());
+    expect(office["3d"]).toBe(en.office["3d"]);
+    expect(client.hud).toBe(en.hud);
   });
 
   it("names namespaces that exist in both locales, and picks only those", () => {

@@ -63,6 +63,27 @@ export const LAYOUT_NAMESPACES = [
  */
 export const FETCHED_NAMESPACES = ["guides"] as const;
 
+/**
+ * Dotted sub-paths of a CLIENT_NAMESPACES namespace that only server components read and pass on as resolved props
+ * (the Classic office card's `office.classic`): `ClientMessages` drops them, so they never ride in a page's RSC payload.
+ */
+export const SERVER_PATHS = ["office.classic"] as const;
+
+/** A copy without the dotted paths; only the objects along a path are copied, everything else stays the same object. */
+export function omitMessages(messages: AbstractIntlMessages, paths: readonly string[]): AbstractIntlMessages {
+  const out: AbstractIntlMessages = { ...messages };
+  for (const path of paths) {
+    const keys = path.split(".");
+    let into: AbstractIntlMessages | null = out;
+    for (let i = 0; i < keys.length - 1 && into; i++) {
+      const next: AbstractIntlMessages[string] | undefined = into[keys[i]];
+      into = typeof next === "object" ? (into[keys[i]] = { ...next }) : null;
+    }
+    if (into) delete into[keys[keys.length - 1]];
+  }
+  return out;
+}
+
 /** Picks top-level namespaces or dotted sub-paths (`hud.palette`), keeping the nesting and the original objects. */
 export function pickMessages(messages: AbstractIntlMessages, paths: readonly string[]): AbstractIntlMessages {
   const picked: AbstractIntlMessages = {};
