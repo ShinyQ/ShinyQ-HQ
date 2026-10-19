@@ -52,7 +52,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 ### Layout
 
 - Every hall position is an offset from `LOBBY_SLAB` (`hallX` 33, `halfZ` 27): the slab runs to x = 69.
-- A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from the south edge, 8 u clear of the wall) into a 24 x 38 u plaza (8 u to the north stations, 2 u to contact, 3 u to the experience arch).
+- A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from the south edge, 8 u clear of the wall; from x = 24, 6 u east of the Agent Office wing's east edge) into a 24 x 38 u plaza (8 u to the north stations, 2 u to contact, 3 u to the experience arch).
   - The certification wall stays untouched and readable from the plaza.
 - Four stations sit flush with the slab edges, rooms `L1:highlights-*`:
 
