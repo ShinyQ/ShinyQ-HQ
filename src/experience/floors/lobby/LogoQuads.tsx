@@ -1,73 +1,82 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BufferAttribute, BufferGeometry, CanvasTexture, SRGBColorSpace } from "three";
-import { atlasLayout, quadBuffers, type LogoQuad } from "./logoAtlas";
+import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture } from "three";
+import atlas from "../../logo-atlas.json";
+import { quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
 
-/** Draws every logo into one canvas; failed images leave their cell empty. */
-export function useAtlasTexture(srcs: string[], cols: number, rows: number, cell: number) {
-  const [texture, setTexture] = useState<CanvasTexture | null>(null);
-  const key = srcs.join("|");
-  useEffect(() => {
-    if (srcs.length === 0) return;
-    let cancelled = false;
-    let built: CanvasTexture | null = null;
-    const canvas = document.createElement("canvas");
-    canvas.width = cols * cell;
-    canvas.height = rows * cell;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const pad = Math.round(cell * 0.06);
-    Promise.all(
-      srcs.map(
-        (src, i) =>
-          new Promise<void>((resolve) => {
-            const img = new Image();
-            img.decoding = "async";
-            img.onload = () => {
-              const x = (i % cols) * cell;
-              const y = Math.floor(i / cols) * cell;
-              const box = cell - pad * 2;
-              const scale = Math.min(box / (img.naturalWidth || box), box / (img.naturalHeight || box));
-              const w = (img.naturalWidth || box) * scale;
-              const h = (img.naturalHeight || box) * scale;
-              ctx.drawImage(img, x + (cell - w) / 2, y + (cell - h) / 2, w, h);
-              resolve();
-            };
-            img.onerror = () => resolve();
-            img.src = src;
-          }),
-      ),
-    ).then(() => {
-      if (cancelled) return;
-      built = new CanvasTexture(canvas);
-      built.colorSpace = SRGBColorSpace;
-      built.anisotropy = 4;
-      setTexture(built);
+/** Layout of the prebuilt logo atlas (scripts/logo-atlas.ts): every L1 wall logo, in the order of `wallLogoSrcs`. */
+export const LOGO_ATLAS: AtlasLayout = atlas;
+
+interface SharedAtlas {
+  texture: Texture;
+  users: number;
+  ready: Promise<Texture>;
+}
+
+let shared: SharedAtlas | null = null;
+
+/**
+ * One texture for both walls, decoded before upload. Same settings as the runtime canvas atlas it
+ * replaces (sRGB, anisotropy 4, flipY, straight alpha, mipmaps).
+ */
+function acquire(): SharedAtlas {
+  if (!shared) {
+    const texture = new Texture();
+    texture.colorSpace = SRGBColorSpace;
+    texture.anisotropy = 4;
+    const img = new Image();
+    img.decoding = "async";
+    img.src = atlas.file;
+    const ready = img.decode().then(() => {
+      texture.image = img;
+      texture.needsUpdate = true;
+      return texture;
     });
+    shared = { texture, users: 0, ready };
+  }
+  shared.users++;
+  return shared;
+}
+
+/** The last wall to unmount disposes the texture (the next mount loads it again, from the HTTP cache). */
+function release(entry: SharedAtlas) {
+  entry.users--;
+  if (entry.users > 0) return;
+  entry.texture.dispose();
+  if (shared === entry) shared = null;
+}
+
+/** The shared logo atlas texture, or null until it has loaded (or when it failed to load). */
+export function useLogoAtlas(): Texture | null {
+  const [texture, setTexture] = useState<Texture | null>(null);
+  useEffect(() => {
+    let live = true;
+    const entry = acquire();
+    entry.ready.then(
+      (t) => live && setTexture(t),
+      () => undefined,
+    );
     return () => {
-      cancelled = true;
-      built?.dispose();
+      live = false;
+      release(entry);
     };
-    // `key` captures srcs; the layout numbers derive from it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, cols, rows, cell]);
+  }, []);
   return texture;
 }
 
-/** Every logo on the skills wall as one mesh (one draw call) over a runtime canvas atlas. */
+/** Every logo on the skills wall as one mesh (one draw call) over the prebuilt logo atlas. */
 export function LogoQuads({ quads, z = 0 }: { quads: LogoQuad[]; z?: number }) {
-  const layout = useMemo(() => atlasLayout(quads.map((q) => q.src), 128), [quads]);
-  const texture = useAtlasTexture(layout.srcs, layout.cols, layout.rows, layout.cell);
+  const texture = useLogoAtlas();
   const geometry = useMemo(() => {
-    const { positions, uvs, indices } = quadBuffers(layout, quads, z);
+    const { positions, uvs, indices } = quadBuffers(LOGO_ATLAS, quads, z);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("uv", new BufferAttribute(uvs, 2));
     g.setIndex(new BufferAttribute(indices, 1));
     g.computeBoundingSphere();
     return g;
-  }, [layout, quads, z]);
+  }, [quads, z]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
   return (

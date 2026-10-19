@@ -168,7 +168,7 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.
-  - The L1 skills wall draws them as one merged quad mesh over a runtime canvas atlas (`floors/lobby/LogoQuads.tsx`, pure layout in `logoAtlas.ts`), one draw call in total.
+  - The L1 skills wall draws them as one merged quad mesh over the prebuilt logo atlas it shares with the certification wall (`floors/lobby/LogoQuads.tsx`, pure layout in `logoAtlas.ts`, built by `scripts/logo-atlas.ts`; see [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one draw call in total.
 
 ### Intents and the Director
 

@@ -1,7 +1,13 @@
 /**
- * Pure layout for the L1 skills-wall logos: one texture atlas and one merged quad geometry,
- * so every logo on the wall costs a single draw call. No React or three side effects.
+ * Pure layout for the L1 skills and certification wall logos: one prebuilt texture atlas
+ * (scripts/logo-atlas.ts) and one merged quad geometry per wall, so each wall's logos cost a single
+ * draw call. No React or three side effects.
  */
+
+/** Atlas cell size in pixels; each logo fits inside the cell less `atlasPad` on every side. */
+export const ATLAS_CELL = 128;
+
+export const atlasPad = (cell: number) => Math.round(cell * 0.06);
 
 export interface AtlasLayout {
   /** Distinct logo paths in atlas cell order. */
@@ -11,11 +17,16 @@ export interface AtlasLayout {
   cell: number;
 }
 
-export function atlasLayout(srcs: readonly (string | null)[], cell = 64): AtlasLayout {
+export function atlasLayout(srcs: readonly (string | null)[], cell = ATLAS_CELL): AtlasLayout {
   const unique = [...new Set(srcs.filter((s): s is string => Boolean(s)))];
   const cols = Math.max(1, Math.ceil(Math.sqrt(unique.length)));
   const rows = Math.max(1, Math.ceil(unique.length / cols));
   return { srcs: unique, cols, rows, cell };
+}
+
+/** Every logo the L1 walls draw, in atlas order: the skills wall items first, then the certification issuers. */
+export function wallLogoSrcs(data: { skills: readonly { logos: readonly (string | null)[] }[]; certifications: readonly { logo: string | null }[] }): (string | null)[] {
+  return [...data.skills.flatMap((g) => g.logos), ...data.certifications.map((c) => c.logo)];
 }
 
 /** UV rectangle [u0, v0, u1, v1] of a cell (v grows upward, row 0 is the top of the canvas). */

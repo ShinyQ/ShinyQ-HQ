@@ -15,7 +15,7 @@ Related: floor rules shared by every floor live in [floors.md](floors.md); the V
 - Draw calls:
   - badge bodies and glows: two instanced meshes;
   - outlines: one line mesh;
-  - issuer logos: one atlas mesh (`orientedQuadBuffers`);
+  - issuer logos: one mesh over the shared prebuilt logo atlas (`orientedQuadBuffers`, see [Logo atlas](#logo-atlas));
   - title, tab, pager and badge texts: one `BatchedLabels`, rendered over the logos.
 - A badge click calls `openCert`.
 
@@ -31,9 +31,17 @@ Code: `floors/lobby/SkillsWall.tsx`, layout in `floors/lobby/layout.ts` (`skills
 - Today: AI and LLM 9 (one column: "Azure OpenAI (incl. Realtime)" is too wide for half a cell), Data science 6 + 6, Azure 6 + 6, Languages 6, Backend 4 + 4, Frontend 5, Data 4 + 3, DevOps 5 + 4.
 - Each grid row is as tall as its tallest cell (`rowHeights`): 11.25 u today, and the title's top (`skillsWallTop`, plinth and title included) at about 12.4 u, under one storey (at most 12.5 u by test; `FLOOR_GAP` is 14). `SKILLS_PAD.bottom` keeps the base row clear of the plinth lip, which hides the lowest 1.5 u or so from the stop's elevated camera.
 - `LOBBY.skillsWall.h` is that measured height: the point-and-go hit box (`interact/registry.ts`) and the Lobby bounds read it, and a unit test fails when content grows the wall past it (update `h`, keep the title under 12.5 u).
-- One `BatchedLabels` (title, headings, one text block per sub-column) and one `LogoQuads` (a logo for every item): no extra draw call or program.
+- One `BatchedLabels` (title, headings, one text block per sub-column) and one `LogoQuads` (a logo for every item, over the prebuilt [logo atlas](#logo-atlas)): no extra draw call or program.
 - Colliders, the point-and-go bounds, the stop (`host3d.ts`, 2.6 u in front) and the lane spoke derive from `LOBBY.skillsWall`.
 - The `L1:skills` view zone (`camera/orbit.ts`) frames the whole wall at zoom 1.7 (phones 1.15 through `classView`: closer so the text reads, and the visitor pans). Like every zone it does not turn the camera under reduced motion.
+
+## Logo atlas
+
+- Both walls draw their logos from one prebuilt image, `public/atlas/logos.<hash>.webp`, with its manifest `src/experience/logo-atlas.json` (`file`, `cols`, `rows`, `cell`, `pad`, `sources`, `srcs`). One request instead of one per logo, and no canvas drawing on the main thread.
+- `bun run logo:atlas` (`scripts/logo-atlas.ts`) writes both. Order: `atlasLayout(wallLogoSrcs(data))`, the skills wall items, then the certification issuers, deduped. Each logo is drawn by headless Chromium with the canvas code the runtime used before: 128 px cells (`ATLAS_CELL`), `atlasPad` (6%, 8 px) on every side, contain fit, centered. On macOS it uses Chrome's GPU raster (Metal, as the visual gate draws), so the cells match the runtime canvas pixel for pixel; elsewhere it falls back to SwiftShader, whose software raster anti-aliases SVG edges slightly differently, so regenerate on macOS. Stored as lossless WebP with `exact` (the RGB of transparent pixels stays, it feeds texture filtering at logo edges); the script checks the pixels round-trip.
+- Both outputs are committed (like the troika fonts): the build needs no browser and the dev server serves them as is. `bun run build` and `build:web` run `bun scripts/logo-atlas.ts --check`, which fails when a wall logo was added or removed, the grid changed or a logo file changed (the `sources` hash covers every source file); `tests/unit/logo-atlas.test.ts` checks the same.
+- Runtime (`useLogoAtlas` in `floors/lobby/LogoQuads.tsx`): one `Texture` shared by both walls, the image decoded (`img.decode()`) before upload; sRGB, anisotropy 4, `flipY`, straight alpha and mipmaps, as the canvas atlas had. The last wall to unmount disposes it. UVs come from `LOGO_ATLAS` (the manifest) through `quadBuffers` and `orientedQuadBuffers`; a logo missing from the atlas is skipped.
+- Cache: `/atlas/*` is immutable for a year (`public/_headers`); a changed atlas gets a new name.
 
 ## Highlights Hall
 

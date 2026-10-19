@@ -1,6 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { atlasLayout, cellUv, quadBuffers } from "@/experience/floors/lobby/logoAtlas";
+import { ATLAS_CELL, atlasLayout, atlasPad, cellUv, quadBuffers, wallLogoSrcs } from "@/experience/floors/lobby/logoAtlas";
+import manifest from "@/experience/logo-atlas.json";
+import { atlasProblems } from "../../scripts/logo-atlas";
+
+const data = () => buildExperienceData("en", { L1: "Lobby", L2: "Career", L3: "Labs", L4: "Library", RF: "Roof" });
 
 describe("skills wall logo atlas", () => {
   it("dedupes logos and skips nulls", () => {
@@ -29,10 +35,36 @@ describe("skills wall logo atlas", () => {
   });
 
   it("ships skill logos aligned with items in the 3D payload", () => {
-    const data = buildExperienceData("en", { L1: "Lobby", L2: "Career", L3: "Labs", L4: "Library", RF: "Roof" });
-    for (const group of data.skills) expect(group.logos).toHaveLength(group.items.length);
-    const layout = atlasLayout(data.skills.flatMap((g) => g.logos));
+    const { skills } = data();
+    for (const group of skills) expect(group.logos).toHaveLength(group.items.length);
+    const layout = atlasLayout(skills.flatMap((g) => g.logos));
     expect(layout.srcs.length).toBeGreaterThan(10);
     expect(layout.srcs.every((s) => s.startsWith("/tech/"))).toBe(true);
+  });
+});
+
+describe("prebuilt L1 logo atlas (scripts/logo-atlas.ts)", () => {
+  it("holds every skills and certification wall logo in the runtime layout order", () => {
+    const d = data();
+    const layout = atlasLayout(wallLogoSrcs(d));
+    expect(manifest.srcs, "stale atlas: run bun scripts/logo-atlas.ts").toEqual(layout.srcs);
+    expect([manifest.cols, manifest.rows, manifest.cell]).toEqual([layout.cols, layout.rows, ATLAS_CELL]);
+    expect(manifest.pad).toBe(atlasPad(ATLAS_CELL));
+    for (const c of d.certifications) if (c.logo) expect(manifest.srcs).toContain(c.logo);
+    for (const g of d.skills) for (const src of g.logos) if (src) expect(manifest.srcs).toContain(src);
+  });
+
+  it("is fresh: same logo bytes, content-hashed file name, one cell per logo at 128 px", () => {
+    expect(atlasProblems(manifest)).toEqual([]);
+    expect(manifest.file).toMatch(/^\/atlas\/logos\.[0-9a-f]{10}\.webp$/);
+    const file = path.join(process.cwd(), "public", manifest.file);
+    expect(existsSync(file)).toBe(true);
+    const bytes = readFileSync(file);
+    expect(bytes.subarray(0, 4).toString("latin1")).toBe("RIFF");
+    expect(bytes.subarray(8, 12).toString("latin1")).toBe("WEBP");
+    // VP8L (lossless) header: 14-bit width and height minus one.
+    expect(bytes.subarray(12, 16).toString("latin1")).toBe("VP8L");
+    const bits = bytes.readUInt32LE(21);
+    expect([(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1]).toEqual([manifest.cols * manifest.cell, manifest.rows * manifest.cell]);
   });
 });

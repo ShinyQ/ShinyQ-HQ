@@ -13,8 +13,8 @@ import { roverRuntime } from "../../rover/runtime";
 import type { ExperienceData, GpuTier } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
 import { arcPoint, CERT_PAGE_SIZE, CERT_WALL, certPage, certPanelHalf, certSlots, faceYaw, tabAngles, type CertSlot } from "./layout";
-import { atlasLayout, orientedQuadBuffers } from "./logoAtlas";
-import { useAtlasTexture } from "./LogoQuads";
+import { orientedQuadBuffers } from "./logoAtlas";
+import { LOGO_ATLAS, useLogoAtlas } from "./LogoQuads";
 
 type Cert = ExperienceData["certifications"][number];
 
@@ -72,24 +72,23 @@ function badgeOutlines(slots: CertSlot[], certs: Cert[], boost: number): BufferG
   return g;
 }
 
-/** Issuer logos of the visible badges as one mesh over a canvas atlas (one draw call). */
+/** Issuer logos of the visible badges as one mesh over the prebuilt logo atlas (one draw call). */
 function BadgeLogos({ slots, certs }: { slots: CertSlot[]; certs: Cert[] }) {
-  const layout = useMemo(() => atlasLayout(certs.map((c) => c.logo), 128), [certs]);
-  const texture = useAtlasTexture(layout.srcs, layout.cols, layout.rows, layout.cell);
+  const texture = useLogoAtlas();
   const geometry = useMemo(() => {
     const quads = slots.flatMap((slot, i) => {
       const src = certs[i].logo;
       if (!src) return [];
       return [{ src, center: badgePoint(slot, -badge.w / 2 + LOGO.inset, badge.h / 2 - LOGO.inset, 0.02), yaw: faceYaw(slot.a), size: LOGO.size }];
     });
-    const { positions, uvs, indices } = orientedQuadBuffers(layout, quads);
+    const { positions, uvs, indices } = orientedQuadBuffers(LOGO_ATLAS, quads);
     const g = new BufferGeometry();
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("uv", new BufferAttribute(uvs, 2));
     g.setIndex(new BufferAttribute(indices, 1));
     g.computeBoundingSphere();
     return g;
-  }, [layout, slots, certs]);
+  }, [slots, certs]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   if (!texture) return null;
   return (

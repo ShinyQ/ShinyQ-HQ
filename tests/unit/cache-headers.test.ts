@@ -23,6 +23,7 @@ describe("cache rules for unhashed public assets", () => {
 
   it("cache each prefix as planned", () => {
     expect(cacheOf("/fonts/*")).toEqual(["Cache-Control: public, max-age=31536000, immutable"]);
+    expect(cacheOf("/atlas/*")).toEqual(["Cache-Control: public, max-age=31536000, immutable"]);
     expect(cacheOf("/tech/*")).toEqual(["Cache-Control: public, max-age=604800, stale-while-revalidate=86400"]);
     for (const p of ["/media/*", "/floors/*", "/logos/*"]) expect(cacheOf(p), p).toEqual(["Cache-Control: public, max-age=86400, stale-while-revalidate=604800"]);
     expect(cacheOf("/cv/*")).toEqual(["Cache-Control: public, max-age=3600, must-revalidate"]);
