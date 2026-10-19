@@ -59,6 +59,33 @@ describe("Agent Office chips", () => {
     expect(chip(1)).not.toHaveAttribute("aria-describedby");
   });
 
+  it("renders a far chip compact on phones: the state dot only, its label kept and a 32 px tap target", () => {
+    getHQStore().setState({ device: { viewport: "mobile", camera: "mobile", coarse: true } });
+    renderChips();
+    act(() => setChipFar(1, true));
+    const far = chip(1);
+    expect(far).toHaveAttribute("data-far", "true");
+    expect(far).toHaveAttribute("data-compact", "true");
+    expect(far).toHaveTextContent(/^$/);
+    expect(far.querySelector(".hq-dot")).not.toBeNull();
+    expect(far).toHaveAttribute("aria-label", "Desk 2: Claude · Planning");
+    expect(far).not.toHaveAttribute("aria-describedby");
+    const pill = far.querySelector(".min-h-8") as HTMLElement;
+    expect(pill).not.toBeNull();
+    expect(parseFloat(pill.style.minWidth)).toBeGreaterThanOrEqual(32);
+    // A near chip on a phone keeps its full content.
+    expect(chip(0)).toHaveAttribute("data-compact", "false");
+    expect(chip(0)).toHaveTextContent("Copilot · Editing");
+    expect(chip(0)).toHaveTextContent("Agent office scene");
+  });
+
+  it("keeps a far chip's first line on desktops (never compact)", () => {
+    renderChips();
+    act(() => setChipFar(1, true));
+    expect(chip(1)).toHaveAttribute("data-compact", "false");
+    expect(chip(1)).toHaveTextContent("Claude · Planning");
+  });
+
   it("opens the Rover's desk drawer through the room mission (drive to the office stop, then open)", () => {
     renderChips();
     fireEvent.click(chip(2));

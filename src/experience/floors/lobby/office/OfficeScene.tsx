@@ -479,11 +479,27 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
 
 /**
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
- * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern)
- * and writes the probes. Renders nothing.
+ * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern),
+ * clamped 8 px inside the screen edges, and writes the probes. A chip's width is read only when it can change (a
+ * new element, its far flag, the phone layout or the feed). Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
-  const tmp = useMemo(() => ({ box: new Box3(), frustum: new Frustum(), m: new Matrix4(), v: new Vector3(), els: officeRuntime.chips.map((): HTMLElement | null => null), shown: officeRuntime.chips.map(() => false) }), []);
+  const tmp = useMemo(
+    () => ({
+      box: new Box3(),
+      frustum: new Frustum(),
+      m: new Matrix4(),
+      v: new Vector3(),
+      els: officeRuntime.chips.map((): HTMLElement | null => null),
+      shown: officeRuntime.chips.map(() => false),
+      half: officeRuntime.chips.map(() => 0),
+      // What the cached half width was read for: the far flag, the phone layout and the view.
+      wFar: officeRuntime.chips.map((): boolean | null => null),
+      wMobile: officeRuntime.chips.map(() => false),
+      wView: officeRuntime.chips.map((): OfficeView | null => null),
+    }),
+    [],
+  );
   const bounds = useMemo(() => officeBounds(), []);
   const next = useRef(0);
   useEffect(
@@ -508,12 +524,14 @@ function OfficeWatch({ view }: { view: OfficeView }) {
       Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted() });
     }
     let chips = 0;
+    const mobile = s.device.viewport === "mobile";
     officeRuntime.chips.forEach((el, slot) => {
       if (!el) return;
       if (tmp.els[slot] !== el) {
         // A freshly mounted chip starts hidden (its inline style).
         tmp.els[slot] = el;
         tmp.shown[slot] = false;
+        tmp.wFar[slot] = null;
       }
       const a = officeRuntime.anchors[slot];
       tmp.v.set(a.x, a.y, a.z);
@@ -527,9 +545,18 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         }
         return;
       }
-      setChipFar(slot, nextChipFar(officeRuntime.far[slot], camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z))));
+      // Read before this frame's far update: React has committed the previous flag's content by now.
+      const far = officeRuntime.far[slot];
+      if (tmp.wFar[slot] !== far || tmp.wMobile[slot] !== mobile || tmp.wView[slot] !== view) {
+        tmp.wFar[slot] = far;
+        tmp.wMobile[slot] = mobile;
+        tmp.wView[slot] = view;
+        tmp.half[slot] = el.offsetWidth / 2;
+      }
+      setChipFar(slot, nextChipFar(far, camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z))));
       tmp.v.project(camera);
-      const x = ((tmp.v.x + 1) / 2) * size.width;
+      const edge = tmp.half[slot] + 8;
+      const x = Math.min(Math.max(((tmp.v.x + 1) / 2) * size.width, edge), size.width - edge);
       const y = ((1 - tmp.v.y) / 2) * size.height;
       el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
       if (!tmp.shown[slot]) {
