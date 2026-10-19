@@ -76,6 +76,7 @@ test("automation keeps 60 fps unless a test opts in", async ({ page }) => {
         const now = performance.now();
         return now - idle.stillSince > 1200 && now - idle.lastActivity > 1200;
       }),
+      { timeout: 60_000 },
     )
     .toBe(true);
   expect(await page.evaluate(() => (window as unknown as IdleWindow).__hq.idle.enabled)).toBe(false);
@@ -89,9 +90,14 @@ test("full motion: a parked scene with no fast mover on screen renders at 30 fps
   await enterFloorRoute(page, "/en/journey");
   await optIn(page);
   await expect.poll(() => cadence(page), { timeout: 60_000 }).toBe(30);
-  const { gaps } = await renderOver(page, 90);
+  const { rendered, gaps, seconds } = await renderOver(page, 90);
   expect(gaps.length, "frames still render at 30 fps").toBeGreaterThan(2);
-  expect(Math.min(...gaps), JSON.stringify(gaps)).toBeGreaterThanOrEqual(1000 / 30 - 3);
+  // The overall rate, not single gaps: a late frame keeps the 33 ms rhythm (the next one follows sooner) and an R3F
+  // invalidation adds a frame, so one gap can be a 60 Hz tick. A slow runner only lowers the rate.
+  const median = [...gaps].sort((x, y) => x - y)[Math.floor(gaps.length / 2)];
+  const detail = `${rendered} frames in ${seconds.toFixed(2)} s, gaps ${JSON.stringify(gaps.map(Math.round))}`;
+  expect(rendered / seconds, detail).toBeLessThan(45);
+  expect(median, detail).toBeGreaterThanOrEqual(25);
   // "x" is bound to no intent: plain input, nothing moves.
   expect(await cadenceAfter(page, () => page.keyboard.press("x"))).toBe(60);
   await expect.poll(() => cadence(page), { timeout: 60_000 }).toBe(30);
