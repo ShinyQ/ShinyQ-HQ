@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
@@ -19,6 +19,7 @@ import { officeRuntime, useChipFar } from "./runtime";
 function Chip({ rover }: { rover: OfficeRoverView }) {
   const t = useTranslations("office");
   const far = useChipFar(rover.slot);
+  const taskId = useId();
   const line = chipLines(rover, t);
   const color = OFFICE_STATE_STYLE[rover.state].color;
   return (
@@ -33,6 +34,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
       data-state={rover.state}
       data-far={far ? "true" : "false"}
       aria-label={t("3d.target.desk", { n: rover.slot + 1, agent: line.head })}
+      aria-describedby={!far && line.task ? taskId : undefined}
       // Hidden until OfficeScene has placed it (it then writes the transform, visibility and opacity every frame).
       style={{ opacity: 0, visibility: "hidden" }}
       className="pointer-events-auto absolute top-0 left-0 flex flex-col items-center gap-1 will-change-transform"
@@ -42,7 +44,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
         {line.head}
       </span>
       {!far && line.task && (
-        <span className="text-[13px] leading-5 text-ink-2" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span id={taskId} className="text-[13px] leading-5 text-ink-2" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {line.task}
         </span>
       )}

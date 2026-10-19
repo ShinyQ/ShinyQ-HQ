@@ -48,7 +48,7 @@ import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "
 import { chipAnchor, GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, pose, poseOffset, slotPhase, STILL_T, stillPose } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
-import { OFFICE_CHIP_FAR, officeRuntime, setChipFar } from "./runtime";
+import { nextChipFar, officeRuntime, setChipFar } from "./runtime";
 
 const NO_RAYCAST = () => null;
 const QUADS = 10;
@@ -480,7 +480,7 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
  * and writes the probes. Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
-  const tmp = useMemo(() => ({ box: new Box3(), frustum: new Frustum(), m: new Matrix4(), v: new Vector3() }), []);
+  const tmp = useMemo(() => ({ box: new Box3(), frustum: new Frustum(), m: new Matrix4(), v: new Vector3(), els: officeRuntime.chips.map((): HTMLElement | null => null), shown: officeRuntime.chips.map(() => false) }), []);
   const bounds = useMemo(() => officeBounds(), []);
   const next = useRef(0);
   useEffect(
@@ -507,17 +507,34 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     let chips = 0;
     officeRuntime.chips.forEach((el, slot) => {
       if (!el) return;
+      if (tmp.els[slot] !== el) {
+        // A freshly mounted chip starts hidden (its inline style).
+        tmp.els[slot] = el;
+        tmp.shown[slot] = false;
+      }
       const a = officeRuntime.anchors[slot];
       tmp.v.set(a.x, a.y, a.z);
-      setChipFar(slot, camera.position.distanceTo(tmp.v) > OFFICE_CHIP_FAR);
+      const on = here && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
+      if (!on) {
+        // A hidden chip is written once, then left alone until it comes back into view.
+        if (tmp.shown[slot]) {
+          el.style.visibility = "hidden";
+          el.style.opacity = "0";
+          tmp.shown[slot] = false;
+        }
+        return;
+      }
+      setChipFar(slot, nextChipFar(officeRuntime.far[slot], camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z))));
       tmp.v.project(camera);
-      const on = here && officeRuntime.inView && tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1;
       const x = ((tmp.v.x + 1) / 2) * size.width;
       const y = ((1 - tmp.v.y) / 2) * size.height;
       el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
-      el.style.visibility = on ? "visible" : "hidden";
-      el.style.opacity = on ? "1" : "0";
-      if (on) chips += 1;
+      if (!tmp.shown[slot]) {
+        el.style.visibility = "visible";
+        el.style.opacity = "1";
+        tmp.shown[slot] = true;
+      }
+      chips += 1;
     });
     sceneProbes.office.chips = chips;
   });

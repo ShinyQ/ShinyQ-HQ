@@ -41,6 +41,8 @@ describe("Agent Office chips", () => {
     expect(chip(0)).toHaveTextContent("Copilot · Editing");
     expect(chip(0)).toHaveTextContent("Agent office scene");
     expect(chip(1)).toHaveTextContent(en.office.clientProject);
+    expect(chip(0)).toHaveAccessibleDescription("Agent office scene");
+    expect(chip(1)).toHaveAccessibleDescription(en.office.clientProject);
     expect(chip(4).querySelector("[data-progress]")).toHaveAttribute("data-progress", "58");
     expect(chip(0)).toHaveAttribute("data-state", "working");
     expect(officeRuntime.chips.every((el) => el instanceof HTMLElement)).toBe(true);
@@ -54,6 +56,7 @@ describe("Agent Office chips", () => {
     act(() => setChipFar(1, true));
     expect(chip(1)).not.toHaveTextContent("Office drawers");
     expect(chip(1)).toHaveAttribute("data-far", "true");
+    expect(chip(1)).not.toHaveAttribute("aria-describedby");
   });
 
   it("opens the Rover's desk drawer through the room mission (drive to the office stop, then open)", () => {

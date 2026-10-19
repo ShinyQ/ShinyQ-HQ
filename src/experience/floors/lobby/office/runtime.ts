@@ -5,6 +5,13 @@ import { CHIP_LIFT } from "./officeRig";
 
 /** A chip farther than this from the camera shows its first line only (the mock's `.tag.far`). */
 export const OFFICE_CHIP_FAR = 28;
+/** Half-width of the near/far band, so a camera hovering at the threshold does not flip the chip every frame. */
+export const OFFICE_CHIP_FAR_BAND = 1;
+
+/** The next far flag for a chip at `dist` from the camera: far above 29, near below 27, unchanged between. */
+export function nextChipFar(far: boolean, dist: number): boolean {
+  return far ? dist > OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND : dist > OFFICE_CHIP_FAR + OFFICE_CHIP_FAR_BAND;
+}
 
 /**
  * Shared between the office scene (in the canvas) and its HUD chips, mutated outside React render: whether the
