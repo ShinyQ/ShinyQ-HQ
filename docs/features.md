@@ -220,7 +220,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 - A curved console row of five desks, a Rover behind each desk facing you (Desk 1 on the left from the office), and a screen wall behind them: mission control (counts, who is working now, today) and the public GitHub board.
 - Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
-- A chip over each Rover with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones just the state dot).
+- A chip for each Rover, in an arc over the screen wall above it (never on the wall's text), with the agent, the activity and the task (public repositories only, else "Client project") and CI progress; from farther away only the agent and activity (on phones just the state dot).
 - Click a Rover, its chip or a wall half to drive to the office and open its drawer: the summary, the GitHub board, or one desk (agent, activity, task, repository, time in state, recent activity).
 - It loads on its own after the first frame when you are near it on L1 (the session starts within reach), and polls only while the office is in view or one of its drawers is open.
 - Semi-live (GitHub only), resting (off) and offline modes put every Rover to sleep; reduced motion holds every Rover still.
