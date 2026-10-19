@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import type { Locale, RoomId } from "@/content/schema";
 import type { RoomViews } from "@/content/room-views/types";
 import { afterFirstFrameIdle } from "@/experience/boot-signals";
-import { READY_FLOORS } from "@/experience/config";
+import { READY_FLOORS } from "@/experience/floorOrder";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useAskPanelOpen } from "@/hud/ask/availability";
 import { audio } from "@/lib/audio";

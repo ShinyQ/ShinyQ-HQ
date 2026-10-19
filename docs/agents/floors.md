@@ -8,7 +8,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 
 ## Ready floors
 
-- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
+- `READY_FLOORS` in `src/experience/floorOrder.ts` (re-exported by `config.ts`) lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
   - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set (visiting all five public floors; [B1 access](floor-b1-engine-room.md#access)). Its elevator row is always listed, locked until then.
 - URL sync writes floor routes only for ready floors.
   - Placeholders keep `/{locale}`, and the HUD links to their HTML page.
@@ -159,7 +159,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 417.7 KB and full 441.3 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 446.7 KB and full 470.4 KB, under their caps of 447.3 and 471 KB ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 440.3 KB and full 456.1 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 469.3 KB and full 485.1 KB, under their caps of 469.9 and 485.7 KB ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 

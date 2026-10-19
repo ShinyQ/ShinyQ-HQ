@@ -253,6 +253,9 @@ describe("specsForChanges", () => {
 
   it("selects the arrivals spec for arrival points, zones and the camera (Round 8 J)", () => {
     expect(specsForChanges(["src/experience/config.ts"]).specs).toEqual(["arrivals", "experience"]);
+    // The floor order and the Lobby spawn moved out of config.ts (floor layouts out of Classic): same specs.
+    expect(specsForChanges(["src/experience/floorOrder.ts"]).specs).toEqual(["arrivals", "experience"]);
+    expect(specsForChanges(["src/experience/floors/lobby/spawn.ts"]).specs).toEqual(["arrivals", "camera", "experience", "highlights", "interact", "onboarding", "visits"]);
     // The 3D root writes each built floor's route; the arrivals tour checks it on every floor.
     expect(specsForChanges(["src/experience/Experience.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "experience"]);
     expect(specsForChanges(["src/experience/floors/career/YearGates.tsx"]).specs).toContain("arrivals");

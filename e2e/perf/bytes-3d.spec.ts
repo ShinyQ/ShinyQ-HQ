@@ -11,9 +11,9 @@ import { writePerfEntry } from "./helpers";
  * the Page View (`?tier=static`) and the 3D view until the scene runs and the network is quiet. Every
  * response the Page View did not fetch is 3D-path bytes: scripts are gated, fonts, JSON, CSS and
  * images are reported. The main path is measured with `?prefetch=off`; then each public on-demand floor
- * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at 450 KB; main plus
- * every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in a normal
- * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 471 KB, lite 447.3 KB).
+ * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at `BYTES_3D_BUDGET.failAt`
+ * (456.7 KB); main plus every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in
+ * a normal session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 485.7 KB, lite 469.9 KB).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
  * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap.
  */
@@ -68,7 +68,7 @@ async function recordTransfers(page: Page, load: () => Promise<unknown>, quietMs
 }
 
 for (const tier of ["lite", "full"] as const) {
-  test(`3D JS after the gate stays under ${BYTES_3D_BUDGET.failAt / 1024} KB gzip (${tier})`, async ({ browser }) => {
+  test(`3D JS after the gate stays under ${(BYTES_3D_BUDGET.failAt / 1024).toFixed(1)} KB gzip (${tier})`, async ({ browser }) => {
     const pageView = await browser.newContext();
     const pv = await pageView.newPage();
     // Longer quiet window: the Page View loads some chunks on idle (Ask status, HUD index), which a starved

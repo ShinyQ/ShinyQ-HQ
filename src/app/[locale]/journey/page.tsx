@@ -8,7 +8,7 @@ import { RepoWall, SideProjectGrid } from "@/components/WorkshopAnnex";
 import { getPublicRepos, getSideProjects, getTimeline, getYears } from "@/content/load";
 import { typeCounts } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
 import { seoMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
@@ -28,7 +28,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
   return (
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/journey")} />
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L2" />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L2" />
       <PageIntro
         marker={<Marker accent="amber">L2 · {tf("L2")}</Marker>}
         title={t("navTitle")}

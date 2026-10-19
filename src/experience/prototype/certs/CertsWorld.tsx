@@ -1,7 +1,7 @@
 "use client";
 
-import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { ToneMappingMode } from "postprocessing";
 import { useEffect, useState } from "react";
 import { ACESFilmicToneMapping } from "three";
 import { getHQStore } from "@/store/useHQStore";
@@ -13,6 +13,7 @@ import { SkillsWall } from "../../floors/lobby/SkillsWall";
 import { GridFloor } from "../../fx/GridFloor";
 import { Rover } from "../../rover/Rover";
 import { roverRuntime } from "../../rover/runtime";
+import { usePostComposer } from "../../scene/postComposer";
 import { sceneSettings } from "../../scene/settings";
 import type { ExperienceData, GpuTier } from "../../types";
 
@@ -38,6 +39,12 @@ function Ready({ onReady }: { onReady: () => void }) {
   useEffect(() => {
     if (frames > 30) onReady();
   }, [frames, onReady]);
+  return null;
+}
+
+/** The prototype's bloom as it always was: 4x MSAA, 8 levels and AgX tone mapping (postprocessing's default mode). */
+function PrototypeEffects() {
+  usePostComposer({ multisampling: 4, levels: 8, bloom: { threshold: 0.6, intensity: 0.9, radius: 0.45 }, toneMapping: ToneMappingMode.AGX });
   return null;
 }
 
@@ -67,10 +74,7 @@ export default function CertsWorld({ data, certs, labels, tier, mobile }: { data
         <CertWall certifications={certs} labels={labels} tier={tier} />
         <Rover tier={tier} />
         {tier === "full" && (
-          <EffectComposer>
-            <Bloom mipmapBlur luminanceThreshold={0.6} intensity={0.9} radius={0.45} />
-            <ToneMapping />
-          </EffectComposer>
+          <PrototypeEffects />
         )}
       </Canvas>
     </div>

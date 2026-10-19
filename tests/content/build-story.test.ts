@@ -154,7 +154,7 @@ describe("build story content", () => {
 
     for (const locale of LOCALES) {
       const bytes = gate("bytes-3d").budget[locale];
-      expect(bytes, `bytes-3d.${locale}`).toContain(kb(BYTES_3D_BUDGET.failAt));
+      expect(bytes, `bytes-3d.${locale}`).toContain(`${ids(Math.round((BYTES_3D_BUDGET.failAt / 1024) * 10) / 10, locale)} KB`);
 
       const render = gate("render-memory").budget[locale];
       expect(render, `render-memory.${locale}`).toContain(String(RENDER_BUDGET.sceneCalls));

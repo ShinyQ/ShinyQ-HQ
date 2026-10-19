@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
-import { experienceDataFor } from "@/experience/gate-data";
+import { experienceDataVersion } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { Marker, PageIntro, SectionWide } from "@/components/page/Layout";
 import { WorkFeature, WorkRow } from "@/components/page/Work";
@@ -33,7 +33,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
   return (
     <ClientMessages>
       <JsonLd data={pageJsonLd(locale, "/labs")} />
-      <ExperienceGate data={await experienceDataFor(locale)} startFloor="L3" />
+      <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L3" />
       <PageIntro
         marker={<Marker accent="violet">L3 · {tf("L3")}</Marker>}
         title={tw("title")}

@@ -7,7 +7,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ## Gate and tiers
 
-- `ExperienceGate({ data, startFloor?, startRoom? })` (client) runs on these routes; pages get `data` from `experienceDataFor(locale)` (`src/experience/gate-data.ts`).
+- `ExperienceGate({ locale, version, startFloor?, startRoom? })` (client) runs on these routes; pages pass `version={await experienceDataVersion(locale)}` (`src/experience/gate-data.ts`), and the gate fetches the 3D page data itself (see [ExperienceData](#experiencedata)).
 
   | Route | Prop |
   |---|---|
@@ -154,7 +154,14 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 
 ### ExperienceData
 
-- The 3D chunk gets its content as a serializable `ExperienceData` prop from the server page, so it never bundles `site-content.json` or zod.
+- The 3D chunk gets its content as a serializable `ExperienceData` prop, so it never bundles `site-content.json` or zod.
+- Static versioned JSON, never the page's RSC payload (about 9 KB gzip less on every gated page):
+  - The build writes `experienceDataFor(locale)` (`src/experience/gate-data.ts`, floor names localized from `messages`) to `/data/experience/{locale}.json` (`src/app/data/[...path]/route.ts`).
+  - The page passes only `experienceDataVersion(locale)`, a 12-character content hash; the gate fetches `/data/experience/{locale}.json?v=<hash>` (`loadExperienceData` in `src/experience/data-client.ts`: one fetch per locale and page load, forgotten after a failure), so the 1 h `/data/*` cache never outlives a deploy.
+  - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate starts the chunk at the same time). `Experience` mounts only once the data is in.
+  - A failed fetch is a crash ([Crash recovery](#crash-recovery)): one automatic retry on the next mount, then the static page with "Retry 3D" (which fetches again). The boot cover is released with the static tier (or by its 8 s timeout), never left up.
+  - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
+  - Dev routes (`/{locale}/dev/*`) still pass `experienceDataFor(locale)` to their prototype loaders directly.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.
@@ -308,7 +315,8 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ### Floor order and the secret floor
 
-- `FLOOR_IDS` (`src/experience/config.ts`) lists every floor bottom up, B1 first: `["B1", "L1", "L2", "L3", "L4", "RF"]`.
+- `FLOOR_IDS` (`src/experience/floorOrder.ts`, re-exported by `config.ts`) lists every floor bottom up, B1 first: `["B1", "L1", "L2", "L3", "L4", "RF"]`.
+  - `floorOrder.ts` (`FLOOR_IDS`, `READY_FLOORS`, `floorIndex`) and `floors/lobby/spawn.ts` (`LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING` and the kiosk axis they stand on; `LOBBY` in `config.ts` builds on them) import only `@/lib/floors` and types. The store and the HUD pieces every Classic page loads read these, never `@/experience/config`, which pulls in every floor layout ([performance.md](performance.md#classic-bundle-and-the-floor-layouts)).
   - `floorY(id)` is `(floorIndex(id) - floorIndex("L1")) * FLOOR_GAP`, so L1 stays at y 0, every public floor keeps its height and B1 sits one gap below (y -14); ride time by index distance stays correct.
   - `PUBLIC_FLOORS` (`src/lib/floors.ts`, L1 to RF) is the list visitors tour: visit tracking, floor lines, missions, OG stills, picker thumbnails and the build dashboard never include B1.
   - `towerFloors(b1Unlocked)` is what the tower draws and the elevator serves (`PUBLIC_FLOORS`, plus B1 once unlocked); `shaftSpan(floors)` sizes the glass shaft (the old box while locked) and `ElevatorShaft` draws a stop label per drawn floor.
@@ -341,6 +349,15 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - `?gfx=dpr1.5,msaa0,bloom5,monitor-on|off` overrides it for measurements.
 - `?gfx=probe` mounts the black-frame probe (`scene/BlackFrameProbe.tsx`, a lazy chunk, never loaded otherwise; see [Shader math](#shader-math)).
 
+### Full-tier post-processing
+
+- `scene/Effects.tsx` (a lazy chunk, full tier only) builds the post chain with `postprocessing` directly (`usePostComposer`, `scene/postComposer.ts`):
+  - a HalfFloat `EffectComposer` (depth buffer, no stencil, MSAA from the pixel budget) and a `RenderPass`;
+  - then one `EffectPass`: mipmap bloom (ADD blend, `sceneSettings("full").bloom`, levels from the pixel budget, luminance smoothing 0.03) and ACES tone mapping.
+- While mounted, renderer tone mapping and `autoClear` are off (both restored on unmount). The composer renders at `useFrame` priority 1 and resizes on canvas size and DPR changes.
+- One layout effect builds and disposes the composer (never `useMemo` plus a disposing effect: StrictMode's simulated remount in `bun run dev` would dispose the live composer and draw nothing). `postHandle` reads it through getters set in a layout effect, before the first composer frame; `QualityController` and the sky change MSAA, bloom levels and intensity on these objects without a rebuild.
+- `@react-three/postprocessing` is not a dependency: it bundled n8ao (about 8 KB gzip on the full tier) for this same setup, which `tests/hud/post-composer.test.tsx` pins (its defaults, one merged pass, renderer state, no import of the wrapper).
+
 ### Counting
 
 - `RenderCounter` (`src/experience/perf/`) splits `renderer.info` into scene calls and post passes every frame (`__hq.perf.stats`, peaks since `__hq.perf.resetPeaks()`, plus live programs, geometries and textures).
@@ -350,6 +367,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ## Crash recovery
 
 - `CanvasBoundary` (around the R3F canvas, which rethrows creation and render errors) and the `webglcontextlost` listener call `onCrash`.
+- So does a failed fetch of the 3D page data (`/data/experience/{locale}.json`); the remount fetches it again.
 - `ExperienceGate` remounts the 3D view once on a fresh canvas, after the tab is visible again (`whenVisible`).
 - A second failure sets the static tier and shows the notice with a "Retry 3D" button (`hud.retry3d`, `data-testid="retry-3d"`).
   - `recovery.ts`: `afterFailure`, `manualRetry`, `settled`; store `recover(tier)`.

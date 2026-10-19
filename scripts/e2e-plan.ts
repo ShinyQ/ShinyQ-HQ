@@ -218,6 +218,8 @@ export const RULES: Rule[] = [
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
   { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
+  // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
+  { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   // Missions: the runner, the 3D host and the reworked missions (highlights drives to the hall, journey rides to L2).
@@ -236,8 +238,8 @@ export const RULES: Rule[] = [
   // View zones (travel direction, class views): the L3 three paths arrival and road entrances read them too.
   { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths", "arrivals"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride", "arrivals"] },
-  // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone.
-  { test: /^src\/experience\/config\.ts$/, specs: ["experience", "arrivals"] },
+  // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone (the floor order and the Lobby spawn live apart).
+  { test: /^src\/experience\/(config|floorOrder)\.ts$/, specs: ["experience", "arrivals"] },
   // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
   { test: /^src\/experience\/rover\/(idle|activity)\.ts$/, specs: ["rover-idle"] },
   { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "camera", "experience"] },
@@ -245,7 +247,8 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/fade\.ts$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).
   { test: /^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$/, specs: ["boot-first", "pageview", "static-routes"] },
-  { test: /^src\/experience\/ExperienceGate\.tsx$/, specs: ["boot-first", "experience", "lifecycle", "onboarding", "view-links"] },
+  // The gate and the 3D page data it fetches with the 3D chunk (data-client.ts, served by src/app/data).
+  { test: /^src\/experience\/(ExperienceGate\.tsx|data-client\.ts)$/, specs: ["boot-first", "experience", "lifecycle", "onboarding", "view-links"] },
   // Measurement in the 3D view: render counters, the ?perf=1 overlay, timeline marks, the RUM probe.
   { test: /^src\/experience\/perf\/|^src\/lib\/(perf-marks\.ts|rum\/)/, specs: ["perf-probes", "experience"] },
   { test: /^src\/experience\/(ExperienceGate\.tsx|gate-tier\.ts|introContinue\.ts)$|^src\/lib\/(boot-first|gpu-tier|intro-session)\.ts$|^src\/components\/Boot(Cover|Card)\.tsx$|^src\/experience\/boot-signals\.ts$|^src\/components\/(QuietLink|NavLink|SiteHeader)\.tsx$|^src\/hud\/BootOverlay\.tsx$/, specs: ["boot-first", "experience", "onboarding"] },
@@ -278,7 +281,7 @@ export const RULES: Rule[] = [
 
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
-  { test: /^src\/app\/data\//, specs: ["labs", "library-roof"] },
+  { test: /^src\/app\/data\//, specs: ["labs", "library-roof", "boot-first", "experience"] },
   { test: /^scripts\/(csp-hashes|csp-policy|defer-scripts)\.ts$/, specs: ["csp", "deploy", "static-routes", "boot-first"] },
   { test: /^public\/_headers$|^scripts\/root-redirect\.ts$/, specs: ["csp", "deploy", "static-routes"] },
   { test: /^public\/_redirects$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
