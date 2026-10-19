@@ -6,7 +6,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { BufferGeometry, Float32BufferAttribute, Object3D, type Group, type InstancedMesh, type LineSegments } from "three";
 import type { Locale } from "@/content/schema";
 import type { RoomArchitecture, RoomViews } from "@/content/room-views/types";
-import { loadRoomViews } from "@/hud/drawer/data";
+import { loadFloorViews } from "@/hud/drawer/data";
 import { useHQStore, getHQStore } from "@/store/useHQStore";
 import { cameraFocus } from "../../camera/focus";
 import { hologramPose } from "../../camera/rigs";
@@ -150,7 +150,7 @@ export function HologramStage({ placed, locale, tier }: { placed: PlacedPod[]; l
   useEffect(() => {
     if (!active || views) return;
     let live = true;
-    loadRoomViews(locale).then(
+    loadFloorViews(locale, "L3").then(
       (v) => live && setViews(v),
       () => undefined,
     );

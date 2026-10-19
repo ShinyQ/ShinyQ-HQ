@@ -55,7 +55,7 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
   [/^src\/lib\/office\/(poll|model|protocol)\.ts$/, ["bytes", "floor:L1", "floor:B1"]],
   // The office scene, its drawer body and its main path layout and shell: the Lobby keys plus B1.
   [/^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)/, ["boot", "bytes", "floor:L1", "floor:B1", "hover"]],
-  [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)/, ["bytes", "floor:L1", "boot", "hover"]],
+  [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)|^public\/atlas\/|^src\/experience\/logo-atlas\.ts$/, ["bytes", "floor:L1", "boot", "hover"]],
   [/^src\/experience\/floors\/(career\/|CareerArchive\.tsx$)/, ["bytes", "floor:L2", "ride:L2"]],
   [/^src\/experience\/floors\/(labs\/|Labs\.tsx$)/, ["bytes", "floor:L3", "ride:L3"]],
   [/^src\/experience\/floors\/(library\/|Library\.tsx$)/, ["bytes", "floor:L4", "ride:L4"]],

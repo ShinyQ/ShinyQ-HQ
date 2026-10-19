@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts && bun scripts/root-redirect.ts && bun scripts/check-client-chunks.ts && bun scripts/csp-hashes.ts",
-    "build:web": "bun scripts/build-knowledge.ts && next build && bun scripts/defer-scripts.ts && bun scripts/root-redirect.ts && bun scripts/check-client-chunks.ts && bun scripts/csp-hashes.ts",
+    "build": "bun scripts/build-knowledge.ts && bun scripts/logo-atlas.ts --check && next build && bun scripts/defer-scripts.ts && bun scripts/root-redirect.ts && bun scripts/check-client-chunks.ts && bun scripts/csp-hashes.ts",
+    "build:web": "bun scripts/build-knowledge.ts && bun scripts/logo-atlas.ts --check && next build && bun scripts/defer-scripts.ts && bun scripts/root-redirect.ts && bun scripts/check-client-chunks.ts && bun scripts/csp-hashes.ts",
     "serve": "bun scripts/serve-static.ts",
     "typecheck": "bun scripts/build-knowledge.ts && next typegen && tsc --noEmit",
     "lint": "eslint",
@@ -29,6 +29,7 @@
     "build:knowledge": "bun scripts/build-knowledge.ts",
     "cv:pages": "bun scripts/cv-pages.ts",
     "paper:pages": "bun scripts/paper-pages.ts",
+    "logo:atlas": "bun scripts/logo-atlas.ts",
     "floor:thumbs": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"floor thumbnail\" --workers=1 && bun scripts/floor-thumbs.ts",
     "og:check": "bun scripts/og-check.ts",
     "og:stills": "SCREENSHOTS=1 playwright test e2e/screenshots.spec.ts -g \"og still\" --workers=1 && bun scripts/og-stills.ts",

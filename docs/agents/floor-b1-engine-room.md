@@ -37,7 +37,7 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 - Clicking a station (point-and-go `B1:station:<station>`) opens the Glass Drawer for room `B1:<station>`.
 - Views come from `buildEngineViews` (`content/room-views/engine.ts`): the build story and the build-time snapshot through the Classic page helpers (`src/lib/build-page.ts`), so a number shows only when the snapshot carries it.
-- They live in their own static file, `/data/rooms/b1-<locale>.json`, never in the shared rooms file. `DrawerHost` fetches it (`loadEngineViews`) only when B1 is unlocked or a `B1:` room opens ([hud-and-drawer.md](hud-and-drawer.md)).
+- They live in their own static file, `/data/rooms/b1-<locale>.json` (with its `?v=` content hash), never in a public floor's file. `DrawerHost` fetches it (`loadFloorViews(locale, "B1")`) only once B1 is unlocked (on idle after the rover's floor, or at once when a `B1:` room opens) ([hud-and-drawer.md](hud-and-drawer.md#builders-and-data)).
 - `EngineBody` (`hud/drawer/EngineBody.tsx`, in the B1 chunk) renders `RoomView.engine`: the blueprint diagram, the rounds timeline, the gate list, the plan excerpt or the dashboard tiles, around the generic sections. Each drawer links its Classic section `/{locale}/build#<station>`.
 - The blueprint diagram ships laid out twice: `layout` (`DIAGRAM_PRESETS.phone`, 318 px) and `wide` (`DIAGRAM_PRESETS.drawer`: top to bottom, three nodes per band, every text at least 12 px, at most 492 px). `Blueprint` in `EngineBody` measures its figure before paint and on resize (a `ResizeObserver`, no new CSS) and draws `wide` once the figure is as wide as it: the 560 and 600 px side drawers; phones, the 480 px drawer and the drawer next to the Ask panel keep the phone layout.
 

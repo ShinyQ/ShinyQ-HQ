@@ -10,7 +10,7 @@ import type { TopicItemKind } from "../topic-index";
 
 /**
  * Glass Drawer content contract. One `RoomView` per room, locale-resolved and serializable, built on
- * the server by the per-floor builders in this folder and shipped as `/data/rooms/{locale}.json`.
+ * the server by the per-floor builders in this folder and shipped as one file per floor, `/data/rooms/{locale}-{floor}.json`.
  * Types only: the client imports this file without pulling in zod or the dataset.
  */
 

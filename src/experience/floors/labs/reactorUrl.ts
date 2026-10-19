@@ -11,7 +11,7 @@ export interface ReactorUrlStore {
   subscribe(listener: (state: ReturnType<ReactorUrlStore["getState"]>, prev: ReturnType<ReactorUrlStore["getState"]>) => void): () => void;
 }
 
-/** The Tech Reactor drawer data (`/data/rooms/{locale}.json`) is what `load` returns. */
+/** The Tech Reactor drawer data (from `/data/rooms/{locale}-L3.json`) is what `load` returns. */
 export type ReactorUrlEnv = FilterUrlEnv<RoomReactor>;
 
 /**

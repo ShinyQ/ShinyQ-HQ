@@ -53,6 +53,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - The symbols cut is the troika fallback (arrows, shapes), so nothing loads from a CDN.
   - LICENSE files stay in `public/fonts/`.
 - `public/tech/`: tech logos (svg/webp, see its README for sources), resolved by `src/content/tech.ts`.
+- `public/atlas/`: the L1 wall logo atlas, `logos.<hash>.webp` (quantized, lossless WebP, content-hashed), written with its client manifest `src/experience/logo-atlas.ts` (the hashed file name) and the build-side `scripts/logo-atlas.lock.json` by `bun run logo:atlas`, committed.
 - `public/logos/`: company and school logos (TimelineEntry.logo), 128 px webp.
 - `public/media/<pod-slug>/`: pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide) + NN-name.w1200.webp (1200 wide, `scripts/media-sizes.ts`).
 - `public/media/production/`: the masked Grafana probe dashboard of "How I run AI in production" (same three sizes as the pod galleries; `scripts/media-sizes.ts` covers it).
@@ -91,6 +92,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `scripts/subset-fonts.sh`: subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); `tests/content/fonts.test.ts` checks coverage.
 - `scripts/troika-fonts.ts`, `scripts/troika-glyphs.ts`: subset the in-world fonts (fonttools) to the characters 3D text uses; `tests/content/troika-fonts.test.ts` checks coverage.
+- `scripts/logo-atlas.ts`: draws every L1 wall logo into one quantized, lossless WebP atlas with headless Chromium (`bun run logo:atlas`); `--check` (part of `build`) and `tests/unit/logo-atlas.test.ts` fail when it is stale.
 - `scripts/validate-fragment.ts`: schema + safety check for content files.
 - `scripts/docs-index.ts`: prints the owner decisions log (`docs/decisions/`) and the plans table (each plan's `Status:` line) at read time; nothing it prints is committed.
 - `scripts/brand-marks.ts`: writes the rover brand mark files (public/brand/, src/app/icon.svg, apple-icon.png, favicon.ico) from `src/lib/brand-mark.ts`; the lockup wordmark is outlined by brand-wordmark.py (fonttools).
@@ -142,7 +144,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
+- `src/app/data/[...path]/route.ts`: build-time client data: Glass Drawer content, one file per floor: /data/rooms/{locale}-{floor}.json (L1 to RF) and /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), each fetched with a `?v=` content hash, /data/hud/index.json, the 3D page data /data/experience/{locale}.json (fetched by ExperienceGate with the 3D chunk), and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
 
 ### src/assets/
 
@@ -207,6 +209,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `src/lib/`: format (Intl dates), accent class maps, gpu-tier, url-sync, viewport.
 - `src/lib/boot-first.ts`: game-first load: inline head script, shouldBootFirst, releaseBootCover.
+- `src/lib/content-hash.ts`: `shortHash`, the 12-character `?v=` content hash of the build-time `/data/*` files (HUD index, 3D page data, room data per floor); server only.
 - `src/lib/perf-marks.ts`: User Timing marks of the game-first timeline (hq:boot-release, hq:first-frame, hq:intro-start, hq:intro-end, hq:explore, hq:first-drawer).
 - `src/lib/visits/`: public visit stats display (S2).
   - contract.ts (re-exports S1's StatsSnapshotV1, validator and fixtures).
@@ -289,7 +292,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Pure layout.ts (buildEngineLayout, ENGINE, bays, racks) and scenery.ts (solids, flow and panel instances, signs).
   - EngineFx.tsx (`FlowMesh`, `PanelMesh`); `floors/EngineRoom.tsx` is the floor and `floors/chunks/engine.ts` its chunk entry.
 - `src/experience/floors/lobby/`: L1.
-  - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP).
+  - Pure layout.ts (Lobby elements, CERT_WALL, TITLE_TOP); logoAtlas.ts (atlas layout and quad buffers) and LogoQuads.tsx (the shared prebuilt logo atlas texture, `useLogoAtlas`).
   - roverMark3d.ts (the profile hologram as the rover brand mark: head, screen, `^_^` face, antenna, treads; drawn by ProfileHologram.tsx in five calls on existing programs).
   - kiosk.ts (Rover menu kiosk parts, lines, the radial spoke end and the spawn stop).
   - spawn.ts (the kiosk axis, `LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING`; types only, the store reads it; `LOBBY` in config.ts builds on it).

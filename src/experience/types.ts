@@ -175,6 +175,8 @@ export interface ExperienceData {
   floors: Record<FloorId, { name: string; route: string }>;
   years: number[];
   roomCount: number;
+  /** Content hash of each floor's Glass Drawer file (`roomDataVersions`): its `?v=` in `/data/rooms`. */
+  roomData: Record<FloorId, string>;
   /** L3 Labs: pods in site order (`orderPods`: gallery first, then hero, featured, listed, then `order`) and wing labels. */
   labs: { pods: LabPod[]; wings: Record<Wing, string>; ops: OpsData };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */

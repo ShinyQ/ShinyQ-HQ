@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FloorId, RoomId } from "@/content/schema";
 import { useRoomUrlSync } from "@/hud/drawer/DrawerHost";
-import { loadRoomViews } from "@/hud/drawer/data";
+import { loadRoomView, setRoomDataVersions } from "@/hud/drawer/data";
 import { createReactorHashSync } from "./floors/labs/reactorUrl";
 import { OPS_ROOM } from "./floors/labs/opsHash";
 import { formatYearMonth } from "@/lib/format";
@@ -280,6 +280,8 @@ function ExperienceView({
   const tReactor = useTranslations("labs.reactor");
   // The load hash, before any URL sync below can rewrite the URL (the Tech Reactor deep link reads it).
   const [startHash] = useState(() => window.location.hash);
+  // The drawer files' `?v=`, set before any child effect (the drawer, holograms, deep links) can fetch one.
+  setRoomDataVersions(data.locale, data.roomData);
   const tStats = useTranslations("stats");
   const tOffice = useTranslations("office");
   // Public visit stats (the L1 Visitor Observatory, its ring tile and drawer): one fetch after the first frame.
@@ -467,7 +469,7 @@ function ExperienceView({
           history: window.history,
           location: window.location,
           initialHash: startHash,
-          load: () => loadRoomViews(data.locale).then((views) => views[TOPICS_ROOM]?.topics),
+          load: () => loadRoomView(data.locale, TOPICS_ROOM).then((view) => view?.topics),
           onPopState: (listener) => {
             window.addEventListener("popstate", listener);
             return () => window.removeEventListener("popstate", listener);
@@ -485,7 +487,7 @@ function ExperienceView({
           history: window.history,
           location: window.location,
           initialHash: startHash,
-          load: () => loadRoomViews(data.locale).then((views) => views[REACTOR_ROOM]?.reactor),
+          load: () => loadRoomView(data.locale, REACTOR_ROOM).then((view) => view?.reactor),
           onPopState: (listener) => {
             window.addEventListener("popstate", listener);
             return () => window.removeEventListener("popstate", listener);

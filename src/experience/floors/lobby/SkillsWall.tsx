@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import type { Texture } from "three";
 import { COLORS, LOBBY } from "../../config";
 import { BatchedLabels } from "../../fx/BatchedLabels";
 import type { BatchedLabel } from "../../fx/labelProps";
 import type { ExperienceData } from "../../types";
 import { FONTS, GlassBox } from "../../tower/primitives";
 import { SKILLS_PAD, SKILLS_TEXT, SKILLS_TITLE, skillsWallLayout } from "./layout";
-import type { LogoQuad } from "./logoAtlas";
+import type { AtlasLayout, LogoQuad } from "./logoAtlas";
 import { LogoQuads } from "./LogoQuads";
 
 // 10 u cells, 4 across by 2 down, on the 40 u wall; heights and sub-columns come from skillsWallLayout.
@@ -26,7 +27,7 @@ const GROUP_ACCENT: Record<string, string> = {
 };
 
 /** Every skill group, 4 across by 2 down, on a glass wall north of the hologram, facing the plaza; every item shows. */
-export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]; title: string }) {
+export function SkillsWall({ skills, atlas, atlasTexture, title }: { skills: ExperienceData["skills"]; atlas: AtlasLayout; atlasTexture: Texture | null; title: string }) {
   const { x, z, w, d, plinth } = LOBBY.skillsWall;
   const { h, textWidth, itemTop: ITEM_TOP, cells } = useMemo(() => skillsWallLayout(skills), [skills]);
   // Logo centers line up with each item line of their sub-column's text block (anchorY top, fixed line height).
@@ -90,7 +91,7 @@ export function SkillsWall({ skills, title }: { skills: ExperienceData["skills"]
         <GlassBox size={[w, h, d]} position={[0, h / 2, 0]} color={COLORS.green} fillOpacity={0.05} edgeOpacity={0.85} />
         <BatchedLabels labels={labels} name="skills-labels" />
         <group position={[0, 0, d / 2 + 0.035]}>
-          <LogoQuads quads={quads} />
+          <LogoQuads atlas={atlas} texture={atlasTexture} quads={quads} />
         </group>
       </group>
     </group>

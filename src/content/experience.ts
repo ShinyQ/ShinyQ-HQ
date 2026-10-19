@@ -24,6 +24,7 @@ import {
   getYears,
 } from "./load";
 import type { FloorId, Locale } from "./schema";
+import { roomDataVersions } from "./room-views";
 import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
 import { getTechLogo } from "./tech";
 import { repoSlug } from "./workshop";
@@ -117,6 +118,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
     ) as ExperienceData["floors"],
     years: getYears().map((y) => y.year),
     roomCount: countRooms(),
+    roomData: roomDataVersions(locale),
     labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing, ops: buildOpsData(locale) },
     career: buildCareerData(locale),
     library: buildLibraryData(locale),

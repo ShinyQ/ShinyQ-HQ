@@ -69,6 +69,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - `skills[]` holds the skill groups (`id`, `label` as `{ en, id }`, `items`). The seven CV groups follow the CV's taxonomy and order (`tests/content/cv-facts.test.ts`); the site-only Data science and ML group (`ds`, owner decision 2026-10-17) comes right after AI and LLM.
 - Every group shows everywhere: the L1 skills wall (4 across by 2 down in `SKILLS_WALL_ORDER`; a new group is appended), its drawer, the Page View skills sections (home, About, Quick view), Cmd-K and Ask (dataset order). A group that grows the wall past `LOBBY.skillsWall.h` fails `tests/unit/lobby-layout.test.ts`.
 - Each item gets a logo through `src/content/tech.ts` (`public/tech/`) or is listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`); never add a logo file without a source in `public/tech/README.md`.
+- The 3D walls read their logos from a prebuilt atlas: after adding, removing or replacing a skill or issuer logo, run `bun run logo:atlas` and commit `public/atlas/`, `src/experience/logo-atlas.ts` and `scripts/logo-atlas.lock.json` (`bun run build` and `tests/unit/logo-atlas.test.ts` fail until then).
 
 ## Certifications
 
@@ -77,7 +78,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
   - Page View shows featured cards plus a dense list (issuer chips, status filter and search from 10 certifications on).
   - The 3D Lobby shows a curved wall with issuer tabs and paging.
 - Clicking one opens an in-site preview card with an "Open credential" link (new tab); credential sites are never framed. A certification with a study guide (`certId` in `content/study-guides.json`) also gets "Read study guide", which opens the in-site reader ([Study guides](#study-guides)).
-- New issuers get a logo through `src/content/tech.ts` (`public/tech/`).
+- New issuers get a logo through `src/content/tech.ts` (`public/tech/`), then `bun run logo:atlas` (the wall logo atlas, see [Skills](#skills)).
 - A certification without an exam code (Google's Generative AI Leader) leaves `code` out and may set `shortLabel` (at most 16 characters, for example "Gen AI Leader"), which fills the featured card's big title slot on the Classic site and is never shown as a code; featured cards prefer certifications with a code, so pin a new code-less one with `featured: true`.
 - When a certification is added, also update the `microsoft-certifications` fact (count and codes), the `certification-desk-2026` journey entry and the Ask golden set (`tests/ask/golden.json`). The weekly live-facts job checks every `credentialUrl` (Microsoft Learn, Credly) for reachability.
 
