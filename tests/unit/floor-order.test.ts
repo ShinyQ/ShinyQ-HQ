@@ -32,7 +32,7 @@ describe("floor order module (perf item 3)", () => {
   it("imports only the floor lists and types", () => {
     for (const file of LIGHT) {
       const src = readFileSync(join(ROOT, file), "utf8");
-      for (const m of src.matchAll(/^\s*import\s+(type\s+)?[^"';]*?from\s+["']([^"']+)["']/gm)) {
+      for (const m of src.matchAll(/^\s*(?:import|export)\s+(type\s+)?[^"';]*?from\s+["']([^"']+)["']/gm)) {
         const allowed = m[1] ? ALLOWED_TYPE_IMPORTS : ALLOWED_VALUE_IMPORTS;
         expect(allowed.has(m[2]), `${file} imports ${m[2]}`).toBe(true);
       }

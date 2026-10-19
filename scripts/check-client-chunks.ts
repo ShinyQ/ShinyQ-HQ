@@ -24,6 +24,7 @@ export function chunkLeaks(files: readonly { name: string; text: string }[]): st
  * (reached through `experience/config`) carry them. A Page View chunk that holds one pulled the layouts in.
  */
 export const FLOOR_LAYOUT_MARKERS: readonly { label: string; token: string }[] = [
+  // One view zone id per layout. Modules without their own marker (nav/road.ts, lobby/hallGallery.ts, labs/ops.ts) travel in the same chunk as a marked layout, so they are caught through it.
   { label: "experience/config", token: "L1:arrival" },
   { label: "L1 Highlights Hall", token: "L1:highlights-entry" },
   { label: "L2 Career Road", token: "L2:arrival" },
