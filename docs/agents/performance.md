@@ -51,6 +51,13 @@ The Cloudflare Web Analytics beacon (production builds only) is requested last: 
 
 CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27% fewer image bytes than lossless at the same look (SSIM >= 0.997); lossy WebP and AVIF were larger at that quality. Page 1 is eager with `fetchPriority="high"`, later pages `loading="lazy"` (Chrome still fetches page 2 at low priority after page 1: it sits within the lazy-load distance). See [content.md](content.md#cv).
 
+### Classic bundle and the floor layouts
+
+- No chunk an exported page loads carries a floor layout: `experience/config.ts` imports every layout (L1 hall, L2 Career Road, L3 Project Roads and ops, L4 newsroom, RF, B1, the road kit), so only the 3D path may import it.
+- Classic-reachable code (the store `src/store/useHQStore.ts`, `hud/drawer/DrawerHost.tsx`, `hud/Hud.tsx`, `hud/switchLocale.ts`) reads the floor order from `src/experience/floorOrder.ts` and the Lobby spawn from `src/experience/floors/lobby/spawn.ts`; both import only `@/lib/floors` and types.
+- Guards: `tests/unit/floor-order.test.ts` (static import graph of those modules) and `scripts/check-client-chunks.ts` in `bun run build` (fails when a page chunk holds a layout's view zone id, `FLOOR_LAYOUT_MARKERS`).
+- Effect: the shared Classic chunk of about 25 KB gzip is gone; Classic `/en` scripts went from 239.5 to 218.9 KB gzip (13 to 12 scripts). Those bytes now load after the 3D gate: the main path grows 21.9 KB gzip on both tiers (full 440.9 to 462.8 KB, lite 417.3 to 439.2 KB; session totals full 490.2 KB, lite 466.5 KB), so it ships only together with the 3D path savings that keep the caps.
+
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
@@ -193,7 +200,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/Hud.tsx`, `ViewControls`, `src/components/Modal.tsx`, `dialog/DialogBox` and `dialog/placement`, `ask/AskDock` | their own specs plus `hud-corners` |
 | `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
-| `src/experience/config.ts`, `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
+| `src/experience/config.ts`, `floorOrder.ts`, `floors/lobby/spawn.ts` (also the kiosk specs), `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
 | The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { createElement, Suspense, useEffect, useState, type ComponentProps, type ReactNode } from "react";
-import { READY_FLOORS } from "@/experience/config";
+import { READY_FLOORS } from "@/experience/floorOrder";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { Link } from "@/i18n/navigation";

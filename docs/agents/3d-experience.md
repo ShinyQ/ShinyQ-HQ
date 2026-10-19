@@ -308,7 +308,8 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ### Floor order and the secret floor
 
-- `FLOOR_IDS` (`src/experience/config.ts`) lists every floor bottom up, B1 first: `["B1", "L1", "L2", "L3", "L4", "RF"]`.
+- `FLOOR_IDS` (`src/experience/floorOrder.ts`, re-exported by `config.ts`) lists every floor bottom up, B1 first: `["B1", "L1", "L2", "L3", "L4", "RF"]`.
+  - `floorOrder.ts` (`FLOOR_IDS`, `READY_FLOORS`, `floorIndex`) and `floors/lobby/spawn.ts` (`LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING` and the kiosk axis they stand on; `LOBBY` in `config.ts` builds on them) import only `@/lib/floors` and types. The store and the HUD pieces every Classic page loads read these, never `@/experience/config`, which pulls in every floor layout ([performance.md](performance.md#classic-bundle-and-the-floor-layouts)).
   - `floorY(id)` is `(floorIndex(id) - floorIndex("L1")) * FLOOR_GAP`, so L1 stays at y 0, every public floor keeps its height and B1 sits one gap below (y -14); ride time by index distance stays correct.
   - `PUBLIC_FLOORS` (`src/lib/floors.ts`, L1 to RF) is the list visitors tour: visit tracking, floor lines, missions, OG stills, picker thumbnails and the build dashboard never include B1.
   - `towerFloors(b1Unlocked)` is what the tower draws and the elevator serves (`PUBLIC_FLOORS`, plus B1 once unlocked); `shaftSpan(floors)` sizes the glass shaft (the old box while locked) and `ElevatorShaft` draws a stop label per drawn floor.

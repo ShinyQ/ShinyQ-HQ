@@ -8,7 +8,7 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
 
 ## Ready floors
 
-- `READY_FLOORS` in `src/experience/config.ts` lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
+- `READY_FLOORS` in `src/experience/floorOrder.ts` (re-exported by `config.ts`) lists floors with real 3D content: `["B1", "L1", "L2", "L3", "L4", "RF"]` (`FLOOR_IDS`).
   - B1 has no route: its URL stays `/{locale}` (Classic counterpart `/build`), and it is reachable only once `b1Unlocked` is set (visiting all five public floors; [B1 access](floor-b1-engine-room.md#access)). Its elevator row is always listed, locked until then.
 - URL sync writes floor routes only for ready floors.
   - Placeholders keep `/{locale}`, and the HUD links to their HTML page.

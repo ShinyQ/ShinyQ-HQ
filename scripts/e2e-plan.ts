@@ -218,6 +218,8 @@ export const RULES: Rule[] = [
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
   { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
+  // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
+  { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
   { test: /^src\/experience\/floors\/lobby\//, specs: ["experience", "highlights"] },
   { test: /^src\/experience\/floors\//, specs: ["experience", "labs", "career", "library-roof"] },
   // Missions: the runner, the 3D host and the reworked missions (highlights drives to the hall, journey rides to L2).
@@ -236,8 +238,8 @@ export const RULES: Rule[] = [
   // View zones (travel direction, class views): the L3 three paths arrival and road entrances read them too.
   { test: /^src\/experience\/camera\/orbit\.ts$/, specs: ["camera", "experience", "career", "ride", "labs-paths", "arrivals"] },
   { test: /^src\/experience\/camera\//, specs: ["camera", "experience", "career", "ride", "arrivals"] },
-  // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone.
-  { test: /^src\/experience\/config\.ts$/, specs: ["experience", "arrivals"] },
+  // Shared 3D config: floor heights, the shaft, the Lobby layout and its arrival point and zone (the floor order and the Lobby spawn live apart).
+  { test: /^src\/experience\/(config|floorOrder)\.ts$/, specs: ["experience", "arrivals"] },
   // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
   { test: /^src\/experience\/rover\/(idle|activity)\.ts$/, specs: ["rover-idle"] },
   { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "camera", "experience"] },

@@ -1,6 +1,7 @@
 import type { FloorId } from "@/content/schema";
-import { PUBLIC_FLOORS, SECRET_FLOOR } from "@/lib/floors";
+import { PUBLIC_FLOORS } from "@/lib/floors";
 import { yawLooking } from "./camera/look";
+import { FLOOR_IDS, floorIndex } from "./floorOrder";
 import type { ViewZone } from "./camera/orbit";
 import { buildCareerRoad } from "./floors/career/layout";
 import { buildEngineLayout, ENGINE } from "./floors/engine/layout";
@@ -9,6 +10,17 @@ import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
+import {
+  KIOSK_AXIS,
+  KIOSK_CENTER,
+  KIOSK_DEPTH,
+  KIOSK_STOP_GAP,
+  KIOSK_WIDTH,
+  LOBBY_HOLOGRAM,
+  LOBBY_OBSERVATORY,
+  LOBBY_SPAWN,
+  LOBBY_SPAWN_HEADING,
+} from "./floors/lobby/spawn";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
@@ -16,12 +28,9 @@ import type { FloorLayout, LayoutExtras, Rect, Vec2 } from "./types";
 
 /** Tower constants from spec appendix 01 section 1. */
 export const FLOOR_GAP = 14;
-/** Every floor bottom up: the secret B1 Engine Room under the Lobby, then the five public floors (`PUBLIC_FLOORS`). */
-export const FLOOR_IDS = [SECRET_FLOOR, ...PUBLIC_FLOORS] as const satisfies readonly FloorId[];
+/** The floor order lives in floorOrder.ts (light: the store and the Classic HUD read it); re-exported here. */
+export { FLOOR_IDS, floorIndex, READY_FLOORS } from "./floorOrder";
 export const SLAB_THICKNESS = 0.4;
-
-/** Floors whose 3D content is built (B1 has no route of its own: its URL stays /{locale}, `FLOOR_ROUTE`). */
-export const READY_FLOORS: readonly FloorId[] = FLOOR_IDS;
 
 export const SHAFT = { x: -28, z: 0, size: 6 } as const;
 export const SHAFT_EAST_FACE = SHAFT.x + SHAFT.size / 2;
@@ -65,10 +74,6 @@ export const ROVER = {
   maxTilt: (8 * Math.PI) / 180,
 } as const;
 
-export function floorIndex(id: FloorId): number {
-  return FLOOR_IDS.indexOf(id);
-}
-
 /** Height of a floor's slab top: L1 stays at 0, so every public floor keeps its height and B1 sits one gap below. */
 export function floorY(id: FloorId): number {
   return (floorIndex(id) - floorIndex("L1")) * FLOOR_GAP;
@@ -96,39 +101,6 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   maxZ: cz + d / 2,
 });
 
-const LOBBY_HOLOGRAM = { x: 6, z: 0, radius: 3 } as const;
-/**
- * Visitor Observatory footprint (public visit stats, owner decision 2026-10-14): the south-west corner,
- * flush with the west and south slab edges, between the elevator and the Rover menu kiosk.
- */
-const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: 21 } as const;
-/**
- * The kiosk axis (owner review 2026-10-14: "the rover kiosk not straight line into the circle"): the unit
- * direction from the hologram to the observatory. The kiosk sits on it facing the hologram, its lane spoke
- * runs along it from the ring into the kiosk front, and the session spawn stands on it in front of the
- * screen, so the spawn view looks down one line: hologram, rover, kiosk, observatory.
- */
-const KIOSK_AXIS: Vec2 = (() => {
-  const dx = (LOBBY_OBSERVATORY.minX + LOBBY_OBSERVATORY.maxX) / 2 - LOBBY_HOLOGRAM.x;
-  const dz = (LOBBY_OBSERVATORY.minZ + LOBBY_OBSERVATORY.maxZ) / 2 - LOBBY_HOLOGRAM.z;
-  const l = Math.hypot(dx, dz);
-  return { x: dx / l, z: dz / l };
-})();
-/** Kiosk center distance from the hologram along the axis, its depth (along the axis) and width (the screen). */
-const KIOSK_RADIUS = 19.2;
-const KIOSK_DEPTH = 2;
-const KIOSK_WIDTH = 3.4;
-/**
- * The rover stops this far in front of the screen (point-and-go `L1:kiosk:ask-rover`, the session spawn):
- * 0.5 u more than when the kiosk stood square to the grid, because its obstacle is the axis-aligned box
- * of the turned footprint, whose corner reaches toward the stop.
- */
-const KIOSK_STOP_GAP = 3;
-const onAxis = (d: number): Vec2 => ({ x: LOBBY_HOLOGRAM.x + KIOSK_AXIS.x * d, z: LOBBY_HOLOGRAM.z + KIOSK_AXIS.z * d });
-const KIOSK_CENTER = onAxis(KIOSK_RADIUS);
-/** Owner 2026-10-14: "first rover placement should be infront of his kiosk". */
-const LOBBY_SPAWN = onAxis(KIOSK_RADIUS - KIOSK_DEPTH / 2 - KIOSK_STOP_GAP);
-
 /**
  * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on
  * its axis (z = 0, like the door at (-24, 0)), so the lane ring and the slab line up with the
@@ -141,7 +113,7 @@ export const LOBBY = {
   /** Session spawn: the kiosk stop, in front of the Rover menu screen (floors/lobby/kiosk.ts `kioskStop`). */
   spawn: LOBBY_SPAWN,
   /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
-  spawnHeading: Math.atan2(KIOSK_AXIS.x, KIOSK_AXIS.z),
+  spawnHeading: LOBBY_SPAWN_HEADING,
   /**
    * Elevator arrivals (Round 8 J, like L3) roll on east along the elevator axis to the west point of the lane
    * ring; the camera stands behind the rover and looks east at the profile hologram, the name above it and the

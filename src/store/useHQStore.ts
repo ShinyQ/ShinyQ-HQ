@@ -4,7 +4,8 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 import { createStore } from "zustand/vanilla";
 import type { DrawerTab, FloorId, Locale, RoomId } from "@/content/schema";
 import { canEnterFloor, floorProgress, PUBLIC_FLOOR_COUNT, withFloorSeen } from "@/experience/b1";
-import { FLOOR_IDS, floorIndex, LOBBY } from "@/experience/config";
+import { FLOOR_IDS, floorIndex } from "@/experience/floorOrder";
+import { LOBBY_SPAWN, LOBBY_SPAWN_HEADING } from "@/experience/floors/lobby/spawn";
 import type { Ride } from "@/experience/tower/elevator";
 import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
@@ -209,7 +210,7 @@ export function sameRover(current: RoverState, patch: Partial<RoverState>): bool
 const BLOCKED_PHASES: readonly Phase[] = ["boot", "intro", "static", "palette", "quick", "terminal", "hologram"];
 
 /** Spawn at the Lobby spawn point (the kiosk stop), facing the Rover menu screen (owner 2026-10-14). */
-export const initialRover: RoverState = { x: LOBBY.spawn.x, z: LOBBY.spawn.z, heading: LOBBY.spawnHeading, speed: 0, face: "idle" };
+export const initialRover: RoverState = { x: LOBBY_SPAWN.x, z: LOBBY_SPAWN.z, heading: LOBBY_SPAWN_HEADING, speed: 0, face: "idle" };
 
 function resolveTarget(base: FloorId, target: ElevatorTarget, b1Unlocked: boolean): FloorId | undefined {
   const to = target === "up" ? FLOOR_IDS[floorIndex(base) + 1] : target === "down" ? FLOOR_IDS[floorIndex(base) - 1] : target;
