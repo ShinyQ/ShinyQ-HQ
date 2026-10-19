@@ -49,7 +49,7 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
     ALL_PERF_KEYS,
   ],
   [/^src\/experience\/prototype\//, []],
-  [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)/, ["bytes", "floor:L1", "boot", "hover"]],
+  [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)|^public\/atlas\/|^src\/experience\/logo-atlas\.json$/, ["bytes", "floor:L1", "boot", "hover"]],
   [/^src\/experience\/floors\/(career\/|CareerArchive\.tsx$)/, ["bytes", "floor:L2", "ride:L2"]],
   [/^src\/experience\/floors\/(labs\/|Labs\.tsx$)/, ["bytes", "floor:L3", "ride:L3"]],
   [/^src\/experience\/floors\/(library\/|Library\.tsx$)/, ["bytes", "floor:L4", "ride:L4"]],
