@@ -19,6 +19,7 @@ import {
   KIOSK_WIDTH,
   LOBBY_HOLOGRAM,
   LOBBY_OBSERVATORY,
+  LOBBY_SOUTH_EDGE,
   LOBBY_SPAWN,
   LOBBY_SPAWN_HEADING,
 } from "./floors/lobby/spawn";
@@ -103,7 +104,7 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
 });
 
 /** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
-const LOBBY_BOUNDS = { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: 21 } as const;
+const LOBBY_BOUNDS = { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: LOBBY_SOUTH_EDGE } as const;
 
 /**
  * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on

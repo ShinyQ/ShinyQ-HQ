@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { LOBBY } from "../../../config";
-import { isOfficeRoom, OFFICE } from "../officeLayout";
+import { isOfficeRoom, OFFICE, officeWing } from "../officeLayout";
+import { LOBBY_SOUTH_EDGE } from "../spawn";
 import type * as OfficeBodyChunk from "./body";
 import type * as OfficeChunk from "./scene";
 
@@ -9,6 +9,12 @@ export type OfficeModule = typeof OfficeChunk;
 /** The office drawer body chunk (`./body.ts`), loaded only when an office drawer opens. */
 export type OfficeBodyModule = typeof OfficeBodyChunk;
 export type OfficeChunkState = "idle" | "loading" | "ready" | "failed";
+
+/**
+ * The wing as `LOBBY.officeWing` builds it, from the light modules only: bodies.tsx (the Classic drawer host) imports
+ * this loader, so it never imports experience/config (check-client-chunks, tests/unit/floor-order.test.ts).
+ */
+const OFFICE_WING_PLAN = officeWing(LOBBY_SOUTH_EDGE);
 
 let pending: Promise<OfficeModule> | null = null;
 let loaded: OfficeModule | null = null;
@@ -102,7 +108,7 @@ export const OFFICE_MISSION = "office";
 export function officeLoadWanted({ idle, state: chunk, prefetch, floor, rideTo, at, mission }: OfficeLoadInput): boolean {
   if (!idle || chunk !== "idle" || !prefetch || (rideTo ?? floor) !== "L1") return false;
   if (mission === OFFICE_MISSION || isOfficeRoom(mission?.replace(/^goto:/, ""))) return true;
-  const { stop } = LOBBY.officeWing;
+  const { stop } = OFFICE_WING_PLAN;
   return Math.hypot(at.x - stop.x, at.z - stop.z) <= OFFICE.loadRadius;
 }
 

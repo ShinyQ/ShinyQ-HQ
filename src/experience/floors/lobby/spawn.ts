@@ -7,11 +7,13 @@ import type { Vec2 } from "../../types";
  */
 
 export const LOBBY_HOLOGRAM = { x: 6, z: 0, radius: 3 } as const;
+/** The Lobby slab's south edge (`LOBBY.bounds.maxZ`), where the Agent Office wing joins it (`officeWing`). */
+export const LOBBY_SOUTH_EDGE = 21;
 /**
  * Visitor Observatory footprint (public visit stats, owner decision 2026-10-14): the south-west corner,
  * flush with the west and south slab edges, between the elevator and the Rover menu kiosk.
  */
-export const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: 21 } as const;
+export const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: LOBBY_SOUTH_EDGE } as const;
 /**
  * The kiosk axis (owner review 2026-10-14: "the rover kiosk not straight line into the circle"): the unit
  * direction from the hologram to the observatory. The kiosk sits on it facing the hologram, its lane spoke

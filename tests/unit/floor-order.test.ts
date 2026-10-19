@@ -7,8 +7,11 @@ import { LOBBY_SPAWN, LOBBY_SPAWN_HEADING } from "@/experience/floors/lobby/spaw
 import { ROOT, staticClosure } from "../helpers/import-graph";
 
 const LIGHT = ["src/experience/floorOrder.ts", "src/experience/floors/lobby/spawn.ts"];
-/** Light 3D modules Classic code reads on purpose: the Visitor Observatory room id and the career type icons (TypeIcon). */
-const CLASSIC_OK = ["src/experience/floors/lobby/visitsRoom.ts", "src/experience/fx/holoIcons.ts"];
+/**
+ * Light 3D modules Classic code reads on purpose: the Visitor Observatory room id, the career type icons (TypeIcon) and
+ * the Agent Office loader (the drawer bodies load the office drawer body through it; it reads officeLayout.ts).
+ */
+const CLASSIC_OK = ["src/experience/floors/lobby/visitsRoom.ts", "src/experience/fx/holoIcons.ts", "src/experience/floors/lobby/office/chunk.ts"];
 
 /** Value imports the light modules may make: the floor lists only (types are erased). */
 const ALLOWED_VALUE_IMPORTS = new Set(["@/lib/floors"]);

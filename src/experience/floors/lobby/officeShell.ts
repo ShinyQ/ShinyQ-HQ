@@ -6,8 +6,8 @@ import { OFFICE, officeObstacles, officeSlots, type OfficeSlot } from "./officeL
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
- * Kept out of `officeLayout.ts`, which the Classic site's shared page chunk carries through `useHQStore` and
- * config.ts, so they cost the Classic JS budget nothing (tests/unit/office-chunk-graph.test.ts).
+ * Kept out of `officeLayout.ts`, which the Classic site's shared page chunk carries through the drawer bodies and the
+ * office loader (`office/chunk.ts`), so they cost the Classic JS budget nothing (tests/unit/office-chunk-graph.test.ts).
  */
 
 /** The five desks and Rovers in the wing. */
