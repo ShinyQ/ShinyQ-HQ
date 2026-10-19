@@ -8,6 +8,8 @@
  *
  *   bun run build && bun scripts/serve-static.ts --port 4481 --dir out &
  *   bun scripts/office-shots.ts --base http://127.0.0.1:4481 --out screenshots/office
+ *
+ * `--only full-1440x900,lite-390x844` limits the run to those tier and viewport combos (while iterating).
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -36,10 +38,12 @@ type OfficeWindow = Window & {
 
 let base = "http://127.0.0.1:4481";
 let out = "screenshots/office";
+let only: string[] | null = null;
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--base") base = argv[++i];
   else if (argv[i] === "--out") out = argv[++i];
+  else if (argv[i] === "--only") only = argv[++i].split(",");
 }
 mkdirSync(out, { recursive: true });
 
@@ -76,6 +80,7 @@ const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--ena
 try {
   for (const vp of VIEWPORTS) {
     for (const tier of TIERS) {
+      if (only && !only.includes(`${tier}-${vp.width}x${vp.height}`)) continue;
       const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1, hasTouch: vp.touch, isMobile: vp.mobile });
       const page = await context.newPage();
       await asReturningVisitor(page);
@@ -98,12 +103,13 @@ try {
       await page.screenshot({ path: name("states-a") });
 
       // Zoom key steps (as e2e/office.spec.ts `nearChips`) until the chips leave their far band and show the task line.
-      // The middle chip: a chip off screen (the end ones on a phone) keeps its far flag.
-      for (let i = 0; i < 8 && (await chip(page, 2).getAttribute("data-far")) !== "false"; i++) {
+      // The middle three: a chip off screen (the end ones on a phone) keeps its far flag.
+      const near = async () => (await Promise.all([1, 2, 3].map((slot) => chip(page, slot).getAttribute("data-far")))).every((far) => far === "false");
+      for (let i = 0; i < 8 && !(await near()); i++) {
         await page.keyboard.press("=");
         await settle(page);
       }
-      if ((await chip(page, 2).getAttribute("data-far")) !== "false") throw new Error("office shots: the chips never came near");
+      if (!(await near())) throw new Error("office shots: the chips never came near");
       await waitForFrames(page, 20);
       await page.screenshot({ path: name("states-a-near") });
       // A hand zoom suppresses the office view zone until the rover leaves it: reset, step out and come back.
