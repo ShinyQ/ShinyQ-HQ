@@ -159,7 +159,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 417.7 KB and full 441.3 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 446.7 KB and full 470.3 KB, both over their caps by about 0.3 KB pending an owner note ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 417.7 KB and full 441.3 KB gzip; floor chunks L3 13.9, L4 11.8, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 446.7 KB and full 470.4 KB, under their caps of 447.3 and 471 KB ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 

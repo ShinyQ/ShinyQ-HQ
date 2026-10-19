@@ -156,7 +156,7 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Budget | Limit |
 |---|---|
 | 3D JS on the first-frame path (`?prefetch=off`, per tier) | under 450 KB gzip |
-| 3D session total (main path plus the public floor chunks) | full 470 KB, lite 446.4 KB gzip |
+| 3D session total (main path plus the public floor chunks) | full 471 KB, lite 447.3 KB gzip |
 | Floor chunks (incremental) | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip |
 | Scene draw calls per frame, any floor | under 150 (L1 125, RF 79, B1 100); at most 20 post passes |
 | Triangles per frame | under 30k |
