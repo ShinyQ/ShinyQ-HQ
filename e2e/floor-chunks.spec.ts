@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PREPARE_TIMEOUT } from "../src/experience/tower/elevator";
-import { asReturningVisitor, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
+import { asReturningVisitor, waitForFloor, waitForHQ, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * On-demand floor chunks (Round 7 B): L3, L4 and RF load after the first frame, on elevator intent and

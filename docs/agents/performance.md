@@ -240,6 +240,22 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
 
+### Animation speed
+
+Functional specs run rides, drives, camera eases and the intro 4x faster in game time; the perf lane and the memory gates never do (owner experiment, [decisions.md](../decisions.md)).
+
+- Runtime: `animationSpeed()` (`src/experience/scene/animationSpeed.ts`) is 1 unless `navigator.webdriver` is set and a fixture set `window.__hqE2ESpeed` (at most `MAX_ANIMATION_SPEED`, 8). It is read once per frame and multiplies the time after the per-frame caps, so a slow SwiftShader frame still moves 4x:
+  - the ride stages (`advanceRide` `speed`); the closed-door waits (`held`, `PREPARE_TIMEOUT`, `chunkHeld`) stay on real frame time, so the car never moves before the floor is ready;
+  - the autopilot (`RoverController.step` `speed`: the door approach, the arrival roll-on, point-and-go, missions) and the beam; manual driving stays real-time;
+  - `CameraDirector`'s eases, the arrival glide and the intro clock; held Q/E/R/F and the zoom push idle stay real-time.
+  - Decorative clocks (orbiting labels, shaders, rover idle), HUD timers and mission `say` pauses keep real time.
+  - The store's rover mirror (`setRover`, every `STORE_SYNC_S`) syncs `speed` times as often, so `snapshot().rover` lags the live pose by the same game distance as at 1x.
+- Fixture (`e2e/hq.ts`): a functional spec opts in with `test.beforeEach(({ context }) => fastAnimations(context))`. `E2E_SPEED` sets the speed (default 4; `E2E_SPEED=1` runs the same specs at real speed to measure or bisect); `PERF=1` makes `fastAnimations` a no-op.
+- `resetRenderPeaks` drops the page to real speed until `readRenderPeaks`, so every render-budget window measures at real speed.
+- A test that asserts pacing, a duration or a trajectory sampled frame by frame (the intro's length, the dolly's car heights `distinctY`, a closest approach, a mid-drive position window) calls `realAnimations(page | context)` before navigating, or `setAnimationSpeed(page, 1)` on a live page.
+- Never opted in (a unit test checks the first four): `e2e/perf/**`, `memory.spec.ts`, `gpu.spec.ts`, `ride.spec.ts`; also `motion.spec.ts` and `fast-return.spec.ts` (they sample the dolly and the drive mid-flight), `perf-probes`, `daynight`, `rover-idle`, `lifecycle`, `boost` (manual driving), the visual and screenshot specs and the static-page specs.
+- Add `fastAnimations` to a new spec only when its assertions are end states (a floor, a room, a pose after settling), and run it at `E2E_SPEED=1` and the default once before pushing.
+
 ### Keeping the suite lean
 
 Each check lives in one place, at the cheapest level that can see the regression (the 2026-10-18 trim, [decisions.md](../decisions.md)):

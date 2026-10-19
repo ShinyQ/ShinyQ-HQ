@@ -1,9 +1,12 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { asReturningVisitor, enterFloorRoute, waitForHQ, waitForHydration, waitForRoom } from "./hq";
+import { asReturningVisitor, enterFloorRoute, waitForHQ, waitForHydration, waitForRoom, fastAnimations } from "./hq";
 import { heroPod, hostedPost } from "./routes";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { SITE_URL } from "../src/lib/site";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 90_000 });
 

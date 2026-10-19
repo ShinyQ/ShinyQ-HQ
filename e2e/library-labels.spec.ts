@@ -2,7 +2,10 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
-import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames } from "./hq";
+import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L4 declutter (Round 7 F): the timeline signs (sections, post titles, year plates) and the end plaza signs

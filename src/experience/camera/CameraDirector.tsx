@@ -12,6 +12,7 @@ import { intents, pitchAxisFromKeys, rotateAxisFromKeys } from "../input/intents
 import { MAX_FRAME_DT } from "../rover/controller";
 import { RIDE_CAP, type RideStage } from "../tower/elevator";
 import { roverRuntime } from "../rover/runtime";
+import { animationSpeed } from "../scene/animationSpeed";
 import { sceneSettings } from "../scene/settings";
 import type { FloorLayout, Vec2 } from "../types";
 import { ARRIVAL_HEADING, cameraBehindHeading, glidePose, glideProgress, shoulderPose, stepGlide } from "./arrival";
@@ -136,7 +137,9 @@ export function CameraDirector({
     const s = getHQStore().getState();
     // During a ride the camera eases with the car's per-frame cap, so a long frame pauses both instead
     // of the camera catching up in one jump (R5 P6).
-    const dt = Math.min(rawDt, s.ride && s.ride.stage !== "toDoor" ? RIDE_CAP.max : MAX_FRAME_DT);
+    const frameDt = Math.min(rawDt, s.ride && s.ride.stage !== "toDoor" ? RIDE_CAP.max : MAX_FRAME_DT);
+    // 1 outside e2e: the eases, the glide and the intro run faster in game time; held keys turn at real speed.
+    const dt = frameDt * animationSpeed();
     const l = local.current;
     l.now += dt;
     const cls = s.device.camera;
@@ -158,7 +161,7 @@ export function CameraDirector({
     const keys = held.current ?? [];
     const axis = exploring ? rotateAxisFromKeys(keys) : 0;
     const tilt = exploring ? pitchAxisFromKeys(keys) : 0;
-    if (axis || tilt) rotate(orbit, axis * KEY_ROTATE_SPEED * dt, tilt * KEY_PITCH_SPEED * dt, rail);
+    if (axis || tilt) rotate(orbit, axis * KEY_ROTATE_SPEED * frameDt, tilt * KEY_PITCH_SPEED * frameDt, rail);
     // The session spawn (the L1 kiosk stop, a `prime` zone) starts in its zone's view at once: the intro flies into
     // that view and the first frame shows it, with no turn afterwards. Other zones keep easing in (never under reduced motion).
     // A deep link that spawns on an arrival point (L4, RF) opens on the arrival view too (rail-aware).
@@ -210,7 +213,7 @@ export function CameraDirector({
     if (exploring && !s.ride && !glide && !rollingOn) {
       updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), orbit), s.reducedMotion, cls, rail);
     }
-    stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s) || glide !== null);
+    stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s) || glide !== null, frameDt);
     roverRuntime.cameraYaw = orbit.yaw;
     roverRuntime.cameraRailYaw = orbit.railYaw;
     roverRuntime.cameraMode = orbit.firstPerson ? "first" : "third";

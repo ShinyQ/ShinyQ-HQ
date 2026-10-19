@@ -18,7 +18,11 @@ import {
   waitForPhase,
   waitForRoom,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L4 Topic Constellation (owner request 2026-10-14): the end plaza of the Writing floor. Picking a topic

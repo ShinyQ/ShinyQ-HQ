@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { chooseMotion, collectErrors, enterHQ, skipFloorLines, waitForCameraSettle, waitForFloor, waitForFrames } from "./hq";
+import { chooseMotion, collectErrors, enterHQ, skipFloorLines, waitForCameraSettle, waitForFloor, waitForFrames, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L3-style arrivals on every floor (Round 8 J, owner 2026-10-17): after an elevator ride the rover rolls on east

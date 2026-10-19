@@ -1,5 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { skipFloorLines, chooseMotion, collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom } from "./hq";
+import { skipFloorLines, chooseMotion, collectErrors, driveTo, enterFloorRoute, targetPoint, visibleTarget, waitForCameraSettle, waitForFrames, waitForRoom, fastAnimations, realAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Spectacle round, Session B (docs/superpowers/specs/2026-10-13-spectacle-floor-ends-hall-design.md):
@@ -102,6 +105,8 @@ async function sampleCore(page: Page, core: Rect) {
 }
 
 test("L3 reactor core: autopilot across the east plaza drives around it", async ({ page }) => {
+  // The closest approach is sampled frame by frame along the drive: real speed.
+  await realAnimations(page);
   await enterFloorRoute(page, "/en/labs");
   const core = await coreRect(page);
   const cx = (core.minX + core.maxX) / 2;
@@ -116,6 +121,8 @@ test("L3 reactor core: autopilot across the east plaza drives around it", async 
 });
 
 test("L3 reactor core: point-and-go to a pod beyond it drives around it and opens the pod", async ({ page }) => {
+  // The closest approach is sampled frame by frame along the drive: real speed.
+  await realAnimations(page);
   // No first-visit floor line: its text box would sit over the middle of the view.
   await skipFloorLines(page);
   await enterFloorRoute(page, "/en/labs");

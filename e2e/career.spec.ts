@@ -1,8 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, collectErrors, enterHQ, skipFloorLines, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive, fastAnimations } from "./hq";
 import en from "../messages/en.json";
 import content from "../content/site-content.json";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 const journey = content.missions.find((m) => m.id === "journey")!;
 

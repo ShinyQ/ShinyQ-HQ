@@ -1,7 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { enterHQ, waitForFloor } from "./hq";
+import { enterHQ, waitForFloor, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Floor ambience (Round 9 O): the "Floor ambience" switch sits in the settings sound group, persists

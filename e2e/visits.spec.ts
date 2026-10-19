@@ -4,7 +4,10 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 import { FLOOR_SCENE_CAPS } from "./budgets";
-import { chooseMotion, asReturningVisitor, skipFloorLines, clickablePoint, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "./hq";
+import { chooseMotion, asReturningVisitor, skipFloorLines, clickablePoint, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Public visit stats (owner plan "Public visit stats, Layer 1", S2): the Classic Contact section and

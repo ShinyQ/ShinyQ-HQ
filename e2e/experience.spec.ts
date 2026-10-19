@@ -1,9 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, visibleTarget } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, visibleTarget, fastAnimations, realAnimations } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { distanceToRect } from "../src/experience/nav/collision";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -45,6 +48,8 @@ async function trackPeaks(page: Page) {
 
 test.describe("boot and intro", () => {
   test("the boot and the intro play once per session; nothing skips the boot", async ({ page }) => {
+    // The intro's length (at least 5 s) is a real-speed property.
+    await realAnimations(page);
     const errors = collectErrors(page);
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
@@ -119,6 +124,8 @@ test.describe("boot and intro", () => {
   });
 
   test("a drive key that skips the intro on a floor deep link does not cancel the ride on", async ({ page }) => {
+    // Skips the intro mid-flight: real speed.
+    await realAnimations(page);
     const errors = collectErrors(page);
     await page.goto("/en/labs?tier=lite");
     await waitForHQ(page);
@@ -139,6 +146,8 @@ test.describe("boot and intro", () => {
   });
 
   test("the intro opens on Rover's face, lights the Lobby and lands on the follow view", async ({ page }) => {
+    // Counts drawn intro frames and its length: real speed.
+    await realAnimations(page);
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");
@@ -208,6 +217,8 @@ test.describe("boot and intro", () => {
    * returns a reader of the last intro timeline time drawn before the handover and the skip flag.
    */
   async function intoTheIntro(page: Page) {
+    // Skips the intro mid-flight and checks how far its timeline got: real speed.
+    await realAnimations(page);
     await page.addInitScript(() => {
       localStorage.setItem("hq:terminal-seen", "1");
       localStorage.setItem("hq:onboarded", "done");

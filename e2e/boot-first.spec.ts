@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { addScriptPolicy, sitePolicy } from "../scripts/csp-policy";
-import { asHumanBrowser, asReturningVisitor, collectErrors, waitForHQ } from "./hq";
+import { asHumanBrowser, asReturningVisitor, collectErrors, waitForHQ, fastAnimations } from "./hq";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 test.describe.configure({ timeout: 90_000 });
 

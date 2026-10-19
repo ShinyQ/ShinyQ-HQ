@@ -19,7 +19,11 @@ import {
   waitForPhase,
   waitForRoom,
   waitForSceneLive,
+  fastAnimations,
 } from "./hq";
+
+// Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
+test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * B1 Engine Room, PR 2: the floor exists only for sessions unlocked with the dev and test flag; rides from the
