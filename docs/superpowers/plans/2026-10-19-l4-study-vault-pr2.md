@@ -6,7 +6,7 @@ Status: in review
 
 **Goal:** A Study Vault alcove off the L4 end plaza where four giant holo books (exam code on the spine, issuer
 tones) slide their covers out as the Rover approaches, and selecting a book opens the in-app study guide reader
-shipped in PR1 (#243).
+shipped in PR1 (#243, plan [2026-10-19-l4-study-guides-pr1.md](2026-10-19-l4-study-guides-pr1.md)).
 
 **Architecture:** The newsroom layout gains a vault (spur road off the ring road, a small round plaza, a stop
 `L4:vault`, a camera zone, four book slots and their obstacles) from a new `guides` input. The scene draws the

@@ -65,7 +65,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | In review |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | In review |
-| Study guides | 2026-10-19 (PR 1 of 2): the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card; PR 2 adds the 3D Study Vault on L4 | In review |
+| Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (PR 1, shipped in #243 and #245); PR 2 adds the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader), in review | In review |
 
 ## Controls and first visit
 
@@ -278,7 +278,10 @@ Route `/en/library`.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
 - **Read my writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
-- **Study guides**: today on the Classic Writing page and in the certification card ([Classic site](#classic-site)); a 3D Study Vault off the end plaza is planned (PR 2 of the study guides spec).
+- **Study Vault**: a road from the end plaza's ring road leads south-east to a small round plaza where the four certification study guides stand as tall holo books on an arc, each on a low plinth over a dashed floor track, in its issuer's tone (Microsoft cyan, GitHub violet, Google amber) with its exam code on the spine and a STUDY VAULT sign above.
+  - Covers slide out and swing open as the rover comes near (half open from the vault stop, fully open next to a book or when you point at it); reduced motion snaps them, and the lite tier drops the light pools.
+  - Click a book (tap, then Go, on touch screens) to drive to the vault and read that guide in the same in-site reader as the Classic Writing page ([Classic site](#classic-site)); one "!" hint bubble introduces the vault.
+  - The spine signs show only near the vault and never cover another label.
 
 ### Topic Constellation
 
