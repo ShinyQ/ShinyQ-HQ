@@ -50,6 +50,7 @@ describe("hint lines", () => {
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:pods" } }))).toBe("browse");
     expect(hintGoKey(item({ kind: "board", action: { type: "command", command: "palette:posts" } }))).toBe("browse");
     expect(hintGoKey(item({ action: { type: "command", command: "cv" } }))).toBe("viewCv");
+    expect(hintGoKey(item({ action: { type: "command", command: "guide:ai-103" } }))).toBe("open");
     expect(hintGoKey(item({ action: { type: "command", command: "unknown" } }))).toBe("go");
   });
 

@@ -333,7 +333,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - The HUD minimap reads `buildFloorLayouts` and `interactRuntime.items` (`subscribe`, `setItems`): a floor change that alters roads or targets shows up on the minimap and the overview automatically, with no map code to touch (see [Minimap](hud-and-drawer.md#minimap)).
 - Never put navigation `onClick` or hover handlers on scene objects.
   - L1 certification badges and pills and L4 research paper plates keep their own clicks (they open previews, not drives).
-- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument).
+- Commands (`parseCommand` in `pick.ts`): `terminal`, `palette:pods`, `palette:rooms`, `palette:posts`, `cv`, `reactor:<ring>`, `open:<room id>` (that room's drawer where the rover stands; the L4 research monument), `guide:<slug>` (the study guide reader through the `guide` HUD command; the L4 Study Vault books, `L4:vault:<slug>`, which drive to the vault stop first).
 
 ### Rendering and actions
 

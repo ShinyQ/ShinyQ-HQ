@@ -664,7 +664,9 @@
       "go": "Pergi ke {label}",
       "hintFine": "Klik objek yang menyala untuk menuju ke sana.",
       "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
-      "console": "Konsol waktu"
+      "console": "Konsol waktu",
+      "studyGuide": "Baca panduan belajar {code}",
+      "studyVault": "Study Vault"
     }
   },
   "engine": {
