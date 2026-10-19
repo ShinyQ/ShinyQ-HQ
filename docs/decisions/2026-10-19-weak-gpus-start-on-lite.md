@@ -1,6 +1,7 @@
 # 3D experience
 
 - Date: 2026-10-19
+- PR: [#259](https://github.com/ShinyQ/ShinyQ-HQ/pull/259)
 
 Known-weak integrated GPUs start on the lite tier, read from the `WEBGL_debug_renderer_info` renderer string
 (`WEAK_GPU` in `src/lib/gpu-tier.ts`): Intel HD and UHD Graphics (Iris, Iris Xe, Iris Plus and Arc stay full), Mali-4xx,
