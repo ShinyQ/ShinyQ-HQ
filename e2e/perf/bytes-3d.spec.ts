@@ -16,7 +16,9 @@ import { writePerfEntry } from "./helpers";
  * session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 473 KB, lite 449.4 KB).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
  * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office chunk
- * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total.
+ * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total;
+ * its drawer body chunk (`__hq.office.loadBody()`, loaded on an office drawer open) is measured after it and held to
+ * `BYTES_3D_BUDGET.officeBody`.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -31,12 +33,16 @@ async function measureFloor(page: Page, floor: FloorChunkId, seen: Set<string>, 
   return bytes;
 }
 
-type OfficeLoad = { __hq: { office?: { load: () => Promise<void> } } };
+type OfficeLoader = "load" | "loadBody";
+type OfficeLoad = { __hq: { office?: Partial<Record<OfficeLoader, () => Promise<void>>> } };
 
-/** Bytes of the Agent Office chunk on top of the Page View, the main path and the floor chunks already counted; null on a build without it. */
-async function measureOffice(page: Page, seen: Set<string>, counted: Set<string>): Promise<number | null> {
-  if (!(await page.evaluate(() => Boolean((window as unknown as OfficeLoad).__hq.office)))) return null;
-  const loaded = await recordTransfers(page, () => page.evaluate(() => (window as unknown as OfficeLoad).__hq.office!.load()), 2000);
+/**
+ * Bytes of an Agent Office chunk (`load`: the scene, `loadBody`: the drawer body) on top of the Page View, the main
+ * path and the chunks already counted; null on a build without that loader.
+ */
+async function measureOffice(page: Page, loader: OfficeLoader, seen: Set<string>, counted: Set<string>): Promise<number | null> {
+  if (!(await page.evaluate((l) => Boolean((window as unknown as OfficeLoad).__hq.office?.[l]), loader))) return null;
+  const loaded = await recordTransfers(page, () => page.evaluate((l) => (window as unknown as OfficeLoad).__hq.office![l]!(), loader), 2000);
   const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
   for (const t of loaded) counted.add(t.path);
   return bytes;
@@ -111,7 +117,9 @@ for (const tier of ["lite", "full"] as const) {
       for (const floor of BYTES_3D_BUDGET.sessionFloors) floors[floor] = await measureFloor(page, floor, seen, mainPaths);
     }
     // The Agent Office (L1) loads near the spawn in a normal session, but has its own cap outside the session total.
-    const office = await measureOffice(page, seen, mainPaths);
+    const office = await measureOffice(page, "load", seen, mainPaths);
+    // Its drawer body is a second chunk, loaded only when an office drawer opens: incremental over the scene chunk.
+    const officeBody = await measureOffice(page, "loadBody", seen, mainPaths);
     await context.close();
 
     // B1 only loads when unlocked. It is a near floor of the Lobby, so it may arrive during the main path even with
@@ -146,12 +154,13 @@ for (const tier of ["lite", "full"] as const) {
     const total = sum(js);
     const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
     const sessionTotal = total + floorsTotal;
-    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors: { ...floors, ...(b1 === null ? {} : { B1: b1 }) }, sessionTotal } : {}), ...(office === null ? {} : { office }) });
+    writePerfEntry({ kind: "bytes3d", tier, js, other, ...(hasChunks ? { floors: { ...floors, ...(b1 === null ? {} : { B1: b1 }) }, sessionTotal } : {}), ...(office === null ? {} : { office }), ...(officeBody === null ? {} : { officeBody }) });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
     if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
     if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
     if (office !== null) console.log(`Agent Office chunk (${tier}): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), not in the session total`);
+    if (officeBody !== null) console.log(`Agent Office drawer body (${tier}, on drawer open): ${kb(officeBody)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBody)}), over the scene chunk`);
 
     if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
     expect(total, "no 3D JavaScript measured: did the gate load the 3D chunk?").toBeGreaterThan(BYTES_3D_BUDGET.minExpected);
@@ -168,6 +177,10 @@ for (const tier of ["lite", "full"] as const) {
     if (office !== null) {
       expect(office, "Agent Office chunk: did __hq.office.load fetch any script?").toBeGreaterThan(0);
       expect(office, `Agent Office chunk ${kb(office)} is over its ${kb(BYTES_3D_BUDGET.office)} cap`).toBeLessThan(BYTES_3D_BUDGET.office);
+    }
+    if (officeBody !== null) {
+      expect(officeBody, "Agent Office drawer body: did __hq.office.loadBody fetch any script?").toBeGreaterThan(0);
+      expect(officeBody, `Agent Office drawer body ${kb(officeBody)} is over its ${kb(BYTES_3D_BUDGET.officeBody)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeBody);
     }
     if (hasChunks) expect(sessionTotal, `main + floor chunks ${kb(sessionTotal)} is over the ${kb(BYTES_3D_BUDGET.session[tier])} session cap (${tier})`).toBeLessThan(BYTES_3D_BUDGET.session[tier]);
   });

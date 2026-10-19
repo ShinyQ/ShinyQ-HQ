@@ -108,6 +108,14 @@ describe("gates", () => {
     expect(s.markdown).toContain("Agent Office chunk (L1, lazy, not in the session total): 9.5 KB of 14.0 KB.");
   });
 
+  it("reports the Agent Office drawer body chunk as its own line, incremental over the scene chunk", () => {
+    const entry = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, office: 12.5 * 1024, officeBody: 2.5 * 1024 } as const;
+    const s = renderGates([entry], []);
+    expect(s.markdown).toContain("Agent Office drawer body (on drawer open): 2.5 KB of 6.0 KB.");
+    const without = renderGates([{ ...entry, officeBody: undefined }], []);
+    expect(without.markdown).not.toContain("Agent Office drawer body");
+  });
+
   it("renders P3's memory entries", () => {
     const s = renderGates([{ kind: "memory", tier: "lite", trips: 10, before: { geometries: 400, textures: 30, programs: 26 }, after: { geometries: 400, textures: 30, programs: 26 }, heapDeltaBytes: 512 * 1024 }], []);
     expect(s.markdown).toContain("| lite | 10 | 0 | 0 | 0 | 0.5 MB |");

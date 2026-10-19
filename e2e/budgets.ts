@@ -33,15 +33,18 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
  * The L1 Agent Office chunk (`floors/lobby/office/scene.ts`) is measured after the session floors and held to `office`
- * (owner decision 2026-10-19), outside the session total.
+ * (owner decision 2026-10-19), outside the session total. Its drawer body (`floors/lobby/office/body.ts`, loaded only
+ * when an office drawer opens) is measured after the scene chunk and held to the `officeBody` sanity cap.
  */
 export const BYTES_3D_BUDGET = {
   failAt: 450 * 1024,
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
-  /** L1 Agent Office chunk (lazy, near the office or on an office drawer), incremental over the main path and the session floors. */
+  /** L1 Agent Office scene chunk (lazy, near the office), incremental over the main path and the session floors. */
   office: 14 * 1024,
+  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap. */
+  officeBody: 6 * 1024,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   session: { lite: Math.round(449.4 * 1024), full: 473 * 1024 },
