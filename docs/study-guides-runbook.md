@@ -13,9 +13,11 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
   first 12 hex characters of the prepared file's sha256, so a new PDF always gets a new key and never overwrites an
   object a browser may have cached.
 - The Pages Function `functions/api/guides/[slug].ts` (`functions/_lib/guides.ts`, binding `GUIDES` in
-  `wrangler.toml`) serves `/api/guides/<slug>` from the key named by the deployed `content/study-guides.json`:
-  single byte ranges for pdf.js, ETag revalidation, `?download=1` for an attachment, and a year of immutable
-  caching when `?v=` matches the current version (five minutes otherwise).
+  `wrangler.toml`) serves `/api/guides/<slug>`: single byte ranges for pdf.js, ETag revalidation and `?download=1`
+  for an attachment. `?v=<version>` (12 lowercase hex) reads exactly `<slug>/<version>.pdf` (404 when that object
+  is gone) with a year of immutable caching, so a reader opened before a deploy keeps reading the same bytes. With
+  no `?v=` (or a malformed one) it serves the version in the deployed `content/study-guides.json` with a five
+  minute cache. The site always asks with `?v=`.
 - The PDFs and the prepared copies are never committed. Prepared files go to `.study-guides/` (gitignored); only the
   JSON and the page 1 covers (`public/study-guides/<slug>.webp`) are committed.
 - The bucket stays private: no `r2.dev` public URL and no custom domain on it. The Function is the only way in.
@@ -58,8 +60,10 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 
 1. Prepare the new source under the same slug: it gets a new `version`.
 2. Upload it, commit, open the PR and let the merge deploy.
-3. The old object stays in the bucket until the new deploy is live and `main` CI is green: the live site, any
-   cached page and an automatic rollback (`rollback.yml`) still point to the old version until then.
+3. Keep the old object in the bucket at least a day after the deploy (and until `main` CI is green): pages and
+   `/data/guides/{locale}.json` cached before the deploy (an hour for the data file), a reader left open and an
+   automatic rollback (`rollback.yml`) still ask for the old `?v=`, and the Function answers 404 once its object
+   is gone.
 4. Then delete the old object:
 
    ```sh

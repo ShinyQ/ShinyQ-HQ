@@ -87,7 +87,8 @@ describe("GET /api/guides/<slug>", () => {
     // _headers rules never reach Function responses, so the Function keeps the PDF out of frames itself.
     expect(res.headers.get("Content-Security-Policy")).toBe("frame-ancestors 'none'");
     expect(await bodyBytes(res)).toEqual(BYTES);
-    expect(calls.head).toEqual([KEY]);
+    // One R2 read for a plain GET: get() carries the size and the ETag.
+    expect(calls.head).toEqual([]);
     expect(calls.get).toEqual([{ key: KEY, range: undefined }]);
   });
 
@@ -195,12 +196,48 @@ describe("GET /api/guides/<slug>", () => {
     expect(res.headers.get("Content-Disposition")).toBe('attachment; filename="GH-600_Study_Guide.pdf"');
   });
 
-  it("caches immutably only for the current version", async () => {
-    const current = await call({ GUIDES: fakeBucket() }, { path: `/api/guides/gh-600?v=${GUIDE.version}` });
-    expect(current.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable, no-transform");
-    const stale = await call({ GUIDES: fakeBucket() }, { path: "/api/guides/gh-600?v=000000000000" });
-    expect(stale.status).toBe(200);
-    expect(stale.headers.get("Cache-Control")).toBe("public, max-age=300, no-transform");
+  it("serves a range of the current version with a year of immutable caching", async () => {
+    const calls: Calls = { head: [], get: [] };
+    const res = await call({ GUIDES: fakeBucket(undefined, calls) }, { path: `/api/guides/gh-600?v=${GUIDE.version}`, headers: { Range: "bytes=0-99" } });
+    expect(res.status).toBe(206);
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable, no-transform");
+    expect(await bodyBytes(res)).toEqual(BYTES.slice(0, 100));
+    expect(calls.get).toEqual([{ key: KEY, range: { offset: 0, length: 100 } }]);
+  });
+
+  it("serves an older existing version from its own key, immutably (bytes under a version never change)", async () => {
+    const old = "0123456789ab";
+    const oldBytes = Uint8Array.from({ length: 400 }, (_, i) => (i * 7) % 256);
+    const calls: Calls = { head: [], get: [] };
+    const bucket = fakeBucket({ [KEY]: BYTES, [`gh-600/${old}.pdf`]: oldBytes }, calls);
+    const full = await call({ GUIDES: bucket }, { path: `/api/guides/gh-600?v=${old}` });
+    expect(full.status).toBe(200);
+    expect(full.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable, no-transform");
+    expect(full.headers.get("Content-Length")).toBe("400");
+    expect(await bodyBytes(full)).toEqual(oldBytes);
+    const part = await call({ GUIDES: bucket }, { path: `/api/guides/gh-600?v=${old}`, headers: { Range: "bytes=-10" } });
+    expect(part.status).toBe(206);
+    expect(part.headers.get("Content-Range")).toBe("bytes 390-399/400");
+    expect(await bodyBytes(part)).toEqual(oldBytes.slice(390));
+    expect(new Set([...calls.head, ...calls.get.map((g) => g.key)])).toEqual(new Set([`gh-600/${old}.pdf`]));
+  });
+
+  it("answers 404 for a well-formed version that is not in the bucket", async () => {
+    for (const init of [{}, { headers: { Range: "bytes=0-99" } }, { method: "HEAD" }]) {
+      const res = await call({ GUIDES: fakeBucket() }, { path: "/api/guides/gh-600?v=000000000000", ...init });
+      expect(res.status).toBe(404);
+    }
+  });
+
+  it("serves the current version with the short cache without ?v= or with a malformed one", async () => {
+    for (const path of ["/api/guides/gh-600", "/api/guides/gh-600?v=", "/api/guides/gh-600?v=ABC123DEF456", "/api/guides/gh-600?v=abc123def4567", "/api/guides/gh-600?v=../x"]) {
+      const calls: Calls = { head: [], get: [] };
+      const res = await call({ GUIDES: fakeBucket(undefined, calls) }, { path });
+      expect(res.status, path).toBe(200);
+      expect(res.headers.get("Cache-Control"), path).toBe("public, max-age=300, no-transform");
+      expect(await bodyBytes(res)).toEqual(BYTES);
+      expect(calls.get.map((g) => g.key)).toEqual([KEY]);
+    }
   });
 
   it("answers 502 when R2 throws", async () => {

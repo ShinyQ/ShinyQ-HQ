@@ -12,6 +12,8 @@ export interface GuideEntry {
 const DEFAULT_GUIDES: readonly GuideEntry[] = data.guides.map(({ slug, version, file, bytes }) => ({ slug, version, file, bytes }));
 
 const PATH = /^\/api\/guides\/([^/]+)$/;
+/** A content version (`?v=`): the first 12 hex digits of the PDF's SHA-256, as in the R2 key. */
+const VERSION = /^[0-9a-f]{12}$/;
 const IMMUTABLE = "public, max-age=31536000, immutable, no-transform";
 const SHORT = "public, max-age=300, no-transform";
 // _headers rules never reach Function responses (Cloudflare Pages), so the framing policy is set here.
@@ -60,8 +62,11 @@ function matchesEtag(header: string | null, etag: string): boolean {
 
 /**
  * `GET|HEAD /api/guides/<slug>`: a study guide PDF from the private R2 bucket behind `GUIDES` (key
- * `<slug>/<version>.pdf`), with single byte ranges for pdf.js, ETag revalidation, `?download=1` for an
- * attachment and a year of immutable caching when `?v=` names the current version.
+ * `<slug>/<version>.pdf`), with single byte ranges for pdf.js, ETag revalidation and `?download=1` for an
+ * attachment. A well-formed `?v=<version>` reads exactly that version's key (404 when it is gone) and caches it
+ * for a year, immutable, since the bytes under a version key never change: a reader opened before a deploy keeps
+ * reading the bytes it started with. Without `?v=` (or with a malformed one) it serves the current version with a
+ * short cache. A plain GET is one R2 read; HEAD, `If-None-Match` and `Range` read the object's head first.
  */
 export function createGuidesHandler(guides: readonly GuideEntry[] = DEFAULT_GUIDES) {
   const bySlug = new Map(guides.map((guide) => [guide.slug, guide]));
@@ -77,26 +82,36 @@ export function createGuidesHandler(guides: readonly GuideEntry[] = DEFAULT_GUID
       console.error("GUIDES binding missing");
       return notFound();
     }
-    const key = `${guide.slug}/${guide.version}.pdf`;
+    const v = url.searchParams.get("v");
+    const exact = v !== null && VERSION.test(v);
+    const key = `${guide.slug}/${exact ? v : guide.version}.pdf`;
+    const cacheControl = exact ? IMMUTABLE : SHORT;
+    const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
+    const headersFor = (etag: string): Record<string, string> => ({
+      "Content-Type": "application/pdf",
+      "Accept-Ranges": "bytes",
+      ETag: etag,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": FRAME_POLICY,
+      "Content-Disposition": `${disposition}; filename="${guide.file}"`,
+      "Cache-Control": cacheControl,
+    });
     try {
+      const ifNoneMatch = request.headers.get("If-None-Match");
+      const rangeHeader = request.headers.get("Range");
+      if (method === "GET" && !ifNoneMatch && !rangeHeader) {
+        const object = await bucket.get(key);
+        if (!object) return notFound();
+        return new Response(object.body, { status: 200, headers: { ...headersFor(object.httpEtag), "Content-Length": String(object.size) } });
+      }
       const head = await bucket.head(key);
       if (!head) return notFound();
-      const cacheControl = url.searchParams.get("v") === guide.version ? IMMUTABLE : SHORT;
-      if (matchesEtag(request.headers.get("If-None-Match"), head.httpEtag)) {
+      if (matchesEtag(ifNoneMatch, head.httpEtag)) {
         return new Response(null, { status: 304, headers: { ETag: head.httpEtag, "Cache-Control": cacheControl } });
       }
-      const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
-      const headers: Record<string, string> = {
-        "Content-Type": "application/pdf",
-        "Accept-Ranges": "bytes",
-        ETag: head.httpEtag,
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": FRAME_POLICY,
-        "Content-Disposition": `${disposition}; filename="${guide.file}"`,
-        "Cache-Control": cacheControl,
-      };
+      const headers = headersFor(head.httpEtag);
       if (method === "HEAD") return new Response(null, { status: 200, headers: { ...headers, "Content-Length": String(head.size) } });
-      const range = parseRange(request.headers.get("Range"), head.size);
+      const range = parseRange(rangeHeader, head.size);
       if (range === "unsatisfiable") return new Response(null, { status: 416, headers: { ...headers, "Content-Range": `bytes */${head.size}` } });
       if (range) {
         const length = range.end - range.start + 1;
@@ -106,7 +121,7 @@ export function createGuidesHandler(guides: readonly GuideEntry[] = DEFAULT_GUID
       }
       const object = await bucket.get(key);
       if (!object) return notFound();
-      return new Response(object.body, { status: 200, headers: { ...headers, "Content-Length": String(object.size) } });
+      return new Response(object.body, { status: 200, headers: { ...headersFor(object.httpEtag), "Content-Length": String(object.size) } });
     } catch (error) {
       console.error("GUIDES read failed", error);
       return text(502, "Upstream error");
