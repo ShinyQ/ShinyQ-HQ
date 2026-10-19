@@ -15,14 +15,14 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 456.7 KB gzip (measured full 456.1 KB, lite 440.3 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 457.3 KB gzip (measured full 456.7 KB, lite 441.0 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 5.0 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 485.7 KB (measured 485.1 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 469.9 KB (measured 469.3 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 486.3 KB (measured 485.7 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 470.6 KB (measured 470.0 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -79,14 +79,14 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 
 #### `bytes-3d`
 
-- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 456.7 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 456.1 KB, lite 440.3 KB (the full tier adds the lazy `Effects` chunk).
+- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 457.3 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
+  - It gates the critical path before the first frame. Measured: full 456.7 KB, lite 441.0 KB (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 485.7 KB: measured 485.1 KB (main 456.1 KB plus floor chunks 29.0 KB).
-  - lite 469.9 KB: measured 469.3 KB (main 440.3 KB plus floor chunks 29.0 KB).
-  - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, and the floor layouts out of the Classic bundle); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
+  - full 486.3 KB: measured 485.7 KB (main 456.7 KB plus floor chunks 29.0 KB).
+  - lite 470.6 KB: measured 470.0 KB (main 441.0 KB plus floor chunks 29.0 KB).
+  - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 11.8 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
