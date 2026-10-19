@@ -80,7 +80,7 @@ describe("applyGithub", () => {
   it("tracks job progress for the desk on that branch and counts CI runs once", () => {
     let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "d1", T0);
-    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 42, jobId: "1", name: "Lint", status: "done" }, { type: "job", runId: 42, jobId: "2", name: "E2E", status: "running" }] }, "d2", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 42, attempt: 1, jobId: "1", name: "Lint", status: "done" }, { type: "job", runId: 42, attempt: 1, jobId: "2", name: "E2E", status: "running" }] }, "d2", T0);
     const snap = view(doc, T0);
     expect(snap.desks[0].progress).toEqual({ done: 1, total: 2 });
     expect(snap.github[0]).toMatchObject({ kind: "run", status: "running", progress: { done: 1, total: 2 } });
@@ -91,7 +91,7 @@ describe("applyGithub", () => {
 
   it("fails the waiting desk with the failed job's name", () => {
     let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
-    doc = applyGithub(doc, { repo: HQ, changes: [run("running"), { type: "job", runId: 42, jobId: "9", name: "E2E shard 3/8", status: "failed" }] }, "d1", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running"), { type: "job", runId: 42, attempt: 1, jobId: "9", name: "E2E shard 3/8", status: "failed" }] }, "d1", T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("failure")] }, "d2", T0 + 1000);
     expect(view(doc, T0 + 2000).desks[0]).toMatchObject({ state: "failed", activity: "failed", job: "E2E shard 3/8" });
   });
@@ -110,7 +110,7 @@ describe("applyGithub", () => {
     let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "d1", T0);
     const before = view(doc, T0);
-    const after = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 999, jobId: "1", name: "Fork job", status: "failed" }] }, "d2", T0);
+    const after = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 999, attempt: 1, jobId: "1", name: "Fork job", status: "failed" }] }, "d2", T0);
     expect(after.runs).toEqual(doc.runs);
     expect(view(after, T0)).toEqual(before);
   });
@@ -134,7 +134,7 @@ describe("applyGithub", () => {
   });
 
   it("ignores a late running delivery of a completed attempt", () => {
-    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, jobId: "1", name: "Lint", status: "done" }] }, "a0", T0);
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, attempt: 1, jobId: "1", name: "Lint", status: "done" }] }, "a0", T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("success")] }, "a", T0 + 1000);
     const feed = doc.feed;
     doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "b", T0 + 2000);
@@ -144,7 +144,7 @@ describe("applyGithub", () => {
   });
 
   it("restarts a run on a newer attempt: jobs cleared, feed back to running", () => {
-    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, jobId: "9", name: "E2E", status: "failed" }] }, "a0", T0);
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, attempt: 1, jobId: "9", name: "E2E", status: "failed" }] }, "a0", T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("failure")] }, "a1", T0 + 1000);
     doc = applyGithub(doc, { repo: HQ, changes: [run("running", 2)] }, "b0", T0 + 2000);
     expect(doc.runs[0]).toMatchObject({ id: 42, attempt: 2, status: "running", jobs: {} });
@@ -161,6 +161,55 @@ describe("applyGithub", () => {
     const before = { runs: doc.runs, feed: doc.feed, today: doc.today };
     for (const [i, status] of (["failure", "success", "running", "cancelled"] as const).entries()) doc = applyGithub(doc, { repo: HQ, changes: [run(status, 1)] }, `old-${i}`, T0 + 1000);
     expect({ runs: doc.runs, feed: doc.feed, today: doc.today }).toEqual(before);
+  });
+
+  it("ignores a late running delivery of a cancelled attempt: no run, no feed item", () => {
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running")] }, "c0", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("cancelled")] }, "c1", T0 + 1000);
+    expect(doc.cancelled).toEqual([{ id: 42, attempt: 1 }]);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running")] }, "c2", T0 + 2000);
+    expect(doc.runs).toEqual([]);
+    expect(doc.feed).toEqual([]);
+    expect(view(doc, T0 + 2000).github).toEqual([]);
+  });
+
+  it("starts a re-run after a cancel as a new run and forgets the cancel", () => {
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), run("cancelled")] }, "c0", T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running", 2)] }, "c1", T0 + 1000);
+    expect(doc.runs[0]).toMatchObject({ id: 42, attempt: 2, status: "running", jobs: {} });
+    expect(view(doc, T0 + 1000).github[0]).toMatchObject({ kind: "run", status: "running" });
+    expect(doc.cancelled).toEqual([]);
+  });
+
+  it("keeps only the newest cancelled records", () => {
+    let doc = publicDoc();
+    for (let id = 1; id <= TIMING.runsKept + 5; id++) doc = applyGithub(doc, { repo: HQ, changes: [{ ...run("cancelled"), id }] }, `x-${id}`, T0);
+    expect(doc.cancelled).toHaveLength(TIMING.runsKept);
+    expect(doc.cancelled[0]).toEqual({ id: TIMING.runsKept + 5, attempt: 1 });
+  });
+
+  it("ignores a late job of an older attempt after a restart", () => {
+    let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", state: "ci", activity: "ci" }), T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [run("running"), run("failure"), run("running", 2)] }, "j0", T0);
+    const before = { runs: doc.runs, feed: doc.feed };
+    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 42, attempt: 1, jobId: "9", name: "E2E", status: "failed" }] }, "j1", T0 + 1000);
+    expect({ runs: doc.runs, feed: doc.feed }).toEqual(before);
+    expect(doc.runs[0].jobs).toEqual({});
+    expect(doc.runs[0]).not.toHaveProperty("failedJob");
+    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "job", runId: 42, attempt: 2, jobId: "10", name: "E2E", status: "running" }] }, "j2", T0 + 2000);
+    expect(doc.runs[0].jobs).toEqual({ "10": "running" });
+  });
+
+  it("reads an older stored document without cancelled records", () => {
+    const stored: Partial<OfficeDoc> = publicDoc();
+    delete stored.cancelled;
+    const legacy = stored as OfficeDoc;
+    expect(legacy).not.toHaveProperty("cancelled");
+    let doc = applyGithub(legacy, { repo: HQ, changes: [run("running")] }, "l0", T0);
+    expect(view(doc, T0).github[0]).toMatchObject({ kind: "run", status: "running" });
+    doc = applyGithub(doc, { repo: HQ, changes: [run("cancelled")] }, "l1", T0 + 1000);
+    expect(doc.cancelled).toEqual([{ id: 42, attempt: 1 }]);
+    expect(view(applyGithub(legacy, { repo: HQ, changes: [] }, "l2", T0), T0).github).toEqual([]);
   });
 
   it("returns the same document for a repeated delivery", () => {

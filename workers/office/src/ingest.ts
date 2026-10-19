@@ -120,7 +120,8 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const runId = int(job?.run_id);
       const jobId = int(job?.id);
       if (!job || runId === null || jobId === null) break;
-      changes.push({ type: "job", runId, jobId: String(jobId), name: title(text(job.name), "Job"), status: jobStatus(text(job.status), text(job.conclusion)) });
+      const attempt = int(job.run_attempt);
+      changes.push({ type: "job", runId, attempt: attempt !== null && attempt > 0 ? attempt : 1, jobId: String(jobId), name: title(text(job.name), "Job"), status: jobStatus(text(job.status), text(job.conclusion)) });
       break;
     }
     case "pull_request": {
