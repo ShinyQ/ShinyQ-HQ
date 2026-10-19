@@ -34,6 +34,8 @@ import { markTerminalSeen, orderTerminalMissions } from "./terminal";
 import { createTypeahead } from "./typeahead";
 
 const MIN_TOAST_MS = 2400;
+/** The longest the Rover menu waits for the HUD index before it opens anyway (a stalled request). */
+const TERMINAL_INDEX_WAIT_MS = 2000;
 const STATIC_ACTIONS: readonly PaletteActionId[] = ["view-cv", "copy-email", "toggle-language", "quick-view", "motion-system", "motion-full", "motion-reduced"];
 const MOTION_ACTIONS: Partial<Record<PaletteActionId, MotionPref>> = { "motion-system": "system", "motion-full": "full", "motion-reduced": "reduced" };
 /** Only while the 3D HUD is open (its OnboardingLayer hosts the replay). */
@@ -189,6 +191,15 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
   }, [settled]);
 
   const terminalMissions = useMemo(() => (index ? orderTerminalMissions(index.missions) : []), [index]);
+  // The index loads on open (or at idle): until it settles the palette shows no "No results" and keeps an Enter,
+  // and the Rover menu waits (at most TERMINAL_INDEX_WAIT_MS) instead of opening with no missions.
+  const indexLoading = !index && !settled;
+  const [indexWaitOver, setIndexWaitOver] = useState(false);
+  useEffect(() => {
+    if (!terminalOpen || !indexLoading) return;
+    const timer = window.setTimeout(() => setIndexWaitOver(true), TERMINAL_INDEX_WAIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [terminalOpen, indexLoading]);
 
   // HUD commands and global shortcuts.
   useEffect(() => {
@@ -380,7 +391,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
       {terminalMounted && (
         <Suspense fallback={null}>
           {createElement(lazyTerminal(), {
-            open: terminalOpen,
+            open: terminalOpen && (!indexLoading || indexWaitOver),
             locale,
             missions: terminalMissions,
             onRun: (id: string) => {
@@ -410,6 +421,7 @@ export function MissionHud({ locale, indexVersion, index: preloaded }: MissionHu
             onSelect,
             onClose: closePalette,
             typeahead,
+            loading: indexLoading,
             onFailed: () => {
               closePalette();
               setPaletteMounted(false);

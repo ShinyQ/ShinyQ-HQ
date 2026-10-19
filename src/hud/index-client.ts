@@ -16,12 +16,15 @@ let current: HudIndex | null = null;
 let pending: Promise<HudIndex | null> | null = null;
 let settled = false;
 let scheduled = false;
+/** The deployed index version, remembered from MissionHud's first call, so a launcher preload can fetch the same URL. */
+let knownVersion: string | undefined;
 const listeners = new Set<() => void>();
 
 const notify = () => listeners.forEach((listener) => listener());
 
-/** Fetches the index once per page load (`version` busts the 1 h `/data/*` cache after a deploy). Resolves null on failure. */
-export function loadHudIndex(version?: string): Promise<HudIndex | null> {
+/** Fetches the index once per page load (`version` busts the 1 h `/data/*` cache after a deploy; defaults to the one MissionHud passed). Resolves null on failure. */
+export function loadHudIndex(version: string | undefined = knownVersion): Promise<HudIndex | null> {
+  knownVersion ??= version;
   if (current) return Promise.resolve(current);
   if (!pending) {
     pending = fetch(version ? `${HUD_INDEX_PATH}?v=${version}` : HUD_INDEX_PATH)
@@ -41,6 +44,7 @@ export function loadHudIndex(version?: string): Promise<HudIndex | null> {
 
 /** Loads the index once the page is idle after `load` (at most `HUD_INDEX_IDLE_TIMEOUT_MS` after it). */
 export function scheduleHudIndex(version?: string) {
+  knownVersion ??= version;
   if (scheduled || current || typeof window === "undefined") return;
   scheduled = true;
   const run = () => void loadHudIndex(version);

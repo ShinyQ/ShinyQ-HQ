@@ -21,6 +21,8 @@ export interface CommandPaletteProps {
   /** Runs the entry. The palette calls `onClose` first. */
   onSelect: (entry: PaletteEntry) => void;
   onClose: () => void;
+  /** The HUD index is still on its way: no "No results" yet, and an Enter waits for the results. */
+  loading?: boolean;
   /** Keys typed after the shortcut while the palette chunk was still loading: they seed the query on open, and an Enter runs the top result. */
   typeahead?: PaletteTypeahead;
 }
@@ -45,7 +47,7 @@ export function CommandPalette(props: CommandPaletteProps) {
   return props.open ? <PaletteDialog {...props} /> : null;
 }
 
-function PaletteDialog({ locale, entries, recent, filter = null, ask = false, onFilterChange, onSelect, onClose, typeahead }: CommandPaletteProps) {
+function PaletteDialog({ locale, entries, recent, filter = null, ask = false, onFilterChange, onSelect, onClose, typeahead, loading = false }: CommandPaletteProps) {
   const t = useTranslations("hud.palette");
   const tAsk = useTranslations("ask.palette");
   const tFloors = useTranslations("floors");
@@ -54,7 +56,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
   const [typed] = useState(() => typeahead?.peek() ?? { text: "", submit: false });
   const [query, setQuery] = useState(typed.text);
   const [activeIndex, setActiveIndex] = useState(0);
-  // The query whose top result runs once rendered: an Enter typed while the chunk was loading.
+  // The query whose top result runs once rendered and the index has loaded: an Enter typed while the chunk or the index was loading.
   const submitFor = useRef<string | null>(typed.submit ? typed.text : null);
 
   const groups = useMemo<PaletteGroup[]>(() => searchPalette(entries, query, { filter, recent, ask }), [entries, query, filter, recent, ask]);
@@ -95,14 +97,15 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
     onSelect(entry);
   };
 
-  // An Enter typed before the chunk arrived runs the top result of the typed query, once it has rendered.
+  // A kept Enter runs the top result of its query once that query has rendered with the index loaded (a query
+  // edited after the Enter no longer matches, so it never runs).
   useEffect(() => {
-    if (submitFor.current === null || submitFor.current !== query) return;
+    if (submitFor.current === null || submitFor.current !== query || loading) return;
     submitFor.current = null;
     if (active >= 0) select(rows[active].entry);
-    // Keyed on the query only: the catch-up update above may still change it once.
+    // Keyed on the query and the index: the catch-up update above may still change the query once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, loading]);
 
   const firstOfGroup = (group: number) => rows.findIndex((row) => row.group === group);
 
@@ -122,7 +125,8 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
         break;
       case "Enter":
         event.preventDefault();
-        if (active >= 0) select(rows[active].entry);
+        if (loading) submitFor.current = query;
+        else if (active >= 0) select(rows[active].entry);
         break;
       case "Tab": {
         event.preventDefault();
@@ -293,7 +297,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
           })}
         </div>
 
-        {rows.length === 0 && query.trim() ? (
+        {rows.length === 0 && query.trim() && !loading ? (
           <p role="status" className="px-4 py-6 text-center text-ink-2">
             {t("empty", { query: query.trim() })}
           </p>

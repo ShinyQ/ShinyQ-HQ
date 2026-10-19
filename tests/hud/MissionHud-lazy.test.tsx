@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import { getContent } from "@/content/load";
 import { openPalette, openTerminal } from "@/hud/events";
 import { primeHudIndex } from "@/hud/index-client";
-import { buildHudIndex } from "@/hud/index-data";
+import { buildHudIndex, hudIndexVersion } from "@/hud/index-data";
+import { HudLaunchers } from "@/hud/HudLaunchers";
 import { MissionHud } from "@/hud/MissionHud";
 import { TERMINAL_SEEN_KEY } from "@/hud/terminal";
 
@@ -61,6 +63,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
   primeHudIndex(null);
   localStorage.clear();
 });
@@ -138,3 +142,71 @@ describe("MissionHud lazy chunks", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+describe("MissionHud before the HUD index has loaded", () => {
+  const version = hudIndexVersion(index);
+  /** A fetch for the index that answers only when released (a slow network). */
+  function slowIndex() {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchMock = vi.fn(async () => {
+      await gate;
+      return Response.json(index);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return { fetchMock, release: () => act(async () => release()) };
+  }
+  function renderLoading() {
+    return render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <HudLaunchers />
+        <MissionHud locale="en" indexVersion={version} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("the palette shows no 'No results' and keeps an Enter until the index arrives, then runs the first result", async () => {
+    const { release } = slowIndex();
+    chunks.push.mockReset();
+    renderLoading();
+    act(() => openPalette());
+    const input = await screen.findByRole("combobox");
+    await userEvent.type(input, "voice");
+    expect(input).toHaveValue("voice");
+    expect(screen.queryByText(/No results/)).toBeNull();
+    await userEvent.keyboard("{Enter}");
+    expect(chunks.push).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Command palette" })).toBeInTheDocument();
+    await release();
+    await vi.waitFor(() => expect(chunks.push).toHaveBeenCalledWith("/en/labs/voice-ai-contact-center"));
+    expect(chunks.push).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the Rover menu waits for the index instead of opening without missions", async () => {
+    const { release } = slowIndex();
+    renderLoading();
+    act(() => openTerminal());
+    await act(async () => {});
+    await vi.waitFor(() => expect(chunks.terminal).toBeGreaterThan(0));
+    await act(async () => {});
+    expect(screen.queryByRole("dialog", { name: en.hud.terminal.title })).toBeNull();
+    await release();
+    const menu = await screen.findByRole("dialog", { name: en.hud.terminal.title });
+    // Eight entries: the missions plus "Explore on my own".
+    expect(menu.querySelectorAll("[role='option']")).toHaveLength(8);
+  });
+
+  it("hovering a launcher starts the index download with the chunk", () => {
+    vi.useFakeTimers();
+    const { fetchMock } = slowIndex();
+    renderLoading();
+    // The idle load has not run yet (its timer is held).
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.pointerEnter(screen.getByRole("button", { name: /open search/ }));
+    expect(fetchMock).toHaveBeenCalledWith(`/data/hud/index.json?v=${version}`);
+  });
+});
+
