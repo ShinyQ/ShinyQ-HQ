@@ -69,18 +69,44 @@ export function ensureAskStatus(): Promise<AskStatus | null> {
   return requestAskStatus();
 }
 
+/** Pending idle check (timer, idle callback, load listener), cancelled by `cancelAskStatus`. */
+let pending: { timer?: number; idle?: number; onLoad?: () => void } = {};
+
 /** Checks the status once the page is idle after `load` (see `ensureAskStatus`). */
 export function scheduleAskStatus(delayMs = IDLE_DELAY_MS) {
   if (scheduled || typeof window === "undefined") return;
   scheduled = true;
-  const run = () => void ensureAskStatus();
+  // The window can be gone by the time a callback fires (a torn-down test environment, a closed frame).
+  const run = () => {
+    pending = {};
+    if (typeof window !== "undefined") void ensureAskStatus();
+  };
   const idle = () => {
-    if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: 3000 });
+    pending.timer = undefined;
+    if (typeof window === "undefined") return;
+    if (typeof window.requestIdleCallback === "function") pending.idle = window.requestIdleCallback(run, { timeout: 3000 });
     else run();
   };
-  const later = () => window.setTimeout(idle, delayMs);
+  const later = () => {
+    pending.onLoad = undefined;
+    if (typeof window !== "undefined") pending.timer = window.setTimeout(idle, delayMs);
+  };
   if (document.readyState === "complete") later();
-  else window.addEventListener("load", later, { once: true });
+  else {
+    pending.onLoad = later;
+    window.addEventListener("load", later, { once: true });
+  }
+}
+
+/** Cancels a scheduled idle check that has not run yet (teardown; `resetAskAvailability`). */
+export function cancelAskStatus() {
+  if (typeof window !== "undefined") {
+    if (pending.timer !== undefined) window.clearTimeout(pending.timer);
+    if (pending.idle !== undefined && typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(pending.idle);
+    if (pending.onLoad) window.removeEventListener("load", pending.onLoad);
+  }
+  pending = {};
+  scheduled = false;
 }
 
 function subscribe(listener: () => void) {
@@ -174,7 +200,7 @@ export function useDockLayout(): DrawerLayout {
 
 /** Test hook. */
 export function resetAskAvailability() {
-  scheduled = false;
+  cancelAskStatus();
   current = undefined;
   heroVisible = false;
   panelOpen = false;
