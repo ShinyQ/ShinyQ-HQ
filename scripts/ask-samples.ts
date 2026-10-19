@@ -70,7 +70,7 @@ async function main() {
   let failed = 0;
   for (const [i, sample] of SAMPLES.entries()) {
     const question = scrubPII(cleanText(sample.q));
-    const result = await runPipeline({
+    const ask = () => runPipeline({
       question,
       locale: detectLocale(question, sample.lang),
       pack,
@@ -81,6 +81,16 @@ async function main() {
       deadlineMs: Number.POSITIVE_INFINITY,
       ...(models ? { models } : {}),
     });
+    let result = await ask();
+    // Groq free tier: 8,000 tokens per minute. Wait out a rate limit (retry-after, at most 65 s) up to 3 times.
+    for (let retry = 1; retry <= 3; retry++) {
+      const limited = result.failures.find((f) => f.reason === "rate_limited");
+      if (!limited) break;
+      const wait = Math.min(limited.retryAfterSec ?? 20, 65);
+      console.log(`${i + 1}. rate limited, waiting ${wait} s (retry ${retry} of 3)`);
+      await new Promise((r) => setTimeout(r, wait * 1000));
+      result = await ask();
+    }
     if (result.reason === "model_failed") failed++;
     const answeredBy = result.calledModel ? (result.model ?? result.source) : "no model call (fixed reply)";
     const meta = [`${result.outcome}`, result.reason ? `reason ${result.reason}` : "", result.cite ? `cite ${result.cite}` : ""].filter(Boolean).join(", ");
@@ -88,6 +98,8 @@ async function main() {
     // The failure trail names the model and the reason only (never a key or a response body).
     const trail = result.failures.map((f) => `${f.model}: ${f.reason}`).join(" > ");
     console.log(`${i + 1}. [${sample.lang}] ${sample.kind}: ${result.outcome}${result.reason ? ` (${result.reason})` : ""} by ${answeredBy}${trail ? ` [${trail}]` : ""}`);
+    // When a check replaced the model's text, show what it was (blocklisted terms redacted) for the review.
+    if (result.reason && result.raw) console.log(`   replaced raw: ${redactBlockedText(result.raw, safety.blocklist).replace(/\s+/g, " ").slice(0, 400)}`);
   }
   const report = [
     `# Ask the HQ samples: ${label}`,
