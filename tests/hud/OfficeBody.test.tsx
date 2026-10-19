@@ -143,6 +143,18 @@ describe("Agent Office drawers", () => {
     expect(screen.queryByRole("link")).toBeNull();
   });
 
+  it("says the title was not shared, not a client project, for a public repository without a title", () => {
+    const now = Date.now();
+    const snap = officeSnapshot([officeDesk(0, "codex", "working", "reading", now, { repo: "ShinyQ/ShinyQ-HQ" }), officeDesk(1, "claude", "working", "editing", now)], now);
+    live.feed = { status: "ready", snapshot: snap, fetchedAt: now };
+    body({ panel: "desk", slot: 0 }, "L1:office-desk-1");
+    expect(screen.getByTestId("office-task")).toHaveTextContent(o.drawer.untitled);
+    expect(screen.getByTestId("office-repo")).toBeInTheDocument();
+    cleanup();
+    body({ panel: "desk", slot: 1 }, "L1:office-desk-2");
+    expect(screen.getByTestId("office-task")).toHaveTextContent(o.clientPrivate);
+  });
+
   for (const status of ["idle", "loading"] as const) {
     it(`shows a loading line, not an empty office, before the first snapshot (${status})`, () => {
       live.feed = { status, snapshot: null, fetchedAt: 0 };

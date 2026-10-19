@@ -51,7 +51,8 @@ function Field({ label, children, testId }: { label: string; children: ReactNode
 function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; updatedAt: number | null; locale: Locale; now: number }) {
   const t = useTranslations("office");
   const repo = safeRepoUrl(rover.repo);
-  const task = !rover.agent ? t("3d.drawer.none") : (rover.title ?? (rover.state === "asleep" ? t("3d.drawer.none") : t("3d.clientPrivate")));
+  // A public repository without a title is not a client project: say the title was not shared instead.
+  const task = !rover.agent ? t("3d.drawer.none") : (rover.title ?? (rover.state === "asleep" ? t("3d.drawer.none") : repo ? t("3d.drawer.untitled") : t("3d.clientPrivate")));
   return (
     <>
       <p className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-glass-border px-2.5 text-[13px] text-ink-2" data-testid="office-state">

@@ -506,6 +506,12 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     () => () => {
       officeRuntime.inView = false;
       officeLive.want("view", false);
+      // The chips live in the HUD and outlive a canvas remount: hide them, as a new watcher assumes they start hidden.
+      for (const el of officeRuntime.chips) {
+        if (!el) continue;
+        el.style.visibility = "hidden";
+        el.style.opacity = "0";
+      }
     },
     [],
   );
