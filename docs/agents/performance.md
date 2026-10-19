@@ -46,7 +46,7 @@ JetBrains Mono (`jetbrains` in `src/app/fonts.ts`) stays preloaded with Inter an
 - Classic site: the header (`>_` tool, EN/ID switch; on desktop also the site name, the nav floor labels and `Ctrl K`) and `pv-data` labels such as the floor eyebrow, filter labels and chip counts. Boot cover: its eyebrow, the role line and the boot log.
 - Dropping the preload would swap these from the fallback after first paint. Recheck with a first-viewport scan of computed `font-family` before changing it.
 
-The Cloudflare Web Analytics beacon (production builds only) loads last: after the `load` event, after the app chunks finish (each `/_next/static/chunks/` script has a Resource Timing entry; at most 3 s after `load`) and then on idle, so it never competes with the HTML, CSS, fonts or chunks. See [stats.md](stats.md#cloudflare-web-analytics-beacon).
+The Cloudflare Web Analytics beacon (production builds only) is requested last: after the `load` event, after the deferred app chunk scripts are inserted (requested; at most 1 s after `load`) and then on idle (500 ms deadline), so it is requested after the HTML, CSS, fonts and every app chunk. See [stats.md](stats.md#cloudflare-web-analytics-beacon).
 
 CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27% fewer image bytes than lossless at the same look (SSIM >= 0.997); lossy WebP and AVIF were larger at that quality. Page 1 is eager with `fetchPriority="high"`, later pages `loading="lazy"` (Chrome still fetches page 2 at low priority after page 1: it sits within the lazy-load distance). See [content.md](content.md#cv).
 

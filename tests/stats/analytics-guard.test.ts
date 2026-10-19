@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Analytics, CHUNK_WAIT_MS, cfBeaconScript } from "@/components/Analytics";
+import { Analytics, CHUNK_WAIT_MS, IDLE_TIMEOUT_MS, cfBeaconScript } from "@/components/Analytics";
 import { LOADER_MARKER } from "../../scripts/defer-scripts";
 import { STATS_OPTOUT_KEY } from "@/lib/stats/optout";
 
@@ -49,20 +49,7 @@ describe("Cloudflare Web Analytics beacon guard", () => {
     expect(document.querySelectorAll(BEACON)).toHaveLength(1);
   });
 
-  it("waits for the deferred app chunks before it injects the beacon", () => {
-    const loaded = new Set<string>();
-    vi.spyOn(performance, "getEntriesByName").mockImplementation((name: string) => (loaded.has(name) ? [{} as PerformanceEntry] : []));
-    let notify: () => void = () => {};
-    vi.stubGlobal(
-      "PerformanceObserver",
-      class {
-        constructor(cb: () => void) {
-          notify = cb;
-        }
-        observe() {}
-        disconnect() {}
-      },
-    );
+  it("waits for the deferred app chunk requests, not their downloads", async () => {
     setReadyState("complete");
     new Function(cfBeaconScript(TOKEN))();
     vi.advanceTimersByTime(100);
@@ -71,25 +58,38 @@ describe("Cloudflare Web Analytics beacon guard", () => {
     polyfill.src = "http://localhost/_next/static/chunks/polyfills.js";
     polyfill.setAttribute("nomodule", "");
     document.head.appendChild(polyfill);
+    await Promise.resolve();
+    vi.advanceTimersByTime(100);
+    expect(document.querySelector(BEACON)).toBeNull();
     const chunk = document.createElement("script");
     chunk.src = "http://localhost/_next/static/chunks/app.js";
     document.head.appendChild(chunk);
-    notify();
-    vi.advanceTimersByTime(100);
-    expect(document.querySelector(BEACON)).toBeNull();
-    loaded.add(chunk.src);
-    notify();
+    await Promise.resolve();
+    vi.advanceTimersByTime(1);
+    expect(document.querySelectorAll(BEACON)).toHaveLength(1);
+    vi.runAllTimers();
+    expect(document.querySelectorAll(BEACON)).toHaveLength(1);
+    chunk.remove();
+    polyfill.remove();
+  });
+
+  it("goes straight to idle when the chunk scripts are already in the page", () => {
+    const chunk = document.createElement("script");
+    chunk.src = "http://localhost/_next/static/chunks/app.js";
+    document.head.appendChild(chunk);
+    setReadyState("complete");
+    new Function(cfBeaconScript(TOKEN))();
     vi.advanceTimersByTime(1);
     expect(document.querySelector(BEACON)).not.toBeNull();
     chunk.remove();
-    polyfill.remove();
   });
 
   it("never carries the deferred chunk loader's marker (defer-scripts would skip the page)", () => {
     expect(cfBeaconScript(TOKEN)).not.toContain(LOADER_MARKER);
   });
 
-  it("stops waiting for the app chunks after a cap", () => {
+  it("stops waiting for the app chunks after a cap of about a second", () => {
+    expect(CHUNK_WAIT_MS).toBeLessThanOrEqual(1000);
     setReadyState("complete");
     new Function(cfBeaconScript(TOKEN))();
     vi.advanceTimersByTime(CHUNK_WAIT_MS - 100);
@@ -98,9 +98,10 @@ describe("Cloudflare Web Analytics beacon guard", () => {
     expect(document.querySelector(BEACON)).not.toBeNull();
   });
 
-  it("injects on idle with a deadline when requestIdleCallback exists", () => {
+  it("injects on idle with a short deadline when requestIdleCallback exists", () => {
+    expect(IDLE_TIMEOUT_MS).toBeLessThanOrEqual(1000);
     const idle = vi.fn((cb: () => void, opts?: { timeout?: number }) => {
-      expect(opts).toEqual({ timeout: 2000 });
+      expect(opts).toEqual({ timeout: IDLE_TIMEOUT_MS });
       cb();
       return 1;
     });

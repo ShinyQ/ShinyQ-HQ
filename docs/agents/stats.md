@@ -62,7 +62,7 @@ Security S7.
 ### Cloudflare Web Analytics beacon
 
 - `src/components/Analytics.tsx` renders an inline loader (only when `NEXT_PUBLIC_CF_BEACON_TOKEN` is set at build) that injects `beacon.min.js` with `defer`, `data-cf-beacon` and `spa: true`.
-- It waits for the `load` event, then for the app chunks (the defer-scripts loader inserts them after first paint, often after `load`; at least one `/_next/static/chunks/` script and a Resource Timing entry for each, `nomodule` polyfills excluded, at most `CHUNK_WAIT_MS` = 3 s), then for idle (`requestIdleCallback`, 2 s deadline).
+- It waits for the `load` event, then for the app chunk requests (the defer-scripts loader inserts every chunk script in one loop after first paint, often after `load`; a MutationObserver waits for one `/_next/static/chunks/` script, `nomodule` polyfills excluded, at most `CHUNK_WAIT_MS` = 1 s), then for idle (`requestIdleCallback`, `IDLE_TIMEOUT_MS` = 500 ms deadline).
 - Page views are kept: the beacon sends the page load at once when the document is already complete (from the Navigation Timing entry), and `spa: true` records later History navigations. Only a visit that leaves before the beacon loads is not counted.
 - The loader must never contain the text `data-hq-defer`: `scripts/defer-scripts.ts` skips a page that carries it (`tests/stats/analytics-guard.test.ts`).
 - Its sha256 is added to the page's script policy at build (`scripts/csp-hashes.ts`); the beacon host is in script-src.
