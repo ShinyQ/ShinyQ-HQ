@@ -24,6 +24,9 @@ describe("study guide reader chunk boundaries", () => {
   it("loads the reader and pdf.js only through dynamic imports", () => {
     expect(source("src/components/guides/GuideDialog.tsx")).toContain('import("./GuideReader")');
     expect(source(PDF)).toContain('import("pdfjs-dist")');
+    // Older browsers get the legacy build and worker, also only through a dynamic import and a worker URL.
+    expect(source(PDF)).toContain('import("pdfjs-dist/legacy/build/pdf.mjs")');
+    expect(source(PDF)).toContain('new URL("pdfjs-dist/legacy/build/pdf.worker.min.mjs", import.meta.url)');
     expect(staticClosure(READER).has("src/components/guides/reader-model.ts")).toBe(true);
     expect(pullsPdfjs(staticClosure(READER))).toEqual([]);
   });

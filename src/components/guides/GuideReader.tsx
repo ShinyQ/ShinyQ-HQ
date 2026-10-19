@@ -8,7 +8,7 @@ import styles from "./GuideReader.module.css";
 import { GuidePage } from "./GuidePage";
 import { GuideThumbs } from "./GuideThumbs";
 import { GuideToolbar, type Chapter } from "./GuideToolbar";
-import { destPage, loadPdfjs } from "./pdf";
+import { afterDestroy, destPage, destroyTask, loadPdfjs, raceLoad, workerFailure } from "./pdf";
 import { canvasPixelCap, canvasScale, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage } from "./reader-model";
 import { GuideSkeleton } from "./ui";
 
@@ -85,22 +85,30 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
   useEffect(() => {
     let live = true;
     let task: PDFDocumentLoadingTask | undefined;
-    loadPdfjs()
-      .then(async (lib) => {
-        if (!live) return;
-        // Range requests only: no streaming of the whole file and no background prefetch. No wasm, no XFA.
-        task = lib.getDocument({ url: view.url, rangeChunkSize: 65536, disableAutoFetch: true, disableStream: true, enableXfa: false, useWasm: false, isOffscreenCanvasSupported: false });
-        const doc = await task.promise;
-        const [first, outline] = await Promise.all([doc.getPage(1), doc.getOutline().catch(() => null)]);
-        const { width, height } = first.getViewport({ scale: 1 });
-        if (live) setLoaded({ lib, doc, count: doc.numPages, base: { width, height }, chapters: flatten((outline ?? []) as OutlineItem[]) });
-      })
-      .catch(() => {
-        if (live) fail.current?.();
-      });
+    const open = async () => {
+      const lib = await loadPdfjs();
+      // A document closed a moment ago (fast close and reopen, Retry) finishes its destroy on the worker first.
+      await afterDestroy();
+      if (!live) return;
+      // Range requests only: no streaming of the whole file and no background prefetch. No wasm, no XFA.
+      task = lib.getDocument({ url: view.url, rangeChunkSize: 65536, disableAutoFetch: true, disableStream: true, enableXfa: false, useWasm: false, isOffscreenCanvasSupported: false });
+      // pdf.js waits forever on a worker that never loads: race the open against its failure and a timeout.
+      const { doc, first, outline } = await raceLoad(
+        task.promise.then(async (doc) => {
+          const [first, outline] = await Promise.all([doc.getPage(1), doc.getOutline().catch(() => null)]);
+          return { doc, first, outline };
+        }),
+        workerFailure(),
+      );
+      const { width, height } = first.getViewport({ scale: 1 });
+      if (live) setLoaded({ lib, doc, count: doc.numPages, base: { width, height }, chapters: flatten((outline ?? []) as OutlineItem[]) });
+    };
+    open().catch(() => {
+      if (live) fail.current?.();
+    });
     return () => {
       live = false;
-      void task?.destroy();
+      if (task) destroyTask(task);
     };
   }, [view.url]);
 
