@@ -24,6 +24,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `?view=architecture` opens the hologram.
 - Tier: decided once per page load (`src/lib/gpu-tier.ts`, `?tier=full|lite|static` override), after commit and never during render.
   - Reason: the WebGL probe takes seconds on software renderers and would block client navigation into gated routes.
+  - `decideTier` order: a valid `?tier=` wins; no WebGL2, Save-Data or a software renderer (`SOFTWARE_RENDERER`) is static; a known-weak integrated GPU (`WEAK_GPU`) is lite; a coarse pointer, under 4 GB device memory or at most 2 cores is lite; anything else is full.
+  - `WEAK_GPU` reads the unmasked renderer: Intel HD and UHD Graphics (Iris, Iris Xe, Iris Plus and Arc stay full), Mali-4xx, Mali-T and Mali-G31 to G52, Adreno 5xx and below. A Firefox bucket (ends in ", or similar"; every Intel iGPU reads "Intel(R) HD Graphics") is not a known GPU and skips this check.
+  - The boot-first head script decides only static; the weak-GPU check runs in the gate.
 - It then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page.
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.

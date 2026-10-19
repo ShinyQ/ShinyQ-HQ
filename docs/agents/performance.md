@@ -299,6 +299,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Name UI by its message key (`en.hud.launcher.askRover`), not literal text, so a rename breaks the typecheck instead of a test run.
 - `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas).
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
+  - Without `?tier=`, auto-detection reads the renderer: SwiftShader is static, and on a real GPU a known-weak integrated GPU (Intel HD or UHD Graphics, low-end Mali, Adreno 5xx and below; `WEAK_GPU` in `src/lib/gpu-tier.ts`) is lite, so a full-tier test or capture on such a machine passes `?tier=full`.
 - Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
 
 ### Animation speed
