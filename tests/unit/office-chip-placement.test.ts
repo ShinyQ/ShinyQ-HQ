@@ -38,8 +38,8 @@ const slots = officeSlots(W);
 const CHIP = { far: { w: 200, h: 32 }, near: { w: 220, h: 68 }, compact: { w: 32, h: 32 } } as const;
 
 /**
- * The HUD chips must stay out of (px, measured in the browser at these sizes): the top bar (62 px desktop, 60 px
- * tablets, 58 px phones; `OfficeWatch` clamps under `OFFICE_CHIP_TOP`), the bottom band (the hint's top is 62 px
+ * The HUD chips must stay out of (px, measured in the browser at these sizes): the top row (`hudBar`; `OfficeWatch`
+ * clamps under `OFFICE_CHIP_TOP`), the bottom band (the hint's top is 62 px
  * over the bottom edge, 82 px on a portrait tablet), the desktop profile card and elevator panel, and the Corners
  * minimap (tablets 112 px at top 76, phones 72 px at top 64) and joystick.
  */
@@ -149,6 +149,13 @@ function deskScreenBoxes(camera: PerspectiveCamera, size: { width: number; heigh
     return boxOf(camera, size, [0, 1, 2, 3].map((k) => [positions[k * 3], positions[k * 3 + 1], positions[k * 3 + 2]] as const));
   });
 }
+
+/**
+ * The HUD's top row bottom edge (px, measured in the browser at the six sizes): 62 from 768 px wide (`md:top-4`: the
+ * desktop top bar; on the Corners HUD the 60 px top bar beside the 62 px floor chip, a landscape phone included), 58 on a
+ * narrower screen (`top-3`: a portrait phone's floor chip).
+ */
+const hudBar = ({ width }: { width: number }) => (width >= 768 ? 62 : 58);
 
 /** The top bar clamp `OfficeWatch` uses (phones by the HUD's viewport class). */
 const hudTop = (size: { width: number; height: number }) => OFFICE_CHIP_TOP[viewportClass(size.width, size.height) === "mobile" ? "mobile" : "desktop"];
@@ -283,10 +290,11 @@ describe("Agent Office chips at the office stop", () => {
     for (const { width, height } of SIZES) {
       const size = { width, height };
       const camera = stopCamera(width, height, 4);
+      expect(hudTop(size), `the clamp at ${width} x ${height} sits under the real top row`).toBeGreaterThanOrEqual(hudBar(size));
       let clamped = 0;
       for (const { slot, box } of chipBoxes(camera, size)) {
         if (!box) continue;
-        expect(box.y0, `slot ${slot} at ${width} x ${height}`).toBeGreaterThanOrEqual(hudTop(size) - 1e-9);
+        expect(box.y0, `slot ${slot} at ${width} x ${height} under the top row`).toBeGreaterThanOrEqual(hudBar(size));
         const a = officeRuntime.anchors[slot];
         const raw = ((1 - new Vector3(a.x, a.y, a.z).project(camera).y) / 2) * height;
         if (raw - (box.y1 - box.y0) < hudTop(size)) {

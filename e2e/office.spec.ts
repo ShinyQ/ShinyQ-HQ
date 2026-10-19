@@ -379,3 +379,33 @@ test.describe("Agent Office (L1)", () => {
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 });
+
+test.describe("Agent Office (L1) on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+
+  const zoom = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { rover: { cameraZoom: number } } }).__hq.rover.cameraZoom);
+
+  test("keeps every chip a compact dot with no task line at the stop and zoomed in two steps", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop shows the middle three's task lines.
+    const start = await zoom(page);
+    for (let i = 0; i < 2; i++) await page.keyboard.press("=");
+    await expect.poll(() => zoom(page)).toBeLessThan(start * 0.7);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
+    for (const slot of [0, 1, 2, 3, 4]) {
+      await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+      await expect(chip(page, slot)).not.toHaveAttribute("aria-describedby");
+    }
+    // Desk 1 has a public task: the compact dot hides it (the desk's drawer shows it).
+    await expect(chip(page, 0)).not.toContainText("Agent office scene");
+    expect(errors).toEqual([]);
+  });
+});
