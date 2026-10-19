@@ -1,5 +1,5 @@
 import type { AskLocale, AskOutcome, AskSource, AskTag } from "../../src/ask/protocol";
-import { checkAnswer, closestSource, type CheckFailure } from "./checks";
+import { checkAnswer, firstPersonVoice, relevantClosest, type CheckFailure } from "./checks";
 import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, type CannedKind } from "./messages";
@@ -8,7 +8,7 @@ import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
-import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, privateTopic, nicknameForModel, resolveNickname, routedTopic } from "./scope";
+import { isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, opinionAboutOthers, privateTopic, nicknameForModel, resolveNickname, routedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack, SafetyData } from "./types";
 
@@ -36,7 +36,7 @@ export interface PipelineInput {
   deadlineMs?: number;
 }
 
-export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "model_failed" | "model_decline";
+export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "persona" | "injection" | "model_failed" | "model_decline";
 
 export interface PipelineResult {
   text: string;
@@ -70,6 +70,7 @@ const OUTCOME_OF: Record<CannedKind, AskOutcome> = {
   private: "decline",
   others: "decline",
   noView: "unknown",
+  persona: "decline",
   capabilities: "answer",
   lead: "answer",
   leadRates: "answer",
@@ -90,7 +91,8 @@ export function packVocabulary(pack: KnowledgePack): ReadonlySet<string> {
 export function usableHistory(history: readonly HistoryTurn[], pack: KnowledgePack): HistoryTurn[] {
   return history.filter((t) => {
     const q = resolveNickname(t.q);
-    return !isHarmful(q) && !privateTopic(q) && !opinionAboutOthers(q, pack.orgs) && !isGeneralAssistantRequest(q);
+    // A signed answer that would now fail the voice check (an older or weaker check signed it) never becomes context.
+    return !isHarmful(q) && !privateTopic(q) && !opinionAboutOthers(q, pack.orgs) && !isGeneralAssistantRequest(q) && !isPersonaRequest(q) && !isRuleOverride(q) && !firstPersonVoice(t.a);
   });
 }
 
@@ -122,6 +124,9 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   });
   if (either(isHarmful)) return early("decline", "harmful");
   if (isCapabilityQuestion(question)) return early("capabilities", undefined, { tags: CAPABILITY_TAGS });
+  // Rover answers as itself (owner decision 2026-10-19): persona switches and rule overrides never reach the model.
+  if (either(isPersonaRequest)) return early("persona", "persona");
+  if (either(isRuleOverride)) return early("decline", "injection");
   // An earlier project inquiry never turns a request for general-assistant work into a lead.
   if (!isLeadQuestion(question) && isGeneralAssistantRequest(question)) return early("decline", "general");
   const lead = either(isLeadQuestion);
@@ -133,11 +138,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   if (!lead && either(isGeneralAssistantRequest)) return early("decline", "general");
 
   const topic = lead ? undefined : routedTopic(routed);
-  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, ...(anchor ? { anchor: resolveNickname(anchor) } : {}) });
+  // A related professional question (owner decision 2026-10-19): answered only from his work, with a cited source.
+  const adjacent = !lead && !topic && isAdjacentQuestion(routed);
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, ...(anchor ? { anchor: resolveNickname(anchor) } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
   const matches = lead ? leadMatches(pack, routed) : [];
-  const routing = { ...(topic ? { topic } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
+  const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
   const messages = buildMessages(pack.packDate, context, modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
@@ -162,12 +169,13 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     site: !lead && isSiteQuestion(routed),
     ...(topic ? { topic } : {}),
     ...(lead ? { lead: { fit: matches.length > 0 } } : {}),
+    adjacent,
     locale,
   });
   if (!check.ok) {
     // A project inquiry whose answer cannot be shown still gets the invitation and the card; safety replacements stay.
     const replacement: CannedKind = lead && check.replacement !== "restricted" ? "lead" : check.replacement;
-    const closest = replacement === "noView" ? closestSource(chunks, locale) : undefined;
+    const closest = replacement === "noView" ? relevantClosest(pack, routed, chunks, locale, { adjacent }) : undefined;
     return {
       text: replacement === "noView" ? noViewMessage(locale, closest) : canned(replacement, locale),
       outcome: OUTCOME_OF[replacement],
@@ -184,6 +192,11 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       ...leadFlag,
       historyUsed,
     };
+  }
+  // An adjacent question the model declines or cannot answer from CONTEXT gets the no-view reply naming his closest work.
+  if (adjacent && (check.outcome === "decline" || check.outcome === "unknown")) {
+    const closest = relevantClosest(pack, routed, chunks, locale, { adjacent: true });
+    return { text: noViewMessage(locale, closest), outcome: "unknown", source: "none", reason: "unsourced", raw: generation.text, failures: generation.failures, ...modelOf, calledModel: true, chunkIds, tags, ...(closest ? { cite: closest.url } : {}), historyUsed };
   }
   // The model's own refusal is replaced by the fixed one, which points back to what this assistant covers.
   // A project inquiry the model refuses or cannot place (no matching work) still gets the invitation and the card.

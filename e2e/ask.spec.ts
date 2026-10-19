@@ -12,7 +12,7 @@ import { ASK_SEED_KEY, starterQuestions } from "../src/ask/suggestions";
  */
 
 const AS_OF = "2026-10-01";
-const AS_OF_LINE = "Answered by AI from this site, as of Oct 1, 2026";
+const AS_OF_LINE = "Rover's AI answer from this site, as of Oct 1, 2026";
 const HOSTILE = "<img src=x onerror=alert(1)>";
 const TEASER_SEEN = "hq:ask-teaser";
 /** Stored seed value that keeps the pills in bank order. */

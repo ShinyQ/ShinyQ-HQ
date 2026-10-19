@@ -1,7 +1,8 @@
 import { askLinkTarget } from "../../src/ask/links";
 import { ASK_REPO_CITE } from "../../src/ask/protocol";
+import { ADJACENT_SOURCE_TYPES } from "./checks";
 import { indexPack } from "./pack-index";
-import { isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
+import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
 
@@ -20,6 +21,11 @@ export const PERSPECTIVE_CAP = 3;
 export const LEAD_INCLUDE = "contact";
 /** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
 export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+/** Chunks every adjacent answer gets (owner decision 2026-10-19): who he is and his rules of work, the most general lessons he wrote. */
+export const ADJACENT_INCLUDE = ["profile", "principles"] as const;
+/** Added to case studies, posts and talks for an adjacent question, so his written views do not crowd them out. */
+export const ADJACENT_BOOST = 2;
+const ADJACENT_BOOSTED: ReadonlySet<string> = new Set(["project", "post", "talk"]);
 /** Most matching past projects or jobs a lead answer is grounded in (owner request: 1 to 3). */
 export const LEAD_MATCH_CAP = 3;
 /** A lead match needs two specific terms in common, or one specific term with at least this BM25 score. */
@@ -145,14 +151,16 @@ export interface RetrieveOptions {
   lead?: boolean;
   /** Earlier questions a follow-up refers to (`followUpAnchor`): their best chunks come first, so "What stack did it use?" finds the project, not every skill. */
   anchor?: string;
+  /** A related professional question (`isAdjacentQuestion`): his principles, then only his case studies, posts, talks, papers and written views. */
+  adjacent?: boolean;
 }
 
 /** Chunks the anchor itself retrieves first (multi-turn memory). */
 export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
-export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question) }): Retrieved {
-  const { topic, lead, anchor } = options;
+export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
+  const { topic, lead, anchor, adjacent } = options;
   const scored = scoreChunks(pack, question);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -180,6 +188,19 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
       if (chunk.type === "perspective" || chunk.type === "principle") continue;
       add(chunk);
     }
+  } else if (adjacent) {
+    // Related professional questions: his principles, then his case studies, posts, talks, papers and written views only.
+    ADJACENT_INCLUDE.forEach((id) => add(byId(id)));
+    let perspectives = 0;
+    scored
+      .filter((r) => r.score > 0 && ADJACENT_SOURCE_TYPES.has(r.chunk.type))
+      .map((r) => ({ chunk: r.chunk, score: r.score + (ADJACENT_BOOSTED.has(r.chunk.type) ? ADJACENT_BOOST : 0) }))
+      .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+      .forEach(({ chunk }) => {
+        if (picked.length >= TOP_K + ADJACENT_INCLUDE.length || picked.includes(chunk)) return;
+        if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) return;
+        picked.push(chunk);
+      });
   } else {
     const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
     always.forEach((id) => add(byId(id)));

@@ -19,7 +19,7 @@ import type { AskEnv, KnowledgePack, PagesContext, SafetyData } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
-const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "unsourced", "model_decline", "fit", "consulting"]);
+const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "persona", "injection", "unsourced", "model_decline", "fit", "consulting"]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
