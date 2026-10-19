@@ -426,12 +426,13 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 
 - The Worker `hq-office` (`workers/office/`) holds the office state in a SQLite-backed Durable Object; the Pages
   Functions `/api/office`, `/api/office/beat` and `/api/office/github` reach it through the service binding `OFFICE`.
-- `deploy.yml` deploys it after a successful Pages upload (job "hq-office Worker", the same gates as the upload) and
-  sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET` (GitHub rejects secret names starting with `GITHUB_`); a missing secret
-  leaves its route at 503. A Pages deploy fails when a service binding names a missing
-  Worker, so the binding `OFFICE` stays commented out in the root `wrangler.toml` until hq-office exists; until then
-  `/api/office` answers mode "off". A commit without `workers/office/`
-  (a manual redeploy of an older one) skips the job with a notice.
+- `deploy.yml` deploys it inside the Pages job ("Cloudflare Pages production"), after the gates (fast path still
+  open, complete green main CI) and before the upload, because Pages rejects a deploy whose service binding names a
+  missing Worker. It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET` (GitHub rejects secret names starting with `GITHUB_`); a missing secret
+  leaves its route at 503. The Worker step has `continue-on-error`: a failure does not stop the upload while the
+  Worker exists, and the step "hq-office Worker deploy failed" after the smoke check turns the job red (and opens the
+  `deploy-failed` issue). A commit without `workers/office/` (a manual redeploy of an older one) or
+  `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps with a notice.
 - `rollback.yml` rolls it back with Pages: when the Worker's sources (`workers/office`, `src/lib/office`,
   `src/content/safety-match.ts`, `functions/_lib/security.ts`) differ between the rollback target and the live
   commit, it rebuilds the safety list and redeploys the Worker from the target (its secrets persist). A target

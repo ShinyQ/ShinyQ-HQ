@@ -57,9 +57,11 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Deploy and CI
 
-- `deploy.yml` job `office-worker` deploys the Worker after a successful Pages upload (the same gates as the upload)
-  and sets its secrets from the `production` environment; a commit without `workers/office/` skips it. `office-worker.yml` bundles it on pull requests (no secrets).
-- The Pages service binding `OFFICE` is off (commented out in the root `wrangler.toml`) until the Worker exists: a Pages deploy fails when a binding names a missing Worker; without it `/api/office` answers mode "off".
+- `deploy.yml` deploys the Worker inside the Pages job (Cloudflare Pages production), after the gates and before the
+  upload, because Pages rejects a deploy whose service binding `OFFICE` (root `wrangler.toml`) names a missing Worker.
+  It sets its secrets from the `production` environment; a commit without `workers/office/` or
+  `OFFICE_WORKER_DEPLOY = "false"` skips it. A failed Worker step does not stop the upload; a later step fails the job.
+  `office-worker.yml` bundles it on pull requests (no secrets).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
   `workers/office` leaves it at the live version).
