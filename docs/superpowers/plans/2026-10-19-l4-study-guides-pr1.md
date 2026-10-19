@@ -35,7 +35,7 @@ PR2 (the 3D Study Vault) gets its own plan after this PR is in review.
 - Classic CSS budget 20,480 B (gzip transfer of the global stylesheet): prefer existing classes (`pv-btn`,
   `pv-btn-primary`, `chip`, `label`, `glass`, tokens); reader-only styles go in a CSS module imported by the reader
   chunk.
-- Reader chunk (dynamic import of `GuideReader` plus pdf.js, gzip) under 160 KB; worker (gzip) under 360 KB.
+- Reader chunk (dynamic import of `GuideReader` plus pdf.js, gzip) under 160 KB; worker (gzip) under 400 KB.
   Neither may be reachable from `src/experience/Experience.tsx`.
 - PDFs are never committed. R2 bucket `hq-study-guides` (private), keys `<slug>/<version>.pdf` (already uploaded).
 - Before pushing: `bun run verify:quick`, then `bun run e2e:changed`. At most 2 CI runs in flight.
@@ -458,7 +458,7 @@ a Helvetica Type1 font, an outline with one entry per page titled "Chapter n", c
 6. axe on the open reader (`@axe-core/playwright`, same tags as other axe specs): no violations.
 7. Phone: the dialog fills the viewport (bounding box equals the viewport), thumbnails rail hidden.
 
-`e2e/budgets.ts`: `export const GUIDE_READER_BUDGET = { chunk: 160 * 1024, worker: 360 * 1024 } as const;` (gzip
+`e2e/budgets.ts`: `export const GUIDE_READER_BUDGET = { chunk: 160 * 1024, worker: 400 * 1024 } as const;` (gzip
 bytes). `e2e/perf/guide-reader.spec.ts`: on `/en/library`, record JS responses (`page.on("response")`) after the
 Read click until the first page renders; gzip-size each body (`zlib.gzipSync`), the worker is the response whose
 URL contains `pdf.worker`; assert both caps, and that no response before the click contains `pdfjs` (the reader is

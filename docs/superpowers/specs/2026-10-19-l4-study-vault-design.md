@@ -172,7 +172,7 @@ flowchart LR
 ### Size caps
 
 - Reader chunk (the dynamic import of `GuideReader` with pdf.js, gzip): under 160 KB.
-- pdf.js worker (gzip): under 360 KB.
+- pdf.js worker (gzip): under 400 KB (the pdf.js 6.4 worker alone is about 354 KB).
 - Neither is on any Classic page's initial load or the 3D session; `e2e/budgets.ts` gets `GUIDE_READER` caps and
   a perf test asserts both, plus that the 3D session totals stay unchanged.
 
