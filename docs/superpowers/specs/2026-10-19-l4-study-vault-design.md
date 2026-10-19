@@ -138,8 +138,9 @@ flowchart LR
   (`attachment` with `?download=1`), `X-Content-Type-Options: nosniff`, `Cache-Control: no-transform` plus
   `public, max-age=31536000, immutable` when `?v=` equals the current version, else `public, max-age=300`.
   `no-transform` keeps Cloudflare from compressing the body, which would break byte ranges.
-- `_headers` gets a `/api/guides/*` block that detaches the page CSP and sets `frame-ancestors 'none'`, like
-  `/papers/*`; the site CSP is unchanged.
+- The Function sets `Content-Security-Policy: frame-ancestors 'none'` and `X-Content-Type-Options: nosniff` itself:
+  Cloudflare Pages never applies `_headers` to Function responses, so `_headers` gets no `/api/guides/*` block (an
+  earlier draft had one; it was inert and was removed). The site CSP is unchanged.
 
 ## Reader
 
@@ -215,7 +216,7 @@ flowchart LR
 
 | Layer | What |
 |---|---|
-| Unit | dataset schema and cross checks (cert ids, covers, versions), view helpers, weight labels, `CertView.guide`, Function handler (200, HEAD, 206 forms, 416, 304, 404 unknown and missing, 405, download disposition, cache by version), `_headers` CSP block, client namespaces |
+| Unit | dataset schema and cross checks (cert ids, covers, versions), view helpers, weight labels, `CertView.guide`, Function handler (200, HEAD, 206 forms, 416, 304, 404 unknown and missing, 405, download disposition, cache by version), Function headers (`frame-ancestors 'none'`), no `/api/*` rule in `_headers`, client namespaces |
 | Unit (PR2) | vault layout, space and pad rules, clearance, stops and view zones, the L4 label sweep with the spine signs |
 | e2e | Classic shelf opens the reader and renders page 1 text; page navigation and keyboard; download link is same-origin with `download` and no `target`; `CertDialog` "Read study guide"; no new page (`context.on("page")`); desktop and phone; axe on the open reader |
 | e2e (PR2) | reader opens from the 3D vault on desktop and phone; label overlap specs stay clean |

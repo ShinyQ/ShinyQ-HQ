@@ -2,7 +2,7 @@
 
 Where things live in the repository: one entry per path with a short description. Index: [AGENTS.md](../../AGENTS.md).
 
-Paths are relative to the repository root. Two paths are not in a fresh checkout on purpose (both gitignored): `content/.safety-blocklist.local.txt` (private, kept by the owner) and `functions/_generated/` (written by the build).
+Paths are relative to the repository root. Three paths are not in a fresh checkout on purpose (all gitignored): `content/.safety-blocklist.local.txt` (private, kept by the owner), `functions/_generated/` (written by the build) and `.study-guides/` (prepared study guide PDFs, written by `scripts/study-guides.ts`; never committed).
 
 ## content/
 
@@ -11,6 +11,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `content/build-story.json`: the build story (EN/ID) behind the `/build` page; read by `src/content/build-story.ts`. See "Build story" in [content.md](content.md).
 - `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only; it points to the `/build` page. See "Ask the HQ" in [ask.md](ask.md).
 - `content/perspectives.json`: Kurniadi's professional Q&A (EN/ID), Ask knowledge only once approved (no page). See "Content access" in [content.md](content.md).
+- `content/study-guides.json`: the certification study guides (EN/ID; human fields by hand, `pages`, `bytes`, `version` and `cover` by `scripts/study-guides.ts`); the PDFs live in the private R2 bucket `hq-study-guides`. See "Study guides" in [content.md](content.md#study-guides).
 - `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
 - `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
 - `content/safety-blocklist.default.txt`: committed blocklist: client company names (C3), personal data, Azure resource names.
@@ -30,9 +31,10 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - Snapshot: GET /api/stats from KV STATS_KV (`functions/_lib/stats.ts`).
 - `functions/api/office/` (`index.ts`, `beat.ts`, `github.ts`): Agent Office routes (GET /api/office, POST beats and
   webhooks) forwarding to the hq-office Worker through the service binding OFFICE (`functions/_lib/office.ts`).
+- `functions/api/guides/[slug].ts`: GET and HEAD /api/guides/<slug>, a study guide PDF from R2 `GUIDES` with byte ranges, ETag and versioned caching (`functions/_lib/guides.ts`).
 - `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval.
 - `functions/_generated/`: gitignored: knowledge pack + safety lists from `scripts/build-knowledge.ts`.
-- `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit and /api/stats (source of truth once deployed; no secrets).
+- `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit, /api/stats and /api/guides (source of truth once deployed; no secrets).
 - `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
 - `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
   state. See [office.md](office.md).
@@ -59,6 +61,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `public/papers/`: self-hosted paper PDFs and their page images, output of `bun run paper:pages`, committed.
   - `{file}.pdf`: redacted or authors' manuscript (see "Content access" in [content.md](content.md)).
   - `{file}/{file}-N.webp`: page images, 1400 px.
+- `public/study-guides/`: page 1 covers of the study guides (`<slug>.webp`, 480 px wide), output of `bun scripts/study-guides.ts prepare`, committed (the PDFs never are).
 - `public/floors/`: elevator picker thumbnails (320 x 180 webp, one per floor), output of `bun run floor:thumbs`, committed.
 - `public/og-assets/`: share card inputs, output of `bun run og:stills`, committed (the build never needs WebGL).
   - One 1200x630 still per floor (floor-{L1,L2,L3,L4,RF}.jpg).
@@ -94,6 +97,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `scripts/pdf-pages.ts`: shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts.
 - `scripts/cv-pages.ts`: `cv:pages`: renders the CV PDF to page webps + content/generated/cv-pages.json (needs poppler and webp locally).
 - `scripts/paper-pages.ts`: `paper:pages`: checks each paper PDF's text for personal data (PERSONAL_DATA_PATTERNS) and blocklisted names, then renders page webps + content/generated/paper-pages.json.
+- `scripts/study-guides.ts`: `prepare` (safety scan, PDF metadata, linearize, version, cover), `upload` (wrangler R2 put into `hq-study-guides`) and `check` for the study guide PDFs; runbook [../study-guides-runbook.md](../study-guides-runbook.md).
 - `scripts/floor-thumbs.ts`: `floor:thumbs` step 2: converts the "floor thumbnail" captures (e2e/screenshots.spec.ts) into public/floors/*.webp (needs webp).
 
 ### E2E planning and perf reports
@@ -136,7 +140,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/app/global-not-found.tsx`: 404.html.
 - `src/app/sitemap.ts`, `src/app/robots.ts`: static metadata routes (all locales, hreflang alternates).
 - `src/app/og/[...path]/route.tsx`: build-time OG JPEGs: /og/{locale}.jpg, /og/{locale}/page/{quick,journey,labs,library,contact,cv}.jpg, /og/{locale}/{labs,blog}/{slug}.jpg.
-- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json.
+- `src/app/data/[...path]/route.ts`: build-time Glass Drawer content: /data/rooms/{locale}.json, /data/rooms/b1-{locale}.json (B1 Engine Room, fetched only when unlocked), /data/hud/index.json, and the study guide dialog's data /data/guides/{locale}.json (guide views plus the `guides` strings).
 
 ### src/assets/
 
@@ -158,6 +162,10 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/components/paper/`: paper preview.
   - PaperDialog (lazy modal: abstract, APA/IEEE/BibTeX, DOI and Scholar links, "Read the paper").
   - PaperReader (PageViewer with a paper PDF, PaperNotice), PaperTrigger, PaperReadLink.
+- `src/components/guides/`: study guides.
+  - GuideShelf (server: the `/library#guides` cards) with the GuideActions island (Read, Download PDF).
+  - GuideDialog (lazy modal in DialogHost: fetches /data/guides/{locale}.json, loading and error states, then imports the reader).
+  - GuideReader (lazy chunk, `GuideReader.module.css`), GuidePage, GuideThumbs, GuideToolbar, ui; `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules), `data-path.ts`.
 - `src/components/page/`: Page View building blocks.
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
@@ -182,6 +190,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/content/topic-map.ts`, `src/content/topic-index.ts`: L4 Topic Constellation: the topic list, tag folds, item-to-topic map and allowlists; pure `buildTopicIndex` (read it through `getTopicIndex()` from `@/content/load`).
 - `src/content/certs.ts`: pure certification helpers and the CertView type (sort, featured, issuer counts and wall tabs, filter, issuer logos), client-safe.
 - `src/content/cert-views.ts`: certViews(locale) / toCertViews: serializable CertView[] for the island, the preview card and the 3D wall.
+- `src/content/guides.ts`: GuideView type and pure study guide helpers (URLs, weight and size labels, page key), client-safe.
+- `src/content/guide-views.ts`: guideViews(locale) and guideForCert(certId), server only (reads `getStudyGuides()`).
 - `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
 - `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.
 - `src/content/safety.ts`: blocklist loading and forbidden patterns.
@@ -370,6 +380,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | Floor pads and pickers | `pads.spec.ts` |
 | Point-and-go | `interact.spec.ts`: hover, click, empty floor, touch, reduced motion |
 | How I run AI in production | `production.spec.ts`: the About section and axe, Cmd-K, the L3 Ops Control Room, its drawer, live panel, deep link and reduced motion |
+| Study guides | `guides.spec.ts`: the `/library#guides` shelf and the certification card open the reader (page 1 with its text layer, Next, page input, Home and End, Esc and focus return), chapters, a same-origin download with no new tab, the resumed page, axe, the phone layout; `/api/guides/*` comes from `e2e/fixtures/guide-pdf.ts` |
 | Zero CSP violations | `csp.spec.ts`: Classic routes, 404, the `/` redirect, the CV viewer, 3D boot, intro, a ride and a deep link |
 | Opt-in screenshots | `screenshots.spec.ts`, `pageview-visual.spec.ts` |
 
@@ -380,12 +391,15 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `e2e/perf/`: perf lane (PERF=1, `bun run e2e:perf`, CI job `3D perf gates`).
   - bytes-3d, floors (+ baseline.json), peaks, memory-full (the memory gate on the full tier with Motion Full), nightly timeline, local look check.
   - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the default suite.
+  - `guide-reader.spec.ts` (perf key `guides`): the study guide reader's chunk and worker caps.
+- `e2e/fixtures/guide-pdf.ts`: a generated fixture PDF (no owner content, no committed binary) and `routeGuides` / `serveGuides`, which answer `/api/guides/*` with byte ranges in e2e.
 - `e2e/perf-probes.spec.ts`: default suite: ?perf=1 overlay on and off, timeline marks, RUM beacon.
 
 ## docs/
 
 - `docs/features.md`: feature reference by floor (controls, floors, Ask, CI, performance, status log); the README links here.
-- `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, safety lint).
+- `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, study guides, safety lint).
+- `docs/deploy.md`, `docs/ask-runbook.md`, `docs/study-guides-runbook.md`: deploy, Ask the HQ and study guide (R2 upload) runbooks.
 - `docs/decisions.md`: how to add and read owner decisions (static, no table); `docs/decisions/`: one file per decision, `YYYY-MM-DD-slug.md`.
 - `docs/superpowers/`: specs (with a status table) and plans (status only in each plan's `Status:` line).
 - `docs/readme/`: README media: hero.gif, hero.jpg, floor-{L1,L2,L3,L4,RF}.jpg (output of `scripts/readme-hero.ts`, committed).

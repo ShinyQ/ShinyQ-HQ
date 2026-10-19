@@ -1,6 +1,6 @@
 # Content
 
-How code reads the dataset and its side files (CV, paper PDFs, logos, diagrams, galleries, certifications, perspectives, indexes) and the schema fields added beyond appendix 06.
+How code reads the dataset and its side files (CV, paper PDFs, logos, diagrams, galleries, certifications, study guides, perspectives, indexes) and the schema fields added beyond appendix 06.
 
 Index: [AGENTS.md](../../AGENTS.md).
 
@@ -62,6 +62,22 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - the paper modal shows it as a button and swaps its body for `PaperReader` (alt text "<title>, page N of M", the IEEE notice in English plus the DOI of the published version).
 - `/papers/*` detaches the site CSP (`frame-ancestors 'none'`) so the browser PDF viewer opens the file in a new tab; nothing is framed.
 - The Ask pack says the full text can be read on the site.
+
+## Study guides
+
+Workflow: [../content.md](../content.md#study-guides) and [../study-guides-runbook.md](../study-guides-runbook.md).
+
+- Data: `content/study-guides.json`, its own file, parsed by `StudyGuidesFileSchema` (`@/content/schema`; unique `slug` and `certId`, at most 8 domains, `version` 12 hex, `cover` `/study-guides/<slug>.webp`). Read it on the server through `getStudyGuides()` (`@/content/load`); invalid data fails `next build`.
+- Views: `guideViews(locale)` and `guideForCert(certId)` in `@/content/guide-views` (server only) build `GuideView` (locale-resolved title, summary and domain labels, `editionLabel`, `sizeLabel`, `url` and `downloadUrl`).
+- Client-safe helpers in `@/content/guides` (no zod, React or three): the `GuideView` type, `GUIDE_SLUG`, `guideUrl(slug, version)` (`/api/guides/<slug>?v=<version>`), `guideDownloadUrl` (adds `&download=1`), `GUIDE_PAGE_KEY`, `weightLabel`, `sizeLabel`. Never build a guide URL by hand: the `?v=` version is what makes the immutable cache safe.
+- Consumers:
+  - the Classic shelf `GuideShelf` on `/library` (server, labels resolved) with the `GuideActions` island;
+  - `CertView.guide` (see [Certifications](#certifications));
+  - the guide dialog fetches `/data/guides/{locale}.json` (`src/app/data/[...path]/route.ts`: the views plus the `guides` strings; [styling-and-i18n.md](styling-and-i18n.md#client-messages)).
+- Open the reader only with `openGuide(slug)` (`hq:hud` "guide", handled by `DialogHost`); `preloadGuideDialog` warms the chunk on hover or focus.
+- The reader chunk (`GuideReader.tsx`, `pdf.ts`) is reachable only through dynamic imports: `GuideDialog` imports `./GuideReader`, and `pdf.ts` imports `pdfjs-dist` on first use. `tests/unit/guide-chunks-graph.test.ts` fails when `Experience.tsx` or the locale layout reach either statically ([performance.md](performance.md#study-guide-reader)). Pure reader rules (zoom steps, render window, canvas sizing, keys, saved page) live in `reader-model.ts`.
+- Pages Function: `functions/api/guides/[slug].ts` with `createGuidesHandler` in `functions/_lib/guides.ts`. It imports `content/study-guides.json` itself, so a slug or version not in the deployed file answers 404. It sets its own headers (Cloudflare Pages does not apply `public/_headers` to Function responses), including `Content-Security-Policy: frame-ancestors 'none'` and `X-Content-Type-Options: nosniff`. Binding `GUIDES` (R2 `hq-study-guides`, [ask.md](ask.md#bindings-vars-and-secrets)).
+- Never commit a PDF; covers in `public/study-guides/` are the only committed output of `scripts/study-guides.ts`.
 
 ## Tech logos
 
@@ -142,7 +158,9 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - `limit` (home) caps the rows and links to `/contact#certifications`;
   - from `CERT_FILTER_MIN` (10) the full list gets issuer chips, a status select (`?issuer=`, `?status=` in the query string) and a local search box.
 - Every card, row and 3D badge calls `openCert(view)` (`hq:hud` command), which `DialogHost` shows as `CertDialog` (shared `Modal`, width `sm`):
-  - issuer, code, full name, status, dates, credential ID and "Open credential" (new tab, `rel="noopener noreferrer"`).
+  - issuer, code, full name, status, dates, credential ID and "Open credential" (new tab, `rel="noopener noreferrer"`);
+  - "Read study guide" (primary; "Open credential" turns ghost) when `CertView.guide` is set: it sends `openGuide(slug)` and `DialogHost` swaps the card for the guide dialog, keeping the card's opener for focus return.
+- `CertView.guide` is the study guide slug for the certification (`guideForCert(certId)` in `@/content/guide-views`) or `null`, so the 3D wall and the Classic cards get the action from the same views.
 - Never frame a credential site and never render "Verified" style labels.
 - Strings live in `messages/*.json` `certs`.
 

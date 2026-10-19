@@ -111,6 +111,11 @@ No label may cover another (owner decision).
 - Deep link `#library-topic=<slug>`: `topicHash.ts`, `createTopicHashSync` in `topicUrl.ts` on the shared `floors/filterUrl.ts`; `gateStartRoom` starts on `L4:topics`.
 - Probe: `__hq.probes.topics` (`topic`, `lit`, `roads`, `orbit`, `orbs`, `monument`, `labels`: the shown signs' screen boxes and projected quads).
 
+## Study guides
+
+- Not on the floor yet. The certification study guides ship first in the Classic site (the `/library#guides` shelf) and in the certification card, both opening the shared pdf.js reader ([content.md](content.md#study-guides)).
+- A 3D Study Vault (an alcove off the end plaza with the guides as books, opening the same reader) is planned for PR 2: design in [`2026-10-19-l4-study-vault-design.md`](../superpowers/specs/2026-10-19-l4-study-vault-design.md#3d-study-vault-pr2). Nothing of it is in the L4 chunk today.
+
 ## Tests
 
 - `e2e/topics.spec.ts`: includes no label overlap from the approach, the camera zones and while orbiting, desktop and phone, by `polygonOverlap` of the quads.

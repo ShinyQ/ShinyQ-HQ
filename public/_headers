@@ -58,11 +58,8 @@
   Content-Security-Policy: frame-ancestors 'none'
   Cache-Control: public, max-age=86400, must-revalidate
 
-# Study guide PDFs (Pages Function, R2): read in the in-app pdf.js reader, never framed. The site CSP is
-# detached like /papers/* so a direct visit opens in the browser PDF viewer.
-/api/guides/*
-  ! Content-Security-Policy
-  Content-Security-Policy: frame-ancestors 'none'
+# No rules for /api/* (Pages Functions): Cloudflare Pages never applies _headers to a Function's response, so
+# each Function sets its own headers (the study guide PDFs: functions/_lib/guides.ts, frame-ancestors 'none').
 
 # Build-time Open Graph images (src/app/og). Not hashed, so cache for a day.
 /og/*

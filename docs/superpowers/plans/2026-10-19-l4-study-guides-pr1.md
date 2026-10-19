@@ -53,7 +53,7 @@ PR2 (the 3D Study Vault) gets its own plan after this PR is in review.
 | `functions/_lib/types.ts` | `GuidesEnv`, minimal `R2Bucket` types |
 | `functions/api/guides/[slug].ts` | Pages Function entry |
 | `wrangler.toml` | `[[r2_buckets]] binding = "GUIDES"`, `bucket_name = "hq-study-guides"` |
-| `public/_headers` | `/api/guides/*` block (detach page CSP, `frame-ancestors 'none'`) |
+| `public/_headers` | `/api/guides/*` block (detach page CSP, `frame-ancestors 'none'`); removed in Task 7: `_headers` never reaches Function responses, so the Function sets the header itself |
 | `src/app/data/[...path]/route.ts`, `src/components/guides/data-path.ts` | `/data/guides/{locale}.json` |
 | `messages/en.json`, `messages/id.json` | `guides` namespace; `certs.preview.readGuide`; `library.guides*` |
 | `src/i18n/client-messages.ts` | `guides` in `CLIENT_NAMESPACES` (not `LAYOUT_NAMESPACES`) |

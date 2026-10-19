@@ -40,6 +40,7 @@ All bindings and vars live in `wrangler.toml`.
 | `ASK_KV` | binding | KV `shinyq-hq-ask` |
 | `ASK_EVENTS` | binding | Analytics Engine `ask_events` |
 | `PERF_EVENTS` | binding | Analytics Engine `perf_events`, the RUM beacon, kill switch `RUM_ENABLED` |
+| `GUIDES` | binding | R2 `hq-study-guides` (private), the study guide PDFs behind `/api/guides/<slug>` ([content.md](content.md#study-guides), [runbook](../study-guides-runbook.md)); the bucket must exist before a deploy that carries the binding |
 | `ASK_RL` | binding | optional |
 | `ASK_ENABLED` | var | kill switch, anything but `"true"` is off |
 | `ASK_PRIMARY`, `ASK_FALLBACK` | var | Workers AI models |
