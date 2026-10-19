@@ -87,6 +87,13 @@ Index: [AGENTS.md](../../AGENTS.md).
   `env`, `time`, `sudo` and `nohup`); spec section 5. An answered ask tool maps to thinking; Needs Kurniadi comes only
   from a permission request or a needs-input notification. Tests: `tests/relay/map.test.ts` over
   `tests/relay/fixtures.ts` (payloads of all three agents with planted secrets).
+- Copilot permission checks (`hook.ts`, `isPermissionCheck` in `map.ts`): Copilot fires `permissionRequest` before its
+  permission service decides (also under autopilot and allow-all, with no auto-approval field in the payload), so a
+  Copilot `permissionRequest` within `PERMISSION_CHECK_MS` (1.5 s) of a `preToolUse` for the same tool in the same
+  session changes nothing; the relay keeps that session's last `preToolUse` (tool, time) in
+  `~/.office-relay/sessions/<hash>.tool.json`. A real Copilot prompt is the `permission_prompt` notification. Claude
+  Code and Codex keep `PermissionRequest` as Needs Kurniadi (they fire it only when about to ask). Tests:
+  `tests/relay/hook.test.ts`.
 - Git data from `.git` files only (`git.ts`, worktrees included); titles from branch names (`title.ts`); a branch
   outside `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title (`beat.ts`); the session id is an HMAC with a
   local salt (`session.ts`). Relay files live in `~/.office-relay/` (the OS home when `HOME` is empty).
