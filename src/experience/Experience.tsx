@@ -560,6 +560,7 @@ function ExperienceView({
               }
             : null,
           archive: t("interact.archive"),
+          vault: t("interact.studyVault"),
         },
       },
       roof: {

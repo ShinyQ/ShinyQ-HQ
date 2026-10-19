@@ -8,6 +8,7 @@ import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
 import { EndPlaza, type EndPlazaLabels } from "./library/decor/EndPlaza";
 import { NewsroomDecor as PickedDecor } from "./library/decor/NewsroomDecor";
+import { StudyVault } from "./library/decor/StudyVault";
 import { TopicHighlights } from "./library/decor/TopicHighlights";
 import { buildLibraryLayout } from "./library/layout";
 import { libraryLayoutInput, type LibraryZone } from "./library/model";
@@ -15,7 +16,7 @@ import { libraryLayoutInput, type LibraryZone } from "./library/model";
 export interface LibraryLabels {
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
   zones: Record<LibraryZone, string>;
-  /** End plaza signs: the topic count, the research monument and the archive board (`library.topics`). */
+  /** End plaza signs: the topic count, the research monument, the archive board (`library.topics`) and the Study Vault. */
   end: EndPlazaLabels;
 }
 
@@ -23,7 +24,8 @@ export interface LibraryLabels {
  * L4 Writing (walkable floors plan, part 3), generated from content: the owner's pick of the three
  * concepts. Stations are point-and-go targets (interact/registry.ts: drive to the door, then open); paper
  * holograms open the paper preview modal. The end plaza holds the Topic Constellation, the research
- * monument and the archive board (`EndPlaza`), and a picked topic lights its stations (`TopicHighlights`).
+ * monument and the archive board (`EndPlaza`), and a picked topic lights its stations (`TopicHighlights`). With study
+ * guides, the Study Vault's books stand off the end plaza (`StudyVault`; their spines are end plaza signs).
  */
 export function Library({ data, labels, tier }: { data: ExperienceData; labels: LibraryLabels; tier: GpuTier }) {
   const layout = useMemo(() => buildLibraryLayout(libraryLayoutInput(data.library)), [data.library]);
@@ -39,6 +41,7 @@ export function Library({ data, labels, tier }: { data: ExperienceData; labels: 
       {layout.end && (
         <>
           <TopicHighlights layout={layout} tier={tier} />
+          {layout.end.vault && <StudyVault vault={layout.end.vault} tier={tier} reducedMotion={reducedMotion} />}
           <Suspense fallback={null}>
             <EndPlaza layout={layout} library={data.library} tier={tier} reducedMotion={reducedMotion} labels={labels.end} />
           </Suspense>

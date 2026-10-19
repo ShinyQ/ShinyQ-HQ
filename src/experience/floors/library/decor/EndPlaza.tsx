@@ -18,6 +18,7 @@ import { LineBatch } from "../../labs/lines";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryLayout } from "../model";
 import { useEndSignPlacement } from "./useEndSignPlacement";
+import { issuerTone, VAULT_SCENE } from "./vault";
 import { CONSTELLATION, constellationSpin, orbitAt, orbSlots, topicLinks, topicPickOf, type OrbSlot } from "../topics";
 
 const NO_RAYCAST = () => null;
@@ -29,6 +30,7 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
+const VAULT_TITLE_COLOR = "#e0f2fe";
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
 export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
@@ -45,6 +47,8 @@ export interface EndPlazaLabels {
   monument: { citations: string; citationsLabel: string; hIndex: string; hIndexLabel: string; source: string } | null;
   /** "Post archive". */
   archive: string;
+  /** "Study Vault" (`hud.interact.studyVault`): the sign over the vault's books. */
+  vault: string;
 }
 
 function setCursor(value: string) {
@@ -53,8 +57,9 @@ function setCursor(value: string) {
 
 /** What each end-plaza sign is, for the screen-space placement (`placeLabels`). */
 export interface EndSignMeta {
-  kind: "topic" | "count" | "monument" | "archive";
-  /** Topic slug (topic labels). */
+  /** `guide`: a Study Vault book's spine; `vault`: the "Study Vault" sign over the books. */
+  kind: "topic" | "count" | "monument" | "archive" | "guide" | "vault";
+  /** Topic slug (topic labels), study guide slug (spines). */
   slug?: string;
   /** Piece count (topic labels): bigger topics win a contested spot. */
   count?: number;
@@ -82,8 +87,9 @@ function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignS
  * Every sign of the end plaza in one `FloatingSigns` group (two draw calls), with what each one is: the
  * topic labels riding the orbit above their orbs (the picked one larger, the others dimmed), "N pieces
  * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
- * they never cross from any camera yaw) and the archive board's name. Positions are relative to the
- * plaza center. Which of them show each frame is decided on screen (`placeLabels`).
+ * they never cross from any camera yaw), the archive board's name and, with the Study Vault, each book's
+ * spine (in its issuer's tone, just in front of the spine face) and the "Study Vault" sign over the arc.
+ * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`).
  */
 export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTopic[], slots: readonly OrbSlot[], labels: EndPlazaLabels, pick: TopicPick | null): { signs: SignSpec[]; meta: EndSignMeta[] } {
   const end = layout.end!;
@@ -134,6 +140,30 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
   if (layout.board) {
     signs.push({ text: labels.archive, x: layout.board.center.x - end.center.x - 0.6, y: NEWSROOM.board.h - 0.6, z: layout.board.center.z - end.center.z, color: "#22d3ee", fontSize: 0.4, font: FONTS.monoBold });
     meta.push({ kind: "archive" });
+  }
+  const vault = end.vault;
+  if (vault) {
+    const { d } = NEWSROOM.end.vault.book;
+    const S = VAULT_SCENE.spine;
+    for (const book of vault.books) {
+      const ahead = d / 2 + VAULT_SCENE.spine.ahead;
+      signs.push({
+        text: wrapSign(book.spine, S.wrap),
+        x: book.at.x + book.facing.x * ahead - end.center.x,
+        y: S.y,
+        z: book.at.z + book.facing.z * ahead - end.center.z,
+        color: issuerTone(book.issuer),
+        fontSize: S.font,
+        font: FONTS.monoBold,
+      });
+      meta.push({ kind: "guide", slug: book.slug });
+    }
+    // Over the middle of the arc, a little behind the books.
+    const n = vault.books.length;
+    const mid = vault.books.reduce((m, b) => ({ x: m.x + b.at.x / n, z: m.z + b.at.z / n, fx: m.fx + b.facing.x / n, fz: m.fz + b.facing.z / n }), { x: 0, z: 0, fx: 0, fz: 0 });
+    const T = VAULT_SCENE.title;
+    signs.push({ text: labels.vault.toUpperCase(), x: mid.x - mid.fx * T.behind - end.center.x, y: T.y, z: mid.z - mid.fz * T.behind - end.center.z, color: VAULT_TITLE_COLOR, fontSize: T.font, font: FONTS.monoBold });
+    meta.push({ kind: "vault" });
   }
   return { signs, meta };
 }
@@ -263,7 +293,7 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
   const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick), [layout, topics, slots, labels, pick]);
   const hovered = useRef<string | null>(null);
   const root = useRef<Group>(null);
-  const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion, obstacles: PEDESTAL_OBSTACLE });
+  const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion, obstacles: PEDESTAL_OBSTACLE, vault: end.vault });
   useEffect(() => {
     sceneProbes.topics.monument = end.monument && labels.monument ? [labels.monument.citations, labels.monument.hIndex, labels.monument.source] : null;
   }, [end.monument, labels.monument]);

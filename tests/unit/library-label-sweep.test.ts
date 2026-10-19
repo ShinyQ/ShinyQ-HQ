@@ -10,7 +10,7 @@ import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/expe
 import { buildFloorLayouts, floorY, ROVER } from "@/experience/config";
 import { stationTitles } from "@/experience/floors/library/decor/common";
 import { endPlazaSigns, PEDESTAL_OBSTACLE, type EndPlazaLabels } from "@/experience/floors/library/decor/EndPlaza";
-import { createLibraryFrame, endPlazaFrame, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
+import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, type LibraryZone } from "@/experience/floors/library/model";
@@ -68,6 +68,7 @@ const endLabels: EndPlazaLabels = {
       }
     : null,
   archive: en.hud.interact.archive,
+  vault: en.hud.interact.studyVault,
 };
 const plaza = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), endLabels, null);
 const plazaSizes = plaza.signs.map(signPlate);
@@ -162,7 +163,7 @@ class Drive {
 /** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`. */
 function frame(drive: Drive, camera: PerspectiveCamera, angle: number) {
   const v = new Vector3();
-  const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v });
+  const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v, vault: vaultZone(drive.pos, layout.end!.vault) });
   const work = createLibraryFrame();
   const lib = libraryLabelFrame(work, { camera, signs: timeline.signs, meta: timeline.meta, half, origin: { x: 0, y: FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, size: drive.size, endBoxes: end.boxes, v });
   const plates: Plate[] = [];
@@ -226,6 +227,13 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
       }
       expect(seen, `${id}: ${ZONE_SIGN[zone]} sign on the approach, road or door pose of the ${zone} zone (${visited.join(", ")})`).toBe(true);
     }
+
+    // The Study Vault: from its stop every book's spine and the "Study Vault" sign show (they outrank the topics there).
+    const vault = layout.end!.vault!;
+    drive.to(floor.stops!["L4:vault"]!);
+    const atVault = check("vault");
+    for (const book of vault.books) expect(atVault.some((p) => p.kind === "guide" && p.text === book.spine), `${id}: ${book.spine} spine at the vault`).toBe(true);
+    expect(atVault.some((p) => p.kind === "vault" && p.text === en.hud.interact.studyVault.toUpperCase()), `${id}: the Study Vault sign`).toBe(true);
   });
 });
 
