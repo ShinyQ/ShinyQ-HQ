@@ -139,7 +139,6 @@ describe("DrawerHost room data per floor", () => {
   });
 
   it("prefetches only the rover's floor on idle, then a ride target when the rover heads there", async () => {
-    getHQStore().setState({ b1Unlocked: true });
     renderHost();
     expect(rooms()).toEqual([]);
     act(() => markFirstFrame());
@@ -151,5 +150,12 @@ describe("DrawerHost room data per floor", () => {
     act(() => getHQStore().getState().openRoom("L4:research"));
     await screen.findByTestId("room-drawer");
     expect(rooms()).toHaveLength(2);
+  });
+
+  it("adds the B1 file on idle once B1 is unlocked, after the rover's floor", async () => {
+    getHQStore().setState({ b1Unlocked: true });
+    renderHost();
+    act(() => markFirstFrame());
+    await vi.waitFor(() => expect(rooms()).toEqual(["/data/rooms/en-L1.json?v=v1", "/data/rooms/b1-en.json?v=vb"]));
   });
 });

@@ -383,8 +383,8 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 - Client loader (`hud/drawer/data.ts`): `loadFloorViews(locale, floor)` (one fetch per locale and floor, a failed load is forgotten so the next call refetches), `loadRoomView(locale, room)` (its floor's file only), `peekFloorViews` (synchronous, once loaded). There is no all-floors loader: nothing needs every floor.
 - What loads when (pages never grow):
   - an open room loads its floor's file at once (deep links before the first frame), through `useFloorViews` in `DrawerHost`;
-  - after the first 3D frame on idle: the rover's floor, then a ride's target floor as the rover heads there. Other floors load only on demand. A Lobby session fetches only the L1 file;
-  - B1 is reached only through its floor, a ride to it or a `B1:` room, so a locked session never fetches it;
+  - after the first 3D frame on idle: the rover's floor, then a ride's target floor as the rover heads there, and the B1 file once B1 is unlocked (like its floor chunk). Other floors load only on demand. A locked Lobby session fetches only the L1 file;
+  - a locked session never fetches the B1 file (no B1 floor, ride or room);
   - the hologram (`HologramOverlay`, `HologramStage`) reads the L3 file, the paper preview (`openPaperFor`) and `#library-topic=` the L4 file, `#labs-tech=` the L3 file.
 - A floor phase owns its builder file; a test checks that every catalog room has a view.
 

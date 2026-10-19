@@ -103,13 +103,15 @@ export function DrawerHost({ locale }: { locale: Locale }) {
   // An open room reads its floor's file only (deep links load it at once, before idle).
   const views = useFloorViews(locale, open && activeRoom ? roomFloor(activeRoom) : null);
   // After the first frame and an idle moment: the rover's floor, then a ride's target floor as the rover heads
-  // there. Other floors load on demand. The secret B1 file is reached only once unlocked (its floor, ride or room).
+  // there, and the secret B1 file once unlocked (like its floor chunk). Other floors load on demand.
   const floor = useHQStore((s) => s.floor);
   const rideTo = useHQStore((s) => s.ride?.to);
+  const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   useEffect(() => {
     if (!idle) return;
-    for (const f of [floor, rideTo]) if (f) loadFloorViews(locale, f).catch(() => undefined);
-  }, [idle, locale, floor, rideTo]);
+    const wanted: (FloorId | false | undefined)[] = [floor, rideTo, b1Unlocked && "B1"];
+    for (const f of wanted) if (f) loadFloorViews(locale, f).catch(() => undefined);
+  }, [idle, locale, floor, rideTo, b1Unlocked]);
   const returnFocus = useRef<HTMLElement | null>(null);
 
   // Esc closes the open room from the moment the store opens it: while its data loads (the loading card)
