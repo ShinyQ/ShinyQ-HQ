@@ -1,6 +1,7 @@
 import { ENGINE_BAYS, engineRoom, isEngineStation } from "@/experience/floors/engine/layout";
 import type { EngineData, LibraryData, RoofData } from "@/experience/types";
 import { getBuildStory } from "./build-story";
+import { guideViews } from "./guide-views";
 import { getLibrary, getPosts, getProfile, getRoof, getTopicIndex } from "./load";
 import { messages } from "./room-views/shared";
 import { topicRooms } from "./topic-index";
@@ -32,6 +33,7 @@ export function buildLibraryData(locale: Locale): LibraryData {
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((t) => ({ id: t.id, title: t.title[locale], event: t.event, date: t.date, role: t.role })),
     topics: getTopicIndex().topics.map((t) => ({ slug: t.slug, label: messages(locale).library.topics.names[t.slug], count: t.items.length, rooms: topicRooms(t) })),
+    guides: guideViews(locale).map(({ slug, spine, issuer, code, title }) => ({ slug, spine, issuer, code, title })),
   };
 }
 

@@ -44,6 +44,16 @@ describe("L4 Writing floor (the picked concept)", () => {
     expect(layout.floor.stops?.["L4:topics"]).toEqual(layout.end?.ringStop);
   });
 
+  it("adds the Study Vault stop (a stop and a camera zone, no catalog room or drawer)", () => {
+    const vault = layout.end?.vault;
+    expect(vault?.books).toHaveLength(data.library.guides.length);
+    expect(layout.floor.stops?.["L4:vault"]).toEqual(vault?.stop);
+    expect(layout.floor.viewZones?.some((z) => z.id === "L4:vault")).toBe(true);
+    const catalog = buildRoomCatalog(getContent(), structuralLabels());
+    expect(catalog.some((r) => r.id === "L4:vault")).toBe(false);
+    expect(buildLibraryLayout({ ...input, guides: [] }).floor.stops?.["L4:vault"]).toBeUndefined();
+  });
+
   it("parks rooms without a door at the archive board, or at the overview spot when every post is docked", () => {
     expect(layout.floor.listStop).toEqual(layout.board?.stop ?? layout.floor.spawn);
     const many: LibraryLayoutInput = { ...input, posts: Array.from({ length: LIBRARY_FLOOR.maxPosts + 3 }, (_, i) => ({ slug: `p${i}`, date: "2026-01-01", tags: [], external: false })) };
