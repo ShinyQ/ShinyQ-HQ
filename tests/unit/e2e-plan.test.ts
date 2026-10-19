@@ -171,7 +171,7 @@ describe("specsForChanges", () => {
       expect(specsForChanges([file]).specs, file).toContain("engine-room");
     }
     // Glass Drawer data per floor: the per-floor fetches and every floor's deep links.
-    for (const file of ["src/hud/drawer/data.ts", "src/hud/drawer/data-path.ts", "src/content/room-views/index.ts", "src/app/data/[...path]/route.ts"]) {
+    for (const file of ["src/hud/drawer/data.ts", "src/hud/drawer/data-path.ts", "src/hud/drawer/DrawerHost.tsx", "src/content/room-views/index.ts", "src/app/data/[...path]/route.ts"]) {
       expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["floor-chunks", "labs", "highlights", "visits", "production", "reactor", "topics"]));
     }
     // On top of their first matching rule, never instead of it.

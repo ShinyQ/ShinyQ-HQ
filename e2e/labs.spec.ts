@@ -21,6 +21,7 @@ import {
   waitForPhase,
   waitForSceneLive,
   fastAnimations,
+  trackRoomFiles,
 } from "./hq";
 import { content, heroPod, livePods } from "./routes";
 import en from "../messages/en.json";
@@ -117,6 +118,7 @@ test.describe("L3 Labs in 3D", () => {
 
   test("a deep link in a session that saw the intro opens L3 at the pod with the drawer", async ({ page }) => {
     await asReturningVisitor(page);
+    const roomFiles = trackRoomFiles(page);
     await page.goto(`/en/labs/${heroPod.slug}?tier=lite`);
     await waitForHQ(page);
     await waitForRoom(page, `L3:${heroPod.slug}`, 30_000);
@@ -126,14 +128,7 @@ test.describe("L3 Labs in 3D", () => {
     await expect(drawer).toBeVisible();
     await expect(drawer.getByRole("tab")).toHaveText(Object.values(en.drawer.tabs));
     // The pod's drawer comes from the L3 file alone, versioned by its content hash.
-    const roomFiles = await page.evaluate(() =>
-      performance
-        .getEntriesByType("resource")
-        .map((e) => new URL(e.name))
-        .filter((u) => u.pathname.startsWith("/data/rooms/"))
-        .map((u) => `${u.pathname}${u.search}`),
-    );
-    expect(roomFiles).toEqual([expect.stringMatching(/^\/data\/rooms\/en-L3\.json\?v=[0-9a-f]{12}$/)]);
+    expect(roomFiles()).toEqual([expect.stringMatching(/^\/data\/rooms\/en-L3\.json\?v=[0-9a-f]{12}$/)]);
     await drawer.getByRole("tab", { name: "Results" }).click();
     await expect(drawer.getByTestId("metric").first()).toBeVisible();
     // Next pod in the wing replaces the URL.
