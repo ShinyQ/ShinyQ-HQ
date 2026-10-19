@@ -65,12 +65,15 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>
+      {/* One text block for Largest Contentful Paint (styles in globals.css): the cover's first paint stays the LCP
+          once the HUD hint mounts under it. Same pixels as four stacked paragraphs. The paragraphs are display:
+          contents there, which drops their implicit role in Chrome, so it is explicit. */}
       {p.who && (
         <div className="hq-boot-who" data-testid="boot-who">
-          <p className="text-lg leading-6 font-bold text-ink">{p.who.name}</p>
-          <p className="text-sm font-semibold text-cyan">{p.who.headline}</p>
-          {p.who.motto && <p className="mt-1 text-sm leading-5 text-ink-2">{p.who.motto}</p>}
-          <p className="mt-1 font-mono text-xs leading-5 text-ink-3">{p.who.role}</p>
+          <p role="paragraph" className="text-lg leading-6 font-bold text-ink">{p.who.name}</p>
+          <p role="paragraph" className="text-sm font-semibold text-cyan">{p.who.headline}</p>
+          {p.who.motto && <p role="paragraph" className="hq-boot-gap text-sm leading-5 text-ink-2">{p.who.motto}</p>}
+          <p role="paragraph" className="hq-boot-gap font-mono text-xs leading-5 text-ink-3">{p.who.role}</p>
         </div>
       )}
       <ol className="hq-boot-log mt-5" aria-hidden={deco}>

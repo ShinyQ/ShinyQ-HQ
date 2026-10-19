@@ -133,6 +133,15 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   - `perfOverlayOn` in `experience/perf/lines.ts` is the one parser of the flag.
 - The nightly `perf-nightly.yml` (`bun run e2e:timeline`, `e2e/perf/timeline.spec.ts`, tagged `@nightly`) records the game-first timeline (marks in `src/lib/perf-marks.ts`) as a trend artifact.
 
+### Game-first LCP
+
+- On a game-first visit the LCP is the boot card's owner block (`boot-who`), painted with the SSR boot cover; nothing that mounts later under the cover may become a larger candidate.
+  - Chrome records a text block once, at its first paint, grouped by the nearest non-anonymous block; a later, larger block replaces the candidate until the first input. Content painted under the opaque cover counts (no occlusion), and an opacity or visibility reveal counts at the reveal.
+  - The HUD (with the controls hint, about 17,400 px2 on a phone) mounts under the cover with the 3D chunk, about 5 s in on a returning slow-4G phone; it used to become the LCP there.
+  - The owner block's paragraphs are `display: contents` inside a zero-font flex column (`.hq-boot-who` in `globals.css`), so their text forms one candidate (about 39,000 px2 at 390 x 844, 50,000 px2 at 1440 x 900) with the same pixels as four stacked paragraphs; `role="paragraph"` keeps their semantics in Chrome's accessibility tree.
+- `e2e/boot-first.spec.ts` ("game-first LCP", Pixel 7, lite, returning visitor) asserts the last LCP entry is the owner block and lands within 1 s of the cover title's paint (`elementtiming` `hq-headline`).
+- Measure a change near the cover or the HUD with a throttled returning visit (slow 4G, 4x CPU) and read every `largest-contentful-paint` entry, not just the last.
+
 ### RUM beacon
 
 - Contract: appendix 06 section 4 ([06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contracts.md)). Related: [stats.md](stats.md).

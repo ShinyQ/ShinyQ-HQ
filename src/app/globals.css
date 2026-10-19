@@ -426,10 +426,29 @@
     background: rgb(5 5 12 / 0.6);
     box-shadow: 0 0 60px -20px rgb(99 102 241 / 0.6);
   }
+  /* The owner block paints as one LCP text block, larger than the HUD hint that later mounts under the cover:
+     its paragraphs are display: contents, so their text lands in anonymous flex items of this element (Chrome
+     groups LCP text by the nearest non-anonymous block). Each paragraph keeps its own font and line height
+     (the zero font size and line height here leave no strut), and an empty ::before block breaks the lines and
+     stands in for the 4 px top margin (.hq-boot-gap), so the pixels match four stacked paragraphs. */
   .hq-boot-who {
+    display: flex;
+    flex-direction: column;
     margin-top: 14px;
     padding-top: 12px;
     border-top: 1px solid var(--color-line);
+    font-size: 0;
+    line-height: 0;
+  }
+  .hq-boot-who > p {
+    display: contents;
+  }
+  .hq-boot-who > p + p::before {
+    content: "";
+    display: block;
+  }
+  .hq-boot-who > .hq-boot-gap::before {
+    height: 4px;
   }
   .hq-boot-page {
     display: inline-flex;

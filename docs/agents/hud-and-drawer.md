@@ -76,6 +76,11 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
 - The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
 
+### Controls hint
+
+- `HintBar` (`src/hud/Hud.tsx`, `data-testid="hint"`) is a plain text panel in the bottom band's center column under point-and-go's status, shown outside the intro and an open room while no Rover line is open: `hud.hintFine` with a fine pointer, `hud.hintCoarse` on touch, `hud.career.scrubHint` on L2 with touch. On phones it leaves after 6 s.
+- It mounts with the HUD, under the SSR boot cover on a returning visit, so its first paint is an LCP candidate. Keep it smaller than the boot card's owner block (the game-first LCP, see [performance.md](performance.md#game-first-lcp)); do not merge it into a larger text block.
+
 ### Settings registry
 
 - One panel (`SettingsPanel`, shown in the Corners menu sheet and the desktop `settings-sheet`) renders `SETTINGS` from `src/hud/settings/defs/index.ts`.
