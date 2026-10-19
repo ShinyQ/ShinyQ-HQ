@@ -28,7 +28,7 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * floors counts toward the first one loaded, L3). Idle prefetch loads every floor in a normal session, so the
  * session total (main + the public floor chunks) has its own cap per tier (owner decision 2026-10-16: full 470 KB, lite
  * 446.4 KB), raised by 3 KB for the L1 Agent Office's main-path mount and loader (owner decision 2026-10-19
- * (docs/decisions/2026-10-19-agent-office-3d-budgets.md)): full 473 KB (measured 470.6 KB), lite 449.4 KB (measured 447.0 KB).
+ * (docs/decisions/2026-10-19-agent-office-3d-budgets.md)): full 473 KB (measured 471.0 KB), lite 449.4 KB (measured 447.4 KB).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
