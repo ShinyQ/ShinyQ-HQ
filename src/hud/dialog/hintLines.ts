@@ -14,6 +14,8 @@ export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "L2:station:workshop": "workshop",
   "L2:station:time-console": "timeConsole",
   "L3:door:ops": "ops",
+  // The Study Vault's books share one bubble (`hintTargets`), under the vault's id.
+  "L4:vault": "vault",
 };
 
 export function hintObjectKey(item: Pick<Interactable, "id">): string | null {

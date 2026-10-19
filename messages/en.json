@@ -1015,7 +1015,8 @@
         "research": "The Research desk: papers with abstracts and citations.",
         "workshop": "The Workshop: side projects and public repositories.",
         "timeConsole": "The time console: beam to any year, or back to the elevator.",
-        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry."
+        "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry.",
+        "vault": "The Study Vault: {name}'s certification study guides as books. Pick one to read it."
       },
       "go": {
         "open": "Open",
