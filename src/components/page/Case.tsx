@@ -31,7 +31,7 @@ export function MetricLedger({ results, locale }: { results: readonly LedgerResu
           <p className="pv-num text-[30px] leading-none sm:text-[34px]">{r.value}</p>
           <div className="min-w-0">
             <p className="text-[15px] leading-[22px] text-ink">{r.label[locale]}</p>
-            {r.context && <p className="mt-1.5 max-w-[60ch] text-[13px] leading-[20px] text-ink-3">{r.context[locale]}</p>}
+            {r.context && <p className="mt-1.5 text-[13px] leading-[20px] text-ink-3">{r.context[locale]}</p>}
           </div>
         </li>
       ))}

@@ -70,7 +70,7 @@ export default async function JourneyEntryPage({ params }: PageProps<"/[locale]/
           ]}
         />
         <div className="grid gap-6 lg:grid-cols-12">
-          <div className="min-w-0 lg:col-span-8">
+          <div className="pv-col min-w-0 lg:col-span-8">
             <p className="pv-lead mt-10">{entry.summary[locale]}</p>
 
             {entry.highlights.length > 0 && (

@@ -78,7 +78,8 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
     headline result is a `pv-result` block (value over label on a neutral hairline), pinned to the bottom.
   - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
-  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`); the hero's headline and motto opt out.
+  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's headline and motto opt out.
+  - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped either.
 - Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
 
 ### Case study (`/labs/<slug>`)

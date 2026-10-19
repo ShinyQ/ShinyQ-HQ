@@ -99,6 +99,12 @@
     text-wrap: pretty;
   }
 
+  /* A reading column (the 8 of 12 columns of a case study or a Journey entry) is already the measure, so its lead
+     runs the column's full width and lines up with the ruled lists below it. */
+  .pv-col .pv-lead {
+    max-width: none;
+  }
+
   .pv-body {
     color: var(--color-ink-2);
     max-width: 68ch;

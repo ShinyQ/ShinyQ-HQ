@@ -110,7 +110,10 @@ Change: the section title scale with a comfortable measure, so the email address
 
 Before: `pv-lead` at 21 px runs about 85 to 90 characters per line (home "In short", About, case study Problem).
 
-Change: the measure is capped at about 66 characters, with `text-wrap: pretty` to avoid orphans.
+Change: the measure is capped at about 66 characters in wide places (page intros), with `text-wrap: pretty` to avoid
+orphans. Inside the 8-column reading column of a case study or a Journey entry (`pv-col`) the column already is the
+measure, so a lead (and the Results ledger's method line) runs its full width and lines up with the ruled lists below
+(owner review).
 
 ### 10. Noisy overlays and tags
 
