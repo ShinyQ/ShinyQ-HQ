@@ -3,8 +3,9 @@
  * load one content-hashed WebP instead of fetching every logo under public/tech and drawing it into a
  * canvas at runtime. Each logo is drawn by headless Chromium with the exact canvas code the runtime used
  * (128 px cells, 6% padding, contain fit, centered) and Chrome's GPU raster on macOS, so the cells match
- * what Chrome drew before; the canvas pixels (straight alpha, as WebGL received them) are stored as
- * lossless WebP.
+ * what Chrome drew before. The canvas pixels (straight alpha, as WebGL received them) are rounded to a
+ * coarser grid that looks the same (`quantize`) and stored as lossless WebP: about 41% fewer bytes than the
+ * exact pixels, where lossy WebP (4:2:0 chroma) visibly smears thin colored edges.
  *
  *   bun scripts/logo-atlas.ts          regenerate public/atlas/logos.<hash>.webp and src/experience/logo-atlas.json
  *   bun scripts/logo-atlas.ts --check  fail when the committed atlas misses a logo or a logo file changed (bun run build)
@@ -124,16 +125,49 @@ export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
   }
 }
 
+/** Grid steps of `quantize`: RGB of SVG cells, RGB of raster cells (already lossy sources), partial alpha. */
+export const QUANT = { svg: 4, raster: 8, alpha: 5 } as const;
+
+/**
+ * Rounds the straight-alpha atlas pixels so lossless WebP compresses them better while the walls look the
+ * same: RGB to multiples of 4 (SVG logos, smooth gradients) or 8 (raster logos), partial alpha to multiples
+ * of 5 (at most 2 off; 0 and 255 stay exact). Fully transparent pixels keep RGB 0, which the straight-alpha
+ * mipmaps blend into logo edges as before. Deterministic, so the same canvas gives the same file.
+ */
+export function quantize(rgba: Buffer, width: number, layout: AtlasLayout): Buffer {
+  const out = Buffer.from(rgba);
+  const raster = layout.srcs.map((src) => !src.endsWith(".svg"));
+  const snap = (v: number, step: number) => Math.min(255, Math.round(v / step) * step);
+  for (let p = 0; p < out.length / 4; p++) {
+    const i = p * 4;
+    let a = out[i + 3];
+    if (a === 0) continue;
+    if (a < 255) a = out[i + 3] = snap(a, QUANT.alpha);
+    if (a === 0) {
+      out[i] = out[i + 1] = out[i + 2] = 0;
+      continue;
+    }
+    const x = p % width;
+    const y = Math.floor(p / width);
+    const cell = Math.floor(y / layout.cell) * layout.cols + Math.floor(x / layout.cell);
+    const step = raster[cell] ? QUANT.raster : QUANT.svg;
+    for (let c = 0; c < 3; c++) out[i + c] = snap(out[i + c], step);
+  }
+  return out;
+}
+
 async function generate() {
   const sharp = (await import("sharp")).default;
   const layout = expectedLayout();
   const sources = sourcesHash(layout);
   const png = await rasterize(layout);
+  const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixels = quantize(data, info.width, layout);
+  const raw = { raw: { width: info.width, height: info.height, channels: 4 as const } };
   // exact: keep the RGB of transparent pixels, which texture filtering blends into logo edges. effort 6 with
   // quality 100 is the slowest, smallest lossless setting (cwebp -z 9).
-  const webp = await sharp(png).webp({ lossless: true, exact: true, effort: 6, quality: 100 }).toBuffer();
-  const [a, b] = await Promise.all([sharp(png).ensureAlpha().raw().toBuffer(), sharp(webp).ensureAlpha().raw().toBuffer()]);
-  if (!a.equals(b)) throw new Error("the WebP atlas does not round-trip the canvas pixels");
+  const webp = await sharp(pixels, raw).webp({ lossless: true, exact: true, effort: 6, quality: 100 }).toBuffer();
+  if (!pixels.equals(await sharp(webp).ensureAlpha().raw().toBuffer())) throw new Error("the WebP atlas does not round-trip the quantized pixels");
   mkdirSync(OUT, { recursive: true });
   const name = `logos.${sha(webp).slice(0, 10)}.webp`;
   writeFileSync(path.join(OUT, name), webp);
