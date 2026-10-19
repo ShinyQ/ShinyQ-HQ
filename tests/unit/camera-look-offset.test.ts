@@ -9,6 +9,7 @@ import {
   createOrbitState,
   primeZone,
   resetView,
+  rotate,
   setPitchRange,
   stepOrbit,
   updateZone,
@@ -246,7 +247,8 @@ const zones: { floor: FloorId; zone: ViewZone }[] = FLOOR_IDS.flatMap((floor) =>
   ...(layouts[floor].viewZones ?? []).map((zone) => ({ floor, zone })),
 ]);
 const hasOffset = (zone: ViewZone) => zone.lookOffset !== undefined || Object.values(zone.classView ?? {}).some((v) => v?.lookOffset !== undefined);
-const plain = zones.filter(({ zone }) => !hasOffset(zone));
+/** The (zone, class) pairs without a look offset: the office's desktop and tablet views are compared too. */
+const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone, cls).lookOffset === undefined);
 
 /** The settled follow pose as CameraDirector builds it (look-ahead, offset scale, look offset, camera collision), new code path. */
 function newPose(floor: FloorId, s: OrbitState, cls: ViewportClass, aspect: number, at: { x: number; z: number }): CameraPose {
@@ -264,6 +266,9 @@ function oldPose(floor: FloorId, s: OldState, cls: ViewportClass, aspect: number
   const pose = oldFollowPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], s.yaw, s.zoom * followOffsetScale(cls, aspect), s.pitch);
   return { ...pose, position: clampCamera(pose.target, pose.position, cameraWorld(layouts[floor], floorY(floor)), rover, pose.fov) };
 }
+
+/** Zoom-in presses (x 0.5) that take any zone's zoom into first person (past ZOOM_RANGE[0], pushed to FIRST_PERSON.enterPush). */
+const FIRST_STEPS = 4;
 
 const centre = (zone: ViewZone) => ({ x: (zone.area.minX + zone.area.maxX) / 2, z: (zone.area.minZ + zone.area.maxZ) / 2 });
 
@@ -308,6 +313,8 @@ describe("the follow rig's look offset", () => {
 
   describe.each(CLASSES)("%s: every zone without an offset keeps its exact poses", (cls) => {
     const run = (reduced: boolean) => {
+      const plain = plainOn(cls);
+      expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(cls !== "mobile");
       for (const { floor, zone } of plain) {
         const rail = floor === "L2";
         const at = centre(zone);
@@ -323,14 +330,21 @@ describe("the follow rig's look offset", () => {
           expect(newPose(floor, s, cls, aspect, at), `${zone.id} primed pose`).toEqual(oldPose(floor, o, cls, aspect, at));
           const got: unknown[] = [];
           const want: unknown[] = [];
-          // Out of the zone, back in by driving, a hand reset, out, in, a hand zoom, out again: every frame on the way.
-          const script: [ViewZone | null, "zone" | "reset" | "zoom"][] = [
+          // Out of the zone, back in by driving, a hand reset, out, in, a hand zoom, out again, then zoomed into first person,
+          // into the zone in first person, a held glide (the elevator ride and drawers hold it), a reset back to third
+          // person and out: every frame on the way.
+          const script: [ViewZone | null, "zone" | "reset" | "zoom" | "first" | "hold"][] = [
             [null, "zone"],
             [zone, "zone"],
             [zone, "reset"],
             [null, "zone"],
             [zone, "zone"],
             [zone, "zoom"],
+            [null, "zone"],
+            [null, "first"],
+            [zone, "zone"],
+            [zone, "hold"],
+            [zone, "reset"],
             [null, "zone"],
           ];
           for (const [z, act] of script) {
@@ -340,14 +354,21 @@ describe("the follow rig's look offset", () => {
             } else if (act === "zoom") {
               zoomBy(s, 0.8);
               oldZoomBy(o, 0.8);
-            } else {
+            } else if (act === "first") {
+              for (let i = 0; i < FIRST_STEPS; i++) {
+                zoomBy(s, 0.5);
+                oldZoomBy(o, 0.5);
+              }
+              expect(s.firstPerson, `${zone.id} in first person`).toBe(true);
+            } else if (act === "reset") {
               resetView(s);
               oldResetView(o);
             }
+            const hold = act === "hold";
             for (let frame = 0; frame < 40; frame++) {
               const dt = frame % 3 === 0 ? 1 / 30 : 1 / 60;
-              stepOrbit(s, dt, reduced);
-              oldStepOrbit(o, dt, reduced);
+              stepOrbit(s, dt, reduced, hold);
+              oldStepOrbit(o, dt, reduced, hold);
               got.push(pick(s), [s.lookForward, s.lookUp]);
               want.push(pick(o), [0, 0]);
               if (!rail) {
@@ -454,6 +475,26 @@ describe("the office zone's look offset eases in and out with the zone", () => {
     primeZone(s, office, "mobile");
     resetView(s);
     expect([s.lookForwardTarget, s.lookUpTarget]).toEqual([0, 0]);
+  });
+
+  it("freezes where it is under a drag during the ease-in (like the zoom), and still eases out on leaving", () => {
+    const s = createOrbitState();
+    setPitchRange(s, pitchRange("mobile", "follow"));
+    updateZone(s, office, false, "mobile");
+    for (let i = 0; i < 5; i++) stepOrbit(s, 1 / 60, false);
+    const mid = s.lookForward;
+    expect(Math.abs(mid)).toBeGreaterThan(0);
+    expect(Math.abs(mid)).toBeLessThan(Math.abs(forward));
+    rotate(s, 0.05, 0.02);
+    expect(s.easing).toBe(false);
+    expect([s.lookForwardTarget, s.lookUpTarget]).toEqual([s.lookForward, s.lookUp]);
+    expect(s.zoomTarget).toBe(s.zoom);
+    for (let i = 0; i < 120; i++) stepOrbit(s, 1 / 60, false);
+    expect(s.lookForward).toBe(mid);
+    // Leaving the zone still eases it back to 0.
+    updateZone(s, null, false, "mobile");
+    for (let i = 0; i < 120; i++) stepOrbit(s, 1 / 60, false);
+    expect([s.lookForward, s.lookUp]).toEqual([0, 0]);
   });
 
   it("never applies under reduced motion (the zone does not turn or zoom either), and cuts out on leaving", () => {

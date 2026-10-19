@@ -140,6 +140,9 @@ export function rotate(s: OrbitState, dyaw: number, dpitch = 0, rail = false): v
     if (dpitch !== 0) s.zoneTurn = null;
   }
   s.zoomTarget = s.zoom;
+  // Easing stops here, so every target freezes where its value is (a look offset easing in would otherwise finish later).
+  s.lookForwardTarget = s.lookForward;
+  s.lookUpTarget = s.lookUp;
   s.easing = false;
   if (s.zone) s.suppressedZone = s.zone;
 }
