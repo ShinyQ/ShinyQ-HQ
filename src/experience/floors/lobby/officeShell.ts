@@ -4,7 +4,7 @@ import { distanceToRect } from "../../nav/collision";
 import { roverRuntime } from "../../rover/runtime";
 import type { Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
-import { isOfficeRoom, OFFICE, officeObstacles, officeSlots, type OfficeSlot } from "./officeLayout";
+import { isOfficeRoom, OFFICE, officeObstacles, officeSlots, officeZone, type OfficeSlot } from "./officeLayout";
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
@@ -32,21 +32,39 @@ export function wingBounds(): Rect {
   return { ...rect, minZ: lead.from };
 }
 
+/** The office stop's view zone area (`L1:office`, `officeZone`): the chips show and the wing sign fades out in it. */
+const STOP_AREA = officeZone(LOBBY.officeWing).area;
+
+/** Whether `at` (by default the rover's live position) stands in the office stop's view zone area. */
+export function atOfficeStop(at: Vec2 = roverRuntime): boolean {
+  return distanceToRect(at, STOP_AREA) === 0;
+}
+
 /**
- * Whether the office chips may show (`OfficeWatch`): only while the rover (by default its live position) is in the wing
- * or an office drawer is open. From the Lobby and the lead road the wall sits low and far, where five chips would crowd
- * between the HUD's top bar and the wall top and run under the minimap.
+ * Whether the office chips may show (`OfficeWatch`): only while the rover (by default its live position) is at the office
+ * stop (its view zone area) or an office drawer is open. From the Lobby, the lead road and the rest of the wing the
+ * camera is not in the office view yet: the far chips clamp into one row under the HUD's top bar over each other, and on
+ * a phone run under the minimap (tests/unit/office-chip-placement.test.ts).
  */
 export function officeChipsHere(room: string | null, at: Vec2 = roverRuntime): boolean {
-  return isOfficeRoom(room) || distanceToRect(at, LOBBY.officeWing.rect) === 0;
+  return isOfficeRoom(room) || atOfficeStop(at);
+}
+
+/**
+ * Whether the wing sign hides (`Lobby`, faded like the ghost outline): while the rover is on L1 at the office stop, where
+ * the plate would stand in the foreground of the office view (large on a desktop screen). It shows everywhere else,
+ * the lead road and the rest of the wing included.
+ */
+export function wingSignHidden(floor: string, at: Vec2 = roverRuntime): boolean {
+  return floor === "L1" && atOfficeStop(at);
 }
 
 /**
  * The floating wing sign over the wing plaza's centre (the shared `FloatingSigns`; nothing on the floor), low enough
  * that the rover still drives under it. No spot over the lead road keeps the plate whole in every frame it shows up
  * in, so it stands where it does (tests/unit/office-chip-placement.test.ts): from the primed spawn it is whole on the
- * landscape screens and out of the portrait ones (never a sliver at an edge), from the office stop it is whole in
- * front of the rover on every camera class, and on the lead road it reads ahead of the rover.
+ * landscape screens and out of the portrait ones (never a sliver at an edge), and on the lead road it reads ahead of
+ * the rover. At the office stop, where it would stand whole in the foreground, it fades out (`wingSignHidden`).
  */
 export function officeSign(text: string, color: string): SignSpec {
   const { lead, plaza } = LOBBY.officeWing;

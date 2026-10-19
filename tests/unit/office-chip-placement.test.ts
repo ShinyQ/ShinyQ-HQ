@@ -11,7 +11,7 @@ import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
-import { officeSign } from "@/experience/floors/lobby/officeShell";
+import { officeChipsHere, officeSign, wingSignHidden } from "@/experience/floors/lobby/officeShell";
 import { CHIP_ROW, nextChipFar, OFFICE_CHIP_FAR, OFFICE_CHIP_FAR_BAND, OFFICE_CHIP_TOP, officeRuntime } from "@/experience/floors/lobby/office/runtime";
 import { boxesOverlap, type ScreenBox } from "@/experience/fx/labelPlacement";
 import type { ViewportClass } from "@/experience/types";
@@ -101,14 +101,15 @@ const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.3
 
 /**
  * The settled follow camera with the rover at `at`, as `CameraDirector` builds it: primed in the view zone there (the
- * office stop, the spawn), zoomed in by `steps` zoom key presses (0.8 each; a hand zoom hands the framing back, so the
- * zone's look offset on portrait screens has eased out at the near pose), or turned by hand to `yaw` (the approach).
+ * office stop, the spawn; with `prime` false the plain follow view, as the rover drives into a zone before it eases),
+ * zoomed in by `steps` zoom key presses (0.8 each; a hand zoom hands the framing back, so the zone's look offset on
+ * portrait screens has eased out at the near pose), or turned by hand to `yaw` (the approach).
  */
-function followCamera(width: number, height: number, at: { x: number; z: number; heading?: number }, steps = 0, yaw?: number): PerspectiveCamera {
+function followCamera(width: number, height: number, at: { x: number; z: number; heading?: number }, steps = 0, yaw?: number, prime = true): PerspectiveCamera {
   const cls = cameraClass(width, height);
   const orbit = createOrbitState();
   setPitchRange(orbit, pitchRange(cls, "follow"));
-  primeZone(orbit, zoneAt("L1", at, floor.viewZones), cls);
+  primeZone(orbit, prime ? zoneAt("L1", at, floor.viewZones) : null, cls);
   if (yaw !== undefined) orbit.yaw = orbit.yawTarget = yaw;
   for (let i = 0; i < steps; i++) zoomBy(orbit, 0.8, false);
   for (let i = 0; i < 300 && orbit.easing; i++) stepOrbit(orbit, 1 / 60, false);
@@ -289,13 +290,8 @@ describe("Agent Office chips at the office stop", () => {
       expect(rover!.y1, "rover over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
       expect(wall.y0 / height, "sky over the wall").toBeLessThanOrEqual(SKY[cls][1]);
       expect(wall.y0 / height, "sky over the wall").toBeGreaterThanOrEqual(SKY[cls][0]);
-      // The wing sign in front of the rover is whole on screen, under the rover and the desks, clear of the HUD boxes.
-      const sign = signBox(camera, size);
-      expect(sign).not.toBeNull();
-      expect(signFraming(sign!, size), "wing sign at the stop").toBe("in");
-      expect(sign!.y0, "wing sign under the rover").toBeGreaterThanOrEqual(rover!.y1);
-      expect(sign!.y0, "wing sign under the desks").toBeGreaterThanOrEqual(desks.y1);
-      for (const { id, box } of hudBoxes(size, coarse)) expect(boxesOverlap(sign!, box), `wing sign on the ${id}`).toBe(false);
+      // The wing sign would stand whole in the foreground here (in front of the rover, under it): it fades out at the stop.
+      expect(wingSignHidden("L1", W.stop), "wing sign at the stop").toBe(true);
     });
 
     it("show the wing sign whole or not at all from the primed spawn, and whole between the HUD bars on the lead road (the approach)", () => {
@@ -334,6 +330,43 @@ describe("Agent Office chips at the office stop", () => {
       const before = stopCamera(width, height, steps - 1);
       expect([1, 2, 3].some((slot) => anchorDistance(before, slot) < NEAR)).toBe(false);
       expectClear(camera, size, coarse, chips);
+    });
+  });
+
+  describe.each(SIZES)("off the stop, $id ($width x $height)", ({ width, height, coarse }) => {
+    const size = { width, height };
+    const south = yawLooking({ x: 0, z: 1 });
+    /** Shown chips (those the gate lets through at `at`) never overlap one another and stay clear of the HUD. */
+    const expectUncrowded = (camera: PerspectiveCamera, at: { x: number; z: number }, what: string) => {
+      const shown = officeChipsHere(null, at) ? chipBoxes(camera, size).filter((c) => c.box) : [];
+      for (const { slot, box } of shown) expectClearOfHud(box!, size, coarse, `${what}: slot ${slot}`);
+      for (let i = 0; i < shown.length; i++)
+        for (let j = i + 1; j < shown.length; j++) expect(boxesOverlap(shown[i].box!, shown[j].box!), `${what}: slots ${shown[i].slot} and ${shown[j].slot}`).toBe(false);
+      return shown.length;
+    };
+
+    it("hide the chips in the wing outside the stop zone (S + 2 to S + 14), where they would clamp into one row over each other or under the minimap", () => {
+      let crowded = 0;
+      for (const dz of [2, 4, 6, 8, 10, 12, 14])
+        for (const dx of [-5, 0, 5]) {
+          const at = { x: W.lead.x + dx, z: W.rect.minZ + dz, heading: 0 };
+          expect(officeChipsHere(null, at), `chips at S + ${dz}, x ${at.x}`).toBe(false);
+          const camera = followCamera(width, height, at, 0, south);
+          expect(expectUncrowded(camera, at, `S + ${dz}, x ${at.x}`)).toBe(0);
+          // Without the gate: shown chips that overlap one another or a HUD box (the final review's crowding).
+          const all = chipBoxes(camera, size).filter((c) => c.box);
+          const hud = hudBoxes(size, coarse).map((h) => h.box);
+          if (all.some((c, i) => all.some((d, j) => j > i && boxesOverlap(c.box!, d.box!)) || hud.some((h) => boxesOverlap(c.box!, h)))) crowded += 1;
+        }
+      // The gate matters: somewhere in the wing the ungated chips crowd on this size.
+      if (width !== 844) expect(crowded, "ungated chips crowd somewhere in the wing").toBeGreaterThan(0);
+    });
+
+    it("show them uncrowded at the stop, settled in the office view or still arriving in the plain follow view", () => {
+      const at = { ...W.stop, heading: 0 };
+      expect(officeChipsHere(null, at)).toBe(true);
+      expect(expectUncrowded(followCamera(width, height, at), at, "settled")).toBe(5);
+      expect(expectUncrowded(followCamera(width, height, at, 0, south, false), at, "arriving")).toBeGreaterThan(0);
     });
   });
 

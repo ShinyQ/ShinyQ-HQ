@@ -1,8 +1,8 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useHQStore } from "@/store/useHQStore";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { FLOOR_COLOR, kioskRect, LOBBY } from "../config";
 import type { ExperienceData, GpuTier, Rect } from "../types";
 import { FloatingSigns } from "../fx/FloatingSign";
@@ -26,7 +26,11 @@ import { VISITS_ROOM } from "./lobby/visitsRoom";
 import { VisitsStation } from "./lobby/VisitsStation";
 import { OfficeMount } from "./lobby/office/OfficeMount";
 import { officeRoad, type OfficeTranslate } from "./lobby/officeLayout";
-import { officeSign, wingBounds } from "./lobby/officeShell";
+import { officeSign, wingBounds, wingSignHidden } from "./lobby/officeShell";
+import { MAX_FRAME_DT } from "../rover/controller";
+import { roverRuntime } from "../rover/runtime";
+import { animationSpeed } from "../scene/animationSpeed";
+import { ghostOutlineOpacity, stepGhostOutline } from "../tower/ghostOutline";
 
 export interface LobbyLabels {
   skillsTitle: string;
@@ -39,7 +43,7 @@ export interface LobbyLabels {
   observatory: ObservatoryLabels;
   /** The `office` namespace translator (Agent Office: wall, screens, targets; the lazy chunk resolves its own keys). */
   office: OfficeTranslate;
-  /** The floating sign over the office wing's lead road (`hud.rooms.office`). */
+  /** The floating sign over the office wing's plaza (`hud.rooms.office`). */
   officeSign: string;
 }
 
@@ -84,6 +88,21 @@ function useComposerLive(tier: GpuTier): boolean {
   return live;
 }
 
+/**
+ * The wing sign's opacity (`FloatingSigns` visibility): out while the rover is at the office stop (`wingSignHidden`),
+ * eased like the ghost outline (frame deltas, a cut under reduced motion); a faded-out sign leaves the draw.
+ */
+function useWingSignVisibility(): { readonly current: number[] } {
+  const visibility = useRef([1]);
+  const hide = useRef(0);
+  useFrame((_, rawDt) => {
+    const { floor, reducedMotion } = getHQStore().getState();
+    hide.current = stepGhostOutline(hide.current, wingSignHidden(floor, roverRuntime), Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reducedMotion);
+    visibility.current[0] = ghostOutlineOpacity(hide.current);
+  });
+  return visibility;
+}
+
 /** L1 Lobby (appendix 01 section 2), generated from content. */
 export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: LobbyLabels; tier: GpuTier }) {
   const hall = useHallReady();
@@ -95,6 +114,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
   // From the intro chunk, loaded before the canvas mounts in a session that plays the intro (intro/chunk.ts).
   const IntroBeacons = introModule()?.IntroBeacons;
   const wingSigns = useMemo(() => [officeSign(labels.officeSign, FLOOR_COLOR.L1)], [labels.officeSign]);
+  const wingSignVisibility = useWingSignVisibility();
   useEffect(() => {
     sceneProbes.spectacle.ringTiles = stats.length;
   }, [stats.length]);
@@ -130,7 +150,7 @@ export function Lobby({ data, labels, tier }: { data: ExperienceData; labels: Lo
           <>
             <RoadMarkings network={WING_ROAD} color={FLOOR_COLOR.L1} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} fillOpacity={tier === "full" ? 0.05 : 0.08} />
             <Suspense fallback={null}>
-              <FloatingSigns signs={wingSigns} name="office-wing-sign" tier={tier} />
+              <FloatingSigns signs={wingSigns} name="office-wing-sign" tier={tier} visibility={wingSignVisibility} />
             </Suspense>
           </>
         )}

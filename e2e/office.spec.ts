@@ -46,6 +46,23 @@ const trigger = (page: Page) =>
 const settled = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.settled() ?? 0);
 const feed = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.feed() ?? null);
 const chip = (page: Page, slot: number) => page.locator(`[data-testid="office-chip"][data-slot="${slot}"]`);
+type SceneNode = { name: string; type: string; visible: boolean; children: SceneNode[] };
+/**
+ * What the office view looks out past: the wing sign (shown plates, `__hq.probes.signs`), the tower frame and the ghost
+ * outline of every floor above (each a line drawn only while `visible`).
+ */
+const lookOut = (page: Page) =>
+  page.evaluate(() => {
+    const hq = (window as unknown as { __hq: { probes: { signs: Record<string, unknown[]> }; render: { scene: SceneNode & { getObjectByName(n: string): SceneNode | undefined } } } }).__hq;
+    const scene = hq.render.scene;
+    const lines = (g: SceneNode | undefined) => (g?.children ?? []).filter((c) => c.type === "LineSegments");
+    const outline = (id: string) => lines(scene.getObjectByName(`floor-${id}`)?.children[0]).some((l) => l.visible);
+    return {
+      sign: (hq.probes.signs["office-wing-sign"] ?? []).length,
+      frame: lines(scene.getObjectByName("tower")).some((l) => l.visible),
+      outlines: ["L2", "L3", "L4", "RF"].filter(outline),
+    };
+  });
 /** On the lead road, just inside the Lobby edge: within OFFICE.loadRadius of the office stop. */
 const LEAD = { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 2 };
 
@@ -368,6 +385,20 @@ test.describe("Agent Office (L1)", () => {
     await expect(chip(page, 1)).toContainText(id.office.clientProject);
   });
 
+  test("at the office stop the wing sign, the tower frame and the floors above's outlines leave the view; on the lead road they are back", async ({ page }) => {
+    await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    // Faded over the ghost floors' fade (0.45 s), then out of the draw.
+    await expect.poll(() => lookOut(page)).toEqual({ sign: 0, frame: false, outlines: [] });
+    // The lead road in the Lobby: the sign reads ahead of the rover again, the frame and the outlines are back.
+    await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
+    await waitForCameraSettle(page);
+    await expect.poll(() => lookOut(page)).toEqual({ sign: 1, frame: true, outlines: ["L2", "L3", "L4", "RF"] });
+  });
+
   test("L1 stays under its scene-call cap at the office (lite)", async ({ page }) => {
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -385,7 +416,7 @@ test.describe("Agent Office (L1) on a phone", () => {
 
   const zoom = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { rover: { cameraZoom: number } } }).__hq.rover.cameraZoom);
 
-  test("hides the chips on the lead road with the office in view, and shows them at the stop", async ({ page }) => {
+  test("hides the chips on the lead road and in the wing outside the stop zone with the office in view, and shows them at the stop", async ({ page }) => {
     const office = await serveOffice(page);
     await enterHQ(page);
     await atOffice(page);
@@ -394,8 +425,15 @@ test.describe("Agent Office (L1) on a phone", () => {
     await waitForCameraSettle(page);
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     // Back onto the lead road in the Lobby (the approach): leaving the office view turns back to its south-looking yaw,
-    // so the wall stays in view, low and far, where the chips would crowd the top bar and the minimap (`officeChipsHere`).
+    // so the wall stays in view, low and far, where the chips would crowd the top bar and the minimap (`officeChipsHere`
+    // lets them show only in the stop's view zone area or with an office drawer open).
     await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).inView).toBe(true);
+    await expect.poll(async () => (await probe(page)).chips).toBe(0);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toBeHidden();
+    // In the wing, on the plaza under the sign (S + 9.5): the office is ahead and in view, still no chips.
+    await driveTo(page, LOBBY.officeWing.plaza.center);
     await waitForCameraSettle(page);
     await expect.poll(async () => (await probe(page)).inView).toBe(true);
     await expect.poll(async () => (await probe(page)).chips).toBe(0);
