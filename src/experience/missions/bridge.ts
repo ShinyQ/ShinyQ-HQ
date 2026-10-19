@@ -27,14 +27,16 @@ let cache: { deps: HostDeps; source: HostFactory; host: MissionHost } | null = n
 let visited: (() => readonly RoomId[]) | null = null;
 let runner: MissionRunner | null = null;
 let autoOpenClaimed = false;
+let requestRunner: (() => void) | null = null;
 const listeners = new Set<(state: MissionState) => void>();
 const waiting = new Set<(runner: MissionRunner | null) => void>();
-/** How long a cross-floor link or ad hoc step list waits for the runner (MissionHud loads its index after hydration). */
+/** How long a cross-floor link or ad hoc step list waits for the runner (MissionHud loads its index on demand or at idle). */
 const RUNNER_WAIT_MS = 5000;
 
 /** The active runner, or the next one registered within `timeoutMs` (null after that). */
 function whenRunner(timeoutMs = RUNNER_WAIT_MS): Promise<MissionRunner | null> {
   if (runner) return Promise.resolve(runner);
+  requestRunner?.();
   return new Promise((resolve) => {
     const done = (next: MissionRunner | null) => {
       clearTimeout(timer);
@@ -44,6 +46,14 @@ function whenRunner(timeoutMs = RUNNER_WAIT_MS): Promise<MissionRunner | null> {
     const timer = setTimeout(() => done(null), timeoutMs);
     waiting.add(done);
   });
+}
+
+/** MissionHud registers how to get a runner sooner (load the HUD index now) when a caller waits for one. */
+export function onRunnerRequest(request: () => void): () => void {
+  requestRunner = request;
+  return () => {
+    if (requestRunner === request) requestRunner = null;
+  };
 }
 
 export function register3DHost(next: HostFactory, visitedRooms: () => readonly RoomId[]): () => void {

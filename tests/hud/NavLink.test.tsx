@@ -9,11 +9,16 @@ const pathname = vi.hoisted(() => ({ value: "/labs/voice-ai-contact-center" }));
 
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => pathname.value,
-  Link: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
-    <a href={href} {...rest}>
-      {children}
-    </a>
-  ),
+  useRouter: () => ({ prefetch: () => {} }),
+  Link: ({ href, children, ...props }: { href: string; children: ReactNode; prefetch?: unknown }) => {
+    const { prefetch, ...rest } = props;
+    void prefetch;
+    return (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    );
+  },
 }));
 
 afterEach(cleanup);

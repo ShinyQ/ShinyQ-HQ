@@ -6,6 +6,7 @@ import { getRoof } from "@/content/load";
 import { CV_FILE_NAME, CV_PAGES, cvDownloadName, cvPdfPath } from "@/lib/cv";
 import manifest from "../../content/generated/cv-pages.json";
 import { parseRedirects } from "../../scripts/serve-static";
+import { webpChunks, webpSize } from "../helpers/webp";
 
 const root = process.cwd();
 const { fileName } = getRoof().cv;
@@ -102,5 +103,22 @@ describe("CV page images (in-site viewer, rendered by `bun run cv:pages`)", () =
       }
     });
     expect(readdirSync(path.join(root, "public", "cv", "pages")).sort()).toEqual(expected.sort());
+  });
+
+  it("are near-lossless webp (one VP8L frame, no metadata) within the per-width byte budget", () => {
+    // Lossless at `-z 9` weighed 104 KB (page 1, 800 px); near-lossless 0 is visually identical (SSIM >= 0.998).
+    const budget = { 800: 90_000, 1200: 150_000, 1600: 200_000 } as const;
+    for (const page of CV_PAGES) {
+      for (const [src, width] of [
+        [page.srcSmall, page.widthSmall],
+        [page.srcMedium, page.widthMedium],
+        [page.src, page.width],
+      ] as const) {
+        const bytes = readFileSync(path.join(root, "public", src));
+        expect(webpChunks(bytes), src).toEqual(["VP8L"]);
+        expect(webpSize(bytes).width, src).toBe(width);
+        expect(bytes.length, `${src}: run \`bun run cv:pages\` (near-lossless webp)`).toBeLessThan(budget[width as keyof typeof budget]);
+      }
+    }
   });
 });

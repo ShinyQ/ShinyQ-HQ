@@ -231,6 +231,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   - a stored `"off"` stays muted;
   - the context starts on the first user gesture.
 - The engine starts paused; `Experience` calls `audio.setPaused(false/true)` on mount/unmount, so the Page View and static tier stay silent (no AudioContext at all) without changing the stored choice.
+- The engine itself (`engine.ts`, `synth.ts`, `music.ts`, about 3.8 KB gzip) is a lazy chunk behind the `audio` facade (`src/lib/audio/singleton.ts`): it loads on the first call that needs sound in the unpaused 3D view (a pointer, touch or key press, or a one-shot or a moving rover after a user activation). Never import `@/lib/audio/engine` outside tests; the facade answers and persists the settings and hands its state to the engine when it arrives (details in `src/lib/audio/README.md`). Still one `AudioContext`: a gesture or an unmute before the engine arrives makes the facade create and resume it inside that gesture (Safari needs that), and the engine adopts it. No idle warm-up of the chunk (the 3D session caps have about 1.7 KB of headroom).
 
 ## Next.js version notes
 
