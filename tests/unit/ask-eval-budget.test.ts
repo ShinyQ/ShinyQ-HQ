@@ -40,7 +40,9 @@ describe("eval neuron budget", () => {
     expect(workflow).toContain(`EVAL_GROQ_FIRST: ${models[0]}`);
     expect(workflow).toContain(`EVAL_GROQ_SECOND: ${models[1]}`);
     const runs = [...workflow.matchAll(/run: bun scripts\/ask-eval\.ts (.+)/g)].map((m) => m[1]);
-    expect(runs).toEqual(["smoke", 'golden --groq "$EVAL_GROQ_FIRST"', 'suggestions --groq "$EVAL_GROQ_SECOND" --slice day/7', 'redteam --groq "$EVAL_GROQ_SECOND"']);
+    expect(runs).toEqual(["smoke", 'golden --groq "$EVAL_GROQ_FIRST" --slice day/2', 'suggestions --groq "$EVAL_GROQ_SECOND" --slice day/14', 'redteam --groq "$EVAL_GROQ_SECOND"']);
+    // The pills follow the red team: both use the second model and its per-minute token limit.
+    expect(workflow).toMatch(/suggestions:\n[^\n]*\n(?:\s+#[^\n]*\n)*\s+needs: redteam\n/);
   });
 });
 
@@ -54,5 +56,22 @@ describe("owner-review samples (scripts/ask-samples.ts)", () => {
     expect(count("Adjacent unsupported")).toBe(1);
     expect(count("Decline")).toBe(2);
     expect(new Set(SAMPLES.map((s) => s.lang))).toEqual(new Set(["en", "id"]));
+  });
+});
+
+describe("golden scoring on Groq slices", () => {
+  it("keeps the full set's allowed misses for a slice", async () => {
+    const { goldenThreshold } = await import("../../scripts/ask-eval");
+    expect(goldenThreshold(91, 91, 88)).toBe(88);
+    expect(goldenThreshold(46, 91, 88)).toBe(43);
+    expect(goldenThreshold(2, 91, 88)).toBe(0);
+    expect(goldenThreshold(10, 10)).toBe(10);
+  });
+
+  it("checks the language of Indonesian answers, not of short fragments", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const item = { id: "x", lang: "id" as const, q: "Di mana dia tinggal?", facts: [], expect: { any: ["jakarta"] } };
+    expect(scoreGolden("Jakarta, Indonesia.", item).pass).toBe(true);
+    expect(scoreGolden("He lives in Jakarta and works at Metrodata as a consultant.", item).notes).toContain("not Indonesian");
   });
 });

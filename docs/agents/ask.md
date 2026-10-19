@@ -143,7 +143,7 @@ All bindings and vars live in `wrangler.toml`.
   - follow-ups stay deterministic (`pickFollowUps`).
 - Public stats keep five topics: `STATS_TOPIC_OF` counts `about` pills under perspectives and `site` pills under work (handler blob8, the `hq-stats` Worker's `CHIP_TOPICS`).
 - `tests/ask/suggestions.test.ts` checks every question retrieves its expected chunks in EN and ID (after `resolveNickname`, as the pipeline does); `tests/ask/sampler.test.ts` covers determinism, no repeats and coverage.
-- `bun scripts/ask-eval.ts suggestions --groq <model> --slice day/7` asks a seventh of them nightly on a Groq backup model (at least 90% must get a real answer; every pill once a week).
+- `bun scripts/ask-eval.ts suggestions --groq <model> --slice day/14` asks a fourteenth of them nightly on a Groq backup model (at least 90% must get a real answer; every pill every two weeks).
 
 ## Wire additions
 
@@ -347,7 +347,7 @@ Security S3, H1 (owner decision).
 - Check job: staleness warning (45 days).
 - gitleaks ("Secret scan", allowlist `.github/gitleaks.toml`), `bun audit` (non-blocking), Dependabot, CODEOWNERS.
 - Scheduled workflows:
-  - nightly `ask-eval.yml`: the 20-question smoke set on Workers AI, golden, red team and a seventh of the pills on the Groq backup models; any Workers AI eval run prints its estimated neurons and stops above 2,000 unless `--budget` allows more (owner decision 2026-10-19, runbook section 9a);
+  - nightly `ask-eval.yml`: the 20-question smoke set on Workers AI, half the golden set, the red team and a fourteenth of the pills on the Groq backup models (sized to their 200,000 daily tokens); any Workers AI eval run prints its estimated neurons and stops above 2,000 unless `--budget` allows more (owner decision 2026-10-19, runbook section 9a);
   - weekly `refresh-facts.yml` and `content-gap.yml`;
   - hourly `uptime.yml` ([`docs/deploy.md`](../deploy.md) section 16).
 - `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).
