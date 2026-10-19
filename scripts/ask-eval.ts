@@ -227,7 +227,7 @@ export function reportRow(r: { item: { id: string }; result: PipelineResult; ms:
   return `| ${r.item.id} | ${r.pass ? "pass" : "**fail**"} | ${r.result.outcome} | ${r.result.source} | ${cell(checkSummary(r.result))} | ${r.ms} | ${cell(r.notes.join(", "))} | ${cell(redactBlockedText(r.result.text, blocklist))} |`;
 }
 
-function restClient(token: string, accountId: string): ModelClient {
+export function restClient(token: string, accountId: string): ModelClient {
   return {
     async *stream(model, input, signal) {
       const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
@@ -239,7 +239,7 @@ function restClient(token: string, accountId: string): ModelClient {
   };
 }
 
-function cliClient(): ModelClient {
+export function cliClient(): ModelClient {
   return {
     async *stream(model, input) {
       const dir = mkdtempSync(path.join(tmpdir(), "ask-eval-"));

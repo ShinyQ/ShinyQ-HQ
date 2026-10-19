@@ -43,3 +43,16 @@ describe("eval neuron budget", () => {
     expect(runs).toEqual(["smoke", 'golden --groq "$EVAL_GROQ_FIRST"', 'suggestions --groq "$EVAL_GROQ_SECOND" --slice day/7', 'redteam --groq "$EVAL_GROQ_SECOND"']);
   });
 });
+
+describe("owner-review samples (scripts/ask-samples.ts)", () => {
+  it("holds the 10 agreed samples in EN and ID", async () => {
+    const { SAMPLES } = await import("../../scripts/ask-samples");
+    expect(SAMPLES).toHaveLength(10);
+    const count = (kind: string) => SAMPLES.filter((s) => s.kind.startsWith(kind)).length;
+    expect(count("Rover voice")).toBe(4);
+    expect(count("Adjacent grounded")).toBe(3);
+    expect(count("Adjacent unsupported")).toBe(1);
+    expect(count("Decline")).toBe(2);
+    expect(new Set(SAMPLES.map((s) => s.lang))).toEqual(new Set(["en", "id"]));
+  });
+});
