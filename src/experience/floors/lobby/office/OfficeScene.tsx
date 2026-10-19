@@ -256,7 +256,10 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
     l.states[r.slot] = r.state;
   }
   l.clock.tick(now, fps);
-  if ((!l.clock.faceDue && !l.clock.screenDue) || !shownInScene(g)) return;
+  // Until the atlas is primed both halves count as due, so the first upload never ships blank cells.
+  const faceDue = l.clock.faceDue || !l.primed;
+  const screenDue = l.clock.screenDue || !l.primed;
+  if ((!faceDue && !screenDue) || !shownInScene(g)) return;
   const map = (Q.material as MeshBasicMaterial).map;
   const canvas = map?.image as HTMLCanvasElement | undefined;
   const atlasCtx = canvas?.getContext("2d");
@@ -266,8 +269,8 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
   for (const r of rovers) {
     const fade = l.fades[r.slot];
     const tag = fadeTag(fade, fadeLevel(fade, now));
-    l.next[r.slot] = l.clock.faceDue ? faceKey(OFFICE_STATE_STYLE[r.state].face, drawT, slotPhase(r.slot), FACE_FPS_MAX, reduced) + tag : l.keys[r.slot];
-    l.next[n + r.slot] = l.clock.screenDue ? screenKey(screenInput(r, t), drawT, fps, reduced) + tag : l.keys[n + r.slot];
+    l.next[r.slot] = faceDue ? faceKey(OFFICE_STATE_STYLE[r.state].face, drawT, slotPhase(r.slot), FACE_FPS_MAX, reduced) + tag : l.keys[r.slot];
+    l.next[n + r.slot] = screenDue ? screenKey(screenInput(r, t), drawT, fps, reduced) + tag : l.keys[n + r.slot];
   }
   const dirty = dirtyCells(l.keys, l.next);
   if (!dirty.length) return;
