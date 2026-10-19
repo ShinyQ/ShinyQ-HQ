@@ -65,7 +65,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | In review |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | In review |
-| Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (PR 1, shipped in #243 and #245); PR 2 adds the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader), in review | In review |
+| Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Shipped |
 
 ## Controls and first visit
 
