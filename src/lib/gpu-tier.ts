@@ -15,6 +15,10 @@ export interface TierInputs {
 
 const TIERS: readonly GpuTier[] = ["full", "lite", "static"];
 export const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i;
+/** Known-weak integrated GPUs: Intel HD and UHD Graphics (not Iris or Arc), Mali-4xx, T and G3x/G5x up to G52, Adreno 5xx and below. */
+export const WEAK_GPU = /\bIntel\b.*\b(?:U?HD) Graphics\b|\bMali-(?:4\d\d|T\d+|G[35][0-2])\b|\bAdreno ?\(TM\) ?[1-5]\d\d\b/i;
+/** Firefox reports a coarse bucket ending in ", or similar" (Iris Xe reads "Intel(R) HD Graphics"), never a known GPU. */
+const BUCKETED_RENDERER = /, or similar$/;
 
 export function isTier(value: unknown): value is GpuTier {
   return typeof value === "string" && (TIERS as readonly string[]).includes(value);
@@ -29,6 +33,7 @@ export function decideTier(i: TierInputs): GpuTier {
   if (!i.webgl2 || i.saveData) return "static";
   // Software rasterizers (no usable GPU) are detect-gpu tier 0, which appendix 08 maps to static.
   if (i.renderer && SOFTWARE_RENDERER.test(i.renderer)) return "static";
+  if (i.renderer && WEAK_GPU.test(i.renderer) && !BUCKETED_RENDERER.test(i.renderer)) return "lite";
   if (i.coarse) return "lite";
   if (i.deviceMemory !== undefined && i.deviceMemory < 4) return "lite";
   if (i.cores !== undefined && i.cores <= 2) return "lite";
