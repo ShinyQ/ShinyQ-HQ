@@ -124,8 +124,9 @@ for (const tier of ["lite", "full"] as const) {
     const other: ChunkMap = {};
     for (const t of transfers) {
       if (seen.has(t.path)) continue;
-      // troika fetches its fonts with XHR, so the file name tells fonts apart from JSON.
-      const kind = /\.(woff2?|ttf|otf)$/.test(t.path) ? "font" : (KIND[t.type] ?? "other");
+      // troika fetches its fonts with XHR and the L1 logo atlas is fetched for createImageBitmap, so the file name
+      // tells fonts and images apart from JSON.
+      const kind = /\.(woff2?|ttf|otf)$/.test(t.path) ? "font" : /\.(webp|png|jpe?g|avif|gif|svg)$/.test(t.path) ? "image" : (KIND[t.type] ?? "other");
       if (kind === "js") js[chunkName(t.path)] = (js[chunkName(t.path)] ?? 0) + t.bytes;
       else other[kind] = (other[kind] ?? 0) + t.bytes;
     }
