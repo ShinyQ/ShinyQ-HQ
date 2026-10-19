@@ -41,7 +41,7 @@ import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { OFFICE_SLOTS, officeBounds } from "../officeShell";
+import { OFFICE_SLOTS, officeBounds, officeChipsHere } from "../officeShell";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
@@ -532,6 +532,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     }
     let chips = 0;
     const mobile = s.device.viewport === "mobile";
+    const chipsHere = here && officeChipsHere(s.activeRoom);
     officeRuntime.chips.forEach((el, slot) => {
       if (!el) return;
       if (tmp.els[slot] !== el) {
@@ -542,7 +543,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
       }
       const a = officeRuntime.anchors[slot];
       tmp.v.set(a.x, a.y, a.z);
-      const on = here && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
+      const on = chipsHere && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
       if (!on) {
         // A hidden chip is written once, then left alone until it comes back into view.
         if (tmp.shown[slot]) {

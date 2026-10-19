@@ -385,6 +385,27 @@ test.describe("Agent Office (L1) on a phone", () => {
 
   const zoom = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { rover: { cameraZoom: number } } }).__hq.rover.cameraZoom);
 
+  test("hides the chips on the lead road with the office in view, and shows them at the stop", async ({ page }) => {
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
+    // Back onto the lead road in the Lobby (the approach): leaving the office view turns back to its south-looking yaw,
+    // so the wall stays in view, low and far, where the chips would crowd the top bar and the minimap (`officeChipsHere`).
+    await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).inView).toBe(true);
+    await expect.poll(async () => (await probe(page)).chips).toBe(0);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toBeHidden();
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toBeVisible();
+  });
+
   test("keeps every chip a compact dot with no task line at the stop and zoomed in two steps", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);

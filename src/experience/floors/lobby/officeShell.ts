@@ -1,8 +1,10 @@
 import { LOBBY } from "../../config";
 import type { SignSpec } from "../../fx/signLayout";
-import type { Rect } from "../../types";
+import { distanceToRect } from "../../nav/collision";
+import { roverRuntime } from "../../rover/runtime";
+import type { Rect, Vec2 } from "../../types";
 import type { Box } from "../roof/solids";
-import { OFFICE, officeObstacles, officeSlots, type OfficeSlot } from "./officeLayout";
+import { isOfficeRoom, OFFICE, officeObstacles, officeSlots, type OfficeSlot } from "./officeLayout";
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
@@ -28,6 +30,15 @@ export function officeBounds(): Rect {
 export function wingBounds(): Rect {
   const { rect, lead } = LOBBY.officeWing;
   return { ...rect, minZ: lead.from };
+}
+
+/**
+ * Whether the office chips may show (`OfficeWatch`): only while the rover (by default its live position) is in the wing
+ * or an office drawer is open. From the Lobby and the lead road the wall sits low and far, where five chips would crowd
+ * between the HUD's top bar and the wall top and run under the minimap.
+ */
+export function officeChipsHere(room: string | null, at: Vec2 = roverRuntime): boolean {
+  return isOfficeRoom(room) || distanceToRect(at, LOBBY.officeWing.rect) === 0;
 }
 
 /**
