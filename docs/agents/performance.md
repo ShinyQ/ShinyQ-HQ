@@ -88,7 +88,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
   - full 491.1 KB: measured 490.5 KB (main 461.6 KB plus floor chunks 28.9 KB).
   - lite 475.4 KB: measured 474.8 KB (main 445.9 KB plus floor chunks 28.9 KB).
-  - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, and the floor layouts out of the Classic bundle; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
+  - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 11.7 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
@@ -152,6 +152,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 ### Frame rate and timeline
 
 - Never gate time: SwiftShader FPS and timings are noise.
+- A parked scene renders at the idle cadence (30 fps or on demand, [3d-experience.md](3d-experience.md#idle-cadence)); it is off under automation, so specs and the perf lane count 60 fps frames. Measure it on a real GPU with `navigator.webdriver` hidden: `__hq.frames()` over 5 s parked and the CDP `Performance.getMetrics` TaskDuration delta (main-thread busy time).
 - Frame rate is checked on real devices with `?perf=1` and in the field with the RUM beacon.
   - The `?perf=1` overlay shows FPS p50/p10, frame p95, scene and post calls, GPU objects, tier and renderer, DPR and pixels, and a sixth line with the last elevator ride from `window.__hq.ridePrep.lastRide`.
   - It mounts only with the flag (about 1 KB inside the 3D chunk, never on the Page View).
@@ -219,11 +220,11 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/hud/FloorButtons.tsx`, `src/hud/Hud.tsx` and `src/experience/Experience.tsx` (the elevator panel, the unbuilt-floor link, the route each floor writes) | their own specs plus `arrivals` (its desktop tour rides the panel to every floor) |
 | `src/experience/camera/**` | `camera`, `experience`, `career`, `ride` and `arrivals` |
 | `src/experience/config.ts`, `floorOrder.ts`, `floors/lobby/spawn.ts` (also the kiosk specs), `floors/career/**`, `floors/library/**`, `floors/labs/layout.ts`, `floors/roof/layout.ts` and `floors/lobby/observatoryLayout.ts` (arrival points and zones) | `arrivals` plus the floor's own specs |
-| `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle`) |
-| `src/experience/rover/{idle,activity}.ts` | `rover-idle` |
+| `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle` and `idle-cadence`) |
+| `src/experience/rover/{idle,activity}.ts` | `rover-idle` (`idle.ts` adds `idle-cadence`) |
 | The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
-| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` |
+| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch,idle}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` (the scene files add `idle-cadence`) |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
 | `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `b1-unlock`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
@@ -305,6 +306,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Name UI by its message key (`en.hud.launcher.askRover`), not literal text, so a rename breaks the typecheck instead of a test run.
 - `page.waitForTimeout` is only for proving that nothing happens (for example that `?tier=static` never mounts the canvas).
 - Pass `?tier=lite` (no bloom or motes) unless the test is about the full tier.
+  - Without `?tier=`, auto-detection reads the renderer: SwiftShader is static, and on a real GPU a known-weak integrated GPU (Intel HD or UHD Graphics, low-end Mali, Adreno 5xx and below; `WEAK_GPU` in `src/lib/gpu-tier.ts`) is lite, so a full-tier test or capture on such a machine passes `?tier=full`.
 - Agent Office tests drive the lazy chunk through `__hq.office` ([floor-l1-lobby.md](floor-l1-lobby.md#probes-and-tests)), never through time:
   - `load()` and `loadBody()` load the scene and drawer body chunks; `state()` is the scene chunk's state; `asks()` counts the speculative trigger's asks after the first frame went idle (a `?prefetch=off` test proves the trigger ran yet `state()` stayed `idle`).
   - `test()` (once loaded): `poll()` fetches now (and lets its one fetch land while nothing wants the poller), `settled()` counts settled fetches (wait for it to grow: a 204 keeps the feed unchanged), `advance(ms)` skews the poller's clock to cross the 60 s keep-last window, `feed()` and `wanted()` read the state.

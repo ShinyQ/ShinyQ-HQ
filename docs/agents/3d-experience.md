@@ -24,6 +24,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `?view=architecture` opens the hologram.
 - Tier: decided once per page load (`src/lib/gpu-tier.ts`, `?tier=full|lite|static` override), after commit and never during render.
   - Reason: the WebGL probe takes seconds on software renderers and would block client navigation into gated routes.
+  - `decideTier` order: a valid `?tier=` wins; no WebGL2, Save-Data or a software renderer (`SOFTWARE_RENDERER`) is static; a known-weak integrated GPU (`WEAK_GPU`) is lite; a coarse pointer, under 4 GB device memory or at most 2 cores is lite; anything else is full.
+  - `WEAK_GPU` reads the unmasked renderer: Intel HD and UHD Graphics (Iris, Iris Xe, Iris Plus and Arc stay full), Mali-4xx, Mali-T and Mali-G31 to G52, Adreno 5xx and below. A Firefox bucket (ends in ", or similar"; every Intel iGPU reads "Intel(R) HD Graphics") is not a known GPU and skips this check.
+  - The boot-first head script decides only static; the weak-GPU check runs in the gate.
 - It then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page.
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.
@@ -299,11 +302,25 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ## Frame loop
 
 - The canvas runs `frameloop="never"`. `FrameLoop` (`scene/FrameLoop.tsx`) calls R3F `advance` from its own rAF loop through `framePacer` (`scene/framePacer.ts`).
-  - At most 60 fps (`FRAME_CAP_FPS`): 90, 120 and 144 Hz displays skip refreshes, 60 Hz displays render every one, no idle cap.
-- Animate with `useFrame` deltas; never start another rAF loop or rely on `invalidate` in the scene.
-- `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused).
+  - At most 60 fps (`FRAME_CAP_FPS`): 90, 120 and 144 Hz displays skip refreshes, 60 Hz displays render every one.
+  - The pacer's cadence is 60, 30 or 0 (on demand); the idle detector picks it (see "Idle cadence" below).
+- Animate with `useFrame` deltas; never start another rAF loop. R3F's `invalidate` (prop changes, mounts, text syncs) renders the next animation frame at any cadence (`invalidateFrames`).
+- `__hq.frames()` counts rendered frames; `__hq.clock()` is the R3F clock in seconds (the `useFrame` time, 0 on a new canvas, frozen while paused; at any cadence it advances by the wall time between rendered frames, and a switch to a faster cadence drops the idle gap like a resume, so the first frame after input has a normal one-frame delta).
 - `__hq.audio()` is a read-only audio probe (`floor`, `ambience`, `muted`, `played`: one-shot request counts); see [Audio](ci-and-deploy.md#audio).
 - A runtime quality monitor must take 60 fps as the ceiling and restart its sample window across a pause: `scene/frameMonitor.ts` treats a gap above `pauseMs` (a paused loop, a hidden tab) as a pause.
+
+### Idle cadence
+
+- While nothing moves the canvas drops from 60 fps (`scene/idle.ts`, run inline by `FrameLoop`; owner decision 2026-10-19). Idle means: no input (the rover's activity counter: `ACTIVITY_EVENTS` and intents), no store change and no resize for 1 s (`IDLE_AFTER_MS`), and for 1 s the camera matrix did not change (a moving rover moves the follow camera) and `sceneBusy` was false: no ride, beam, running mission, boot or intro, no face but the idle one (arrived with its flag, blocked, thinking, driving), no status line, no idle look, spin or hop (full motion).
+- The idle cadence is per floor (`idleCadence`), from the parked-motion inventory (on-screen step per 60 fps frame of everything that moves while parked; 30 fps doubles it):
+  - Full motion: 30 fps on L2 and B1 (slow pulses, shader flows, twinkles, the rover's bob: under 0.6 CSS px per frame). 60 on L1 and L3 (data packets at 2 u/s, about 1.4 px; the L3 reactor rings and hologram board), L4 (the newsroom ticker scrolling at 2.4 u/s) and RF (the drone's patrol, about 1.5 px).
+  - Reduced motion: on demand (cadence 0); 30 fps on L1, where the profile hologram keeps a slow spin.
+- On demand renders a frame on an R3F invalidation (prop changes, mounts, text syncs; `invalidateFrames`) and at a wake in clock seconds (`wakeFrameAt`): the rover's antenna flip (every pi/5 s, so at least every 0.63 s) and its eye blinks (`Rover.tsx`), and the running Day and night clock every 250 ms (`SkyController`). A reduced-motion idle blink of the rover's idle machine starts on the next of those frames.
+- Any input, store change (hover, ride, room, settings) or resize brings 60 fps back on the next animation frame, with a one-frame delta (`setPacerCadence`).
+- A new animation that judders at 30 fps (fast translation, scrolling text) on L2 or B1 changes that floor's full-motion rule to 60; one that keeps moving under reduced motion changes its floor's reduced rule to 30. A new time-driven change under reduced motion (a blink, a timer) calls `wakeFrameAt(clockSeconds)` from its `useFrame`, or counts as busy in `sceneBusy`.
+- Frames rendered below 60 fps (`framePacer.cadence < 60`) are not slow frames: the quality monitor holds, and the RUM probe and the `?perf=1` FPS skip them.
+- Bytes: about 0.69 KB gzip on the main 3D path, inline so the bytes gate counts it (a lazy chunk would load in every visitor session but never in the automated gate). Keep it lean: no store hooks or React wrappers, no per-floor tables, no new listeners (reuse the rover's activity counter and the store subscription).
+- Off under automation (`navigator.webdriver`), so e2e frame counts, `BUDGET_WINDOW`, the perf lane and the virtual clock see 60 fps; specs that hide the flag (`asHumanBrowser`) get the visitor's cadence. A test opts in with `window.__hq.idle.enabled = true`; `__hq.cadence()` reads the cadence and `__hq.idle` (`idleRuntime`: `enabled`, `lastActivity`, `stillSince`) whether the scene is quiet (`e2e/idle-cadence.spec.ts`, which waits on these, never on time).
 
 ### Pausing when covered
 

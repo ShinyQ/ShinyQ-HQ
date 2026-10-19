@@ -27,10 +27,11 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * 461.6 KB full, 445.9 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks) has its own
- * cap per tier: full 491.1 KB (measured 490.5 KB), lite 475.4 KB (measured 474.8 KB). Owner budget rule (decisions
- * 2026-10-16 and 2026-10-19, relayed for the L1 Agent Office 2026-10-19/20): each cap is the measured value plus about
- * 0.6 KB, re-set when the office merged main after the floor layouts left the Classic bundle and again for the office's look
- * offset and ghost outline rule on the main path (2026-10-20).
+ * cap per tier: full 491.1 KB (measured 490.5 KB), lite 475.4 KB (measured 474.8 KB). Owner decisions 2026-10-16
+ * and 2026-10-19 (the Study Vault; the floor layouts moved out of the Classic bundle, option A; the inline idle frame
+ * cadence, option A), relayed for the L1 Agent Office 2026-10-19/20: each cap, `failAt` included, is the measured value
+ * plus about 0.6 KB, re-set whenever the office merges main and for the office's look offset and ghost outline rule on the
+ * main path (2026-10-20).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.

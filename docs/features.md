@@ -82,6 +82,7 @@ Open `/en` and press **Boot rover**.
 - With reduced motion the camera does not move: the intro is a 0.9 s fade into the view behind Rover.
 - A deep link such as `/en/labs/<slug>` then rides on to its floor or room.
 - Add `?tier=lite` or `?tier=static` to force a tier.
+- Known-weak integrated GPUs (Intel HD and UHD Graphics, low-end Mali, Adreno 5xx and below) start on lite; the graphics quality setting can still pick full.
 
 ### Driving
 
