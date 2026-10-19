@@ -94,14 +94,19 @@ serves the site):
 SITE=https://kurniadi.pages.dev
 curl -sI "$SITE/api/guides/<slug>?v=<version>"
 curl -s -r 0-99 -o /dev/null -w "%{http_code}\n" "$SITE/api/guides/<slug>?v=<version>"
+curl -s -D - -o /dev/null -H 'Accept-Encoding: br, gzip' "$SITE/api/guides/<slug>?v=<version>"
 ```
 
 - The first prints `200`, `content-type: application/pdf`, `accept-ranges: bytes`, an `etag`,
   `cache-control: public, max-age=31536000, immutable, no-transform`, `content-security-policy:
   frame-ancestors 'none'` and `content-disposition: inline; filename="<file>"`.
 - The second prints `206` (a byte range, which pdf.js relies on).
-- `?download=1` switches the disposition to `attachment`. A wrong slug or a version missing from the bucket
-  answers 404; an R2 error answers 502 (the Function logs "GUIDES read failed" or "GUIDES binding missing").
+- The third (a full GET that offers compression) prints `200` with a `content-length` equal to the guide's
+  `bytes` and no `content-encoding` header (`no-transform` keeps Cloudflare from compressing the PDF, which would
+  break byte ranges).
+- `?download=1` switches the disposition to `attachment`. A wrong slug, a version missing from the bucket or a
+  missing `GUIDES` binding answers 404 (the last logs "GUIDES binding missing"); an R2 error answers 502 (the
+  Function logs "GUIDES read failed").
 - Open the Writing page's Study guides shelf (`/en/library#guides`), read a guide and download it.
 
 ## Safety scan
