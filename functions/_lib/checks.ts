@@ -243,7 +243,9 @@ export function unknownEmployers(text: string, entities: readonly string[]): str
 export function unknownNames(text: string, vocabulary: ReadonlySet<string>, extra: ReadonlySet<string> = new Set()): string[] {
   return properNouns(text).filter((word) => {
     const parts = word.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
-    return parts.some((part) => !vocabulary.has(part) && !COMMON_CAPS.has(part) && !extra.has(part) && !/^\d+$/.test(part));
+    // A plural of a known word ("LLMs" for "LLM") is known too.
+    const known = (part: string) => vocabulary.has(part) || (part.length > 3 && part.endsWith("s") && vocabulary.has(part.slice(0, -1)));
+    return parts.some((part) => !known(part) && !COMMON_CAPS.has(part) && !extra.has(part) && !/^\d+$/.test(part));
   });
 }
 
@@ -290,7 +292,7 @@ export function defamatoryWords(text: string, context: string): string[] {
  * is his written words and does not count; curly apostrophes are folded first.
  */
 const ROVER_I =
-  /^I(?:'m|\s+am)\s+(?:Rover|the (?:HQ's |small )?guide|a (?:small )?guide|only|not|just|sorry|afraid|unable|happy to)\b|^I(?:'ll|\s+will|'d|\s+would)\s+(?:point|show|take|guide|roll|answer|be happy)\b|^I(?:'ve|\s+have)\s+(?:found|checked|looked|searched|no)\b|^I\s+(?:answer|found|find|can|could|can't|cannot|couldn't|don't|do not|didn't|did not|only|have no|haven't|see|checked|looked|searched|scanned|spotted)\b/;
+  /^I(?:'m|\s+am)\s+(?:Rover|the (?:HQ's |small )?guide|a (?:small )?guide|only|not|just|sorry|afraid|unable|happy to)\b|^I(?:'ll|\s+will|'d|\s+would)\s+(?:point|show|take|guide|roll|answer|be happy)\b|^I(?:'ve|\s+have)\s+(?:found|checked|looked|searched|no)\b|^I(?:'d|\s+would)?\s+(?:suggest|recommend)\s+(?:asking|trying|checking|looking|reading|exploring|starting)\b|^I\s+(?:answer|found|find|can|could|can't|cannot|couldn't|don't|do not|didn't|did not|only|have no|haven't|see|checked|looked|searched|scanned|spotted)\b/;
 const ROVER_MY = /^[Mm]y\s+(?:map|maps|sensors?|circuits?|scanner|wheels|tour|antenna|search|apologies|name is Rover)\b/;
 /** "saya" as an object ("ke saya") or Rover's own guide verbs ("Saya Rover", "saya menemukan"). */
 const SAYA_BEFORE = /(?:^|\s)(?:ke|kepada|dari|oleh|untuk|pada|bagi|dengan|jawaban|peta|sensor)\s+$/i;

@@ -99,7 +99,7 @@ describe("persona requests and rule overrides", () => {
 });
 
 describe("Rover's voice in the output checks", () => {
-  it.each(["This is Kurniadi Ahmad Wijaya's portfolio, and I found two of his projects on this.", "I found two of his projects on this.", "I'm Rover, the guide robot of ShinyQ HQ.", "Beep! I can point you to his fraud review case study.", "Saya Rover. Saya menemukan dua proyeknya.", "From my map of the HQ, his projects are on L3."])(
+  it.each(["This is Kurniadi Ahmad Wijaya's portfolio, and I found two of his projects on this.", "I found two of his projects on this.", "I'm Rover, the guide robot of ShinyQ HQ.", "Beep! I can point you to his fraud review case study.", "Saya Rover. Saya menemukan dua proyeknya.", "Beep! I can only answer questions about Kurniadi's work, so I suggest asking about his projects or skills.", "From my map of the HQ, his projects are on L3."])(
     "lets Rover's own I through: %s",
     (text) => expect(firstPersonVoice(text)).toBe(false),
   );
@@ -118,6 +118,7 @@ describe("Rover's voice in the output checks", () => {
     "My name is Kurniadi and I specialize in AI.",
     "I have built several RAG assistants.",
     "I spent five years on fraud detection.",
+    "I suggest you use RAG for your chatbot.",
     "Aku bekerja di Metrodata.",
     "Proyek terbaik saya adalah ARIA.",
   ])("replaces Kurniadi's first person: %s", (text) => expect(firstPersonVoice(text)).toBe(true));
@@ -281,5 +282,13 @@ describe("golden scoring of the cite", () => {
     const text = "From his written view, a probabilistic model should not be the final authority.";
     expect(scoreGolden(text, item, {}).notes).toContain("no cite");
     expect(scoreGolden(text, item, { cite: "/blog/why-the-better-fraud-engine-shipped-in-shadow-mode" }).pass).toBe(true);
+  });
+});
+
+describe("entity check plurals (2026-10-19 samples)", () => {
+  it("accepts the plural of a known word and still flags unknown names", async () => {
+    const { unknownNames } = await import("../../functions/_lib/checks");
+    expect(unknownNames("He avoids using LLMs for exact work.", vocabulary)).toEqual([]);
+    expect(unknownNames("He worked with Zorblax on it.", vocabulary)).toEqual(["Zorblax"]);
   });
 });
