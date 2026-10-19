@@ -1,6 +1,7 @@
 # L4 Writing: study guides
 
 - Date: 2026-10-19
+- PR: [#243](https://github.com/ShinyQ/ShinyQ-HQ/pull/243)
 
 The owner's four certification study guides (AI-103, AI-901, GH-600, Google Generative AI Leader) are readable in
 the site: a pdf.js reader in a lazy chunk, streamed by HTTP Range from the private R2 bucket hq-study-guides
