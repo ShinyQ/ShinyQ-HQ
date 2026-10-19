@@ -100,11 +100,11 @@ export const RULES: Rule[] = [
   // The performance beacon Function is unit tested (tests/unit/rum-endpoint.test.ts); no e2e covers Functions locally.
   { test: /^functions\/(api\/rum|_lib\/rum)\.ts$/, specs: [] },
   // L1 Agent Office (3D, part 3 of the office): the layout and the shell on the main path, the lazy scene and drawer
-  // body chunks, the shared poller and model, the HUD chips host and the e2e fixtures. The spawn is within the
-  // office's load radius, so the Lobby specs (point-and-go, the tour) see the office too. Before the backend rule,
-  // which keeps the rest of src/lib/office/ (the protocol and the fixtures) unit tested only.
+  // body chunks, the shared client modules (the poller, the model, the protocol the scene and the room views import,
+  // the fixtures the e2e snapshots share), the HUD chips host and the e2e fixtures. The spawn is within the office's
+  // load radius, so the Lobby specs (point-and-go, the tour) see the office too. Before the backend rule below.
   {
-    test: /^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)|^src\/lib\/office\/(poll|model)\.ts$|^src\/hud\/OfficeLayer\.tsx$|^e2e\/office-fixtures\.ts$/,
+    test: /^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)|^src\/lib\/office\/(poll|model|fixtures|protocol)\.ts$|^src\/hud\/OfficeLayer\.tsx$|^e2e\/office-fixtures\.ts$/,
     specs: ["office", "experience", "highlights", "interact", "onboarding"],
   },
   // Agent Office backend (part 1): unit tested in tests/office; the 3D office and the Classic card add their specs.
@@ -375,6 +375,8 @@ const ALSO_RULES: Rule[] = [
   { test: /^src\/store\/|^src\/experience\/(Experience|ExperienceGate)\.tsx$|^src\/lib\/audio\/engine\.ts$/, specs: ["b1-unlock"] },
   // Cmd-K's gated action (the unlock moment's host files keep their own specs).
   { test: /^src\/hud\/(hudActions|search|palette-types|MissionHud)\.tsx?$/, specs: ["b1-unlock"] },
+  // The office chips host keeps the specs of the HUD folder rule it matched before the office rule.
+  { test: /^src\/hud\/OfficeLayer\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud"] },
   {
     test: /^src\/lib\/(floors\.ts|audio\/ambience\.ts)$|^src\/hud\/drawer\/(data|data-path)\.ts$|^src\/hud\/drawer\/(bodies|DrawerHost)\.tsx$|^src\/experience\/tower\/(ElevatorShaft|Tower)\.tsx$|^src\/experience\/sky\/SkyController\.tsx$|^src\/experience\/floors\/(floorChunks|floorPrefetch)\.ts$|^src\/experience\/floors\/(FloorChunkPrefetch|lazyFloors)\.tsx$|^src\/hud\/(FloorButtons|CommandPalette)\.tsx$|^src\/hud\/pads\/(picker\.ts|PadPicker\.tsx)$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["engine-room"],

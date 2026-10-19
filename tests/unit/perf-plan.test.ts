@@ -24,16 +24,19 @@ function perfTitles(): string[] {
 }
 
 describe("perfKeysFor", () => {
-  it("selects the bytes gate and the L1 gates for the office's shared client modules and its scene", () => {
-    expect(perfKeysFor(["src/lib/office/poll.ts"])).toEqual(["bytes", "floor:L1"]);
-    expect(perfKeysFor(["src/lib/office/model.ts"])).toEqual(["bytes", "floor:L1"]);
+  it("selects the bytes gate and the L1 and B1 gates for the office's shared client modules and its scene", () => {
+    for (const file of ["src/lib/office/poll.ts", "src/lib/office/model.ts", "src/lib/office/protocol.ts"])
+      expect(perfKeysFor([file]), file).toEqual(["bytes", "floor:L1", "floor:B1"]);
     for (const file of [
       "src/experience/floors/lobby/office/OfficeScene.tsx",
       "src/experience/floors/lobby/office/OfficeBody.tsx",
       "src/experience/floors/lobby/office/body.ts",
       "src/experience/floors/lobby/officeShell.ts",
+      "src/experience/floors/lobby/officeLayout.ts",
     ])
-      expect(perfKeysFor([file]), file).toEqual(["boot", "bytes", "floor:L1", "hover"]);
+      expect(perfKeysFor([file]), file).toEqual(["boot", "bytes", "floor:L1", "floor:B1", "hover"]);
+    // The rest of the Lobby keeps the Lobby keys.
+    expect(perfKeysFor(["src/experience/floors/lobby/hallLayout.ts"])).toEqual(["boot", "bytes", "floor:L1", "hover"]);
   });
 
   it("selects the floor, its rides and the bytes gate for L3 code", () => {
