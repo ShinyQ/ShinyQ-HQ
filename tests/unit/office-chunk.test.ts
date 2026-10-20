@@ -25,9 +25,10 @@ describe("Agent Office chunk trigger", () => {
 
   it("measures 25 u from the wing's stop: the lead road and the wing load it, the spawn and the elevator arrival do not", () => {
     expect(OFFICE.loadRadius).toBe(25);
-    // Spawn 30.8 u and arrival 38.6 u from the stop: a session that never heads south does not fetch the office.
-    expect(dist(LOBBY.spawn)).toBeCloseTo(30.82, 1);
-    expect(dist(LOBBY.arrival)).toBeCloseTo(38.56, 1);
+    // Spawn 33.2 u and arrival 44.4 u from the stop (the 54 u deep Lobby, more room 2026-10-19): a session that never
+    // heads south does not fetch the office.
+    expect(dist(LOBBY.spawn)).toBeCloseTo(33.21, 1);
+    expect(dist(LOBBY.arrival)).toBeCloseTo(44.42, 1);
     expect(officeLoadWanted({ ...base, at: LOBBY.spawn })).toBe(false);
     expect(officeLoadWanted({ ...base, floor: "L3", rideTo: "L1", at: LOBBY.arrival })).toBe(false);
     // The lead road's Lobby end (24.5 u) and every corner of the wing are inside.

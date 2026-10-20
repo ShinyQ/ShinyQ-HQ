@@ -2,6 +2,7 @@ import type { FloorId, RoomId } from "@/content/schema";
 import type { ViewZone } from "../../camera/orbit";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { DoorTrigger, Rect, Vec2 } from "../../types";
+import { OFFICE_WING } from "./officeLayout";
 import { LOBBY_SLAB } from "./slab";
 import { HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "./stations";
 
@@ -24,11 +25,11 @@ export const HALL = {
   /** Drives that start or end in here follow the hall road (`FloorLayout.roadZone`); east of the cert wall. */
   zone: { minX: X0 - 1, maxX: X0 + 36, minZ: -Z, maxZ: Z },
   /**
-   * Starts 6 u east of the Agent Office wing's east edge (x = 18, the wing hangs off the south slab edge), so the
+   * Starts 6 u east of the Agent Office wing's east edge (`OFFICE_WING.maxX`, the wing hangs off the south slab edge), so the
    * road's driving width keeps 6 u from the wing's north-east corner (owner, 2026-10-19).
    */
   lead: [
-    { x: 24, z: LEAD_Z },
+    { x: OFFICE_WING.maxX + 6, z: LEAD_Z },
     { x: X0 + 8, z: LEAD_Z },
   ],
   /** The plaza keeps 8 u to the north stations, 2 u to the contact station and 3 u to the experience arch. */

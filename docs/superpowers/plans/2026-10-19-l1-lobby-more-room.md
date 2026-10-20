@@ -21,7 +21,7 @@ Status: in review (owner request 2026-10-19, Proposal A approved).
 
 - [x] `LOBBY_SLAB` (minX -24, halfZ 27, hallX 33); `HALL` stations, lead road (z = halfZ - 6), plaza, gate, entry, zone and lazyX as offsets; gallery (about center, monolith backZ, contact card, fountain) from them.
 - [x] `LOBBY`: bounds from the slab, lane ring 13.5, stats ring 11, skills wall flush north (`skillsWallRect`, the plinth footprint), cert arc 23.5 (`LOBBY.certWall.radius`, read by `CERT_WALL`), kiosk at 22.5 u, observatory in the new south-west corner; the arrival point stays at (-6, 0) with its zooms (a farther arrival point forces narrower zooms that put the name under the HUD at 1194x834).
-- [x] Spawn view zooms retuned on captures (desktop 1.7, tablets 1.8, phones 1.95); intro `revealReach` 90; the pinned desktop intro poses re-captured, compared to 1e-9 u (the last bit varies with the JIT tier).
+- [x] Spawn view zooms retuned on captures (desktop 1.7, landscape tablets 1.8, phones and portrait tablets 1.85); intro `revealReach` 90; the pinned desktop intro poses re-captured, compared to 1e-9 u (the last bit varies with the JIT tier).
 - [x] Unit tests: lobby-layout (54 u slab, walkways at least 6 u), highlights-layout (no space-rule breach), hall-gallery (gate at x 38, lead road z 21), intro (phone orbit radius bound 28 for the zoomed-out landing).
 - [x] Docs: `docs/agents/floor-l1-lobby.md`, `docs/agents/stats.md`, `docs/features.md`, decision `docs/decisions/2026-10-19-l1-lobby-more-room.md`.
 - [ ] Rebase onto Office PR3; keep its lead road in the x -3 to 9 corridor south of the ring.

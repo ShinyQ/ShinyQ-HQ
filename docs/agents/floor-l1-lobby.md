@@ -118,7 +118,7 @@ Design: owner decisions D1 to D7 ([2026-10-18](../decisions/2026-10-18-agent-off
 
 ### Layout
 
-The office has its own south wing of the L1 slab ([owner decision](../decisions/2026-10-20-agent-office-wing.md)), reached by a lead road from the Lobby plaza like the Highlights Hall. Everything derives from S, the Lobby's south slab edge (`LOBBY.bounds.maxZ`, 21): `OFFICE_WING` holds the offsets and `officeWing(S)` builds `LOBBY.officeWing` in config.ts, the one source every reader uses (layout, shell, chunk trigger, scene, e2e, scripts). The office functions take the wing (`officeSlots(w)`, `officeObstacles(w)`, `officeStops(w)`, `officeZone(w)`, `officeRoad(w)`, ...). x values are absolute.
+The office has its own south wing of the L1 slab ([owner decision](../decisions/2026-10-20-agent-office-wing.md)), reached by a lead road from the Lobby plaza like the Highlights Hall. Everything derives from S, the Lobby's south slab edge (`LOBBY.bounds.maxZ` = `LOBBY_SOUTH_EDGE` in `floors/lobby/spawn.ts`, from `LOBBY_SLAB.halfZ`: 27): `OFFICE_WING` holds the offsets and `officeWing(S)` builds `LOBBY.officeWing` in config.ts, the one source every reader uses (layout, shell, chunk trigger, scene, e2e, scripts). The office functions take the wing (`officeSlots(w)`, `officeObstacles(w)`, `officeStops(w)`, `officeZone(w)`, `officeRoad(w)`, ...). x values are absolute.
 
 | Item | Offsets from S |
 |---|---|
@@ -215,7 +215,7 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 | Zone | Where | Camera |
 |---|---|---|
-| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (tablets 1.8, phones 1.95), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
+| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
 | `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0), just inside the lane ring's west point | behind the rover, looking east at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 0.88, the widest views that keep the camera east of the glass shaft |
 | `L1:visits` | the observatory door | |
 

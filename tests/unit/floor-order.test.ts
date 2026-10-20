@@ -6,15 +6,15 @@ import * as order from "@/experience/floorOrder";
 import { LOBBY_SPAWN, LOBBY_SPAWN_HEADING } from "@/experience/floors/lobby/spawn";
 import { ROOT, staticClosure } from "../helpers/import-graph";
 
-const LIGHT = ["src/experience/floorOrder.ts", "src/experience/floors/lobby/spawn.ts"];
+const LIGHT = ["src/experience/floorOrder.ts", "src/experience/floors/lobby/spawn.ts", "src/experience/floors/lobby/slab.ts"];
 /**
  * Light 3D modules Classic code reads on purpose: the Visitor Observatory room id, the career type icons (TypeIcon) and
  * the Agent Office loader (the drawer bodies load the office drawer body through it; it reads officeLayout.ts).
  */
 const CLASSIC_OK = ["src/experience/floors/lobby/visitsRoom.ts", "src/experience/fx/holoIcons.ts", "src/experience/floors/lobby/office/chunk.ts"];
 
-/** Value imports the light modules may make: the floor lists only (types are erased). */
-const ALLOWED_VALUE_IMPORTS = new Set(["@/lib/floors"]);
+/** Value imports the light modules may make: the floor lists and the import-free L1 slab constant (types are erased). */
+const ALLOWED_VALUE_IMPORTS = new Set(["@/lib/floors", "./slab"]);
 const ALLOWED_TYPE_IMPORTS = new Set(["@/lib/floors", "@/content/schema", "../types", "../../types"]);
 
 /** Modules every Classic page loads (the store and the HUD pieces the layout mounts) that must stay off the floor layouts. */

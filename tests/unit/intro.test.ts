@@ -196,7 +196,7 @@ describe("intro timeline", () => {
     for (let t = pullEnd; t <= INTRO.duration + 1e-9; t += 1 / 60) {
       const p = introPose(phone, t).position;
       const c = orbitCenter(phone, t);
-      // The landing is the spawn view's follow distance (zoom 1.95 since more room), still well inside 42 u.
+      // The landing is the spawn view's follow distance (zoom 1.85 since more room), still well inside 42 u.
       expect(Math.hypot(p[0] - c[0], p[2] - c[2])).toBeLessThan(28);
       top = Math.max(top, p[1]);
     }

@@ -23,9 +23,12 @@ export const OBSERVATORY_VIEW = {
    * axis (hologram, rover, kiosk, observatory in one column), zoomed out a little more.
    */
   spawnTurn: 0.62,
-  /** Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. */
+  /**
+   * Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. Phones stay at
+   * 1.85 or under, so the office wing sign is out of a portrait tablet's frame, never a sliver at its edge.
+   */
   spawnZoom: 1.7,
-  spawnZoomNarrow: { tablet: 1.8, mobile: 1.95 },
+  spawnZoomNarrow: { tablet: 1.8, mobile: 1.85 },
   /** Half size of the spawn zone around the kiosk stop. */
   spawnHalf: 2.5,
 } as const;
