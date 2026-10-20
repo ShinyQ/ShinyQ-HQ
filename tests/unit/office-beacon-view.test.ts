@@ -9,11 +9,13 @@ import { followCamera, SIZES } from "../helpers/office-cameras";
 /**
  * The Needs Kurniadi beacon from the Lobby (design 2026-10-20 section 5.3): the share of the column's height (its axis,
  * floor to `BEACON.h`) that projects inside the screen, from the settled follow cameras of
- * tests/unit/office-chip-placement.test.ts (`tests/helpers/office-cameras.ts`) on the six sizes the office is tuned on.
- * From the primed spawn (the kiosk view looks south over the wing) every landscape size shows at least 30% of it, for a
- * single asking Rover's origin and the plaza centre. The elevator arrival view looks east at the hologram and the hall
- * lead road's views look north-west or east into the hall, with the wing behind the camera, so the column never shows
- * there; the portrait sizes miss it from the spawn too. Those are recorded below (they must equal the measured lists),
+ * tests/unit/office-chip-placement.test.ts (`tests/helpers/office-cameras.ts`) on the seven sizes the office is tuned on.
+ * From the primed spawn (the kiosk view looks south over the wing) every landscape size but the 960 x 640 tablet
+ * viewport shows at least 30% of it (measured 33.7 to 77%), for a single asking Rover's origin and the plaza centre.
+ * The elevator arrival view looks east at the hologram and the hall lead road's views look north-west or east into the
+ * hall, with the wing behind the camera, so the column never shows there; the portrait sizes miss it from the spawn
+ * too, and so does the 960 x 640 tablet viewport for desks 1 to 3 (their columns fall outside its narrower frame;
+ * desks 4 and 5 and the plaza centre show 39 to 60%). Those are recorded below (they must equal the measured lists),
  * and the minimap cue (Task 8) carries the signal there.
  */
 
@@ -46,7 +48,7 @@ const landscape = (s: Size) => s.width > s.height;
 
 /** Where the column (slot 2's origin) shows under 30% of its height: the minimap cue carries the signal there. */
 const BLIND: Record<string, readonly string[]> = {
-  spawn: ["portrait tablet", "phone"],
+  spawn: ["portrait tablet", "tablet", "phone"],
   arrival: SIZES.map((s) => s.id),
   "hall road west": SIZES.map((s) => s.id),
   "hall road east": SIZES.map((s) => s.id),
@@ -57,7 +59,7 @@ describe("the beacon from the Lobby", () => {
     Object.entries(VIEWS).map(([view, camera]) => [view, Object.fromEntries(SIZES.map((s) => [s.id, Object.fromEntries(Object.entries(ORIGINS).map(([o, at]) => [o, onScreen(camera(s), at)]))]))]),
   ) as Record<string, Record<string, Record<string, number>>>;
 
-  it.each(SIZES.filter(landscape))("shows at least 30% of the column from the primed spawn on $id ($width x $height), whoever asks", ({ id }) => {
+  it.each(SIZES.filter((s) => landscape(s) && !BLIND.spawn.includes(s.id)))("shows at least 30% of the column from the primed spawn on $id ($width x $height), whoever asks", ({ id }) => {
     for (const [o, share] of Object.entries(measured.spawn[id])) expect(share, `${o} from the spawn`).toBeGreaterThanOrEqual(VISIBLE);
   });
 
