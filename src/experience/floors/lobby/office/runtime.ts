@@ -19,11 +19,15 @@ const farListeners = new Set<() => void>();
 const notify = () => farListeners.forEach((listener) => listener());
 
 export function setChipFar(slot: number, far: boolean): void {
-  if (officeRuntime.far[slot] !== far) (officeRuntime.far[slot] = far), notify();
+  if (officeRuntime.far[slot] === far) return;
+  officeRuntime.far[slot] = far;
+  notify();
 }
 
 export function setChipsCompact(compact: boolean): void {
-  if (officeRuntime.compact !== compact) (officeRuntime.compact = compact), notify();
+  if (officeRuntime.compact === compact) return;
+  officeRuntime.compact = compact;
+  notify();
 }
 
 export const subscribeChipFar = (listener: () => void): (() => void) => {
