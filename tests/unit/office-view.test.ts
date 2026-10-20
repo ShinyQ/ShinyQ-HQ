@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ViewportClass } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
-import { chipLines, NEAR_DROP, NEAR_DROPS, nearDropsFor, nearHead, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
+import { chipLines, nearDropsFor, nearParts, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
 import type { OfficeFeedSnapshot } from "@/lib/office/poll";
@@ -58,26 +58,26 @@ describe("Agent Office view model", () => {
 
   it("writes chip lines: the name, agent and activity, the title or Client project, CI progress, and the full label", () => {
     const view = ready(statesA(NOW));
-    expect(chipLines(view.rovers[0], t)).toEqual({ name: "Copilot", base: "Copilot · Editing", head: "Copilot · Editing", helpers: null, task: "Agent office scene", progress: null, label: "Desk 1: Copilot · Editing, Agent office scene" });
-    expect(chipLines(view.rovers[1], t)).toEqual({ name: "Claude", base: "Claude · Planning", head: "Claude · Planning", helpers: null, task: "Client project", progress: null, label: "Desk 2: Claude · Planning, Client project" });
+    expect(chipLines(view.rovers[0], t)).toEqual({ name: "Copilot", activity: "Editing", base: "Copilot · Editing", head: "Copilot · Editing", helpers: null, task: "Agent office scene", progress: null, label: "Desk 1: Copilot · Editing, Agent office scene" });
+    expect(chipLines(view.rovers[1], t)).toEqual({ name: "Claude", activity: "Planning", base: "Claude · Planning", head: "Claude · Planning", helpers: null, task: "Client project", progress: null, label: "Desk 2: Claude · Planning, Client project" });
     expect(chipLines(view.rovers[4], t).progress).toBeCloseTo(7 / 12);
     expect(chipLines(view.rovers[4], t).label).toMatch(/^Desk 5: .+, Office chips, 7 of 12 jobs$/);
     const helpers = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
     expect(chipLines(helpers.rovers[0], t)).toMatchObject({ base: "Copilot · Editing", head: "Copilot · Editing · 3 helpers", helpers: "3 helpers" });
     expect(chipLines(helpers.rovers[0], t).label).toMatch(/^Desk 1: Copilot · Editing · 3 helpers, /);
-    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", base: "Off duty", head: "Off duty", helpers: null, task: null, progress: null, label: "Desk 5: Off duty" });
+    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", activity: null, base: "Off duty", head: "Off duty", helpers: null, task: null, progress: null, label: "Desk 5: Off duty" });
   });
 
-  it("drops a near chip's head part by part, the agent's name always whole", () => {
+  it("splits a near chip's head into the name, the activity (the part an ellipsis cuts) and the helpers, whose word alone may go", () => {
     const helpers = chipLines(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot }).rovers[0], t);
-    expect(NEAR_DROPS).toBe(NEAR_DROP.name);
-    expect([0, NEAR_DROP.activity, NEAR_DROP.word, NEAR_DROP.name].map((d) => nearHead(helpers, 3, d))).toEqual(["Copilot · Editing · 3 helpers", "Copilot · 3 helpers", "Copilot · 3", "Copilot"]);
-    expect(nearDropsFor(helpers)).toBe(NEAR_DROPS);
+    expect(nearParts(helpers, 3, 0)).toEqual({ name: "Copilot", activity: "Editing", helpers: "3 helpers" });
+    expect(nearParts(helpers, 3, 1)).toEqual({ name: "Copilot", activity: "Editing", helpers: "3" });
+    expect(nearDropsFor(helpers)).toBe(1);
     const plain = chipLines(ready(statesA(NOW)).rovers[1], t);
-    expect([0, NEAR_DROP.activity, NEAR_DROPS].map((d) => nearHead(plain, 0, d))).toEqual(["Claude · Planning", "Claude", "Claude"]);
-    expect(nearDropsFor(plain)).toBe(NEAR_DROP.activity);
+    expect([0, 1].map((d) => nearParts(plain, 0, d))).toEqual([0, 1].map(() => ({ name: "Claude", activity: "Planning", helpers: null })));
+    expect(nearDropsFor(plain)).toBe(0);
     const off = chipLines(ready(statesB(NOW)).rovers[4], t);
-    expect(nearHead(off, 0, 1)).toBe("Off duty");
+    expect(nearParts(off, 0, 1)).toEqual({ name: "Off duty", activity: null, helpers: null });
     expect(nearDropsFor(off)).toBe(0);
   });
 

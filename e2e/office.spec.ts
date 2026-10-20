@@ -669,17 +669,25 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-helpers")).toHaveText("3");
     await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-helpers")).toHaveText("6");
     await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-more")).toHaveCount(0);
-    // One zoom key step brings the chips near: the head keeps the whole name and the total, and the pill the two drones not
-    // drawn; a head that does not fit drops the activity, then the word "helpers", never the pill or a name.
+    // One zoom key step brings the chips near: the head keeps the whole name, the activity (cut by an ellipsis when space
+    // runs out, never dropped) and the total, and the pill the two drones not drawn; a head that does not fit drops only
+    // the word "helpers".
     await page.keyboard.press("=");
     await waitForCameraSettle(page);
     await expect(chip(page, CREW_SLOT.six)).toHaveAttribute("data-far", "false");
     const six = chip(page, CREW_SLOT.six).getByTestId("office-chip-head");
-    await expect(six).toHaveText(/^Claude · (.+ · )?6( helpers)?$/);
+    await expect(six).toHaveText(/^Claude · .+ · 6( helpers)?$/);
     await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-more")).toHaveText("+2");
     await expect(page.getByTestId("office-chip-more")).toHaveCount(1);
-    await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-head")).toHaveText(/^Copilot · (Editing · )?3( helpers)?$/);
-    for (const el of await page.getByTestId("office-chip-head").all()) expect(await el.evaluate((h) => h.scrollWidth <= h.clientWidth), await el.innerText()).toBe(true);
+    await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-head")).toHaveText(/^Copilot · Editing · 3( helpers)?$/);
+    for (const el of await page.getByTestId("office-chip-head").all()) {
+      const fit = await el.evaluate((h) => {
+        const name = h.querySelector<HTMLElement>("[data-testid=office-chip-name]")!;
+        const cut = h.querySelector<HTMLElement>("[data-testid=office-chip-activity]");
+        return { head: h.scrollWidth <= h.clientWidth, name: name.scrollWidth <= name.clientWidth, ellipsis: !cut || getComputedStyle(cut).textOverflow === "ellipsis" };
+      });
+      expect(fit, await el.innerText()).toEqual({ head: true, name: true, ellipsis: true });
+    }
     // CREW_B: the 6 and the 3 moved to slots 2 and 3; the sleeping Rovers draw none, desk 5's stale count of 2 included.
     await show(page, office, CREW_B, CREW_B_STATES);
     await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([0, 0, 4, 3, 0]);

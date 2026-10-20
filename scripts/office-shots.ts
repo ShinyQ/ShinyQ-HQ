@@ -23,7 +23,7 @@
  * The living crew (v2 snapshots, `e2e/office-fixtures.ts`; the beacon's watch reads the v1 path, answered `asV1`):
  * `crew-a` and `crew-b` at the office stop (far chips) once each Rover holds its state's pose and the helper drones
  * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" and the "+2"
- * pill (a head that does not fit drops its activity, then the word "helpers", never the pill); `beacon-spawn` at the
+ * pill (an activity that does not fit ends in an ellipsis, a head that still does not fit drops the word "helpers", never the pill); `beacon-spawn` at the
  * primed spawn with one desk asking (`CREW_A`), the beacon column and the minimap cue lit; `beacon-stop` at the stop with
  * that desk asking (the column hidden, faint bands at the asking Rover); `asleep` every desk asleep (docked Rovers,
  * dimmed desks, charge pads).

@@ -91,20 +91,23 @@ describe("Agent Office chips", () => {
   };
   const pill = (slot: number) => chip(slot).querySelector("[data-testid=office-chip-more]");
 
-  it("drops a near head's activity, then the word helpers, never the +N pill or the agent's name; the label keeps the full text", () => {
+  const activity = (slot: number) => chip(slot).querySelector<HTMLElement>("[data-testid=office-chip-activity]");
+
+  it("cuts a near head's activity with an ellipsis and drops only the word helpers, never the activity, the name or the +N pill; the label keeps the full text", () => {
     live.feed = claudeSix();
     const restore = mockHeadWidths(140, 110);
     try {
       renderChips();
-      // "Copilot · Editing · 3 helpers" (203 px) drops the activity: "Copilot · 3 helpers" (133 px) fits.
-      expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
+      // "Copilot · Editing · 3 helpers" (203 px) overflows: the word goes, the activity stays (cut by its ellipsis).
+      expect(head(0)).toHaveTextContent(/^Copilot · Editing · 3$/);
       expect(head(0)).toHaveAttribute("data-drop", "1");
+      expect(activity(0)).toHaveTextContent(/^· Editing$/);
       expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Desk 1: Copilot · Editing · 3 helpers, /));
-      // Beside the "+2" pill "Claude · 6 helpers" (126 px) does not fit either: the word goes, "Claude · 6" and the pill stay.
-      expect(head(2)).toHaveTextContent(/^Claude · 6$/);
-      expect(head(2)).toHaveAttribute("data-drop", "2");
+      // Beside the "+2" pill: "Claude · Watching CI · 6" and the pill.
+      expect(head(2)).toHaveTextContent(/^Claude · Watching CI · 6$/);
+      expect(head(2)).toHaveAttribute("data-drop", "1");
       expect(pill(2)).toHaveTextContent(/^\+2$/);
-      expect(chip(2)).toHaveTextContent(/^Claude · 6\+2$/);
+      expect(chip(2)).toHaveTextContent(/^Claude · Watching CI · 6\+2$/);
       expect(chip(2)).toHaveAttribute("aria-label", expect.stringContaining("Claude · Watching CI · 6 helpers"));
       // A head that fits stays whole: "Claude · Planning" (119 px).
       expect(head(1)).toHaveTextContent(/^Claude · Planning$/);
@@ -113,50 +116,54 @@ describe("Agent Office chips", () => {
       act(() => setChipFar(0, true));
       expect(chip(0)).toHaveTextContent(/^Copilot3$/);
       act(() => setChipFar(0, false));
-      expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
+      expect(head(0)).toHaveTextContent(/^Copilot · Editing · 3$/);
     } finally {
       restore();
     }
   });
 
-  it("keeps the word helpers beside the +N pill when it fits once the activity is gone", () => {
+  it("keeps the word helpers while the head fits", () => {
     live.feed = claudeSix();
-    const restore = mockHeadWidths(140, 130);
+    const restore = mockHeadWidths(260, 260);
     try {
       renderChips();
-      expect(head(2)).toHaveTextContent(/^Claude · 6 helpers$/);
-      expect(head(2)).toHaveAttribute("data-drop", "1");
-      expect(pill(2)).toHaveTextContent(/^\+2$/);
-      expect(chip(2)).toHaveTextContent(/^Claude · 6 helpers\+2$/);
+      expect(head(2)).toHaveTextContent(/^Claude · Watching CI · 6 helpers$/);
+      expect(head(2)).toHaveAttribute("data-drop", "0");
+      expect(chip(2)).toHaveTextContent(/^Claude · Watching CI · 6 helpers\+2$/);
     } finally {
       restore();
     }
   });
 
-  it("keeps the +N pill beside the name alone, the deepest drop", () => {
-    live.feed = claudeSix();
-    // Even the name (42 px) overflows a 30 px span: the truncating span is the safety net.
-    const restore = mockHeadWidths(30, 30);
+  it("never drops a long activity without helpers: the ellipsis cuts it, the head keeps all its text", () => {
+    live.feed = { status: "ready", snapshot: statesB(Date.now()), fetchedAt: Date.now() };
+    const restore = mockHeadWidths(60, 60);
     try {
       renderChips();
-      expect(head(2)).toHaveTextContent(/^Claude$/);
-      expect(head(2)).toHaveAttribute("data-drop", "3");
-      expect(pill(2)).toHaveTextContent(/^\+2$/);
-      // A head with nothing left to drop is not measured again: an agent without helpers stops at its name (drop 1).
-      expect(head(1)).toHaveTextContent(/^Claude$/);
-      expect(head(1)).toHaveAttribute("data-drop", "1");
+      expect(head(0)).toHaveTextContent(/^Codex · Asking Kurniadi$/);
+      expect(head(0)).toHaveAttribute("data-drop", "0");
+      expect(activity(0)).toHaveTextContent(/^· Asking Kurniadi$/);
     } finally {
       restore();
     }
   });
 
-  it("keeps a near head whole while it fits (one truncating span, the safety net)", () => {
+  it("lays a near head out as the name and the helpers (never shrinking) around the activity, the part an ellipsis cuts", () => {
     live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
     renderChips();
-    expect(head(2)).toHaveClass("min-w-0", "truncate");
+    expect(head(2)).toHaveClass("flex", "min-w-0", "overflow-hidden", "whitespace-pre");
     expect(head(2)).toHaveAttribute("data-drop", "0");
-    expect(head(2).children).toHaveLength(0);
+    const [name, cut, count] = Array.from(head(2).children) as HTMLElement[];
+    expect(name).toHaveAttribute("data-testid", "office-chip-name");
+    expect(name).toHaveClass("shrink-0");
+    expect(cut).toBe(activity(2));
+    expect(cut).toHaveClass("min-w-0", "overflow-hidden", "text-ellipsis");
+    expect(cut.style.minWidth).toBe("3.5em");
+    expect(count).toHaveClass("shrink-0");
+    expect(count).toHaveTextContent(/^· 6 helpers$/);
     expect(head(2).nextElementSibling).toHaveAttribute("data-testid", "office-chip-more");
+    // Without helpers the activity may shrink to nothing: the name always fits a near chip.
+    expect(activity(1)!.style.minWidth).toBe("0px");
   });
 
   it("says one helper, and in Indonesian asisten", () => {
