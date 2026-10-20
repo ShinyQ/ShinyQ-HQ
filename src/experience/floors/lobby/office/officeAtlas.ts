@@ -40,6 +40,9 @@ export function atlasCell(index: number): Cell {
   return index < 5 ? faceCell(index) : screenCell(index - 5);
 }
 
+/** The flag plate (one cell shared by every Rover): right of the five faces in the top row. */
+export const FLAG_CELL: Cell = { x: 5 * FACE_W, y: 0, w: FACE_W, h: FACE_H };
+
 /** Texel origin of a cell for a partial upload into the flipY atlas texture (rows count from the bottom). */
 export function uploadOrigin(c: Cell): { x: number; y: number } {
   return { x: c.x, y: ATLAS.h - c.y - c.h };
@@ -205,6 +208,16 @@ export function drawFace(ctx: CanvasRenderingContext2D, cell: Cell, kind: FaceKi
       break;
   }
   ctx.restore();
+}
+
+/** The flag: the input tone with a white "!" mark (a symbol, not a word). */
+export function drawFlag(ctx: CanvasRenderingContext2D, c: Cell, color: string): void {
+  ctx.clearRect(c.x, c.y, c.w, c.h);
+  ctx.fillStyle = color;
+  ctx.fillRect(c.x + 4, c.y + 4, c.w - 8, c.h - 8);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(c.x + c.w / 2 - 6, c.y + 18, 12, 40);
+  ctx.fillRect(c.x + c.w / 2 - 6, c.y + 66, 12, 12);
 }
 
 export interface ScreenInput {

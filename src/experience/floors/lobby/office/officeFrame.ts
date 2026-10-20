@@ -1,6 +1,6 @@
 import type { OfficeState } from "@/lib/office/protocol";
 import { FACE_FPS_MAX } from "./officeAtlas";
-import { CROSSFADE_S, type OfficePose } from "./officeVisual";
+import { CROSSFADE_S, poseChanged, type OfficePose } from "./officeVisual";
 import { wallSpin, type WallModel } from "./officeWall";
 
 /**
@@ -35,7 +35,7 @@ export class RoverWrites {
   /** Records the slot's pose; true when it changed (its matrices, face quad and chip anchor need writing, its glow too). */
   pose(slot: number, p: OfficePose): boolean {
     const a = this.poses[slot];
-    if (a.y === p.y && a.rx === p.rx && a.ry === p.ry && a.rz === p.rz && a.armL === p.armL && a.armR === p.armR && a.tipScale === p.tipScale) return false;
+    if (!poseChanged(a, p)) return false;
     Object.assign(a, p);
     this.posePending[slot] = true;
     this.glowPending[slot] = true;

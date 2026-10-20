@@ -5,13 +5,15 @@ import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "
 
 /**
  * Instance matrices and quad corners for the office Rovers, written in place every frame the office is in view
- * (no allocation in the write functions: module temporaries and constant tables; `glowKey` builds a short string). Chest, head, two arms and the antenna stalk share one instanced mesh,
- * the treads another; the faces and desk screens are corners of one merged quad mesh; the antenna tips, the
- * halos and the progress dots are one instanced holo mesh.
+ * (no allocation in the write functions: module temporaries and constant tables; `glowKey` builds a short string). Chest, head, two arms, the antenna stalk and the flag pole share one
+ * instanced mesh, the treads another; the faces, desk screens and flag plates are corners of one merged quad mesh;
+ * the antenna tips, the halos and the progress dots are one instanced holo mesh.
  */
-export const PARTS_PER_ROVER = 5;
+export const PARTS_PER_ROVER = 6;
 export const TREADS_PER_ROVER = 2;
 export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count;
+/** The flag pole (in the parts mesh) and plate (a quad on the atlas's flag cell), held in the raised left hand. */
+export const FLAG = { pole: { w: 0.06, h: 1.2 }, plate: { w: 0.6, h: 0.4 } } as const;
 
 const M = new Matrix4();
 const A = new Matrix4();
@@ -21,6 +23,7 @@ const E = new Euler(0, 0, 0, "YXZ");
 const V = new Vector3();
 const S = new Vector3();
 const T = new Vector3();
+const ACROSS = new Vector3();
 const ONE = new Vector3(1, 1, 1);
 const C = new Color();
 const FLAT = new Quaternion().setFromEuler(new Euler(-Math.PI / 2, 0, 0));
@@ -30,10 +33,20 @@ const QUAD_X = [-0.5, 0.5, 0.5, -0.5] as const;
 const QUAD_Y = [-0.5, -0.5, 0.5, 0.5] as const;
 type Part = readonly [number, number, number, number, number, number];
 
-/** The Rover's frame: its spot, turned to face the arc centre, plus the pose (bob, pitch, sway, roll). */
+/** The Rover's frame: its spot plus the pose's offsets on its own axes, turned to face the arc centre plus the pose's turn. */
 export function roverFrame(slot: OfficeSlot, p: OfficePose, out: Matrix4): Matrix4 {
-  E.set(p.rx, slot.yaw + p.ry, p.rz, "YXZ");
-  return out.compose(T.set(slot.rover.x, p.y, slot.rover.z), Q.setFromEuler(E), ONE);
+  const c = Math.cos(slot.yaw);
+  const s = Math.sin(slot.yaw);
+  // Local x is (cos yaw, -sin yaw) and local z (sin yaw, cos yaw) in floor x and z.
+  T.set(slot.rover.x + p.x * c + p.z * s, p.y, slot.rover.z - p.x * s + p.z * c);
+  E.set(p.rx, slot.yaw + p.ry + p.yaw, p.rz, "YXZ");
+  return out.compose(T, Q.setFromEuler(E), ONE);
+}
+
+/** The left hand's point in the Rover's frame for an arm angle (the arm's far end). */
+function hand(angle: number, out: Vector3): Vector3 {
+  const R = OFFICE_ROVER;
+  return out.set(-R.shoulder.x, R.shoulder.y - Math.sin(angle) * R.arm.d, R.shoulder.z + Math.cos(angle) * R.arm.d);
 }
 
 function box(frame: Matrix4, part: Part, target: Float32Array, index: number): void {
@@ -59,6 +72,10 @@ export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, s
   arm(frame, -1, p.armL, parts, at + 2);
   arm(frame, 1, p.armR, parts, at + 3);
   box(frame, R.stalk, parts, at + 4);
+  hand(p.armL, ACROSS);
+  const h = FLAG.pole.h * p.flag;
+  A.compose(V.set(ACROSS.x, ACROSS.y + h / 2, ACROSS.z), Q.identity(), S.set(p.flag > 0 ? FLAG.pole.w : 0, h, p.flag > 0 ? FLAG.pole.w : 0));
+  M.multiplyMatrices(frame, A).toArray(parts, (at + 5) * 16);
   box(frame, R.treads[0], treads, slot * TREADS_PER_ROVER);
   box(frame, R.treads[1], treads, slot * TREADS_PER_ROVER + 1);
 }
@@ -71,6 +88,15 @@ function writeQuad(frame: Matrix4, cx: number, cy: number, cz: number, w: number
 export function writeFace(frame: Matrix4, positions: Float32Array, quad: number): void {
   const f = OFFICE_ROVER.face;
   writeQuad(frame, 0, f.y, f.z, f.w, f.h, positions, quad);
+}
+
+/** The flag plate at the pole's top, waving about the pole by `p.wave`; collapsed to a point while lowered. */
+export function writeFlag(frame: Matrix4, p: OfficePose, positions: Float32Array, quad: number): void {
+  hand(p.armL, ACROSS);
+  const top = ACROSS.y + FLAG.pole.h * p.flag;
+  A.copy(frame).multiply(B.makeTranslation(ACROSS.x, top - FLAG.plate.h / 2, ACROSS.z)).multiply(B.makeRotationY(p.wave)).multiply(B.makeTranslation(-FLAG.plate.w / 2, 0, 0.01));
+  const k = p.flag > 0.98 ? 1 : 0;
+  writeQuad(A, 0, 0, 0, FLAG.plate.w * k, FLAG.plate.h * k, positions, quad);
 }
 
 const DESK = new Matrix4();
@@ -106,6 +132,7 @@ export function glowKey(state: OfficeState, progress: OfficeProgress | null, red
 /**
  * One Rover's glow instances: the antenna tip (turned to the camera; dim when asleep), the halo on the floor, and
  * the progress dots around it (CI jobs done of total; a moving run of four while tests or a CI wait without numbers run).
+ * `gain` scales the tip and halo colours.
  */
 export function writeGlow(
   slot: OfficeSlot,
@@ -118,6 +145,7 @@ export function writeGlow(
   camera: { x: number; z: number },
   matrices: Float32Array,
   colors: Float32Array,
+  gain = 1,
 ): void {
   const R = OFFICE_ROVER;
   const base = slot.slot * GLOW_PER_ROVER;
@@ -126,9 +154,9 @@ export function writeGlow(
   V.set(R.tip.x, R.tip.y, R.tip.z).applyMatrix4(frame);
   E.set(0, Math.atan2(camera.x - V.x, camera.z - V.z), 0, "YXZ");
   M.compose(V, Q.setFromEuler(E), S.setScalar(R.tip.size * tipScale)).toArray(matrices, base * 16);
-  C.set(asleep ? SLEEP_TIP : tone).toArray(colors, base * 3);
+  C.set(asleep ? SLEEP_TIP : tone).multiplyScalar(gain).toArray(colors, base * 3);
   M.compose(T.set(slot.rover.x, R.halo.y, slot.rover.z), FLAT, S.setScalar(R.halo.size)).toArray(matrices, (base + 1) * 16);
-  C.set(tone).multiplyScalar(asleep ? 0.08 : 0.35).toArray(colors, (base + 1) * 3);
+  C.set(tone).multiplyScalar(asleep ? 0.08 : 0.35 * gain).toArray(colors, (base + 1) * 3);
   const n = R.progress.count;
   const show = state === "ci" || state === "testing";
   const lit = litDots(state, progress);

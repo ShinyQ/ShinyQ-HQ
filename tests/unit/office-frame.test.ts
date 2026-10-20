@@ -67,6 +67,14 @@ describe("Agent Office frame gate: Rover writes", () => {
     for (let k = 1; k <= 4; k++) moved = g.camera(STOP.x + k * CAMERA_EPS * 0.4, STOP.z + 0.5) || moved;
     expect(moved).toBe(true);
   });
+
+  it("marks a pose write when only an offset, the turn or the flag changed", () => {
+    const w = new RoverWrites(1, stillPose("asleep"), "asleep", { x: 0, z: 0 });
+    for (const k of ["x", "z", "yaw", "flag", "wave"] as const) {
+      w.done(0);
+      expect(w.pose(0, { ...w.poses[0], [k]: w.poses[0][k] + 0.1 })).toBe(true);
+    }
+  });
 });
 
 describe("Agent Office frame gate: atlas", () => {

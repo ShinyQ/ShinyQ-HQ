@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Color, Matrix4, Vector3 } from "three";
 import { LOBBY } from "@/experience/config";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
-import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
+import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const W = LOBBY.officeWing;
@@ -23,7 +23,7 @@ describe("Agent Office Rover rig", () => {
     expect(bl.y).toBeGreaterThan(OFFICE.desk.top);
   });
 
-  it("writes five light parts and two treads per Rover, and raises the arm for input", () => {
+  it("writes six light parts and two treads per Rover, and raises the arm for input", () => {
     const parts = new Float32Array(slots.length * PARTS_PER_ROVER * 16);
     const treads = new Float32Array(slots.length * TREADS_PER_ROVER * 16);
     const p = stillPose("input");
@@ -89,5 +89,42 @@ describe("Agent Office Rover rig", () => {
     expect(glowKey("ci", { done: 3, total: 12 }, false, 0)).toBe(glowKey("ci", { done: 3, total: 12 }, false, 4.4));
     expect(glowKey("asleep", null, true, 0.1)).toBe(glowKey("asleep", null, true, 9.7));
     expect(glowKey("asleep", null, false, 0.1)).toBe(glowKey("asleep", null, false, 9.7));
+  });
+
+  it("offsets and turns the Rover on its own axes", () => {
+    const s = slots[2];
+    const base = roverFrame(s, stillPose("working"), new Matrix4());
+    const moved = roverFrame(s, { ...stillPose("working"), z: -0.35, yaw: 0.5 }, new Matrix4());
+    const p0 = new Vector3().setFromMatrixPosition(base);
+    const p1 = new Vector3().setFromMatrixPosition(moved);
+    expect(p0.distanceTo(p1)).toBeCloseTo(0.35, 5);
+    // Backward is away from the arc centre.
+    expect(Math.hypot(p1.x - LOBBY.officeWing.arc.x, p1.z - LOBBY.officeWing.arc.z)).toBeGreaterThan(Math.hypot(p0.x - LOBBY.officeWing.arc.x, p0.z - LOBBY.officeWing.arc.z));
+  });
+
+  it("hides the flag pole and quad while lowered and raises them with the flag", () => {
+    const parts = new Float32Array(PARTS_PER_ROVER * 16);
+    const treads = new Float32Array(TREADS_PER_ROVER * 16);
+    const quads = new Float32Array(12);
+    const f = roverFrame(slots[0], stillPose("input"), new Matrix4());
+    writeRover(f, { ...stillPose("input"), flag: 0 }, parts, 0, treads);
+    writeFlag(f, { ...stillPose("input"), flag: 0 }, quads, 0);
+    expect(new Matrix4().fromArray(parts, 5 * 16).determinant()).toBeCloseTo(0, 8);
+    expect(quads.every((v, i) => v === quads[i % 3])).toBe(true);
+    writeRover(f, { ...stillPose("input"), flag: 1 }, parts, 0, treads);
+    writeFlag(f, { ...stillPose("input"), flag: 1 }, quads, 0);
+    expect(Math.abs(new Matrix4().fromArray(parts, 5 * 16).determinant())).toBeGreaterThan(0);
+    const ys = [1, 4, 7, 10].map((i) => quads[i]);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(0.4, 2);
+  });
+
+  it("scales the tip and halo colours by the glow gain", () => {
+    const matrices = new Float32Array(GLOW_PER_ROVER * 16);
+    const full = new Float32Array(GLOW_PER_ROVER * 3);
+    const dim = new Float32Array(GLOW_PER_ROVER * 3);
+    const frame = roverFrame(slots[0], stillPose("working"), new Matrix4());
+    writeGlow(slots[0], frame, "working", null, 1, 0, true, W.stop, matrices, full);
+    writeGlow(slots[0], frame, "working", null, 1, 0, true, W.stop, matrices, dim, 0.5);
+    for (const i of [0, 1]) for (let c = 0; c < 3; c++) expect(dim[i * 3 + c]).toBeCloseTo(full[i * 3 + c] * 0.5, 5);
   });
 });
