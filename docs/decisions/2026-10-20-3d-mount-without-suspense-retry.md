@@ -1,0 +1,5 @@
+# Performance
+
+- Date: 2026-10-20
+
+Owner approval: "The owner says yes to feat/perf-mount-early (first frame from about 875 to 640 ms, with the 4 ride baselines updated)" and "rebase onto main, then open the PR with base and head captures of the 4 ride poses and a note on why they changed. The other 44 poses must pass strict and the bytes must not grow." `ExperienceGate` loads the 3D chunk and the 3D page data with `Promise.all` and renders the loaded component directly instead of through `next/dynamic`, whose lazy component suspended once even with its chunk in and held a Suspense retry until 300 ms after its fallback. The first frame (`/en`, returning visitor, `?prefetch=off`, local build, median of 3) went from 674 to 407 ms (full) and 643 to 418 ms (lite). A failed 3D chunk takes the crash recovery path (one automatic retry, then the static page with "Retry 3D", which requests the chunk again) instead of the app error boundary. The 3D bytes after the gate are byte-identical; no budget changed.

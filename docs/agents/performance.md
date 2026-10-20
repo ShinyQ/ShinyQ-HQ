@@ -127,8 +127,13 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 
 - The gated pages (`/{locale}`, journey, labs, library, contact and their room pages) do not serialize `ExperienceData` into the HTML or the RSC payload (about 8 to 9 KB gzip per document; numbers in [the decision](../decisions/2026-10-19-3d-page-data-static-json.md)).
 - The data is static versioned JSON, `/data/experience/{locale}.json?v=<hash>` (about 9.4 KB gzip), fetched by `ExperienceGate` in parallel with the 3D chunk (`src/experience/data-client.ts`); the Classic site and the static tier never download it. Detail: [3d-experience.md](3d-experience.md#experiencedata).
-- The gate renders the loaded 3D component directly instead of through `next/dynamic` (a lazy component's Suspense retry waits until 300 ms after its fallback): the canvas mounts about 115 ms after the last 3D script arrives instead of about 285 ms, and the first frame (returning visitor, `/en`, local build, median of 3) went from 875 to 625 ms (full) and 881 to 658 ms (lite). Keep `next/dynamic` and `React.lazy` off the first-frame path.
 - The 3D bytes gate counts scripts only, so its numbers do not move; the JSON shows under `json` in its report. Guard: no exported HTML or `.txt` file may carry the payload (check with `grep -rl roomCount out --include=*.html --include=*.txt`).
+
+### 3D mount without a Suspense retry
+
+- `ExperienceGate` renders the loaded 3D component directly, never through `next/dynamic` or `React.lazy`: a lazy component suspends once even when its chunk is in, and React holds that Suspense retry until 300 ms after its fallback showed. Detail: [3d-experience.md](3d-experience.md#gate-and-tiers).
+- The first frame (`/en`, returning visitor, `?prefetch=off`, local build, median of 3) is about 400 to 420 ms on both tiers, about 225 to 265 ms earlier than through `next/dynamic` (numbers in [the decision](../decisions/2026-10-20-3d-mount-without-suspense-retry.md)).
+- Keep `next/dynamic` and `React.lazy` off the first-frame path.
 
 ### Look check
 
