@@ -4,12 +4,19 @@ name: Ask the HQ eval
 # under 20% of the 10,000 free daily Workers AI neurons, which production Ask shares.
 #   - smoke: the fixed 20-question set (scripts/ask-eval.ts SMOKE_GOLDEN, SMOKE_REDTEAM) on the primary Workers AI
 #     model, about 800 neurons; needs CF_EVAL_TOKEN (Workers AI Read, AI Gateway Read, Account Analytics Read).
-#   - On the Groq backup models, sized to their free daily limit of 200,000 tokens per model (about 2,600
-#     uncached tokens per question, shared with production's backup tier): half of the golden set each night
-#     (`--slice day/2`, the set's allowed misses apply to the half) on the first model; the red team (every attack
-#     must end safely), then one fourteenth of the curated pills (`--slice day/14`, 90% must get a real answer,
-#     every pill every two weeks) on the second, one after the other so they never share its per-minute limit.
-#     They need the GROQ_API_KEY environment secret and make no Workers AI call. Each run prints its Groq tokens.
+#   - Groq (owner direction 2026-10-20): the bulk runs on Groq models production never uses, so evals never compete
+#     with the backup tier. Groq limits are per model: 200,000 tokens, 1,000 requests and 8,000 tokens per minute a
+#     day on the free plan; about 3,000 tokens per model call. The key offers one capable non-production chat model
+#     (EVAL_GROQ_EVAL), so the golden set rotates over three nights:
+#       EVAL_GROQ_EVAL: a third of the golden set (`--slice day/3`, the set's allowed misses apply to the third),
+#         then a fourteenth of the curated pills (`--slice day/14`), then a fourth of the red team (`--slice day/4`),
+#         one after the other (one per-minute limit); the worst night of the 84-day cycle is 52 calls, about 78%.
+#       EVAL_GROQ_STRESS: the whole red team on a small model, a stress test of the deterministic guards and output
+#         checks (about 31 calls, 47%).
+#       EVAL_GROQ_BACKUP (production's first backup): the 10-item fidelity set (scripts/ask-eval.ts
+#         FIDELITY_GOLDEN, about 10 calls, 15%), so the real backup is still checked.
+#     Every run prints its planned tokens first and stops above 80% of the model's day. They need the GROQ_API_KEY
+#     environment secret and make no Workers AI call.
 # A red-team failure opens or updates one issue labelled ask-redteam. Jobs skip (green, with a notice) while
 # their secret is missing (docs/ask-runbook.md).
 # The optional purge job deletes AI Gateway logs older than 7 days when CF_LOGS_TOKEN is set.
@@ -31,9 +38,11 @@ permissions:
 
 env:
   ASK_GATEWAY_ID: shinyq-hq
-  # The Groq backup models of wrangler.toml ASK_BACKUP_MODELS, in order.
-  EVAL_GROQ_FIRST: qwen/qwen3.8-27b
-  EVAL_GROQ_SECOND: openai/gpt-oss-120b
+  # Eval models (owner direction 2026-10-20): EVAL and STRESS are never production tiers; BACKUP is the first model
+  # of wrangler.toml ASK_BACKUP_MODELS and runs only the fidelity set.
+  EVAL_GROQ_EVAL: openai/gpt-oss-20b
+  EVAL_GROQ_STRESS: allam-2-7b
+  EVAL_GROQ_BACKUP: qwen/qwen3.8-27b
 
 jobs:
   smoke:
@@ -79,7 +88,7 @@ jobs:
           if-no-files-found: ignore
 
   golden:
-    name: Golden set (Groq backup model)
+    name: Golden set, one third (Groq eval model)
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -109,7 +118,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-        run: bun scripts/ask-eval.ts golden --groq "$EVAL_GROQ_FIRST" --slice day/2
+        run: bun scripts/ask-eval.ts golden --groq "$EVAL_GROQ_EVAL" --slice day/3
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
@@ -119,9 +128,9 @@ jobs:
           if-no-files-found: ignore
 
   suggestions:
-    name: Curated pills, one fourteenth (Groq backup model)
-    # After the red team: both use the second Groq model, whose per-minute token limit they would otherwise share.
-    needs: redteam
+    name: Curated pills, one fourteenth (Groq eval model)
+    # After the golden set: both use the eval model, whose per-minute token limit they would otherwise share.
+    needs: golden
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     environment:
@@ -152,7 +161,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-        run: bun scripts/ask-eval.ts suggestions --groq "$EVAL_GROQ_SECOND" --slice day/14
+        run: bun scripts/ask-eval.ts suggestions --groq "$EVAL_GROQ_EVAL" --slice day/14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
@@ -162,7 +171,10 @@ jobs:
           if-no-files-found: ignore
 
   redteam:
-    name: Red-team set (Groq backup model)
+    name: Red-team set (Groq stress and eval models)
+    # The eval-model slice runs after the pills, on the same per-minute limit.
+    needs: suggestions
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -190,23 +202,33 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
         if: steps.gate.outputs.enabled == 'true'
-      - name: Red-team set
+      - name: Red-team set, every item (stress model)
         id: redteam
         if: steps.gate.outputs.enabled == 'true'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-        run: bun scripts/ask-eval.ts redteam --groq "$EVAL_GROQ_SECOND"
+        run: bun scripts/ask-eval.ts redteam --groq "$EVAL_GROQ_STRESS"
+      - name: Red-team set, one fourth (eval model)
+        id: redteam_eval
+        if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+          ASK_EVAL_REPORT: ask-eval-redteam-eval.md
+        run: bun scripts/ask-eval.ts redteam --groq "$EVAL_GROQ_EVAL" --slice day/4
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         with:
           name: ask-eval-redteam
-          path: ask-eval-redteam.md
+          path: |
+            ask-eval-redteam.md
+            ask-eval-redteam-eval.md
           retention-days: 14
           if-no-files-found: ignore
       - name: Open or update the red-team issue
         # The issue is public: blocklisted terms (client names) are redacted from the report first.
-        if: failure() && steps.redteam.outcome == 'failure'
+        if: failure() && (steps.redteam.outcome == 'failure' || steps.redteam_eval.outcome == 'failure')
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -219,9 +241,12 @@ jobs:
             echo ""
             echo "Playbook: docs/ask-runbook.md, section \"Incident playbook\". Full report: run artifact \`ask-eval-redteam\`."
             echo ""
-            if [ -f ask-eval-redteam.md ]; then
-              bun scripts/content-gap.ts --redact ask-eval-redteam.md | head -c 60000
-            fi
+            for report in ask-eval-redteam.md ask-eval-redteam-eval.md; do
+              if [ -f "$report" ]; then
+                bun scripts/content-gap.ts --redact "$report" | head -c 30000
+                echo ""
+              fi
+            done
           } > redteam-issue.md
           number=$(gh issue list --repo "$REPO" --label ask-redteam --state open --json number --jq '.[0].number')
           if [ -n "$number" ]; then
@@ -229,6 +254,46 @@ jobs:
           else
             gh issue create --repo "$REPO" --title "Ask the HQ red-team failure" --label ask-redteam --body-file redteam-issue.md
           fi
+
+  fidelity:
+    name: Fidelity set (production Groq backup, 10 questions)
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      deployment: false
+    env:
+      ASK_EVAL_REPORT: ask-eval-fidelity.md
+    steps:
+      - name: Check token
+        id: gate
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY != '' }}
+        run: |
+          if [ "$GROQ_API_KEY" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GROQ_API_KEY is not set in the production environment; skipping the fidelity eval (docs/ask-runbook.md)."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        if: steps.gate.outputs.enabled == 'true'
+      - name: Fidelity set on the production backup model
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
+        run: bun scripts/ask-eval.ts fidelity --groq "$EVAL_GROQ_BACKUP"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
+        with:
+          name: ask-eval-fidelity
+          path: ask-eval-fidelity.md
+          retention-days: 14
+          if-no-files-found: ignore
 
   purge-logs:
     name: Purge AI Gateway logs older than 7 days

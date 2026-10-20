@@ -34,16 +34,50 @@ describe("eval neuron budget", () => {
     expect(() => sliceItems(items, "x")).toThrow();
   });
 
-  it("runs the nightly sets on the Groq backup models of wrangler.toml and only the smoke set on Workers AI", () => {
+  it("runs the bulk on Groq models production never uses, the fidelity set on the backup and only the smoke set on Workers AI", () => {
     const workflow = readFileSync(".github/workflows/ask-eval.yml", "utf8");
-    const models = /ASK_BACKUP_MODELS = "([^"]+)"/.exec(readFileSync("wrangler.toml", "utf8"))![1].split(",");
-    expect(workflow).toContain(`EVAL_GROQ_FIRST: ${models[0]}`);
-    expect(workflow).toContain(`EVAL_GROQ_SECOND: ${models[1]}`);
+    const production = /ASK_BACKUP_MODELS = "([^"]+)"/.exec(readFileSync("wrangler.toml", "utf8"))![1].split(",");
+    const model = (name: string) => new RegExp(`${name}: (\\S+)`).exec(workflow)![1];
+    expect(production).not.toContain(model("EVAL_GROQ_EVAL"));
+    expect(production).not.toContain(model("EVAL_GROQ_STRESS"));
+    expect(model("EVAL_GROQ_BACKUP")).toBe(production[0]);
     const runs = [...workflow.matchAll(/run: bun scripts\/ask-eval\.ts (.+)/g)].map((m) => m[1]);
-    expect(runs).toEqual(["smoke", 'golden --groq "$EVAL_GROQ_FIRST" --slice day/2', 'suggestions --groq "$EVAL_GROQ_SECOND" --slice day/14', 'redteam --groq "$EVAL_GROQ_SECOND"']);
-    // The pills follow the red team: both use the second model and its per-minute token limit.
-    expect(workflow).toMatch(/suggestions:\n[^\n]*\n(?:\s+#[^\n]*\n)*\s+needs: redteam\n/);
+    expect(runs).toEqual([
+      "smoke",
+      'golden --groq "$EVAL_GROQ_EVAL" --slice day/3',
+      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/14',
+      'redteam --groq "$EVAL_GROQ_STRESS"',
+      'redteam --groq "$EVAL_GROQ_EVAL" --slice day/4',
+      'fidelity --groq "$EVAL_GROQ_BACKUP"',
+    ]);
+    // The eval model's runs follow each other: golden, then the pills, then the red team (one per-minute limit).
+    expect(workflow).toMatch(/suggestions:\n[^\n]*\n(?:\s+#[^\n]*\n)*\s+needs: golden\n/);
+    expect(workflow).toMatch(/redteam:\n[^\n]*\n(?:\s+#[^\n]*\n)*\s+needs: suggestions\n/);
   });
+
+  it("keeps the eval model's worst night of the 84-day rotation under 80% of its daily tokens", async () => {
+    const { buildRepoPack, loadDynamicFacts } = await import("@/ask/repo-pack");
+    const { resolveGoldenItem } = await import("@/ask/golden-facts");
+    const { packVocabulary } = await import("../../functions/_lib/pipeline");
+    const { countModelCalls, suggestionItems, planGroqTokens, GROQ_BUDGET_SHARE, FIDELITY_GOLDEN } = await import("../../scripts/ask-eval");
+    const { pack, safety } = buildRepoPack();
+    const deps = { pack, vocabulary: packVocabulary(pack), safety };
+    const facts = loadDynamicFacts();
+    const g = golden.items.map((i) => resolveGoldenItem(i as Parameters<typeof resolveGoldenItem>[0], facts));
+    const pills = suggestionItems().map((i) => resolveGoldenItem(i, facts));
+    let worst = 0;
+    for (let d = 0; d < 84; d++) {
+      const day = new Date(Date.UTC(2026, 9, 20 + d));
+      const calls =
+        (await countModelCalls(sliceItems(g, "day/3", day) as never, deps)) +
+        (await countModelCalls(sliceItems(pills, "day/14", day) as never, deps)) +
+        (await countModelCalls(sliceItems(redteam.items as never[], "day/4", day), deps));
+      worst = Math.max(worst, calls);
+    }
+    expect(planGroqTokens(worst).share).toBeLessThanOrEqual(GROQ_BUDGET_SHARE);
+    expect(planGroqTokens(await countModelCalls(redteam.items as never, deps)).share).toBeLessThanOrEqual(GROQ_BUDGET_SHARE);
+    expect(planGroqTokens(await countModelCalls(golden.items.filter((i) => (FIDELITY_GOLDEN as readonly string[]).includes(i.id)) as never, deps)).share).toBeLessThanOrEqual(0.2);
+  }, 180_000);
 });
 
 describe("owner-review samples (scripts/ask-samples.ts)", () => {
@@ -73,5 +107,23 @@ describe("golden scoring on Groq slices", () => {
     const item = { id: "x", lang: "id" as const, q: "Di mana dia tinggal?", facts: [], expect: { any: ["jakarta"] } };
     expect(scoreGolden("Jakarta, Indonesia.", item).pass).toBe(true);
     expect(scoreGolden("He lives in Jakarta and works at Metrodata as a consultant.", item).notes).toContain("not Indonesian");
+  });
+});
+
+describe("model-agnostic golden assertions (2026-10-20)", () => {
+  it("does not flag a list of English product names as the wrong language", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const q05 = golden.items.find((i) => i.id === "q05") as never;
+    const list = "Microsoft Certified: Azure AI Apps and Agents Developer Associate (AI-103) - 2026-09 Microsoft Certified: Azure AI Fundamentals (AI-901) - 2026-05 Microsoft Certified: Azure Fundamentals (AZ-900)";
+    expect(scoreGolden(list, q05).pass).toBe(true);
+    expect(scoreGolden("He has the AI-103 and AZ-900 certifications from Microsoft, which he earned this year.", q05).notes).toContain("not Indonesian");
+  });
+
+  it("accepts q03 with the relative drop or with the absolute rates", async () => {
+    const { scoreGolden } = await import("../../scripts/ask-eval");
+    const q03 = golden.items.find((i) => i.id === "q03") as never;
+    expect(scoreGolden("Pada proyek itu, false positive rate turun dari 36,4% menjadi 9,1% di gold set.", q03).pass).toBe(true);
+    expect(scoreGolden("Pada proyek itu, false positive turun 90,9% dari 36,4% di gold set.", q03).pass).toBe(true);
+    expect(scoreGolden("Pada proyek itu, false positive turun banyak di gold set.", q03).pass).toBe(false);
   });
 });
