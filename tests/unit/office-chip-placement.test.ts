@@ -90,12 +90,12 @@ function expectClearOfHud(box: ScreenBox, size: { width: number; height: number 
 const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobile: 2 };
 
 /**
- * The sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 37.6% desktop,
- * 31.4% tablet, 21.5% portrait). A landscape screen raises the look target (`OFFICE.view.desktop.lookOffset`, held
- * through a hand zoom) so the wall's top sits under the middle of the screen: that band holds the two chip rows, also
- * at the near pose. A portrait screen (390 x 844, 820 x 1180) moves the look target toward the camera
- * (`OFFICE.view.mobile.lookOffset`, owner decision 2026-10-20: about 20%, at most about 22%, with the five desks and the
- * Rover in frame).
+ * The sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 36.3% desktop,
+ * 30% tablet, 21.8% portrait; tests/unit/office-view.test.ts pins them). A landscape screen raises the look target
+ * (`OFFICE.view.desktop.lookOffset`, held through a hand zoom) so the wall's top sits over the middle of the screen: that
+ * band holds the two chip rows, also at the near pose. A portrait screen (390 x 844, 820 x 1180) moves the look target
+ * toward the camera (`OFFICE.view.mobile.lookOffset`, owner decision 2026-10-20: about 20%, at most about 22%, with the
+ * five desks and the Rover in frame).
  */
 const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.4], tablet: [0, 0.4], mobile: [0.18, 0.22] };
 
