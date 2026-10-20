@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review (owner request 2026-10-19, Proposal A approved).
+Status: shipped in #252 (4ff54fb), 2026-10-20
 
 **Goal:** Give the L1 Lobby components more breathing room without changing any component, content or behavior: every L1 obstacle pair 6 u apart (`SPACE_RULES`) and at least 6 u of walkway between the lane ring and each wall or the kiosk.
 
