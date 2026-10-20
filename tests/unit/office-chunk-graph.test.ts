@@ -28,8 +28,8 @@ const OFFICE_ONLY = [
 ];
 /** Office-only modules reached from the drawer body entry only (never from the scene entry). */
 const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`];
-/** The main-path part of the office: the loader, the mount with the furniture shell and the layout. */
-const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
+/** The main-path part of the office: the loader, the mount with the furniture shell, the beacon signal and its watch, and the layout. */
+const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, `${DIR}/officeSignal.ts`, `${DIR}/officeWatch.ts`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
 
 function files(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

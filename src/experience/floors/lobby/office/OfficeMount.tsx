@@ -16,6 +16,7 @@ import { MergedBoxes, MergedEdges } from "../../roof/kit";
 import type { OfficeTranslate } from "../officeLayout";
 import { officeShellBoxes } from "../officeShell";
 import { countOfficeAsk, loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
+import { startOfficeWatch } from "./officeWatch";
 
 /** One stable list, so MergedBoxes and MergedEdges build their geometry once. */
 const SHELL = officeShellBoxes();
@@ -65,6 +66,7 @@ export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
  * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays; it fades in over
  * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
+ * It also starts the office watch after the first frame went idle (`officeWatch.ts`, the beacon's signal from anywhere on L1).
  */
 export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTranslate; ready: boolean }) {
   const mod = useOfficeModule();
@@ -84,6 +86,17 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
       }),
     [],
   );
+  // The beacon's office watch (main path): its first fetch once the first frame went idle.
+  useEffect(() => {
+    let stopWatch: (() => void) | undefined;
+    const cancel = afterFirstFrameIdle(() => {
+      stopWatch = startOfficeWatch();
+    });
+    return () => {
+      cancel();
+      stopWatch?.();
+    };
+  }, []);
   // The fade-in (frame deltas, a cut under reduced motion), from the frame the live scene shows (`OfficeReady`).
   useFrame((_, rawDt) => {
     const f = fade.current;

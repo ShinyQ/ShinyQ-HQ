@@ -53,6 +53,7 @@ import { officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "./crewFra
 import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
+import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
@@ -511,6 +512,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     () => () => {
       officeRuntime.inView = false;
       officeLive.want("view", false);
+      setOfficeSignal({ sceneFeeding: false });
       // The chips live in the HUD and outlive a canvas remount: hide them (far), as a new watcher assumes they start hidden.
       officeRuntime.chips.forEach((el, slot) => {
         setChipFar(slot, true);
@@ -533,6 +535,9 @@ function OfficeWatch({ view }: { view: OfficeView }) {
       const inView = here && tmp.frustum.intersectsBox(tmp.box);
       officeRuntime.inView = inView;
       officeLive.want("view", inView);
+      // While this chunk's poller runs, its feed drives the beacon's signal and the main-path watch stops fetching.
+      const feeding = officeLive.wanted();
+      if (officeSignal.sceneFeeding !== feeding) setOfficeSignal({ sceneFeeding: feeding });
       const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
       Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted(), crew });
     }
@@ -603,6 +608,13 @@ function OfficeWatch({ view }: { view: OfficeView }) {
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
+  // The beacon's signal from this feed while its poller runs (a frozen feed never writes): the same reading as the
+  // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window.
+  useEffect(() => {
+    if (!officeLive.wanted() || feed.status === "idle" || feed.status === "loading") return;
+    const sig = feed.status === "ready" ? signalFromBody(feed.snapshot, Date.now()) : null;
+    setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
+  }, [feed]);
   const slots = OFFICE_SLOTS;
   const agents = view.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
