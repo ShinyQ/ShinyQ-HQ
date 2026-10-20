@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, type RootState } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box3,
   BoxGeometry,
@@ -110,9 +110,14 @@ function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   g.setAttribute("normal", new BufferAttribute(new Float32Array(QUADS * 12), 3));
   g.setIndex(index);
   // The faces move with their Rovers: one fixed sphere around the whole office, so culling never trusts stale bounds.
-  const b = officeBounds();
-  g.boundingSphere = new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
+  g.boundingSphere = officeSphere();
   return g;
+}
+
+/** One fixed sphere around the whole office (3 u past its corners): the bounds of everything that moves with the Rovers. */
+function officeSphere(): Sphere {
+  const b = officeBounds();
+  return new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
 }
 
 /** Glow instances: each Rover's (rig and crew), then the CI tower's lane dots at `TOWER.start`. */
@@ -217,7 +222,7 @@ function flushRovers(writes: RoverWrites, fxs: readonly CrewFx[], slots: readonl
     if (glowDue) {
       const fx = fxs[slot];
       writeGlow(slots[slot], FRAME, r.state, r.progress, p.tipScale, now, reduced, writes.cam, matrices, colors, fx.flicker);
-      writeCrewGlow(slots[slot], FRAME, r.state, fx, now, phase, reduced, matrices, colors, drones, lite);
+      writeCrewGlow(slots[slot], FRAME, r.state, fx, now, phase, reduced, matrices, colors, drones, lite, writes.cam);
       glowed = true;
     }
     writes.done(slot);
@@ -399,6 +404,18 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     return () => {
       if (g) forgetDrawn(g);
     };
+  }, [slots]);
+  // Fixed bounds (like the quads'): instance bounds from the rest instances would miss orbiting drones and confetti past
+  // the end Rovers, so they could pop at the screen edges; the glow keeps the tower's dots too.
+  useLayoutEffect(() => {
+    const sphere = officeSphere();
+    if (parts.current) parts.current.boundingSphere = sphere.clone();
+    if (treads.current) treads.current.boundingSphere = sphere.clone();
+    const G = glows.current;
+    if (G) {
+      G.computeBoundingSphere();
+      G.boundingSphere!.union(sphere);
+    }
   }, [slots]);
   useEffect(() => {
     officeRuntime.crew = crew.actors;

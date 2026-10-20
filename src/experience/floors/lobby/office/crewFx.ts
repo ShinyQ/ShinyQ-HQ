@@ -12,8 +12,8 @@ import { OFFICE_ROVER } from "./officeVisual";
  * the write functions: module temporaries and constant tables; the key functions build a short string).
  */
 
-/** Crew instances per Rover in the glow mesh, after the 18 the rig writes (tip, halo, 16 progress dots); `eyes`: the helper drones' eye lights. */
-export const CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, eyes: 16, count: 20 } as const;
+/** Crew instances per Rover in the glow mesh, after the 18 the rig writes (tip, halo, 16 progress dots); `cores`: the helper drones' glowing cores. */
+export const CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, cores: 16, count: 20 } as const;
 /** The rig's own instances per Rover (`writeGlow`): the tip, the halo and the progress dots. */
 const RIG_GLOW = 2 + OFFICE_ROVER.progress.count;
 
@@ -42,16 +42,20 @@ function dot(frame: Matrix4, p: FxPoint, size: number, color: string, gain: numb
   C.set(color).multiplyScalar(gain * p.a).toArray(colors, i * 3);
 }
 
-/** The eye light sits on the drone's outer face (the body is 0.3 u deep). */
-const EYE_R = (DRONES.r + DRONES.body[2] / 2 + 0.01) / DRONES.r;
+/**
+ * A helper drone's core: a glow dot at the drone's centre, turned to the camera, twice the body's width, in its Rover's
+ * state tone (`gain`; dim on the lite tier), so the body hides its middle and it reads as a glowing rim and core.
+ */
+export const DRONE_CORE = { size: 0.6, gain: 1.4, lite: 0.5 } as const;
+const NOWHERE = { x: 0, z: 0 };
 
 /**
  * Writes one Rover's 20 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`: the
- * sparks, the thought trail, the confetti and the `drones` helper drones' eye lights ride on it (no eye lights on the
- * lite tier). The charge pad lies on the floor under the docked Rover (`CHARGE_PAD`) and the desk light on the desk, so
+ * sparks, the thought trail, the confetti and the `drones` helper drones' cores (`DRONE_CORE`, turned to `cam`, the
+ * camera's floor position) ride on it. The charge pad lies on the floor under the docked Rover (`CHARGE_PAD`) and the desk light on the desk, so
  * neither follows the Rover's pitch, slump or turn.
  */
-export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array, drones = 0, lite = false): void {
+export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array, drones = 0, lite = false, cam: { x: number; z: number } = NOWHERE): void {
   const base = slot.slot * (RIG_GLOW + CREW_GLOW.count) + RIG_GLOW;
   const tone = STATE_TONE[state];
   for (let i = 0; i < 5; i++) {
@@ -81,10 +85,11 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
   M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(OFFICE.desk.w * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
   C.set(tone).multiplyScalar(0.6 * fx.deskLight).toArray(colors, desk * 3);
   for (let i = 0; i < DRONES.max; i++) {
-    dronePoint(i, lite ? 0 : drones, t, phase, reduced, P);
-    P.x *= EYE_R;
-    P.z *= EYE_R;
-    dot(frame, P, 0.1, tone, 1.4, base + CREW_GLOW.eyes + i, matrices, colors);
+    dronePoint(i, drones, t, phase, reduced, P);
+    const at = base + CREW_GLOW.cores + i;
+    V.set(P.x, P.y, P.z).applyMatrix4(frame);
+    M.compose(V, Q.setFromAxisAngle(UP, Math.atan2(cam.x - V.x, cam.z - V.z)), S.setScalar(P.a > 0 ? DRONE_CORE.size : 0)).toArray(matrices, at * 16);
+    C.set(tone).multiplyScalar((lite ? DRONE_CORE.lite : DRONE_CORE.gain) * P.a).toArray(colors, at * 3);
   }
 }
 

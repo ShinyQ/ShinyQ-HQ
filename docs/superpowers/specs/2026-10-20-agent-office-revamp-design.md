@@ -249,8 +249,8 @@ Each session is one Rover; the sub-agents a session starts become small **helper
 - **History (stage C)**: a helper count change is a loggable change, and each log event carries the count.
 - **3D**: one drone per active helper orbits the parent Rover's head (radius 1.15 u, y 2.5 u, 1.2 rad/s, evenly spaced,
   a gentle bob), at most 4 drawn; more show as a "+N" pill on the chip. Drone bodies are instances of the Rover parts
-  mesh (`PARTS_PER_ROVER` grows by 4) and their eye lights instances of the glow mesh (`GLOW_PER_ROVER` grows by 4, full
-  tier only; lite draws the bodies only): no new draw call or program. Reduced motion parks them, hovering still at
+  mesh (`PARTS_PER_ROVER` grows by 4) and their glowing cores in the parent Rover's state tone instances of the glow mesh
+  (`GLOW_PER_ROVER` grows by 4; dim on lite): no new draw call or program. Reduced motion parks them, hovering still at
   fixed angles beside the head. Asleep, off-duty or offline Rovers have no drones.
 - **Text**: the chip and the desk drawer read "Copilot · Editing · 3 helpers" ("Copilot · Mengedit · 3 asisten"), ICU
   plurals in both locales; the compact phone chip keeps the dot only and adds the count to its accessible name; the

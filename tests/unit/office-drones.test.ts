@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { Matrix4, Vector3 } from "three";
+import { Color, Matrix4, Quaternion, Vector3 } from "three";
+import { STATE_TONE } from "@/lib/office/model";
 import { LOBBY } from "@/experience/config";
 import { officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { crewFx, DRONES, dronePoint, newActor, type FxPoint } from "@/experience/floors/lobby/office/crew";
-import { CREW_GLOW, droneKey, TOWER, writeCrewGlow } from "@/experience/floors/lobby/office/crewFx";
+import { CREW_GLOW, DRONE_CORE, droneKey, TOWER, writeCrewGlow } from "@/experience/floors/lobby/office/crewFx";
 import { DRONE_PART, GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDrones, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
@@ -67,23 +68,48 @@ describe("helper drones", () => {
     expect([0, 1, 2, 3].map((i) => scaleAt(parts, DRONE_PART + i) > 0)).toEqual([true, true, false, false]);
   });
 
-  it("lights one eye per drawn drone on the full tier and none on the lite tier", () => {
-    expect(CREW_GLOW.eyes).toBe(16);
+  it("lights one core per drawn drone in its Rover's state tone, turned to the camera, dim on the lite tier", () => {
+    expect(CREW_GLOW.cores).toBe(16);
     expect(CREW_GLOW.count).toBe(20);
     expect(GLOW_PER_ROVER).toBe(38);
     expect(TOWER.start).toBe(5 * GLOW_PER_ROVER);
     const fx = crewFx(newActor("working"), false);
     const frame = roverFrame(slots[2], stillPose("working"), new Matrix4());
-    const base = 2 * GLOW_PER_ROVER + 18 + CREW_GLOW.eyes;
-    const eyes = (lite: boolean, n: number) => {
+    const base = 2 * GLOW_PER_ROVER + 18 + CREW_GLOW.cores;
+    const cam = { x: slots[2].rover.x + 3, z: slots[2].rover.z - 20 };
+    const write = (lite: boolean, n: number) => {
       const m = new Float32Array(5 * GLOW_PER_ROVER * 16);
       const c = new Float32Array(5 * GLOW_PER_ROVER * 3);
-      writeCrewGlow(slots[2], frame, "working", fx, 1, 0.3, false, m, c, n, lite);
-      return Array.from({ length: DRONES.max }, (_, i) => scaleAt(m, base + i));
+      writeCrewGlow(slots[2], frame, "working", fx, 1, 0.3, false, m, c, n, lite, cam);
+      return { m, c };
     };
-    expect(eyes(false, 3).map((s) => s > 0)).toEqual([true, true, true, false]);
-    expect(eyes(false, 0).every((s) => s === 0)).toBe(true);
-    expect(eyes(true, 4).every((s) => s === 0)).toBe(true);
+    const cores = (lite: boolean, n: number) => Array.from({ length: DRONES.max }, (_, i) => scaleAt(write(lite, n).m, base + i));
+    expect(cores(false, 3).map((s) => s > 0)).toEqual([true, true, true, false]);
+    expect(cores(false, 0).every((s) => s === 0)).toBe(true);
+    // Twice the body's width, so it shows around the grey body as a rim.
+    expect(cores(false, 1)[0]).toBeCloseTo(DRONE_CORE.size, 6);
+    expect(DRONE_CORE.size).toBeGreaterThanOrEqual(2 * DRONES.body[0]);
+    expect(cores(true, 4).every((s) => s > 0)).toBe(true);
+    // At the drone's centre (the body's position in the parts mesh), in the state tone, the lite tier dimmer.
+    const parts = new Float32Array(5 * PARTS_PER_ROVER * 16);
+    writeDrones(frame, 3, 1, 0.3, false, parts, 2 * PARTS_PER_ROVER);
+    const { m, c } = write(false, 3);
+    for (let i = 0; i < 3; i++) {
+      const core = new Vector3().setFromMatrixPosition(new Matrix4().fromArray(m, (base + i) * 16));
+      const body = new Vector3().setFromMatrixPosition(new Matrix4().fromArray(parts, (2 * PARTS_PER_ROVER + DRONE_PART + i) * 16));
+      expect(core.distanceTo(body), `core ${i} at its drone`).toBeLessThan(1e-5);
+      // The plane faces +z before its turn: turned, its normal points at the camera.
+      const q = new Quaternion();
+      new Matrix4().fromArray(m, (base + i) * 16).decompose(new Vector3(), q, new Vector3());
+      const n = new Vector3(0, 0, 1).applyQuaternion(q);
+      const to = new Vector3(cam.x - core.x, 0, cam.z - core.z).normalize();
+      expect(n.dot(to), `core ${i} faces the camera`).toBeCloseTo(1, 6);
+    }
+    const tone = new Color(STATE_TONE.working);
+    expect(Array.from(c.subarray(base * 3, base * 3 + 3))).toEqual([tone.r, tone.g, tone.b].map((v) => Math.fround(v * DRONE_CORE.gain)));
+    const lite = write(true, 3).c;
+    expect(lite[base * 3]).toBeCloseTo(tone.r * DRONE_CORE.lite, 6);
+    expect(DRONE_CORE.lite).toBeLessThan(DRONE_CORE.gain);
   });
 
   it("keys the drones: empty without drones, stable under reduced motion, a 30 Hz tick in full motion", () => {

@@ -669,6 +669,19 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await show(page, office, CREW_A, CREW_A_STATES);
     await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
     await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
+    // Fixed bounds: the parts and treads take the screen quads' office-wide sphere, the glow one that holds it, so orbiting
+    // drones and confetti never pop at the screen edges.
+    const bounds = await page.evaluate(() => {
+      type S = { center: { x: number; y: number; z: number }; radius: number };
+      type O = { boundingSphere: S | null; geometry: { boundingSphere: S | null } };
+      const scene = (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): O | undefined } } } }).__hq.render.scene;
+      const quads = scene.getObjectByName("office-screens")!.geometry.boundingSphere!;
+      const of = (name: string) => scene.getObjectByName(name)!.boundingSphere!;
+      const holds = (a: S, b: S) => Math.hypot(a.center.x - b.center.x, a.center.y - b.center.y, a.center.z - b.center.z) + b.radius <= a.radius + 1e-4;
+      const same = (a: S) => Math.abs(a.radius - quads.radius) < 1e-6 && holds(a, quads);
+      return { parts: same(of("office-rover-parts")), treads: same(of("office-rover-treads")), glow: holds(of("office-glow"), quads) };
+    });
+    expect(bounds).toEqual({ parts: true, treads: true, glow: true });
     // In full motion the drones orbit: their positions move on.
     const before = await droneParts(page);
     await expect.poll(async () => (await droneParts(page))[CREW_SLOT.six].at, { timeout: 30_000 }).not.toEqual(before[CREW_SLOT.six].at);
