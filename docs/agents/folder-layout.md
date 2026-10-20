@@ -298,7 +298,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - spawn.ts (the kiosk axis, `LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING`; types only, the store reads it; `LOBBY` in config.ts builds on it).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
   - officeLayout.ts (the Agent Office wing offsets and `officeWing`, layout, rooms, obstacles, stops, view zone and road; config.ts imports it, so it stays import-light; it reaches the Classic page chunk only through the office loader `office/chunk.ts`, which the drawer bodies import, never through config.ts), officeShell.ts (3D-only, main path: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`, the stop gates `atOfficeStop`, `officeChipsHere` and `wingSignHidden`, the chip anchors and constants, the office canvas helpers) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
-    - main path: `OfficeMount.tsx` (the furniture shell, the load trigger, the fade-in and the office watch's start), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`), `officeSignal.ts` (the beacon's signal: `officeSignal`, `setOfficeSignal`, `useOfficeSignal`, `signalFromBody`; imports React only) and `officeWatch.ts` (`startOfficeWatch`, `officeWatchNow`);
+    - main path: `OfficeMount.tsx` (the furniture shell, the load trigger, the fade-in and the office watch's start), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`), `officeSignal.ts` (the beacon's signal: `officeSignal`, `setOfficeSignal`, `useOfficeSignal`, `signalFromBody`; imports React only), `officeWatch.ts` (`startOfficeWatch`, `officeWatchNow`), `beacon.ts` (pure: `BEACON`, `beaconOrigin`, `beaconGain`, `beaconInstances`) and `OfficeBeacon.tsx` (the Needs Kurniadi beacon mesh);
     - the scene chunk `scene.ts`: `OfficeScene.tsx` (Rovers, atlas, glow, wall, chip placement), `OfficeChips.tsx`, `runtime.ts` (in-view flag, chip elements, near/far flags), `live.ts` (the poller and `officeTest`), the pure modules `officeModel.ts`, `officeVisual.ts` (`OFFICE_STATE_STYLE`, `STATUS_COLOR`, poses), `officeRig.ts`, `officeAtlas.ts`, `officeFrame.ts`, `officeWall.ts` and `interact.ts`;
     - the drawer body chunk `body.ts`: `OfficeBody.tsx`.
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
@@ -367,6 +367,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `tests/helpers/space.ts`: expectSpaceRules(...) for walkable floor layouts.
 - `tests/helpers/edge-accents.ts`: static scanner for colored left/top edge stripes (`tests/unit/edge-accents.test.ts`).
+- `tests/helpers/office-cameras.ts`: settled L1 follow cameras and the six office sizes, shared by `office-chip-placement` and `office-beacon-view`.
 - `tests/unit/`: Vitest.
   - Schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors.
   - Career layout, labs layout, arrival framing and directory boards, sign facing, library concepts and layout.

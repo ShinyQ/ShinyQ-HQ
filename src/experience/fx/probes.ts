@@ -35,8 +35,8 @@ export const sceneProbes = {
   hallGate: { sweeps: 0, active: false },
   /** L3 Ops Control Room: mounted, and the live panel (this site's telemetry) with its rows when shown. */
   ops: { mounted: false, live: false, rows: [] as string[] },
-  /** L1 Agent Office (lazy chunk): compiled and shown, Rovers, their states in slot order, the view mode, wall redraws, chips on screen, the largest body offset from the held pose (0 under reduced motion), in view, polling, and per desk the crew actor's state, turn, flag and dock offset (every 0.5 s). */
-  office: { loaded: false, desks: 0, states: [] as string[], mode: "off", wallFrames: 0, chips: 0, bob: 0, inView: false, polling: false, crew: [] as { state: OfficeState; yaw: number; flag: number; z: number }[] },
+  /** L1 Agent Office (lazy chunk): compiled and shown, Rovers, their states in slot order, the view mode, wall redraws, chips on screen, the largest body offset from the held pose (0 under reduced motion), in view, polling, per desk the crew actor's state, turn, flag and dock offset (every 0.5 s), and whether the Needs Kurniadi beacon is lit (main path, every frame). */
+  office: { beacon: false, loaded: false, desks: 0, states: [] as string[], mode: "off", wallFrames: 0, chips: 0, bob: 0, inView: false, polling: false, crew: [] as { state: OfficeState; yaw: number; flag: number; z: number }[] },
 };
 
 type TextLike = Object3D & { text?: unknown; textRenderInfo?: unknown; _members?: Map<Object3D & { text?: string }, unknown> };

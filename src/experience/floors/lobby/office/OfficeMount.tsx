@@ -15,6 +15,7 @@ import { speculativePrefetchOn } from "../../floorChunks";
 import { MergedBoxes, MergedEdges } from "../../roof/kit";
 import type { OfficeTranslate } from "../officeLayout";
 import { officeShellBoxes } from "../officeShell";
+import { OfficeBeacon } from "./OfficeBeacon";
 import { countOfficeAsk, loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
 import { startOfficeWatch } from "./officeWatch";
 
@@ -66,7 +67,8 @@ export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
  * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays; it fades in over
  * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
- * It also starts the office watch after the first frame went idle (`officeWatch.ts`, the beacon's signal from anywhere on L1).
+ * It also starts the office watch after the first frame went idle (`officeWatch.ts`, the beacon's signal from anywhere on L1),
+ * and draws the Needs Kurniadi beacon (`OfficeBeacon`) once `ready`, so no canvas-target program compiles.
  */
 export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTranslate; ready: boolean }) {
   const mod = useOfficeModule();
@@ -122,6 +124,7 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
     <group name="agent-office">
       <MergedBoxes boxes={SHELL} color="#0b1020" emissive={COLORS.cyan} emissiveIntensity={0.05} />
       <MergedEdges boxes={SHELL} color={COLORS.cyan} tier={tier} opacity={0.6} />
+      {ready && <OfficeBeacon />}
       {Scene && (
         <group ref={live}>
           <Scene tier={tier} t={t} />
