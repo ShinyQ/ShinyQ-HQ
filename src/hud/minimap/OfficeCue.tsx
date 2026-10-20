@@ -23,7 +23,8 @@ export function OfficeCue({ center, radius }: { center: { x: number; z: number }
       </g>
     );
   }
-  const k = (radius - 2) / d;
+  // 2.5 in from the rim: the pip (r 1.6) pulses to 1.35 times its size (2.16) and stays inside the clip.
+  const k = (radius - 2.5) / d;
   return (
     <g data-map="office-cue">
       <circle data-cue="pip" cx={center.x + dx * k} cy={center.z + dz * k} r={1.6} fill={TONE} className="office-cue" />

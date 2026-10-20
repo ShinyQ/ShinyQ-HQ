@@ -20,5 +20,8 @@ describe("OfficeCue", () => {
     const far = svg(<OfficeCue center={{ x: LOBBY.officeWing.stop.x, z: LOBBY.officeWing.stop.z - 60 }} radius={22} />);
     const pip = far.container.querySelector('[data-cue="pip"]')!;
     expect(Number(pip.getAttribute("cy"))).toBeGreaterThan(LOBBY.officeWing.stop.z - 60);
+    // 2.5 in from the rim, so its pulse (1.35 times r 1.6) never meets the clip.
+    expect(Number(pip.getAttribute("cy")) - (LOBBY.officeWing.stop.z - 60)).toBeCloseTo(22 - 2.5, 6);
+    expect(22 - (Number(pip.getAttribute("cy")) - (LOBBY.officeWing.stop.z - 60)) - 1.35 * Number(pip.getAttribute("r"))).toBeGreaterThan(0);
   });
 });
