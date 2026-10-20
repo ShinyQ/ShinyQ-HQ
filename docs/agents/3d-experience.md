@@ -389,7 +389,9 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ## Crash recovery
 
 - `CanvasBoundary` (around the R3F canvas, which rethrows creation and render errors) and the `webglcontextlost` listener call `onCrash`.
-- So does a failed load of the 3D chunk or of the 3D page data (`/data/experience/{locale}.json`); the remount loads them again.
+- So does a failed load of the 3D chunk or of the 3D page data (`/data/experience/{locale}.json`); the remount and "Retry 3D" load them again.
+  - Every attempt calls `import("./Experience")` afresh: the Turbopack runtime forgets a chunk whose script failed (after its own single retry of a network error), so the next import requests it again. `next/dynamic` or `React.lazy` would keep the rejected promise and fail every retry.
+  - Covered by `e2e/lifecycle.spec.ts` ("a 3D chunk that fails to load ...").
 - `ExperienceGate` remounts the 3D view once on a fresh canvas, after the tab is visible again (`whenVisible`).
 - A second failure sets the static tier and shows the notice with a "Retry 3D" button (`hud.retry3d`, `data-testid="retry-3d"`).
   - `recovery.ts`: `afterFailure`, `manualRetry`, `settled`; store `recover(tier)`.
