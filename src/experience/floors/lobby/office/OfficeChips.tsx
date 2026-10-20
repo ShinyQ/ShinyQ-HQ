@@ -8,20 +8,23 @@ import { officeDeskRoom } from "../officeLayout";
 import { useOfficeFeed } from "./live";
 import { chipLines, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
-import { officeRuntime, useChipFar } from "./runtime";
+import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip over a Rover (the mock's `.tag`, in HUD tokens): a state dot (never an edge stripe) with
- * "<Agent> · <activity>", then the title or "Client project" and a CI progress bar, both dropped when far.
+ * "<Agent> · <activity>" (at most 176 px wide, a longer head ends in an ellipsis; its label keeps it whole), then the title
+ * or "Client project" and a CI progress bar, both dropped when far.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill (its label keeps the
  * agent and activity), so the five chips neither overlap nor run off the screen edges or under the minimap; the
- * desk's drawer shows the task. OfficeScene moves it every frame (HintProbe pattern) through `officeRuntime.chips`. A click opens the
+ * desk's drawer shows the task. Outside the office view (`officeChipMode`: reduced motion, a hand turn at the stop) every
+ * screen shows them that way. OfficeScene moves it every frame (HintProbe pattern) through `officeRuntime.chips`. A click opens the
  * Rover's drawer the way its point-and-go target does (drive to the office stop, then open).
  */
 function Chip({ rover }: { rover: OfficeRoverView }) {
   const t = useTranslations("office");
   const far = useChipFar(rover.slot);
-  const compact = useHQStore((s) => far && s.device.viewport === "mobile");
+  const plain = useChipsCompact();
+  const compact = useHQStore((s) => far && (plain || s.device.viewport === "mobile"));
   const taskId = useId();
   const line = chipLines(rover, t);
   const color = OFFICE_STATE_STYLE[rover.state].color;
@@ -48,9 +51,9 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
           <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color }} />
         </span>
       ) : (
-        <span className="glass glass-solid inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink">
-          <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color }} />
-          {line.head}
+        <span className="glass glass-solid inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink" style={{ maxWidth: 176 }}>
+          <span aria-hidden="true" className="hq-dot hq-dot-md shrink-0" style={{ color }} />
+          <span className="min-w-0 truncate">{line.head}</span>
         </span>
       )}
       {!far && line.task && (

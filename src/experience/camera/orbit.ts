@@ -423,6 +423,36 @@ function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: Vie
 }
 
 /**
+ * What the camera shows of a view zone (`CameraDirector` writes it to `roverRuntime.cameraView` and `cameraHeld` every
+ * frame): `zone`, the zone whose view is applied (entered with motion on, not turned by hand, in third person; else
+ * null), and `held`, true from the frame the drawn camera first comes to rest in that view until the zone changes, its
+ * camera class changes or its look offset is retargeted. A hand zoom (with a held look offset) or the rover moving inside
+ * the zone keeps it held while the camera follows.
+ */
+export interface ZoneHold {
+  zone: string | null;
+  held: boolean;
+  cls: ViewportClass | undefined;
+  forward: number;
+  up: number;
+}
+
+export const createZoneHold = (): ZoneHold => ({ zone: null, held: false, cls: undefined, forward: 0, up: 0 });
+
+/** Updates `h` for this frame (no allocation): `still` is true when the drawn camera rests on its wanted pose. */
+export function holdZone(h: ZoneHold, s: OrbitState, reduced: boolean, still: boolean): void {
+  const zone = s.zone !== null && s.suppressedZone !== s.zone && !reduced && !s.firstPerson ? s.zone : null;
+  if (h.zone !== zone || h.cls !== s.zoneCls || h.forward !== s.lookForwardTarget || h.up !== s.lookUpTarget) {
+    h.zone = zone;
+    h.cls = s.zoneCls;
+    h.forward = s.lookForwardTarget;
+    h.up = s.lookUpTarget;
+    h.held = false;
+  }
+  if (still) h.held = true;
+}
+
+/**
  * Tracks the zone the rover is in. Entering a zone eases the camera to face its feature, unless
  * reduced motion is on, the visitor is in first person, or they already rotated by hand inside it.
  * Leaving clears the block. On the rail rig a zone's `railYaw` eases the rail in the same way and back to

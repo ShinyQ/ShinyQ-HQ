@@ -46,6 +46,44 @@ const trigger = (page: Page) =>
 const settled = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.settled() ?? 0);
 const feed = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.feed() ?? null);
 const chip = (page: Page, slot: number) => page.locator(`[data-testid="office-chip"][data-slot="${slot}"]`);
+/** The zone view the camera shows and whether it holds it (`roverRuntime.cameraView`, `cameraHeld`). */
+const cameraView = (page: Page) =>
+  page.evaluate(() => {
+    const rover = (window as unknown as { __hq: { rover: { cameraView: string | null; cameraHeld: boolean } } }).__hq.rover;
+    return { view: rover.cameraView, held: rover.cameraHeld };
+  });
+/** The shown chips' boxes never overlap one another. */
+async function expectChipsApart(page: Page) {
+  const boxes = await page.locator('[data-testid="office-chip"]').evaluateAll((els) =>
+    els.filter((el) => (el as HTMLElement).style.visibility === "visible").map((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number; top: number; bottom: number }),
+  );
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++) {
+      const [a, b] = [boxes[i], boxes[j]];
+      expect(a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5, `chips ${i} and ${j} overlap`).toBe(false);
+    }
+}
+/**
+ * The fewest chips shown (`__hq.probes.office.chips`) over the next `frames` animation frames, sampled while `act` runs:
+ * a chip that blinks out for a frame shows up here.
+ */
+async function fewestChipsWhile(page: Page, frames: number, act: () => Promise<void>) {
+  await page.evaluate((frames) => {
+    const w = window as unknown as OfficeWindow & { __fewestChips?: number; __fewestDone?: boolean };
+    w.__fewestChips = Infinity;
+    w.__fewestDone = false;
+    let seen = 0;
+    const tick = () => {
+      w.__fewestChips = Math.min(w.__fewestChips!, w.__hq.probes.office.chips);
+      if (++seen < frames) requestAnimationFrame(tick);
+      else w.__fewestDone = true;
+    };
+    requestAnimationFrame(tick);
+  }, frames);
+  await act();
+  await page.waitForFunction(() => (window as unknown as { __fewestDone?: boolean }).__fewestDone === true, undefined, { timeout: 60_000 });
+  return page.evaluate(() => (window as unknown as { __fewestChips: number }).__fewestChips);
+}
 type SceneNode = { name: string; type: string; visible: boolean; children: SceneNode[] };
 /**
  * What the office view looks out past: the wing sign (shown plates, `__hq.probes.signs`), the tower frame and the ghost
@@ -96,7 +134,7 @@ async function atOffice(page: Page) {
 
 /**
  * At the office stop the follow camera sits about 40 u from the chips (1280 x 720), past their far band
- * (`OFFICE_CHIP_FAR`), so they show their first line only (a chip starts near and turns far there). One zoom key step
+ * (`OFFICE_CHIP_FAR`), so they show their first line only (a chip starts far and stays far there). One zoom key step
  * (0.8, still third person; the view keeps its raised aim) brings the middle three near
  * (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring desk 1's as well, so desks 1 to 4
  * show their task lines (desk 5's chip is not checked).
@@ -356,7 +394,7 @@ test.describe("Agent Office (L1)", () => {
     expect((await probe(page)).states).toEqual(["asleep", "asleep", "asleep", "asleep", "asleep"]);
   });
 
-  test("reduced motion holds every pose still", async ({ page }) => {
+  test("reduced motion holds every pose still; the office view does not apply there, so the chips show as compact dots", async ({ page }) => {
     await chooseMotion(page, "reduced");
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -366,6 +404,16 @@ test.describe("Agent Office (L1)", () => {
       await waitForFrames(page, 6);
       expect((await probe(page)).bob).toBe(0);
     }
+    // At the stop the camera stays in the plain follow view (no zone view applies under reduced motion): no full chips
+    // crowding the top bar, every chip a compact dot (those whose anchors are in view and clear of the HUD show).
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    expect(await cameraView(page)).toEqual({ view: null, held: expect.any(Boolean) });
+    for (const slot of [0, 1, 2, 3, 4]) {
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+      await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+    }
+    await expectChipsApart(page);
   });
 
   test("Motion Full animates the working Rovers", async ({ page }) => {
@@ -410,6 +458,49 @@ test.describe("Agent Office (L1)", () => {
     await waitForCameraSettle(page);
     const peaks = await expectRenderBudget(page);
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+  });
+});
+
+test.describe("Agent Office (L1) at 1440 x 900", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("at the stop the chips wait for the camera, then all five show far; a hand zoom keeps them shown; a drag turns them into dots", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    // Settled in the office view: all five on screen, one line (far, past the band's near edge from a far start), not dots.
+    await expect.poll(() => cameraView(page)).toEqual({ view: "L1:office", held: true });
+    await expect.poll(async () => (await probe(page)).chips).toBe(5);
+    for (const slot of [0, 1, 2, 3, 4]) {
+      await expect(chip(page, slot)).toBeVisible();
+      await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
+    }
+    await expectChipsApart(page);
+    // Still far a moment later (the settle gate holds past the first settled frame).
+    await waitForFrames(page, 30);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+    // One zoom key step: the camera eases in for about a second; the chips never blink out, and once it rests the
+    // middle three show their task lines.
+    expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(5);
+    await waitForCameraSettle(page);
+    for (const slot of [1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
+    await expectChipsApart(page);
+    // A drag turns the camera by hand: the office view no longer applies, and every chip turns into a compact dot at once.
+    const { width, height } = page.viewportSize()!;
+    await page.mouse.move(Math.round(width * 0.78), Math.round(height * 0.6));
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(Math.round(width * 0.78) - i * 6, Math.round(height * 0.6));
+    await page.mouse.up();
+    await expect.poll(() => cameraView(page)).toEqual({ view: null, held: expect.any(Boolean) });
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
+    await expectChipsApart(page);
+    expect(errors).toEqual([]);
   });
 });
 
