@@ -1,5 +1,6 @@
 # Ask
 
 - Date: 2026-10-19
+- PR: [#241](https://github.com/ShinyQ/ShinyQ-HQ/pull/241)
 
 The Ask knowledge pack moves out of the Function bundle into Workers KV (`ASK_KV`, `pack:` keys): versioned, immutable values that carry a build-time BM25 index, a `pack:current` pointer flipped only after validation by `deploy.yml` and flipped back by `rollback.yml`, the last 10 versions kept, per-isolate memory, SHA-256, schema and shape checks, the bundle's pinned version and a small bundled fallback pack, inside the free tiers (owner request "move all of our knowledge for the chatbot into the Cloudflare", option B; Vectorize stays future work). This replaces the 256 KiB cap of 2026-10-15 with measured budgets: `PACK_MAX_BYTES` 384 KiB (text pack), `PACK_VALUE_MAX_BYTES` 768 KiB (stored value) and `FALLBACK_MAX_BYTES` 24 KiB (bundled fallback). Measured on the 166-chunk pack (Node 24, laptop under load): text pack 259,282 bytes, stored value 451,232 bytes, fallback 13,528 bytes; Functions bundle 449,019 to 210,101 bytes (133,036 to 62,801 gzip); per new isolate, 18 to 22 ms of tokenizing at start became SHA-256 2 to 3.5 ms, parse 1.3 to 1.4 ms and hydrate 1.2 to 1.5 ms on its first request. The deploy token gains Workers KV Storage: Edit.
