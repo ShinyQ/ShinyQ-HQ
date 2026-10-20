@@ -31,7 +31,7 @@ describe("office watch loader", () => {
     await act(async () => {
       await a;
     });
-    expect(beaconImports.n - before).toBeLessThanOrEqual(1);
+    expect(beaconImports.n - before).toBe(1);
     expect(hook.result.current?.OfficeBeacon).toBeTypeOf("function");
     expect(loader.loadOfficeBeacon()).toBe(a);
   });
@@ -97,18 +97,30 @@ describe("office watch loader", () => {
     signal.setOfficeSignal({ asking: [], goodAt: Date.now() });
   });
 
-  it("officeWatchNow loads the watch chunk and runs one tick of the running watch", async () => {
+  it("officeWatchNow called before any watch exists waits for the OfficeMount effect to start one, then ticks", async () => {
     const loader: Loader = await import("@/experience/floors/lobby/office/watchLoader");
+    const signal: Signal = await import("@/experience/floors/lobby/office/officeSignal");
     getHQStore().setState({ floor: "L1", ride: null });
-    const f = vi.fn(async () => new Response(JSON.stringify(body("asleep")), { status: 200 }));
-    // Nothing runs yet: the hook still loads the chunk and resolves.
-    await loader.officeWatchNow();
+    const f = vi.fn(async () => new Response(JSON.stringify(body("input")), { status: 200 }));
+    let done = false;
+    // The call that loads the chunk (`?prefetch=off`): no watch runs yet.
+    const now = loader.officeWatchNow().then(() => {
+      done = true;
+    });
     const watch = await loader.loadOfficeWatch();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(done).toBe(false);
+    expect(f).not.toHaveBeenCalled();
+    // A simulated OfficeMount effect starts the watch once the module arrived (after React commits).
     const stop = watch.startOfficeWatch({ fetch: f, every: 60_000 });
-    await Promise.resolve();
+    await now;
+    expect(f).toHaveBeenCalledTimes(2);
+    expect(signal.officeSignal.needsKurniadi).toBe(true);
+    expect(loader.officeAsks.on).toBe(true);
     const calls = f.mock.calls.length;
     await loader.officeWatchNow();
     expect(f).toHaveBeenCalledTimes(calls + 1);
     stop();
+    expect(signal.officeSignal.needsKurniadi).toBe(false);
   });
 });

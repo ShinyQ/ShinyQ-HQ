@@ -7,9 +7,29 @@ const INPUT = ["pointerdown", "keydown", "wheel"] as const;
 
 /** The running watch's tick, for `officeWatchTick` (`__hq.office.watchNow()`). */
 let tickNow: (() => Promise<void>) | undefined;
+/** Resolved by the next `startOfficeWatch` (a tick asked for before any watch runs waits on it); reset once used. */
+let started: { promise: Promise<void>; resolve: () => void } | null = null;
 
-/** One tick of the running watch now (its usual gates apply; nothing when it is not running); resolves once its answer applied. `__hq.office.watchNow()` loads the chunk, then calls it. */
-export const officeWatchTick = async (): Promise<void> => tickNow?.();
+const whenStarted = (): Promise<void> => {
+  if (!started) {
+    let resolve = () => {};
+    const promise = new Promise<void>((r) => {
+      resolve = r;
+    });
+    started = { promise, resolve };
+  }
+  return started.promise;
+};
+
+/**
+ * One tick of the running watch now (its usual gates apply); resolves once its answer applied. With no watch running
+ * it waits for the next `startOfficeWatch` (OfficeMount starts it in an effect after the chunk loads), then ticks.
+ * `__hq.office.watchNow()` loads the chunk, then calls it.
+ */
+export const officeWatchTick = async (): Promise<void> => {
+  while (!tickNow) await whenStarted();
+  await tickNow();
+};
 
 /**
  * The beacon's own small poll of GET /api/office (watch chunk; v1, design section 5.3; the path is a literal so the
@@ -40,6 +60,8 @@ export function startOfficeWatch(opts: { fetch?: (input: string, init?: RequestI
   };
   for (const t of INPUT) addEventListener(t, touch, { passive: true });
   tickNow = tick;
+  started?.resolve();
+  started = null;
   void tick();
   const id = setInterval(tick, opts.every ?? 30_000);
   return () => {

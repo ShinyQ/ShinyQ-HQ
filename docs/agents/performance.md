@@ -23,8 +23,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
 | L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 14,262 B of 14,336 B) | `e2e/budgets.ts` |
 | L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 6,043 B of 6,144 B) | `e2e/budgets.ts` |
-| L1 office watch chunk (`BYTES_3D_BUDGET.officeWatch`) | 2.0 KB gzip, inside the session total (measured 1,393 B of 2,048 B) | `e2e/budgets.ts` |
-| L1 office beacon chunk (`BYTES_3D_BUDGET.officeBeacon`) | 2.1 KB gzip, outside the session total (measured 1,471 B of 2,150 B) | `e2e/budgets.ts` |
+| L1 office watch chunk (`BYTES_3D_BUDGET.officeWatch`) | 1.96 KB gzip, inside the session total (measured 1,393 B of 2,007 B: measured plus 614 B) | `e2e/budgets.ts` |
+| L1 office beacon chunk (`BYTES_3D_BUDGET.officeBeacon`) | 2.04 KB gzip, outside the session total (measured 1,471 B of 2,085 B: measured plus 614 B) | `e2e/budgets.ts` |
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 495.1 KB (measured 494.5 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 479.3 KB (measured 478.7 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |

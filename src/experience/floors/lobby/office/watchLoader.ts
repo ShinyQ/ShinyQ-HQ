@@ -87,5 +87,5 @@ export function useOfficeAsks(): boolean {
   return useSyncExternalStore(subscribe, getAsks, off);
 }
 
-/** `__hq.office.watchNow()` (Playwright): loads the watch chunk, then one tick of the running watch (its usual gates apply). */
+/** `__hq.office.watchNow()` (Playwright): loads the watch chunk, waits for a running watch (OfficeMount starts it), then one tick of it (its usual gates apply). */
 export const officeWatchNow = (): Promise<void> => loadOfficeWatch().then((m) => m.officeWatchTick());

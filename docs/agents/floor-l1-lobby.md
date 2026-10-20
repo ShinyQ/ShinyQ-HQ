@@ -198,7 +198,7 @@ The office has its own south wing of the L1 slab ([owner decision](../decisions/
 
 ### Probes and tests
 
-- `__hq.office`: `load()`, `loadBody()`, `state()`, `asks()` (trigger asks after the first frame went idle: the `?prefetch=off` proof), `watchNow()` (loads the watch chunk, then one tick of the running watch, its gates apply; resolves once applied), `loadWatch()` and `loadBeacon()` (load the watch or beacon chunk: the bytes gate), `test()` once loaded (`feed`, `poll`, `advance`, `wanted`, `settled`).
+- `__hq.office`: `load()`, `loadBody()`, `state()`, `asks()` (trigger asks after the first frame went idle: the `?prefetch=off` proof), `watchNow()` (loads the watch chunk, waits until a watch runs (OfficeMount starts it on L1), then one tick of it, its gates apply; resolves once applied), `loadWatch()` and `loadBeacon()` (load the watch or beacon chunk: the bytes gate), `test()` once loaded (`feed`, `poll`, `advance`, `wanted`, `settled`).
 - `__hq.probes.office`: `loaded`, `desks`, `states`, `mode`, `wallFrames`, `chips`, `bob`, `inView`, `polling`.
 - Unit: `lobby-office`, `office-rooms`, `office-model`, `office-poll`, `office-visual`, `office-rig`, `office-atlas`, `office-frame`, `office-view`, `office-wall`, `office-runtime`, `office-chip-placement`, `office-chunk`, `office-live`, `office-interact`, `office-chunk-graph`, `office-signal`, `office-watch`, `office-watch-loader`, `office-beacon`, `office-beacon-view`; jsdom: `tests/hud/OfficeChips.test.tsx`, `tests/hud/OfficeBody.test.tsx`. E2E: `e2e/office.spec.ts` with snapshots from `e2e/office-fixtures.ts`; perf: the L1 and B1 gates load the office first, plus the office stop spot ([performance.md](performance.md)).
 - Owner captures: `bun scripts/office-shots.ts` (not committed).

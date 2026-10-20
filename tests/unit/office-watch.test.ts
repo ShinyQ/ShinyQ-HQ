@@ -148,7 +148,6 @@ describe("office watch", () => {
   });
   it("runs one tick now through officeWatchTick (the __hq.office.watchNow test hook)", async () => {
     getHQStore().setState({ floor: "L1", ride: null });
-    await expect(officeWatchTick()).resolves.toBeUndefined();
     let state = "input";
     const f = vi.fn(async () => new Response(JSON.stringify(body(state))));
     const stop = startOfficeWatch({ fetch: f, every: 60_000 });
@@ -159,8 +158,20 @@ describe("office watch", () => {
     expect(officeSignal.needsKurniadi).toBe(false);
     const calls = f.mock.calls.length;
     stop();
-    await officeWatchTick();
+    // With no watch running, a tick waits for the next start instead of resolving without one.
+    let done = false;
+    const waiting = officeWatchTick().then(() => {
+      done = true;
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(done).toBe(false);
     expect(f).toHaveBeenCalledTimes(calls);
+    state = "input";
+    const stop2 = startOfficeWatch({ fetch: f, every: 60_000 });
+    await waiting;
+    expect(f).toHaveBeenCalledTimes(calls + 2);
+    expect(officeSignal.needsKurniadi).toBe(true);
+    stop2();
   });
   it("bypasses the HTTP cache (the endpoint allows max-age=5 plus stale-while-revalidate=30)", async () => {
     getHQStore().setState({ floor: "L1", ride: null });
