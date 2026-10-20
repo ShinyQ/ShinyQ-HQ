@@ -302,7 +302,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
     - the watch chunk `watchChunk.ts` (mirrors the signal into `officeAsks`, loads the beacon chunk on the first ask): `officeSignal.ts` (the beacon's signal: `officeSignal`, `setOfficeSignal`, `useOfficeSignal`, `signalFromBody`; imports React only, shared with the scene and beacon chunks), `officeWatch.ts` (`startOfficeWatch`, `officeWatchTick`) and `src/hud/minimap/OfficeCue.tsx`;
     - the beacon chunk `beaconChunk.ts`: `OfficeBeacon.tsx` (the Needs Kurniadi beacon mesh) and `beacon.ts` (pure: `BEACON`, `beaconOrigin`, `beaconGain`, `beaconInstances`);
     - the scene chunk `scene.ts`: `OfficeScene.tsx` (Rovers, atlas, glow, wall, chip placement), `OfficeChips.tsx`, `runtime.ts` (in-view flag, chip elements, near/far flags), `live.ts` (the poller and `officeTest`), the pure modules `officeModel.ts`, `officeVisual.ts` (`OFFICE_STATE_STYLE`, `STATUS_COLOR`, poses), `officeRig.ts`, `officeAtlas.ts`, `officeFrame.ts`, `officeWall.ts` and `interact.ts`;
-    - the drawer body chunk `body.ts`: `OfficeBody.tsx`.
+    - the drawer body chunk `body.ts`: `OfficeBody.tsx` and `crewSummary.ts` (the summary drawer's crew sentences and announcements).
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
   - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT, stationOf, gatePillars).

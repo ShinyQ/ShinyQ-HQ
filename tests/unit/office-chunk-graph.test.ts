@@ -27,7 +27,7 @@ const OFFICE_ONLY = [
   "src/lib/office/model.ts",
 ];
 /** Office-only modules reached from the drawer body entry only (never from the scene entry). */
-const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`];
+const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`, `${DIR}/crewSummary.ts`];
 /** The watch chunk entry (idle on L1, in the session total) and the beacon chunk entry (on the first ask). */
 const WATCH = `${DIR}/watchChunk.ts`;
 const BEACON = `${DIR}/beaconChunk.ts`;

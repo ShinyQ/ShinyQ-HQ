@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { RoomView } from "@/content/room-views/types";
 import type { Locale } from "@/content/schema";
 import type { RoomBodyProps } from "@/hud/drawer/bodies";
@@ -10,8 +10,9 @@ import { sinceLabel } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
 import type { OfficeGithubItem } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
-import { officeDeskRoom } from "../officeLayout";
+import { officeDeskRoom, type OfficeTranslate } from "../officeLayout";
 import { loadOffice } from "./chunk";
+import { crewAnnouncement, crewLines } from "./crewSummary";
 import { officeLive, useOfficeFeed } from "./live";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
@@ -93,8 +94,33 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
   );
 }
 
-function SummaryPanel({ office }: { office: OfficeView }) {
+/** The live region's text: the state changes since the last announcement, at most one announcement per 10 s. */
+function useCrewNews(office: OfficeView, t: OfficeTranslate): string {
+  const [news, setNews] = useState("");
+  const s = useRef({ said: office, next: office, at: 0, timer: 0 });
+  useEffect(() => {
+    const r = s.current;
+    r.next = office;
+    if (r.timer) return;
+    r.timer = window.setTimeout(() => {
+      r.timer = 0;
+      const text = crewAnnouncement(r.said, r.next, t);
+      if (!text) return;
+      r.said = r.next;
+      r.at = Date.now();
+      setNews(text);
+    }, Math.max(0, r.at + 10_000 - Date.now()));
+  }, [office, t]);
+  useEffect(() => {
+    const r = s.current;
+    return () => window.clearTimeout(r.timer);
+  }, []);
+  return news;
+}
+
+function SummaryPanel({ office, locale, now }: { office: OfficeView; locale: Locale; now: number }) {
   const t = useTranslations("office");
+  const news = useCrewNews(office, t);
   const today = office.today;
   return (
     <>
@@ -114,6 +140,17 @@ function SummaryPanel({ office }: { office: OfficeView }) {
             );
           })}
         </ul>
+      </section>
+      <section className="space-y-2" data-testid="office-crew">
+        <h3 className={HEAD}>{t("3d.crew.title")}</h3>
+        <ul className={`${NOTE} space-y-1`}>
+          {crewLines(office, t, locale, now).map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+        <p className="sr-only" role="status" aria-live="polite" data-testid="office-crew-news">
+          {news}
+        </p>
       </section>
       {today && (
         <section className="space-y-2">
@@ -228,7 +265,7 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
           ) : (
-            <SummaryPanel office={office} />
+            <SummaryPanel office={office} locale={locale} now={now} />
           )}
         </>
       )}

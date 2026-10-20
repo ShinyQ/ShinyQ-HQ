@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
 import type { OfficeFeed } from "@/lib/office/poll";
+import type { OfficeDesk } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
@@ -38,12 +41,12 @@ const view = (office: NonNullable<RoomView["office"]>, id: string): RoomView => 
   tabs: [],
   office,
 });
-const body = (office: NonNullable<RoomView["office"]>, id = "L1:office") =>
-  render(
-    <NextIntlClientProvider locale="en" messages={en}>
-      <OfficeBody view={view(office, id)} locale="en" />
-    </NextIntlClientProvider>,
-  );
+const tree = (office: NonNullable<RoomView["office"]>, id = "L1:office", locale: "en" | "id" = "en") => (
+  <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : ids}>
+    <OfficeBody view={view(office, id)} locale={locale} />
+  </NextIntlClientProvider>
+);
+const body = (office: NonNullable<RoomView["office"]>, id = "L1:office") => render(tree(office, id));
 const o = en.office["3d"];
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 /** An external link's accessible name: its text, then "(opens in a new tab)" (the arrow is hidden from screen readers). */
@@ -198,5 +201,73 @@ describe("Agent Office drawers", () => {
     body({ panel: "github" }, "L1:office-github");
     expect(screen.getByTestId("office-offline")).toHaveTextContent(o.drawer.offline);
     expect(screen.getAllByTestId("office-feed-row")).toHaveLength(2);
+  });
+
+  describe("crew summary", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+    /** Sets desk states on the current snapshot (a fresh object, as each poll gives) and re-renders. */
+    const poll = (rerender: (ui: ReactElement) => void, states: Record<number, Partial<OfficeDesk>>, locale: "en" | "id" = "en") => {
+      const snap = live.feed.snapshot!;
+      live.feed = { ...live.feed, snapshot: { ...snap, desks: snap.desks.map((d) => ({ ...d, ...states[d.slot] })) } };
+      rerender(tree({ panel: "summary" }, "L1:office", locale));
+      act(() => vi.advanceTimersByTime(0));
+    };
+    const wait = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+
+    it("reads one sentence per desk and keeps a polite live region, silent on open", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const crew = screen.getByTestId("office-crew");
+      expect(within(crew).getByRole("heading")).toHaveTextContent(o.crew.title);
+      expect(within(crew).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+        "Desk 1: Copilot is working, since 14 min",
+        "Desk 2: Claude is thinking, since 14 min",
+        "Desk 3: Codex is reviewing, since 14 min",
+        "Desk 4: Copilot is running tests, since 14 min",
+        "Desk 5: Claude is waiting on CI, since 14 min",
+      ]);
+      const news = screen.getByRole("status");
+      expect(news).toHaveAttribute("aria-live", "polite");
+      expect(news).toBeEmptyDOMElement();
+      poll(rerender, { 0: { activity: "reading", title: "Other title" } });
+      expect(news).toBeEmptyDOMElement();
+    });
+
+    it("announces a state change, then coalesces the changes of the next 10 s into one announcement", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      poll(rerender, { 0: { state: "input", activity: "asking" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(2000);
+      poll(rerender, { 1: { state: "done", activity: "finished" } });
+      wait(2000);
+      poll(rerender, { 2: { state: "failed", activity: "failed" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(5900);
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(100);
+      expect(news).toHaveTextContent(/^Desk 2: Claude is now done\. Desk 3: Codex is now stopped on a failed CI run\.$/);
+    });
+
+    it("announces nothing when a desk changes and changes back within the window", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      poll(rerender, { 0: { state: "input" } });
+      poll(rerender, { 1: { state: "done" } });
+      poll(rerender, { 1: { state: "thinking" } });
+      wait(10_000);
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+    });
+
+    it("speaks Indonesian in the Indonesian drawer", () => {
+      const { rerender } = render(tree({ panel: "summary" }, "L1:office", "id"));
+      wait(0);
+      expect(within(screen.getByTestId("office-crew")).getAllByRole("listitem")[0]).toHaveTextContent("Meja 1: Copilot sedang bekerja, sejak 14 mnt");
+      poll(rerender, { 0: { state: "input", activity: "asking" } }, "id");
+      expect(screen.getByTestId("office-crew-news")).toHaveTextContent("Meja 1: Copilot kini sedang menunggu Kurniadi.");
+    });
   });
 });
