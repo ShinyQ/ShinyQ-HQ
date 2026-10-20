@@ -14,9 +14,10 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
- * (never an edge stripe) with the agent's name (and a small "+3" while it has helpers), "<Agent> · <activity> · 3 helpers"
- * when near, with a "+2" pill past the four drones drawn (6 helpers) (at most `CHIP_ROW.max` px wide, or the row's
- * fit `chipMaxWidth` that `OfficeWatch` writes, a longer line ends in an ellipsis; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
+ * (never an edge stripe) with the agent's name (and, while it has helpers, a small drone ring with their total, "3"),
+ * "<Agent> · <activity> · 3 helpers" when near, with a "+2" pill past the four drones drawn (6 helpers) (at most
+ * `CHIP_ROW.max` px wide, or the row's fit `chipMaxWidth` that `OfficeWatch` writes; the activity ends in an ellipsis
+ * first, so the helpers total always shows; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
  * full text (`chipLines`: agent, activity, helpers, the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
@@ -68,10 +69,18 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
         ) : (
           <span className="glass glass-solid inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink" style={{ maxWidth: "100%" }}>
             <span aria-hidden="true" className="hq-dot hq-dot-md shrink-0" style={{ color }} />
-            <span className="min-w-0 truncate">{far ? line.name : line.head}</span>
+            {far ? (
+              <span className="min-w-0 truncate">{line.name}</span>
+            ) : (
+              <span data-testid="office-chip-head" className="flex min-w-0">
+                <span className="min-w-0 truncate">{line.base}</span>
+                {line.helpers && <span className="shrink-0 whitespace-pre">{` · ${line.helpers}`}</span>}
+              </span>
+            )}
             {line.helpers && far && (
-              <span aria-hidden="true" data-testid="office-chip-helpers" className="shrink-0 text-xs text-ink-2">
-                {`+${rover.helpers}`}
+              <span aria-hidden="true" data-testid="office-chip-helpers" className="inline-flex shrink-0 items-center gap-1 text-xs text-ink-2">
+                <span className="hq-dot hq-dot-md" style={{ background: "transparent", border: "1.5px solid currentColor" }} />
+                {rover.helpers}
               </span>
             )}
             {more > 0 && !far && (

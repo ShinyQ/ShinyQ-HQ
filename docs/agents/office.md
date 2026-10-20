@@ -169,16 +169,18 @@ Index: [AGENTS.md](../../AGENTS.md).
 - What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
   activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
   raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with
-  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub events and today's numbers (without the CI clause on a day with no
-  runs). No privacy note shows on the card or in the 3D drawers (owner request 2026-10-20); the rule itself is unchanged
-  ([Privacy](#privacy-owner-decision-d3)).
+  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub
+  events and today's numbers (without the CI clause on a day with no runs). No privacy note shows on the card or in
+  the 3D drawers (owner request 2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
   - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
     title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
     beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
   - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
     keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
     (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
-    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line).
+    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line). The dimmed rows keep
+    their "· 3 helpers", like their last known activity, whereas the 3D office zeroes the helpers offline
+    (`OfficeRoverView.helpers`: no drones, no helpers on the chips or in the drawers).
   - English counts are ICU plurals in `office.classic` ("+1 more session", "1 task done", "1 of 1 CI run green"),
     filled on the client by `fill` (`src/components/office/fill.ts`: `{name}` and `{n, plural, ...}`).
   - A disabled office (`{"v":1,"enabled":false}`) hides the whole section, but only once it is off screen: while the
