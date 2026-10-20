@@ -105,7 +105,7 @@ export const OFFICE = {
    * size of its area around the stop. The wall's top stands 5.6 u over the follow rig's look target (the rover plus its
    * look-ahead, over the desks), so each class lowers the camera (`pitch`) and moves the look target (`lookOffset`):
    * - landscape screens (desktop, tablet) raise it (`up`), so the wall's top sits under the middle of the screen with the
-   *   two chip rows over it (37.3% of the screen over the wall's top on a desktop, 31.4% on a landscape phone); the
+   *   two chip rows over it (37.6% of the screen over the wall's top on a desktop, 31.4% on a landscape phone); the
    *   offset holds through a hand zoom (`hold`), so the near pose zooms in about the same aim and the middle three chips
    *   with their task lines still fit between the wall and the top bar;
    * - a portrait screen (the mobile class: 390 x 844, 820 x 1180) moves it 10 u toward the camera (owner decision
@@ -117,9 +117,9 @@ export const OFFICE = {
    * when the rover leaves the stop.
    */
   view: {
-    desktop: { zoom: 1.2, pitch: -0.3, lookOffset: { up: 3, hold: true } },
+    desktop: { zoom: 1.22, pitch: -0.3, lookOffset: { up: 3, hold: true } },
     tablet: { zoom: 1.25, pitch: -0.15, lookOffset: { up: 2, hold: true } },
-    mobile: { zoom: 1.42, pitch: -0.42, lookOffset: { forward: -10 } },
+    mobile: { zoom: 1.36, pitch: -0.45, lookOffset: { forward: -10 } },
     half: { x: 2, z: 1.4 },
   },
   /**

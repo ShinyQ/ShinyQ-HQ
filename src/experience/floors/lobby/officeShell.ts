@@ -118,10 +118,10 @@ export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
 
 /**
  * A chip farther than this from the camera shows its first line only (the mock's `.tag.far`): at the office stop the
- * chips sit 39.1 u or more from the camera, and one zoom step (two on a portrait screen) brings the middle three within
- * 37.6 u.
+ * chips sit 39.6 u or more from a desktop camera (past the band's far edge, so a chip that starts near turns far), and
+ * one zoom step (two on a portrait screen) brings the middle three within 36.5 u.
  */
-export const OFFICE_CHIP_FAR = 39.5;
+export const OFFICE_CHIP_FAR = 38;
 
 /**
  * Whether the chips may show for the camera (`OfficeWatch`, with `officeChipsHere`): only while it holds still
@@ -135,7 +135,7 @@ export const chipsSettled = (): boolean => roverRuntime.cameraSettled;
 export const OFFICE_CHIP_FAR_BAND = 1;
 
 /**
- * The next far flag for a chip at `dist` from the camera: far above 40.5, near below 38.5, unchanged between. On a phone
+ * The next far flag for a chip at `dist` from the camera: far above 39, near below 37, unchanged between. On a phone
  * (`phone`) always far: there is no room for task lines over the wall, and the desk's drawer shows them.
  */
 export function nextChipFar(far: boolean, dist: number, phone = false): boolean {

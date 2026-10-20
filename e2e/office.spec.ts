@@ -95,14 +95,16 @@ async function atOffice(page: Page) {
 }
 
 /**
- * At the office stop the follow camera sits about 35 u from the chips (1280 x 720), past their far band
- * (`OFFICE_CHIP_FAR`), so they show their first line only. One zoom key step (0.8, still third person) brings the
- * middle three near (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring desk 1's as
- * well, so desks 1 to 4 show their task lines (desk 5's chip is not checked).
+ * At the office stop the follow camera sits about 40 u from the chips (1280 x 720), past their far band
+ * (`OFFICE_CHIP_FAR`), so they show their first line only (a chip starts near and turns far there). One zoom key step
+ * (0.8, still third person; the view keeps its raised aim) brings the middle three near
+ * (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring desk 1's as well, so desks 1 to 4
+ * show their task lines (desk 5's chip is not checked).
  */
 async function nearChips(page: Page) {
   await driveTo(page, LOBBY.officeWing.stop);
   await waitForCameraSettle(page);
+  for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
   for (let i = 0; i < 2; i++) await page.keyboard.press("=");
   await waitForCameraSettle(page);
   for (const slot of [0, 1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
