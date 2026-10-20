@@ -33,10 +33,7 @@ export const OFFICE_WING = {
   lead: { width: 8, from: -8, to: 6 },
   /** Wing plaza (S + 1.5 to S + 17.5): it stops short of the end desks, which reach forward on both sides of the stop. */
   plaza: { z: 9.5, w: 18, d: 16 },
-  /**
-   * The stop stands in the concave front of the row, 5.5 u from the arc centre toward the desks: close enough that the
-   * follow camera's look target lands near the wall, which leaves the chips room over it (office-chip-placement).
-   */
+  /** The stop stands in the concave front of the row, 5.5 u from the arc centre toward the desks: the follow camera's look target lands near the wall. */
   stop: 16.5,
   /** Desk arc centre: the middle Rover's back (S + 24.2) stays 4.5 u in front of the wall frame. */
   arc: 11,
@@ -105,26 +102,24 @@ export const OFFICE = {
   dock: { pad: 0.25 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
-   * size of its area around the stop. The wall's top stands 5.6 u over the follow rig's look target (the rover plus its
-   * look-ahead, over the desks), so each class lowers the camera (`pitch`) and moves the look target (`lookOffset`):
-   * - landscape screens (desktop, tablet) raise it (`up`), so the wall's top sits over the middle of the screen with the
-   *   two chip rows over it (36.3% of the screen over the wall's top on a desktop, 30% on the tablet camera); the offset
-   *   holds through a hand zoom (`hold`), so the near pose zooms in about the same aim and the middle three chips with
-   *   their task lines still fit between the wall and the top bar;
-   * - a portrait screen (the mobile class: 390 x 844, 820 x 1180) moves it 4.5 u toward the camera: about 22% sky over the
-   *   wall, the console and the Rovers 37% to 46% down, with the five desks and the Rover in frame; a hand zoom hands the
-   *   framing back there (the offset eases out), as its compact chips need no room for task lines.
-   * Each class takes the view closest to filling the frame (the wall's top near the top edge, the console in the lower
-   * middle, the CI tower and the dock in frame on landscape screens; tests/unit/office-view.test.ts pins the fractions)
-   * that keeps the wall, the five desks and the Rover in frame, the chips far, and one zoom step (two on a portrait
-   * screen) bringing the middle three near clear of each other, the wall and the HUD
-   * (tests/unit/office-chip-placement.test.ts): the chips over the wall bound how high the wall's top can go. A `pitch`
-   * also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
+   * size of its area around the stop. From the stop the office fills the frame (owner decision 2026-10-20, with the chips
+   * in one row under the HUD's top bar): each class raises the camera (`pitch`) and takes the view closest to the wall's
+   * top 12% to 15% from the top edge and the console and the Rovers 45% to 85% down, with the whole wall, the five desks,
+   * every Rover's head under the screen and the visitor's Rover in frame (tests/unit/office-view.test.ts measures them):
+   * - desktop: the CI tower column and the dock pad in frame too, which on 1180 x 820 (the narrowest desktop) holds the
+   *   camera back: the wall's top at 15%, the Rovers' heads from 42.4% down; the look target drops 1.25 u (`up`) and holds
+   *   through a hand zoom (`hold`), so the near pose zooms in about the same aim;
+   * - tablet (landscape phones and small landscape tablets): 14.5% and 45.1% to 67%, the plain aim (no look offset);
+   * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
+   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: the wall's top at 15%,
+   *   the console 31.4% to 42.6% down; the look target moves 5.25 u toward the camera, and a hand zoom hands the framing
+   *   back there (the offset eases out).
+   * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
    */
   view: {
-    desktop: { zoom: 1.2, pitch: -0.36, lookOffset: { up: 2.5, hold: true } },
-    tablet: { zoom: 1.22, pitch: -0.33, lookOffset: { up: 1, hold: true } },
-    mobile: { zoom: 1.42, pitch: -0.09, lookOffset: { forward: -4.5 } },
+    desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true } },
+    tablet: { zoom: 1.07, pitch: 0.2 },
+    mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
     half: { x: 2, z: 1.4 },
   },
   /**
@@ -212,8 +207,8 @@ export function officeDock(w: OfficeWing): Rect {
 
 /**
  * The tower column's centre (the crew's look target): 1.5 u in from the corner's east and north edges, so the column
- * (turned toward the stop, reaching about 1.18 u) stays on the plinth and, seen from the office stop, clear of desk 1's chip
- * on every camera class (tests/unit/office-chip-placement.test.ts; the corner's middle put it under that chip).
+ * (turned toward the stop, reaching about 1.18 u) stays on the plinth and, from the office stop, in frame on desktops
+ * (tests/unit/office-view.test.ts).
  */
 export function officeTowerColumn(w: OfficeWing): Vec2 {
   const r = officeTower(w);
@@ -278,7 +273,7 @@ export function officeZone(w: OfficeWing): ViewZone {
     zoom: view.desktop.zoom,
     classView: {
       desktop: { ...view.desktop, lookOffset: { ...view.desktop.lookOffset } },
-      tablet: { ...view.tablet, lookOffset: { ...view.tablet.lookOffset } },
+      tablet: { ...view.tablet },
       mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } },
     },
     // The view looks south past the L1 slab edge, under the L2 slab: its ghost outline hides here (tower/ghostOutline.ts).

@@ -133,11 +133,10 @@ async function atOffice(page: Page) {
 }
 
 /**
- * At the office stop the follow camera sits about 40 u from the chips (1280 x 720), past their far band
- * (`OFFICE_CHIP_FAR`), so they show their first line only (a chip starts far and stays far there). One zoom key step
- * (0.8, still third person; the view keeps its raised aim) brings the middle three near
- * (tests/unit/office-chip-placement.test.ts pins that pose on every class); two bring desk 1's as well, so desks 1 to 4
- * show their task lines (desk 5's chip is not checked).
+ * At the office stop the follow camera sits about 36 u from the Rovers' heads (1280 x 720), past the chips' far band
+ * (`OFFICE_CHIP_FAR`), so they show the agent's name only (a chip starts far and stays far there). One zoom key step
+ * (0.8, still third person; the view keeps its aim) brings all five near (tests/unit/office-chip-placement.test.ts pins
+ * that pose on every class), so after two desks 1 to 4 show their activity (desk 5's chip is not checked).
  */
 async function nearChips(page: Page) {
   await driveTo(page, LOBBY.officeWing.stop);
@@ -220,8 +219,9 @@ test.describe("Agent Office (L1)", () => {
     expect((await probe(page)).desks).toBe(5);
     await nearChips(page);
     await expect(chip(page, 0)).toContainText(`${en.office.agent.copilot} · ${en.office.activity.editing}`);
-    await expect(chip(page, 0)).toContainText("Agent office scene");
-    await expect(chip(page, 1)).toContainText(en.office.clientProject);
+    // The task stays in the label (the drawer shows it): the row keeps one compact line per chip.
+    await expect(chip(page, 0)).toHaveAttribute("aria-label", /, Agent office scene$/);
+    await expect(chip(page, 1)).toHaveAttribute("aria-label", new RegExp(`, ${en.office.clientProject}$`));
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expect.poll(async () => (await probe(page)).wallFrames).toBeGreaterThan(0);
     await show(page, office, statesB(Date.now()), STATES_B);
@@ -404,8 +404,8 @@ test.describe("Agent Office (L1)", () => {
       await waitForFrames(page, 6);
       expect((await probe(page)).bob).toBe(0);
     }
-    // At the stop the camera stays in the plain follow view (no zone view applies under reduced motion): no full chips
-    // crowding the top bar, every chip a compact dot (those whose anchors are in view and clear of the HUD show).
+    // At the stop the camera stays in the plain follow view (no zone view applies under reduced motion): every chip a
+    // compact dot in the row (those whose Rovers are in view show).
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
     expect(await cameraView(page)).toEqual({ view: null, held: expect.any(Boolean) });
@@ -432,7 +432,7 @@ test.describe("Agent Office (L1)", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await nearChips(page);
     await expect(chip(page, 0)).toContainText(`${id.office.agent.copilot} · ${id.office.activity.editing}`);
-    await expect(chip(page, 1)).toContainText(id.office.clientProject);
+    await expect(chip(page, 1)).toHaveAttribute("aria-label", new RegExp(`, ${id.office.clientProject}$`));
   });
 
   test("at the office stop the wing sign, the tower frame and the floors above's outlines leave the view; on the lead road they are back", async ({ page }) => {
@@ -481,11 +481,18 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
       await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
     }
     await expectChipsApart(page);
+    // One row pinned under the top bar (`OFFICE_CHIP_TOP.desktop`, 66 px), in desk order left to right, each with its leader
+    // line drawn down to its Rover.
+    const row = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; top: number }));
+    for (const box of row) expect(box.top).toBeCloseTo(66, 0);
+    for (let i = 1; i < row.length; i++) expect(row[i].left).toBeGreaterThan(row[i - 1].left);
+    const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
+    expect(leads).toEqual(["visible", "visible", "visible", "visible", "visible"]);
     // Still far a moment later (the settle gate holds past the first settled frame).
     await waitForFrames(page, 30);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
-    // One zoom key step: the camera eases in for about a second; the chips never blink out, and once it rests the
-    // middle three show their task lines.
+    // One zoom key step: the camera eases in for about a second; the chips never blink out, and once it rests they add
+    // the activity.
     expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(5);
     await waitForCameraSettle(page);
     for (const slot of [1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
@@ -518,8 +525,8 @@ test.describe("Agent Office (L1) on a phone", () => {
     await waitForCameraSettle(page);
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     // Back onto the lead road in the Lobby (the approach): leaving the office view turns back to its south-looking yaw,
-    // so the wall stays in view, low and far, where the chips would crowd the top bar and the minimap (`officeChipsHere`
-    // lets them show only in the stop's view zone area or with an office drawer open).
+    // so the wall stays in view, low and far, a backdrop the chips do not label (`officeChipsHere` lets them show only in
+    // the stop's view zone area or with an office drawer open).
     await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
     await waitForCameraSettle(page);
     await expect.poll(async () => (await probe(page)).inView).toBe(true);
@@ -537,7 +544,7 @@ test.describe("Agent Office (L1) on a phone", () => {
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toBeVisible();
   });
 
-  test("keeps every chip a compact dot with no task line at the stop and zoomed in two steps", async ({ page }) => {
+  test("keeps every chip a compact dot with no text at the stop and zoomed in two steps", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -548,7 +555,7 @@ test.describe("Agent Office (L1) on a phone", () => {
     // At the stop, once the camera holds still, every chip shows as a compact dot.
     await expect.poll(async () => (await probe(page)).chips).toBe(5);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
-    // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop shows the middle three's task lines.
+    // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop's chips add the activity.
     const start = await zoom(page);
     for (let i = 0; i < 2; i++) await page.keyboard.press("=");
     await expect.poll(() => zoom(page)).toBeLessThan(start * 0.7);

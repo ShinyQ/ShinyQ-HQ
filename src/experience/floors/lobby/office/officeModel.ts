@@ -73,12 +73,19 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
   };
 }
 
-/** Chip text: "<Agent> · <activity>", then the title or "Client project" (not for sleeping Rovers), then CI progress. */
-export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { head: string; task: string | null; progress: number | null } {
-  const head = r.agent ? `${t(`agent.${r.agent}`)} · ${t(`activity.${r.activity}`)}` : t("3d.offDuty");
+/**
+ * Chip text: the agent's name ("Off duty" without one), "<Agent> · <activity>", the title or "Client project" (not for
+ * sleeping Rovers), CI progress (0 to 1), and the full text for the chip's label: "Desk <n>: <head>, <task>, <done> of
+ * <total> jobs".
+ */
+export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: string; head: string; task: string | null; progress: number | null; label: string } {
+  const name = r.agent ? t(`agent.${r.agent}`) : t("3d.offDuty");
+  const head = r.agent ? `${name} · ${t(`activity.${r.activity}`)}` : name;
   const task = r.agent && r.state !== "asleep" ? (r.title ?? t("clientProject")) : null;
-  const progress = r.progress && r.progress.total > 0 ? Math.min(1, r.progress.done / r.progress.total) : null;
-  return { head, task, progress };
+  const ci = r.progress && r.progress.total > 0 ? r.progress : null;
+  const progress = ci ? Math.min(1, ci.done / ci.total) : null;
+  const label = [t("3d.target.desk", { n: r.slot + 1, agent: head }), task, ci && t("3d.jobs", { done: ci.done, total: ci.total })].filter(Boolean).join(", ");
+  return { name, head, task, progress, label };
 }
 
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {

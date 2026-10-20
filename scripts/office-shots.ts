@@ -2,7 +2,7 @@
 /**
  * Agent Office captures for the owner's review (part 3 of the office): the spawn view (the ghost outline of the floors
  * above, kept there), the nine Rover states over two fixtures
- * (the first one also zoomed in to the near pose: the chips show their task lines, compact on a phone), the summary,
+ * (the first one also zoomed in to the near pose: the chips add the activity, compact on a phone), the summary,
  * GitHub and Rover drawers, and the semi-live and off modes, at 1440x900, 1280x720, 820x1180 (touch tablet), 390x844
  * and 844x390 (phones) on the full and lite tiers,
  * on a served export with `/api/office` answered from fixtures. SwiftShader WebGL. Never committed; the waits
@@ -67,7 +67,6 @@ mkdirSync(out, { recursive: true });
 const SLOW = 120_000;
 const probe = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office);
 const camera = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.camera());
-const chip = (page: Page, slot: number) => page.locator(`[data-testid="office-chip"][data-slot="${slot}"]`);
 
 async function waitFor(what: string, check: () => Promise<boolean>, timeout = SLOW) {
   const end = Date.now() + timeout;
@@ -226,21 +225,12 @@ try {
         await page.screenshot({ path: name("states-a") });
       }
 
-      // As tests/unit/office-chip-placement.test.ts, from the stop: zoom key steps until the middle three leave their far
-      // band and show the task line. A phone keeps its chips compact at any distance: the near pose of its camera class
-      // (two steps on a portrait screen, one on a landscape one) instead.
+      // As tests/unit/office-chip-placement.test.ts, from the stop: the near pose of the camera class (two zoom key steps on
+      // a portrait screen, one on a landscape one), where a desktop's chips add the activity. A phone keeps its chips
+      // compact, and a row narrower than five full chips (960 x 640, a portrait tablet) one line, at any distance.
       if (wants("states-a-near")) {
-        const near = async () => (await Promise.all([1, 2, 3].map((slot) => chip(page, slot).getAttribute("data-far")))).every((far) => far === "false");
-        if ((await chip(page, 2).getAttribute("data-compact")) === "true") {
-          for (let i = 0; i < (vp.height > vp.width ? 2 : 1); i++) await page.keyboard.press("=");
-          await settle(page);
-        } else {
-          for (let i = 0; i < 8 && !(await near()); i++) {
-            await page.keyboard.press("=");
-            await settle(page);
-          }
-          if (!(await near())) throw new Error("office shots: the chips never came near");
-        }
+        for (let i = 0; i < (vp.height > vp.width ? 2 : 1); i++) await page.keyboard.press("=");
+        await settle(page);
         await waitForFrames(page, 20);
         await page.screenshot({ path: name("states-a-near") });
         // A hand zoom suppresses the office view zone until the rover leaves it: reset, step out and come back.

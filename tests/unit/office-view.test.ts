@@ -1,8 +1,7 @@
 import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 import type { ViewportClass } from "@/experience/types";
-import { OFFICE_CHIP_TOP } from "@/experience/floors/lobby/officeShell";
-import { cameraClass, viewportClass } from "@/lib/viewport";
+import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
@@ -56,12 +55,13 @@ describe("Agent Office view model", () => {
     expect(off.rovers.every((r) => r.state === "asleep")).toBe(true);
   });
 
-  it("writes chip lines: agent and activity, the title or Client project, CI progress", () => {
+  it("writes chip lines: the name, agent and activity, the title or Client project, CI progress, and the full label", () => {
     const view = ready(statesA(NOW));
-    expect(chipLines(view.rovers[0], t)).toEqual({ head: "Copilot · Editing", task: "Agent office scene", progress: null });
-    expect(chipLines(view.rovers[1], t)).toEqual({ head: "Claude · Planning", task: "Client project", progress: null });
+    expect(chipLines(view.rovers[0], t)).toEqual({ name: "Copilot", head: "Copilot · Editing", task: "Agent office scene", progress: null, label: "Desk 1: Copilot · Editing, Agent office scene" });
+    expect(chipLines(view.rovers[1], t)).toEqual({ name: "Claude", head: "Claude · Planning", task: "Client project", progress: null, label: "Desk 2: Claude · Planning, Client project" });
     expect(chipLines(view.rovers[4], t).progress).toBeCloseTo(7 / 12);
-    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ head: "Off duty", task: null, progress: null });
+    expect(chipLines(view.rovers[4], t).label).toMatch(/^Desk 5: .+, Office chips, 7 of 12 jobs$/);
+    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", head: "Off duty", task: null, progress: null, label: "Desk 5: Off duty" });
   });
 
   it("feeds the desk screen the state's kind, the activity label and only protocol fields", () => {
@@ -77,29 +77,26 @@ describe("Agent Office view model", () => {
 });
 
 /**
- * How the office fills the frame from the office stop (Task 19, coordinator request 2026-10-20: the wall's top 12% to 15%
- * from the top edge, the console and the Rovers 45% to 85% down, the CI tower column and the dock pad in frame on desktop
- * sizes, the visitor's Rover in frame). `OFFICE.view` takes, per camera class, the view closest to those targets that keeps
- * every chip check of tests/unit/office-chip-placement.test.ts (far at the stop, the middle three near one zoom step in,
- * clear of the wall, the desk screens, the rover, one another and the HUD, also on every frame of the zoom).
- * The wall-top target is out of reach with chips hung over the wall: on a desktop a 15% wall top leaves 42 px (1280 x 720)
- * for the two chip rows under the 66 px top bar, puts the camera 35 to 37.5 u from the anchors (inside the 37 u near band,
- * so the chips are not far at the stop), and one zoom step (the pivot is the rover's look-ahead, in the console) lifts the
- * wall's top to 47 to 59 px, under the top bar. A portrait screen is width bound (the whole wall and the five desks fit
- * 390 px), so its console cannot drop to 45% with the wall's top over 18%. The measured fractions are pinned here.
+ * How the office fills the frame from the office stop (owner decision 2026-10-20: the wall's top 12% to 15% from the top
+ * edge, the console and the Rovers 45% to 85% down, the CI tower column and the dock pad in frame on desktop sizes, the
+ * visitor's Rover in frame; the chips moved to a row under the HUD's top bar to free that band). `OFFICE.view` takes, per
+ * camera class, the view closest to those targets (`tests/helpers/office-frame.ts`; the search behind it is in the Task 19
+ * report):
+ * - desktop: no view keeps the tower and the dock in frame on 1180 x 820 (the narrowest desktop) with the console top under
+ *   42.8% at a 15% wall top: the Rovers' heads start at 42.4%;
+ * - tablet: every target;
+ * - portrait: width bound (the whole wall and the five desks across 390 px, every Rover in frame from the zone's corners),
+ *   so the office spans under a third of the height: the console 31% to 43% down.
  */
 describe("the office stop frame", () => {
-  /** Wall top, console top and bottom (fractions of the height from the top edge), per camera class. */
+  /** The measured wall top, console top and bottom (fractions of the height from the top edge), per camera class. */
   const MEASURED: Record<ViewportClass, readonly [number, number, number]> = {
-    desktop: [0.363, 0.572, 0.685],
-    tablet: [0.3, 0.502, 0.612],
-    mobile: [0.218, 0.367, 0.459],
+    desktop: [0.15, 0.424, 0.618],
+    tablet: [0.145, 0.451, 0.67],
+    mobile: [0.149, 0.314, 0.426],
   };
-  /**
-   * The near pose (one zoom step, two on a portrait screen) still leaves a chip's height between the HUD's top bar and the
-   * wall's top: a near chip (task line, 68 px) on the desktop camera, a one-line chip or a phone's dot (32 px) elsewhere.
-   */
-  const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobile: 2 };
+  /** The lowest console top each class reaches (the 45% target where it can). */
+  const CONSOLE_TOP: Record<ViewportClass, number> = { desktop: 0.42, tablet: 0.45, mobile: 0.31 };
 
   it.each(SIZES)("frames the office on $id ($width x $height): wall top, console band, the tower, the dock and the visitor's Rover", ({ width, height }) => {
     const cls = cameraClass(width, height);
@@ -108,17 +105,11 @@ describe("the office stop frame", () => {
     expect(f.wallTop, "wall top").toBeCloseTo(wallTop, 3);
     expect(f.console.top, "console top").toBeCloseTo(consoleTop, 3);
     expect(f.console.bottom, "console bottom").toBeCloseTo(consoleBottom, 3);
-    // The console and the Rovers sit under the wall, inside the lower-middle band's bottom edge.
-    expect(f.console.top).toBeGreaterThan(f.wallTop);
-    expect(f.console.bottom).toBeLessThanOrEqual(0.85);
+    expect(f.wallTop, "wall top 12% to 15% down").toBeGreaterThanOrEqual(0.12);
+    expect(f.wallTop, "wall top 12% to 15% down").toBeLessThanOrEqual(0.15 + 5e-4);
+    expect(f.console.top, "console top").toBeGreaterThanOrEqual(CONSOLE_TOP[cls]);
+    expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
-    if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
-  });
-
-  it.each(SIZES)("leaves a chip's height between the top bar and the wall at the near pose on $id ($width x $height)", ({ width, height }) => {
-    const cls = cameraClass(width, height);
-    const near = officeFrame(width, height, NEAR_STEPS[cls]);
-    const top = OFFICE_CHIP_TOP[viewportClass(width, height) === "mobile" ? "mobile" : "desktop"];
-    expect(near.wallTop * height - top).toBeGreaterThanOrEqual(cls === "desktop" ? 68 : 32);
+    if (cls === "desktop") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
   });
 });
