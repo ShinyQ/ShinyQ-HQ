@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, visibleTarget, fastAnimations, realAnimations } from "./hq";
+import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyFloorPoint, enterHQ, hoveredTarget, openPage, PHONE_SAFE, snapshot, targetPoint, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForHydration, waitForPhase, waitForRoom, waitForRoverMove, waitForSceneLive, visibleTarget, fastAnimations, realAnimations } from "./hq";
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { distanceToRect } from "../src/experience/nav/collision";
@@ -642,6 +642,8 @@ test.describe("tiers and views", () => {
     await page.reload();
     await waitForHQ(page);
     await waitForPhase(page, "explore");
+    // `explore` comes before the Director's first frame; a key pressed before it is dropped.
+    await waitForSceneLive(page);
     await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
     await page.keyboard.press("m");
     await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "true");
