@@ -454,6 +454,9 @@ test.describe("Agent Office (L1) on a phone", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
+    // At the stop, once the camera holds still, every chip shows as a compact dot.
+    await expect.poll(async () => (await probe(page)).chips).toBe(5);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
     // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop shows the middle three's task lines.
     const start = await zoom(page);
     for (let i = 0; i < 2; i++) await page.keyboard.press("=");
