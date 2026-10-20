@@ -1,7 +1,8 @@
 # Agent Office revamp (living crew, ship-it pipeline, day replay): design
 
 Date: 2026-10-20. Status: approved by the owner on 2026-10-20 (direction D, staged all-in; section 2), relayed by the
-coordinator. The look of stage A waits on the owner's review of the prototype renders (section 13).
+coordinator; the stage A look approved on 2026-10-20 from the prototype renders (thought trail only, beacon 1.6 u,
+slim LED-lane tower, the done spin ending on the camera).
 
 Owner request (verbatim): "I see thats good but current Agent Office just not feel so WOW i need you to think and do
 revamp for it (or add featured)".
@@ -66,7 +67,7 @@ Client modules and chunks (all under `src/experience/floors/lobby/office/` unles
 | Piece | Where | Loaded | Stage |
 |---|---|---|---|
 | `officeWatch.ts`, `OfficeBeacon.tsx`, minimap cue | main path (beside `OfficeMount`), `src/hud/minimap/` | with L1 | A |
-| `crew.ts` (pure choreography), `crewFx.ts` (sparks, swirl, flag, dock writes) | scene chunk | lead road, wing, office mission, go-to or drawer (unchanged trigger) | A |
+| `crew.ts` (pure choreography), `crewFx.ts` (sparks, thought trail, flag, dock writes) | scene chunk | lead road, wing, office mission, go-to or drawer (unchanged trigger) | A |
 | `pipeline.ts` (pure: lanes, packets, ships from snapshot diffs), `pipelineFx.ts` | scene chunk | same | B |
 | `replay.ts` (pure engine), `replayFeed.ts` (fetch, parse, playback clock) | new `office/replayChunk.ts` lazy chunk | the idle loop condition, or the drawer's replay control | C |
 | Replay controls, crew summary | drawer body chunk (`OfficeBody`) | an office drawer opens | A (summary), C (controls) |
@@ -98,7 +99,7 @@ One `CrewActor` per desk, advanced by `stepCrew(actor, input, dt, reduced)` ever
 - Input: the desk's effective state (from the feed), the camera's xz, the tower and dock anchors (section 6.1), the
   slot's phase.
 - Output: an `OfficePose` (today's fields plus `x` and `z` offsets along the desk's local axes, a `yaw` offset, `flag`
-  0 to 1, `spin`), and an `fx` record (sparks, swirl, flag wave, charge level, flicker) read by `crewFx.ts`.
+  0 to 1, `spin`), and an `fx` record (sparks, thought trail, flag wave, charge level, flicker) read by `crewFx.ts`.
 - **Transitions**: on a state change the actor snapshots the pose it is in and blends from it to the new state's live
   target pose with a smoothstep weight over `max(0.35 s, turn / 3 rad/s)`, so gestures (typing, pacing) keep their full
   amplitude once the blend ends and no turn is faster than 3 rad/s. A one-shot gesture (the victory spin) starts only
@@ -115,12 +116,12 @@ One `CrewActor` per desk, advanced by `stepCrew(actor, input, dt, reduced)` ever
 | State | Full motion | Reduced motion (held pose, still readable) | Desk |
 |---|---|---|---|
 | working | typing: arms alternate, head pitched 0.12 rad to the desk, a 0.04 u bob; **key sparks**: 3 to 5 cyan glow dots pop 0.2 to 0.6 u above the desk's front edge between the hands, each living 0.3 s | typing pose held, 3 sparks fixed above the keys | code screen (unchanged) |
-| thinking | head tilt sway; **particle swirl**: 5 amber dots orbit 0.55 u around a point 0.45 u over the antenna tip, plus a 3-dot thought trail rising from the tip (sizes 0.08, 0.12, 0.18 u) | tilt held, swirl dots fixed at 5 evenly spaced angles, trail fixed | dots screen |
+| thinking | head tilt sway; **thought trail**: 3 amber dots rising from the antenna tip (sizes 0.08, 0.12, 0.18 u), bobbing gently (owner: the trail only, no swirl) | tilt held, trail fixed | dots screen |
 | reviewing | side-to-side scan (unchanged) | unchanged | diff screen |
 | testing | lean in, arms half raised, progress ring runs (unchanged) | unchanged | progress screen |
 | ci (waiting on CI) | turns to the CI tower (`tower` look target) and **paces**: slides 0.4 u either way along the desk's tangent at 0.2 Hz, the turn following the tower; the progress dot ring stays | turned to the tower, standing at the middle of its pace | CI screen |
 | input (Needs Kurniadi) | turns to the camera (`camera` target), raises the left arm with a **flag** (pole 1.2 u, plate 0.6 x 0.4 u in the input tone) that waves; the **beacon** rings over the wing (5.3) | turned to the camera, flag raised still, beacon steady (no rings moving) | question screen ("Waiting for Kurniadi", unchanged) |
-| done | a **victory spin**: one full turn over 0.9 s with a 0.3 u hop and both arms up, then the happy bob; 6 green confetti dots burst from the head once | arms up, no spin, no confetti | check screen |
+| done | a **victory spin**: one full turn over 0.9 s with a 0.3 u hop and both arms up that ends facing the camera (the `camera` look target, so the happy face reads), then the happy bob; 6 green confetti dots burst from the head once | arms up, facing the camera, no spin, no confetti | check screen |
 | failed | **slump**: pitch 0.3 rad, down 0.08 u, arms hanging; **red flicker**: the halo and antenna tip flicker in two short bursts every 3 s (never above 3 flashes per second, WCAG 2.3.1) | slump held, halo and tip steady red | cross screen |
 | asleep | **docks and charges**: rolls back 0.35 u onto a charging pad (a flat glow disc), head down; the pad breathes at 0.2 Hz from 30% to 60% | docked, pad steady at 45% | screen off; the **desk light** (a new glow strip instance along the desk's front edge, lit in the state tone while awake) fades to 10% |
 
@@ -139,7 +140,7 @@ and the chip carry the same information).
   the watch reads its feed instead of fetching (one request stream, not two).
 - **Beacon** (`OfficeBeacon.tsx`, inside the wing's `IntroReveal`): one instanced mesh on the hall's stage material
   (`createStageMaterial`, `HOLO_MODE.stage`, no new program) over the unit open cylinder, all instances of the `beam`
-  stage kind: a column 1.2 u wide rising 26 u from the floor 1.25 u behind the asking Rover,
+  stage kind: a column 1.6 u wide (owner) rising 26 u from the floor 1.25 u behind the asking Rover,
   between it and the wall (in front of the desk it hid the Rover and its flag in the prototype renders; from the wing
   plaza centre when more than one asks), plus three short bands (0.3 u tall) that rise up it and widen every 1.6 s, in the
   input tone. Drawn only while `needsKurniadi` (out of the draw otherwise), so the spawn's
@@ -163,9 +164,9 @@ chunk, lights the tower from v1 data: the newest running public run in the feed 
 
 ### 5.5 Rendering and budget (A)
 
-- Sparks, swirl, trail, confetti, flicker, charge pads and desk lights are extra instances of the existing glow mesh
-  (`GLOW_PER_ROVER` grows from 18 to 39: 5 sparks, 5 swirl, 3 trail, 6 confetti, the charge pad and the desk light;
-  195 instances): 0 new calls, 0 new programs. Writes
+- Sparks, the thought trail, confetti, flicker, charge pads and desk lights are extra instances of the existing glow mesh
+  (`GLOW_PER_ROVER` grows from 18 to 34: 5 sparks, 3 trail, 6 confetti, the charge pad and the desk light; 170
+  instances): 0 new calls, 0 new programs. Writes
   stay keyed: a still office (all asleep, reduced motion, camera still) writes nothing per frame.
 - Flags: the pole is one more part per Rover (`PARTS_PER_ROVER` 5 to 6, scaled to 0 when lowered) and the plate a quad
   on a new flag cell of the face atlas (the atlas mesh grows from 10 to 15 quads), so the parts mesh needs no instance

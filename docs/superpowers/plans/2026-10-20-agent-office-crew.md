@@ -2,9 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: planned (2026-10-20); waits on the office enhancement PR and the owner's look approval of the prototype renders.
+Status: planned (2026-10-20); look approved by the owner 2026-10-20 (thought trail only, beacon 1.6 u wide, slim LED-lane
+tower, the done spin ending on the camera, no debug labels in captures); coding waits on the office enhancement PR.
 
-**Goal:** The five office Rovers act out their real states with their bodies (sparks, swirl, CI pacing, a raised flag,
+**Goal:** The five office Rovers act out their real states with their bodies (sparks, a thought trail, CI pacing, a raised flag,
 a victory spin, a slump with a red flicker, docking to charge), a beacon over the wing and a minimap cue show from
 anywhere in the Lobby when Kurniadi is needed, and the drawer reads the crew aloud.
 
@@ -37,7 +38,7 @@ Design: [`2026-10-20-agent-office-revamp-design.md`](../specs/2026-10-20-agent-o
 
 | File | Responsibility |
 |---|---|
-| `src/experience/floors/lobby/office/crew.ts` (new, scene chunk) | Pure choreography: look yaws, per-state target pose, blend, fx record, spark/swirl/confetti positions |
+| `src/experience/floors/lobby/office/crew.ts` (new, scene chunk) | Pure choreography: look yaws, per-state target pose, blend, fx record, spark, thought trail and confetti positions |
 | `src/experience/floors/lobby/office/crewFx.ts` (new, scene chunk) | Writes crew glow instances and the crew glow key; tower lane dots |
 | `src/experience/floors/lobby/office/officeVisual.ts` | `OfficePose` gains `x`, `z`, `yaw`, `flag`, `wave`; failed still pose deepens |
 | `src/experience/floors/lobby/office/officeRig.ts` | `roverFrame` applies the offsets; `writeRover` writes the flag pole; `writeFlag` quad; `writeGlow` gain |
@@ -74,7 +75,7 @@ Design: [`2026-10-20-agent-office-revamp-design.md`](../specs/2026-10-20-agent-o
 **Interfaces:**
 - Produces: `OfficePose` with `x, z, yaw, flag, wave` (all 0 at rest); `CREW`; `lookYaw(slot, target, clamp)`;
   `crewTarget(state, t, phase, reduced, look, spin)`; `newActor(state)`; `stepCrew(actor, state, dt, phase, reduced, look)`;
-  `crewFx(actor, reduced)`; `sparkAt`, `swirlAt`, `trailAt`, `confettiAt` (Rover-local positions); `CrewLook = { camera: number; tower: number }`.
+  `crewFx(actor, reduced)`; `sparkAt`, `trailAt`, `confettiAt` (Rover-local positions); `CrewLook = { camera: number; tower: number }`.
 
 - [ ] **Step 1: Extend the pose type.** In `officeVisual.ts` change `OfficePose` and `REST`, and deepen the failed slump:
 
@@ -142,9 +143,10 @@ describe("crew targets", () => {
     const xs = Array.from({ length: 50 }, (_, i) => crewTarget("ci", i * 0.1, 0, false, LOOK, 0).x);
     expect(Math.max(...xs)).toBeCloseTo(CREW.pace.amp, 1);
   });
-  it("spins one full turn and lands on the rest heading", () => {
-    expect(crewTarget("done", 0, 0, false, LOOK, 0.5).yaw).toBeCloseTo(Math.PI, 5);
-    expect(crewTarget("done", 0, 0, false, LOOK, 1).yaw).toBe(0);
+  it("spins one full turn and ends facing the camera (owner)", () => {
+    expect(crewTarget("done", 0, 0, false, LOOK, 0.5).yaw).toBeCloseTo(LOOK.camera + Math.PI, 5);
+    expect(crewTarget("done", 0, 0, false, LOOK, 1).yaw).toBe(LOOK.camera);
+    expect(crewTarget("done", 0, 0, true, LOOK, 0).yaw).toBe(LOOK.camera);
   });
 });
 
@@ -182,7 +184,8 @@ describe("fx", () => {
       return crewFx(a, reduced);
     };
     expect(fx("working").sparks).toBeGreaterThan(0);
-    expect(fx("thinking").swirl).toBe(1);
+    expect(fx("thinking").trail).toBe(1);
+    expect(fx("working").trail).toBe(0);
     expect(fx("asleep").deskLight).toBeCloseTo(0.1);
     expect(fx("working").deskLight).toBe(1);
     expect(fx("failed", true).flicker).toBe(1);
@@ -283,7 +286,6 @@ export interface CrewActor {
 export interface CrewFx {
   /** 0 to 1: how many of the 5 sparks show (0 none). */
   sparks: number;
-  swirl: number;
   trail: number;
   /** Confetti burst progress 0 to 1, -1 when none. */
   confetti: number;
@@ -328,8 +330,10 @@ export function crewTarget(state: OfficeState, t: number, phase: number, reduced
       p.wave = reduced ? 0 : Math.sin(t * TAU * CREW.wave.hz + phase) * CREW.wave.amp;
       break;
     case "done":
+      // The spin ends facing the camera, so the happy face reads (owner decision 2026-10-20).
+      p.yaw = look.camera;
       if (spin > 0 && spin < 1) {
-        p.yaw = TAU * smooth(spin);
+        p.yaw += TAU * smooth(spin);
         p.y += CREW.spin.hop * Math.sin(Math.PI * spin);
       }
       break;
@@ -386,7 +390,6 @@ export function crewFx(a: CrewActor, reduced: boolean): CrewFx {
   const charge = s !== "asleep" ? 0 : reduced ? CREW.charge.still : CREW.charge.lo + (CREW.charge.hi - CREW.charge.lo) * (0.5 + 0.5 * Math.sin(t * TAU * CREW.charge.hz));
   return {
     sparks: s === "working" ? (reduced ? 0.6 : 1) : 0,
-    swirl: s === "thinking" ? 1 : 0,
     trail: s === "thinking" ? 1 : 0,
     confetti,
     flicker,
@@ -418,16 +421,6 @@ export function sparkAt(i: number, t: number, phase: number, reduced: boolean, o
   o.y = 1.15 + clamp01(life / 0.5) * 0.4;
   o.z = 0.9;
   o.a = life < 0.5 ? 1 - life / 0.5 : 0;
-  return o;
-}
-
-/** Swirl dot `i` (0 to 4) over the antenna tip. */
-export function swirlAt(i: number, t: number, reduced: boolean, o: FxPoint): FxPoint {
-  const a = (i / 5) * TAU + (reduced ? 0 : t * 1.6);
-  o.x = 0.35 + Math.cos(a) * 0.55;
-  o.y = 2.9 + (reduced ? 0 : Math.sin(t * 2 + i) * 0.06);
-  o.z = -0.1 + Math.sin(a) * 0.55;
-  o.a = 1;
   return o;
 }
 
@@ -713,10 +706,10 @@ the rect's north edge (`minZ`) until it passes and record the measured gaps in t
 - Test: `tests/unit/office-crew-fx.test.ts`
 
 **Interfaces:**
-- Consumes: `CrewFx`, `sparkAt`, `swirlAt`, `trailAt`, `confettiAt`, `TRAIL_SIZE` (Task 1); `roverFrame` (Task 2);
+- Consumes: `CrewFx`, `sparkAt`, `trailAt`, `confettiAt`, `TRAIL_SIZE` (Task 1); `roverFrame` (Task 2);
   `officeTowerColumn` (Task 3); `STATE_TONE`.
-- Produces: `CREW_GLOW = { sparks: 0, swirl: 5, trail: 10, confetti: 13, charge: 19, desk: 20, count: 21 }`;
-  `GLOW_PER_ROVER` becomes `18 + CREW_GLOW.count` (39; defined in `officeRig.ts`, which imports `CREW_GLOW`);
+- Produces: `CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, count: 16 }`;
+  `GLOW_PER_ROVER` becomes `18 + CREW_GLOW.count` (34; defined in `officeRig.ts`, which imports `CREW_GLOW`);
   `writeCrewGlow(slot, frame, state, fx, t, phase, reduced, matrices, colors)`; `crewGlowKey(state, fx, t, reduced): string`;
   `TOWER = { lanes: 24, dots: 8, start: 5 * GLOW_PER_ROVER }`; `towerLanes(view): { total: number; done: number; running: boolean }`;
   `writeTower(lanes, t, reduced, matrices, colors)`; `towerKey(lanes, t, reduced): string`.
@@ -748,7 +741,7 @@ describe("crew glow", () => {
     const base = 1 * GLOW_PER_ROVER + 18;
     const sparks = Array.from({ length: 5 }, (_, i) => scaleAt(m, base + CREW_GLOW.sparks + i));
     expect(sparks.some((s) => s > 0)).toBe(true);
-    for (let i = CREW_GLOW.swirl; i < CREW_GLOW.charge; i++) expect(scaleAt(m, base + i)).toBe(0);
+    for (let i = CREW_GLOW.trail; i < CREW_GLOW.charge; i++) expect(scaleAt(m, base + i)).toBe(0);
     expect(scaleAt(m, base + CREW_GLOW.desk)).toBeGreaterThan(0);
   });
   it("keys stay still under reduced motion and while asleep step only with the charge level", () => {
@@ -791,11 +784,11 @@ import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
 import { OFFICE, officeTowerColumn, type OfficeSlot } from "../officeLayout";
-import { confettiAt, sparkAt, swirlAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
+import { confettiAt, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
 
 /** Crew instances per Rover in the glow mesh, after the 18 the rig writes (tip, halo, 16 progress dots). */
-export const CREW_GLOW = { sparks: 0, swirl: 5, trail: 10, confetti: 13, charge: 19, desk: 20, count: 21 } as const;
+export const CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, count: 16 } as const;
 const RIG_GLOW = 18;
 
 const M = new Matrix4();
@@ -814,7 +807,7 @@ function dot(frame: Matrix4, p: FxPoint, size: number, color: string, gain: numb
   C.set(color).multiplyScalar(gain * p.a).toArray(colors, i * 3);
 }
 
-/** Writes one Rover's 21 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`. */
+/** Writes one Rover's 16 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`. */
 export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array): void {
   const base = slot.slot * (RIG_GLOW + CREW_GLOW.count) + RIG_GLOW;
   const tone = STATE_TONE[state];
@@ -822,11 +815,6 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
     sparkAt(i, t, phase, reduced, P);
     if (fx.sparks === 0) P.a = 0;
     dot(frame, P, 0.09, SPARK, 1.4, base + CREW_GLOW.sparks + i, matrices, colors);
-  }
-  for (let i = 0; i < 5; i++) {
-    swirlAt(i, t, reduced, P);
-    P.a *= fx.swirl;
-    dot(frame, P, 0.11, tone, 1.2, base + CREW_GLOW.swirl + i, matrices, colors);
   }
   for (let j = 0; j < 3; j++) {
     trailAt(j, t, reduced, P);
@@ -855,7 +843,7 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
   if (reduced) return `${state}:${fx.confetti >= 0 ? 1 : 0}`;
   if (state === "asleep") return `asleep:${Math.round(fx.charge * 10)}`;
   if (state === "failed") return `failed:${fx.flicker}`;
-  if (fx.sparks || fx.swirl || fx.confetti >= 0) return `${state}:${Math.floor(t * 30)}`;
+  if (fx.sparks || fx.trail || fx.confetti >= 0) return `${state}:${Math.floor(t * 30)}`;
   return state;
 }
 
@@ -1185,7 +1173,7 @@ calling `stopWatch?.()`. `OfficeScene.tsx`: an effect sets `sceneFeeding: true` 
 
 **Interfaces:**
 - Consumes: `officeSignal`, `useOfficeSignal` (Task 6); `createStageMaterial`, `stageAttributes`, `STAGE_KIND` (hall); `OFFICE_SLOTS`.
-- Produces: `beaconGain(atStop)`; `BEACON = { h: 26, r: 0.6, bands: 3, period: 1.6, band: 0.3, slots: 5 }` (instance 0 the column, 1 to 3 the
+- Produces: `beaconGain(atStop)`; `BEACON = { h: 26, r: 0.8, bands: 3, period: 1.6, band: 0.3, slots: 5 }` (instance 0 the column, 1 to 3 the
   bands, 4 reserved for stage B's deploy beam); `beaconOrigin(asking: number[]): Vec2`;
   `beaconInstances(t: number, reduced: boolean, out: BeaconInstance[]): void` with
   `BeaconInstance = { y: number; r: number; h: number; alpha: number }`; probe `__hq.probes.office.beacon: boolean`.
@@ -1245,7 +1233,7 @@ import type { Vec2 } from "../../../types";
 import { OFFICE_SLOTS } from "../officeShell";
 
 /** The Needs Kurniadi beacon (design 2026-10-20 section 5.3): a tall column plus three bands rising it, on the hall's stage program. */
-export const BEACON = { h: 26, r: 0.6, bands: 3, period: 1.6, band: 0.3, slots: 5 } as const;
+export const BEACON = { h: 26, r: 0.8, bands: 3, period: 1.6, band: 0.3, slots: 5 } as const;
 
 export interface BeaconInstance {
   y: number;
