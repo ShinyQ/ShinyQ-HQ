@@ -4,6 +4,8 @@ import { chooseMotion, asHumanBrowser, asReturningVisitor, collectErrors, emptyF
 import en from "../messages/en.json";
 import data from "../content/site-content.json";
 import { distanceToRect } from "../src/experience/nav/collision";
+import { slabInsetRects } from "../src/experience/nav/slab";
+import type { Rect } from "../src/experience/types";
 
 // Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
 test.beforeEach(({ context }) => fastAnimations(context));
@@ -382,11 +384,15 @@ test.describe("rover on desktop", () => {
     await page.waitForTimeout(4000);
     await page.keyboard.up("w");
     const { rover } = await snapshot(page);
-    // Lobby slab x -24 to 64 (the Highlights Hall east of x = 28), z -21 to 21, minus the rover radius.
-    expect(rover.x).toBeGreaterThan(-23.01);
-    expect(rover.x).toBeLessThan(63.01);
-    expect(rover.z).toBeGreaterThan(-20.01);
-    expect(rover.z).toBeLessThan(20.01);
+    // The Lobby slab is its main rect (the Highlights Hall east of x = 28) plus the Agent Office's south wing
+    // (`FloorLayout.wings`, src/experience/nav/slab.ts): the rover center stays on that union inset by its radius
+    // (the inset rects plus a bridge across each joint), so it never leaves the slab through any wall.
+    const slab = await page.evaluate(() => {
+      const l1 = (window as unknown as { __hq: { layouts: { L1: { bounds: Rect; wings?: Rect[] } } } }).__hq.layouts.L1;
+      return { bounds: l1.bounds, wings: l1.wings };
+    });
+    const onSlab = slabInsetRects(slab, 0.99).some((r) => rover.x >= r.minX && rover.x <= r.maxX && rover.z >= r.minZ && rover.z <= r.maxZ);
+    expect(onSlab, JSON.stringify({ rover, slab })).toBe(true);
     // Never overlapping the hologram pedestal: its obstacle is the 6 by 6 square at (6, 0) (LOBBY.hologram, radius 3)
     // and the rover a circle of radius 1 (ROVER.radius), so its center stays 1 u from the square, round at the corners.
     expect(distanceToRect(rover, PEDESTAL), JSON.stringify(rover)).toBeGreaterThan(0.99);
