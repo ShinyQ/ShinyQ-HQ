@@ -76,7 +76,7 @@ yet) and the new count, only when the count changes. Other beats carry the count
 (logged `no-parent ignored`). The session end (Copilot `sessionEnd`, Claude Code and Codex `SessionEnd`) deletes the
 session's helpers file; its beat carries `helpers: 0` when the last sent count was above 0, else no count. Hook
 processes run concurrently, so the helpers file is updated under a short lock (`<file>.lock`, created exclusively, a try
-every 2 ms, a lock older than 1 s is removed; after 10 ms the hook goes on unlocked so it stays fast) and
+every 2 ms, a lock older than 1 s is removed; after 30 ms the hook goes on unlocked so it stays fast) and
 replaced whole through a temp file and a rename (a reader never sees a truncated file).
 
 A helper counts once, as a drone on its parent's desk, never as a desk of its own. Copilot reports a helper's own tool

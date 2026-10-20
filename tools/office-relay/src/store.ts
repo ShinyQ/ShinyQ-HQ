@@ -53,9 +53,12 @@ function writeAtomic(file: string, data: string): void {
   }
 }
 
-/** The pause between lock attempts, and the most a hook waits for the lock before going on unlocked. */
+/**
+ * The pause between lock attempts, and the most a hook waits for the lock before going on unlocked: 30 ms covers another
+ * hook's whole critical section (a read, an apply and an atomic write) on a busy machine, and the hook still exits fast.
+ */
 export const LOCK_WAIT_MS = 2;
-export const LOCK_BUDGET_MS = 10;
+export const LOCK_BUDGET_MS = 30;
 /** A lock older than this was left by a hook that died; it is removed. */
 export const LOCK_STALE_MS = 1000;
 
@@ -81,12 +84,12 @@ function tryLock(lock: string): boolean {
 
 /**
  * Runs `fn` while holding `<file>.lock` (created exclusively), so concurrent hook processes apply their updates one
- * after another. Synchronous and bounded: a try every LOCK_WAIT_MS, and after LOCK_BUDGET_MS it runs unlocked, so
- * the hook stays fast.
+ * after another. Synchronous and bounded: a try every LOCK_WAIT_MS, and after `budget` ms (LOCK_BUDGET_MS; tests pass
+ * their own) it runs unlocked, so the hook stays fast.
  */
-export function withFileLock<T>(file: string, fn: () => T): T {
+export function withFileLock<T>(file: string, fn: () => T, budget: number = LOCK_BUDGET_MS): T {
   const lock = `${file}.lock`;
-  const deadline = performance.now() + LOCK_BUDGET_MS;
+  const deadline = performance.now() + budget;
   let held = tryLock(lock);
   for (let left = deadline - performance.now(); !held && left > 0; left = deadline - performance.now()) {
     sleep(Math.min(LOCK_WAIT_MS, left));
@@ -182,18 +185,23 @@ export function writeHelpers(paths: RelayPaths, session: string, state: HelperSt
  * Runs `fn` under the session's helpers lock (see `withFileLock`); `fn` reads, applies and writes the helpers file and
  * may record what it sends, so two hook processes never apply their updates to the same old state.
  */
-export function withHelpersLock<T>(paths: RelayPaths, session: string, fn: () => T): T {
+export function withHelpersLock<T>(paths: RelayPaths, session: string, fn: () => T, budget?: number): T {
   ensure(paths.sessions);
-  return withFileLock(helpersFile(paths, session), fn);
+  return withFileLock(helpersFile(paths, session), fn, budget);
 }
 
-/** Read, apply, write under the lock; returns the written state. */
-export function updateHelpers(paths: RelayPaths, session: string, apply: (state: HelperState) => HelperState): HelperState {
-  return withHelpersLock(paths, session, () => {
-    const next = apply(readHelpers(paths, session));
-    writeHelpers(paths, session, next);
-    return next;
-  });
+/** Read, apply, write under the lock (waiting at most `budget` ms for it); returns the written state. */
+export function updateHelpers(paths: RelayPaths, session: string, apply: (state: HelperState) => HelperState, budget?: number): HelperState {
+  return withHelpersLock(
+    paths,
+    session,
+    () => {
+      const next = apply(readHelpers(paths, session));
+      writeHelpers(paths, session, next);
+      return next;
+    },
+    budget,
+  );
 }
 
 /** Forgets a session's helpers (its session ended). */

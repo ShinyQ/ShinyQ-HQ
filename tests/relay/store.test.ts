@@ -33,7 +33,9 @@ describe("helpers file: atomic writes and the lock", () => {
     const paths = relayPaths({ HOME: home });
     return { home, sync, paths, file: helpersFile(paths, SESSION), lock: `${helpersFile(paths, SESSION)}.lock` };
   }
-  const child = (role: string, home: string, sync: string) => spawn("bun", [CHILD, role, home, SESSION, sync], { env: BASE_ENV, stdio: "ignore" });
+  /** A lock budget far over any critical section under load, so the two-process test checks the lock, not the clock. */
+  const WIDE = 2000;
+  const child = (role: string, home: string, sync: string) => spawn("bun", [CHILD, role, home, SESSION, sync, String(WIDE)], { env: BASE_ENV, stdio: "ignore" });
   const exited = (c: ChildProcess) => new Promise<number | null>((resolve) => c.on("exit", resolve));
   const twoHelpers = (paths: RelayPaths) => writeHelpers(paths, SESSION, applyHelper(applyHelper({ ids: {} }, "start", null, Date.now()), "start", null, Date.now()));
 
@@ -110,12 +112,18 @@ describe("helpers file: atomic writes and the lock", () => {
     utimesSync(lock, old, old);
     let lockedInside = false;
     const t = performance.now();
-    updateHelpers(paths, SESSION, (s) => {
-      lockedInside = existsSync(lock) && statSync(lock).mtimeMs > Date.now() - LOCK_STALE_MS;
-      return applyHelper(s, "start", "x", Date.now());
-    });
-    expect(performance.now() - t).toBeLessThan(LOCK_BUDGET_MS);
-    expect(lockedInside).toBe(true);
+    // With a wide budget, waiting out the stale lock would take 2 s: taking it at once is the behaviour checked.
+    updateHelpers(
+      paths,
+      SESSION,
+      (s) => {
+        lockedInside = existsSync(lock) && statSync(lock).mtimeMs > Date.now() - LOCK_STALE_MS;
+        return applyHelper(s, "start", "x", Date.now());
+      },
+      WIDE,
+    );
+    expect(lockedInside, "a fresh lock replaced the stale one").toBe(true);
+    expect(performance.now() - t).toBeLessThan(250);
     expect(existsSync(lock)).toBe(false);
     expect(helperCount(readHelpers(paths, SESSION), Date.now())).toBe(1);
   });
@@ -127,8 +135,9 @@ describe("helpers file: atomic writes and the lock", () => {
     const t = performance.now();
     updateHelpers(paths, SESSION, (s) => applyHelper(s, "start", "x", Date.now()));
     const waited = performance.now() - t;
+    // It waits out the production budget, then gives up (a generous upper bound: the point is that it ends).
     expect(waited).toBeGreaterThanOrEqual(LOCK_BUDGET_MS - 1);
-    expect(waited).toBeLessThan(LOCK_BUDGET_MS + 20);
+    expect(waited).toBeLessThan(LOCK_BUDGET_MS + 250);
     expect(existsSync(lock)).toBe(true);
     expect(helperCount(readHelpers(paths, SESSION), Date.now())).toBe(1);
   });

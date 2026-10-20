@@ -138,7 +138,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
   helpers file and its beat carries `helpers: 0` only when the last sent count was above 0. The helpers file is read,
   applied and written (and the beat sent) under a bounded lock (`withHelpersLock` in `store.ts`: exclusive
-  `<file>.lock`, a try every 2 ms for at most 10 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically
+  `<file>.lock`, a try every 2 ms for at most 30 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically
   (temp file plus rename, mode 0600; also the sent and last-tool files). A helper counts once, as a drone, never as
   its own desk: Copilot events other than `subagentStart` / `subagentStop` with a non-empty `agentId` / `agent_id`
   (from inside a helper, under the helper's own session id) are ignored (`helper-event ignored`); Claude Code and
