@@ -9,8 +9,9 @@ import { pose, stillPose, type OfficePose } from "./officeVisual";
  * same steps give the same poses. Under reduced motion every pose is a held still pose and a state change cuts.
  */
 export const CREW = {
-  /** Shortest blend between two states (s); longer when the turn would exceed `turnRate`. */
+  /** Shortest blend between two states (s); longer for a big turn, so `turnRate` (rad/s) is the turn's average rate. */
   blend: 0.35,
+  /** Average turn rate of a blend, not a hard cap: the smoothstep ease peaks at 1.5x this mid-blend. */
   turnRate: 3,
   cameraClamp: (70 * Math.PI) / 180,
   workPitch: 0.12,
@@ -37,6 +38,8 @@ export interface CrewActor {
   from: OfficePose;
   blendFor: number;
   pose: OfficePose;
+  /** Scratch target pose, rewritten every step (no per-frame allocation). */
+  target: OfficePose;
 }
 
 export interface CrewFx {
@@ -69,9 +72,9 @@ export function lookYaw(slot: OfficeSlot, target: Vec2, clamp = Math.PI): number
   return Math.max(-clamp, Math.min(clamp, d));
 }
 
-/** The pose a state aims for at its local time `t`; `spin` is the victory spin's progress (0 to 1). */
-export function crewTarget(state: OfficeState, t: number, phase: number, reduced: boolean, look: CrewLook, spin: number): OfficePose {
-  const p = pose(state, t, phase, reduced);
+/** The pose a state aims for at its local time `t`; `spin` is the victory spin's progress (0 to 1). Writes into `out` when given. */
+export function crewTarget(state: OfficeState, t: number, phase: number, reduced: boolean, look: CrewLook, spin: number, out?: OfficePose): OfficePose {
+  const p = pose(state, t, phase, reduced, out);
   switch (state) {
     case "working":
       p.rx += CREW.workPitch;
@@ -104,12 +107,15 @@ export function crewTarget(state: OfficeState, t: number, phase: number, reduced
 }
 
 export function newActor(state: OfficeState): CrewActor {
-  const p = { ...stillPose(state) };
-  return { state, t: 1e3, from: { ...p }, blendFor: 0, pose: p };
+  // t starts long past every blend and burst, so a new actor is already settled (no entry spin or confetti).
+  return { state, t: 1e3, from: stillPose(state), blendFor: 0, pose: stillPose(state), target: stillPose(state) };
 }
 
+/** Every `OfficePose` field, in one constant list (blending walks it without allocating). */
+export const POSE_KEYS = ["y", "rx", "ry", "rz", "armL", "armR", "tipScale", "x", "z", "yaw", "flag", "wave"] as const satisfies readonly (keyof OfficePose)[];
+
 function mix(a: OfficePose, b: OfficePose, w: number, out: OfficePose): void {
-  for (const k of Object.keys(out) as (keyof OfficePose)[]) out[k] = a[k] + (b[k] - a[k]) * w;
+  for (const k of POSE_KEYS) out[k] = a[k] + (b[k] - a[k]) * w;
 }
 
 const spinOf = (a: CrewActor, reduced: boolean) => (a.state === "done" && !reduced ? clamp01((a.t - a.blendFor) / CREW.spin.s) : 0);
@@ -117,15 +123,18 @@ const spinOf = (a: CrewActor, reduced: boolean) => (a.state === "done" && !reduc
 /** Advances the actor by `dt` toward `state`; returns its pose (the same object every call). */
 export function stepCrew(a: CrewActor, state: OfficeState, dt: number, phase: number, reduced: boolean, look: CrewLook): OfficePose {
   if (state !== a.state) {
-    const aim = crewTarget(state, 0, phase, reduced, look, 0);
-    a.from = { ...a.pose };
-    a.blendFor = reduced ? 0 : Math.max(CREW.blend, Math.abs(wrap(aim.yaw - a.pose.yaw)) / CREW.turnRate);
+    const aim = crewTarget(state, 0, phase, reduced, look, 0, a.target);
+    // Start from the pose's yaw on the aim's branch, so the blend takes the short way round (a cut spin never unwinds).
+    const turn = wrap(a.pose.yaw - aim.yaw);
+    Object.assign(a.from, a.pose);
+    a.from.yaw = aim.yaw + turn;
+    a.blendFor = reduced ? 0 : Math.max(CREW.blend, Math.abs(turn) / CREW.turnRate);
     a.state = state;
     a.t = 0;
   } else {
     a.t += dt;
   }
-  const target = crewTarget(state, a.t, phase, reduced, look, spinOf(a, reduced));
+  const target = crewTarget(state, a.t, phase, reduced, look, spinOf(a, reduced), a.target);
   const w = a.blendFor <= 0 ? 1 : smooth(clamp01(a.t / a.blendFor));
   if (w >= 1) Object.assign(a.pose, target);
   else mix(a.from, target, w, a.pose);

@@ -66,29 +66,44 @@ export const slotPhase = (slot: number): number => slot * 1.7 + 0.4;
 
 const REST: OfficePose = { y: 0, rx: 0, ry: 0, rz: 0, armL: 0, armR: 0, tipScale: 1, x: 0, z: 0, yaw: 0, flag: 0, wave: 0 };
 
-/** The pose a state holds under reduced motion (and the reference the bob probe measures from). */
-export function stillPose(state: OfficeState): OfficePose {
+/** The pose a state holds under reduced motion (and the reference the bob probe measures from); writes into `out` when given. */
+export function stillPose(state: OfficeState, out?: OfficePose): OfficePose {
+  const p = Object.assign(out ?? ({} as OfficePose), REST);
   switch (state) {
     case "thinking":
-      return { ...REST, armR: -0.9 };
+      p.armR = -0.9;
+      break;
     case "testing":
-      return { ...REST, rx: 0.08, armL: -0.3, armR: -0.3 };
+      p.rx = 0.08;
+      p.armL = -0.3;
+      p.armR = -0.3;
+      break;
     case "input":
-      return { ...REST, armL: -1.6 };
+      p.armL = -1.6;
+      break;
     case "done":
-      return { ...REST, armL: -1.8, armR: -1.8 };
+      p.armL = -1.8;
+      p.armR = -1.8;
+      break;
     case "failed":
-      return { ...REST, y: -0.08, rx: 0.3, armL: 0.35, armR: 0.35 };
+      p.y = -0.08;
+      p.rx = 0.3;
+      p.armL = 0.35;
+      p.armR = 0.35;
+      break;
     case "asleep":
-      return { ...REST, y: -0.06, rx: 0.14 };
+      p.y = -0.06;
+      p.rx = 0.14;
+      break;
     default:
-      return { ...REST };
+      break;
   }
+  return p;
 }
 
-/** The pose at time `t` (s): typing bob, head tilt, side to side, leaning in, idle sway, a raised arm, a hop, a slump with a shake. Asleep holds its slump in both motion settings (no breath), so a sleeping office costs no writes. */
-export function pose(state: OfficeState, t: number, phase: number, reduced: boolean): OfficePose {
-  const p = stillPose(state);
+/** The pose at time `t` (s): typing bob, head tilt, side to side, leaning in, idle sway, a raised arm, a hop, a slump with a shake. Asleep holds its slump in both motion settings (no breath), so a sleeping office costs no writes. Writes into `out` when given (no allocation). */
+export function pose(state: OfficeState, t: number, phase: number, reduced: boolean, out?: OfficePose): OfficePose {
+  const p = stillPose(state, out);
   if (reduced) return p;
   switch (state) {
     case "working":

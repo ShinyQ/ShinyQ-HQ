@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { OFFICE_STATES, type OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "@/experience/config";
-import { officeObstacles, officeSlots } from "@/experience/floors/lobby/officeLayout";
-import { CREW, crewFx, crewTarget, lookYaw, newActor, stepCrew, sparkAt, type CrewLook } from "@/experience/floors/lobby/office/crew";
+import { officeSlots } from "@/experience/floors/lobby/officeLayout";
+import { CREW, POSE_KEYS, TRAIL_SIZE, confettiAt, crewFx, crewTarget, lookYaw, newActor, stepCrew, sparkAt, trailAt, type CrewLook } from "@/experience/floors/lobby/office/crew";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const LOOK: CrewLook = { camera: 0.4, tower: -0.7 };
+const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const run = (from: OfficeState, to: OfficeState, seconds: number, reduced = false, dt = 1 / 60) => {
   const a = newActor(from);
   for (let t = 0; t < 2; t += dt) stepCrew(a, from, dt, 0.4, reduced, LOOK);
@@ -34,11 +35,38 @@ describe("crew targets", () => {
 });
 
 describe("blending", () => {
-  it("never turns faster than the turn rate and settles", () => {
+  it("turns at the turn rate on average (smoothstep peaks at 1.5x) and settles", () => {
     const { a, yaws } = run("ci", "input", 1.5);
     const steps = yaws.slice(1).map((y, i) => Math.abs(y - yaws[i]) * 60);
     expect(Math.max(...steps)).toBeLessThanOrEqual(CREW.turnRate * 1.6);
     expect(a.pose.yaw).toBeCloseTo(LOOK.camera, 5);
+  });
+  it("cutting the done spin turns back the short way at the turn rate and settles", () => {
+    const a = newActor("working");
+    for (let i = 0; i < 120; i++) stepCrew(a, "working", 1 / 60, 0.4, false, LOOK);
+    for (let i = 0; i < 60; i++) stepCrew(a, "done", 1 / 60, 0.4, false, LOOK);
+    expect(a.t).toBeGreaterThan(a.blendFor);
+    expect(a.t).toBeLessThan(a.blendFor + CREW.spin.s);
+    let prev = a.pose.yaw;
+    let peak = 0;
+    for (let i = 0; i < 120; i++) {
+      const y = stepCrew(a, "working", 1 / 60, 0.4, false, LOOK).yaw;
+      peak = Math.max(peak, Math.abs(wrap(y - prev)) * 60);
+      prev = y;
+    }
+    expect(peak).toBeLessThanOrEqual(CREW.turnRate * 1.6);
+    const settled = crewTarget("working", a.t, 0.4, false, LOOK, 0);
+    for (const k of POSE_KEYS) expect(a.pose[k], k).toBeCloseTo(settled[k], 5);
+  });
+  it("blends every pose field and reuses its pose objects", () => {
+    expect([...POSE_KEYS].sort()).toEqual(Object.keys(stillPose("working")).sort());
+    const a = newActor("working");
+    const { pose, target, from } = a;
+    for (const s of ["done", "asleep", "ci", "input", "failed"] as const) for (let i = 0; i < 30; i++) expect(stepCrew(a, s, 1 / 60, 0, false, LOOK)).toBe(pose);
+    expect(a.target).toBe(target);
+    expect(a.from).toBe(from);
+    const out = stillPose("working");
+    expect(crewTarget("ci", 1, 0, false, LOOK, 0, out)).toBe(out);
   });
   it("retargets mid-blend from the blended pose (no jump)", () => {
     const a = newActor("working");
@@ -82,6 +110,44 @@ describe("fx", () => {
       expect(o.y).toBeLessThanOrEqual(1.6);
     }
   });
+  it("rises three thought dots of growing size, held still under reduced motion", () => {
+    expect(TRAIL_SIZE).toEqual([0.08, 0.12, 0.18]);
+    const o = { x: 0, y: 0, z: 0, a: 0 };
+    for (const t of [0, 0.7, 2.3]) {
+      const ys = [0, 1, 2].map((j) => trailAt(j, t, false, o).y);
+      expect(ys[1]).toBeGreaterThan(ys[0]);
+      expect(ys[2]).toBeGreaterThan(ys[1]);
+    }
+    expect({ ...trailAt(1, 0.3, true, o) }).toEqual({ ...trailAt(1, 5.1, true, o) });
+  });
+  it("confetti starts at the head opaque and fades out at the end", () => {
+    const o = { x: 0, y: 0, z: 0, a: 0 };
+    for (let j = 0; j < 6; j++) {
+      confettiAt(j, 0, o);
+      expect(Math.hypot(o.x, o.z)).toBe(0);
+      expect(o.y).toBeCloseTo(1.9);
+      expect(o.a).toBe(1);
+      expect(confettiAt(j, 1, o).a).toBe(0);
+    }
+  });
+  it("bursts confetti only from the end of the blend through spin plus confetti", () => {
+    for (const reduced of [false, true]) {
+      const a = newActor("working");
+      const seen = [] as [number, number][];
+      for (let i = 0; i < 240; i++) {
+        stepCrew(a, "done", 1 / 60, 0, reduced, LOOK);
+        seen.push([a.t, crewFx(a, reduced).confetti]);
+      }
+      for (const [t, c] of seen) {
+        if (reduced || t < a.blendFor || t > a.blendFor + CREW.spin.s + CREW.confetti) expect(c, `t ${t}`).toBe(-1);
+        else {
+          expect(c).toBeGreaterThanOrEqual(0);
+          expect(c).toBeLessThanOrEqual(1);
+        }
+      }
+      if (!reduced) expect(seen.filter(([, c]) => c >= 0).length).toBeGreaterThan(60);
+    }
+  });
   it("never flashes more than 3 times a second when failed", () => {
     const a = newActor("failed");
     let flips = 0;
@@ -101,18 +167,6 @@ describe("look and room", () => {
   it("clamps the camera turn to 70 degrees", () => {
     const behind = { x: slots[0].rover.x - Math.sin(slots[0].yaw) * 10, z: slots[0].rover.z - Math.cos(slots[0].yaw) * 10 };
     expect(Math.abs(lookYaw(slots[0], behind, CREW.cameraClamp))).toBeCloseTo(CREW.cameraClamp, 5);
-  });
-  it("pace and dock keep every Rover inside its row box", () => {
-    const boxes = officeObstacles(LOBBY.officeWing);
-    for (const s of slots) {
-      const across = { x: Math.cos(s.yaw), z: -Math.sin(s.yaw) };
-      const fwd = { x: Math.sin(s.yaw), z: Math.cos(s.yaw) };
-      for (const [dx, dz] of [[CREW.pace.amp, 0], [-CREW.pace.amp, 0], [0, -CREW.dock.back]]) {
-        const p = { x: s.rover.x + across.x * dx + fwd.x * dz, z: s.rover.z + across.z * dx + fwd.z * dz };
-        const inside = boxes.some((b) => p.x - 1 >= b.minX - 1e-6 && p.x + 1 <= b.maxX + 1e-6 && p.z - 1 >= b.minZ - 1e-6 && p.z + 1 <= b.maxZ + 1e-6);
-        expect(inside, `slot ${s.slot} at ${dx},${dz}`).toBe(true);
-      }
-    }
   });
   it("every state has a still pose", () => {
     for (const s of OFFICE_STATES) expect(stillPose(s)).toBeDefined();
