@@ -39,7 +39,7 @@ const leadRect = (w: OfficeWing): Rect => ({ minX: w.lead.x - w.lead.width / 2, 
 describe("Agent Office wing (owner decision 2026-10-20)", () => {
   it("is one named wing derived from the Lobby's south edge: the L1 slab gains it, the main rect stays", () => {
     expect(W).toEqual(officeWing(S));
-    expect(W.rect).toEqual({ minX: -12, maxX: 18, minZ: S, maxZ: S + 25 });
+    expect(W.rect).toEqual({ minX: -12, maxX: 18, minZ: S, maxZ: S + 29 });
     expect(l1.bounds).toEqual(LOBBY.bounds);
     expect(l1.wings).toEqual([W.rect]);
     expect(W.stop).toEqual({ x: 3, z: S + 16.5 });
@@ -161,14 +161,15 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(OFFICE_SLOTS).toEqual(slots);
   });
 
-  it("stands the screen wall flush with the wing's south edge, facing north, centred on the arc, clear of the middle Rover's back", () => {
+  it("stands the screen wall flush with the wing's south edge, facing north, centred on the arc, 4.5 u behind the middle Rover's back", () => {
     const wall = officeWallRect(W);
     expect((wall.minX + wall.maxX) / 2).toBeCloseTo(W.arc.x);
     expect(wall.maxX - wall.minX).toBeCloseTo(OFFICE.wall.w + 2 * OFFICE.wall.frame);
     expect(wall.maxZ).toBe(W.rect.maxZ);
     expect(W.rect.maxZ).toBe(S + OFFICE_WING.depth);
     expect(wall.minZ).toBeCloseTo(W.wall.z - OFFICE.wall.t / 2);
-    expect(wall.minZ - (slots[2].rover.z + OFFICE.rover.radius)).toBeGreaterThanOrEqual(0.2);
+    // The space between the console and the wall (owner request 2026-10-20; 0.35 u before).
+    expect(wall.minZ - (slots[2].rover.z + OFFICE.rover.radius)).toBeCloseTo(4.5, 9);
     expect(l1.tall).toContainEqual(officeTall(W));
     expect(officeTall(W).h).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
   });
@@ -252,7 +253,7 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     const zone = zoneAt("L1", W.stop, zones);
     expect(zone?.id).toBe("L1:office");
     expect(zone?.yaw).toBeCloseTo(yawLooking({ x: 0, z: 1 }));
-    expect(zoneView(zone!, "desktop")).toEqual({ yaw: zone!.yaw, zoom: OFFICE.view.desktop.zoom, pitch: undefined });
+    expect(zoneView(zone!, "desktop")).toEqual({ yaw: zone!.yaw, ...OFFICE.view.desktop });
     expect(zoneView(zone!, "tablet")).toEqual({ yaw: zone!.yaw, ...OFFICE.view.tablet });
     expect(zoneView(zone!, "mobile")).toEqual({ yaw: zone!.yaw, ...OFFICE.view.mobile });
     expect(zoneAt("L1", l1.spawn, zones)?.id).toBe("L1:kiosk");
@@ -299,7 +300,7 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
       }
     // The row's boxes cover every footprint, and the floor they hide beyond the footprints in front of the console
     // (nearer the arc centre than the desks' front edges) stays under 15% of the footprints' area. The rest they hide
-    // lies behind the console, under 6 u from the wall frame: a pocket the space rules forbid, so the boxes close it.
+    // lies behind the console, between the Rovers and the wall frame.
     const row = officeObstacles(W).slice(0, 3);
     const inRect = (r: Rect, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
     const front = OFFICE.deskRadius - OFFICE.desk.d / 2;
@@ -319,6 +320,8 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
         else deepest = Math.max(deepest, wallFront - z);
       }
     expect(hidden / foot).toBeLessThan(0.15);
-    expect(deepest).toBeLessThan(SPACE_RULES.clear);
+    // The rest lies behind the console: the owner's space between the Rovers and the wall (4.5 u behind the middle Rover,
+    // 7.35 u behind the end ones), open to the eye and closed to the rover, so no drive ends up behind the console.
+    expect(deepest).toBeCloseTo(wallFront - (slots[0].rover.z + OFFICE.rover.radius), 1);
   });
 });

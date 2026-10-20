@@ -96,17 +96,19 @@ export function officeShellBoxes(): Box[] {
 }
 
 /**
- * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, at their Rovers'
- * x, desks 2 and 4 a `step` higher (two rows, so neighbours never share one and the row stays low): from the office
- * stop, on every camera class, they sit in the empty space over the wall and never cover its text, a desk screen or
- * the visitor's rover, and zoomed in until the middle three show their task lines (desktops and tablets; a phone keeps
- * them compact, `OfficeWatch`) they still clear the wall, each other and the HUD (tests/unit/office-chip-placement.test.ts).
+ * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, desks 2 and 4 a
+ * `step` higher (two rows, so neighbours never share one and the row stays low), each at its Rover's x pushed `spread`
+ * times as far from the wall's centre line (the outer chips still over the wall): the wall stands 4.5 u behind the
+ * Rovers, so at their own x the chips of desks 1, 3 and 5 would crowd one row on a portrait tablet. From the office
+ * stop, on every camera class, they sit in the empty space over the wall and never cover its text, a desk screen or the
+ * visitor's rover, and zoomed in until the middle three show their task lines (desktops and tablets; a phone keeps them
+ * compact, `OfficeWatch`) they still clear the wall, each other and the HUD (tests/unit/office-chip-placement.test.ts).
  */
-export const CHIP_ROW = { gap: 0.2, step: 2.2 } as const;
+export const CHIP_ROW = { gap: 0.2, step: 2.2, spread: 1.1 } as const;
 
 /** The chips' world anchors (`CHIP_ROW`), one per slot. */
 export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({
-  x: s.rover.x,
+  x: LOBBY.officeWing.wall.x + (s.rover.x - LOBBY.officeWing.wall.x) * CHIP_ROW.spread,
   y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame + CHIP_ROW.gap + CHIP_ROW.step * (s.slot % 2),
   z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2,
 }));
@@ -114,13 +116,26 @@ export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({
 /** A chip's top never goes above this (px): under the HUD's top bar (62 px desktop, 58 px phones), so `OfficeWatch` clamps there. */
 export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
 
-/** A chip farther than this from the camera shows its first line only (the mock's `.tag.far`). */
-export const OFFICE_CHIP_FAR = 30;
+/**
+ * A chip farther than this from the camera shows its first line only (the mock's `.tag.far`): at the office stop the
+ * chips sit 39.1 u or more from the camera, and one zoom step (two on a portrait screen) brings the middle three within
+ * 37.6 u.
+ */
+export const OFFICE_CHIP_FAR = 39.5;
+
+/**
+ * Whether the chips may show for the camera (`OfficeWatch`, with `officeChipsHere`): only while it holds still
+ * (`roverRuntime.cameraSettled`, written by `CameraDirector`). Arriving at the stop the camera eases from the plain
+ * follow view, which frames the tall wall's top high on the screen with no room for the chip rows under the top bar,
+ * into the office view; part way the chips would crowd the top bar and each other (tests/unit/office-chip-placement.test.ts).
+ * A hand zoom on a portrait screen eases its look offset out the same way, so its chips wait too.
+ */
+export const chipsSettled = (): boolean => roverRuntime.cameraSettled;
 /** Half-width of the near/far band, so a camera hovering at the threshold does not flip the chip every frame. */
 export const OFFICE_CHIP_FAR_BAND = 1;
 
 /**
- * The next far flag for a chip at `dist` from the camera: far above 31, near below 29, unchanged between. On a phone
+ * The next far flag for a chip at `dist` from the camera: far above 40.5, near below 38.5, unchanged between. On a phone
  * (`phone`) always far: there is no room for task lines over the wall, and the desk's drawer shows them.
  */
 export function nextChipFar(far: boolean, dist: number, phone = false): boolean {

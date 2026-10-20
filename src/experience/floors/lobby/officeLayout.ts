@@ -7,7 +7,8 @@ import type { Rect, Vec2 } from "../../types";
 /**
  * L1 Agent Office (owner decisions D1 and D7, 2026-10-18; the south wing, 2026-10-20): its own wing of the L1
  * slab south of the Lobby, reached by a lead road from the Lobby plaza into a wing plaza, with one curved console
- * row of five desks (a Rover behind each, facing the plaza) backed against a screen wall on the wing's south edge.
+ * row of five desks (a Rover behind each, facing the plaza) and, 4.5 u behind the Rovers, a tall screen wall on the
+ * wing's south edge (owner request 2026-10-20: a higher wall, more space between the console and the wall).
  * Pure and import-light: config.ts reads it (`LOBBY.officeWing`, obstacles, camera column, stops, the view zone,
  * the road), the main-path `OfficeMount` draws the furniture shell from it, and the lazy office chunk places the
  * rest. tests/unit/lobby-office.test.ts asserts every clearance.
@@ -22,10 +23,10 @@ export type OfficeTranslate = (key: string, values?: Record<string, string | num
  * x values are absolute (the stop's axis is x 3, inside the Lobby plaza's x -3 to 9 window), z values add to S.
  */
 export const OFFICE_WING = {
-  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 25. */
+  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 29. */
   minX: -12,
   maxX: 18,
-  depth: 25,
+  depth: 29,
   /** The axis of the lead road, the plaza, the stop and the desk arc. */
   x: 3,
   /** Lead road: 8 u wide, from the Lobby plaza south of the lane ring (S - 8) to 4.5 u inside the wing plaza (S + 6). */
@@ -37,10 +38,10 @@ export const OFFICE_WING = {
    * follow camera's look target lands near the wall, which leaves the chips room over it (office-chip-placement).
    */
   stop: 16.5,
-  /** Desk arc centre: the middle Rover's back stays 0.35 u in front of the wall frame. */
+  /** Desk arc centre: the middle Rover's back (S + 24.2) stays 4.5 u in front of the wall frame. */
   arc: 11,
-  /** The screen wall's centre line, 0.3 u in front of the wing's south edge (its footprint reaches back to it). */
-  wall: 24.7,
+  /** The screen wall's centre line, 0.15 u in front of the wing's south edge (its footprint reaches back to it). */
+  wall: 28.85,
 } as const;
 
 export interface OfficeWing {
@@ -94,23 +95,31 @@ export const OFFICE = {
    */
   desk: { w: 4.05, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
   rover: { radius: 1 },
-  /** The screen (17 x 4 u, bottom at y 0.6) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`). */
-  wall: { w: 17, h: 4, bottom: 0.6, t: 0.3, frame: 0.2 },
+  /**
+   * The screen (17 x 5.2 u, the wall canvas's 1280 x 392 aspect, bottom at y 1.2: over the desks and the Rovers' heads
+   * from the office stop) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`).
+   */
+  wall: { w: 17, h: 5.2, bottom: 1.2, t: 0.3, frame: 0.2 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
-   * size of its area around the stop. The follow rig keeps its look target (the rover plus its look-ahead, over the
-   * desks) in the middle of the screen, so on a landscape screen the sky over the wall is set by the zoom; each class
-   * takes the closest view that keeps the wall, the five desks and the Rover in frame, the chips far, one zoom step (two
-   * on a portrait screen) bringing the middle three near clear of each other, the wall and the HUD
-   * (tests/unit/office-chip-placement.test.ts). A portrait screen (the mobile class: 390 x 844, 820 x 1180) also moves
-   * its look target 6.25 u toward the camera (`lookOffset`, owner decision 2026-10-20): the view tilts down and the sky
-   * over the wall drops from 38% to about 20%; a hand zoom hands the framing back (the offset eases out).
-   * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
+   * size of its area around the stop. The wall's top stands 5.6 u over the follow rig's look target (the rover plus its
+   * look-ahead, over the desks), so each class lowers the camera (`pitch`) and moves the look target (`lookOffset`):
+   * - landscape screens (desktop, tablet) raise it (`up`), so the wall's top sits under the middle of the screen with the
+   *   two chip rows over it (37.3% of the screen over the wall's top on a desktop, 31.4% on a landscape phone); the
+   *   offset holds through a hand zoom (`hold`), so the near pose zooms in about the same aim and the middle three chips
+   *   with their task lines still fit between the wall and the top bar;
+   * - a portrait screen (the mobile class: 390 x 844, 820 x 1180) moves it 10 u toward the camera (owner decision
+   *   2026-10-20): the view tilts down to about 20% sky over the wall with the five desks and the Rover in frame; a hand
+   *   zoom hands the framing back there (the offset eases out), as its compact chips need no room for task lines.
+   * Each class takes the view that keeps the wall, the five desks and the Rover in frame, the chips far, and one zoom
+   * step (two on a portrait screen) bringing the middle three near clear of each other, the wall and the HUD
+   * (tests/unit/office-chip-placement.test.ts). A `pitch` also opts into the turn-back on exit: the tilt levels again
+   * when the rover leaves the stop.
    */
   view: {
-    desktop: { zoom: 1.24 },
-    tablet: { zoom: 1.15, pitch: -0.1 },
-    mobile: { zoom: 1.3, pitch: 0.2, lookOffset: { forward: -6.25 } },
+    desktop: { zoom: 1.2, pitch: -0.3, lookOffset: { up: 3, hold: true } },
+    tablet: { zoom: 1.25, pitch: -0.15, lookOffset: { up: 2, hold: true } },
+    mobile: { zoom: 1.42, pitch: -0.42, lookOffset: { forward: -10 } },
     half: { x: 2, z: 1.4 },
   },
   /**
@@ -185,11 +194,12 @@ export function officeWallRect(w: OfficeWing): Rect {
 }
 
 /**
- * Navgrid obstacles, flush with the wing's south edge (the floor behind the console is closed, no pocket): each end
- * desk and its Rover as one box, the middle three as the box between them, then the wall. Neighbouring desks touch
- * (the console is continuous), so the boxes touch too; the two end boxes keep the middle box's width (about 10 u)
- * apart and 6 u from the wing's side edges. The middle box starts at the front of desks 2 and 4, so the concave
- * floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
+ * Navgrid obstacles, flush with the wing's south edge: each end desk and its Rover as one box, the middle three as the
+ * box between them, then the wall. The 4.5 u between the Rovers and the wall (7.35 u behind the end Rovers) is open to
+ * the eye but closed to the rover: the boxes reach back to the wall, so no drive ends up behind the console.
+ * Neighbouring desks touch (the console is continuous), so the boxes touch too; the two end boxes keep the middle
+ * box's width (about 10 u) apart and 6 u from the wing's side edges. The middle box starts at the front of desks 2 and
+ * 4, so the concave floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
  */
 export function officeObstacles(w: OfficeWing): Rect[] {
   const s = officeSlots(w).map((x) => x.rect);
@@ -223,7 +233,11 @@ export function officeZone(w: OfficeWing): ViewZone {
     area: { minX: stop.x - view.half.x, maxX: stop.x + view.half.x, minZ: stop.z - view.half.z, maxZ: stop.z + view.half.z },
     yaw: yawLooking({ x: 0, z: 1 }),
     zoom: view.desktop.zoom,
-    classView: { tablet: { ...view.tablet }, mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } } },
+    classView: {
+      desktop: { ...view.desktop, lookOffset: { ...view.desktop.lookOffset } },
+      tablet: { ...view.tablet, lookOffset: { ...view.tablet.lookOffset } },
+      mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } },
+    },
     // The view looks south past the L1 slab edge, under the L2 slab: its ghost outline hides here (tower/ghostOutline.ts).
     hideGhostAbove: true,
   };

@@ -39,7 +39,7 @@ import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { canvasTexture, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, OFFICE_SLOTS, officeBounds, officeChipsHere, useCanvasFonts } from "../officeShell";
+import { canvasTexture, chipsSettled, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, OFFICE_SLOTS, officeBounds, officeChipsHere, useCanvasFonts } from "../officeShell";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
@@ -494,7 +494,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     }
     let chips = 0;
     const mobile = s.device.viewport === "mobile";
-    const chipsHere = here && officeChipsHere(s.activeRoom);
+    const chipsHere = here && officeChipsHere(s.activeRoom) && chipsSettled();
     officeRuntime.chips.forEach((el, slot) => {
       if (!el) return;
       if (tmp.els[slot] !== el) {

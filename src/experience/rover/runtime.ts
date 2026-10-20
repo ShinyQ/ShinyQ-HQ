@@ -38,6 +38,8 @@ export const roverRuntime = {
   cameraLook: 0,
   /** Elevation of the drawn camera above its target, radians (test probe). */
   cameraElevation: 0,
+  /** The drawn camera holds still: its orbit is not easing and the drawn pose has reached the wanted one (the office chips wait for it). */
+  cameraSettled: false,
   /** The rover follows a path (autopilot, scrub, mission leg, elevator approach); set by the Director. */
   driving: false,
   /** Current camera position (debug and test probe). */

@@ -247,7 +247,7 @@ const zones: { floor: FloorId; zone: ViewZone }[] = FLOOR_IDS.flatMap((floor) =>
   ...(layouts[floor].viewZones ?? []).map((zone) => ({ floor, zone })),
 ]);
 const hasOffset = (zone: ViewZone) => zone.lookOffset !== undefined || Object.values(zone.classView ?? {}).some((v) => v?.lookOffset !== undefined);
-/** The (zone, class) pairs without a look offset: the office's desktop and tablet views are compared too. */
+/** The (zone, class) pairs without a look offset: every zone but the office (it has one on every class). */
 const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone, cls).lookOffset === undefined);
 
 /** The settled follow pose as CameraDirector builds it (look-ahead, offset scale, look offset, camera collision), new code path. */
@@ -314,7 +314,8 @@ describe("the follow rig's look offset", () => {
   describe.each(CLASSES)("%s: every zone without an offset keeps its exact poses", (cls) => {
     const run = (reduced: boolean) => {
       const plain = plainOn(cls);
-      expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(cls !== "mobile");
+      expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(false);
+      expect(plain.length).toBe(zones.length - 1);
       for (const { floor, zone } of plain) {
         const rail = floor === "L2";
         const at = centre(zone);
@@ -430,12 +431,40 @@ describe("the office zone's look offset eases in and out with the zone", () => {
   const stop = LOBBY.officeWing.stop;
   const { forward = 0, up = 0 } = OFFICE.view.mobile.lookOffset as { forward?: number; up?: number };
 
-  it("is set on the portrait camera (mobile class) and nowhere else on the zone: toward the camera", () => {
+  it("is set per camera class only: toward the camera on a portrait screen, up (held through a hand zoom) on landscape ones", () => {
     expect(office.lookOffset).toBeUndefined();
     expect(zoneView(office, "mobile").lookOffset).toEqual(OFFICE.view.mobile.lookOffset);
-    expect(zoneView(office, "desktop").lookOffset).toBeUndefined();
-    expect(zoneView(office, "tablet").lookOffset).toBeUndefined();
+    expect(zoneView(office, "desktop").lookOffset).toEqual(OFFICE.view.desktop.lookOffset);
+    expect(zoneView(office, "tablet").lookOffset).toEqual(OFFICE.view.tablet.lookOffset);
     expect(forward).toBeLessThan(0);
+    expect(zoneView(office, "mobile").lookOffset?.hold).toBeUndefined();
+    for (const cls of ["desktop", "tablet"] as const) {
+      expect(zoneView(office, cls).lookOffset?.up).toBeGreaterThan(0);
+      expect(zoneView(office, cls).lookOffset?.hold).toBe(true);
+    }
+  });
+
+  it("holds a landscape offset through a hand zoom (no ease, it scales with the zoom), and lets it go on a drag, a reset or leaving", () => {
+    for (const cls of ["desktop", "tablet"] as const) {
+      const { up: held = 0 } = zoneView(office, cls).lookOffset!;
+      const s = createOrbitState();
+      setPitchRange(s, pitchRange(cls, "follow"));
+      primeZone(s, office, cls);
+      expect([s.lookUp, s.lookHold]).toEqual([held, true]);
+      zoomBy(s, 0.8, false);
+      expect([s.lookUpTarget, s.lookUp]).toEqual([held, held]);
+      expect(s.easing).toBe(false);
+      resetView(s);
+      expect([s.lookUpTarget, s.lookHold]).toEqual([0, false]);
+      primeZone(s, office, cls);
+      rotate(s, 0.05, 0);
+      expect(s.lookHold).toBe(false);
+      zoomBy(s, 0.8, false);
+      expect(s.lookUpTarget).toBe(0);
+      primeZone(s, office, cls);
+      updateZone(s, null, false, cls);
+      expect([s.lookUpTarget, s.lookHold]).toEqual([0, false]);
+    }
   });
 
   it("eases in on entry (no snap) and back to 0 on exit, in step with the zone's zoom", () => {

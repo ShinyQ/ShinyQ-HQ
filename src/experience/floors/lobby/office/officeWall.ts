@@ -9,10 +9,11 @@ import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 /**
  * The screen wall (owner decision D1): as seen from the plaza, mission control on the left half (the mode with
  * the snapshot's age, four counters, up to two awake desks, today, a "+N" chip for sessions beyond five) and the
- * public GitHub board on the right half. Drawn in 1280 x 300 base units, scaled to the tier's canvas.
+ * public GitHub board on the right half. Drawn in 1280 x 392 base units (the 17 x 5.2 u screen's aspect, 75 px per u
+ * on the full tier), scaled to the tier's canvas.
  */
-export const WALL_BASE = { w: 1280, h: 300 } as const;
-export const WALL_CANVAS = { full: { w: 1280, h: 300 }, lite: { w: 1024, h: 240 } } as const;
+export const WALL_BASE = { w: 1280, h: 392 } as const;
+export const WALL_CANVAS = { full: { w: 1280, h: 392 }, lite: { w: 1024, h: 314 } } as const;
 
 const MODE_COLOR: Record<OfficeViewMode, string> = { live: COLORS.green, "semi-live": COLORS.violet, off: "#8a93b5", offline: "#f87171" };
 
@@ -134,13 +135,13 @@ export function drawWall(ctx: CanvasRenderingContext2D, size: { w: number; h: nu
   ctx.setTransform(size.w / WALL_BASE.w, 0, 0, size.h / WALL_BASE.h, 0, 0);
   ctx.fillStyle = "#05070f";
   ctx.fillRect(0, 0, WALL_BASE.w, WALL_BASE.h);
-  roundRect(ctx, 8, 8, 624, 284, 18);
+  roundRect(ctx, 8, 8, 624, 376, 18);
   ctx.fillStyle = "rgba(18, 11, 42, 0.92)";
   ctx.fill();
   ctx.strokeStyle = COLORS.violet;
   ctx.lineWidth = 3;
   ctx.stroke();
-  roundRect(ctx, 648, 8, 624, 284, 18);
+  roundRect(ctx, 648, 8, 624, 376, 18);
   ctx.fillStyle = "rgba(6, 14, 20, 0.92)";
   ctx.fill();
   ctx.strokeStyle = COLORS.green;
@@ -149,84 +150,84 @@ export function drawWall(ctx: CanvasRenderingContext2D, size: { w: number; h: nu
   ctx.textAlign = "left";
 
   ctx.fillStyle = "#d8c8ff";
-  ctx.font = `700 28px ${fonts.mono}`;
-  ctx.fillText(m.control, 28, 46);
+  ctx.font = `700 32px ${fonts.mono}`;
+  ctx.fillText(m.control, 28, 54);
   ctx.fillStyle = m.statusColor;
   ctx.beginPath();
-  circlePath(ctx, 34, 68, 6);
+  circlePath(ctx, 35, 84, 7);
   ctx.fill();
-  ctx.font = `500 18px ${fonts.mono}`;
-  ctx.fillText(m.status, 48, 74);
+  ctx.font = `500 20px ${fonts.mono}`;
+  ctx.fillText(m.status, 50, 91);
   if (m.extra) {
     ctx.fillStyle = COLORS.amber;
-    ctx.font = `700 22px ${fonts.mono}`;
+    ctx.font = `700 26px ${fonts.mono}`;
     ctx.textAlign = "right";
-    ctx.fillText(m.extra, 612, 46);
+    ctx.fillText(m.extra, 612, 54);
     ctx.textAlign = "left";
   }
   m.tiles.forEach((tile, k) => {
     const x = 28 + k * 150;
     ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-    roundRect(ctx, x, 90, 136, 84, 12);
+    roundRect(ctx, x, 110, 136, 100, 12);
     ctx.fill();
     ctx.fillStyle = tile.color;
-    ctx.font = `800 44px ${fonts.sans}`;
-    ctx.fillText(String(tile.value), x + 14, 140);
-    ctx.font = `500 13px ${fonts.mono}`;
-    ctx.fillText(tile.label, x + 14, 162);
+    ctx.font = `800 52px ${fonts.sans}`;
+    ctx.fillText(String(tile.value), x + 14, 170);
+    ctx.font = `500 14px ${fonts.mono}`;
+    ctx.fillText(tile.label, x + 14, 196, 112);
   });
   ctx.fillStyle = "#cfd6f5";
-  ctx.font = `500 16px ${fonts.mono}`;
-  ctx.fillText(m.nowTitle, 28, 200);
+  ctx.font = `500 18px ${fonts.mono}`;
+  ctx.fillText(m.nowTitle, 28, 240);
   if (m.resting) {
-    ctx.font = `400 17px ${fonts.sans}`;
-    ctx.fillText(m.resting, 28, 228);
+    ctx.font = `400 18px ${fonts.sans}`;
+    ctx.fillText(m.resting, 28, 272, 584);
   }
   m.now.forEach((row, k) => {
-    const y = 226 + k * 24;
+    const y = 272 + k * 30;
     ctx.fillStyle = row.color;
     ctx.beginPath();
-    circlePath(ctx, 34, y - 6, 5);
+    circlePath(ctx, 35, y - 6, 6);
     ctx.fill();
     ctx.fillStyle = "#eef0ff";
-    ctx.font = `600 16px ${fonts.sans}`;
-    ctx.fillText(row.head, 48, y);
+    ctx.font = `600 18px ${fonts.sans}`;
+    ctx.fillText(row.head, 50, y, 290);
     ctx.fillStyle = "#98a2c8";
-    ctx.font = `400 14px ${fonts.mono}`;
-    ctx.fillText(row.sub.slice(0, 32), 330, y);
+    ctx.font = `400 15px ${fonts.mono}`;
+    ctx.fillText(row.sub.slice(0, 28), 350, y);
   });
   if (m.today) {
     ctx.fillStyle = "#98a2c8";
-    ctx.font = `400 13px ${fonts.mono}`;
-    ctx.fillText(m.today, 28, 282);
+    ctx.font = `400 15px ${fonts.mono}`;
+    ctx.fillText(m.today, 28, 362, 584);
   }
 
   ctx.fillStyle = "#cdeee2";
-  ctx.font = `700 28px ${fonts.mono}`;
-  ctx.fillText(m.github, 668, 46);
+  ctx.font = `700 32px ${fonts.mono}`;
+  ctx.fillText(m.github, 668, 54);
   ctx.fillStyle = "#8a93b5";
-  ctx.font = `500 15px ${fonts.mono}`;
-  ctx.fillText(m.githubSub, 668, 70);
+  ctx.font = `500 17px ${fonts.mono}`;
+  ctx.fillText(m.githubSub, 668, 82);
   if (!m.rows.length) {
     ctx.fillStyle = "#cfd6f5";
-    ctx.font = `400 17px ${fonts.sans}`;
-    ctx.fillText(m.empty, 668, 120);
+    ctx.font = `400 19px ${fonts.sans}`;
+    ctx.fillText(m.empty, 668, 140);
   }
   m.rows.forEach((row, k) => {
-    const y = 110 + k * 46;
+    const y = 136 + k * 62;
     const color = STATUS_COLOR[row.status];
-    statusIcon(ctx, row.status, 684, y - 6, color, t);
+    statusIcon(ctx, row.status, 686, y - 7, color, t);
     ctx.fillStyle = "#eef0ff";
-    ctx.font = `600 17px ${fonts.sans}`;
-    ctx.fillText(row.title.slice(0, 44), 708, y);
+    ctx.font = `600 19px ${fonts.sans}`;
+    ctx.fillText(row.title.slice(0, 40), 712, y, row.progress === null ? 540 : 336);
     ctx.fillStyle = "#98a2c8";
-    ctx.font = `400 13px ${fonts.mono}`;
-    ctx.fillText(row.meta.slice(0, 64), 708, y + 18);
+    ctx.font = `400 14px ${fonts.mono}`;
+    ctx.fillText(row.meta.slice(0, 60), 712, y + 22, 540);
     if (row.progress !== null) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.fillRect(1060, y - 10, 190, 6);
+      ctx.fillRect(1060, y - 12, 190, 7);
       ctx.fillStyle = color;
-      ctx.fillRect(1060, y - 10, 190 * row.progress, 6);
+      ctx.fillRect(1060, y - 12, 190 * row.progress, 7);
     }
   });
   ctx.restore();

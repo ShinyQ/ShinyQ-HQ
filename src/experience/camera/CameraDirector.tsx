@@ -369,6 +369,7 @@ export function CameraDirector({
       const drawn = clampCamera(toVec3(l.target), toVec3(l.pos), world, roverTarget, viewFov);
       l.pos.set(drawn[0], drawn[1], drawn[2]);
     }
+    roverRuntime.cameraSettled = !orbit.easing && l.pos.distanceToSquared(l.desiredPos) < 0.01 && l.target.distanceToSquared(l.desiredTarget) < 0.01;
 
     // First person: mix the smoothed third-person camera toward the rover's eyes by the eased blend.
     const fp = orbit.blend > 0 && rig !== "intro";
