@@ -73,11 +73,21 @@ Each tool's sub-agent start and stop hooks update a per-session list in `~/.offi
 start or stop sends a beat with the session's last state and activity (or working / editing for a session with no beat
 yet) and the new count, only when the count changes. Other beats carry the count while it is above 0 and once more as
 0. A helper with no stop event for 30 minutes no longer counts. A start or stop without a parent session id is ignored
-(logged `no-parent ignored`).
+(logged `no-parent ignored`). The session end (Copilot `sessionEnd`, Claude Code and Codex `SessionEnd`) deletes the
+session's helpers file; its beat carries `helpers: 0` when the last sent count was above 0, else no count. Hook
+processes run concurrently, so the helpers file is updated under a short lock (`<file>.lock`, created exclusively, a try
+every 2 ms, a lock older than 1 s is removed; after 10 ms the hook goes on unlocked so it stays fast) and
+replaced whole through a temp file and a rename (a reader never sees a truncated file).
+
+A helper counts once, as a drone on its parent's desk, never as a desk of its own. Copilot reports a helper's own tool
+events under the helper's own session id with `agentId` (or `agent_id`) set, so every Copilot event other than
+`subagentStart` / `subagentStop` that carries a non-empty `agentId` is ignored (logged `helper-event ignored`). Claude
+Code and Codex report a helper's tool events under the parent's `session_id`, so they move the parent's desk (state and
+activity) as the main agent's own events do.
 
 | Tool (version checked) | Events | Parent session | Helper id | Notes |
 |---|---|---|---|---|
-| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes |
+| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes. Known limits of anonymous counting: a helper running longer than the 30 min TTL, a duplicate stop, or a start missed while paused can make a later stop remove a different helper; the count heals itself within 30 minutes. A helper's own tool events (with `agentId`) are ignored |
 | Claude Code (2.1.223) | `SubagentStart`, `SubagentStop` | `session_id` (the main session) | `agent_id` | A resumed subagent or a teammate's new message repeats the start (deduped by id); a stop of an internal agent (prompt suggestions, `/btw`) with no start changes nothing |
 | OpenAI Codex (0.154.0) | `SubagentStart`, `SubagentStop` | `session_id` (the parent's) | `agent_id` | Both events are async hooks like the others; trust them in `/hooks` |
 

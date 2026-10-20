@@ -134,6 +134,25 @@ describe("office-relay CLI", () => {
     expect(run(["status"], env).stdout).toContain("program: running from a checkout");
   }, 30_000);
 
+  it("hook: two helpers stopping at once in two processes both count (no phantom helper)", async () => {
+    for (let round = 0; round < 3; round++) {
+      const h = home();
+      const spool = path.join(h, "spool");
+      const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool };
+      const start = JSON.stringify(HOOK_FIXTURES.copilot.subagentStart);
+      for (let i = 0; i < 2; i++) expect(run(["hook", "copilot", "subagentStart"], env, start).status).toBe(0);
+      const stop = () =>
+        new Promise<number | null>((resolve) => {
+          const child = spawn("bun", [CLI, "hook", "copilot", "subagentStop"], { env, stdio: ["pipe", "ignore", "ignore"] });
+          child.on("exit", resolve);
+          child.stdin.end(JSON.stringify(HOOK_FIXTURES.copilot.subagentStop));
+        });
+      expect(await Promise.all([stop(), stop()])).toEqual([0, 0]);
+      const counts = readFileSync(spool, "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { helpers?: number }).helpers);
+      expect(counts).toEqual([1, 2, 1, 0]);
+    }
+  }, 30_000);
+
   it("pause: exit 1 with a message when the pause file cannot be written", () => {
     const file = path.join(home(), "not-a-dir");
     writeFileSync(file, "");

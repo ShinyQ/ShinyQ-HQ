@@ -119,9 +119,17 @@ Index: [AGENTS.md](../../AGENTS.md).
   (salted id hashes, or anonymous keys for Copilot, whose start names no helper; a stop then ends the oldest), counted
   while younger than `HELPER_TTL_MS` (30 min) and capped at 9. Every tool's sub-agent hooks carry the parent's session
   id; an event without one is ignored. A start or stop sends the session's last state with the new count only when the
-  count changes; other beats carry the count while it is above 0 and once more as 0. Tests:
+  count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
+  helpers file and its beat carries `helpers: 0` only when the last sent count was above 0. The helpers file is read,
+  applied and written (and the beat sent) under a bounded lock (`withHelpersLock` in `store.ts`: exclusive
+  `<file>.lock`, a try every 2 ms for at most 10 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically
+  (temp file plus rename, mode 0600; also the sent and last-tool files). A helper counts once, as a drone, never as
+  its own desk: Copilot events other than `subagentStart` / `subagentStop` with a non-empty `agentId` / `agent_id`
+  (from inside a helper, under the helper's own session id) are ignored (`helper-event ignored`); Claude Code and
+  Codex helper tool events carry the parent's `session_id` and move the parent's desk. Tests:
   `tests/relay/helpers.test.ts`, `tests/relay/hook.test.ts` (planted prompt, client name, private transcript paths,
-  helper id and type never reach a beat or the log).
+  helper id and type never reach a beat or the log; dispatch is the only sink), `tests/relay/store.test.ts` (two
+  processes, torn reads, stale and held locks), `tests/relay/cli.test.ts` (two concurrent stops).
 - Never add a beat field, a log field or a debug mode that records payload text.
 
 ## Classic card and Ask

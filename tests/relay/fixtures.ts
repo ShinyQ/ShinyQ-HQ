@@ -15,7 +15,7 @@ export const HELPER_TRANSCRIPT = "/Users/someone/private/sessions/subagents/agen
 export const HELPER_ID = "agent-helper-7f3a9c";
 export const HELPER_TYPE = "ledger-sleuth";
 /** Strings that must never appear in a beat or the relay log. */
-export const PLANTED = [PROMPT, SECRET_CMD, CWD, OUTPUT, "hunter2", "client-portal", "abc123", "transcript.jsonl", "raw-session-123", HELPER_PROMPT, "sk-live-secret", HELPER_DESC, CLIENT, "/Users/someone/private", HELPER_ID, HELPER_TYPE] as const;
+export const PLANTED = [PROMPT, SECRET_CMD, CWD, OUTPUT, "hunter2", "client-portal", "abc123", "transcript.jsonl", "raw-session-123", HELPER_PROMPT, "sk-live-secret", HELPER_DESC, CLIENT, "/Users/someone/private", HELPER_ID, HELPER_TYPE, "raw-helper-session-456", "raw-parent-agent-789"] as const;
 
 const copilot = (extra: Record<string, unknown>) => ({ sessionId: "raw-session-123", timestamp: 1_792_327_344_000, cwd: CWD, ...extra });
 const snake = (event: string, extra: Record<string, unknown>) => ({ session_id: "raw-session-123", transcript_path: `${CWD}/transcript.jsonl`, cwd: CWD, hook_event_name: event, permission_mode: "default", ...extra });
@@ -30,6 +30,9 @@ export const HOOK_FIXTURES: Record<OfficeAgent, Record<string, Record<string, un
     postToolUseView: copilot({ toolName: "view", toolArgs: { path: `${CWD}/src/login.ts` }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseBash: copilot({ toolName: "bash", toolArgs: { command: SECRET_CMD }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseFailureCi: copilot({ toolName: "bash", toolArgs: { command: "gh pr checks 230 --watch" }, error: OUTPUT }),
+    // A tool call inside a helper (hooks reference: "hooks that fire inside a subagent include extra fields"): the
+    // helper's own session id plus `agentId`, `agentType` and `parentAgentId`. The relay ignores it.
+    preToolUseInHelper: { ...copilot({ toolName: "edit", toolArgs: { path: `${CWD}/src/login.ts` } }), sessionId: "raw-helper-session-456", agentId: HELPER_ID, agentType: HELPER_TYPE, parentAgentId: "raw-parent-agent-789" },
     preToolUseMcp: copilot({ toolName: "github-mcp-server-get_file_contents", toolArgs: { path: `${CWD}/src/login.ts` } }),
     // The shape Copilot CLI 1.0.97 sends (captured): `toolInput`, not `toolArgs`, and nothing about auto-approval.
     permissionRequest: copilot({ hookName: "permissionRequest", toolName: "bash", toolInput: { command: SECRET_CMD }, permissionSuggestions: [] }),

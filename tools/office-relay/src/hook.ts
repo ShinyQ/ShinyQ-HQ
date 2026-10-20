@@ -4,7 +4,7 @@ import type { GitInfo } from "./git";
 import { applyHelper, hashHelper, helperCount, helperEvent, helperId, parentSession } from "./helpers";
 import { isPermissionCheck, mapEvent, payloadCwd, rawSessionId, toolName, type Mapped } from "./map";
 import { sessionHash } from "./session";
-import { appendLog, isPaused, loadConfig, loadSalt, readHelpers, readLastTool, readSent, writeHelpers, writeLastTool, writeSent, type RelayPaths } from "./store";
+import { appendLog, clearHelpers, isPaused, loadConfig, loadSalt, readHelpers, readLastTool, readSent, withHelpersLock, writeHelpers, writeLastTool, writeSent, type RelayPaths } from "./store";
 
 export interface HookDeps {
   paths: RelayPaths;
@@ -44,23 +44,32 @@ function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", pa
   const salt = loadSalt(paths);
   const session = sessionHash(agent, parent, salt);
   const id = helperId(agent, payload);
-  const state = applyHelper(readHelpers(paths, session), kind, id ? hashHelper(id, salt) : null, now);
-  writeHelpers(paths, session, state);
-  const helpers = helperCount(state, now);
-  const prev = readSent(paths, session);
-  if ((prev?.helpers ?? 0) === helpers) {
-    appendLog(paths, `${agent} ${event} helpers ${helpers} skipped`);
-    return "skipped";
-  }
-  const cwd = payloadCwd(payload);
-  const mapped = prev ? { state: prev.state, activity: prev.activity } : BUSY;
-  const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now, helpers });
-  if (!parseOfficeBeat(beat)) {
-    appendLog(paths, `${agent} ${event} invalid`);
-    return "ignored";
-  }
-  return send(deps, session, beat, `${agent} ${event} helpers ${helpers}`);
+  // Read, apply, write and send under one lock: two helpers stopping at once both count.
+  return withHelpersLock(paths, session, () => {
+    const state = applyHelper(readHelpers(paths, session), kind, id ? hashHelper(id, salt) : null, now);
+    writeHelpers(paths, session, state);
+    const helpers = helperCount(state, now);
+    const prev = readSent(paths, session);
+    if ((prev?.helpers ?? 0) === helpers) {
+      appendLog(paths, `${agent} ${event} helpers ${helpers} skipped`);
+      return "skipped";
+    }
+    const cwd = payloadCwd(payload);
+    const mapped = prev ? { state: prev.state, activity: prev.activity } : BUSY;
+    const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now, helpers });
+    if (!parseOfficeBeat(beat)) {
+      appendLog(paths, `${agent} ${event} invalid`);
+      return "ignored";
+    }
+    return send(deps, session, beat, `${agent} ${event} helpers ${helpers}`);
+  });
 }
+
+/**
+ * Copilot reports a helper's own tool events under the helper's own session id, with `agentId` (camelCase hooks) or
+ * `agent_id` set ("hooks that fire inside a subagent include extra fields"); they would open a desk of their own.
+ */
+const insideCopilotHelper = (p: Record<string, unknown>) => [p.agentId, p.agent_id].some((x) => typeof x === "string" && x.length > 0);
 
 /**
  * The hook path: local work only (map, git files, hash, dedupe), then `dispatch`. Throws nothing the caller must
@@ -82,6 +91,11 @@ export function runHook(agent: string, event: string, stdin: string, deps: HookD
   const now = deps.now();
   const helper = helperEvent(agent, safeEvent);
   if (helper) return runHelper(agent, safeEvent, helper, payload, deps, now);
+  // A helper counts once, as a drone on its parent's desk, never as its own desk.
+  if (agent === "copilot" && insideCopilotHelper(payload)) {
+    appendLog(paths, `${agent} ${safeEvent} helper-event ignored`);
+    return "ignored";
+  }
   const sessionOf = () => sessionHash(agent, rawSessionId(payload) ?? `${payloadCwd(payload) ?? "unknown"}`, loadSalt(paths));
   // Copilot's permissionRequest right after the preToolUse of the same tool is a permission check, not a prompt (map.ts).
   const copilotEvent = agent === "copilot" ? safeEvent.toLowerCase() : "";
@@ -98,8 +112,11 @@ export function runHook(agent: string, event: string, stdin: string, deps: HookD
   const session = sessionOf();
   const cwd = payloadCwd(payload);
   const prev = readSent(paths, session);
-  // The count rides along while the session has helpers, and once more as 0 so the office clears them.
-  const live = helperCount(readHelpers(paths, session), now);
+  // The count rides along while the session has helpers, and once more as 0 so the office clears them. A session
+  // that ends takes its helpers with it.
+  const ended = safeEvent.toLowerCase() === "sessionend";
+  if (ended) clearHelpers(paths, session);
+  const live = ended ? 0 : helperCount(readHelpers(paths, session), now);
   const helpers = live > 0 || (prev?.helpers ?? 0) > 0 ? live : undefined;
   const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now, helpers });
   if (!parseOfficeBeat(beat)) {
