@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/content/locales";
 import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
 import { createOfficePoller, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
-import type { OfficeGithubStatus } from "@/lib/office/protocol";
+import type { OfficeDesk, OfficeGithubStatus } from "@/lib/office/protocol";
 import { fill, OFFICE_RESERVE, type OfficeCardLabels } from "./labels";
 
 export interface OfficePanelProps {
@@ -20,7 +20,7 @@ const GITHUB_SHOWN = 4;
 const COUNTS: readonly (keyof OfficeCounts)[] = ["active", "thinking", "waiting", "asleep"];
 /** Hairline rules of the counts strip: 2 by 2 below `md` (the Indonesian labels do not fit four across), one row from `md`. */
 const COUNT_RULES = ["", "border-l pl-4", "border-t md:border-t-0 md:border-l md:pl-4", "border-l border-t pl-4 md:border-t-0"];
-const ICON: Record<OfficeGithubStatus, string> = { running: "\u25cc", success: "\u2713", failure: "\u2715", merged: "\u2713", opened: "\u25cb", pushed: "\u2191" };
+const ICON: Record<OfficeGithubStatus, string> = { running: "\u25d0", success: "\u2713", failure: "\u2715", merged: "\u2713", opened: "\u25cb", pushed: "\u2191" };
 const ICON_TONE: Record<OfficeGithubStatus, string> = {
   running: "text-cyan",
   success: "text-green",
@@ -33,6 +33,11 @@ const ICON_TONE: Record<OfficeGithubStatus, string> = {
 /** The local time of the last good fetch, for "updated 15:04". */
 function clock(locale: Locale, at: number): string {
   return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", { hour: "2-digit", minute: "2-digit" }).format(at);
+}
+
+/** The line under a desk: its title, else "Client project" while it works; a sleeping desk works on nothing (as in the 3D drawer). */
+function deskTask(desk: OfficeDesk, clientProject: string): string | null {
+  return deskTitle(desk) ?? (desk.state === "asleep" ? null : clientProject);
 }
 
 function Dot({ tone }: { tone: string }) {
@@ -81,16 +86,19 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
   const counts = officeCounts(desks);
   const t = now();
   const live = feed.status === "ready" && snap?.mode === "live";
-  const line =
-    feed.status === "offline"
+  // Offline: the desks and counts are no longer known, so only the last GitHub events stay (plan: Global Constraints).
+  const offline = feed.status === "offline";
+  const line = offline
+    ? snap
       ? labels.offline
-      : !snap
-        ? labels.loading
-        : snap.mode === "semi-live"
-          ? labels.semiLive
-          : snap.mode === "off"
-            ? labels.resting
-            : labels.live;
+      : labels.offlineEmpty
+    : !snap
+      ? labels.loading
+      : snap.mode === "semi-live"
+        ? labels.semiLive
+        : snap.mode === "off"
+          ? labels.resting
+          : labels.live;
 
   return (
     // The busy card's height until the first answer; then the card's own height.
@@ -103,35 +111,43 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
       </p>
       {snap && (
         <>
-          <dl className="mt-6 grid grid-cols-2 border-y border-line md:grid-cols-4">
-            {COUNTS.map((key, i) => (
-              <div key={key} data-testid={`office-count-${key}`} className={`flex flex-col-reverse gap-2.5 border-line py-4 ${COUNT_RULES[i]}`}>
-                <dt className="pv-data">{labels.counts[key]}</dt>
-                <dd className="pv-num text-[28px] leading-none">{counts[key]}</dd>
-              </div>
-            ))}
-          </dl>
+          {!offline && (
+            <>
+              <dl className="mt-6 grid grid-cols-2 border-y border-line md:grid-cols-4">
+                {COUNTS.map((key, i) => (
+                  <div key={key} data-testid={`office-count-${key}`} className={`flex flex-col-reverse gap-2.5 border-line py-4 ${COUNT_RULES[i]}`}>
+                    <dt className="pv-data">{labels.counts[key]}</dt>
+                    <dd className="pv-num text-[28px] leading-none">{counts[key]}</dd>
+                  </div>
+                ))}
+              </dl>
 
-          <h3 className="pv-data mt-8">{labels.agents}</h3>
-          {desks.length === 0 ? (
-            <p className="mt-3 text-ink-2">{labels.noAgents}</p>
-          ) : (
-            <ul className="pv-rows pv-rows-closed mt-3">
-              {desks.map((d) => (
-                <li key={d.slot} data-testid="office-desk" className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-3">
-                  <Dot tone={STATE_TONE[d.state]} />
-                  <span className="min-w-0">
-                    <span className="text-ink">
-                      {labels.agentNames[d.agent]} {"\u00b7"} {labels.activities[d.activity]}
-                    </span>
-                    <span className="block truncate text-sm text-ink-2">{deskTitle(d) ?? labels.clientProject}</span>
-                  </span>
-                  <span className="pv-data">{labels.states[d.state]}</span>
-                </li>
-              ))}
-            </ul>
+              <h3 className="pv-data mt-8">{labels.agents}</h3>
+              {desks.length === 0 ? (
+                <p className="mt-3 text-ink-2">{labels.noAgents}</p>
+              ) : (
+                <ul className="pv-rows pv-rows-closed mt-3">
+                  {desks.map((d) => (
+                    <li key={d.slot} data-testid="office-desk" className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-3">
+                      <Dot tone={STATE_TONE[d.state]} />
+                      <span className="min-w-0">
+                        <span className="text-ink">
+                          {labels.agentNames[d.agent]} {"\u00b7"} {labels.activities[d.activity]}
+                        </span>
+                        {deskTask(d, labels.clientProject) && (
+                          <span data-testid="office-task" className="block truncate text-sm text-ink-2">
+                            {deskTask(d, labels.clientProject)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="pv-data">{labels.states[d.state]}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {snap.extra > 0 && <p className="pv-date mt-2">{fill(labels.extra, { count: snap.extra })}</p>}
+            </>
           )}
-          {snap.extra > 0 && <p className="pv-date mt-2">{fill(labels.extra, { count: snap.extra })}</p>}
 
           <h3 className="pv-data mt-8">{labels.github}</h3>
           {snap.github.length === 0 ? (
@@ -161,9 +177,11 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
             </ul>
           )}
 
-          <p data-testid="office-today" className="mt-6 text-sm text-ink-2">
-            {fill(labels.today, { tasks: snap.today.tasksDone, prs: snap.today.prsMerged, green: snap.today.ciGreen, runs: snap.today.ciRuns })}
-          </p>
+          {!offline && (
+            <p data-testid="office-today" className="mt-6 text-sm text-ink-2">
+              {fill(snap.today.ciRuns > 0 ? labels.today : labels.todayNoCi, { tasks: snap.today.tasksDone, prs: snap.today.prsMerged, green: snap.today.ciGreen, runs: snap.today.ciRuns })}
+            </p>
+          )}
         </>
       )}
       <p data-testid="office-privacy" className="mt-6 text-sm text-ink-3">

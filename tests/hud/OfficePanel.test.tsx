@@ -101,12 +101,60 @@ describe("OfficePanel", () => {
     expect(statuses).toEqual(["loading", "ready", "offline", "disabled"]);
   });
 
-  it("shows the offline line when the first request fails", () => {
+  it("shows the offline line without the last-activity clause when the first request fails", () => {
     const { poller } = fakePoller({ status: "offline", snapshot: null, fetchedAt: 0 });
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
-    expect(screen.getByTestId("office-live").textContent).toContain(labels.offline);
+    expect(screen.getByRole("status").textContent).toBe(labels.offlineEmpty);
+    expect(screen.getByTestId("office-live").textContent).not.toContain(labels.offline);
     expect(screen.queryAllByTestId("office-desk")).toHaveLength(0);
     expect(screen.getByTestId("office-privacy")).toBeTruthy();
+  });
+
+  it("offline with a kept snapshot shows only the last GitHub events, not the desks as if they were live", () => {
+    const { poller, push } = fakePoller(ready(OFFICE_FIXTURES.busy as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(screen.getAllByTestId("office-desk")).toHaveLength(5);
+    push({ status: "offline", snapshot: OFFICE_FIXTURES.busy as OfficeSnapshotV1, fetchedAt: OFFICE_FIXTURE_NOW });
+    expect(screen.getByRole("status").textContent).toBe(labels.offline);
+    expect(screen.queryAllByTestId("office-desk")).toHaveLength(0);
+    expect(screen.queryByTestId("office-count-active")).toBeNull();
+    expect(screen.queryByText(labels.agents)).toBeNull();
+    expect(screen.queryByText("+1 more sessions")).toBeNull();
+    expect(screen.queryByTestId("office-today")).toBeNull();
+    expect(screen.getByText(labels.github)).toBeTruthy();
+    expect(screen.getAllByTestId("office-github")).toHaveLength(4);
+    expect(screen.getByTestId("office-privacy")).toBeTruthy();
+  });
+
+  it("shows no task under a sleeping desk without a title, and Client project only under a working one", () => {
+    const { poller } = fakePoller(ready(OFFICE_FIXTURES.quiet as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const desks = screen.getAllByTestId("office-desk");
+    const snap = OFFICE_FIXTURES.quiet as OfficeSnapshotV1;
+    expect(desks).toHaveLength(snap.desks.length);
+    snap.desks.forEach((d, i) => {
+      if (d.state === "asleep" && !d.title) {
+        expect(desks[i].textContent).not.toContain(labels.clientProject);
+        expect(desks[i].querySelector("[data-testid=office-task]")).toBeNull();
+      } else if (!d.title) expect(desks[i].querySelector("[data-testid=office-task]")!.textContent).toBe(labels.clientProject);
+    });
+    expect(snap.desks.some((d) => d.state === "asleep" && !d.title)).toBe(true);
+    expect(snap.desks.some((d) => d.state !== "asleep" && !d.title)).toBe(true);
+  });
+
+  it("drops the CI clause from today when no run happened", () => {
+    const { poller } = fakePoller(ready(OFFICE_FIXTURES.off as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(screen.getByTestId("office-today").textContent).toBe("Today: 0 tasks done, 0 PRs merged");
+  });
+
+  it("draws the running mark as a solid glyph (the dotted circle was too faint to read)", () => {
+    const { poller } = fakePoller(ready(OFFICE_FIXTURES.busy as OfficeSnapshotV1));
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const running = screen.getAllByTestId("office-github").find((row) => row.textContent?.includes(labels.status.running));
+    const mark = running!.querySelector("[aria-hidden=true]")!;
+    expect(mark.textContent).toBe("\u25d0");
+    expect(mark.className).toContain("text-cyan");
   });
 
   it("holds the busy card's height until the first answer, then takes its own", () => {

@@ -1236,7 +1236,8 @@
       "live": "Langsung",
       "semiLive": "Semi-langsung: tidak ada agen yang melapor, hanya aktivitas GitHub publik",
       "resting": "Istirahat: kantor sedang tidak melapor",
-      "offline": "Offline: menampilkan aktivitas terakhir yang diketahui",
+      "offline": "Offline: menampilkan aktivitas GitHub terakhir yang diketahui",
+      "offlineEmpty": "Offline: kantor sedang tidak dapat dihubungi",
       "updated": "diperbarui {time}",
       "counts": { "active": "Aktif", "thinking": "Berpikir", "waiting": "Menunggu", "asleep": "Tidur" },
       "agents": "Di meja",
@@ -1245,6 +1246,7 @@
       "github": "Terbaru di GitHub",
       "noGithub": "Belum ada aktivitas publik hari ini.",
       "today": "Hari ini: {tasks} tugas selesai, {prs} PR di-merge, {green} dari {runs} CI run hijau",
+      "todayNoCi": "Hari ini: {tasks} tugas selesai, {prs} PR di-merge",
       "status": { "running": "Berjalan", "success": "Lulus", "failure": "Gagal", "merged": "Di-merge", "opened": "Dibuka", "pushed": "Di-push" }
     },
     "3d": {

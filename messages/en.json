@@ -1236,7 +1236,8 @@
       "live": "Live",
       "semiLive": "Semi-live: no agent is reporting, public GitHub activity only",
       "resting": "Resting: the office is not reporting right now",
-      "offline": "Offline: showing the last known activity",
+      "offline": "Offline: showing the last known GitHub activity",
+      "offlineEmpty": "Offline: the office cannot be reached right now",
       "updated": "updated {time}",
       "counts": { "active": "Active", "thinking": "Thinking", "waiting": "Waiting", "asleep": "Asleep" },
       "agents": "At the desks",
@@ -1245,6 +1246,7 @@
       "github": "Latest on GitHub",
       "noGithub": "No public activity yet today.",
       "today": "Today: {tasks} tasks done, {prs} PRs merged, {green} of {runs} CI runs green",
+      "todayNoCi": "Today: {tasks} tasks done, {prs} PRs merged",
       "status": { "running": "Running", "success": "Passed", "failure": "Failed", "merged": "Merged", "opened": "Opened", "pushed": "Pushed" }
     },
     "3d": {

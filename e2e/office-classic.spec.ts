@@ -64,12 +64,32 @@ test.describe("Classic: Live Agent Office", () => {
     await expect(page.locator("#journey")).toBeVisible();
   });
 
-  test("shows Offline when the first request fails", async ({ page }) => {
+  test("shows Offline when the first request fails, without promising activity it does not have", async ({ page }) => {
     await mockOffice(page, 500);
     await open(page);
     await expect(section(page)).toHaveAttribute("data-status", "offline");
-    await expect(page.getByTestId("office-live")).toContainText(en.office.classic.offline);
+    await expect(page.getByTestId("office-live")).toHaveText(en.office.classic.offlineEmpty);
     await expect(page.getByTestId("office-desk")).toHaveCount(0);
+    await expect(page.getByTestId("office-github")).toHaveCount(0);
+  });
+
+  test("offline after a good snapshot keeps only the last GitHub events, not the desks", async ({ page }) => {
+    await page.clock.setFixedTime(OFFICE_FIXTURE_NOW);
+    const office = await mockOffice(page, OFFICE_FIXTURES.busy);
+    await open(page);
+    await expect(section(page)).toHaveAttribute("data-status", "ready");
+    await expect(page.getByTestId("office-desk")).toHaveCount(5);
+    // Failures more than 60 s after the last good fetch: the next poll reports offline.
+    office.set(500);
+    await page.clock.setFixedTime(OFFICE_FIXTURE_NOW + 2 * 60_000);
+    await expect(section(page)).toHaveAttribute("data-status", "offline", { timeout: 20_000 });
+    await expect(page.getByTestId("office-live")).toHaveText(en.office.classic.offline);
+    await expect(page.getByTestId("office-desk")).toHaveCount(0);
+    await expect(page.getByTestId("office-count-active")).toHaveCount(0);
+    await expect(page.getByTestId("office-today")).toHaveCount(0);
+    await expect(page.getByTestId("office-github")).toHaveCount(4);
+    const axe = await new AxeBuilder({ page }).include("#office").analyze();
+    expect(axe.violations).toEqual([]);
   });
 
   test("does not load or fetch before the section nears the viewport", async ({ page }) => {
@@ -115,6 +135,9 @@ test.describe("Classic: Live Agent Office", () => {
     await open(page, home("id"));
     await expect(page.locator("#office-title")).toHaveText(id.office.classic.title);
     await expect(page.getByTestId("office-count-asleep")).toContainText(id.office.classic.counts.asleep);
+    // Only the reviewing desk carries a task line; the sleeping desks work on nothing.
+    await expect(page.getByTestId("office-desk")).toHaveCount(5);
+    await expect(page.getByTestId("office-task")).toHaveText([id.office.clientProject]);
     await expect(page.getByTestId("office-privacy")).toHaveText(id.office.privacy);
   });
 

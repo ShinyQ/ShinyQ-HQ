@@ -13,6 +13,14 @@ describe("office card copy", () => {
     expect(hasFirstPerson(id.office.classic.title, "id")).toBe(false);
   });
 
+  it("has an offline line for a failed first request that promises no activity, and a today line without CI", () => {
+    for (const m of [en, id]) {
+      expect(m.office.classic.offlineEmpty).not.toBe(m.office.classic.offline);
+      expect(m.office.classic.todayNoCi).not.toMatch(/\{green\}|\{runs\}|CI/);
+      expect(m.office.classic.todayNoCi).toMatch(/\{tasks\}.*\{prs\}/);
+    }
+  });
+
   it("fills named placeholders and leaves unknown ones", () => {
     expect(fill("Today: {tasks} tasks, {prs} PRs", { tasks: 9, prs: 7 })).toBe("Today: 9 tasks, 7 PRs");
     expect(fill("{a} and {b}", { a: "x" })).toBe("x and {b}");

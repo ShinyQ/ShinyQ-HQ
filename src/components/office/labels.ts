@@ -9,6 +9,8 @@ export interface OfficeCardLabels {
   semiLive: string;
   resting: string;
   offline: string;
+  /** Offline before any snapshot: nothing to show. */
+  offlineEmpty: string;
   updated: string;
   counts: Record<"active" | "thinking" | "waiting" | "asleep", string>;
   agents: string;
@@ -17,6 +19,8 @@ export interface OfficeCardLabels {
   github: string;
   noGithub: string;
   today: string;
+  /** `today` without the CI clause, for a day without CI runs. */
+  todayNoCi: string;
   status: Record<OfficeGithubStatus, string>;
   clientProject: string;
   privacy: string;

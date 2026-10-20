@@ -27,6 +27,8 @@ describe("officeCardLabels", () => {
     for (const value of leaves(labels)) expect(typeof value === "string" && value.length > 0, String(value)).toBe(true);
     expect(labels.title).toBe(messages.office.classic.title);
     expect(labels.today).toBe(messages.office.classic.today);
+    expect(labels.todayNoCi).toBe(messages.office.classic.todayNoCi);
+    expect(labels.offlineEmpty).toBe(messages.office.classic.offlineEmpty);
     expect(labels.counts).toEqual(messages.office.classic.counts);
     expect(labels.status).toEqual(messages.office.classic.status);
     expect(labels.clientProject).toBe(messages.office.clientProject);
