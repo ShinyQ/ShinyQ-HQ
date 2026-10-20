@@ -37,7 +37,11 @@ export const STATUS_COLOR: Record<OfficeGithubStatus, string> = {
   pushed: "#8a93b5",
 };
 
-/** Body offset (y), pitch toward the desk (rx, positive leans forward), sway (ry), roll (rz), arm angles about x (negative raises) and the antenna tip scale. */
+/**
+ * Body offset (y), pitch toward the desk (rx, positive leans forward), sway (ry), roll (rz), arm angles about x
+ * (negative raises) and the antenna tip scale, plus offsets along the Rover's own axes (x across, z forward toward
+ * the desk), a turn (yaw) on top of the desk heading, the flag (0 lowered to 1 raised) and its wave angle.
+ */
 export interface OfficePose {
   y: number;
   rx: number;
@@ -46,6 +50,11 @@ export interface OfficePose {
   armL: number;
   armR: number;
   tipScale: number;
+  x: number;
+  z: number;
+  yaw: number;
+  flag: number;
+  wave: number;
 }
 
 /** Faces and screens under reduced motion are drawn at this fixed time (a frame that reads well), never animated. */
@@ -55,7 +64,7 @@ export const CROSSFADE_S = 0.4;
 /** A stable phase per slot, so the five Rovers never move in step. */
 export const slotPhase = (slot: number): number => slot * 1.7 + 0.4;
 
-const REST: OfficePose = { y: 0, rx: 0, ry: 0, rz: 0, armL: 0, armR: 0, tipScale: 1 };
+const REST: OfficePose = { y: 0, rx: 0, ry: 0, rz: 0, armL: 0, armR: 0, tipScale: 1, x: 0, z: 0, yaw: 0, flag: 0, wave: 0 };
 
 /** The pose a state holds under reduced motion (and the reference the bob probe measures from). */
 export function stillPose(state: OfficeState): OfficePose {
@@ -69,7 +78,7 @@ export function stillPose(state: OfficeState): OfficePose {
     case "done":
       return { ...REST, armL: -1.8, armR: -1.8 };
     case "failed":
-      return { ...REST, y: -0.05, rx: 0.22 };
+      return { ...REST, y: -0.08, rx: 0.3, armL: 0.35, armR: 0.35 };
     case "asleep":
       return { ...REST, y: -0.06, rx: 0.14 };
     default:
@@ -127,7 +136,7 @@ export function poseOffset(state: OfficeState, p: OfficePose): number {
  * `glowKey` (officeRig) for those.
  */
 export function poseChanged(a: OfficePose, b: OfficePose): boolean {
-  return a.y !== b.y || a.rx !== b.rx || a.ry !== b.ry || a.rz !== b.rz || a.armL !== b.armL || a.armR !== b.armR || a.tipScale !== b.tipScale;
+  return a.y !== b.y || a.rx !== b.rx || a.ry !== b.ry || a.rz !== b.rz || a.armL !== b.armL || a.armR !== b.armR || a.tipScale !== b.tipScale || a.x !== b.x || a.z !== b.z || a.yaw !== b.yaw || a.flag !== b.flag || a.wave !== b.wave;
 }
 
 /** Rover parts in its own frame (forward +z, toward the plaza) as unit-box instances: x, y, z, w, h, d. */
