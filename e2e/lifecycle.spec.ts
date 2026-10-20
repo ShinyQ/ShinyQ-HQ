@@ -288,4 +288,28 @@ test.describe("WebGL crash recovery", () => {
     await page.waitForTimeout(2000);
     expect(await hqMounts(page)).toBe(3);
   });
+
+  test("a 3D chunk that fails to load retries once, then Retry 3D loads it again", async ({ page }) => {
+    // The chunk that holds Experience (the only script with its 3D host's test id) fails until it is let through.
+    let blocked = true;
+    const attempts: string[] = [];
+    await page.route("**/_next/static/chunks/*.js", async (route) => {
+      const response = await route.fetch();
+      const body = await response.text();
+      if (!body.includes('"data-testid":"hq"')) return route.fulfill({ response, body });
+      attempts.push(route.request().url());
+      return blocked ? route.abort("failed") : route.fulfill({ response, body });
+    });
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite");
+    const notice = page.getByRole("status").filter({ hasText: en.hud.staticNotice });
+    await expect(notice).toBeVisible({ timeout: 30_000 });
+    // Turbopack retries a network error once by itself, so one gate attempt makes 2 requests: a third proves the
+    // automatic remount asked for the chunk again (2 attempts make 4).
+    expect(attempts.length).toBeGreaterThanOrEqual(3);
+    blocked = false;
+    await page.getByTestId("retry-3d").click();
+    await waitForHQ(page);
+    await expect(notice).toBeHidden();
+  });
 });

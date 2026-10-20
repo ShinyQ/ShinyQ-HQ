@@ -27,7 +27,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `decideTier` order: a valid `?tier=` wins; no WebGL2, Save-Data or a software renderer (`SOFTWARE_RENDERER`) is static; a known-weak integrated GPU (`WEAK_GPU`) is lite; a coarse pointer, under 4 GB device memory or at most 2 cores is lite; anything else is full.
   - `WEAK_GPU` reads the unmasked renderer: Intel HD and UHD Graphics (Iris, Iris Xe, Iris Plus and Arc stay full), Mali-4xx, Mali-T and Mali-G31 to G52, Adreno 5xx and below. A Firefox bucket (ends in ", or similar"; every Intel iGPU reads "Intel(R) HD Graphics") is not a known GPU and skips this check.
   - The boot-first head script decides only static; the weak-GPU check runs in the gate.
-- It then lazy-loads `src/experience/Experience.tsx` with `next/dynamic` and portals it over the page.
+- It then loads `src/experience/Experience.tsx` (a dynamic `import()`) together with the 3D page data and renders the loaded component directly, portalled over the page.
+  - Not through `next/dynamic` or `React.lazy`: a lazy component suspends once even when its chunk is in, and React holds a Suspense retry until 300 ms after the fallback showed, which delayed the first frame by about 225 to 265 ms ([performance.md](performance.md#3d-mount-without-a-suspense-retry)).
+  - A failed chunk takes the crash path like a failed data fetch ([Crash recovery](#crash-recovery)).
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.
 - The effective tier is the probe's tier adjusted by the graphics quality preference (`hq:quality`: `auto`, `full`, `lite`; `useQualityTier`, `applyQualityPref` in `src/lib/gpu-tier.ts`).
@@ -161,7 +163,7 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
 - Static versioned JSON, never the page's RSC payload (about 9 KB gzip less on every gated page):
   - The build writes `experienceDataFor(locale)` (`src/experience/gate-data.ts`, floor names localized from `messages`) to `/data/experience/{locale}.json` (`src/app/data/[...path]/route.ts`).
   - The page passes only `experienceDataVersion(locale)`, a 12-character content hash (`shortHash` in `src/lib/content-hash.ts`, shared with the HUD index and room data versions); the gate fetches `/data/experience/{locale}.json?v=<hash>` (`loadExperienceData` in `src/experience/data-client.ts`: one fetch per locale and page load, forgotten after a failure), so the 1 h `/data/*` cache never outlives a deploy.
-  - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate starts the chunk at the same time). `Experience` mounts only once the data is in.
+  - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate loads both with `Promise.all`). `Experience` mounts only once both are in.
   - A failed fetch is a crash ([Crash recovery](#crash-recovery)): one automatic retry on the next mount, then the static page with "Retry 3D" (which fetches again). The boot cover is released with the static tier (or by its 8 s timeout), never left up.
   - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
   - Dev routes (`/{locale}/dev/*`) still pass `experienceDataFor(locale)` to their prototype loaders directly.
@@ -387,7 +389,9 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ## Crash recovery
 
 - `CanvasBoundary` (around the R3F canvas, which rethrows creation and render errors) and the `webglcontextlost` listener call `onCrash`.
-- So does a failed fetch of the 3D page data (`/data/experience/{locale}.json`); the remount fetches it again.
+- So does a failed load of the 3D chunk or of the 3D page data (`/data/experience/{locale}.json`); the remount and "Retry 3D" load them again.
+  - Every attempt calls `import("./Experience")` afresh: the Turbopack runtime forgets a chunk whose script failed (after its own single retry of a network error), so the next import requests it again. `next/dynamic` or `React.lazy` would keep the rejected promise and fail every retry.
+  - Covered by `e2e/lifecycle.spec.ts` ("a 3D chunk that fails to load ...").
 - `ExperienceGate` remounts the 3D view once on a fresh canvas, after the tab is visible again (`whenVisible`).
 - A second failure sets the static tier and shows the notice with a "Retry 3D" button (`hud.retry3d`, `data-testid="retry-3d"`).
   - `recovery.ts`: `afterFailure`, `manualRetry`, `settled`; store `recover(tier)`.
