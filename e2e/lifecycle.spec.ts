@@ -304,8 +304,9 @@ test.describe("WebGL crash recovery", () => {
     await page.goto("/en?tier=lite");
     const notice = page.getByRole("status").filter({ hasText: en.hud.staticNotice });
     await expect(notice).toBeVisible({ timeout: 30_000 });
-    // The first load and the automatic remount each asked for the chunk (Turbopack retries a network error once more).
-    expect(attempts.length).toBeGreaterThanOrEqual(2);
+    // Turbopack retries a network error once by itself, so one gate attempt makes 2 requests: a third proves the
+    // automatic remount asked for the chunk again (2 attempts make 4).
+    expect(attempts.length).toBeGreaterThanOrEqual(3);
     blocked = false;
     await page.getByTestId("retry-3d").click();
     await waitForHQ(page);
