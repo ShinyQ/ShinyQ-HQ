@@ -2,13 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: planned (2026-10-20); starts after part A merges.
+Status: planned (2026-10-20); starts after part A merges. Part A introduces snapshot v2 (v1 plus desk `helpers`, served at
+`?v=2` to the scene and the Classic card) and the watch and beacon chunks; this plan adds v3 (v2 plus `pipeline`) for the
+scene only, and puts the deploy beam in the beacon chunk (loaded on the first ask or the first fresh deploy).
 
 **Goal:** Pushes, CI jobs, merges and production deploys of public repositories become physical events in the office
 wing: a CI tower with one light lane per workflow job, packets from the pushing agent's desk, green or red bursts, a
 package flying to the ship dock per merged PR, and a beam over the dock per production deploy.
 
-**Architecture:** The Worker keeps job names and derives a `pipeline` block; a v2 snapshot (`GET /api/office?v=2`)
+**Architecture:** The Worker keeps job names and derives a `pipeline` block; a v3 snapshot (`GET /api/office?v=3`)
 carries it to the 3D scene while v1 stays byte for byte for the Classic card. A pure `pipeline.ts` derives events from
 successive snapshots; `pipelineFx.ts` writes them into the existing glow and parts meshes and the main-path beacon
 mesh's spare instance (the beam). One contract change, every side in this PR.
@@ -26,19 +28,19 @@ Design: [`2026-10-20-agent-office-revamp-design.md`](../specs/2026-10-20-agent-o
 - No new shader program on L1; L1 under 125 scene draw calls on both tiers; office caps re-set by measured plus 0.6 KB,
   `officeTotal` 40 KB.
 - Reduced motion: no packets, flights or bursts; end states shown at once.
-- Security review (the `security-review` agent) of the v2 surface before merge.
+- Security review (the `security-review` agent) of the v3 surface before merge.
 
 ## File structure
 
 | File | Responsibility |
 |---|---|
-| `workers/office/src/state.ts` | `RunRecord.names`, job caps, `pipelineOf(doc, now)`, `viewV2` |
-| `workers/office/src/office.ts`, `worker.ts` | `/snapshot?v=2` |
-| `src/lib/office/protocol.ts` | v2 types, `parseOfficeResponseV2`, `parseOfficeAny` |
-| `src/lib/office/fixtures.ts`, `e2e/office-fixtures.ts` | v2 fixtures with runs, jobs and ships |
-| `functions/_lib/office.ts` | `?v=2` honoured, per-version cache key |
+| `workers/office/src/state.ts` | `RunRecord.names`, job caps, `pipelineOf(doc, now)`, `viewV3` |
+| `workers/office/src/office.ts`, `worker.ts` | `/snapshot?v=3` |
+| `src/lib/office/protocol.ts` | v3 types, `parseOfficeResponseV3`, `parseOfficeAny` |
+| `src/lib/office/fixtures.ts`, `e2e/office-fixtures.ts` | v3 fixtures with runs, jobs and ships |
+| `functions/_lib/office.ts` | `?v=3` honoured, per-version cache key |
 | `src/lib/office/poll.ts` | `path` and `parse` options |
-| `src/experience/floors/lobby/office/live.ts` | the scene polls v2 |
+| `src/experience/floors/lobby/office/live.ts` | the scene polls v3 |
 | `src/experience/floors/lobby/office/pipeline.ts` (new) | lanes, `diffPipeline`, event queue (pure) |
 | `src/experience/floors/lobby/office/pipelineFx.ts` (new) | lane matrix, packets, bursts, crown, package and trail writes |
 | `src/experience/floors/lobby/office/beacon.ts`, `OfficeBeacon.tsx`, `officeSignal.ts` | the deploy beam on instance 4 |
@@ -118,7 +120,7 @@ In `case "run"`, a restart clears `names` and `order` with `jobs`, and a new run
 const slotOf = (doc: OfficeDoc, repo: string, branch: string, now: number): number | undefined =>
   doc.sessions.find((s) => s.slot !== null && s.repo === repo && s.branch === branch && effective(s, now) !== null)?.slot ?? undefined;
 
-/** The v2 pipeline block (design 6.2): the newest runs with their lanes, and the latest merges and deploys. */
+/** The v3 pipeline block (design 6.2): the newest runs with their lanes, and the latest merges and deploys. */
 export function pipelineOf(doc: OfficeDoc, now: number): OfficePipeline {
   const runs = [...doc.runs]
     .sort((a, b) => (b.started ?? b.updated) - (a.started ?? a.updated))
@@ -148,48 +150,48 @@ export function pipelineOf(doc: OfficeDoc, now: number): OfficePipeline {
   return { runs, ships };
 }
 
-/** The v2 snapshot: the v1 view plus the pipeline. */
-export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
-  return { ...view(doc, now), v: 2, pipeline: pipelineOf(doc, now) };
+/** The v3 snapshot: the v1 view plus the pipeline. */
+export function viewV3(doc: OfficeDoc, now: number): OfficeSnapshotV3 {
+  return { ...view(doc, now), v: 3, pipeline: pipelineOf(doc, now) };
 }
 ```
 
 - [ ] **Step 4:** Run; expected PASS (old documents without `names`, `order` or `started` read through the fallbacks).
 - [ ] **Step 5:** Commit `feat(office): the Worker keeps job lanes and builds the pipeline`.
 
-### Task 2: Contract v2
+### Task 2: Contract v3
 
 **Files:**
 - Modify: `src/lib/office/protocol.ts`, `src/lib/office/fixtures.ts`
 - Test: `tests/office/protocol.test.ts`
 
 **Interfaces:**
-- Produces: `OfficePipelineJob`, `OfficePipelineRun`, `OfficeShip`, `OfficePipeline`, `OfficeSnapshotV2`, `OFFICE_PIPELINE = { runs: 3, jobs: 24, ships: 10, jobName: 40 }`,
-  `parseOfficeResponseV2(raw): OfficeSnapshotV2 | OfficeDisabledV1 | null`, `parseOfficeAny(raw): (OfficeSnapshotV1 & { pipeline?: OfficePipeline }) | OfficeDisabledV1 | null`,
-  `OFFICE_FIXTURES_V2` (busy with two runs, 12 jobs, a merge and a deploy).
+- Produces: `OfficePipelineJob`, `OfficePipelineRun`, `OfficeShip`, `OfficePipeline`, `OfficeSnapshotV3`, `OFFICE_PIPELINE = { runs: 3, jobs: 24, ships: 10, jobName: 40 }`,
+  `parseOfficeResponseV3(raw): OfficeSnapshotV3 | OfficeDisabledV1 | null`, `parseOfficeAny(raw): (OfficeSnapshotV1 & { pipeline?: OfficePipeline }) | OfficeDisabledV1 | null`,
+  `OFFICE_FIXTURES_V3` (busy with two runs, 12 jobs, a merge and a deploy).
 
 - [ ] **Step 1: Tests first:**
 
 ```ts
-describe("v2", () => {
+describe("v3", () => {
   it("accepts the fixtures and rejects extra keys, long lists, bad jobs and markup", () => {
-    expect(parseOfficeResponseV2(OFFICE_FIXTURES_V2.busy)).not.toBeNull();
+    expect(parseOfficeResponseV3(OFFICE_FIXTURES_V3.busy)).not.toBeNull();
     const bad = [
-      { ...OFFICE_FIXTURES_V2.busy, pipeline: { runs: [], ships: [], x: 1 } },
-      { ...OFFICE_FIXTURES_V2.busy, pipeline: { runs: Array(4).fill(OFFICE_FIXTURES_V2.busy.pipeline.runs[0]), ships: [] } },
-      { ...OFFICE_FIXTURES_V2.busy, pipeline: { runs: [{ ...OFFICE_FIXTURES_V2.busy.pipeline.runs[0], jobs: [{ name: "<b>", status: "done" }] }], ships: [] } },
-      { ...OFFICE_FIXTURES_V2.busy, pipeline: { runs: [{ ...OFFICE_FIXTURES_V2.busy.pipeline.runs[0], slot: 7 }], ships: [] } },
-      { ...OFFICE_FIXTURES_V2.busy, pipeline: { runs: [], ships: [{ key: "k", kind: "merge", status: "pushed", at: 1 }] } },
+      { ...OFFICE_FIXTURES_V3.busy, pipeline: { runs: [], ships: [], x: 1 } },
+      { ...OFFICE_FIXTURES_V3.busy, pipeline: { runs: Array(4).fill(OFFICE_FIXTURES_V3.busy.pipeline.runs[0]), ships: [] } },
+      { ...OFFICE_FIXTURES_V3.busy, pipeline: { runs: [{ ...OFFICE_FIXTURES_V3.busy.pipeline.runs[0], jobs: [{ name: "<b>", status: "done" }] }], ships: [] } },
+      { ...OFFICE_FIXTURES_V3.busy, pipeline: { runs: [{ ...OFFICE_FIXTURES_V3.busy.pipeline.runs[0], slot: 7 }], ships: [] } },
+      { ...OFFICE_FIXTURES_V3.busy, pipeline: { runs: [], ships: [{ key: "k", kind: "merge", status: "pushed", at: 1 }] } },
     ];
-    for (const b of bad) expect(parseOfficeResponseV2(b)).toBeNull();
+    for (const b of bad) expect(parseOfficeResponseV3(b)).toBeNull();
   });
   it("falls back to v1 with no pipeline", () => {
     expect(parseOfficeAny(OFFICE_FIXTURES.busy)).toMatchObject({ v: 1 });
     expect(parseOfficeAny(OFFICE_FIXTURES.busy)?.["pipeline" as never]).toBeUndefined();
-    expect(parseOfficeAny(OFFICE_FIXTURES_V2.busy)).toHaveProperty("pipeline");
+    expect(parseOfficeAny(OFFICE_FIXTURES_V3.busy)).toHaveProperty("pipeline");
   });
-  it("keeps v1 strict: a v1 parser rejects a v2 body", () => {
-    expect(parseOfficeResponse(OFFICE_FIXTURES_V2.busy)).toBeNull();
+  it("keeps v1 strict: a v1 parser rejects a v3 body", () => {
+    expect(parseOfficeResponse(OFFICE_FIXTURES_V3.busy)).toBeNull();
   });
 });
 ```
@@ -226,70 +228,67 @@ function isPipeline(x: unknown): x is OfficePipeline {
   return isObj(x) && onlyKeys(x, ["runs", "ships"]) && Array.isArray(x.runs) && x.runs.length <= OFFICE_PIPELINE.runs && x.runs.every(isRun) && Array.isArray(x.ships) && x.ships.length <= OFFICE_PIPELINE.ships && x.ships.every(isShip);
 }
 
-/** Validates GET /api/office?v=2: the v1 checks on everything but `v`, plus the pipeline. */
-export function parseOfficeResponseV2(raw: unknown): OfficeSnapshotV2 | OfficeDisabledV1 | null {
+/** Validates GET /api/office?v=3: the v2 checks (v1 plus desk helpers, part A) on everything but `v`, plus the pipeline. */
+export function parseOfficeResponseV3(raw: unknown): OfficeSnapshotV3 | OfficeDisabledV1 | null {
   if (!isObj(raw)) return null;
   if (raw.v === 1 && raw.enabled === false) return parseOfficeResponse(raw) as OfficeDisabledV1 | null;
-  if (raw.v !== 2 || !isPipeline(raw.pipeline)) return null;
+  if (raw.v !== 3 || !isPipeline(raw.pipeline)) return null;
   const { pipeline, ...rest } = raw;
-  const v1 = parseOfficeResponse({ ...rest, v: 1 });
-  return v1 && v1.enabled ? ({ ...v1, v: 2, pipeline } as OfficeSnapshotV2) : null;
+  const v2 = parseOfficeResponseV2({ ...rest, v: 2 });
+  return v2 && v2.enabled ? ({ ...v2, v: 3, pipeline } as OfficeSnapshotV3) : null;
 }
 
-/** The scene's parser: v2 when the Worker serves it, else v1 without a pipeline (an older Worker). */
-export function parseOfficeAny(raw: unknown): (OfficeSnapshotV1 & { pipeline?: OfficePipeline }) | OfficeDisabledV1 | null {
-  const v2 = parseOfficeResponseV2(raw);
-  if (v2) return v2.enabled ? ({ ...v2, v: 1 } as OfficeSnapshotV1 & { pipeline: OfficePipeline }) : v2;
-  return parseOfficeResponse(raw);
+/** The scene's parser: v3 when the Worker serves it, else v2 or v1 without a pipeline (an older Worker after a rollback). */
+export function parseOfficeAny(raw: unknown): OfficeSnapshot | OfficeDisabledV1 | null {
+  const v3 = parseOfficeResponseV3(raw);
+  if (v3) return v3;
+  return parseOfficeResponseV2(raw);
 }
 ```
 
 (Note `parseOfficeAny` normalises to `v: 1` with an extra `pipeline`, so `officeView` and every v1 consumer keep their
-types.) Add `OFFICE_FIXTURES_V2` built from `OFFICE_FIXTURES` with `v: 2` and a `pipeline` (a running run on desk 1
+types.) Add `OFFICE_FIXTURES_V3` built from `OFFICE_FIXTURES` with `v: 3` and a `pipeline` (a running run on desk 1
 with 12 jobs: 5 done, 1 failed, 3 running, 3 queued, named like the real CI: "Typecheck, lint, unit tests", "Build, CV
 and e2e (1/8)" to "(8/8)", "Lighthouse CI", "3D perf gates 1/2", "3D perf gates 2/2"; a finished green run; a merge of
 desk 2 and a production deploy success).
 - [ ] **Step 4:** Run; expected PASS.
-- [ ] **Step 5:** Commit `feat(office): snapshot contract v2 with the pipeline`.
+- [ ] **Step 5:** Commit `feat(office): snapshot contract v3 with the pipeline`.
 
-### Task 3: Serve v2 (Durable Object, Worker, Pages Function)
+### Task 3: Serve v3 (Durable Object, Worker, Pages Function)
 
 **Files:**
 - Modify: `workers/office/src/office.ts`, `workers/office/src/worker.ts`, `functions/_lib/office.ts`
 - Test: `tests/office/worker.test.ts`, `tests/office/office-endpoint.test.ts`
 
-- [ ] **Step 1: Tests first.** Worker: `GET /snapshot?v=2` answers `viewV2` (parses with `parseOfficeResponseV2`),
+- [ ] **Step 1: Tests first.** Worker: `GET /snapshot?v=3` answers `viewV3` (parses with `parseOfficeResponseV3`),
   `GET /snapshot` and `?v=3` answer v1. Endpoint:
 
 ```ts
-it("serves v2 only for ?v=2, with its own cache entry, and v1 unchanged", async () => {
+it("serves v3 only for ?v=3, with its own cache entry, and v1 unchanged", async () => {
   const cache = memoryCache();
-  const env = officeEnv({ snapshot: (v) => (v === "2" ? OFFICE_FIXTURES_V2.busy : OFFICE_FIXTURES.busy) });
+  const env = officeEnv({ snapshot: (v) => (v === "3" ? OFFICE_FIXTURES_V3.busy : OFFICE_FIXTURES.busy) });
   const h = createOfficeSnapshotHandler({ cache: () => cache });
   const v1 = await h(ctx("https://x/api/office", env));
-  const v2 = await h(ctx("https://x/api/office?v=2", env));
-  const junk = await h(ctx("https://x/api/office?v=2&x=<script>", env));
+  const v3 = await h(ctx("https://x/api/office?v=3", env));
+  const junk = await h(ctx("https://x/api/office?v=3&x=<script>", env));
   expect((await v1.json()).v).toBe(1);
-  expect((await v2.json()).v).toBe(2);
+  expect((await v3.json()).v).toBe(2);
   expect((await junk.json()).v).toBe(2);
-  expect(cache.keys()).toEqual(["https://x/api/office", "https://x/api/office?v=2"]);
-  expect(v2.headers.get("Cache-Control")).toBe("public, max-age=5, stale-while-revalidate=30");
+  expect(cache.keys()).toEqual(["https://x/api/office", "https://x/api/office?v=3"]);
+  expect(v3.headers.get("Cache-Control")).toBe("public, max-age=5, stale-while-revalidate=30");
 });
 ```
 
 (`memoryCache`, `officeEnv` and `ctx` extend the helpers this test file already has; `officeEnv` gains a `snapshot(v)` hook.)
 - [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3: Implement.** DO `/snapshot`: `const v2 = new URL(request.url).searchParams.get("v") === "2";` and
-  `JSON.stringify(v2 ? viewV2(doc, now) : view(doc, now))`. Worker: forward `?v=2` only
-  (`office.fetch(\`${DO_BASE}/snapshot${new URL(request.url).searchParams.get("v") === "2" ? "?v=2" : ""}\`)`).
-  Function: `const v2 = new URL(request.url).searchParams.get("v") === "2";` the cache key is
-  `new URL(v2 ? "/api/office?v=2" : "/api/office", request.url)`; fetch `${WORKER}/snapshot${v2 ? "?v=2" : ""}`;
-  validate with `v2 ? parseOfficeResponseV2 : parseOfficeResponse`; the fallback on failure stays `offSnapshot` (v1:
-  the scene's `parseOfficeAny` reads it). `jsonAnswer` takes `OfficeResponseV1 | OfficeSnapshotV2`.
+- [ ] **Step 3: Implement.** DO `/snapshot`: the `v` query picks `view` (v1), `viewV2` (part A) or `viewV3`; anything
+  other than "2" or "3" is v1. Worker: forward `?v=2` or `?v=3` only. Function: extend part A's version switch with
+  "3" (cache key `/api/office?v=3`, fetch `${WORKER}/snapshot?v=3`, validate with `parseOfficeResponseV3`); the fallback on failure stays `offSnapshot` (v1:
+  the scene's `parseOfficeAny` reads it). `jsonAnswer` takes `OfficeResponseV1 | OfficeSnapshotV3`.
 - [ ] **Step 4:** Run `bun run test tests/office/`; expected PASS.
-- [ ] **Step 5:** Commit `feat(office): serve the v2 snapshot at /api/office?v=2`.
+- [ ] **Step 5:** Commit `feat(office): serve the v3 snapshot at /api/office?v=3`.
 
-### Task 4: The scene polls v2
+### Task 4: The scene polls v3
 
 **Files:**
 - Modify: `src/lib/office/poll.ts`, `src/experience/floors/lobby/office/live.ts`, `src/experience/floors/lobby/office/officeModel.ts`
@@ -301,15 +300,15 @@ it("serves v2 only for ?v=2, with its own cache entry, and v1 unchanged", async 
   `OfficeView.pipeline: OfficePipeline | null` (null when off, offline or v1).
 
 - [ ] **Step 1: Tests first:** the poller fetches `path` and parses with `parse` (a stub records the URL and returns
-  `OFFICE_FIXTURES_V2.busy`; the feed keeps `pipeline`); `officeView` keeps `pipeline` when live and drops it when
+  `OFFICE_FIXTURES_V3.busy`; the feed keeps `pipeline`); `officeView` keeps `pipeline` when live and drops it when
   offline or off.
 - [ ] **Step 2:** Run; expect FAIL.
 - [ ] **Step 3: Implement:** in `createOfficePoller`, `const path = opts.path ?? OFFICE_PATH; const parse = opts.parse ?? parseOfficeResponse;`
-  and use them where it fetches and validates today. `live.ts`: `createOfficePoller({ now: ..., path: \`${OFFICE_PATH}?v=2\`, parse: parseOfficeAny })`.
+  and use them where it fetches and validates today. `live.ts`: `createOfficePoller({ now: ..., path: \`${OFFICE_PATH}?v=3\`, parse: parseOfficeAny })`.
   `officeView`: `pipeline: live && "pipeline" in live && live.pipeline ? live.pipeline : null`. The Classic card's poller
   is untouched (v1).
 - [ ] **Step 4:** Run; expected PASS. `bun run build` still passes the Classic JS budget (the card does not import `parseOfficeAny`).
-- [ ] **Step 5:** Commit `feat(office): the 3D office polls the v2 snapshot`.
+- [ ] **Step 5:** Commit `feat(office): the 3D office polls the v3 snapshot`.
 
 ### Task 5: Pipeline events (pure)
 
@@ -339,11 +338,11 @@ export class PipeQueue { push(events: PipeEvent[], t: number): void; due(t: numb
 ```ts
 import { describe, expect, it } from "vitest";
 import { diffPipeline, lanesOf, PIPE, PipeQueue } from "@/experience/floors/lobby/office/pipeline";
-import { OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import type { OfficePipeline } from "@/lib/office/protocol";
 
-const P = OFFICE_FIXTURES_V2.busy.pipeline;
-const now = OFFICE_FIXTURES_V2.busy.updatedAt;
+const P = OFFICE_FIXTURES_V3.busy.pipeline;
+const now = OFFICE_FIXTURES_V3.busy.updatedAt;
 const withJob = (p: OfficePipeline, lane: number, status: "done" | "failed"): OfficePipeline => ({ ...p, runs: p.runs.map((r, i) => (i === 0 ? { ...r, jobs: r.jobs.map((j, k) => (k === lane ? { ...j, status } : j)) } : r)) });
 
 describe("pipeline", () => {
@@ -586,7 +585,7 @@ sets it from its own feed too.
 
 ### Task 9: E2E, budgets, captures, security review, docs, PR
 
-- [ ] **Step 1:** `e2e/office.spec.ts`: from `OFFICE_FIXTURES_V2` the tower shows N lanes (probe
+- [ ] **Step 1:** `e2e/office.spec.ts`: from `OFFICE_FIXTURES_V3` the tower shows N lanes (probe
   `__hq.probes.office.lanes`), feeding a snapshot with a finished job raises `__hq.probes.office.fx.bursts`, a new merge
   a package (`fx.packages`), a deploy success the beam (`__hq.probes.office.beam`); the CI drawer lists the jobs; v1
   fixtures still render (no pipeline). Add `lanes`, `fx` and `beam` to `sceneProbes.office`.
@@ -596,9 +595,9 @@ sets it from its own feed too.
 - [ ] **Step 3:** Captures and video (part A's `scripts/office-shots.ts` gains shots `pipeline` and `ship`, and the video
   feeds a scripted run: lanes filling, a failure burst, a merge package, a deploy beam) at 1440x900, 820x1180 and 390x844,
   full and lite; send to the coordinator.
-- [ ] **Step 4:** Security review: run the `security-review` agent on the branch diff (focus: v2 parsing, job names,
+- [ ] **Step 4:** Security review: run the `security-review` agent on the branch diff (focus: v3 parsing, job names,
   cache keys, the `v` query, privatize handling); fix findings; summarise them in the PR.
-- [ ] **Step 5:** Docs: `docs/agents/office.md` (contract v2, pipeline, endpoints), `docs/agents/floor-l1-lobby.md` (tower,
+- [ ] **Step 5:** Docs: `docs/agents/office.md` (contract v3, pipeline, endpoints), `docs/agents/floor-l1-lobby.md` (tower,
   dock, rendering counts, CI room, probes), `docs/features.md`, `workers/office/README.md`; this plan's `Status: in review`.
 - [ ] **Step 6:** `bun run verify:quick && bun run e2e:changed`, check CI in flight, push, open a ready-for-review PR
   `feat(office): the ship-it pipeline (revamp part B)`.
@@ -606,5 +605,5 @@ sets it from its own feed too.
 ## Self-review notes
 
 - Spec 6.1 (placement) shipped in part A; 6.2 to Tasks 1 to 4; 6.3 to Tasks 6 to 8; 6.4 to Task 5; 6.5 and 13 to Task 9.
-- Types shared across tasks: `OfficePipeline`, `OfficePipelineRun`, `OfficeShip`, `OfficeSnapshotV2`, `parseOfficeAny`,
-  `pipelineOf`, `viewV2`, `lanesOf`, `diffPipeline`, `PipeQueue`, `PipelineFx`, `BEAM`, `beamInstance`, `beaconVisible`.
+- Types shared across tasks: `OfficePipeline`, `OfficePipelineRun`, `OfficeShip`, `OfficeSnapshotV3`, `parseOfficeAny`,
+  `pipelineOf`, `viewV3`, `lanesOf`, `diffPipeline`, `PipeQueue`, `PipelineFx`, `BEAM`, `beamInstance`, `beaconVisible`.

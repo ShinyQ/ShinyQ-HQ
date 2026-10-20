@@ -54,7 +54,8 @@ flowchart LR
   fn1 & fn2 -->|service binding OFFICE| w[hq-office Worker]
   w --> DO[(Durable Object: doc row + log rows per WIB day)]
   DO -->|v1 snapshot| s1[GET /api/office]
-  DO -->|v2 snapshot, stage B| s2[GET /api/office?v=2]
+  DO -->|v2 snapshot with helpers, stage A| s2[GET /api/office?v=2]
+  DO -->|v3 snapshot with pipeline, stage B| s4[GET /api/office?v=3]
   DO -->|history v1, stage C| s3[GET /api/office/history]
   s1 --> card[Classic card, unchanged] & watch[main path: office watch, beacon, minimap cue]
   s2 --> scene[office scene chunk: crew, tower, packets]
@@ -132,28 +133,39 @@ and the chip carry the same information).
 
 ### 5.3 Beacon and minimap cue (main path)
 
-- **Office watch** (`officeWatch.ts`, main path, about 0.4 KB gzip): while the visitor is on L1 (not riding), the tab is
+- **Chunks (owner budget decision 2026-10-20)**: the main path carries only a small loader in `OfficeMount`. After the
+  first frame goes idle on L1 it loads the **office watch chunk** (`office/watchChunk.ts`: the signal, the watch and the
+  minimap cue component), which loads on every L1 session and counts in the 3D session totals (its own cap,
+  `BYTES_3D_BUDGET.officeWatch`, measured plus 0.6 KB). The **beacon chunk** (`office/beaconChunk.ts`: the beacon mesh
+  and its effects, and stage B's deploy beam) loads only the first time the watch sees a Needs Kurniadi desk (or, in
+  stage B, a fresh production deploy) and stays loaded for the session; most sessions never download it. It has its own
+  cap (`BYTES_3D_BUDGET.officeBeacon`) outside the session total, like the office chunk. The office scene chunk feeds
+  the same signal through the watch chunk's module (a shared lazy chunk, never the main path).
+- **Office watch** (in the watch chunk): while the visitor is on L1 (not riding), the tab is
   visible, the visitor was active in the last 10 min and the office scene's own poller is not running, it fetches
-  `GET /api/office` every 30 s (the first fetch after the first frame went idle) and keeps two booleans:
-  `needsKurniadi` (some desk's state is `input`) and, from stage B, `deployFlash` (a deploy success at most 30 s old).
-  It reads only those fields with tiny guards (it never renders text from the body). Once the scene chunk's poller runs,
-  the watch reads its feed instead of fetching (one request stream, not two).
-- **Beacon** (`OfficeBeacon.tsx`, inside the wing's `IntroReveal`): one instanced mesh on the hall's stage material
+  `GET /api/office` (v1, `cache: "no-store"`) every 30 s and keeps two values: the asking desks (`needsKurniadi`) and,
+  from stage B, `deployAt` (a deploy success at most 30 s old). It reads only those fields with tiny guards (it never
+  renders text from the body). The signal expires on its own 60 s after the last good answer (a module timer), so a
+  beacon never outlives its data, also after leaving L1. Once the scene chunk's poller runs, the scene feeds the signal
+  instead (one request stream, not two).
+- **Beacon** (`OfficeBeacon.tsx` in the beacon chunk, mounted by `OfficeMount` inside the wing's `IntroReveal` once loaded): one instanced mesh on the hall's stage material
   (`createStageMaterial`, `HOLO_MODE.stage`, no new program) over the unit open cylinder, all instances of the `beam`
   stage kind: a column 1.6 u wide (owner) rising 26 u from the floor 1.25 u behind the asking Rover,
   between it and the wall (in front of the desk it hid the Rover and its flag in the prototype renders; from the wing
   plaza centre when more than one asks), plus three short bands (0.3 u tall) that rise up it and widen every 1.6 s, in the
   input tone. Drawn only while `needsKurniadi` (out of the draw otherwise), so the spawn's
   settled calls rise by 1 only while a Rover asks. The wing stands outside the tower's footprint, so the column rises
-  into open sky and reads over the Lobby's landmarks from the spawn, the elevator arrival and the hall road (asserted by
-  a projection test from those points on the six sizes, like `office-chip-placement`). Reduced motion: the column holds
+  into open sky and reads over the Lobby's landmarks from the spawn on every landscape size (34 to 77% of the column
+  in frame, asserted by a projection test on the six sizes like `office-chip-placement`); the views that face away from
+  the wing (the hall road, the elevator arrival, portrait screens at the spawn) rely on the minimap cue (owner decision:
+  no HUD edge arrow). Reduced motion: the column holds
   at full height, rings fixed. While the rover is at the office stop the beacon fades to 25% (in the prototype the
   column crossed the wall's GitHub half, and the asking Rover's flag carries the signal there).
 - **Minimap cue**: the office room marker in the minimap and the overview pulses in the input tone while
   `needsKurniadi` (CSS, written as `@variant motion-reduce` with a static ring under reduced motion), with an
   `aria-label` "Agent Office: a Rover is waiting for Kurniadi" / "Kantor Agen: sebuah Rover menunggu Kurniadi". No new
   draw call (the minimap is HTML/SVG).
-- The beacon and the cue never load the office chunk: the trigger in `officeLoadWanted` is unchanged.
+- The watch, the cue and the beacon never load the office scene chunk: the trigger in `officeLoadWanted` is unchanged.
 
 ### 5.4 The CI tower and the dock (stage A shells)
 
@@ -172,7 +184,8 @@ chunk, lights the tower from v1 data: the newest running public run in the feed 
   on a new flag cell of the face atlas (the atlas mesh grows from 10 to 15 quads), so the parts mesh needs no instance
   colour (which would compile a new program variant).
 - Tower lanes in A: glow-mesh instances (an LED matrix, section 6.3). Tower and dock bodies: main-path shell boxes.
-- Expected: scene chunk +4 to 6 KB gzip, main path +0.6 to 1.0 KB (watch, beacon, minimap cue, shells), L1 calls at
+- Measured so far: scene chunk 13.2 KB gzip with the crew; main path: the loader and the shells only (the watch chunk and the
+  beacon chunk carry the rest, owner decision), L1 calls at
   the office stop +0 (the beacon is already counted when asking: +1), at the spawn +1 only while a Rover asks.
 
 ### 5.6 Accessibility (A)
@@ -214,12 +227,16 @@ Each session is one Rover; the sub-agents a session starts become small **helper
   stop that changes the count sends a beat with the session's last state and activity (the dedupe compares `helpers`
   too); the hook still exits 0 at once. A tool whose payload cannot name the parent session, or that has no such hook,
   is documented in the relay README and shows no helpers.
-- **Worker**: `SessionRecord.helpers` from the latest beat that carried it; read-time rule: 0 when the session is asleep
-  or removed, or when no beat came for `TIMING.helpersTtl` (10 min). The snapshot's desk gains an optional `helpers`
-  (1 to 9, omitted at 0), so v1 stays backward compatible for the Classic card and old relays (owner decision: an
-  optional v1 field, not a new version). Known window: a browser tab or Pages Function still on the previous build
-  rejects a snapshot whose desk carries `helpers` (strict keys) until it reloads or the Pages upload finishes, minutes
-  after the Worker deploy; the office shows as offline there in that window.
+- **Worker and contract v2**: `SessionRecord.helpers` from the latest beat that carried it; read-time rule: 0 when the
+  session is asleep or removed, or when no beat came for `TIMING.helpersTtl` (10 min). Old clients must never see the
+  field (owner decision): `GET /api/office?v=2` serves snapshot v2, the v1 snapshot plus an optional desk `helpers` (1 to
+  9, omitted at 0); `GET /api/office` (v1) stays byte for byte as before, asserted by a test that a v1 request never
+  carries `helpers`. The 3D scene and the Classic card built after this change poll `?v=2`; the watch keeps v1 (it needs
+  no helpers). Deploy order: the Worker deploys before the Pages upload, so the new Function and the new clients always
+  meet a Worker that serves v2; the old Function in the upload window still asks v1 and gets v1. After a rollback to a
+  Worker without v2, a v2 request gets that Worker's v1 body, which the v2 parser accepts as a fallback (no helpers).
+  The beat's optional `helpers` is accepted by the new Worker; an older Worker (after a rollback) rejects beats that
+  carry it, so the relay omits it at 0 and the rollback runbook notes it (helpers show again after the roll forward).
 - **History (stage C)**: a helper count change is a loggable change, and each log event carries the count.
 - **3D**: one drone per active helper orbits the parent Rover's head (radius 1.15 u, y 2.5 u, 1.2 rad/s, evenly spaced,
   a gentle bob), at most 4 drawn; more show as a "+N" pill on the chip. Drone bodies are instances of the Rover parts
@@ -252,10 +269,10 @@ Exact rects come from `officeTower(w)` and `officeDock(w)` in `officeLayout.ts` 
 the L1 re-spacing moves them with the wing. From the stop both are in frame on desktop and tablet classes; on portrait
 screens they may fall outside the frame, where the CI drawer and the chips carry the pipeline (asserted by projection).
 
-### 6.2 Data: contract v2 (Worker, Function, scene in one PR)
+### 6.2 Data: contract v3 (Worker, Function, scene in one PR)
 
-The v1 response cannot carry per-job lanes, so the scene moves to `GET /api/office?v=2`; v1 stays byte for byte for
-the Classic card and for clients cached across a deploy.
+The v1 and v2 responses cannot carry per-job lanes, so the scene moves to `GET /api/office?v=3`; v1 and v2 stay byte for byte
+for the Classic card, the watch and clients cached across a deploy.
 
 ```ts
 interface OfficePipelineJob { name: string; status: "queued" | "running" | "done" | "failed" }
@@ -267,8 +284,8 @@ interface OfficePipelineRun {
   jobs: OfficePipelineJob[];  // at most 24, in first-seen order
 }
 interface OfficeShip { key: string; kind: "merge" | "deploy"; status: "running" | "success" | "failure" | "merged"; at: number; slot?: number }
-interface OfficeSnapshotV2 extends Omit<OfficeSnapshotV1, "v"> {
-  v: 2;
+interface OfficeSnapshotV3 extends Omit<OfficeSnapshotV2, "v"> {
+  v: 3;
   pipeline: { runs: OfficePipelineRun[] /* newest first, at most 3 */; ships: OfficeShip[] /* newest first, at most 10 */ };
 }
 ```
@@ -278,8 +295,8 @@ interface OfficeSnapshotV2 extends Omit<OfficeSnapshotV1, "v"> {
   `ships` derive from the feed's `merged` PRs and `deploy` items. Older stored documents read with `names` absent.
 - Public repositories only, the same rules as today (allowlist, known-public set, fork and actor checks, blocked
   branches ignored, `privatized` strips runs and ships).
-- `parseOfficeResponse` accepts v1 and v2 (`parseOfficeResponseV2` for the scene), strict on keys like v1.
-- `functions/_lib/office.ts`: the `v` query (only `2` is honoured; anything else is v1) is part of the edge cache key;
+- `parseOfficeAny` (the scene) accepts v3, v2 and v1 (`parseOfficeResponseV3` strict on keys like v1); the Classic card stays on v2.
+- `functions/_lib/office.ts`: the `v` query (only `2` and `3` are honoured; anything else is v1) is part of the edge cache key;
   the same ETag and cache headers.
 
 ### 6.3 Visuals
@@ -315,10 +332,10 @@ end state shows at once (lanes lit, package on the dock, a static beam glow for 
 
 - Expected: scene chunk +6 to 8 KB, main path +0.1 KB (the beam kind in the beacon mesh, the watch's deploy flag); calls
   at the office stop +0 (all instances) beyond the beacon mesh while lit.
-- Unit: `office/state` (job names, caps, ships, privatized), `office/protocol` (v2 parse, hostile inputs),
-  `office-endpoint` (v2 query, cache key, v1 unchanged), `office-pipeline` (diff rules, baseline, staleness, queue),
+- Unit: `office/state` (job names, caps, ships, privatized), `office/protocol` (v3 parse, hostile inputs),
+  `office-endpoint` (v3 query, cache key, v1 unchanged), `office-pipeline` (diff rules, baseline, staleness, queue),
   `office-rooms` (the CI room), `lobby-office` (fixture rects). E2E: a run's lanes fill from fixture snapshots, a burst,
-  a package, a beam; the CI drawer lists the jobs. Security review of the v2 surface before merge.
+  a package, a beam; the CI drawer lists the jobs. Security review of the v3 surface before merge.
 
 ## 7. Stage C: day replay
 
@@ -414,7 +431,9 @@ interface DayLog {
 | Office scene chunk | 14 KB cap | measured plus 0.6 KB per stage (about 26 KB after B) | `BYTES_3D_BUDGET.office` |
 | Office replay chunk (C) | none | about 7 KB | `BYTES_3D_BUDGET.officeReplay` |
 | Drawer body | 6 KB cap | measured plus 0.6 KB (about 8 KB after C) | `BYTES_3D_BUDGET.officeBody` |
-| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | grows only by the watch, beacon and cue (target at most 1.2 KB over A to C), caps re-set to measured plus 0.6 KB per stage | `BYTES_3D_BUDGET` |
+| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | first frame grows only by the loader and the furniture shells; the session total also counts the watch chunk; caps re-set to measured plus 0.6 KB per stage | `BYTES_3D_BUDGET` |
+| Office watch chunk (A, every L1 session) | none | measured plus 0.6 KB, inside the session total | `BYTES_3D_BUDGET.officeWatch` |
+| Beacon chunk (A, on the first ask) | none | measured plus 0.6 KB, outside the session total | `BYTES_3D_BUDGET.officeBeacon` |
 | L1 scene calls | 101 / 103 spawn, 51 / 53 stop | spawn +1 only while asking or a beam fires; stop +2 at most (beacon mesh, tiles) | under 125 both tiers |
 | Shader programs per floor | baseline | baseline (stage-mode and dot-mode meshes reuse compiled programs) | `e2e/perf/baseline.json` plus 0 for the office |
 | Memory | zero growth | zero growth in geometries, textures and programs across a replay loop and live switches | perf memory gate |
@@ -448,7 +467,7 @@ chunk only on the idle-loop condition or the drawer control).
 | History endpoint down or invalid | No replay; the live office as before; the drawer's replay controls show "Replay unavailable". |
 | Truncated day | Replays what it has; the drawer notes "Partial day". |
 | Webhook gaps (missed job events) | Lanes show what arrived; a finished run fills its remaining lanes to its conclusion. |
-| Old cached client after a deploy | v1 unchanged; a v2 client against an old Worker gets a v1 body, which `parseOfficeResponseV2` rejects: the scene falls back to v1 parsing with no pipeline. |
+| Old cached client after a deploy | Every version is served byte for byte as it was (v1 for old clients, v2 for stage A clients); a new field only ever appears in a new version that old clients never request. The Worker deploys before the Pages upload, so a new client always meets a Worker that knows its version; a client asking a version an older Worker (after a rollback) does not know gets that Worker's v1 body, which the client's parser accepts as a fallback with no helpers or pipeline. |
 | Many asks at once | One beacon at the plaza centre; every asking Rover waves its flag. |
 | WebGL off | The Classic site is unchanged (the Classic card stays v1); no 3D work. |
 
@@ -477,7 +496,7 @@ chunk only on the idle-loop condition or the drawer control).
 | PR | Scope | Depends on |
 |---|---|---|
 | A | Crew choreography, crew fx, tower and dock shells with v1 lane light, office watch, beacon, minimap cue, crew summary, sub-agent helpers (relay hooks, optional beat and desk field, drones, chip, drawer and Classic text), docs, decision, relay reinstall steps | the enhancement PR merged; the owner's look approval of the prototype renders |
-| B | Contract v2 (Worker, Function, scene), lanes, packets, bursts, packages, deploy beam, CI room and drawer, docs | A merged |
+| B | Contract v3 (Worker, Function, scene), lanes, packets, bursts, packages, deploy beam, CI room and drawer, docs | A merged |
 | C | Day log storage, history endpoint, replay chunk, tiles, idle loop, replay controls, docs | B merged |
 
 For each PR: `bun run verify:quick`, `bun run e2e:changed`, the perf lane, captures at 1440x900, 820x1180 and 390x844

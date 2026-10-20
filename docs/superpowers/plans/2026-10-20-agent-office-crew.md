@@ -1454,6 +1454,59 @@ export function OfficeCue({ center, radius }: { center: { x: number; z: number }
 - [ ] **Step 4:** `bun run test tests/hud/OfficeCue.test.tsx tests/unit/minimap-model.test.ts tests/unit/messages*.test.ts`; expected PASS.
 - [ ] **Step 5:** Commit `feat(office): minimap cue when a Rover needs Kurniadi`.
 
+### Task 18: Watch and beacon chunks (owner budget decision; runs right after Task 8)
+
+**Files:**
+- Create: `src/experience/floors/lobby/office/watchLoader.ts` (main path), `src/experience/floors/lobby/office/watchChunk.ts`, `src/experience/floors/lobby/office/beaconChunk.ts`
+- Modify: `OfficeMount.tsx`, `OfficeScene.tsx` (signal import stays, now lazy-only), `src/hud/minimap/Minimap.tsx`, `src/hud/minimap/MapLayers.tsx`, `src/experience/Experience.tsx` (`watchNow`), `e2e/budgets.ts` and the 3D bytes measurement (`officeWatch`, `officeBeacon`), `docs/agents/performance.md`
+- Test: `tests/unit/office-chunk-graph.test.ts`, `tests/unit/office-watch-loader.test.ts` (new), `tests/hud/OfficeCue.test.tsx`, `tests/unit/office-watch.test.ts`, `tests/unit/office-signal.test.ts`
+
+**Interfaces:**
+- Produces (main path, `watchLoader.ts`, a few hundred bytes at most):
+
+```ts
+/** Lazy office watch chunk (signal, watch, minimap cue) and beacon chunk (beacon mesh, later the deploy beam). */
+export function loadOfficeWatch(): Promise<typeof import("./watchChunk")>;   // memoized; started by OfficeMount after the first frame went idle on L1
+export function loadOfficeBeacon(): Promise<typeof import("./beaconChunk")>; // memoized; called by the watch chunk on the first ask
+export function useOfficeWatchModule(): typeof import("./watchChunk") | null;  // useSyncExternalStore over the loaded module
+export function useOfficeBeaconModule(): typeof import("./beaconChunk") | null;
+export const officeAsks: { on: boolean };                                     // mirrored by the signal (minimap label), with
+export function setOfficeAsks(on: boolean): void;                             // a subscribe for useOfficeAsks()
+export function useOfficeAsks(): boolean;
+export function officeWatchNow(): Promise<void>;                             // test hook: loads the watch chunk, runs one tick
+```
+
+- `watchChunk.ts` exports `startOfficeWatch`, `OfficeCue`, `officeWatchTick` (one tick now, for the hook), and on import
+  wires `subscribeOfficeSignal` to `setOfficeAsks(officeSignal.needsKurniadi)` and to `loadOfficeBeacon()` the first
+  time `needsKurniadi` turns true (once per session).
+- `beaconChunk.ts` exports `OfficeBeacon` (moved from the main path, unchanged behaviour).
+- Budgets: `BYTES_3D_BUDGET.officeWatch` (inside the session total) and `BYTES_3D_BUDGET.officeBeacon` (outside it, like
+  `office`), each the measured gzip plus 0.6 KB.
+
+- [ ] **Step 1: Tests first.** `tests/unit/office-chunk-graph.test.ts`: `officeSignal.ts`, `officeWatch.ts`,
+  `OfficeCue.tsx` (moved to `src/experience/floors/lobby/office/OfficeCue.tsx` or kept under `src/hud/minimap/` but
+  imported only by `watchChunk.ts`), `beacon.ts` and `OfficeBeacon.tsx` are NOT in the main-path closure of
+  `Experience.tsx` or the HUD; `watchLoader.ts` is; its only references to the chunks are its two `import()` calls.
+  `tests/unit/office-watch-loader.test.ts`: `loadOfficeWatch` and `loadOfficeBeacon` are memoized (one import each),
+  `useOfficeAsks` follows `setOfficeAsks`, the watch chunk calls `loadOfficeBeacon` once on the first ask and never on
+  a quiet feed, `officeWatchNow` runs one tick. Keep the existing signal, watch, beacon and cue tests passing in their new
+  homes.
+- [ ] **Step 2:** Run; expect FAIL.
+- [ ] **Step 3: Implement.** `OfficeMount`: in the existing `afterFirstFrameIdle` effect, when on L1 (or as soon as the
+  floor becomes L1 later in the session), `void loadOfficeWatch().then((m) => m.startOfficeWatch())`, stopping it on
+  unmount as before; render `{ready && beaconMod && <beaconMod.OfficeBeacon />}` with `beaconMod = useOfficeBeaconModule()`.
+  Minimap: `const watch = useOfficeWatchModule(); const asks = useOfficeAsks();` the label appends
+  `t("map.officeAsks")` when `asks && floor === "L1"`; `MapLayers` renders `watch && <watch.OfficeCue ... />` on L1.
+  `Experience.tsx`: `watchNow: officeWatchNow` from the loader. The office scene keeps feeding the signal through
+  `officeSignal.ts` (now a shared lazy module of the scene and watch chunks).
+- [ ] **Step 4: Measure.** `bun run build`; gzip -9 the main 3D chunk (compare with Task 8's 92,063 B: the target is the
+  loader only, a few hundred bytes over the pre-Task-6 size of about 91.1 KB), the watch chunk and the beacon chunk; add
+  `officeWatch` and `officeBeacon` to `BYTES_3D_BUDGET` with measured plus 0.6 KB and teach the 3D bytes measurement
+  (the perf lane's bytes spec, see `e2e/budgets.ts` and how `office` / `officeBody` are measured) to count the watch
+  chunk in the session total and the beacon chunk separately. Record the numbers in the report.
+- [ ] **Step 5:** Run `bunx vitest run tests/unit/office* tests/hud tests/unit/minimap*`, typecheck, lint, build; expected PASS.
+- [ ] **Step 6:** Commit `perf(office): watch and beacon in lazy L1 chunks (main path keeps a loader)`.
+
 ### Task 9: Crew summary in the drawer
 
 **Files:**
@@ -1668,24 +1721,32 @@ line ("only the number of active helpers leaves the machine") and the reinstall 
   a fixture stays under 50 ms (it does no network).
 - [ ] **Step 6:** Commit `feat(office-relay): count sub-agent helpers per session (count only)`.
 
-### Task 11: Worker and snapshot: helpers per desk
+### Task 11: Worker and contract v2: helpers per desk
 
 **Files:**
-- Modify: `workers/office/src/state.ts`, `workers/office/src/ingest.ts` (`sanitizeBeat` keeps `helpers`), `src/lib/office/protocol.ts` (`OfficeDesk.helpers?`, `isDesk`), `src/lib/office/fixtures.ts`
-- Test: `tests/office/state.test.ts`, `tests/office/ingest.test.ts`, `tests/office/protocol.test.ts`
+- Modify: `workers/office/src/state.ts`, `workers/office/src/ingest.ts` (`sanitizeBeat` keeps `helpers`), `workers/office/src/office.ts` (`/snapshot?v=2`), `workers/office/src/worker.ts` (forward `?v=2` only), `functions/_lib/office.ts` (version switch, per-version cache key), `src/lib/office/protocol.ts` (`OfficeSnapshotV2`, `parseOfficeResponseV2`), `src/lib/office/poll.ts` (`path` and `parse` options), `src/experience/floors/lobby/office/live.ts` (the scene polls `?v=2`), `src/lib/office/fixtures.ts`, `workers/office/README.md` (rollback note)
+- Test: `tests/office/state.test.ts`, `tests/office/ingest.test.ts`, `tests/office/protocol.test.ts`, `tests/office/worker.test.ts`, `tests/office/office-endpoint.test.ts`, `tests/unit/office-poll.test.ts`
 
 **Interfaces:**
 - Produces: `TIMING.helpersTtl = 10 * 60_000`; `SessionRecord.helpers?: number`; `effectiveHelpers(s, e, now): number`;
-  `OfficeDesk.helpers?: number` (1 to 9, absent at 0); a `busy` fixture desk with `helpers: 3` and one with `helpers: 6`.
+  `viewV2(doc, now): OfficeSnapshotV2` (v1 view with `v: 2` and desk `helpers` 1 to 9, absent at 0; `view` (v1) never
+  carries `helpers`); `OfficeSnapshotV2` (`OfficeDeskV2 = OfficeDesk & { helpers?: number }`); `parseOfficeResponseV2(raw)`
+  accepting v2 (strict keys, `helpers` 1 to 9) and, as a fallback after a rollback, v1 (normalised to the same type);
+  `type OfficeSnapshot = OfficeSnapshotV2` for the clients; `OfficePollerOptions.path?` (default `OFFICE_PATH`) and
+  `parse?` (default `parseOfficeResponse`); fixtures `OFFICE_FIXTURES_V2` (busy with a desk at `helpers: 3` and one at 6).
 
 - [ ] **Step 1: Tests first:** `applyBeat` stores `helpers` from a beat that carries it and keeps the previous value for
-  a beat without it; `view` emits `helpers` only when the effective count is 1 to 9, drops it when the session is asleep,
-  removed, or quiet for 10 min; a beat with `helpers: 0` clears it; `sanitizeBeat` passes `helpers` through for every
-  repository (it is not repository data); `parseOfficeResponse` accepts a desk with `helpers` 1 and 9 and rejects 0, 10
-  and a string (0 must be omitted), and the Classic and 3D parsers still accept every old fixture.
+  a beat without it; `viewV2` emits `helpers` only when the effective count is 1 to 9, drops it when the session is
+  asleep, removed or quiet for 10 min; a beat with `helpers: 0` clears it; **`view` (v1) never carries `helpers`, and
+  `JSON.stringify(view(doc, now))` is byte for byte what it was before this task for the same document** (a golden built
+  from a fixed doc); `sanitizeBeat` passes `helpers` through for every repository; `parseOfficeResponseV2` accepts a v2
+  desk with `helpers` 1 and 9 and rejects 0, 10 and a string, accepts a v1 body as a fallback, and `parseOfficeResponse`
+  (v1) rejects any body carrying `helpers`; the Worker and the Function serve v2 only for `?v=2` with its own cache key,
+  v1 for no query or anything else (`?v=3`, junk), and a v1 response never contains the string `"helpers"`; the poller
+  fetches its `path` and parses with its `parse`.
 - [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3: Implement:** in `applyBeat`, `helpers: beat.helpers ?? prev?.helpers` (omit when undefined or 0); in
-  `deskOf`, `...(h > 0 ? { helpers: h } : {})` with
+- [ ] **Step 3: Implement:** in `applyBeat`, `helpers: beat.helpers ?? prev?.helpers` (omit when undefined or 0); `viewV2`
+  maps `deskOf` with `...(h > 0 ? { helpers: h } : {})` where
 
 ```ts
 /** Helpers show while the session is awake and beat within the last 10 min (a lost stop event decays). */
@@ -1695,11 +1756,14 @@ export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): n
 }
 ```
 
-and in `protocol.ts` `"helpers"` in `DESK_KEYS` with `optional(x, "helpers", (h) => isInt(h, 1, OFFICE_HELPERS_MAX))`.
-`applyChange` `privatized` keeps `helpers` (not repository data). Changing a session's helpers counts as a change for
-`recent` only when the state also changed (helpers do not flood `recent`).
-- [ ] **Step 4:** Run `bunx vitest run tests/office`; expected PASS.
-- [ ] **Step 5:** Commit `feat(office): helpers per desk in the snapshot (optional v1 field)`.
+  The DO's `/snapshot` picks `viewV2` for `?v=2`; the Worker forwards `?v=2` only; the Function's handler reads
+  `v === "2"`, uses the key `/api/office?v=2`, fetches `${WORKER}/snapshot?v=2`, validates with `parseOfficeResponseV2`.
+  `live.ts`: `createOfficePoller({ ..., path: \`${OFFICE_PATH}?v=2\`, parse: parseOfficeResponseV2 })`. `privatized`
+  keeps `helpers`. Helper changes do not add `recent` entries. README rollback note: a Worker rolled back to before
+  this change rejects beats that carry `helpers` (the relay omits it at 0), so sessions with helpers go missing until
+  the roll forward; v2 clients fall back to that Worker's v1 body.
+- [ ] **Step 4:** Run `bunx vitest run tests/office tests/unit/office-poll.test.ts tests/unit/office-*`; expected PASS.
+- [ ] **Step 5:** Commit `feat(office): snapshot v2 with helpers per desk (v1 unchanged)`.
 
 ### Task 12: Helper drones in the 3D office
 
@@ -1758,8 +1822,9 @@ tier. Rest instances start with zero-scale drones.
   `officeCardLabels`, the count filled by `fill`), and `e2e/office-classic.spec.ts` adds a fixture with helpers to its
   no-layout-shift states at 1440x900 and 390x844 in both locales.
 - [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3: Implement** the strings and the four places. The Classic row truncates (`truncate`) so the row height is
-  unchanged; `OFFICE_RESERVE` stays as it is (the e2e proves it).
+- [ ] **Step 3: Implement** the strings and the four places. The Classic card's poller asks `?v=2` and parses with
+  `parseOfficeResponseV2` (Task 11's poller options); measure the card chunk's gzip delta. The Classic row truncates
+  (`truncate`) so the row height is unchanged; `OFFICE_RESERVE` stays as it is (the e2e proves it).
 - [ ] **Step 4:** Run the listed tests plus `messages` and `client-namespaces`; expected PASS.
 - [ ] **Step 5:** Commit `feat(office): helper counts on chips, drawer, summary and the Classic card`.
 
@@ -1851,7 +1916,7 @@ draws 4 and its chip shows "+2", reduced motion keeps the drone positions still 
 
 ## Self-review notes
 
-- Spec 5.1 to 5.7 map to Tasks 1 to 9 and 14; 5.8 (helpers) to Tasks 10 to 13; budgets (spec 8) to Task 15; captures
+- Spec 5.1 to 5.7 map to Tasks 1 to 9, 18 (chunks, run after Task 8) and 14; 5.8 (helpers) to Tasks 10 to 13; budgets (spec 8) to Task 15; captures
   and process (spec 13) to Tasks 16 and 17.
 - The flag plate is an atlas quad (no instance colour on the parts mesh, which would compile a new program variant),
   so `PARTS_PER_ROVER` grows by one (the pole), not two.
