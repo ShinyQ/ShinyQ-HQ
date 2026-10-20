@@ -5,7 +5,8 @@ The backend of the L1 Agent Office (spec `docs/superpowers/specs/2026-10-18-agen
 
 | Route (site origin) | Worker route | Who calls it |
 |---|---|---|
-| `GET /api/office` | `GET /snapshot` | the 3D office and the Classic card (edge-cached 5 s per data center, ETag and 304) |
+| `GET /api/office` | `GET /snapshot` | snapshot v1: the Classic card and the L1 beacon's watch (edge-cached 5 s per data center, ETag and 304) |
+| `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`): the 3D office (its own cache key, same headers) |
 | `POST /api/office/beat` | `POST /beat` | `office-relay` on the owner's Mac (`X-Office-Signature`) |
 | `POST /api/office/github` | `POST /github` | repository webhooks (`X-Hub-Signature-256`) |
 
@@ -23,6 +24,11 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   `workers/office/` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
   failed" then turns the job red.
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
+- Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2` (the Worker forwards no other
+  query, and the Function, the Worker and the Durable Object answer v1 for no query, `?v=3` or junk). Rolled back to
+  before v2, the Worker rejects beats that carry `helpers` (the relay omits it at 0), so sessions with helpers go
+  missing until the roll forward; v2 clients then get that Worker's v1 body (the Function and the client parsers
+  read it as v2 without helpers).
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
     same value.

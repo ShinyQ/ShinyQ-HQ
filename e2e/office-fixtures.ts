@@ -6,6 +6,10 @@ import type { OfficeActivity, OfficeAgent, OfficeDesk, OfficeSnapshotV1, OfficeS
  */
 export const OFFICE_REPO = "ShinyQ/ShinyQ-HQ";
 
+/** Playwright URL patterns: both snapshot versions (the beacon's watch asks v1, the 3D office's poller `?v=2`), and v2 alone. */
+export const OFFICE_API = /\/api\/office(\?v=2)?$/;
+export const OFFICE_API_V2 = /\/api\/office\?v=2$/;
+
 export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDesk> = {}): OfficeDesk {
   return { slot, agent, state, activity, since: now - 14 * 60_000, recent: [], ...extra };
 }

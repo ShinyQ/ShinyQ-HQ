@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
-import { parseOfficeResponse } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { parseOfficeResponse, parseOfficeResponseV2 } from "@/lib/office/protocol";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
 import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
 
@@ -11,7 +11,8 @@ function worker(reply: (path: string, init?: RequestInit) => Response | Promise<
   const calls: { path: string; init?: RequestInit }[] = [];
   const binding: ServiceBinding = {
     async fetch(input, init) {
-      const path = new URL(typeof input === "string" ? input : input.url).pathname;
+      const url = new URL(typeof input === "string" ? input : input.url);
+      const path = url.pathname + url.search;
       calls.push({ path, init });
       return reply(path, init);
     },
@@ -32,10 +33,10 @@ function memoryCache() {
   return { map, cache };
 }
 
-async function get(env: OfficeEnv, cache: EdgeCache | null = null, method = "GET", headers: Record<string, string> = {}) {
+async function get(env: OfficeEnv, cache: EdgeCache | null = null, method = "GET", headers: Record<string, string> = {}, query = "?x=1") {
   const pending: Promise<unknown>[] = [];
   const handle = createOfficeSnapshotHandler({ cache: () => cache, now: () => T0 });
-  const res = await handle({ request: new Request(`${SITE}/api/office?x=1`, { method, headers }), env, waitUntil: (p) => void pending.push(p) });
+  const res = await handle({ request: new Request(`${SITE}/api/office${query}`, { method, headers }), env, waitUntil: (p) => void pending.push(p) });
   await Promise.all(pending);
   return res;
 }
@@ -115,6 +116,46 @@ describe("GET /api/office", () => {
       { OFFICE_ENABLED: "true", OFFICE: worker(() => Response.json({ v: 1, enabled: true, mode: "live", desks: "nope" })).binding },
     ];
     for (const env of cases) expect(await (await get(env)).json()).toEqual(off);
+  });
+
+  it("serves v2 only for ?v=2, from the Worker's v2 snapshot, under its own cache key", async () => {
+    const { binding, calls } = worker((path) => Response.json(path === "/snapshot?v=2" ? OFFICE_FIXTURES_V2.busy : OFFICE_FIXTURES.busy));
+    const { cache, map } = memoryCache();
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    const v2 = await get(env, cache, "GET", {}, "?v=2");
+    expect(await v2.json()).toEqual(OFFICE_FIXTURES_V2.busy);
+    const v1 = await get(env, cache, "GET", {}, "");
+    expect(await v1.json()).toEqual(OFFICE_FIXTURES.busy);
+    expect(v1.headers.get("ETag")).not.toBe(v2.headers.get("ETag"));
+    expect([...map.keys()].sort()).toEqual([`${SITE}/api/office`, `${SITE}/api/office?v=2`]);
+    expect(await (await get(env, cache, "GET", {}, "?v=2")).json()).toEqual(OFFICE_FIXTURES_V2.busy);
+    expect(calls.map((c) => c.path)).toEqual(["/snapshot?v=2", "/snapshot"]);
+  });
+
+  it("serves v1 without helpers for no query, ?v=3 and junk, even if a Worker answered helpers", async () => {
+    const { binding, calls } = worker((path) => Response.json(path === "/snapshot?v=2" ? OFFICE_FIXTURES_V2.busy : OFFICE_FIXTURES.busy));
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    for (const query of ["", "?v=1", "?v=3", "?v=2x", "?v=%3Cscript%3E", "?x=2"]) {
+      const text = await (await get(env, null, "GET", {}, query)).text();
+      expect(text, query).not.toContain('"helpers"');
+      expect(JSON.parse(text), query).toEqual(OFFICE_FIXTURES.busy);
+    }
+    expect(new Set(calls.map((c) => c.path))).toEqual(new Set(["/snapshot"]));
+    // A v1 answer that somehow carried helpers fails v1 validation: the Function answers mode off, still without them.
+    const leaky = worker(() => Response.json(OFFICE_FIXTURES_V2.busy)).binding;
+    const text = await (await get({ OFFICE_ENABLED: "true", OFFICE: leaky }, null, "GET", {}, "")).text();
+    expect(text).not.toContain('"helpers"');
+    expect(JSON.parse(text)).toEqual(offSnapshot(T0));
+  });
+
+  it("serves a v1 body as v2 when the Worker was rolled back, and mode off as v2 on failure", async () => {
+    const rolledBack = worker(() => Response.json(OFFICE_FIXTURES.busy)).binding;
+    expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: rolledBack }, null, "GET", {}, "?v=2")).json()).toEqual({ ...OFFICE_FIXTURES.busy, v: 2 });
+    const off2 = { ...offSnapshot(T0), v: 2 };
+    expect(parseOfficeResponseV2(off2)).toEqual(off2);
+    expect(await (await get({ OFFICE_ENABLED: "true" }, null, "GET", {}, "?v=2")).json()).toEqual(off2);
+    expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: worker(() => new Response(null, { status: 500 })).binding }, null, "GET", {}, "?v=2")).json()).toEqual(off2);
+    expect(await (await get({ OFFICE_ENABLED: "false" }, null, "GET", {}, "?v=2")).json()).toEqual({ v: 1, enabled: false });
   });
 
   it("answers HEAD without a body and other methods with 405", async () => {

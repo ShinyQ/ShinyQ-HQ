@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, type OfficeSnapshotV1 } from "@/lib/office/protocol";
+import { parseOfficeResponse, parseOfficeResponseV2, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "@/lib/office/protocol";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
@@ -108,6 +108,30 @@ describe("hq-office Worker", () => {
     const fork = { ...pr, pull_request: { ...pr.pull_request, number: 4, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/4", head: { ref: "fix/z", repo: { full_name: "stranger/ShinyQ-HQ" } } } };
     expect((await call("/github", await signedHook("pull_request", fork, "d-3"))).status).toBe(204);
     expect((await snapshot(call)).github).toHaveLength(1);
+  });
+
+  it("serves v2 with helpers only for ?v=2, and v1 without them for anything else", async () => {
+    const { call } = setup();
+    expect((await call("/beat", await signedBeat({ helpers: 4 }))).status).toBe(204);
+    const v2 = parseOfficeResponseV2(await (await call("/snapshot?v=2")).json()) as OfficeSnapshotV2;
+    expect(v2).toMatchObject({ v: 2, desks: [{ slot: 0, helpers: 4 }] });
+    for (const query of ["", "?v=1", "?v=3", "?v=2x", "?v=", "?x=2", "?v=%32%20"]) {
+      const text = await (await call(`/snapshot${query}`)).text();
+      expect(text, query).not.toContain('"helpers"');
+      expect(parseOfficeResponse(JSON.parse(text)), query).toMatchObject({ v: 1, desks: [{ slot: 0 }] });
+    }
+    expect((await call("/beat", await signedBeat({ helpers: 0 }))).status).toBe(204);
+    expect(await (await call("/snapshot?v=2")).text()).not.toContain('"helpers"');
+  });
+
+  it("forwards only ?v=2 to the Durable Object", async () => {
+    const seen: string[] = [];
+    const env: OfficeWorkerEnv = {
+      OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json({})) }) },
+    };
+    const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
+    for (const query of ["", "?v=2", "?v=3", "?v=2&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
+    expect(seen).toEqual(["https://office/snapshot", "https://office/snapshot?v=2", "https://office/snapshot", "https://office/snapshot?v=2", "https://office/snapshot"]);
   });
 
   it("keeps the document across a new Durable Object instance (cold start)", async () => {

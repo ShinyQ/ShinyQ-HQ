@@ -24,7 +24,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Page } from "@playwright/test";
 import { asReturningVisitor, driveTo, skipFloorLines, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
-import { STATES_A, STATES_B, statesA, statesB } from "../e2e/office-fixtures";
+import { OFFICE_API, OFFICE_API_V2, STATES_A, STATES_B, statesA, statesB } from "../e2e/office-fixtures";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE } from "../src/experience/floors/lobby/officeLayout";
@@ -80,7 +80,7 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeout = SL
 /** Fetches now (the poller restarts), waits for that response and until the office shows `mode` and `states`. */
 async function show(page: Page, reply: { body: unknown }, body: unknown, mode: string, states: readonly string[]) {
   reply.body = body;
-  await Promise.all([page.waitForResponse("**/api/office"), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
   await waitFor(`${mode} ${states.join(",")}`, async () => {
     const o = await probe(page);
     return o.mode === mode && JSON.stringify(o.states) === JSON.stringify(states);
@@ -191,7 +191,7 @@ try {
       await asReturningVisitor(page);
       await skipFloorLines(page);
       const reply: { body: unknown } = { body: statesA(Date.now()) };
-      await page.route("**/api/office", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(reply.body) }));
+      await page.route(OFFICE_API, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(reply.body) }));
       await page.goto(`${base}/en?tier=${tier}`);
       await waitForHQ(page);
       await waitForPhase(page, "explore", SLOW);

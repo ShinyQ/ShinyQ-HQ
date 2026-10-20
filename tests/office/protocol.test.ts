@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, OFFICE_HELPERS_MAX, parseOfficeBeat, parseOfficeResponse, wibDay } from "@/lib/office/protocol";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, wibDay } from "@/lib/office/protocol";
 
 const SESSION = "a".repeat(64);
 const beat = (extra: Record<string, unknown> = {}) => ({ v: 1, agent: "copilot", session: SESSION, state: "working", activity: "editing", ts: OFFICE_FIXTURE_NOW, ...extra });
@@ -30,6 +30,49 @@ describe("parseOfficeResponse", () => {
     expect(parseOfficeResponse({ v: 1, enabled: false, mode: "live" })).toBeNull();
     expect(parseOfficeResponse({ v: 2, enabled: false })).toBeNull();
     expect(parseOfficeResponse(null)).toBeNull();
+  });
+});
+
+describe("parseOfficeResponse (v1) never takes helpers", () => {
+  it("rejects a v1 body carrying helpers on a desk, and any v2 body", () => {
+    const busy = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
+    expect(parseOfficeResponse({ ...busy, desks: [{ ...busy.desks[0], helpers: 3 }] })).toBeNull();
+    expect(parseOfficeResponse({ ...busy, helpers: 3 })).toBeNull();
+    expect(parseOfficeResponse(JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy)))).toBeNull();
+  });
+});
+
+describe("parseOfficeResponseV2", () => {
+  const busy2 = () => JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
+
+  it("accepts every v2 fixture unchanged", () => {
+    expect(OFFICE_FIXTURES_V2.busy.enabled && OFFICE_FIXTURES_V2.busy.desks.map((d) => d.helpers)).toEqual([3, undefined, 6, undefined, undefined]);
+    for (const [name, value] of Object.entries(OFFICE_FIXTURES_V2)) expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(value))), name).toEqual(value);
+  });
+
+  it("accepts desk helpers 1 and 9 and rejects 0, 10, a fraction and a string", () => {
+    const busy = busy2();
+    for (const helpers of [1, OFFICE_HELPERS_MAX]) expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], helpers }] }), String(helpers)).not.toBeNull();
+    for (const helpers of [0, 10, 1.5, "3", null]) expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], helpers }] }), String(helpers)).toBeNull();
+  });
+
+  it("keeps the v1 checks: strict keys, enums, slots", () => {
+    const busy = busy2();
+    expect(parseOfficeResponseV2({ ...busy, extraField: 1 })).toBeNull();
+    expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], prompt: "hello" }] })).toBeNull();
+    expect(parseOfficeResponseV2({ ...busy, desks: [busy.desks[0], { ...busy.desks[1], slot: busy.desks[0].slot }] })).toBeNull();
+    expect(parseOfficeResponseV2({ ...busy, v: 3 })).toBeNull();
+    expect(parseOfficeResponseV2({ v: 2, enabled: false })).toBeNull();
+    expect(parseOfficeResponseV2(null)).toBeNull();
+  });
+
+  it("accepts a v1 body as a fallback after a rollback, as a v2 snapshot without helpers", () => {
+    for (const [name, value] of Object.entries(OFFICE_FIXTURES)) {
+      const parsed = parseOfficeResponseV2(JSON.parse(JSON.stringify(value)));
+      expect(parsed, name).toEqual(value.enabled ? { ...value, v: 2 } : value);
+    }
+    const busy = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
+    expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], helpers: 3 }] })).toBeNull();
   });
 });
 

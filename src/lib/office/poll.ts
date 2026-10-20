@@ -1,4 +1,4 @@
-import { OFFICE_PATH, parseOfficeResponse, type OfficeSnapshotV1 } from "./protocol";
+import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeResponseV2, type OfficeSnapshot, type OfficeSnapshotV1 } from "./protocol";
 
 /**
  * Agent Office polling (owner decision D6, spec section 8), shared by the 3D office on L1 and the Classic home card.
@@ -8,9 +8,15 @@ export const POLL = { activeMs: 10_000, restingMs: 30_000, idleStopMs: 600_000, 
 
 export type OfficeFeedStatus = "idle" | "loading" | "ready" | "offline" | "disabled";
 
+/**
+ * The v2 snapshot shape with either version number: the 3D office polls v2, the Classic card still v1 (whose desks
+ * simply carry no `helpers`), so every consumer reads one type.
+ */
+export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshot["v"] };
+
 export interface OfficeFeed {
   status: OfficeFeedStatus;
-  snapshot: OfficeSnapshotV1 | null;
+  snapshot: OfficeFeedSnapshot | null;
   /** `now()` of the last good response (0 before any). */
   fetchedAt: number;
 }
@@ -27,6 +33,10 @@ export interface OfficePoller {
 }
 
 export interface OfficePollerOptions {
+  /** What to fetch (default `OFFICE_PATH`, v1); the 3D office asks `${OFFICE_PATH}?v=2`. */
+  path?: string;
+  /** The body's validator for that path (default `parseOfficeResponse`, v1). */
+  parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | null;
   fetcher?: typeof fetch;
   now?: () => number;
   visible?: () => boolean;
@@ -47,6 +57,8 @@ export function pollInterval(feed: OfficeFeed): number {
 }
 
 export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller {
+  const path = opts.path ?? OFFICE_PATH;
+  const parse = opts.parse ?? parseOfficeResponse;
   const fetcher = opts.fetcher ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   const now = opts.now ?? Date.now;
   const visible = opts.visible ?? pageVisible;
@@ -84,10 +96,10 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     // A hung request becomes an error after activeMs, so the keep-last then offline rule still applies.
     const abortTimer = setTimer(() => controller.abort(), POLL.activeMs);
     try {
-      const res = await fetcher(OFFICE_PATH, { headers: { accept: "application/json" }, credentials: "omit", signal: controller.signal });
-      if (res.status !== 200) throw new Error(`GET ${OFFICE_PATH}: ${res.status}`);
-      const parsed = parseOfficeResponse(await res.json());
-      if (!parsed) throw new Error(`GET ${OFFICE_PATH}: invalid body`);
+      const res = await fetcher(path, { headers: { accept: "application/json" }, credentials: "omit", signal: controller.signal });
+      if (res.status !== 200) throw new Error(`GET ${path}: ${res.status}`);
+      const parsed = parse(await res.json());
+      if (!parsed) throw new Error(`GET ${path}: invalid body`);
       if (gen !== generation) return;
       set(parsed.enabled ? { status: "ready", snapshot: parsed, fetchedAt: now() } : { status: "disabled", snapshot: null, fetchedAt: now() });
     } catch {

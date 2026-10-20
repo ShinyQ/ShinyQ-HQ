@@ -1,5 +1,5 @@
-import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_RECENT, wibDay } from "../../../src/lib/office/protocol";
-import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, wibDay } from "../../../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
 
 /** Time rules and caps (spec section 3.3); every rule is applied from `now`, so the Durable Object needs no alarm. */
 export const TIMING = {
@@ -8,6 +8,8 @@ export const TIMING = {
   longWaitAsleepAfter: 15 * 60_000,
   removeAfter: 30 * 60_000,
   doneFor: 20_000,
+  /** Helpers show only while the session beat within this window (a lost stop event decays). */
+  helpersTtl: 10 * 60_000,
   runStaleAfter: 6 * 3_600_000,
   deliveriesKept: 200,
   prsKept: 50,
@@ -27,6 +29,8 @@ export interface SessionRecord {
   repo?: string;
   branch?: string;
   title?: string;
+  /** Active helpers (sub-agents) from the last beat that carried a count; absent at 0. */
+  helpers?: number;
   recent: OfficeRecent[];
 }
 
@@ -155,6 +159,7 @@ export function applyBeat(doc: OfficeDoc, beat: OfficeBeatV1, now: number): Offi
   const prev = doc.sessions.find((s) => s.id === beat.session);
   const changed = !prev || prev.state !== beat.state || prev.activity !== beat.activity;
   const keep = beat.repo !== undefined && doc.publicRepos.includes(beat.repo);
+  const helpers = beat.helpers ?? prev?.helpers;
   const record: SessionRecord = {
     id: beat.session,
     agent: beat.agent,
@@ -167,6 +172,7 @@ export function applyBeat(doc: OfficeDoc, beat: OfficeBeatV1, now: number): Offi
     ...(keep ? { repo: beat.repo } : {}),
     ...(keep && beat.branch ? { branch: beat.branch } : {}),
     ...(keep && beat.title ? { title: beat.title } : {}),
+    ...(helpers ? { helpers } : {}),
     recent: !prev || changed ? [{ state: beat.state, activity: beat.activity, at: now }, ...(prev?.recent ?? [])].slice(0, OFFICE_RECENT) : prev.recent,
   };
   const tasksDone = today.tasksDone + (beat.state === "done" && prev?.state !== "done" ? 1 : 0);
@@ -232,7 +238,7 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
         runs: doc.runs.filter((r) => r.repo !== repo),
         prs: doc.prs.filter((p) => p.repo !== repo),
         feed: doc.feed.filter((f) => f.repo !== repo),
-        sessions: doc.sessions.map((s) => (s.repo === repo ? { id: s.id, agent: s.agent, slot: s.slot, firstSeen: s.firstSeen, lastBeat: s.lastBeat, state: s.state, activity: s.activity, since: s.since, recent: s.recent } : s)),
+        sessions: doc.sessions.map((s) => (s.repo === repo ? { id: s.id, agent: s.agent, slot: s.slot, firstSeen: s.firstSeen, lastBeat: s.lastBeat, state: s.state, activity: s.activity, since: s.since, ...(s.helpers ? { helpers: s.helpers } : {}), recent: s.recent } : s)),
       };
   }
 }
@@ -279,13 +285,24 @@ function deskOf(doc: OfficeDoc, s: SessionRecord, e: Effective): OfficeDesk {
 
 const feedItem = (f: FeedRecord): OfficeGithubItem => ({ kind: f.kind, status: f.status, repo: f.repo, title: f.title, at: f.at, url: f.url, ...(f.progress ? { progress: f.progress } : {}) });
 
-/** The public snapshot at `now` (time rules applied, nothing written). */
-export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
+/** Helpers show while the session is awake and beat within the last 10 min (a lost stop event decays). */
+export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): number {
+  if (!s.helpers || e.state === "asleep" || now - s.lastBeat >= TIMING.helpersTtl) return 0;
+  return Math.min(OFFICE_HELPERS_MAX, s.helpers);
+}
+
+function seats(doc: OfficeDoc, now: number) {
   const live = doc.sessions.flatMap((s) => {
     const e = effective(s, now);
     return e ? [{ s, e }] : [];
   });
   const seated = live.filter(({ s }) => s.slot !== null).sort((a, b) => (a.s.slot ?? 0) - (b.s.slot ?? 0));
+  return { live, seated };
+}
+
+/** The public v1 snapshot at `now` (time rules applied, nothing written). Never carries `helpers`: v1 never changes. */
+export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
+  const { live, seated } = seats(doc, now);
   return {
     v: 1,
     enabled: true,
@@ -295,6 +312,21 @@ export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
     extra: live.length - seated.length,
     github: doc.feed.map(feedItem),
     today: rollToday(doc.today, now),
+  };
+}
+
+/** The public v2 snapshot at `now`: the v1 view with `v: 2` and desk `helpers` (1 to 9, absent at 0). */
+export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
+  const { seated } = seats(doc, now);
+  const v1 = view(doc, now);
+  return {
+    ...v1,
+    v: 2,
+    desks: v1.desks.map((d, i) => {
+      const { s, e } = seated[i];
+      const h = effectiveHelpers(s, e, now);
+      return h > 0 ? { ...d, helpers: h } : d;
+    }),
   };
 }
 

@@ -23,7 +23,8 @@ describe("signalFromBody", () => {
     expect(signalFromBody({ ...ok, desks: Array.from({ length: 6 }, (_, i) => ({ slot: i % 5, state: "input" })) }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, desks: [null] }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, github: {} }, 0)).toBeNull();
-    expect(signalFromBody({ ...ok, v: 2 }, 0)).toBeNull();
+    expect(signalFromBody({ ...ok, v: 2 }, 0)).toEqual({ asking: [2], deployAt: null });
+    expect(signalFromBody({ ...ok, v: 3 }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, enabled: "true" }, 0)).toBeNull();
     const hostile = Object.defineProperty({ v: 1, enabled: true, github: [] }, "desks", { get: () => [{ slot: 0, state: "input" }] });
     expect(signalFromBody(hostile, 0)).toEqual({ asking: [0], deployAt: null });

@@ -1,5 +1,5 @@
 import { parseOfficeBeat } from "../../../src/lib/office/protocol";
-import { applyBeat, applyGithub, emptyDoc, isGithubMessage, view, type OfficeDoc } from "./state";
+import { applyBeat, applyGithub, emptyDoc, isGithubMessage, view, viewV2, type OfficeDoc } from "./state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "./types";
 
 const DOC_KEY = "doc";
@@ -30,10 +30,12 @@ export class Office {
   }
 
   async fetch(request: Request): Promise<Response> {
-    const { pathname } = new URL(request.url);
+    const { pathname, searchParams } = new URL(request.url);
     if (pathname === "/snapshot") {
       if (request.method !== "GET") return status(405);
-      const body = JSON.stringify(view(await this.load(), this.now()));
+      // v2 only for exactly ?v=2; anything else is the unchanged v1 body.
+      const doc = await this.load();
+      const body = JSON.stringify(searchParams.get("v") === "2" ? viewV2(doc, this.now()) : view(doc, this.now()));
       return new Response(body, { headers: { "Content-Type": "application/json; charset=utf-8" } });
     }
     if (pathname !== "/beat" && pathname !== "/github") return status(404);

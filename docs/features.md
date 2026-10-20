@@ -360,7 +360,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 2 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
-- `/api/office`: the Agent Office snapshot (`GET`, always 200 JSON) with an ETag (304 on a match) and `max-age=5, stale-while-revalidate=30`; the L1 office polls it while in view. `POST /api/office/beat` and `/api/office/github` take the signed relay beats and GitHub webhooks ([office.md](agents/office.md)).
+- `/api/office`: the Agent Office snapshot (`GET`, always 200 JSON) with an ETag (304 on a match) and `max-age=5, stale-while-revalidate=30`; the L1 office polls `?v=2` (snapshot v2: v1 plus desk helper counts; v1 never changes) while in view. `POST /api/office/beat` and `/api/office/github` take the signed relay beats and GitHub webhooks ([office.md](agents/office.md)).
 - `/api/guides/{slug}`: a study guide PDF from the private R2 bucket (Pages Function, `GET` and `HEAD`): byte ranges, ETag, `?v=<version>` for a year of immutable caching, `?download=1` for an attachment. Runbook: [`study-guides-runbook.md`](study-guides-runbook.md).
 
 ## Search and link previews

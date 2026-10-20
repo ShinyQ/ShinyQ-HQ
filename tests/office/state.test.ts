@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, type OfficeBeatV1 } from "@/lib/office/protocol";
-import { applyBeat, applyGithub, assignSlots, emptyDoc, effective, TIMING, view, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { parseOfficeResponse, parseOfficeResponseV2, type OfficeBeatV1 } from "@/lib/office/protocol";
+import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, TIMING, view, viewV2, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 const HQ = "ShinyQ/ShinyQ-HQ";
@@ -218,6 +218,63 @@ describe("applyGithub", () => {
   });
 });
 
+describe("helpers", () => {
+  const helpersOf = (doc: OfficeDoc, now: number) => viewV2(doc, now).desks.map((d) => d.helpers);
+
+  it("stores helpers from a beat that carries them and keeps them for a beat without", () => {
+    let doc = applyBeat(emptyDoc(T0), beat(1, { helpers: 3 }), T0);
+    expect(doc.sessions[0].helpers).toBe(3);
+    doc = applyBeat(doc, beat(1, { state: "testing", activity: "testing" }), T0 + 1000);
+    expect(doc.sessions[0].helpers).toBe(3);
+    expect(helpersOf(doc, T0 + 2000)).toEqual([3]);
+  });
+
+  it("clears them on a beat with helpers 0 (nothing stored, nothing shown)", () => {
+    let doc = applyBeat(emptyDoc(T0), beat(1, { helpers: 4 }), T0);
+    doc = applyBeat(doc, beat(1, { helpers: 0 }), T0 + 1000);
+    expect(doc.sessions[0]).not.toHaveProperty("helpers");
+    expect(viewV2(doc, T0 + 1000).desks[0]).not.toHaveProperty("helpers");
+    doc = applyBeat(doc, beat(1), T0 + 2000);
+    expect(doc.sessions[0]).not.toHaveProperty("helpers");
+  });
+
+  it("adds no recent entry and keeps since when only the helper count changes", () => {
+    let doc = applyBeat(emptyDoc(T0), beat(1), T0);
+    doc = applyBeat(doc, beat(1, { helpers: 2 }), T0 + 1000);
+    doc = applyBeat(doc, beat(1, { helpers: 5 }), T0 + 2000);
+    const desk = viewV2(doc, T0 + 2000).desks[0];
+    expect(desk.recent).toHaveLength(1);
+    expect(desk.since).toBe(T0);
+    expect(desk.helpers).toBe(5);
+  });
+
+  it("shows nothing while asleep, after 10 min without a beat, or once the session is removed", () => {
+    const ci = applyBeat(emptyDoc(T0), beat(1, { state: "ci", activity: "ci", helpers: 2 }), T0);
+    expect(helpersOf(ci, T0 + TIMING.helpersTtl - 1)).toEqual([2]);
+    expect(viewV2(ci, T0 + TIMING.helpersTtl).desks[0]).toMatchObject({ state: "ci" });
+    expect(viewV2(ci, T0 + TIMING.helpersTtl).desks[0]).not.toHaveProperty("helpers");
+    const working = applyBeat(emptyDoc(T0), beat(1, { helpers: 2 }), T0);
+    expect(viewV2(working, T0 + TIMING.asleepAfter).desks[0]).toMatchObject({ state: "asleep" });
+    expect(viewV2(working, T0 + TIMING.asleepAfter).desks[0]).not.toHaveProperty("helpers");
+    const done = applyBeat(emptyDoc(T0), beat(1, { state: "done", activity: "finished", helpers: 1 }), T0);
+    expect(viewV2(done, T0 + TIMING.doneFor).desks[0]).not.toHaveProperty("helpers");
+    expect(viewV2(ci, T0 + TIMING.removeAfter).desks).toEqual([]);
+  });
+
+  it("caps the count at 9 and reads 0 without a stored count", () => {
+    const rec: SessionRecord = { id: sid(1), agent: "codex", slot: 0, firstSeen: T0, lastBeat: T0, state: "working", activity: "editing", since: T0, recent: [], helpers: 12 };
+    expect(effectiveHelpers(rec, effective(rec, T0)!, T0)).toBe(9);
+    expect(effectiveHelpers({ ...rec, helpers: undefined }, effective(rec, T0)!, T0)).toBe(0);
+  });
+
+  it("keeps helpers when a repository goes private", () => {
+    let doc = applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", title: "X", helpers: 3 }), T0);
+    doc = applyGithub(doc, { repo: HQ, changes: [{ type: "privatized" }] }, "priv-1", T0 + 1);
+    expect(doc.sessions[0]).not.toHaveProperty("repo");
+    expect(viewV2(doc, T0 + 1).desks[0]).toMatchObject({ helpers: 3 });
+  });
+});
+
 describe("view", () => {
   it("is valid under the public contract, live with sessions and semi-live without", () => {
     const empty = view(publicDoc(), T0);
@@ -226,5 +283,73 @@ describe("view", () => {
     const live = view(applyBeat(publicDoc(), beat(1, { repo: HQ, branch: "feat/x", title: "X" }), T0), T0);
     expect(live.mode).toBe("live");
     expect(parseOfficeResponse(JSON.parse(JSON.stringify(live)))).not.toBeNull();
+  });
+});
+
+/** A fixed stored document (sessions with and without helpers) for the v1 byte-for-byte golden. */
+function goldenDoc(): OfficeDoc {
+  const s = (n: number, slot: number | null, lastBeat: number, extra: Partial<SessionRecord> = {}): SessionRecord => ({
+    id: sid(n),
+    agent: (["copilot", "claude", "codex"] as const)[n % 3],
+    slot,
+    firstSeen: T0 - 60 * 60_000 + n,
+    lastBeat,
+    state: "working",
+    activity: "editing",
+    since: lastBeat - 60_000,
+    recent: [{ state: "working", activity: "editing", at: lastBeat - 60_000 }],
+    ...extra,
+  });
+  return {
+    v: 1,
+    sessions: [
+      s(1, 0, T0 - 5_000, { repo: HQ, branch: "feat/x", title: "Office crew", helpers: 3, state: "ci", activity: "ci" }),
+      s(2, 1, T0 - 30_000, { helpers: 6 }),
+      s(3, 2, T0 - 10 * 60_000, { helpers: 2 }),
+      s(4, 3, T0 - 1_000),
+      s(5, 4, T0 - 2_000, { repo: HQ, branch: "fix/y", state: "failed", activity: "failed", helpers: 9 }),
+      s(6, null, T0 - 3_000, { helpers: 1 }),
+    ],
+    runs: [
+      { id: 42, attempt: 1, repo: HQ, branch: "feat/x", title: "CI · feat/x", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42", status: "running", jobs: { a: "done", b: "running" }, updated: T0 - 4_000 },
+      { id: 41, attempt: 1, repo: HQ, branch: "fix/y", title: "CI · fix/y", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/41", status: "failure", jobs: { c: "failed" }, failedJob: "Lint", updated: T0 - 6_000 },
+    ],
+    prs: [{ repo: HQ, branch: "fix/y", number: 9, title: "fix: y", updated: T0 - 7_000 }],
+    feed: [
+      { key: "run:42", kind: "run", status: "running", repo: HQ, title: "CI · feat/x", at: T0 - 4_000, url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42", progress: { done: 1, total: 2 } },
+      { key: "pr:ShinyQ/ShinyQ-HQ#9", kind: "pr", status: "opened", repo: HQ, title: "#9 fix: y", at: T0 - 7_000, url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/9" },
+    ],
+    publicRepos: [HQ],
+    deliveries: ["d1"],
+    cancelled: [],
+    today: { day: "2026-10-18", tasksDone: 2, prsMerged: 1, ciRuns: 3, ciGreen: 2 },
+  };
+}
+
+/** `JSON.stringify(view(goldenDoc(), T0))` captured from the v1 `view` before snapshot v2 existed: v1 never changes. */
+const GOLDEN_V1 = "{\"v\":1,\"enabled\":true,\"mode\":\"live\",\"updatedAt\":1792310400000,\"desks\":[{\"slot\":0,\"agent\":\"claude\",\"state\":\"ci\",\"activity\":\"ci\",\"since\":1792310335000,\"repo\":\"ShinyQ/ShinyQ-HQ\",\"title\":\"Office crew\",\"progress\":{\"done\":1,\"total\":2},\"recent\":[{\"state\":\"working\",\"activity\":\"editing\",\"at\":1792310335000}]},{\"slot\":1,\"agent\":\"codex\",\"state\":\"thinking\",\"activity\":\"planning\",\"since\":1792310390000,\"recent\":[{\"state\":\"working\",\"activity\":\"editing\",\"at\":1792310310000}]},{\"slot\":2,\"agent\":\"copilot\",\"state\":\"asleep\",\"activity\":\"resting\",\"since\":1792309980000,\"recent\":[{\"state\":\"working\",\"activity\":\"editing\",\"at\":1792309740000}]},{\"slot\":3,\"agent\":\"claude\",\"state\":\"working\",\"activity\":\"editing\",\"since\":1792310339000,\"recent\":[{\"state\":\"working\",\"activity\":\"editing\",\"at\":1792310339000}]},{\"slot\":4,\"agent\":\"codex\",\"state\":\"failed\",\"activity\":\"failed\",\"since\":1792310338000,\"repo\":\"ShinyQ/ShinyQ-HQ\",\"title\":\"fix: y\",\"job\":\"Lint\",\"recent\":[{\"state\":\"working\",\"activity\":\"editing\",\"at\":1792310338000}]}],\"extra\":1,\"github\":[{\"kind\":\"run\",\"status\":\"running\",\"repo\":\"ShinyQ/ShinyQ-HQ\",\"title\":\"CI · feat/x\",\"at\":1792310396000,\"url\":\"https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42\",\"progress\":{\"done\":1,\"total\":2}},{\"kind\":\"pr\",\"status\":\"opened\",\"repo\":\"ShinyQ/ShinyQ-HQ\",\"title\":\"#9 fix: y\",\"at\":1792310393000,\"url\":\"https://github.com/ShinyQ/ShinyQ-HQ/pull/9\"}],\"today\":{\"day\":\"2026-10-18\",\"tasksDone\":2,\"prsMerged\":1,\"ciRuns\":3,\"ciGreen\":2}}";
+
+describe("view (v1) and viewV2", () => {
+  it("keeps v1 byte for byte, with no helpers anywhere", () => {
+    const body = JSON.stringify(view(goldenDoc(), T0));
+    expect(body).toBe(GOLDEN_V1);
+    expect(body).not.toContain("helpers");
+    expect(parseOfficeResponse(JSON.parse(body))).not.toBeNull();
+  });
+
+  it("is v1 plus helpers 1 to 9 on awake desks", () => {
+    const v2 = viewV2(goldenDoc(), T0);
+    expect(v2.v).toBe(2);
+    const v1 = JSON.parse(GOLDEN_V1);
+    const withoutHelpers = v2.desks.map((d) => {
+      const copy = { ...d };
+      delete copy.helpers;
+      return copy;
+    });
+    expect({ ...v2, v: 1, desks: withoutHelpers }).toEqual(v1);
+    expect(v2.desks.map((d) => d.helpers)).toEqual([3, 6, undefined, undefined, 9]);
+    expect(v2.desks[2]).not.toHaveProperty("helpers");
+    expect(v2.desks[3]).not.toHaveProperty("helpers");
+    expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(v2)))).toEqual(v2);
   });
 });

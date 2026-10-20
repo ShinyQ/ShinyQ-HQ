@@ -20,7 +20,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { OFFICE_API, OFFICE_API_V2, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk near the wing, five
@@ -104,10 +104,10 @@ const lookOut = (page: Page) =>
 /** On the lead road, just inside the Lobby edge: within OFFICE.loadRadius of the office stop. */
 const LEAD = { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 2 };
 
-/** Answers `/api/office` from a mutable reply, so a test can switch fixtures or fail the endpoint mid-run. */
+/** Answers `/api/office` (v1 for the watch, `?v=2` for the poller) from a mutable reply, so a test can switch fixtures or fail the endpoint mid-run. */
 async function serveOffice(page: Page) {
   const reply: { status: number; body: unknown } = { status: 200, body: OFFICE_FIXTURES.disabled };
-  await page.route("**/api/office", (route) =>
+  await page.route(OFFICE_API, (route) =>
     route.fulfill(reply.status === 200 ? { status: 200, contentType: "application/json", body: JSON.stringify(reply.body) } : { status: reply.status, body: "" }),
   );
   return {
@@ -120,7 +120,7 @@ async function serveOffice(page: Page) {
 
 /** Fetches now (the poller restarts) and waits for that response. */
 async function pollNow(page: Page) {
-  await Promise.all([page.waitForResponse("**/api/office"), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
 }
 
 /** Parks inside the office view, off the stop (a click still drives), once the office is loaded, in view and polling. */
@@ -388,7 +388,7 @@ test.describe("Agent Office (L1)", () => {
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
     expect((await probe(page)).states).toEqual(STATES_A);
     office.set(null, 500);
-    await Promise.all([page.waitForResponse("**/api/office"), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
+    await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
     await expect.poll(async () => (await feed(page))?.status).toBe("offline");
     await expect.poll(async () => (await probe(page)).mode).toBe("offline");
     expect((await probe(page)).states).toEqual(["asleep", "asleep", "asleep", "asleep", "asleep"]);

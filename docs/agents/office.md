@@ -14,16 +14,25 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Contract
 
-- `src/lib/office/protocol.ts` (v1): `OfficeBeatV1` (relay to Worker) and `OfficeResponseV1` (GET /api/office).
-- Clients validate with `parseOfficeResponse` and hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Fixtures: `OFFICE_FIXTURES` in `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
+- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`) and
+  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0;
+  `OfficeSnapshot` is v2). The disabled answer `{v:1, enabled:false}` is the same in both.
+- v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
+  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2; no query, `?v=3` or junk
+  get v1.
+- Clients validate with `parseOfficeResponse` (v1) or `parseOfficeResponseV2` (strict v2, plus a v1 body read as v2
+  without helpers, for a rolled-back Worker) and hide on null; the Worker validates beats with `parseOfficeBeat`.
+- Who polls what: the 3D office's poller v2 (`createOfficePoller({ path, parse })` in `office/live.ts`); the Classic
+  card and the L1 beacon's watch v1. `signalFromBody` reads both.
+- Fixtures: `OFFICE_FIXTURES` (v1) and `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) in
+  `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.
 
 ### Privacy (owner decision D3)
 
 - A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, helpers?, ts}`; `session` is a
   salted hash and `helpers` a count of active sub-agents (0 to `OFFICE_HELPERS_MAX`, 9), never their names, types or
-  ids. `sanitizeBeat` keeps it; storing and showing it is the snapshot's job.
+  ids. `sanitizeBeat` keeps it for every repository; the session stores it, and only snapshot v2 shows it.
 - `repo`, `branch` and `title` survive only for repositories in `OFFICE_REPO_ALLOWLIST` that a webhook reported public.
 - Titles (beats and GitHub items) go through the public safety blocklist (`cleanTitle`, `findBlockedTerms` from
   `src/content/safety-match.ts`); a blocked title is dropped or replaced by a generic one.
@@ -46,6 +55,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Time rules run at read time (`effective`): thinking after 20 s quiet while working or reviewing, asleep after 3 min
   (15 min while testing, on CI or waiting for input), done for 20 s, failed until the next beat, removed after 30 min.
   No alarms.
+- Helpers: a beat's `helpers` replaces the stored count, a beat without it keeps it, 0 clears it; a count change adds
+  no `recent` entry; a privatized repository keeps it. `viewV2` shows it (`effectiveHelpers`, capped at 9) while the
+  session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1) never does.
+  The Durable Object's `/snapshot` answers `viewV2` for `?v=2`, else `view`; the Worker forwards only `?v=2`.
 - Desks: five stable slots (`assignSlots`); an awake newcomer may take the longest-asleep desk; others are `extra`.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
@@ -54,10 +67,12 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (always 200 JSON: the snapshot, `mode: "off"` on failure, or
-  `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
+- `functions/_lib/office.ts`: `GET /api/office` (v1) and `GET /api/office?v=2` (v2) (always 200 JSON: the snapshot,
+  `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
-  `caches.default` for 5 s per data center; `POST /api/office/beat` and `/github` forward the raw body and signature
+  `caches.default` for 5 s per data center under one key per version (`/api/office`, `/api/office?v=2`); v2 fetches
+  the Worker's `/snapshot?v=2` and validates with `parseOfficeResponseV2`, so a rolled-back Worker's v1 body is served
+  as v2 without helpers; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
@@ -70,7 +85,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   `office-worker.yml` bundles it on pull requests (no secrets).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
-  `workers/office` leaves it at the live version).
+  `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
+  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests

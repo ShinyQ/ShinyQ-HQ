@@ -1,8 +1,9 @@
 /**
- * Agent Office contract, version 1 (docs/superpowers/specs/2026-10-18-agent-office-design.md, docs/agents/office.md).
+ * Agent Office contract (docs/superpowers/specs/2026-10-18-agent-office-design.md, docs/agents/office.md).
  * The relay (tools/office-relay) sends `OfficeBeatV1`; the hq-office Worker serves `OfficeResponseV1` through
- * GET /api/office; the 3D office and the Classic card validate it with `parseOfficeResponse` and hide on null.
- * Change it only with a new version (`v: 2`) and every side in one PR.
+ * GET /api/office (validated with `parseOfficeResponse`) and `OfficeResponseV2` (v1 plus desk `helpers`) through
+ * GET /api/office?v=2 (validated with `parseOfficeResponseV2`, which also takes a v1 body after a rollback). Clients
+ * hide on null. v1 never changes: a new field means a new version, with every side in one PR.
  */
 export const OFFICE_AGENTS = ["copilot", "claude", "codex"] as const;
 export type OfficeAgent = (typeof OFFICE_AGENTS)[number];
@@ -102,6 +103,22 @@ export interface OfficeDisabledV1 {
 
 export type OfficeResponseV1 = OfficeSnapshotV1 | OfficeDisabledV1;
 
+/** A v2 desk: a v1 desk plus its active helpers (sub-agents), 1 to OFFICE_HELPERS_MAX, absent at 0. */
+export type OfficeDeskV2 = OfficeDesk & { helpers?: number };
+
+/** GET /api/office?v=2: the v1 snapshot with `v: 2` and v2 desks. */
+export interface OfficeSnapshotV2 extends Omit<OfficeSnapshotV1, "v" | "desks"> {
+  v: 2;
+  desks: OfficeDeskV2[];
+}
+
+/** The disabled answer is the same body in every version. */
+export type OfficeResponseV2 = OfficeSnapshotV2 | OfficeDisabledV1;
+
+/** What the clients hold: the newest snapshot version. */
+export type OfficeSnapshot = OfficeSnapshotV2;
+export type OfficeResponse = OfficeResponseV2;
+
 /** What the relay sends: enums and allowlisted public names only, never prompts, commands, paths or output. */
 export interface OfficeBeatV1 {
   v: 1;
@@ -154,11 +171,18 @@ function isRecent(x: unknown): boolean {
 }
 
 const DESK_KEYS = ["slot", "agent", "state", "activity", "since", "repo", "title", "progress", "job", "recent"];
+const DESK_KEYS_V2 = [...DESK_KEYS, "helpers"];
 
 function isDesk(x: unknown): x is OfficeDesk {
+  return isObj(x) && onlyKeys(x, DESK_KEYS) && isDeskFields(x);
+}
+
+function isDeskV2(x: unknown): x is OfficeDeskV2 {
+  return isObj(x) && onlyKeys(x, DESK_KEYS_V2) && optional(x, "helpers", (h) => isInt(h, 1, OFFICE_HELPERS_MAX)) && isDeskFields(x);
+}
+
+function isDeskFields(x: Obj): boolean {
   return (
-    isObj(x) &&
-    onlyKeys(x, DESK_KEYS) &&
     isInt(x.slot, 0, OFFICE_DESKS - 1) &&
     oneOf(OFFICE_AGENTS, x.agent) &&
     oneOf(OFFICE_STATES, x.state) &&
@@ -204,19 +228,40 @@ function isToday(x: unknown): x is OfficeToday {
   );
 }
 
+const disabled = (): OfficeDisabledV1 => ({ v: 1, enabled: false });
+const SNAPSHOT_KEYS = ["v", "enabled", "mode", "updatedAt", "desks", "extra", "github", "today"];
+
+/** The checks every snapshot version shares, with that version's desk check. */
+function isSnapshot(raw: Obj, desk: (x: unknown) => boolean): boolean {
+  if (raw.enabled !== true || !onlyKeys(raw, SNAPSHOT_KEYS)) return false;
+  if (!oneOf(OFFICE_MODES, raw.mode) || !isInt(raw.updatedAt) || !isInt(raw.extra, 0, 10_000)) return false;
+  const desks = raw.desks;
+  if (!Array.isArray(desks) || desks.length > OFFICE_DESKS || !desks.every(desk)) return false;
+  if (new Set(desks.map((d: OfficeDesk) => d.slot)).size !== desks.length) return false;
+  const github = raw.github;
+  if (!Array.isArray(github) || github.length > OFFICE_FEED || !github.every(isGithubItem)) return false;
+  return isToday(raw.today);
+}
+
+const isDisabled = (raw: Obj) => raw.v === 1 && raw.enabled === false && onlyKeys(raw, ["v", "enabled"]);
+
 /** Validates GET /api/office: null on anything unexpected, so a broken or tampered body never renders. */
 export function parseOfficeResponse(raw: unknown): OfficeResponseV1 | null {
   if (!isObj(raw) || raw.v !== 1) return null;
-  if (raw.enabled === false) return onlyKeys(raw, ["v", "enabled"]) ? { v: 1, enabled: false } : null;
-  if (raw.enabled !== true || !onlyKeys(raw, ["v", "enabled", "mode", "updatedAt", "desks", "extra", "github", "today"])) return null;
-  if (!oneOf(OFFICE_MODES, raw.mode) || !isInt(raw.updatedAt) || !isInt(raw.extra, 0, 10_000)) return null;
-  const desks = raw.desks;
-  if (!Array.isArray(desks) || desks.length > OFFICE_DESKS || !desks.every(isDesk)) return null;
-  if (new Set(desks.map((d) => d.slot)).size !== desks.length) return null;
-  const github = raw.github;
-  if (!Array.isArray(github) || github.length > OFFICE_FEED || !github.every(isGithubItem)) return null;
-  if (!isToday(raw.today)) return null;
-  return raw as unknown as OfficeSnapshotV1;
+  if (raw.enabled === false) return isDisabled(raw) ? disabled() : null;
+  return isSnapshot(raw, isDesk) ? (raw as unknown as OfficeSnapshotV1) : null;
+}
+
+/**
+ * Validates GET /api/office?v=2 (strict keys, desk `helpers` 1 to OFFICE_HELPERS_MAX). A valid v1 body is accepted
+ * too, as a v2 snapshot without helpers: a Worker or Pages deploy rolled back to before v2 answers v1.
+ */
+export function parseOfficeResponseV2(raw: unknown): OfficeResponseV2 | null {
+  if (!isObj(raw)) return null;
+  if (raw.enabled === false) return isDisabled(raw) ? disabled() : null;
+  if (raw.v === 2) return isSnapshot(raw, isDeskV2) ? (raw as unknown as OfficeSnapshotV2) : null;
+  const v1 = parseOfficeResponse(raw);
+  return v1 && v1.enabled ? { ...v1, v: 2 } : null;
 }
 
 const BEAT_KEYS = ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "helpers", "ts"];

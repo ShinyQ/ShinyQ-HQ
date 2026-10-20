@@ -55,11 +55,11 @@ const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object
 const isSlot = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < DESKS;
 
 /**
- * Reads only what the beacon needs from a GET /api/office (v1) body: null when it does not look like one. Never throws
- * and never keeps text.
+ * Reads only what the beacon needs from a GET /api/office body (v1 from the watch, v2 from the scene's poller; the
+ * fields it reads are the same in both): null when it does not look like one. Never throws and never keeps text.
  */
 export function signalFromBody(body: unknown, now: number): { asking: number[]; deployAt: number | null } | null {
-  if (!isObj(body) || body.v !== 1) return null;
+  if (!isObj(body) || (body.v !== 1 && body.v !== 2)) return null;
   if (body.enabled === false) return { asking: [], deployAt: null };
   const { desks, github } = body;
   if (body.enabled !== true || !Array.isArray(desks) || desks.length > DESKS || !Array.isArray(github)) return null;
