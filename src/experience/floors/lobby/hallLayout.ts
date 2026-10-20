@@ -2,30 +2,43 @@ import type { FloorId, RoomId } from "@/content/schema";
 import type { ViewZone } from "../../camera/orbit";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { DoorTrigger, Rect, Vec2 } from "../../types";
+import { OFFICE_WING } from "./officeLayout";
+import { LOBBY_SLAB } from "./slab";
 import { HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "./stations";
 
+/** Hall west edge and the slab's half depth (floors/lobby/slab.ts): every hall position below is an offset from them. */
+const X0 = LOBBY_SLAB.hallX;
+const Z = LOBBY_SLAB.halfZ;
+/** The lead road's line: 6 u in from the south slab edge, so the gateway's south pillar touches the edge. */
+const LEAD_Z = Z - 6;
+
 /**
- * L1 Highlights Hall (owner request, October 2026): the Lobby slab grows east from x = 28 to 64. A
- * lead road leaves the plaza south of the certification wall (which stays untouched and readable from
- * the plaza) into a 24 x 26 u hall plaza. Four stations stand flush with the slab edges, facing the
- * plaza, in this order: about me (north-west), top projects (north-east), work experience (east),
+ * L1 Highlights Hall (owner request, October 2026; more room 2026-10-19): the Lobby slab grows east from
+ * `LOBBY_SLAB.hallX` by 36 u. A lead road leaves the Lobby south of the certification wall (which stays
+ * untouched and readable from the plaza) into the hall plaza. Four stations stand flush with the slab edges,
+ * facing the plaza, in this order: about me (north-west), top projects (north-east), work experience (east),
  * contact (south). Pure: the floor layout, the scenery and the e2e tests read it.
  * Checked by tests/unit/highlights-layout.test.ts (space rules with the real Lobby).
  */
 export const HALL = {
-  maxX: 64,
+  maxX: X0 + 36,
   /** Drives that start or end in here follow the hall road (`FloorLayout.roadZone`); east of the cert wall. */
-  zone: { minX: 27, maxX: 64, minZ: -21, maxZ: 21 },
+  zone: { minX: X0 - 1, maxX: X0 + 36, minZ: -Z, maxZ: Z },
+  /**
+   * Starts 6 u east of the Agent Office wing's east edge (`OFFICE_WING.maxX`, the wing hangs off the south slab edge), so the
+   * road's driving width keeps 6 u from the wing's north-east corner (owner, 2026-10-19).
+   */
   lead: [
-    { x: 14, z: 15 },
-    { x: 36, z: 15 },
+    { x: OFFICE_WING.maxX + 6, z: LEAD_Z },
+    { x: X0 + 8, z: LEAD_Z },
   ],
-  plaza: { x: 46, z: 3, w: 24, d: 26 },
+  /** The plaza keeps 8 u to the north stations, 2 u to the contact station and 3 u to the experience arch. */
+  plaza: { x: X0 + 18, z: 3, w: 24, d: 2 * Z - 16 },
   stations: {
-    about: { minX: 32, maxX: 42, minZ: -21, maxZ: -18 },
-    projects: { minX: 48, maxX: 64, minZ: -21, maxZ: -18 },
-    experience: { minX: 61, maxX: 64, minZ: -8, maxZ: 10 },
-    contact: { minX: 40, maxX: 54, minZ: 18, maxZ: 21 },
+    about: { minX: X0 + 4, maxX: X0 + 14, minZ: -Z, maxZ: -Z + 3 },
+    projects: { minX: X0 + 20, maxX: X0 + 36, minZ: -Z, maxZ: -Z + 3 },
+    experience: { minX: X0 + 33, maxX: X0 + 36, minZ: -8, maxZ: 10 },
+    contact: { minX: X0 + 12, maxX: X0 + 26, minZ: Z - 3, maxZ: Z },
   },
   /** Unit direction from each door pad into its station. */
   facing: {
@@ -40,19 +53,19 @@ export const HALL = {
   spurWidth: 4,
   panel: { h: 6, plinth: 0.35, depth: 0.3 },
   /** The passage behind the cert wall: the camera turns to look into the hall. */
-  entry: { minX: 28, maxX: 36, minZ: 11, maxZ: 19 },
+  entry: { minX: X0, maxX: X0 + 8, minZ: LEAD_Z - 4, maxZ: LEAD_Z + 4 },
   /**
    * Gateway arch over the lead road where it enters the plaza (gallery rebuild, October 2026): two
-   * pillars (the south one touches the slab edge, the north one stays 6 u clear of the cert wall), a
+   * pillars (the south one touches the slab edge, the north one stays clear of the cert wall), a
    * lintel the rover drives under, and the floating "HIGHLIGHTS HALL" sign above it (nothing on the floor).
    */
-  gate: { x: 33, depth: 1.2, north: { minZ: 9.4, maxZ: 10.6 }, south: { minZ: 19.8, maxZ: 21 }, h: 7.4, lintel: 1, signY: 8.1 },
+  gate: { x: X0 + 5, depth: 1.2, north: { minZ: LEAD_Z - 5.6, maxZ: LEAD_Z - 4.4 }, south: { minZ: LEAD_Z + 4.8, maxZ: Z }, h: 7.4, lintel: 1, signY: 8.1 },
   /** Station camera zoom (the old panel widths over 11, so phone text stays as large as before the gallery). */
   zoom: { about: 1, projects: 1.45, experience: 1.5, contact: 1.27 },
   /** Height of each station's shape (point-and-go pick volume, camera collision). */
   height: { about: 6.4, projects: 7.6, experience: 7.4, contact: 9.6 },
   /** Screenshots load once the rover is east of here on L1. */
-  lazyX: 18,
+  lazyX: X0 - 10,
 } as const;
 
 export interface HallStation {

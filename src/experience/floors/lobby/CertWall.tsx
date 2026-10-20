@@ -2,7 +2,7 @@
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh, type Texture } from "three";
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Object3D, type InstancedMesh, type Mesh, type Texture } from "three";
 import { issuerTabs } from "@/content/certs";
 import { openCert } from "@/hud/events";
 import { useHQStore } from "@/store/useHQStore";
@@ -14,6 +14,7 @@ import type { ExperienceData, GpuTier } from "../../types";
 import { BoxEdges, FONTS } from "../../tower/primitives";
 import { arcPoint, CERT_PAGE_SIZE, CERT_WALL, certPage, certPanelHalf, certSlots, faceYaw, tabAngles, type CertSlot } from "./layout";
 import { orientedQuadBuffers, type AtlasLayout } from "./logoAtlas";
+import { useWarmLogos } from "./LogoQuads";
 
 type Cert = ExperienceData["certifications"][number];
 
@@ -88,9 +89,11 @@ function BadgeLogos({ atlas, texture, slots, certs }: { atlas: AtlasLayout; text
     return g;
   }, [atlas, slots, certs]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  const mesh = useRef<Mesh>(null);
+  useWarmLogos(mesh);
   if (!texture) return null;
   return (
-    <mesh geometry={geometry} renderOrder={3} raycast={() => null}>
+    <mesh ref={mesh} geometry={geometry} renderOrder={3} raycast={() => null}>
       <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
     </mesh>
   );

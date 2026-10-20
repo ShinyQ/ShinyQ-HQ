@@ -1,4 +1,5 @@
 import type { Vec2 } from "../../types";
+import { LOBBY_SLAB } from "./slab";
 
 /**
  * The Lobby spawn and the kiosk axis it stands on, apart from `experience/config` so the store reads the
@@ -7,13 +8,13 @@ import type { Vec2 } from "../../types";
  */
 
 export const LOBBY_HOLOGRAM = { x: 6, z: 0, radius: 3 } as const;
-/** The Lobby slab's south edge (`LOBBY.bounds.maxZ`), where the Agent Office wing joins it (`officeWing`). */
-export const LOBBY_SOUTH_EDGE = 21;
+/** The Lobby slab's south edge (`LOBBY.bounds.maxZ`, `LOBBY_SLAB.halfZ`), where the Agent Office wing joins it (`officeWing`). */
+export const LOBBY_SOUTH_EDGE = LOBBY_SLAB.halfZ;
 /**
  * Visitor Observatory footprint (public visit stats, owner decision 2026-10-14): the south-west corner,
  * flush with the west and south slab edges, between the elevator and the Rover menu kiosk.
  */
-export const LOBBY_OBSERVATORY = { minX: -24, maxX: -18, minZ: 14, maxZ: LOBBY_SOUTH_EDGE } as const;
+export const LOBBY_OBSERVATORY = { minX: LOBBY_SLAB.minX, maxX: LOBBY_SLAB.minX + 6, minZ: LOBBY_SOUTH_EDGE - 7, maxZ: LOBBY_SOUTH_EDGE } as const;
 /**
  * The kiosk axis (owner review 2026-10-14: "the rover kiosk not straight line into the circle"): the unit
  * direction from the hologram to the observatory. The kiosk sits on it facing the hologram, its lane spoke
@@ -26,8 +27,12 @@ export const KIOSK_AXIS: Vec2 = (() => {
   const l = Math.hypot(dx, dz);
   return { x: dx / l, z: dz / l };
 })();
-/** Kiosk center distance from the hologram along the axis, its depth (along the axis) and width (the screen). */
-export const KIOSK_RADIUS = 19.2;
+/**
+ * Kiosk center distance from the hologram along the axis (more room 2026-10-19: 19.2 to 22.5, so its front
+ * clears the lane ring by about 6 u and its box keeps 6 u to the observatory), its depth (along the axis)
+ * and width (the screen).
+ */
+export const KIOSK_RADIUS = 22.5;
 export const KIOSK_DEPTH = 2;
 export const KIOSK_WIDTH = 3.4;
 /**

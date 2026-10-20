@@ -23,6 +23,7 @@ import {
   LOBBY_SPAWN,
   LOBBY_SPAWN_HEADING,
 } from "./floors/lobby/spawn";
+import { LOBBY_SLAB } from "./floors/lobby/slab";
 import { buildRoofLayout } from "./floors/roof/layout";
 import { returnPad } from "./nav/fastReturn";
 import { elevatorPad } from "./nav/pads";
@@ -103,14 +104,22 @@ const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   maxZ: cz + d / 2,
 });
 
-/** The plaza ends at x = 28; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to `HALL.maxX`. */
-const LOBBY_BOUNDS = { minX: -24, maxX: HALL.maxX, minZ: -21, maxZ: LOBBY_SOUTH_EDGE } as const;
+/**
+ * The plaza ends at `LOBBY_SLAB.hallX`; the Highlights Hall (floors/lobby/hallLayout.ts) extends the slab east to
+ * `HALL.maxX`. The slab is `LOBBY_SLAB.halfZ` deep on each side of the elevator axis (more room 2026-10-19).
+ */
+const LOBBY_BOUNDS = { minX: LOBBY_SLAB.minX, maxX: HALL.maxX, minZ: -LOBBY_SLAB.halfZ, maxZ: LOBBY_SOUTH_EDGE } as const;
+/** Walkable lane ring around the hologram (more room 2026-10-19: 12 to 13.5). */
+const LANE_RADIUS = 13.5;
+
+/** Certification wall arc radius around the hologram (more room 2026-10-19: 19.6 to 23.5); floors/lobby/layout.ts `CERT_WALL`. */
+const CERT_RADIUS = 23.5;
 
 /**
  * Lobby element positions (appendix 01 section 2). The plaza sits east of the elevator, centered on
  * its axis (z = 0, like the door at (-24, 0)), so the lane ring and the slab line up with the
- * elevator; the walls keep a clear walkway (at least 4 u) outside the lane ring. See
- * tests/unit/lobby-layout.test.ts.
+ * elevator; the walls keep a clear walkway (at least 6 u, owner "more room" 2026-10-19) outside the
+ * lane ring. See tests/unit/lobby-layout.test.ts.
  */
 export const LOBBY = {
   bounds: LOBBY_BOUNDS,
@@ -119,9 +128,10 @@ export const LOBBY = {
   /** The rover faces the kiosk screen at spawn: heading (sin, cos) along the kiosk axis. */
   spawnHeading: LOBBY_SPAWN_HEADING,
   /**
-   * Elevator arrivals (Round 8 J, like L3) roll on east along the elevator axis to the west point of the lane
-   * ring; the camera stands behind the rover and looks east at the profile hologram, the name above it and the
-   * stats ring around it. Zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   * Elevator arrivals (Round 8 J, like L3) roll on east along the elevator axis to (-6, 0), 12 u west of the
+   * hologram, just inside the lane ring's west point (more room 2026-10-19 widened the ring, not this view); the
+   * camera stands behind the rover and looks east at the profile hologram, the name above it and the stats ring
+   * around it. Zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
    */
   arrival: { x: -6, z: 0 } as Vec2,
   arrivalZoom: 1.03,
@@ -133,16 +143,21 @@ export const LOBBY = {
    */
   titleY: 6.4,
   titleFont: { name: 0.58, headline: 0.3, gap: 0.12 },
-  statsRadius: 10,
+  statsRadius: 11,
   /** Tiles float above the rover (about 2.8 u tall), so the walkable ring never clips them. */
   statsTile: { w: 3.4, h: 1.9, y: 4.25, stagger: 0.5 },
   /**
-   * Raised on a 0.35 u glowing plinth; 40 u wide for 4 by 2 groups. h is the drawn height (skillsWallLayout) for today's
-   * skills, used by the hit box and bounds; a unit test fails when content grows the wall past it.
+   * Raised on a 0.35 u glowing plinth (`d` + 0.4 deep, SkillsWall.tsx) whose back touches the north slab edge; 40 u
+   * wide for 4 by 2 groups. The obstacle is the plinth's footprint (`skillsWallRect`). h is the drawn
+   * height (skillsWallLayout) for today's skills, used by the hit box and bounds; a unit test fails when content
+   * grows the wall past it.
    */
-  skillsWall: { x: 6, z: -18.5, w: 40, d: 1, h: 11.25, plinth: 0.35 },
-  /** Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL): the obstacle and view zone use it. */
-  certWall: { x: 25, z: 0, w: 2.4, d: 18, h: 6.2 },
+  skillsWall: { x: 6, z: -LOBBY_SLAB.halfZ + 0.7, w: 40, d: 1, h: 11.25, plinth: 0.35 },
+  /**
+   * Footprint of the curved certification wall (floors/lobby/layout.ts CERT_WALL, an arc of `radius` around the
+   * hologram): the obstacle and view zone use it.
+   */
+  certWall: { x: LOBBY_HOLOGRAM.x + CERT_RADIUS - 0.6, z: 0, w: 2.4, d: 18, h: 6.2, radius: CERT_RADIUS },
   /**
    * Rover menu kiosk on the kiosk axis, turned to face the hologram (`yaw`, forward is (sin, cos)); `depth`
    * runs along the axis, `width` across it (the screen). floors/lobby/kiosk.ts builds its parts and bounds.
@@ -151,7 +166,7 @@ export const LOBBY = {
   kioskAxis: KIOSK_AXIS,
   /** Visitor Observatory (`L1:visits`) footprint; `h` is the globe top, a camera collision column. */
   observatory: { ...LOBBY_OBSERVATORY, h: 7.4 },
-  laneRadius: 12,
+  laneRadius: LANE_RADIUS,
   /**
    * The Agent Office wing (owner decision 2026-10-20): a slab wing south of the Lobby with its lead road, plaza and
    * stop, all derived from the Lobby's south edge (floors/lobby/officeLayout.ts `OFFICE_WING`), so it moves with it.
@@ -232,6 +247,12 @@ function lobbyArrivalZone(): ViewZone {
   };
 }
 
+/** The skills wall's obstacle: its plinth's footprint (0.2 u deeper than the wall on each side), flush with the north slab edge. */
+export function skillsWallRect(): Rect {
+  const { x, z, w, d } = LOBBY.skillsWall;
+  return rect(x, z, w, d + 0.4);
+}
+
 /** Axis-aligned bounds of the turned kiosk footprint (its obstacle and point-and-go bounds). */
 export function kioskRect(): Rect {
   const { x, z, yaw, depth, width } = LOBBY.kiosk;
@@ -242,7 +263,7 @@ export function kioskRect(): Rect {
 
 /** Floor-local layouts. Floors without content yet are placeholder slabs. `extras` carries per-floor inputs. */
 export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}): Record<FloorId, FloorLayout> {
-  const { hologram, skillsWall, certWall, observatory: o, officeWing: wing } = LOBBY;
+  const { hologram, certWall, observatory: o, officeWing: wing } = LOBBY;
   const office = officeRoad(wing);
   const observatory = lobbyObservatory({ rect: o, spawn: LOBBY.spawn, axis: LOBBY.kioskAxis });
   const layouts: Record<FloorId, FloorLayout> = {
@@ -254,7 +275,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
         LOBBY.bounds,
         [
           rect(hologram.x, hologram.z, hologram.radius * 2, hologram.radius * 2),
-          rect(skillsWall.x, skillsWall.z, skillsWall.w, skillsWall.d),
+          skillsWallRect(),
           rect(certWall.x, certWall.z, certWall.w, certWall.d),
           kioskRect(),
           ...HALL_LAYOUT.obstacles,

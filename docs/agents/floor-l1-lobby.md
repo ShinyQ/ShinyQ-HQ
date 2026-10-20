@@ -3,12 +3,14 @@
 The L1 Lobby floor: the certification wall, the Highlights Hall, the Rover menu kiosk, the Agent Office and the Lobby camera views.
 Index: [AGENTS.md](../../AGENTS.md).
 
+Layout (owner, more room 2026-10-19): one slab for the Lobby and the hall (`LOBBY_SLAB` in `floors/lobby/slab.ts`: x from -24, z from -27 to 27, the hall from x = 33), centered on the elevator axis. The hologram stays at (6, 0); the lane ring is r 13.5 and the stats ring r 11. Every obstacle pair clears 6 u (`spaceViolations` finds nothing on L1) and the walkway between the lane ring and each wall or the kiosk is at least 6 u (`tests/unit/lobby-layout.test.ts`). Positions derive from `LOBBY` and `LOBBY_SLAB`, so colliders, bounds, stops, the minimap and deep links follow them.
+
 Related: floor rules shared by every floor live in [floors.md](floors.md); the Visitor Observatory (`L1:visits`) is described in [stats.md](stats.md) and [hud-and-drawer.md](hud-and-drawer.md).
 
 ## Certification wall
 
 - Code: `floors/lobby/CertWall.tsx`; pure layout `CERT_WALL`, `certSlots`, `certPage`, `tabAngles`, `certPanelHalf` in `floors/lobby/layout.ts`.
-- Shape: a curved holo-wall on an arc of radius 19.6 around the hologram, inside the `LOBBY.certWall` footprint.
+- Shape: a curved holo-wall on an arc of radius 23.5 (`LOBBY.certWall.radius`) around the hologram, inside the `LOBBY.certWall` footprint. Badges keep their size at any radius (angles scale with it).
   - A layout test keeps the widest panel inside the footprint.
 - Tabs come from `issuerTabs`: All, up to 3 issuers with 2 or more certifications, Other.
 - Paging: 12 badges per page in two rows sized to content, a pager past 12.
@@ -23,7 +25,7 @@ Related: floor rules shared by every floor live in [floors.md](floors.md); the V
 
 Code: `floors/lobby/SkillsWall.tsx`, layout in `floors/lobby/layout.ts` (`skillsWallLayout`).
 
-- `LOBBY.skillsWall.w` is 40 u. Every skill group (owner, 2026-10-17: all groups, under one storey) sits 4 across by 2 down (`SKILLS_GRID`) in 10 u cells, in `SKILLS_WALL_ORDER` (`wallSkillGroups` in `@/content/selectors`): AI and LLM, Data science and ML, Azure, Languages on top; Backend, Frontend, Data and messaging, DevOps below. A group the order does not list still shows, appended.
+- `LOBBY.skillsWall.w` is 40 u. Its plinth's back touches the north slab edge; the obstacle is the plinth footprint (`skillsWallRect`). Every skill group (owner, 2026-10-17: all groups, under one storey) sits 4 across by 2 down (`SKILLS_GRID`) in 10 u cells, in `SKILLS_WALL_ORDER` (`wallSkillGroups` in `@/content/selectors`): AI and LLM, Data science and ML, Azure, Languages on top; Backend, Frontend, Data and messaging, DevOps below. A group the order does not list still shows, appended.
 - Heading colors (`GROUP_ACCENT`, palette colors only): AI violet, Data science green, Azure blue, Languages pink, Backend cyan, Frontend indigo (`COLORS.lane`), Data pale indigo (`COLORS.packet`), DevOps amber.
 - Every item shows (owner, 2026-10-17: "show all"). A group with more than `SKILLS_SPLIT.over` (6) items splits into two sub-columns inside its cell, column-major (first half left). Each sub-column has its logos in one column and the same line spacing.
 - The second sub-column starts at the cell middle (half the text width plus half of `SKILLS_SPLIT.gap`, 0.2 u), shifted only as far as needed so every item fits its slot (`skillItemWidth`: the icon gap plus about 0.5 em per glyph). Split cells in one grid column share that edge, so sub-columns line up down the wall; a group whose halves cannot both fit keeps one column.
@@ -49,8 +51,8 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 
 ### Layout
 
-- The Lobby slab runs to x = 64.
-- A lead road leaves the plaza south of the certification wall (z = 15) into a 24 x 26 u plaza.
+- Every hall position is an offset from `LOBBY_SLAB` (`hallX` 33, `halfZ` 27): the slab runs to x = 69.
+- A lead road leaves the Lobby south of the certification wall (z = 21, 6 u in from the south edge, 8 u clear of the wall; from x = 24, 6 u east of the Agent Office wing's east edge) into a 24 x 38 u plaza (8 u to the north stations, 2 u to contact, 3 u to the experience arch).
   - The certification wall stays untouched and readable from the plaza.
 - Four stations sit flush with the slab edges, rooms `L1:highlights-*`:
 
@@ -73,7 +75,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 - Top projects: three monolith screens in a shallow arc.
 - Work experience: a lit arch (columns on the pillars, the title on the lintel, an amber glow in the opening).
 - Contact: beside a signal beacon with pulsing rings and a floating card.
-- Gateway arch over the lead road at x = 33:
+- Gateway arch over the lead road at x = 38:
   - pillars are obstacles; the rover drives under the lintel;
   - the floating "Highlights Hall" sign (`FloatingSigns`, `gateSign`); nothing is written on the floor;
   - a light curtain sweeps once per browser session on the first eastward pass (`gateCrossed`, `sessionStorage["hq:hall-gate"]`, probe `__hq.probes.hallGate`), never under reduced motion.
@@ -116,7 +118,7 @@ Design: owner decisions D1 to D7 ([2026-10-18](../decisions/2026-10-18-agent-off
 
 ### Layout
 
-The office has its own south wing of the L1 slab ([owner decision](../decisions/2026-10-20-agent-office-wing.md)), reached by a lead road from the Lobby plaza like the Highlights Hall. Everything derives from S, the Lobby's south slab edge (`LOBBY.bounds.maxZ`, 21): `OFFICE_WING` holds the offsets and `officeWing(S)` builds `LOBBY.officeWing` in config.ts, the one source every reader uses (layout, shell, chunk trigger, scene, e2e, scripts). The office functions take the wing (`officeSlots(w)`, `officeObstacles(w)`, `officeStops(w)`, `officeZone(w)`, `officeRoad(w)`, ...). x values are absolute.
+The office has its own south wing of the L1 slab ([owner decision](../decisions/2026-10-20-agent-office-wing.md)), reached by a lead road from the Lobby plaza like the Highlights Hall. Everything derives from S, the Lobby's south slab edge (`LOBBY.bounds.maxZ` = `LOBBY_SOUTH_EDGE` in `floors/lobby/spawn.ts`, from `LOBBY_SLAB.halfZ`: 27): `OFFICE_WING` holds the offsets and `officeWing(S)` builds `LOBBY.officeWing` in config.ts, the one source every reader uses (layout, shell, chunk trigger, scene, e2e, scripts). The office functions take the wing (`officeSlots(w)`, `officeObstacles(w)`, `officeStops(w)`, `officeZone(w)`, `officeRoad(w)`, ...). x values are absolute.
 
 | Item | Offsets from S |
 |---|---|
@@ -200,7 +202,7 @@ Code: `floors/lobby/kiosk.ts`. The kiosk lines up straight, radially into the ho
 - Body, stand and screen are one group turned by one yaw (`KIOSK.yaw`) that faces the hologram.
 - The screen is centered on the body and only tilts back.
 - Lines never wrap: `kioskFontSize` fits the longest line, `fitLine` ends longer ones in "...".
-- Placement: on the kiosk axis (`LOBBY.kioskAxis`: the unit direction from the hologram to the Visitor Observatory), 19.2 u from the hologram.
+- Placement: on the kiosk axis (`LOBBY.kioskAxis`: the unit direction from the hologram to the Visitor Observatory), 22.5 u from the hologram (its front about 6 u past the lane ring, its box 6 u from the observatory).
 - Lane spoke (`Lanes.tsx`): one straight radial segment ending 0.4 u in front of its front (`kioskLaneEnd`).
 - Obstacle and pick volume: the axis-aligned box of the turned footprint (`kioskRect` in config.ts, `kioskBounds`).
 - Point-and-go stop: `kioskStop()`, on the axis 3 u in front of the screen.
@@ -213,8 +215,8 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 | Zone | Where | Camera |
 |---|---|---|
-| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.5, so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
-| `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0) | behind the rover, looking east at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 0.88, the widest views that keep the camera east of the glass shaft |
+| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
+| `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0), just inside the lane ring's west point | behind the rover, looking east at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 0.88, the widest views that keep the camera east of the glass shaft |
 | `L1:visits` | the observatory door | |
 
 - `CameraDirector` primes the zone under the rover when it is marked `prime` (only `L1:kiosk`; `primeZone`), on the first frame and through the boot and the intro.

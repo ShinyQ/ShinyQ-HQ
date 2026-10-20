@@ -130,7 +130,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 ### Placements
 
 - L1 Visitor Observatory (owner decision), see [floor-l1-lobby.md](floor-l1-lobby.md):
-  - the Lobby's south-west corner, `LOBBY.observatory` x -24 to -18, z 14 to 21;
+  - the Lobby's south-west corner, `LOBBY.observatory` x -24 to -18, z 20 to 27;
   - station `L1:station:visits` in `lobbyItems`, door pad on its north side;
   - globe and panel in `floors/lobby/VisitsStation.tsx`, pure parts in `floors/lobby/observatory.ts`, door and view zones in `floors/lobby/observatoryLayout.ts`;
   - seven draw calls: the plinth and its outline on the hall's merged solid and line materials, five on the holo-fx program, modes `globe` and `dot`;
