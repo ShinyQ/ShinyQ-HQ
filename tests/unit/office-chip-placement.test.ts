@@ -9,7 +9,7 @@ import { buildFloorLayouts, floorY, LOBBY, ROVER_HEIGHT } from "@/experience/con
 import { yawTowards } from "@/experience/fx/facing";
 import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
-import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, officeSlots, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
 import { OFFICE_ROVER } from "@/experience/floors/lobby/office/officeVisual";
 import {
@@ -215,6 +215,16 @@ function wallBox(camera: PerspectiveCamera, size: { width: number; height: numbe
   return boxOf(camera, size, xs.flatMap((px) => ys.map((py) => [px, py, z] as const)));
 }
 
+/** The CI tower's column (2 x 2 u turned toward the stop) from the floor to its top (plinth plus column). */
+function towerBox(camera: PerspectiveCamera, size: { width: number; height: number }): ScreenBox {
+  const c = officeTowerColumn(W);
+  const half = OFFICE.tower.column / 2;
+  const yaw = Math.atan2(W.stop.x - c.x, W.stop.z - c.z);
+  const [cos, sin] = [Math.cos(yaw), Math.sin(yaw)];
+  const corners = [-1, 1].flatMap((u) => [-1, 1].map((v) => [c.x + half * (u * cos + v * sin), c.z + half * (-u * sin + v * cos)] as const));
+  return boxOf(camera, size, corners.flatMap(([x, z]) => [0, OFFICE.tower.plinth + OFFICE.tower.h].map((y) => [x, y, z] as const)));
+}
+
 function deskScreenBoxes(camera: PerspectiveCamera, size: { width: number; height: number }): ScreenBox[] {
   const positions = new Float32Array(12);
   return slots.map((s) => {
@@ -285,15 +295,17 @@ function deskBox(camera: PerspectiveCamera, size: { width: number; height: numbe
   );
 }
 
-/** Every shown chip clears the wall, the desk screens, the visitor's rover (at `at`), the HUD and every other chip. */
+/** Every shown chip clears the wall, the CI tower column, the desk screens, the visitor's rover (at `at`), the HUD and every other chip. */
 function expectClear(camera: PerspectiveCamera, size: { width: number; height: number }, coarse: boolean, chips: ReturnType<typeof chipBoxes>, at: { x: number; z: number } = W.stop) {
   const wall = wallBox(camera, size);
+  const tower = towerBox(camera, size);
   const desks = deskScreenBoxes(camera, size);
   const rover = roverScreenBox(camera, at, floorY("L1"), size, new Vector3(), { x0: 0, y0: 0, x1: 0, y1: 0 });
   expect(rover).not.toBeNull();
   const shown = chips.filter((c) => c.box);
   for (const { slot, box } of shown) {
     expect(boxesOverlap(box!, wall), `slot ${slot} on the wall`).toBe(false);
+    expect(boxesOverlap(box!, tower), `slot ${slot} on the CI tower column`).toBe(false);
     desks.forEach((d, i) => expect(boxesOverlap(box!, d), `slot ${slot} on desk screen ${i}`).toBe(false));
     expect(boxesOverlap(box!, rover!), `slot ${slot} on the rover`).toBe(false);
     expectClearOfHud(box!, size, coarse, `slot ${slot}`);

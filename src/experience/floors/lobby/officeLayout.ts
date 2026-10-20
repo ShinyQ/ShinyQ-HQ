@@ -100,6 +100,9 @@ export const OFFICE = {
    * from the office stop) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`).
    */
   wall: { w: 17, h: 5.2, bottom: 1.2, t: 0.3, frame: 0.2 },
+  /** The CI tower (south-east corner, stage B lights its lane matrix) and the ship dock (south-west corner). */
+  tower: { column: 2, h: 9, plinth: 0.4 },
+  dock: { pad: 0.25 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
    * size of its area around the stop. The wall's top stands 5.6 u over the follow rig's look target (the rover plus its
@@ -193,13 +196,42 @@ export function officeWallRect(w: OfficeWing): Rect {
   return { minX: w.wall.x - wall.w / 2 - wall.frame, maxX: w.wall.x + wall.w / 2 + wall.frame, minZ: w.wall.z - wall.t / 2, maxZ: w.rect.maxZ };
 }
 
+/** The south-east corner beside the east row box: touches it and the wing's east and south edges (SPACE_RULES allow touching). */
+export function officeTower(w: OfficeWing): Rect {
+  const east = officeSlots(w)[0].rect;
+  return { minX: east.maxX, maxX: w.rect.maxX, minZ: east.minZ, maxZ: w.rect.maxZ };
+}
+
+/** The south-west corner beside the west row box, mirrored. */
+export function officeDock(w: OfficeWing): Rect {
+  const west = officeSlots(w)[OFFICE.angles.length - 1].rect;
+  return { minX: w.rect.minX, maxX: west.minX, minZ: west.minZ, maxZ: w.rect.maxZ };
+}
+
+/**
+ * The tower column's centre (the crew's look target): 1.5 u in from the corner's east and north edges, so the column
+ * (turned toward the stop, reaching about 1.18 u) stays on the plinth and, seen from the office stop, clear of desk 1's chip
+ * on every camera class (tests/unit/office-chip-placement.test.ts; the corner's middle put it under that chip).
+ */
+export function officeTowerColumn(w: OfficeWing): Vec2 {
+  const r = officeTower(w);
+  return { x: r.maxX - 1.5, z: r.minZ + 1.5 };
+}
+
+/** The ship dock pad's centre: the corner's middle. */
+export function officeDockPad(w: OfficeWing): Vec2 {
+  const r = officeDock(w);
+  return { x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2 };
+}
+
 /**
  * Navgrid obstacles, flush with the wing's south edge: each end desk and its Rover as one box, the middle three as the
- * box between them, then the wall. The 4.5 u between the Rovers and the wall (7.35 u behind the end Rovers) is open to
- * the eye but closed to the rover: the boxes reach back to the wall, so no drive ends up behind the console.
- * Neighbouring desks touch (the console is continuous), so the boxes touch too; the two end boxes keep the middle
- * box's width (about 10 u) apart and 6 u from the wing's side edges. The middle box starts at the front of desks 2 and
- * 4, so the concave floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
+ * box between them, then the wall, the CI tower and the ship dock. The 4.5 u between the Rovers and the wall (7.35 u
+ * behind the end Rovers) is open to the eye but closed to the rover: the boxes reach back to the wall, so no drive ends
+ * up behind the console. Neighbouring desks touch (the console is continuous), so the boxes touch too; the two end
+ * boxes keep the middle box's width (about 10 u) apart and 6 u from the wing's side edges, and the tower and the dock
+ * fill the two corners between them and the side edges (touching both). The middle box starts at the front of desks 2
+ * and 4, so the concave floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
  */
 export function officeObstacles(w: OfficeWing): Rect[] {
   const s = officeSlots(w).map((x) => x.rect);
@@ -211,12 +243,21 @@ export function officeObstacles(w: OfficeWing): Rect[] {
     { minX: west.maxX, maxX: east.minX, minZ: Math.min(...s.slice(1, -1).map((r) => r.minZ)), maxZ: edge },
     { ...west, maxZ: edge },
     officeWallRect(w),
+    officeTower(w),
+    officeDock(w),
   ];
 }
 
 /** Camera collision column: the wall frame. */
 export function officeTall(w: OfficeWing): Rect & { h: number } {
   return { ...officeWallRect(w), h: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame };
+}
+
+/** Camera collision column: the CI tower's 2 x 2 u column around `officeTowerColumn`, from the floor to its top (plinth plus column). */
+export function officeTowerTall(w: OfficeWing): Rect & { h: number } {
+  const c = officeTowerColumn(w);
+  const half = OFFICE.tower.column / 2;
+  return { minX: c.x - half, maxX: c.x + half, minZ: c.z - half, maxZ: c.z + half, h: OFFICE.tower.plinth + OFFICE.tower.h };
 }
 
 /** Where `drive` stops for every office room (`FloorLayout.stops`). */

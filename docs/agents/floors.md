@@ -284,7 +284,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 
 - roads at least 8 u wide, plazas at least 16 u;
 - roads clear of obstacles over their full width, spurs by the rover radius;
-- obstacles either touching or at least 6 u apart (also from the slab edges: the outer edges of the slab and its wings, never a joint);
+- obstacles either touching or at least 6 u apart (also from the slab edges: the outer edges of the slab and its wings, never a joint); a narrower gap passes only when a third obstacle covers the whole strip between the two (`gapFilled`: no floor there, the three touch as one chain, like the Agent Office's CI tower and ship dock beside the end row boxes);
 - every door has a spur ending on its pad;
 - 6 u wide floor connects the start to within 4 u of every pad.
 - Layouts with floor pads pass them as `pads` (see [pad rules](#pad-rules)).

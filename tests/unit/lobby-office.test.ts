@@ -11,22 +11,28 @@ import {
   OFFICE_ROOMS,
   OFFICE_WING,
   officeDeskRoom,
+  officeDock,
+  officeDockPad,
   officeObstacles,
   officeRoad,
   officeSlots,
   officeStops,
   officeTall,
+  officeTower,
+  officeTowerColumn,
+  officeTowerTall,
   officeWallRect,
   officeWing,
   officeZone,
   type OfficeWing,
 } from "@/experience/floors/lobby/officeLayout";
+import { CREW } from "@/experience/floors/lobby/office/crew";
 import { OFFICE_SLOTS, officeBounds, officeShellBoxes, officeSign, wingBounds } from "@/experience/floors/lobby/officeShell";
-import { buildNavGrid, findPath, isWalkable, nearestWalkable } from "@/experience/nav/navgrid";
+import { buildNavGrid, componentsOf, findPath, isWalkable, nearestWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph, routeUsesRoad } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { inSlab, slabRects } from "@/experience/nav/slab";
-import { rectGap, SPACE_RULES, spaceViolations, wideGrid } from "@/experience/nav/space";
+import { gapFilled, rectGap, SPACE_RULES, spaceViolations, wideGrid } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
 
 const l1 = buildFloorLayouts(8).L1;
@@ -35,6 +41,30 @@ const S = LOBBY.bounds.maxZ;
 const slots = officeSlots(W);
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
 const leadRect = (w: OfficeWing): Rect => ({ minX: w.lead.x - w.lead.width / 2, maxX: w.lead.x + w.lead.width / 2, minZ: w.lead.from, maxZ: w.lead.to });
+type Floor = Parameters<typeof buildNavGrid>[0];
+/** Whether a rover drive (the rover-radius navgrid) gets from `from` (its nearest walkable cell) to `to`. */
+const reachable = (layout: Floor, from: Vec2, to: Vec2) => {
+  const grid = buildNavGrid(layout, ROVER.radius);
+  const start = nearestWalkable(grid, from);
+  const end = start && findPath(grid, start, to)?.at(-1);
+  return Boolean(end && end.x === to.x && end.z === to.z);
+};
+/** Walkable navgrid cells in the wing a rover cannot reach from the spawn: pockets behind or between the office boxes. */
+const pocketCells = (layout: Floor, spawn: Vec2 = LOBBY.spawn, area: Rect = W.rect) => {
+  const grid = buildNavGrid(layout, ROVER.radius);
+  const labels = componentsOf(grid);
+  const s = nearestWalkable(grid, spawn)!;
+  const at = (x: number, z: number) => Math.floor((z - grid.minZ) / grid.cell) * grid.cols + Math.floor((x - grid.minX) / grid.cell);
+  const home = labels[at(s.x, s.z)];
+  const out: Vec2[] = [];
+  for (let k = 0; k < labels.length; k++) {
+    if (labels[k] === -1 || labels[k] === home) continue;
+    const p = { x: grid.minX + ((k % grid.cols) + 0.5) * grid.cell, z: grid.minZ + (Math.floor(k / grid.cols) + 0.5) * grid.cell };
+    if (p.x >= area.minX && p.x <= area.maxX && p.z >= area.minZ && p.z <= area.maxZ) out.push(p);
+  }
+  return out;
+};
+const sameRect = (a: Rect, b: Rect) => a.minX === b.minX && a.maxX === b.maxX && a.minZ === b.minZ && a.maxZ === b.maxZ;
 
 describe("Agent Office wing (owner decision 2026-10-20)", () => {
   it("is one named wing derived from the Lobby's south edge: the L1 slab gains it, the main rect stays", () => {
@@ -67,6 +97,9 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(b.wall).toEqual(at(a.wall));
     expect(officeObstacles(b)).toEqual(officeObstacles(a).map(shift));
     expect(officeTall(b)).toEqual({ ...shift(officeTall(a)), h: officeTall(a).h });
+    expect(officeTowerTall(b)).toEqual({ ...shift(officeTowerTall(a)), h: officeTowerTall(a).h });
+    expect(officeTowerColumn(b)).toEqual(at(officeTowerColumn(a)));
+    expect(officeDockPad(b)).toEqual(at(officeDockPad(a)));
     for (const [i, s] of officeSlots(b).entries()) {
       const o = officeSlots(a)[i];
       expect(s.desk.x).toBeCloseTo(o.desk.x, 9);
@@ -114,19 +147,22 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(sign.y - signPlate(sign).h / 2).toBeGreaterThan(ROVER_HEIGHT + 0.5);
   });
 
-  it("meets the space rules: the desk boxes touch each other and the wall or keep 6 u, and keep 6 u to the wing's side edges", () => {
+  it("meets the space rules: the boxes touch each other and the wall or keep 6 u (or a box between fills the gap), the row and the wall 6 u from the wing's side edges", () => {
     const office = officeObstacles(W);
-    expect(office).toHaveLength(4);
+    expect(office).toHaveLength(6);
     for (const o of office) expect(l1.obstacles).toContainEqual(o);
     for (let i = 0; i < office.length; i++)
       for (let j = i + 1; j < office.length; j++) {
         const gap = rectGap(office[i], office[j]);
-        expect(gap === 0 || gap >= SPACE_RULES.clear, `${i} ${j}: ${gap}`).toBe(true);
+        expect(gap === 0 || gap >= SPACE_RULES.clear || gapFilled(office[i], office[j], office), `${i} ${j}: ${gap}`).toBe(true);
       }
-    // Flush with the wing's south edge, inside the wing, 6 u from its side edges.
+    // Flush with the wing's south edge, inside the wing; the row and the wall 6 u from its side edges (the CI tower and
+    // the ship dock fill the corners between them, touching the side edges).
     for (const o of office) {
       expect(o.maxZ).toBe(W.rect.maxZ);
       expect(inside(o, W.rect)).toBe(true);
+    }
+    for (const o of office.slice(0, 4)) {
       expect(o.minX - W.rect.minX).toBeGreaterThanOrEqual(SPACE_RULES.clear);
       expect(W.rect.maxX - o.maxX).toBeGreaterThanOrEqual(SPACE_RULES.clear);
     }
@@ -260,9 +296,9 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(zones.filter((z) => z.prime).map((z) => z.id)).toEqual(["L1:kiosk"]);
   });
 
-  it("draws the furniture shell inside the obstacles: 5 desk tops meeting in one console, 10 legs and the wall frame", () => {
+  it("draws the furniture shell inside the obstacles: 5 desk tops meeting in one console, 10 legs, the wall frame, the CI tower (plinth and column) and the dock pad", () => {
     const boxes = officeShellBoxes();
-    expect(boxes).toHaveLength(16);
+    expect(boxes).toHaveLength(19);
     // Every point of every box (sampled over its turned footprint) stands on an obstacle: no invisible floor gaps.
     const obstacles = officeObstacles(W);
     for (const b of boxes) {
@@ -276,11 +312,21 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
         }
     }
     // The desk tops are the desks: neighbours meet at their back edge (the console has no gap).
-    const tops = boxes.filter((b) => b.y > 0);
+    const tops = boxes.filter((b) => b.y === OFFICE.desk.top - OFFICE.desk.slab);
     expect(tops).toHaveLength(5);
     for (const t of tops) expect(t.w).toBe(OFFICE.desk.w);
-    const top = Math.max(...boxes.map((b) => b.y + b.h));
-    expect(top).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
+    // The tallest is the CI tower column (on its plinth), then the wall frame.
+    const heights = boxes.map((b) => b.y + b.h).sort((x, y) => y - x);
+    expect(heights[0]).toBeCloseTo(OFFICE.tower.plinth + OFFICE.tower.h);
+    expect(heights[1]).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
+    // The tower plinth and the dock pad fill their corners; the column stands on the plinth, turned toward the stop.
+    const [plinth, column, pad] = boxes.slice(-3);
+    const tower = officeTower(W);
+    const dock = officeDock(W);
+    expect(plinth).toMatchObject({ y: 0, h: OFFICE.tower.plinth, w: tower.maxX - tower.minX, d: tower.maxZ - tower.minZ });
+    expect(column).toMatchObject({ ...officeTowerColumn(W), y: OFFICE.tower.plinth, w: OFFICE.tower.column, d: OFFICE.tower.column, h: OFFICE.tower.h });
+    expect(Math.sin(column.yaw!) * (W.stop.x - column.x) + Math.cos(column.yaw!) * (W.stop.z - column.z)).toBeCloseTo(Math.hypot(W.stop.x - column.x, W.stop.z - column.z));
+    expect(pad).toMatchObject({ ...officeDockPad(W), y: 0, h: OFFICE.dock.pad, w: dock.maxX - dock.minX, d: dock.maxZ - dock.minZ });
   });
 
   it("is one continuous console: neighbouring desks touch, so the boxes touch honestly and hide little open floor", () => {
@@ -323,5 +369,70 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     // The rest lies behind the console: the owner's space between the Rovers and the wall (4.5 u behind the middle Rover,
     // 7.35 u behind the end ones), open to the eye and closed to the rover, so no drive ends up behind the console.
     expect(deepest).toBeCloseTo(wallFront - (slots[0].rover.z + OFFICE.rover.radius), 1);
+  });
+});
+
+describe("CI tower and ship dock", () => {
+  const w = LOBBY.officeWing;
+  const [east, , west] = officeObstacles(w);
+  const tower = officeTower(w);
+  const dock = officeDock(w);
+  it("fill the corners beside the end row boxes, touching them and the wing's edges", () => {
+    expect(tower).toMatchObject({ minX: east.maxX, maxX: w.rect.maxX, maxZ: w.rect.maxZ });
+    expect(dock).toMatchObject({ minX: w.rect.minX, maxX: west.minX, maxZ: w.rect.maxZ });
+    expect(tower.minZ).toBeCloseTo(east.minZ, 6);
+    expect(dock.minZ).toBeCloseTo(west.minZ, 6);
+    expect(officeObstacles(w).slice(4)).toEqual([tower, dock]);
+    for (const r of [tower, dock]) expect(l1.obstacles).toContainEqual(r);
+  });
+  it("meet the space rules (touch, 6 u or a filled gap) with every other L1 obstacle", () => {
+    for (const r of [tower, dock])
+      for (const o of l1.obstacles.filter((o) => !sameRect(o, r))) {
+        const gap = rectGap(r, o);
+        // The tower keeps 3.68 u to the middle box and 0.21 u to the wall frame (the dock mirrored), but the end row
+        // box between them fills that strip: no floor, the three touch as one chain (`gapFilled`).
+        const filled = gapFilled(r, o, l1.obstacles.filter((x) => !sameRect(x, r) && !sameRect(x, o)));
+        expect(gap === 0 || gap >= 6 - 1e-6 || filled, `${JSON.stringify(r)} vs ${JSON.stringify(o)}: ${gap}`).toBe(true);
+      }
+  });
+  it("leave the stop reachable from the spawn and the elevator, with no pocket", () => {
+    expect(reachable(l1, LOBBY.spawn, w.stop)).toBe(true);
+    expect(reachable(l1, LOBBY.arrival, w.stop)).toBe(true);
+    expect(pocketCells(l1)).toEqual([]);
+  });
+  it("keeps every Rover's footprint (radius 1) inside the office obstacles while pacing and docked", () => {
+    const boxes = officeObstacles(w);
+    const inside = (x: number, z: number) => boxes.some((b) => x >= b.minX - 1e-6 && x <= b.maxX + 1e-6 && z >= b.minZ - 1e-6 && z <= b.maxZ + 1e-6);
+    for (const s of officeSlots(w)) {
+      const across = { x: Math.cos(s.yaw), z: -Math.sin(s.yaw) };
+      const fwd = { x: Math.sin(s.yaw), z: Math.cos(s.yaw) };
+      for (const [dx, dz] of [[CREW.pace.amp, 0], [-CREW.pace.amp, 0], [0, -CREW.dock.back]]) {
+        const cx = s.rover.x + across.x * dx + fwd.x * dz;
+        const cz = s.rover.z + across.z * dx + fwd.z * dz;
+        for (let k = 0; k < 32; k++) {
+          const a = (k / 32) * Math.PI * 2;
+          expect(inside(cx + Math.cos(a), cz + Math.sin(a)), `slot ${s.slot} at ${dx},${dz}`).toBe(true);
+        }
+      }
+    }
+  });
+  it("puts the tower column on the tower and in front of the wall line", () => {
+    const c = officeTowerColumn(w);
+    expect(c.x).toBeGreaterThan(tower.minX);
+    expect(c.x).toBeLessThan(tower.maxX);
+    expect(c.z).toBeLessThan(w.wall.z);
+  });
+  it("puts the dock pad on the dock, and makes the tower column a camera column (plinth plus column)", () => {
+    const p = officeDockPad(w);
+    expect(p.x).toBeGreaterThan(dock.minX);
+    expect(p.x).toBeLessThan(dock.maxX);
+    expect(p.z).toBeGreaterThan(dock.minZ);
+    expect(p.z).toBeLessThan(dock.maxZ);
+    const c = officeTowerColumn(w);
+    const half = OFFICE.tower.column / 2;
+    expect(officeTowerTall(w)).toEqual({ minX: c.x - half, maxX: c.x + half, minZ: c.z - half, maxZ: c.z + half, h: OFFICE.tower.plinth + OFFICE.tower.h });
+    expect(inside(officeTowerTall(w), tower)).toBe(true);
+    expect(l1.tall).toContainEqual(officeTowerTall(w));
+    expect(l1.tall).toContainEqual(officeTall(w));
   });
 });

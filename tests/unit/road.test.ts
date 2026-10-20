@@ -14,7 +14,7 @@ import {
 } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
 import { chevronMarks, dashes, miterNormals, networkFill, offsetLine, roadEdges, spurStub } from "@/experience/nav/roadGeometry";
-import { padViolations, rectGap, spaceViolations } from "@/experience/nav/space";
+import { gapFilled, padViolations, rectGap, spaceViolations } from "@/experience/nav/space";
 import type { DoorTrigger, PadTrigger, Rect, Vec2 } from "@/experience/types";
 import { expectSpaceRules } from "../helpers/space";
 
@@ -259,6 +259,18 @@ describe("space rules", () => {
   });
 
   const rules = (input: Partial<typeof base>) => spaceViolations({ ...base, ...input }).map((x) => x.rule);
+
+  it("passes a narrow gap only when a third obstacle fills the whole strip between the two (no floor there)", () => {
+    const a = { minX: 0, maxX: 2, minZ: 0, maxZ: 4 };
+    const b = { minX: 5, maxX: 7, minZ: 0, maxZ: 4 };
+    expect(gapFilled(a, b, [a, b, { minX: 2, maxX: 5, minZ: -1, maxZ: 4 }])).toBe(true);
+    // Covering only part of the strip leaves floor between them.
+    expect(gapFilled(a, b, [a, b, { minX: 2, maxX: 5, minZ: 1, maxZ: 4 }])).toBe(false);
+    expect(gapFilled(a, b, [a, b, { minX: 2, maxX: 4.5, minZ: 0, maxZ: 4 }])).toBe(false);
+    // Diagonal neighbours: the corner rect between them.
+    expect(gapFilled(a, { minX: 4, maxX: 6, minZ: 6, maxZ: 8 }, [{ minX: 1, maxX: 4.5, minZ: 3, maxZ: 6.5 }])).toBe(true);
+    expect(gapFilled(a, b, [a, b])).toBe(false);
+  });
 
   it("flags narrow roads and small plazas", () => {
     const network = { ...STRAIGHT, roads: [{ ...STRAIGHT.roads[0], width: 6 }], plazas: [{ ...STRAIGHT.plazas[0], w: 12 }] };
