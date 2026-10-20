@@ -5,7 +5,8 @@ import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
-import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import en from "../../messages/en.json";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
 import { SIZES } from "../helpers/office-cameras";
@@ -68,6 +69,18 @@ describe("Agent Office view model", () => {
     const [input, , failed] = ready(statesB(NOW)).rovers;
     expect(screenInput(input, t)).toEqual({ kind: "question", color: "#f472b6", activity: "Asking Kurniadi", progress: null, job: null });
     expect(screenInput(failed, t)).toMatchObject({ kind: "cross", job: "Build, CV and e2e" });
+  });
+
+  it("maps desk helpers to the Rover's drones, 0 without helpers, asleep, off duty, off or offline", () => {
+    const busy = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
+    const live = officeView({ status: "ready", snapshot: busy });
+    expect(live.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0]);
+    expect(ready(statesB(NOW)).rovers[4].helpers).toBe(0);
+    const sleepy = officeView({ status: "ready", snapshot: { ...busy, desks: busy.desks.map((d) => (d.slot === 0 ? { ...d, state: "asleep", activity: "resting" } : d)) } });
+    expect(sleepy.rovers[0].helpers).toBe(0);
+    expect(officeView({ status: "offline", snapshot: busy }).rovers.every((r) => r.helpers === 0)).toBe(true);
+    expect(officeView({ status: "ready", snapshot: { ...busy, mode: "off" } }).rovers.every((r) => r.helpers === 0)).toBe(true);
+    expect(officeView({ status: "disabled", snapshot: null }).rovers.every((r) => r.helpers === 0)).toBe(true);
   });
 
   it("links through the shared, Classic-safe URL checks (src/lib/office/model.ts)", () => {

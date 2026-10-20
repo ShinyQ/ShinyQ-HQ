@@ -40,8 +40,8 @@ describe("crew glow", () => {
 });
 
 describe("crew glow layout", () => {
-  it("packs 34 glow instances per Rover and the tower after the five Rovers", () => {
-    expect(GLOW_PER_ROVER).toBe(34);
+  it("packs 38 glow instances per Rover (18 rig, 20 crew with 4 drone eyes) and the tower after the five Rovers", () => {
+    expect(GLOW_PER_ROVER).toBe(38);
     expect(TOWER.start).toBe(5 * GLOW_PER_ROVER);
   });
   it("writes crewFx into the given object", () => {

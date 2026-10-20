@@ -65,13 +65,13 @@ import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
-import { crewFx, newActor, type CrewFx } from "./crew";
+import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "./crewFrame";
 import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
-import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeRover } from "./officeRig";
+import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
@@ -182,12 +182,18 @@ interface RoverMeshes {
   quads: Mesh;
 }
 
-/** Writes the marked Rovers (instance matrices, face and flag quads, rig and crew glow) from the poses `writes` recorded and the crew's fx, then clears their marks. */
-function flushRovers(writes: RoverWrites, fxs: readonly CrewFx[], slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], now: number, reduced: boolean, m: RoverMeshes): void {
+/**
+ * Writes the marked Rovers (instance matrices, face and flag quads, rig and crew glow) from the poses `writes` recorded
+ * and the crew's fx, then clears their marks. The helper drones' bodies move with the glow key, so a glow-only write
+ * rewrites them too while a Rover has (or just lost) drones; `drawn` holds each slot's drawn drone count.
+ */
+function flushRovers(writes: RoverWrites, fxs: readonly CrewFx[], slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], now: number, reduced: boolean, lite: boolean, m: RoverMeshes, drawn: number[]): void {
   const position = m.quads.geometry.getAttribute("position") as BufferAttribute;
   const matrices = m.glow.instanceMatrix.array as Float32Array;
   const colors = m.glow.instanceColor!.array as Float32Array;
+  const parts = m.parts.instanceMatrix.array as Float32Array;
   let posed = false;
+  let droned = false;
   let glowed = false;
   for (const r of rovers) {
     const slot = r.slot;
@@ -195,23 +201,29 @@ function flushRovers(writes: RoverWrites, fxs: readonly CrewFx[], slots: readonl
     const glowDue = writes.glowPending[slot];
     if (!poseDue && !glowDue) continue;
     const p = writes.poses[slot];
+    const phase = slotPhase(slot);
+    const drones = Math.min(r.helpers, DRONES.max);
     roverFrame(slots[slot], p, FRAME);
     if (poseDue) {
-      writeRover(FRAME, p, m.parts.instanceMatrix.array as Float32Array, slot, m.treads.instanceMatrix.array as Float32Array);
+      writeRover(FRAME, p, parts, slot, m.treads.instanceMatrix.array as Float32Array, drones, now, phase, reduced);
       writeFace(FRAME, position.array as Float32Array, slot);
       writeFlag(FRAME, p, position.array as Float32Array, 2 * slots.length + slot);
       posed = true;
+    } else if (glowDue && (drones > 0 || drawn[slot] > 0)) {
+      writeDrones(FRAME, drones, now, phase, reduced, parts, slot * PARTS_PER_ROVER);
+      droned = true;
     }
+    drawn[slot] = drones;
     if (glowDue) {
       const fx = fxs[slot];
       writeGlow(slots[slot], FRAME, r.state, r.progress, p.tipScale, now, reduced, writes.cam, matrices, colors, fx.flicker);
-      writeCrewGlow(slots[slot], FRAME, r.state, fx, now, slotPhase(slot), reduced, matrices, colors);
+      writeCrewGlow(slots[slot], FRAME, r.state, fx, now, phase, reduced, matrices, colors, drones, lite);
       glowed = true;
     }
     writes.done(slot);
   }
+  if (posed || droned) m.parts.instanceMatrix.needsUpdate = true;
   if (posed) {
-    m.parts.instanceMatrix.needsUpdate = true;
     m.treads.instanceMatrix.needsUpdate = true;
     position.needsUpdate = true;
   }
@@ -378,6 +390,9 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   }, []);
   const fonts = useCanvasFonts(redraw);
   const fps = SCREEN_FPS[tier === "full" ? "full" : "lite"];
+  const lite = tier !== "full";
+  // Each slot's drawn helper drones (the rest instances draw none).
+  const drawn = useMemo(() => slots.map(() => 0), [slots]);
 
   useEffect(() => {
     const g = group.current;
@@ -401,14 +416,14 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     if (!g || !P || !D || !G || !Q || !officeRuntime.inView) return;
     const now = clock.elapsedTime;
     const dt = Math.min(rawDt, MAX_FRAME_DT) * animationSpeed();
-    sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, dt, now, reduced, camera.position);
+    sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, dt, now, reduced, camera.position, lite);
     const tk = towerKey(lanes, now, reduced);
     if (writes.pending() || tk !== lanesKey.current) {
       const rovers = view.rovers;
       // Only how the meshes look: wait for a drawn frame (a hidden L1 or the office before its precompile skips it).
       // One callback per object (the latest wins), so it covers both the Rovers and the tower.
       whenDrawn(g, () => {
-        flushRovers(writes, crew.fx, slots, rovers, now, reduced, { parts: P, treads: D, glow: G, quads: Q });
+        flushRovers(writes, crew.fx, slots, rovers, now, reduced, lite, { parts: P, treads: D, glow: G, quads: Q }, drawn);
         if (tk === lanesKey.current) return;
         writeTower(lanes, now, reduced, G.instanceMatrix.array as Float32Array, G.instanceColor!.array as Float32Array);
         lanesKey.current = tk;
@@ -618,7 +633,8 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     const feeding = officeLive.wanted();
     if (officeSignal.sceneFeeding !== feeding) setOfficeSignal({ sceneFeeding: feeding });
     const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
-    Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted(), crew });
+    const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
+    Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted(), crew, drones });
   }
   const mobile = s.device.viewport === "mobile";
   const mode = here ? officeChipMode(s.activeRoom) : null;
@@ -766,7 +782,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, [agents, slots, t]);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, polling: false, crew: [] });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, polling: false, crew: [], drones: [] });
     },
     [],
   );

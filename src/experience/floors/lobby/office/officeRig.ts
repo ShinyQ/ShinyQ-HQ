@@ -1,16 +1,19 @@
 import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import type { OfficeProgress, OfficeState } from "@/lib/office/protocol";
 import type { OfficeSlot } from "../officeLayout";
+import { dronePoint, DRONES, type FxPoint } from "./crew";
 import { CREW_GLOW } from "./crewFx";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "./officeVisual";
 
 /**
  * Instance matrices and quad corners for the office Rovers, written in place every frame the office is in view
  * (no allocation in the write functions: module temporaries and constant tables; `glowKey` builds a short string). Chest, head, two arms, the antenna stalk and the flag pole share one
- * instanced mesh, the treads another; the faces, desk screens and flag plates are corners of one merged quad mesh;
+ * instanced mesh with up to four helper drones, the treads another; the faces, desk screens and flag plates are corners of one merged quad mesh;
  * the antenna tips, the halos and the progress dots are one instanced holo mesh.
  */
-export const PARTS_PER_ROVER = 6;
+/** Chest, head, two arms, stalk, flag pole (0 to 5), then the helper drones' bodies (`DRONE_PART` to 9). */
+export const PARTS_PER_ROVER = 10;
+export const DRONE_PART = 6;
 export const TREADS_PER_ROVER = 2;
 /** Glow instances per Rover: the rig's 18 (tip, halo, 16 progress dots, indexes `base` to `base + 17`), then the crew's (`crewFx.ts`). */
 export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count + CREW_GLOW.count;
@@ -30,6 +33,7 @@ const ONE = new Vector3(1, 1, 1);
 const C = new Color();
 const FLAT = new Quaternion().setFromEuler(new Euler(-Math.PI / 2, 0, 0));
 const SLEEP_TIP = "#3b3f5c";
+const DRONE: FxPoint = { x: 0, y: 0, z: 0, a: 0 };
 /** Quad corner signs: bottom left, bottom right, top right, top left. */
 const QUAD_X = [-0.5, 0.5, 0.5, -0.5] as const;
 const QUAD_Y = [-0.5, -0.5, 0.5, 0.5] as const;
@@ -66,7 +70,19 @@ function arm(frame: Matrix4, side: number, angle: number, parts: Float32Array, i
   M.multiplyMatrices(frame, A).toArray(parts, index * 16);
 }
 
-export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, slot: number, treads: Float32Array): void {
+/** The helper drones' bodies (parts `at + 6` to `at + 9`, `at` the Rover's first part): `min(n, 4)` drawn, the rest at zero scale. */
+export function writeDrones(frame: Matrix4, n: number, t: number, phase: number, reduced: boolean, parts: Float32Array, at: number): void {
+  const [w, h, d] = DRONES.body;
+  for (let i = 0; i < DRONES.max; i++) {
+    dronePoint(i, n, t, phase, reduced, DRONE);
+    const k = DRONE.a > 0 ? 1 : 0;
+    A.compose(V.set(DRONE.x, DRONE.y, DRONE.z), Q.identity(), S.set(w * k, h * k, d * k));
+    M.multiplyMatrices(frame, A).toArray(parts, (at + DRONE_PART + i) * 16);
+  }
+}
+
+/** One Rover's parts and treads; `drones` helper drones orbit its head (none by default: the rest instances). */
+export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, slot: number, treads: Float32Array, drones = 0, t = 0, phase = 0, reduced = true): void {
   const R = OFFICE_ROVER;
   const at = slot * PARTS_PER_ROVER;
   box(frame, R.chest, parts, at);
@@ -80,6 +96,7 @@ export function writeRover(frame: Matrix4, p: OfficePose, parts: Float32Array, s
   M.multiplyMatrices(frame, A).toArray(parts, (at + 5) * 16);
   box(frame, R.treads[0], treads, slot * TREADS_PER_ROVER);
   box(frame, R.treads[1], treads, slot * TREADS_PER_ROVER + 1);
+  writeDrones(frame, drones, t, phase, reduced, parts, at);
 }
 
 /** Four corners (bottom left, bottom right, top right, top left, counter-clockwise from the front) of a w x h quad facing the frame's +z. */

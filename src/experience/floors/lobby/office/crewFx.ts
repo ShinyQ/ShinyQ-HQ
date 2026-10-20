@@ -3,7 +3,7 @@ import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
 import { OFFICE, officeTowerColumn, type OfficeSlot } from "../officeLayout";
-import { confettiAt, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
+import { confettiAt, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
 import { OFFICE_ROVER } from "./officeVisual";
 
@@ -12,8 +12,8 @@ import { OFFICE_ROVER } from "./officeVisual";
  * the write functions: module temporaries and constant tables; the key functions build a short string).
  */
 
-/** Crew instances per Rover in the glow mesh, after the 18 the rig writes (tip, halo, 16 progress dots). */
-export const CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, count: 16 } as const;
+/** Crew instances per Rover in the glow mesh, after the 18 the rig writes (tip, halo, 16 progress dots); `eyes`: the helper drones' eye lights. */
+export const CREW_GLOW = { sparks: 0, trail: 5, confetti: 8, charge: 14, desk: 15, eyes: 16, count: 20 } as const;
 /** The rig's own instances per Rover (`writeGlow`): the tip, the halo and the progress dots. */
 const RIG_GLOW = 2 + OFFICE_ROVER.progress.count;
 
@@ -37,12 +37,16 @@ function dot(frame: Matrix4, p: FxPoint, size: number, color: string, gain: numb
   C.set(color).multiplyScalar(gain * p.a).toArray(colors, i * 3);
 }
 
+/** The eye light sits on the drone's outer face (the body is 0.3 u deep). */
+const EYE_R = (DRONES.r + DRONES.body[2] / 2 + 0.01) / DRONES.r;
+
 /**
- * Writes one Rover's 16 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`: the
- * sparks, the thought trail and the confetti ride on it. The charge pad lies on the floor under the Rover and the desk
- * light on the desk, so neither follows the Rover's pitch, slump or turn.
+ * Writes one Rover's 20 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`: the
+ * sparks, the thought trail, the confetti and the `drones` helper drones' eye lights ride on it (no eye lights on the
+ * lite tier). The charge pad lies on the floor under the Rover and the desk light on the desk, so neither follows the
+ * Rover's pitch, slump or turn.
  */
-export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array): void {
+export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array, drones = 0, lite = false): void {
   const base = slot.slot * (RIG_GLOW + CREW_GLOW.count) + RIG_GLOW;
   const tone = STATE_TONE[state];
   for (let i = 0; i < 5; i++) {
@@ -70,6 +74,19 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
   V.set(slot.desk.x + Math.sin(slot.yaw) * edge, OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
   M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(OFFICE.desk.w * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
   C.set(tone).multiplyScalar(0.6 * fx.deskLight).toArray(colors, desk * 3);
+  for (let i = 0; i < DRONES.max; i++) {
+    dronePoint(i, lite ? 0 : drones, t, phase, reduced, P);
+    P.x *= EYE_R;
+    P.z *= EYE_R;
+    dot(frame, P, 0.1, tone, 1.4, base + CREW_GLOW.eyes + i, matrices, colors);
+  }
+}
+
+/** Changes when the helper drones would move or show differently: "" without drones, their count (and the tier) parked under reduced motion, a 30 Hz tick in full motion. */
+export function droneKey(drones: number, t: number, reduced: boolean, lite: boolean): string {
+  const n = Math.min(drones, DRONES.max);
+  if (n <= 0) return "";
+  return reduced ? `d${n}${lite ? "l" : ""}` : `d${n}:${Math.floor(t * 30)}`;
 }
 
 /** Changes when any crew instance would change: animated effects tick at 30 Hz, the charge in tenths, the flicker by its gain. */

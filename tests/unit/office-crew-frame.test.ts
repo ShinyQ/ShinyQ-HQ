@@ -7,7 +7,8 @@ import { officeView, type OfficeView } from "@/experience/floors/lobby/office/of
 import { slotPhase } from "@/experience/floors/lobby/office/officeVisual";
 import { officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
-import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 
 const DT = 1 / 60;
@@ -102,5 +103,33 @@ describe("office crew frame (the keyed write decision)", () => {
     expect(writes.glowKeys.every((k) => k.includes("|"))).toBe(true);
     const working = view.rovers.find((r) => r.state === "working")!;
     expect(crew.fx[working.slot].sparks).toBe(1);
+  });
+
+  it("parks helper drones under reduced motion (nothing written per frame) and ticks them at 30 Hz in full motion", () => {
+    const drones = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
+    expect(drones.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0]);
+    const { due } = run(drones, true, 300);
+    expect(due.slice(1).some(Boolean)).toBe(false);
+    const { writes, crew } = setup();
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, drones.rovers, DT, 0, false, CAM);
+    const first = writes.glowKeys.slice();
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, drones.rovers, DT, 1 / 30 + 1e-3, false, CAM);
+    expect(writes.glowKeys[0]).not.toBe(first[0]);
+    expect(writes.glowKeys[0]).toContain("|d3");
+    expect(writes.glowKeys[2]).toContain("|d4");
+    expect(writes.glowKeys[1]).not.toContain("|d");
+  });
+
+  it("rewrites a still Rover's glow when its drone count or the tier changes", () => {
+    const { writes, crew } = setup();
+    const view = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
+    const one = view.rovers.map((r) => ({ ...r, helpers: r.slot === 0 ? 1 : 0 }));
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, one, DT, 0, true, CAM);
+    for (const s of OFFICE_SLOTS) writes.done(s.slot);
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, one.map((r) => ({ ...r, helpers: r.slot === 0 ? 2 : 0 })), DT, DT, true, CAM);
+    expect(writes.glowPending).toEqual([true, false, false, false, false]);
+    for (const s of OFFICE_SLOTS) writes.done(s.slot);
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, one.map((r) => ({ ...r, helpers: r.slot === 0 ? 2 : 0 })), DT, 2 * DT, true, CAM, true);
+    expect(writes.glowPending).toEqual([true, false, false, false, false]);
   });
 });

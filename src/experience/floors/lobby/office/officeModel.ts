@@ -26,6 +26,8 @@ export interface OfficeRoverView {
   job: string | null;
   since: number | null;
   recent: readonly OfficeRecent[];
+  /** Active helpers (sub-agents, the v2 desk count): 0 when asleep, off duty, or the view is off or offline. */
+  helpers: number;
 }
 
 export interface OfficeView {
@@ -38,7 +40,7 @@ export interface OfficeView {
   updatedAt: number | null;
 }
 
-const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [] });
+const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [], helpers: 0 });
 
 export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): OfficeView {
   const snap = feed.status === "disabled" ? null : feed.snapshot;
@@ -59,6 +61,7 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
       job: desk.state === "failed" ? (desk.job ?? null) : null,
       since: desk.since,
       recent: desk.recent,
+      helpers: desk.state === "asleep" ? 0 : (desk.helpers ?? 0),
     };
   });
   const live = snap && !sleeping ? snap : null;

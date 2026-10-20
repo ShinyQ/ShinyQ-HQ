@@ -208,3 +208,17 @@ export function confettiAt(j: number, u: number, o: FxPoint): FxPoint {
   o.a = 1 - u;
   return o;
 }
+
+/** Helper drones (one per active sub-agent, at most 4 drawn) orbiting the head; `body` is the drone's box size (u). */
+export const DRONES = { max: 4, r: 1.15, y: 2.5, speed: 1.2, bob: 0.06, body: [0.3, 0.12, 0.3] } as const;
+
+/** Drone `i` of `n` (at most 4 drawn) orbiting the head, in the Rover's frame; parked at fixed angles under reduced motion. */
+export function dronePoint(i: number, n: number, t: number, phase: number, reduced: boolean, o: FxPoint): FxPoint {
+  const k = Math.max(1, Math.min(n, DRONES.max));
+  const a = (i / k) * TAU + (reduced ? 0.6 : t * DRONES.speed + phase);
+  o.x = Math.cos(a) * DRONES.r;
+  o.y = DRONES.y + (reduced ? 0 : Math.sin(t * 2.2 + i * 1.3 + phase) * DRONES.bob);
+  o.z = Math.sin(a) * DRONES.r;
+  o.a = i < Math.min(n, DRONES.max) ? 1 : 0;
+  return o;
+}

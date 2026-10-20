@@ -2,7 +2,7 @@ import type { OfficeState } from "@/lib/office/protocol";
 import type { Vec2 } from "../../../types";
 import type { OfficeSlot } from "../officeLayout";
 import { CREW, crewFx, crewTarget, lookYaw, newActor, stepCrew, type CrewActor, type CrewFx, type CrewLook } from "./crew";
-import { crewGlowKey } from "./crewFx";
+import { crewGlowKey, droneKey } from "./crewFx";
 import type { RoverWrites } from "./officeFrame";
 import type { OfficeRoverView } from "./officeModel";
 import { glowKey } from "./officeRig";
@@ -35,9 +35,10 @@ export function officeCrew(slots: readonly OfficeSlot[], camera: Vec2, tower: Ve
 /** The docked asleep pose (both motion settings): the rest instances and `RoverWrites`' first record, so a sleeping office writes nothing. */
 export const restCrewPose = (): OfficePose => crewTarget("asleep", STILL_T, 0, true, NO_LOOK, 0);
 
-/** A Rover's glow key: the rig's (`glowKey`) and the crew's (`crewGlowKey`). */
-export function crewKey(state: OfficeState, progress: OfficeRoverView["progress"], fx: CrewFx, now: number, reduced: boolean): string {
-  return glowKey(state, progress, reduced, now) + "|" + crewGlowKey(state, fx, now, reduced);
+/** A Rover's glow key: the rig's (`glowKey`), the crew's (`crewGlowKey`) and its helper drones' (`droneKey`, absent without drones). */
+export function crewKey(state: OfficeState, progress: OfficeRoverView["progress"], fx: CrewFx, now: number, reduced: boolean, drones = 0, lite = false): string {
+  const d = droneKey(drones, now, reduced, lite);
+  return glowKey(state, progress, reduced, now) + "|" + crewGlowKey(state, fx, now, reduced) + (d ? "|" + d : "");
 }
 
 /** The asleep office's glow key under reduced motion (the rest glow). */
@@ -55,10 +56,10 @@ export function crewOffset(state: OfficeState, p: OfficePose, phase: number): nu
 
 /**
  * One frame of the crew: turns the camera looks when the camera moved (marking every glow), steps each Rover's actor
- * by `dt` (already clamped and scaled), records its pose and glow key. Returns the bob probe. No allocation but the
- * short key strings.
+ * by `dt` (already clamped and scaled), records its pose and glow key (the helper drones ride on the glow key: their
+ * bodies are written with the glow). Returns the bob probe. No allocation but the short key strings.
  */
-export function stepOfficeCrew(c: OfficeCrew, writes: RoverWrites, slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], dt: number, now: number, reduced: boolean, cam: Vec2): number {
+export function stepOfficeCrew(c: OfficeCrew, writes: RoverWrites, slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], dt: number, now: number, reduced: boolean, cam: Vec2, lite = false): number {
   if (writes.camera(cam.x, cam.z)) for (const s of slots) c.looks[s.slot].camera = lookYaw(s, writes.cam, CREW.cameraClamp);
   let bob = 0;
   for (const r of rovers) {
@@ -68,7 +69,7 @@ export function stepOfficeCrew(c: OfficeCrew, writes: RoverWrites, slots: readon
     bob = Math.max(bob, crewOffset(r.state, p, phase));
     writes.pose(r.slot, p);
     const fx = crewFx(actor, reduced, c.fx[r.slot]);
-    writes.glow(r.slot, crewKey(r.state, r.progress, fx, now, reduced));
+    writes.glow(r.slot, crewKey(r.state, r.progress, fx, now, reduced, r.helpers, lite));
   }
   return bob;
 }
