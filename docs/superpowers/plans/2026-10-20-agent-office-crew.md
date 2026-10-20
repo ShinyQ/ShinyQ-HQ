@@ -1841,11 +1841,21 @@ Coordinator request (2026-10-20, after #270: wall 17 x 5.2 u, 4.5 u behind the m
 office stop the office must fill the frame. Today the wall and console sit in the middle third on desktop (about 38% sky
 above, much empty plaza below) and the top 40% on phones (more than half the screen empty plaza).
 
+**Owner decision (2026-10-20, option a): the chips leave the sky over the wall.** They become one compact row pinned
+just under the HUD top bar, each x-aligned with its Rover (projected Rover head x), showing a state dot plus the agent
+name, the activity added on the near pose; phones keep dot-only chips. They never overlap the HUD (top bar, the desktop
+floor menu panel on the right, the profile card, the minimap and joystick) or each other: collisions resolve by nudging
+along x while keeping the desk order. A thin leader line from each chip down toward its Rover, or a matching colour cue,
+maps each chip to its Rover if cheap (an HTML/CSS element, no draw call). Aria-labels keep the full text (agent,
+activity, task, helpers). The chips still show only at the office stop or with an office drawer open, and the "+N"
+helpers pill and the CI progress bar stay in the chip. Then the camera targets below apply.
+
 - [ ] **Step 1: Tests first** (in `tests/unit/office-view.test.ts`, on 1440x900, 1280x720, 1180x820 (desktop), the
   tablet class and 820x1180 and 390x844 (mobile)): the wall top projects 12% to 15% from the top edge; the console and
   every office Rover project inside the lower-middle band (their projected y between 45% and 85% of the height); on the
   desktop sizes the CI tower column and the dock pad are inside the frame; the visitor's Rover at the stop is inside the
-  frame; every chip still clears the wall, the desk screens, each other and the HUD (`office-chip-placement`); every
+  frame; the pinned chip row clears the HUD boxes and each other, keeps the desk order, and each chip's x is within its
+  nudge of its Rover's projected x (`office-chip-placement` rewritten for the row); every
   other view zone produces float-for-float the poses of before (`camera-look-offset` frozen copy).
 - [ ] **Step 2:** Run; expect FAIL with the current `OFFICE.view`.
 - [ ] **Step 3: Implement:** tune `OFFICE.view.{desktop,tablet,mobile}` (zoom, pitch, `lookOffset.forward` and, if needed,

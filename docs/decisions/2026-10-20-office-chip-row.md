@@ -1,0 +1,5 @@
+# L1 Agent Office
+
+- Date: 2026-10-20
+
+Owner decision on the Agent Office revamp's office stop view ([design](../superpowers/specs/2026-10-20-agent-office-revamp-design.md) section 5.7b): after the higher wall of [#270](https://github.com/ShinyQ/ShinyQ-HQ/pull/270) the office must fill the frame from its stop (the wall top about 12 to 15% from the top edge, the console and Rovers lower middle, the CI tower and dock corners in frame on desktop, the visitor's Rover visible). The chips over the wall needed that sky band, so (option a) they become one compact row pinned just under the HUD top bar, each x-aligned with its Rover: a state dot and the agent name, the activity on the near pose, dot-only on phones; collisions with each other and with the HUD (the top bar, the desktop floor menu on the right, the minimap) resolve by nudging along x in desk order; a thin leader line or colour cue maps each chip to its Rover; the aria-label keeps the full text. This replaces the 2026-10-20 arc of chips hanging over the wall.

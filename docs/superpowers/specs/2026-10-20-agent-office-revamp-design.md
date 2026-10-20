@@ -214,6 +214,15 @@ chunk, lights the tower from v1 data: the newest running public run in the feed 
 - Perf lane: L1 calls at the spawn (asking and not) and at the office stop on both tiers; programs at the baseline;
   memory gates.
 
+### 5.7b Office stop view and chip row (owner decision 2026-10-20)
+
+From the office stop the office fills the frame: the wall top about 12 to 15% from the top edge, the console and Rovers
+in the lower middle, the CI tower and dock corners in frame on desktop, the visitor's Rover visible; other view zones
+unchanged. To free the sky band the chips move from over the wall into one compact row pinned under the HUD top bar,
+each x-aligned with its Rover (a state dot and the agent name; the activity on the near pose; dot-only on phones),
+nudged along x in desk order so they never overlap each other or the HUD (top bar, the desktop floor menu, the profile
+card, the minimap), with a thin leader line or colour cue to its Rover; the full text stays in the aria-label.
+
 ### 5.8 Sub-agent helpers (owner addition, 2026-10-20)
 
 Each session is one Rover; the sub-agents a session starts become small **helper drones** around it.
