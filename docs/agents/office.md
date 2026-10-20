@@ -142,5 +142,6 @@ Index: [AGENTS.md](../../AGENTS.md).
   `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks
   `/api/office` from `OFFICE_FIXTURES`; `OFFICE_SHOTS=<dir>` writes the owner's review captures).
 - Ask: one paragraph in `content/ask/site-build.json` (what the office is, in its own wing of the Lobby, and its privacy
-  rule); "Agent Office" and "kantor agen" questions are site questions (`SITE` in `functions/_lib/scope.ts`); golden
-  q92 and q93. Never put live office data in the pack.
+  rule); "Agent Office" and "kantor agen" questions are site questions (`SITE` in `functions/_lib/scope.ts`), but not
+  the business sense ("a travel agent office", "kantor agen asuransi"); golden q92 and q93. Never put live office data
+  in the pack.

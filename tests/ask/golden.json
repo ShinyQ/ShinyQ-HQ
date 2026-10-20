@@ -94,6 +94,6 @@
     {"id": "q90", "lang": "en", "q": "When should a voice agent be interrupted?", "facts": [], "expect": {"cite": true, "none": ["in general", "generally speaking"]}},
     {"id": "q91", "lang": "id", "q": "Kapan blockchain sebaiknya tidak dipakai untuk menyimpan data?", "facts": [], "expect": {"refuse": true, "cite": false, "none": ["tulisan yang paling terkait"]}},
     {"id": "q92", "lang": "en", "q": "What is the Agent Office in the Lobby?", "facts": ["Agent Office"], "expect": {"any": ["rover", "desk", "coding agent", "ai agent"]}},
-    {"id": "q93", "lang": "id", "q": "Apakah Agent Office itu langsung?", "facts": ["Agent Office"], "expect": {"any": ["langsung", "live", "hook", "semi"]}}
+    {"id": "q93", "lang": "id", "q": "Apakah Agent Office itu langsung?", "facts": ["Agent Office"], "expect": {"any": ["semi", "hook", "github"]}}
   ]
 }

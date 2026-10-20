@@ -224,7 +224,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
   - It also routes "engine room", "b1 engine room", "ruang mesin", "secret floor", "hidden floor", "lantai rahasia" and "lantai tersembunyi" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q76).
-  - It routes "agent office" and "kantor agen" to the site too (golden q92 and q93; [office.md](office.md#classic-card-and-ask)).
+  - It routes the Agent Office to the site too: "the/this/your/his agent office", the name "Agent Office" (not after "a/an" or a kind of agent such as "travel"), and "kantor agen" not followed by a business word ("asuransi", "properti", "perjalanan", ...); golden q92 and q93, negatives in `tests/ask/scope.test.ts` ([office.md](office.md#classic-card-and-ask)).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
   - Such an answer carries `cite` = `/build` (kind `build`; the dock shows "Read on this site: How this site was built"), and the page links the public repository.
   - `isAskCite` still accepts `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, kind `repo`, opened in a new tab) so an older cached answer renders; nothing new cites it.

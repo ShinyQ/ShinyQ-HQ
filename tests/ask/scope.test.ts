@@ -225,9 +225,18 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
     expect(isSiteQuestion("Did Kurniadi work in an engine factory?")).toBe(false);
   });
 
-  it.each(["What is the Agent Office?", "Is the agent office live?", "Apa itu Agent Office?", "Apakah kantor agen itu langsung?"])("treats %s as a site question", (q) => {
+  it.each(["What is the Agent Office?", "Is the agent office live?", "Apa itu Agent Office?", "Apakah kantor agen itu langsung?", "What does Kurniadi's agent office show?", "Tell me about Agent Office"])("treats %s as a site question", (q) => {
     expect(isSiteQuestion(q)).toBe(true);
   });
+
+  it.each([
+    "Did Kurniadi ever work at a travel agent office?",
+    "Is there an insurance agent office near his workplace?",
+    "Did he build an app for a Travel Agent Office?",
+    "Was the agent office of the insurer one of his clients?",
+    "Apakah Kurniadi pernah membuat aplikasi untuk kantor agen asuransi?",
+    "Apakah dia pernah kerja di kantor agen properti atau kantor agen perjalanan?",
+  ])("does not treat the business sense in %s as the office (EN and ID)", (q) => expect(isSiteQuestion(q)).toBe(false));
 
   it.each([
     "What's in his portfolio?",
