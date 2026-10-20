@@ -26,6 +26,37 @@ async function mockOffice(page: Page, first: Reply) {
   return { calls: () => calls, set: (next: Reply) => (reply = next) };
 }
 
+/** Answers `/api/office` with `reply` only after `release()`, so the test can measure the page while the card loads. */
+async function heldOffice(page: Page, reply: Reply) {
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/office", async (route) => {
+    await held;
+    await (typeof reply === "number" ? route.fulfill({ status: reply }) : route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(reply) }));
+  });
+  return { release: () => release() };
+}
+
+/** Sums the layout shifts (without recent input) from now on; the returned reader waits a frame for pending entries. */
+async function watchShifts(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __officeShift: number; __officeShiftObserver?: PerformanceObserver };
+    w.__officeShiftObserver?.disconnect();
+    w.__officeShift = 0;
+    w.__officeShiftObserver = new PerformanceObserver((list) => {
+      for (const e of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) w.__officeShift += e.value;
+    });
+    w.__officeShiftObserver.observe({ type: "layout-shift" });
+  });
+  return () =>
+    page.evaluate(
+      () =>
+        new Promise<number>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve((window as unknown as { __officeShift: number }).__officeShift))),
+        ),
+    );
+}
+
 const home = (locale: "en" | "id" = "en") => `/${locale}?tier=static`;
 
 async function open(page: Page, path = home()) {
@@ -56,24 +87,43 @@ test.describe("Classic: Live Agent Office", () => {
     expect(errors).toEqual([]);
   });
 
-  test("hides the section when the office is disabled", async ({ page }) => {
+  test("a disabled office stays in place while on screen, then hides once scrolled away", async ({ page }) => {
     await mockOffice(page, OFFICE_FIXTURES.disabled);
     await open(page);
+    await expect(page.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled");
+    await expect(page.getByTestId("office-live")).toHaveText(en.office["3d"].drawer.disabled);
+    await expect(section(page)).not.toHaveAttribute("data-status", "disabled");
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(section(page)).toHaveAttribute("data-status", "disabled");
     await expect(page.locator("#office")).toBeHidden();
-    await expect(page.locator("#journey")).toBeVisible();
+    await expect(page.locator("#journey")).toBeAttached();
   });
 
-  test("shows Offline when the first request fails, without promising activity it does not have", async ({ page }) => {
+  test("a disabled office that answers while the card is below the screen hides at once, with no layout shift", async ({ page }) => {
+    await mockOffice(page, OFFICE_FIXTURES.disabled);
+    await openPage(page, home());
+    const shifts = await watchShifts(page);
+    // The card within a screen below the viewport: the panel loads and polls, but nothing of it is visible.
+    await page.locator("#office").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight - 200));
+    await expect(section(page)).toHaveAttribute("data-status", "disabled");
+    await expect(page.locator("#office")).toBeHidden();
+    expect(await shifts()).toBe(0);
+  });
+
+  test("shows Offline when the first request fails, over the off-duty desks, without promising activity", async ({ page }) => {
     await mockOffice(page, 500);
     await open(page);
     await expect(section(page)).toHaveAttribute("data-status", "offline");
     await expect(page.getByTestId("office-live")).toHaveText(en.office.classic.offlineEmpty);
-    await expect(page.getByTestId("office-desk")).toHaveCount(0);
+    await expect(page.getByTestId("office-desk")).toHaveCount(5);
+    await expect(page.locator('[data-testid=office-desk][data-state="off-duty"]')).toHaveCount(5);
     await expect(page.getByTestId("office-github")).toHaveCount(0);
+    await expect(page.getByTestId("office-github-empty")).toHaveCount(0);
+    const axe = await new AxeBuilder({ page }).include("#office").analyze();
+    expect(axe.violations).toEqual([]);
   });
 
-  test("offline after a good snapshot keeps only the last GitHub events, not the desks", async ({ page }) => {
+  test("offline after a good snapshot keeps the last known rows, dimmed, with their time", async ({ page }) => {
     await page.clock.setFixedTime(OFFICE_FIXTURE_NOW);
     const office = await mockOffice(page, OFFICE_FIXTURES.busy);
     await open(page);
@@ -83,10 +133,12 @@ test.describe("Classic: Live Agent Office", () => {
     office.set(500);
     await page.clock.setFixedTime(OFFICE_FIXTURE_NOW + 2 * 60_000);
     await expect(section(page)).toHaveAttribute("data-status", "offline", { timeout: 20_000 });
-    await expect(page.getByTestId("office-live")).toHaveText(en.office.classic.offline);
-    await expect(page.getByTestId("office-desk")).toHaveCount(0);
-    await expect(page.getByTestId("office-count-active")).toHaveCount(0);
-    await expect(page.getByTestId("office-today")).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: en.office.classic.offline })).toBeVisible();
+    await expect(page.getByTestId("office-time")).toHaveText(/as of \d{2}:\d{2}$/);
+    await expect(page.getByTestId("office-body")).toHaveClass(/opacity-60/);
+    await expect(page.locator('[data-testid=office-desk][data-state="working"]')).toHaveCount(1);
+    await expect(page.getByTestId("office-count-active")).toContainText("2");
+    await expect(page.getByTestId("office-today")).toContainText("9 tasks done");
     await expect(page.getByTestId("office-github")).toHaveCount(4);
     const axe = await new AxeBuilder({ page }).include("#office").analyze();
     expect(axe.violations).toEqual([]);
@@ -99,34 +151,62 @@ test.describe("Classic: Live Agent Office", () => {
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await expect(section(page)).toHaveAttribute("data-status", "idle");
     await expect(page.locator("#office").getByText(en.office.classic.loading)).toBeAttached();
+    await expect(page.locator("#office").getByText(en.office.classic.loadingNote)).toBeAttached();
     expect(office.calls()).toBe(0);
     await page.locator("#office").scrollIntoViewIfNeeded();
     await expect.poll(office.calls).toBeGreaterThan(0);
     await expect(section(page)).toHaveAttribute("data-status", "ready");
   });
 
-  for (const size of [
-    { width: 1440, height: 900 },
-    { width: 390, height: 844 },
-  ]) {
-    test(`the first busy snapshot does not push the next section down at ${size.width}px`, async ({ page }) => {
+  // One card height in every state: the loading line holds it, and no answer or later change of state moves the next section.
+  for (const [locale, size] of [
+    ["en", { width: 1440, height: 900 }],
+    ["en", { width: 390, height: 844 }],
+    ["id", { width: 1440, height: 900 }],
+    ["id", { width: 390, height: 844 }],
+  ] as const) {
+    test(`no state moves the next section (${locale}, ${size.width}px)`, async ({ page }) => {
+      test.setTimeout(120_000);
       await page.setViewportSize(size);
-      let release: () => void = () => undefined;
-      const held = new Promise<void>((resolve) => (release = resolve));
-      await page.route("**/api/office", async (route) => {
-        await held;
-        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_FIXTURES.busy) });
-      });
-      await openPage(page, home("id"));
+      await page.clock.setFixedTime(OFFICE_FIXTURE_NOW);
+      const journey = () => page.locator("#journey").evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+      for (const [name, reply, status] of [
+        ["busy", OFFICE_FIXTURES.busy, "ready"],
+        ["semiLive", OFFICE_FIXTURES.semiLive, "ready"],
+        ["quiet", OFFICE_FIXTURES.quiet, "ready"],
+        ["off", OFFICE_FIXTURES.off, "ready"],
+        ["offline", 500, "offline"],
+      ] as const) {
+        await page.unrouteAll();
+        const office = await heldOffice(page, reply);
+        await openPage(page, home(locale));
+        // The static loading line (before the panel chunk) and the panel waiting on its first answer hold the same height.
+        await expect(section(page)).toHaveAttribute("data-status", "idle");
+        const placeholder = await journey();
+        await page.locator("#office").scrollIntoViewIfNeeded();
+        await expect(section(page)).toHaveAttribute("data-status", "loading");
+        const before = await journey();
+        expect(before, `${name} placeholder`).toBe(placeholder);
+        const shifts = await watchShifts(page);
+        office.release();
+        await expect(section(page), name).toHaveAttribute("data-status", status);
+        await expect(page.getByTestId("office-desk"), name).toHaveCount(5);
+        expect(await journey(), name).toBe(before);
+        expect(await shifts(), name).toBe(0);
+      }
+      // A good snapshot, then failures more than 60 s later: offline keeps the rows, so the card keeps its height.
+      await page.unrouteAll();
+      const office = await mockOffice(page, OFFICE_FIXTURES.busy);
+      await openPage(page, home(locale));
       await page.locator("#office").scrollIntoViewIfNeeded();
-      await expect(section(page)).toHaveAttribute("data-status", "loading");
-      const top = () => page.locator("#journey").evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-      const before = await top();
-      release();
-      await expect(page.getByTestId("office-desk")).toHaveCount(5);
-      // The reserve is the busy card's height (rounded up): the snapshot may settle a fraction of a pixel up, never down.
-      expect(await top()).toBeLessThanOrEqual(before);
-      expect(await top()).toBeGreaterThan(before - 1);
+      await expect(section(page)).toHaveAttribute("data-status", "ready");
+      const before = await journey();
+      const shifts = await watchShifts(page);
+      office.set(500);
+      await page.clock.setFixedTime(OFFICE_FIXTURE_NOW + 2 * 60_000);
+      await expect(section(page)).toHaveAttribute("data-status", "offline", { timeout: 20_000 });
+      expect(await journey(), "offline-kept").toBe(before);
+      expect(await shifts(), "offline-kept").toBe(0);
     });
   }
 
@@ -174,10 +254,16 @@ test.describe("Classic: Live Agent Office", () => {
         await expect(section(page)).toHaveAttribute("data-status", "ready");
         await shoot(`${name}-${size.width}`);
       }
-      // Disabled: the area between the intro and the journey, to show the section is gone.
+      // Disabled on screen: held in place with the switched-off line.
       await page.unrouteAll();
       await mockOffice(page, OFFICE_FIXTURES.disabled);
       await open(page, home());
+      await expect(page.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled");
+      // A viewport shot: scrolling to the top for a page clip would let the section hide.
+      await page.locator("#office").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 80));
+      await page.screenshot({ path: `${dir}/classic-disabled-held-${size.width}.png` });
+      // Then scrolled away: the area between the intro and the journey, to show the section is gone.
+      await page.evaluate(() => window.scrollTo(0, 0));
       await expect(section(page)).toHaveAttribute("data-status", "disabled");
       const intro = await pageBox("#intro");
       const journey = await pageBox("#journey");
