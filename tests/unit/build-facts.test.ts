@@ -132,7 +132,7 @@ describe("collectFacts", () => {
     expect(facts.tests).toEqual({ unitFiles: 3, e2eFiles: 1 });
     expect(facts.docs).toEqual({ specs: 2, plans: 2 });
     expect(facts.ci).toEqual({ jobs: ["First job", "Second job"], workflows: 2 });
-    expect(facts.budgets).toMatchObject({ js3dKb: 465.2, sessionFullKb: 494.1, sceneCalls: 150, triangles: 30000, floorChunkKb: { L3: 20, L4: 16, RF: 8 } });
+    expect(facts.budgets).toMatchObject({ js3dKb: 465.3, sessionFullKb: 494.2, sceneCalls: 150, triangles: 30000, floorChunkKb: { L3: 20, L4: 16, RF: 8 } });
   });
 
   it("is deterministic and keeps a stable key order", () => {

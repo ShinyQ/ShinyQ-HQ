@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture } from "three";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { BufferAttribute, BufferGeometry, SRGBColorSpace, Texture, type Mesh } from "three";
+import { useHQStore } from "@/store/useHQStore";
 import { LOGO_ATLAS_FILE } from "../../logo-atlas";
+import { sceneTarget } from "../../scene/postHandle";
+import { precompileObject } from "../../scene/precompile";
+import { renderProbe } from "../../scene/renderProbe";
 import { atlasFlipY, canDecodeAtlasBitmap, quadBuffers, type AtlasLayout, type LogoQuad } from "./logoAtlas";
 
 // Only an ImageBitmap has close(); the <img> fallback has none.
@@ -60,6 +65,23 @@ export function useLogoAtlas(): Texture | null {
 }
 
 /**
+ * Compiles and pins a logo mesh's program the first frame it exists, the scene has drawn and (full tier) the composer
+ * target is up. The atlas loads after the boot warm-up, so without it the shared logo program would compile on the
+ * first frame a wall comes into view (a hitch mid-drive when neither wall is in the spawn view). Both walls share
+ * one material setup, so the second mesh finds the program already built.
+ */
+export function useWarmLogos(ref: RefObject<Mesh | null>): void {
+  const tier = useHQStore((s) => s.tier);
+  const done = useRef(false);
+  useFrame((state) => {
+    const mesh = ref.current;
+    if (done.current || !mesh || !renderProbe.rendered || (tier === "full" && sceneTarget() === null)) return;
+    done.current = true;
+    void precompileObject(state.gl, mesh, state.camera, state.scene).catch(() => null);
+  });
+}
+
+/**
  * Every logo on the skills wall as one mesh (one draw call) over the prebuilt logo atlas `texture`. `atlas`
  * is `atlasLayout(wallLogoSrcs(data))`, the order scripts/logo-atlas.ts drew the cells in.
  */
@@ -74,9 +96,11 @@ export function LogoQuads({ atlas, texture, quads, z = 0 }: { atlas: AtlasLayout
     return g;
   }, [atlas, quads, z]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  const mesh = useRef<Mesh>(null);
+  useWarmLogos(mesh);
   if (!texture) return null;
   return (
-    <mesh geometry={geometry} renderOrder={2}>
+    <mesh ref={mesh} geometry={geometry} renderOrder={2}>
       <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
     </mesh>
   );
