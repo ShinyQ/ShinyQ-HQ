@@ -42,10 +42,10 @@ export interface OfficeCardLabels {
 /**
  * The card's one height in every state (five desk rows, four GitHub rows, the counts, the "+N more" and today lines;
  * measured from 320 to 1440 px wide per locale: 881 px from 768, 1004 below, 1020 for an Indonesian semi-live line at
- * 320), held from the loading line on, so neither the first answer nor a later change of state moves the sections
- * below (CLS).
+ * 320) plus about 8 px of headroom (889 px from 768, 1028 below), held from the loading line on, so neither the first
+ * answer nor a later change of state moves the sections below (CLS).
  */
 export const OFFICE_RESERVE: Record<Locale, string> = {
-  en: "min-h-[1024px] md:min-h-[881px]",
-  id: "min-h-[1024px] md:min-h-[881px]",
+  en: "min-h-[1028px] md:min-h-[889px]",
+  id: "min-h-[1028px] md:min-h-[889px]",
 };

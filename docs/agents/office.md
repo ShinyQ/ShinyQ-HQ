@@ -153,8 +153,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   GitHub rows with quiet empty rows filling the slots and "No public activity yet today." when a snapshot has none,
   the "+N more" line, today's line), titles and heads truncate, and the status line and today's line hold two lines
   below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
-  on: 881 px from 768 (every state, both locales) and 1024 px below (measured 1004 from 360 to 414 px in both locales,
-  1020 for an Indonesian semi-live line at 320).
+  on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in
+  both locales, 1020 for an Indonesian semi-live line at 320), about 8 px of headroom over the tallest.
   `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, offline before and after a snapshot)
   moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
