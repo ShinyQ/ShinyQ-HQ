@@ -44,7 +44,7 @@ type OfficeWindow = Window & {
   __hq: {
     store: { getState: () => { phase: string; openRoom: (r: string) => void; closeRoom: () => void } };
     camera: () => [number, number, number];
-    rover: { cameraYaw: number; heading: number };
+    rover: { cameraYaw: number; heading: number; cameraView: string | null; cameraHeld: boolean };
     probes: { office: OfficeProbe };
     office: { load(): Promise<void>; test(): { poll(): void } | null };
   };
@@ -91,6 +91,11 @@ async function show(page: Page, reply: { body: unknown }, body: unknown, mode: s
 
 /** The rover parked and the follow camera still. */
 const settle = (page: Page) => waitForCameraSettle(page, { timeout: SLOW });
+/** The camera holds the office view (`roverRuntime.cameraHeld`), so the chips show in full, then a few frames for them to land. */
+async function officeHeld(page: Page) {
+  await waitFor("the office view", () => page.evaluate(() => (window as unknown as OfficeWindow).__hq.rover.cameraView === "L1:office" && (window as unknown as OfficeWindow).__hq.rover.cameraHeld));
+  await waitForFrames(page, 10);
+}
 
 /** Waits until the drawer's view shift (the camera's view offset, eased by the Director) stops moving. */
 async function viewShiftSettled(page: Page) {
@@ -216,7 +221,10 @@ try {
       const home = await camera(page);
 
       await show(page, reply, statesA(Date.now()), "live", STATES_A);
-      if (wants("states-a")) await page.screenshot({ path: name("states-a") });
+      if (wants("states-a")) {
+        await officeHeld(page);
+        await page.screenshot({ path: name("states-a") });
+      }
 
       // As tests/unit/office-chip-placement.test.ts, from the stop: zoom key steps until the middle three leave their far
       // band and show the task line. A phone keeps its chips compact at any distance: the near pose of its camera class
@@ -263,7 +271,10 @@ try {
       }
 
       await show(page, reply, statesB(Date.now()), "live", STATES_B);
-      if (wants("states-b")) await page.screenshot({ path: name("states-b") });
+      if (wants("states-b")) {
+        await officeHeld(page);
+        await page.screenshot({ path: name("states-b") });
+      }
       if (wants("semi-live")) {
         await show(page, reply, OFFICE_FIXTURES.semiLive, "semi-live", asleep);
         await page.screenshot({ path: name("semi-live") });
