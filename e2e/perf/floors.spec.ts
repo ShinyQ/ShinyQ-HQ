@@ -3,6 +3,7 @@ import { enterB1Route, rideTo } from "../b1";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
 import { LOBBY } from "../../src/experience/config";
 import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, waitForCameraSettle } from "../hq";
+import { asV1, crewA, OFFICE_API, OFFICE_API_V2 } from "../office-fixtures";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
 
@@ -40,7 +41,7 @@ const FLOORS = [
 
 const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 
-type OfficeWindow = { __hq: { office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean } } } };
+type OfficeWindow = { __hq: { office?: { load(): Promise<void> }; probes: { office?: { loaded: boolean; beacon?: boolean } } } };
 
 /**
  * The Agent Office chunk loads only near its wing (or on an office mission or drawer); load it and wait until it shows, so L1 (and B1, ridden
@@ -109,6 +110,18 @@ for (const tier of ["lite", "full"] as const) {
     await settleOffice(page);
     await rideTo(page, "B1");
     await measureFloor(page, tier, "B1");
+  });
+  // The Needs Kurniadi beacon lit from the spawn (a Rover asks): the beacon chunk plus the live crew of `crewA`, the
+  // office scene loaded as at the spawn spot. Same cap and program baseline; reported as the settled-L1-beacon peak.
+  test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon`, async ({ page }) => {
+    await page.route(OFFICE_API, (route) => {
+      const body = crewA(Date.now());
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V2.test(route.request().url()) ? body : asV1(body)) });
+    });
+    await enterFloorRoute(page, "/en", { tier });
+    await settleOffice(page);
+    await page.waitForFunction(() => (window as unknown as OfficeWindow).__hq.probes.office?.beacon === true, null, { timeout: 60_000 });
+    await measureFloor(page, tier, "L1", "beacon");
   });
   test(`L1 ${tier}: settled draw calls and shader programs at the Agent Office`, async ({ page }) => {
     await enterFloorRoute(page, "/en", { tier });

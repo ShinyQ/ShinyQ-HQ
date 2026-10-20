@@ -17,7 +17,7 @@ export interface GpuCountersEntry {
 
 /** One JSON file in perf-report/ (written by `writePerfEntry` in e2e/perf/helpers.ts). */
 export type PerfEntry =
-  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF" | "B1", number>>; sessionTotal?: number; office?: number; officeBody?: number; officeWatch?: number; officeBeacon?: number }
+  | { kind: "bytes3d"; tier: Tier; js: ChunkMap; other: ChunkMap; floors?: Partial<Record<"L3" | "L4" | "RF" | "B1", number>>; sessionTotal?: number; office?: number; officeBody?: number; officeTotal?: number; officeWatch?: number; officeBeacon?: number }
   | { kind: "floor"; tier: Tier; floor: string; sceneCalls: number; postCalls: number; triangles: number; programs: number; geometries: number; textures: number }
   | { kind: "peak"; tier: Tier; scenario: string; sceneCalls: number; postCalls: number; triangles: number; frames: number }
   | { kind: "memory"; tier: Tier; trips: number; before: GpuCountersEntry; after: GpuCountersEntry; heapDeltaBytes: number }
@@ -178,6 +178,7 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
     }
     if (e.office !== undefined) out.markdown += `Agent Office chunk (L1, lazy, not in the session total): ${kb(e.office)} of ${kb(BYTES_3D_BUDGET.office)}.\n\n`;
     if (e.officeBody !== undefined) out.markdown += `Agent Office drawer body (on drawer open): ${kb(e.officeBody)} of ${kb(BYTES_3D_BUDGET.officeBody)}.\n\n`;
+    if (e.officeTotal !== undefined) out.markdown += `Agent Office total (scene and drawer body, not in the session total): ${kb(e.officeTotal)} of ${kb(BYTES_3D_BUDGET.officeTotal)}.\n\n`;
     if (e.officeWatch !== undefined) out.markdown += `Agent Office watch chunk (L1, idle, in the session total): ${kb(e.officeWatch)} of ${kb(BYTES_3D_BUDGET.officeWatch)}.\n\n`;
     if (e.officeBeacon !== undefined) out.markdown += `Agent Office beacon chunk (on the first ask, not in the session total): ${kb(e.officeBeacon)} of ${kb(BYTES_3D_BUDGET.officeBeacon)}.\n\n`;
     out.warnings.push(...s.warnings);
