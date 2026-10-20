@@ -194,7 +194,10 @@ const REFUSAL = [
 ];
 /** Fewest lowercase prose words an Indonesian answer needs before its language is checked. */
 export const MIN_PROSE_WORDS = 3;
-const ID_HINT = ["yang", "dan", "dia", "adalah", "di ", "dengan", "proyek", "untuk", "saya", "tidak"];
+/** Common Indonesian words; an Indonesian answer needs two of them (whole words, 2026-10-20: "memiliki", "diraih", "pada"). */
+const ID_HINT = new Set(
+  "yang dan dia ia adalah di ke dari pada dengan untuk oleh dalam proyek saya tidak bukan belum sudah telah akan bisa dapat juga atau serta ini itu tersebut sebagai sejak hingga sampai memiliki punya diraih meraih bekerja terdiri lantai menara tentang mengenai karena namun tetapi saat ketika setiap semua beberapa banyak kurang lebih secara melalui antara bagi seperti sedang masih baru lalu kemudian sehingga".split(" "),
+);
 
 /** Lowercase, curly quotes and hyphen variants folded, decimal and thousands commas as dots. */
 export function norm(text: string): string {
@@ -233,7 +236,7 @@ export function scoreGolden(answer: string, item: GoldenItem, result: Pick<Pipel
   // Developer Associate (AI-103)") read the same in both languages: only lowercase prose words decide the language,
   // and a reply with fewer than three of them is not checked ("Email him or use LinkedIn." has three).
   const prose = (markdownToPlain(answer).replace(/\b\p{Lu}[\p{L}\p{N}-]*(?:\s+(?:and|of|for|&)\s+\p{Lu}[\p{L}\p{N}-]*)*/gu, " ").match(/\b\p{Ll}{2,}\b/gu) ?? []).length;
-  if ((item.lang === "id" || e.lang === "id") && prose >= MIN_PROSE_WORDS && ID_HINT.reduce((n, w) => n + a.split(w).length - 1, 0) < 2) notes.push("not Indonesian");
+  if ((item.lang === "id" || e.lang === "id") && prose >= MIN_PROSE_WORDS && (a.match(/[\p{L}]+/gu) ?? []).filter((w) => ID_HINT.has(w)).length < 2) notes.push("not Indonesian");
   return { pass: notes.length === 0, notes };
 }
 
@@ -528,6 +531,8 @@ async function main() {
       : "";
     console.log(`${item.id} ${verdict.pass ? "PASS" : "FAIL"} ${result.outcome}/${result.source}${result.reason ? ` (${checkSummary(result)})` : ""} ${ms} ms${groqInfo} ${verdict.notes.join(", ")}`);
     if (args.includes("--verbose")) console.log(`  shown: ${redactBlockedText(result.text, safety.blocklist)}\n  raw: ${redactBlockedText(result.raw ?? "", safety.blocklist)}`);
+    // A replaced model answer is printed (blocklisted terms redacted, 400 characters) so a nightly failure can be diagnosed from the log.
+    else if (result.reason && result.raw) console.log(`  replaced raw: ${redactBlockedText(result.raw, safety.blocklist).replace(/\s+/g, " ").slice(0, 400)}`);
     return { item, result, ms, chars, usage, ...verdict };
   });
 

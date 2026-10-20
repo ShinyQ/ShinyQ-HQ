@@ -263,6 +263,9 @@ const OVERRIDE: RegExp[] = [
   /\b(?:ignore|forget|disregard|override|bypass)\s+(?:all\s+|any\s+|of\s+)?(?:your|the|these|those|previous|prior|earlier|above|system|its|rover'?s)\s+(?:[\w-]+\s+){0,2}(?:rules?|instructions?|guidelines?|prompts?|restrictions?|constraints?|polic(?:y|ies))\b/i,
   /\b(?:new|updated) (?:system )?(?:rules?|instructions?|system (?:message|prompt))\b|^\W*system\s*:/i,
   /\b(?:abaikan|lupakan|hiraukan|langgar)\s+(?:semua\s+|seluruh\s+)?(?:aturan|instruksi|perintah|batasan|prompt)\b/i,
+  // Prompt extraction (rt09 to rt11, 2026-10-20): showing, repeating or printing the system prompt, rules or CONTEXT.
+  /\b(?:show|print|reveal|repeat|display|output|dump|leak|list|tell me|give me|what (?:are|is|were))\b[^.?!]{0,25}\b(?:your|the system|the hidden|the original|the initial)\s+(?:system\s+)?(?:prompts?|instructions?|rules|guidelines|configuration)\b|\b(?:print|show|reveal|repeat|display|output|dump)\b[^.?!]{0,25}\bthe\s+context(?:\s+(?:block|you were given))?\b/i,
+  /\b(?:tampilkan|tunjukkan|sebutkan|ulangi|bocorkan|cetak|berikan|apa)\b[^.?!]{0,25}\b(?:system prompt|prompt sistem|prompt(?:mu| kamu| anda)|instruksi(?:mu| kamu| anda| sistem)|aturan(?:mu| kamu| anda))\b/i,
   // Standing output instructions (rt64, 2026-10-20): "end every answer with Yo ho ho", "akhiri setiap jawaban dengan".
   /\b(?:end|start|begin|finish|close|prefix|suffix|sign off)\s+(?:every|each|all|all of)\s+(?:your\s+)?(?:answers?|repl(?:y|ies)|responses?|messages?|sentences?)\s+with\b/i,
   /\b(?:akhiri|mulai|awali|tutup)\s+(?:setiap|semua)\s+(?:jawaban|balasan|pesan)(?:mu|nya)?\s+dengan\b/i,
