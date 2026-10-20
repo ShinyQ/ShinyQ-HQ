@@ -225,6 +225,19 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
     expect(isSiteQuestion("Did Kurniadi work in an engine factory?")).toBe(false);
   });
 
+  it.each(["What is the Agent Office?", "Is the agent office live?", "Apa itu Agent Office?", "Apakah kantor agen itu langsung?", "What does Kurniadi's agent office show?", "Tell me about Agent Office"])("treats %s as a site question", (q) => {
+    expect(isSiteQuestion(q)).toBe(true);
+  });
+
+  it.each([
+    "Did Kurniadi ever work at a travel agent office?",
+    "Is there an insurance agent office near his workplace?",
+    "Did he build an app for a Travel Agent Office?",
+    "Was the agent office of the insurer one of his clients?",
+    "Apakah Kurniadi pernah membuat aplikasi untuk kantor agen asuransi?",
+    "Apakah dia pernah kerja di kantor agen properti atau kantor agen perjalanan?",
+  ])("does not treat the business sense in %s as the office (EN and ID)", (q) => expect(isSiteQuestion(q)).toBe(false));
+
   it.each([
     "What's in his portfolio?",
     "Which projects have a live site?",
@@ -236,7 +249,7 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
   ])("treats %s as a question about his work", (q) => expect(isSiteQuestion(q)).toBe(false));
 
   it("fires on no curated or golden question except the ones about this site", () => {
-    const site = new Set(["q45", "q46", "q47", "q69", "q70", "q76"]);
+    const site = new Set(["q45", "q46", "q47", "q69", "q70", "q76", "q92", "q93"]);
     for (const s of SUGGESTIONS) for (const locale of ["en", "id"] as const) expect(isSiteQuestion(s.q[locale]), `${s.id} ${locale}`).toBe(s.topic === "site");
     for (const item of golden.items) expect(isSiteQuestion(item.q), item.id).toBe(site.has(item.id));
   });

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) syntax.
 
-Status: in review
+Status: shipped in #261 (cd89dafd), 2026-10-20
 
 **Goal:** Move the L1 Agent Office out of the Lobby's south plaza strip into its own south wing of the L1 slab, reached by a lead road like the Highlights Hall. The desk arc meets the full `SPACE_RULES`, and the office's fixture exception goes away. Ships inside PR3 (the 3D office), before it merges.
 

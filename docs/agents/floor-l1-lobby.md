@@ -112,7 +112,7 @@ Code: `floors/lobby/hallLayout.ts`. Design: [`docs/superpowers/specs/2026-10-13-
 
 ## Agent Office
 
-Design: owner decisions D1 to D7 ([2026-10-18](../decisions/2026-10-18-agent-office.md)); backend, contract and privacy in [office.md](office.md). Code: `floors/lobby/officeLayout.ts` (pure: the wing offsets and builder, layout, rooms, stops, view zone, road; config.ts imports it, so it stays import-light), `floors/lobby/officeShell.ts` (3D-only: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`), `floors/lobby/office/` (the mount, the loader and two lazy chunks), shared client modules `src/lib/office/poll.ts` and `src/lib/office/model.ts`.
+Design: owner decisions D1 to D7 ([2026-10-18](../decisions/2026-10-18-agent-office.md)); backend, contract and privacy in [office.md](office.md). Code: `floors/lobby/officeLayout.ts` (pure: the wing offsets and builder, layout, rooms, stops, view zone, road; config.ts imports it, so it stays import-light), `floors/lobby/officeShell.ts` (3D-only: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`), `floors/lobby/office/` (the mount, the loader and two lazy chunks), shared client modules `src/lib/office/poll.ts` and `src/lib/office/model.ts` (counts, titles, tones, `sinceLabel`, and the link checks `safeGithubUrl` / `safeRepoUrl`: the 3D drawer and the Classic card link only github.com, else show plain text).
 
 ### Layout
 

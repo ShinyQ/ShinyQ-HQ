@@ -48,6 +48,7 @@ export const ALL_SPECS = [
   "missions",
   "motion",
   "office",
+  "office-classic",
   "onboarding",
   "pads",
   "pageview",
@@ -113,6 +114,9 @@ export const RULES: Rule[] = [
     test: /^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)|^src\/lib\/office\/(poll|model|fixtures|protocol)\.ts$|^src\/hud\/OfficeLayer\.tsx$|^e2e\/office-fixtures\.ts$/,
     specs: ["office", "experience", "highlights", "interact", "onboarding", "hud-corners"],
   },
+  // The Classic home card (part 4 of the office, `#office` on the home page): the server section, the lazy shell and
+  // the panel chunk.
+  { test: /^src\/components\/office\//, specs: ["office-classic", "pageview"] },
   // Agent Office backend (part 1): unit tested in tests/office; the 3D office and the Classic card add their specs.
   { test: /^functions\/(api\/office\/|_lib\/office\.ts$)|^src\/lib\/office\//, specs: [] },
   // Local developer tools (tools/office-relay): unit tested in tests/relay; nothing the site ships.
@@ -400,6 +404,8 @@ const ALSO_RULES: Rule[] = [
   { test: /^src\/store\/|^src\/experience\/(Experience|ExperienceGate)\.tsx$|^src\/lib\/audio\/engine\.ts$/, specs: ["b1-unlock"] },
   // Cmd-K's gated action (the unlock moment's host files keep their own specs).
   { test: /^src\/hud\/(hudActions|search|palette-types|MissionHud)\.tsx?$/, specs: ["b1-unlock"] },
+  // The Classic office card (e2e/office-classic.spec.ts) reads the shared office modules, and the home page mounts it.
+  { test: /^src\/lib\/office\/|^src\/app\/\[locale\]\/page\.tsx$/, specs: ["office-classic"] },
   // The office chips host keeps the specs of the HUD folder rule it matched before the office rule.
   { test: /^src\/hud\/OfficeLayer\.tsx$/, specs: ["experience", "missions", "drawer-solid", "hud"] },
   {

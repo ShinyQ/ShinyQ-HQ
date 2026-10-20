@@ -113,3 +113,54 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`
   and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
 - Never add a beat field, a log field or a debug mode that records payload text.
+
+## Classic card and Ask
+
+- `#office` on the Classic home page, after `#intro`, titled "Live Agent Office" (ID "Kantor Agen Langsung"): code in
+  `src/components/office/`.
+  - `OfficeSection` (server) resolves every string on the server (`officeCardLabels`: `office.classic.*` plus the shared
+    `office.agent`, `office.state`, `office.activity`, `office.clientProject` and `office.privacy`, and the 3D office's
+    `office.3d.offDuty` and `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
+  - `office.classic` is a server-only path (`SERVER_PATHS` in `src/i18n/client-messages.ts`): `ClientMessages` drops it
+    with `omitMessages`, so the card's copy never rides in the client messages
+    ([styling-and-i18n.md](styling-and-i18n.md)).
+  - `OfficeShell` and `OfficeLazy` (client, tiny) import the `OfficePanel` chunk only when the section comes within a
+    screen of the viewport (the `VisitsLazy` pattern); until then a static loading line and a short note (what the card
+    shows, so a reader without JavaScript gets something) hold the card's height. A chunk that fails to load leaves the
+    offline line, reports `offline` and releases the height.
+- The panel reuses part 3's `createOfficePoller` and `src/lib/office/model.ts` (`officeCounts`, `deskTitle`,
+  `STATE_TONE`, `sinceLabel`, `safeGithubUrl`): it polls only while the section is within a screen of the viewport, and
+  the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
+  the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
+- What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
+  activity and task, the latest 4 public GitHub events, today's numbers (without the CI clause on a day with no runs)
+  and the privacy note.
+  - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
+    title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
+    beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
+  - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
+    keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
+    (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
+    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line).
+  - English counts are ICU plurals in `office.classic` ("+1 more session", "1 task done", "1 of 1 CI run green"),
+    filled on the client by `fill` (`src/components/office/fill.ts`: `{name}` and `{n, plural, ...}`).
+  - A disabled office (`{"v":1,"enabled":false}`) hides the whole section, but only once it is off screen: while the
+    visitor can see it, the card keeps its height with "The live office is off right now." (the panel holds the
+    `disabled` report until a 0 px margin observer says it left the viewport). The panel loads a screen ahead, so in a
+    normal scroll the answer arrives below the viewport and the section hides without a visible shift.
+- One height in every state (CLS): every state draws the same rows (five desks with a task line or an empty one, four
+  GitHub rows with quiet empty rows filling the slots and "No public activity yet today." when a snapshot has none,
+  the "+N more" line, today's line), titles and heads truncate, the status line and today's line hold two lines below
+  `md`, and the privacy note sits at the foot (`mt-auto`). `OFFICE_RESERVE` (per locale, in `labels.ts`) is that
+  height per breakpoint, held from the loading line on: 945 px at 768 to 1023 and from 1280, 965 px at 1024 to 1279,
+  and below 768 px 1128 (EN) or 1148 (ID), the tallest card at 320 to 414 px (measured 1108 / 1128 at 390x844; only a
+  three-line Indonesian semi-live or offline line at 320 px exceeds it).
+  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, offline before and after a snapshot)
+  moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
+- Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
+  `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks
+  `/api/office` from `OFFICE_FIXTURES`; `OFFICE_SHOTS=<dir>` writes the owner's review captures).
+- Ask: one paragraph in `content/ask/site-build.json` (what the office is, in its own wing of the Lobby, and its privacy
+  rule); "Agent Office" and "kantor agen" questions are site questions (`SITE` in `functions/_lib/scope.ts`), but not
+  the business sense ("a travel agent office", "kantor agen asuransi"); golden q92 and q93. Never put live office data
+  in the pack.

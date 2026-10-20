@@ -34,6 +34,11 @@ const SITE: RegExp[] = [
   /\b(?:built|made|created|developed|coded|designed|powered|powers) (?:you|this)\b|\b(?:are|were) you (?:built|made|created|powered)\b/i,
   /\bwhat (?:ai |llm |language )?models? (?:are you|do you|powers? you)\b/i,
   /\bengine room\b|\bruang mesin\b|\b(?:secret|hidden) floor\b|\blantai (?:rahasia|tersembunyi)\b/i,
+  // The Agent Office (L1 wing, Classic card), not the business sense ("a travel agent office", "kantor agen asuransi"):
+  // "the/this/your/his agent office" in any case, or the name "Agent Office" not after "a/an" or a kind of agent.
+  /\b(?:the|this|that|your|his|kurniadi'?s) agent office\b(?! (?:of|for)\b)/i,
+  /(?<!\b(?:[Aa]n?|[Tt]ravel|[Ii]nsurance|[Rr]eal [Ee]state|[Pp]roperty|[Bb]ooking|[Tt]icket(?:ing)?|[Ss]hipping|[Ff]reight|[Tt]ax|[Ee]mployment|[Rr]ecruitment|[Tt]alent|[Ss]ales|[Cc]ustoms|[Ii]mmigration|[Ll]iterary|[Ss]ports?|[Pp]atent|[Ll]and) )\bAgent Office\b(?! (?:of|for)\b)/,
+  /\bkantor agen\b(?! (?:asuransi|properti|perjalanan|travel|tiket|pajak|penjualan|tenaga kerja|real estate|pulsa|bus|kapal|pengiriman|ekspedisi|kargo|logistik|gas|elpiji|lpg|bbm|bank|saham|sekuritas|imigrasi|penerbangan|pariwisata|umrah|umroh|haji|perumahan|rumah|mobil|motor|resmi|tunggal|jasa|distribusi|pos)\b)/i,
   /\b(?:situs|website|web|portofolio|chatbot|asisten|menara) ini\b/i,
   /\b(?:kamu|anda) (?:dibuat|dibangun|memakai|menggunakan|pakai)\b|\bmodel (?:ai |llm )?apa (?:yang )?(?:kamu|anda)\b/i,
 ];

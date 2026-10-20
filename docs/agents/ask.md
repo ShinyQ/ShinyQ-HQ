@@ -220,16 +220,17 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
 ### Site-build chunk
 
 - `content/ask/site-build.json` (`SiteBuildSchema`, read through `getSiteBuild()`; never import it into a client component).
-  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
+  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room, the Agent Office and its privacy rule, never its live data), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
-  - It also routes "engine room", "b1 engine room", "ruang mesin", "secret floor", "hidden floor", "lantai rahasia" and "lantai tersembunyi" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q75).
+  - It also routes "engine room", "b1 engine room", "ruang mesin", "secret floor", "hidden floor", "lantai rahasia" and "lantai tersembunyi" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q76).
+  - It routes the Agent Office to the site too: "the/this/your/his agent office", the name "Agent Office" (not after "a/an" or a kind of agent such as "travel"), and "kantor agen" not followed by a business word ("asuransi", "properti", "perjalanan", ...); golden q92 and q93, negatives in `tests/ask/scope.test.ts` ([office.md](office.md#classic-card-and-ask)).
   - Deliberately narrow: "this site", "ShinyQ HQ", "this chatbot", "situs ini", never "his portfolio" or a project's live site.
   - Such an answer carries `cite` = `/build` (kind `build`; the dock shows "Read on this site: How this site was built"), and the page links the public repository.
   - `isAskCite` still accepts `ASK_REPO_CITE` (`https://github.com/ShinyQ/ShinyQ-HQ`, kind `repo`, opened in a new tab) so an older cached answer renders; nothing new cites it.
 - Every fact must be backed by the repository.
   - Update the note in the same PR when the stack, hosting, the assistant or the test gates change.
-  - Keep golden q45 to q47, q69, q70 and q75 true (runbook section 16).
+  - Keep golden q45 to q47, q69, q70, q76, q92 and q93 true (runbook section 16).
 - To fit it, project chunks keep as keywords only the stack names that carry a topic tag (`stackKeywords` in `src/ask/pack.ts`; the text still lists the whole stack).
 
 ### Production chunk

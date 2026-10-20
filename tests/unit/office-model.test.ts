@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COLORS } from "@/experience/config";
-import { deskTitle, officeCounts, sinceLabel, STATE_TONE } from "@/lib/office/model";
+import { deskTitle, officeCounts, safeGithubUrl, safeRepoUrl, sinceLabel, STATE_TONE } from "@/lib/office/model";
 import { OFFICE_STATES, parseOfficeResponse } from "@/lib/office/protocol";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
 
@@ -47,5 +47,17 @@ describe("shared office model (src/lib/office/model.ts)", () => {
     expect(sinceLabel(NOW - 3 * 60_000, "id", NOW)).toBe("3 mnt");
     expect(sinceLabel(NOW - 2 * 3_600_000, "id", NOW)).toBe("2 j");
     expect(sinceLabel(NOW + 5_000, "en", NOW)).toBe("just now");
+  });
+
+  it("links only well-formed public GitHub repositories and github.com URLs", () => {
+    expect(safeRepoUrl("ShinyQ/ShinyQ-HQ")).toBe("https://github.com/ShinyQ/ShinyQ-HQ");
+    expect(safeRepoUrl("ShinyQ/../x")).toBeNull();
+    expect(safeRepoUrl("ShinyQ/..")).toBeNull();
+    expect(safeRepoUrl("javascript:alert(1)")).toBeNull();
+    expect(safeRepoUrl(null)).toBeNull();
+    expect(safeGithubUrl("https://github.com/ShinyQ/ShinyQ-HQ/pull/1")).toBe("https://github.com/ShinyQ/ShinyQ-HQ/pull/1");
+    expect(safeGithubUrl("http://github.com/x")).toBeNull();
+    expect(safeGithubUrl("https://evil.example/github.com")).toBeNull();
+    expect(safeGithubUrl("not a url")).toBeNull();
   });
 });
