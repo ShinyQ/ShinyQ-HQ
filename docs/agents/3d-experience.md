@@ -28,7 +28,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `WEAK_GPU` reads the unmasked renderer: Intel HD and UHD Graphics (Iris, Iris Xe, Iris Plus and Arc stay full), Mali-4xx, Mali-T and Mali-G31 to G52, Adreno 5xx and below. A Firefox bucket (ends in ", or similar"; every Intel iGPU reads "Intel(R) HD Graphics") is not a known GPU and skips this check.
   - The boot-first head script decides only static; the weak-GPU check runs in the gate.
 - It then loads `src/experience/Experience.tsx` (a dynamic `import()`) together with the 3D page data and renders the loaded component directly, portalled over the page.
-  - Not through `next/dynamic` or `React.lazy`: a lazy component suspends once even when its chunk is in, and React holds a Suspense retry until 300 ms after the fallback showed, which delayed the first frame by about 200 ms.
+  - Not through `next/dynamic` or `React.lazy`: a lazy component suspends once even when its chunk is in, and React holds a Suspense retry until 300 ms after the fallback showed, which delayed the first frame by about 225 to 265 ms ([performance.md](performance.md#3d-mount-without-a-suspense-retry)).
   - A failed chunk takes the crash path like a failed data fetch ([Crash recovery](#crash-recovery)).
 - While it is open, `#site-shell` (header, main, footer in the locale layout) is `inert`. The HTML stays in the DOM for SEO and is the static tier.
 - The tier probe lives in `src/experience/gate-tier.ts` (`useGateTier()`), shared by the gate and the landing's "Enter the 3D HQ" button.
