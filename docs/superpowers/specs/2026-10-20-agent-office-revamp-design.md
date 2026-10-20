@@ -139,13 +139,15 @@ and the chip carry the same information).
   the watch reads its feed instead of fetching (one request stream, not two).
 - **Beacon** (`OfficeBeacon.tsx`, inside the wing's `IntroReveal`): one instanced mesh on the hall's stage material
   (`createStageMaterial`, `HOLO_MODE.stage`, no new program) over the unit open cylinder, all instances of the `beam`
-  stage kind: a column 1.2 u wide rising 26 u from the floor in front of the asking Rover's desk (from the wing plaza
-  centre when more than one asks), plus three short bands (0.3 u tall) that rise up it and widen every 1.6 s, in the
+  stage kind: a column 1.2 u wide rising 26 u from the floor 1.25 u behind the asking Rover,
+  between it and the wall (in front of the desk it hid the Rover and its flag in the prototype renders; from the wing
+  plaza centre when more than one asks), plus three short bands (0.3 u tall) that rise up it and widen every 1.6 s, in the
   input tone. Drawn only while `needsKurniadi` (out of the draw otherwise), so the spawn's
   settled calls rise by 1 only while a Rover asks. The wing stands outside the tower's footprint, so the column rises
   into open sky and reads over the Lobby's landmarks from the spawn, the elevator arrival and the hall road (asserted by
   a projection test from those points on the six sizes, like `office-chip-placement`). Reduced motion: the column holds
-  at full height, rings fixed.
+  at full height, rings fixed. While the rover is at the office stop the beacon fades to 25% (in the prototype the
+  column crossed the wall's GitHub half, and the asking Rover's flag carries the signal there).
 - **Minimap cue**: the office room marker in the minimap and the overview pulses in the input tone while
   `needsKurniadi` (CSS, written as `@variant motion-reduce` with a static ring under reduced motion), with an
   `aria-label` "Agent Office: a Rover is waiting for Kurniadi" / "Kantor Agen: sebuah Rover menunggu Kurniadi". No new

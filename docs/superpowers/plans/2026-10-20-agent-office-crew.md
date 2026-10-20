@@ -1185,7 +1185,7 @@ calling `stopWatch?.()`. `OfficeScene.tsx`: an effect sets `sceneFeeding: true` 
 
 **Interfaces:**
 - Consumes: `officeSignal`, `useOfficeSignal` (Task 6); `createStageMaterial`, `stageAttributes`, `STAGE_KIND` (hall); `OFFICE_SLOTS`.
-- Produces: `BEACON = { h: 26, r: 0.6, bands: 3, period: 1.6, band: 0.3, slots: 5 }` (instance 0 the column, 1 to 3 the
+- Produces: `beaconGain(atStop)`; `BEACON = { h: 26, r: 0.6, bands: 3, period: 1.6, band: 0.3, slots: 5 }` (instance 0 the column, 1 to 3 the
   bands, 4 reserved for stage B's deploy beam); `beaconOrigin(asking: number[]): Vec2`;
   `beaconInstances(t: number, reduced: boolean, out: BeaconInstance[]): void` with
   `BeaconInstance = { y: number; r: number; h: number; alpha: number }`; probe `__hq.probes.office.beacon: boolean`.
@@ -1201,9 +1201,12 @@ import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
 const make = () => Array.from({ length: BEACON.slots }, () => ({ y: 0, r: 0, h: 0, alpha: 0 }));
 
 describe("beacon", () => {
-  it("rises from the asking desk, or the plaza centre when several ask", () => {
+  it("rises behind the asking Rover, or the plaza centre when several ask", () => {
     const one = beaconOrigin([2]);
-    expect(Math.hypot(one.x - OFFICE_SLOTS[2].desk.x, one.z - OFFICE_SLOTS[2].desk.z)).toBeLessThan(3);
+    const arc = LOBBY.officeWing.arc;
+    const r = OFFICE_SLOTS[2].rover;
+    expect(Math.hypot(one.x - r.x, one.z - r.z)).toBeCloseTo(1.25, 5);
+    expect(Math.hypot(one.x - arc.x, one.z - arc.z)).toBeGreaterThan(Math.hypot(r.x - arc.x, r.z - arc.z));
     expect(beaconOrigin([0, 4])).toEqual(LOBBY.officeWing.plaza.center);
   });
   it("bands climb the column and widen, then restart", () => {
@@ -1251,14 +1254,16 @@ export interface BeaconInstance {
   alpha: number;
 }
 
-/** In front of the asking desk (toward the stop), or the wing plaza's centre when several Rovers ask. */
+/** 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), or the wing plaza's centre when several Rovers ask. */
 export function beaconOrigin(asking: readonly number[]): Vec2 {
   if (asking.length !== 1) return LOBBY.officeWing.plaza.center;
   const s = OFFICE_SLOTS[asking[0]];
-  const fx = Math.sin(s.yaw);
-  const fz = Math.cos(s.yaw);
-  return { x: s.desk.x + fx * 1.6, z: s.desk.z + fz * 1.6 };
+  // Forward (sin yaw, cos yaw) points at the arc centre, so behind is the opposite way.
+  return { x: s.rover.x - Math.sin(s.yaw) * 1.25, z: s.rover.z - Math.cos(s.yaw) * 1.25 };
 }
+
+/** The beacon's gain: 25% while the rover stands at the office stop (the flag carries the signal there). */
+export const beaconGain = (atStop: boolean) => (atStop ? 0.25 : 1);
 
 /** Column (0) and bands (1 to 3) at time `t`; instance 4 (stage B's beam) is left as is. Reduced motion: bands fixed at a third, two thirds and the top. */
 export function beaconInstances(t: number, reduced: boolean, out: BeaconInstance[]): void {
@@ -1287,7 +1292,8 @@ import { MAX_FRAME_DT } from "../../../rover/controller";
 import { animationSpeed } from "../../../scene/animationSpeed";
 import { createStageMaterial } from "../HallFx";
 import { STAGE_KIND } from "../hallStage";
-import { BEACON, beaconInstances, beaconOrigin, type BeaconInstance } from "./beacon";
+import { atOfficeStop } from "../officeShell";
+import { BEACON, beaconGain, beaconInstances, beaconOrigin, type BeaconInstance } from "./beacon";
 import { officeSignal, useOfficeSignal } from "./officeSignal";
 
 const NO_RAYCAST = () => null;
@@ -1334,7 +1340,7 @@ export function OfficeBeacon() {
       const b = l.inst[i];
       M.compose(V.set(o.x, b.y, o.z), Q.identity(), S.set(b.r, b.h, b.r));
       m.setMatrixAt(i, M);
-      alpha.setW(i, b.alpha);
+      alpha.setW(i, b.alpha * beaconGain(atOfficeStop()));
     }
     m.instanceMatrix.needsUpdate = true;
     alpha.needsUpdate = true;
