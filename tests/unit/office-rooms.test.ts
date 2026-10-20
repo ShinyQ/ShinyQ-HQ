@@ -31,7 +31,7 @@ describe("Agent Office rooms and copy", () => {
       const m = locale === "en" ? en : id;
       expect(views["L1:office"].sections).toEqual([{ body: m.office["3d"].hooks }]);
       expect(views["L1:office-github"].sections).toEqual([{ body: m.office["3d"].githubNote }]);
-      for (let slot = 0; slot < 5; slot++) expect(views[`L1:office-desk-${slot + 1}`].sections).toEqual([{ body: m.office.privacy }]);
+      for (let slot = 0; slot < 5; slot++) expect(views[`L1:office-desk-${slot + 1}`].sections).toEqual([{ body: m.office["3d"].hooks }]);
     });
 
     it(`ships every office view in the L1 room data file, and in no other floor's (${locale})`, () => {
@@ -49,7 +49,8 @@ describe("Agent Office rooms and copy", () => {
       expect(Object.keys(m.office.activity).sort()).toEqual([...OFFICE_ACTIVITIES].sort());
       expect(Object.keys(m.office.agent).sort()).toEqual([...OFFICE_AGENTS].sort());
       expect(m.office.clientProject.length).toBeGreaterThan(0);
-      expect(m.office.privacy.length).toBeGreaterThan(0);
+      // The privacy note was removed (owner request 2026-10-20): no card or drawer renders it.
+      expect("privacy" in m.office).toBe(false);
     }
   });
 

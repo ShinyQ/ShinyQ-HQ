@@ -119,8 +119,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `#office` on the Classic home page, after `#intro`, titled "Live Agent Office" (ID "Kantor Agen Langsung"): code in
   `src/components/office/`.
   - `OfficeSection` (server) resolves every string on the server (`officeCardLabels`: `office.classic.*` plus the shared
-    `office.agent`, `office.state`, `office.activity`, `office.clientProject` and `office.privacy`, and the 3D office's
-    `office.3d.offDuty` and `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
+    `office.agent`, `office.state`, `office.activity` and `office.clientProject`, and the 3D office's `office.3d.offDuty`
+    and `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
   - `office.classic` is a server-only path (`SERVER_PATHS` in `src/i18n/client-messages.ts`): `ClientMessages` drops it
     with `omitMessages`, so the card's copy never rides in the client messages
     ([styling-and-i18n.md](styling-and-i18n.md)).
@@ -133,8 +133,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
   the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
 - What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
-  activity and task, the latest 4 public GitHub events, today's numbers (without the CI clause on a day with no runs)
-  and the privacy note.
+  activity and task, the latest 4 public GitHub events and today's numbers (without the CI clause on a day with no
+  runs). No privacy note shows on the card or in the 3D drawers (owner request 2026-10-20); the rule itself is unchanged
+  ([Privacy](#privacy-owner-decision-d3)).
   - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
     title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
     beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
@@ -150,11 +151,10 @@ Index: [AGENTS.md](../../AGENTS.md).
     normal scroll the answer arrives below the viewport and the section hides without a visible shift.
 - One height in every state (CLS): every state draws the same rows (five desks with a task line or an empty one, four
   GitHub rows with quiet empty rows filling the slots and "No public activity yet today." when a snapshot has none,
-  the "+N more" line, today's line), titles and heads truncate, the status line and today's line hold two lines below
-  `md`, and the privacy note sits at the foot (`mt-auto`). `OFFICE_RESERVE` (per locale, in `labels.ts`) is that
-  height per breakpoint, held from the loading line on: 945 px at 768 to 1023 and from 1280, 965 px at 1024 to 1279,
-  and below 768 px 1128 (EN) or 1148 (ID), the tallest card at 320 to 414 px (measured 1108 / 1128 at 390x844; only a
-  three-line Indonesian semi-live or offline line at 320 px exceeds it).
+  the "+N more" line, today's line), titles and heads truncate, and the status line and today's line hold two lines
+  below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
+  on: 881 px from 768 (every state, both locales) and 1024 px below (measured 1004 from 360 to 414 px in both locales,
+  1020 for an Indonesian semi-live line at 320).
   `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, offline before and after a snapshot)
   moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,

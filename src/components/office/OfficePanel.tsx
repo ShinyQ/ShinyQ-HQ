@@ -99,8 +99,8 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
 }
 
 /**
- * The Classic home card (lazy chunk): counts, the five desks, the latest public GitHub events, today and the privacy
- * note (spec section 4.2). Every state draws the same rows (an empty desk is "Off duty", empty GitHub slots stay as
+ * The Classic home card (lazy chunk): counts, the five desks, the latest public GitHub events and today (spec
+ * section 4.2). Every state draws the same rows (an empty desk is "Off duty", empty GitHub slots stay as
  * quiet rows, offline keeps the last known rows dimmed), so the card keeps one height (`OFFICE_RESERVE`). Polls only
  * while the card is within a screen of the viewport; the poller skips hidden tabs, stops after 10 min without input,
  * and keeps the last snapshot 60 s before reporting offline. A disabled office hides the section only once it is off
@@ -255,10 +255,6 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
           </p>
         </div>
       )}
-      {/* At the foot of the held height in every state, so it never moves when the rows arrive. */}
-      <p data-testid="office-privacy" className="mt-auto pt-6 text-sm text-ink-3">
-        {labels.privacy}
-      </p>
     </div>
   );
 }

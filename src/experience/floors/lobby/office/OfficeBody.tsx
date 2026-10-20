@@ -177,16 +177,10 @@ function GithubPanel({ items, locale, now }: { items: readonly OfficeGithubItem[
   );
 }
 
-/** The panel's standing notes (how the data arrives, what never leaves the machine), shown in every feed state. */
+/** The panel's standing note (how the data arrives), shown in every feed state. */
 function PanelNotes({ panel }: { panel: OfficePanel }) {
   const t = useTranslations("office");
-  if (panel === "github") return <p className={NOTE}>{t("3d.githubNote")}</p>;
-  return (
-    <>
-      {panel === "summary" && <p className={NOTE}>{t("3d.hooks")}</p>}
-      <p className={NOTE}>{t("privacy")}</p>
-    </>
-  );
+  return <p className={NOTE}>{t(panel === "github" ? "3d.githubNote" : "3d.hooks")}</p>;
 }
 
 /** No data to show yet or any more: the first fetch is pending or failed, or the live office is switched off. */

@@ -16,7 +16,6 @@ const labels: OfficeCardLabels = {
   disabled: en.office["3d"].drawer.disabled,
   offDuty: en.office["3d"].offDuty,
   clientProject: en.office.clientProject,
-  privacy: en.office.privacy,
   states: en.office.state,
   activities: en.office.activity,
   agentNames: en.office.agent,
@@ -74,7 +73,7 @@ afterEach(() => {
 });
 
 describe("OfficePanel", () => {
-  it("shows counts, desks with titles or Client project, GitHub items, today and the privacy note", () => {
+  it("shows counts, desks with titles or Client project, GitHub items and today, with no privacy note", () => {
     const { poller, calls } = fakePoller(ready(OFFICE_FIXTURES.busy as OfficeSnapshotV1));
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW + 4000} />);
     expect(calls).toContain("start");
@@ -87,7 +86,8 @@ describe("OfficePanel", () => {
     expect(screen.getByTestId("office-extra").textContent).toBe("+1 more session");
     expect(screen.getAllByTestId("office-github")).toHaveLength(4);
     expect(screen.getByTestId("office-today").textContent).toBe("Today: 9 tasks done, 7 PRs merged, 13 of 14 CI runs green");
-    expect(screen.getByTestId("office-privacy").textContent).toBe(labels.privacy);
+    expect(screen.queryByTestId("office-privacy")).toBeNull();
+    expect(screen.getByTestId("office-panel").textContent).not.toMatch(/leave Kurniadi's machine/);
   });
 
   it("reports the status so the shell can hide a disabled office, and shows semi-live and offline lines", () => {
@@ -116,7 +116,6 @@ describe("OfficePanel", () => {
     expect(screen.queryAllByTestId("office-github")).toHaveLength(0);
     expect(screen.queryByTestId("office-github-empty")).toBeNull();
     expect(screen.getByTestId("office-today")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByTestId("office-privacy")).toBeTruthy();
   });
 
   it("offline with a kept snapshot keeps the last known rows in place, dimmed, with the time of that snapshot", () => {
@@ -133,7 +132,6 @@ describe("OfficePanel", () => {
     expect(screen.getByTestId("office-extra").textContent).toBe("+1 more session");
     expect(screen.getByTestId("office-today").textContent).toContain("Today: 9 tasks done");
     expect(screen.getAllByTestId("office-github")).toHaveLength(4);
-    expect(screen.getByTestId("office-privacy")).toBeTruthy();
   });
 
   it("shows no task under a sleeping desk without a title, and Client project only under a working one", () => {
@@ -354,7 +352,7 @@ describe("OfficeLazy", () => {
     expect(screen.getByText(labels.loadingNote).parentElement).toBe(screen.getByText(labels.loading).parentElement);
     expect(fetcher).not.toHaveBeenCalled();
     io.fire(true);
-    await waitFor(() => expect(screen.getByTestId("office-privacy")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("office-panel")).toBeTruthy());
     io.fire(true);
     await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled"));
     // On screen: held with the switched-off line, so nothing below moves.

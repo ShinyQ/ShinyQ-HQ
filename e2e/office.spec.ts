@@ -271,7 +271,7 @@ test.describe("Agent Office (L1)", () => {
     await expect(drawer.getByTestId("office-body")).toHaveAttribute("data-panel", "desk");
     await expect(drawer).toContainText(en.office["3d"].agentFull.copilot);
     await expect(drawer.getByTestId("office-repo")).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ");
-    await expect(drawer).toContainText(en.office.privacy);
+    await expect(drawer).toContainText(en.office["3d"].hooks);
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
     await chip(page, 1).click();

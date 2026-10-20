@@ -81,7 +81,7 @@ test.describe("Classic: Live Agent Office", () => {
     await expect(page.getByTestId("office-github").first()).toContainText("CI");
     await expect(page.getByTestId("office-github").first().locator("a")).toHaveAttribute("href", /^https:\/\/github\.com\//);
     await expect(page.getByTestId("office-count-active")).toContainText("2");
-    await expect(page.getByTestId("office-privacy")).toBeVisible();
+    await expect(page.getByTestId("office-privacy")).toHaveCount(0);
     const axe = await new AxeBuilder({ page }).include("#office").analyze();
     expect(axe.violations).toEqual([]);
     expect(errors).toEqual([]);
@@ -218,7 +218,7 @@ test.describe("Classic: Live Agent Office", () => {
     // Only the reviewing desk carries a task line; the sleeping desks work on nothing.
     await expect(page.getByTestId("office-desk")).toHaveCount(5);
     await expect(page.getByTestId("office-task")).toHaveText([id.office.clientProject]);
-    await expect(page.getByTestId("office-privacy")).toHaveText(id.office.privacy);
+    await expect(page.getByTestId("office-today")).toBeVisible();
   });
 
   test("captures for the owner", async ({ page }) => {
