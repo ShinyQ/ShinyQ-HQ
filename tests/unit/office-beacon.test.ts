@@ -15,7 +15,7 @@ describe("beacon", () => {
     expect(Math.hypot(one.x - arc.x, one.z - arc.z)).toBeGreaterThan(Math.hypot(r.x - arc.x, r.z - arc.z));
     expect(beaconOrigin([0, 4])).toEqual(LOBBY.officeWing.plaza.center);
   });
-  it("bands climb the column and widen, then restart", () => {
+  it("rings pulse up the column's lowest part and widen, then restart: flat bands well wider than the column", () => {
     const a = make();
     const b = make();
     beaconInstances(0.2, false, a);
@@ -23,7 +23,24 @@ describe("beacon", () => {
     expect(a[0]).toMatchObject({ h: BEACON.h, r: BEACON.r });
     expect(b[1].y).toBeGreaterThan(a[1].y);
     expect(b[1].r).toBeGreaterThan(a[1].r);
-    for (const i of a.slice(1, 4)) expect(i.y).toBeLessThanOrEqual(BEACON.h);
+    for (const t of [0, 0.25, 0.5, 0.8, 1.1, 1.59, 3.3])
+      for (const reduced of [false, true]) {
+        const c = make();
+        beaconInstances(t, reduced, c);
+        for (const i of c.slice(1, 4)) {
+          expect(i.y + i.h).toBeLessThanOrEqual(BEACON.rise + 1e-9);
+          expect(i.r).toBeGreaterThanOrEqual(2 * BEACON.r);
+          expect(i.h).toBeLessThan(i.r);
+          expect(i.alpha).toBeGreaterThanOrEqual(0);
+          expect(i.alpha).toBeLessThanOrEqual(1);
+        }
+      }
+    // A ring fades in at the bottom (no pop) and out at the top.
+    const start = make();
+    beaconInstances(0, false, start);
+    expect(start[1]).toMatchObject({ y: 0, alpha: 0 });
+    // Three rings in flight, a third of the climb apart.
+    expect([a[1].y, a[2].y, a[3].y].sort((x, y) => x - y).every((y, k, ys) => k === 0 || y - ys[k - 1] > 1)).toBe(true);
   });
   it("holds still under reduced motion", () => {
     const a = make();
@@ -39,7 +56,7 @@ describe("beacon", () => {
     expect(a[4]).toEqual({ y: 1, r: 2, h: 3, alpha: 0.5 });
   });
   it("hides the column at the office stop, keeping only faint bands around the asking Rover; whole elsewhere; the asking state's pink", () => {
-    expect(beaconGain(false)).toEqual({ column: 1, bands: 1, reach: BEACON.h });
+    expect(beaconGain(false)).toEqual({ column: 1, bands: 1, reach: BEACON.rise });
     const stop = beaconGain(true);
     expect(stop.column).toBe(0);
     expect(stop.bands).toBeGreaterThan(0);
@@ -56,7 +73,7 @@ describe("beacon", () => {
         }
         expect(a[0].alpha * stop.column).toBe(0);
       }
-    // Away from the stop the default reach is the column's height (the Lobby view is unchanged).
+    // Away from the stop the default reach is the rings' rise (the Lobby view).
     const lobby = make();
     const plain = make();
     beaconInstances(0.7, false, lobby, beaconGain(false).reach);

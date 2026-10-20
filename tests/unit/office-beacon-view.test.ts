@@ -63,6 +63,16 @@ describe("the beacon from the Lobby", () => {
     for (const [o, share] of Object.entries(measured.spawn[id])) expect(share, `${o} from the spawn`).toBeGreaterThanOrEqual(VISIBLE);
   });
 
+  it.each(SIZES.filter((s) => landscape(s) && s.height > 390))("keeps the rings' climb (the lowest BEACON.rise u) in frame from the primed spawn on $id ($width x $height)", ({ width, height }) => {
+    const camera = VIEWS.spawn({ width, height } as Size);
+    const v = new Vector3();
+    for (const [o, at] of Object.entries(ORIGINS)) {
+      if (measured.spawn[SIZES.find((s) => s.width === width && s.height === height)!.id][o] < VISIBLE) continue;
+      v.set(at.x, BEACON.rise, at.z).project(camera);
+      expect(v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1, `${o}: the rings' top in frame`).toBe(true);
+    }
+  });
+
   it("misses it exactly where recorded (the minimap cue's sizes and views)", () => {
     expect(Object.keys(BLIND)).toEqual(Object.keys(VIEWS));
     for (const view of Object.keys(VIEWS)) {
