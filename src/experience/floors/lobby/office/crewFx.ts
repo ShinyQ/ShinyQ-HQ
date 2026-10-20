@@ -2,7 +2,7 @@ import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
-import { OFFICE, officeTowerColumn, type OfficeSlot } from "../officeLayout";
+import { OFFICE, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
 import { confettiAt, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
 import { OFFICE_ROVER } from "./officeVisual";
@@ -28,8 +28,13 @@ const FLAT = new Quaternion().setFromEuler(new Euler(-Math.PI / 2, 0, 0));
 const SPARK = "#a5f3fc";
 const CHARGE = "#67e8f9";
 const CONFETTI = ["#34d399", "#22d3ee", "#fbbf24", "#f472b6", "#a78bfa", "#ffffff"] as const;
-/** The charge pad lies on the floor, above the halo (0.03) and the progress dots (0.04). */
-const CHARGE_Y = 0.05;
+/**
+ * The charge pad: a flat glow ellipse `w` across and `d` deep (u) under the docked Rover, centred where it stands (its
+ * front edge meets the desk's back edge, so no part of it lies under the desk) and wider than the Rover (0.75 u half
+ * width), so it shows on both sides of it from the office stop. `y` lies over the halo (0.03), the progress dots (0.04) and
+ * the corner pads' tops (`OFFICE.tower.plinth`, `OFFICE.dock.pad`), which the end Rovers' pads reach over.
+ */
+export const CHARGE_PAD = { w: 3.2, d: 2.2, y: 0.12 } as const;
 
 function dot(frame: Matrix4, p: FxPoint, size: number, color: string, gain: number, i: number, matrices: Float32Array, colors: Float32Array): void {
   V.set(p.x, p.y, p.z).applyMatrix4(frame);
@@ -43,8 +48,8 @@ const EYE_R = (DRONES.r + DRONES.body[2] / 2 + 0.01) / DRONES.r;
 /**
  * Writes one Rover's 20 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`: the
  * sparks, the thought trail, the confetti and the `drones` helper drones' eye lights ride on it (no eye lights on the
- * lite tier). The charge pad lies on the floor under the Rover and the desk light on the desk, so neither follows the
- * Rover's pitch, slump or turn.
+ * lite tier). The charge pad lies on the floor under the docked Rover (`CHARGE_PAD`) and the desk light on the desk, so
+ * neither follows the Rover's pitch, slump or turn.
  */
 export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array, drones = 0, lite = false): void {
   const base = slot.slot * (RIG_GLOW + CREW_GLOW.count) + RIG_GLOW;
@@ -65,9 +70,10 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
     dot(frame, P, 0.1, CONFETTI[j], 1.3, base + CREW_GLOW.confetti + j, matrices, colors);
   }
   const charge = base + CREW_GLOW.charge;
-  V.setFromMatrixPosition(frame).setY(CHARGE_Y);
-  M.compose(V, FLAT, S.setScalar(fx.charge > 0 ? 2.1 : 0)).toArray(matrices, charge * 16);
-  C.set(CHARGE).multiplyScalar(0.6 * fx.charge).toArray(colors, charge * 3);
+  V.setFromMatrixPosition(frame).setY(CHARGE_PAD.y);
+  const pad = fx.charge > 0 ? 1 : 0;
+  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(CHARGE_PAD.w * pad, CHARGE_PAD.d * pad, pad)).toArray(matrices, charge * 16);
+  C.set(CHARGE).multiplyScalar(fx.charge).toArray(colors, charge * 3);
   // The desk light: a long flat glow along the desk's far edge, in the state tone (dims to 10% asleep).
   const desk = base + CREW_GLOW.desk;
   const edge = OFFICE.desk.d / 2 - 0.05;
@@ -98,8 +104,13 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
   return state;
 }
 
-/** The tower's LED matrix after the five Rovers' glow: up to 24 lanes of 8 dots, bottom to top. */
-export const TOWER = { lanes: 24, dots: 8, start: 5 * (RIG_GLOW + CREW_GLOW.count), gap: 0.3 } as const;
+/**
+ * The tower's LED matrix after the five Rovers' glow: up to 24 lanes of 8 dots, bottom to top, over most of the slim
+ * column's stop-facing face (`base` over the plinth, `gap` between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart
+ * within a lane (0.91 u of its 1.2 u face). Idle dots stay a dim visible grid (`idle`), a run's pending lanes a little
+ * brighter, done lanes bright green, the next lane chasing.
+ */
+export const TOWER = { lanes: 24, dots: 8, start: 5 * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
 
 export interface TowerLanes {
   total: number;
@@ -120,10 +131,11 @@ export function towerLanes(view: OfficeView): TowerLanes {
 
 const COL = officeTowerColumn(LOBBY.officeWing);
 /** The column's stop-facing side (the column is turned to face the office stop, `officeShell.ts`). */
-const FACE = Math.atan2(LOBBY.officeWing.stop.x - COL.x, LOBBY.officeWing.stop.z - COL.z);
+const FACE = officeTowerYaw(LOBBY.officeWing);
 const FACE_Q = new Quaternion().setFromAxisAngle(UP, FACE);
+const IDLE = "#64748b";
 
-/** Writes the lane dots on the column's stop-facing side: done lanes green, the next lane chasing, the rest dim. */
+/** Writes the lane dots on the column's stop-facing side: done lanes green, the next lane chasing, the rest a dim grid. */
 export function writeTower(lanes: TowerLanes, t: number, reduced: boolean, matrices: Float32Array, colors: Float32Array): void {
   const cx = Math.cos(FACE);
   const sx = -Math.sin(FACE);
@@ -136,11 +148,11 @@ export function writeTower(lanes: TowerLanes, t: number, reduced: boolean, matri
     const chasing = shown && lanes.running && lane === lanes.done;
     for (let d = 0; d < TOWER.dots; d++) {
       const i = TOWER.start + lane * TOWER.dots + d;
-      const across = (d - (TOWER.dots - 1) / 2) * 0.2;
-      V.set(COL.x + cx * across + fx * out, OFFICE.tower.plinth + 0.6 + lane * TOWER.gap, COL.z + sx * across + fz * out);
-      M.compose(V, FACE_Q, S.setScalar(shown ? 0.14 : 0.08)).toArray(matrices, i * 16);
-      const color = lane < lanes.done ? "#34d399" : chasing ? "#a78bfa" : "#3b3f5c";
-      const on = lane < lanes.done ? 1 : chasing ? (d === head ? 1.4 : 0.35) : 0.12;
+      const across = (d - (TOWER.dots - 1) / 2) * TOWER.across;
+      V.set(COL.x + cx * across + fx * out, OFFICE.tower.plinth + TOWER.base + lane * TOWER.gap, COL.z + sx * across + fz * out);
+      M.compose(V, FACE_Q, S.setScalar(shown ? TOWER.size.lit : TOWER.size.idle)).toArray(matrices, i * 16);
+      const color = lane < lanes.done ? "#34d399" : chasing ? "#a78bfa" : IDLE;
+      const on = lane < lanes.done ? TOWER.done : chasing ? (d === head ? 1.4 : 0.5) : shown ? TOWER.pending : TOWER.idle;
       C.set(color).multiplyScalar(on).toArray(colors, i * 3);
     }
   }

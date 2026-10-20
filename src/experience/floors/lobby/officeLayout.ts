@@ -97,9 +97,13 @@ export const OFFICE = {
    * from the office stop) inside a frame `frame` u wide, `t` thick, facing north (`OfficeWing.wall`).
    */
   wall: { w: 17, h: 5.2, bottom: 1.2, t: 0.3, frame: 0.2 },
-  /** The CI tower (south-east corner, stage B lights its lane matrix) and the ship dock (south-west corner). */
-  tower: { column: 2, h: 9, plinth: 0.4 },
-  dock: { pad: 0.25 },
+  /**
+   * The CI tower (south-east corner): a slim LED-lane column (owner decision 2026-10-20), 1.2 u square and 9 u tall, its
+   * lane matrix on the stop-facing face (stage B lights it from v2 data), on a low floor pad over the corner; the ship dock
+   * (south-west corner) is a low floor pad too. The pads keep the corners' obstacle rects.
+   */
+  tower: { column: 1.2, h: 9, plinth: 0.1 },
+  dock: { pad: 0.1 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
    * size of its area around the stop. From the stop the office fills the frame (owner decision 2026-10-20, with the chips
@@ -112,15 +116,16 @@ export const OFFICE = {
    * - tablet (landscape phones and small landscape tablets): the wall's top at 17.7%, under the HUD's top bar on 844 x 390
    *   and the chip row on 960 x 640, the console 45.8% to 66.4% down, the tower and the dock in frame, the plain aim;
    * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
-   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: the wall's top at 15%,
-   *   the console 31.4% to 42.6% down; the look target moves 5.25 u toward the camera, and a hand zoom hands the framing
-   *   back there (the offset eases out).
+   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: tilted steeper (66
+   *   degrees) to bring the console and the visitor's Rover lower, the wall's top at 15%, the console 31.5% to 43.4% down
+   *   (no view keeping the five Rovers across the screen puts it lower); the look target moves 4.75 u toward the camera,
+   *   and a hand zoom hands the framing back there (the offset eases out).
    * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
    */
   view: {
     desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true } },
     tablet: { zoom: 1.2, pitch: 0.35 },
-    mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
+    mobile: { zoom: 1.42, pitch: 0.4, lookOffset: { forward: -4.8 } },
     half: { x: 2, z: 1.4 },
   },
   /**
@@ -208,12 +213,18 @@ export function officeDock(w: OfficeWing): Rect {
 
 /**
  * The tower column's centre (the crew's look target): 1.5 u in from the corner's east and north edges, so the column
- * (turned toward the stop, reaching about 1.18 u) stays on the plinth and, from the office stop, in frame on desktops
+ * (turned toward the stop, reaching about 0.8 u) stays on the plinth and, from the office stop, in frame on desktops
  * (tests/unit/office-view.test.ts).
  */
 export function officeTowerColumn(w: OfficeWing): Vec2 {
   const r = officeTower(w);
   return { x: r.maxX - 1.5, z: r.minZ + 1.5 };
+}
+
+/** The tower column's turn (three `rotation.y`): its lane face looks at the office stop. */
+export function officeTowerYaw(w: OfficeWing): number {
+  const c = officeTowerColumn(w);
+  return Math.atan2(w.stop.x - c.x, w.stop.z - c.z);
 }
 
 /** The ship dock pad's centre: the corner's middle. */
@@ -251,11 +262,11 @@ export function officeTall(w: OfficeWing): Rect & { h: number } {
   return { ...officeWallRect(w), h: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame };
 }
 
-/** Camera collision column: the CI tower's 2 x 2 u column around `officeTowerColumn`, from the floor to its top (plinth plus column). */
+/** Camera collision column: the CI tower's turned column (its axis-aligned box) around `officeTowerColumn`, from the floor to its top (plinth plus column). */
 export function officeTowerTall(w: OfficeWing): Rect & { h: number } {
   const c = officeTowerColumn(w);
-  const half = OFFICE.tower.column / 2;
-  return { minX: c.x - half, maxX: c.x + half, minZ: c.z - half, maxZ: c.z + half, h: OFFICE.tower.plinth + OFFICE.tower.h };
+  const half = turnedHalf(OFFICE.tower.column, OFFICE.tower.column, officeTowerYaw(w));
+  return { minX: c.x - half.x, maxX: c.x + half.x, minZ: c.z - half.z, maxZ: c.z + half.z, h: OFFICE.tower.plinth + OFFICE.tower.h };
 }
 
 /** Where `drive` stops for every office room (`FloorLayout.stops`). */

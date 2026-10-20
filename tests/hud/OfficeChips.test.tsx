@@ -69,19 +69,48 @@ describe("Agent Office chips", () => {
     expect(chip(1)).toHaveAttribute("aria-label", `Desk 2: Claude · Planning, ${en.office.clientProject}`);
   });
 
-  it("truncates a near chip's activity first, so the helpers total always shows", () => {
+  it("drops a near head's activity first when it does not fit, never cutting the agent's name; the label keeps the full text", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
+    // jsdom lays nothing out: the head's text is 7 px a character, in a span 140 px wide (110 px beside a "+N" pill).
+    const width = (el: HTMLElement) => (el.dataset.testid === "office-chip-head" ? (el.textContent ?? "").length * 7 : 0);
+    const room = (el: HTMLElement) => (el.dataset.testid === "office-chip-head" ? Math.min(width(el), el.nextElementSibling ? 110 : 140) : 0);
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return width(this);
+    });
+    const client = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return room(this);
+    });
+    try {
+      renderChips();
+      // "Copilot · Editing · 3 helpers" (203 px) drops the activity: "Copilot · 3 helpers" (133 px) fits.
+      expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
+      expect(head(0)).toHaveAttribute("data-drop", "1");
+      expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Desk 1: Copilot · Editing · 3 helpers, /));
+      // Beside the "+2" pill "Copilot · 6 helpers" does not fit either: the pill goes, the name and the total stay whole.
+      expect(head(2)).toHaveTextContent(/^Copilot · 6 helpers$/);
+      expect(chip(2).querySelector("[data-testid=office-chip-more]")).toBeNull();
+      expect(chip(2)).toHaveAttribute("aria-label", expect.stringContaining("Copilot · Watching CI · 6 helpers"));
+      // A head that fits stays whole: "Claude · Planning" (119 px).
+      expect(head(1)).toHaveTextContent(/^Claude · Planning$/);
+      expect(head(1)).toHaveAttribute("data-drop", "0");
+      // A far turn and back starts whole again (and drops again).
+      act(() => setChipFar(0, true));
+      expect(chip(0)).toHaveTextContent(/^Copilot3$/);
+      act(() => setChipFar(0, false));
+      expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
+    } finally {
+      scroll.mockRestore();
+      client.mockRestore();
+    }
+  });
+
+  it("keeps a near head whole while it fits (one truncating span, the safety net)", () => {
     live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
     renderChips();
-    const [base, total] = Array.from(head(2).children) as HTMLElement[];
-    expect(head(2)).toHaveClass("flex", "min-w-0");
-    expect(base).toHaveClass("min-w-0", "truncate");
-    expect(base).toHaveTextContent(/^Copilot · Watching CI$/);
-    expect(total).toHaveClass("shrink-0", "whitespace-pre");
-    expect(total).not.toHaveClass("truncate");
-    expect(total.textContent).toBe(" · 6 helpers");
-    expect(total.nextElementSibling).toBeNull();
+    expect(head(2)).toHaveClass("min-w-0", "truncate");
+    expect(head(2)).toHaveAttribute("data-drop", "0");
+    expect(head(2).children).toHaveLength(0);
     expect(head(2).nextElementSibling).toHaveAttribute("data-testid", "office-chip-more");
-    expect(head(1).children).toHaveLength(1);
   });
 
   it("says one helper, and in Indonesian asisten", () => {

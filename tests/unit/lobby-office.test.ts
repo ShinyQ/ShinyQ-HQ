@@ -21,7 +21,9 @@ import {
   officeTower,
   officeTowerColumn,
   officeTowerTall,
+  officeTowerYaw,
   officeWallRect,
+  turnedHalf,
   officeWing,
   officeZone,
   type OfficeWing,
@@ -327,6 +329,18 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(column).toMatchObject({ ...officeTowerColumn(W), y: OFFICE.tower.plinth, w: OFFICE.tower.column, d: OFFICE.tower.column, h: OFFICE.tower.h });
     expect(Math.sin(column.yaw!) * (W.stop.x - column.x) + Math.cos(column.yaw!) * (W.stop.z - column.z)).toBeCloseTo(Math.hypot(W.stop.x - column.x, W.stop.z - column.z));
     expect(pad).toMatchObject({ ...officeDockPad(W), y: 0, h: OFFICE.dock.pad, w: dock.maxX - dock.minX, d: dock.maxZ - dock.minZ });
+    expect(column.yaw).toBe(officeTowerYaw(W));
+  });
+
+  it("makes the CI tower a slim LED-lane column (owner decision 2026-10-20) on low floor pads, the corners' obstacles unchanged", () => {
+    expect(OFFICE.tower.column).toBeCloseTo(1.2);
+    expect(OFFICE.tower.h).toBe(9);
+    // The tower plinth and the dock pad read as floor pads, 0.08 u to 0.12 u high.
+    for (const h of [OFFICE.tower.plinth, OFFICE.dock.pad]) {
+      expect(h).toBeGreaterThanOrEqual(0.08);
+      expect(h).toBeLessThanOrEqual(0.12);
+    }
+    expect(officeObstacles(W).slice(4)).toEqual([officeTower(W), officeDock(W)]);
   });
 
   it("is one continuous console: neighbouring desks touch, so the boxes touch honestly and hide little open floor", () => {
@@ -429,8 +443,11 @@ describe("CI tower and ship dock", () => {
     expect(p.z).toBeGreaterThan(dock.minZ);
     expect(p.z).toBeLessThan(dock.maxZ);
     const c = officeTowerColumn(w);
-    const half = OFFICE.tower.column / 2;
-    expect(officeTowerTall(w)).toEqual({ minX: c.x - half, maxX: c.x + half, minZ: c.z - half, maxZ: c.z + half, h: OFFICE.tower.plinth + OFFICE.tower.h });
+    // The turned column's axis-aligned box.
+    const half = turnedHalf(OFFICE.tower.column, OFFICE.tower.column, officeTowerYaw(w));
+    expect(half.x).toBeGreaterThan(OFFICE.tower.column / 2);
+    expect(half.x).toBeLessThan((OFFICE.tower.column / 2) * Math.SQRT2 + 1e-9);
+    expect(officeTowerTall(w)).toEqual({ minX: c.x - half.x, maxX: c.x + half.x, minZ: c.z - half.z, maxZ: c.z + half.z, h: OFFICE.tower.plinth + OFFICE.tower.h });
     expect(inside(officeTowerTall(w), tower)).toBe(true);
     expect(l1.tall).toContainEqual(officeTowerTall(w));
     expect(l1.tall).toContainEqual(officeTall(w));

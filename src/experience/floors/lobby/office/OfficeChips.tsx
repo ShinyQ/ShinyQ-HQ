@@ -1,14 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
 import { CHIP_ROW } from "../officeShell";
 import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
-import { chipLines, officeView, type OfficeRoverView } from "./officeModel";
+import { chipLines, NEAR_DROPS, nearHead, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
 import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
@@ -16,8 +16,9 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
  * (never an edge stripe) with the agent's name (and, while it has helpers, a small drone ring with their total, "3"),
  * "<Agent> · <activity> · 3 helpers" when near, with a "+2" pill past the four drones drawn (6 helpers) (at most
- * `CHIP_ROW.max` px wide, or the row's fit `chipMaxWidth` that `OfficeWatch` writes; the activity ends in an ellipsis
- * first, so the helpers total always shows; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
+ * `CHIP_ROW.max` px wide, or the row's fit `chipMaxWidth` that `OfficeWatch` writes; a near head that does not fit drops
+ * whole parts, never cutting the agent's name: the activity first ("Copilot · 3 helpers"), then the "+2" pill, then the
+ * helpers, `nearHead`; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
  * full text (`chipLines`: agent, activity, helpers, the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
@@ -33,6 +34,16 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
   const line = chipLines(rover, t);
   const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
+  // A near head that overflows (the head span cuts its text) drops one more part, measured again before paint, until it
+  // fits; new text or a far turn starts whole again.
+  const key = `${far}|${line.head}|${more}`;
+  const [fit, setFit] = useState({ key, drop: 0 });
+  const drop = fit.key === key ? fit.drop : 0;
+  const head = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = head.current;
+    if (!far && el && drop < NEAR_DROPS && el.scrollWidth > el.clientWidth) setFit({ key, drop: drop + 1 });
+  }, [far, key, drop]);
   return (
     <>
       <span
@@ -72,9 +83,8 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
             {far ? (
               <span className="min-w-0 truncate">{line.name}</span>
             ) : (
-              <span data-testid="office-chip-head" className="flex min-w-0">
-                <span className="min-w-0 truncate">{line.base}</span>
-                {line.helpers && <span className="shrink-0 whitespace-pre">{` · ${line.helpers}`}</span>}
+              <span ref={head} data-testid="office-chip-head" data-drop={drop} className="min-w-0 truncate">
+                {nearHead(line, drop)}
               </span>
             )}
             {line.helpers && far && (
@@ -83,7 +93,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
                 {rover.helpers}
               </span>
             )}
-            {more > 0 && !far && (
+            {more > 0 && !far && drop < 2 && (
               <span aria-hidden="true" data-testid="office-chip-more" className="shrink-0 rounded-full border border-glass-border px-1.5 text-xs text-ink-2">
                 {`+${more}`}
               </span>

@@ -1,7 +1,7 @@
 import { Matrix4, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
-import { crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
+import { CHARGE_PAD, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
+import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
 import { GLOW_PER_ROVER, roverFrame } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
@@ -64,8 +64,42 @@ describe("crew glow layout", () => {
     const p = stepCrew(asleep, "asleep", 0.1, 0, false, { camera: 1, tower: 0 });
     writeCrewGlow(slot, roverFrame(slot, p, new Matrix4()), "asleep", crewFx(asleep, false), 0.1, 0, false, m, c);
     expect(posAt(m, base + CREW_GLOW.desk).distanceTo(desk)).toBeLessThan(1e-6);
-    expect(posAt(m, base + CREW_GLOW.charge).y).toBeCloseTo(0.05);
+    expect(posAt(m, base + CREW_GLOW.charge).y).toBeCloseTo(CHARGE_PAD.y);
     expect(scaleAt(m, base + CREW_GLOW.charge)).toBeGreaterThan(0);
+  });
+  it("lays the charge pad where the docked Rover stands, behind the desk and wider than the Rover, over the corner pads", () => {
+    const m = new Float32Array(5 * GLOW_PER_ROVER * 16);
+    const c = new Float32Array(5 * GLOW_PER_ROVER * 3);
+    for (const slot of OFFICE_SLOTS) {
+      const base = slot.slot * GLOW_PER_ROVER + 18;
+      const asleep = newActor("asleep");
+      const frame = roverFrame(slot, stepCrew(asleep, "asleep", 0.1, 0, true, LOOK), new Matrix4());
+      writeCrewGlow(slot, frame, "asleep", crewFx(asleep, true), 0.1, 0, true, m, c);
+      const at = posAt(m, base + CREW_GLOW.charge);
+      const docked = new Vector3().setFromMatrixPosition(frame);
+      expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
+      const arc = LOBBY.officeWing.arc;
+      // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
+      expect(Math.hypot(at.x - arc.x, at.z - arc.z) - CHARGE_PAD.d / 2).toBeGreaterThanOrEqual(OFFICE.deskRadius + OFFICE.desk.d / 2 - 1e-5);
+      const e = new Matrix4().fromArray(m, (base + CREW_GLOW.charge) * 16).elements;
+      // Its width runs along the desk (the Rover's local x), 0.85 u past the Rover's 0.75 u half width on each side.
+      expect(Math.hypot(e[0], e[1], e[2])).toBeCloseTo(CHARGE_PAD.w);
+      expect(Math.abs(e[0] * Math.cos(slot.yaw) - e[2] * Math.sin(slot.yaw)) / CHARGE_PAD.w).toBeCloseTo(1);
+      expect(CHARGE_PAD.w / 2).toBeGreaterThan(0.75 + 0.5);
+      expect(at.y).toBeGreaterThan(Math.max(OFFICE.tower.plinth, OFFICE.dock.pad));
+      // Reduced motion: a steady 0.6 of the pad's colour.
+      expect(Math.max(c[(base + CREW_GLOW.charge) * 3], c[(base + CREW_GLOW.charge) * 3 + 1], c[(base + CREW_GLOW.charge) * 3 + 2])).toBeGreaterThan(0.4);
+    }
+  });
+  it("breathes the charge pad 0.45 to 0.8 at 0.2 Hz, a steady 0.6 under reduced motion", () => {
+    expect(CREW.charge).toEqual({ hz: 0.2, lo: 0.45, hi: 0.8, still: 0.6 });
+    const a = newActor("asleep");
+    const levels: number[] = [];
+    for (let i = 0; i < 300; i++) levels.push(crewFx((stepCrew(a, "asleep", 1 / 60, 0, false, LOOK), a), false).charge);
+    expect(Math.min(...levels)).toBeGreaterThanOrEqual(0.45 - 1e-9);
+    expect(Math.max(...levels)).toBeLessThanOrEqual(0.8 + 1e-9);
+    expect(Math.max(...levels) - Math.min(...levels)).toBeGreaterThan(0.3);
+    expect(crewFx(newActor("asleep"), true).charge).toBe(0.6);
   });
 });
 
@@ -85,6 +119,25 @@ describe("tower lanes (v1: anonymous progress)", () => {
     }
     const green = (lane: number) => c[(TOWER.start + lane * TOWER.dots) * 3 + 1];
     expect(green(6)).toBeGreaterThan(green(8));
+    // Lit lanes bright, the run's pending lanes and the idle ones a dim grid under them.
+    expect(green(6)).toBeGreaterThan(0.5);
+    expect(green(13)).toBeLessThan(green(9));
+    expect(green(9)).toBeLessThan(green(6) / 3);
+  });
+  it("spans the lanes over most of the slim column's height, the dots across its face", () => {
+    const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
+    const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
+    writeTower({ total: 0, done: 0, running: false }, 0, true, m, c);
+    const bottom = posAt(m, TOWER.start).y;
+    const top = posAt(m, TOWER.start + (TOWER.lanes - 1) * TOWER.dots).y;
+    expect(bottom - OFFICE.tower.plinth).toBeLessThan(0.6);
+    expect((top - bottom) / OFFICE.tower.h).toBeGreaterThan(0.85);
+    expect(top).toBeLessThan(OFFICE.tower.plinth + OFFICE.tower.h - 0.2);
+    const first = posAt(m, TOWER.start);
+    const last = posAt(m, TOWER.start + TOWER.dots - 1);
+    const span = Math.hypot(last.x - first.x, last.z - first.z) + TOWER.size.lit;
+    expect(span).toBeGreaterThan(OFFICE.tower.column * 0.7);
+    expect(span).toBeLessThan(OFFICE.tower.column);
   });
 
   it("reads the newest running run's progress", () => {
@@ -109,10 +162,12 @@ describe("tower lanes (v1: anonymous progress)", () => {
     const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
     const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
     writeTower(lanes, 3, false, m, c);
+    // Dark: every dot a dim idle dot, still visible as a grid (no lane lit).
     for (let i = TOWER.start; i < TOWER.start + TOWER.lanes * TOWER.dots; i++) {
       const rgb = [c[i * 3], c[i * 3 + 1], c[i * 3 + 2]];
-      expect(Math.max(...rgb)).toBeGreaterThan(0);
-      expect(Math.max(...rgb)).toBeLessThan(0.02);
+      expect(Math.max(...rgb)).toBeGreaterThan(0.05);
+      expect(Math.max(...rgb)).toBeLessThan(0.15);
+      expect(scaleAt(m, i)).toBeCloseTo(TOWER.size.idle);
     }
     expect(towerKey(lanes, 3, true)).toBe(towerKey(lanes, 8, true));
     expect(towerKey(lanes, 3, false)).toBe(towerKey(lanes, 8.37, false));

@@ -96,6 +96,15 @@ export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: strin
   return { name, base, head, helpers, task, progress, label };
 }
 
+/** How much a near chip's head drops to fit its chip: 0 nothing, 1 the activity, 2 the "+N" pill too, 3 the helpers too (the name alone). */
+export const NEAR_DROPS = 3;
+
+/** A near chip's head after `drop` steps (`NEAR_DROPS`, `OfficeChips`): whole parts go, the agent's name never cut. */
+export function nearHead(line: { name: string; head: string; helpers: string | null }, drop: number): string {
+  if (drop <= 0) return line.head;
+  return line.helpers && drop < NEAR_DROPS ? `${line.name} · ${line.helpers}` : line.name;
+}
+
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {
   const style = OFFICE_STATE_STYLE[r.state];
   return { kind: style.screen, color: style.color, activity: r.agent ? t(`activity.${r.activity}`) : t("3d.offDuty"), progress: r.progress, job: r.job };

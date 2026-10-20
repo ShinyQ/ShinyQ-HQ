@@ -20,7 +20,8 @@ export const CREW = {
   spin: { s: 0.9, hop: 0.3 },
   /** Two short bursts every period (s): at most 2 flashes in 3 s. */
   flicker: { period: 3, on: [[0, 0.12], [0.25, 0.37]] as const },
-  charge: { hz: 0.2, lo: 0.3, hi: 0.6, still: 0.45 },
+  /** The charge pad's level while asleep: breathing 0.45 to 0.8 at 0.2 Hz, a steady 0.6 under reduced motion. */
+  charge: { hz: 0.2, lo: 0.45, hi: 0.8, still: 0.6 },
   confetti: 1.2,
   wave: { hz: 1.2, amp: 0.35 },
 } as const;

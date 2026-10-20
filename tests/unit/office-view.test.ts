@@ -1,15 +1,18 @@
 import { createTranslator } from "next-intl";
+import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import type { ViewportClass } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
-import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
-import { chipLines, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
+import { baseElevation } from "@/experience/camera/rigs";
+import { floorY, LOBBY } from "@/experience/config";
+import { OFFICE, type OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
+import { chipLines, NEAR_DROPS, nearHead, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
 import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import en from "../../messages/en.json";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
-import { SIZES } from "../helpers/office-cameras";
+import { followCamera, SIZES } from "../helpers/office-cameras";
 import { officeFrame } from "../helpers/office-frame";
 
 const NOW = 1_800_000_000_000;
@@ -68,6 +71,15 @@ describe("Agent Office view model", () => {
     expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", base: "Off duty", head: "Off duty", helpers: null, task: null, progress: null, label: "Desk 5: Off duty" });
   });
 
+  it("drops a near chip's head part by part, the agent's name always whole", () => {
+    const helpers = chipLines(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot }).rovers[0], t);
+    expect([0, 1, 2, NEAR_DROPS].map((d) => nearHead(helpers, d))).toEqual(["Copilot · Editing · 3 helpers", "Copilot · 3 helpers", "Copilot · 3 helpers", "Copilot"]);
+    const plain = chipLines(ready(statesA(NOW)).rovers[1], t);
+    expect([0, 1, NEAR_DROPS].map((d) => nearHead(plain, d))).toEqual(["Claude · Planning", "Claude", "Claude"]);
+    const off = chipLines(ready(statesB(NOW)).rovers[4], t);
+    expect(nearHead(off, 1)).toBe("Off duty");
+  });
+
   it("feeds the desk screen the state's kind, the activity label and only protocol fields", () => {
     const [input, , failed] = ready(statesB(NOW)).rovers;
     expect(screenInput(input, t)).toEqual({ kind: "question", color: "#f472b6", activity: "Asking Kurniadi", progress: null, job: null });
@@ -104,14 +116,16 @@ describe("Agent Office view model", () => {
  *   target on purpose: there it clears the HUD's 62 px top bar on 844 x 390 (69 px) and the chip row's 32 px names on
  *   960 x 640 (114 px against the row's bottom at 98 px);
  * - portrait: width bound (the whole wall and the five desks across 390 px, every Rover in frame from the zone's corners),
- *   so the office spans under a third of the height: the console 31% to 43% down.
+ *   so the office spans under a third of the height: tilted steeper (66 degrees) the console stands 31.5% to 43.4% down and
+ *   the visitor's Rover's middle at 46.1% (from 31.4% to 42.6%, 45%); with the wall's top at 15% no view that keeps the five
+ *   Rovers across the screen puts the console lower (the look-fix pass report searched pitch, zoom and look offset).
  */
 describe("the office stop frame", () => {
   /** The measured wall top, console top and bottom (fractions of the height from the top edge), per camera class. */
   const MEASURED: Record<ViewportClass, readonly [number, number, number]> = {
     desktop: [0.15, 0.424, 0.618],
     tablet: [0.177, 0.458, 0.664],
-    mobile: [0.149, 0.314, 0.426],
+    mobile: [0.149, 0.315, 0.434],
   };
   /** The lowest console top each class reaches (the 45% target where it can). */
   const CONSOLE_TOP: Record<ViewportClass, number> = { desktop: 0.42, tablet: 0.45, mobile: 0.31 };
@@ -138,5 +152,12 @@ describe("the office stop frame", () => {
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
     if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
+  });
+
+  it.each(SIZES.filter((s) => cameraClass(s.width, s.height) === "mobile"))("tilts the portrait view steeper on $id, so the visitor's Rover stands lower", ({ width, height }) => {
+    expect(baseElevation("mobile", "follow") + OFFICE.view.mobile.pitch).toBeGreaterThan((65 * Math.PI) / 180);
+    const stop = LOBBY.officeWing.stop;
+    const v = new Vector3(stop.x, floorY("L1") + 1, stop.z).project(followCamera(width, height, stop));
+    expect((1 - v.y) / 2).toBeCloseTo(0.461, 3);
   });
 });

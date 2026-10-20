@@ -39,9 +39,9 @@ export function OfficeBeacon() {
     if (!m) return;
     sceneProbes.office.beacon = m.visible = officeSignal.needsKurniadi;
     if (!m.visible) return;
-    beaconInstances((t.current += Math.min(dt, 0.1)), getHQStore().getState().reducedMotion, INST);
-    const o = beaconOrigin(officeSignal.asking);
     const gain = beaconGain(atOfficeStop());
+    beaconInstances((t.current += Math.min(dt, 0.1)), getHQStore().getState().reducedMotion, INST, gain.reach);
+    const o = beaconOrigin(officeSignal.asking);
     const at = m.instanceMatrix.array;
     const { aStage, aStage2 } = m.geometry.attributes;
     const s = aStage.array;
@@ -52,7 +52,7 @@ export function OfficeBeacon() {
       at[i * 16 + 14] = o.z;
       s[i * 4 + 1] = b.h;
       s[i * 4 + 2] = s[i * 4 + 3] = b.r;
-      aStage2.array[i * 4 + 3] = b.alpha * gain;
+      aStage2.array[i * 4 + 3] = b.alpha * (i === 0 ? gain.column : gain.bands);
     }
     m.instanceMatrix.needsUpdate = aStage.needsUpdate = aStage2.needsUpdate = true;
   });

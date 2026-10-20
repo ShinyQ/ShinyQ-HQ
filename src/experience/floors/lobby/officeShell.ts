@@ -7,7 +7,7 @@ import { roverRuntime } from "../../rover/runtime";
 import type { Rect, Vec2 } from "../../types";
 import type { ScreenBox } from "../../fx/labelPlacement";
 import type { Box } from "../roof/solids";
-import { isOfficeRoom, OFFICE, officeDock, officeDockPad, officeObstacles, officeSlots, officeTower, officeTowerColumn, officeZone, type OfficeSlot } from "./officeLayout";
+import { isOfficeRoom, OFFICE, officeDock, officeDockPad, officeObstacles, officeSlots, officeTower, officeTowerColumn, officeTowerYaw, officeZone, type OfficeSlot } from "./officeLayout";
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
@@ -99,7 +99,7 @@ export function officeShellBoxes(): Box[] {
   const col = officeTowerColumn(w);
   const pad = officeDockPad(w);
   out.push({ x: (tower.minX + tower.maxX) / 2, y: 0, z: (tower.minZ + tower.maxZ) / 2, w: tower.maxX - tower.minX, h: OFFICE.tower.plinth, d: tower.maxZ - tower.minZ });
-  out.push({ x: col.x, y: OFFICE.tower.plinth, z: col.z, w: OFFICE.tower.column, h: OFFICE.tower.h, d: OFFICE.tower.column, yaw: Math.atan2(w.stop.x - col.x, w.stop.z - col.z) });
+  out.push({ x: col.x, y: OFFICE.tower.plinth, z: col.z, w: OFFICE.tower.column, h: OFFICE.tower.h, d: OFFICE.tower.column, yaw: officeTowerYaw(w) });
   out.push({ x: pad.x, y: 0, z: pad.z, w: dock.maxX - dock.minX, h: OFFICE.dock.pad, d: dock.maxZ - dock.minZ });
   return out;
 }

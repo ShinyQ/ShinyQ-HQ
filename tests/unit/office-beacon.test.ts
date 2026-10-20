@@ -38,9 +38,30 @@ describe("beacon", () => {
     beaconInstances(0.4, false, a);
     expect(a[4]).toEqual({ y: 1, r: 2, h: 3, alpha: 0.5 });
   });
-  it("dims to a quarter at the office stop, and is the asking state's pink", () => {
-    expect(beaconGain(true)).toBe(0.25);
-    expect(beaconGain(false)).toBe(1);
+  it("hides the column at the office stop, keeping only faint bands around the asking Rover; whole elsewhere; the asking state's pink", () => {
+    expect(beaconGain(false)).toEqual({ column: 1, bands: 1, reach: BEACON.h });
+    const stop = beaconGain(true);
+    expect(stop.column).toBe(0);
+    expect(stop.bands).toBeGreaterThan(0);
+    expect(stop.bands).toBeLessThanOrEqual(0.3);
+    // The bands climb no higher than the Rover's head (1.95 u), so nothing crosses the screen wall (from 1.2 u) far up.
+    expect(stop.reach).toBeLessThanOrEqual(2);
+    for (const reduced of [false, true])
+      for (const t of [0, 0.3, 0.9, 1.5]) {
+        const a = make();
+        beaconInstances(t, reduced, a, stop.reach);
+        for (const b of a.slice(1, 4)) {
+          expect(b.y + b.h).toBeLessThanOrEqual(stop.reach + 1e-9);
+          expect(b.alpha * stop.bands).toBeLessThanOrEqual(0.3);
+        }
+        expect(a[0].alpha * stop.column).toBe(0);
+      }
+    // Away from the stop the default reach is the column's height (the Lobby view is unchanged).
+    const lobby = make();
+    const plain = make();
+    beaconInstances(0.7, false, lobby, beaconGain(false).reach);
+    beaconInstances(0.7, false, plain);
+    expect(lobby).toEqual(plain);
     expect(COLORS.pink).toBe(STATE_TONE.input);
   });
 });
