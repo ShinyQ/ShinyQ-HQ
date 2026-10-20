@@ -1,6 +1,7 @@
 import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import type { OfficeProgress, OfficeState } from "@/lib/office/protocol";
 import type { OfficeSlot } from "../officeLayout";
+import { CREW_GLOW } from "./crewFx";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "./officeVisual";
 
 /**
@@ -11,7 +12,8 @@ import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "
  */
 export const PARTS_PER_ROVER = 6;
 export const TREADS_PER_ROVER = 2;
-export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count;
+/** Glow instances per Rover: the rig's 18 (tip, halo, 16 progress dots, indexes `base` to `base + 17`), then the crew's (`crewFx.ts`). */
+export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count + CREW_GLOW.count;
 /** The flag pole (in the parts mesh) and plate (a quad on the atlas's flag cell), held in the raised left hand. */
 export const FLAG = { pole: { w: 0.06, h: 1.2 }, plate: { w: 0.6, h: 0.4 } } as const;
 

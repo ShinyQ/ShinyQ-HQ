@@ -48,6 +48,8 @@ const rough: OfficeSnapshotV1 = {
 const quiet: OfficeSnapshotV1 = {
   ...busy,
   extra: 0,
+  // No run in flight: the branch's CI finished green (the CI tower stays dark).
+  github: [{ kind: "run", status: "success", repo: HQ, title: "CI · feat/intro-orbit-reveal", at: ago(6), url: `${RUNS}/1001` }, ...BUSY_GITHUB.slice(1)],
   desks: BUSY_DESKS.map((d) =>
     d.slot === 1 ? desk({ slot: 1, agent: "claude", state: "reviewing", activity: "reading", since: ago(4) }) : desk({ slot: d.slot, agent: d.agent, state: "asleep", activity: "resting", since: ago(60 + d.slot) }),
   ),

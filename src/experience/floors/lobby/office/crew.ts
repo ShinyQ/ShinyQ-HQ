@@ -141,8 +141,8 @@ export function stepCrew(a: CrewActor, state: OfficeState, dt: number, phase: nu
   return a.pose;
 }
 
-/** The actor's effects now (read by `crewFx.ts`). */
-export function crewFx(a: CrewActor, reduced: boolean): CrewFx {
+/** The actor's effects now (read by `crewFx.ts`); writes into `out` when given (no allocation). */
+export function crewFx(a: CrewActor, reduced: boolean, out?: CrewFx): CrewFx {
   const s = a.state;
   const t = a.t;
   const spinEnd = a.blendFor + CREW.spin.s;
@@ -153,14 +153,14 @@ export function crewFx(a: CrewActor, reduced: boolean): CrewFx {
     flicker = CREW.flicker.on.some(([on, off]) => k >= on && k < off) ? 1.8 : 0.55;
   }
   const charge = s !== "asleep" ? 0 : reduced ? CREW.charge.still : CREW.charge.lo + (CREW.charge.hi - CREW.charge.lo) * (0.5 + 0.5 * Math.sin(t * TAU * CREW.charge.hz));
-  return {
-    sparks: s === "working" ? (reduced ? 0.6 : 1) : 0,
-    trail: s === "thinking" ? 1 : 0,
-    confetti,
-    flicker,
-    charge,
-    deskLight: s === "asleep" ? 0.1 : 1,
-  };
+  const o = out ?? ({} as CrewFx);
+  o.sparks = s === "working" ? (reduced ? 0.6 : 1) : 0;
+  o.trail = s === "thinking" ? 1 : 0;
+  o.confetti = confetti;
+  o.flicker = flicker;
+  o.charge = charge;
+  o.deskLight = s === "asleep" ? 0.1 : 1;
+  return o;
 }
 
 export interface FxPoint {
