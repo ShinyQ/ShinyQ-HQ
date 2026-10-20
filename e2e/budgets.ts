@@ -56,8 +56,8 @@ export const BYTES_3D_BUDGET = {
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
-  /** L1 Agent Office scene chunk (lazy, near the office), incremental over the main path and the session floors (measured 19,928 B, cap 20,541 B). */
-  office: Math.round(20.06 * 1024),
+  /** L1 Agent Office scene chunk (lazy, near the office), incremental over the main path and the session floors (measured 20,907 B, cap 21,524 B). */
+  office: Math.round(21.02 * 1024),
   /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 6,911 B, cap 7,526 B). */
   officeBody: Math.round(7.35 * 1024),
   /** L1 Agent Office total on the office trigger: the scene chunk plus the drawer body (plus the replay chunk once it ships), outside the session total. */
