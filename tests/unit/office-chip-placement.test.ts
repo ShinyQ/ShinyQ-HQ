@@ -580,7 +580,7 @@ describe("Agent Office chips at the office stop", () => {
       expect(mode).toBe("full");
     });
 
-    it("a hand zoom keeps them shown (a landscape screen's look offset holds), the row clear on every frame; a portrait screen's eases its offset out, so its chips wait", () => {
+    it("a hand zoom keeps them shown where the look offset stays (the tablet camera), the row clear on every frame; a desktop's re-aims for the near pose and a portrait screen's eases out, so their chips wait", () => {
       const { orbit, drawn, hold } = settledAtStop();
       zoomBy(orbit, 0.8, false);
       const modes: ReturnType<typeof officeChipMode>[] = [];
@@ -595,8 +595,8 @@ describe("Agent Office chips at the office stop", () => {
         },
         hold,
       );
-      if (cls === "mobile") expect(modes.some((m) => m === null), "portrait: they wait for the look offset").toBe(true);
-      else expect(modes.every((m) => m === "full"), "landscape: shown through the zoom").toBe(true);
+      if (cls === "tablet") expect(modes.every((m) => m === "full"), "tablet: shown through the zoom").toBe(true);
+      else expect(modes.some((m) => m === null), "desktop and portrait: they wait for the look offset").toBe(true);
       expect(modes.at(-1)).toBe("full");
     });
 

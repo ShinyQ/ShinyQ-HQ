@@ -450,9 +450,21 @@ describe("the office zone's look offset eases in and out with the zone", () => {
       setPitchRange(s, pitchRange(cls, "follow"));
       primeZone(s, office, cls);
       expect([s.lookUp, s.lookHold]).toEqual([held, true]);
-      zoomBy(s, 0.8, false);
+      // A hand zoom out keeps the aim (no ease); one in past `near.zoom` eases to the near pose's aim, and back out again.
+      zoomBy(s, 1.1, false);
       expect([s.lookUpTarget, s.lookUp]).toEqual([held, held]);
       expect(s.easing).toBe(false);
+      const near = OFFICE.view.desktop.lookOffset.near;
+      zoomBy(s, 0.8, false);
+      expect(s.zoom).toBeLessThan(near.zoom);
+      expect([s.lookUpTarget, s.lookUp, s.lookHold, s.easing]).toEqual([near.up, held, true, true]);
+      for (let i = 0; i < 300 && s.easing; i++) stepOrbit(s, 1 / 60, false);
+      expect(s.lookUp).toBe(near.up);
+      zoomBy(s, 0.9, false);
+      expect(s.lookUpTarget).toBe(near.up);
+      zoomBy(s, 1.5, false);
+      expect(s.zoom).toBeGreaterThan(near.zoom);
+      expect([s.lookUpTarget, s.easing]).toEqual([held, true]);
       resetView(s);
       expect([s.lookUpTarget, s.lookHold]).toEqual([0, false]);
       primeZone(s, office, cls);
@@ -630,8 +642,8 @@ describe("a device rotation in a zone (the camera class changes) re-applies the 
       setPitchRange(s, pitchRange(cls, "follow"));
       updateZone(s, office, false, cls);
       settle(s);
-      // Back on the landscape screen: the held aim is back with the hand zoom kept.
-      expect(s.lookUp).toBeCloseTo(zoneView(office, cls).lookOffset!.up!, 9);
+      // Back on the landscape screen: the held aim is back with the hand zoom kept (in: the near pose's aim).
+      expect(s.lookUp).toBeCloseTo(zoneView(office, cls).lookOffset!.near!.up, 9);
       expect(s.lookHold).toBe(true);
       expect(s.zoom).toBeCloseTo(zoneView(office, cls).zoom! * 0.8, 9);
     }

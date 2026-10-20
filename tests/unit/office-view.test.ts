@@ -152,4 +152,18 @@ describe("the office stop frame", () => {
     expect(f.rover, "the visitor's Rover").toBe(true);
     if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
   });
+
+  /**
+   * The near pose (one zoom key step in, `OFFICE.view.desktop.lookOffset.near`): the look target rises so the wall's top
+   * stands at 15.9%, under the near chip row (its top at 66 px plus a 40 px chip with its CI bar) by 8 px or more on every
+   * desktop size, the console and the visitor's Rover still in frame.
+   */
+  it.each(SIZES.filter((s) => cameraClass(s.width, s.height) === "desktop"))("aims the desktop near pose under the chip row on $id ($width x $height)", ({ width, height }) => {
+    const f = officeFrame(width, height, 1);
+    expect(f.wallTop, "wall top").toBeCloseTo(0.159, 3);
+    expect(f.wallTop * height, "wall top under the near chip row").toBeGreaterThanOrEqual(66 + 40 + 8);
+    expect(f.console.top, "console top").toBeCloseTo(0.498, 3);
+    expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
+    expect(f.rover, "the visitor's Rover").toBe(true);
+  });
 });

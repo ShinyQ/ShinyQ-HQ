@@ -65,6 +65,8 @@ export interface OrbitState {
   lookUpTarget: number;
   /** The zone's look offset opted into `LookOffset.hold`: a hand zoom keeps it (scaled with the zoom) instead of easing it out. */
   lookHold: boolean;
+  /** The look offset last aimed at (a held one re-aims on a hand zoom, `LookOffset.near`). */
+  lookAim: LookOffset | undefined;
 }
 
 export const ZOOM_RANGE = [0.6, 1.5] as const;
@@ -111,6 +113,7 @@ export function createOrbitState(): OrbitState {
     lookUp: 0,
     lookUpTarget: 0,
     lookHold: false,
+    lookAim: undefined,
   };
 }
 
@@ -205,8 +208,9 @@ export function zoomBy(s: OrbitState, factor: number, allowFirst = true): void {
   s.zoom = clamp(want, ZOOM_RANGE[0], ZOOM_RANGE[1]);
   s.zoomTarget = s.zoom;
   s.zoneZoom = null;
-  // A hand zoom takes the framing over: the zone's look offset eases back to 0 with its zoom released, unless it holds.
-  if (!s.lookHold) aimAt(s, undefined);
+  // A hand zoom takes the framing over: the zone's look offset eases back to 0 with its zoom released, unless it holds
+  // (then it re-aims for the new zoom, `LookOffset.near`).
+  aimAt(s, s.lookHold ? s.lookAim : undefined, s.zoom);
   if (allowFirst && want < ZOOM_RANGE[0]) {
     s.push = Math.min(1, s.push) * (want / ZOOM_RANGE[0]);
     if (s.push <= FIRST_PERSON.enterPush) {
@@ -229,6 +233,8 @@ export interface LookOffset {
   up?: number;
   /** Kept through a hand zoom (it scales with the zoom, so the framing zooms in about the same aim); else eased out. */
   hold?: boolean;
+  /** A held offset's `up` once a hand zoom brings the camera closer than `zoom` (the near pose aims elsewhere). */
+  near?: { zoom: number; up: number };
 }
 
 /** A floor area where the camera turns to face something (a wall) when the rover walks in. */
@@ -286,11 +292,15 @@ export function zoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zo
   return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom, pitch: own?.pitch, lookOffset: own?.lookOffset ?? zone.lookOffset };
 }
 
-/** Sets the look offset targets a zone view asks for (0 without one), easing when they change. */
-function aimAt(s: OrbitState, look: LookOffset | undefined): void {
+/**
+ * Sets the look offset targets a zone view asks for (0 without one), easing when they change; `zoom` (a hand zoom's)
+ * picks the offset's `near` up under its zoom.
+ */
+function aimAt(s: OrbitState, look: LookOffset | undefined, zoom?: number): void {
   const forward = look?.forward ?? 0;
-  const up = look?.up ?? 0;
+  const up = look?.near && zoom !== undefined && zoom < look.near.zoom ? look.near.up : (look?.up ?? 0);
   s.lookHold = look?.hold === true;
+  s.lookAim = look;
   if (forward === s.lookForwardTarget && up === s.lookUpTarget) return;
   s.lookForwardTarget = forward;
   s.lookUpTarget = up;
@@ -342,6 +352,7 @@ export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportCl
   s.lookForward = s.lookForwardTarget = view.lookOffset?.forward ?? 0;
   s.lookUp = s.lookUpTarget = view.lookOffset?.up ?? 0;
   s.lookHold = view.lookOffset?.hold === true;
+  s.lookAim = view.lookOffset;
   if (rail && zone?.railYaw !== undefined) {
     s.railYaw = s.railYawTarget = zone.railYaw;
     s.zoneRailYaw = zone.railYaw;
@@ -417,7 +428,7 @@ function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: Vie
   } else {
     // After a hand zoom the new class's offset applies if it holds (as it would have survived that zoom), else it eases
     // out: a held offset dropped on a portrait screen comes back on a landscape one.
-    aimAt(s, view.lookOffset?.hold ? view.lookOffset : undefined);
+    aimAt(s, view.lookOffset?.hold ? view.lookOffset : undefined, s.zoom);
   }
   s.easing = true;
 }

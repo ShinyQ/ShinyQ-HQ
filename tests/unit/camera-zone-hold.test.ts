@@ -37,17 +37,30 @@ describe("holdZone", () => {
     expect(mode(h)).toBe("full");
   });
 
-  it("keeps holding through a hand zoom (a held look offset) and camera motion that changes nothing it tracks", () => {
+  it("keeps holding through a hand zoom out (a held look offset, no near aim) and camera motion that changes nothing it tracks", () => {
     const s = atStop();
     const h = createZoneHold();
     settle(s);
     holdZone(h, s, false, true);
-    zoomBy(s, 0.8, false);
+    zoomBy(s, 1.1, false);
     for (let i = 0; i < 30; i++) {
       stepOrbit(s, 1 / 60, false);
       holdZone(h, s, false, false);
       expect(mode(h)).toBe("full");
     }
+  });
+
+  it("lets go when a desktop hand zoom in re-aims its held look offset (the near pose), and holds again once the camera rests", () => {
+    const s = atStop();
+    const h = createZoneHold();
+    settle(s);
+    holdZone(h, s, false, true);
+    zoomBy(s, 0.8, false);
+    holdZone(h, s, false, false);
+    expect(mode(h)).toBeNull();
+    settle(s);
+    holdZone(h, s, false, true);
+    expect(mode(h)).toBe("full");
   });
 
   it("lets go when a portrait screen's hand zoom eases its look offset out, and holds again once the camera rests", () => {

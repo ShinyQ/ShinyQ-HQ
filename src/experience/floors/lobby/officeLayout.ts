@@ -112,7 +112,8 @@ export const OFFICE = {
    * every Rover's head under the screen and the visitor's Rover in frame (tests/unit/office-view.test.ts measures them):
    * - desktop: the CI tower column and the dock pad in frame too, which on 1180 x 820 (the narrowest desktop) holds the
    *   camera back: the wall's top at 15%, the Rovers' heads from 42.4% down; the look target drops 1.25 u (`up`) and holds
-   *   through a hand zoom (`hold`), so the near pose zooms in about the same aim;
+   *   through a hand zoom (`hold`); a hand zoom in (the near pose) raises it to 1.7 u over the rover (`near`), so the
+   *   wall's top stays at 15.9%, under the near chip row (66 px plus a 40 px chip) by 8 px or more from 720 px tall;
    * - tablet (landscape phones and small landscape tablets): the wall's top at 17.7%, under the HUD's top bar on 844 x 390
    *   and the chip row on 960 x 640, the console 45.8% to 66.4% down, the tower and the dock in frame, the plain aim;
    * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
@@ -122,7 +123,7 @@ export const OFFICE = {
    * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
    */
   view: {
-    desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true } },
+    desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true, near: { zoom: 1.2, up: 1.7 } } },
     tablet: { zoom: 1.2, pitch: 0.35 },
     mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
     half: { x: 2, z: 1.4 },
