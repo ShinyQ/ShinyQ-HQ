@@ -59,7 +59,7 @@ afterEach(() => {
 });
 
 describe("Agent Office drawers", () => {
-  it("shows a public desk: state, full agent name, activity, title, repository link, time in state, recent activity, privacy note", () => {
+  it("shows a public desk: state, full agent name, activity, title, repository link, time in state, recent activity, the hooks note and no privacy note", () => {
     body({ panel: "desk", slot: 0 }, "L1:office-desk-1");
     expect(live.want).toHaveBeenCalledWith("drawer", true);
     expect(screen.getByTestId("office-state")).toHaveTextContent(en.office.state.working);
@@ -70,7 +70,8 @@ describe("Agent Office drawers", () => {
     expect(screen.getByRole("link", { name: external("ShinyQ/ShinyQ-HQ") })).toHaveAttribute("target", "_blank");
     expect(screen.getByTestId("office-body")).toHaveTextContent("14 min");
     expect(screen.getAllByTestId("office-recent")).toHaveLength(2);
-    expect(screen.getByTestId("office-body")).toHaveTextContent(en.office.privacy);
+    expect(screen.getByTestId("office-body")).toHaveTextContent(o.hooks);
+    expect(screen.getByTestId("office-body")).not.toHaveTextContent(/leave Kurniadi's machine/);
   });
 
   it("hides a private desk's details and shows an off-duty desk as nothing right now", () => {

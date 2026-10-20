@@ -7,7 +7,7 @@ const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promis
 vi.stubGlobal("fetch", fetchMock);
 
 const { officeLive, officeTest } = await import("@/experience/floors/lobby/office/live");
-const { officeRuntime, setChipFar, subscribeChipFar } = await import("@/experience/floors/lobby/office/runtime");
+const { officeRuntime, setChipFar, setChipsCompact, subscribeChipFar } = await import("@/experience/floors/lobby/office/runtime");
 const { OFFICE_CHIP_ANCHORS } = await import("@/experience/floors/lobby/officeShell");
 
 afterEach(() => {
@@ -78,20 +78,27 @@ describe("Agent Office live feed (3D)", () => {
     fresh.officeLive.want("view", false);
   });
 
-  it("anchors a chip over every Rover and notifies far changes once", () => {
+  it("anchors a chip over every Rover, starts every chip far and notifies far and compact changes once", () => {
     expect(OFFICE_CHIP_ANCHORS).toHaveLength(5);
     expect(officeRuntime.chips).toEqual([null, null, null, null, null]);
+    expect(officeRuntime.far).toEqual([true, true, true, true, true]);
+    expect(officeRuntime.compact).toBe(false);
     const listener = vi.fn();
     const unsubscribe = subscribeChipFar(listener);
-    setChipFar(2, true);
-    setChipFar(2, true);
-    expect(officeRuntime.far[2]).toBe(true);
+    setChipFar(2, false);
+    setChipFar(2, false);
+    expect(officeRuntime.far[2]).toBe(false);
     expect(listener).toHaveBeenCalledTimes(1);
-    setChipFar(2, false);
-    expect(listener).toHaveBeenCalledTimes(2);
-    unsubscribe();
     setChipFar(2, true);
     expect(listener).toHaveBeenCalledTimes(2);
+    setChipsCompact(true);
+    setChipsCompact(true);
+    expect(officeRuntime.compact).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(3);
+    unsubscribe();
     setChipFar(2, false);
+    setChipsCompact(false);
+    expect(listener).toHaveBeenCalledTimes(3);
+    setChipFar(2, true);
   });
 });

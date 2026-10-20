@@ -36,7 +36,6 @@ export async function officeCardLabels(locale: Locale): Promise<OfficeCardLabels
     todayNoCi: c("todayNoCi"),
     status: Object.fromEntries(STATUSES.map((s) => [s, c(`status.${s}`)])) as OfficeCardLabels["status"],
     clientProject: t("clientProject"),
-    privacy: t("privacy"),
     states: Object.fromEntries(OFFICE_STATES.map((s) => [s, t(`state.${s}`)])) as OfficeCardLabels["states"],
     activities: Object.fromEntries(OFFICE_ACTIVITIES.map((a) => [a, t(`activity.${a}`)])) as OfficeCardLabels["activities"],
     agentNames: Object.fromEntries(OFFICE_AGENTS.map((a) => [a, t(`agent.${a}`)])) as OfficeCardLabels["agentNames"],

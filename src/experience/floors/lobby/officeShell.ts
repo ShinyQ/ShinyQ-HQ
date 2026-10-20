@@ -2,6 +2,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import { LinearFilter, SRGBColorSpace, Texture } from "three";
 import { LOBBY } from "../../config";
 import type { SignSpec } from "../../fx/signLayout";
+import { cameraClass } from "@/lib/viewport";
 import { distanceToRect } from "../../nav/collision";
 import { roverRuntime } from "../../rover/runtime";
 import type { Rect, Vec2 } from "../../types";
@@ -37,7 +38,8 @@ export function wingBounds(): Rect {
 }
 
 /** The office stop's view zone area (`L1:office`, `officeZone`): the chips show and the wing sign fades out in it. */
-const STOP_AREA = officeZone(LOBBY.officeWing).area;
+const STOP_ZONE = officeZone(LOBBY.officeWing);
+const STOP_AREA = STOP_ZONE.area;
 
 /** Whether `at` (by default the rover's live position) stands in the office stop's view zone area. */
 export function atOfficeStop(at: Vec2 = roverRuntime): boolean {
@@ -96,17 +98,19 @@ export function officeShellBoxes(): Box[] {
 }
 
 /**
- * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, at their Rovers'
- * x, desks 2 and 4 a `step` higher (two rows, so neighbours never share one and the row stays low): from the office
- * stop, on every camera class, they sit in the empty space over the wall and never cover its text, a desk screen or
- * the visitor's rover, and zoomed in until the middle three show their task lines (desktops and tablets; a phone keeps
- * them compact, `OfficeWatch`) they still clear the wall, each other and the HUD (tests/unit/office-chip-placement.test.ts).
+ * The HTML chips hang up from fixed anchors on the screen wall's front face, `gap` (u) over its frame, desks 2 and 4 a
+ * `step` higher (two rows, so neighbours never share one and the row stays low), each at its Rover's x pushed `spread`
+ * times as far from the wall's centre line (the outer chips still over the wall): the wall stands 4.5 u behind the
+ * Rovers, so at their own x the chips of desks 1, 3 and 5 would crowd one row on a portrait tablet. From the office
+ * stop, on every camera class, they sit in the empty space over the wall and never cover its text, a desk screen or the
+ * visitor's rover, and zoomed in until the middle three show their task lines (desktops and tablets; a phone keeps them
+ * compact, `OfficeWatch`) they still clear the wall, each other and the HUD (tests/unit/office-chip-placement.test.ts).
  */
-export const CHIP_ROW = { gap: 0.2, step: 2.2 } as const;
+export const CHIP_ROW = { gap: 0.2, step: 2.2, spread: 1.1 } as const;
 
 /** The chips' world anchors (`CHIP_ROW`), one per slot. */
 export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({
-  x: s.rover.x,
+  x: LOBBY.officeWing.wall.x + (s.rover.x - LOBBY.officeWing.wall.x) * CHIP_ROW.spread,
   y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame + CHIP_ROW.gap + CHIP_ROW.step * (s.slot % 2),
   z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2,
 }));
@@ -114,13 +118,87 @@ export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({
 /** A chip's top never goes above this (px): under the HUD's top bar (62 px desktop, 58 px phones), so `OfficeWatch` clamps there. */
 export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
 
-/** A chip farther than this from the camera shows its first line only (the mock's `.tag.far`). */
-export const OFFICE_CHIP_FAR = 30;
+/**
+ * Whether the chips keep one line at any distance (`OfficeWatch`): on a phone (`viewport` "mobile"), outside the office
+ * view (`compact`), and on the tablet camera (a landscape screen under 1024 px wide, `cameraClass`), where near chips with
+ * their task lines would cover each other (tests/unit/office-chip-placement.test.ts).
+ */
+export const chipsOneLine = (viewport: string, width: number, height: number, compact: boolean): boolean =>
+  viewport === "mobile" || compact || cameraClass(width, height) === "tablet";
+
+/**
+ * The HUD box in a top corner a chip drops below (px): the desktop profile card (top left, 296 px wide, 153 px down), the
+ * Corners HUD's minimap (top right: phones 72 px at top 64, 12 px in; tablets 112 px at top 76, 16 px in). `x` is its
+ * inner edge from the screen's left (positive) or right (negative) edge.
+ */
+const CHIP_CORNER = { desktop: { x: 296, bottom: 153 }, phone: { x: -84, bottom: 136 }, tablet: { x: -128, bottom: 188 } } as const;
+
+/** Each chip's size (`half` its half width, `h` its height, px) and where it shows this frame (`x`, `y`: its bottom centre; x NaN while hidden). */
+export interface ChipSpots {
+  x: number[];
+  y: number[];
+  half: number[];
+  h: number[];
+}
+
+export const chipSpots = (): ChipSpots => ({ x: OFFICE_SLOTS.map(() => NaN), y: OFFICE_SLOTS.map(() => 0), half: OFFICE_SLOTS.map(() => 0), h: OFFICE_SLOTS.map(() => 0) });
+
+/**
+ * Where `OfficeWatch` puts chip `slot` (its size in `spots`) whose anchor projects to (`px`, `py`) on a `width` by
+ * `height` screen, chips placed in slot order: centred on it and hanging up from it, x clamped 8 px inside the screen
+ * edges, its top under the HUD's top bar (`OFFICE_CHIP_TOP`) and under the HUD's top corner box (`hud`, the `hudLayout`)
+ * when it would reach under it (a rover at the stop zone's east edge on a phone). Writes `spots.x` and `spots.y`
+ * (allocates nothing) and returns false (x NaN) where the chip hides: on the HUD (the bottom band, 84 px; the desktop
+ * elevator panel, 219 by 284 px, 16 px in from the right, centred; the Corners joystick, 160 by 144 px, bottom left), and
+ * for the dots outside the office view (`pinned`, where the anchors can rise anywhere and the wall can be seen edge on)
+ * where it would leave its anchor for the top bar or cover a lower slot's dot.
+ */
+export function placeChip(spots: ChipSpots, slot: number, px: number, py: number, width: number, height: number, hud: "desktop" | "tablet" | "phone", pinned = false): boolean {
+  const { half, h } = spots;
+  const corner = CHIP_CORNER[hud];
+  const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"] + h[slot];
+  const x = Math.min(Math.max(px, half[slot] + 8), width - half[slot] - 8);
+  let y = Math.max(py, top);
+  if (corner.x > 0 ? x - half[slot] < corner.x : x + half[slot] > width + corner.x) y = Math.max(y, corner.bottom + h[slot]);
+  let on =
+    y <= height - 84 &&
+    (hud === "desktop" ? x + half[slot] <= width - 235 || y <= (height - 284) / 2 || y - h[slot] >= (height + 284) / 2 : x - half[slot] >= 160 || y <= height - 144);
+  if (pinned) {
+    on &&= py >= top;
+    for (let j = 0; on && j < slot; j++) on = !(Math.abs(spots.x[j] - x) < half[j] + half[slot] && Math.abs(spots.y[j] - y) < Math.max(h[j], h[slot]));
+  }
+  spots.x[slot] = on ? x : NaN;
+  spots.y[slot] = y;
+  return on;
+}
+
+/**
+ * A chip farther than this from the camera shows its first line only (the mock's `.tag.far`): at the office stop the
+ * chips sit 39.6 u or more from a desktop camera (past the band's far edge, so a chip that starts near turns far), and
+ * one zoom step (two on a portrait screen) brings the middle three within 36.5 u.
+ */
+export const OFFICE_CHIP_FAR = 38;
+
+/**
+ * How the chips show (`OfficeWatch`) where `officeChipsHere` lets them: "full" (one line far, task lines near) once the
+ * camera holds the office view (`roverRuntime.cameraView` is the stop's zone and `cameraHeld`); null (hidden) while that
+ * view is applied but the camera has not come to rest in it yet (arriving from the plain follow view, which frames the tall
+ * wall's top high on the screen with no room for the chip rows under the top bar, or a device rotation); "compact" (state
+ * dots, `OfficeChips`) when the office view is not applied at all: reduced motion, a hand turn or drag inside the zone,
+ * first person, or an office drawer open away from the stop. Once held, a hand zoom (a held look offset) or the rover moving
+ * inside the zone keeps the chips shown; a portrait screen's hand zoom retargets its look offset, so its chips wait again
+ * (tests/unit/office-chip-placement.test.ts).
+ */
+export function officeChipMode(room: string | null, at: Vec2 = roverRuntime, view = roverRuntime.cameraView, held = roverRuntime.cameraHeld): "full" | "compact" | null {
+  if (!officeChipsHere(room, at)) return null;
+  if (view !== STOP_ZONE.id) return "compact";
+  return held ? "full" : null;
+}
 /** Half-width of the near/far band, so a camera hovering at the threshold does not flip the chip every frame. */
 export const OFFICE_CHIP_FAR_BAND = 1;
 
 /**
- * The next far flag for a chip at `dist` from the camera: far above 31, near below 29, unchanged between. On a phone
+ * The next far flag for a chip at `dist` from the camera: far above 39, near below 37, unchanged between. On a phone
  * (`phone`) always far: there is no room for task lines over the wall, and the desk's drawer shows them.
  */
 export function nextChipFar(far: boolean, dist: number, phone = false): boolean {

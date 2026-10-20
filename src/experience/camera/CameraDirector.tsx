@@ -21,7 +21,7 @@ import { cameraWorld, clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { activeZone, createOrbitState, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { activeZone, createOrbitState, createZoneHold, holdZone, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import { introRuntime, resetIntroRuntime, setReveal } from "../intro/runtime";
 import { introModule } from "../intro/chunk";
 import type { IntroPlan } from "./intro";
@@ -86,6 +86,7 @@ export function CameraDirector({
     target: new Vector3(),
     desiredPos: new Vector3(),
     desiredTarget: new Vector3(),
+    hold: createZoneHold(),
     /** Drawn camera after the first-person mix (equal to pos and target while the blend is 0). */
     outPos: new Vector3(),
     outTarget: new Vector3(),
@@ -369,6 +370,10 @@ export function CameraDirector({
       const drawn = clampCamera(toVec3(l.target), toVec3(l.pos), world, roverTarget, viewFov);
       l.pos.set(drawn[0], drawn[1], drawn[2]);
     }
+    roverRuntime.cameraSettled = !orbit.easing && l.pos.distanceToSquared(l.desiredPos) < 0.01 && l.target.distanceToSquared(l.desiredTarget) < 0.01;
+    holdZone(l.hold, orbit, s.reducedMotion, roverRuntime.cameraSettled);
+    roverRuntime.cameraView = l.hold.zone;
+    roverRuntime.cameraHeld = l.hold.held;
 
     // First person: mix the smoothed third-person camera toward the rover's eyes by the eased blend.
     const fp = orbit.blend > 0 && rig !== "intro";

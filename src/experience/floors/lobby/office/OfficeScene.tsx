@@ -25,6 +25,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import type { OfficeState } from "@/lib/office/protocol";
+import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
 import { neonColor } from "../../../fx/materials";
@@ -35,11 +36,12 @@ import { forgetDrawn, shownInScene, whenDrawn } from "../../../scene/drawnWork";
 import { sceneTarget } from "../../../scene/postHandle";
 import { precompileObject } from "../../../scene/precompile";
 import { renderProbe } from "../../../scene/renderProbe";
+import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { canvasTexture, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, OFFICE_SLOTS, officeBounds, officeChipsHere, useCanvasFonts } from "../officeShell";
+import { canvasTexture, chipSpots, chipsOneLine, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_SLOTS, officeBounds, officeChipMode, placeChip, useCanvasFonts } from "../officeShell";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
@@ -48,7 +50,7 @@ import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "
 import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, pose, poseOffset, slotPhase, STILL_T, stillPose } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
-import { officeRuntime, setChipFar } from "./runtime";
+import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 
 const NO_RAYCAST = () => null;
 const QUADS = 10;
@@ -441,9 +443,10 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
 /**
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
  * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern),
- * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges and under the HUD's top bar (far on
- * phones at any distance), and writes the probes. A chip's size is
- * read only when it can change (a new element, its far flag, the phone layout or the feed). Renders nothing.
+ * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges and under the HUD's top bar, as
+ * `officeChipMode` lets them (far and compact on phones at any distance, and everywhere outside the office view; a hidden
+ * chip turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far
+ * flag, its compact layout or the feed). Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
   const tmp = useMemo(
@@ -452,13 +455,12 @@ function OfficeWatch({ view }: { view: OfficeView }) {
       frustum: new Frustum(),
       m: new Matrix4(),
       v: new Vector3(),
+      spots: chipSpots(),
       els: officeRuntime.chips.map((): HTMLElement | null => null),
       shown: officeRuntime.chips.map(() => false),
-      half: officeRuntime.chips.map(() => 0),
-      h: officeRuntime.chips.map(() => 0),
-      // What the cached half width was read for: the far flag, the phone layout and the view.
+      // What the cached half width was read for: the far flag, the compact layout and the view.
       wFar: officeRuntime.chips.map((): boolean | null => null),
-      wMobile: officeRuntime.chips.map(() => false),
+      wSmall: officeRuntime.chips.map(() => false),
       wView: officeRuntime.chips.map((): OfficeView | null => null),
     }),
     [],
@@ -469,12 +471,13 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     () => () => {
       officeRuntime.inView = false;
       officeLive.want("view", false);
-      // The chips live in the HUD and outlive a canvas remount: hide them, as a new watcher assumes they start hidden.
-      for (const el of officeRuntime.chips) {
-        if (!el) continue;
+      // The chips live in the HUD and outlive a canvas remount: hide them (far), as a new watcher assumes they start hidden.
+      officeRuntime.chips.forEach((el, slot) => {
+        setChipFar(slot, true);
+        if (!el) return;
         el.style.visibility = "hidden";
         el.style.opacity = "0";
-      }
+      });
     },
     [],
   );
@@ -494,8 +497,14 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     }
     let chips = 0;
     const mobile = s.device.viewport === "mobile";
-    const chipsHere = here && officeChipsHere(s.activeRoom);
+    const mode = here ? officeChipMode(s.activeRoom) : null;
+    const oneLine = chipsOneLine(s.device.viewport, size.width, size.height, mode === "compact");
+    // The committed layout (React has rendered the previous frame's flags by now), then this frame's.
+    const small = mobile || officeRuntime.compact;
+    const hud = hudLayout(s.device.viewport, s.device.coarse);
+    if (mode) setChipsCompact(mode === "compact");
     officeRuntime.chips.forEach((el, slot) => {
+      tmp.spots.x[slot] = NaN;
       if (!el) return;
       if (tmp.els[slot] !== el) {
         // A freshly mounted chip starts hidden (its inline style).
@@ -504,32 +513,35 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         tmp.wFar[slot] = null;
       }
       const a = OFFICE_CHIP_ANCHORS[slot];
-      tmp.v.set(a.x, a.y, a.z);
-      const on = chipsHere && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
+      const dist = camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z));
+      let on = mode !== null && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
+      if (on) {
+        // Read before this frame's far update: React has committed the previous flag's content by now.
+        const far = officeRuntime.far[slot];
+        if (tmp.wFar[slot] !== far || tmp.wSmall[slot] !== small || tmp.wView[slot] !== view) {
+          tmp.wFar[slot] = far;
+          tmp.wSmall[slot] = small;
+          tmp.wView[slot] = view;
+          tmp.spots.half[slot] = el.offsetWidth / 2;
+          tmp.spots.h[slot] = el.offsetHeight;
+        }
+        // A far chip turns near only once the camera holds still (its taller task lines would sweep over its neighbours as
+        // the camera zooms in); turning far is at once.
+        const next = nextChipFar(far, dist, oneLine);
+        if (next || roverRuntime.cameraSettled) setChipFar(slot, next);
+        on = placeChip(tmp.spots, slot, ((tmp.v.x + 1) / 2) * size.width, ((1 - tmp.v.y) / 2) * size.height, size.width, size.height, hud, mode === "compact");
+      }
       if (!on) {
-        // A hidden chip is written once, then left alone until it comes back into view.
+        // A hidden chip is written once (and turns far), then left alone until it comes back into view.
         if (tmp.shown[slot]) {
           el.style.visibility = "hidden";
           el.style.opacity = "0";
           tmp.shown[slot] = false;
+          setChipFar(slot, true);
         }
         return;
       }
-      // Read before this frame's far update: React has committed the previous flag's content by now.
-      const far = officeRuntime.far[slot];
-      if (tmp.wFar[slot] !== far || tmp.wMobile[slot] !== mobile || tmp.wView[slot] !== view) {
-        tmp.wFar[slot] = far;
-        tmp.wMobile[slot] = mobile;
-        tmp.wView[slot] = view;
-        tmp.half[slot] = el.offsetWidth / 2;
-        tmp.h[slot] = el.offsetHeight;
-      }
-      setChipFar(slot, nextChipFar(far, camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z)), mobile));
-      tmp.v.project(camera);
-      const edge = tmp.half[slot] + 8;
-      const x = Math.min(Math.max(((tmp.v.x + 1) / 2) * size.width, edge), size.width - edge);
-      const y = Math.max(((1 - tmp.v.y) / 2) * size.height, OFFICE_CHIP_TOP[mobile ? "mobile" : "desktop"] + tmp.h[slot]);
-      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+      el.style.transform = `translate3d(${tmp.spots.x[slot].toFixed(1)}px, ${tmp.spots.y[slot].toFixed(1)}px, 0) translate(-50%, -100%)`;
       if (!tmp.shown[slot]) {
         el.style.visibility = "visible";
         el.style.opacity = "1";

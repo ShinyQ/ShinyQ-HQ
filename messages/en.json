@@ -1228,7 +1228,6 @@
     "state": { "working": "Working", "thinking": "Thinking", "reviewing": "Reviewing", "testing": "Running tests", "ci": "Waiting on CI", "input": "Needs Kurniadi", "done": "Done", "failed": "CI failed", "asleep": "Asleep" },
     "activity": { "editing": "Editing", "planning": "Planning", "reading": "Reading", "testing": "Testing", "building": "Building", "shell": "Running commands", "ci": "Watching CI", "git": "Using git", "asking": "Asking Kurniadi", "finished": "Finished", "failed": "Failed", "resting": "Resting" },
     "clientProject": "Client project",
-    "privacy": "Only the agent, its state and the activity type leave Kurniadi's machine, plus the repository, branch and task title for public repositories. Code, prompts, file paths and client names never do.",
     "classic": {
       "title": "Live Agent Office",
       "intro": "The AI coding agents Kurniadi works with, shown live: what each one is doing right now, plus public GitHub activity. The same office stands in a wing of the 3D Lobby.",

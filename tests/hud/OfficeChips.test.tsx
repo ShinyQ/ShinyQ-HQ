@@ -14,7 +14,7 @@ vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => l
 vi.mock("@/experience/missions/bridge", () => bridge);
 
 import { OfficeChips } from "@/experience/floors/lobby/office/OfficeChips";
-import { officeRuntime, setChipFar } from "@/experience/floors/lobby/office/runtime";
+import { officeRuntime, setChipFar, setChipsCompact } from "@/experience/floors/lobby/office/runtime";
 
 const renderChips = () =>
   render(
@@ -27,11 +27,14 @@ const chip = (slot: number) => screen.getAllByTestId("office-chip").find((el) =>
 beforeEach(() => {
   getHQStore().setState({ phase: "explore", floor: "L1", activeRoom: null, device: { viewport: "desktop", camera: "desktop", coarse: false } });
   live.feed = { status: "ready", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
+  // Chips start far (`officeRuntime.far`); these tests start them near, as at the near pose.
+  for (let slot = 0; slot < 5; slot++) setChipFar(slot, false);
 });
 afterEach(() => {
   cleanup();
   bridge.goToRoom.mockClear();
-  for (let slot = 0; slot < 5; slot++) setChipFar(slot, false);
+  for (let slot = 0; slot < 5; slot++) setChipFar(slot, true);
+  setChipsCompact(false);
 });
 
 describe("Agent Office chips", () => {
@@ -79,9 +82,28 @@ describe("Agent Office chips", () => {
     expect(chip(0)).toHaveTextContent("Agent office scene");
   });
 
-  it("keeps a far chip's first line on desktops (never compact)", () => {
+  it("keeps a far chip's first line on desktops in the office view, at most 176 px wide (a longer head ends in an ellipsis)", () => {
     renderChips();
     act(() => setChipFar(1, true));
+    expect(chip(1)).toHaveAttribute("data-compact", "false");
+    expect(chip(1)).toHaveTextContent("Claude · Planning");
+    const pill = chip(1).querySelector(".min-h-8") as HTMLElement;
+    expect(pill.style.maxWidth).toBe("176px");
+    expect(pill.querySelector(".truncate")).toHaveTextContent("Claude · Planning");
+  });
+
+  it("shows every far chip as a compact dot on any screen outside the office view (`officeRuntime.compact`)", () => {
+    renderChips();
+    act(() => {
+      for (let slot = 0; slot < 5; slot++) setChipFar(slot, true);
+      setChipsCompact(true);
+    });
+    for (let slot = 0; slot < 5; slot++) {
+      expect(chip(slot)).toHaveAttribute("data-compact", "true");
+      expect(chip(slot)).toHaveTextContent(/^$/);
+    }
+    expect(chip(1)).toHaveAttribute("aria-label", "Desk 2: Claude · Planning");
+    act(() => setChipsCompact(false));
     expect(chip(1)).toHaveAttribute("data-compact", "false");
     expect(chip(1)).toHaveTextContent("Claude · Planning");
   });

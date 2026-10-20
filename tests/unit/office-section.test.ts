@@ -32,7 +32,7 @@ describe("officeCardLabels", () => {
     expect(labels.counts).toEqual(messages.office.classic.counts);
     expect(labels.status).toEqual(messages.office.classic.status);
     expect(labels.clientProject).toBe(messages.office.clientProject);
-    expect(labels.privacy).toBe(messages.office.privacy);
+    expect("privacy" in labels).toBe(false);
     expect(Object.keys(labels.states)).toEqual([...OFFICE_STATES]);
     expect(Object.keys(labels.activities)).toEqual([...OFFICE_ACTIVITIES]);
     expect(Object.keys(labels.agentNames)).toEqual([...OFFICE_AGENTS]);

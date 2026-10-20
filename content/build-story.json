@@ -427,7 +427,7 @@
             "en": "Measures the gzip JavaScript the 3D experience downloads before its first frame, for the lite and full tiers.",
             "id": "Mengukur JavaScript gzip yang diunduh pengalaman 3D sebelum frame pertama, untuk tier lite dan full."
           },
-          "budget": { "en": "Under 465.3 KB gzip on the first-frame path", "id": "Di bawah 465,3 KB gzip pada jalur frame pertama" },
+          "budget": { "en": "Under 466.1 KB gzip on the first-frame path", "id": "Di bawah 466,1 KB gzip pada jalur frame pertama" },
           "jobs": ["3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}"],
           "required": true
         },

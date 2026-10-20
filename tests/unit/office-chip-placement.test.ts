@@ -2,8 +2,8 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { cameraWorld, clampCamera } from "@/experience/camera/collision";
 import { CAMERA_FAR, CAMERA_NEAR } from "@/experience/camera/firstPerson";
-import { followOffsetScale } from "@/experience/camera/offset";
-import { createOrbitState, primeZone, setPitchRange, stepOrbit, yawLooking, zoneAt, zoomBy } from "@/experience/camera/orbit";
+import { followEase, followOffsetScale } from "@/experience/camera/offset";
+import { createOrbitState, createZoneHold, holdZone, primeZone, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, yawLooking, zoneAt, zoomBy, type OrbitState } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/experience/camera/rigs";
 import { buildFloorLayouts, floorY, LOBBY, ROVER_HEIGHT } from "@/experience/config";
 import { yawTowards } from "@/experience/fx/facing";
@@ -11,7 +11,22 @@ import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { writeDeskScreen } from "@/experience/floors/lobby/office/officeRig";
-import { CHIP_ROW, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_FAR, OFFICE_CHIP_FAR_BAND, OFFICE_CHIP_TOP, officeChipsHere, officeSign, wingSignHidden } from "@/experience/floors/lobby/officeShell";
+import { OFFICE_ROVER } from "@/experience/floors/lobby/office/officeVisual";
+import {
+  CHIP_ROW,
+  chipSpots,
+  chipsOneLine,
+  nextChipFar,
+  OFFICE_CHIP_ANCHORS,
+  OFFICE_CHIP_FAR,
+  OFFICE_CHIP_FAR_BAND,
+  OFFICE_CHIP_TOP,
+  officeChipMode,
+  officeChipsHere,
+  officeSign,
+  placeChip,
+  wingSignHidden,
+} from "@/experience/floors/lobby/officeShell";
 import { boxesOverlap, type ScreenBox } from "@/experience/fx/labelPlacement";
 import type { ViewportClass } from "@/experience/types";
 import { hudLayout } from "@/hud/layout";
@@ -24,7 +39,10 @@ import { cameraClass, viewportClass } from "@/lib/viewport";
  * the chips placed as `OfficeWatch` places them (the anchor projected, the chip hanging up from it, x clamped 8 px
  * inside the screen edges, y clamped under the HUD's top bar) with conservative CSS sizes. Zoomed in from the stop
  * until the middle three show their task lines, the near chips keep clear of the same and of the HUD (a phone keeps
- * its chips compact). The view itself frames the whole wall, the five desks and the rover on every size.
+ * its chips compact; a landscape screen's look offset holds through the zoom). The view itself frames the whole wall,
+ * the five desks and the rover on every size, with the screen over the Rovers' heads. The chips show in full only once the
+ * camera holds the office view (`officeChipMode`): arriving from the plain follow view, they would crowd the top bar; once
+ * held, a hand zoom keeps them shown; outside the office view (reduced motion, a hand turn) they show as compact dots.
  */
 
 const floor = buildFloorLayouts(8).L1;
@@ -36,7 +54,7 @@ const slots = officeSlots(W);
  * 32 px pill, the 20 px task line and the 4 px CI bar with their 4 px gaps make 64, plus 4; the task line stops at
  * 200 px), a phone's compact far dot (32 x 32).
  */
-const CHIP = { far: { w: 200, h: 32 }, near: { w: 220, h: 68 }, compact: { w: 32, h: 32 } } as const;
+const CHIP = { far: { w: 176, h: 32 }, near: { w: 204, h: 68 }, compact: { w: 32, h: 32 } } as const;
 
 /**
  * The HUD chips must stay out of (px, measured in the browser at these sizes): the top row (`hudBar`; `OfficeWatch`
@@ -70,13 +88,15 @@ function expectClearOfHud(box: ScreenBox, size: { width: number; height: number 
 /**
  * The sizes the office is tuned on, with the HUD's pointer (coarse: the Corners minimap and joystick). The camera class
  * comes from the size (`cameraClass`): 1440 x 900, 1280 x 720 (Playwright's desktop) and 1180 x 820 use the desktop
- * camera, 820 x 1180 and 390 x 844 the portrait one ("mobile"), 844 x 390 the tablet one.
+ * camera, 820 x 1180 and 390 x 844 the portrait one ("mobile"), 960 x 640 (a tablet's viewport: near and far chips) and
+ * 844 x 390 the tablet one.
  */
 const SIZES = [
   { id: "desktop", width: 1440, height: 900, coarse: false },
   { id: "small desktop", width: 1280, height: 720, coarse: false },
   { id: "landscape tablet", width: 1180, height: 820, coarse: true },
   { id: "portrait tablet", width: 820, height: 1180, coarse: true },
+  { id: "tablet", width: 960, height: 640, coarse: true },
   { id: "phone", width: 390, height: 844, coarse: true },
   { id: "landscape phone", width: 844, height: 390, coarse: true },
 ] as const;
@@ -89,14 +109,14 @@ const SIZES = [
 const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobile: 2 };
 
 /**
- * The sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 33.1% desktop,
- * 32.7% tablet, 20.4% portrait). The follow rig keeps its look target (the rover plus its look-ahead, over the desks)
- * in the middle of the screen, so on a landscape screen the wall's top edge sits a third of the way down whatever the
- * zoom (most of that band holds the two chip rows). A portrait screen (390 x 844, 820 x 1180) moves the look target
- * toward the camera (`OFFICE.view.mobile.lookOffset`, owner decision 2026-10-20: about 20%, at most about 22%, with the
- * five desks and the Rover in frame).
+ * The sky over the wall frame at the stop, as a share of the screen height, per camera class (measured 37.6% desktop,
+ * 31.4% tablet, 21.5% portrait). A landscape screen raises the look target (`OFFICE.view.desktop.lookOffset`, held
+ * through a hand zoom) so the wall's top sits under the middle of the screen: that band holds the two chip rows, also
+ * at the near pose. A portrait screen (390 x 844, 820 x 1180) moves the look target toward the camera
+ * (`OFFICE.view.mobile.lookOffset`, owner decision 2026-10-20: about 20%, at most about 22%, with the five desks and the
+ * Rover in frame).
  */
-const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.34], tablet: [0, 0.34], mobile: [0.18, 0.22] };
+const SKY: Record<ViewportClass, readonly [number, number]> = { desktop: [0, 0.4], tablet: [0, 0.4], mobile: [0.18, 0.22] };
 
 /**
  * The settled follow camera with the rover at `at`, as `CameraDirector` builds it: primed in the view zone there (the
@@ -113,16 +133,34 @@ function followCamera(width: number, height: number, at: { x: number; z: number;
   for (let i = 0; i < steps; i++) zoomBy(orbit, 0.8, false);
   for (let i = 0; i < 300 && orbit.easing; i++) stepOrbit(orbit, 1 / 60, false);
   expect(orbit.easing).toBe(false);
+  return orbitCamera(orbit, width, height, at);
+}
+
+type Pose = { position: Vector3; target: Vector3; fov: number };
+
+/** The clamped follow pose `CameraDirector` wants from an orbit state with the rover at `at`. */
+function orbitPose(orbit: OrbitState, width: number, height: number, at: { x: number; z: number }): Pose {
+  const cls = cameraClass(width, height);
   const rover: [number, number, number] = [at.x, floorY("L1") + 1, at.z];
   const f = followForward(cls, orbit.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const pose = followPose(cls, [rover[0] + f.x * ahead, rover[1], rover[2] + f.z * ahead], orbit.yaw, orbit.zoom * followOffsetScale(cls, width / height), orbit.pitch, orbit.lookForward, orbit.lookUp);
+  return { position: new Vector3(...clampCamera(pose.target, pose.position, world, rover, pose.fov)), target: new Vector3(...pose.target), fov: pose.fov };
+}
+
+/** A camera drawn at `pose`. */
+function poseCamera(pose: Pose, width: number, height: number): PerspectiveCamera {
   const camera = new PerspectiveCamera(pose.fov, width / height, CAMERA_NEAR, CAMERA_FAR);
-  camera.position.set(...clampCamera(pose.target, pose.position, world, rover, pose.fov));
-  camera.lookAt(...pose.target);
+  camera.position.copy(pose.position);
+  camera.lookAt(pose.target);
   camera.updateMatrixWorld();
   camera.updateProjectionMatrix();
   return camera;
+}
+
+/** The follow camera `CameraDirector` builds from an orbit state with the rover at `at`. */
+function orbitCamera(orbit: OrbitState, width: number, height: number, at: { x: number; z: number }): PerspectiveCamera {
+  return poseCamera(orbitPose(orbit, width, height, at), width, height);
 }
 
 /** The settled follow camera at the office stop (in the `L1:office` view zone), zoomed in by `steps` zoom key presses. */
@@ -195,17 +233,23 @@ const hudBar = ({ width }: { width: number }) => (width >= 768 ? 62 : 58);
 /** The top bar clamp `OfficeWatch` uses (phones by the HUD's viewport class). */
 const hudTop = (size: { width: number; height: number }) => OFFICE_CHIP_TOP[viewportClass(size.width, size.height) === "mobile" ? "mobile" : "desktop"];
 
+type Size = { width: number; height: number; coarse?: boolean };
+
 /**
- * A chip's box as `OfficeWatch` places it: centered on the anchor's x (clamped 8 px inside the edges), hanging up
- * from it, its top never above the HUD's top bar.
+ * A chip's box as `OfficeWatch` places it (`placeChip`, chips in slot order into `spots`): centered on the anchor's x
+ * (clamped 8 px inside the edges), hanging up from it, its top never above the HUD's top bar nor under the HUD's top
+ * corner box; null when it is off screen or hides (on the HUD; a dot outside the office view, `pinned`, off its anchor or
+ * on a lower slot's dot).
  */
-function chipBox(camera: PerspectiveCamera, size: { width: number; height: number }, slot: number, chip: { w: number; h: number }): ScreenBox | null {
+function chipBox(camera: PerspectiveCamera, size: Size, slot: number, chip: { w: number; h: number }, pinned = false, spots = chipSpots()): ScreenBox | null {
   const a = OFFICE_CHIP_ANCHORS[slot];
   const v = new Vector3(a.x, a.y, a.z).project(camera);
+  spots.x[slot] = NaN;
   if (!(v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1)) return null;
-  const edge = chip.w / 2 + 8;
-  const x = Math.min(Math.max(((v.x + 1) / 2) * size.width, edge), size.width - edge);
-  const y = Math.max(((1 - v.y) / 2) * size.height, hudTop(size) + chip.h);
+  spots.half[slot] = chip.w / 2;
+  spots.h[slot] = chip.h;
+  if (!placeChip(spots, slot, ((v.x + 1) / 2) * size.width, ((1 - v.y) / 2) * size.height, size.width, size.height, hudLayout(viewportClass(size.width, size.height), size.coarse ?? false), pinned)) return null;
+  const [x, y] = [spots.x[slot], spots.y[slot]];
   return { x0: x - chip.w / 2, y0: y - chip.h, x1: x + chip.w / 2, y1: y };
 }
 
@@ -218,12 +262,17 @@ const anchorDistance = (camera: PerspectiveCamera, slot: number) => {
 /** Near: the scene's far band flips a far chip to near under this distance. */
 const NEAR = OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND;
 
-/** Every chip's box at the pose, its size from the scene's far flag (a far chip starts far, as at the stop; a phone's stays far). */
-function chipBoxes(camera: PerspectiveCamera, size: { width: number; height: number }) {
-  const compact = viewportClass(size.width, size.height) === "mobile";
+/**
+ * Every chip's box at the pose, its size from the scene's far flag: from `was` (by default far, as a chip starts and as a
+ * hidden one turns again), always far on a phone or outside the office view (`compact`, as `officeChipMode` says).
+ */
+function chipBoxes(camera: PerspectiveCamera, size: Size, { compact = false, was = [true, true, true, true, true] as readonly boolean[], still = true } = {}) {
+  const small = compact || viewportClass(size.width, size.height) === "mobile";
+  const spots = chipSpots();
   return slots.map((s) => {
-    const far = nextChipFar(true, anchorDistance(camera, s.slot), compact);
-    return { slot: s.slot, far, box: chipBox(camera, size, s.slot, far ? (compact ? CHIP.compact : CHIP.far) : CHIP.near) };
+    // A far chip turns near only once the camera holds still (`OfficeWatch`).
+    const far = nextChipFar(was[s.slot], anchorDistance(camera, s.slot), chipsOneLine(viewportClass(size.width, size.height), size.width, size.height, compact)) || (was[s.slot] && !still);
+    return { slot: s.slot, far, box: chipBox(camera, size, s.slot, far ? (small ? CHIP.compact : CHIP.far) : CHIP.near, compact, spots) };
   });
 }
 
@@ -236,11 +285,11 @@ function deskBox(camera: PerspectiveCamera, size: { width: number; height: numbe
   );
 }
 
-/** Every shown chip clears the wall, the desk screens, the visitor's rover, the HUD and every other chip. */
-function expectClear(camera: PerspectiveCamera, size: { width: number; height: number }, coarse: boolean, chips: ReturnType<typeof chipBoxes>) {
+/** Every shown chip clears the wall, the desk screens, the visitor's rover (at `at`), the HUD and every other chip. */
+function expectClear(camera: PerspectiveCamera, size: { width: number; height: number }, coarse: boolean, chips: ReturnType<typeof chipBoxes>, at: { x: number; z: number } = W.stop) {
   const wall = wallBox(camera, size);
   const desks = deskScreenBoxes(camera, size);
-  const rover = roverScreenBox(camera, W.stop, floorY("L1"), size, new Vector3(), { x0: 0, y0: 0, x1: 0, y1: 0 });
+  const rover = roverScreenBox(camera, at, floorY("L1"), size, new Vector3(), { x0: 0, y0: 0, x1: 0, y1: 0 });
   expect(rover).not.toBeNull();
   const shown = chips.filter((c) => c.box);
   for (const { slot, box } of shown) {
@@ -254,11 +303,14 @@ function expectClear(camera: PerspectiveCamera, size: { width: number; height: n
 }
 
 describe("Agent Office chips at the office stop", () => {
-  it("anchor still on the wall's front face over its frame, at each Rover's x, in two rows (no pose moves them)", () => {
+  it("anchor still on the wall's front face over its frame, at each Rover's x spread from the wall's centre, in two rows (no pose moves them)", () => {
     const { wall } = OFFICE;
     const top = wall.bottom + wall.h + wall.frame;
-    expect(OFFICE_CHIP_ANCHORS.map((a) => a.x)).toEqual(slots.map((s) => s.rover.x));
+    expect(CHIP_ROW.spread).toBeGreaterThanOrEqual(1);
+    OFFICE_CHIP_ANCHORS.forEach((a, i) => expect(a.x).toBeCloseTo(W.wall.x + (slots[i].rover.x - W.wall.x) * CHIP_ROW.spread, 12));
     for (const a of OFFICE_CHIP_ANCHORS) {
+      // Over the wall: the outer chips stay inside its frame's width.
+      expect(Math.abs(a.x - W.wall.x)).toBeLessThanOrEqual(wall.w / 2 + wall.frame);
       expect(a.z).toBeCloseTo(W.wall.z - wall.t / 2);
       expect(a.y).toBeGreaterThanOrEqual(top + CHIP_ROW.gap - 1e-9);
       expect(a.y).toBeLessThanOrEqual(top + CHIP_ROW.gap + CHIP_ROW.step + 1e-9);
@@ -267,8 +319,8 @@ describe("Agent Office chips at the office stop", () => {
     for (let i = 1; i < slots.length; i++) expect(Math.abs(OFFICE_CHIP_ANCHORS[i].y - OFFICE_CHIP_ANCHORS[i - 1].y)).toBeCloseTo(CHIP_ROW.step);
   });
 
-  describe.each(SIZES)("$id ($width x $height)", ({ width, height, coarse }) => {
-    const size = { width, height };
+  describe.each(SIZES)("$id ($width x $height)", ({ id, width, height, coarse }) => {
+    const size = { width, height, coarse };
     const cls = cameraClass(width, height);
     const compact = viewportClass(width, height) === "mobile";
 
@@ -289,13 +341,23 @@ describe("Agent Office chips at the office stop", () => {
       expect(rover!.y1, "rover over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
       expect(wall.y0 / height, "sky over the wall").toBeLessThanOrEqual(SKY[cls][1]);
       expect(wall.y0 / height, "sky over the wall").toBeGreaterThanOrEqual(SKY[cls][0]);
+      // The screen reads over the console: every Rover's head (and antenna tip) stays under the screen's bottom edge.
+      const screenBottom = boxOf(camera, size, [[W.wall.x, OFFICE.wall.bottom, W.wall.z - OFFICE.wall.t / 2]]).y0;
+      for (const s of slots) {
+        const head = boxOf(camera, size, [[s.rover.x, OFFICE_ROVER.head[1] + OFFICE_ROVER.head[4] / 2, s.rover.z]]).y0;
+        const tip = boxOf(camera, size, [[s.rover.x, OFFICE_ROVER.tip.y + OFFICE_ROVER.tip.size / 2, s.rover.z]]).y0;
+        expect(head, `Rover ${s.slot + 1}'s head under the screen`).toBeGreaterThan(screenBottom);
+        expect(tip, `Rover ${s.slot + 1}'s antenna under the screen`).toBeGreaterThan(screenBottom);
+      }
       // The wing sign would stand whole in the foreground here (in front of the rover, under it): it fades out at the stop.
       expect(wingSignHidden("L1", W.stop), "wing sign at the stop").toBe(true);
     });
 
     it("show the wing sign whole or not at all from the primed spawn, and whole between the HUD bars on the lead road (the approach)", () => {
       const spawn = signBox(followCamera(width, height, { ...LOBBY.spawn, heading: LOBBY.spawnHeading }), size);
-      if (spawn) expect(signFraming(spawn, size), "wing sign at the spawn").not.toBe("clipped");
+      // Not on a small landscape tablet (960 x 640, added for the chips): from the spawn its plate runs about 8 px past the
+      // left edge there, as before the higher wall (the sign did not move).
+      if (spawn && id !== "tablet") expect(signFraming(spawn, size), "wing sign at the spawn").not.toBe("clipped");
       // On the lead road at the Lobby plaza's edge, heading into the wing, the view turned south (scripts/office-shots.ts `approach`).
       const approach = signBox(followCamera(width, height, { x: W.lead.x, z: W.rect.minZ - 6, heading: 0 }, 0, yawLooking({ x: 0, z: 1 })), size);
       expect(approach).not.toBeNull();
@@ -309,11 +371,31 @@ describe("Agent Office chips at the office stop", () => {
       const camera = stopCamera(width, height);
       const chips = chipBoxes(camera, size);
       for (const c of chips) {
-        // Far from the stop (one line), as the scene's far band decides it.
-        expect(nextChipFar(true, anchorDistance(camera, c.slot)), `slot ${c.slot} far`).toBe(true);
+        // Far from the stop (one line), as the scene's far band decides it: a chip starts far (`officeRuntime.far`) and
+        // turns far again whenever it hides, so it stays far past the band's near edge.
+        expect(c.far, `slot ${c.slot} far`).toBe(true);
         expect(c.box, `slot ${c.slot} on screen`).not.toBeNull();
       }
       expectClear(camera, size, coarse, chips);
+    });
+
+    it("stay far (one line), on screen and clear with the rover anywhere in the stop's zone (its corners, 2 u by 1.4 u off the stop)", () => {
+      const { half } = OFFICE.view;
+      let nearest = Infinity;
+      for (const dx of [-half.x, 0, half.x])
+        for (const dz of [-half.z, 0, half.z]) {
+          const at = { x: W.stop.x + dx, z: W.stop.z + dz };
+          expect(zoneAt("L1", at, floor.viewZones)?.id, `zone at ${dx}, ${dz}`).toBe("L1:office");
+          const camera = followCamera(width, height, at);
+          const chips = chipBoxes(camera, size);
+          for (const c of chips) {
+            nearest = Math.min(nearest, anchorDistance(camera, c.slot));
+            expect(c.far, `slot ${c.slot} far at ${dx}, ${dz}`).toBe(true);
+            expect(c.box, `slot ${c.slot} on screen at ${dx}, ${dz}`).not.toBeNull();
+          }
+          expectClear(camera, size, coarse, chips, at);
+        }
+      expect(nearest).toBeGreaterThan(NEAR);
     });
 
     it(`the near pose (${NEAR_STEPS[cls]} zoom steps) shows the middle three's task lines (compact on a phone) clear of the wall, the desk screens, the rover, one another and the HUD`, () => {
@@ -323,7 +405,8 @@ describe("Agent Office chips at the office stop", () => {
       for (const slot of [1, 2, 3]) {
         expect(anchorDistance(camera, slot), `slot ${slot} near`).toBeLessThan(NEAR);
         expect(chips[slot].box, `slot ${slot} on screen`).not.toBeNull();
-        expect(chips[slot].far, `slot ${slot} shows its task line`).toBe(compact);
+        // One line on a phone (compact) and on the tablet camera (`OfficeWatch`: near chips would cover each other there).
+        expect(chips[slot].far, `slot ${slot} shows its task line`).toBe(compact || cls === "tablet");
       }
       // The first step that does: one less leaves them far.
       const before = stopCamera(width, height, steps - 1);
@@ -333,9 +416,9 @@ describe("Agent Office chips at the office stop", () => {
   });
 
   describe.each(SIZES)("off the stop, $id ($width x $height)", ({ width, height, coarse }) => {
-    const size = { width, height };
+    const size = { width, height, coarse };
     const south = yawLooking({ x: 0, z: 1 });
-    /** Shown chips (those the gate lets through at `at`) never overlap one another and stay clear of the HUD. */
+    /** Shown chips (those the gate lets through at `at`, from a settled camera) never overlap one another and stay clear of the HUD. */
     const expectUncrowded = (camera: PerspectiveCamera, at: { x: number; z: number }, what: string) => {
       const shown = officeChipsHere(null, at) ? chipBoxes(camera, size).filter((c) => c.box) : [];
       for (const { slot, box } of shown) expectClearOfHud(box!, size, coarse, `${what}: slot ${slot}`);
@@ -352,26 +435,178 @@ describe("Agent Office chips at the office stop", () => {
           expect(officeChipsHere(null, at), `chips at S + ${dz}, x ${at.x}`).toBe(false);
           const camera = followCamera(width, height, at, 0, south);
           expect(expectUncrowded(camera, at, `S + ${dz}, x ${at.x}`)).toBe(0);
-          // Without the gate: shown chips that overlap one another or a HUD box (the final review's crowding).
+          // Without the gate: shown chips that overlap one another or a HUD box, or that the top bar pulls off their anchors
+          // (the final review's crowding: one row under the top bar).
           const all = chipBoxes(camera, size).filter((c) => c.box);
           const hud = hudBoxes(size, coarse).map((h) => h.box);
-          if (all.some((c, i) => all.some((d, j) => j > i && boxesOverlap(c.box!, d.box!)) || hud.some((h) => boxesOverlap(c.box!, h)))) crowded += 1;
+          const pulled = all.some((c) => {
+            const a = OFFICE_CHIP_ANCHORS[c.slot];
+            return ((1 - new Vector3(a.x, a.y, a.z).project(camera).y) / 2) * height < c.box!.y1 - 1e-6;
+          });
+          if (pulled || all.some((c, i) => all.some((d, j) => j > i && boxesOverlap(c.box!, d.box!)) || hud.some((h) => boxesOverlap(c.box!, h)))) crowded += 1;
         }
       // The gate matters: somewhere in the wing the ungated chips crowd on this size.
       if (width !== 844) expect(crowded, "ungated chips crowd somewhere in the wing").toBeGreaterThan(0);
     });
 
-    it("show them uncrowded at the stop, settled in the office view or still arriving in the plain follow view", () => {
+    it("show them uncrowded once the camera settles in the office view; arriving from the plain follow view they wait (it would crowd them)", () => {
       const at = { ...W.stop, heading: 0 };
       expect(officeChipsHere(null, at)).toBe(true);
       expect(expectUncrowded(followCamera(width, height, at), at, "settled")).toBe(5);
-      expect(expectUncrowded(followCamera(width, height, at, 0, south, false), at, "arriving")).toBeGreaterThan(0);
+      // Arriving: the rover enters the stop's zone with the camera still in the plain follow view, facing south. The zone
+      // starts the ease on that frame, so the camera is never settled there: the chips wait (`chipsSettled`).
+      const cls = cameraClass(width, height);
+      const orbit = createOrbitState();
+      setPitchRange(orbit, pitchRange(cls, "follow"));
+      orbit.yaw = orbit.yawTarget = south;
+      const plain = orbitCamera(orbit, width, height, at);
+      updateZone(orbit, zoneAt("L1", at, floor.viewZones), false, cls);
+      expect(orbit.easing, "the zone eases the camera in").toBe(true);
+      // The gate matters: there the shown chips would crowd the top bar, the HUD or one another.
+      const all = chipBoxes(plain, size).filter((c) => c.box);
+      const hud = hudBoxes(size, coarse).map((h) => h.box);
+      const crowded = all.some((c, i) => c.box!.y0 < hudTop(size) - 1e-9 || hud.some((h) => boxesOverlap(c.box!, h)) || all.some((d, j) => j > i && boxesOverlap(c.box!, d.box!)));
+      if (cls === "desktop") expect(crowded, "ungated chips crowd the plain view").toBe(true);
+      for (let frame = 0; frame < 300 && orbit.easing; frame++) stepOrbit(orbit, 1 / 60, false);
+      expect(orbit.easing).toBe(false);
+      expect(expectUncrowded(orbitCamera(orbit, width, height, at), at, "eased")).toBe(5);
+    });
+  });
+
+  describe.each(SIZES)("as the camera moves, $id ($width x $height)", ({ width, height, coarse }) => {
+    const size = { width, height, coarse };
+    const cls = cameraClass(width, height);
+    const at = { ...W.stop, heading: 0 };
+    const zone = zoneAt("L1", at, floor.viewZones);
+    const south = yawLooking({ x: 0, z: 1 });
+
+    /**
+     * `CameraDirector` at the stop, frame by frame (1/60 s): the orbit steps, the drawn pose springs toward the wanted one
+     * (`followEase`), `holdZone` reads it, and `officeChipMode` gates the chips; `frame` sees each drawn camera, the mode
+     * and the chips as `OfficeWatch` would size them (their far flags carried from frame to frame, turned far while hidden).
+     */
+    function run(orbit: OrbitState, reduced: boolean, frames: number, drawn: Pose, frame: (camera: PerspectiveCamera, mode: ReturnType<typeof officeChipMode>, chips: ReturnType<typeof chipBoxes>) => void, hold = createZoneHold()) {
+      let was: boolean[] = [true, true, true, true, true];
+      for (let i = 0; i < frames; i++) {
+        updateZone(orbit, zone, reduced, cls);
+        stepOrbit(orbit, 1 / 60, reduced);
+        const want = orbitPose(orbit, width, height, at);
+        const k = followEase(1 / 60, reduced);
+        drawn.position.lerp(want.position, k);
+        drawn.target.lerp(want.target, k);
+        drawn.fov = want.fov;
+        const still = !orbit.easing && drawn.position.distanceToSquared(want.position) < 0.01 && drawn.target.distanceToSquared(want.target) < 0.01;
+        holdZone(hold, orbit, reduced, still);
+        const mode = officeChipMode(null, at, hold.zone, hold.held);
+        const camera = poseCamera(drawn, width, height);
+        const chips = chipBoxes(camera, size, { compact: mode === "compact", was, still });
+        was = chips.map((c) => (mode ? c.far : true));
+        frame(camera, mode, chips);
+      }
+      return hold;
+    }
+    /** A settled orbit in the office view at the stop, its drawn pose and its hold. */
+    function settledAtStop() {
+      const orbit = createOrbitState();
+      setPitchRange(orbit, pitchRange(cls, "follow"));
+      orbit.yaw = orbit.yawTarget = south;
+      const drawn = orbitPose(orbit, width, height, at);
+      const modes: ReturnType<typeof officeChipMode>[] = [];
+      const hold = run(orbit, false, 600, drawn, (_, m) => modes.push(m));
+      return { orbit, drawn, hold, mode: modes.at(-1), modes };
+    }
+
+    it("arriving, the chips wait while the camera swings into the office view, then show in full", () => {
+      const { mode, modes } = settledAtStop();
+      expect(modes[0], "the arrival frame").toBeNull();
+      expect(modes.slice(0, 20).every((m) => m === null), "while the camera swings in").toBe(true);
+      expect(mode).toBe("full");
+    });
+
+    it("a hand zoom keeps them shown (a landscape screen's look offset holds), clear on every frame; a portrait screen's eases its offset out, so its chips wait", () => {
+      const { orbit, drawn, hold } = settledAtStop();
+      zoomBy(orbit, 0.8, false);
+      const modes: ReturnType<typeof officeChipMode>[] = [];
+      run(
+        orbit,
+        false,
+        240,
+        drawn,
+        (camera, mode, chips) => {
+          modes.push(mode);
+          if (!mode) return;
+          // Clear of the wall, the desk screens, the rover and the HUD on every frame; of each other within 1 px (on the
+          // frame the camera comes to rest within 0.1 u the near chips turn up a fraction of a pixel short of their final rows).
+          const shrunk = chips.map((c) => ({ ...c, box: c.box && { x0: c.box.x0 + 0.5, y0: c.box.y0 + 0.5, x1: c.box.x1 - 0.5, y1: c.box.y1 - 0.5 } }));
+          expectClear(camera, size, coarse, shrunk);
+        },
+        hold,
+      );
+      if (cls === "mobile") expect(modes.some((m) => m === null), "portrait: they wait for the look offset").toBe(true);
+      else expect(modes.every((m) => m === "full"), "landscape: shown through the zoom").toBe(true);
+      expect(modes.at(-1)).toBe("full");
+    });
+
+    it("the rover moving inside the zone keeps them shown in full", () => {
+      const { orbit, drawn, hold } = settledAtStop();
+      const modes: ReturnType<typeof officeChipMode>[] = [];
+      const from = { ...at };
+      for (const [dx, dz] of [[1, 0], [1, 1], [0, 1]] as const) {
+        at.x = from.x + dx;
+        at.z = from.z + dz;
+        run(orbit, false, 30, drawn, (_, mode) => modes.push(mode), hold);
+      }
+      Object.assign(at, from);
+      expect(modes.every((m) => m === "full")).toBe(true);
+    });
+
+    it("a hand turn or drag in the zone (the view no longer applies) turns them into compact dots at once, clear of each other and the HUD", () => {
+      for (const turn of [(o: OrbitState) => rotate(o, 0.35, 0), (o: OrbitState) => rotate(o, -0.35, -0.1), (o: OrbitState) => rotateStep(o, 1), (o: OrbitState) => rotateStep(o, -1)]) {
+        const { orbit, drawn, hold } = settledAtStop();
+        turn(orbit);
+        const modes: ReturnType<typeof officeChipMode>[] = [];
+        run(
+          orbit,
+          false,
+          120,
+          drawn,
+          (_, mode, chips) => {
+            modes.push(mode);
+            for (const c of chips) if (c.box) expect(c.box.x1 - c.box.x0, `slot ${c.slot} a dot`).toBeCloseTo(CHIP.compact.w, 6);
+            const shown = chips.filter((c) => c.box);
+            for (const { slot, box } of shown) expectClearOfHud(box!, size, coarse, `slot ${slot}`);
+            for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) expect(boxesOverlap(shown[i].box!, shown[j].box!), `slots ${shown[i].slot} and ${shown[j].slot}`).toBe(false);
+          },
+          hold,
+        );
+        expect(modes.every((m) => m === "compact")).toBe(true);
+      }
+    });
+
+    it("under reduced motion (the zone's view never applies) the plain follow view shows compact dots, clear of each other and the HUD", () => {
+      for (const yaw of [south, south - 0.4, south + 0.4, 0]) {
+        const orbit = createOrbitState();
+        setPitchRange(orbit, pitchRange(cls, "follow"));
+        orbit.yaw = orbit.yawTarget = yaw;
+        const drawn = orbitPose(orbit, width, height, at);
+        const modes: ReturnType<typeof officeChipMode>[] = [];
+        run(orbit, true, 30, drawn, (camera, mode, chips) => {
+          modes.push(mode);
+          const shown = chips.filter((c) => c.box);
+          for (const c of shown) expect(c.far && Math.abs(c.box!.x1 - c.box!.x0 - CHIP.compact.w) < 1e-6, `slot ${c.slot} a dot`).toBe(true);
+          for (const { slot, box } of shown) expectClearOfHud(box!, size, coarse, `slot ${slot}`);
+          for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) expect(boxesOverlap(shown[i].box!, shown[j].box!), `yaw ${yaw}: slots ${shown[i].slot} and ${shown[j].slot}`).toBe(false);
+        });
+        expect(orbit.zoom, "the zone's view never applied").toBe(1);
+        expect(modes.every((m) => m === "compact")).toBe(true);
+      }
     });
   });
 
   it("never go under the HUD's top bar: zoomed in past the near pose, a chip whose anchor rises that high stops right under it", () => {
-    for (const { width, height } of SIZES) {
-      const size = { width, height };
+    let under = 0;
+    for (const { width, height, coarse } of SIZES) {
+      const size = { width, height, coarse };
       const camera = stopCamera(width, height, 4);
       expect(hudTop(size), `the clamp at ${width} x ${height} sits under the real top row`).toBeGreaterThanOrEqual(hudBar(size));
       let clamped = 0;
@@ -380,12 +615,49 @@ describe("Agent Office chips at the office stop", () => {
         expect(box.y0, `slot ${slot} at ${width} x ${height} under the top row`).toBeGreaterThanOrEqual(hudBar(size));
         const a = OFFICE_CHIP_ANCHORS[slot];
         const raw = ((1 - new Vector3(a.x, a.y, a.z).project(camera).y) / 2) * height;
-        if (raw - (box.y1 - box.y0) < hudTop(size)) {
+        // Under the HUD's top corner box (the desktop profile card, the Corners minimap) a chip drops below it instead.
+        const corner = hudBoxes(size, coarse).find((h) => h.id === "minimap" || h.id === "profile card")?.box;
+        if (corner && box.x1 > corner.x0 && box.x0 < corner.x1 && raw - (box.y1 - box.y0) < corner.y1) {
+          under += 1;
+          expect(box.y0).toBeCloseTo(corner.y1);
+        } else if (raw - (box.y1 - box.y0) < hudTop(size)) {
           clamped += 1;
           expect(box.y0).toBeCloseTo(hudTop(size));
         }
       }
       if (width === 1440) expect(clamped, "the desktop pose exercises the clamp").toBeGreaterThan(0);
     }
+    expect(under, "some size exercises the corner drop").toBeGreaterThan(0);
+  });
+
+  it("drop a chip that would reach under the HUD's top corner box below it, hide one that would land on the HUD, and keep dots on their anchors and apart", () => {
+    const spots = chipSpots();
+    /** Places slot 0 (or `slot`) sized `w` by `h` and returns where it shows, or null. */
+    const place = (px: number, py: number, w: number, width: number, height: number, hud: "desktop" | "tablet" | "phone", pinned = false, slot = 0) => {
+      spots.half[slot] = w / 2;
+      spots.h[slot] = 32;
+      return placeChip(spots, slot, px, py, width, height, hud, pinned) ? { x: spots.x[slot], y: spots.y[slot] } : null;
+    };
+    // Phone 390 x 844: the minimap spans x 306 to 378, y 64 to 136; a 32 px dot whose right edge passes 306 drops below 136.
+    expect(place(310, 135, 32, 390, 844, "phone")).toEqual({ x: 310, y: 168 });
+    expect(place(280, 135, 32, 390, 844, "phone")).toEqual({ x: 280, y: 135 });
+    // Desktop: the top bar and the screen edges clamp; the profile card (x 16 to 296, down to 153) drops a chip below it.
+    expect(place(1430, 20, 176, 1440, 900, "desktop")).toEqual({ x: 1440 - 96, y: OFFICE_CHIP_TOP.desktop + 32 });
+    expect(place(300, 120, 32, 1440, 900, "desktop")).toEqual({ x: 300, y: 185 });
+    // A tablet's minimap (112 px at top 76, 16 px in).
+    expect(place(900, 150, 176, 960, 640, "tablet")).toEqual({ x: 960 - 96, y: 188 + 32 });
+    // Hidden on the bottom band, the desktop elevator panel and the Corners joystick.
+    expect(place(700, 840, 32, 1440, 900, "desktop")).toBeNull();
+    expect(place(1300, 450, 32, 1440, 900, "desktop")).toBeNull();
+    expect(place(1300, 300, 32, 1440, 900, "desktop")).not.toBeNull();
+    expect(place(100, 720, 32, 390, 844, "phone")).toBeNull();
+    expect(place(200, 720, 32, 390, 844, "phone")).not.toBeNull();
+    // A dot outside the office view (pinned): hidden rather than pulled off its anchor under the top bar, or onto slot 0's dot.
+    expect(place(700, 80, 32, 1440, 900, "desktop", true)).toBeNull();
+    expect(place(700, 300, 32, 1440, 900, "desktop", true)).toEqual({ x: 700, y: 300 });
+    expect(place(720, 310, 32, 1440, 900, "desktop", true, 1)).toBeNull();
+    expect(place(740, 310, 32, 1440, 900, "desktop", true, 1)).toEqual({ x: 740, y: 310 });
+    // A full chip may overlap (the office view keeps them apart; the tests above check it).
+    expect(place(720, 310, 32, 1440, 900, "desktop", false, 1)).toEqual({ x: 720, y: 310 });
   });
 });

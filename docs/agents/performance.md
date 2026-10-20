@@ -15,16 +15,16 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 465.3 KB gzip (measured full 464.7 KB, lite 448.9 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.1 KB gzip (measured full 465.5 KB, lite 449.8 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
 | B1 floor chunk (unlocked session only) | B1 16 KB gzip (measured 5.0 KB) | `e2e/budgets.ts` |
 | B1 settled scene calls | under 100 (`FLOOR_SCENE_CAPS.B1`; measured 45 lite, 48 full) | `e2e/budgets.ts` |
-| L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 13,993 B of 14,336 B) | `e2e/budgets.ts` |
-| L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 5,996 B of 6,144 B) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 494.2 KB (measured 493.6 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 478.5 KB (measured 477.9 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| L1 Agent Office scene chunk (`BYTES_3D_BUDGET.office`) | 14 KB gzip, outside the session total (measured 14,262 B of 14,336 B) | `e2e/budgets.ts` |
+| L1 Agent Office drawer body chunk (`BYTES_3D_BUDGET.officeBody`) | 6 KB gzip, incremental over the scene chunk, a sanity cap (measured 6,043 B of 6,144 B) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 495.1 KB (measured 494.5 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 479.3 KB (measured 478.7 KB, about 0.6 KB headroom) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -74,26 +74,26 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 | Spec | What it gates |
 |---|---|
 | `bytes-3d` | 3D JS after the gate (see below) |
-| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L4 also at the Study Vault stop (same caps and L4 program baseline, reported as the settled peak `settled-L4-vault`); L1 and B1 load the Agent Office chunk first, and an L1 spot at the office stop holds the same cap and baseline (reported as `settled-L1-office`; L1 measured 101 lite and 103 full at the spawn, 46 and 48 at the office stop; cap 125) |
+| `floors` | every floor and tier (B1 too, ridden from the Lobby when unlocked): settled scene calls, post passes, triangles, shader programs within `e2e/perf/baseline.json` + 2; L4 also at the Study Vault stop (same caps and L4 program baseline, reported as the settled peak `settled-L4-vault`); L1 and B1 load the Agent Office chunk first, and an L1 spot at the office stop holds the same cap and baseline (reported as `settled-L1-office`; L1 measured 100 lite and 102 full at the spawn, 44 and 46 at the office stop; cap 125) |
 | `peaks` | boot plus intro, elevator rides through the panel, hover, boosting; every frame |
 | `memory-full` | full-tier memory gate (owner decision, see below); it writes the `memory-full` entry of the summary |
 | `guide-reader` | the study guide reader's chunk and worker caps (perf key `guides`, see below) |
 
 #### `bytes-3d`
 
-- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 465.3 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 464.5 KB, lite 448.7 KB (the full tier adds the lazy `Effects` chunk).
+- Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 466.1 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
+  - It gates the critical path before the first frame. Measured: full 465.5 KB, lite 449.8 KB (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
-  - full 494.2 KB: measured 493.6 KB (main 464.7 KB plus floor chunks 28.9 KB).
-  - lite 478.5 KB: measured 477.9 KB (main 448.9 KB plus floor chunks 28.9 KB).
+  - full 495.1 KB: measured 494.5 KB (main 465.5 KB plus floor chunks 28.9 KB).
+  - lite 479.3 KB: measured 478.7 KB (main 449.8 KB plus floor chunks 28.9 KB).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
   - Floor chunks measured L3 13.9 KB, L4 11.7 KB, RF 3.3 KB, B1 5.0 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
-- Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 13,993 B); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 5,996 B). Both caps are their own, outside the session total (owner decision 2026-10-19); the scene loads only within 25 u of the office stop (the lead road and the wing), on an office-bound mission or an office drawer, never at the spawn ([L1 Agent Office](floor-l1-lobby.md#chunks-and-mounting)).
+- Agent Office: its scene chunk is loaded through `__hq.office.load()` after the session floors and held to `BYTES_3D_BUDGET.office` (14 KB, measured 14,262 B); its drawer body chunk through `__hq.office.loadBody()` after that, held to `BYTES_3D_BUDGET.officeBody` (6 KB, measured 6,043 B). Both caps are their own, outside the session total (owner decision 2026-10-19); the scene loads only within 25 u of the office stop (the lead road and the wing), on an office-bound mission or an office drawer, never at the spawn ([L1 Agent Office](floor-l1-lobby.md#chunks-and-mounting)).
   - The Classic page chunks carry no office code (`/en` page scripts 219.0 KB gzip, gzip -9 of the page's chunks): the drawer bodies import the office loader (`office/chunk.ts`) for the office drawer body, and the loader reads `officeLayout.ts` and `floors/lobby/spawn.ts` only, never `experience/config` (`check-client-chunks`, `tests/unit/floor-order.test.ts`); the 3D-only shell helpers live in `officeShell.ts`. The `office` strings sit in `CLIENT_NAMESPACES`, so `/en/quick` HTML is unchanged.
 - JSON is reported (`other.json`), not capped. The Glass Drawer data is split per floor ([hud-and-drawer.md](hud-and-drawer.md#builders-and-data)), so a Lobby session fetches only the L1 file on idle (7.4 KB gzip of JSON with the seven Agent Office views, was 74.2 KB with the single 340 KB rooms file; the split costs the main path about 0.16 KB gzip).
 - Images are reported (`other.image`), not capped. The L1 skills and certification wall logos are one prebuilt WebP atlas (quantized, then lossless) (`scripts/logo-atlas.ts`, [floor-l1-lobby.md](floor-l1-lobby.md#logo-atlas)), one request instead of one per logo (58 today), cached as immutable. It costs more bytes than the sources (about 126 KB against about 81 KB of gzipped SVG and WebP on the wire): a 128 px raster of every logo, quantized only as far as the walls still look the same (lossy WebP smears thin colored edges). Never go back to fetching logos one by one from 3D code.

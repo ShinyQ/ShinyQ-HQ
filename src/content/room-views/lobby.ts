@@ -86,7 +86,7 @@ function buildOfficeViews(locale: Locale): RoomView[] {
     single({ id: roomId("L1", "office"), kind: "office", title: m.hud.rooms.office, subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "summary" } }),
     single({ id: roomId("L1", "office-github"), kind: "office", title: o.githubTitle, subtitle: o.subtitle, accent: "green", sections: [{ body: o.githubNote }], office: { panel: "github" } }),
     ...Array.from({ length: OFFICE_DESKS }, (_, slot) =>
-      single({ id: roomId("L1", `office-desk-${slot + 1}`), kind: "office", title: fill(o.desk, { n: String(slot + 1) }), subtitle: o.subtitle, accent: "cyan", sections: [{ body: m.office.privacy }], office: { panel: "desk", slot } }),
+      single({ id: roomId("L1", `office-desk-${slot + 1}`), kind: "office", title: fill(o.desk, { n: String(slot + 1) }), subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "desk", slot } }),
     ),
   ]);
 }

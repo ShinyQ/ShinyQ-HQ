@@ -1228,7 +1228,6 @@
     "state": { "working": "Bekerja", "thinking": "Berpikir", "reviewing": "Meninjau", "testing": "Menjalankan tes", "ci": "Menunggu CI", "input": "Butuh Kurniadi", "done": "Selesai", "failed": "CI gagal", "asleep": "Tidur" },
     "activity": { "editing": "Mengedit", "planning": "Merencanakan", "reading": "Membaca", "testing": "Menguji", "building": "Build", "shell": "Menjalankan perintah", "ci": "Memantau CI", "git": "Memakai git", "asking": "Bertanya ke Kurniadi", "finished": "Selesai", "failed": "Gagal", "resting": "Istirahat" },
     "clientProject": "Proyek klien",
-    "privacy": "Hanya agen, statusnya, dan jenis aktivitasnya yang keluar dari mesin Kurniadi, ditambah repositori, branch, dan judul tugas untuk repositori publik. Kode, prompt, path file, dan nama klien tidak pernah keluar.",
     "classic": {
       "title": "Kantor Agen Langsung",
       "intro": "Agen AI coding yang bekerja bersama Kurniadi, ditampilkan langsung: apa yang sedang dikerjakan masing-masing saat ini, ditambah aktivitas GitHub publik. Kantor yang sama berdiri di sayap Lobi 3D.",
