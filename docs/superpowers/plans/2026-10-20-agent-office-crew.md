@@ -1828,6 +1828,34 @@ tier. Rest instances start with zero-scale drones.
 - [ ] **Step 4:** Run the listed tests plus `messages` and `client-namespaces`; expected PASS.
 - [ ] **Step 5:** Commit `feat(office): helper counts on chips, drawer, summary and the Classic card`.
 
+### Task 19: Retune the office stop camera (after the rebase on #270)
+
+**Files:**
+- Modify: `src/experience/floors/lobby/officeLayout.ts` (`OFFICE.view` per camera class, the stop offset if needed), `src/experience/floors/lobby/officeShell.ts` (chip rows if the wall moved)
+- Test: `tests/unit/office-view.test.ts`, `tests/unit/office-chip-placement.test.ts`, `tests/unit/camera-look-offset.test.ts` (other zones bit-identical), `tests/unit/office-beacon-view.test.ts`
+
+**Interfaces:**
+- Produces: a projected-frame helper in `tests/helpers/` (from Task 7's camera helpers) that returns, for a camera class and size, the wall top's distance from the top edge (fraction of the height), the console's and Rovers' vertical band, whether the tower and dock corners and the visitor's Rover are inside the frame.
+
+Coordinator request (2026-10-20, after #270: wall 17 x 5.2 u, 4.5 u behind the middle Rover, wing 29 u deep): from the
+office stop the office must fill the frame. Today the wall and console sit in the middle third on desktop (about 38% sky
+above, much empty plaza below) and the top 40% on phones (more than half the screen empty plaza).
+
+- [ ] **Step 1: Tests first** (in `tests/unit/office-view.test.ts`, on 1440x900, 1280x720, 1180x820 (desktop), the
+  tablet class and 820x1180 and 390x844 (mobile)): the wall top projects 12% to 15% from the top edge; the console and
+  every office Rover project inside the lower-middle band (their projected y between 45% and 85% of the height); on the
+  desktop sizes the CI tower column and the dock pad are inside the frame; the visitor's Rover at the stop is inside the
+  frame; every chip still clears the wall, the desk screens, each other and the HUD (`office-chip-placement`); every
+  other view zone produces float-for-float the poses of before (`camera-look-offset` frozen copy).
+- [ ] **Step 2:** Run; expect FAIL with the current `OFFICE.view`.
+- [ ] **Step 3: Implement:** tune `OFFICE.view.{desktop,tablet,mobile}` (zoom, pitch, `lookOffset.forward` and, if needed,
+  `lookOffset.up`) and, only if no view meets the targets, the stop's z offset (`OFFICE_WING.stop`), keeping the stop
+  reachable and the space rules. Search the parameters with a small script over the projection helper (not committed)
+  and record the chosen values and the measured fractions in the report and in `docs/agents/floor-l1-lobby.md`'s view
+  table.
+- [ ] **Step 4:** Run the four test files plus `tests/unit/lobby-office.test.ts`; expected PASS.
+- [ ] **Step 5:** Commit `feat(office): the office stop view fills the frame`.
+
 ### Task 14: E2E, probes and fixtures
 
 **Files:**
@@ -1916,7 +1944,7 @@ draws 4 and its chip shows "+2", reduced motion keeps the drone positions still 
 
 ## Self-review notes
 
-- Spec 5.1 to 5.7 map to Tasks 1 to 9, 18 (chunks, run after Task 8) and 14; 5.8 (helpers) to Tasks 10 to 13; budgets (spec 8) to Task 15; captures
+- Spec 5.1 to 5.7 map to Tasks 1 to 9, 18 (chunks, run after Task 8), 19 (stop camera, after the rebase) and 14; 5.8 (helpers) to Tasks 10 to 13; budgets (spec 8) to Task 15; captures
   and process (spec 13) to Tasks 16 and 17.
 - The flag plate is an atlas quad (no instance colour on the parts mesh, which would compile a new program variant),
   so `PARTS_PER_ROVER` grows by one (the pole), not two.
