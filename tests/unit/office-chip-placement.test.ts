@@ -8,6 +8,7 @@ import { yawTowards } from "@/experience/fx/facing";
 import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
+import { leadEnd } from "@/experience/floors/lobby/office/officeFrame";
 import { OFFICE_ROVER } from "@/experience/floors/lobby/office/officeVisual";
 import {
   CHIP_ROW,
@@ -111,18 +112,26 @@ interface RowChip {
   far: boolean;
   /** Its Rover's head on screen (px). */
   head: { x: number; y: number };
-  /** Where it shows (its centre x), its box, and its leader line's ends; null when hidden. */
+  /** Where it shows (its centre x), its box, and its leader line's ends (`leadEnd`: a tick at the wall's top, or faded); null when hidden. */
   x: number;
   box: ScreenBox | null;
-  lead: { x0: number; y0: number; x1: number; y1: number } | null;
+  lead: { x0: number; y0: number; x1: number; y1: number; tick: boolean; faded: boolean } | null;
+}
+
+/** The screen wall's top edge (the frame's top, its front face) on screen: its two ends (px), as `OfficeWatch` projects it. */
+function wallTopLine(camera: PerspectiveCamera, { width, height }: { width: number; height: number }): [number, number, number, number] {
+  const { w, h, bottom, frame, t } = OFFICE.wall;
+  const ends = [-1, 1].map((k) => new Vector3(W.wall.x + k * (w / 2 + frame), bottom + h + frame, W.wall.z - t / 2).project(camera));
+  return [((ends[0].x + 1) / 2) * width, ((1 - ends[0].y) / 2) * height, ((ends[1].x + 1) / 2) * width, ((1 - ends[1].y) / 2) * height];
 }
 
 /**
  * The row as `OfficeWatch` lays it out at this pose: a chip shows where its Rover's head is on screen, sized from the
  * scene's far flag (from `was`, by default far as a chip starts and as a hidden one turns again; always far on a phone, on
  * a row narrower than five full chips or outside the office view, `compact`); the row then nudges them
- * apart in desk order inside `chipRowBounds`. A leader line runs from a chip's bottom centre to its Rover's head where
- * that head sits `CHIP_ROW.lead` px or more under the chip and the whole line crosses no HUD box.
+ * apart in desk order inside `chipRowBounds`. A leader line runs from a chip's bottom centre toward its Rover's head where
+ * that head sits `CHIP_ROW.lead` px or more under the chip and the drawn line crosses no HUD box, ending at the screen
+ * wall's top (`leadEnd`).
  */
 function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was = [true, true, true, true, true] as readonly boolean[], still = true } = {}) {
   const { width, height } = size;
@@ -156,11 +165,13 @@ function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was =
     bounds,
   );
   expect(fits, "the row fits").toBe(true);
+  const wall = wallTopLine(camera, size);
   shown.forEach(({ chip, w, h }, k) => {
     chip.x = out[k];
     chip.box = { x0: out[k] - w / 2, y0: top, x1: out[k] + w / 2, y1: top + h };
     const { x, y } = chip.head;
-    const lead = { x0: out[k], y0: chip.box.y1, x1: x, y1: y };
+    const end = leadEnd(out[k], chip.box.y1, x, y, ...wall, CHIP_ROW.lead, { x: 0, y: 0, tick: false, faded: false });
+    const lead = { x0: out[k], y0: chip.box.y1, x1: end.x, y1: end.y, tick: end.tick, faded: end.faded };
     if (y - chip.box.y1 >= CHIP_ROW.lead && !boxes.some((b) => segmentHits(lead, b))) chip.lead = lead;
   });
   return { top, bounds, oneLine, chips };
@@ -448,6 +459,27 @@ describe("Agent Office chips at the office stop", () => {
       expect(approach!.y1, "wing sign over the bottom band").toBeLessThanOrEqual(height - HUD.bottom);
       // A landscape phone (390 px tall) shows it at the top centre, 8 px above the top bar's bottom line (y 54 to 78).
       if (height > 390) expect(approach!.y0, "wing sign under the top bar").toBeGreaterThanOrEqual(hudBar(size));
+    });
+
+    it("end every leader line at the screen wall's top with a tick, off the screens' text (faded to the head where the chip row sits over the wall: a landscape phone), also at a desktop's near pose", () => {
+      // The tablet camera's near pose raises the wall's top over the row (its leader lines fade); phones keep compact dots.
+      for (const steps of cls === "desktop" ? [0, NEAR_STEPS[cls]] : [0]) {
+        const camera = stopCamera(width, height, steps);
+        const row = chipRow(camera, size);
+        const [x0, y0, x1, y1] = wallTopLine(camera, size);
+        for (const c of row.chips) {
+          const lead = c.lead!;
+          expect(lead, `slot ${c.slot}'s leader line (${steps} steps)`).not.toBeNull();
+          if (id === "landscape phone") {
+            expect([lead.tick, lead.faded], `slot ${c.slot} faded over the wall`).toEqual([false, true]);
+            continue;
+          }
+          expect([lead.tick, lead.faded], `slot ${c.slot} ends at the wall's top (${steps} steps)`).toEqual([true, false]);
+          expect(lead.y1, `slot ${c.slot} on the wall's top edge`).toBeCloseTo(y0 + ((y1 - y0) * (lead.x1 - x0)) / (x1 - x0), 6);
+          expect(lead.y1 - lead.y0, `slot ${c.slot} at least ${CHIP_ROW.lead} px long`).toBeGreaterThanOrEqual(CHIP_ROW.lead);
+          expect(lead.y1, `slot ${c.slot} above its Rover's head`).toBeLessThan(c.head.y);
+        }
+      }
     });
 
     it("show all five far (the name; a dot on a phone) in one row over their Rovers, with a leader line down to each", () => {

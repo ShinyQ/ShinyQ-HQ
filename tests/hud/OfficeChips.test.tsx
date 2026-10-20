@@ -208,7 +208,7 @@ describe("Agent Office chips", () => {
     expect(chip(0)).toHaveAttribute("aria-label", expect.stringContaining("3 helpers"));
   });
 
-  it("draws a hidden 1 px leader line per chip in its state's colour, out of the way of pointers and the accessibility tree", () => {
+  it("draws a hidden 1 px leader line and its tick per chip in its state's colour, out of the way of pointers and the accessibility tree", () => {
     renderChips();
     const leads = screen.getAllByTestId("office-chip-lead", { exact: true });
     expect(leads).toHaveLength(5);
@@ -221,6 +221,16 @@ describe("Agent Office chips", () => {
       expect(lead.style.transition).toBe("");
     }
     expect(leads[0].style.background).toBe(chip(0).querySelector<HTMLElement>(".hq-dot")!.style.color);
+    // The tick where the line meets the screen wall's top: hidden until drawn, in the same colour.
+    const ticks = screen.getAllByTestId("office-chip-tick", { exact: true });
+    expect(officeRuntime.ticks).toEqual(ticks.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
+    for (const tick of ticks) {
+      expect(tick).toHaveAttribute("aria-hidden", "true");
+      expect(tick).toHaveClass("pointer-events-none");
+      expect(tick.style.visibility).toBe("hidden");
+      expect([tick.style.width, tick.style.height]).toEqual(["10px", "2px"]);
+    }
+    expect(ticks[0].style.background).toBe(leads[0].style.background);
   });
 
   it("labels an off-duty Rover and shows a far chip's name only, its label kept whole", () => {

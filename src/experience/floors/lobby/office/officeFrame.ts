@@ -150,3 +150,42 @@ export class WallGate {
     this.drawnContent = null;
   }
 }
+
+/** A chip's leader line: its opacity, faded where it would cross the wall's screens, and the tick at the wall's top (px). */
+export const LEAD = { opacity: 0.6, faded: 0.15, tick: 10 } as const;
+
+/** Where a chip's leader line ends (`leadEnd`) and how it is drawn. */
+export interface LeadEnd {
+  x: number;
+  y: number;
+  tick: boolean;
+  faded: boolean;
+}
+
+/**
+ * The end of the leader line from (x, y), a chip's bottom centre, toward its Rover's head (hx, hy), with the screen wall's
+ * top edge projected through (wx0, wy0) and (wx1, wy1) (px; NaN off the camera): at that edge, with a tick, when the line
+ * crosses it at least `min` px under the chip, so the line never runs over the screens' text (the chip's colour and its
+ * Rover's antenna keep the mapping); faded (`LEAD.faded`) all the way to the head when the edge is above that (the chip
+ * itself sits over the screens); whole to the head when the head stands above the edge. Writes `out`, allocates nothing.
+ */
+export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd): LeadEnd {
+  out.x = hx;
+  out.y = hy;
+  out.tick = out.faded = false;
+  const ex = wx1 - wx0;
+  const ey = wy1 - wy0;
+  const dx = hx - x;
+  const dy = hy - y;
+  const den = dx * ey - dy * ex;
+  // Parallel, or the wall off the camera (NaN): the whole line.
+  if (!(Math.abs(den) > 1e-9)) return out;
+  const t = ((wx0 - x) * ey - (wy0 - y) * ex) / den;
+  if (t >= 1) return out;
+  if (t * Math.hypot(dx, dy) >= min) {
+    out.x = x + t * dx;
+    out.y = y + t * dy;
+    out.tick = true;
+  } else out.faded = true;
+  return out;
+}

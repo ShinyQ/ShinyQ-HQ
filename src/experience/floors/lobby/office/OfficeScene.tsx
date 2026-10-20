@@ -68,7 +68,7 @@ import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, 
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "./crewFrame";
 import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
-import { AtlasClock, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
+import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
@@ -540,10 +540,15 @@ function createWatchState() {
     th: perSlot(() => 0),
     ts: perSlot(() => 0),
     out: perSlot(() => 0),
-    // The last written chip x and leader line (x, y, length, angle).
+    // The last written chip x and leader line (x, y, length, angle), its fade and its tick (x, y; NaN hidden).
     cx: perSlot(() => NaN),
     lead: perSlot(() => [NaN, NaN, NaN, NaN]),
     leadOn: perSlot(() => false),
+    leadFaded: perSlot(() => false),
+    tick: perSlot(() => [NaN, NaN]),
+    // The wall's top edge projected this frame (x0, y0, x1, y1 px; NaN off the camera) and a leader line's end.
+    wall: [NaN, NaN, NaN, NaN],
+    end: { x: 0, y: 0, tick: false, faded: false },
     // When the office-in-view test runs next (s).
     next: 0,
     // The HUD boxes, the row's bounds and the chips' widest fit for one screen size and HUD layout.
@@ -579,24 +584,58 @@ function hideChip(w: WatchState, slot: number, el: HTMLElement | null) {
   writeLead(w, slot, NaN, NaN);
 }
 
+/** The screen wall's top edge (the frame's top, its front face): the leader lines end there (`leadEnd`). */
+const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
+
+/** Projects the wall's top edge ends into `w.wall` (px; NaN when either is behind the camera). */
+function projectWallTop(w: WatchState, camera: RootState["camera"], width: number, height: number) {
+  for (let k = 0; k < 2; k++) {
+    w.v.set(LOBBY.officeWing.wall.x + (k ? WALL_TOP.x : -WALL_TOP.x), WALL_TOP.y, WALL_TOP.z).project(camera);
+    const back = w.v.z >= 1;
+    w.wall[2 * k] = back ? NaN : ((w.v.x + 1) / 2) * width;
+    w.wall[2 * k + 1] = back ? NaN : ((1 - w.v.y) / 2) * height;
+  }
+}
+
+/** Shows chip `slot`'s tick at (x, y) (its centre, px), or hides it (NaN). */
+function writeTick(w: WatchState, slot: number, x: number, y: number) {
+  const tick = officeRuntime.ticks[slot];
+  const last = w.tick[slot];
+  if (!tick || (last[0] === x && last[1] === y) || (Number.isNaN(x) && Number.isNaN(last[0]))) return;
+  last[0] = x;
+  last[1] = y;
+  if (Number.isNaN(x)) tick.style.visibility = "hidden";
+  else {
+    tick.style.transform = `translate3d(${x - LEAD.tick / 2}px, ${y - 1}px, 0)`;
+    tick.style.visibility = "visible";
+  }
+}
+
 /**
- * The leader line of chip `slot` from (x, y), the chip's bottom centre, to its Rover's head (`w.hx`, `w.hy`): drawn while
- * the head sits at least `CHIP_ROW.lead` px under the chip and the whole line crosses no HUD box (`segmentHitsBox`); NaN
+ * The leader line of chip `slot` from (x, y), the chip's bottom centre, toward its Rover's head (`w.hx`, `w.hy`): drawn while
+ * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box (`segmentHitsBox`); it ends
+ * at the screen wall's top with a tick, or runs faded to the head where the chip sits over the screens (`leadEnd`); NaN
  * hides it.
  */
 function writeLead(w: WatchState, slot: number, x: number, y: number) {
   const lead = officeRuntime.leads[slot];
   if (!lead) return;
-  const hx = w.hx[slot];
-  const hy = w.hy[slot];
-  let on = !Number.isNaN(x) && hy - y >= CHIP_ROW.lead;
+  const e = leadEnd(x, y, w.hx[slot], w.hy[slot], w.wall[0], w.wall[1], w.wall[2], w.wall[3], CHIP_ROW.lead, w.end);
+  const hx = e.x;
+  const hy = e.y;
+  let on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead;
   for (let i = 0; on && i < w.hud.length; i++) on = !segmentHitsBox(x, y, hx, hy, w.hud[i]);
+  writeTick(w, slot, on && e.tick ? Math.round(hx) : NaN, Math.round(hy));
   if (!on) {
     if (w.leadOn[slot]) {
       lead.style.visibility = "hidden";
       w.leadOn[slot] = false;
     }
     return;
+  }
+  if (w.leadFaded[slot] !== e.faded) {
+    w.leadFaded[slot] = e.faded;
+    lead.style.opacity = String(e.faded ? LEAD.faded : LEAD.opacity);
   }
   const dx = Math.round(hx - x);
   const length = Math.round(Math.hypot(dx, hy - y));
@@ -651,12 +690,15 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     let on = false;
     if (el) {
       if (w.els[slot] !== el) {
-        // A freshly mounted chip starts hidden (its inline style).
+        // A freshly mounted chip starts hidden (its inline style), its leader line and tick (mounted with it) too.
         w.els[slot] = el;
         w.shown[slot] = false;
         w.wFar[slot] = null;
         w.wMax[slot] = NaN;
         w.cx[slot] = NaN;
+        w.leadOn[slot] = w.leadFaded[slot] = false;
+        w.lead[slot].fill(NaN);
+        w.tick[slot].fill(NaN);
       }
       const a = OFFICE_CHIP_ANCHORS[slot];
       const dist = camera.position.distanceTo(w.v.set(a.x, a.y, a.z));
@@ -692,6 +734,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     if (!on) hideChip(w, slot, el);
   }
   layoutChipRow(w.tx, w.th, w.out, n, w.bounds);
+  if (n) projectWallTop(w, camera, size.width, size.height);
   let chips = 0;
   for (let k = 0; k < n; k++) {
     const slot = w.ts[k];
@@ -742,7 +785,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         el.style.visibility = "hidden";
         el.style.opacity = "0";
       });
-      for (const lead of officeRuntime.leads) if (lead) lead.style.visibility = "hidden";
+      for (const lead of [...officeRuntime.leads, ...officeRuntime.ticks]) if (lead) lead.style.visibility = "hidden";
     },
     [],
   );

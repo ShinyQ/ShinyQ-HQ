@@ -24,7 +24,9 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
  * frame (HintProbe pattern) through `officeRuntime.chips`, with its leader line (`officeRuntime.leads`: 1 px in the
- * state's colour from the chip down to its Rover's head; no transition, so reduced motion changes nothing). A click opens
+ * state's colour from the chip toward its Rover's head, ending at the screen wall's top with a 10 px tick,
+ * `officeRuntime.ticks`, or faded to 15% where the chip itself sits over the screens; no transition, so reduced motion
+ * changes nothing). A click opens
  * the Rover's drawer the way its point-and-go target does (drive to the office stop, then open).
  */
 function Chip({ rover }: { rover: OfficeRoverView }) {
@@ -56,8 +58,18 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
         data-testid="office-chip-lead"
         data-slot={rover.slot}
         className="pointer-events-none absolute top-0 left-0"
-        // Hidden until OfficeScene draws it (it then writes the transform, the height and the visibility).
+        // Hidden until OfficeScene draws it (it then writes the transform, the height, the opacity and the visibility).
         style={{ width: 1, height: 0, background: color, opacity: 0.6, transformOrigin: "0 0", visibility: "hidden" }}
+      />
+      <span
+        ref={(el) => {
+          officeRuntime.ticks[rover.slot] = el;
+        }}
+        aria-hidden="true"
+        data-testid="office-chip-tick"
+        data-slot={rover.slot}
+        className="pointer-events-none absolute top-0 left-0"
+        style={{ width: 10, height: 2, background: color, opacity: 0.6, visibility: "hidden" }}
       />
       <button
         ref={(el) => {

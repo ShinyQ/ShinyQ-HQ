@@ -628,6 +628,16 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     for (let i = 1; i < row.length; i++) expect(row[i].left).toBeGreaterThan(row[i - 1].left);
     const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
     expect(leads).toEqual(["visible", "visible", "visible", "visible", "visible"]);
+    // Each ends at the screen wall's top with a tick, above its Rover's head (never across the screens' text).
+    const ends = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) =>
+      els.map((el) => {
+        const tick = el.nextElementSibling as HTMLElement;
+        const lead = el.getBoundingClientRect();
+        const t = tick.getBoundingClientRect();
+        return { tick: tick.dataset.testid === "office-chip-tick" && tick.style.visibility === "visible", meets: Math.abs(lead.bottom - (t.top + t.height / 2)) <= 2 };
+      }),
+    );
+    expect(ends).toEqual(Array.from({ length: 5 }, () => ({ tick: true, meets: true })));
     // Still far a moment later (the settle gate holds past the first settled frame).
     await waitForFrames(page, 30);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
