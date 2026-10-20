@@ -123,7 +123,6 @@ export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
  */
 export const CHIP_ROW = { gap: 6, edge: 8, max: 176, band: 44, lead: 8 } as const;
 
-
 /**
  * The HUD boxes the chip row and the leader lines keep off (px, measured in the browser): the desktop profile card (top
  * left) and floor menu panel (right, 219 by 284 px, centred), the Corners minimap (top right: phones 72 px at top 64,
@@ -137,6 +136,35 @@ export function officeHudBoxes(width: number, height: number, hud: "desktop" | "
     ];
   const minimap = hud === "phone" ? { x0: width - 84, y0: 64, x1: width - 12, y1: 136 } : { x0: width - 128, y0: 76, x1: width - 16, y1: 188 };
   return [minimap, { x0: 0, y0: height - 144, x1: 160, y1: height }];
+}
+
+/**
+ * Whether the segment from (x0, y0) to (x1, y1) runs through the inside of box `b` (its edges excluded, px): a leader line
+ * is drawn only while it crosses no HUD box (`OfficeWatch`, tests/unit/office-chip-placement.test.ts). Clips the segment's
+ * parameter to the box one axis at a time; allocates nothing.
+ */
+export function segmentHitsBox(x0: number, y0: number, x1: number, y1: number, b: ScreenBox): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  if (dx === 0) {
+    if (x0 <= b.x0 || x0 >= b.x1) return false;
+  } else {
+    const a = (b.x0 - x0) / dx;
+    const c = (b.x1 - x0) / dx;
+    t0 = Math.max(t0, Math.min(a, c));
+    t1 = Math.min(t1, Math.max(a, c));
+  }
+  if (dy === 0) {
+    if (y0 <= b.y0 || y0 >= b.y1) return false;
+  } else {
+    const a = (b.y0 - y0) / dy;
+    const c = (b.y1 - y0) / dy;
+    t0 = Math.max(t0, Math.min(a, c));
+    t1 = Math.min(t1, Math.max(a, c));
+  }
+  return t0 < t1;
 }
 
 /** The x span the chip row may use (px). */

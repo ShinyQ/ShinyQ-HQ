@@ -84,7 +84,9 @@ describe("Agent Office view model", () => {
  * report):
  * - desktop: no view keeps the tower and the dock in frame on 1180 x 820 (the narrowest desktop) with the console top under
  *   42.8% at a 15% wall top: the Rovers' heads start at 42.4%;
- * - tablet: every target;
+ * - tablet: the console from 45.8% down, the tower and the dock in frame; the wall's top at 17.7%, lower than the 15%
+ *   target on purpose: there it clears the HUD's 62 px top bar on 844 x 390 (69 px) and the chip row's 32 px names on
+ *   960 x 640 (114 px against the row's bottom at 98 px);
  * - portrait: width bound (the whole wall and the five desks across 390 px, every Rover in frame from the zone's corners),
  *   so the office spans under a third of the height: the console 31% to 43% down.
  */
@@ -92,11 +94,16 @@ describe("the office stop frame", () => {
   /** The measured wall top, console top and bottom (fractions of the height from the top edge), per camera class. */
   const MEASURED: Record<ViewportClass, readonly [number, number, number]> = {
     desktop: [0.15, 0.424, 0.618],
-    tablet: [0.145, 0.451, 0.67],
+    tablet: [0.177, 0.458, 0.664],
     mobile: [0.149, 0.314, 0.426],
   };
   /** The lowest console top each class reaches (the 45% target where it can). */
   const CONSOLE_TOP: Record<ViewportClass, number> = { desktop: 0.42, tablet: 0.45, mobile: 0.31 };
+  /**
+   * The lowest the wall's top may stand: 15% (the target), but 18% on the tablet camera, whose screens are short: measured
+   * clear of the HUD's top bar (62 px) on 844 x 390 and of the chip row (66 px plus a 32 px chip) on 960 x 640.
+   */
+  const WALL_TOP_MAX: Record<ViewportClass, number> = { desktop: 0.15, tablet: 0.18, mobile: 0.15 };
 
   it.each(SIZES)("frames the office on $id ($width x $height): wall top, console band, the tower, the dock and the visitor's Rover", ({ width, height }) => {
     const cls = cameraClass(width, height);
@@ -105,11 +112,15 @@ describe("the office stop frame", () => {
     expect(f.wallTop, "wall top").toBeCloseTo(wallTop, 3);
     expect(f.console.top, "console top").toBeCloseTo(consoleTop, 3);
     expect(f.console.bottom, "console bottom").toBeCloseTo(consoleBottom, 3);
-    expect(f.wallTop, "wall top 12% to 15% down").toBeGreaterThanOrEqual(0.12);
-    expect(f.wallTop, "wall top 12% to 15% down").toBeLessThanOrEqual(0.15 + 5e-4);
+    expect(f.wallTop, "wall top 12% down or lower").toBeGreaterThanOrEqual(0.12);
+    expect(f.wallTop, "wall top 15% down or higher (18% on the tablet camera)").toBeLessThanOrEqual(WALL_TOP_MAX[cls] + 5e-4);
+    if (cls === "tablet") {
+      expect(f.wallTop * height, "wall top under the HUD's top bar").toBeGreaterThanOrEqual(62 + 4);
+      if (height > 390) expect(f.wallTop * height, "wall top under the chip row's names").toBeGreaterThanOrEqual(66 + 32 + 8);
+    }
     expect(f.console.top, "console top").toBeGreaterThanOrEqual(CONSOLE_TOP[cls]);
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
-    if (cls === "desktop") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
+    if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
   });
 });

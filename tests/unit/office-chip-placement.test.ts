@@ -25,6 +25,7 @@ import {
   officeChipsHere,
   officeHudBoxes,
   officeSign,
+  segmentHitsBox,
   wingSignHidden,
 } from "@/experience/floors/lobby/officeShell";
 import { boxesOverlap, type ScreenBox } from "@/experience/fx/labelPlacement";
@@ -121,7 +122,7 @@ interface RowChip {
  * scene's far flag (from `was`, by default far as a chip starts and as a hidden one turns again; always far on a phone, on
  * a row narrower than five full chips or outside the office view, `compact`); the row then nudges them
  * apart in desk order inside `chipRowBounds`. A leader line runs from a chip's bottom centre to its Rover's head where
- * that head sits `CHIP_ROW.lead` px or more under the chip and off every HUD box.
+ * that head sits `CHIP_ROW.lead` px or more under the chip and the whole line crosses no HUD box.
  */
 function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was = [true, true, true, true, true] as readonly boolean[], still = true } = {}) {
   const { width, height } = size;
@@ -159,20 +160,14 @@ function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was =
     chip.x = out[k];
     chip.box = { x0: out[k] - w / 2, y0: top, x1: out[k] + w / 2, y1: top + h };
     const { x, y } = chip.head;
-    if (y - chip.box.y1 >= CHIP_ROW.lead && !boxes.some((b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1)) chip.lead = { x0: out[k], y0: chip.box.y1, x1: x, y1: y };
+    const lead = { x0: out[k], y0: chip.box.y1, x1: x, y1: y };
+    if (y - chip.box.y1 >= CHIP_ROW.lead && !boxes.some((b) => segmentHits(lead, b))) chip.lead = lead;
   });
   return { top, bounds, oneLine, chips };
 }
 
-/** Whether the segment crosses the box (sampled every 2 px). */
-function segmentHits(l: { x0: number; y0: number; x1: number; y1: number }, b: ScreenBox): boolean {
-  const steps = Math.max(1, Math.ceil(Math.hypot(l.x1 - l.x0, l.y1 - l.y0) / 2));
-  for (let i = 0; i <= steps; i++) {
-    const [x, y] = [l.x0 + ((l.x1 - l.x0) * i) / steps, l.y0 + ((l.y1 - l.y0) * i) / steps];
-    if (x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1) return true;
-  }
-  return false;
-}
+/** Whether the leader line crosses the box (`segmentHitsBox`, the scene's test). */
+const segmentHits = (l: { x0: number; y0: number; x1: number; y1: number }, b: ScreenBox): boolean => segmentHitsBox(l.x0, l.y0, l.x1, l.y1, b);
 
 /**
  * The shown chips: one row under the HUD's top bar, on screen inside the row's bounds, clear of every HUD box and of each
@@ -359,6 +354,38 @@ describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", () => {
     for (const { width, height, coarse } of SIZES) {
       const layout = hudLayout(viewportClass(width, height), coarse);
       expect(officeHudBoxes(width, height, layout)).toEqual(hudBoxes({ width, height }, coarse).map((h) => h.box));
+    }
+  });
+
+  it("tests a leader line against a HUD box along its whole length (`segmentHitsBox`)", () => {
+    const box = { x0: 100, y0: 100, x1: 200, y1: 200 };
+    // Through the middle, with both ends outside: the head check alone missed this.
+    expect(segmentHitsBox(50, 150, 250, 150, box)).toBe(true);
+    expect(segmentHitsBox(150, 50, 150, 250, box)).toBe(true);
+    expect(segmentHitsBox(80, 80, 220, 230, box)).toBe(true);
+    // One end inside, or the whole line inside.
+    expect(segmentHitsBox(150, 150, 300, 300, box)).toBe(true);
+    expect(segmentHitsBox(120, 130, 180, 170, box)).toBe(true);
+    // Past a corner, along an edge, ending on an edge, and short of the box: clear.
+    expect(segmentHitsBox(40, 150, 150, 40, box)).toBe(false);
+    expect(segmentHitsBox(100, 50, 100, 250, box)).toBe(false);
+    expect(segmentHitsBox(150, 20, 150, 100, box)).toBe(false);
+    expect(segmentHitsBox(150, 20, 150, 99, box)).toBe(false);
+    expect(segmentHitsBox(250, 150, 250, 150, box)).toBe(false);
+    // Every direction gives the same answer, and it agrees with dense sampling on random lines.
+    let seed = 7;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 300;
+    for (let i = 0; i < 500; i++) {
+      const [x0, y0, x1, y1] = [rand(), rand(), rand(), rand()];
+      let sampled = false;
+      for (let k = 0; k <= 2000 && !sampled; k++) {
+        const t = k / 2000;
+        const [x, y] = [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t];
+        sampled = x > box.x0 + 1e-6 && x < box.x1 - 1e-6 && y > box.y0 + 1e-6 && y < box.y1 - 1e-6;
+      }
+      const hit = segmentHitsBox(x0, y0, x1, y1, box);
+      expect(segmentHitsBox(x1, y1, x0, y0, box)).toBe(hit);
+      if (sampled) expect(hit, `${x0},${y0} to ${x1},${y1}`).toBe(true);
     }
   });
 });

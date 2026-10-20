@@ -109,7 +109,8 @@ export const OFFICE = {
    * - desktop: the CI tower column and the dock pad in frame too, which on 1180 x 820 (the narrowest desktop) holds the
    *   camera back: the wall's top at 15%, the Rovers' heads from 42.4% down; the look target drops 1.25 u (`up`) and holds
    *   through a hand zoom (`hold`), so the near pose zooms in about the same aim;
-   * - tablet (landscape phones and small landscape tablets): 14.5% and 45.1% to 67%, the plain aim (no look offset);
+   * - tablet (landscape phones and small landscape tablets): the wall's top at 17.7%, under the HUD's top bar on 844 x 390
+   *   and the chip row on 960 x 640, the console 45.8% to 66.4% down, the tower and the dock in frame, the plain aim;
    * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
    *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: the wall's top at 15%,
    *   the console 31.4% to 42.6% down; the look target moves 5.25 u toward the camera, and a hand zoom hands the framing
@@ -118,7 +119,7 @@ export const OFFICE = {
    */
   view: {
     desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true } },
-    tablet: { zoom: 1.07, pitch: 0.2 },
+    tablet: { zoom: 1.2, pitch: 0.35 },
     mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
     half: { x: 2, z: 1.4 },
   },

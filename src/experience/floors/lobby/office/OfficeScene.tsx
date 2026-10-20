@@ -58,6 +58,7 @@ import {
   officeBounds,
   officeChipMode,
   officeHudBoxes,
+  segmentHitsBox,
   useCanvasFonts,
 } from "../officeShell";
 import type { ScreenBox } from "../../../fx/labelPlacement";
@@ -517,6 +518,8 @@ function createWatchState() {
     wFar: perSlot((): boolean | null => null),
     wSmall: perSlot(() => false),
     wView: perSlot((): OfficeView | null => null),
+    // The max width last written to the chip (px; NaN until written for this element).
+    wMax: perSlot(() => NaN),
     // The row this frame: the shown chips' targets, half widths and slots, and their laid out centres.
     tx: perSlot(() => 0),
     th: perSlot(() => 0),
@@ -563,7 +566,8 @@ function hideChip(w: WatchState, slot: number, el: HTMLElement | null) {
 
 /**
  * The leader line of chip `slot` from (x, y), the chip's bottom centre, to its Rover's head (`w.hx`, `w.hy`): drawn while
- * the head sits at least `CHIP_ROW.lead` px under the chip and off every HUD box; NaN hides it.
+ * the head sits at least `CHIP_ROW.lead` px under the chip and the whole line crosses no HUD box (`segmentHitsBox`); NaN
+ * hides it.
  */
 function writeLead(w: WatchState, slot: number, x: number, y: number) {
   const lead = officeRuntime.leads[slot];
@@ -571,10 +575,7 @@ function writeLead(w: WatchState, slot: number, x: number, y: number) {
   const hx = w.hx[slot];
   const hy = w.hy[slot];
   let on = !Number.isNaN(x) && hy - y >= CHIP_ROW.lead;
-  for (let i = 0; on && i < w.hud.length; i++) {
-    const b = w.hud[i];
-    on = !(hx >= b.x0 && hx <= b.x1 && hy >= b.y0 && hy <= b.y1);
-  }
+  for (let i = 0; on && i < w.hud.length; i++) on = !segmentHitsBox(x, y, hx, hy, w.hud[i]);
   if (!on) {
     if (w.leadOn[slot]) {
       lead.style.visibility = "hidden";
@@ -638,6 +639,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
         w.els[slot] = el;
         w.shown[slot] = false;
         w.wFar[slot] = null;
+        w.wMax[slot] = NaN;
         w.cx[slot] = NaN;
       }
       const a = OFFICE_CHIP_ANCHORS[slot];
@@ -646,6 +648,12 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
       if (on) {
         // Read before this frame's far update: React has committed the previous flag's content by now.
         const far = officeRuntime.far[slot];
+        // The row's fit (`chipMaxWidth`) caps the chip's width; a new cap changes its size.
+        if (w.wMax[slot] !== w.max) {
+          w.wMax[slot] = w.max;
+          el.style.maxWidth = `${w.max}px`;
+          w.wFar[slot] = null;
+        }
         if (w.wFar[slot] !== far || w.wSmall[slot] !== small || w.wView[slot] !== view) {
           w.wFar[slot] = far;
           w.wSmall[slot] = small;

@@ -13,8 +13,8 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
- * (never an edge stripe) with the agent's name, "<Agent> · <activity>" when near (at most `CHIP_ROW.max` px wide, a longer
- * line ends in an ellipsis; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
+ * (never an edge stripe) with the agent's name, "<Agent> · <activity>" when near (at most `CHIP_ROW.max` px wide, or the row's
+ * fit `chipMaxWidth` that `OfficeWatch` writes, a longer line ends in an ellipsis; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
  * full text (`chipLines`: agent, activity, the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
