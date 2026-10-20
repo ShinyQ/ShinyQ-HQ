@@ -22,9 +22,10 @@
  *
  * The living crew (v2 snapshots, `e2e/office-fixtures.ts`; the beacon's watch reads the v1 path, answered `asV1`):
  * `crew-a` and `crew-b` at the office stop (far chips) once each Rover holds its state's pose and the helper drones
- * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" (a head that
- * does not fit drops its activity, then the "+2" pill); `beacon-spawn` at the primed spawn with one desk asking (`CREW_A`), the beacon column and the minimap cue lit;
- * `beacon-stop` at the stop with that desk asking (the column hidden, faint bands at the asking Rover); `asleep` every desk asleep (docked Rovers,
+ * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" and the "+2"
+ * pill (a head that does not fit drops its activity, then the word "helpers", never the pill); `beacon-spawn` at the
+ * primed spawn with one desk asking (`CREW_A`), the beacon column and the minimap cue lit; `beacon-stop` at the stop with
+ * that desk asking (the column hidden, faint bands at the asking Rover); `asleep` every desk asleep (docked Rovers,
  * dimmed desks, charge pads).
  *
  * `--video <dir>` records one 1440x900 full-tier take (Playwright `recordVideo`) into `<dir>/crew-states.webm` (and
@@ -384,13 +385,13 @@ async function captureShots(browser: Browser) {
           await page.screenshot({ path: name("beacon-stop") });
         }
         // Desktop sizes only (a phone keeps its chips compact): one zoom key step brings the chips near, the head with
-        // the whole name and the helpers total (and the "+2" pill for the drones not drawn where it fits).
+        // the whole name and the helpers total and the "+2" pill for the drones not drawn.
         if (wants("crew-a-near") && !vp.touch) {
           await page.keyboard.press("=");
           await settle(page);
           const six = page.locator(`[data-testid="office-chip"][data-slot="${CREW_SLOT.six}"]`);
           await six.and(page.locator('[data-far="false"]')).waitFor({ timeout: SLOW });
-          await six.getByTestId("office-chip-head").filter({ hasText: "6 helpers" }).waitFor({ timeout: SLOW });
+          await six.getByTestId("office-chip-more").waitFor({ timeout: SLOW });
           await waitForFrames(page, 20);
           await page.screenshot({ path: name("crew-a-near") });
           // A hand zoom suppresses the office view zone until the rover leaves it: reset, step out and come back.
@@ -471,10 +472,10 @@ async function recordStates(browser: Browser, dir: string) {
     await showCrew(page, reply, crew, 0);
     await hold(6000);
   }
-  // CREW_A one zoom step in: the near chips ("· 3 helpers") and the drones orbiting their Rovers.
+  // CREW_A one zoom step in: the near chips ("· 3 helpers", "+2") and the drones orbiting their Rovers.
   await page.keyboard.press("=");
   await settle(page);
-  await page.locator(`[data-testid="office-chip"][data-slot="${CREW_SLOT.six}"]`).getByTestId("office-chip-head").filter({ hasText: "6 helpers" }).waitFor({ timeout: SLOW });
+  await page.locator(`[data-testid="office-chip"][data-slot="${CREW_SLOT.six}"]`).getByTestId("office-chip-more").waitFor({ timeout: SLOW });
   await hold(6000);
   const recording = page.video()!;
   await context.close();

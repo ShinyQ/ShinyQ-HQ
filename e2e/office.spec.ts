@@ -650,7 +650,7 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     expect(errors).toEqual([]);
   });
 
-  test("helper drones: 3 helpers draw 3, 6 draw 4 and the near chip keeps the total (a +2 pill where it fits); a sleeping Rover's helpers draw none", async ({ page }) => {
+  test("helper drones: 3 helpers draw 3, 6 draw 4 and the near chip adds +2; a sleeping Rover's helpers draw none", async ({ page }) => {
     const errors = collectErrors(page);
     await chooseMotion(page, "full");
     const office = await serveOffice(page);
@@ -669,17 +669,16 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-helpers")).toHaveText("3");
     await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-helpers")).toHaveText("6");
     await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-more")).toHaveCount(0);
-    // One zoom key step brings the chips near: the head reads "6 helpers" after the whole name, with the pill for the two
-    // drones not drawn where it fits; a head that does not fit drops the activity, then the pill, never cutting a name.
+    // One zoom key step brings the chips near: the head keeps the whole name and the total, and the pill the two drones not
+    // drawn; a head that does not fit drops the activity, then the word "helpers", never the pill or a name.
     await page.keyboard.press("=");
     await waitForCameraSettle(page);
     await expect(chip(page, CREW_SLOT.six)).toHaveAttribute("data-far", "false");
     const six = chip(page, CREW_SLOT.six).getByTestId("office-chip-head");
-    await expect(six).toContainText("6 helpers");
-    await expect(six).toHaveText(/^Claude · /);
-    await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-head")).toHaveText(/^Copilot · (Editing · )?3 helpers$/);
-    expect(await page.getByTestId("office-chip-more").count()).toBeLessThanOrEqual(1);
-    if ((await chip(page, CREW_SLOT.six).getByTestId("office-chip-more").count()) > 0) await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-more")).toHaveText("+2");
+    await expect(six).toHaveText(/^Claude · (.+ · )?6( helpers)?$/);
+    await expect(chip(page, CREW_SLOT.six).getByTestId("office-chip-more")).toHaveText("+2");
+    await expect(page.getByTestId("office-chip-more")).toHaveCount(1);
+    await expect(chip(page, CREW_SLOT.three).getByTestId("office-chip-head")).toHaveText(/^Copilot · (Editing · )?3( helpers)?$/);
     for (const el of await page.getByTestId("office-chip-head").all()) expect(await el.evaluate((h) => h.scrollWidth <= h.clientWidth), await el.innerText()).toBe(true);
     // CREW_B: the 6 and the 3 moved to slots 2 and 3; the sleeping Rovers draw none, desk 5's stale count of 2 included.
     await show(page, office, CREW_B, CREW_B_STATES);

@@ -96,14 +96,23 @@ export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: strin
   return { name, base, head, helpers, task, progress, label };
 }
 
-/** How much a near chip's head drops to fit its chip: 0 nothing, 1 the activity, 2 the "+N" pill too, 3 the helpers too (the name alone). */
-export const NEAR_DROPS = 3;
+/**
+ * A near chip's drop levels (`nearHead`, `OfficeChips`): 0 the whole head, then `activity` "Claude · 6 helpers", `word`
+ * "Claude · 6" (the word "helpers" goes), `name` the agent's name alone. The "+N" pill is never dropped.
+ */
+export const NEAR_DROP = { activity: 1, word: 2, name: 3 } as const;
+/** The last drop level (`NEAR_DROP.name`). */
+export const NEAR_DROPS = NEAR_DROP.name;
 
-/** A near chip's head after `drop` steps (`NEAR_DROPS`, `OfficeChips`): whole parts go, the agent's name never cut. */
-export function nearHead(line: { name: string; head: string; helpers: string | null }, drop: number): string {
+/** A near chip's head after `drop` levels (`NEAR_DROP`), `helpers` the numeric total: whole parts go, the agent's name never cut. */
+export function nearHead(line: { name: string; head: string; helpers: string | null }, helpers: number, drop: number): string {
   if (drop <= 0) return line.head;
-  return line.helpers && drop < NEAR_DROPS ? `${line.name} · ${line.helpers}` : line.name;
+  if (!line.helpers || drop >= NEAR_DROP.name) return line.name;
+  return drop >= NEAR_DROP.word ? `${line.name} · ${helpers}` : `${line.name} · ${line.helpers}`;
 }
+
+/** The deepest drop level that still changes a near head: `NEAR_DROPS` with helpers, 1 with an activity, else 0. */
+export const nearDropsFor = (line: { name: string; head: string; helpers: string | null }): number => (line.helpers ? NEAR_DROPS : line.head !== line.name ? NEAR_DROP.activity : 0);
 
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {
   const style = OFFICE_STATE_STYLE[r.state];

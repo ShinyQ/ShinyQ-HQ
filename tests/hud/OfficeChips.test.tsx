@@ -69,27 +69,43 @@ describe("Agent Office chips", () => {
     expect(chip(1)).toHaveAttribute("aria-label", `Desk 2: Claude · Planning, ${en.office.clientProject}`);
   });
 
-  it("drops a near head's activity first when it does not fit, never cutting the agent's name; the label keeps the full text", () => {
-    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
-    // jsdom lays nothing out: the head's text is 7 px a character, in a span 140 px wide (110 px beside a "+N" pill).
+  /** The busy crew with Claude at the 6-helper desk (slot 2), as on the owner's captures. */
+  const claudeSix = (): OfficeFeed => {
+    const snap = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
+    return { status: "ready", snapshot: { ...snap, desks: snap.desks.map((d) => (d.slot === 2 ? { ...d, agent: "claude" } : d)) }, fetchedAt: Date.now() };
+  };
+  /** jsdom lays nothing out: the head's text is 7 px a character, in a span `wide` px wide (`pill` px beside a "+N" pill). */
+  const mockHeadWidths = (wide: number, pill: number) => {
     const width = (el: HTMLElement) => (el.dataset.testid === "office-chip-head" ? (el.textContent ?? "").length * 7 : 0);
-    const room = (el: HTMLElement) => (el.dataset.testid === "office-chip-head" ? Math.min(width(el), el.nextElementSibling ? 110 : 140) : 0);
+    const room = (el: HTMLElement) => (el.dataset.testid === "office-chip-head" ? Math.min(width(el), el.nextElementSibling ? pill : wide) : 0);
     const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
       return width(this);
     });
     const client = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
       return room(this);
     });
+    return () => {
+      scroll.mockRestore();
+      client.mockRestore();
+    };
+  };
+  const pill = (slot: number) => chip(slot).querySelector("[data-testid=office-chip-more]");
+
+  it("drops a near head's activity, then the word helpers, never the +N pill or the agent's name; the label keeps the full text", () => {
+    live.feed = claudeSix();
+    const restore = mockHeadWidths(140, 110);
     try {
       renderChips();
       // "Copilot · Editing · 3 helpers" (203 px) drops the activity: "Copilot · 3 helpers" (133 px) fits.
       expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
       expect(head(0)).toHaveAttribute("data-drop", "1");
       expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Desk 1: Copilot · Editing · 3 helpers, /));
-      // Beside the "+2" pill "Copilot · 6 helpers" does not fit either: the pill goes, the name and the total stay whole.
-      expect(head(2)).toHaveTextContent(/^Copilot · 6 helpers$/);
-      expect(chip(2).querySelector("[data-testid=office-chip-more]")).toBeNull();
-      expect(chip(2)).toHaveAttribute("aria-label", expect.stringContaining("Copilot · Watching CI · 6 helpers"));
+      // Beside the "+2" pill "Claude · 6 helpers" (126 px) does not fit either: the word goes, "Claude · 6" and the pill stay.
+      expect(head(2)).toHaveTextContent(/^Claude · 6$/);
+      expect(head(2)).toHaveAttribute("data-drop", "2");
+      expect(pill(2)).toHaveTextContent(/^\+2$/);
+      expect(chip(2)).toHaveTextContent(/^Claude · 6\+2$/);
+      expect(chip(2)).toHaveAttribute("aria-label", expect.stringContaining("Claude · Watching CI · 6 helpers"));
       // A head that fits stays whole: "Claude · Planning" (119 px).
       expect(head(1)).toHaveTextContent(/^Claude · Planning$/);
       expect(head(1)).toHaveAttribute("data-drop", "0");
@@ -99,8 +115,38 @@ describe("Agent Office chips", () => {
       act(() => setChipFar(0, false));
       expect(head(0)).toHaveTextContent(/^Copilot · 3 helpers$/);
     } finally {
-      scroll.mockRestore();
-      client.mockRestore();
+      restore();
+    }
+  });
+
+  it("keeps the word helpers beside the +N pill when it fits once the activity is gone", () => {
+    live.feed = claudeSix();
+    const restore = mockHeadWidths(140, 130);
+    try {
+      renderChips();
+      expect(head(2)).toHaveTextContent(/^Claude · 6 helpers$/);
+      expect(head(2)).toHaveAttribute("data-drop", "1");
+      expect(pill(2)).toHaveTextContent(/^\+2$/);
+      expect(chip(2)).toHaveTextContent(/^Claude · 6 helpers\+2$/);
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps the +N pill beside the name alone, the deepest drop", () => {
+    live.feed = claudeSix();
+    // Even the name (42 px) overflows a 30 px span: the truncating span is the safety net.
+    const restore = mockHeadWidths(30, 30);
+    try {
+      renderChips();
+      expect(head(2)).toHaveTextContent(/^Claude$/);
+      expect(head(2)).toHaveAttribute("data-drop", "3");
+      expect(pill(2)).toHaveTextContent(/^\+2$/);
+      // A head with nothing left to drop is not measured again: an agent without helpers stops at its name (drop 1).
+      expect(head(1)).toHaveTextContent(/^Claude$/);
+      expect(head(1)).toHaveAttribute("data-drop", "1");
+    } finally {
+      restore();
     }
   });
 

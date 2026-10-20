@@ -8,7 +8,7 @@ import { officeDeskRoom } from "../officeLayout";
 import { CHIP_ROW } from "../officeShell";
 import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
-import { chipLines, NEAR_DROPS, nearHead, officeView, type OfficeRoverView } from "./officeModel";
+import { chipLines, nearDropsFor, nearHead, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
 import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
@@ -17,9 +17,10 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
  * (never an edge stripe) with the agent's name (and, while it has helpers, a small drone ring with their total, "3"),
  * "<Agent> · <activity> · 3 helpers" when near, with a "+2" pill past the four drones drawn (6 helpers) (at most
  * `CHIP_ROW.max` px wide, or the row's fit `chipMaxWidth` that `OfficeWatch` writes; a near head that does not fit drops
- * whole parts, never cutting the agent's name: the activity first ("Copilot · 3 helpers"), then the "+2" pill, then the
- * helpers, `nearHead`; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
- * full text (`chipLines`: agent, activity, helpers, the title or "Client project", CI progress) at any distance.
+ * whole parts, never cutting the agent's name: the activity first ("Claude · 6 helpers"), then the word "helpers"
+ * ("Claude · 6"), then the name alone, `nearHead`; the "+2" pill always stays; one line where five such chips would not
+ * fit the row), and a CI progress bar when near. Its label keeps the full text (`chipLines`: agent, activity, helpers,
+ * the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
  * frame (HintProbe pattern) through `officeRuntime.chips`, with its leader line (`officeRuntime.leads`: 1 px in the
@@ -35,15 +36,16 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
   const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
   // A near head that overflows (the head span cuts its text) drops one more part, measured again before paint, until it
-  // fits; new text or a far turn starts whole again.
+  // fits; new text or a far turn starts whole again. A head with no part left to drop is not measured again.
+  const last = nearDropsFor(line);
   const key = `${far}|${line.head}|${more}`;
   const [fit, setFit] = useState({ key, drop: 0 });
   const drop = fit.key === key ? fit.drop : 0;
   const head = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     const el = head.current;
-    if (!far && el && drop < NEAR_DROPS && el.scrollWidth > el.clientWidth) setFit({ key, drop: drop + 1 });
-  }, [far, key, drop]);
+    if (!far && el && drop < last && el.scrollWidth > el.clientWidth) setFit({ key, drop: drop + 1 });
+  }, [far, key, drop, last]);
   return (
     <>
       <span
@@ -84,7 +86,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
               <span className="min-w-0 truncate">{line.name}</span>
             ) : (
               <span ref={head} data-testid="office-chip-head" data-drop={drop} className="min-w-0 truncate">
-                {nearHead(line, drop)}
+                {nearHead(line, rover.helpers, drop)}
               </span>
             )}
             {line.helpers && far && (
@@ -93,8 +95,9 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
                 {rover.helpers}
               </span>
             )}
-            {more > 0 && !far && drop < 2 && (
-              <span aria-hidden="true" data-testid="office-chip-more" className="shrink-0 rounded-full border border-glass-border px-1.5 text-xs text-ink-2">
+            {/* Tight padding and gap (2 px under the chip's), so "Claude · 6 helpers" and its pill fit a 176 px chip. */}
+            {more > 0 && !far && (
+              <span aria-hidden="true" data-testid="office-chip-more" className="shrink-0 rounded-full border border-glass-border text-xs text-ink-2" style={{ marginLeft: -2, paddingInline: 3 }}>
                 {`+${more}`}
               </span>
             )}

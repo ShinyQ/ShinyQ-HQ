@@ -116,16 +116,15 @@ export const OFFICE = {
    * - tablet (landscape phones and small landscape tablets): the wall's top at 17.7%, under the HUD's top bar on 844 x 390
    *   and the chip row on 960 x 640, the console 45.8% to 66.4% down, the tower and the dock in frame, the plain aim;
    * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
-   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: tilted steeper (66
-   *   degrees) to bring the console and the visitor's Rover lower, the wall's top at 15%, the console 31.5% to 43.4% down
-   *   (no view keeping the five Rovers across the screen puts it lower); the look target moves 4.75 u toward the camera,
-   *   and a hand zoom hands the framing back there (the offset eases out).
+   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: the wall's top at 15%,
+   *   the console 31.4% to 42.6% down; the look target moves 5.25 u toward the camera, and a hand zoom hands the framing
+   *   back there (the offset eases out).
    * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
    */
   view: {
     desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true } },
     tablet: { zoom: 1.2, pitch: 0.35 },
-    mobile: { zoom: 1.42, pitch: 0.4, lookOffset: { forward: -4.8 } },
+    mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
     half: { x: 2, z: 1.4 },
   },
   /**
