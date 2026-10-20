@@ -4,9 +4,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { OFFICE_AGENTS, parseOfficeBeat } from "@/lib/office/protocol";
 import { KEEPALIVE_MS } from "../../tools/office-relay/src/beat";
+import { hashHelper, HELPER_TTL_MS } from "../../tools/office-relay/src/helpers";
 import { runHook, type HookDeps } from "../../tools/office-relay/src/hook";
-import { relayPaths } from "../../tools/office-relay/src/store";
-import { eventOf, HOOK_FIXTURES, PLANTED } from "./fixtures";
+import { loadSalt, relayPaths } from "../../tools/office-relay/src/store";
+import { CLIENT, eventOf, HELPER_EVENTS, HELPER_ID, HELPER_TYPE, HOOK_FIXTURES, PLANTED } from "./fixtures";
 
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 
@@ -27,7 +28,7 @@ describe("runHook", () => {
         for (const body of sent) {
           const beat = parseOfficeBeat(JSON.parse(body));
           expect(beat, `${agent} ${key}`).not.toBeNull();
-          expect(Object.keys(JSON.parse(body)).every((k) => ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "ts"].includes(k))).toBe(true);
+          expect(Object.keys(JSON.parse(body)).every((k) => ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "helpers", "ts"].includes(k))).toBe(true);
           for (const secret of PLANTED) expect(body, `${agent} ${key}`).not.toContain(secret);
         }
         const log = readFileSync(path.join(home, ".office-relay", "relay.log"), { encoding: "utf8", flag: "a+" });
@@ -171,5 +172,155 @@ describe("runHook: Copilot permission checks", () => {
       expect(runHook(agent, "PermissionRequest", json(HOOK_FIXTURES[agent].PermissionRequest), d)).toBe("sent");
       expect(states(sent)).toEqual(["testing", "input"]);
     }
+  });
+});
+
+describe("runHook: sub-agent helpers (count only)", () => {
+  const json = (p: Record<string, unknown>) => JSON.stringify(p);
+  const beats = (sent: string[]) => sent.map((b) => JSON.parse(b) as Record<string, unknown>);
+  const prompt = { copilot: "userPromptSubmitted", claude: "UserPromptSubmit", codex: "UserPromptSubmit" } as const;
+
+  function expectClean(body: string, home: string) {
+    const hashed = hashHelper(HELPER_ID, loadSalt(relayPaths({ HOME: home })));
+    for (const secret of PLANTED) expect(body).not.toContain(secret);
+    expect(body).not.toMatch(/sk-live-secret/);
+    expect(body).not.toMatch(new RegExp(CLIENT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+    expect(body).not.toMatch(/\/Users\/someone\/private/);
+    expect(body).not.toMatch(new RegExp(HELPER_ID));
+    expect(body).not.toMatch(new RegExp(HELPER_TYPE, "i"));
+    expect(body).not.toMatch(/onboarding/i);
+    expect(body).not.toContain(hashed);
+  }
+
+  for (const agent of OFFICE_AGENTS) {
+    const { start, stop } = HELPER_EVENTS[agent];
+    const fx = HOOK_FIXTURES[agent];
+
+    it(`${agent}: a start sends helpers 1 with the session's last state, a stop sends 0, and nothing private leaves`, () => {
+      const { d, sent, tick, home } = deps();
+      expect(runHook(agent, prompt[agent], json(fx[prompt[agent]]), d)).toBe("sent");
+      tick(500);
+      const before = sent.length;
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = (() => {
+        throw new Error("no network in the hook");
+      }) as unknown as typeof fetch;
+      try {
+        // Synchronous: the beat is dispatched before runHook returns, and nothing touches the network.
+        expect(runHook(agent, start, json(fx[start]), d)).toBe("sent");
+        expect(sent.length).toBe(before + 1);
+      } finally {
+        globalThis.fetch = realFetch;
+      }
+      const [first, started] = beats(sent);
+      expect(started).toMatchObject({ v: 1, agent, session: first.session, state: "thinking", activity: "planning", helpers: 1 });
+      expect(parseOfficeBeat(started)).not.toBeNull();
+
+      tick(500);
+      expect(runHook(agent, stop, json(fx[stop]), d)).toBe("sent");
+      expect(beats(sent).at(-1)).toMatchObject({ session: first.session, state: "thinking", helpers: 0 });
+
+      for (const body of sent) expectClean(body, home);
+      const log = readFileSync(path.join(home, ".office-relay", "relay.log"), "utf8");
+      expectClean(log, home);
+      expect(log).toContain(`${agent} ${start} helpers 1 sent`);
+      expect(log).toContain(`${agent} ${stop} helpers 0 sent`);
+    });
+  }
+
+  for (const agent of ["claude", "codex"] as const) {
+    it(`${agent}: a second start with the same helper id sends nothing; a stop for an unknown helper changes nothing`, () => {
+      const { d, sent, tick } = deps();
+      const { start, stop } = HELPER_EVENTS[agent];
+      expect(runHook(agent, start, json(HOOK_FIXTURES[agent][start]), d)).toBe("sent");
+      tick(KEEPALIVE_MS + 1);
+      expect(runHook(agent, start, json(HOOK_FIXTURES[agent][start]), d)).toBe("skipped");
+      expect(runHook(agent, stop, json({ ...HOOK_FIXTURES[agent][stop], agent_id: "agent-internal" }), d)).toBe("skipped");
+      tick(10);
+      expect(runHook(agent, stop, json(HOOK_FIXTURES[agent][stop]), d)).toBe("sent");
+      expect(beats(sent).map((b) => b.helpers)).toEqual([1, 0]);
+    });
+  }
+
+  it("copilot: starts carry no helper id, so each counts and each stop ends the oldest", () => {
+    const { d, sent, tick } = deps();
+    const cp = HOOK_FIXTURES.copilot;
+    runHook("copilot", "subagentStart", json(cp.subagentStart), d);
+    tick(10);
+    runHook("copilot", "subagentStart", json(cp.subagentStart), d);
+    tick(10);
+    runHook("copilot", "subagentStop", json(cp.subagentStop), d);
+    tick(10);
+    runHook("copilot", "subagentStop", json(cp.subagentStop), d);
+    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 2, 1, 0]);
+  });
+
+  it("a helper of a session with no beat yet shows the desk working", () => {
+    const { d, sent } = deps();
+    expect(runHook("claude", "SubagentStart", json(HOOK_FIXTURES.claude.SubagentStart), d)).toBe("sent");
+    expect(beats(sent)[0]).toMatchObject({ state: "working", activity: "editing", helpers: 1, repo: "ShinyQ/ShinyQ-HQ" });
+  });
+
+  it("ignores a helper event without a parent session id", () => {
+    const { d, sent, home } = deps();
+    const orphan: Record<string, unknown> = { ...HOOK_FIXTURES.claude.SubagentStart };
+    delete orphan.session_id;
+    expect(runHook("claude", "SubagentStart", json(orphan), d)).toBe("ignored");
+    expect(sent).toEqual([]);
+    expect(readFileSync(path.join(home, ".office-relay", "relay.log"), "utf8")).toContain("claude SubagentStart no-parent ignored");
+  });
+
+  it("other beats carry the live count, then 0 once, then nothing", () => {
+    const { d, sent, tick } = deps();
+    const cl = HOOK_FIXTURES.claude;
+    runHook("claude", "UserPromptSubmit", json(cl.UserPromptSubmit), d);
+    expect(beats(sent)[0]).not.toHaveProperty("helpers");
+    tick(10);
+    runHook("claude", "SubagentStart", json(cl.SubagentStart), d);
+    tick(10);
+    runHook("claude", "PostToolUse", json(cl.PostToolUseEdit), d);
+    expect(beats(sent).at(-1)).toMatchObject({ state: "working", helpers: 1 });
+    tick(10);
+    runHook("claude", "SubagentStop", json(cl.SubagentStop), d);
+    tick(10);
+    runHook("claude", "PostToolUse", json(cl.PostToolUseRead), d);
+    expect(beats(sent).map((b) => b.helpers)).toEqual([undefined, 1, 1, 0, undefined]);
+  });
+
+  it("a helper with no stop expires after the TTL and the next beat sends 0", () => {
+    const { d, sent, tick } = deps();
+    const cl = HOOK_FIXTURES.claude;
+    runHook("claude", "SubagentStart", json(cl.SubagentStart), d);
+    tick(HELPER_TTL_MS);
+    expect(runHook("claude", "PostToolUse", json(cl.PostToolUseEdit), d)).toBe("sent");
+    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 0]);
+  });
+
+  it("counts helpers per parent session", () => {
+    const { d, sent, tick } = deps();
+    const cl = HOOK_FIXTURES.claude;
+    runHook("claude", "SubagentStart", json(cl.SubagentStart), d);
+    tick(10);
+    runHook("claude", "SubagentStart", json({ ...cl.SubagentStart, session_id: "another-session" }), d);
+    const [a, b] = beats(sent);
+    expect(a.session).not.toBe(b.session);
+    expect([a.helpers, b.helpers]).toEqual([1, 1]);
+  });
+
+  it("stays quiet while paused", () => {
+    const { d, sent } = deps();
+    writeFileSync(d.paths.pause, "");
+    expect(runHook("codex", "SubagentStart", json(HOOK_FIXTURES.codex.SubagentStart), d)).toBe("paused");
+    expect(sent).toEqual([]);
+  });
+
+  it("returns within a few milliseconds", () => {
+    const { d, tick } = deps();
+    const t = performance.now();
+    for (let i = 0; i < 20; i++) {
+      tick(10);
+      runHook("claude", i % 2 ? "SubagentStop" : "SubagentStart", json(HOOK_FIXTURES.claude[i % 2 ? "SubagentStop" : "SubagentStart"]), d);
+    }
+    expect((performance.now() - t) / 20).toBeLessThan(50);
   });
 });

@@ -3,8 +3,9 @@
 The local half of the L1 Agent Office (`docs/agents/office.md`): hooks of GitHub Copilot, Claude Code and OpenAI Codex
 call `office-relay hook <agent> <event>`, which turns the event into a tiny signed beat (agent, a hashed session id, a
 state, an activity type, and for allowlisted public repositories the repository, branch and a title from the branch
-name) and posts it to `https://kurniadi.pages.dev/api/office/beat` from a detached process. Prompts, commands, file paths,
-output and the raw session id never leave the machine.
+name, and the number of active helpers) and posts it to `https://kurniadi.pages.dev/api/office/beat` from a detached
+process. Prompts, commands, file paths, output and the raw session id never leave the machine; of sub-agents, only the
+number of active helpers leaves the machine.
 
 ## Install (owner, once)
 
@@ -22,6 +23,11 @@ output and the raw session id never leave the machine.
    and run `office-relay status` again: the last events list `copilot ...`, `claude ...` and `codex ...` lines with
    `sent` and `send 204`. For the GitHub Copilot desktop app, start a session there and look for `copilot` lines too
    (the app is built on Copilot CLI; this confirms it loads `~/.copilot/hooks`).
+
+After an update that adds hook events (the sub-agent events below, for example), reinstall from the newer checkout
+(step 2), trust the new Codex hooks in `/hooks` (step 3) and restart running agent sessions, which load their hooks at
+start. Then start a helper in each tool (Copilot: an explore or task agent; Claude Code: any subagent; Codex: a
+subagent) and look for `<agent> <event> helpers 1 sent` in `office-relay status`.
 
 Every hook command is written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` (the directory
 single-quoted), so a hook never fails, even when Bun or the program is missing. The shim runs Bun from `/` with
@@ -57,6 +63,23 @@ file before writing anything: a file they cannot parse aborts the command with e
   branch that does not match `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title; the server also drops
   branch names that hold a blocklisted term.
 - The session id is an HMAC with a local salt (`~/.office-relay/salt`).
+- Helpers: the count of active sub-agents of a session, 0 to 9 (`helpers`; see below). Nothing else about a helper
+  leaves the machine.
+
+## Helpers (sub-agents)
+
+Each tool's sub-agent start and stop hooks update a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
+(salted hashes of the helper ids, or anonymous keys, with their start times; never names, types, prompts or paths). A
+start or stop sends a beat with the session's last state and activity (or working / editing for a session with no beat
+yet) and the new count, only when the count changes. Other beats carry the count while it is above 0 and once more as
+0. A helper with no stop event for 30 minutes no longer counts. A start or stop without a parent session id is ignored
+(logged `no-parent ignored`).
+
+| Tool (version checked) | Events | Parent session | Helper id | Notes |
+|---|---|---|---|---|
+| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes |
+| Claude Code (2.1.223) | `SubagentStart`, `SubagentStop` | `session_id` (the main session) | `agent_id` | A resumed subagent or a teammate's new message repeats the start (deduped by id); a stop of an internal agent (prompt suggestions, `/btw`) with no start changes nothing |
+| OpenAI Codex (0.154.0) | `SubagentStart`, `SubagentStop` | `session_id` (the parent's) | `agent_id` | Both events are async hooks like the others; trust them in `/hooks` |
 
 ## Test and debugging overrides
 

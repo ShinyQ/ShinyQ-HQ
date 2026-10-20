@@ -21,7 +21,9 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Privacy (owner decision D3)
 
-- A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, ts}`; `session` is a salted hash.
+- A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, helpers?, ts}`; `session` is a
+  salted hash and `helpers` a count of active sub-agents (0 to `OFFICE_HELPERS_MAX`, 9), never their names, types or
+  ids. `sanitizeBeat` keeps it; storing and showing it is the snapshot's job.
 - `repo`, `branch` and `title` survive only for repositories in `OFFICE_REPO_ALLOWLIST` that a webhook reported public.
 - Titles (beats and GitHub items) go through the public safety blocklist (`cleanTitle`, `findBlockedTerms` from
   `src/content/safety-match.ts`); a blocked title is dropped or replaced by a generic one.
@@ -112,6 +114,14 @@ Index: [AGENTS.md](../../AGENTS.md).
   and keeps `~/.office-relay/`. Codex needs a trust in `/hooks`.
 - `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`
   and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
+- Helpers (`helpers.ts`, mapping table in the relay README): Copilot `subagentStart` / `subagentStop`, Claude Code and
+  Codex `SubagentStart` / `SubagentStop` keep a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
+  (salted id hashes, or anonymous keys for Copilot, whose start names no helper; a stop then ends the oldest), counted
+  while younger than `HELPER_TTL_MS` (30 min) and capped at 9. Every tool's sub-agent hooks carry the parent's session
+  id; an event without one is ignored. A start or stop sends the session's last state with the new count only when the
+  count changes; other beats carry the count while it is above 0 and once more as 0. Tests:
+  `tests/relay/helpers.test.ts`, `tests/relay/hook.test.ts` (planted prompt, client name, private transcript paths,
+  helper id and type never reach a beat or the log).
 - Never add a beat field, a log field or a debug mode that records payload text.
 
 ## Classic card and Ask

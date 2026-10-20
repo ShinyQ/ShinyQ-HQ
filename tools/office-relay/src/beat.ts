@@ -15,13 +15,15 @@ export interface Sent {
   activity: OfficeActivity;
   repo?: string;
   title?: string;
+  /** The helper count of the last sent beat (absent means 0). */
+  helpers?: number;
   sentAt: number;
 }
 
 /** The only object that leaves the machine: enums, a hashed session, and allowlisted public names. */
-export function buildBeat(input: { agent: OfficeAgent; session: string; mapped: Mapped; git: GitInfo | null; allow: readonly string[]; now: number }): OfficeBeatV1 {
-  const { agent, session, mapped, git, allow, now } = input;
-  const beat: OfficeBeatV1 = { v: 1, agent, session, state: mapped.state, activity: mapped.activity, ts: now };
+export function buildBeat(input: { agent: OfficeAgent; session: string; mapped: Mapped; git: GitInfo | null; allow: readonly string[]; now: number; helpers?: number }): OfficeBeatV1 {
+  const { agent, session, mapped, git, allow, now, helpers } = input;
+  const beat: OfficeBeatV1 = { v: 1, agent, session, state: mapped.state, activity: mapped.activity, ...(helpers !== undefined ? { helpers } : {}), ts: now };
   if (!git || !repoAllowed(git.repo, allow)) return beat;
   // A branch the beat schema would reject is dropped (with its title) so the beat itself stays valid.
   const branch = git.branch && BRANCH.test(git.branch) ? git.branch : undefined;
@@ -32,5 +34,7 @@ export function buildBeat(input: { agent: OfficeAgent; session: string; mapped: 
 export function shouldSend(prev: Sent | null, beat: OfficeBeatV1, now: number): boolean {
   if (!prev) return true;
   if (prev.state !== beat.state || prev.activity !== beat.activity || prev.repo !== beat.repo || prev.title !== beat.title) return true;
+  // An absent count means 0: beats stop carrying it once a 0 has been sent.
+  if ((prev.helpers ?? 0) !== (beat.helpers ?? 0)) return true;
   return now - prev.sentAt >= KEEPALIVE_MS;
 }

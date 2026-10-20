@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSy
 import { homedir } from "node:os";
 import path from "node:path";
 import type { Sent } from "./beat";
+import type { HelperState } from "./helpers";
 import type { LastTool } from "./map";
 
 export interface RelayConfig {
@@ -96,6 +97,24 @@ export function readLastTool(paths: RelayPaths, session: string): LastTool | nul
 export function writeLastTool(paths: RelayPaths, session: string, last: LastTool): void {
   ensure(paths.sessions);
   writeFileSync(toolFile(paths, session), JSON.stringify(last), { mode: 0o600 });
+}
+
+const helpersFile = (paths: RelayPaths, session: string) => path.join(paths.sessions, `${session.slice(0, 32)}.helpers.json`);
+
+/** A session's helpers (salted id hashes to start times); a missing or broken file is an empty state. */
+export function readHelpers(paths: RelayPaths, session: string): HelperState {
+  try {
+    const raw = JSON.parse(readFileSync(helpersFile(paths, session), "utf8")) as { ids?: unknown };
+    const ids = typeof raw.ids === "object" && raw.ids !== null && !Array.isArray(raw.ids) ? (raw.ids as Record<string, unknown>) : {};
+    return { ids: Object.fromEntries(Object.entries(ids).filter((e): e is [string, number] => e[0].length <= 64 && typeof e[1] === "number" && Number.isFinite(e[1]))) };
+  } catch {
+    return { ids: {} };
+  }
+}
+
+export function writeHelpers(paths: RelayPaths, session: string, state: HelperState): void {
+  ensure(paths.sessions);
+  writeFileSync(helpersFile(paths, session), JSON.stringify(state), { mode: 0o600 });
 }
 
 /** One line per decision (agent, event, state, outcome); never payload text. Rotates at 256 KB. */

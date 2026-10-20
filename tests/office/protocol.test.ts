@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, parseOfficeBeat, parseOfficeResponse, wibDay } from "@/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, parseOfficeBeat, parseOfficeResponse, wibDay } from "@/lib/office/protocol";
 
 const SESSION = "a".repeat(64);
 const beat = (extra: Record<string, unknown> = {}) => ({ v: 1, agent: "copilot", session: SESSION, state: "working", activity: "editing", ts: OFFICE_FIXTURE_NOW, ...extra });
@@ -50,5 +50,11 @@ describe("parseOfficeBeat", () => {
     expect(parseOfficeBeat(beat({ repo: "ShinyQ/ShinyQ-HQ", title: "x".repeat(81) }))).toBeNull();
     expect(parseOfficeBeat(beat({ title: "Orphan title" }))).toBeNull();
     expect(parseOfficeBeat(beat({ ts: 1.5 }))).toBeNull();
+  });
+
+  it("accepts a helper count from 0 to 9 and nothing else", () => {
+    expect(OFFICE_HELPERS_MAX).toBe(9);
+    for (const helpers of [0, 1, 9]) expect(parseOfficeBeat(beat({ helpers }))).toEqual(beat({ helpers }));
+    for (const helpers of [-1, 10, 1.5, "2", null, true]) expect(parseOfficeBeat(beat({ helpers })), String(helpers)).toBeNull();
   });
 });

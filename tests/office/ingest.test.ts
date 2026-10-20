@@ -44,6 +44,14 @@ describe("allowlist and titles", () => {
     expect(sanitizeBeat({ ...beat, repo: "ShinyQ/ShinyQ-HQ", title: "Acme Bank login" }, ALLOW, BLOCK)).toEqual({ ...beat, repo: "ShinyQ/ShinyQ-HQ", title: undefined });
     expect(sanitizeBeat({ ...beat, repo: "ShinyQ/ShinyQ-HQ" }, ALLOW, BLOCK)).toEqual({ ...beat, repo: "ShinyQ/ShinyQ-HQ" });
   });
+
+  it("keeps the helper count of a beat, with or without a repository", () => {
+    const beat: OfficeBeatV1 = { v: 1, agent: "claude", session: "b".repeat(64), state: "working", activity: "editing", helpers: 3, ts: 1 };
+    expect(sanitizeBeat(beat, ALLOW, BLOCK)).toEqual(beat);
+    expect(sanitizeBeat({ ...beat, helpers: 0, repo: "client/app" }, ALLOW, BLOCK)).toEqual({ ...beat, helpers: 0 });
+    expect(sanitizeBeat({ ...beat, repo: "ShinyQ/ShinyQ-HQ", branch: "fix/acme-bank" }, ALLOW, BLOCK)).toEqual({ ...beat, repo: "ShinyQ/ShinyQ-HQ" });
+    expect(sanitizeBeat({ ...beat, helpers: undefined }, ALLOW, BLOCK)).not.toHaveProperty("helpers");
+  });
 });
 
 describe("parseGithubEvent", () => {

@@ -25,6 +25,8 @@ export const OFFICE_GITHUB_PATH = "/api/office/github";
 export const OFFICE_BEAT_MAX_BYTES = 2048;
 export const OFFICE_TITLE_MAX = 80;
 export const OFFICE_FEED_TITLE_MAX = 120;
+/** The most helpers (sub-agents) a beat reports for one session. */
+export const OFFICE_HELPERS_MAX = 9;
 
 export interface OfficeProgress {
   done: number;
@@ -111,6 +113,11 @@ export interface OfficeBeatV1 {
   repo?: string;
   branch?: string;
   title?: string;
+  /**
+   * Active helpers (sub-agents) of this session, 0 to OFFICE_HELPERS_MAX: a count only, never names, types or ids.
+   * Absent when the session has had none since the last 0 was sent.
+   */
+  helpers?: number;
   /** Epoch ms when the relay built the beat (replay guard). */
   ts: number;
 }
@@ -212,7 +219,7 @@ export function parseOfficeResponse(raw: unknown): OfficeResponseV1 | null {
   return raw as unknown as OfficeSnapshotV1;
 }
 
-const BEAT_KEYS = ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "ts"];
+const BEAT_KEYS = ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "helpers", "ts"];
 
 /** Validates a beat strictly: unknown keys, raw session ids or markup in titles reject the whole beat. */
 export function parseOfficeBeat(raw: unknown): OfficeBeatV1 | null {
@@ -221,5 +228,6 @@ export function parseOfficeBeat(raw: unknown): OfficeBeatV1 | null {
   if (!oneOf(OFFICE_STATES, raw.state) || !oneOf(OFFICE_ACTIVITIES, raw.activity) || !isInt(raw.ts)) return null;
   if (!optional(raw, "repo", matches(REPO)) || !optional(raw, "branch", matches(BRANCH)) || !optional(raw, "title", matches(BEAT_TITLE))) return null;
   if ((raw.branch !== undefined || raw.title !== undefined) && raw.repo === undefined) return null;
+  if (!optional(raw, "helpers", (x) => isInt(x, 0, OFFICE_HELPERS_MAX))) return null;
   return raw as unknown as OfficeBeatV1;
 }
