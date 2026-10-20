@@ -106,6 +106,21 @@ describe("RoverController", () => {
     expect(rover.pose.z).toBeLessThan(9 * 0.25 + 1e-6);
   });
 
+  it("brakes for the end of the path, not only on its last leg: a short last leg after a long one stops on the target", () => {
+    // The L1 hall's experience spur: a long road leg, then 0.4 u from the spur's start to the target (2026-10-20 flake).
+    for (const last of [0.4, 1, 2]) {
+      const rover = new RoverController({ x: 0, z: 0 }, 0);
+      const end = { x: 0, z: 20 + last };
+      rover.setPath([{ x: 0, z: 20 }, end], true);
+      const ctx = { tuning, autopilotSpeed: 12, world: open };
+      let arrived = false;
+      for (let i = 0; i < 600 && !arrived; i++) arrived = rover.update(dt, null, ctx).arrived;
+      expect(arrived, `last leg ${last}`).toBe(true);
+      for (let i = 0; i < 120; i++) rover.update(dt, null, ctx);
+      expect(Math.hypot(rover.pose.x - end.x, rover.pose.z - end.z), `last leg ${last}`).toBeLessThan(0.5);
+    }
+  });
+
   it("uses the autopilot speed when on autopilot", () => {
     const rover = new RoverController({ x: 0, z: 0 }, 0);
     rover.setPath([{ x: 0, z: 80 }], true);

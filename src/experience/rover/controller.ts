@@ -100,7 +100,10 @@ export class RoverController {
     }
     const tuning = this.autopilot ? { ...ctx.tuning, maxSpeed: ctx.autopilotSpeed } : ctx.tuning;
     const stopping = (this.pose.speed * this.pose.speed) / (2 * tuning.braking) + 0.4;
-    const mag = last ? Math.max(0.2, Math.min(1, d / stopping)) : 1;
+    // Brake for the path's end, not just its last leg: a short last leg (a spur off the road) would otherwise start at
+    // full speed and slide past the target.
+    const left = last ? d : d + remaining(this.path);
+    const mag = left < stopping ? Math.max(0.2, left / stopping) : 1;
     const desire = { x: ((target.x - this.pose.x) / d) * mag, z: ((target.z - this.pose.z) / d) * mag };
     this.pose = stepRover(this.pose, desire, dt, tuning, ctx.world);
 
@@ -111,6 +114,13 @@ export class RoverController {
     }
     return { arrived: false, blocked: false };
   }
+}
+
+/** Length of the path from its first point to its last. */
+function remaining(path: readonly Vec2[]): number {
+  let sum = 0;
+  for (let i = 1; i < path.length; i++) sum += dist(path[i - 1], path[i]);
+  return sum;
 }
 
 function dist(a: Vec2, b: Vec2) {
