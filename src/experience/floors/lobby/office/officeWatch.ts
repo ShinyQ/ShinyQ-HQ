@@ -31,7 +31,7 @@ export function startOfficeWatch(opts: { fetch?: (input: string, init?: RequestI
     if (s.floor !== "L1" || s.ride || officeSignal.sceneFeeding || document.visibilityState === "hidden" || now() - lastInput >= IDLE_MS) return;
     const mine = ++seq;
     try {
-      const res = await get("/api/office", { credentials: "omit" });
+      const res = await get("/api/office", { cache: "no-store", credentials: "omit" });
       const sig = res.status === 200 ? signalFromBody(await res.json(), now()) : null;
       if (sig && mine === seq && !officeSignal.sceneFeeding) setOfficeSignal({ ...sig, goodAt: now() });
     } catch {

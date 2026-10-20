@@ -162,6 +162,15 @@ describe("office watch", () => {
     await officeWatchNow();
     expect(f).toHaveBeenCalledTimes(calls);
   });
+  it("bypasses the HTTP cache (the endpoint allows max-age=5 plus stale-while-revalidate=30)", async () => {
+    getHQStore().setState({ floor: "L1", ride: null });
+    const f = fetcher("input");
+    const stop = startOfficeWatch({ fetch: f, every: 60_000 });
+    await officeWatchNow();
+    expect(f).toHaveBeenCalled();
+    for (const call of f.mock.calls as unknown[][]) expect((call[1] as RequestInit | undefined)?.cache).toBe("no-store");
+    stop();
+  });
   it("fetches the protocol path and keeps the main-path modules free of the protocol, the content schema and zod", () => {
     const f = fetcher("asleep");
     getHQStore().setState({ floor: "L1", ride: null });
