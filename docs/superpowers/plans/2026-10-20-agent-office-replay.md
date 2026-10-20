@@ -59,7 +59,7 @@ Design: [`2026-10-20-agent-office-revamp-design.md`](../specs/2026-10-20-agent-o
 
 ```ts
 export const HISTORY = { days: 8, events: 3000, prs: 200, runs: 500, deploys: 50, maxBytes: 120 * 1024 } as const;
-export type LogEvent = [t: number, n: number, slot: number, state: number, activity: number, until: number];
+export type LogEvent = [t: number, n: number, slot: number, state: number, activity: number, until: number, helpers: number];
 export interface DayLog {
   v: 1; day: string; keys: string[]; agents: OfficeAgent[];
   tasks: Record<string, { repo: string; branch?: string; title?: string }>;
@@ -89,9 +89,13 @@ describe("day log", () => {
     let log = emptyLog("2026-10-20");
     log = logBeat(log, undefined, rec({}), DAY0 + 1_000);
     log = logBeat(log, rec({ lastBeat: DAY0 + 50_000 }), rec({ state: "ci", activity: "ci", lastBeat: DAY0 + 60_000 }), DAY0 + 60_000);
-    expect(log.events).toEqual([[1, 0, 1, 0, 0, 50], [60, 0, 1, 4, 6, 0]]);
+    expect(log.events).toEqual([[1, 0, 1, 0, 0, 50, 0], [60, 0, 1, 4, 6, 0, 0]]);
     expect(log.keys).toEqual(["a".repeat(64)]);
     expect(JSON.stringify(log.events)).not.toContain("aaaa");
+  });
+  it("logs a helper count change and carries the count", () => {
+    const log = logBeat(emptyLog("2026-10-20"), rec({}), rec({ helpers: 3 }), DAY0 + 5_000);
+    expect(log.events.at(-1)?.[6]).toBe(3);
   });
   it("ignores keepalives (same state and activity)", () => {
     const log = logBeat(emptyLog("2026-10-20"), rec({}), rec({ lastBeat: DAY0 + 15_000 }), DAY0 + 15_000);
@@ -133,7 +137,7 @@ import type { OfficeDoc, SessionRecord } from "./state";
 
 /** The replay log (design 7.1): one row per WIB day beside the doc, bounded, with no session hash in served output. */
 export const HISTORY = { days: 8, events: 3000, prs: 200, runs: 500, deploys: 50, maxBytes: 120 * 1024 } as const;
-export type LogEvent = [t: number, n: number, slot: number, state: number, activity: number, until: number];
+export type LogEvent = [t: number, n: number, slot: number, state: number, activity: number, until: number, helpers: number];
 export interface DayLog {
   v: 1;
   day: string;
@@ -161,7 +165,7 @@ function ordinal(log: DayLog, s: SessionRecord): { log: DayLog; n: number } {
 
 /** A state, activity or slot change of one session; keepalives log nothing. The previous open event of that session gets its `until` from `prev.lastBeat`. */
 export function logBeat(log: DayLog, prev: SessionRecord | undefined, next: SessionRecord, now: number): DayLog {
-  if (prev && prev.state === next.state && prev.activity === next.activity && prev.slot === next.slot) return log;
+  if (prev && prev.state === next.state && prev.activity === next.activity && prev.slot === next.slot && (prev.helpers ?? 0) === (next.helpers ?? 0)) return log;
   if (log.truncated) return log;
   const o = ordinal(log, next);
   let out = o.log;
@@ -169,12 +173,12 @@ export function logBeat(log: DayLog, prev: SessionRecord | undefined, next: Sess
   if (prev) {
     for (let i = events.length - 1; i >= 0; i--) {
       if (events[i][1] === o.n) {
-        if (events[i][5] === 0) events[i] = [events[i][0], events[i][1], events[i][2], events[i][3], events[i][4], Math.max(events[i][0], secondsOfDay(prev.lastBeat))];
+        if (events[i][5] === 0) events[i] = [events[i][0], events[i][1], events[i][2], events[i][3], events[i][4], Math.max(events[i][0], secondsOfDay(prev.lastBeat)), events[i][6]];
         break;
       }
     }
   }
-  events.push([secondsOfDay(now), o.n, next.slot ?? -1, OFFICE_STATES.indexOf(next.state), OFFICE_ACTIVITIES.indexOf(next.activity), 0]);
+  events.push([secondsOfDay(now), o.n, next.slot ?? -1, OFFICE_STATES.indexOf(next.state), OFFICE_ACTIVITIES.indexOf(next.activity), 0, next.helpers ?? 0]);
   const tasks = next.repo ? { ...out.tasks, [o.n]: { repo: next.repo, ...(next.branch ? { branch: next.branch } : {}), ...(next.title ? { title: next.title } : {}) } } : out.tasks;
   out = { ...out, events, tasks };
   if (events.length > HISTORY.events || size(out) > HISTORY.maxBytes) return { ...log, truncated: true };
@@ -267,7 +271,7 @@ export interface OfficeHistoryIndexV1 { v: 1; days: OfficeHistoryDay[] }
 export interface OfficeHistoryV1 {
   v: 1; day: string; start: number; agents: OfficeAgent[];
   tasks: Record<string, { repo: string; title?: string }>;
-  events: [number, number, number, number, number, number][];
+  events: [number, number, number, number, number, number, number][];
   prs: [number, number, string, number, string][];
   runs: [number, 0 | 1][]; deploys: [number, 0 | 1][];
   truncated: boolean;
@@ -283,7 +287,7 @@ export function parseOfficeHistory(raw: unknown): OfficeHistoryV1 | null;
 - [ ] **Step 1: Tests first:** `historyDay` never contains a 64-hex string (`/[0-9a-f]{64}/`), drops a repo missing from
   `publicRepos`, replaces a blocked title (a term from the blocklist fixture) with nothing, fills the open `until`;
   `historyIndex` lists exactly 8 days, newest first, empty days with zeros; `parseOfficeHistory` rejects extra keys,
-  events with a state index of 9 or more, a slot of 5, `t` over 86,400, a title with `<`, more than 3,000 events, and
+  events with a state index of 9 or more, a helper count over 9, a slot of 5, `t` over 86,400, a title with `<`, more than 3,000 events, and
   accepts `historyDay` output; the DO answers `GET /history` (index) and `GET /history?day=YYYY-MM-DD` (a day in the
   window), `404` for anything else; the Worker forwards only a valid `day`.
 - [ ] **Step 2:** Run; expect FAIL.
@@ -415,7 +419,8 @@ days with a seeded sequence, and a reference that replays the same events throug
   day stretched to 30 s, a longer one squeezed to 60 s). `snapshotAt` rebuilds each desk: the latest event at or before
   the day time for each ordinal with a slot, then applies the rules of `effective` (thinking after 20 s past a working or
   reviewing event's `until`, asleep after 3 or 15 min, done for 20 s, removed after 30 min) using `until` as the last
-  beat; the title is the ordinal's task title when present (else none: "Client project"), the mode `live` while a desk is
+  beat; the title is the ordinal's task title when present (else none: "Client project"), `helpers` the event's count while
+  the desk is awake, the mode `live` while a desk is
   awake else `semi-live`; `pipeline.ships` lists the merges and deploys of the last 60 s of day time; `today` counts up to
   that moment.
 - [ ] **Step 4:** Run; expected PASS.

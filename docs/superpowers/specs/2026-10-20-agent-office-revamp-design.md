@@ -201,6 +201,41 @@ chunk, lights the tower from v1 data: the newest running public run in the feed 
 - Perf lane: L1 calls at the spawn (asking and not) and at the office stop on both tiers; programs at the baseline;
   memory gates.
 
+### 5.8 Sub-agent helpers (owner addition, 2026-10-20)
+
+Each session is one Rover; the sub-agents a session starts become small **helper drones** around it.
+
+- **Relay** (`tools/office-relay`): hooks the sub-agent start and stop events each tool offers (Copilot CLI
+  `subagentStart` / `subagentStop`, Claude Code `SubagentStart` / `SubagentStop`, Codex `SubagentStart` /
+  `SubagentStop`; each verified against the tool's hooks reference and a captured payload before it is installed). It
+  keeps the active helper ids of each parent session locally (`~/.office-relay/sessions/<hash>.helpers.json`, each id
+  hashed with the local salt, dropped after 30 min without a stop) and sends only their count: a beat gains an optional
+  `helpers` (integer 0 to 9, 9 meaning 9 or more). No helper name, type, prompt or id ever leaves the machine. A start or
+  stop that changes the count sends a beat with the session's last state and activity (the dedupe compares `helpers`
+  too); the hook still exits 0 at once. A tool whose payload cannot name the parent session, or that has no such hook,
+  is documented in the relay README and shows no helpers.
+- **Worker**: `SessionRecord.helpers` from the latest beat that carried it; read-time rule: 0 when the session is asleep
+  or removed, or when no beat came for `TIMING.helpersTtl` (10 min). The snapshot's desk gains an optional `helpers`
+  (1 to 9, omitted at 0), so v1 stays backward compatible for the Classic card and old relays (owner decision: an
+  optional v1 field, not a new version). Known window: a browser tab or Pages Function still on the previous build
+  rejects a snapshot whose desk carries `helpers` (strict keys) until it reloads or the Pages upload finishes, minutes
+  after the Worker deploy; the office shows as offline there in that window.
+- **History (stage C)**: a helper count change is a loggable change, and each log event carries the count.
+- **3D**: one drone per active helper orbits the parent Rover's head (radius 1.15 u, y 2.5 u, 1.2 rad/s, evenly spaced,
+  a gentle bob), at most 4 drawn; more show as a "+N" pill on the chip. Drone bodies are instances of the Rover parts
+  mesh (`PARTS_PER_ROVER` grows by 4) and their eye lights instances of the glow mesh (`GLOW_PER_ROVER` grows by 4, full
+  tier only; lite draws the bodies only): no new draw call or program. Reduced motion parks them, hovering still at
+  fixed angles beside the head. Asleep, off-duty or offline Rovers have no drones.
+- **Text**: the chip and the desk drawer read "Copilot · Editing · 3 helpers" ("Copilot · Mengedit · 3 asisten"), ICU
+  plurals in both locales; the compact phone chip keeps the dot only and adds the count to its accessible name; the
+  crew summary says "with 3 helpers". The Classic card adds "· 3 helpers" after the activity on the same line inside
+  the existing row (truncating, no height change, `OFFICE_RESERVE` unchanged).
+- **Budget**: scene chunk about +1 KB, Classic card chunk about +0.1 KB, main path 0.
+- **Tests**: relay fixtures with planted secrets for each tool's start and stop payloads (only a count leaves), the
+  helper store (dedupe by id, TTL, cap 9), beat parse (0 to 9), Worker reducer and TTL, snapshot parse (1 to 9, absent
+  at 0), the drone writer (count, cap 4, reduced motion parked, lite without glow), chips, drawer and Classic card in both
+  locales, and an e2e drone state; the stage A captures and video include a desk with 3 helpers and one with 6.
+
 ## 6. Stage B: ship-it pipeline
 
 ### 6.1 Placement
@@ -298,7 +333,7 @@ interface DayLog {
   keys: string[];                    // private: session hash per ordinal; never served
   agents: OfficeAgent[];             // per ordinal
   tasks: Record<number, { repo: string; branch?: string; title?: string }>; // public allowlisted repos only
-  events: [t: number, n: number, slot: number, state: number, activity: number, until: number][];
+  events: [t: number, n: number, slot: number, state: number, activity: number, until: number, helpers: number][];
   prs: [t: number, slot: number, repo: string, number: number, title: string][];
   runs: [t: number, ok: 0 | 1][];
   deploys: [t: number, ok: 0 | 1][];
@@ -308,7 +343,7 @@ interface DayLog {
 
 - `t` and `until` are seconds since the WIB midnight; `slot` -1 for a session beyond the five desks; states and
   activities are indexes into `OFFICE_STATES` and `OFFICE_ACTIVITIES`.
-- Logged: a beat that changes a session's state or activity (keepalives are not logged; the previous event's `until`
+- Logged: a beat that changes a session's state, activity or helper count (keepalives are not logged; the previous event's `until`
   is set from that session's `lastBeat` when its next event arrives, and the open event's `until` comes from the doc's
   `lastBeat` at read time), a slot change, a CI failure, a merged PR, a finished run, a deploy result.
 - Caps: 3,000 events, 200 PRs, 500 runs, 50 deploys and 120 KB serialized per day; past a cap the day is marked
@@ -390,7 +425,8 @@ chunk only on the idle-loop condition or the drawer control).
 
 ## 9. Privacy and security
 
-- No new data leaves the relay: stages A to C use the v1 beat unchanged. The history stores what the doc already
+- The only new data leaving the relay is the helper count (0 to 9) per session (5.8); otherwise stages A to C use
+  the v1 beat unchanged. The history stores what the doc already
   holds, minus the session hash in served output (per-day ordinals that do not link across days).
 - Titles, job names and branch-derived text pass `cleanTitle` at ingest and again at history read time; repositories
   must be allowlisted and in the known-public set at read time.
@@ -440,7 +476,7 @@ chunk only on the idle-loop condition or the drawer control).
 
 | PR | Scope | Depends on |
 |---|---|---|
-| A | Crew choreography, crew fx, tower and dock shells with v1 lane light, office watch, beacon, minimap cue, crew summary, docs, decision | the enhancement PR merged; the owner's look approval of the prototype renders |
+| A | Crew choreography, crew fx, tower and dock shells with v1 lane light, office watch, beacon, minimap cue, crew summary, sub-agent helpers (relay hooks, optional beat and desk field, drones, chip, drawer and Classic text), docs, decision, relay reinstall steps | the enhancement PR merged; the owner's look approval of the prototype renders |
 | B | Contract v2 (Worker, Function, scene), lanes, packets, bursts, packages, deploy beam, CI room and drawer, docs | A merged |
 | C | Day log storage, history endpoint, replay chunk, tiles, idle loop, replay controls, docs | B merged |
 
@@ -453,7 +489,8 @@ Docs per PR: `docs/agents/office.md`, `docs/agents/floor-l1-lobby.md` (Agent Off
 
 ## 14. Out of scope
 
-- New beat fields or relay changes; any data from private repositories beyond the anonymous state.
+- Beat fields or relay changes beyond the helper count; any data from private repositories beyond the anonymous
+  state.
 - Per-visitor history, accounts or notifications outside the site.
 - History beyond 7 days, or exports.
 - Text painted on floors or in the tower; new floors or a second office.

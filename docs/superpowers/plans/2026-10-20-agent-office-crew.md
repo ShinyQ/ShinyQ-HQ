@@ -118,7 +118,7 @@ and in `stillPose`:
 import { describe, expect, it } from "vitest";
 import { OFFICE_STATES, type OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "@/experience/config";
-import { officeObstacles, officeSlots } from "@/experience/floors/lobby/officeLayout";
+import { officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { CREW, crewFx, crewTarget, lookYaw, newActor, stepCrew, sparkAt, type CrewLook } from "@/experience/floors/lobby/office/crew";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
@@ -218,18 +218,6 @@ describe("look and room", () => {
   it("clamps the camera turn to 70 degrees", () => {
     const behind = { x: slots[0].rover.x - Math.sin(slots[0].yaw) * 10, z: slots[0].rover.z - Math.cos(slots[0].yaw) * 10 };
     expect(Math.abs(lookYaw(slots[0], behind, CREW.cameraClamp))).toBeCloseTo(CREW.cameraClamp, 5);
-  });
-  it("pace and dock keep every Rover inside its row box", () => {
-    const boxes = officeObstacles(LOBBY.officeWing);
-    for (const s of slots) {
-      const across = { x: Math.cos(s.yaw), z: -Math.sin(s.yaw) };
-      const fwd = { x: Math.sin(s.yaw), z: Math.cos(s.yaw) };
-      for (const [dx, dz] of [[CREW.pace.amp, 0], [-CREW.pace.amp, 0], [0, -CREW.dock.back]]) {
-        const p = { x: s.rover.x + across.x * dx + fwd.x * dz, z: s.rover.z + across.z * dx + fwd.z * dz };
-        const inside = boxes.some((b) => p.x - 1 >= b.minX - 1e-6 && p.x + 1 <= b.maxX + 1e-6 && p.z - 1 >= b.minZ - 1e-6 && p.z + 1 <= b.maxZ + 1e-6);
-        expect(inside, `slot ${s.slot} at ${dx},${dz}`).toBe(true);
-      }
-    }
   });
   it("every state has a still pose", () => {
     for (const s of OFFICE_STATES) expect(stillPose(s)).toBeDefined();
@@ -632,6 +620,22 @@ describe("CI tower and ship dock", () => {
     expect(reachable(LOBBY, LOBBY.arrival, w.stop)).toBe(true);
     expect(pocketCells(LOBBY)).toEqual([]);
   });
+  it("keeps every Rover's footprint (radius 1) inside the office obstacles while pacing and docked", () => {
+    const boxes = officeObstacles(w);
+    const inside = (x: number, z: number) => boxes.some((b) => x >= b.minX - 1e-6 && x <= b.maxX + 1e-6 && z >= b.minZ - 1e-6 && z <= b.maxZ + 1e-6);
+    for (const s of officeSlots(w)) {
+      const across = { x: Math.cos(s.yaw), z: -Math.sin(s.yaw) };
+      const fwd = { x: Math.sin(s.yaw), z: Math.cos(s.yaw) };
+      for (const [dx, dz] of [[CREW.pace.amp, 0], [-CREW.pace.amp, 0], [0, -CREW.dock.back]]) {
+        const cx = s.rover.x + across.x * dx + fwd.x * dz;
+        const cz = s.rover.z + across.z * dx + fwd.z * dz;
+        for (let k = 0; k < 32; k++) {
+          const a = (k / 32) * Math.PI * 2;
+          expect(inside(cx + Math.cos(a), cz + Math.sin(a)), `slot ${s.slot} at ${dx},${dz}`).toBe(true);
+        }
+      }
+    }
+  });
   it("puts the tower column on the tower and in front of the wall line", () => {
     const c = officeTowerColumn(w);
     expect(c.x).toBeGreaterThan(tower.minX);
@@ -641,7 +645,9 @@ describe("CI tower and ship dock", () => {
 });
 ```
 
-(`rectGap`, `reachable` and `pocketCells` are the helpers this file already uses for the console; reuse them by name.)
+(`rectGap`, `reachable` and `pocketCells` are the helpers this file already uses for the console; reuse them by name.
+Import `CREW` from `office/crew` and `officeSlots` for the footprint test, which moved here from Task 1: the end Rovers'
+pace and dock reach past their own row boxes by up to 0.24 u, into the tower and dock corners.)
 In `tests/unit/office-chip-placement.test.ts`, add the tower column's projected box (x from `officeTowerColumn`, y 0 to
 `OFFICE.tower.h`) to the boxes no chip may cover, on the six sizes.
 
@@ -1526,7 +1532,238 @@ above in both locales, Indonesian natural ("Meja {n}: {agent} sedang {state}, se
 - [ ] **Step 4:** Run the two files plus `tests/unit/messages*.test.ts` and `tests/unit/client-namespaces.test.ts`; expected PASS.
 - [ ] **Step 5:** Commit `feat(office): crew summary for screen readers in the drawer`.
 
-### Task 10: E2E, probes and fixtures
+### Task 10: Relay: sub-agent helpers (count only)
+
+**Files:**
+- Create: `tools/office-relay/src/helpers.ts`
+- Modify: `tools/office-relay/src/hook.ts`, `beat.ts`, `install.ts`, `map.ts` (event names only), `store.ts` (helpers file), `tools/office-relay/README.md`, `src/lib/office/protocol.ts` (`OfficeBeatV1.helpers?`, `parseOfficeBeat`)
+- Test: `tests/relay/helpers.test.ts` (new), `tests/relay/hook.test.ts`, `tests/relay/install.test.ts`, `tests/relay/fixtures.ts`, `tests/office/protocol.test.ts`
+
+**Interfaces:**
+- Produces: `OFFICE_HELPERS_MAX = 9`; `OfficeBeatV1.helpers?: number` (0 to 9; `parseOfficeBeat` rejects anything else);
+  `HELPER_TTL_MS = 30 * 60_000`; `helperEvent(agent, event): "start" | "stop" | null`; `helperId(agent, payload): string | null`
+  (the tool's sub-agent id field, else null); `parentSession(agent, payload): string | null` (the raw parent session id);
+  `applyHelper(state: HelperState, kind, idHash, now): HelperState`, `helperCount(state, now): number` (live ids, capped
+  at 9); `HelperState = { ids: Record<string, number> }` (hashed id to start time); `readHelpers` / `writeHelpers`
+  (`<sessions>/<hash32>.helpers.json`); `Sent.helpers?: number`; `shouldSend` also compares `helpers`.
+
+- [ ] **Step 1: Pin each tool's payloads.** Read the current hooks references (Copilot CLI:
+  https://docs.github.com/en/copilot/reference/hooks-reference; Claude Code: https://docs.anthropic.com/en/docs/claude-code/hooks;
+  Codex: the hooks page of the Codex docs) and check the installed CLIs' versions (`copilot --version`, `claude --version`,
+  `codex --version`). For each tool record in `tests/relay/fixtures.ts` a start and a stop payload with the documented
+  field names, plus planted secrets in every free-text field (a prompt with "sk-live-secret", a description with a
+  client name from the safety fixture, a transcript path under `/Users/someone/private`). Note per tool which field names
+  the parent session (Claude: `session_id`, with `agent_id` for the helper) and which names the helper. If a tool's
+  payload has no parent session id (for example a sub-agent that reports its own session), `parentSession` returns null
+  and that tool shows no helpers: say so in the README's mapping table. If a tool documents no sub-agent hook, leave it
+  out of the install lists and document it.
+- [ ] **Step 2: Tests first** `tests/relay/helpers.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { applyHelper, HELPER_TTL_MS, helperCount, helperEvent } from "../../tools/office-relay/src/helpers";
+
+describe("helpers", () => {
+  it("maps each tool's start and stop events", () => {
+    expect(helperEvent("claude", "SubagentStart")).toBe("start");
+    expect(helperEvent("claude", "SubagentStop")).toBe("stop");
+    expect(helperEvent("copilot", "subagentStart")).toBe("start");
+    expect(helperEvent("copilot", "subagentStop")).toBe("stop");
+    expect(helperEvent("claude", "PreToolUse")).toBeNull();
+  });
+  it("counts live ids, dedupes repeats, caps at 9 and expires after the TTL", () => {
+    let s = { ids: {} as Record<string, number> };
+    s = applyHelper(s, "start", "a", 0);
+    s = applyHelper(s, "start", "a", 10);
+    s = applyHelper(s, "start", "b", 20);
+    expect(helperCount(s, 30)).toBe(2);
+    s = applyHelper(s, "stop", "a", 40);
+    expect(helperCount(s, 50)).toBe(1);
+    expect(helperCount(s, 20 + HELPER_TTL_MS)).toBe(0);
+    for (let i = 0; i < 12; i++) s = applyHelper(s, "start", `x${i}`, 100);
+    expect(helperCount(s, 200)).toBe(9);
+  });
+  it("a stop without an id removes the oldest (tools that send no helper id)", () => {
+    let s = applyHelper(applyHelper({ ids: {} }, "start", null, 0), "start", null, 5);
+    s = applyHelper(s, "stop", null, 10);
+    expect(helperCount(s, 11)).toBe(1);
+  });
+});
+```
+
+In `tests/relay/hook.test.ts`, for each tool's fixture pair: a start dispatches one beat whose JSON has `helpers: 1` and
+the session's last state; the dispatched body never contains any planted secret, the helper id, the agent type or the
+word from the description (`expect(body).not.toMatch(...)` for each); a second start with the same id dispatches nothing;
+the stop dispatches `helpers: 0`; `runHook` returns within the same synchronous call (no network). In `install.test.ts`:
+the new events are written for the tools that support them, and uninstall removes them. In `tests/office/protocol.test.ts`:
+`parseOfficeBeat` accepts `helpers` 0 and 9 and rejects -1, 10, 1.5 and "2".
+- [ ] **Step 3:** Run `bunx vitest run tests/relay tests/office/protocol.test.ts`; expect FAIL.
+- [ ] **Step 4: Implement** `helpers.ts`:
+
+```ts
+import { createHmac } from "node:crypto";
+import type { OfficeAgent } from "../../../src/lib/office/protocol";
+import { OFFICE_HELPERS_MAX } from "../../../src/lib/office/protocol";
+
+/** A helper (sub-agent) with no stop event for this long is dropped. */
+export const HELPER_TTL_MS = 30 * 60_000;
+
+export interface HelperState {
+  /** Salted hash of the helper id (or a synthetic key) to its start time. */
+  ids: Record<string, number>;
+}
+
+const START = new Set(["subagentstart"]);
+const STOP = new Set(["subagentstop"]);
+
+/** Whether an event starts or stops a helper (event names compared case-insensitively). */
+export function helperEvent(agent: OfficeAgent, event: string): "start" | "stop" | null {
+  const e = event.toLowerCase();
+  if (START.has(e)) return "start";
+  if (STOP.has(e)) return "stop";
+  return null;
+}
+
+const str = (x: unknown): string | null => (typeof x === "string" && x.length > 0 && x.length <= 200 ? x : null);
+
+/** The tool's own id for the helper (never sent; only its salted hash is stored locally). */
+export function helperId(agent: OfficeAgent, p: Record<string, unknown>): string | null {
+  return str(p.agent_id) ?? str(p.agentId) ?? str(p.subagent_id) ?? str(p.subagentId) ?? null;
+}
+
+export const hashHelper = (id: string, salt: string) => createHmac("sha256", salt).update(`helper:${id}`).digest("hex").slice(0, 32);
+
+export function applyHelper(s: HelperState, kind: "start" | "stop", idHash: string | null, now: number): HelperState {
+  const ids = Object.fromEntries(Object.entries(s.ids).filter(([, at]) => now - at < HELPER_TTL_MS));
+  if (kind === "start") {
+    ids[idHash ?? `anon:${now}:${Object.keys(ids).length}`] = ids[idHash ?? ""] ?? now;
+    return { ids };
+  }
+  if (idHash && idHash in ids) delete ids[idHash];
+  else if (!idHash) {
+    const oldest = Object.entries(ids).sort((a, b) => a[1] - b[1])[0];
+    if (oldest) delete ids[oldest[0]];
+  }
+  return { ids };
+}
+
+export function helperCount(s: HelperState, now: number): number {
+  return Math.min(OFFICE_HELPERS_MAX, Object.values(s.ids).filter((at) => now - at < HELPER_TTL_MS).length);
+}
+```
+
+(Adjust `helperId` and `parentSession` to the field names Step 1 pinned; `parentSession` returns the existing
+`rawSessionId(payload)` for tools whose sub-agent payload carries the parent's session id, null otherwise.)
+In `hook.ts`, before `mapEvent`: when `helperEvent(agent, safeEvent)` is not null, require `parentSession(agent, payload)`
+(else log `"<agent> <event> no-parent ignored"` and return `"ignored"`), update the helper file under that session's
+hash, and build the beat from the session's last sent state and activity (`readSent`; a session with none uses
+`working` / `editing`) with `helpers: helperCount(...)`; send when the count changed (`shouldSend` compares `helpers`).
+Every other beat carries `helpers` only when the session's helper file has a non-zero count or the last sent beat had
+one (so the count reaches 0 on the server). In `protocol.ts`: `OFFICE_HELPERS_MAX = 9`, `helpers?: number` on
+`OfficeBeatV1`, `"helpers"` in `BEAT_KEYS`, `optional(raw, "helpers", (x) => isInt(x, 0, OFFICE_HELPERS_MAX))`.
+In `install.ts`: add `"subagentStart", "subagentStop"` to `COPILOT_EVENTS` and `"SubagentStart", "SubagentStop"` to
+`CLAUDE_EVENTS` and `CODEX_EVENTS` (only for the tools Step 1 confirmed). README: the mapping table rows, the privacy
+line ("only the number of active helpers leaves the machine") and the reinstall steps (Task 17).
+- [ ] **Step 5:** Run the relay and protocol tests; expected PASS. Measure a hook call: `bun -e` timing of `runHook` with
+  a fixture stays under 50 ms (it does no network).
+- [ ] **Step 6:** Commit `feat(office-relay): count sub-agent helpers per session (count only)`.
+
+### Task 11: Worker and snapshot: helpers per desk
+
+**Files:**
+- Modify: `workers/office/src/state.ts`, `workers/office/src/ingest.ts` (`sanitizeBeat` keeps `helpers`), `src/lib/office/protocol.ts` (`OfficeDesk.helpers?`, `isDesk`), `src/lib/office/fixtures.ts`
+- Test: `tests/office/state.test.ts`, `tests/office/ingest.test.ts`, `tests/office/protocol.test.ts`
+
+**Interfaces:**
+- Produces: `TIMING.helpersTtl = 10 * 60_000`; `SessionRecord.helpers?: number`; `effectiveHelpers(s, e, now): number`;
+  `OfficeDesk.helpers?: number` (1 to 9, absent at 0); a `busy` fixture desk with `helpers: 3` and one with `helpers: 6`.
+
+- [ ] **Step 1: Tests first:** `applyBeat` stores `helpers` from a beat that carries it and keeps the previous value for
+  a beat without it; `view` emits `helpers` only when the effective count is 1 to 9, drops it when the session is asleep,
+  removed, or quiet for 10 min; a beat with `helpers: 0` clears it; `sanitizeBeat` passes `helpers` through for every
+  repository (it is not repository data); `parseOfficeResponse` accepts a desk with `helpers` 1 and 9 and rejects 0, 10
+  and a string (0 must be omitted), and the Classic and 3D parsers still accept every old fixture.
+- [ ] **Step 2:** Run; expect FAIL.
+- [ ] **Step 3: Implement:** in `applyBeat`, `helpers: beat.helpers ?? prev?.helpers` (omit when undefined or 0); in
+  `deskOf`, `...(h > 0 ? { helpers: h } : {})` with
+
+```ts
+/** Helpers show while the session is awake and beat within the last 10 min (a lost stop event decays). */
+export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): number {
+  if (!s.helpers || e.state === "asleep" || now - s.lastBeat >= TIMING.helpersTtl) return 0;
+  return Math.min(OFFICE_HELPERS_MAX, s.helpers);
+}
+```
+
+and in `protocol.ts` `"helpers"` in `DESK_KEYS` with `optional(x, "helpers", (h) => isInt(h, 1, OFFICE_HELPERS_MAX))`.
+`applyChange` `privatized` keeps `helpers` (not repository data). Changing a session's helpers counts as a change for
+`recent` only when the state also changed (helpers do not flood `recent`).
+- [ ] **Step 4:** Run `bunx vitest run tests/office`; expected PASS.
+- [ ] **Step 5:** Commit `feat(office): helpers per desk in the snapshot (optional v1 field)`.
+
+### Task 12: Helper drones in the 3D office
+
+**Files:**
+- Modify: `officeRig.ts` (`PARTS_PER_ROVER` +4, drone writes), `crewFx.ts` (`CREW_GLOW` +4 eye lights), `officeModel.ts` (`OfficeRoverView.helpers`), `OfficeScene.tsx`
+- Test: `tests/unit/office-drones.test.ts` (new), `tests/unit/office-model.test.ts`
+
+**Interfaces:**
+- Produces: `DRONES = { max: 4, r: 1.15, y: 2.5, speed: 1.2, bob: 0.06, body: [0.3, 0.12, 0.3] }`;
+  `dronePoint(i: number, n: number, t: number, phase: number, reduced: boolean, out: FxPoint): FxPoint` (Rover-local,
+  pure, in `crew.ts`); `writeDrones(frame, n, t, phase, reduced, parts, at)` and drone eye lights in `writeCrewGlow`
+  (scaled 0 on lite or for drones beyond `n`); `OfficeRoverView.helpers: number` (0 when asleep, off duty, off or offline).
+
+- [ ] **Step 1: Tests first:** `dronePoint` for n 1 to 4 keeps every drone at radius 1.15 from the head axis and evenly
+  spaced (angle step 2 pi / n); two times give different points in full motion and the same point under reduced motion;
+  `writeDrones` writes `min(n, 4)` non-zero bodies and zero-scale for the rest; on the lite tier the eye-light instances are
+  zero-scale; `officeView` maps desk `helpers` to `OfficeRoverView.helpers` and zeroes it when the view is offline or off.
+- [ ] **Step 2:** Run; expect FAIL.
+- [ ] **Step 3: Implement** in `crew.ts`:
+
+```ts
+export const DRONES = { max: 4, r: 1.15, y: 2.5, speed: 1.2, bob: 0.06, body: [0.3, 0.12, 0.3] } as const;
+
+/** Drone `i` of `n` (at most 4 drawn) orbiting the head; parked at fixed angles under reduced motion. */
+export function dronePoint(i: number, n: number, t: number, phase: number, reduced: boolean, o: FxPoint): FxPoint {
+  const k = Math.max(1, Math.min(n, DRONES.max));
+  const a = (i / k) * TAU + (reduced ? 0.6 : t * DRONES.speed + phase);
+  o.x = Math.cos(a) * DRONES.r;
+  o.y = DRONES.y + (reduced ? 0 : Math.sin(t * 2.2 + i * 1.3 + phase) * DRONES.bob);
+  o.z = Math.sin(a) * DRONES.r;
+  o.a = i < Math.min(n, DRONES.max) ? 1 : 0;
+  return o;
+}
+```
+
+`writeRover` writes parts `at + 6` to `at + 9` as drone bodies from `dronePoint` (zero scale when `o.a` is 0); the glow
+key includes the drone count and, in full motion with drones, the 30 Hz tick. `OfficeScene` passes `r.helpers` and the
+tier. Rest instances start with zero-scale drones.
+- [ ] **Step 4:** Run the drone, model, rig and crew-fx tests; expected PASS.
+- [ ] **Step 5:** Commit `feat(office): helper drones orbit their Rover`.
+
+### Task 13: Helper text: chips, drawer, crew summary and Classic card
+
+**Files:**
+- Modify: `officeModel.ts` (`chipLines`), `OfficeChips.tsx` ("+N" pill), `OfficeBody.tsx`, `crewSummary.ts`, `src/components/office/OfficePanel.tsx`, `src/components/office/labels.ts`, `messages/en.json`, `messages/id.json`
+- Test: `tests/hud/OfficeChips.test.tsx`, `tests/hud/OfficeBody.test.tsx`, `tests/hud/OfficePanel.test.tsx`, `tests/unit/office-crew-summary.test.ts`, `tests/unit/office-card-labels.test.ts`, `e2e/office-classic.spec.ts` (no layout shift with helpers)
+
+**Interfaces:**
+- Produces: message `office.helpers` = `"{n, plural, one {# helper} other {# helpers}}"` (en) and `"{n, plural, other {# asisten}}"` (id);
+  `chipLines(r, t).head` = `"<Agent> · <activity> · <n helpers>"` when `r.helpers > 0`; chip pill `"+<n - 4>"` when
+  `r.helpers > 4`; phone compact chips add the helpers text to `aria-label` only.
+
+- [ ] **Step 1: Tests first:** chip head "Copilot · Editing · 3 helpers" and "Copilot · Mengedit · 3 asisten"; "1 helper";
+  no helpers text at 0; a "+2" pill at 6; the desk drawer shows the same head; `crewLines` says "... is editing with 3
+  helpers"; the Classic card row reads "Editing · 3 helpers" on the activity line (its labels resolved server-side through
+  `officeCardLabels`, the count filled by `fill`), and `e2e/office-classic.spec.ts` adds a fixture with helpers to its
+  no-layout-shift states at 1440x900 and 390x844 in both locales.
+- [ ] **Step 2:** Run; expect FAIL.
+- [ ] **Step 3: Implement** the strings and the four places. The Classic row truncates (`truncate`) so the row height is
+  unchanged; `OFFICE_RESERVE` stays as it is (the e2e proves it).
+- [ ] **Step 4:** Run the listed tests plus `messages` and `client-namespaces`; expected PASS.
+- [ ] **Step 5:** Commit `feat(office): helper counts on chips, drawer, summary and the Classic card`.
+
+### Task 14: E2E, probes and fixtures
 
 **Files:**
 - Modify: `e2e/office-fixtures.ts` (a fixture per state lineup: `CREW_A` working, thinking, ci, input, done; `CREW_B` failed, asleep, working, thinking, asleep), `e2e/office.spec.ts`
@@ -1563,10 +1800,12 @@ test("reduced motion holds the poses @office", async ({ page }) => {
 ```
 
 Add `__hq.office.watchNow()` (main path, test hook: runs one watch tick now) beside the existing `__hq.office` hooks.
+Add a drone test: a fixture desk with `helpers: 3` draws 3 drones (probe `__hq.probes.office.drones[slot]`), one with 6
+draws 4 and its chip shows "+2", reduced motion keeps the drone positions still across frames.
 - [ ] **Step 2:** `bun run build && bun run e2e:changed`; expected PASS (the office specs and the smoke set).
 - [ ] **Step 3:** Commit `test(office): crew states, beacon and reduced motion e2e`.
 
-### Task 11: Budgets and the perf lane
+### Task 15: Budgets and the perf lane
 
 **Files:**
 - Modify: `e2e/budgets.ts`, `e2e/perf/*` (the office stop and spawn-with-beacon spots), `docs/agents/performance.md`
@@ -1583,12 +1822,13 @@ Add `__hq.office.watchNow()` (main path, test hook: runs one watch tick now) bes
   `docs/agents/performance.md` and the AGENTS.md budget table rows for the office chunks if their values changed.
 - [ ] **Step 5:** Commit `perf(office): crew budgets measured and re-set`.
 
-### Task 12: Captures and the states video
+### Task 16: Captures and the states video
 
 **Files:**
 - Modify: `scripts/office-shots.ts` (shots `crew-a`, `crew-b`, `beacon-spawn`; a `--video` flag)
 
-- [ ] **Step 1:** Add the shots: `crew-a` and `crew-b` at the office stop from `CREW_A` and `CREW_B`; `beacon-spawn` at the
+- [ ] **Step 1:** Add the shots: `crew-a` and `crew-b` at the office stop from `CREW_A` and `CREW_B` (each with one desk
+  carrying `helpers: 3` and one `helpers: 6`, realistic public titles, no debug labels); `beacon-spawn` at the
   primed spawn with one desk asking. Add `--video <dir>`: a 1440x900 full-tier context with `recordVideo`, driving to
   the stop and feeding `CREW_A`, then `CREW_B`, then the all-asleep fixture, about 6 s each (waits on the crew probe
   between feeds, the length is the recording's, not a test wait), saved as `crew-states.webm`.
@@ -1599,17 +1839,20 @@ Add `__hq.office.watchNow()` (main path, test hook: runs one watch tick now) bes
 - [ ] **Step 4:** Send the captures and the video to the coordinator (`send_session_message`), then wait for the owner's
   review before merge. Commit the script change: `chore(office): crew captures and states video`.
 
-### Task 13: Docs and the PR
+### Task 17: Docs and the PR
 
 - [ ] **Step 1:** Update `docs/agents/office.md` (signal and watch, beacon, minimap cue), `docs/agents/floor-l1-lobby.md`
   (Agent Office: layout rows for the tower and dock, rendering counts, states table with the crew motions, probes, tests),
   `docs/features.md` (L1 Agent Office bullets and the status log line), and set this plan's `Status:` to `in review`.
 - [ ] **Step 2:** `bun run verify:quick && bun run e2e:changed`; check CI in flight (`gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`), then push and open a ready-for-review PR titled `feat(office): the living crew (revamp part A)` with the captures summary and the measured budgets.
-- [ ] **Step 3:** After merge, set `Status: shipped in #N (sha), date` in a follow-up docs commit of stage B.
+- [ ] **Step 3:** After merge, send the coordinator the relay reinstall steps from `tools/office-relay/README.md`
+  (pull main, `bun tools/office-relay/src/cli.ts install`, restart the three CLIs, Codex `/hooks` trust, `office-relay status`
+  to confirm the new events and the install time), and set `Status: shipped in #N (sha), date` in a follow-up docs commit of stage B.
 
 ## Self-review notes
 
-- Spec 5.1 to 5.7 map to Tasks 1 to 10; budgets (spec 8) to Task 11; captures and process (spec 13) to Tasks 12 and 13.
+- Spec 5.1 to 5.7 map to Tasks 1 to 9 and 14; 5.8 (helpers) to Tasks 10 to 13; budgets (spec 8) to Task 15; captures
+  and process (spec 13) to Tasks 16 and 17.
 - The flag plate is an atlas quad (no instance colour on the parts mesh, which would compile a new program variant),
   so `PARTS_PER_ROVER` grows by one (the pole), not two.
 - Names used across tasks: `CrewLook`, `stepCrew`, `crewFx`, `CREW_GLOW`, `GLOW_PER_ROVER`, `TOWER`, `towerLanes`,
