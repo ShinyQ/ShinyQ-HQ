@@ -76,19 +76,24 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
   };
 }
 
+/** "3 helpers" / "3 asisten" for a Rover with active helpers, else null. */
+export const helpersText = (r: Pick<OfficeRoverView, "helpers">, t: OfficeTranslate): string | null => (r.helpers > 0 ? t("helpers", { n: r.helpers }) : null);
+
 /**
- * Chip text: the agent's name ("Off duty" without one), "<Agent> · <activity>", the title or "Client project" (not for
- * sleeping Rovers), CI progress (0 to 1), and the full text for the chip's label: "Desk <n>: <head>, <task>, <done> of
- * <total> jobs".
+ * Chip text: the agent's name ("Off duty" without one), `base` "<Agent> · <activity>", `head` that plus the helpers
+ * ("<Agent> · <activity> · 3 helpers"), the helpers text alone, the title or "Client project" (not for sleeping Rovers),
+ * CI progress (0 to 1), and the full text for the chip's label: "Desk <n>: <head>, <task>, <done> of <total> jobs".
  */
-export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: string; head: string; task: string | null; progress: number | null; label: string } {
+export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: string; base: string; head: string; helpers: string | null; task: string | null; progress: number | null; label: string } {
   const name = r.agent ? t(`agent.${r.agent}`) : t("3d.offDuty");
-  const head = r.agent ? `${name} · ${t(`activity.${r.activity}`)}` : name;
+  const base = r.agent ? `${name} · ${t(`activity.${r.activity}`)}` : name;
+  const helpers = r.agent ? helpersText(r, t) : null;
+  const head = helpers ? `${base} · ${helpers}` : base;
   const task = r.agent && r.state !== "asleep" ? (r.title ?? t("clientProject")) : null;
   const ci = r.progress && r.progress.total > 0 ? r.progress : null;
   const progress = ci ? Math.min(1, ci.done / ci.total) : null;
   const label = [t("3d.target.desk", { n: r.slot + 1, agent: head }), task, ci && t("3d.jobs", { done: ci.done, total: ci.total })].filter(Boolean).join(", ");
-  return { name, head, task, progress, label };
+  return { name, base, head, helpers, task, progress, label };
 }
 
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {

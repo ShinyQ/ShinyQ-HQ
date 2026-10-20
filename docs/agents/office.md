@@ -167,7 +167,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
   the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
 - What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
-  activity and task, the latest 4 public GitHub events and today's numbers (without the CI clause on a day with no
+  activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
+  raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with
+  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub events and today's numbers (without the CI clause on a day with no
   runs). No privacy note shows on the card or in the 3D drawers (owner request 2026-10-20); the rule itself is unchanged
   ([Privacy](#privacy-owner-decision-d3)).
   - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
@@ -189,7 +191,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
   on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in
   both locales, 1020 for an Indonesian semi-live line at 320), about 8 px of headroom over the tallest.
-  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, offline before and after a snapshot)
+  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, offline before and after a snapshot)
   moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
   `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks

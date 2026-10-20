@@ -6,11 +6,15 @@ import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeRes
  */
 export const POLL = { activeMs: 10_000, restingMs: 30_000, idleStopMs: 600_000, keepLastMs: 60_000 } as const;
 
+/** The snapshot v2 request (desk helpers) the 3D office and the Classic card make. */
+export const OFFICE_V2_PATH = `${OFFICE_PATH}?v=2`;
+
 export type OfficeFeedStatus = "idle" | "loading" | "ready" | "offline" | "disabled";
 
 /**
- * The v2 snapshot shape with either version number: the 3D office polls v2, the Classic card still v1 (whose desks
- * simply carry no `helpers`), so every consumer reads one type.
+ * The v2 snapshot shape with either version number: the 3D office and the Classic card poll v2 (`OFFICE_V2_PATH`,
+ * `parseOfficeResponseV2`), while unit fixtures and other callers may still hand in a v1 snapshot (whose desks simply
+ * carry no `helpers`), so every consumer reads one type.
  */
 export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshot["v"] };
 
@@ -33,7 +37,7 @@ export interface OfficePoller {
 }
 
 export interface OfficePollerOptions {
-  /** What to fetch (default `OFFICE_PATH`, v1); the 3D office asks `${OFFICE_PATH}?v=2`. */
+  /** What to fetch (default `OFFICE_PATH`, v1); both clients ask `OFFICE_V2_PATH`. */
   path?: string;
   /** The body's validator for that path (default `parseOfficeResponse`, v1). */
   parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | null;

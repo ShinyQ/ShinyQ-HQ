@@ -58,11 +58,14 @@ describe("Agent Office view model", () => {
 
   it("writes chip lines: the name, agent and activity, the title or Client project, CI progress, and the full label", () => {
     const view = ready(statesA(NOW));
-    expect(chipLines(view.rovers[0], t)).toEqual({ name: "Copilot", head: "Copilot · Editing", task: "Agent office scene", progress: null, label: "Desk 1: Copilot · Editing, Agent office scene" });
-    expect(chipLines(view.rovers[1], t)).toEqual({ name: "Claude", head: "Claude · Planning", task: "Client project", progress: null, label: "Desk 2: Claude · Planning, Client project" });
+    expect(chipLines(view.rovers[0], t)).toEqual({ name: "Copilot", base: "Copilot · Editing", head: "Copilot · Editing", helpers: null, task: "Agent office scene", progress: null, label: "Desk 1: Copilot · Editing, Agent office scene" });
+    expect(chipLines(view.rovers[1], t)).toEqual({ name: "Claude", base: "Claude · Planning", head: "Claude · Planning", helpers: null, task: "Client project", progress: null, label: "Desk 2: Claude · Planning, Client project" });
     expect(chipLines(view.rovers[4], t).progress).toBeCloseTo(7 / 12);
     expect(chipLines(view.rovers[4], t).label).toMatch(/^Desk 5: .+, Office chips, 7 of 12 jobs$/);
-    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", head: "Off duty", task: null, progress: null, label: "Desk 5: Off duty" });
+    const helpers = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
+    expect(chipLines(helpers.rovers[0], t)).toMatchObject({ base: "Copilot · Editing", head: "Copilot · Editing · 3 helpers", helpers: "3 helpers" });
+    expect(chipLines(helpers.rovers[0], t).label).toMatch(/^Desk 1: Copilot · Editing · 3 helpers, /);
+    expect(chipLines(ready(statesB(NOW)).rovers[4], t)).toEqual({ name: "Off duty", base: "Off duty", head: "Off duty", helpers: null, task: null, progress: null, label: "Desk 5: Off duty" });
   });
 
   it("feeds the desk screen the state's kind, the activity label and only protocol fields", () => {

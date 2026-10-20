@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/content/locales";
 import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
-import { createOfficePoller, POLL, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
-import { OFFICE_DESKS, type OfficeDesk, type OfficeGithubItem, type OfficeGithubStatus } from "@/lib/office/protocol";
+import { createOfficePoller, OFFICE_V2_PATH, POLL, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
+import { OFFICE_DESKS, parseOfficeResponseV2, type OfficeDeskV2, type OfficeGithubItem, type OfficeGithubStatus } from "@/lib/office/protocol";
 import { fill } from "./fill";
 import { OFFICE_RESERVE, type OfficeCardLabels } from "./labels";
 
@@ -45,7 +45,7 @@ function clock(locale: Locale, at: number): string {
 }
 
 /** The line under a desk: its title, else "Client project" while it works; a sleeping desk works on nothing (as in the 3D drawer). */
-function deskTask(desk: OfficeDesk, clientProject: string): string | null {
+function deskTask(desk: OfficeDeskV2, clientProject: string): string | null {
   return deskTitle(desk) ?? (desk.state === "asleep" ? null : clientProject);
 }
 
@@ -53,15 +53,22 @@ function Dot({ tone, className = "" }: { tone: string; className?: string }) {
   return <span aria-hidden="true" className={`inline-block size-2 shrink-0 rounded-full ${className}`} style={{ backgroundColor: tone }} />;
 }
 
+/** "Copilot · Editing", plus " · 3 helpers" while an awake desk has helpers (one line that truncates, so the row keeps its height). */
+function deskHead(desk: OfficeDeskV2, labels: OfficeCardLabels, locale: Locale): string {
+  const head = `${labels.agentNames[desk.agent]} \u00b7 ${labels.activities[desk.activity]}`;
+  const helpers = desk.state === "asleep" ? 0 : (desk.helpers ?? 0);
+  return helpers > 0 ? `${head} \u00b7 ${fill(labels.helpers, { n: helpers }, locale)}` : head;
+}
+
 /** One of the five desks: its session, or "Off duty" (asleep, no task) like the 3D office. */
-function DeskRow({ desk, labels }: { desk: OfficeDesk | undefined; labels: OfficeCardLabels }) {
+function DeskRow({ desk, labels, locale }: { desk: OfficeDeskV2 | undefined; labels: OfficeCardLabels; locale: Locale }) {
   const task = desk ? deskTask(desk, labels.clientProject) : null;
   const state = desk?.state ?? "asleep";
   return (
     <li data-testid="office-desk" data-state={desk ? state : "off-duty"} className="grid grid-cols-[auto_1fr_auto] items-baseline gap-3 py-3">
       <Dot tone={STATE_TONE[state]} />
       <span className="min-w-0">
-        <span className="block truncate text-ink">{desk ? `${labels.agentNames[desk.agent]} \u00b7 ${labels.activities[desk.activity]}` : labels.offDuty}</span>
+        <span className="block truncate text-ink">{desk ? deskHead(desk, labels, locale) : labels.offDuty}</span>
         {task ? (
           <span data-testid="office-task" className="block truncate text-sm text-ink-2">
             {task}
@@ -99,15 +106,15 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
 }
 
 /**
- * The Classic home card (lazy chunk): counts, the five desks, the latest public GitHub events and today (spec
- * section 4.2). Every state draws the same rows (an empty desk is "Off duty", empty GitHub slots stay as
+ * The Classic home card (lazy chunk): counts, the five desks (with their helpers, from snapshot v2), the latest public
+ * GitHub events and today (spec section 4.2). Every state draws the same rows (an empty desk is "Off duty", empty GitHub slots stay as
  * quiet rows, offline keeps the last known rows dimmed), so the card keeps one height (`OFFICE_RESERVE`). Polls only
  * while the card is within a screen of the viewport; the poller skips hidden tabs, stops after 10 min without input,
  * and keeps the last snapshot 60 s before reporting offline. A disabled office hides the section only once it is off
  * screen, so the switch never moves what the visitor is reading.
  */
 export function OfficePanel({ locale, labels, onStatus, poller: injected, now = Date.now }: OfficePanelProps) {
-  const poller = useMemo(() => injected ?? createOfficePoller(), [injected]);
+  const poller = useMemo(() => injected ?? createOfficePoller({ path: OFFICE_V2_PATH, parse: parseOfficeResponseV2 }), [injected]);
   const [feed, setFeed] = useState<OfficeFeed>(() => poller.feed());
   const [onScreen, setOnScreen] = useState(false);
   const [, setTick] = useState(0);
@@ -226,7 +233,7 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
           <h3 className="pv-data mt-8">{labels.agents}</h3>
           <ul className="pv-rows pv-rows-closed mt-3">
             {SLOTS.map((slot) => (
-              <DeskRow key={slot} desk={desks.find((d) => d.slot === slot)} labels={labels} />
+              <DeskRow key={slot} desk={desks.find((d) => d.slot === slot)} labels={labels} locale={locale} />
             ))}
           </ul>
           <p data-testid="office-extra" aria-hidden={extra ? undefined : true} className="pv-date mt-2">

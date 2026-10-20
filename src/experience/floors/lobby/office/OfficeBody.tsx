@@ -14,7 +14,7 @@ import { officeDeskRoom, type OfficeTranslate } from "../officeLayout";
 import { loadOffice } from "./chunk";
 import { crewAnnouncement, crewLines } from "./crewSummary";
 import { officeLive, useOfficeFeed } from "./live";
-import { chipLines, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
+import { chipLines, helpersText, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
 // Existing classes only (no new Tailwind utilities: the CSS budget rides on every page).
@@ -52,6 +52,7 @@ function Field({ label, children, testId }: { label: string; children: ReactNode
 function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; updatedAt: number | null; locale: Locale; now: number }) {
   const t = useTranslations("office");
   const repo = safeRepoUrl(rover.repo);
+  const helpers = rover.agent ? helpersText(rover, t) : null;
   // A public repository without a title is not a client project: say the title was not shared instead.
   const task = !rover.agent ? t("3d.drawer.none") : (rover.title ?? (rover.state === "asleep" ? t("3d.drawer.none") : repo ? t("3d.drawer.untitled") : t("3d.clientPrivate")));
   return (
@@ -62,7 +63,9 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
       </p>
       <dl className="space-y-2 text-[15px] leading-6">
         <Field label={t("3d.drawer.agent")}>{rover.agent ? t(`3d.agentFull.${rover.agent}`) : t("3d.offDuty")}</Field>
-        <Field label={t("3d.drawer.activity")}>{t(`activity.${rover.activity}`)}</Field>
+        <Field label={t("3d.drawer.activity")} testId="office-activity">
+          {helpers ? `${t(`activity.${rover.activity}`)} · ${helpers}` : t(`activity.${rover.activity}`)}
+        </Field>
         <Field label={t("3d.drawer.task")} testId="office-task">
           {task}
         </Field>

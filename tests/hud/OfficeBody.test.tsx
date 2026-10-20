@@ -7,7 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
-import type { OfficeFeed } from "@/lib/office/poll";
+import { OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
 import type { OfficeDesk } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
@@ -97,6 +98,25 @@ describe("Agent Office drawers", () => {
     expect(getHQStore().getState().activeRoom).toBe("L1:office-desk-3");
     expect(screen.getAllByTestId("metric").map((m) => m.textContent)).toEqual([`3${o.drawer.tasksDone}`, `2${o.drawer.prsMerged}`, `5/6${o.drawer.ciGreen}`]);
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.hooks);
+  });
+
+  it("shows a desk's helpers on its activity and on the summary's agent rows, in both locales", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
+    body({ panel: "desk", slot: 0 }, "L1:office-desk-1");
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Editing · 3 helpers$/);
+    cleanup();
+    body({ panel: "desk", slot: 1 }, "L1:office-desk-2");
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Planning$/);
+    cleanup();
+    body({ panel: "summary" });
+    const rows = screen.getAllByTestId("office-agent");
+    expect(rows[0]).toHaveTextContent("Desk 1: Copilot · Editing · 3 helpers");
+    expect(rows[2]).toHaveTextContent("Desk 3: Copilot · Watching CI · 6 helpers");
+    expect(rows[1]).not.toHaveTextContent("helper");
+    expect(screen.getByTestId("office-crew")).toHaveTextContent("Desk 1: Copilot is working with 3 helpers");
+    cleanup();
+    render(tree({ panel: "desk", slot: 0 }, "L1:office-desk-1", "id"));
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Mengedit · 3 asisten$/);
   });
 
   it("lists public GitHub activity with status, links and progress, and its note", () => {

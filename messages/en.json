@@ -1229,6 +1229,7 @@
     "state": { "working": "Working", "thinking": "Thinking", "reviewing": "Reviewing", "testing": "Running tests", "ci": "Waiting on CI", "input": "Needs Kurniadi", "done": "Done", "failed": "CI failed", "asleep": "Asleep" },
     "activity": { "editing": "Editing", "planning": "Planning", "reading": "Reading", "testing": "Testing", "building": "Building", "shell": "Running commands", "ci": "Watching CI", "git": "Using git", "asking": "Asking Kurniadi", "finished": "Finished", "failed": "Failed", "resting": "Resting" },
     "clientProject": "Client project",
+    "helpers": "{n, plural, one {# helper} other {# helpers}}",
     "classic": {
       "title": "Live Agent Office",
       "intro": "The AI coding agents Kurniadi works with, shown live: what each one is doing right now, plus public GitHub activity. The same office stands in a wing of the 3D Lobby.",
@@ -1266,7 +1267,7 @@
       "drawer": { "agent": "Agent", "activity": "Activity", "task": "Task", "repo": "Repository", "since": "In this state", "updated": "Last update", "recent": "Recent activity", "agents": "Agents", "today": "Today", "tasksDone": "Tasks done", "prsMerged": "PRs merged", "ciGreen": "CI runs green", "none": "Nothing right now", "offline": "The office is offline. This is the last known activity.", "offlineEmpty": "The office is offline right now. Try again in a few minutes.", "loading": "Connecting to the live office.", "disabled": "The live office is off right now.", "untitled": "No title shared" },
       "crew": {
         "title": "Crew now",
-        "line": "Desk {n}: {agent} is {state}{time, select, none {} other {, since {time}}}",
+        "line": "Desk {n}: {agent} is {state}{helpers, select, none {} other { with {helpers}}}{time, select, none {} other {, since {time}}}",
         "offDuty": "Desk {n}: off duty",
         "change": "Desk {n}: {agent} is now {state}.",
         "mode": {

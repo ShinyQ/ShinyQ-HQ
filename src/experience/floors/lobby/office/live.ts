@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { createOfficePoller, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH, parseOfficeResponseV2 } from "@/lib/office/protocol";
+import { createOfficePoller, OFFICE_V2_PATH, type OfficeFeed } from "@/lib/office/poll";
+import { parseOfficeResponseV2 } from "@/lib/office/protocol";
 
 /**
  * The 3D office's one poller (`src/lib/office/poll.ts`). It runs while any reason wants it: the office in view on
@@ -9,7 +9,7 @@ import { OFFICE_PATH, parseOfficeResponseV2 } from "@/lib/office/protocol";
  * also accepts a v1 body after a rollback. Chunk only.
  */
 const clock = { skew: 0 };
-const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: `${OFFICE_PATH}?v=2`, parse: parseOfficeResponseV2 });
+const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V2_PATH, parse: parseOfficeResponseV2 });
 const wants = new Set<string>();
 const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;

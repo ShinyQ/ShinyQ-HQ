@@ -5,10 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OfficeLazy, OfficeShell } from "@/components/office/OfficeLazy";
 import { OfficePanel } from "@/components/office/OfficePanel";
 import { OFFICE_RESERVE, type OfficeCardLabels } from "@/components/office/labels";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "@/lib/office/fixtures";
-import { POLL, type OfficeFeed, type OfficePoller } from "@/lib/office/poll";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { POLL, type OfficeFeed, type OfficeFeedSnapshot, type OfficePoller } from "@/lib/office/poll";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 import en from "../../messages/en.json";
+import ids from "../../messages/id.json";
 
 const c = en.office.classic;
 const labels: OfficeCardLabels = {
@@ -16,6 +17,7 @@ const labels: OfficeCardLabels = {
   disabled: en.office["3d"].drawer.disabled,
   offDuty: en.office["3d"].offDuty,
   clientProject: en.office.clientProject,
+  helpers: en.office.helpers,
   states: en.office.state,
   activities: en.office.activity,
   agentNames: en.office.agent,
@@ -148,6 +150,41 @@ describe("OfficePanel", () => {
     });
     expect(snap.desks.some((d) => d.state === "asleep" && !d.title)).toBe(true);
     expect(snap.desks.some((d) => d.state !== "asleep" && !d.title)).toBe(true);
+  });
+
+  it("shows an awake desk's helpers after its activity on the same truncating line (one helper, Indonesian asisten)", () => {
+    const v2 = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
+    const { poller } = fakePoller({ status: "ready", snapshot: v2, fetchedAt: OFFICE_FIXTURE_NOW });
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const heads = screen.getAllByTestId("office-desk").map((d) => d.querySelector(".truncate")!);
+    expect(heads[0].textContent).toBe("Copilot \u00b7 Editing \u00b7 3 helpers");
+    expect(heads[2].textContent).toBe("Copilot \u00b7 Watching CI \u00b7 6 helpers");
+    expect(heads[1].textContent).toBe("Claude \u00b7 Planning");
+    expect(heads[0]).toHaveClass("block", "truncate");
+    cleanup();
+    const one = fakePoller({ status: "ready", snapshot: { ...v2, desks: v2.desks.map((d) => (d.slot === 0 ? { ...d, helpers: 1 } : d)) }, fetchedAt: OFFICE_FIXTURE_NOW });
+    render(<OfficePanel locale="en" labels={labels} poller={one.poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(screen.getAllByTestId("office-desk")[0].querySelector(".truncate")!.textContent).toBe("Copilot \u00b7 Editing \u00b7 1 helper");
+    cleanup();
+    const idLabels = { ...labels, helpers: ids.office.helpers, activities: ids.office.activity } as OfficeCardLabels;
+    const again = fakePoller({ status: "ready", snapshot: v2, fetchedAt: OFFICE_FIXTURE_NOW });
+    render(<OfficePanel locale="id" labels={idLabels} poller={again.poller} now={() => OFFICE_FIXTURE_NOW} />);
+    expect(screen.getAllByTestId("office-desk")[0].querySelector(".truncate")!.textContent).toBe("Copilot \u00b7 Mengedit \u00b7 3 asisten");
+  });
+
+  it("polls snapshot v2 by default and reads a v1 body (a rollback) as a desk list without helpers", async () => {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        urls.push(String(url));
+        return { status: 200, json: async () => OFFICE_FIXTURES.busy } as unknown as Response;
+      }),
+    );
+    render(<OfficePanel locale="en" labels={labels} />);
+    await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "ready"));
+    expect(urls[0]).toBe("/api/office?v=2");
+    expect(screen.getAllByTestId("office-desk")[0].querySelector(".truncate")!.textContent).toBe("Copilot \u00b7 Editing");
   });
 
   it("drops the CI clause from today when no run happened", () => {
@@ -360,7 +397,7 @@ describe("OfficeLazy", () => {
     expect(screen.getByRole("status").textContent).toBe(labels.disabled);
     io.fire(false);
     await waitFor(() => expect(section).toHaveAttribute("data-status", "disabled"));
-    expect(fetcher).toHaveBeenCalledWith("/api/office", expect.objectContaining({ credentials: "omit" }));
+    expect(fetcher).toHaveBeenCalledWith("/api/office?v=2", expect.objectContaining({ credentials: "omit" }));
     expect(section).not.toBeVisible();
   });
 });

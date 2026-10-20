@@ -62,7 +62,7 @@ export function wallModel(view: OfficeView, t: OfficeTranslate, locale: "en" | "
       { value: c.asleep, label: t("3d.wall.asleep"), color: "#8a93b5" },
     ],
     nowTitle: t("3d.wall.now"),
-    now: awake.slice(0, 2).map((r) => ({ color: OFFICE_STATE_STYLE[r.state].color, head: chipLines(r, t).head, sub: r.title ?? t("clientProject") })),
+    now: awake.slice(0, 2).map((r) => ({ color: OFFICE_STATE_STYLE[r.state].color, head: chipLines(r, t).base, sub: r.title ?? t("clientProject") })),
     resting: awake.length ? null : t("3d.wall.resting"),
     today: view.today ? t("3d.wall.today", { tasks: view.today.tasksDone, prs: view.today.prsMerged, green: view.today.ciGreen, runs: view.today.ciRuns }) : null,
     github: t("3d.wall.github"),

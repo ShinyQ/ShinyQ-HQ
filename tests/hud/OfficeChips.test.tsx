@@ -6,6 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import type { OfficeFeed } from "@/lib/office/poll";
 import { getHQStore } from "@/store/useHQStore";
+import ids from "../../messages/id.json";
+import { OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import { statesA, statesB } from "../../e2e/office-fixtures";
 
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed }));
@@ -50,6 +53,54 @@ describe("Agent Office chips", () => {
     expect(chip(4).querySelector("[data-progress]")).toHaveAttribute("data-progress", "58");
     expect(chip(0)).toHaveAttribute("data-state", "working");
     expect(officeRuntime.chips.every((el) => el instanceof HTMLElement)).toBe(true);
+  });
+
+  it("adds the helpers to a near chip's head and label, with a +N pill past the four drones drawn", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
+    renderChips();
+    expect(chip(0).querySelector(".truncate")).toHaveTextContent(/^Copilot · Editing · 3 helpers$/);
+    expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Desk 1: Copilot · Editing · 3 helpers, /));
+    expect(chip(0).querySelector("[data-testid=office-chip-more]")).toBeNull();
+    expect(chip(2).querySelector(".truncate")).toHaveTextContent(/^Copilot · Watching CI · 6 helpers$/);
+    expect(chip(2).querySelector("[data-testid=office-chip-more]")).toHaveTextContent(/^\+2$/);
+    expect(chip(2).querySelector("[data-testid=office-chip-more]")).toHaveAttribute("aria-hidden", "true");
+    expect(chip(1)).not.toHaveTextContent(/helper|\+/);
+    expect(chip(1)).toHaveAttribute("aria-label", `Desk 2: Claude · Planning, ${en.office.clientProject}`);
+  });
+
+  it("says one helper, and in Indonesian asisten", () => {
+    const snap = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
+    live.feed = { status: "ready", snapshot: { ...snap, desks: snap.desks.map((d) => (d.slot === 0 ? { ...d, helpers: 1 } : d)) }, fetchedAt: Date.now() };
+    const { unmount } = renderChips();
+    expect(chip(0).querySelector(".truncate")).toHaveTextContent(/^Copilot · Editing · 1 helper$/);
+    unmount();
+    live.feed = { status: "ready", snapshot: snap, fetchedAt: Date.now() };
+    render(
+      <NextIntlClientProvider locale="id" messages={ids}>
+        <OfficeChips />
+      </NextIntlClientProvider>,
+    );
+    expect(chip(0).querySelector(".truncate")).toHaveTextContent(/^Copilot · Mengedit · 3 asisten$/);
+    expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Meja 1: Copilot · Mengedit · 3 asisten, /));
+  });
+
+  it("shows a far chip's helpers as a small +N count after the name, and a phone's dot keeps them in its label only", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
+    renderChips();
+    act(() => setChipFar(2, true));
+    expect(chip(2)).toHaveTextContent(/^Copilot\+6$/);
+    expect(chip(2).querySelector("[data-testid=office-chip-helpers]")).toHaveAttribute("aria-hidden", "true");
+    expect(chip(2).querySelector("[data-testid=office-chip-more]")).toBeNull();
+    expect(chip(2)).toHaveAttribute("aria-label", expect.stringContaining("Copilot · Watching CI · 6 helpers"));
+    act(() => setChipFar(1, true));
+    expect(chip(1)).toHaveTextContent(/^Claude$/);
+    cleanup();
+    getHQStore().setState({ device: { viewport: "mobile", camera: "mobile", coarse: true } });
+    renderChips();
+    act(() => setChipFar(0, true));
+    expect(chip(0)).toHaveAttribute("data-compact", "true");
+    expect(chip(0)).toHaveTextContent(/^$/);
+    expect(chip(0)).toHaveAttribute("aria-label", expect.stringContaining("3 helpers"));
   });
 
   it("draws a hidden 1 px leader line per chip in its state's colour, out of the way of pointers and the accessibility tree", () => {

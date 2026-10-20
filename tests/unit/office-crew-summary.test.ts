@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { crewAnnouncement, crewLines } from "@/experience/floors/lobby/office/crewSummary";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import { OFFICE_STATES, type OfficeSnapshotV1 } from "@/lib/office/protocol";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
@@ -35,6 +36,18 @@ describe("crew summary", () => {
     expect(lines[3]).toBe(`Meja 4: Codex sedang menunggu Kurniadi, sejak ${clock(sinceOf(3), "id")}`);
     expect(clock(Date.UTC(2026, 0, 1, 14, 2), "id")).toMatch(/^\d{2}\.\d{2}$/);
     expect(crewLines(view(statesB(OFFICE_FIXTURE_NOW)), tId, "id")[4]).toBe("Meja 5: tidak bertugas");
+  });
+
+  it("says how many helpers an awake desk has, in both locales", () => {
+    const v2 = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
+    const helpers = officeView({ status: "ready", snapshot: v2 });
+    expect(crewLines(helpers, t, "en")[0]).toBe(`Desk 1: Copilot is working with 3 helpers, since ${clock(sinceOf(0))}`);
+    expect(crewLines(helpers, t, "en")[2]).toMatch(/^Desk 3: Copilot is waiting on CI with 6 helpers, since /);
+    expect(crewLines(helpers, t, "en")[1]).toBe(`Desk 2: Claude is thinking, since ${clock(sinceOf(1))}`);
+    expect(crewLines(helpers, tId, "id")[0]).toBe(`Meja 1: Copilot sedang bekerja dengan 3 asisten, sejak ${clock(sinceOf(0), "id")}`);
+    const one = officeView({ status: "ready", snapshot: { ...v2, desks: v2.desks.map((d) => (d.slot === 0 ? { ...d, helpers: 1 } : d)) } });
+    expect(crewLines(one, t, "en")[0]).toMatch(/^Desk 1: Copilot is working with 1 helper, since /);
+    expect(crewLines(officeView({ status: "offline", snapshot: v2 }), t, "en")[0]).toBe("Desk 1: Copilot is asleep");
   });
 
   it("drops the time for a sleeping office (no since)", () => {

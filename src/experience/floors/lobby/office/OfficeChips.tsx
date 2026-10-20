@@ -6,6 +6,7 @@ import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
 import { CHIP_ROW } from "../officeShell";
+import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
 import { chipLines, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
@@ -13,9 +14,10 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
- * (never an edge stripe) with the agent's name, "<Agent> · <activity>" when near (at most `CHIP_ROW.max` px wide, or the row's
+ * (never an edge stripe) with the agent's name (and a small "+3" while it has helpers), "<Agent> · <activity> · 3 helpers"
+ * when near, with a "+2" pill past the four drones drawn (6 helpers) (at most `CHIP_ROW.max` px wide, or the row's
  * fit `chipMaxWidth` that `OfficeWatch` writes, a longer line ends in an ellipsis; one line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the
- * full text (`chipLines`: agent, activity, the title or "Client project", CI progress) at any distance.
+ * full text (`chipLines`: agent, activity, helpers, the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
  * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
  * frame (HintProbe pattern) through `officeRuntime.chips`, with its leader line (`officeRuntime.leads`: 1 px in the
@@ -28,6 +30,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
   const plain = useChipsCompact();
   const compact = useHQStore((s) => far && (plain || s.device.viewport === "mobile"));
   const line = chipLines(rover, t);
+  const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
   return (
     <>
@@ -66,6 +69,16 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
           <span className="glass glass-solid inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink" style={{ maxWidth: "100%" }}>
             <span aria-hidden="true" className="hq-dot hq-dot-md shrink-0" style={{ color }} />
             <span className="min-w-0 truncate">{far ? line.name : line.head}</span>
+            {line.helpers && far && (
+              <span aria-hidden="true" data-testid="office-chip-helpers" className="shrink-0 text-xs text-ink-2">
+                {`+${rover.helpers}`}
+              </span>
+            )}
+            {more > 0 && !far && (
+              <span aria-hidden="true" data-testid="office-chip-more" className="shrink-0 rounded-full border border-glass-border px-1.5 text-xs text-ink-2">
+                {`+${more}`}
+              </span>
+            )}
           </span>
         )}
         {!far && line.progress !== null && (
