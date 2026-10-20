@@ -94,6 +94,14 @@ describe("tower lanes (v1: anonymous progress)", () => {
     expect(lanes.done).toBeLessThanOrEqual(lanes.total);
     expect(lanes).toEqual({ total: 12, done: 7, running: true });
   });
+  it("scales done past 24 jobs instead of clamping", () => {
+    const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
+    const runs = (done: number, total: number): OfficeSnapshotV1 => ({ ...busy, github: busy.github.map((g) => (g.kind === "run" && g.status === "running" ? { ...g, progress: { done, total } } : g)) });
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(30, 48) }))).toEqual({ total: 24, done: 15, running: true });
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(47, 48) }))).toEqual({ total: 24, done: 23, running: true });
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(48, 48) }))).toEqual({ total: 24, done: 24, running: true });
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(5, 12) }))).toEqual({ total: 12, done: 5, running: true });
+  });
   it("is dark and keyed still without a run", () => {
     const view = officeView({ status: "ready", snapshot: OFFICE_FIXTURES.quiet as OfficeSnapshotV1 });
     const lanes = towerLanes(view);
@@ -101,6 +109,12 @@ describe("tower lanes (v1: anonymous progress)", () => {
     const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
     const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
     writeTower(lanes, 3, false, m, c);
+    for (let i = TOWER.start; i < TOWER.start + TOWER.lanes * TOWER.dots; i++) {
+      const rgb = [c[i * 3], c[i * 3 + 1], c[i * 3 + 2]];
+      expect(Math.max(...rgb)).toBeGreaterThan(0);
+      expect(Math.max(...rgb)).toBeLessThan(0.02);
+    }
     expect(towerKey(lanes, 3, true)).toBe(towerKey(lanes, 8, true));
+    expect(towerKey(lanes, 3, false)).toBe(towerKey(lanes, 8.37, false));
   });
 });

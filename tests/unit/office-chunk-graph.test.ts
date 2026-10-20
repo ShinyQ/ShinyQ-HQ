@@ -17,6 +17,9 @@ const OFFICE_ONLY = [
   `${DIR}/officeAtlas.ts`,
   `${DIR}/officeModel.ts`,
   `${DIR}/officeWall.ts`,
+  `${DIR}/crew.ts`,
+  `${DIR}/crewFx.ts`,
+  `${DIR}/crewFrame.ts`,
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
@@ -79,7 +82,7 @@ describe("Agent Office chunk boundary", () => {
     const body = staticClosure(BODY);
     expect(BODY_ONLY.filter((f) => !body.has(f))).toEqual([]);
     // Turbopack copies a module shared by the two async chunks into each one: the body stays off the canvas and 3D code.
-    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
+    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "crew.ts", "crewFx.ts", "crewFrame.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
     expect(sceneOnly.filter((f) => body.has(f))).toEqual([]);
     const loader = readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8");
     expect(loader.match(/import\(\s*["'][^"']*["']\s*\)/g)).toEqual([`import("./scene")`, `import("./body")`]);

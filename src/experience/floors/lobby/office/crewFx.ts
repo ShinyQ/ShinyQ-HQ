@@ -90,13 +90,15 @@ export interface TowerLanes {
   running: boolean;
 }
 
-/** Stage A (v1 data): the newest running public run's progress as anonymous lanes; dark without one. */
+/** Stage A (v1 data): the newest running public run's progress as anonymous lanes (scaled to 24 past 24 jobs); dark without one. */
 export function towerLanes(view: OfficeView): TowerLanes {
   let run: OfficeView["github"][number] | null = null;
   for (const g of view.github) if (g.kind === "run" && g.status === "running" && (!run || g.at > run.at)) run = g;
   if (!run) return { total: 0, done: 0, running: false };
-  const total = Math.min(TOWER.lanes, run.progress?.total ?? 1);
-  return { total, done: Math.min(total, run.progress?.done ?? 0), running: true };
+  const jobs = run.progress?.total ?? 1;
+  const total = Math.min(TOWER.lanes, jobs);
+  const done = Math.min(jobs, run.progress?.done ?? 0);
+  return { total, done: jobs > TOWER.lanes ? Math.floor((done * total) / jobs) : done, running: true };
 }
 
 const COL = officeTowerColumn(LOBBY.officeWing);
