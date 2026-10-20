@@ -2,8 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: planned (2026-10-20); look approved by the owner 2026-10-20 (thought trail only, beacon 1.6 u wide, slim LED-lane
-tower, the done spin ending on the camera, no debug labels in captures); coding waits on the office enhancement PR.
+Status: in review; look approved by the owner 2026-10-20 (thought trail only, beacon 1.6 u wide, slim LED-lane tower, the
+done spin ending on the camera, no debug labels in captures), and the look pass on 2026-10-21
+([decision](../../decisions/2026-10-21-office-look-pass.md)).
 
 **Goal:** The five office Rovers act out their real states with their bodies (sparks, a thought trail, CI pacing, a raised flag,
 a victory spin, a slump with a red flicker, docking to charge), a beacon over the wing and a minimap cue show from

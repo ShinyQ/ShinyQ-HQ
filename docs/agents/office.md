@@ -22,8 +22,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   get v1.
 - Clients validate with `parseOfficeResponse` (v1) or `parseOfficeResponseV2` (strict v2, plus a v1 body read as v2
   without helpers, for a rolled-back Worker) and hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Who polls what: the 3D office's poller v2 (`createOfficePoller({ path, parse })` in `office/live.ts`); the Classic
-  card and the L1 beacon's watch v1. `signalFromBody` reads both.
+- Who polls what: the 3D office's poller (`createOfficePoller({ path, parse })` in `office/live.ts`) and the Classic
+  card v2; the L1 beacon's watch v1. `signalFromBody` reads both.
 - Fixtures: `OFFICE_FIXTURES` (v1) and `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) in
   `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.

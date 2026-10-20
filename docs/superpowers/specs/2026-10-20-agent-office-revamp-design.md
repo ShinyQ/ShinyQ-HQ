@@ -152,15 +152,17 @@ and the chip carry the same information).
   (`createStageMaterial`, `HOLO_MODE.stage`, no new program) over the unit open cylinder, all instances of the `beam`
   stage kind: a column 1.6 u wide (owner) rising 26 u from the floor 1.25 u behind the asking Rover,
   between it and the wall (in front of the desk it hid the Rover and its flag in the prototype renders; from the wing
-  plaza centre when more than one asks), plus three short bands (0.3 u tall) that rise up it and widen every 1.6 s, in the
-  input tone. Drawn only while `needsKurniadi` (out of the draw otherwise), so the spawn's
+  plaza centre when more than one asks), plus three flat rings (0.4 u tall bands, 2.2 to 3.8 times the column's radius)
+  that pulse up its lowest 8 u (the part a desktop sees from the spawn) every 1.6 s, fading in and out, in the input
+  tone (look pass, [decision 2026-10-21](../../decisions/2026-10-21-office-look-pass.md)). Drawn only while `needsKurniadi` (out of the draw otherwise), so the spawn's
   settled calls rise by 1 only while a Rover asks. The wing stands outside the tower's footprint, so the column rises
   into open sky and reads over the Lobby's landmarks from the spawn on every landscape size (34 to 77% of the column
   in frame, asserted by a projection test on the six sizes like `office-chip-placement`); the views that face away from
   the wing (the hall road, the elevator arrival, portrait screens at the spawn) rely on the minimap cue (owner decision:
   no HUD edge arrow). Reduced motion: the column holds
-  at full height, rings fixed. While the rover is at the office stop the beacon fades to 25% (in the prototype the
-  column crossed the wall's GitHub half, and the asking Rover's flag carries the signal there).
+  at full height, rings fixed. While the rover is at the office stop the column hides and only faint bands stay (30%,
+  climbing no higher than the asking Rover's head; decision 2026-10-21, replacing the 25% fade): in the prototype the
+  column crossed the wall's GitHub half, and the asking Rover's flag carries the signal there.
 - **Minimap cue**: the office room marker in the minimap and the overview pulses in the input tone while
   `needsKurniadi` (CSS, written as `@variant motion-reduce` with a static ring under reduced motion), with an
   `aria-label` "Agent Office: a Rover is waiting for Kurniadi" / "Kantor Agen: sebuah Rover menunggu Kurniadi". No new
@@ -170,8 +172,9 @@ and the chip carry the same information).
 ### 5.4 The CI tower and the dock (stage A shells)
 
 The `ci` pose needs something to watch, so stage A adds the two corner fixtures of section 6.1 as furniture shell (the
-main path's merged boxes, so the navgrid and the minimap fixtures hold them before the chunk loads) and, in the scene
-chunk, lights the tower from v1 data: the newest running public run in the feed shows its `progress` as lit lanes
+main path's merged boxes, so the navgrid and the minimap fixtures hold them before the chunk loads): a slim LED-lane
+column 1.2 u square and 9 u tall (look pass, decision 2026-10-21, replacing 2 u) and a low dock pad. In the scene
+chunk it lights the tower from v1 data: the newest running public run in the feed shows its `progress` as lit lanes
 (done of total, anonymous). Stage B replaces that with named per-job lanes.
 
 ### 5.5 Rendering and budget (A)
@@ -270,7 +273,7 @@ Two corner fixtures in the wing, both touching the console's end row boxes and t
 6 u `SPACE_RULES` allow touching), so they close the corners without making a pocket:
 
 - **CI tower** (south-east, screen left from the stop): the plinth fills the corner east of the east row box; a column
-  about 2 x 2 u, about 9 u tall, turned to face the stop, carries the lane matrix on its stop-facing side.
+  1.2 x 1.2 u (decision 2026-10-21), about 9 u tall, turned to face the stop, carries the lane matrix on its stop-facing side.
 - **Ship dock** (south-west, screen right): a low pad with a launch ring, where merged packages land and deploy beams
   fire.
 

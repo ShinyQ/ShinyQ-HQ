@@ -25,8 +25,10 @@ number of active helpers leaves the machine.
    (the app is built on Copilot CLI; this confirms it loads `~/.copilot/hooks`).
 
 After an update that adds hook events (the sub-agent events below, for example), reinstall from the newer checkout
-(step 2), trust the new Codex hooks in `/hooks` (step 3) and restart running agent sessions, which load their hooks at
-start. Then start a helper in each tool (Copilot: an explore or task agent; Claude Code: any subagent; Codex: a
+(step 2) only after the Worker and Pages from that change are deployed: a Worker without snapshot v2 and helpers support
+rejects every beat that carries `helpers`, so a relay that sends them too early hides busy desks while helpers run. Then
+trust the new Codex hooks in `/hooks` (step 3) and restart running agent sessions, which load their hooks at start.
+Then start a helper in each tool (Copilot: an explore or task agent; Claude Code: any subagent; Codex: a
 subagent) and look for `<agent> <event> helpers 1 sent` in `office-relay status`.
 
 Every hook command is written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` (the directory
@@ -87,7 +89,7 @@ activity) as the main agent's own events do.
 
 | Tool (version checked) | Events | Parent session | Helper id | Notes |
 |---|---|---|---|---|
-| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes. Known limits of anonymous counting: a helper running longer than the 30 min TTL, a duplicate stop, or a start missed while paused can make a later stop remove a different helper; the count heals itself within 30 minutes. A helper's own tool events (with `agentId`) are ignored |
+| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes. Nested helpers: a helper that starts its own helper fires `subagentStart` under the helper's own session id, which opens a desk of its own (a known limit; nested helpers are rare). Known limits of anonymous counting: a helper running longer than the 30 min TTL, a duplicate stop, or a start missed while paused can make a later stop remove a different helper; the count heals itself within 30 minutes. A helper's own tool events (with `agentId`) are ignored |
 | Claude Code (2.1.223) | `SubagentStart`, `SubagentStop` | `session_id` (the main session) | `agent_id` | A resumed subagent or a teammate's new message repeats the start (deduped by id); a stop of an internal agent (prompt suggestions, `/btw`) with no start changes nothing |
 | OpenAI Codex (0.154.0) | `SubagentStart`, `SubagentStop` | `session_id` (the parent's) | `agent_id` | Both events are async hooks like the others; trust them in `/hooks` |
 

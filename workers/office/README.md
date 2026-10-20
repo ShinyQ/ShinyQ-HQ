@@ -5,8 +5,8 @@ The backend of the L1 Agent Office (spec `docs/superpowers/specs/2026-10-18-agen
 
 | Route (site origin) | Worker route | Who calls it |
 |---|---|---|
-| `GET /api/office` | `GET /snapshot` | snapshot v1: the Classic card and the L1 beacon's watch (edge-cached 5 s per data center, ETag and 304) |
-| `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`): the 3D office (its own cache key, same headers) |
+| `GET /api/office` | `GET /snapshot` | snapshot v1: the L1 beacon's watch (edge-cached 5 s per data center, ETag and 304) |
+| `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`): the 3D office and the Classic card (its own cache key, same headers) |
 | `POST /api/office/beat` | `POST /beat` | `office-relay` on the owner's Mac (`X-Office-Signature`) |
 | `POST /api/office/github` | `POST /github` | repository webhooks (`X-Hub-Signature-256`) |
 
