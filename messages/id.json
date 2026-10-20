@@ -1269,6 +1269,12 @@
         "line": "Meja {n}: {agent} {state}{time, select, none {} other {, sejak {time}}}",
         "offDuty": "Meja {n}: tidak bertugas",
         "change": "Meja {n}: {agent} kini {state}.",
+        "mode": {
+          "live": "Kantor kembali live.",
+          "semi-live": "Belum ada agen yang melapor.",
+          "off": "Kantor sedang istirahat.",
+          "offline": "Kantor sedang offline. Semua Rover tidur."
+        },
         "state": { "working": "sedang bekerja", "thinking": "sedang berpikir", "reviewing": "sedang meninjau", "testing": "sedang menjalankan tes", "ci": "sedang menunggu CI", "input": "sedang menunggu Kurniadi", "done": "sudah selesai", "failed": "terhenti karena CI gagal", "asleep": "sedang tidur" }
       },
       "hooks": "Langsung dari hook agen di mesin Kurniadi, diperbarui sekitar setiap 10 detik selama Anda melihat.",

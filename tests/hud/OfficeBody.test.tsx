@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import type { ReactElement } from "react";
+import { StrictMode, type ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import ids from "../../messages/id.json";
@@ -214,18 +214,20 @@ describe("Agent Office drawers", () => {
       act(() => vi.advanceTimersByTime(0));
     };
     const wait = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+    const clock = (slot: number, locale = "en") => new Intl.DateTimeFormat(locale, { timeStyle: "short" }).format(live.feed.snapshot!.desks.find((d) => d.slot === slot)!.since!);
 
     it("reads one sentence per desk and keeps a polite live region, silent on open", () => {
       const { rerender } = body({ panel: "summary" });
       wait(0);
       const crew = screen.getByTestId("office-crew");
+      expect(crew).toHaveClass("sr-only");
       expect(within(crew).getByRole("heading")).toHaveTextContent(o.crew.title);
       expect(within(crew).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-        "Desk 1: Copilot is working, since 14 min",
-        "Desk 2: Claude is thinking, since 14 min",
-        "Desk 3: Codex is reviewing, since 14 min",
-        "Desk 4: Copilot is running tests, since 14 min",
-        "Desk 5: Claude is waiting on CI, since 14 min",
+        `Desk 1: Copilot is working, since ${clock(0)}`,
+        `Desk 2: Claude is thinking, since ${clock(1)}`,
+        `Desk 3: Codex is reviewing, since ${clock(2)}`,
+        `Desk 4: Copilot is running tests, since ${clock(3)}`,
+        `Desk 5: Claude is waiting on CI, since ${clock(4)}`,
       ]);
       const news = screen.getByRole("status");
       expect(news).toHaveAttribute("aria-live", "polite");
@@ -262,10 +264,29 @@ describe("Agent Office drawers", () => {
       expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
     });
 
+    it("still announces after React Strict Mode mounts the drawer twice", () => {
+      const strict = (ui: ReactElement) => <StrictMode>{ui}</StrictMode>;
+      const { rerender } = render(strict(tree({ panel: "summary" })));
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      expect(news).toBeEmptyDOMElement();
+      poll((ui) => rerender(strict(ui)), { 0: { state: "input", activity: "asking" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+    });
+
+    it("says one sentence, not one per desk, when the office goes offline", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      live.feed = { ...live.feed, status: "offline" };
+      rerender(tree({ panel: "summary" }));
+      wait(0);
+      expect(screen.getByTestId("office-crew-news")).toHaveTextContent(/^The office went offline\. Every Rover is asleep\.$/);
+    });
+
     it("speaks Indonesian in the Indonesian drawer", () => {
       const { rerender } = render(tree({ panel: "summary" }, "L1:office", "id"));
       wait(0);
-      expect(within(screen.getByTestId("office-crew")).getAllByRole("listitem")[0]).toHaveTextContent("Meja 1: Copilot sedang bekerja, sejak 14 mnt");
+      expect(within(screen.getByTestId("office-crew")).getAllByRole("listitem")[0]).toHaveTextContent(`Meja 1: Copilot sedang bekerja, sejak ${clock(0, "id")}`);
       poll(rerender, { 0: { state: "input", activity: "asking" } }, "id");
       expect(screen.getByTestId("office-crew-news")).toHaveTextContent("Meja 1: Copilot kini sedang menunggu Kurniadi.");
     });

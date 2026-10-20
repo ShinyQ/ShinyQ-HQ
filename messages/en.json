@@ -1269,6 +1269,12 @@
         "line": "Desk {n}: {agent} is {state}{time, select, none {} other {, since {time}}}",
         "offDuty": "Desk {n}: off duty",
         "change": "Desk {n}: {agent} is now {state}.",
+        "mode": {
+          "live": "The office is live again.",
+          "semi-live": "No agent is reporting right now.",
+          "off": "The office is resting.",
+          "offline": "The office went offline. Every Rover is asleep."
+        },
         "state": { "working": "working", "thinking": "thinking", "reviewing": "reviewing", "testing": "running tests", "ci": "waiting on CI", "input": "waiting for Kurniadi", "done": "done", "failed": "stopped on a failed CI run", "asleep": "asleep" }
       },
       "hooks": "Live from agent hooks on Kurniadi's machine, refreshed about every 10 seconds while you watch.",

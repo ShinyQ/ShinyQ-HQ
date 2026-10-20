@@ -113,12 +113,15 @@ function useCrewNews(office: OfficeView, t: OfficeTranslate): string {
   }, [office, t]);
   useEffect(() => {
     const r = s.current;
-    return () => window.clearTimeout(r.timer);
+    return () => {
+      window.clearTimeout(r.timer);
+      r.timer = 0;
+    };
   }, []);
   return news;
 }
 
-function SummaryPanel({ office, locale, now }: { office: OfficeView; locale: Locale; now: number }) {
+function SummaryPanel({ office, locale }: { office: OfficeView; locale: Locale }) {
   const t = useTranslations("office");
   const news = useCrewNews(office, t);
   const today = office.today;
@@ -141,10 +144,10 @@ function SummaryPanel({ office, locale, now }: { office: OfficeView; locale: Loc
           })}
         </ul>
       </section>
-      <section className="space-y-2" data-testid="office-crew">
-        <h3 className={HEAD}>{t("3d.crew.title")}</h3>
-        <ul className={`${NOTE} space-y-1`}>
-          {crewLines(office, t, locale, now).map((line, i) => (
+      <section className="sr-only" data-testid="office-crew">
+        <h3>{t("3d.crew.title")}</h3>
+        <ul>
+          {crewLines(office, t, locale).map((line, i) => (
             <li key={i}>{line}</li>
           ))}
         </ul>
@@ -265,7 +268,7 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
           ) : (
-            <SummaryPanel office={office} locale={locale} now={now} />
+            <SummaryPanel office={office} locale={locale} />
           )}
         </>
       )}
