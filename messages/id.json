@@ -500,7 +500,8 @@
       "title": "{floor} {name}",
       "rooms": "Tempat di lantai ini",
       "visited": "sudah dikunjungi",
-      "close": "Tutup peta"
+      "close": "Tutup peta",
+      "officeAsks": ", Kantor Agen: sebuah Rover menunggu Kurniadi"
     },
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",

@@ -500,7 +500,8 @@
       "title": "{floor} {name}",
       "rooms": "Places on this floor",
       "visited": "visited",
-      "close": "Close map"
+      "close": "Close map",
+      "officeAsks": ", Agent Office: a Rover is waiting for Kurniadi"
     },
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",

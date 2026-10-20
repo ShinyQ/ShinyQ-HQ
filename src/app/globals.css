@@ -565,3 +565,19 @@
     box-shadow: 0 0 24px -8px var(--hq-glow, var(--color-cyan));
   }
 }
+
+/* Minimap Needs Kurniadi cue (src/hud/minimap/OfficeCue.tsx): a slow pulse, still under reduced motion. */
+.office-cue {
+  animation: office-cue 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  @variant motion-reduce {
+    animation: none;
+  }
+}
+@keyframes office-cue {
+  50% {
+    opacity: 0.45;
+    transform: scale(1.35);
+  }
+}
