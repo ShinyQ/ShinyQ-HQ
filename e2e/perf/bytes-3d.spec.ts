@@ -12,8 +12,8 @@ import { writePerfEntry } from "./helpers";
  * response the Page View did not fetch is 3D-path bytes: scripts are gated, fonts, JSON, CSS and
  * images are reported. The main path is measured with `?prefetch=off`; then each public on-demand floor
  * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at `BYTES_3D_BUDGET.failAt`
- * (465.5 KB); main plus every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in
- * a normal session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 494.4 KB, lite 478.7 KB).
+ * (466.1 KB); main plus every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in
+ * a normal session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 495.1 KB, lite 479.3 KB).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
  * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office chunk
  * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total;
