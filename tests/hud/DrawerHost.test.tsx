@@ -129,12 +129,14 @@ describe("DrawerHost room data per floor", () => {
     expect(rooms()).toEqual(["/data/rooms/en-L3.json?v=v3"]);
   });
 
-  it("opens a B1 station from the separate file alone", async () => {
+  // The station body is the lazy B1 floor chunk (React reveals a Suspense boundary after about 300 ms): its first,
+  // cold import takes 0.3 to 1.2 s under a parallel suite, past vi.waitFor's 1 s default.
+  it("opens a B1 station from the separate file alone", { timeout: 15_000 }, async () => {
     getHQStore().setState({ b1Unlocked: true, floor: "B1" });
     renderHost();
     act(() => getHQStore().getState().openRoom("B1:timeline"));
     const drawer = await screen.findByTestId("room-drawer");
-    await vi.waitFor(() => expect(drawer.querySelector("[data-engine-station='timeline']")).not.toBeNull());
+    await vi.waitFor(() => expect(drawer.querySelector("[data-engine-station='timeline']")).not.toBeNull(), { timeout: 10_000 });
     expect(rooms()).toEqual(["/data/rooms/b1-en.json?v=vb"]);
   });
 
