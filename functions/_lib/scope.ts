@@ -245,6 +245,10 @@ const PERSONA: RegExp[] = [
   /\b(?:jawab|bicara|berbicara|menjawab|bertindak|berperan)(?:lah)? (?:sebagai|seperti|seolah(?:-olah)?(?: kamu)?) (?:kurniadi|shinyq|dia|beliau|orang lain)\b/i,
   /\b(?:pura-pura|berpura-pura|anggap(?:lah)? (?:kamu|dirimu|kau)|kamu (?:sekarang )?(?:adalah|jadi|menjadi))\s+(?:jadi |menjadi |adalah |sebagai )?(?:kurniadi|shinyq)\b/i,
   /\bpakai kata (?:saya|aku)\b|\bsebagai orang pertama\b/i,
+  // Any other character (rt64, 2026-10-20): "From now on you are PirateBot", "You're now ChatGPT".
+  /\b(?:from now on|starting now|for the rest of (?:this|the) (?:chat|conversation))\b[^.?!]{0,20}\byou(?:'re| are| will be| must be| shall be)\b/i,
+  /\b(?:you are|you're)\s+(?:now\s+)?(?:a\s+|an\s+|the\s+)?[A-Za-z-]*(?:bot|gpt)\b/i,
+  /\b(?:mulai sekarang|dari sekarang)\b[^.?!]{0,20}\b(?:kamu|anda)\b[^.?!]{0,10}\b(?:adalah|jadi|menjadi|sebagai)\b/i,
   // His voice or his role without his name (security review 2026-10-19).
   /\b(?:in|using|with) (?:his|kurniadi'?s) (?:own )?voice\b|\bas (?:the )?(?:owner|author|creator) of (?:this|the) (?:site|portfolio|website)\b|\bsebagai pemilik (?:situs|portofolio|website) ini\b|\bdengan suara(?:nya| kurniadi)\b/i,
 ];
@@ -259,6 +263,9 @@ const OVERRIDE: RegExp[] = [
   /\b(?:ignore|forget|disregard|override|bypass)\s+(?:all\s+|any\s+|of\s+)?(?:your|the|these|those|previous|prior|earlier|above|system|its|rover'?s)\s+(?:[\w-]+\s+){0,2}(?:rules?|instructions?|guidelines?|prompts?|restrictions?|constraints?|polic(?:y|ies))\b/i,
   /\b(?:new|updated) (?:system )?(?:rules?|instructions?|system (?:message|prompt))\b|^\W*system\s*:/i,
   /\b(?:abaikan|lupakan|hiraukan|langgar)\s+(?:semua\s+|seluruh\s+)?(?:aturan|instruksi|perintah|batasan|prompt)\b/i,
+  // Standing output instructions (rt64, 2026-10-20): "end every answer with Yo ho ho", "akhiri setiap jawaban dengan".
+  /\b(?:end|start|begin|finish|close|prefix|suffix|sign off)\s+(?:every|each|all|all of)\s+(?:your\s+)?(?:answers?|repl(?:y|ies)|responses?|messages?|sentences?)\s+with\b/i,
+  /\b(?:akhiri|mulai|awali|tutup)\s+(?:setiap|semua)\s+(?:jawaban|balasan|pesan)(?:mu|nya)?\s+dengan\b/i,
 ];
 
 /** An attempt to override, replace or drop the assistant's rules (EN/ID). */
