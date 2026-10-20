@@ -376,6 +376,13 @@ describe("site-build chunk and the B1 Engine Room (2026-10-17)", () => {
     expect(chunk.text_en).toContain("B1 Engine Room");
     expect(chunk.text_id).toContain("Ruang Mesin B1");
   });
+
+  it("explains the Agent Office and its privacy rule in both languages (2026-10-20)", () => {
+    const chunk = pack.chunks.find((c) => c.id === "site-build")!;
+    for (const text of [chunk.text_en, chunk.text_id]) expect(text).toContain("Agent Office");
+    expect(chunk.text_en).toContain('"Client project"');
+    expect(chunk.text_id).toContain('"Proyek klien"');
+  });
 });
 
 describe("pack budget for project chunks", () => {
