@@ -488,7 +488,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 465.3 KB gzip per tier; session total full 494.2 KB, lite 478.5 KB | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 465.5 KB gzip per tier; session total full 494.4 KB, lite 478.7 KB | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.

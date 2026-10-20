@@ -607,8 +607,8 @@
     "workshop.spec.ts › L2 Workshop › with reduced motion › the Workshop holds still and the console's jump is the fade cut": 32.6
   },
   "perf": {
-    "bytes-3d.spec.ts › 3D JS after the gate stays under 465.3 KB gzip (full)": 48.7,
-    "bytes-3d.spec.ts › 3D JS after the gate stays under 465.3 KB gzip (lite)": 42.2,
+    "bytes-3d.spec.ts › 3D JS after the gate stays under 465.5 KB gzip (full)": 48.7,
+    "bytes-3d.spec.ts › 3D JS after the gate stays under 465.5 KB gzip (lite)": 42.2,
     "floors.spec.ts › B1 full: settled draw calls and shader programs": 231.7,
     "floors.spec.ts › B1 lite: settled draw calls and shader programs": 73,
     "floors.spec.ts › L1 full: settled draw calls and shader programs": 185.1,
