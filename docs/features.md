@@ -66,7 +66,8 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
-| Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | In review |
+| Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | Done |
+| Agent Office, part 4 (Classic and Ask) | 2026-10-20: the Live Agent Office card on the Classic home page (lazy, polls only near the screen, honest live, semi-live, resting and offline states), and Ask Rover Assistant explains the office and its privacy rule | In review |
 | Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
 | Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
 
@@ -169,6 +170,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result on a hairline at the bottom, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
+- **Live Agent Office** (`/#office`, after the intro): the L1 office as a card: counts, the agents at their desks with their state, activity and task ("Client project" for private work), the latest public GitHub activity, today's numbers and the privacy note. It shows Live, Semi-live (no agent reporting), Resting or Offline (the last GitHub events only), hides when the office is switched off, and loads and polls only while it is near the screen.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
 - **Shareable links:**
   - `?view=classic` opens the Classic site and stays in the URL through navigation, the language switch and copied links (`?view=page` still works).
@@ -229,6 +231,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - Click a Rover, its chip or a wall half to drive to the office and open its drawer: the summary, the GitHub board, or one desk (agent, activity, task, repository, time in state, recent activity).
 - It loads on its own once you drive onto the lead road or into the wing, start the office mission or head for an office room (from the elevator ride on), or open one of its drawers; a visit that never heads south never downloads it. It polls only while the office is in view or one of its drawers is open.
 - Semi-live (GitHub only), resting (off) and offline modes put every Rover to sleep; reduced motion holds every Rover still.
+- On the Classic site the same office is the **Live Agent Office** card on the home page (`/#office`, see [Classic site](#classic-site)), and Ask Rover Assistant can explain what it shows and its privacy rule.
 
 ## L1 Highlights Hall
 
@@ -370,7 +373,7 @@ Every page is a static HTML page with its own search and share tags, so crawlers
 
 ## Ask the HQ (AI Q&A)
 
-Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing, process and the secret B1 Engine Room; `content/ask/site-build.json`; answers cite the How this site was built page, `/build`, which links the repository), and get short answers grounded only in this site's content (EN and ID).
+Visitors ask questions about Kurniadi's work, projects, career, contact details, the views he has written down (principles, engineering and AI practice, tools, career advice, working style, AI and the industry, the Indonesian tech scene, technology policy and life outside work) and how this site itself was built (stack, 3D engine, hosting, the assistant, testing, process, the secret B1 Engine Room and the Agent Office; `content/ask/site-build.json`; answers cite the How this site was built page, `/build`, which links the repository), and get short answers grounded only in this site's content (EN and ID).
 
 ### Where
 

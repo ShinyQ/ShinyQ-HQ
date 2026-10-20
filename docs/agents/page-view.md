@@ -107,6 +107,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 ## Landing (home hero)
 
+- Section order after the hero (`src/app/[locale]/page.tsx`): Selected work (`#work`), the intro (`#intro`: bio and
+  status), the Live Agent Office (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Journey, Writing,
+  Skills, Certifications, Contact.
+
 ### Hero
 
 - `HomeHero` (`src/components/page/Hero.tsx`) starts with the owner portrait and the name.
