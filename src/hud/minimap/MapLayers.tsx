@@ -2,13 +2,13 @@
 
 import { memo, useMemo, useSyncExternalStore } from "react";
 import type { Accent, FloorId } from "@/content/schema";
+import { useOfficeWatchModule } from "@/experience/floors/lobby/office/watchLoader";
 import { interactRuntime } from "@/experience/interact/runtime";
 import type { Interactable } from "@/experience/interact/registry";
 import type { FloorLayouts } from "@/experience/types";
 import { FLOOR_ACCENT } from "@/lib/accent";
 import { useHQStore } from "@/store/useHQStore";
 import { arrowRotation, buildFloorMap, labelAnchor, labelsDoors, MINIMAP_RADIUS, RING_WIDTH, type FloorMap } from "./model";
-import { OfficeCue } from "./OfficeCue";
 
 /** SVG fills per accent (static, like the Tailwind class maps). */
 const ACCENT_FILL: Record<Accent, string> = {
@@ -42,15 +42,16 @@ export function useFloorMap(layouts: FloorLayouts): FloorMap {
 
 /**
  * The map's shapes in world units (north-up): the slab, roads and plazas, the elevator shaft, room
- * dots in the floor accent (visited ones dimmed), optional labels, the L1 office cue (`cueCenter` is the
- * minimap window's center; none in the overview) and the rover arrow. Strokes that must stay crisp at any
+ * dots in the floor accent (visited ones dimmed), optional labels, the L1 office cue (from the office watch chunk once
+ * it loaded; `cueCenter` is the minimap window's center, none in the overview) and the rover arrow. Strokes that must stay crisp at any
  * zoom use `non-scaling-stroke`.
  */
 export function MapLayers({ map, labels = false, roomRadius, arrowScale, cueCenter }: { map: FloorMap; labels?: boolean; roomRadius: number; arrowScale: number; cueCenter?: { x: number; z: number } }) {
+  const watch = useOfficeWatchModule();
   return (
     <>
       <StaticLayers map={map} labels={labels} roomRadius={roomRadius} />
-      {map.floor === "L1" && <OfficeCue center={cueCenter ?? null} radius={MINIMAP_RADIUS} />}
+      {map.floor === "L1" && watch && <watch.OfficeCue center={cueCenter ?? null} radius={MINIMAP_RADIUS} />}
       <RoverArrow scale={arrowScale} />
     </>
   );

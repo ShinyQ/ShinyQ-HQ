@@ -15,9 +15,8 @@ import { speculativePrefetchOn } from "../../floorChunks";
 import { MergedBoxes, MergedEdges } from "../../roof/kit";
 import type { OfficeTranslate } from "../officeLayout";
 import { officeShellBoxes } from "../officeShell";
-import { OfficeBeacon } from "./OfficeBeacon";
 import { countOfficeAsk, loadOffice, officeChunkState, officeLoadWanted, useOfficeModule } from "./chunk";
-import { startOfficeWatch } from "./officeWatch";
+import { loadOfficeWatch, useOfficeBeaconModule, useOfficeWatchModule } from "./watchLoader";
 
 /** One stable list, so MergedBoxes and MergedEdges build their geometry once. */
 const SHELL = officeShellBoxes();
@@ -67,8 +66,9 @@ export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
  * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays; it fades in over
  * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
- * It also starts the office watch after the first frame went idle (`officeWatch.ts`, the beacon's signal from anywhere on L1),
- * and draws the Needs Kurniadi beacon (`OfficeBeacon`) once `ready`, so no canvas-target program compiles.
+ * Once the first frame went idle on L1 (`?prefetch=off` respected) it loads the office watch chunk (`watchLoader.ts`: the
+ * beacon's signal from anywhere on L1, the minimap cue) and runs its watch while mounted, and it draws the Needs Kurniadi
+ * beacon from its own chunk (loaded on the first ask) once `ready`, so no canvas-target program compiles.
  */
 export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTranslate; ready: boolean }) {
   const mod = useOfficeModule();
@@ -76,23 +76,28 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
   const intro = useHQStore((s) => s.phase === "intro");
   const [mounted, setMounted] = useState(false);
   if (mod && onL1 && ready && !intro && !mounted) setMounted(true);
+  const watch = useOfficeWatchModule();
+  const beacon = useOfficeBeaconModule();
+  const [idleNow, setIdleNow] = useState(false);
   const idle = useRef(false);
   const next = useRef(0);
   const prefetch = useRef<boolean | null>(null);
   const live = useRef<Group>(null);
   const fade = useRef<{ t: number; slots: FadeSlot[] | null }>({ t: 0, slots: null });
-  // Once the first frame went idle: the load trigger may ask, and the beacon's office watch starts (main path).
+  // Once the first frame went idle: the load trigger may ask, and the office watch chunk loads on L1 (now or later).
+  useEffect(
+    () =>
+      afterFirstFrameIdle(() => {
+        idle.current = true;
+        setIdleNow(true);
+      }),
+    [],
+  );
   useEffect(() => {
-    let stop: (() => void) | undefined;
-    const cancel = afterFirstFrameIdle(() => {
-      idle.current = true;
-      stop = startOfficeWatch();
-    });
-    return () => {
-      cancel();
-      stop?.();
-    };
-  }, []);
+    if (idleNow && onL1 && speculativePrefetchOn(window.location.search)) void loadOfficeWatch().catch(() => null);
+  }, [idleNow, onL1]);
+  // The watch runs while mounted once its chunk is here (also when the scene chunk or `__hq.office` loaded it).
+  useEffect(() => (idleNow && watch ? watch.startOfficeWatch() : undefined), [idleNow, watch]);
   // The fade-in (frame deltas, a cut under reduced motion), from the frame the live scene shows (`OfficeReady`).
   useFrame((_, rawDt) => {
     const f = fade.current;
@@ -124,7 +129,7 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
     <group name="agent-office">
       <MergedBoxes boxes={SHELL} color="#0b1020" emissive={COLORS.cyan} emissiveIntensity={0.05} />
       <MergedEdges boxes={SHELL} color={COLORS.cyan} tier={tier} opacity={0.6} />
-      {ready && <OfficeBeacon />}
+      {ready && beacon && <beacon.OfficeBeacon />}
       {Scene && (
         <group ref={live}>
           <Scene tier={tier} t={t} />

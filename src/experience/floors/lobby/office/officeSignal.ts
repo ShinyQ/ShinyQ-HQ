@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Main-path Agent Office signal (design 2026-10-20 section 5.3): whether a Rover needs Kurniadi (the beacon and the
+ * Agent Office signal (design 2026-10-20 section 5.3; lazy, shared by the watch, scene and beacon chunks): whether a Rover needs Kurniadi (the beacon and the
  * minimap cue) and when the last production deploy succeeded (stage B's beam). Fed by the office watch's small fetch,
  * or by the office scene's own feed while its poller runs (`sceneFeeding`), so there is one request stream.
  */

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { createElement, forwardRef, Suspense, useEffect, useId, useLayoutEffect, useReducer, useRef, useSyncExternalStore, type ComponentProps } from "react";
 import { Modal } from "@/components/Modal";
-import { useOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
+import { useOfficeAsks } from "@/experience/floors/lobby/office/watchLoader";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
@@ -93,7 +93,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
   const floorLabel = useFloorLabel();
   const map = useFloorMap(layouts);
   const rover = useHQStore((s) => s.rover);
-  const asks = useOfficeSignal((s) => s.needsKurniadi);
+  const asks = useOfficeAsks();
   const clipId = `minimap-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const { floor } = map;
   return (

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OFFICE_PATH } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeSignal, setOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
-import { officeWatchNow, startOfficeWatch } from "@/experience/floors/lobby/office/officeWatch";
+import { officeWatchTick, startOfficeWatch } from "@/experience/floors/lobby/office/officeWatch";
 
 const body = (state: string) => ({ v: 1, enabled: true, mode: "live", updatedAt: 1, desks: [{ slot: 2, state }], extra: 0, github: [], today: {} });
 const fetcher = (state: string) => vi.fn(async () => new Response(JSON.stringify(body(state)), { status: 200 }));
@@ -146,36 +146,36 @@ describe("office watch", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(officeSignal.needsKurniadi).toBe(false);
   });
-  it("runs one tick now through officeWatchNow (the __hq.office.watchNow test hook)", async () => {
+  it("runs one tick now through officeWatchTick (the __hq.office.watchNow test hook)", async () => {
     getHQStore().setState({ floor: "L1", ride: null });
-    await expect(officeWatchNow()).resolves.toBeUndefined();
+    await expect(officeWatchTick()).resolves.toBeUndefined();
     let state = "input";
     const f = vi.fn(async () => new Response(JSON.stringify(body(state))));
     const stop = startOfficeWatch({ fetch: f, every: 60_000 });
-    await officeWatchNow();
+    await officeWatchTick();
     expect(officeSignal.needsKurniadi).toBe(true);
     state = "working";
-    await officeWatchNow();
+    await officeWatchTick();
     expect(officeSignal.needsKurniadi).toBe(false);
     const calls = f.mock.calls.length;
     stop();
-    await officeWatchNow();
+    await officeWatchTick();
     expect(f).toHaveBeenCalledTimes(calls);
   });
   it("bypasses the HTTP cache (the endpoint allows max-age=5 plus stale-while-revalidate=30)", async () => {
     getHQStore().setState({ floor: "L1", ride: null });
     const f = fetcher("input");
     const stop = startOfficeWatch({ fetch: f, every: 60_000 });
-    await officeWatchNow();
+    await officeWatchTick();
     expect(f).toHaveBeenCalled();
     for (const call of f.mock.calls as unknown[][]) expect((call[1] as RequestInit | undefined)?.cache).toBe("no-store");
     stop();
   });
-  it("fetches the protocol path and keeps the main-path modules free of the protocol, the content schema and zod", () => {
+  it("fetches the protocol path and keeps the watch chunk modules free of the protocol, the content schema and zod", () => {
     const f = fetcher("asleep");
     getHQStore().setState({ floor: "L1", ride: null });
     const stop = startOfficeWatch({ fetch: f, every: 60_000 });
-    return officeWatchNow().then(() => {
+    return officeWatchTick().then(() => {
       expect(f.mock.calls[0]).toEqual([OFFICE_PATH, expect.objectContaining({ credentials: "omit" })]);
       stop();
       for (const file of ["officeSignal.ts", "officeWatch.ts"]) {

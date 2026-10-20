@@ -5,7 +5,10 @@ import { useOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
 
 const TONE = "var(--color-pink)";
 
-/** The minimap's Needs Kurniadi cue: a pulsing ring at the office stop, or a pip on the rim pointing at it (design 5.3). */
+/**
+ * The minimap's Needs Kurniadi cue: a pulsing ring at the office stop, or a pip on the rim pointing at it (design 5.3).
+ * It ships in the office watch chunk (`watchChunk.ts`): `MapLayers` draws it once that chunk loaded, never imports it.
+ */
 export function OfficeCue({ center, radius }: { center: { x: number; z: number } | null; radius: number }) {
   const on = useOfficeSignal((s) => s.needsKurniadi);
   if (!on) return null;

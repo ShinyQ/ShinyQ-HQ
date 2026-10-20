@@ -18,12 +18,13 @@ const PINK = new Color(COLORS.pink).toArray();
 const stage = () => new InstancedBufferAttribute(new Float32Array(BEACON.slots * 4), 4);
 
 /**
- * The Needs Kurniadi beacon over the wing (main path): one instanced draw of `STAGE_KIND.beam` (0) instances on the
+ * The Needs Kurniadi beacon over the wing (beacon chunk, `beaconChunk.ts`): one instanced draw of `STAGE_KIND.beam` (0) instances on the
  * hall's stage program (instance colors like the hall, so the same defines; additive is GL state), the column and its
  * rising bands, in the asking state's pink. The stage shader takes only the position from the instance matrix and the
  * shape from `aStage` (beams never read `aStageUv`), so every instance starts as a zero-size beam (all zeros) and slot 4
  * (stage B's deploy beam) stays one. No React state: the frame reads the signal and keeps the mesh out of the draw while
- * nobody asks. `OfficeMount` mounts it once `ready` (the full tier's composer exists), so no canvas-target program compiles.
+ * nobody asks. `OfficeMount` mounts it once the chunk loaded (the watch chunk loads it on the first ask) and `ready` (the full
+ * tier's composer exists), so no canvas-target program compiles; it stays mounted.
  */
 export function OfficeBeacon() {
   const geometry = useMemo(() => new CylinderGeometry(1, 1, 1, 20, 1, true).setAttribute("aStage", stage()).setAttribute("aStage2", stage()), []);

@@ -58,6 +58,7 @@ import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDes
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
+import { loadOfficeWatch } from "./watchLoader";
 
 const NO_RAYCAST = () => null;
 /** Faces, desk screens, then the input flags: one quad each per Rover. */
@@ -535,7 +536,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
       const inView = here && tmp.frustum.intersectsBox(tmp.box);
       officeRuntime.inView = inView;
       officeLive.want("view", inView);
-      // While this chunk's poller runs, its feed drives the beacon's signal and the main-path watch stops fetching.
+      // While this chunk's poller runs, its feed drives the beacon's signal and the office watch stops fetching.
       const feeding = officeLive.wanted();
       if (officeSignal.sceneFeeding !== feeding) setOfficeSignal({ sceneFeeding: feeding });
       const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
@@ -609,11 +610,13 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
   // The beacon's signal from this feed while its poller runs (a frozen feed never writes): the same reading as the
-  // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window.
+  // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window. The watch
+  // chunk mirrors the signal to the minimap and loads the beacon, so it loads here too (it may not have yet).
   useEffect(() => {
     if (!officeLive.wanted() || feed.status === "idle" || feed.status === "loading") return;
     const sig = feed.status === "ready" ? signalFromBody(feed.snapshot, Date.now()) : null;
     setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
+    void loadOfficeWatch().catch(() => null);
   }, [feed]);
   const slots = OFFICE_SLOTS;
   const agents = view.rovers.map((r) => r.agent ?? "").join(",");

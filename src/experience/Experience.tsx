@@ -66,7 +66,7 @@ import { REACTOR_RINGS, type ReactorRingId } from "@/content/tech-rings";
 import { floorOf } from "./missions/rooms";
 import { floorChunks, floorChunksHandle } from "./floors/floorChunks";
 import { officeHandle } from "./floors/lobby/office/chunk";
-import { officeWatchNow } from "./floors/lobby/office/officeWatch";
+import { loadOfficeBeacon, loadOfficeWatch, officeWatchNow } from "./floors/lobby/office/watchLoader";
 import { FloorChunkPrefetch } from "./floors/FloorChunkPrefetch";
 import { markFirstFrame, resetFirstFrame } from "./boot-signals";
 import type { ExperienceData, FloorLayout, GpuTier } from "./types";
@@ -190,8 +190,9 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // Floor chunk states and loads (Round 7 B).
     floorChunks: floorChunksHandle,
     // The lazy Agent Office chunk (L1): load, state and its test hooks (e2e/office.spec.ts, the bytes gate), plus
-    // `watchNow`: one tick of the main-path office watch (the beacon's signal).
-    office: { ...officeHandle, watchNow: officeWatchNow },
+    // the office watch and beacon chunks: `watchNow` loads the watch chunk and runs one tick of its watch, `loadWatch` and
+    // `loadBeacon` load a chunk and resolve with its module (the bytes gate).
+    office: { ...officeHandle, watchNow: officeWatchNow, loadWatch: loadOfficeWatch, loadBeacon: loadOfficeBeacon },
     ridePrep,
     probes: sceneProbes,
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).

@@ -118,6 +118,18 @@ describe("gates", () => {
     expect(without.markdown).not.toContain("Agent Office drawer body");
   });
 
+  it("reports the office watch chunk in the session total and the beacon chunk outside it", () => {
+    const floors = { L3: 10 * 1024, L4: 8 * 1024, RF: 4 * 1024 };
+    const entry = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, floors, sessionTotal: 445.5 * 1024, officeWatch: 1.5 * 1024, officeBeacon: 1.2 * 1024 } as const;
+    const s = renderGates([entry], []);
+    expect(s.markdown).toContain(`Session total with every public floor chunk and the office watch chunk (B1 excluded): 445.5 KB of ${(BYTES_3D_BUDGET.session.full / 1024).toFixed(1)} KB.`);
+    expect(s.markdown).toContain(`Agent Office watch chunk (L1, idle, in the session total): 1.5 KB of ${(BYTES_3D_BUDGET.officeWatch / 1024).toFixed(1)} KB.`);
+    expect(s.markdown).toContain(`Agent Office beacon chunk (on the first ask, not in the session total): 1.2 KB of ${(BYTES_3D_BUDGET.officeBeacon / 1024).toFixed(1)} KB.`);
+    const without = renderGates([{ ...entry, officeWatch: undefined, officeBeacon: undefined }], []);
+    expect(without.markdown).not.toContain("Agent Office watch chunk");
+    expect(without.markdown).not.toContain("beacon chunk");
+  });
+
   it("renders P3's memory entries", () => {
     const s = renderGates([{ kind: "memory", tier: "lite", trips: 10, before: { geometries: 400, textures: 30, programs: 26 }, after: { geometries: 400, textures: 30, programs: 26 }, heapDeltaBytes: 512 * 1024 }], []);
     expect(s.markdown).toContain("| lite | 10 | 0 | 0 | 0 | 0.5 MB |");

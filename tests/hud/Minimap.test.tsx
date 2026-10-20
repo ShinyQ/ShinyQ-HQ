@@ -2,17 +2,21 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts } from "@/experience/config";
+import { setOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
+import { loadOfficeWatch } from "@/experience/floors/lobby/office/watchLoader";
 import { interactRuntime } from "@/experience/interact/runtime";
 import type { Interactable } from "@/experience/interact/registry";
 import { intents, type Intent } from "@/experience/input/intents";
 import { Minimap } from "@/hud/minimap/Minimap";
 import { minimapPref } from "@/hud/minimap/pref";
 import { getHQStore } from "@/store/useHQStore";
+
+vi.mock("@/experience/floors/lobby/office/beaconChunk", () => ({ OfficeBeacon: () => null }));
 
 const data = buildExperienceData("en", en.floors);
 const layouts = buildFloorLayouts(8);
@@ -208,5 +212,21 @@ describe("Minimap", () => {
     expect(within(dialog).getByRole("heading", { level: 3, name: "Tempat di lantai ini" })).toBeInTheDocument();
     expect(within(dialog).getAllByTestId("map-room")[1]).toHaveAccessibleName("Visits sudah dikunjungi");
     expect(within(dialog).getByRole("button", { name: "Tutup peta" })).toBeInTheDocument();
+  });
+
+  it("draws the office cue and names it in the label only once the office watch chunk loaded", async () => {
+    act(() => setOfficeSignal({ asking: [1], goodAt: Date.now() }));
+    mount();
+    const button = screen.getByTestId("minimap");
+    expect(button.querySelector("[data-map='office-cue']")).toBeNull();
+    expect(button).toHaveAccessibleName("Map of L1 Home: open overview");
+    await act(async () => {
+      await loadOfficeWatch();
+    });
+    expect(button.querySelector("[data-map='office-cue']")).not.toBeNull();
+    expect(button).toHaveAccessibleName(`Map of L1 Home: open overview${en.hud.map.officeAsks}`);
+    act(() => setOfficeSignal({ asking: [] }));
+    expect(button.querySelector("[data-map='office-cue']")).toBeNull();
+    expect(button).toHaveAccessibleName("Map of L1 Home: open overview");
   });
 });

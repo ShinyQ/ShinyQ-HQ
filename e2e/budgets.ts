@@ -41,7 +41,11 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * and it is left out of the session total: only unlocked visitors load it.
  * The L1 Agent Office chunk (`floors/lobby/office/scene.ts`) is measured after the session floors and held to `office`
  * (owner decision 2026-10-19), outside the session total. Its drawer body (`floors/lobby/office/body.ts`, loaded only
- * when an office drawer opens) is measured after the scene chunk and held to the `officeBody` sanity cap.
+ * when an office drawer opens) is measured after the scene chunk and held to the `officeBody` sanity cap. Owner decision
+ * 2026-10-20 (the office revamp chunks): the office watch chunk (`floors/lobby/office/watchChunk.ts`, idle on every L1
+ * session) is measured right after the session floors, counted in the session total and held to `officeWatch`; the
+ * beacon chunk (`floors/lobby/office/beaconChunk.ts`, on the first Needs Kurniadi ask) is measured last and held to
+ * `officeBeacon`, outside the session total; each cap is its measured value plus about 0.6 KB.
  */
 export const BYTES_3D_BUDGET = {
   failAt: Math.round(466.1 * 1024),
@@ -52,6 +56,10 @@ export const BYTES_3D_BUDGET = {
   office: 14 * 1024,
   /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap. */
   officeBody: 6 * 1024,
+  /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,393 B). */
+  officeWatch: Math.round(2.0 * 1024),
+  /** L1 office beacon chunk (the beacon mesh, on the first Needs Kurniadi ask), incremental over the office chunks, outside the session total (measured 1,471 B). */
+  officeBeacon: Math.round(2.1 * 1024),
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   session: { lite: Math.round(479.3 * 1024), full: Math.round(495.1 * 1024) },

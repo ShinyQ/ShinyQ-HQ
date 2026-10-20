@@ -5,15 +5,15 @@ const IDLE_MS = 10 * 60_000;
 /** Visitor input that resets the 10 min idle stop (a touch fires `pointerdown` too). */
 const INPUT = ["pointerdown", "keydown", "wheel"] as const;
 
-/** The running watch's tick, for `__hq.office.watchNow()`. */
+/** The running watch's tick, for `officeWatchTick` (`__hq.office.watchNow()`). */
 let tickNow: (() => Promise<void>) | undefined;
 
-/** `__hq.office.watchNow()` (Playwright): one watch tick now (its usual gates apply); resolves once its answer applied. */
-export const officeWatchNow = async (): Promise<void> => tickNow?.();
+/** One tick of the running watch now (its usual gates apply; nothing when it is not running); resolves once its answer applied. `__hq.office.watchNow()` loads the chunk, then calls it. */
+export const officeWatchTick = async (): Promise<void> => tickNow?.();
 
 /**
- * The beacon's own small poll of GET /api/office (v1, design section 5.3; the path is a literal so the main path never
- * imports the protocol module): at once, then every `every` ms while the visitor is on L1 (not riding), the tab is
+ * The beacon's own small poll of GET /api/office (watch chunk; v1, design section 5.3; the path is a literal so the
+ * watch chunk never imports the protocol module): at once, then every `every` ms while the visitor is on L1 (not riding), the tab is
  * visible, there was input in the last 10 min and the office scene's poller is not feeding the signal itself. Only the
  * newest answer applies. The signal expires on its own 60 s after its last good answer (`setOfficeSignal`); stopping
  * the watch clears it at once.
