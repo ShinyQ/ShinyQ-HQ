@@ -414,8 +414,9 @@ function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: Vie
       s.zoneZoom = view.zoom ?? null;
     }
     aimAt(s, view.lookOffset);
-  } else if (s.lookHold) {
-    // A held offset survived the hand zoom: the new class's offset takes over if it holds too, else it eases out.
+  } else {
+    // After a hand zoom the new class's offset applies if it holds (as it would have survived that zoom), else it eases
+    // out: a held offset dropped on a portrait screen comes back on a landscape one.
     aimAt(s, view.lookOffset?.hold ? view.lookOffset : undefined);
   }
   s.easing = true;

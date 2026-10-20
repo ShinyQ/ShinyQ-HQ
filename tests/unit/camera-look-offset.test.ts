@@ -622,6 +622,22 @@ describe("a device rotation in a zone (the camera class changes) re-applies the 
     expect({ zoom: s.zoom, pitch: s.pitch, lookForward: s.lookForward }).toEqual(primed);
   });
 
+  it("brings a landscape screen's held look offset back after a hand zoom and a round trip through portrait", () => {
+    for (const cls of ["desktop", "tablet"] as const) {
+      const s = rotateAtStop(cls, "mobile", (o) => zoomBy(o, 0.8, false));
+      // Portrait: the zoom stays the visitor's, the held offset (portrait has none that holds) eased out.
+      expect(s.zoom).toBeCloseTo(zoneView(office, cls).zoom! * 0.8, 9);
+      expect([s.lookForward, s.lookUp]).toEqual([0, 0]);
+      setPitchRange(s, pitchRange(cls, "follow"));
+      updateZone(s, office, false, cls);
+      settle(s);
+      // Back on the landscape screen: the raised aim is back with the hand zoom kept.
+      expect(s.lookUp).toBeCloseTo(zoneView(office, cls).lookOffset!.up!, 9);
+      expect(s.lookHold).toBe(true);
+      expect(s.zoom).toBeCloseTo(zoneView(office, cls).zoom! * 0.8, 9);
+    }
+  });
+
   it("leaves every zone whose view is the same on both classes untouched, float for float", () => {
     let compared = 0;
     for (const { zone } of zones)
