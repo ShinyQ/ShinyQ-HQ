@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { signalFromBody } from "@/experience/floors/lobby/office/officeSignal";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { officeSignal, setOfficeSignal, signalFromBody } from "@/experience/floors/lobby/office/officeSignal";
 import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 
@@ -31,9 +31,40 @@ describe("signalFromBody", () => {
     const github = [null, 1, { kind: "deploy", status: "failure", at: 0 }, { kind: "deploy", status: "success", at: "0" }, { kind: "run", status: "success", at: 0 }, { kind: "deploy", status: "success", at: 9_000 }, { kind: "deploy", status: "success", at: 5_000 }];
     expect(signalFromBody({ ...ok, github }, 10_000)).toEqual({ asking: [2], deployAt: 9_000 });
   });
-  it("asks nothing while the office is off (its Rovers sleep), but keeps semi-live asks like the scene", () => {
+  it("reads no mode: only enabled, the desks and the deploys count", () => {
     const body = { v: 1, enabled: true, desks: [{ slot: 1, state: "input" }], github: [] };
-    expect(signalFromBody({ ...body, mode: "off" }, 0)).toEqual({ asking: [], deployAt: null });
-    expect(signalFromBody({ ...body, mode: "semi-live" }, 0)).toEqual({ asking: [1], deployAt: null });
+    for (const mode of ["off", "semi-live", "live", 1, undefined]) expect(signalFromBody({ ...body, mode }, 0)).toEqual({ asking: [1], deployAt: null });
+    expect(signalFromBody({ ...body, enabled: false, mode: "live" }, 0)).toEqual({ asking: [], deployAt: null });
+  });
+});
+
+describe("office signal expiry", () => {
+  afterEach(() => {
+    setOfficeSignal({ asking: [], deployAt: null, sceneFeeding: false, goodAt: 0 });
+    vi.useRealTimers();
+  });
+
+  it("clears asking and deployAt 60 s after the last good answer with no watch running", async () => {
+    vi.useFakeTimers();
+    setOfficeSignal({ asking: [3], deployAt: Date.now(), goodAt: Date.now() });
+    expect(officeSignal.needsKurniadi).toBe(true);
+    await vi.advanceTimersByTimeAsync(40_000);
+    // A newer good answer moves the window; a patch that leaves goodAt alone keeps it.
+    setOfficeSignal({ asking: [3, 4], goodAt: Date.now() });
+    await vi.advanceTimersByTimeAsync(30_000);
+    setOfficeSignal({ sceneFeeding: true });
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(officeSignal).toMatchObject({ needsKurniadi: true, asking: [3, 4] });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(officeSignal).toMatchObject({ needsKurniadi: false, asking: [], deployAt: null, sceneFeeding: true });
+  });
+
+  it("clears an already stale answer at once and arms nothing for a dark signal", async () => {
+    vi.useFakeTimers();
+    setOfficeSignal({ asking: [1], goodAt: Date.now() - 61_000 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(officeSignal.needsKurniadi).toBe(false);
+    setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

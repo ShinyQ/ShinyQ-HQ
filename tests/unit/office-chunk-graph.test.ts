@@ -101,7 +101,7 @@ describe("Agent Office chunk boundary", () => {
     // The idle flag starts false and flips only inside the afterFirstFrameIdle callback.
     expect(mount).toMatch(/const idle = useRef\(false\)/);
     expect(mount.match(/idle\.current = true/g)).toHaveLength(1);
-    expect(mount).toMatch(/afterFirstFrameIdle\(\(\) => \{\s*idle\.current = true;\s*\}\)/);
+    expect(mount).toMatch(/afterFirstFrameIdle\(\(\) => \{\s*idle\.current = true;\s*stop = startOfficeWatch\(\);\s*\}\)/);
     // The one loadOffice call is gated by officeLoadWanted fed with that flag and speculativePrefetchOn.
     expect(mount.match(/loadOffice\(\)/g)).toHaveLength(1);
     expect(mount).toMatch(/const want = officeLoadWanted\(\{\s*idle: idle\.current,[^}]*prefetch: prefetch\.current,/);

@@ -79,22 +79,16 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
   const prefetch = useRef<boolean | null>(null);
   const live = useRef<Group>(null);
   const fade = useRef<{ t: number; slots: FadeSlot[] | null }>({ t: 0, slots: null });
-  useEffect(
-    () =>
-      afterFirstFrameIdle(() => {
-        idle.current = true;
-      }),
-    [],
-  );
-  // The beacon's office watch (main path): its first fetch once the first frame went idle.
+  // Once the first frame went idle: the load trigger may ask, and the beacon's office watch starts (main path).
   useEffect(() => {
-    let stopWatch: (() => void) | undefined;
+    let stop: (() => void) | undefined;
     const cancel = afterFirstFrameIdle(() => {
-      stopWatch = startOfficeWatch();
+      idle.current = true;
+      stop = startOfficeWatch();
     });
     return () => {
       cancel();
-      stopWatch?.();
+      stop?.();
     };
   }, []);
   // The fade-in (frame deltas, a cut under reduced motion), from the frame the live scene shows (`OfficeReady`).

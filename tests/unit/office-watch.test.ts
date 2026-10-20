@@ -42,10 +42,9 @@ describe("office watch", () => {
     const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     await vi.advanceTimersByTimeAsync(31_000);
     expect(f).not.toHaveBeenCalled();
-    // The tab turning visible fetches at once.
+    // Visibility is read at tick time: the next tick after the tab turns visible fetches.
     visibility.mockReturnValue("visible");
-    document.dispatchEvent(new Event("visibilitychange"));
-    await vi.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(30_000);
     expect(f).toHaveBeenCalledTimes(1);
     stop();
   });
@@ -97,6 +96,17 @@ describe("office watch", () => {
     expect(officeSignal.asking).toEqual([]);
     stop();
   });
+  it("clears the beacon at once when stopped (the Lobby unmounts on a ride off L1)", async () => {
+    vi.useFakeTimers();
+    getHQStore().setState({ floor: "L1", ride: null });
+    const stop = startOfficeWatch({ fetch: fetcher("input"), now: () => Date.now(), every: 30_000 });
+    await vi.advanceTimersByTimeAsync(10);
+    setOfficeSignal({ deployAt: Date.now() });
+    expect(officeSignal.needsKurniadi).toBe(true);
+    stop();
+    expect(officeSignal).toMatchObject({ needsKurniadi: false, asking: [], deployAt: null });
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it("never throws on hostile bodies and keeps no text from them", async () => {
     vi.useFakeTimers();
     getHQStore().setState({ floor: "L1", ride: null });
@@ -147,9 +157,10 @@ describe("office watch", () => {
     state = "working";
     await officeWatchNow();
     expect(officeSignal.needsKurniadi).toBe(false);
+    const calls = f.mock.calls.length;
     stop();
     await officeWatchNow();
-    expect(f).toHaveBeenCalledTimes(f.mock.calls.length);
+    expect(f).toHaveBeenCalledTimes(calls);
   });
   it("fetches the protocol path and keeps the main-path modules free of the protocol, the content schema and zod", () => {
     const f = fetcher("asleep");

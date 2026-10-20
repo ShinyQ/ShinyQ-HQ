@@ -15,14 +15,21 @@ export interface OfficeSignal {
   goodAt: number;
 }
 
-const blank = (): OfficeSignal => ({ needsKurniadi: false, asking: [], deployAt: null, sceneFeeding: false, goodAt: 0 });
-export const officeSignal: OfficeSignal = blank();
-const SERVER = blank();
+export const officeSignal: OfficeSignal = { needsKurniadi: false, asking: [], deployAt: null, sceneFeeding: false, goodAt: 0 };
 const listeners = new Set<() => void>();
+/** The keep-last window: a raised signal goes dark this long after its last good answer (ms). */
+const KEEP_MS = 60_000;
+let stale: ReturnType<typeof setTimeout> | undefined;
 
+/**
+ * Patches the signal and re-arms its expiry: whoever fed it (the watch or the scene) and whether or not either still
+ * runs (riding off L1 unmounts both), `asking` and `deployAt` clear 60 s after `goodAt`, so the beacon is never stale.
+ */
 export function setOfficeSignal(patch: Partial<OfficeSignal>): void {
   Object.assign(officeSignal, patch);
   officeSignal.needsKurniadi = officeSignal.asking.length > 0;
+  clearTimeout(stale);
+  if (officeSignal.needsKurniadi || officeSignal.deployAt !== null) stale = setTimeout(() => setOfficeSignal({ asking: [], deployAt: null }), officeSignal.goodAt + KEEP_MS - Date.now());
   for (const l of listeners) l();
 }
 
@@ -33,13 +40,13 @@ export const subscribeOfficeSignal = (cb: () => void) => {
   };
 };
 
-/** `select` must return a primitive or a field of the signal (a fresh object each call would re-render forever). */
+/**
+ * `select` must return a primitive or a field of the signal (a fresh object each call would re-render forever). The
+ * server snapshot is the same read: nothing ever feeds the signal before hydration, so it is still the dark default.
+ */
 export function useOfficeSignal<T>(select: (s: OfficeSignal) => T): T {
-  return useSyncExternalStore(
-    subscribeOfficeSignal,
-    () => select(officeSignal),
-    () => select(SERVER),
-  );
+  const get = () => select(officeSignal);
+  return useSyncExternalStore(subscribeOfficeSignal, get, get);
 }
 
 const DEPLOY_FRESH_MS = 30_000;
@@ -49,7 +56,7 @@ const isSlot = (x: unknown): x is number => Number.isInteger(x) && (x as number)
 
 /**
  * Reads only what the beacon needs from a GET /api/office (v1) body: null when it does not look like one. Never throws
- * and never keeps text. An office in mode "off" asks nothing (its Rovers sleep, as in the scene's view).
+ * and never keeps text.
  */
 export function signalFromBody(body: unknown, now: number): { asking: number[]; deployAt: number | null } | null {
   if (!isObj(body) || body.v !== 1) return null;
@@ -59,7 +66,7 @@ export function signalFromBody(body: unknown, now: number): { asking: number[]; 
   const asking: number[] = [];
   for (const d of desks) {
     if (!isObj(d) || typeof d.state !== "string" || !isSlot(d.slot)) return null;
-    if (d.state === "input" && body.mode !== "off") asking.push(d.slot);
+    if (d.state === "input") asking.push(d.slot);
   }
   let deployAt: number | null = null;
   for (const g of github) {
