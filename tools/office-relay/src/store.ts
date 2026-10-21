@@ -147,6 +147,15 @@ export function writeSent(paths: RelayPaths, session: string, sent: Sent): void 
   writeAtomic(sentFile(paths, session), JSON.stringify(sent));
 }
 
+/**
+ * Runs `fn` under the session's throttle lock (see `withFileLock`): a hook and the session's trailing sender read,
+ * decide and write the sent record one after another, so a beat is never sent twice or lost between them.
+ */
+export function withSessionLock<T>(paths: RelayPaths, session: string, fn: () => T, budget?: number): T {
+  ensure(paths.sessions);
+  return withFileLock(sentFile(paths, session), fn, budget);
+}
+
 const toolFile = (paths: RelayPaths, session: string) => path.join(paths.sessions, `${session.slice(0, 32)}.tool.json`);
 
 export function readLastTool(paths: RelayPaths, session: string): LastTool | null {

@@ -5,7 +5,8 @@ import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parseOfficeBeat } from "../../../src/lib/office/protocol";
 import { readGit } from "./git";
-import { runHook } from "./hook";
+import { COALESCE_MS } from "./beat";
+import { flushSession, runHook } from "./hook";
 import { install, installed, installPaths, uninstall } from "./install";
 import { endpointOf, postBeat, readIngestKey } from "./send";
 import { appendLog, isPaused, loadConfig, relayPaths, type RelayPaths } from "./store";
@@ -47,8 +48,48 @@ function dispatch(body: string): void {
   child.unref();
 }
 
+/** Starts the session's detached trailing sender (`flush`), which sleeps until `due`; the hook does not wait for it. */
+function schedule(session: string, due: number, token: string): void {
+  const child = spawn(process.execPath, ["--no-env-file", SELF, "flush", session, String(due), token], { cwd: "/", detached: true, stdio: "ignore", env: process.env });
+  child.on("error", () => undefined);
+  child.unref();
+}
+
+/** The coalescing window: COALESCE_MS, or OFFICE_RELAY_COALESCE_MS (0 to 60000 ms) for tests. */
+function coalesceMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.OFFICE_RELAY_COALESCE_MS;
+  const n = raw && /^\d{1,5}$/.test(raw) ? Number(raw) : NaN;
+  return n >= 0 && n <= 60_000 ? n : COALESCE_MS;
+}
+
+/** The trailing sender ends after this many wakes (at most one per 10 to 15 s: about an hour); a stale `due` lets the next hook start another. */
+const FLUSH_WAKES = 240;
+const SESSION = /^[0-9a-f]{64}$/;
+const TOKEN = /^[0-9a-f]{16}$/;
+
+/**
+ * The trailing sender: sleeps until `due`, then sends the session's queued change or keepalive (`flushSession`), and
+ * sleeps again while the hooks keep something due. Ends when nothing is left, or when another sender owns the session.
+ */
+async function flush(paths: RelayPaths, session: string, dueArg: string, token: string): Promise<void> {
+  if (!SESSION.test(session) || !TOKEN.test(token) || !/^\d{1,15}$/.test(dueArg)) return;
+  let due: number | undefined = Number(dueArg);
+  for (let wake = 0; due !== undefined && wake < FLUSH_WAKES; wake++) {
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, due! - Date.now())));
+    const step = flushSession(paths, session, token, Date.now(), coalesceMs());
+    if (step.body) {
+      if (process.env.OFFICE_RELAY_SPOOL) appendFileSync(process.env.OFFICE_RELAY_SPOOL, `${step.body}\n`);
+      else await post(paths, step.body);
+    }
+    due = step.due;
+  }
+}
+
 async function send(paths: RelayPaths): Promise<void> {
-  const body = process.env.OFFICE_BEAT ?? "";
+  return post(paths, process.env.OFFICE_BEAT ?? "");
+}
+
+async function post(paths: RelayPaths, body: string): Promise<void> {
   let valid = false;
   try {
     valid = parseOfficeBeat(JSON.parse(body)) !== null;
@@ -84,17 +125,19 @@ function status(paths: RelayPaths): string {
   ].join("\n");
 }
 
-const USAGE = "usage: office-relay hook <agent> <event> | send | pause | resume | status | install | uninstall";
+const USAGE = "usage: office-relay hook <agent> <event> | send | flush <session> <due> <token> | pause | resume | status | install | uninstall";
 
 async function main(argv: string[]): Promise<void> {
   const [command, a = "", b = ""] = argv;
   const paths = relayPaths();
   switch (command) {
     case "hook":
-      runHook(a, b, await readStdin(), { paths, now: Date.now, readGit: (cwd) => readGit(cwd), dispatch });
+      runHook(a, b, await readStdin(), { paths, now: Date.now, readGit: (cwd) => readGit(cwd), dispatch, schedule, coalesceMs: coalesceMs() });
       return;
     case "send":
       return send(paths);
+    case "flush":
+      return flush(paths, a, b, argv[3] ?? "");
     case "pause":
       writeFileSync(paths.pause, "");
       console.log("office-relay: paused (nothing is sent until `office-relay resume`)");
@@ -119,15 +162,16 @@ async function main(argv: string[]): Promise<void> {
 
 const argv = process.argv.slice(2);
 // The background commands never print, even for an error that escapes main (an unhandled rejection or exception).
-if (argv[0] === "hook" || argv[0] === "send") {
+const BACKGROUND = new Set(["hook", "send", "flush"]);
+if (BACKGROUND.has(argv[0])) {
   process.on("uncaughtException", () => process.exit(0));
   process.on("unhandledRejection", () => process.exit(0));
 }
 
-// A hook must never fail or print: hook and send swallow errors and exit 0. Every owner command reports its error (exit 1).
+// A hook must never fail or print: hook, send and flush swallow errors and exit 0. Every owner command reports its error (exit 1).
 main(argv)
   .catch((error: unknown) => {
-    if (argv[0] !== "hook" && argv[0] !== "send") {
+    if (!BACKGROUND.has(argv[0])) {
       console.error(error instanceof Error ? error.message : String(error));
       process.exitCode = 1;
     }
