@@ -7,7 +7,8 @@ The backend of the L1 Agent Office (spec `docs/superpowers/specs/2026-10-18-agen
 |---|---|---|
 | `GET /api/office` | `GET /snapshot` | snapshot v1 (five desks plus `extra`): clients cached from before v2 (edge-cached 5 s per data center, ETag and 304) |
 | `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`, five desks plus `extra`): clients cached from before v3 (its own cache key, same headers) |
-| `GET /api/office?v=3` | `GET /snapshot?v=3` | snapshot v3 (v2 with up to ten desks, slots 0 to 9): the 3D office, the Classic card and the L1 beacon's watch (its own cache key, same headers) |
+| `GET /api/office?v=3` | `GET /snapshot?v=3` | snapshot v3 (v2 with up to ten desks, slots 0 to 9): the Classic card and the L1 beacon's watch (its own cache key, same headers) |
+| `GET /api/office?v=4` | `GET /snapshot?v=4` | snapshot v4 (v3 plus `pipeline`: the 3 newest runs with their job lanes, the latest merges and production deploys): the 3D office (its own cache key, same headers) |
 | `POST /api/office/beat` | `POST /beat` | `office-relay` on the owner's Mac (`X-Office-Signature`) |
 | `POST /api/office/github` | `POST /github` | repository webhooks (`X-Hub-Signature-256`) |
 
@@ -25,9 +26,12 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   `workers/office/` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
   failed" then turns the job red.
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
-- Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2` and v3 only exactly `?v=3` (the
-  Worker forwards no other query, and the Function, the Worker and the Durable Object answer v1 for no query, `?v=4`
-  or junk). Ten seats (`assignSlots`, the front row, slots 0 to 4, filling first): v1 and v2 list the front row's five
+- Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2`, v3 only exactly `?v=3` and v4 only
+  exactly `?v=4` (the Worker forwards no other query, and the Function, the Worker and the Durable Object answer v1
+  for no query, `?v=5` or junk). v4 is `viewV3` plus `pipelineOf`: a run keeps its laned job ids (`order`, at most 24,
+  later jobs folding into the last lane), their names (`names`, cut to 40 characters) and when this attempt was first
+  seen (`started`); runs stored before v4 read without them. Rolled back to before v4, the Worker answers v1 to `?v=4`
+  (the Function and the scene read it as v4 with an empty pipeline). Ten seats (`assignSlots`, the front row, slots 0 to 4, filling first): v1 and v2 list the front row's five
   desks and count the back row (slots 5 to 9) in `extra`, never a slot above 4; v3 lists all ten. Rolled back to
   before v2, the Worker rejects beats that carry `helpers` (the relay omits it at 0), so sessions with helpers go
   missing until the roll forward; v2 clients then get that Worker's v1 body (the Function and the client parsers
