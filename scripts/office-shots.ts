@@ -17,7 +17,9 @@
  * `ring-south` (always-live office, design 5.9): the rover on the Lobby lane ring's south point (the hologram's centre plus
  * `LOBBY.laneRadius` toward the wing), the view turned to look south at the wing, once the office is in view, far
  * (past `OFFICE_LOD.farDistance`) and polling: the live Rovers from afar, the scene chunk loaded on its own at idle;
- * `ring-south-out` (with `ring-south`) the same view one zoom key step out.
+ * on desktop sizes (where the default zoom puts the wing under the HUD's top bar, kept as `ring-south-default`) the view
+ * then tilts up by a mouse drag; `ring-south-out` (with `ring-south`) the same view one zoom key step out. `spawn-wing`: the spawn view turned the same
+ * way toward the wing (a wheel rotate, as a visitor would), the live office far off past the Lobby.
  *
  * `approach`: the rover on the wing's lead road at the Lobby plaza edge (x 3, S - 6), the view turned (a shift-wheel
  * rotate, as a visitor would) to look south into the wing. `overview` (full tier, 1440x900 only): a top-down still of
@@ -107,6 +109,8 @@ const runShots = !video || only !== null || shots !== null;
 if (runShots) mkdirSync(out, { recursive: true });
 
 const SLOW = 120_000;
+/** The ring-south shot's tilt on desktop sizes (px of upward drag, about 0.3 rad): frames the office under the HUD bar. */
+const RING_TILT = -75;
 const probe = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office);
 const camera = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.camera());
 
@@ -214,6 +218,21 @@ async function viewShiftSettled(page: Page) {
 const turnTo = (page: Page, yaw: number) => turnCameraTo(page, yaw, SLOW);
 
 /**
+ * Tilts the follow camera by a vertical mouse drag of `dy` px over the canvas centre (a visitor's tilt; negative tilts the
+ * view up), then waits until it settles.
+ */
+async function tiltBy(page: Page, dy: number) {
+  const vp = page.viewportSize()!;
+  const x = vp.width / 2;
+  const y = vp.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + dy, { steps: 12 });
+  await page.mouse.up();
+  await waitForCameraSettle(page, { timeout: SLOW });
+}
+
+/**
  * Pins the drawn camera straight over the L1 slab (the Lobby, the hall and the south wing), north up: replaces the
  * camera's `position.copy` and `lookAt` (the Director's per-frame pose) and fixes `fov`, `far` and the fog range.
  */
@@ -305,6 +324,17 @@ async function captureShots(browser: Browser) {
       // The scene chunk loads on its own at idle on L1 (always live); the load here only waits for it.
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
       await waitFor("the office chunk", async () => (await probe(page)).loaded);
+      if (wants("spawn-wing")) {
+        // The spawn view turned toward the wing (south), as a visitor would: the live office from afar.
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        await waitFor("the office in view, far and polling", async () => {
+          const o = await probe(page);
+          return o.inView && o.far && o.polling;
+        });
+        await show(page, reply, statesA(Date.now()), "live", STATES_A);
+        await page.screenshot({ path: name("spawn-wing") });
+        await turnTo(page, 0);
+      }
       if (wants("ring-south")) {
         await driveTo(page, { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius }, SLOW);
         await settle(page);
@@ -314,6 +344,13 @@ async function captureShots(browser: Browser) {
           return o.inView && o.far && o.polling;
         });
         await show(page, reply, statesA(Date.now()), "live", STATES_A);
+        if (!vp.mobile) {
+          // At the default desktop zoom the wing sits under the HUD's top bar: keep that view as ring-south-default, then
+          // tilt the view up (a visitor's drag) so the wall, the sign and the Rovers show clear of the bar.
+          await page.screenshot({ path: name("ring-south-default") });
+          await tiltBy(page, RING_TILT);
+          await waitForFrames(page, 20);
+        }
         await page.screenshot({ path: name("ring-south") });
         // One zoom key step out (a visitor's next move from here): the camera rises and the wing fills more of the frame.
         if (wants("ring-south-out")) {

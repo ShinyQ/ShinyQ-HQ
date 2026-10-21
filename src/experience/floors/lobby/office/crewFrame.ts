@@ -93,7 +93,8 @@ export interface LodStep {
 /**
  * One frame of the level of detail (pure; writes `out`, so a frame allocates nothing): inside `OFFICE_LOD.farDistance`
  * it steps every frame, past it it accumulates the frame deltas and steps once they reach `1 / farHz`, by all of them,
- * so the animations keep their real time.
+ * so the animations keep their real time. The caller passes animation-scaled time (`animationSpeed()`), so the far rate
+ * counts scene seconds, not wall seconds: a test speed-up steps faster in real time.
  */
 export function lodStep(distance: number, dt: number, acc: number, out: LodStep = { step: false, dt: 0, acc: 0 }): LodStep {
   const sum = acc + dt;

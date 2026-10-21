@@ -310,19 +310,25 @@ test.describe("Agent Office (L1)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the live layer mounts at idle on L1 without moving the rover, whether or not the office is in view", async ({ page }) => {
+  test("the live layer mounts at idle on L1 with the office out of view, without moving the rover", async ({ page }) => {
     await serveOffice(page);
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
+    // The spawn view frames the wing's bounds: turn away (north, a wheel turn; the rover stays) so the scene mounts out of view.
+    await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
     const at = await roverAt(page);
     // Positive control for the ?prefetch=off test below: the first ask after the first frame went idle loads the chunk
     // (an accepted ask leaves "idle" and stops the count), and the scene compiles and shows (`loaded`) at the spawn.
     await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
     expect(await trigger(page)).toMatchObject({ state: "ready", asks: expect.any(Number) });
     expect((await trigger(page)).asks).toBeGreaterThanOrEqual(1);
+    // Mounted while the office is out of view: past a watch tick (0.5 s) the view still misses the wing, nothing polls.
+    await waitForFrames(page, 30, 1_200);
+    expect(await probe(page)).toMatchObject({ loaded: true, inView: false, polling: false });
+    expect(await reasons(page)).toEqual([]);
     const now = await roverAt(page);
     expect(Math.hypot(now.x - at.x, now.z - at.z), "the rover never moved").toBeLessThan(0.01);
   });

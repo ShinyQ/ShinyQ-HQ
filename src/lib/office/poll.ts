@@ -26,8 +26,12 @@ export interface OfficeFeed {
 }
 
 export interface OfficePoller {
-  /** Begin polling now (idempotent). */
-  start(): void;
+  /**
+   * Begin polling (idempotent). The first start fetches at once; a later one waits out what is left of `interval`
+   * since the last request (so a view flickering in and out never fetches more often than the cadence), unless
+   * `now` asks for a fetch at once (the tab turning visible, the test hook).
+   */
+  start(opts?: { now?: boolean }): void;
   /** Stop timers and abort the request in flight (keeps the last feed). */
   stop(): void;
   /** Visitor input: resets the 10 min idle stop, restarts if it had stopped for idleness. */
@@ -84,6 +88,8 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   let timer: unknown = null;
   /** `now()` when the pending wait was armed (the last request settled). */
   let armedAt = 0;
+  /** `now()` when the last request began (null before the first). */
+  let requestedAt: number | null = null;
   let generation = 0;
   let inflight: AbortController | null = null;
 
@@ -104,6 +110,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
 
   /** One request; its result is dropped when stop() or a restart changed the generation while it was in flight. */
   async function load(gen: number): Promise<void> {
+    requestedAt = now();
     if (current.status === "idle") set({ ...current, status: "loading" });
     const controller = new AbortController();
     inflight = controller;
@@ -143,13 +150,21 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   }
 
   const poller: OfficePoller = {
-    start() {
+    start(opts) {
       if (running) return;
       running = true;
       idleStopped = false;
-      lastTouch = now();
+      const t = now();
+      lastTouch = t;
       generation += 1;
-      void tick(generation);
+      const gen = generation;
+      const wait = opts?.now || requestedAt === null ? 0 : Math.min(interval(current), Math.max(0, requestedAt + interval(current) - t));
+      if (wait <= 0) {
+        void tick(gen);
+        return;
+      }
+      armedAt = requestedAt ?? t;
+      timer = setTimer(() => void tick(gen), wait);
     },
     stop() {
       running = false;

@@ -15,7 +15,9 @@ export function officePollInterval(reasons: ReadonlySet<OfficePollReason>, feed:
 
 /**
  * The 3D office's one poller (`src/lib/office/poll.ts`). It runs while any reason wants it, at the cadence the reasons
- * set (`officePollInterval`); out of view with no drawer open it stops, and the office watch polls instead. Visitor
+ * set (`officePollInterval`); out of view with no drawer open it stops, and the office watch polls instead. Coming
+ * back into view waits out the rest of the cadence since the last request (panning across the frustum edge never
+ * fetches faster than the cadence). Visitor
  * input resets its 10 minute idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot
  * v2 (desk helpers), which also accepts a v1 body after a rollback. Chunk only.
  */
@@ -43,7 +45,7 @@ function attach(): () => void {
     if (document.visibilityState !== "visible" || !wants.size) return;
     poller.stop();
     poller.touch();
-    poller.start();
+    poller.start({ now: true });
   };
   for (const type of INPUT) window.addEventListener(type, touch, { passive: true });
   document.addEventListener("visibilitychange", onVisible);
@@ -97,7 +99,7 @@ export const officeTest = {
   poll(): void {
     settle();
     poller.stop();
-    poller.start();
+    poller.start({ now: true });
     if (wants.size) return;
     release = poller.subscribe((feed) => {
       if (feed.status === "loading") return;

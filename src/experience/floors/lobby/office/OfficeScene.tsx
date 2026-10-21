@@ -681,6 +681,12 @@ function writeLead(w: WatchState, slot: number, x: number, y: number) {
   }
 }
 
+/** Whether any chip, leader line or tick is on screen (the watch has chip work to do even out of view). */
+function anyChipShown(w: WatchState): boolean {
+  for (let slot = 0; slot < w.shown.length; slot++) if (w.shown[slot] || w.leadOn[slot] || !Number.isNaN(w.tick[slot][0])) return true;
+  return false;
+}
+
 /** One frame of `OfficeWatch` (a plain function, so the watch state it updates stays out of React's render rules). */
 function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clock, size }: RootState) {
   const s = getHQStore().getState();
@@ -706,6 +712,8 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
   }
+  // Out of view with every chip already hidden: no chip work this frame.
+  if (!officeRuntime.inView && !anyChipShown(w)) return;
   const mobile = s.device.viewport === "mobile";
   const mode = here ? officeChipMode(s.activeRoom) : null;
   // The committed layout (React has rendered the previous frame's flags by now), then this frame's.

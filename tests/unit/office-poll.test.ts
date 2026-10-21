@@ -141,7 +141,7 @@ describe("createOfficePoller", () => {
     expect(poller.feed()).toMatchObject({ status: "disabled", snapshot: null });
   });
 
-  it("stop() ends the timers but keeps the feed; start() fetches again at once; unsubscribe stops notifications", async () => {
+  it("stop() ends the timers but keeps the feed; a later start() past the cadence fetches at once; unsubscribe stops notifications", async () => {
     const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
     const poller = createOfficePoller({ fetcher });
     const listener = vi.fn();
@@ -157,6 +157,29 @@ describe("createOfficePoller", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(calls).toHaveLength(2);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("a restart within the cadence waits out its remainder since the last request; start({ now }) fetches at once", async () => {
+    const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(calls).toHaveLength(1);
+    poller.stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(1);
+    // 4 s after the request: the 10 s cadence fetches 6 s later, not at once and not 10 s from the restart.
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 4_000 - 1);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toHaveLength(2);
+    poller.stop();
+    poller.start({ now: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(3);
+    poller.stop();
   });
 });
 
@@ -221,7 +244,7 @@ describe("createOfficePoller robustness", () => {
     const listener = vi.fn();
     poller.subscribe(listener);
     poller.stop();
-    poller.start();
+    poller.start({ now: true });
     await vi.advanceTimersByTimeAsync(0);
     expect(pending).toHaveLength(2);
     const older = statesA(T0 - 5_000);

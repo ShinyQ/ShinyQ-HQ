@@ -171,7 +171,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 - The panel reuses part 3's `createOfficePoller` and `src/lib/office/model.ts` (`officeCounts`, `deskTitle`,
   `STATE_TONE`, `sinceLabel`, `safeGithubUrl`): it polls only while the section is within a screen of the viewport, and
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
-  the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
+  the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does; scrolling the
+  card back near waits out the rest of the cadence since the last request).
 - What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
   activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
   raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with

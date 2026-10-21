@@ -129,7 +129,7 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
       if (document.visibilityState !== "visible" || !near) return;
       poller.stop();
       poller.touch();
-      poller.start();
+      poller.start({ now: true });
     };
     for (const type of INPUT) window.addEventListener(type, touch, { passive: true });
     document.addEventListener("visibilitychange", onVisible);
