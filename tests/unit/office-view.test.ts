@@ -5,7 +5,7 @@ import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, nearDropsFor, nearParts, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import en from "../../messages/en.json";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
@@ -41,6 +41,19 @@ describe("Agent Office view model", () => {
     expect(shared.withSeats(v3, 10)).toBe(v3);
   });
 
+
+  it("keeps the pipeline of a live v4 feed; null offline, off, disabled, before data or for a snapshot without one", () => {
+    const busy = OFFICE_FIXTURES_V4.busy;
+    if (!busy.enabled) throw new Error("busy is enabled");
+    expect(busy.pipeline.runs.length).toBeGreaterThan(0);
+    expect(officeView({ status: "ready", snapshot: busy }).pipeline).toEqual(busy.pipeline);
+    expect(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V4.semiLive as OfficeFeedSnapshot }).pipeline).toEqual({ runs: [], ships: [] });
+    expect(officeView({ status: "offline", snapshot: busy }).pipeline).toBeNull();
+    expect(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V4.off as OfficeFeedSnapshot }).pipeline).toBeNull();
+    expect(officeView({ status: "disabled", snapshot: null }).pipeline).toBeNull();
+    expect(officeView({ status: "idle", snapshot: null }).pipeline).toBeNull();
+    expect(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot }).pipeline).toBeNull();
+  });
 
   it("always shows ten Rovers in slot order, live desks with their state, title only when public", () => {
     const view = ready(statesA(NOW));

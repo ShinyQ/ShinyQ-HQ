@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { officeSignal, setOfficeSignal, signalFromBody } from "@/experience/floors/lobby/office/officeSignal";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 
 const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
@@ -25,7 +25,8 @@ describe("signalFromBody", () => {
     expect(signalFromBody({ ...ok, github: {} }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, v: 2 }, 0)).toEqual({ asking: [2], deployAt: null });
     expect(signalFromBody({ ...ok, v: 3 }, 0)).toEqual({ asking: [2], deployAt: null });
-    for (const v of [0, 4, "3", null]) expect(signalFromBody({ ...ok, v }, 0)).toBeNull();
+    expect(signalFromBody({ ...ok, v: 4 }, 0)).toEqual({ asking: [2], deployAt: null });
+    for (const v of [0, 5, "3", null]) expect(signalFromBody({ ...ok, v }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, enabled: "true" }, 0)).toBeNull();
     const hostile = Object.defineProperty({ v: 1, enabled: true, github: [] }, "desks", { get: () => [{ slot: 0, state: "input" }] });
     expect(signalFromBody(hostile, 0)).toEqual({ asking: [0], deployAt: null });
@@ -33,15 +34,16 @@ describe("signalFromBody", () => {
     const github = [null, 1, { kind: "deploy", status: "failure", at: 0 }, { kind: "deploy", status: "success", at: "0" }, { kind: "run", status: "success", at: 0 }, { kind: "deploy", status: "success", at: 9_000 }, { kind: "deploy", status: "success", at: 5_000 }];
     expect(signalFromBody({ ...ok, github }, 10_000)).toEqual({ asking: [2], deployAt: 9_000 });
   });
-  it("accepts v1, v2 and v3 bodies with up to ten desks and slots 0 to 9 (a back-row asker counts)", () => {
+  it("accepts v1 to v4 bodies with up to ten desks and slots 0 to 9 (a back-row asker counts)", () => {
+    expect(signalFromBody(OFFICE_FIXTURES_V4.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3, 7], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES_V3.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3, 7], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES_V2.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3], deployAt: null });
     const ten = Array.from({ length: 10 }, (_, slot) => ({ slot, state: slot === 9 ? "input" : "working" }));
-    for (const v of [1, 2, 3]) expect(signalFromBody({ v, enabled: true, desks: ten, github: [] }, 0), String(v)).toEqual({ asking: [9], deployAt: null });
+    for (const v of [1, 2, 3, 4]) expect(signalFromBody({ v, enabled: true, desks: ten, github: [] }, 0), String(v)).toEqual({ asking: [9], deployAt: null });
     expect(signalFromBody({ v: 3, enabled: true, desks: [...ten, { slot: 9, state: "input" }], github: [] }, 0)).toBeNull();
     expect(signalFromBody({ v: 3, enabled: true, desks: [{ slot: 10, state: "input" }], github: [] }, 0)).toBeNull();
-    expect(signalFromBody({ ...OFFICE_FIXTURES_V3.busy, v: 4 }, 0)).toBeNull();
+    expect(signalFromBody({ ...OFFICE_FIXTURES_V3.busy, v: 5 }, 0)).toBeNull();
   });
 
   it("reads no mode: only enabled, the desks and the deploys count", () => {

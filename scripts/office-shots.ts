@@ -27,7 +27,7 @@
  * control, so it pins the drawn camera (`__hq.render.camera`) over the slab after the Director's own pose, lifts the
  * fog, hides the floor groups other than L1 (the ghost slabs above would cover it) and the HTML HUD.
  *
- * The living crew (v2 snapshots, `e2e/office-fixtures.ts`, read as v3; the scene, the card and the beacon's watch ask `?v=3`):
+ * The living crew (v2 snapshots, `e2e/office-fixtures.ts`, read as v3 or v4; the card and the beacon's watch ask `?v=3`, the scene `?v=4`):
  * `crew-a` and `crew-b` at the office stop (far chips) once each Rover holds its state's pose and the helper drones
  * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" and the "+2"
  * pill (an activity that does not fit ends in an ellipsis, a head that still does not fit drops the word "helpers", never the pill); `beacon-spawn` at the
@@ -58,6 +58,7 @@ import {
   crewB,
   OFFICE_API,
   OFFICE_API_V3,
+  OFFICE_API_V4,
   OFFICE_REPO,
   officeDesk,
   officeSnapshot,
@@ -132,7 +133,7 @@ const ten = <T,>(front: readonly T[], rest: T): T[] => [...front, ...Array.from(
 async function show(page: Page, reply: { body: unknown }, body: unknown, mode: string, front: readonly string[], frames = 30) {
   const states = ten(front, "asleep");
   reply.body = body;
-  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
   await waitFor(`${mode} ${states.join(",")}`, async () => {
     const o = await probe(page);
     return o.mode === mode && JSON.stringify(o.states) === JSON.stringify(states);
@@ -205,10 +206,11 @@ async function showCrew(page: Page, reply: { body: unknown }, crew: keyof typeof
   if (frames) await waitForFrames(page, frames);
 }
 
-/** Answers `/api/office` from `reply`: `?v=3` (the poller and the beacon watch) as is, the v1 path (no client asks it) `asV1`. */
+/** Answers `/api/office` from `reply`: `?v=3` (the beacon watch) and `?v=4` (the poller) as is, the v1 path (no client asks it) `asV1`. */
 async function serveOffice(page: Page, reply: { body: unknown }) {
   await page.route(OFFICE_API, (route) => {
-    const body = OFFICE_API_V3.test(route.request().url()) ? reply.body : asV1(reply.body);
+    const url = route.request().url();
+    const body = OFFICE_API_V3.test(url) || OFFICE_API_V4.test(url) ? reply.body : asV1(reply.body);
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
 }

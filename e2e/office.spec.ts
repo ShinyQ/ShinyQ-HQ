@@ -23,7 +23,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V3, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
@@ -132,9 +132,10 @@ const roverAt = (page: Page) => page.evaluate(() => (window as unknown as { __hq
 const reasons = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.reasons() ?? []);
 
 /**
- * Answers `/api/office` (`?v=3` for the watch and the poller; a v2 body reads as v3, as after a rollback) from a mutable
- * reply, so a test can switch fixtures or fail the endpoint mid-run. A v2 body answers the v1 path (no client asks it)
- * as v1 (`asV1`); `requests` lists the asked URLs' paths.
+ * Answers `/api/office` (`?v=3` for the watch, `?v=4` for the scene's poller; both get the reply body as is, so a v2 or
+ * v3 body reads as v4 with an empty pipeline, as after a rollback) from a mutable reply, so a test can switch fixtures
+ * or fail the endpoint mid-run. A v2 body answers the v1 path (no client asks it) as v1 (`asV1`); `requests` lists the
+ * asked URLs' paths.
  */
 async function serveOffice(page: Page) {
   const reply: { status: number; body: unknown } = { status: 200, body: OFFICE_FIXTURES.disabled };
@@ -142,7 +143,7 @@ async function serveOffice(page: Page) {
   await page.route(OFFICE_API, (route) => {
     const url = new URL(route.request().url());
     requests.push(url.pathname + url.search);
-    const body = OFFICE_API_V3.test(url.href) ? reply.body : asV1(reply.body);
+    const body = OFFICE_API_V3.test(url.href) || OFFICE_API_V4.test(url.href) ? reply.body : asV1(reply.body);
     return route.fulfill(reply.status === 200 ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: reply.status, body: "" });
   });
   return {
@@ -211,7 +212,7 @@ const droneParts = (page: Page) =>
 
 /** Fetches now (the poller restarts) and waits for that response. */
 async function pollNow(page: Page) {
-  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
 }
 
 /** Parks inside the office view, off the stop (a click still drives), once the office is loaded, in view and polling. */
@@ -516,7 +517,7 @@ test.describe("Agent Office (L1)", () => {
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
     expect((await probe(page)).states).toEqual(tenStates(STATES_A));
     office.set(null, 500);
-    await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
+    await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
     await expect.poll(async () => (await feed(page))?.status).toBe("offline");
     await expect.poll(async () => (await probe(page)).mode).toBe("offline");
     expect((await probe(page)).states).toEqual(tenStates([]));

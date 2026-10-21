@@ -7,11 +7,12 @@ import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, Offic
 export const OFFICE_REPO = "ShinyQ/ShinyQ-HQ";
 
 /**
- * Playwright URL patterns: every snapshot version (v1, `?v=2`, `?v=3`; the 3D office's poller, the beacon's watch and
- * the Classic card all ask `?v=3`), and v3 alone.
+ * Playwright URL patterns: every snapshot version (v1, `?v=2`, `?v=3`, `?v=4`; the beacon's watch and the Classic card
+ * ask `?v=3`, the 3D office's poller `?v=4`), v3 alone and v4 alone.
  */
-export const OFFICE_API = /\/api\/office(\?v=[23])?$/;
+export const OFFICE_API = /\/api\/office(\?v=[234])?$/;
 export const OFFICE_API_V3 = /\/api\/office\?v=3$/;
+export const OFFICE_API_V4 = /\/api\/office\?v=4$/;
 
 export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDeskV2> = {}): OfficeDeskV2 {
   return { slot, agent, state, activity, since: now - 14 * 60_000, recent: [], ...extra };

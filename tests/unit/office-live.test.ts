@@ -24,19 +24,34 @@ afterEach(() => {
 });
 
 describe("Agent Office live feed (3D)", () => {
-  it("polls snapshot v3 while any reason wants it (in view near or far, a drawer open) and stops when none does", async () => {
+  it("polls snapshot v4 while any reason wants it (in view near or far, a drawer open) and stops when none does", async () => {
     officeLive.want("near", true);
     officeLive.want("drawer", true);
     expect(officeLive.wanted()).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe(`${OFFICE_PATH}?v=3`);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${OFFICE_PATH}?v=4`);
     await vi.waitFor(() => expect(officeTest.feed().status).toBe("ready"));
-    // The fixture is a v1 body (as after a rollback): it reads as a v3 snapshot.
-    expect(officeTest.feed().snapshot?.v).toBe(3);
+    // The fixture is a v1 body (as after a rollback): it reads as a v4 snapshot with an empty pipeline.
+    expect(officeTest.feed().snapshot).toMatchObject({ v: 4, pipeline: { runs: [], ships: [] } });
     officeLive.want("near", false);
     expect(officeLive.wanted()).toBe(true);
     officeLive.want("drawer", false);
     expect(officeLive.wanted()).toBe(false);
+  });
+
+  it("asks /api/office?v=4 for every reason (near, far, a drawer) and for the test hook", async () => {
+    for (const reason of ["near", "far", "drawer"] as const) {
+      const { officeLive: live2 } = await freshLive();
+      fetchMock.mockClear();
+      live2.want(reason, true);
+      expect(fetchMock.mock.calls.map((c) => c[0]), reason).toEqual(["/api/office?v=4"]);
+      live2.want(reason, false);
+    }
+    const { officeTest: test2 } = await freshLive();
+    fetchMock.mockClear();
+    test2.poll();
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual(["/api/office?v=4"]);
+    await vi.waitFor(() => expect(test2.feed().status).toBe("ready"));
   });
 
   it("polls fast near or with a drawer open, every 30 s far, and stops out of view (the office watch takes over)", async () => {

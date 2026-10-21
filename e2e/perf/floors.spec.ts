@@ -4,7 +4,7 @@ import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
 import { yawLooking } from "../../src/experience/camera/look";
 import { LOBBY } from "../../src/experience/config";
 import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, turnCameraTo, waitForCameraSettle } from "../hq";
-import { asV1, crewA, OFFICE_API, OFFICE_API_V3 } from "../office-fixtures";
+import { asV1, crewA, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4 } from "../office-fixtures";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
 
@@ -117,7 +117,7 @@ for (const tier of ["lite", "full"] as const) {
   test(`L1 ${tier}: settled draw calls and shader programs with the Needs Kurniadi beacon`, async ({ page }) => {
     await page.route(OFFICE_API, (route) => {
       const body = crewA(Date.now());
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) ? body : asV1(body)) });
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) || OFFICE_API_V4.test(route.request().url()) ? body : asV1(body)) });
     });
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);
@@ -130,7 +130,7 @@ for (const tier of ["lite", "full"] as const) {
   test(`L1 ${tier}: settled draw calls and shader programs with the office in view from the Lobby`, async ({ page }) => {
     await page.route(OFFICE_API, (route) => {
       const body = crewA(Date.now());
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) ? body : asV1(body)) });
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(OFFICE_API_V3.test(route.request().url()) || OFFICE_API_V4.test(route.request().url()) ? body : asV1(body)) });
     });
     await enterFloorRoute(page, "/en", { tier });
     await settleOffice(page);

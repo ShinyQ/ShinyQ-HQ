@@ -1,6 +1,6 @@
 import { deskTitle, officeCounts, withSeats, type OfficeCounts } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_SEATS, type OfficeActivity, type OfficeAgent, type OfficeGithubItem, type OfficeProgress, type OfficeRecent, type OfficeState, type OfficeToday } from "@/lib/office/protocol";
+import { OFFICE_SEATS, type OfficeActivity, type OfficeAgent, type OfficeGithubItem, type OfficePipeline, type OfficeProgress, type OfficeRecent, type OfficeState, type OfficeToday } from "@/lib/office/protocol";
 import type { OfficeTranslate } from "../officeLayout";
 import type { ScreenInput } from "./officeAtlas";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
@@ -38,6 +38,8 @@ export interface OfficeView {
   extra: number;
   github: readonly OfficeGithubItem[];
   today: OfficeToday | null;
+  /** The v4 CI pipeline: null when the view is off, offline or disabled, or the snapshot carries none. */
+  pipeline: OfficePipeline | null;
   updatedAt: number | null;
 }
 
@@ -73,6 +75,7 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
     extra: live ? live.extra : 0,
     github: snap ? snap.github : [],
     today: live ? live.today : null,
+    pipeline: live?.pipeline ?? null,
     updatedAt: snap ? snap.updatedAt : null,
   };
 }

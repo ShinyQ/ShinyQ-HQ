@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
-import { createOfficePoller, OFFICE_V3_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
+import { createOfficePoller, OFFICE_V3_PATH, OFFICE_V4_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
+import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4 } from "@/lib/office/protocol";
 import { officeDesk, officeSnapshot, statesA } from "../../e2e/office-fixtures";
 
 const T0 = 1_800_000_000_000;
@@ -80,6 +80,24 @@ describe("createOfficePoller", () => {
     expect(poller.feed().snapshot?.desks).toHaveLength(10);
     await vi.advanceTimersByTimeAsync(POLL.activeMs);
     expect(poller.feed()).toMatchObject({ status: "ready", snapshot: { ...OFFICE_FIXTURES_V2.busy, v: 3 } });
+    poller.stop();
+  });
+
+  it("polls v4 at OFFICE_V4_PATH and keeps the pipeline in the feed (a rolled-back v3 body reads as v4 with an empty pipeline)", async () => {
+    expect(OFFICE_V4_PATH).toBe("/api/office?v=4");
+    const busy = OFFICE_FIXTURES_V4.busy;
+    if (!busy.enabled) throw new Error("busy is enabled");
+    expect(busy.pipeline.runs.length).toBeGreaterThan(0);
+    const v4 = fakeFetch([{ status: 200, body: busy }, { status: 200, body: OFFICE_FIXTURES_V3.busy }]);
+    const poller = createOfficePoller({ fetcher: v4.fetcher, path: OFFICE_V4_PATH, parse: parseOfficeResponseV4 });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(v4.calls[0].url).toBe("/api/office?v=4");
+    expect(poller.feed()).toMatchObject({ status: "ready", snapshot: { v: 4, pipeline: busy.pipeline } });
+    expect(poller.feed().snapshot?.desks).toHaveLength(10);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(v4.calls[1].url).toBe("/api/office?v=4");
+    expect(poller.feed()).toMatchObject({ status: "ready", snapshot: { ...OFFICE_FIXTURES_V3.busy, v: 4, pipeline: { runs: [], ships: [] } } });
     poller.stop();
   });
 
