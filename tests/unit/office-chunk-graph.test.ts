@@ -20,6 +20,8 @@ const OFFICE_ONLY = [
   `${DIR}/crew.ts`,
   `${DIR}/crewFx.ts`,
   `${DIR}/crewFrame.ts`,
+  `${DIR}/pipeline.ts`,
+  `${DIR}/pipelineFx.ts`,
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Color, Matrix4, Vector3 } from "three";
 import { LOBBY } from "@/experience/config";
 import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
-import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
+import { GLOW_PER_ROVER, glowKey, officeInstances, PACKAGE_START, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const W = LOBBY.officeWing;
@@ -130,5 +130,11 @@ describe("Agent Office Rover rig", () => {
     writeGlow(slots[0], frame, "working", null, 1, 0, true, W.stop, matrices, full);
     writeGlow(slots[0], frame, "working", null, 1, 0, true, W.stop, matrices, dim, 0.5);
     for (const i of [0, 1]) for (let c = 0; c < 3; c++) expect(dim[i * 3 + c]).toBeCloseTo(full[i * 3 + c] * 0.5, 5);
+  });
+
+  it("keeps the packages in the parts mesh after every Rover's parts", () => {
+    expect(PACKAGE_START).toBe(100);
+    expect(PACKAGE_START).toBe(slots.length * PARTS_PER_ROVER);
+    expect(officeInstances().parts).toBe(113);
   });
 });

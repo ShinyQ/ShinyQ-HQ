@@ -25,7 +25,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
-import type { OfficeState } from "@/lib/office/protocol";
+import type { OfficePipeline, OfficeState } from "@/lib/office/protocol";
 import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
@@ -52,12 +52,14 @@ import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew, type LodStep } from "./crewFrame";
-import { towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
+import { DARK_TOWER, PIPE_PARTS, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
+import { deployRunning, diffPipeline, PipeQueue } from "./pipeline";
+import { PipelineFx, restPipeline } from "./pipelineFx";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
@@ -108,11 +110,9 @@ function officeSphere(): Sphere {
   return new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
 }
 
-const DARK_TOWER = { total: 0, done: 0, running: false } as const;
-
 /**
- * Rest instances (every Rover asleep and docked, the tower dark), attached at creation so precompile, bounds and
- * culling see the final meshes: the glow mesh's bounds take in the tower's dots from here.
+ * Rest instances (every Rover asleep and docked, the tower dark, no pipeline effect), attached at creation so
+ * precompile, bounds and culling see the final meshes: the glow mesh's bounds take in the tower's dots from here.
  */
 function restInstances(slots: readonly OfficeSlot[]) {
   const n = COUNTS;
@@ -129,6 +129,7 @@ function restInstances(slots: readonly OfficeSlot[]) {
     writeCrewGlow(s, FRAME, "asleep", fx, 0, slotPhase(s.slot), true, glow, colors);
   }
   writeTower(DARK_TOWER, 0, true, glow, colors);
+  restPipeline(glow, colors, parts);
   return { parts, treads, glow, colors };
 }
 
@@ -325,9 +326,10 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
  * The ten office Rovers (both console rows): light parts and treads (two instanced standard meshes with `alphaHash`,
  * the player Rover's wheel program), their faces and the desk screens (one quad mesh on one canvas atlas, the player
  * face's material settings), and the glow (one instanced holo mesh: antenna tips, halos, progress dots, the crew's
- * effects and the CI tower's lane dots). Each desk's crew actor acts out its state (`crew.ts`). Nothing is written
- * while no pose, glow key, tower key or camera changed; the atlas uploads only its changed cells. Past
- * `OFFICE_LOD.farDistance` the crew, its effects and the tower step `OFFICE_LOD.farHz` times a second (`lodStep`) and the
+ * effects, the CI tower's lane dots and the pipeline effects); the parts mesh also carries the pipeline's packages
+ * (`pipelineFx.ts`). Each desk's crew actor acts out its state (`crew.ts`). Nothing is written while no pose, glow key,
+ * tower key, pipeline key or camera changed; the atlas uploads only its changed cells. Past `OFFICE_LOD.farDistance` the
+ * crew, its effects, the tower and the pipeline effects step `OFFICE_LOD.farHz` times a second (`lodStep`) and the
  * faces and desk screens repaint at most `OFFICE_LOD.atlasFps` times a second.
  */
 function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: readonly OfficeSlot[]; tier: GpuTier; t: OfficeTranslate }) {
@@ -365,6 +367,19 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const lanes = useMemo(() => towerLanes(view), [view]);
   // The tower key last written (the rest instances drew it dark): "" writes the tower on the first frame in view.
   const lanesKey = useRef("");
+  const fx = useMemo(() => new PipelineFx(), []);
+  const queue = useMemo(() => new PipeQueue(), []);
+  const prevPipe = useRef<OfficePipeline | null>(null);
+  const fxKey = useRef("");
+  // Each new feed: diff against the last pipeline (a silent baseline after a load, offline or off).
+  useEffect(() => {
+    const next = view.pipeline;
+    if (next) queue.push(diffPipeline(prevPipe.current, next, Date.now()));
+    prevPipe.current = next;
+  }, [view.pipeline, queue]);
+  useEffect(() => {
+    sceneProbes.office.lanes = lanes.states.filter((s) => s !== "idle").length;
+  }, [lanes]);
   const texts = useMemo((): ScreenTexts => ({ waiting: t("3d.waiting"), jobs: (done, total) => t("3d.jobs", { done, total }), sleep: "z Z" }), [t]);
   const group = useRef<Group>(null);
   const parts = useRef<InstancedMesh>(null);
@@ -431,18 +446,31 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     if (!step.step) return;
     sceneProbes.office.steps += 1;
     sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, step.dt, now, reduced, camera.position, lite);
+    const wall = Date.now();
+    for (const e of queue.due(now, wall)) fx.play(e, now, reduced);
+    const merged = view.today?.prsMerged ?? 0;
+    const deploying = deployRunning(view.pipeline, wall);
     const tk = towerKey(lanes, now, reduced);
-    if (writes.pending() || tk !== lanesKey.current) {
+    const fk = fx.key(now, merged, deploying, reduced);
+    if (writes.pending() || tk !== lanesKey.current || fk !== fxKey.current) {
       const rovers = view.rovers;
       // Only how the meshes look: wait for a drawn frame (a hidden L1 or the office before its precompile skips it).
-      // One callback per object (the latest wins), so it covers both the Rovers and the tower.
+      // One callback per object (the latest wins): the Rovers, the tower and the pipeline effects together.
       whenDrawn(g, () => {
         flushRovers(writes, crew.fx, slots, rovers, now, reduced, lite, { parts: P, treads: D, glow: G, quads: Q }, drawn);
-        if (tk === lanesKey.current) return;
-        writeTower(lanes, now, reduced, G.instanceMatrix.array as Float32Array, G.instanceColor!.array as Float32Array);
-        lanesKey.current = tk;
-        G.instanceMatrix.needsUpdate = true;
-        G.instanceColor!.needsUpdate = true;
+        const gm = G.instanceMatrix.array as Float32Array;
+        const gc = G.instanceColor!.array as Float32Array;
+        if (tk !== lanesKey.current) {
+          writeTower(lanes, now, reduced, gm, gc);
+          lanesKey.current = tk;
+          G.instanceMatrix.needsUpdate = G.instanceColor!.needsUpdate = true;
+        }
+        if (fk !== fxKey.current) {
+          fx.write(now, merged, deploying, reduced, gm, gc, P.instanceMatrix.array as Float32Array);
+          fxKey.current = fk;
+          Object.assign(sceneProbes.office.pipe, fx.counts, { stack: Math.min(PIPE_PARTS.stack, merged) });
+          G.instanceMatrix.needsUpdate = G.instanceColor!.needsUpdate = P.instanceMatrix.needsUpdate = true;
+        }
       });
     }
   });
@@ -901,7 +929,8 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, [agents, t]);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [] });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false });
+      Object.assign(sceneProbes.office.pipe, { packets: 0, bursts: 0, crowns: 0, packages: 0, deployFailed: 0, stack: 0 });
     },
     [],
   );

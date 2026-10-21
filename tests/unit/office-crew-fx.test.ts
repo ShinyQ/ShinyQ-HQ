@@ -1,19 +1,25 @@
-import { Matrix4, Vector3 } from "three";
+import { Color, Matrix4, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { CHARGE_PAD, CHARGE_PAD_TRIM, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
+import { CHARGE_PAD, CHARGE_PAD_TRIM, CREW_GLOW, crewGlowKey, DARK_TOWER, PIPE_GLOW, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower, type LaneStatus, type TowerLanes } from "@/experience/floors/lobby/office/crewFx";
 import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
 import { GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeGlow } from "@/experience/floors/lobby/office/officeRig";
-import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
+import { STATUS_COLOR, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
 import { OFFICE, OFFICE_SEAT_COUNT, officeRiser, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { LOBBY } from "@/experience/config";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
-import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
-import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
+import type { OfficeSnapshotV1, OfficeSnapshotV3, OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { lanesOf } from "@/experience/floors/lobby/office/pipeline";
 
 const LOOK = { camera: 0, tower: 0 };
 const scaleAt = (m: Float32Array, i: number) => new Matrix4().fromArray(m, i * 16).getMaxScaleOnAxis();
 const posAt = (m: Float32Array, i: number) => new Vector3().setFromMatrixPosition(new Matrix4().fromArray(m, i * 16));
+/** Part A's anonymous lanes: `done` of `total` done, the next running, the rest queued. */
+const anon = (total: number, done: number): TowerLanes => {
+  const states = Array.from({ length: total }, (_, i): LaneStatus => (i < done ? "done" : i === done ? "running" : "queued"));
+  return { states, chasing: states.includes("running"), sig: states.map((x) => x[0]).join("") };
+};
 
 describe("crew glow", () => {
   it("shows sparks only while working and hides the rest", () => {
@@ -48,8 +54,11 @@ describe("crew glow layout", () => {
   it("derives every instance count from the one seat count (ten Rovers, the slots and `TOWER.start` alike), the tower's dots after every Rover's glow", () => {
     const n = officeInstances();
     expect(OFFICE_SLOTS).toHaveLength(OFFICE_SEAT_COUNT);
-    expect(n).toEqual({ parts: 10 * PARTS_PER_ROVER, treads: 10 * TREADS_PER_ROVER, glow: 10 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 30 });
-    expect(n.glow).toBe(TOWER.start + TOWER.lanes * TOWER.dots);
+    expect(n).toEqual({ parts: 10 * PARTS_PER_ROVER + 13, treads: 10 * TREADS_PER_ROVER, glow: 643, quads: 30 });
+    // 380 Rover glow, 192 tower dots, then the 71 pipeline effects right after the tower's last dot.
+    expect(n.glow).toBe(10 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots + PIPE_GLOW.count);
+    expect(PIPE_GLOW.start).toBe(TOWER.start + TOWER.lanes * TOWER.dots);
+    expect(PIPE_GLOW.start).toBe(572);
     expect(TOWER.start).toBe(OFFICE_SEAT_COUNT * GLOW_PER_ROVER);
     // Each Rover's rig and crew glow lands in its own block: the last Rover's ends exactly where the tower starts.
     const m = new Float32Array(n.glow * 16);
@@ -148,11 +157,11 @@ describe("crew glow layout", () => {
   });
 });
 
-describe("tower lanes (v1: anonymous progress)", () => {
+describe("tower lanes", () => {
   it("puts the dots on the column's stop-facing side, inside its height", () => {
     const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
     const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
-    writeTower({ total: 12, done: 7, running: true }, 0, false, m, c);
+    writeTower(anon(12, 7), 0, false, m, c);
     const col = officeTowerColumn(LOBBY.officeWing);
     const stop = LOBBY.officeWing.stop;
     const toStop = new Vector3(stop.x - col.x, 0, stop.z - col.z).normalize();
@@ -172,7 +181,7 @@ describe("tower lanes (v1: anonymous progress)", () => {
   it("spans the lanes over most of the slim column's height, the dots across its face", () => {
     const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
     const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
-    writeTower({ total: 0, done: 0, running: false }, 0, true, m, c);
+    writeTower(DARK_TOWER, 0, true, m, c);
     const bottom = posAt(m, TOWER.start).y;
     const top = posAt(m, TOWER.start + (TOWER.lanes - 1) * TOWER.dots).y;
     expect(bottom - OFFICE.tower.plinth).toBeLessThan(0.6);
@@ -185,25 +194,42 @@ describe("tower lanes (v1: anonymous progress)", () => {
     expect(span).toBeLessThan(OFFICE.tower.column);
   });
 
-  it("reads the newest running run's progress", () => {
-    const view = officeView({ status: "ready", snapshot: OFFICE_FIXTURES.busy as OfficeSnapshotV1 });
-    const lanes = towerLanes(view);
-    expect(lanes.total).toBeLessThanOrEqual(TOWER.lanes);
-    expect(lanes.done).toBeLessThanOrEqual(lanes.total);
-    expect(lanes).toEqual({ total: 12, done: 7, running: true });
+  it("gives one lane per job from the v4 pipeline, the back-row run's 3 lanes first", () => {
+    const snap = OFFICE_FIXTURES_V4.busy as OfficeSnapshotV4;
+    const lanes = towerLanes(officeView({ status: "ready", snapshot: snap }));
+    expect(lanes.states).toEqual(lanesOf(snap.pipeline).map((l) => l.status));
+    expect(lanes.states).toHaveLength(TOWER.lanes);
+    expect(lanes.states.slice(0, 3)).toEqual(["running", "queued", "queued"]);
+    expect(lanes.chasing).toBe(true);
   });
-  it("scales done past 24 jobs instead of clamping", () => {
+  it("reads the newest running run's progress as anonymous lanes from a v3 feed (no pipeline), scaled past 24 jobs", () => {
+    const lanes = towerLanes(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeSnapshotV3 }));
+    expect(lanes).toEqual(anon(12, 7));
     const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
     const runs = (done: number, total: number): OfficeSnapshotV1 => ({ ...busy, github: busy.github.map((g) => (g.kind === "run" && g.status === "running" ? { ...g, progress: { done, total } } : g)) });
-    expect(towerLanes(officeView({ status: "ready", snapshot: runs(30, 48) }))).toEqual({ total: 24, done: 15, running: true });
-    expect(towerLanes(officeView({ status: "ready", snapshot: runs(47, 48) }))).toEqual({ total: 24, done: 23, running: true });
-    expect(towerLanes(officeView({ status: "ready", snapshot: runs(48, 48) }))).toEqual({ total: 24, done: 24, running: true });
-    expect(towerLanes(officeView({ status: "ready", snapshot: runs(5, 12) }))).toEqual({ total: 12, done: 5, running: true });
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(30, 48) }))).toEqual(anon(24, 15));
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(47, 48) }))).toEqual(anon(24, 23));
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(48, 48) }))).toEqual(anon(24, 24));
+    expect(towerLanes(officeView({ status: "ready", snapshot: runs(5, 12) }))).toEqual(anon(12, 5));
+  });
+  it("paints a failed lane red and chases every running lane", () => {
+    const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
+    const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
+    const states: LaneStatus[] = ["failed", "running", "done", "running", "queued"];
+    writeTower({ states, chasing: true, sig: "frdrq" }, 0, false, m, c);
+    const rgb = (lane: number, d = 0) => Array.from(c.slice((TOWER.start + lane * TOWER.dots + d) * 3, (TOWER.start + lane * TOWER.dots + d) * 3 + 3));
+    const red = new Color(STATUS_COLOR.failure).multiplyScalar(TOWER.done);
+    expect(rgb(0)[0]).toBeCloseTo(red.r);
+    expect(rgb(0)[1]).toBeCloseTo(red.g);
+    // Both running lanes chase: the head dot bright, the others dim.
+    for (const lane of [1, 3]) expect(rgb(lane, 0)[0]).toBeGreaterThan(rgb(lane, 1)[0] * 2);
+    expect(scaleAt(m, TOWER.start + 5 * TOWER.dots)).toBeCloseTo(TOWER.size.idle);
+    expect(scaleAt(m, TOWER.start + 4 * TOWER.dots)).toBeCloseTo(TOWER.size.lit);
   });
   it("is dark and keyed still without a run", () => {
     const view = officeView({ status: "ready", snapshot: OFFICE_FIXTURES.quiet as OfficeSnapshotV1 });
     const lanes = towerLanes(view);
-    expect(lanes).toEqual({ total: 0, done: 0, running: false });
+    expect(lanes).toEqual(DARK_TOWER);
     const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
     const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
     writeTower(lanes, 3, false, m, c);
