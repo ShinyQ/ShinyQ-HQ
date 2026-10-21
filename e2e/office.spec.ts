@@ -5,7 +5,7 @@ import id from "../messages/id.json";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE, officeSlots } from "../src/experience/floors/lobby/officeLayout";
-import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V4 } from "../src/lib/office/fixtures";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
   asReturningVisitor,
@@ -23,7 +23,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, deployed, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, shipStep, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
@@ -31,7 +31,8 @@ import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_
  * Rovers on two console rows with their states and the front row's chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
- * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
+ * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones; the ship-it pipeline (snapshot
+ * v4: the tower's lanes per job, packets, bursts and packages, the production deploy beam, the CI drawer). `/api/office` is answered from fixtures (Playwright route); waits
  * are on state, never on time.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -52,6 +53,9 @@ type OfficeProbe = {
   beacon: boolean;
   crew: CrewProbe[];
   drones: number[];
+  lanes: number;
+  pipe: { packets: number; bursts: number; crowns: number; packages: number; deployFailed: number; stack: number };
+  beam: boolean;
 };
 type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number; reasons(): string[] };
 type OfficeWindow = Window & {
@@ -132,10 +136,10 @@ const roverAt = (page: Page) => page.evaluate(() => (window as unknown as { __hq
 const reasons = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.reasons() ?? []);
 
 /**
- * Answers `/api/office` (`?v=3` for the watch, `?v=4` for the scene's poller; both get the reply body as is, so a v2 or
- * v3 body reads as v4 with an empty pipeline, as after a rollback) from a mutable reply, so a test can switch fixtures
- * or fail the endpoint mid-run. A v2 body answers the v1 path (no client asks it) as v1 (`asV1`); `requests` lists the
- * asked URLs' paths.
+ * Answers `/api/office` (`?v=4` for the scene's poller gets the reply body as is, so a v2 or v3 body reads as v4 with an
+ * empty pipeline, as after a rollback; `?v=3` for the watch gets a v4 body as the Worker's v3, `asV3`, else as is) from a
+ * mutable reply, so a test can switch fixtures or fail the endpoint mid-run. A v2 body answers the v1 path (no client
+ * asks it) as v1 (`asV1`); `requests` lists the asked URLs' paths.
  */
 async function serveOffice(page: Page) {
   const reply: { status: number; body: unknown } = { status: 200, body: OFFICE_FIXTURES.disabled };
@@ -143,7 +147,7 @@ async function serveOffice(page: Page) {
   await page.route(OFFICE_API, (route) => {
     const url = new URL(route.request().url());
     requests.push(url.pathname + url.search);
-    const body = OFFICE_API_V3.test(url.href) || OFFICE_API_V4.test(url.href) ? reply.body : asV1(reply.body);
+    const body = OFFICE_API_V4.test(url.href) ? reply.body : OFFICE_API_V3.test(url.href) ? asV3(reply.body) : asV1(reply.body);
     return route.fulfill(reply.status === 200 ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: reply.status, body: "" });
   });
   return {
@@ -671,6 +675,171 @@ test.describe("Agent Office (L1)", () => {
     await waitForCameraSettle(page);
     const peaks = await expectRenderBudget(page);
     expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+  });
+});
+
+/** Serves one ship-it step (`shipStep`, for now) and polls it; the tower then shows `lanes` lanes. */
+async function shipIt(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, step: Parameters<typeof shipStep>[1], lanes: number) {
+  office.set(shipStep(Date.now(), step));
+  await pollNow(page);
+  await expect.poll(async () => (await probe(page)).lanes, { timeout: 30_000 }).toBe(lanes);
+}
+
+/** The pipeline effects played since the scene mounted and the dock stack (`__hq.probes.office.pipe`). */
+const pipe = async (page: Page) => (await probe(page)).pipe;
+
+/**
+ * Runs `act`, then waits for one deploy beam to start and end (`__hq.probes.office.beam`, written by the beacon chunk's
+ * frame) and returns how long it showed on the scene clock (`__hq.clock()`), read on every animation frame.
+ */
+async function beamRun(page: Page, act: () => Promise<void>) {
+  await page.evaluate(() => {
+    const w = window as unknown as OfficeWindow & GlWindow & { __beam?: { on: number | null; off: number | null } };
+    const run = (w.__beam = { on: null as number | null, off: null as number | null });
+    const tick = () => {
+      const lit = w.__hq.probes.office.beam;
+      const t = w.__hq.clock();
+      if (lit && run.on === null) run.on = t;
+      if (!lit && run.on !== null) run.off = t;
+      if (run.off === null) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await act();
+  await page.waitForFunction(() => (window as unknown as { __beam: { on: number | null } }).__beam.on !== null, undefined, { timeout: 60_000 });
+  await page.waitForFunction(() => (window as unknown as { __beam: { off: number | null } }).__beam.off !== null, undefined, { timeout: 60_000 });
+  const run = await page.evaluate(() => (window as unknown as { __beam: { on: number; off: number } }).__beam);
+  return run.off - run.on;
+}
+
+/** Whether the beacon chunk's mesh is in the scene (it mounts once the chunk loaded). */
+const beaconMounted = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): unknown } } } }).__hq.render.scene.getObjectByName("office-beacon") !== undefined);
+
+test.describe("Agent Office (L1) ship-it pipeline", () => {
+  test("the tower shows one lane per job: 24 for the busy pipeline, part A's anonymous lanes for a v3 body on ?v=4", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    // Busy: runs of 3, 12 and 12 jobs, the running ones first; the lanes stop at 24.
+    office.set(OFFICE_FIXTURES_V4.busy);
+    await pollNow(page);
+    await expect.poll(async () => (await probe(page)).lanes, { timeout: 30_000 }).toBe(24);
+    // A rolled-back Worker answers v3 on ?v=4: the newest running run's progress (7 of 12) as twelve anonymous lanes.
+    office.set({ ...statesA(Date.now()), v: 3 });
+    await pollNow(page);
+    await expect.poll(async () => (await probe(page)).lanes, { timeout: 30_000 }).toBe(12);
+    expect(errors).toEqual([]);
+  });
+
+  test("a finished job bursts, a new run on back-row desk 6 sends a packet, a new merge flies a package and the stack follows today's merges", async ({ page }) => {
+    const errors = collectErrors(page);
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    // The first pipeline is a silent baseline: no effect plays, the stack shows today's 2 merges.
+    await shipIt(page, office, "base", 4);
+    await expect.poll(async () => (await pipe(page)).stack, { timeout: 30_000 }).toBe(2);
+    expect(await pipe(page)).toMatchObject({ packets: 0, bursts: 0, packages: 0 });
+    await shipIt(page, office, "burst", 4);
+    await expect.poll(async () => (await pipe(page)).bursts, { timeout: 30_000 }).toBe(1);
+    await shipIt(page, office, "packet", 6);
+    await expect.poll(async () => (await pipe(page)).packets, { timeout: 30_000 }).toBe(1);
+    await shipIt(page, office, "merge", 6);
+    await expect.poll(async () => (await pipe(page)).packages, { timeout: 30_000 }).toBe(1);
+    await expect.poll(async () => (await pipe(page)).stack, { timeout: 30_000 }).toBe(3);
+    expect(await pipe(page)).toMatchObject({ packets: 1, bursts: 1, packages: 1 });
+    expect(errors).toEqual([]);
+  });
+
+  test("reduced motion: the same snapshots send no packet and no burst; the lanes and the stack still update", async ({ page }) => {
+    const errors = collectErrors(page);
+    await chooseMotion(page, "reduced");
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await shipIt(page, office, "base", 4);
+    await expect.poll(async () => (await pipe(page)).stack, { timeout: 30_000 }).toBe(2);
+    await shipIt(page, office, "burst", 4);
+    await shipIt(page, office, "packet", 6);
+    await shipIt(page, office, "merge", 6);
+    await expect.poll(async () => (await pipe(page)).stack, { timeout: 30_000 }).toBe(3);
+    // Past the queue's gaps on the scene clock: whatever was due has played (or, here, was skipped).
+    await waitForSceneSeconds(page, 3);
+    await waitForFrames(page, 30);
+    expect(await pipe(page)).toMatchObject({ packets: 0, bursts: 0, crowns: 0, stack: 3 });
+    expect(errors).toEqual([]);
+  });
+
+  test("a fresh production deploy runs the beam for about 8 s, from the spawn through the watch and in view through the scene; a stale one never does", async ({ page }) => {
+    const errors = collectErrors(page);
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    office.set(statesA(Date.now()));
+    await enterHQ(page);
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    // At the spawn, the view turned north away from the wing: the scene's poller stops and the watch alone polls (v3).
+    await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: false, polling: false });
+    // Nobody asks and the deploy is 40 s old (over the 30 s window): no beam, and the beacon chunk never loads.
+    office.set(deployed(Date.now(), Date.now() - 40_000));
+    await watchNow(page);
+    await waitForFrames(page, 30);
+    expect(await beaconMounted(page)).toBe(false);
+    expect((await probe(page)).beam).toBe(false);
+    // A deploy 5 s old: the watch loads the beacon chunk and the beam shows for its 8 s, with no Rover asking.
+    const watched = await beamRun(page, async () => {
+      office.set(deployed(Date.now(), Date.now() - 5_000, 7002));
+      await watchNow(page);
+    });
+    expect(watched, `beam for ${watched.toFixed(2)} s of scene clock (watch)`).toBeGreaterThan(7);
+    expect(watched).toBeLessThan(11);
+    expect((await probe(page)).beacon).toBe(false);
+    // Back toward the wing (the scene polls v4 now): the next fresh deploy runs it again, from the scene's own feed.
+    office.set(statesA(Date.now()));
+    await turnCameraTo(page, yawLooking({ x: 0, z: 1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: true, polling: true });
+    const before = office.requests().length;
+    const seen = await beamRun(page, async () => {
+      office.set(deployed(Date.now(), Date.now() - 3_000, 7003));
+      await pollNow(page);
+    });
+    expect(seen, `beam for ${seen.toFixed(2)} s of scene clock (scene)`).toBeGreaterThan(7);
+    expect(seen).toBeLessThan(11);
+    expect(office.requests().slice(before)).toContain("/api/office?v=4");
+    expect(errors).toEqual([]);
+  });
+
+  test("clicking the CI tower drives to the office stop and opens the CI drawer with the runs and their jobs", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await shipIt(page, office, "packet", 6);
+    const point = await clickablePoint(page, "L1:station:office-ci");
+    expect(point, "the CI tower shows on the canvas").not.toBeNull();
+    await page.mouse.click(point!.x, point!.y);
+    await waitForRoom(page, "L1:office-ci");
+    const at = await roverAt(page);
+    expect(Math.hypot(at.x - LOBBY.officeWing.stop.x, at.z - LOBBY.officeWing.stop.z)).toBeLessThan(1);
+    const drawer = page.getByTestId("room-drawer");
+    await expect(drawer.getByTestId("office-body")).toHaveAttribute("data-panel", "ci");
+    const runs = drawer.getByTestId("office-ci-run");
+    await expect(runs).toHaveCount(2);
+    await expect(runs.first()).toContainText("CI · feat/second-console-row");
+    await expect(runs.first()).toContainText(`Job 1: ${en.office["3d"].ci.job.running}`);
+    await expect(runs.first().getByRole("link")).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/4102");
+    await expect(runs.nth(1)).toContainText(`Job 2: ${en.office["3d"].ci.job.done}`);
+    await expect(drawer).toContainText(en.office["3d"].githubNote);
+    expect(errors).toEqual([]);
   });
 });
 
