@@ -391,7 +391,10 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
     expect(plinth).toMatchObject({ y: 0, h: OFFICE.tower.plinth, w: tower.maxX - tower.minX, d: tower.maxZ - tower.minZ });
     expect(column).toMatchObject({ ...officeTowerColumn(W), y: OFFICE.tower.plinth, w: OFFICE.tower.column, d: OFFICE.tower.column, h: OFFICE.tower.h });
     expect(Math.sin(column.yaw!) * (W.stop.x - column.x) + Math.cos(column.yaw!) * (W.stop.z - column.z)).toBeCloseTo(Math.hypot(W.stop.x - column.x, W.stop.z - column.z));
-    expect(pad).toMatchObject({ ...officeDockPad(W), y: 0, h: OFFICE.dock.pad, w: dock.maxX - dock.minX, d: dock.maxZ - dock.minZ });
+    // The pad covers its whole corner; the stack and the beam stand `OFFICE.dock.inward` u toward the console on it.
+    expect(pad).toMatchObject({ x: (dock.minX + dock.maxX) / 2, z: (dock.minZ + dock.maxZ) / 2, y: 0, h: OFFICE.dock.pad, w: dock.maxX - dock.minX, d: dock.maxZ - dock.minZ });
+    expect(officeDockPad(W).x - pad.x).toBeCloseTo(OFFICE.dock.inward);
+    expect(officeDockPad(W).z).toBeCloseTo(pad.z);
     expect(column.yaw).toBe(officeTowerYaw(W));
   });
 
@@ -512,10 +515,15 @@ describe("CI tower and ship dock", () => {
     expect(c.x).toBeLessThan(tower.maxX);
     expect(c.z).toBeLessThan(w.wall.z);
   });
-  it("puts the dock pad on the dock, and makes the tower column a camera column (plinth plus column)", () => {
+  it("puts the dock's stack point on the dock, nudged toward the console, and makes the tower column a camera column (plinth plus column)", () => {
     const p = officeDockPad(w);
     expect(p.x).toBeGreaterThan(dock.minX);
     expect(p.x).toBeLessThan(dock.maxX);
+    // Inward (toward the console, owner decision 2026-10-21) by `OFFICE.dock.inward`; the dock ring (1.6 u) and the
+    // stack (3 boxes across) stay on the pad, off the end row box.
+    expect(OFFICE.dock.inward).toBeGreaterThan(0);
+    expect(p.x - (dock.minX + dock.maxX) / 2).toBeCloseTo(OFFICE.dock.inward);
+    expect(p.x + 1.6).toBeLessThan(dock.maxX);
     expect(p.z).toBeGreaterThan(dock.minZ);
     expect(p.z).toBeLessThan(dock.maxZ);
     const c = officeTowerColumn(w);

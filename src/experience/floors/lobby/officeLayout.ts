@@ -141,10 +141,13 @@ export const OFFICE = {
   /**
    * The CI tower (south-east corner): a slim LED-lane column (owner decision 2026-10-20), 1.2 u square and 9 u tall, its
    * lane matrix on the stop-facing face (stage B lights it from v2 data), on a low floor pad over the corner; the ship dock
-   * (south-west corner) is a low floor pad too. The pads keep the corners' obstacle rects.
+   * (south-west corner) is a low floor pad too. The pads keep the corners' obstacle rects. The dock's stack and deploy
+   * beam stand `inward` u from the corner's middle toward the console (owner decision 2026-10-21), so from the desktop
+   * office stop the beam clears the floor menu panel; the corner itself stays (it touches the end box and the wing's
+   * edges: anything less than touching would leave a gap under the space rules' 6 u).
    */
   tower: { column: 1.2, h: 9, plinth: 0.1 },
-  dock: { pad: 0.1 },
+  dock: { pad: 0.1, inward: 1.3 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
    * size of its area around the stop. From the stop the office fills the frame (owner decisions 2026-10-20 and 2026-10-21,
@@ -319,10 +322,14 @@ export function officeTowerYaw(w: OfficeWing): number {
   return Math.atan2(w.stop.x - c.x, w.stop.z - c.z);
 }
 
-/** The ship dock pad's centre: the corner's middle. */
+/**
+ * Where the dock's stack and the deploy beam stand: `OFFICE.dock.inward` u east of the corner's middle (toward the
+ * console), still over the pad: the beam (1.1 u radius) keeps 0.6 u and the dock ring (1.6 u) 0.1 u inside the corner
+ * (tests/unit/lobby-office.test.ts).
+ */
 export function officeDockPad(w: OfficeWing): Vec2 {
   const r = officeDock(w);
-  return { x: (r.minX + r.maxX) / 2, z: (r.minZ + r.maxZ) / 2 };
+  return { x: (r.minX + r.maxX) / 2 + OFFICE.dock.inward, z: (r.minZ + r.maxZ) / 2 };
 }
 
 /**

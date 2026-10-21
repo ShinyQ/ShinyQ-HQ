@@ -1,11 +1,12 @@
 import { Vector3, type PerspectiveCamera } from "three";
 import { describe, expect, it } from "vitest";
-import { LOBBY } from "@/experience/config";
+import { floorY, LOBBY } from "@/experience/config";
 import { HALL } from "@/experience/floors/lobby/hallLayout";
 import { BEAM, BEACON, beaconOrigin } from "@/experience/floors/lobby/office/beacon";
-import { officeDockPad } from "@/experience/floors/lobby/officeLayout";
+import { officeHudBoxes } from "@/experience/floors/lobby/office/chipRows";
+import { OFFICE, officeDock, officeDockPad } from "@/experience/floors/lobby/officeLayout";
 import type { Vec2 } from "@/experience/types";
-import { followCamera, SIZES } from "../helpers/office-cameras";
+import { boxOf, followCamera, SIZES } from "../helpers/office-cameras";
 
 /**
  * The Needs Kurniadi beacon from the Lobby (design 2026-10-20 section 5.3): the share of the column's height (its axis,
@@ -122,5 +123,38 @@ describe("the deploy beam from the Lobby", () => {
       const blind = SIZES.filter((s) => onScreen(VIEWS[view](s), dock, BEAM.h) * BEAM.h < BEAM_SHOWN).map((s) => s.id);
       expect(blind, view).toEqual(BEAM_BLIND[view]);
     }
+  });
+});
+
+/**
+ * At the office stop the beam (its foot to `BEAM.stopH`, `BEAM.r` around the dock's stack point) stands clear of the
+ * desktop floor menu panel (`officeHudBoxes`) on 1440 x 900 and 1280 x 720 (owner decision 2026-10-21: the stack point
+ * moved `OFFICE.dock.inward` u toward the console; measured 51 px and 58 px clear, from 4 px and 20 px at the corner's
+ * middle), and wholly in frame; the tower column and the dock pad stay in frame (tests/unit/office-view.test.ts).
+ */
+describe("the deploy beam at the office stop", () => {
+  const dock = officeDockPad(LOBBY.officeWing);
+  const Y = floorY("L1");
+  const points: [number, number, number][] = [];
+  for (const ox of [-BEAM.r, BEAM.r]) for (const oz of [-BEAM.r, BEAM.r]) for (const y of [0, BEAM.stopH]) points.push([dock.x + ox, Y + y, dock.z + oz]);
+
+  it.each([
+    [1440, 900],
+    [1280, 720],
+  ])("clears the floor menu panel by 32 px or more on %i x %i", (width, height) => {
+    const box = boxOf(followCamera(width, height, LOBBY.officeWing.stop), { width, height }, points);
+    const menu = officeHudBoxes(width, height, "desktop")[1];
+    expect(menu.x0 - box.x1).toBeGreaterThanOrEqual(32);
+    expect(box.x0).toBeGreaterThan(0);
+    expect(box.y0).toBeGreaterThan(0);
+    expect(box.y1).toBeLessThan(height);
+  });
+
+  it("stands over the dock pad, its ring too, off the end row box", () => {
+    const corner = officeDock(LOBBY.officeWing);
+    expect(dock.x - (corner.minX + corner.maxX) / 2).toBeCloseTo(OFFICE.dock.inward);
+    expect(dock.x + BEAM.r).toBeLessThan(corner.maxX - 0.5);
+    expect(dock.x + 1.6).toBeLessThan(corner.maxX);
+    expect(dock.x - BEAM.r).toBeGreaterThan(corner.minX);
   });
 });
