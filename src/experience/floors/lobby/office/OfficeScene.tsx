@@ -25,7 +25,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
-import type { OfficePipeline, OfficeState } from "@/lib/office/protocol";
+import type { OfficeState } from "@/lib/office/protocol";
 import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
@@ -58,7 +58,7 @@ import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
-import { deployRunning, diffPipeline, PipeQueue } from "./pipeline";
+import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
@@ -369,14 +369,15 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const lanesKey = useRef("");
   const fx = useMemo(() => new PipelineFx(), []);
   const queue = useMemo(() => new PipeQueue(), []);
-  const prevPipe = useRef<OfficePipeline | null>(null);
+  // The server clock minus this one, read from each snapshot's `updatedAt`: pipeline times are the server's.
+  const skew = useRef(0);
+  const deployAt = useMemo(() => runningDeployAt(view.pipeline), [view.pipeline]);
   const fxKey = useRef("");
-  // Each new feed: diff against the last pipeline (a silent baseline after a load, offline or off).
+  // Each new feed: diff against the last pipeline (a silent baseline after a load, offline, off or out of view).
   useEffect(() => {
-    const next = view.pipeline;
-    if (next) queue.push(diffPipeline(prevPipe.current, next, Date.now()));
-    prevPipe.current = next;
-  }, [view.pipeline, queue]);
+    if (view.updatedAt !== null) skew.current = view.updatedAt - Date.now();
+    queue.see(view.pipeline, Date.now() + skew.current);
+  }, [view.pipeline, view.updatedAt, queue]);
   useEffect(() => {
     sceneProbes.office.lanes = lanes.states.filter((s) => s !== "idle").length;
   }, [lanes]);
@@ -446,10 +447,10 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     if (!step.step) return;
     sceneProbes.office.steps += 1;
     sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, step.dt, now, reduced, camera.position, lite);
-    const wall = Date.now();
+    const wall = Date.now() + skew.current;
     for (const e of queue.due(now, wall)) fx.play(e, now, reduced);
     const merged = view.today?.prsMerged ?? 0;
-    const deploying = deployRunning(view.pipeline, wall);
+    const deploying = deployRunning(deployAt, wall);
     const tk = towerKey(lanes, now, reduced);
     const fk = fx.key(now, merged, deploying, reduced);
     if (writes.pending() || tk !== lanesKey.current || fk !== fxKey.current) {

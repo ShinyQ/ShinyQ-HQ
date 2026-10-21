@@ -2,10 +2,12 @@ import type { OfficeJobStatus, OfficePipeline, OfficePipelineRun } from "@/lib/o
 
 /**
  * Agent Office pipeline events (design 6.4; office scene chunk, pure): snapshots arrive by polling, so events come from
- * comparing two of them. `staleMs`: older events never play; `deployRunMs`: how long a deploy may read as running;
- * bursts play `burstGap` s apart and packages `packageGap` s apart; at most `maxQueue` wait.
+ * comparing two of them. `staleMs`: older events never play (and an older last snapshot is no diff base); `deployRunMs`:
+ * how long a deploy may read as running; bursts play `burstGap` s apart and packages `packageGap` s apart (over the
+ * package's 2.5 s flight, `PIPE_FX.package.s`, so one never cuts off the last in its one flying slot; a test pins it);
+ * at most `maxQueue` wait. Every time here is the server's clock (the scene adds the skew it reads from `updatedAt`).
  */
-export const PIPE = { staleMs: 60_000, deployRunMs: 15 * 60_000, burstGap: 0.15, packageGap: 1, maxQueue: 40, lanes: 24 } as const;
+export const PIPE = { staleMs: 60_000, deployRunMs: 15 * 60_000, burstGap: 0.15, packageGap: 2.6, maxQueue: 40, lanes: 24 } as const;
 
 export type PipeEvent =
   | { kind: "packet"; from: number | "wall"; at: number }
@@ -66,23 +68,38 @@ export function diffPipeline(prev: OfficePipeline | null, next: OfficePipeline, 
   return out;
 }
 
-/** Whether the newest deploy is running (and started under `PIPE.deployRunMs` ago): the dock ring's shimmer. */
-export function deployRunning(p: OfficePipeline | null, now: number): boolean {
+/** When the newest deploy started if it is running, else null: read once per snapshot. */
+export function runningDeployAt(p: OfficePipeline | null): number | null {
   const d = p?.ships.find((s) => s.kind === "deploy");
-  return d !== undefined && d.status === "running" && now - d.at < PIPE.deployRunMs;
+  return d?.status === "running" ? d.at : null;
 }
 
-/** What `due` returns with nothing queued: one shared empty list, so a still office allocates nothing per frame. */
-const NONE: readonly PipeEvent[] = [];
+/** Whether a deploy running since `at` (`runningDeployAt`) still reads as running at `now`: the dock ring's shimmer. */
+export const deployRunning = (at: number | null, now: number): boolean => at !== null && now - at < PIPE.deployRunMs;
 
 /**
  * Plays events staggered in scene time `t` (bursts `burstGap` apart, packages `packageGap` apart, the rest at once),
- * dropping any whose wall time `at` is over `staleMs` old at `wall` (the office was out of view), at most `maxQueue` waiting.
+ * dropping any whose time `at` is over `staleMs` old at `wall` (the office was out of view), at most `maxQueue` waiting.
+ * No allocation per step: `due` swaps two member buffers and returns a third, valid until the next call.
  */
 export class PipeQueue {
   private items: PipeEvent[] = [];
+  private rest: PipeEvent[] = [];
+  private out: PipeEvent[] = [];
   private nextBurst = 0;
   private nextPackage = 0;
+  private prev: OfficePipeline | null = null;
+  private prevAt = 0;
+
+  /**
+   * Queues the events since the last snapshot (`diffPipeline`) for `next`, seen at `now`: a last snapshot over `staleMs`
+   * old (the poller stopped while the office was out of view, or failed) is a silent baseline, so nothing replays.
+   */
+  see(next: OfficePipeline | null, now: number): void {
+    if (next) this.push(diffPipeline(now - this.prevAt <= PIPE.staleMs ? this.prev : null, next, now));
+    this.prev = next;
+    this.prevAt = now;
+  }
 
   push(events: readonly PipeEvent[]): void {
     this.items.push(...events);
@@ -90,9 +107,10 @@ export class PipeQueue {
   }
 
   due(t: number, wall: number): readonly PipeEvent[] {
-    if (this.items.length === 0) return NONE;
-    const out: PipeEvent[] = [];
-    const rest: PipeEvent[] = [];
+    const out = this.out;
+    out.length = 0;
+    if (this.items.length === 0) return out;
+    const rest = this.rest;
     for (const e of this.items) {
       if (wall - e.at > PIPE.staleMs) continue;
       if (e.kind === "burst" && t < this.nextBurst) rest.push(e);
@@ -103,6 +121,8 @@ export class PipeQueue {
         if (e.kind === "package") this.nextPackage = t + PIPE.packageGap;
       }
     }
+    this.items.length = 0;
+    this.rest = this.items;
     this.items = rest;
     return out;
   }

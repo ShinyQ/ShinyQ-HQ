@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PIPE_GLOW, PIPE_PARTS } from "@/experience/floors/lobby/office/crewFx";
-import { arcLift, arcPoint, FX_CEILING, PIPE_FX, PipelineFx } from "@/experience/floors/lobby/office/pipelineFx";
-import { officeInstances } from "@/experience/floors/lobby/office/officeRig";
+import { arcLift, arcPoint, FX_CEILING, PIPE_FX, PipelineFx, restPipeline } from "@/experience/floors/lobby/office/pipelineFx";
+import { officeInstances, PACKAGE_START } from "@/experience/floors/lobby/office/officeRig";
 
 const glow = () => ({ m: new Float32Array(officeInstances().glow * 16), c: new Float32Array(officeInstances().glow * 3) });
 const parts = () => new Float32Array(officeInstances().parts * 16);
@@ -56,5 +56,40 @@ describe("office pipeline visuals", () => {
     fx.play({ kind: "burst", lane: 0, ok: true, at: 0 }, 0, true);
     fx.play({ kind: "crown", ok: true, at: 0 }, 0, true);
     expect(fx.counts).toMatchObject({ packets: 1, bursts: 0, crowns: 0 });
+  });
+
+  it("hides what moves when reduced motion turns on mid-effect: no packet, burst, crown or flying package, the key goes still", () => {
+    const fx = new PipelineFx();
+    const g = glow();
+    const p = parts();
+    fx.play({ kind: "packet", from: 2, at: 0 }, 0, false);
+    fx.play({ kind: "burst", lane: 5, ok: true, at: 0 }, 0, false);
+    fx.play({ kind: "crown", ok: true, at: 0 }, 0, false);
+    fx.play({ kind: "package", from: 7, key: "pr:x#1", at: 0 }, 0, false);
+    fx.write(0.25, 3, false, false, g.m, g.c, p);
+    expect(scaleAt(p, PACKAGE_START)).toBeGreaterThan(0);
+    fx.write(0.25, 3, false, true, g.m, g.c, p);
+    const effects = PIPE_GLOW.start + PIPE_GLOW.packets * PIPE_GLOW.packetDots + PIPE_GLOW.bursts * PIPE_GLOW.burstDots + PIPE_GLOW.crown + PIPE_GLOW.trail + 1;
+    for (let i = PIPE_GLOW.start; i < effects; i++) expect(scaleAt(g.m, i)).toBe(0);
+    expect(scaleAt(p, PACKAGE_START)).toBe(0);
+    expect(Array.from({ length: 3 }, (_, k) => scaleAt(p, PACKAGE_START + 1 + k) > 0)).toEqual([true, true, true]);
+    expect(fx.key(0.25, 3, false, true)).toBe(fx.key(0.5, 3, false, true));
+  });
+
+  it("rests every pipeline instance at zero scale on the office, never at the origin", () => {
+    const g = glow();
+    const p = parts();
+    g.m.fill(1);
+    p.fill(1);
+    restPipeline(g.m, g.c, p);
+    const at = (m: Float32Array, i: number) => [m[i * 16 + 12], m[i * 16 + 13], m[i * 16 + 14]];
+    for (let i = PIPE_GLOW.start; i < PIPE_GLOW.start + PIPE_GLOW.count; i++) {
+      expect(scaleAt(g.m, i)).toBe(0);
+      expect(at(g.m, i)).not.toEqual([0, 0, 0]);
+    }
+    for (let i = PACKAGE_START; i < PACKAGE_START + PIPE_PARTS.count; i++) {
+      expect(scaleAt(p, i)).toBe(0);
+      expect(at(p, i)).not.toEqual([0, 0, 0]);
+    }
   });
 });

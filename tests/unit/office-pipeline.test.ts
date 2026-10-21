@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deployRunning, diffPipeline, lanesOf, PIPE, PipeQueue } from "@/experience/floors/lobby/office/pipeline";
+import { deployRunning, diffPipeline, lanesOf, PIPE, PipeQueue, runningDeployAt } from "@/experience/floors/lobby/office/pipeline";
+import { PIPE_FX } from "@/experience/floors/lobby/office/pipelineFx";
 import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficePipeline, OfficeSnapshotV4 } from "@/lib/office/protocol";
 
@@ -42,9 +43,12 @@ describe("office pipeline events", () => {
 
   it("reads a running deploy as the dock's shimmer, for at most 15 minutes", () => {
     const running = { ...P, ships: [{ key: "deploy:1000", kind: "deploy" as const, status: "running" as const, at: now }, ...P.ships] };
-    expect(deployRunning(running, now)).toBe(true);
-    expect(deployRunning(running, now + PIPE.deployRunMs)).toBe(false);
-    expect(deployRunning(P, now)).toBe(false);
+    expect(runningDeployAt(running)).toBe(now);
+    expect(deployRunning(runningDeployAt(running), now)).toBe(true);
+    expect(deployRunning(runningDeployAt(running), now + PIPE.deployRunMs)).toBe(false);
+    expect(runningDeployAt(P)).toBeNull();
+    expect(runningDeployAt(null)).toBeNull();
+    expect(deployRunning(null, now)).toBe(false);
   });
 
   it("staggers bursts and packages, drops stale events and caps the queue", () => {
@@ -56,5 +60,58 @@ describe("office pipeline events", () => {
     expect(q.due(0.16, now)).toHaveLength(1);
     expect(q.due(0.4, now + PIPE.staleMs + 1)).toEqual([]);
     expect(q.size()).toBe(0);
+  });
+
+  it("plays no burst for a job past the tower's 24 lanes", () => {
+    expect(lanesOf(P).some((l) => l.run === 998 && l.name === P.runs[2].jobs[10].name)).toBe(false);
+    expect(diffPipeline(P, withJob(P, 998, 10, "failed"), now)).toEqual([]);
+  });
+
+  it("bursts on the lane of the new snapshot when the finished run drops below the running ones", () => {
+    const fin = { ...P, runs: P.runs.map((r) => (r.id === 1002 ? { ...r, status: "success" as const, jobs: r.jobs.map((j, k) => (k === 0 ? { ...j, status: "done" as const } : j)) } : r)) };
+    expect(diffPipeline(P, fin, now)).toEqual([
+      { kind: "burst", lane: 12, ok: true, at: now },
+      { kind: "crown", ok: true, at: now },
+    ]);
+  });
+
+  it("diffs each snapshot against the last, but a last one over a minute old (the office was out of view) is a silent baseline", () => {
+    const k = P.runs[1].jobs.findIndex((j) => j.status === "running");
+    const near = new PipeQueue();
+    near.see(P, now);
+    near.see(withJob(P, 1001, k, "done"), now + 10_000);
+    expect(near.size()).toBe(1);
+    const back = new PipeQueue();
+    back.see(P, now);
+    back.see(withJob(P, 1001, k, "done"), now + PIPE.staleMs + 1);
+    expect(back.size()).toBe(0);
+    back.see(withJob(P, 1001, k, "failed"), now + PIPE.staleMs + 2_000);
+    expect(back.size()).toBe(1);
+    const off = new PipeQueue();
+    off.see(P, now);
+    off.see(null, now + 1_000);
+    off.see(withJob(P, 1001, k, "done"), now + 2_000);
+    expect(off.size()).toBe(0);
+  });
+
+  it("never lets a second package cut off the first in flight", () => {
+    expect(PIPE.packageGap).toBeGreaterThanOrEqual(PIPE_FX.package.s);
+    const q = new PipeQueue();
+    const pkg = (key: string) => ({ kind: "package" as const, from: 1, key, at: now });
+    q.push([pkg("a"), pkg("b")]);
+    expect(q.due(0, now).map((e) => e.kind === "package" && e.key)).toEqual(["a"]);
+    for (let t = 0.1; t < PIPE_FX.package.s; t += 0.1) expect(q.due(t, now)).toHaveLength(0);
+    expect(q.due(PIPE.packageGap, now).map((e) => e.kind === "package" && e.key)).toEqual(["b"]);
+  });
+
+  it("reuses its buffers: the list `due` returns is the same array each step", () => {
+    const q = new PipeQueue();
+    const a = q.due(0, now);
+    q.push([{ kind: "crown", ok: true, at: now }]);
+    const b = q.due(0, now);
+    expect(b).toHaveLength(1);
+    expect(b).toBe(a);
+    expect(q.due(1, now)).toBe(a);
+    expect(a).toHaveLength(0);
   });
 });

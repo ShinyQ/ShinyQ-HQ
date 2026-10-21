@@ -126,6 +126,7 @@ const pool = (n: number): Slot[] => Array.from({ length: n }, () => ({ t0: -Infi
 /** The progress (0 to 1 while it plays) of the effect in `s`, `d` s long. */
 const progress = (s: Slot, t: number, d: number): number => (t - s.t0) / d;
 const live = (u: number) => u >= 0 && u < 1;
+const still = () => false;
 const COUNT = { packet: "packets", burst: "bursts", crown: "crowns", package: "packages", deployFailed: "deployFailed" } as const;
 const CROWN: Vec3 = { x: COL.x, y: OFFICE.tower.plinth + OFFICE.tower.h + 0.3, z: COL.z };
 const DOCK: Vec3 = { x: PAD.x, y: OFFICE.dock.pad + 0.2, z: PAD.z };
@@ -157,14 +158,15 @@ export class PipelineFx {
     if (!reduced) this.until = Math.max(this.until, t + PIPE_FX[k].s);
   }
 
-  /** Changes only when the picture does: a 30 Hz tick while an effect moves, the stack count, the dock ring's state (8 Hz while it shimmers). */
+  /** Changes only when the picture does: a 30 Hz tick while an effect moves (never under reduced motion), the stack count, the dock ring's state (8 Hz while it shimmers). */
   key(t: number, merged: number, deploying: boolean, reduced: boolean): string {
     const ring = live(progress(this.failed, t, PIPE_FX.deployFailed.s)) ? "f" : deploying ? (reduced ? "s" : `s${Math.floor(t * 8)}`) : "";
-    return `${t < this.until ? Math.floor(t * 30) : "-"}|${Math.min(PIPE_PARTS.stack, merged)}|${ring}`;
+    return `${!reduced && t < this.until ? Math.floor(t * 30) : "-"}|${Math.min(PIPE_PARTS.stack, merged)}|${ring}`;
   }
 
-  /** Writes every pipeline instance: the glow block in `PIPE_GLOW`'s order, the packages from `PACKAGE_START`. */
+  /** Writes every pipeline instance: the glow block in `PIPE_GLOW`'s order, the packages from `PACKAGE_START`; reduced motion (even mid-effect) hides what moves. */
   write(t: number, merged: number, deploying: boolean, reduced: boolean, m: Float32Array, c: Float32Array, parts: Float32Array): void {
+    const on = reduced ? still : live;
     let i = PIPE_GLOW.start;
     for (const s of this.packets) {
       const u = progress(s, t, PIPE_FX.packet.s);
@@ -174,22 +176,22 @@ export class PipelineFx {
       const step = 0.08 / Math.hypot(B.x - A.x, B.y - A.y, B.z - A.z);
       for (let j = 0; j < PIPE_GLOW.packetDots; j++, i++) {
         const v = u - j * step;
-        if (live(u) && v >= 0) dot(m, c, i, arcPoint(A, B, v, lift, P), 0.14, CYAN, 1.4 - j * 0.25);
+        if (on(u) && v >= 0) dot(m, c, i, arcPoint(A, B, v, lift, P), 0.14, CYAN, 1.4 - j * 0.25);
         else hide(m, c, i);
       }
     }
     const { r0, r1 } = PIPE_FX.burst;
     for (const s of this.bursts) {
       const u = progress(s, t, PIPE_FX.burst.s);
-      ring(m, c, i, lanePoint(s.at, B), r0 + u * (r1 - r0), false, 0.12, s.ok ? GREEN : RED, live(u) ? (1 - u) * 1.5 : 0);
+      ring(m, c, i, lanePoint(s.at, B), r0 + u * (r1 - r0), false, 0.12, s.ok ? GREEN : RED, on(u) ? (1 - u) * 1.5 : 0);
       i += PIPE_GLOW.burstDots;
     }
     const cu = progress(this.crown, t, PIPE_FX.crown.s);
-    ring(m, c, i, CROWN, 0.55, true, 0.16, this.crown.ok ? GREEN : RED, live(cu) ? Math.sin(Math.PI * cu) * 1.8 : 0);
+    ring(m, c, i, CROWN, 0.55, true, 0.16, this.crown.ok ? GREEN : RED, on(cu) ? Math.sin(Math.PI * cu) * 1.8 : 0);
     i += PIPE_GLOW.crown;
     // The flying package (a parts box with a violet core and trail) lands as the next box on the stack.
     const pu = progress(this.pkg, t, PIPE_FX.package.s);
-    const flying = live(pu);
+    const flying = on(pu);
     const stacked = Math.min(PIPE_PARTS.stack, merged);
     const shown = flying ? Math.max(0, stacked - 1) : stacked;
     deskOr(this.pkg.at, lanePoint(MID_LANE, B), A);
