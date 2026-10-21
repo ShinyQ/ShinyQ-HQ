@@ -74,14 +74,14 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
     dot(frame, P, 0.1, CONFETTI[j], 1.3, base + CREW_GLOW.confetti + j, matrices, colors);
   }
   const charge = base + CREW_GLOW.charge;
-  V.setFromMatrixPosition(frame).setY(CHARGE_PAD.y);
+  V.setFromMatrixPosition(frame).setY(slot.lift + CHARGE_PAD.y);
   const pad = fx.charge > 0 ? 1 : 0;
   M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(CHARGE_PAD.w * pad, CHARGE_PAD.d * pad, pad)).toArray(matrices, charge * 16);
   C.set(CHARGE).multiplyScalar(fx.charge).toArray(colors, charge * 3);
   // The desk light: a long flat glow along the desk's far edge, in the state tone (dims to 10% asleep).
   const desk = base + CREW_GLOW.desk;
   const edge = OFFICE.desk.d / 2 - 0.05;
-  V.set(slot.desk.x + Math.sin(slot.yaw) * edge, OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
+  V.set(slot.desk.x + Math.sin(slot.yaw) * edge, slot.lift + OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
   M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(OFFICE.desk.w * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
   C.set(tone).multiplyScalar(0.6 * fx.deskLight).toArray(colors, desk * 3);
   for (let i = 0; i < DRONES.max; i++) {

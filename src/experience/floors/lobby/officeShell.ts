@@ -7,7 +7,7 @@ import { roverRuntime } from "../../rover/runtime";
 import type { Rect, Vec2 } from "../../types";
 import type { ScreenBox } from "../../fx/labelPlacement";
 import type { Box } from "../roof/solids";
-import { isOfficeRoom, OFFICE, officeDock, officeDockPad, officeObstacles, officeSlots, officeTower, officeTowerColumn, officeTowerYaw, officeZone, type OfficeSlot } from "./officeLayout";
+import { isOfficeRoom, OFFICE, officeDock, officeDockPad, officeObstacles, officeRiser, officeSlots, officeTower, officeTowerColumn, officeTowerYaw, officeZone, type OfficeSlot } from "./officeLayout";
 
 /**
  * 3D-only Agent Office helpers (the Lobby, `OfficeMount` and the lazy chunk), placed in the wing `LOBBY.officeWing`.
@@ -17,7 +17,7 @@ import { isOfficeRoom, OFFICE, officeDock, officeDockPad, officeObstacles, offic
  * them, so the office chunk stays under its byte cap.
  */
 
-/** The five desks and Rovers in the wing. */
+/** The ten desks and Rovers in the wing: the front row (slots 0 to 4), then the back row on its riser (slots 5 to 9). */
 export const OFFICE_SLOTS: readonly OfficeSlot[] = officeSlots(LOBBY.officeWing);
 
 /** Everything the office covers: the in-view test. */
@@ -78,20 +78,24 @@ export function officeSign(text: string, color: string): SignSpec {
 
 /**
  * The furniture drawn on the main path (so the obstacles always show, before the chunk and if it fails):
- * five desk tops (neighbours meet, one continuous console), two legs each, the wall frame, the CI tower's plinth and
- * column (turned toward the stop) and the ship dock's pad.
+ * ten desk tops (neighbours meet, one continuous console per row), two legs each, the back row's riser blocks (meeting at
+ * their back edge), the wall frame, the CI tower's plinth and column (turned toward the stop) and the ship dock's pad.
  */
 export function officeShellBoxes(): Box[] {
   const { desk, wall } = OFFICE;
   const w = LOBBY.officeWing;
   const out: Box[] = [];
   for (const s of OFFICE_SLOTS) {
-    out.push({ x: s.desk.x, y: desk.top - desk.slab, z: s.desk.z, w: desk.w, h: desk.slab, d: desk.d, yaw: s.yaw });
+    out.push({ x: s.desk.x, y: s.lift + desk.top - desk.slab, z: s.desk.z, w: desk.w, h: desk.slab, d: desk.d, yaw: s.yaw });
     for (const side of [-1, 1]) {
       // Local x is (cos yaw, -sin yaw) in floor x and z.
       const off = side * (desk.w / 2 - 0.2);
-      out.push({ x: s.desk.x + off * Math.cos(s.yaw), y: 0, z: s.desk.z - off * Math.sin(s.yaw), w: desk.leg, h: desk.top - desk.slab, d: desk.d * 0.8, yaw: s.yaw });
+      out.push({ x: s.desk.x + off * Math.cos(s.yaw), y: s.lift, z: s.desk.z - off * Math.sin(s.yaw), w: desk.leg, h: desk.top - desk.slab, d: desk.d * 0.8, yaw: s.yaw });
     }
+  }
+  for (const s of OFFICE_SLOTS) {
+    const riser = officeRiser(w, OFFICE.rows[s.row], s.theta);
+    if (riser) out.push({ x: riser.center.x, y: 0, z: riser.center.z, w: riser.w, h: s.lift, d: riser.d, yaw: riser.yaw });
   }
   out.push({ x: w.wall.x, y: 0, z: w.wall.z, w: wall.w + 2 * wall.frame, h: wall.bottom + wall.h + wall.frame, d: wall.t });
   const tower = officeTower(w);
@@ -108,10 +112,10 @@ export function officeShellBoxes(): Box[] {
 export const OFFICE_ROVER_HEAD_TOP = 1.95;
 
 /**
- * The chips' world anchors, one per slot: the top of each Rover's head. Each chip in the row under the top bar centres on
- * its anchor's screen x (nudged by `layoutChipRow`), and its leader line ends there.
+ * The chips' world anchors, one per slot (both rows): the top of each Rover's head, on its row's floor. Each chip in the
+ * row under the top bar centres on its anchor's screen x (nudged by `layoutChipRow`), and its leader line ends there.
  */
-export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({ x: s.rover.x, y: OFFICE_ROVER_HEAD_TOP, z: s.rover.z }));
+export const OFFICE_CHIP_ANCHORS = OFFICE_SLOTS.map((s) => ({ x: s.rover.x, y: s.lift + OFFICE_ROVER_HEAD_TOP, z: s.rover.z }));
 
 /** The chip row's top (px): right under the HUD's top bar (62 px from 768 px wide, 58 px on a narrower phone). */
 export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;

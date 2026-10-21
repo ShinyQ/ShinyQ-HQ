@@ -227,9 +227,9 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 ### Agent Office
 
-`L1:office` (summary), `L1:office-github` and `L1:office-desk-1` to `-5` in the office's own south wing of the Lobby, down a lead road from the plaza under an "Agent Office" sign, also in the Rover menu ("Watch the AI agents at work") and Cmd-K.
+`L1:office` (summary), `L1:office-github` and `L1:office-desk-1` to `-10` in the office's own south wing of the Lobby, down a lead road from the plaza under an "Agent Office" sign, also in the Rover menu ("Watch the AI agents at work") and Cmd-K.
 
-- One continuous curved console of five desks around the office stop, a Rover behind each desk facing you (Desk 1 on the left from the office), and, a few steps behind them, a tall screen wall raised over their heads: mission control (counts, who is working now, today) and the public GitHub board.
+- Two curved consoles of five desks around the office stop (ten seats): the front row on the floor, a Rover behind each desk facing you (Desk 1 on the left from the office), and the back row (Desks 6 to 10) raised on a riser behind it, every back-row face and desk screen in clear sight over the front row; a few steps behind them, a tall screen wall raised over their heads: mission control (counts, who is working now, today) and the public GitHub board.
 - Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
 - Helpers (sub-agents) show as small drones orbiting their Rover's head, each with a glowing core in its Rover's state colour (at most four drawn, a "+N" on the chip for more).
 - When a Rover needs Kurniadi, a pink beacon rises behind it over the wing, flat rings pulsing up its lower part (held still with reduced motion), and the minimap's office marker pulses; at the office stop only faint rings stay, and the Rover's raised flag carries the signal.

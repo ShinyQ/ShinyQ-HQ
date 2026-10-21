@@ -3,7 +3,7 @@ import { getCertifications, getProfile, getSkills, getStats } from "../load";
 import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
 import { visitsLabels } from "@/lib/visits/labels";
-import { OFFICE_DESKS } from "@/lib/office/protocol";
+import { OFFICE_SEATS } from "@/lib/office/protocol";
 import { chain, chipLogos, fill, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
@@ -76,7 +76,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
 }
 
 /**
- * L1 Agent Office: the summary half of the wall, the GitHub half and one drawer per desk (`OfficeBody`, live data on the client).
+ * L1 Agent Office: the summary half of the wall, the GitHub half and one drawer per desk, both rows (`OfficeBody`, live data on the client).
  * Each keeps one standing note as its section: the drawer shows it if the office chunk fails to load.
  */
 function buildOfficeViews(locale: Locale): RoomView[] {
@@ -85,7 +85,7 @@ function buildOfficeViews(locale: Locale): RoomView[] {
   return chain([
     single({ id: roomId("L1", "office"), kind: "office", title: m.hud.rooms.office, subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "summary" } }),
     single({ id: roomId("L1", "office-github"), kind: "office", title: o.githubTitle, subtitle: o.subtitle, accent: "green", sections: [{ body: o.githubNote }], office: { panel: "github" } }),
-    ...Array.from({ length: OFFICE_DESKS }, (_, slot) =>
+    ...Array.from({ length: OFFICE_SEATS }, (_, slot) =>
       single({ id: roomId("L1", `office-desk-${slot + 1}`), kind: "office", title: fill(o.desk, { n: String(slot + 1) }), subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "desk", slot } }),
     ),
   ]);

@@ -43,7 +43,7 @@ import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
-import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
+import { OFFICE, officeTowerColumn, rowSlots, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import {
   canvasTexture,
   CHIP_ROW,
@@ -78,8 +78,10 @@ import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
 
 const NO_RAYCAST = () => null;
+/** The Rovers this scene draws: the front row (slots 0 to 4); the back row's desks and riser are in the main-path shell. */
+const SLOTS = rowSlots(OFFICE_SLOTS, 0);
 /** Faces, desk screens, then the input flags: one quad each per Rover. */
-const QUADS = 3 * OFFICE_SLOTS.length;
+const QUADS = 3 * SLOTS.length;
 /** Desk screens redraw at most this often (faces at most FACE_FPS_MAX on both tiers), only the cells whose frame key changed. */
 const SCREEN_FPS = { full: 10, lite: 5 } as const;
 const FRAME = new Matrix4();
@@ -596,7 +598,7 @@ function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "
   w.layout = hud;
   w.hud = officeHudBoxes(width, height, hud);
   chipRowBounds(width, top, w.hud, w.bounds);
-  w.max = chipMaxWidth(w.bounds, OFFICE_CHIP_ANCHORS.length);
+  w.max = chipMaxWidth(w.bounds, SLOTS.length);
 }
 
 /** Hides chip `slot` once (it turns far), then leaves it alone until it comes back into view; its leader line too. */
@@ -852,19 +854,19 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
     void loadOfficeWatch().catch(() => null);
   }, [feed]);
-  const slots = OFFICE_SLOTS;
+  const slots = SLOTS;
   const agents = view.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
     const names = agents.split(",");
     return registerExtraInteractables(
       "L1",
-      officeInteractables(slots, {
+      officeInteractables(OFFICE_SLOTS, {
         office: t("3d.target.office"),
         github: t("3d.target.github"),
         desk: (slot) => t("3d.target.desk", { n: slot + 1, agent: names[slot] ? t(`agent.${names[slot]}`) : t("3d.offDuty") }),
       }),
     );
-  }, [agents, slots, t]);
+  }, [agents, t]);
   useEffect(
     () => () => {
       Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [] });

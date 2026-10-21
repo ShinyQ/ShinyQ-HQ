@@ -5,17 +5,22 @@ import type { Plaza, Road } from "../../nav/road";
 import type { Rect, Vec2 } from "../../types";
 
 /**
- * L1 Agent Office (owner decisions D1 and D7, 2026-10-18; the south wing, 2026-10-20): its own wing of the L1
- * slab south of the Lobby, reached by a lead road from the Lobby plaza into a wing plaza, with one curved console
- * row of five desks (a Rover behind each, facing the plaza) and, 4.5 u behind the Rovers, a tall screen wall on the
- * wing's south edge (owner request 2026-10-20: a higher wall, more space between the console and the wall).
+ * L1 Agent Office (owner decisions D1 and D7, 2026-10-18; the south wing, 2026-10-20; ten desks, 2026-10-21): its own
+ * wing of the L1 slab south of the Lobby, reached by a lead road from the Lobby plaza into a wing plaza, with two curved
+ * console rows of five desks (a Rover behind each, facing the plaza): the front row on the floor, the back row a second
+ * arc behind it on a riser, in the 4.5 u the front row keeps to a tall screen wall on the wing's south edge (owner request
+ * 2026-10-20: a higher wall, more space between the console and the wall).
  * Pure and import-light: config.ts reads it (`LOBBY.officeWing`, obstacles, camera column, stops, the view zone,
  * the road), the main-path `OfficeMount` draws the furniture shell from it, and the lazy office chunk places the
- * rest. tests/unit/lobby-office.test.ts asserts every clearance.
+ * rest. tests/unit/lobby-office.test.ts asserts every clearance, tests/unit/office-rows-visibility.test.ts the back
+ * row's visibility from the office stop.
  */
 
 /** Resolves a key of the `office` messages namespace (Experience passes its translator for that namespace down to the Lobby). */
 export type OfficeTranslate = (key: string, values?: Record<string, string | number>) => string;
+
+/** The wing's depth from S (`OFFICE_WING.depth`): the wall line derives from it. */
+const WING_DEPTH = 29;
 
 /**
  * The wing as offsets from S, the Lobby slab's south edge (`LOBBY.bounds.maxZ`): config.ts imports this module, so
@@ -23,10 +28,14 @@ export type OfficeTranslate = (key: string, values?: Record<string, string | num
  * x values are absolute (the stop's axis is x 3, inside the Lobby plaza's x -3 to 9 window), z values add to S.
  */
 export const OFFICE_WING = {
-  /** Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 29. */
+  /**
+   * Slab rect: x -12 to 18 (6 u east of the observatory's edge at x -18), S to S + 29: the arc centre (11) plus the back
+   * row's Rover radius (15.2) and footprint (1), 1.5 u of open floor and the wall frame (0.3). The back row stands in the
+   * 4.5 u the front row keeps to the wall (owner request 2026-10-20), so the wing, the wall and the stop view keep their place.
+   */
   minX: -12,
   maxX: 18,
-  depth: 29,
+  depth: WING_DEPTH,
   /** The axis of the lead road, the plaza, the stop and the desk arc. */
   x: 3,
   /** Lead road: 8 u wide, from the Lobby plaza south of the lane ring (S - 8) to 4.5 u inside the wing plaza (S + 6). */
@@ -35,10 +44,13 @@ export const OFFICE_WING = {
   plaza: { z: 9.5, w: 18, d: 16 },
   /** The stop stands in the concave front of the row, 5.5 u from the arc centre toward the desks: the follow camera's look target lands near the wall. */
   stop: 16.5,
-  /** Desk arc centre: the middle Rover's back (S + 24.2) stays 4.5 u in front of the wall frame. */
+  /**
+   * Desk arc centre (both rows): the front row's middle Rover's back (S + 24.2) stands 4.5 u in front of the wall frame, the
+   * back row's (S + 27.2) 1.5 u.
+   */
   arc: 11,
   /** The screen wall's centre line, 0.15 u in front of the wing's south edge (its footprint reaches back to it). */
-  wall: 28.85,
+  wall: WING_DEPTH - 0.15,
 } as const;
 
 export interface OfficeWing {
@@ -78,17 +90,40 @@ export function officeRoad(w: OfficeWing): { road: Road; plaza: Plaza } {
   };
 }
 
-export const OFFICE = {
-  deskRadius: 11,
-  roverRadius: 12.2,
+/** One console row: desks on an arc of `deskRadius` around the wing's arc centre, Rovers behind them, on a floor `lift` u high. */
+export interface OfficeRow {
+  deskRadius: number;
+  roverRadius: number;
   /**
-   * Desk angles (degrees from +z toward +x), slot 0 at the east end: the stop camera looks toward +z, so +x is
-   * on the left of the screen and desk 1 is the leftmost Rover from the office stop, like the drawer's list.
+   * Desk angles (degrees from +z toward +x), the row's first slot at the east end: the stop camera looks toward +z, so
+   * +x is on the left of the screen and the row's first desk is its leftmost Rover from the office stop, like the drawer's list.
    */
-  angles: [40, 20, 0, -20, -40],
+  angles: readonly number[];
+  lift: number;
+}
+
+export const OFFICE = {
   /**
-   * Tangential width, radial depth, top height, top slab and leg thickness. The width closes the 20 degree step at
-   * the desks' back edge (2 (11 + 0.45) tan 10 deg = 4.04), so the five desks read as one continuous console.
+   * The two console rows (owner decision 2026-10-21): slots 0 to 4 the front row, on the floor (unchanged), slots 5 to 9
+   * the back row, a second arc 3 u farther out on a 0.9 u riser. The back row's desks start where a front Rover's
+   * footprint ends docked (12.2 + 1 + 0.35 = 13.55 = 14 - 0.45); its 13 degree step keeps both rows' end boxes 6 u from
+   * the wing's side edges (the riser's end block reaches 8.92 u from the axis), so its desks overlap a little (one
+   * continuous console); seen from the office stop every back-row face and desk screen stands clear over the front row
+   * (tests/unit/office-rows-visibility.test.ts).
+   */
+  rows: [
+    { deskRadius: 11, roverRadius: 12.2, angles: [40, 20, 0, -20, -40], lift: 0 },
+    { deskRadius: 14, roverRadius: 15.2, angles: [26, 13, 0, -13, -26], lift: 0.9 },
+  ] as readonly OfficeRow[],
+  /**
+   * The back row's riser: one turned block per back slot, as wide as a desk (neighbours overlap, no floor between them),
+   * from `lip` u in front of its desk to the back of its Rover's footprint (past a docked Rover's treads).
+   */
+  riser: { lip: 0.1 },
+  /**
+   * Tangential width, radial depth, top height (over the row's floor), top slab and leg thickness. The width closes the
+   * front row's 20 degree step at the desks' back edge (2 (11 + 0.45) tan 10 deg = 4.04), so each row reads as one
+   * continuous console.
    */
   desk: { w: 4.05, d: 0.9, top: 0.95, slab: 0.08, leg: 0.12 },
   rover: { radius: 1 },
@@ -133,7 +168,9 @@ export const OFFICE = {
 export const OFFICE_ROOM = "L1:office" as RoomId;
 export const OFFICE_GITHUB_ROOM = "L1:office-github" as RoomId;
 export const officeDeskRoom = (slot: number): RoomId => `L1:office-desk-${slot + 1}` as RoomId;
-export const OFFICE_ROOMS: readonly RoomId[] = [OFFICE_ROOM, OFFICE_GITHUB_ROOM, ...OFFICE.angles.map((_, slot) => officeDeskRoom(slot))];
+/** Seats over both rows (`OFFICE_SEATS` in the office protocol, kept literal here so the layout imports no protocol module). */
+export const OFFICE_SEAT_COUNT = OFFICE.rows.reduce((n, r) => n + r.angles.length, 0);
+export const OFFICE_ROOMS: readonly RoomId[] = [OFFICE_ROOM, OFFICE_GITHUB_ROOM, ...Array.from({ length: OFFICE_SEAT_COUNT }, (_, slot) => officeDeskRoom(slot))];
 
 /** The office rooms have no route of their own (they keep /{locale}, like the Visitor Observatory). */
 export function isOfficeRoom(room: string | null | undefined): boolean {
@@ -142,14 +179,26 @@ export function isOfficeRoom(room: string | null | undefined): boolean {
 
 export interface OfficeSlot {
   slot: number;
+  /** The console row: 0 the front row (slots 0 to 4), 1 the back row on the riser (slots 5 to 9). */
+  row: number;
+  /** The row's floor height (u over the L1 floor): 0 on the front row, the riser's top on the back row. */
+  lift: number;
   /** Angle from +z toward +x (radians). */
   theta: number;
   /** Turn of the desk and its Rover (three `rotation.y`): forward (sin, cos) points at the arc centre. */
   yaw: number;
   desk: Vec2;
   rover: Vec2;
-  /** Axis-aligned box of the turned desk and the Rover's circle. */
+  /** Axis-aligned box of the turned desk, the Rover's circle and, on the back row, its riser block. */
   rect: Rect;
+}
+
+/** A turned block in plan: its centre, width across (local x), depth along the radius (local z) and turn. */
+export interface OfficeBlock {
+  center: Vec2;
+  w: number;
+  d: number;
+  yaw: number;
 }
 
 const DEG = Math.PI / 180;
@@ -163,29 +212,55 @@ export function turnedHalf(w: number, d: number, yaw: number): Vec2 {
   return { x: (w / 2) * c + (d / 2) * s, z: (w / 2) * s + (d / 2) * c };
 }
 
+/** The axis-aligned box of a turned block. */
+export function blockRect(b: OfficeBlock): Rect {
+  const h = turnedHalf(b.w, b.d, b.yaw);
+  return { minX: b.center.x - h.x, maxX: b.center.x + h.x, minZ: b.center.z - h.z, maxZ: b.center.z + h.z };
+}
+
+/**
+ * A back-row slot's riser block (null on the front row): a desk wide, radially from `OFFICE.riser.lip` in front of its
+ * desk to the back of its Rover's footprint.
+ */
+export function officeRiser(w: OfficeWing, row: OfficeRow, theta: number): OfficeBlock | null {
+  if (row.lift <= 0) return null;
+  const front = row.deskRadius - OFFICE.desk.d / 2 - OFFICE.riser.lip;
+  const back = row.roverRadius + OFFICE.rover.radius;
+  return { center: onArc(w, theta, (front + back) / 2), w: OFFICE.desk.w, d: back - front, yaw: theta + Math.PI };
+}
+
+/** Both rows' slots, the front row first (slots 0 to 4, east to west), then the back row (slots 5 to 9, east to west). */
 export function officeSlots(w: OfficeWing): OfficeSlot[] {
-  return OFFICE.angles.map((deg, slot) => {
-    const theta = deg * DEG;
-    const desk = onArc(w, theta, OFFICE.deskRadius);
-    const rover = onArc(w, theta, OFFICE.roverRadius);
-    const yaw = theta + Math.PI;
-    const h = turnedHalf(OFFICE.desk.w, OFFICE.desk.d, yaw);
-    const r = OFFICE.rover.radius;
-    return {
-      slot,
-      theta,
-      yaw,
-      desk,
-      rover,
-      rect: {
-        minX: Math.min(desk.x - h.x, rover.x - r),
-        maxX: Math.max(desk.x + h.x, rover.x + r),
-        minZ: Math.min(desk.z - h.z, rover.z - r),
-        maxZ: Math.max(desk.z + h.z, rover.z + r),
-      },
-    };
+  return OFFICE.rows.flatMap((row, r) => {
+    const first = OFFICE.rows.slice(0, r).reduce((n, x) => n + x.angles.length, 0);
+    return row.angles.map((deg, i): OfficeSlot => {
+      const theta = deg * DEG;
+      const desk = onArc(w, theta, row.deskRadius);
+      const rover = onArc(w, theta, row.roverRadius);
+      const yaw = theta + Math.PI;
+      const h = turnedHalf(OFFICE.desk.w, OFFICE.desk.d, yaw);
+      const rad = OFFICE.rover.radius;
+      const rect = {
+        minX: Math.min(desk.x - h.x, rover.x - rad),
+        maxX: Math.max(desk.x + h.x, rover.x + rad),
+        minZ: Math.min(desk.z - h.z, rover.z - rad),
+        maxZ: Math.max(desk.z + h.z, rover.z + rad),
+      };
+      const riser = officeRiser(w, row, theta);
+      if (riser) {
+        const b = blockRect(riser);
+        rect.minX = Math.min(rect.minX, b.minX);
+        rect.maxX = Math.max(rect.maxX, b.maxX);
+        rect.minZ = Math.min(rect.minZ, b.minZ);
+        rect.maxZ = Math.max(rect.maxZ, b.maxZ);
+      }
+      return { slot: first + i, row: r, lift: row.lift, theta, yaw, desk, rover, rect };
+    });
   });
 }
+
+/** The slots of console row `row` (0 front, 1 back). */
+export const rowSlots = (slots: readonly OfficeSlot[], row: number): OfficeSlot[] => slots.filter((s) => s.row === row);
 
 /** The wall frame's footprint, reaching back to the wing's south edge (no sliver of floor behind it). */
 export function officeWallRect(w: OfficeWing): Rect {
@@ -193,15 +268,30 @@ export function officeWallRect(w: OfficeWing): Rect {
   return { minX: w.wall.x - wall.w / 2 - wall.frame, maxX: w.wall.x + wall.w / 2 + wall.frame, minZ: w.wall.z - wall.t / 2, maxZ: w.rect.maxZ };
 }
 
+/**
+ * The console's end boxes, flush with the wing's south edge: the front row's end desk and Rover on that side, reaching out
+ * over the back row's end (its desk, Rover and riser block) where that stands wider; never in toward the middle, so the
+ * floor in front of desks 2 and 4 stays open (the middle box covers the back row's inner part).
+ */
+function officeEnds(w: OfficeWing): { east: Rect; west: Rect } {
+  const slots = officeSlots(w);
+  const rows = OFFICE.rows.map((_, r) => rowSlots(slots, r));
+  const [east, west] = [rows[0][0].rect, rows[0][rows[0].length - 1].rect];
+  return {
+    east: { ...east, maxX: Math.max(...rows.map((r) => r[0].rect.maxX)), maxZ: w.rect.maxZ },
+    west: { ...west, minX: Math.min(...rows.map((r) => r[r.length - 1].rect.minX)), maxZ: w.rect.maxZ },
+  };
+}
+
 /** The south-east corner beside the east row box: touches it and the wing's east and south edges (SPACE_RULES allow touching). */
 export function officeTower(w: OfficeWing): Rect {
-  const east = officeSlots(w)[0].rect;
+  const { east } = officeEnds(w);
   return { minX: east.maxX, maxX: w.rect.maxX, minZ: east.minZ, maxZ: w.rect.maxZ };
 }
 
 /** The south-west corner beside the west row box, mirrored. */
 export function officeDock(w: OfficeWing): Rect {
-  const west = officeSlots(w)[OFFICE.angles.length - 1].rect;
+  const { west } = officeEnds(w);
   return { minX: w.rect.minX, maxX: west.minX, minZ: west.minZ, maxZ: w.rect.maxZ };
 }
 
@@ -228,23 +318,21 @@ export function officeDockPad(w: OfficeWing): Vec2 {
 }
 
 /**
- * Navgrid obstacles, flush with the wing's south edge: each end desk and its Rover as one box, the middle three as the
- * box between them, then the wall, the CI tower and the ship dock. The 4.5 u between the Rovers and the wall (7.35 u
- * behind the end Rovers) is open to the eye but closed to the rover: the boxes reach back to the wall, so no drive ends
- * up behind the console. Neighbouring desks touch (the console is continuous), so the boxes touch too; the two end
- * boxes keep the middle box's width (about 10 u) apart and 6 u from the wing's side edges, and the tower and the dock
- * fill the two corners between them and the side edges (touching both). The middle box starts at the front of desks 2
- * and 4, so the concave floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
+ * Navgrid obstacles, flush with the wing's south edge: each end of the console (both rows' end desks and Rovers) as one
+ * box, the middle as the box between them, then the wall, the CI tower and the ship dock. The floor between the back
+ * row and the wall (1.5 u behind its middle Rover, more behind its ends) is open to the eye but closed to the rover: the
+ * boxes reach back to the wall, so no drive ends up behind the console. Neighbouring desks touch (each row is continuous), so the boxes touch too;
+ * the two end boxes keep the middle box's width (about 10 u) apart and 6 u from the wing's side edges, and the tower and
+ * the dock fill the two corners between them and the side edges (touching both). The middle box starts at the front of
+ * desks 2 and 4, so the concave floor around the stop stays open (tests/unit/lobby-office.test.ts measures the hidden floor).
  */
 export function officeObstacles(w: OfficeWing): Rect[] {
-  const s = officeSlots(w).map((x) => x.rect);
-  const edge = w.rect.maxZ;
-  const east = s[0];
-  const west = s[s.length - 1];
+  const front = rowSlots(officeSlots(w), 0).map((x) => x.rect);
+  const { east, west } = officeEnds(w);
   return [
-    { ...east, maxZ: edge },
-    { minX: west.maxX, maxX: east.minX, minZ: Math.min(...s.slice(1, -1).map((r) => r.minZ)), maxZ: edge },
-    { ...west, maxZ: edge },
+    east,
+    { minX: west.maxX, maxX: east.minX, minZ: Math.min(...front.slice(1, -1).map((r) => r.minZ)), maxZ: w.rect.maxZ },
+    west,
     officeWallRect(w),
     officeTower(w),
     officeDock(w),

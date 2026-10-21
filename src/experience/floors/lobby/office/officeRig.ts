@@ -39,12 +39,12 @@ const QUAD_X = [-0.5, 0.5, 0.5, -0.5] as const;
 const QUAD_Y = [-0.5, -0.5, 0.5, 0.5] as const;
 type Part = readonly [number, number, number, number, number, number];
 
-/** The Rover's frame: its spot plus the pose's offsets on its own axes, turned to face the arc centre plus the pose's turn. */
+/** The Rover's frame: its spot on its row's floor plus the pose's offsets on its own axes, turned to face the arc centre plus the pose's turn. */
 export function roverFrame(slot: OfficeSlot, p: OfficePose, out: Matrix4): Matrix4 {
   const c = Math.cos(slot.yaw);
   const s = Math.sin(slot.yaw);
   // Local x is (cos yaw, -sin yaw) and local z (sin yaw, cos yaw) in floor x and z.
-  T.set(slot.rover.x + p.x * c + p.z * s, p.y, slot.rover.z - p.x * s + p.z * c);
+  T.set(slot.rover.x + p.x * c + p.z * s, slot.lift + p.y, slot.rover.z - p.x * s + p.z * c);
   E.set(p.rx, slot.yaw + p.ry + p.yaw, p.rz, "YXZ");
   return out.compose(T, Q.setFromEuler(E), ONE);
 }
@@ -121,7 +121,7 @@ export function writeFlag(frame: Matrix4, p: OfficePose, positions: Float32Array
 const DESK = new Matrix4();
 export function writeDeskScreen(slot: OfficeSlot, positions: Float32Array, quad: number): void {
   E.set(0, slot.yaw, 0, "YXZ");
-  DESK.compose(T.set(slot.desk.x, 0, slot.desk.z), Q.setFromEuler(E), ONE);
+  DESK.compose(T.set(slot.desk.x, slot.lift, slot.desk.z), Q.setFromEuler(E), ONE);
   DESK.multiply(A.makeTranslation(DESK_SCREEN.x, DESK_SCREEN.y, DESK_SCREEN.z));
   DESK.multiply(A.makeRotationY(DESK_SCREEN.toe));
   writeQuad(DESK, 0, 0, 0, DESK_SCREEN.w, DESK_SCREEN.h, positions, quad);
@@ -174,7 +174,7 @@ export function writeGlow(
   E.set(0, Math.atan2(camera.x - V.x, camera.z - V.z), 0, "YXZ");
   M.compose(V, Q.setFromEuler(E), S.setScalar(R.tip.size * tipScale)).toArray(matrices, base * 16);
   C.set(asleep ? SLEEP_TIP : tone).multiplyScalar(gain).toArray(colors, base * 3);
-  M.compose(T.set(slot.rover.x, R.halo.y, slot.rover.z), FLAT, S.setScalar(R.halo.size)).toArray(matrices, (base + 1) * 16);
+  M.compose(T.set(slot.rover.x, slot.lift + R.halo.y, slot.rover.z), FLAT, S.setScalar(R.halo.size)).toArray(matrices, (base + 1) * 16);
   C.set(tone).multiplyScalar(asleep ? 0.08 : 0.35 * gain).toArray(colors, (base + 1) * 3);
   const n = R.progress.count;
   const show = state === "ci" || state === "testing";
@@ -182,7 +182,7 @@ export function writeGlow(
   const head = dotHead(reduced, t);
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
-    T.set(slot.rover.x + Math.sin(a) * R.progress.r, R.progress.y, slot.rover.z + Math.cos(a) * R.progress.r);
+    T.set(slot.rover.x + Math.sin(a) * R.progress.r, slot.lift + R.progress.y, slot.rover.z + Math.cos(a) * R.progress.r);
     M.compose(T, FLAT, S.setScalar(show ? R.progress.size : 0)).toArray(matrices, (base + 2 + i) * 16);
     const on = lit >= 0 ? i < lit : (i - head + n) % n < 4;
     C.set(tone).multiplyScalar(on ? 1 : 0.15).toArray(colors, (base + 2 + i) * 3);

@@ -139,6 +139,11 @@ describe("the office stop frame", () => {
     tablet: [0.177, 0.458, 0.664],
     mobile: [0.149, 0.314, 0.426],
   };
+  /**
+   * Both rows' top (the back row's heads on the riser, owner decision 2026-10-21), measured at the same view: the view is
+   * tuned on the front row (`MEASURED`) until it is retuned for both rows; the back row stays under the wall's top.
+   */
+  const BOTH_TOP: Record<ViewportClass, number> = { desktop: 0.318, tablet: 0.347, mobile: 0.249 };
   /** The lowest console top each class reaches (the 45% target where it can). */
   const CONSOLE_TOP: Record<ViewportClass, number> = { desktop: 0.42, tablet: 0.45, mobile: 0.31 };
   /**
@@ -151,16 +156,20 @@ describe("the office stop frame", () => {
     const cls = cameraClass(width, height);
     const f = officeFrame(width, height);
     const [wallTop, consoleTop, consoleBottom] = MEASURED[cls];
+    const front = f.rows[0];
     expect(f.wallTop, "wall top").toBeCloseTo(wallTop, 3);
-    expect(f.console.top, "console top").toBeCloseTo(consoleTop, 3);
-    expect(f.console.bottom, "console bottom").toBeCloseTo(consoleBottom, 3);
+    expect(front.top, "console top").toBeCloseTo(consoleTop, 3);
+    expect(front.bottom, "console bottom").toBeCloseTo(consoleBottom, 3);
+    expect(f.console.bottom, "both rows' bottom: the front row's").toBeCloseTo(consoleBottom, 3);
+    expect(f.console.top, "both rows' top").toBeCloseTo(BOTH_TOP[cls], 3);
+    expect(f.console.top, "the back row under the wall's top").toBeGreaterThan(f.wallTop);
     expect(f.wallTop, "wall top 12% down or lower").toBeGreaterThanOrEqual(0.12);
     expect(f.wallTop, "wall top 15% down or higher (18% on the tablet camera)").toBeLessThanOrEqual(WALL_TOP_MAX[cls] + 5e-4);
     if (cls === "tablet") {
       expect(f.wallTop * height, "wall top under the HUD's top bar").toBeGreaterThanOrEqual(62 + 4);
       if (height > 390) expect(f.wallTop * height, "wall top under the chip row's names").toBeGreaterThanOrEqual(66 + 32 + 8);
     }
-    expect(f.console.top, "console top").toBeGreaterThanOrEqual(CONSOLE_TOP[cls]);
+    expect(front.top, "console top").toBeGreaterThanOrEqual(CONSOLE_TOP[cls]);
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
     if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
@@ -175,7 +184,8 @@ describe("the office stop frame", () => {
     const f = officeFrame(width, height, 1);
     expect(f.wallTop, "wall top").toBeCloseTo(0.159, 3);
     expect(f.wallTop * height, "wall top under the near chip row").toBeGreaterThanOrEqual(66 + 40 + 8);
-    expect(f.console.top, "console top").toBeCloseTo(0.498, 3);
+    expect(f.rows[0].top, "console top").toBeCloseTo(0.498, 3);
+    expect(f.console.top, "both rows' top").toBeCloseTo(0.367, 3);
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
   });

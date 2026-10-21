@@ -45,8 +45,8 @@ describe("office crew frame (the keyed write decision)", () => {
   it("starts docked: the rest pose is the asleep crew pose, so a sleeping office never rewrites its Rovers' matrices", () => {
     const { writes, crew } = setup();
     stepOfficeCrew(crew, writes, OFFICE_SLOTS, asleep.rovers, DT, 0, true, LOBBY.officeWing.stop);
-    expect(writes.posePending).toEqual([false, false, false, false, false]);
-    expect(writes.glowPending).toEqual([false, false, false, false, false]);
+    expect(writes.posePending).toEqual(OFFICE_SLOTS.map(() => false));
+    expect(writes.glowPending).toEqual(OFFICE_SLOTS.map(() => false));
     expect(restCrewPose().z).toBeLessThan(0);
   });
 
@@ -127,10 +127,10 @@ describe("office crew frame (the keyed write decision)", () => {
     stepOfficeCrew(crew, writes, OFFICE_SLOTS, one, DT, 0, true, CAM);
     for (const s of OFFICE_SLOTS) writes.done(s.slot);
     stepOfficeCrew(crew, writes, OFFICE_SLOTS, one.map((r) => ({ ...r, helpers: r.slot === 0 ? 2 : 0 })), DT, DT, true, CAM);
-    expect(writes.glowPending).toEqual([true, false, false, false, false]);
+    expect(writes.glowPending).toEqual(OFFICE_SLOTS.map((s) => s.slot === 0));
     for (const s of OFFICE_SLOTS) writes.done(s.slot);
     stepOfficeCrew(crew, writes, OFFICE_SLOTS, one.map((r) => ({ ...r, helpers: r.slot === 0 ? 2 : 0 })), DT, 2 * DT, true, CAM, true);
-    expect(writes.glowPending).toEqual([true, false, false, false, false]);
+    expect(writes.glowPending).toEqual(OFFICE_SLOTS.map((s) => s.slot === 0));
   });
 });
 

@@ -7,7 +7,7 @@ import { floorY, LOBBY, ROVER_HEIGHT } from "@/experience/config";
 import { yawTowards } from "@/experience/fx/facing";
 import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
-import { OFFICE, officeSlots } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, officeSlots, rowSlots } from "@/experience/floors/lobby/officeLayout";
 import { leadEnd } from "@/experience/floors/lobby/office/officeFrame";
 import { OFFICE_ROVER } from "@/experience/floors/lobby/office/officeVisual";
 import {
@@ -47,7 +47,8 @@ import { boxOf, floor, followCamera, orbitCamera, orbitPose, poseCamera, SIZES, 
  */
 
 const W = LOBBY.officeWing;
-const slots = officeSlots(W);
+/** The Rovers the live scene draws and labels: the front row (slots 0 to 4). */
+const slots = rowSlots(officeSlots(W), 0);
 /**
  * Chip sizes (px): a far chip (one 32 px pill, `min-h-8`, as wide as the longest name: "Tidak bertugas" is 92 px of
  * 13 px Inter, plus the dot, the gap and the padding), a near one (the pill and the 4 px CI bar with the 4 px gap, as wide
@@ -404,7 +405,10 @@ describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", () => {
 describe("Agent Office chips at the office stop", () => {
   it("anchor at each Rover's head top (no pose moves them)", () => {
     expect(OFFICE_ROVER_HEAD_TOP).toBeCloseTo(OFFICE_ROVER.head[1] + OFFICE_ROVER.head[4] / 2, 12);
-    OFFICE_CHIP_ANCHORS.forEach((a, i) => expect(a).toEqual({ x: slots[i].rover.x, y: OFFICE_ROVER_HEAD_TOP, z: slots[i].rover.z }));
+    const all = officeSlots(W);
+    expect(OFFICE_CHIP_ANCHORS).toHaveLength(all.length);
+    // On its row's floor: the back row's heads stand the riser's height higher.
+    OFFICE_CHIP_ANCHORS.forEach((a, i) => expect(a).toEqual({ x: all[i].rover.x, y: all[i].lift + OFFICE_ROVER_HEAD_TOP, z: all[i].rover.z }));
   });
 
   it("pin the row right under the HUD's top bar on every size", () => {

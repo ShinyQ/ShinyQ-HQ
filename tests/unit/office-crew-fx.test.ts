@@ -68,8 +68,8 @@ describe("crew glow layout", () => {
     expect(scaleAt(m, base + CREW_GLOW.charge)).toBeGreaterThan(0);
   });
   it("lays the charge pad where the docked Rover stands, behind the desk and wider than the Rover, over the corner pads", () => {
-    const m = new Float32Array(5 * GLOW_PER_ROVER * 16);
-    const c = new Float32Array(5 * GLOW_PER_ROVER * 3);
+    const m = new Float32Array(OFFICE_SLOTS.length * GLOW_PER_ROVER * 16);
+    const c = new Float32Array(OFFICE_SLOTS.length * GLOW_PER_ROVER * 3);
     for (const slot of OFFICE_SLOTS) {
       const base = slot.slot * GLOW_PER_ROVER + 18;
       const asleep = newActor("asleep");
@@ -80,13 +80,15 @@ describe("crew glow layout", () => {
       expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
       const arc = LOBBY.officeWing.arc;
       // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
-      expect(Math.hypot(at.x - arc.x, at.z - arc.z) - CHARGE_PAD.d / 2).toBeGreaterThanOrEqual(OFFICE.deskRadius + OFFICE.desk.d / 2 - 1e-5);
+      expect(Math.hypot(at.x - arc.x, at.z - arc.z) - CHARGE_PAD.d / 2).toBeGreaterThanOrEqual(OFFICE.rows[slot.row].deskRadius + OFFICE.desk.d / 2 - 1e-5);
       const e = new Matrix4().fromArray(m, (base + CREW_GLOW.charge) * 16).elements;
       // Its width runs along the desk (the Rover's local x), 0.85 u past the Rover's 0.75 u half width on each side.
       expect(Math.hypot(e[0], e[1], e[2])).toBeCloseTo(CHARGE_PAD.w);
       expect(Math.abs(e[0] * Math.cos(slot.yaw) - e[2] * Math.sin(slot.yaw)) / CHARGE_PAD.w).toBeCloseTo(1);
       expect(CHARGE_PAD.w / 2).toBeGreaterThan(0.75 + 0.5);
       expect(at.y).toBeGreaterThan(Math.max(OFFICE.tower.plinth, OFFICE.dock.pad));
+      // On its row's floor (the back row's riser top).
+      expect(at.y - slot.lift).toBeCloseTo(CHARGE_PAD.y);
       // Reduced motion: a steady 0.6 of the pad's colour.
       expect(Math.max(c[(base + CREW_GLOW.charge) * 3], c[(base + CREW_GLOW.charge) * 3 + 1], c[(base + CREW_GLOW.charge) * 3 + 2])).toBeGreaterThan(0.4);
     }

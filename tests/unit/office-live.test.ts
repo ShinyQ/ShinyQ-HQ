@@ -183,7 +183,8 @@ describe("Agent Office live feed (3D)", () => {
   });
 
   it("anchors a chip over every Rover, starts every chip far and notifies far and compact changes once", () => {
-    expect(OFFICE_CHIP_ANCHORS).toHaveLength(5);
+    // One anchor per seat (both rows); the runtime's chips cover the five Rovers the scene draws.
+    expect(OFFICE_CHIP_ANCHORS).toHaveLength(10);
     expect(officeRuntime.chips).toEqual([null, null, null, null, null]);
     expect(officeRuntime.chipFar).toEqual([true, true, true, true, true]);
     expect(officeRuntime.compact).toBe(false);
