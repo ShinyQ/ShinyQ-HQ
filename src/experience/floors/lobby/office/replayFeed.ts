@@ -1,7 +1,9 @@
-import type { OfficeFeedSnapshot } from "@/lib/office/poll";
+import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
+import { OFFICE_SEATS } from "@/lib/office/protocol";
 import { OFFICE_HISTORY_PATH, parseOfficeHistory, parseOfficeHistoryIndex, type OfficeHistoryDay, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
 import { dayTime, planReplay, playTime, REPLAY, snapshotAt, type ReplayPlan } from "./replay";
-import { REPLAY_OFF } from "./replayLink";
+import type { officeLive } from "./live";
+import { officeReplay, REPLAY_OFF } from "./replayLink";
 
 export type ReplayStatus = "off" | "loading" | "playing" | "resting" | "paused" | "unavailable";
 export interface ReplayState {
@@ -33,7 +35,7 @@ export interface ReplayController {
   nextHour(): void;
   /** Back to live. */
   stop(): void;
-  /** From the scene's frame (scaled, LOD-stepped seconds). */
+  /** From the scene's frame (scaled, LOD-stepped seconds); reduced motion ends an `auto` replay. */
   step(dt: number, reduced: boolean): void;
   state(): ReplayState;
 }
@@ -150,7 +152,11 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
       set({ ...REPLAY_OFF, days: s.days, seq: s.seq + 1 }, null);
     },
     step(dt, reduced) {
-      if (reduced || !plan) return;
+      if (reduced) {
+        if (s.auto && s.status !== "off") ctl.stop();
+        return;
+      }
+      if (!plan) return;
       if (s.status === "resting") {
         if ((rest -= dt) > 0) return;
         // Today grows: a copy over a minute old is fetched again before the next loop.
@@ -177,6 +183,54 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
       }
     },
     state: () => s,
+  };
+  return ctl;
+}
+
+/** Per desk slot of a live snapshot: 0 asleep or off duty, 1 awake, 2 asking (Needs Kurniadi); and its latest successful production deploy (epoch ms, 0 for none). */
+export function liveMark(x: OfficeFeedSnapshot): { levels: number[]; deployAt: number } {
+  const levels: number[] = Array(OFFICE_SEATS).fill(0);
+  if (x.mode !== "off") for (const d of x.desks) levels[d.slot] = d.state === "asleep" ? 0 : d.state === "input" ? 2 : 1;
+  let deployAt = 0;
+  for (const p of x.pipeline?.ships ?? []) if (p.kind === "deploy" && p.status === "success") deployAt = Math.max(deployAt, p.at);
+  return { levels, deployAt };
+}
+
+const IDLE_MS = REPLAY.idleS * 1000;
+
+/**
+ * Ties the controller to the live feed and the scene's idle bookkeeping (replay chunk; owner decision: a live event ends
+ * any replay at once). A live event between two ready answers (a desk waking or starting to ask, a newer production
+ * deploy; on the first answer, a deploy under `REPLAY.idleS` old) or an awake desk restarts the quiet timer; an event
+ * ends any replay, an awake desk an `auto` one. Its `auto()` checks the idle rule again (the scene mounted, motion on,
+ * `REPLAY.idleS` quiet: a live answer may have landed or the scene left during the import) and sets `failedAt` on an
+ * unavailable history, nothing to play or a throw.
+ */
+export function linkReplay(ctl: ReplayController, live: Pick<typeof officeLive, "now" | "feed" | "subscribe">, reduced: () => boolean): ReplayController {
+  const r = officeReplay;
+  let last: { levels: number[]; deployAt: number } | null = null;
+  const see = (f: OfficeFeed) => {
+    if (f.status !== "ready" || !f.snapshot) return;
+    const m = liveMark(f.snapshot);
+    const was = last;
+    const event = was ? m.levels.some((l, i) => l > was.levels[i]) || m.deployAt > was.deployAt : f.snapshot.updatedAt - m.deployAt < IDLE_MS;
+    const awake = m.levels.some(Boolean);
+    last = m;
+    if (event || awake) r.quietSince = live.now();
+    if (ctl.state().status !== "off" && (event || (awake && ctl.state().auto))) ctl.stop();
+  };
+  see(live.feed());
+  live.subscribe(see);
+  const auto = ctl.auto;
+  ctl.auto = async () => {
+    if (!r.mounted || reduced() || live.now() - r.quietSince < IDLE_MS) return;
+    let failed = false;
+    try {
+      await auto();
+    } catch {
+      failed = true;
+    }
+    if (failed || ctl.state().status === "unavailable" || ctl.state().empty) r.failedAt = live.now();
   };
   return ctl;
 }

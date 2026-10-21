@@ -6,7 +6,7 @@ import type { ReplayController, ReplayState, ReplayStatus } from "./replayFeed";
 
 /**
  * The scene chunk's side of the day replay (design 7.3): the store the replay chunk publishes to, the scene's source
- * switch, the idle-loop rule, the labels and the one loader of the replay chunk. Values never come from the replay
+ * switch, the idle loop, the labels and the one loader of the replay chunk (live events are the chunk's: `linkReplay`). Values never come from the replay
  * chunk here (types only), so the engine, the feed and the history validators stay in their own chunk. The replay chunk
  * imports this module, so nothing here may import three (the probes do): a three import from the replay chunk splits three
  * out of the main 3D chunk, about 550 B more on the first frame (tests/unit/office-chunk-graph.test.ts). The scene writes
@@ -70,18 +70,31 @@ export function useOfficeSource(): { view: OfficeView; live: OfficeView; feed: O
 }
 
 /**
- * The idle loop's rule: a feed past its first answer and not disabled (offline counts: a cached day may play), no
- * awake desk for `REPLAY.idleS`, the office in view, motion on, no replay running (off, or unavailable before) and
- * `REPLAY.retryS` since a failed or empty attempt.
+ * The idle loop's rule: a feed past its first answer and not disabled (offline counts: a cached day may play),
+ * `REPLAY.idleS` quiet (`idleLoop` restarts the timer on an awake desk or the office out of view), motion on, no
+ * replay running (off, or unavailable before) and `REPLAY.retryS` since a failed or empty attempt.
  */
-export function idleLoopWanted(i: { feed: OfficeFeedStatus; awake: boolean; quietMs: number; inView: boolean; reduced: boolean; status: ReplayStatus; sinceFailMs: number }): boolean {
-  return (i.feed === "ready" || i.feed === "offline") && !i.awake && i.quietMs >= IDLE_MS && i.inView && !i.reduced && (i.status === "off" || i.status === "unavailable") && i.sinceFailMs >= RETRY_MS;
+export function idleLoopWanted(i: { feed: OfficeFeedStatus; quietMs: number; reduced: boolean; status: ReplayStatus; sinceFailMs: number }): boolean {
+  return (i.feed === "ready" || i.feed === "offline") && i.quietMs >= IDLE_MS && !i.reduced && (i.status === "off" || i.status === "unavailable") && i.sinceFailMs >= RETRY_MS;
 }
 
-/** Per desk of the live view: 0 asleep or off duty, 1 awake, 2 asking (Needs Kurniadi). */
-export const liveLevels = (v: OfficeView): number[] => v.rovers.map((r) => (!r.agent || r.state === "asleep" ? 0 : r.state === "input" ? 2 : 1));
-/** A live event that ends any replay (owner decision): a desk waking, or one starting to ask. */
-export const liveEvent = (prev: readonly number[], next: readonly number[]): boolean => next.some((l, i) => l > prev[i]);
+/**
+ * The idle loop (every 0.5 s with the scene's watch): an awake live desk or the office out of view restarts the quiet
+ * timer; a quiet office (`idleLoopWanted`) loads the replay chunk and calls its `auto()`, which checks again, ends on a
+ * live event and records a failure itself (`linkReplay`). A failed import waits `REPLAY.retryS` too.
+ */
+export function idleLoop(awake: boolean, feed: OfficeFeedStatus, inView: boolean, reduced: boolean): void {
+  const r = officeReplay;
+  const now = officeLive.now();
+  if (awake || !inView) r.quietSince = now;
+  if (idleLoopWanted({ feed, quietMs: now - r.quietSince, reduced, status: r.state.status, sinceFailMs: now - r.failedAt }))
+    void loadOfficeReplay().then(
+      (m) => m.replayController.auto(),
+      () => {
+        r.failedAt = officeLive.now();
+      },
+    );
+}
 
 let pending: Promise<typeof import("./replayChunk")> | null = null;
 

@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dayTime, planReplay, REPLAY } from "@/experience/floors/lobby/office/replay";
-import { createReplayFeed, snapKey, type ReplayState } from "@/experience/floors/lobby/office/replayFeed";
+import { createReplayFeed, linkReplay, liveMark, snapKey, type ReplayState } from "@/experience/floors/lobby/office/replayFeed";
+import { officeReplay } from "@/experience/floors/lobby/office/replayLink";
 import { OFFICE_FIXTURE_NOW, OFFICE_HISTORY_FIXTURES } from "@/lib/office/fixtures";
-import type { OfficeFeedSnapshot } from "@/lib/office/poll";
-import type { OfficePipelineRun } from "@/lib/office/protocol";
+import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
+import type { OfficeDeskV2, OfficePipelineRun, OfficeShip } from "@/lib/office/protocol";
 import { dayStart, OFFICE_HISTORY_PATH, type OfficeHistoryIndexV1, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
 
 const { index: INDEX, day: DAY } = OFFICE_HISTORY_FIXTURES;
@@ -13,7 +14,7 @@ const PLAN = planReplay(DAY)!;
 type Answer = { status: number; body?: unknown } | "throw";
 
 /** A replay feed over a stub fetch (`answer` per URL, the fixtures by default), a fake clock (moved by hand only) and a publish log. */
-function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?: boolean } = {}) {
+function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?: boolean; hang?: boolean } = {}) {
   const calls: string[] = [];
   const clock = { now: OFFICE_FIXTURE_NOW };
   const published: { state: ReplayState; snapshot: OfficeFeedSnapshot | null }[] = [];
@@ -26,6 +27,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
   const feed = createReplayFeed({
     fetch: async (url) => {
       calls.push(url);
+      if (opts.hang) await new Promise(() => {});
       const a = answer(url);
       if (a === "throw") throw new TypeError("network");
       return new Response(JSON.stringify(a.body ?? null), { status: a.status });
@@ -40,6 +42,41 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
     for (let t = 0; t < s - 1e-9; t += dt) feed.step(dt, reduced.on);
   };
   return { feed, calls, clock, published, last, play, reduced };
+}
+
+/** A live snapshot at `at` with `desks` (slot, state) and deploy ships (time, status). */
+function liveSnap(at: number, desks: [number, OfficeDeskV2["state"]][] = [], deploys: [number, OfficeShip["status"]][] = []): OfficeFeedSnapshot {
+  return {
+    v: 4,
+    enabled: true,
+    mode: "live",
+    updatedAt: at,
+    desks: desks.map(([slot, state]) => ({ slot, agent: "claude", state, activity: state === "asleep" ? "resting" : state === "input" ? "asking" : "editing", since: at, recent: [] })),
+    extra: 0,
+    github: [],
+    today: { day: TODAY, tasksDone: 0, prsMerged: 0, ciRuns: 0, ciGreen: 0 },
+    pipeline: { runs: [], ships: deploys.map(([t, status], i) => ({ key: `deploy:${i}`, kind: "deploy", status, at: t })) },
+  };
+}
+const ready = (snapshot: OfficeFeedSnapshot): OfficeFeed => ({ status: "ready", snapshot, fetchedAt: snapshot.updatedAt });
+
+/**
+ * The harness's feed tied to a stub live feed (`linkReplay`, as the replay chunk does) on the harness clock: the scene
+ * mounted and quiet for `REPLAY.idleS`, no failure yet. `push` lands a new live answer.
+ */
+function linked(first: OfficeFeed, opts: Parameters<typeof harness>[0] = {}) {
+  const h = harness(opts);
+  officeReplay.mounted = true;
+  officeReplay.quietSince = h.clock.now - REPLAY.idleS * 1000;
+  officeReplay.failedAt = -Infinity;
+  let current = first;
+  const subs = new Set<(f: OfficeFeed) => void>();
+  const ctl = linkReplay(h.feed, { now: () => h.clock.now, feed: () => current, subscribe: (cb) => (subs.add(cb), () => void subs.delete(cb)) }, () => h.reduced.on);
+  const push = (f: OfficeFeed) => {
+    current = f;
+    for (const cb of subs) cb(f);
+  };
+  return { ...h, ctl, push };
 }
 
 /** The fixture day moved to `day` (an older day in the window). */
@@ -212,5 +249,133 @@ describe("office replay feed", () => {
     expect(h.last().state).toMatchObject({ playS: PLAN.duration, seq: seq + 1 });
     h.feed.seek(-5);
     expect(h.last().state.playS).toBe(0);
+  });
+
+  it("ends an `auto` replay on a reduced-motion step, never a visitor's", async () => {
+    const h = harness();
+    await h.feed.auto();
+    h.feed.step(0.1, true);
+    expect(h.last().state).toMatchObject({ status: "off", auto: false });
+    await h.feed.play(TODAY);
+    h.feed.step(0.1, true);
+    expect(h.last().state).toMatchObject({ status: "playing", auto: false });
+  });
+});
+
+describe("office replay link to the live feed", () => {
+  beforeEach(() => {
+    officeReplay.mounted = false;
+    officeReplay.quietSince = 0;
+    officeReplay.failedAt = -Infinity;
+  });
+
+  it("reads a live snapshot's desk levels and latest production deploy", () => {
+    const m = liveMark(liveSnap(5000, [[0, "working"], [3, "input"], [4, "asleep"]], [[1000, "success"], [3000, "running"], [2000, "failure"], [1500, "success"]]));
+    expect(m.levels).toEqual([1, 0, 0, 2, 0, 0, 0, 0, 0, 0]);
+    expect(m.deployAt).toBe(1500);
+    expect(liveMark({ ...liveSnap(5000, [[0, "working"]]), mode: "off" }).levels.every((l) => l === 0)).toBe(true);
+    expect(liveMark({ ...liveSnap(5000), pipeline: undefined }).deployAt).toBe(0);
+  });
+
+  it("a fresh live production deploy ends any replay and restarts the quiet timer, a replay or not", async () => {
+    const t0 = OFFICE_FIXTURE_NOW;
+    const h = linked(ready(liveSnap(t0, [], [[t0 - 600_000, "success"]])));
+    await h.ctl.auto();
+    expect(h.last().state).toMatchObject({ status: "playing", auto: true });
+    // A running deploy is not an event; the same deploy again is not either.
+    h.push(ready(liveSnap(t0 + 5000, [], [[t0 - 600_000, "success"], [t0 + 4000, "running"]])));
+    expect(h.last().state.status).toBe("playing");
+    h.clock.now += 1000;
+    h.push(ready(liveSnap(t0 + 10_000, [], [[t0 - 600_000, "success"], [t0 + 9000, "success"]])));
+    expect(h.last().state.status).toBe("off");
+    expect(officeReplay.quietSince).toBe(h.clock.now);
+    // A visitor's replay ends too.
+    await h.ctl.play(TODAY);
+    h.push(ready(liveSnap(t0 + 20_000, [], [[t0 + 19_000, "success"]])));
+    expect(h.last().state.status).toBe("off");
+    // No replay running: only the quiet timer.
+    h.clock.now += 1000;
+    h.push(ready(liveSnap(t0 + 40_000, [], [[t0 + 39_000, "success"]])));
+    expect(officeReplay.quietSince).toBe(h.clock.now);
+  });
+
+  it("a desk waking or starting to ask ends any replay; an awake desk ends an `auto` one, not a visitor's", async () => {
+    const t0 = OFFICE_FIXTURE_NOW;
+    const h = linked(ready(liveSnap(t0, [[2, "asleep"]])));
+    await h.ctl.play(TODAY);
+    h.push(ready(liveSnap(t0 + 1000, [[2, "working"]])));
+    expect(h.last().state.status).toBe("off");
+    // Awake already (no rise): a visitor's replay holds; then a desk starts to ask.
+    await h.ctl.play(TODAY);
+    h.push(ready(liveSnap(t0 + 2000, [[2, "working"]])));
+    expect(h.last().state.status).toBe("playing");
+    h.push(ready(liveSnap(t0 + 3000, [[2, "input"]])));
+    expect(h.last().state.status).toBe("off");
+    // An auto replay on a quiet office, then the office is awake without a rise (an offline answer between).
+    h.push(ready(liveSnap(t0 + 4000, [[2, "asleep"]])));
+    h.clock.now += REPLAY.idleS * 1000;
+    await h.ctl.auto();
+    expect(h.last().state).toMatchObject({ status: "playing", auto: true });
+    h.push({ status: "offline", snapshot: null, fetchedAt: 0 });
+    expect(h.last().state.status).toBe("playing");
+    h.push(ready(liveSnap(t0 + 5000, [[2, "asleep"], [7, "done"]])));
+    expect(h.last().state.status).toBe("off");
+  });
+
+  it("auto() checks the idle rule again: an import that lands after a desk woke, a fresh deploy, an unmount or reduced motion plays nothing", async () => {
+    const t0 = OFFICE_FIXTURE_NOW;
+    // The import resolved after a live answer with an awake desk landed (the chunk's first answer).
+    const woke = linked(ready(liveSnap(t0, [[1, "working"]])));
+    await woke.ctl.auto();
+    expect(woke.calls).toEqual([]);
+    expect(officeReplay.quietSince).toBe(woke.clock.now);
+    // ... or a production deploy under 30 s old.
+    const deployed = linked(ready(liveSnap(t0, [], [[t0 - 10_000, "success"]])));
+    await deployed.ctl.auto();
+    expect(deployed.calls).toEqual([]);
+    // The scene left (riding off L1) while the import was in flight.
+    const left = linked(ready(liveSnap(t0)));
+    officeReplay.mounted = false;
+    await left.ctl.auto();
+    expect(left.calls).toEqual([]);
+    officeReplay.mounted = true;
+    left.reduced.on = true;
+    await left.ctl.auto();
+    expect(left.calls).toEqual([]);
+    left.reduced.on = false;
+    officeReplay.quietSince = left.clock.now - REPLAY.idleS * 1000 + 1;
+    await left.ctl.auto();
+    expect(left.calls).toEqual([]);
+    officeReplay.quietSince = left.clock.now - REPLAY.idleS * 1000;
+    await left.ctl.auto();
+    expect(left.last().state).toMatchObject({ status: "playing", auto: true });
+    expect(officeReplay.failedAt).toBe(-Infinity);
+  });
+
+  it("a live event during auto()'s fetch drops the load", async () => {
+    const t0 = OFFICE_FIXTURE_NOW;
+    const h = linked(ready(liveSnap(t0)), { hang: true });
+    void h.ctl.auto();
+    await vi.waitFor(() => expect(h.calls).toHaveLength(1));
+    expect(h.last().state.status).toBe("loading");
+    h.push(ready(liveSnap(t0 + 1000, [[0, "working"]])));
+    expect(h.last().state.status).toBe("off");
+  });
+
+  it.each<[string, Parameters<typeof harness>[0], Partial<ReplayState>]>([
+    ["an unavailable history", { index: { status: 503, body: { v: 1, error: "office" } } }, { status: "unavailable" }],
+    ["nothing to play", { index: { status: 200, body: { v: 1, days: INDEX.days.map((d) => ({ ...d, events: 0, prs: 0, runs: 0, deploys: 0 })) } } }, { status: "off", empty: true }],
+  ])("auto() records a failure on %s", async (_, opts, state) => {
+    const h = linked(ready(liveSnap(OFFICE_FIXTURE_NOW)), opts);
+    await h.ctl.auto();
+    expect(h.last().state).toMatchObject(state);
+    expect(officeReplay.failedAt).toBe(h.clock.now);
+  });
+
+  it("auto() records a failure on a throw", async () => {
+    const h = linked(ready(liveSnap(OFFICE_FIXTURE_NOW)));
+    const ctl = linkReplay({ ...h.feed, auto: () => Promise.reject(new Error("boom")) }, { now: () => h.clock.now, feed: () => ({ status: "offline", snapshot: null, fetchedAt: 0 }), subscribe: () => () => {} }, () => false);
+    await ctl.auto();
+    expect(officeReplay.failedAt).toBe(h.clock.now);
   });
 });

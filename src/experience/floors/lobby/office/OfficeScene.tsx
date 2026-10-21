@@ -62,7 +62,7 @@ import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
-import { idleLoopWanted, liveEvent, liveLevels, loadOfficeReplay, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
+import { idleLoop, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
 
@@ -745,35 +745,6 @@ function anyChipShown(w: WatchState): boolean {
   return false;
 }
 
-/** The idle loop's import or its `auto()` is under way (one at a time). */
-let looping = false;
-
-/**
- * The idle loop (every 0.5 s with the watch): an awake live desk restarts the quiet timer and ends an `auto` replay,
- * reduced motion ends one too; a quiet office in view (`idleLoopWanted`) loads the replay chunk and loops the latest
- * day. A failed import, an unavailable history or nothing to play waits `REPLAY.retryS` before the next try.
- */
-function idleLoop(live: OfficeView, feed: OfficeFeedStatus, inView: boolean, reduced: boolean): void {
-  const r = officeReplay;
-  const now = officeLive.now();
-  const awake = live.rovers.some((x) => x.agent && x.state !== "asleep");
-  if (awake) r.quietSince = now;
-  if (r.state.auto && r.state.status !== "off" && (awake || reduced)) r.controller?.stop();
-  if (looping || !idleLoopWanted({ feed, awake, quietMs: now - r.quietSince, inView, reduced, status: r.state.status, sinceFailMs: now - r.failedAt })) return;
-  looping = true;
-  const failed = () => {
-    r.failedAt = officeLive.now();
-  };
-  void loadOfficeReplay()
-    .then((m) => m.replayController.auto())
-    .then(() => {
-      if (r.state.status === "unavailable" || r.state.empty) failed();
-    }, failed)
-    .finally(() => {
-      looping = false;
-    });
-}
-
 /** One frame of `OfficeWatch` (a plain function, so the watch state it updates stays out of React's render rules). */
 function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: OfficeFeedStatus, office: Rect, { camera, clock, size }: RootState) {
   const s = getHQStore().getState();
@@ -798,7 +769,7 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
     const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
     const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
-    idleLoop(live, feed, inView, s.reducedMotion);
+    idleLoop(live.rovers.some((x) => x.agent && x.state !== "asleep"), feed, inView, s.reducedMotion);
   }
   // Out of view with every chip already hidden: no chip work this frame.
   if (!officeRuntime.inView && !anyChipShown(w)) return;
@@ -955,17 +926,6 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
     void loadOfficeWatch().catch(() => null);
   }, [feed]);
-  // A live event ends any replay at once (owner decision): a desk waking or starting to ask, or a fresh production
-  // deploy not seen before. The first ready answer is the baseline.
-  const mark = useRef<{ levels: number[]; deployAt: number | null } | null>(null);
-  useEffect(() => {
-    if (feed.status !== "ready") return;
-    const levels = liveLevels(live);
-    const deployAt = signalFromBody(feed.snapshot, Date.now())?.deployAt ?? null;
-    const last = mark.current;
-    if (last && (liveEvent(last.levels, levels) || (deployAt !== null && deployAt !== last.deployAt)) && officeReplay.state.status !== "off") officeReplay.controller?.stop();
-    mark.current = { levels, deployAt };
-  }, [feed, live]);
   const slots = SLOTS;
   const agents = live.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
