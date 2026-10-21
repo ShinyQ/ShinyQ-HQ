@@ -22,8 +22,9 @@ const withDesk = (slot: number, patch: Partial<OfficeSnapshotV1["desks"][number]
 describe("crew summary", () => {
   it("has one line per desk, off-duty desks included", () => {
     const lines = crewLines(view(), t, "en");
-    expect(lines).toHaveLength(5);
-    expect(lines.every((l) => /^Desk [1-5]: /.test(l))).toBe(true);
+    expect(lines).toHaveLength(10);
+    expect(lines.map((l) => /^Desk (\d+): /.exec(l)?.[1])).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
+    expect(lines.slice(5).every((l) => / off duty$/.test(l))).toBe(true);
     expect(lines[0]).toBe(`Desk 1: Copilot is working, since ${clock(sinceOf(0))}`);
     expect(lines[3]).toBe(`Desk 4: Codex is waiting for Kurniadi, since ${clock(sinceOf(3))}`);
     expect(lines[0]).not.toMatch(/min|ago|just now/);

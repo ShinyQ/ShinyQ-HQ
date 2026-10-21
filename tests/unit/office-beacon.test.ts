@@ -7,15 +7,20 @@ import { STATE_TONE } from "@/lib/office/model";
 const make = () => Array.from({ length: BEACON.slots }, () => ({ y: 0, r: 0, h: 0, alpha: 0 }));
 
 describe("beacon", () => {
-  it("rises behind the asking Rover, or the plaza centre when several ask", () => {
-    const one = beaconOrigin([2]);
+  it("rises behind the asking Rover on its row's floor (a back-row Rover's riser top), or the plaza centre when several ask", () => {
     const arc = LOBBY.officeWing.arc;
-    const r = OFFICE_SLOTS[2].rover;
-    expect(Math.hypot(one.x - r.x, one.z - r.z)).toBeCloseTo(1.25, 5);
-    expect(Math.hypot(one.x - arc.x, one.z - arc.z)).toBeGreaterThan(Math.hypot(r.x - arc.x, r.z - arc.z));
-    expect(beaconOrigin([0, 4])).toEqual(LOBBY.officeWing.plaza.center);
-    // A back-row seat the layout has no desk for yet (slot 7 of snapshot v3) stands at the plaza centre, never crashes.
-    for (const slot of [5, 7, 9]) if (!OFFICE_SLOTS[slot]) expect(beaconOrigin([slot])).toEqual(LOBBY.officeWing.plaza.center);
+    for (const slot of [0, 2, 4, 5, 7, 9]) {
+      const one = beaconOrigin([slot]);
+      const s = OFFICE_SLOTS[slot];
+      expect(Math.hypot(one.x - s.rover.x, one.z - s.rover.z)).toBeCloseTo(1.25, 5);
+      expect(Math.hypot(one.x - arc.x, one.z - arc.z)).toBeGreaterThan(Math.hypot(s.rover.x - arc.x, s.rover.z - arc.z));
+      expect(one.y).toBe(s.lift);
+    }
+    expect(beaconOrigin([2]).y).toBe(0);
+    expect(beaconOrigin([7]).y).toBeGreaterThan(0);
+    expect(beaconOrigin([0, 4])).toEqual({ ...LOBBY.officeWing.plaza.center, y: 0 });
+    // A seat the layout has no desk for (past ten) stands at the plaza centre, never crashes.
+    expect(beaconOrigin([10])).toEqual({ ...LOBBY.officeWing.plaza.center, y: 0 });
   });
   it("rings pulse up the column's lowest part and widen, then restart: flat bands well wider than the column", () => {
     const a = make();

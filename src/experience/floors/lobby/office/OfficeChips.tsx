@@ -10,7 +10,7 @@ import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
 import { chipLines, nearDropsFor, nearParts, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
-import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
+import { OFFICE_CHIP_COUNT, officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
@@ -144,7 +144,10 @@ function NearHead({ parts, drop, ref }: { parts: ReturnType<typeof nearParts>; d
   );
 }
 
-/** The five chips and their leader lines; hidden on phones while a drawer (a bottom sheet) is open. Mounted by the HUD's OfficeLayer. */
+/**
+ * The front row's five chips (`OFFICE_CHIP_COUNT`) and their leader lines; hidden on phones while a drawer (a bottom
+ * sheet) is open. Mounted by the HUD's OfficeLayer.
+ */
 export function OfficeChips() {
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
@@ -152,7 +155,7 @@ export function OfficeChips() {
   if (hidden) return null;
   return (
     <div data-testid="office-chips">
-      {view.rovers.map((rover) => (
+      {view.rovers.slice(0, OFFICE_CHIP_COUNT).map((rover) => (
         <Chip key={rover.slot} rover={rover} />
       ))}
     </div>

@@ -43,7 +43,7 @@ import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
-import { OFFICE, officeTowerColumn, rowSlots, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
+import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import {
   canvasTexture,
   CHIP_ROW,
@@ -67,33 +67,34 @@ import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew, type LodStep } from "./crewFrame";
-import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
+import { towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
-import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
+import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
-import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
+import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
 
 const NO_RAYCAST = () => null;
-/** The Rovers this scene draws: the front row (slots 0 to 4); the back row's desks and riser are in the main-path shell. */
-const SLOTS = rowSlots(OFFICE_SLOTS, 0);
-/** Faces, desk screens, then the input flags: one quad each per Rover. */
-const QUADS = 3 * SLOTS.length;
+/** The Rovers this scene draws: both rows (slots 0 to 9; the desks and the riser are in the main-path shell). */
+const SLOTS = OFFICE_SLOTS;
+/** Instance and quad counts, from the slot count. */
+const COUNTS = officeInstances(SLOTS.length);
 /** Desk screens redraw at most this often (faces at most FACE_FPS_MAX on both tiers), only the cells whose frame key changed. */
 const SCREEN_FPS = { full: 10, lite: 5 } as const;
 const FRAME = new Matrix4();
 const ORIGIN = new Vector2();
 
-/** Five faces, five desk screens and five flag plates as one merged quad mesh (one draw call, one atlas). */
+/** Ten faces, ten desk screens and ten flag plates as one merged quad mesh (one draw call, one atlas). */
 function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   const n = slots.length;
-  const positions = new Float32Array(QUADS * 12);
-  const uvs = new Float32Array(QUADS * 8);
+  const quads = officeInstances(n).quads;
+  const positions = new Float32Array(quads * 12);
+  const uvs = new Float32Array(quads * 8);
   const index: number[] = [];
-  for (let q = 0; q < QUADS; q++) {
+  for (let q = 0; q < quads; q++) {
     const [u0, v0, u1, v1] = cellUv(q < n ? faceCell(q) : q < 2 * n ? screenCell(q - n) : FLAG_CELL);
     uvs.set([u0, v0, u1, v0, u1, v1, u0, v1], q * 8);
     const b = q * 4;
@@ -109,7 +110,7 @@ function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   g.setAttribute("position", new BufferAttribute(positions, 3).setUsage(DynamicDrawUsage));
   g.setAttribute("uv", new BufferAttribute(uvs, 2));
   // Unused by the basic material, but three keys programs on HAS_NORMAL: with it the quads share the wall's program.
-  g.setAttribute("normal", new BufferAttribute(new Float32Array(QUADS * 12), 3));
+  g.setAttribute("normal", new BufferAttribute(new Float32Array(quads * 12), 3));
   g.setIndex(index);
   // The faces move with their Rovers: one fixed sphere around the whole office, so culling never trusts stale bounds.
   g.boundingSphere = officeSphere();
@@ -122,8 +123,6 @@ function officeSphere(): Sphere {
   return new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
 }
 
-/** Glow instances: each Rover's (rig and crew), then the CI tower's lane dots at `TOWER.start`. */
-const glowCount = (slots: readonly OfficeSlot[]) => slots.length * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots;
 const DARK_TOWER = { total: 0, done: 0, running: false } as const;
 
 /**
@@ -131,10 +130,11 @@ const DARK_TOWER = { total: 0, done: 0, running: false } as const;
  * culling see the final meshes: the glow mesh's bounds take in the tower's dots from here.
  */
 function restInstances(slots: readonly OfficeSlot[]) {
-  const parts = new Float32Array(slots.length * PARTS_PER_ROVER * 16);
-  const treads = new Float32Array(slots.length * TREADS_PER_ROVER * 16);
-  const glow = new Float32Array(glowCount(slots) * 16);
-  const colors = new Float32Array(glowCount(slots) * 3);
+  const n = officeInstances(slots.length);
+  const parts = new Float32Array(n.parts * 16);
+  const treads = new Float32Array(n.treads * 16);
+  const glow = new Float32Array(n.glow * 16);
+  const colors = new Float32Array(n.glow * 3);
   const p = restCrewPose();
   const fx = crewFx(newActor("asleep"), true);
   for (const s of slots) {
@@ -337,8 +337,8 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
 }
 
 /**
- * The five office Rovers: light parts and treads (two instanced standard meshes with `alphaHash`, the player
- * Rover's wheel program), their faces and the desk screens (one quad mesh on one canvas atlas, the player
+ * The ten office Rovers (both console rows): light parts and treads (two instanced standard meshes with `alphaHash`,
+ * the player Rover's wheel program), their faces and the desk screens (one quad mesh on one canvas atlas, the player
  * face's material settings), and the glow (one instanced holo mesh: antenna tips, halos, progress dots, the crew's
  * effects and the CI tower's lane dots). Each desk's crew actor acts out its state (`crew.ts`). Nothing is written
  * while no pose, glow key, tower key or camera changed; the atlas uploads only its changed cells. Past
@@ -464,14 +464,14 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
 
   return (
     <group ref={group} name="office-rovers">
-      <instancedMesh ref={parts} args={[box, light, slots.length * PARTS_PER_ROVER]} raycast={NO_RAYCAST} name="office-rover-parts">
+      <instancedMesh ref={parts} args={[box, light, COUNTS.parts]} raycast={NO_RAYCAST} name="office-rover-parts">
         <instancedBufferAttribute attach="instanceMatrix" args={[rest.parts, 16]} usage={DynamicDrawUsage} />
       </instancedMesh>
-      <instancedMesh ref={treads} args={[box, dark, slots.length * TREADS_PER_ROVER]} raycast={NO_RAYCAST} name="office-rover-treads">
+      <instancedMesh ref={treads} args={[box, dark, COUNTS.treads]} raycast={NO_RAYCAST} name="office-rover-treads">
         <instancedBufferAttribute attach="instanceMatrix" args={[rest.treads, 16]} usage={DynamicDrawUsage} />
       </instancedMesh>
       <mesh ref={screenMesh} geometry={quads} material={screens} raycast={NO_RAYCAST} name="office-screens" />
-      <instancedMesh ref={glows} args={[dot, glow, glowCount(slots)]} raycast={NO_RAYCAST} name="office-glow" renderOrder={1}>
+      <instancedMesh ref={glows} args={[dot, glow, COUNTS.glow]} raycast={NO_RAYCAST} name="office-glow" renderOrder={1}>
         <instancedBufferAttribute attach="instanceMatrix" args={[rest.glow, 16]} usage={DynamicDrawUsage} />
         <instancedBufferAttribute attach="instanceColor" args={[rest.colors, 3]} usage={DynamicDrawUsage} />
       </instancedMesh>
@@ -598,7 +598,7 @@ function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "
   w.layout = hud;
   w.hud = officeHudBoxes(width, height, hud);
   chipRowBounds(width, top, w.hud, w.bounds);
-  w.max = chipMaxWidth(w.bounds, SLOTS.length);
+  w.max = chipMaxWidth(w.bounds, OFFICE_CHIP_COUNT);
 }
 
 /** Hides chip `slot` once (it turns far), then leaves it alone until it comes back into view; its leader line too. */
@@ -838,8 +838,9 @@ function OfficeWatch({ view }: { view: OfficeView }) {
 }
 
 /**
- * The live L1 Agent Office (lazy chunk; the furniture shell is drawn by the main-path OfficeMount): five Rovers,
- * their faces and desk screens, the glow, the screen wall, the chips' positions and seven point-and-go targets.
+ * The live L1 Agent Office (lazy chunk; the furniture shell is drawn by the main-path OfficeMount): ten Rovers on two
+ * console rows, their faces and desk screens, the glow, the screen wall, the front row's chips' positions and twelve
+ * point-and-go targets (the office, GitHub and the ten desks).
  * Five draw calls here (parts, treads, screens, glow, wall), on programs L1 already has.
  */
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {

@@ -2,7 +2,7 @@ import { Matrix4, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { CHARGE_PAD, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
 import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
-import { GLOW_PER_ROVER, roverFrame } from "@/experience/floors/lobby/office/officeRig";
+import { GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeGlow } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
 import { OFFICE, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
@@ -40,9 +40,32 @@ describe("crew glow", () => {
 });
 
 describe("crew glow layout", () => {
-  it("packs 38 glow instances per Rover (18 rig, 20 crew with 4 drone eyes) and the tower after the five Rovers", () => {
+  it("packs 38 glow instances per Rover (18 rig, 20 crew with 4 drone eyes) and the tower after the ten Rovers", () => {
     expect(GLOW_PER_ROVER).toBe(38);
-    expect(TOWER.start).toBe(5 * GLOW_PER_ROVER);
+    expect(TOWER.start).toBe(10 * GLOW_PER_ROVER);
+  });
+
+  it("derives every instance count from the slot count (ten Rovers), the tower's dots after every Rover's glow", () => {
+    const n = officeInstances(OFFICE_SLOTS.length);
+    expect(n).toEqual({ parts: 10 * PARTS_PER_ROVER, treads: 10 * TREADS_PER_ROVER, glow: 10 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 30 });
+    expect(n.glow).toBe(TOWER.start + TOWER.lanes * TOWER.dots);
+    expect(officeInstances(5)).toEqual({ parts: 50, treads: 10, glow: 5 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 15 });
+    // Each Rover's rig and crew glow lands in its own block: the last Rover's ends exactly where the tower starts.
+    const m = new Float32Array(n.glow * 16);
+    const c = new Float32Array(n.glow * 3);
+    const fx = crewFx(newActor("working"), false);
+    for (const s of OFFICE_SLOTS) {
+      const f = roverFrame(s, stillPose("working"), new Matrix4());
+      writeGlow(s, f, "ci", { done: 3, total: 8 }, 1, 0.5, false, LOBBY.officeWing.stop, m, c);
+      writeCrewGlow(s, f, "working", fx, 0.5, 0, false, m, c, 4);
+    }
+    const last = OFFICE_SLOTS.length - 1;
+    expect(scaleAt(m, last * GLOW_PER_ROVER)).toBeGreaterThan(0);
+    expect(scaleAt(m, last * GLOW_PER_ROVER + 18 + CREW_GLOW.cores + 3)).toBeGreaterThan(0);
+    for (let i = TOWER.start; i < n.glow; i++) expect(scaleAt(m, i), `tower dot ${i}`).toBe(0);
+    // The back row's halos lie on the riser top.
+    for (const s of OFFICE_SLOTS) expect(posAt(m, s.slot * GLOW_PER_ROVER + 1).y).toBeGreaterThan(s.lift);
+    expect(OFFICE_SLOTS.filter((s) => s.lift > 0).map((s) => s.slot)).toEqual([5, 6, 7, 8, 9]);
   });
   it("writes crewFx into the given object", () => {
     const out = crewFx(newActor("thinking"), false);

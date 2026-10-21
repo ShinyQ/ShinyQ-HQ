@@ -7,7 +7,7 @@ import { officeView, type OfficeView } from "@/experience/floors/lobby/office/of
 import { slotPhase } from "@/experience/floors/lobby/office/officeVisual";
 import { officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 
@@ -56,6 +56,19 @@ describe("office crew frame (the keyed write decision)", () => {
     expect(due[0]).toBe(true);
     expect(due.slice(1).some(Boolean)).toBe(false);
     expect(Math.max(...bobs)).toBe(0);
+  });
+
+  it("a still office of ten (both rows awake, drones included) writes nothing per frame under reduced motion", () => {
+    const ten = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot });
+    expect(ten.rovers).toHaveLength(OFFICE_SLOTS.length);
+    expect(ten.rovers.filter((r) => r.slot >= 5 && r.state !== "asleep")).toHaveLength(4);
+    const { due, bobs } = run(ten, true, 600);
+    expect(due[0]).toBe(true);
+    expect(due.slice(1).some(Boolean)).toBe(false);
+    expect(Math.max(...bobs)).toBe(0);
+    // Ten asleep: the same.
+    const asleepTen = run(asleep, true, 600);
+    expect(asleepTen.due.slice(1).some(Boolean)).toBe(false);
   });
 
   it("stays still under reduced motion with GitHub-only data (asleep desks) and a running run", () => {
@@ -107,7 +120,7 @@ describe("office crew frame (the keyed write decision)", () => {
 
   it("parks helper drones under reduced motion (nothing written per frame) and ticks them at 30 Hz in full motion", () => {
     const drones = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
-    expect(drones.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0]);
+    expect(drones.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0, 0, 0, 0, 0, 0]);
     const { due } = run(drones, true, 300);
     expect(due.slice(1).some(Boolean)).toBe(false);
     const { writes, crew } = setup();
@@ -200,6 +213,15 @@ describe("office far level of detail (lodStep)", () => {
     expect(near.wrote.length).toBeGreaterThan(100);
     const still = runLod(asleep, true, 600, 60);
     expect(still.wrote.slice(1)).toEqual([]);
+  });
+
+  it("applies to all ten Rovers: a busy office of ten writes at most 4 times a second far, a still one not at all", () => {
+    const ten = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot });
+    const far = runLod(ten, false, 600, 60);
+    expect(far.steps).toBe(40);
+    expect(far.wrote.length).toBeLessThanOrEqual(40);
+    for (let i = 1; i < far.wrote.length; i++) expect((far.wrote[i] - far.wrote[i - 1]) * DT).toBeGreaterThanOrEqual(1 / OFFICE_LOD.farHz - 1e-6);
+    expect(runLod(ten, true, 600, 60).wrote.slice(1)).toEqual([]);
   });
 });
 

@@ -25,14 +25,15 @@ export interface BeaconInstance {
 }
 
 /**
- * 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), or the wing
- * plaza's centre when several Rovers ask or the asking seat has no desk in the layout.
+ * 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), at its row's
+ * floor (`y`: a back-row Rover's riser top, `lift`), or the wing plaza's centre on the floor when several Rovers ask or
+ * the asking seat has no desk in the layout.
  */
-export function beaconOrigin(asking: readonly number[]): Vec2 {
+export function beaconOrigin(asking: readonly number[]): Vec2 & { y: number } {
   const s = asking.length === 1 ? OFFICE_SLOTS[asking[0]] : undefined;
-  if (!s) return LOBBY.officeWing.plaza.center;
+  if (!s) return { ...LOBBY.officeWing.plaza.center, y: 0 };
   // Forward (sin yaw, cos yaw) points at the arc centre, so behind is the opposite way.
-  return { x: s.rover.x - Math.sin(s.yaw) * 1.25, z: s.rover.z - Math.cos(s.yaw) * 1.25 };
+  return { x: s.rover.x - Math.sin(s.yaw) * 1.25, y: s.lift, z: s.rover.z - Math.cos(s.yaw) * 1.25 };
 }
 
 const FULL: BeaconGain = { column: 1, bands: 1, reach: BEACON.rise };

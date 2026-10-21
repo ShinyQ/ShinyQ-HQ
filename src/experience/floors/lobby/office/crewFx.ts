@@ -2,7 +2,7 @@ import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
-import { OFFICE, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
+import { OFFICE, OFFICE_SEAT_COUNT, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
 import { confettiAt, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
 import { OFFICE_ROVER } from "./officeVisual";
@@ -110,12 +110,12 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
 }
 
 /**
- * The tower's LED matrix after the five Rovers' glow: up to 24 lanes of 8 dots, bottom to top, over most of the slim
- * column's stop-facing face (`base` over the plinth, `gap` between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart
- * within a lane (0.91 u of its 1.2 u face). Idle dots stay a dim visible grid (`idle`), a run's pending lanes a little
- * brighter, done lanes bright green, the next lane chasing.
+ * The tower's LED matrix after the ten Rovers' glow (`start`: the glow instance count derives from the seat count): up
+ * to 24 lanes of 8 dots, bottom to top, over most of the slim column's stop-facing face (`base` over the plinth, `gap`
+ * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (0.91 u of its 1.2 u face). Idle dots stay a
+ * dim visible grid (`idle`), a run's pending lanes a little brighter, done lanes bright green, the next lane chasing.
  */
-export const TOWER = { lanes: 24, dots: 8, start: 5 * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
+export const TOWER = { lanes: 24, dots: 8, start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
 
 export interface TowerLanes {
   total: number;

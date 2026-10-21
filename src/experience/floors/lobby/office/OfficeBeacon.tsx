@@ -48,7 +48,7 @@ export function OfficeBeacon() {
     for (let i = 0; i <= BEACON.bands; i++) {
       const b = INST[i];
       at[i * 16 + 12] = o.x;
-      at[i * 16 + 13] = b.y;
+      at[i * 16 + 13] = o.y + b.y;
       at[i * 16 + 14] = o.z;
       s[i * 4 + 1] = b.h;
       s[i * 4 + 2] = s[i * 4 + 3] = b.r;

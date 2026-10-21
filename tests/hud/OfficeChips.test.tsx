@@ -52,7 +52,8 @@ describe("Agent Office chips", () => {
     expect(chip(0)).not.toHaveAttribute("aria-describedby");
     expect(chip(4).querySelector("[data-progress]")).toHaveAttribute("data-progress", "58");
     expect(chip(0)).toHaveAttribute("data-state", "working");
-    expect(officeRuntime.chips.every((el) => el instanceof HTMLElement)).toBe(true);
+    // The front row's five chips (the back row's Rovers have none yet; their runtime entries stay empty).
+    expect(officeRuntime.chips.map((el) => el instanceof HTMLElement)).toEqual([true, true, true, true, true, false, false, false, false, false]);
   });
 
   it("adds the helpers to a near chip's head and label, with a +N pill past the four drones drawn", () => {
@@ -212,7 +213,8 @@ describe("Agent Office chips", () => {
     renderChips();
     const leads = screen.getAllByTestId("office-chip-lead", { exact: true });
     expect(leads).toHaveLength(5);
-    expect(officeRuntime.leads).toEqual(leads.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
+    expect(officeRuntime.leads.slice(0, 5)).toEqual(leads.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
+    expect(officeRuntime.leads.slice(5)).toEqual([null, null, null, null, null]);
     for (const lead of leads) {
       expect(lead).toHaveAttribute("aria-hidden", "true");
       expect(lead).toHaveClass("pointer-events-none");
@@ -223,7 +225,8 @@ describe("Agent Office chips", () => {
     expect(leads[0].style.background).toBe(chip(0).querySelector<HTMLElement>(".hq-dot")!.style.color);
     // The tick where the line meets the screen wall's top: hidden until drawn, in the same colour.
     const ticks = screen.getAllByTestId("office-chip-tick", { exact: true });
-    expect(officeRuntime.ticks).toEqual(ticks.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
+    expect(officeRuntime.ticks.slice(0, 5)).toEqual(ticks.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
+    expect(officeRuntime.ticks.slice(5)).toEqual([null, null, null, null, null]);
     for (const tick of ticks) {
       expect(tick).toHaveAttribute("aria-hidden", "true");
       expect(tick).toHaveClass("pointer-events-none");

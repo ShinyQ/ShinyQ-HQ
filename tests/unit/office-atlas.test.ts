@@ -21,6 +21,7 @@ import {
   type ScreenInput,
 } from "@/experience/floors/lobby/office/officeAtlas";
 import { OFFICE_STATE_STYLE } from "@/experience/floors/lobby/office/officeVisual";
+import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
 import { OFFICE_STATES } from "@/lib/office/protocol";
 import { recordingContext } from "../helpers/fake-canvas";
 
@@ -36,13 +37,26 @@ const input = (state: (typeof OFFICE_STATES)[number], extra: Partial<ScreenInput
 });
 
 describe("Agent Office atlas", () => {
-  it("packs five 128 x 96 faces and five 256 x 160 screens into one 1024 x 512 canvas without overlap", () => {
-    const cells = [0, 1, 2, 3, 4].flatMap((slot) => [faceCell(slot), screenCell(slot)]);
-    expect(faceCell(0)).toMatchObject({ w: FACE_W, h: FACE_H });
+  it("packs ten 128 x 96 faces, ten 256 x 160 desk screens and the flag cell into one 1024 x 576 canvas without overlap", () => {
+    expect(ATLAS).toEqual({ w: 1024, h: 576 });
+    const slots = OFFICE_SLOTS.map((s) => s.slot);
+    expect(slots).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const cells = [...slots.flatMap((slot) => [faceCell(slot), screenCell(slot)]), FLAG_CELL];
+    for (const slot of slots) {
+      expect(faceCell(slot)).toMatchObject({ w: FACE_W, h: FACE_H });
+      expect(screenCell(slot)).toMatchObject({ w: 256, h: 160 });
+    }
+    expect(FLAG_CELL).toMatchObject({ w: FACE_W, h: FACE_H });
     for (const c of cells) {
+      expect(c.x).toBeGreaterThanOrEqual(0);
+      expect(c.y).toBeGreaterThanOrEqual(0);
       expect(c.x + c.w).toBeLessThanOrEqual(ATLAS.w);
       expect(c.y + c.h).toBeLessThanOrEqual(ATLAS.h);
     }
+    // No row to spare: the atlas is as tall as its cells need.
+    expect(Math.max(...cells.map((c) => c.y + c.h))).toBe(ATLAS.h);
+    // Every cell is a whole number of texels (the partial uploads land on texel edges).
+    for (const c of cells) for (const v of [c.x, c.y, c.w, c.h]) expect(Number.isInteger(v)).toBe(true);
     for (let i = 0; i < cells.length; i++)
       for (let k = i + 1; k < cells.length; k++) {
         const a = cells[i];
@@ -116,10 +130,10 @@ describe("Agent Office atlas", () => {
   });
 
   it("lists only the changed cells for a partial upload, and maps each cell to its upload origin", () => {
-    expect(ATLAS_CELLS).toBe(10);
-    for (let slot = 0; slot < 5; slot++) {
+    expect(ATLAS_CELLS).toBe(20);
+    for (let slot = 0; slot < 10; slot++) {
       expect(atlasCell(slot)).toEqual(faceCell(slot));
-      expect(atlasCell(5 + slot)).toEqual(screenCell(slot));
+      expect(atlasCell(10 + slot)).toEqual(screenCell(slot));
     }
     const prev = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
     expect(dirtyCells(prev, [...prev])).toEqual([]);

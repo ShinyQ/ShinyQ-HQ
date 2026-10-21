@@ -4,6 +4,7 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
+import { officeSlots } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
@@ -26,8 +27,8 @@ import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
- * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, five
- * Rovers with their states and chips, the partial atlas uploads on a real GL context, the Rover, summary and
+ * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, ten
+ * Rovers on two console rows with their states and the front row's chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
  * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
@@ -173,6 +174,13 @@ async function watchNow(page: Page) {
  */
 const RIG = { per: 10, first: 6 } as const;
 
+/** Seats over both console rows: the scene draws ten Rovers, the back row (slots 5 to 9) off duty without a session. */
+const SEATS = 10;
+/** A five-desk lineup padded to the scene's ten Rovers with `rest` (the back row's off-duty value). */
+const ten = <T,>(front: readonly T[], rest: T): T[] => [...front, ...Array.from({ length: SEATS - front.length }, () => rest)];
+/** Five desks' states as the ten Rovers' states: the back row off duty, asleep. */
+const tenStates = (front: readonly string[]) => ten(front, "asleep");
+
 /** The crew probe's states (`__hq.probes.office.crew`, refreshed every 0.5 s of scene clock while the scene is mounted). */
 const crewStates = async (page: Page) => (await probe(page)).crew.map((c) => c.state);
 
@@ -182,12 +190,12 @@ const crewStates = async (page: Page) => (await probe(page)).crew.map((c) => c.s
  */
 const droneParts = (page: Page) =>
   page.evaluate(
-    ({ per, first }) => {
+    ({ per, first, seats }) => {
       type Parts = { instanceMatrix: { array: ArrayLike<number> } };
       const mesh = (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): Parts | undefined } } } }).__hq.render.scene.getObjectByName("office-rover-parts")!;
       const a = mesh.instanceMatrix.array;
       const r = (x: number) => Math.round(x * 1e4) / 1e4;
-      return [0, 1, 2, 3, 4].map((slot) => {
+      return Array.from({ length: seats }, (_, slot) => {
         let drawn = 0;
         const at: number[] = [];
         for (let i = 0; i < 4; i++) {
@@ -198,7 +206,7 @@ const droneParts = (page: Page) =>
         return { drawn, at };
       });
     },
-    RIG,
+    { ...RIG, seats: SEATS },
   );
 
 /** Fetches now (the poller restarts) and waits for that response. */
@@ -233,7 +241,7 @@ async function nearChips(page: Page) {
 async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, body: unknown, states: readonly string[]) {
   office.set(body);
   await pollNow(page);
-  await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(states);
+  await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(tenStates(states));
 }
 
 type AtlasTexture = { version: number; image: { width: number; height: number } };
@@ -290,7 +298,7 @@ const glErrors = (page: Page) =>
   });
 
 test.describe("Agent Office (L1)", () => {
-  test("loads at idle on L1 and shows five Rovers with their states and chips at the office", async ({ page }) => {
+  test("loads at idle on L1 and shows ten Rovers with their states and the front row's chips at the office", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -298,7 +306,7 @@ test.describe("Agent Office (L1)", () => {
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    expect((await probe(page)).desks).toBe(5);
+    expect((await probe(page)).desks).toBe(SEATS);
     await nearChips(page);
     await expect(chip(page, 0)).toContainText(`${en.office.agent.copilot} · ${en.office.activity.editing}`);
     // The task stays in the label (the drawer shows it): the row keeps one compact line per chip.
@@ -348,7 +356,7 @@ test.describe("Agent Office (L1)", () => {
       return { inView: o.inView, far: o.far, polling: o.polling };
     }, { timeout: 30_000 }).toEqual({ inView: true, far: true, polling: true });
     expect(await reasons(page)).toEqual(["far"]);
-    await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(STATES_A);
+    await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(tenStates(STATES_A));
     await expect.poll(async () => (await probe(page)).bob, { timeout: 30_000 }).toBeGreaterThan(0);
     // The crew steps about 4 times a second of scene clock (`OFFICE_LOD.farHz`), never every frame.
     const sample = () => page.evaluate(() => ({ steps: (window as unknown as OfficeWindow).__hq.probes.office.steps, t: (window as unknown as GlWindow).__hq.clock() }));
@@ -446,7 +454,7 @@ test.describe("Agent Office (L1)", () => {
     expect(summary).not.toBeNull();
     await page.mouse.click(summary!.x, summary!.y);
     await waitForRoom(page, "L1:office");
-    await expect(page.getByTestId("office-agent")).toHaveCount(5);
+    await expect(page.getByTestId("office-agent")).toHaveCount(SEATS);
     await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
     await page.getByTestId("office-agent").nth(2).click();
     await waitForRoom(page, "L1:office-desk-3");
@@ -487,7 +495,7 @@ test.describe("Agent Office (L1)", () => {
     await pollNow(page);
     await expect.poll(async () => (await feed(page))?.status).toBe("disabled");
     await expect.poll(async () => (await probe(page)).mode).toBe("off");
-    expect((await probe(page)).states).toEqual(asleep);
+    expect((await probe(page)).states).toEqual(tenStates(asleep));
   });
 
   test("a 204 or a 500 keeps the last snapshot for a minute, then the office shows offline", async ({ page }) => {
@@ -503,12 +511,12 @@ test.describe("Agent Office (L1)", () => {
     // The 204 settled (the feed listeners ran) and kept the last snapshot.
     await expect.poll(() => settled(page)).toBeGreaterThan(count);
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
-    expect((await probe(page)).states).toEqual(STATES_A);
+    expect((await probe(page)).states).toEqual(tenStates(STATES_A));
     office.set(null, 500);
     await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
     await expect.poll(async () => (await feed(page))?.status).toBe("offline");
     await expect.poll(async () => (await probe(page)).mode).toBe("offline");
-    expect((await probe(page)).states).toEqual(["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    expect((await probe(page)).states).toEqual(tenStates([]));
   });
 
   test("reduced motion holds every pose still; the office view does not apply there, so the chips show as compact dots", async ({ page }) => {
@@ -539,17 +547,17 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_A_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_A_STATES));
     // The blend into each state's pose runs out on the scene clock: wait on the pose, not on time.
     await expect.poll(async () => (await probe(page)).crew[CREW_SLOT.input].flag, { timeout: 30_000 }).toBe(1);
     await expect.poll(async () => Math.abs((await probe(page)).crew[CREW_SLOT.ci].yaw), { timeout: 30_000 }).toBeGreaterThan(0.2);
     const crew = (await probe(page)).crew;
     for (const [slot, c] of crew.entries()) if (slot !== CREW_SLOT.input) expect(c.flag, `desk ${slot + 1} flag`).toBe(0);
     await show(page, office, CREW_B, CREW_B_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_B_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_B_STATES));
     // The flag comes down; the sleeping Rovers (slots 1 and 4) back into their docks.
-    await expect.poll(async () => (await probe(page)).crew.map((c) => c.flag), { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0]);
-    await expect.poll(async () => (await probe(page)).crew.map((c) => c.z < 0), { timeout: 30_000 }).toEqual([false, true, false, false, true]);
+    await expect.poll(async () => (await probe(page)).crew.map((c) => c.flag), { timeout: 30_000 }).toEqual(ten([0, 0, 0, 0, 0], 0));
+    await expect.poll(async () => (await probe(page)).crew.map((c) => c.z < 0), { timeout: 30_000 }).toEqual(ten([false, true, false, false, true], true));
     expect(errors).toEqual([]);
   });
 
@@ -602,9 +610,9 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_A_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_A_STATES));
     await expect.poll(async () => (await probe(page)).crew[CREW_SLOT.input].flag, { timeout: 30_000 }).toBe(1);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
     // The stepped blends run out within a second of scene clock; from then on nothing moves (the probe refreshes every 0.5 s).
     await waitForSceneSeconds(page, 1.5);
     expect((await probe(page)).bob).toBe(0);
@@ -727,8 +735,8 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
     // Fixed bounds: the parts and treads take the screen quads' office-wide sphere, the glow one that holds it, so orbiting
     // drones and confetti never pop at the screen edges.
     const bounds = await page.evaluate(() => {
@@ -773,10 +781,55 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     }
     // CREW_B: the 6 and the 3 moved to slots 2 and 3; the sleeping Rovers draw none, desk 5's stale count of 2 included.
     await show(page, office, CREW_B, CREW_B_STATES);
-    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([0, 0, 4, 3, 0]);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([0, 0, 4, 3, 0]);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual(ten([0, 0, 4, 3, 0], 0));
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([0, 0, 4, 3, 0], 0));
     await expect(chip(page, 4)).not.toHaveAttribute("aria-label", /helper/);
     await expect(chip(page, 4).getByTestId("office-chip-helpers")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("ten desks: ten Rovers on two rows, the back-row asker raises its flag over the riser, a back-row Rover draws its drones", async ({ page }) => {
+    const errors = collectErrors(page);
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    // `backRowAsker`: the front row as `statesA` (nobody asks), the back row working, thinking, asking (slot 7), asleep,
+    // reviewing; 3 helpers at slot 5 and 6 at slot 9 (4 drones drawn).
+    const body = backRowAsker(Date.now());
+    body.desks = body.desks.map((d) => (d.slot === 5 ? { ...d, helpers: 3 } : d.slot === 9 ? { ...d, helpers: 6 } : d));
+    const states = body.desks.map((d) => d.state);
+    expect(states).toHaveLength(SEATS);
+    await show(page, office, body, states);
+    const o = await probe(page);
+    expect(o.desks).toBe(SEATS);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(states);
+    expect((await probe(page)).crew).toHaveLength(SEATS);
+    await expect.poll(async () => (await probe(page)).crew[7].flag, { timeout: 30_000 }).toBe(1);
+    await expect.poll(async () => (await probe(page)).crew[8].z < 0, { timeout: 30_000 }).toBe(true);
+    for (const [slot, c] of (await probe(page)).crew.entries()) if (slot !== 7) expect(c.flag, `desk ${slot + 1} flag`).toBe(0);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0, 3, 0, 0, 0, 4]);
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0, 3, 0, 0, 0, 4]);
+    // The back row's drones orbit their Rovers over the riser.
+    const lift = officeSlots(LOBBY.officeWing)[9].lift;
+    expect(lift).toBeGreaterThan(0);
+    const nine = (await droneParts(page))[9].at;
+    for (let i = 0; i < 4; i++) expect(nine[i * 3 + 1]).toBeGreaterThan(lift + 1);
+    // The scene's feed lights the beacon for the back-row asker; its column stands on the riser top behind that Rover.
+    await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
+    const column = await page.evaluate(() => {
+      type M = { instanceMatrix: { array: ArrayLike<number> } };
+      const mesh = (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): M | undefined } } } }).__hq.render.scene.getObjectByName("office-beacon")!;
+      const a = mesh.instanceMatrix.array;
+      return { x: a[12], y: a[13], z: a[14] };
+    });
+    const asker = officeSlots(LOBBY.officeWing)[7];
+    expect(column.y).toBeCloseTo(asker.lift, 4);
+    expect(Math.hypot(column.x - asker.rover.x, column.z - asker.rover.z)).toBeCloseTo(1.25, 3);
+    // The summary drawer lists ten desks; a back-row desk's drawer shows its Rover.
+    await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office-desk-8"));
+    await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "desk", { timeout: 60_000 });
+    await expect(page.getByTestId("office-activity")).toHaveText(en.office.activity.asking);
     expect(errors).toEqual([]);
   });
 });

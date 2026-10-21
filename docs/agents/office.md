@@ -36,8 +36,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   in `office/live.ts`: the fast cadence near the office or with a drawer open, 30 s from afar, nothing out of view),
   the Classic card, and the L1 beacon's watch every 30 s while the scene's poller is not running (so a back-row asker
   lights the beacon; the same one request per 30 s as before). `signalFromBody` reads v1 to v3 bodies with up to ten
-  desks and slots 0 to 9. Until the scene and the card draw ten (A2 Tasks 5 and 7), `withSeats` (`src/lib/office/model.ts`)
-  folds the back row into `extra` for `officeView` and the card's "+N more" line; the signal keeps every asker.
+  desks and slots 0 to 9. The 3D scene's `officeView` reads all ten (slots 0 to 9, `extra` past ten); until the card
+  draws ten, `withSeats` (`src/lib/office/model.ts`) folds the back row into `extra` for the card's "+N more" line; the
+  signal keeps every asker.
 - Fixtures: `OFFICE_FIXTURES` (v1), `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) and `OFFICE_FIXTURES_V3` (busy
   seats ten: drones at slots 0, 2, 5 and 9, askers at 3 and 7, one more in `extra`) in `src/lib/office/fixtures.ts`
   (busy, rough, quiet, semiLive, off, disabled).

@@ -15,35 +15,48 @@ import { officeFrame } from "../helpers/office-frame";
 const NOW = 1_800_000_000_000;
 const t = createTranslator({ locale: "en", messages: en, namespace: "office" }) as unknown as OfficeTranslate;
 const ready = (snapshot: ReturnType<typeof statesA>) => officeView({ status: "ready", snapshot });
+/** The back row of a five-desk snapshot: five off-duty Rovers asleep. */
+const BACK_ASLEEP = ["asleep", "asleep", "asleep", "asleep", "asleep"];
 
 describe("Agent Office view model", () => {
-  it("reads a ten-desk v3 snapshot as five Rovers: the back row (slots 5 to 9) counts in extra until the scene draws ten", () => {
+  it("reads a ten-desk v3 snapshot as ten Rovers over both rows (slots 0 to 9), extra only past ten", () => {
     const v3 = OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot;
     const view = officeView({ status: "ready", snapshot: v3 });
     const v2 = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
-    expect(view.rovers.map((r) => r.slot)).toEqual([0, 1, 2, 3, 4]);
-    expect(view.rovers).toEqual(v2.rovers);
-    expect(view.counts).toEqual(v2.counts);
-    expect(view.extra).toBe(1 + 5);
+    expect(view.rovers.map((r) => r.slot)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(view.rovers.slice(0, 5)).toEqual(v2.rovers.slice(0, 5));
+    expect(view.rovers.slice(5).map((r) => [r.agent, r.state, r.helpers])).toEqual([
+      ["codex", "reviewing", 2],
+      ["copilot", "testing", 0],
+      ["claude", "input", 0],
+      ["codex", "asleep", 0],
+      ["copilot", "working", 4],
+    ]);
+    expect(view.rovers[7].title).toBe("Ten Rovers in the live scene");
+    expect(view.counts).toEqual({ active: v2.counts.active + 3, thinking: v2.counts.thinking, waiting: v2.counts.waiting + 1, asleep: v2.counts.asleep - 5 + 1 });
+    expect(view.extra).toBe(1);
+    // A five-desk v2 snapshot leaves the back row off duty.
+    expect(v2.rovers.slice(5).every((r) => r.agent === null && r.state === "asleep")).toBe(true);
     expect(shared.withSeats(v3)).toEqual({ ...v3, desks: v3.desks.slice(0, 5), extra: 6 });
     expect(shared.withSeats(v3, 10)).toBe(v3);
   });
 
 
-  it("always shows five Rovers in slot order, live desks with their state, title only when public", () => {
+  it("always shows ten Rovers in slot order, live desks with their state, title only when public", () => {
     const view = ready(statesA(NOW));
     expect(view.mode).toBe("live");
-    expect(view.rovers.map((r) => r.state)).toEqual(STATES_A);
-    expect(view.rovers.map((r) => r.title)).toEqual(["Agent office scene", null, null, null, "Office chips"]);
+    expect(view.rovers.map((r) => r.state)).toEqual([...STATES_A, ...BACK_ASLEEP]);
+    expect(view.rovers.map((r) => r.title)).toEqual(["Agent office scene", null, null, null, "Office chips", null, null, null, null, null]);
     expect(view.rovers[4].progress).toEqual({ done: 7, total: 12 });
     expect(view.rovers[0].progress).toBeNull();
-    expect(view.counts).toEqual({ active: 3, thinking: 1, waiting: 1, asleep: 0 });
+    // The five empty back-row seats count as asleep.
+    expect(view.counts).toEqual({ active: 3, thinking: 1, waiting: 1, asleep: 5 });
     expect(view.extra).toBe(2);
   });
 
   it("fills a slot without a session with an off-duty Rover and keeps a failed desk's job", () => {
     const view = ready(statesB(NOW));
-    expect(view.rovers.map((r) => r.state)).toEqual(STATES_B);
+    expect(view.rovers.map((r) => r.state)).toEqual([...STATES_B, ...BACK_ASLEEP]);
     expect(view.rovers[4]).toMatchObject({ agent: null, state: "asleep", activity: "resting", title: null });
     expect(view.rovers[2].job).toBe("Build, CV and e2e");
   });
@@ -54,7 +67,7 @@ describe("Agent Office view model", () => {
     expect(offline.rovers.every((r) => r.state === "asleep")).toBe(true);
     expect(offline.rovers[0].agent).toBe("copilot");
     expect(offline.github).toHaveLength(2);
-    expect(offline.counts).toEqual({ active: 0, thinking: 0, waiting: 0, asleep: 5 });
+    expect(offline.counts).toEqual({ active: 0, thinking: 0, waiting: 0, asleep: 10 });
     expect(offline.extra).toBe(0);
     for (const feed of [{ status: "disabled", snapshot: null }, { status: "idle", snapshot: null }, { status: "loading", snapshot: null }] as const) {
       const view = officeView(feed);
@@ -103,7 +116,7 @@ describe("Agent Office view model", () => {
   it("maps desk helpers to the Rover's drones, 0 without helpers, asleep, off duty, off or offline", () => {
     const busy = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
     const live = officeView({ status: "ready", snapshot: busy });
-    expect(live.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0]);
+    expect(live.rovers.map((r) => r.helpers)).toEqual([3, 0, 6, 0, 0, 0, 0, 0, 0, 0]);
     expect(ready(statesB(NOW)).rovers[4].helpers).toBe(0);
     const sleepy = officeView({ status: "ready", snapshot: { ...busy, desks: busy.desks.map((d) => (d.slot === 0 ? { ...d, state: "asleep", activity: "resting" } : d)) } });
     expect(sleepy.rovers[0].helpers).toBe(0);

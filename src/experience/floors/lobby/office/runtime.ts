@@ -1,6 +1,9 @@
 import { useSyncExternalStore } from "react";
-import { OFFICE_DESKS } from "@/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_SEATS } from "@/lib/office/protocol";
 import type { CrewActor } from "./crew";
+
+/** Chips in the row under the top bar: the front row's desks (slots 0 to 4); the back row's Rovers have none yet. */
+export const OFFICE_CHIP_COUNT = OFFICE_DESKS;
 
 /**
  * Shared between the office scene (in the canvas) and its HUD chips, mutated outside React render: whether the
@@ -17,11 +20,11 @@ export const officeRuntime = {
   distance: Infinity,
   /** In the far level of detail (`distance` past `OFFICE_LOD.farDistance`): the crew and the effects step at `OFFICE_LOD.farHz`. */
   far: true,
-  chips: Array.from({ length: OFFICE_DESKS }, (): HTMLElement | null => null),
-  leads: Array.from({ length: OFFICE_DESKS }, (): HTMLElement | null => null),
+  chips: Array.from({ length: OFFICE_SEATS }, (): HTMLElement | null => null),
+  leads: Array.from({ length: OFFICE_SEATS }, (): HTMLElement | null => null),
   /** The ticks where the leader lines meet the screen wall's top. */
-  ticks: Array.from({ length: OFFICE_DESKS }, (): HTMLElement | null => null),
-  chipFar: Array.from({ length: OFFICE_DESKS }, () => true),
+  ticks: Array.from({ length: OFFICE_SEATS }, (): HTMLElement | null => null),
+  chipFar: Array.from({ length: OFFICE_SEATS }, () => true),
   compact: false,
   /** The scene's crew actors in slot order (empty while the Rovers are not mounted). */
   crew: [] as CrewActor[],

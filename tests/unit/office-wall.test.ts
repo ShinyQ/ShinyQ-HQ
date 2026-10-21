@@ -16,7 +16,7 @@ const FONTS = { mono: "monospace", sans: "sans-serif" };
 describe("Agent Office screen wall", () => {
   it("summarizes the counts, the mode with its age, the +N chip, the awake desks and today", () => {
     const m = wallModel(officeView({ status: "ready", snapshot: statesA(NOW) }), tEn, "en", NOW + 20_000);
-    expect(m.tiles.map((x) => [x.label, x.value])).toEqual([["ACTIVE", 3], ["THINKING", 1], ["WAITING", 1], ["ASLEEP", 0]]);
+    expect(m.tiles.map((x) => [x.label, x.value])).toEqual([["ACTIVE", 3], ["THINKING", 1], ["WAITING", 1], ["ASLEEP", 5]]);
     expect(m.status).toBe("LIVE · just now");
     expect(m.extra).toBe("+2");
     expect(m.now.map((r) => r.head)).toEqual(["Copilot · Editing", "Claude · Planning"]);
@@ -30,7 +30,7 @@ describe("Agent Office screen wall", () => {
   it("rests when offline: every desk asleep, no today line, the last GitHub events kept", () => {
     const m = wallModel(officeView({ status: "offline", snapshot: statesB(NOW) }), tEn, "en", NOW);
     expect(m.status).toBe("OFFLINE");
-    expect(m.tiles.map((x) => x.value)).toEqual([0, 0, 0, 5]);
+    expect(m.tiles.map((x) => x.value)).toEqual([0, 0, 0, 10]);
     expect(m.resting).toBe(en.office["3d"].wall.resting);
     expect(m.today).toBeNull();
     expect(m.rows).toHaveLength(2);

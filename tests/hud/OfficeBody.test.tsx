@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
-import { OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
 import type { OfficeDesk } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
@@ -89,11 +89,12 @@ describe("Agent Office drawers", () => {
     expect(screen.getByTestId("office-task")).toHaveTextContent(o.drawer.none);
   });
 
-  it("lists the five agents in the summary, opens a desk, shows today and the hooks note", () => {
+  it("lists the ten desks' agents in the summary, opens a desk, shows today and the hooks note", () => {
     body({ panel: "summary" });
     const rows = screen.getAllByTestId("office-agent");
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(10);
     expect(rows[1]).toHaveTextContent("Desk 2: Claude · Planning");
+    expect(rows[7]).toHaveTextContent(`Desk 8: ${o.offDuty}`);
     fireEvent.click(rows[2]);
     expect(getHQStore().getState().activeRoom).toBe("L1:office-desk-3");
     expect(screen.getAllByTestId("metric").map((m) => m.textContent)).toEqual([`3${o.drawer.tasksDone}`, `2${o.drawer.prsMerged}`, `5/6${o.drawer.ciGreen}`]);
@@ -210,10 +211,19 @@ describe("Agent Office drawers", () => {
     expect(screen.queryByTestId("office-offline")).toBeNull();
   });
 
-  it("renders no desk for a slot outside the five", () => {
+  it("shows a back-row desk's Rover like a front-row one (desks 6 to 10), off duty without a session", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
     body({ panel: "desk", slot: 7 }, "L1:office-desk-8");
-    expect(screen.getByTestId("office-body")).toBeInTheDocument();
-    expect(screen.queryByTestId("office-state")).toBeNull();
+    expect(screen.getByTestId("office-state")).toBeInTheDocument();
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Asking Kurniadi$/);
+    cleanup();
+    body({ panel: "desk", slot: 9 }, "L1:office-desk-10");
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Editing · 4 helpers$/);
+    cleanup();
+    live.feed = { status: "ready", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
+    body({ panel: "desk", slot: 7 }, "L1:office-desk-8");
+    expect(screen.getByTestId("office-body")).toHaveTextContent(o.offDuty);
+    expect(screen.getByTestId("office-task")).toHaveTextContent(o.drawer.none);
   });
 
   it("says so when the office is offline and keeps the last known activity", () => {
@@ -248,6 +258,7 @@ describe("Agent Office drawers", () => {
         `Desk 3: Codex is reviewing, since ${clock(2)}`,
         `Desk 4: Copilot is running tests, since ${clock(3)}`,
         `Desk 5: Claude is waiting on CI, since ${clock(4)}`,
+        ...[6, 7, 8, 9, 10].map((n) => `Desk ${n}: off duty`),
       ]);
       const news = screen.getByRole("status");
       expect(news).toHaveAttribute("aria-live", "polite");
