@@ -15,6 +15,7 @@ import { officeSignal } from "./officeSignal";
 const NO_RAYCAST = () => null;
 const INST = Array.from({ length: BEACON.slots }, (): BeaconInstance => ({ y: 0, r: 0, h: 0, alpha: 0 }));
 const PINK = new Color(COLORS.pink).toArray();
+const ORIGIN = { x: 0, z: 0 };
 const stage = () => new InstancedBufferAttribute(new Float32Array(BEACON.slots * 4), 4);
 
 /**
@@ -41,7 +42,7 @@ export function OfficeBeacon() {
     if (!m.visible) return;
     const gain = beaconGain(atOfficeStop());
     beaconInstances((t.current += Math.min(dt, 0.1)), getHQStore().getState().reducedMotion, INST, gain.reach);
-    const o = beaconOrigin(officeSignal.asking);
+    const o = beaconOrigin(officeSignal.asking, ORIGIN);
     const at = m.instanceMatrix.array;
     const { aStage, aStage2 } = m.geometry.attributes;
     const s = aStage.array;

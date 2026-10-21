@@ -1,17 +1,25 @@
 import type { OfficeProgress } from "@/lib/office/protocol";
 import { FACE_H, FACE_W } from "../../../rover/faceTexture";
+import { OFFICE_SEAT_COUNT } from "../officeLayout";
 import type { FaceKind, ScreenKind } from "./officeVisual";
 
 /**
- * The office's one canvas atlas: five Rover faces (128 x 96, like the player Rover's face) and five desk screens
- * (256 x 160), drawn by the pure functions below (any CanvasRenderingContext2D; tests use a recording fake).
+ * The office's one canvas atlas: ten Rover faces (128 x 96, like the player Rover's face), ten desk screens (256 x 160)
+ * and the flag plate, drawn by the pure functions below (any CanvasRenderingContext2D; tests use a recording fake).
  * Faces and screens are a port of the approved mock's eyes() and drawMonitor(), except the input screen, which
  * shows a generic card ("Waiting for Kurniadi"), never a question or prompt (owner decision D3).
- * The atlas is never re-uploaded whole: the caller compares frame keys (`dirtyCells`) and uploads only the changed
- * cells at `uploadOrigin` (the texture has no mipmaps: LinearFilter, generateMipmaps false).
+ * The atlas is uploaded whole once (the first paint); after that the caller compares frame keys (`dirtyCells`) and
+ * uploads only the changed cells at `uploadOrigin` (the texture has no mipmaps: LinearFilter, generateMipmaps false).
+ *
+ * Layout (1024 x 576, every cell at full size): faces 0 to 7 along the top row; the desk screens four to a row under
+ * it (rows 1 to 3, the last holding screens 8 and 9); faces 8 and 9 and the flag right of screens 8 and 9. A WebGL2
+ * texture need not be a power of two (no mipmaps here), so the atlas grows only by the 64 rows it needs.
  */
-export const ATLAS = { w: 1024, h: 512 } as const;
+export const ATLAS = { w: 1024, h: 576 } as const;
 export const SCREEN_CELL = { w: 256, h: 160 } as const;
+/** Faces on the top row, desk screens per row. */
+const FACE_ROW = ATLAS.w / FACE_W;
+const SCREEN_ROW = ATLAS.w / SCREEN_CELL.w;
 
 export interface Cell {
   x: number;
@@ -20,12 +28,16 @@ export interface Cell {
   h: number;
 }
 
-export function faceCell(slot: number): Cell {
-  return { x: slot * FACE_W, y: 0, w: FACE_W, h: FACE_H };
+export function screenCell(slot: number): Cell {
+  return { x: (slot % SCREEN_ROW) * SCREEN_CELL.w, y: FACE_H + Math.floor(slot / SCREEN_ROW) * SCREEN_CELL.h, w: SCREEN_CELL.w, h: SCREEN_CELL.h };
 }
 
-export function screenCell(slot: number): Cell {
-  return { x: (slot % 4) * SCREEN_CELL.w, y: FACE_H + Math.floor(slot / 4) * SCREEN_CELL.h, w: SCREEN_CELL.w, h: SCREEN_CELL.h };
+/** Where the desk screens end: the faces past the top row (and the flag) continue there. */
+const TAIL = screenCell(OFFICE_SEAT_COUNT);
+
+export function faceCell(slot: number): Cell {
+  if (slot < FACE_ROW) return { x: slot * FACE_W, y: 0, w: FACE_W, h: FACE_H };
+  return { x: TAIL.x + (slot - FACE_ROW) * FACE_W, y: TAIL.y, w: FACE_W, h: FACE_H };
 }
 
 /** UV rect [u0, v0, u1, v1] of a cell; a CanvasTexture flips Y, so v runs from the bottom. */
@@ -33,15 +45,15 @@ export function cellUv(c: Cell): [number, number, number, number] {
   return [c.x / ATLAS.w, 1 - (c.y + c.h) / ATLAS.h, (c.x + c.w) / ATLAS.w, 1 - c.y / ATLAS.h];
 }
 
-/** Cells in upload order: the five faces (0 to 4), then the five desk screens (5 to 9). */
-export const ATLAS_CELLS = 10;
+/** Cells in upload order: the ten faces (0 to 9), then the ten desk screens (10 to 19). */
+export const ATLAS_CELLS = 2 * OFFICE_SEAT_COUNT;
 
 export function atlasCell(index: number): Cell {
-  return index < 5 ? faceCell(index) : screenCell(index - 5);
+  return index < OFFICE_SEAT_COUNT ? faceCell(index) : screenCell(index - OFFICE_SEAT_COUNT);
 }
 
-/** The flag plate (one cell shared by every Rover): right of the five faces in the top row. */
-export const FLAG_CELL: Cell = { x: 5 * FACE_W, y: 0, w: FACE_W, h: FACE_H };
+/** The flag plate (one cell shared by every Rover): right of the last face. */
+export const FLAG_CELL: Cell = faceCell(OFFICE_SEAT_COUNT);
 
 /** Texel origin of a cell for a partial upload into the flipY atlas texture (rows count from the bottom). */
 export function uploadOrigin(c: Cell): { x: number; y: number } {

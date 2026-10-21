@@ -5,10 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Group, Material, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { afterFirstFrameIdle } from "../../../boot-signals";
-import { COLORS, LOBBY } from "../../../config";
+import { COLORS } from "../../../config";
 import { sceneProbes } from "../../../fx/probes";
 import { MAX_FRAME_DT } from "../../../rover/controller";
-import { roverRuntime } from "../../../rover/runtime";
 import { animationSpeed } from "../../../scene/animationSpeed";
 import type { GpuTier } from "../../../types";
 import { speculativePrefetchOn } from "../../floorChunks";
@@ -61,8 +60,8 @@ export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
  * L1 Agent Office mount (main path). Always draws the furniture shell (2 calls on the programs the observatory
  * already uses), which matches the navgrid obstacles, so the rover never bumps into an invisible desk before the
  * chunk loads or if it fails. Every 0.5 s after the first frame went idle it asks `officeLoadWanted` (on L1 or
- * riding there, near the office or on a mission bound for it, `?prefetch=off` respected) and starts the chunk (every office drawer open starts it too,
- * beside its own body chunk, `loadOfficeBody`). The live scene mounts once loaded and `ready` (the full tier's composer exists, like the
+ * riding there, at any distance: the always-live office; `?prefetch=off` respected) and starts the chunk (every office
+ * drawer open starts it too, beside its own body chunk, `loadOfficeBody`). The live scene mounts once loaded and `ready` (the full tier's composer exists, like the
  * intro beacons), never in the middle of the intro (its first compile would hitch the orbit); a load during the
  * boot card mounts at once, so the reveal ring switches it on. Once mounted it stays; it fades in over
  * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
@@ -119,8 +118,6 @@ export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTransl
       prefetch: prefetch.current,
       floor: s.floor,
       rideTo: s.ride?.to ?? null,
-      at: s.ride ? LOBBY.arrival : roverRuntime,
-      mission: s.mission?.status === "running" ? s.mission.id : null,
     });
     if (want) void loadOffice().catch(() => null);
   });

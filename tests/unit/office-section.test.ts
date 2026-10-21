@@ -33,6 +33,9 @@ describe("officeCardLabels", () => {
     expect(labels.status).toEqual(messages.office.classic.status);
     expect(labels.clientProject).toBe(messages.office.clientProject);
     expect(labels.helpers).toBe(messages.office.helpers);
+    expect(labels.moreDesks).toBe(messages.office.classic.moreDesks);
+    expect(labels.idle).toBe(messages.office.classic.idle);
+    expect("offDuty" in labels).toBe(false);
     expect("privacy" in labels).toBe(false);
     expect(Object.keys(labels.states)).toEqual([...OFFICE_STATES]);
     expect(Object.keys(labels.activities)).toEqual([...OFFICE_ACTIVITIES]);

@@ -50,19 +50,21 @@ export function useOfficeSignal<T>(select: (s: OfficeSignal) => T): T {
 }
 
 const DEPLOY_FRESH_MS = 30_000;
-const DESKS = 5;
+/** Seats of snapshot v3 (`OFFICE_SEATS`; a literal so the watch chunk never imports the protocol module). */
+const SEATS = 10;
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
-const isSlot = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < DESKS;
+const isSlot = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < SEATS;
 
 /**
- * Reads only what the beacon needs from a GET /api/office body (v1 from the watch, v2 from the scene's poller; the
- * fields it reads are the same in both): null when it does not look like one. Never throws and never keeps text.
+ * Reads only what the beacon needs from a GET /api/office body (v3 from the watch and the scene's poller, v2 or v1
+ * after a rollback; the fields it reads are the same in all three): up to ten desks with slots 0 to 9, so an asker on
+ * the back row counts. Null when it does not look like one. Never throws and never keeps text.
  */
 export function signalFromBody(body: unknown, now: number): { asking: number[]; deployAt: number | null } | null {
-  if (!isObj(body) || (body.v !== 1 && body.v !== 2)) return null;
+  if (!isObj(body) || (body.v !== 1 && body.v !== 2 && body.v !== 3)) return null;
   if (body.enabled === false) return { asking: [], deployAt: null };
   const { desks, github } = body;
-  if (body.enabled !== true || !Array.isArray(desks) || desks.length > DESKS || !Array.isArray(github)) return null;
+  if (body.enabled !== true || !Array.isArray(desks) || desks.length > SEATS || !Array.isArray(github)) return null;
   const asking: number[] = [];
   for (const d of desks) {
     if (!isObj(d) || typeof d.state !== "string" || !isSlot(d.slot)) return null;

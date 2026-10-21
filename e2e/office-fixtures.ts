@@ -1,4 +1,4 @@
-import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, OfficeSnapshotV2, OfficeState } from "../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeState } from "../src/lib/office/protocol";
 
 /**
  * Deterministic Agent Office snapshots: the nine states over two snapshots, one private desk (no title) and one
@@ -6,9 +6,12 @@ import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, Offic
  */
 export const OFFICE_REPO = "ShinyQ/ShinyQ-HQ";
 
-/** Playwright URL patterns: both snapshot versions (the beacon's watch asks v1, the 3D office's poller `?v=2`), and v2 alone. */
-export const OFFICE_API = /\/api\/office(\?v=2)?$/;
-export const OFFICE_API_V2 = /\/api\/office\?v=2$/;
+/**
+ * Playwright URL patterns: every snapshot version (v1, `?v=2`, `?v=3`; the 3D office's poller, the beacon's watch and
+ * the Classic card all ask `?v=3`), and v3 alone.
+ */
+export const OFFICE_API = /\/api\/office(\?v=[23])?$/;
+export const OFFICE_API_V3 = /\/api\/office\?v=3$/;
 
 export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDeskV2> = {}): OfficeDeskV2 {
   return { slot, agent, state, activity, since: now - 14 * 60_000, recent: [], ...extra };
@@ -106,6 +109,22 @@ export function crewB(now: number): OfficeSnapshotV2 {
   };
 }
 
+/**
+ * A ten-seat v3 snapshot (`?v=3`) whose only asker sits on the back row (slot 7): `statesA`'s front row (nobody asks),
+ * then slots 5 to 9 working, thinking, asking, asleep, reviewing; one more session in `extra`.
+ */
+export function backRowAsker(now: number): OfficeSnapshotV3 {
+  const front = statesA(now, 1);
+  const back: [OfficeAgent, OfficeState, OfficeActivity][] = [
+    ["copilot", "working", "editing"],
+    ["claude", "thinking", "planning"],
+    ["codex", "input", "asking"],
+    ["copilot", "asleep", "resting"],
+    ["claude", "reviewing", "reading"],
+  ];
+  return { ...front, v: 3, desks: [...front.desks, ...back.map(([agent, state, activity], i) => officeDesk(5 + i, agent, state, activity, now))] };
+}
+
 export const CREW_A = crewA(Date.now());
 export const CREW_B = crewB(Date.now());
 export const CREW_A_STATES: readonly OfficeState[] = ["working", "thinking", "ci", "input", "done"];
@@ -113,7 +132,7 @@ export const CREW_B_STATES: readonly OfficeState[] = ["failed", "asleep", "worki
 /** `CREW_A`'s desk slots: 3 helpers, 6 helpers (4 drones drawn), waiting on CI, asking. */
 export const CREW_SLOT = { three: 0, six: 1, ci: 2, input: 3 } as const;
 
-/** The v1 body the beacon's watch reads (GET /api/office): a v2 snapshot without `helpers`, `v: 1`; any other body as is. */
+/** The v1 body of GET /api/office (no client asks it since snapshot v3): a v2 snapshot without `helpers`, `v: 1`; any other body as is. */
 export function asV1(body: unknown): unknown {
   const snap = body as Partial<OfficeSnapshotV2> | null;
   if (snap?.v !== 2 || !Array.isArray(snap.desks)) return body;

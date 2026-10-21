@@ -2,7 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
+import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
+import { OFFICE, officeSlots } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
@@ -13,6 +15,7 @@ import {
   driveTo,
   enterHQ,
   expectRenderBudget,
+  turnCameraTo,
   waitForCameraSettle,
   waitForFrames,
   waitForHQ,
@@ -20,14 +23,15 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asV1, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V2, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V3, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
- * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk near the wing, five
- * Rovers with their states and chips, the partial atlas uploads on a real GL context, the Rover, summary and
+ * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
+ * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, ten
+ * Rovers on two console rows with their states and the front row's chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
- * (the lazy watch's v1 fetch from the spawn) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
+ * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
  * are on state, never on time.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -42,12 +46,14 @@ type OfficeProbe = {
   chips: number;
   bob: number;
   inView: boolean;
+  far: boolean;
+  steps: number;
   polling: boolean;
   beacon: boolean;
   crew: CrewProbe[];
   drones: number[];
 };
-type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number };
+type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number; reasons(): string[] };
 type OfficeWindow = Window & {
   __hq: { probes: { office: OfficeProbe }; office: { load(): Promise<void>; state(): string; asks(): number; test(): OfficeHooks | null; watchNow(): Promise<void> } };
 };
@@ -118,12 +124,17 @@ const lookOut = (page: Page) =>
       outlines: ["L2", "L3", "L4", "RF"].filter(outline),
     };
   });
-/** On the lead road, just inside the Lobby edge: within OFFICE.loadRadius of the office stop. */
-const LEAD = { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 2 };
+/** The Lobby lane ring's south point: the hologram's centre plus `LOBBY.laneRadius` toward the office wing. */
+const RING_SOUTH = { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius };
+/** The rover's position (the store's, refreshed every frame). */
+const roverAt = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { rover: { x: number; z: number } } } } }).__hq.store.getState().rover);
+/** The scene poller's reasons (`officeLive.reasons()`: "near", "far", "drawer"). */
+const reasons = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.reasons() ?? []);
 
 /**
- * Answers `/api/office` (v1 for the watch, `?v=2` for the poller) from a mutable reply, so a test can switch fixtures or
- * fail the endpoint mid-run. A v2 body answers the v1 path as v1 (`asV1`); `requests` lists the asked URLs' paths.
+ * Answers `/api/office` (`?v=3` for the watch and the poller; a v2 body reads as v3, as after a rollback) from a mutable
+ * reply, so a test can switch fixtures or fail the endpoint mid-run. A v2 body answers the v1 path (no client asks it)
+ * as v1 (`asV1`); `requests` lists the asked URLs' paths.
  */
 async function serveOffice(page: Page) {
   const reply: { status: number; body: unknown } = { status: 200, body: OFFICE_FIXTURES.disabled };
@@ -131,7 +142,7 @@ async function serveOffice(page: Page) {
   await page.route(OFFICE_API, (route) => {
     const url = new URL(route.request().url());
     requests.push(url.pathname + url.search);
-    const body = OFFICE_API_V2.test(url.href) ? reply.body : asV1(reply.body);
+    const body = OFFICE_API_V3.test(url.href) ? reply.body : asV1(reply.body);
     return route.fulfill(reply.status === 200 ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: reply.status, body: "" });
   });
   return {
@@ -163,6 +174,13 @@ async function watchNow(page: Page) {
  */
 const RIG = { per: 10, first: 6 } as const;
 
+/** Seats over both console rows: the scene draws ten Rovers, the back row (slots 5 to 9) off duty without a session. */
+const SEATS = 10;
+/** A five-desk lineup padded to the scene's ten Rovers with `rest` (the back row's off-duty value). */
+const ten = <T,>(front: readonly T[], rest: T): T[] => [...front, ...Array.from({ length: SEATS - front.length }, () => rest)];
+/** Five desks' states as the ten Rovers' states: the back row off duty, asleep. */
+const tenStates = (front: readonly string[]) => ten(front, "asleep");
+
 /** The crew probe's states (`__hq.probes.office.crew`, refreshed every 0.5 s of scene clock while the scene is mounted). */
 const crewStates = async (page: Page) => (await probe(page)).crew.map((c) => c.state);
 
@@ -172,12 +190,12 @@ const crewStates = async (page: Page) => (await probe(page)).crew.map((c) => c.s
  */
 const droneParts = (page: Page) =>
   page.evaluate(
-    ({ per, first }) => {
+    ({ per, first, seats }) => {
       type Parts = { instanceMatrix: { array: ArrayLike<number> } };
       const mesh = (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): Parts | undefined } } } }).__hq.render.scene.getObjectByName("office-rover-parts")!;
       const a = mesh.instanceMatrix.array;
       const r = (x: number) => Math.round(x * 1e4) / 1e4;
-      return [0, 1, 2, 3, 4].map((slot) => {
+      return Array.from({ length: seats }, (_, slot) => {
         let drawn = 0;
         const at: number[] = [];
         for (let i = 0; i < 4; i++) {
@@ -188,12 +206,12 @@ const droneParts = (page: Page) =>
         return { drawn, at };
       });
     },
-    RIG,
+    { ...RIG, seats: SEATS },
   );
 
 /** Fetches now (the poller restarts) and waits for that response. */
 async function pollNow(page: Page) {
-  await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
 }
 
 /** Parks inside the office view, off the stop (a click still drives), once the office is loaded, in view and polling. */
@@ -223,7 +241,7 @@ async function nearChips(page: Page) {
 async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, body: unknown, states: readonly string[]) {
   office.set(body);
   await pollNow(page);
-  await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(states);
+  await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(tenStates(states));
 }
 
 type AtlasTexture = { version: number; image: { width: number; height: number } };
@@ -280,16 +298,15 @@ const glErrors = (page: Page) =>
   });
 
 test.describe("Agent Office (L1)", () => {
-  test("loads once the rover heads into the wing and shows five Rovers with their states and chips", async ({ page }) => {
+  test("loads at idle on L1 and shows ten Rovers with their states and their chips at the office", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
-    // The lead road is within OFFICE.loadRadius of the stop (the spawn is not): driving onto it loads the chunk, with no drawer.
-    await driveTo(page, LEAD);
+    // The chunk loads on its own once the first frame went idle on L1, with no drive and no drawer.
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    expect((await probe(page)).desks).toBe(5);
+    expect((await probe(page)).desks).toBe(SEATS);
     await nearChips(page);
     await expect(chip(page, 0)).toContainText(`${en.office.agent.copilot} · ${en.office.activity.editing}`);
     // The task stays in the label (the drawer shows it): the row keeps one compact line per chip.
@@ -298,23 +315,61 @@ test.describe("Agent Office (L1)", () => {
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expect.poll(async () => (await probe(page)).wallFrames).toBeGreaterThan(0);
     await show(page, office, statesB(Date.now()), STATES_B);
-    await expect(chip(page, 4)).toContainText(en.office["3d"].offDuty);
+    // An off-duty desk's chip is a dim dot near or far; its label keeps the text.
+    await expect(chip(page, 4)).toHaveAttribute("data-compact", "true");
+    await expect(chip(page, 4)).toHaveAttribute("aria-label", `Desk 5: ${en.office["3d"].offDuty}`);
+    await expect(chip(page, 4)).toHaveText("");
     expect(errors).toEqual([]);
   });
 
-  test("the speculative trigger declines at the spawn and loads the chunk once the rover drives onto the lead road", async ({ page }) => {
+  test("the live layer mounts at idle on L1 with the office out of view, without moving the rover", async ({ page }) => {
     await serveOffice(page);
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    // Positive control for the ?prefetch=off test below. The spawn is 30.8 u from the stop, outside OFFICE.loadRadius:
-    // three counted asks declined (an accepted ask leaves "idle" and stops the count).
-    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
-    expect(await trigger(page)).toMatchObject({ state: "idle" });
-    await driveTo(page, LEAD);
-    await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
+    // The spawn view frames the wing's bounds: turn away (north, a wheel turn; the rover stays) so the scene mounts out of view.
+    await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
+    const at = await roverAt(page);
+    // Positive control for the ?prefetch=off test below: the first ask after the first frame went idle loads the chunk
+    // (an accepted ask leaves "idle" and stops the count), and the scene compiles and shows (`loaded`) at the spawn.
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    expect(await trigger(page)).toMatchObject({ state: "ready", asks: expect.any(Number) });
+    expect((await trigger(page)).asks).toBeGreaterThanOrEqual(1);
+    // Mounted while the office is out of view: past a watch tick (0.5 s) the view still misses the wing, nothing polls.
+    await waitForFrames(page, 30, 1_200);
+    expect(await probe(page)).toMatchObject({ loaded: true, inView: false, polling: false });
+    expect(await reasons(page)).toEqual([]);
+    const now = await roverAt(page);
+    expect(Math.hypot(now.x - at.x, now.z - at.z), "the rover never moved").toBeLessThan(0.01);
+  });
+
+  test("from the lane ring's south point the office is in view and far: a 30 s poll, Rovers animating at the far rate", async ({ page }) => {
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    office.set(statesA(Date.now()));
+    await enterHQ(page);
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    // The rover on the ring's south point, the view turned south toward the wing (a wheel turn, as a visitor would).
+    await driveTo(page, RING_SOUTH);
+    await turnCameraTo(page, yawLooking({ x: 0, z: 1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, far: o.far, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: true, far: true, polling: true });
+    expect(await reasons(page)).toEqual(["far"]);
+    await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(tenStates(STATES_A));
+    await expect.poll(async () => (await probe(page)).bob, { timeout: 30_000 }).toBeGreaterThan(0);
+    // The crew steps about 4 times a second of scene clock (`OFFICE_LOD.farHz`), never every frame.
+    const sample = () => page.evaluate(() => ({ steps: (window as unknown as OfficeWindow).__hq.probes.office.steps, t: (window as unknown as GlWindow).__hq.clock() }));
+    const a = await sample();
+    await waitForSceneSeconds(page, 3);
+    const b = await sample();
+    const rate = (b.steps - a.steps) / (b.t - a.t);
+    expect(rate, `${b.steps - a.steps} crew steps in ${(b.t - a.t).toFixed(2)} s`).toBeGreaterThan(1);
+    expect(rate).toBeLessThanOrEqual(4.5);
+    expect((await probe(page)).far).toBe(true);
   });
 
   test("never loads on its own with ?prefetch=off; an office drawer loads the body and starts the scene", async ({ page }) => {
@@ -402,7 +457,7 @@ test.describe("Agent Office (L1)", () => {
     expect(summary).not.toBeNull();
     await page.mouse.click(summary!.x, summary!.y);
     await waitForRoom(page, "L1:office");
-    await expect(page.getByTestId("office-agent")).toHaveCount(5);
+    await expect(page.getByTestId("office-agent")).toHaveCount(SEATS);
     await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
     await page.getByTestId("office-agent").nth(2).click();
     await waitForRoom(page, "L1:office-desk-3");
@@ -443,7 +498,7 @@ test.describe("Agent Office (L1)", () => {
     await pollNow(page);
     await expect.poll(async () => (await feed(page))?.status).toBe("disabled");
     await expect.poll(async () => (await probe(page)).mode).toBe("off");
-    expect((await probe(page)).states).toEqual(asleep);
+    expect((await probe(page)).states).toEqual(tenStates(asleep));
   });
 
   test("a 204 or a 500 keeps the last snapshot for a minute, then the office shows offline", async ({ page }) => {
@@ -459,12 +514,12 @@ test.describe("Agent Office (L1)", () => {
     // The 204 settled (the feed listeners ran) and kept the last snapshot.
     await expect.poll(() => settled(page)).toBeGreaterThan(count);
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
-    expect((await probe(page)).states).toEqual(STATES_A);
+    expect((await probe(page)).states).toEqual(tenStates(STATES_A));
     office.set(null, 500);
-    await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
+    await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
     await expect.poll(async () => (await feed(page))?.status).toBe("offline");
     await expect.poll(async () => (await probe(page)).mode).toBe("offline");
-    expect((await probe(page)).states).toEqual(["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    expect((await probe(page)).states).toEqual(tenStates([]));
   });
 
   test("reduced motion holds every pose still; the office view does not apply there, so the chips show as compact dots", async ({ page }) => {
@@ -495,17 +550,17 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_A_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_A_STATES));
     // The blend into each state's pose runs out on the scene clock: wait on the pose, not on time.
     await expect.poll(async () => (await probe(page)).crew[CREW_SLOT.input].flag, { timeout: 30_000 }).toBe(1);
     await expect.poll(async () => Math.abs((await probe(page)).crew[CREW_SLOT.ci].yaw), { timeout: 30_000 }).toBeGreaterThan(0.2);
     const crew = (await probe(page)).crew;
     for (const [slot, c] of crew.entries()) if (slot !== CREW_SLOT.input) expect(c.flag, `desk ${slot + 1} flag`).toBe(0);
     await show(page, office, CREW_B, CREW_B_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_B_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_B_STATES));
     // The flag comes down; the sleeping Rovers (slots 1 and 4) back into their docks.
-    await expect.poll(async () => (await probe(page)).crew.map((c) => c.flag), { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0]);
-    await expect.poll(async () => (await probe(page)).crew.map((c) => c.z < 0), { timeout: 30_000 }).toEqual([false, true, false, false, true]);
+    await expect.poll(async () => (await probe(page)).crew.map((c) => c.flag), { timeout: 30_000 }).toEqual(ten([0, 0, 0, 0, 0], 0));
+    await expect.poll(async () => (await probe(page)).crew.map((c) => c.z < 0), { timeout: 30_000 }).toEqual(ten([false, true, false, false, true], true));
     expect(errors).toEqual([]);
   });
 
@@ -515,13 +570,21 @@ test.describe("Agent Office (L1)", () => {
     office.set(CREW_A);
     await enterHQ(page);
     const cue = page.locator('[data-map="office-cue"]');
-    // At the spawn the office scene stays unloaded (outside OFFICE.loadRadius): the lazy watch's v1 fetch feeds the
+    // At the spawn the lazy watch's v3 fetch (or the scene's own poll once it loaded and the office is in view) feeds the
     // signal, which loads the beacon chunk on the first ask.
     await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
     await expect(cue).toBeVisible();
-    expect(await chunkState(page)).toBe("idle");
     expect(office.requests().length).toBeGreaterThan(0);
-    expect(office.requests().every((path) => path === "/api/office")).toBe(true);
+    // Out of view (the elevator arrival, the camera looking north away from the wing) the scene's poller stops and the
+    // watch alone polls, v3.
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    await driveTo(page, LOBBY.arrival);
+    await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: false, polling: false });
+    const before = office.requests().length;
     // Nobody asks any more: one watch tick now, and both go dark.
     office.set(statesA(Date.now()));
     await watchNow(page);
@@ -532,6 +595,15 @@ test.describe("Agent Office (L1)", () => {
     await watchNow(page);
     await expect.poll(async () => (await probe(page)).beacon).toBe(true);
     await expect(cue).toBeVisible();
+    // A back-row asker (seat 7 of a ten-desk v3 snapshot, nobody asking in front) lights it too, through the watch.
+    office.set(statesA(Date.now()));
+    await watchNow(page);
+    await expect.poll(async () => (await probe(page)).beacon).toBe(false);
+    office.set(backRowAsker(Date.now()));
+    await watchNow(page);
+    await expect.poll(async () => (await probe(page)).beacon).toBe(true);
+    await expect(cue).toBeVisible();
+    expect(office.requests().slice(before).every((path) => path === "/api/office?v=3")).toBe(true);
     expect(errors).toEqual([]);
   });
 
@@ -541,9 +613,9 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(CREW_A_STATES);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(tenStates(CREW_A_STATES));
     await expect.poll(async () => (await probe(page)).crew[CREW_SLOT.input].flag, { timeout: 30_000 }).toBe(1);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
     // The stepped blends run out within a second of scene clock; from then on nothing moves (the probe refreshes every 0.5 s).
     await waitForSceneSeconds(page, 1.5);
     expect((await probe(page)).bob).toBe(0);
@@ -604,7 +676,7 @@ test.describe("Agent Office (L1)", () => {
 test.describe("Agent Office (L1) at 1440 x 900", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("at the stop the chips wait for the camera, then all five show far; a hand zoom keeps them shown; a drag turns them into dots", async ({ page }) => {
+  test("at the stop the chips wait for the camera, then all ten show far in one row; a hand zoom keeps them shown; a drag turns them into dots", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -612,23 +684,25 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
-    // Settled in the office view: all five on screen, one line (far, past the band's near edge from a far start), not dots.
+    // Settled in the office view: all ten on screen, one line (far, past the band's near edge from a far start); the five
+    // sessions' chips keep the name, the back row's off-duty desks are dots.
     await expect.poll(() => cameraView(page)).toEqual({ view: "L1:office", held: true });
-    await expect.poll(async () => (await probe(page)).chips).toBe(5);
-    for (const slot of [0, 1, 2, 3, 4]) {
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) {
       await expect(chip(page, slot)).toBeVisible();
       await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
-      await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", slot < 5 ? "false" : "true");
     }
     await expectChipsApart(page);
-    // One row pinned under the top bar (`OFFICE_CHIP_TOP.desktop`, 66 px), in desk order left to right, each with its leader
-    // line drawn down to its Rover.
+    // One row pinned under the top bar (`OFFICE_CHIP_TOP.desktop`, 66 px), each row's desks left to right (the row orders the
+    // chips by their Rovers' heads), each with its leader line drawn.
     const row = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; top: number }));
     for (const box of row) expect(box.top).toBeCloseTo(66, 0);
-    for (let i = 1; i < row.length; i++) expect(row[i].left).toBeGreaterThan(row[i - 1].left);
+    for (const desks of [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]) for (let i = 1; i < desks.length; i++) expect(row[desks[i]].left).toBeGreaterThan(row[desks[i - 1]].left);
     const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
-    expect(leads).toEqual(["visible", "visible", "visible", "visible", "visible"]);
-    // Each ends at the screen wall's top with a tick, above its Rover's head (never across the screens' text).
+    expect(leads).toEqual(Array.from({ length: 10 }, () => "visible"));
+    // Every line stops at the wall-top level with a tick, above its Rover's head (never across the screens' text, never
+    // down beside the wall to an end Rover: the chip's colour and the antenna carry the mapping).
     const ends = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) =>
       els.map((el) => {
         const tick = el.nextElementSibling as HTMLElement;
@@ -637,13 +711,14 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
         return { tick: tick.dataset.testid === "office-chip-tick" && tick.style.visibility === "visible", meets: Math.abs(lead.bottom - (t.top + t.height / 2)) <= 2 };
       }),
     );
-    expect(ends).toEqual(Array.from({ length: 5 }, () => ({ tick: true, meets: true })));
+    expect(ends.filter((e) => e.tick).length).toBe(10);
+    for (const e of ends) expect(e.meets).toBe(true);
     // Still far a moment later (the settle gate holds past the first settled frame).
     await waitForFrames(page, 30);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
     // One zoom key step: the camera eases in for about a second; the chips never blink out, and once it rests they add
     // the activity.
-    expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(5);
+    expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(10);
     await waitForCameraSettle(page);
     for (const slot of [1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
     await expectChipsApart(page);
@@ -654,7 +729,7 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     for (let i = 1; i <= 8; i++) await page.mouse.move(Math.round(width * 0.78) - i * 6, Math.round(height * 0.6));
     await page.mouse.up();
     await expect.poll(() => cameraView(page)).toEqual({ view: null, held: expect.any(Boolean) });
-    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expectChipsApart(page);
     expect(errors).toEqual([]);
@@ -667,8 +742,8 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, CREW_A, CREW_A_STATES);
-    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([3, 4, 0, 0, 0]);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([3, 4, 0, 0, 0], 0));
     // Fixed bounds: the parts and treads take the screen quads' office-wide sphere, the glow one that holds it, so orbiting
     // drones and confetti never pop at the screen edges.
     const bounds = await page.evaluate(() => {
@@ -713,10 +788,71 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     }
     // CREW_B: the 6 and the 3 moved to slots 2 and 3; the sleeping Rovers draw none, desk 5's stale count of 2 included.
     await show(page, office, CREW_B, CREW_B_STATES);
-    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([0, 0, 4, 3, 0]);
-    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([0, 0, 4, 3, 0]);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual(ten([0, 0, 4, 3, 0], 0));
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual(ten([0, 0, 4, 3, 0], 0));
     await expect(chip(page, 4)).not.toHaveAttribute("aria-label", /helper/);
     await expect(chip(page, 4).getByTestId("office-chip-helpers")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("ten desks: ten Rovers on two rows, the back-row asker raises its flag over the riser, a back-row Rover draws its drones", async ({ page }) => {
+    const errors = collectErrors(page);
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    // `backRowAsker`: the front row as `statesA` (nobody asks), the back row working, thinking, asking (slot 7), asleep,
+    // reviewing; 3 helpers at slot 5 and 6 at slot 9 (4 drones drawn).
+    const body = backRowAsker(Date.now());
+    body.desks = body.desks.map((d) => (d.slot === 5 ? { ...d, helpers: 3 } : d.slot === 9 ? { ...d, helpers: 6 } : d));
+    const states = body.desks.map((d) => d.state);
+    expect(states).toHaveLength(SEATS);
+    await show(page, office, body, states);
+    const o = await probe(page);
+    expect(o.desks).toBe(SEATS);
+    await expect.poll(() => crewStates(page), { timeout: 30_000 }).toEqual(states);
+    expect((await probe(page)).crew).toHaveLength(SEATS);
+    await expect.poll(async () => (await probe(page)).crew[7].flag, { timeout: 30_000 }).toBe(1);
+    await expect.poll(async () => (await probe(page)).crew[8].z < 0, { timeout: 30_000 }).toBe(true);
+    for (const [slot, c] of (await probe(page)).crew.entries()) if (slot !== 7) expect(c.flag, `desk ${slot + 1} flag`).toBe(0);
+    await expect.poll(async () => (await probe(page)).drones, { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0, 3, 0, 0, 0, 4]);
+    await expect.poll(async () => (await droneParts(page)).map((d) => d.drawn), { timeout: 30_000 }).toEqual([0, 0, 0, 0, 0, 3, 0, 0, 0, 4]);
+    // The back row's drones orbit their Rovers over the riser.
+    const lift = officeSlots(LOBBY.officeWing)[9].lift;
+    expect(lift).toBeGreaterThan(0);
+    const nine = (await droneParts(page))[9].at;
+    for (let i = 0; i < 4; i++) expect(nine[i * 3 + 1]).toBeGreaterThan(lift + 1);
+    // The scene's feed lights the beacon for the back-row asker; its column stands on the floor just past the riser behind that Rover.
+    await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
+    const column = await page.evaluate(() => {
+      type M = { instanceMatrix: { array: ArrayLike<number> } };
+      const mesh = (window as unknown as { __hq: { render: { scene: { getObjectByName(n: string): M | undefined } } } }).__hq.render.scene.getObjectByName("office-beacon")!;
+      const a = mesh.instanceMatrix.array;
+      return { x: a[12], y: a[13], z: a[14] };
+    });
+    const asker = officeSlots(LOBBY.officeWing)[7];
+    expect(column.y).toBeCloseTo(0, 4);
+    expect(Math.hypot(column.x - asker.rover.x, column.z - asker.rover.z)).toBeCloseTo(OFFICE.rover.radius + 0.8, 3); // + BEACON.r
+    // The summary drawer lists ten desks; a back-row desk's drawer shows its Rover.
+    // At the stop all ten sessions' chips share one row under the top bar: the names (one line, no room for the activity),
+    // apart, each with its leader line drawn.
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(() => cameraView(page)).toEqual({ view: "L1:office", held: true });
+    await expect.poll(async () => (await probe(page)).chips).toBe(SEATS);
+    for (let slot = 0; slot < SEATS; slot++) {
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
+      await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+    }
+    await expect(chip(page, 7)).toHaveAttribute("aria-label", /^Desk 8: Codex · Asking Kurniadi/);
+    const tops = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    expect(tops).toEqual(Array.from({ length: SEATS }, () => 66));
+    await expectChipsApart(page);
+    const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
+    expect(leads).toEqual(Array.from({ length: SEATS }, () => "visible"));
+    await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office-desk-8"));
+    await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "desk", { timeout: 60_000 });
+    await expect(page.getByTestId("office-activity")).toHaveText(en.office.activity.asking);
     expect(errors).toEqual([]);
   });
 });
@@ -762,9 +898,16 @@ test.describe("Agent Office (L1) on a phone", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
-    // At the stop, once the camera holds still, every chip shows as a compact dot.
-    await expect.poll(async () => (await probe(page)).chips).toBe(5);
-    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    // At the stop, once the camera holds still, every chip shows as a compact dot: ten dots in two rows beside the minimap
+    // (the row's top at 64 px, the second a dot and a gap lower), neighbours along x in alternate rows.
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    const dots = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; top: number; right: number }));
+    expect(new Set(dots.map((d) => Math.round(d.top)))).toEqual(new Set([64, 102]));
+    const byX = [...dots].sort((a, b) => a.left - b.left);
+    for (let i = 1; i < byX.length; i++) expect(Math.round(byX[i].top)).not.toBe(Math.round(byX[i - 1].top));
+    for (const d of dots) expect(d.right).toBeLessThanOrEqual(390 - 84);
+    await expectChipsApart(page);
     // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop's chips add the activity.
     const start = await zoom(page);
     for (let i = 0; i < 2; i++) await page.keyboard.press("=");

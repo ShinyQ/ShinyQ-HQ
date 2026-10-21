@@ -2,8 +2,8 @@ import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
-import { OFFICE, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
-import { confettiAt, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
+import { OFFICE, OFFICE_SEAT_COUNT, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
+import { confettiAt, CREW, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
 import { OFFICE_ROVER } from "./officeVisual";
 
@@ -35,6 +35,12 @@ const CONFETTI = ["#34d399", "#22d3ee", "#fbbf24", "#f472b6", "#a78bfa", "#fffff
  * the corner pads' tops (`OFFICE.tower.plinth`, `OFFICE.dock.pad`), which the end Rovers' pads reach over.
  */
 export const CHARGE_PAD = { w: 3.2, d: 2.2, y: 0.12 } as const;
+/**
+ * On a lifted row (the back row's riser) a docked Rover stands `OFFICE.rover.radius - CREW.dock.back` u in front of the
+ * riser's back edge, less than half the pad's depth: there the pad loses this much (0.45 u) off its back and its centre
+ * moves half of it toward the desk, so it ends at the riser's back edge and its front edge still meets the desk's.
+ */
+export const CHARGE_PAD_TRIM = Math.max(0, CREW.dock.back + CHARGE_PAD.d / 2 - OFFICE.rover.radius);
 
 function dot(frame: Matrix4, p: FxPoint, size: number, color: string, gain: number, i: number, matrices: Float32Array, colors: Float32Array): void {
   V.set(p.x, p.y, p.z).applyMatrix4(frame);
@@ -52,7 +58,7 @@ const NOWHERE = { x: 0, z: 0 };
 /**
  * Writes one Rover's 20 crew instances (hidden ones scaled to 0). `frame` is the Rover's frame from `roverFrame`: the
  * sparks, the thought trail, the confetti and the `drones` helper drones' cores (`DRONE_CORE`, turned to `cam`, the
- * camera's floor position) ride on it. The charge pad lies on the floor under the docked Rover (`CHARGE_PAD`) and the desk light on the desk, so
+ * camera's floor position) ride on it. The charge pad lies on the floor under the docked Rover (`CHARGE_PAD`, trimmed on the riser: `CHARGE_PAD_TRIM`) and the desk light on the desk, so
  * neither follows the Rover's pitch, slump or turn.
  */
 export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeState, fx: CrewFx, t: number, phase: number, reduced: boolean, matrices: Float32Array, colors: Float32Array, drones = 0, lite = false, cam: { x: number; z: number } = NOWHERE): void {
@@ -74,15 +80,17 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
     dot(frame, P, 0.1, CONFETTI[j], 1.3, base + CREW_GLOW.confetti + j, matrices, colors);
   }
   const charge = base + CREW_GLOW.charge;
-  V.setFromMatrixPosition(frame).setY(CHARGE_PAD.y);
+  const trim = slot.lift > 0 ? CHARGE_PAD_TRIM : 0;
+  V.setFromMatrixPosition(frame);
+  V.set(V.x + (Math.sin(slot.yaw) * trim) / 2, slot.lift + CHARGE_PAD.y, V.z + (Math.cos(slot.yaw) * trim) / 2);
   const pad = fx.charge > 0 ? 1 : 0;
-  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(CHARGE_PAD.w * pad, CHARGE_PAD.d * pad, pad)).toArray(matrices, charge * 16);
+  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(CHARGE_PAD.w * pad, (CHARGE_PAD.d - trim) * pad, pad)).toArray(matrices, charge * 16);
   C.set(CHARGE).multiplyScalar(fx.charge).toArray(colors, charge * 3);
   // The desk light: a long flat glow along the desk's far edge, in the state tone (dims to 10% asleep).
   const desk = base + CREW_GLOW.desk;
   const edge = OFFICE.desk.d / 2 - 0.05;
-  V.set(slot.desk.x + Math.sin(slot.yaw) * edge, OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
-  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(OFFICE.desk.w * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
+  V.set(slot.desk.x + Math.sin(slot.yaw) * edge, slot.lift + OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
+  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(slot.deskW * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
   C.set(tone).multiplyScalar(0.6 * fx.deskLight).toArray(colors, desk * 3);
   for (let i = 0; i < DRONES.max; i++) {
     dronePoint(i, drones, t, phase, reduced, P);
@@ -110,12 +118,12 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
 }
 
 /**
- * The tower's LED matrix after the five Rovers' glow: up to 24 lanes of 8 dots, bottom to top, over most of the slim
- * column's stop-facing face (`base` over the plinth, `gap` between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart
- * within a lane (0.91 u of its 1.2 u face). Idle dots stay a dim visible grid (`idle`), a run's pending lanes a little
- * brighter, done lanes bright green, the next lane chasing.
+ * The tower's LED matrix after the ten Rovers' glow (`start`: the glow instance count derives from the seat count): up
+ * to 24 lanes of 8 dots, bottom to top, over most of the slim column's stop-facing face (`base` over the plinth, `gap`
+ * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (0.91 u of its 1.2 u face). Idle dots stay a
+ * dim visible grid (`idle`), a run's pending lanes a little brighter, done lanes bright green, the next lane chasing.
  */
-export const TOWER = { lanes: 24, dots: 8, start: 5 * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
+export const TOWER = { lanes: 24, dots: 8, start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
 
 export interface TowerLanes {
   total: number;

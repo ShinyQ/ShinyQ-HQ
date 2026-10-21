@@ -1,4 +1,4 @@
-import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeResponseV2, type OfficeSnapshot, type OfficeSnapshotV1 } from "./protocol";
+import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeResponseV2, type OfficeResponseV3, type OfficeSnapshot, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "./protocol";
 
 /**
  * Agent Office polling (owner decision D6, spec section 8), shared by the 3D office on L1 and the Classic home card.
@@ -6,17 +6,17 @@ import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeRes
  */
 export const POLL = { activeMs: 10_000, restingMs: 30_000, idleStopMs: 600_000, keepLastMs: 60_000 } as const;
 
-/** The snapshot v2 request (desk helpers) the 3D office and the Classic card make. */
-export const OFFICE_V2_PATH = `${OFFICE_PATH}?v=2`;
+/** The snapshot v3 request (ten seats, desk helpers) the 3D office, the Classic card and the office watch make. */
+export const OFFICE_V3_PATH = `${OFFICE_PATH}?v=3`;
 
 export type OfficeFeedStatus = "idle" | "loading" | "ready" | "offline" | "disabled";
 
 /**
- * The v2 snapshot shape with either version number: the 3D office and the Classic card poll v2 (`OFFICE_V2_PATH`,
- * `parseOfficeResponseV2`), while unit fixtures and other callers may still hand in a v1 snapshot (whose desks simply
- * carry no `helpers`), so every consumer reads one type.
+ * The v3 snapshot shape with any version number: the 3D office and the Classic card poll v3 (`OFFICE_V3_PATH`,
+ * `parseOfficeResponseV3`), while unit fixtures and other callers may still hand in a v1 or v2 snapshot (five desks at
+ * most, v1 desks without `helpers`), so every consumer reads one type.
  */
-export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshot["v"] };
+export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshotV2["v"] | OfficeSnapshot["v"] };
 
 export interface OfficeFeed {
   status: OfficeFeedStatus;
@@ -26,21 +26,32 @@ export interface OfficeFeed {
 }
 
 export interface OfficePoller {
-  /** Begin polling now (idempotent). */
-  start(): void;
+  /**
+   * Begin polling (idempotent). The first start fetches at once; a later one waits out what is left of `interval`
+   * since the last settled request (so a view flickering in and out never fetches more often than the cadence), unless
+   * `now` asks for a fetch at once (the tab turning visible, the test hook).
+   */
+  start(opts?: { now?: boolean }): void;
   /** Stop timers and abort the request in flight (keeps the last feed). */
   stop(): void;
   /** Visitor input: resets the 10 min idle stop, restarts if it had stopped for idleness. */
   touch(): void;
+  /**
+   * Re-arms the pending wait for the current `interval` (a reason changed the cadence), counted from when the last
+   * request settled: a shorter cadence that is already due fetches at once. A no-op while stopped or fetching.
+   */
+  retime(): void;
   feed(): OfficeFeed;
   subscribe(listener: (feed: OfficeFeed) => void): () => void;
 }
 
 export interface OfficePollerOptions {
-  /** What to fetch (default `OFFICE_PATH`, v1); both clients ask `OFFICE_V2_PATH`. */
+  /** What to fetch (default `OFFICE_PATH`, v1); both clients ask `OFFICE_V3_PATH`. */
   path?: string;
   /** The body's validator for that path (default `parseOfficeResponse`, v1). */
-  parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | null;
+  parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | null;
+  /** The wait before the next request, from the feed (default `pollInterval`). */
+  interval?: (feed: OfficeFeed) => number;
   fetcher?: typeof fetch;
   now?: () => number;
   visible?: () => boolean;
@@ -63,6 +74,7 @@ export function pollInterval(feed: OfficeFeed): number {
 export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller {
   const path = opts.path ?? OFFICE_PATH;
   const parse = opts.parse ?? parseOfficeResponse;
+  const interval = opts.interval ?? pollInterval;
   const fetcher = opts.fetcher ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   const now = opts.now ?? Date.now;
   const visible = opts.visible ?? pageVisible;
@@ -74,6 +86,13 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   let idleStopped = false;
   let lastTouch = 0;
   let timer: unknown = null;
+  /** `now()` when the pending wait was armed (the last request settled). */
+  let armedAt = 0;
+  /**
+   * `now()` when the last request that settled in its own generation began (null before the first). A request that
+   * stop() aborted or dropped does not count, so a quick stop then start does not wait for a result that never came.
+   */
+  let requestedAt: number | null = null;
   let generation = 0;
   let inflight: AbortController | null = null;
 
@@ -94,6 +113,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
 
   /** One request; its result is dropped when stop() or a restart changed the generation while it was in flight. */
   async function load(gen: number): Promise<void> {
+    const begunAt = now();
     if (current.status === "idle") set({ ...current, status: "loading" });
     const controller = new AbortController();
     inflight = controller;
@@ -115,6 +135,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     } finally {
       clearTimer(abortTimer);
       if (inflight === controller) inflight = null;
+      if (gen === generation) requestedAt = begunAt;
     }
   }
 
@@ -128,17 +149,26 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     }
     if (visible()) await load(gen);
     if (!running || gen !== generation) return;
-    timer = setTimer(() => void tick(gen), pollInterval(current));
+    armedAt = now();
+    timer = setTimer(() => void tick(gen), interval(current));
   }
 
   const poller: OfficePoller = {
-    start() {
+    start(opts) {
       if (running) return;
       running = true;
       idleStopped = false;
-      lastTouch = now();
+      const t = now();
+      lastTouch = t;
       generation += 1;
-      void tick(generation);
+      const gen = generation;
+      const wait = opts?.now || requestedAt === null ? 0 : Math.min(interval(current), Math.max(0, requestedAt + interval(current) - t));
+      if (wait <= 0) {
+        void tick(gen);
+        return;
+      }
+      armedAt = requestedAt ?? t;
+      timer = setTimer(() => void tick(gen), wait);
     },
     stop() {
       running = false;
@@ -151,6 +181,12 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     touch() {
       lastTouch = now();
       if (idleStopped) poller.start();
+    },
+    retime() {
+      if (!running || timer === null) return;
+      clear();
+      const gen = generation;
+      timer = setTimer(() => void tick(gen), Math.max(0, armedAt + interval(current) - now()));
     },
     feed: () => current,
     subscribe(listener) {

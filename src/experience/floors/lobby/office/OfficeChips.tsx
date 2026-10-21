@@ -5,12 +5,12 @@ import { useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
-import { CHIP_ROW } from "../officeShell";
+import { CHIP_ROW } from "./chipRows";
 import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
 import { chipLines, nearDropsFor, nearParts, officeView, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
-import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
+import { OFFICE_CHIP_COUNT, officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
@@ -19,10 +19,11 @@ import { officeRuntime, useChipFar, useChipsCompact } from "./runtime";
  * `CHIP_ROW.max` px wide, or the row's fit `chipMaxWidth` that `OfficeWatch` writes; when space runs out the activity
  * ends in an ellipsis ("Copilot · Asking Kur…"), never dropped, and the agent's name, the helpers count and the "+2" pill
  * always stay whole; a head that still does not fit drops the word "helpers" ("Claude · Watc… · 6"), `nearParts`; one
- * line where five such chips would not fit the row), and a CI progress bar when near. Its label keeps the full text (`chipLines`: agent, activity, helpers,
+ * line where the row leaves a chip under `CHIP_ROW.near`), and a CI progress bar when near. Its label keeps the full text (`chipLines`: agent, activity, helpers,
  * the title or "Client project", CI progress) at any distance.
  * On phones every chip stays far and compact (`OfficeWatch`): the state dot alone in a 32 px pill. Outside the office view
- * (`officeChipMode`: reduced motion, a hand turn at the stop) every screen shows them that way. OfficeScene moves it every
+ * (`officeChipMode`: reduced motion, a hand turn at the stop) and where the row leaves no room for the names
+ * (`chipsDotsOnly`) every screen shows them that way; an off-duty desk's chip is always a dim dot. OfficeScene moves it every
  * frame (HintProbe pattern) through `officeRuntime.chips`, with its leader line (`officeRuntime.leads`: 1 px in the
  * state's colour from the chip toward its Rover's head, ending at the screen wall's top with a 10 px tick,
  * `officeRuntime.ticks`, or faded to 15% where the chip itself sits over the screens; no transition, so reduced motion
@@ -33,7 +34,9 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
   const t = useTranslations("office");
   const far = useChipFar(rover.slot);
   const plain = useChipsCompact();
-  const compact = useHQStore((s) => far && (plain || s.device.viewport === "mobile"));
+  // An off-duty desk's chip is a dim dot at any distance (its label keeps "Desk n: Off duty"), so ten chips share one row.
+  const off = rover.agent === null;
+  const compact = useHQStore((s) => off || (far && (plain || s.device.viewport === "mobile")));
   const line = chipLines(rover, t);
   const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
@@ -88,7 +91,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
         className="pointer-events-auto absolute top-0 left-0 flex flex-col items-center gap-1 will-change-transform"
       >
         {compact ? (
-          <span className="glass glass-solid inline-flex min-h-8 items-center rounded-full" style={{ minWidth: 32, justifyContent: "center" }}>
+          <span className="glass glass-solid inline-flex min-h-8 items-center rounded-full" data-off={off ? "true" : undefined} style={{ minWidth: CHIP_ROW.dot, justifyContent: "center", opacity: off ? 0.7 : undefined }}>
             <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color }} />
           </span>
         ) : (
@@ -144,7 +147,10 @@ function NearHead({ parts, drop, ref }: { parts: ReturnType<typeof nearParts>; d
   );
 }
 
-/** The five chips and their leader lines; hidden on phones while a drawer (a bottom sheet) is open. Mounted by the HUD's OfficeLayer. */
+/**
+ * The ten desks' chips (`OFFICE_CHIP_COUNT`, both rows) and their leader lines; hidden on phones while a drawer (a bottom
+ * sheet) is open. Mounted by the HUD's OfficeLayer.
+ */
 export function OfficeChips() {
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
@@ -152,7 +158,7 @@ export function OfficeChips() {
   if (hidden) return null;
   return (
     <div data-testid="office-chips">
-      {view.rovers.map((rover) => (
+      {view.rovers.slice(0, OFFICE_CHIP_COUNT).map((rover) => (
         <Chip key={rover.slot} rover={rover} />
       ))}
     </div>

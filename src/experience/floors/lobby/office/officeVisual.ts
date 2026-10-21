@@ -61,7 +61,7 @@ export interface OfficePose {
 export const STILL_T = 0.5;
 /** Reduced motion: a state change crossfades the face and the screen over this long instead of cutting. */
 export const CROSSFADE_S = 0.4;
-/** A stable phase per slot, so the five Rovers never move in step. */
+/** A stable phase per slot, so the ten Rovers never move in step. */
 export const slotPhase = (slot: number): number => slot * 1.7 + 0.4;
 
 const REST: OfficePose = { y: 0, rx: 0, ry: 0, rz: 0, armL: 0, armR: 0, tipScale: 1, x: 0, z: 0, yaw: 0, flag: 0, wave: 0 };

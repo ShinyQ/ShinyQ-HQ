@@ -14,18 +14,34 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Contract
 
-- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`) and
-  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0;
-  `OfficeSnapshot` is v2). The disabled answer `{v:1, enabled:false}` is the same in both.
+- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`),
+  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0) and
+  `OfficeResponseV3` (`GET /api/office?v=3`: v2 with `v: 3` and up to `OFFICE_SEATS` (10) desks, slots 0 to 9, `extra`
+  counting sessions past ten; `OfficeSnapshot` is v3). The disabled answer `{v:1, enabled:false}` is the same in all.
+- Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
+  front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
+  seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
+  with at most five sessions (part A clients, already deployed and polling v2, see no change for at most five
+  sessions). With more than five sessions the eviction rule changed: an awake newcomer takes the longest-asleep seat
+  only when all ten are taken, so v1 and v2 clients may show a sleeping front desk while an awake session is in
+  `extra`.
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
-  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2; no query, `?v=3` or junk
-  get v1.
-- Clients validate with `parseOfficeResponse` (v1) or `parseOfficeResponseV2` (strict v2, plus a v1 body read as v2
-  without helpers, for a rolled-back Worker) and hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Who polls what: the 3D office's poller (`createOfficePoller({ path, parse })` in `office/live.ts`) and the Classic
-  card v2; the L1 beacon's watch v1. `signalFromBody` reads both.
-- Fixtures: `OFFICE_FIXTURES` (v1) and `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) in
-  `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
+  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
+  v3; no query, `?v=4` or junk get v1.
+- Clients validate with `parseOfficeResponse` (v1), `parseOfficeResponseV2` (strict v2, five desks, plus a v1 body read
+  as v2 without helpers) or `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
+  rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) and
+  hide on null; the Worker validates beats with `parseOfficeBeat`.
+- Who polls what (all `?v=3`, `OFFICE_V3_PATH`): the 3D office's poller (`createOfficePoller({ path, parse, interval })`
+  in `office/live.ts`: the fast cadence near the office or with a drawer open, 30 s from afar, nothing out of view),
+  the Classic card, and the L1 beacon's watch every 30 s while the scene's poller is not running (so a back-row asker
+  lights the beacon; the same one request per 30 s as before). `signalFromBody` reads v1 to v3 bodies with up to ten
+  desks and slots 0 to 9. The 3D scene's `officeView` and the Classic card both read all ten (slots 0 to 9, `extra` past
+  ten); there `withSeats(snap, OFFICE_SEATS)` (`src/lib/office/model.ts`) only guards against a slot past the seat
+  count; the signal keeps every asker.
+- Fixtures: `OFFICE_FIXTURES` (v1), `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) and `OFFICE_FIXTURES_V3` (busy
+  seats ten: drones at slots 0, 2, 5 and 9, askers at 3 and 7, one more in `extra`) in `src/lib/office/fixtures.ts`
+  (busy, rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.
 
 ### Privacy (owner decision D3)
@@ -56,10 +72,19 @@ Index: [AGENTS.md](../../AGENTS.md).
   (15 min while testing, on CI or waiting for input), done for 20 s, failed until the next beat, removed after 30 min.
   No alarms.
 - Helpers: a beat's `helpers` replaces the stored count, a beat without it keeps it, 0 clears it; a count change adds
-  no `recent` entry; a privatized repository keeps it. `viewV2` shows it (`effectiveHelpers`, capped at 9) while the
-  session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1) never does.
-  The Durable Object's `/snapshot` answers `viewV2` for `?v=2`, else `view`; the Worker forwards only `?v=2`.
-- Desks: five stable slots (`assignSlots`); an awake newcomer may take the longest-asleep desk; others are `extra`.
+  no `recent` entry; a privatized repository keeps it. `viewV2` and `viewV3` show it (`effectiveHelpers`, capped at 9)
+  while the session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1)
+  never does. The Durable Object's `/snapshot` answers `viewV3` for `?v=3`, `viewV2` for `?v=2`, else `view`; the
+  Worker forwards only `?v=2` and `?v=3`.
+- Seats: ten stable seats (`assignSlots`, `OFFICE_SEATS`). The front row fills first: a free seat goes to the lowest
+  free seat, and a back-row session moves to a front-row seat as soon as one is free (oldest first), so for at most
+  five sessions v1 and v2 show what five desks showed. Only when all ten are taken may an awake newcomer take the
+  longest-asleep seat; others are `extra`. `view` and `viewV2` list seats 0 to 4 and count the rest in `extra`;
+  `viewV3` lists all ten.
+- Stored seats (`SessionRecord`): `slot` holds only a front-row seat (0 to 4, or null) and the optional `seat` only a
+  back-row seat (5 to 9); the seat is `slot ?? seat` (`seatOf`; a set `slot` wins and clears `seat`). A Worker from
+  before ten seats reads only `slot`, so after a rollback it counts back-row sessions in `extra` and seats them as
+  before. `migrateDoc` (on load, written once) moves a back-row seat stored in `slot` to `seat`.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
 - Workflow runs carry `run_attempt` (deliveries arrive in any order): an older attempt and a late `running` of a
@@ -67,12 +92,13 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (v1) and `GET /api/office?v=2` (v2) (always 200 JSON: the snapshot,
-  `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
-  `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
-  `caches.default` for 5 s per data center under one key per version (`/api/office`, `/api/office?v=2`); v2 fetches
-  the Worker's `/snapshot?v=2` and validates with `parseOfficeResponseV2`, so a rolled-back Worker's v1 body is served
-  as v2 without helpers; `POST /api/office/beat` and `/github` forward the raw body and signature
+- `functions/_lib/office.ts`: `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3)
+  (always 200 JSON: the snapshot, `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching
+  `If-None-Match`) and `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer
+  `public, max-age=60`), stored in `caches.default` for 5 s per data center under one key per version (`/api/office`,
+  `/api/office?v=2`, `/api/office?v=3`; any other query shares the v1 entry); v2 and v3 fetch the Worker's
+  `/snapshot?v=2` or `?v=3` and validate with `parseOfficeResponseV2` or `parseOfficeResponseV3`, so a rolled-back
+  Worker's older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
@@ -86,12 +112,18 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
   `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
-  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2).
+  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2). A Worker
+  rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, without helpers) and seats only five: it reads
+  only the stored `slot`, so back-row sessions count in `extra` and take a free front desk at the next beat, and its
+  snapshots stay valid (no mode off, at any session count; tested against a frozen copy of its rules in
+  `tests/office/legacy-five-desks.ts`). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
+  Function gets v1 (read as v3).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
 
-- `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/unit/office-deploy.test.ts`.
+- `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/office/legacy-five-desks.ts` is
+  a frozen copy of the pre-ten-seat Worker's seat and view rules (never update it); `tests/unit/office-deploy.test.ts`.
 
 ## Relay
 
@@ -158,8 +190,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `#office` on the Classic home page, after `#intro`, titled "Live Agent Office" (ID "Kantor Agen Langsung"): code in
   `src/components/office/`.
   - `OfficeSection` (server) resolves every string on the server (`officeCardLabels`: `office.classic.*` plus the shared
-    `office.agent`, `office.state`, `office.activity` and `office.clientProject`, and the 3D office's `office.3d.offDuty`
-    and `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
+    `office.agent`, `office.state`, `office.activity`, `office.clientProject` and `office.helpers`, and the 3D office's
+    `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
   - `office.classic` is a server-only path (`SERVER_PATHS` in `src/i18n/client-messages.ts`): `ClientMessages` drops it
     with `omitMessages`, so the card's copy never rides in the client messages
     ([styling-and-i18n.md](styling-and-i18n.md)).
@@ -170,20 +202,31 @@ Index: [AGENTS.md](../../AGENTS.md).
 - The panel reuses part 3's `createOfficePoller` and `src/lib/office/model.ts` (`officeCounts`, `deskTitle`,
   `STATE_TONE`, `sinceLabel`, `safeGithubUrl`): it polls only while the section is within a screen of the viewport, and
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
-  the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
-- What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
-  activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
-  raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with
-  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub
-  events and today's numbers (without the CI clause on a day with no runs). No privacy note shows on the card or in
-  the 3D drawers (owner request 2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
-  - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
-    title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
-    beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
+  the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does; scrolling the
+  card back near waits out the rest of the cadence since the last request).
+- What it shows (the panel polls `OFFICE_V3_PATH` with `parseOfficeResponseV3`, which reads a v2 or v1 body too, and
+  seats it with `withSeats(snapshot, OFFICE_SEATS)`): the counts over the ten seats (`officeCounts(desks,
+  OFFICE_SEATS)`: active, thinking, waiting, asleep, with empty seats asleep, the same numbers as the 3D wall; 2 by 2
+  below 768 px), five desk rows, the idle summary line, the latest 4 public GitHub events and today's numbers (without
+  the CI clause on a day with no runs). No privacy note shows on the card or in the 3D drawers (owner request
+  2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
+  - Desk rows (owner decision 2026-10-21, [ten desks](../decisions/2026-10-21-office-ten-desks.md)): only awake desks
+    (any state but asleep) take a row, by seat (front row first). Up to five fill the rows; past five, four show and
+    the fifth row reads "+N more desks" / "+N meja lainnya" (`office.classic.moreDesks`, N the awake desks
+    beyond the four, `data-testid="office-more"`; "desks", not "active desks", so it never seems to contradict the Active
+    count, which counts only the Active state; [more desks](../decisions/2026-10-21-office-card-more-desks.md)). With no awake desk (and a snapshot) the first row reads "Every Rover
+    is asleep." (`office-none`). Unused rows are quiet, aria-hidden rows (`office-desk-empty`) with the same two lines.
+  - An awake desk shows agent, activity (plus "· 3 helpers" on the same truncating line when it has helpers:
+    `office.helpers`, resolved raw into `OfficeCardLabels.helpers` and filled by `fill`), state and task: its title for
+    an allowlisted public repository, else "Client project".
+  - The summary line under the rows (`office-extra`) collapses asleep desks and empty seats into the idle count, which
+    is the Asleep count (`office.classic.idle`: "No desks idle", "1 desk idle", "8 desks idle" / "Tidak ada meja yang
+    menganggur", "8 meja menganggur"); sessions past the ten seats add " · +N more sessions" (`office.classic.extra`).
+    A v1 or v2 body (a rolled-back Worker) seats five, so the other five seats read as idle.
   - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
     keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
     (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
-    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line). The dimmed rows keep
+    HH:MM"; before any snapshot, five quiet desk rows (`office-desk-empty`) and empty GitHub rows under the offline line). The dimmed rows keep
     their "· 3 helpers", like their last known activity, whereas the 3D office zeroes the helpers offline
     (`OfficeRoverView.helpers`: no drones, no helpers on the chips or in the drawers).
   - English counts are ICU plurals in `office.classic` ("+1 more session", "1 task done", "1 of 1 CI run green"),
@@ -192,17 +235,20 @@ Index: [AGENTS.md](../../AGENTS.md).
     visitor can see it, the card keeps its height with "The live office is off right now." (the panel holds the
     `disabled` report until a 0 px margin observer says it left the viewport). The panel loads a screen ahead, so in a
     normal scroll the answer arrives below the viewport and the section hides without a visible shift.
-- One height in every state (CLS): every state draws the same rows (five desks with a task line or an empty one, four
-  GitHub rows with quiet empty rows filling the slots and "No public activity yet today." when a snapshot has none,
-  the "+N more" line, today's line), titles and heads truncate, and the status line and today's line hold two lines
-  below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
+- One height in every state (CLS): every state draws the same rows (five desk rows, each with two lines: a desk, "+N
+  more desks", "Every Rover is asleep." or a quiet row; four GitHub rows with quiet empty rows filling the slots
+  and "No public activity yet today." when a snapshot has none; the idle summary line, which truncates; today's line),
+  titles and heads truncate, and the status line and today's line hold two lines below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
   on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in
   both locales, 1020 for an Indonesian semi-live line at 320), about 8 px of headroom over the tallest.
-  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, offline before and after a snapshot)
-  moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
+  The ten-desk states measure the same 881 and 1004 px.
+  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, ten desks with
+  nine and with ten awake, offline before and after a snapshot) moves the next section or reports a layout shift, at
+  1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
   `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks
-  `/api/office` from `OFFICE_FIXTURES`; `OFFICE_SHOTS=<dir>` writes the owner's review captures).
+  `/api/office` from `OFFICE_FIXTURES`, `OFFICE_FIXTURES_V2` and `OFFICE_FIXTURES_V3`; `OFFICE_SHOTS=<dir>` writes the
+  owner's review captures, the ten-desk ones in their own test, `-g "ten desks"`).
 - Ask: one paragraph in `content/ask/site-build.json` (what the office is, in its own wing of the Lobby, and its privacy
   rule); "Agent Office" and "kantor agen" questions are site questions (`SITE` in `functions/_lib/scope.ts`), but not
   the business sense ("a travel agent office", "kantor agen asuransi"); golden q92 and q93. Never put live office data

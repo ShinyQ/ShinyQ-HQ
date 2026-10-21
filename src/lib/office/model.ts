@@ -31,6 +31,15 @@ export function officeCounts(desks: readonly OfficeDesk[], slots: number = OFFIC
   return counts;
 }
 
+/**
+ * A snapshot read with `seats` desks (slots 0 to `seats - 1`): desks on later seats count in `extra`, the way snapshots
+ * v1 and v2 fold the back row, so they neither vanish nor break a five-desk view. The same object when nothing folds.
+ */
+export function withSeats<T extends { desks: readonly OfficeDesk[]; extra: number }>(snap: T, seats: number = OFFICE_DESKS): T {
+  const back = snap.desks.reduce((n, d) => n + (d.slot >= seats ? 1 : 0), 0);
+  return back === 0 ? snap : { ...snap, desks: snap.desks.filter((d) => d.slot < seats), extra: snap.extra + back };
+}
+
 /** The task title when the snapshot carries one (allowlisted public repositories only), else null: the UI shows "Client project". */
 export function deskTitle(desk: OfficeDesk): string | null {
   return desk.title ? desk.title : null;

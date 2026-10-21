@@ -14,19 +14,27 @@
  * `--only full-1440x900,lite-390x844` limits the run to those tier and viewport combos (while iterating), and
  * `--shots spawn,approach,states-a` to those shots (the drives between them still run).
  *
+ * `ring-south` (always-live office, design 5.9): the rover on the Lobby lane ring's south point (the hologram's centre plus
+ * `LOBBY.laneRadius` toward the wing), the view turned to look south at the wing, once the office is in view, far
+ * (past `OFFICE_LOD.farDistance`) and polling: the live Rovers from afar, the scene chunk loaded on its own at idle;
+ * on desktop sizes (where the default zoom puts the wing under the HUD's top bar, kept as `ring-south-default`) the view
+ * then tilts up by a mouse drag; `ring-south-out` (with `ring-south`) the same view one zoom key step out. `spawn-wing`: the spawn view turned the same
+ * way toward the wing (a wheel rotate, as a visitor would), the live office far off past the Lobby.
+ *
  * `approach`: the rover on the wing's lead road at the Lobby plaza edge (x 3, S - 6), the view turned (a shift-wheel
  * rotate, as a visitor would) to look south into the wing. `overview` (full tier, 1440x900 only): a top-down still of
  * the whole L1 slab, the south wing included, taken with the rover at the office stop; `window.__hq` has no camera
  * control, so it pins the drawn camera (`__hq.render.camera`) over the slab after the Director's own pose, lifts the
  * fog, hides the floor groups other than L1 (the ghost slabs above would cover it) and the HTML HUD.
  *
- * The living crew (v2 snapshots, `e2e/office-fixtures.ts`; the beacon's watch reads the v1 path, answered `asV1`):
+ * The living crew (v2 snapshots, `e2e/office-fixtures.ts`, read as v3; the scene, the card and the beacon's watch ask `?v=3`):
  * `crew-a` and `crew-b` at the office stop (far chips) once each Rover holds its state's pose and the helper drones
  * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" and the "+2"
  * pill (an activity that does not fit ends in an ellipsis, a head that still does not fit drops the word "helpers", never the pill); `beacon-spawn` at the
  * primed spawn with one desk asking (`CREW_A`), the beacon column and the minimap cue lit; `beacon-stop` at the stop with
  * that desk asking (the column hidden, faint bands at the asking Rover); `asleep` every desk asleep (docked Rovers,
- * dimmed desks, charge pads).
+ * dimmed desks, charge pads). `crew-ten` ten sessions on both rows (`crewTen`: mixed states, drones on both rows, public
+ * titles) at the stop, the ten chips in one row (dots on a phone, in two rows); `crew-ten-near` the near pose.
  *
  * `--video <dir>` records one 1440x900 full-tier take (Playwright `recordVideo`) into `<dir>/crew-states.webm` (and
  * `crew-states.mp4` when `ffmpeg` is on the PATH, both trimmed to start at the spawn): the beacon from the Lobby,
@@ -40,7 +48,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { type Browser, chromium, type Page } from "@playwright/test";
-import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
+import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, turnCameraTo, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
 import {
   asV1,
   CREW_A_STATES,
@@ -49,7 +57,8 @@ import {
   crewA,
   crewB,
   OFFICE_API,
-  OFFICE_API_V2,
+  OFFICE_API_V3,
+  OFFICE_REPO,
   officeDesk,
   officeSnapshot,
   STATES_A,
@@ -57,7 +66,7 @@ import {
   statesA,
   statesB,
 } from "../e2e/office-fixtures";
-import type { OfficeSnapshotV2 } from "../src/lib/office/protocol";
+import type { OfficeSnapshotV2, OfficeSnapshotV3 } from "../src/lib/office/protocol";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE } from "../src/experience/floors/lobby/officeLayout";
@@ -73,7 +82,7 @@ const VIEWPORTS = [
 const TIERS = ["full", "lite"] as const;
 
 type CrewProbe = { state: string; yaw: number; flag: number; z: number };
-type OfficeProbe = { loaded: boolean; states: string[]; mode: string; polling: boolean; beacon: boolean; crew: CrewProbe[]; drones: number[] };
+type OfficeProbe = { loaded: boolean; states: string[]; mode: string; inView: boolean; far: boolean; polling: boolean; beacon: boolean; crew: CrewProbe[]; drones: number[] };
 type OfficeWindow = Window & {
   __hq: {
     store: { getState: () => { phase: string; openRoom: (r: string) => void; closeRoom: () => void } };
@@ -102,6 +111,8 @@ const runShots = !video || only !== null || shots !== null;
 if (runShots) mkdirSync(out, { recursive: true });
 
 const SLOW = 120_000;
+/** The ring-south shot's tilt on desktop sizes (px of upward drag, about 0.3 rad): frames the office under the HUD bar. */
+const RING_TILT = -75;
 const probe = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office);
 const camera = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.camera());
 
@@ -113,10 +124,15 @@ async function waitFor(what: string, check: () => Promise<boolean>, timeout = SL
   }
 }
 
-/** Fetches now (the poller restarts), waits for that response and until the office shows `mode` and `states`. */
-async function show(page: Page, reply: { body: unknown }, body: unknown, mode: string, states: readonly string[], frames = 30) {
+/** Ten seats: a five-desk lineup's back row stays off duty, asleep. */
+const SEATS = 10;
+const ten = <T,>(front: readonly T[], rest: T): T[] => [...front, ...Array.from({ length: SEATS - front.length }, () => rest)];
+
+/** Fetches now (the poller restarts), waits for that response and until the office shows `mode` and `states` (padded to ten seats). */
+async function show(page: Page, reply: { body: unknown }, body: unknown, mode: string, front: readonly string[], frames = 30) {
+  const states = ten(front, "asleep");
   reply.body = body;
-  await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
   await waitFor(`${mode} ${states.join(",")}`, async () => {
     const o = await probe(page);
     return o.mode === mode && JSON.stringify(o.states) === JSON.stringify(states);
@@ -149,11 +165,30 @@ function allAsleep(now: number): OfficeSnapshotV2 {
 }
 const ASLEEP = ["asleep", "asleep", "asleep", "asleep", "asleep"] as const;
 
-/** Each lineup's settled pose, read off the crew probe (refreshed every 0.5 s of scene clock) and the drawn drones. */
+/**
+ * Ten sessions on both rows (`crew-ten`, v3): the front row as `CREW_A` (3 and 6 helpers, CI 7 of 12, asking, done), the
+ * back row reviewing with 2 helpers, testing, failed, asleep and working with 4 helpers; public titles from this site's
+ * own repository.
+ */
+function crewTen(now: number): OfficeSnapshotV3 {
+  const back = [
+    officeDesk(5, "codex", "reviewing", "reading", now, { repo: OFFICE_REPO, title: "Classic Card for Ten Desks", helpers: 2 }),
+    officeDesk(6, "claude", "testing", "testing", now, { repo: OFFICE_REPO, title: "Snapshot v3 With Ten Seats" }),
+    officeDesk(7, "copilot", "failed", "failed", now, { repo: OFFICE_REPO, title: "A Second, Raised Console Row", job: "3D perf gates 1/2" }),
+    officeDesk(8, "codex", "asleep", "resting", now),
+    officeDesk(9, "claude", "working", "editing", now, { repo: OFFICE_REPO, title: "Chips for Ten Desks", helpers: 4 }),
+  ];
+  const front = crewA(now);
+  return { ...front, v: 3, desks: [...front.desks, ...back] };
+}
+const CREW_TEN_STATES = [...CREW_A_STATES, "reviewing", "testing", "failed", "asleep", "working"] as const;
+
+/** Each lineup's settled pose, read off the crew probe (refreshed every 0.5 s of scene clock) and the drawn drones (both rows). */
 const CREWS = {
-  a: { body: crewA, states: CREW_A_STATES, drones: [3, 4, 0, 0, 0], posed: (c: CrewProbe[]) => c[CREW_SLOT.input].flag === 1 && Math.abs(c[CREW_SLOT.ci].yaw) > 0.2 },
-  b: { body: crewB, states: CREW_B_STATES, drones: [0, 0, 4, 3, 0], posed: (c: CrewProbe[]) => c.every((x) => x.flag === 0) && c.map((x) => x.z < 0).join() === "false,true,false,false,true" },
-  asleep: { body: allAsleep, states: ASLEEP, drones: [0, 0, 0, 0, 0], posed: (c: CrewProbe[]) => c.every((x) => x.flag === 0 && x.z < 0) },
+  a: { body: crewA, states: CREW_A_STATES, drones: ten([3, 4, 0, 0, 0], 0), posed: (c: CrewProbe[]) => c[CREW_SLOT.input].flag === 1 && Math.abs(c[CREW_SLOT.ci].yaw) > 0.2 },
+  b: { body: crewB, states: CREW_B_STATES, drones: ten([0, 0, 4, 3, 0], 0), posed: (c: CrewProbe[]) => c.every((x) => x.flag === 0) && c.slice(0, 5).map((x) => x.z < 0).join() === "false,true,false,false,true" },
+  asleep: { body: allAsleep, states: ASLEEP, drones: ten([], 0), posed: (c: CrewProbe[]) => c.every((x) => x.flag === 0 && x.z < 0) },
+  ten: { body: crewTen, states: CREW_TEN_STATES, drones: [3, 4, 0, 0, 0, 2, 0, 0, 0, 4], posed: (c: CrewProbe[]) => c[CREW_SLOT.input].flag === 1 && Math.abs(c[CREW_SLOT.ci].yaw) > 0.2 && c[8].z < 0 },
 } as const;
 
 /**
@@ -165,15 +200,15 @@ async function showCrew(page: Page, reply: { body: unknown }, crew: keyof typeof
   await show(page, reply, body(Date.now()), "live", states, frames);
   await waitFor(`the ${crew} crew's poses`, async () => {
     const o = await probe(page);
-    return o.crew.map((c) => c.state).join() === states.join() && o.drones.join() === drones.join() && posed(o.crew);
+    return o.crew.map((c) => c.state).join() === ten(states, "asleep").join() && o.drones.join() === drones.join() && posed(o.crew);
   });
   if (frames) await waitForFrames(page, frames);
 }
 
-/** Answers `/api/office` from `reply`: the poller's `?v=2` as is, the beacon watch's v1 path `asV1`. */
+/** Answers `/api/office` from `reply`: `?v=3` (the poller and the beacon watch) as is, the v1 path (no client asks it) `asV1`. */
 async function serveOffice(page: Page, reply: { body: unknown }) {
   await page.route(OFFICE_API, (route) => {
-    const body = OFFICE_API_V2.test(route.request().url()) ? reply.body : asV1(reply.body);
+    const body = OFFICE_API_V3.test(route.request().url()) ? reply.body : asV1(reply.body);
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
 }
@@ -205,19 +240,22 @@ async function viewShiftSettled(page: Page) {
   await waitForFrames(page, 10);
 }
 
-/** Turns the follow camera to `yaw` (`yawLooking`, from the default angle) with shift-wheel rotates over the canvas centre. */
-async function turnTo(page: Page, yaw: number) {
+/** Turns the follow camera to `yaw` (`yawLooking`, from the default angle) with wheel rotates over the canvas centre (`turnCameraTo`). */
+const turnTo = (page: Page, yaw: number) => turnCameraTo(page, yaw, SLOW);
+
+/**
+ * Tilts the follow camera by a vertical mouse drag of `dy` px over the canvas centre (a visitor's tilt; negative tilts the
+ * view up), then waits until it settles.
+ */
+async function tiltBy(page: Page, dy: number) {
   const vp = page.viewportSize()!;
-  await page.mouse.move(vp.width / 2, vp.height / 2);
-  for (let i = 0; i < 4; i++) {
-    const now = await page.evaluate(() => (window as unknown as OfficeWindow).__hq.rover.cameraYaw);
-    const left = Math.atan2(Math.sin(yaw - now), Math.cos(yaw - now));
-    if (Math.abs(left) < 0.01) break;
-    // useInputSources: a horizontal wheel turns the view by -deltaX * 0.004 rad.
-    await page.mouse.wheel(-left / 0.004, 0);
-    await waitForFrames(page, 4);
-  }
-  await settle(page);
+  const x = vp.width / 2;
+  const y = vp.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + dy, { steps: 12 });
+  await page.mouse.up();
+  await waitForCameraSettle(page, { timeout: SLOW });
 }
 
 /**
@@ -309,8 +347,47 @@ async function captureShots(browser: Browser) {
         await watchNow(page);
         await waitFor("the beacon off", async () => !(await probe(page)).beacon);
       }
+      // The scene chunk loads on its own at idle on L1 (always live); the load here only waits for it.
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
       await waitFor("the office chunk", async () => (await probe(page)).loaded);
+      if (wants("spawn-wing")) {
+        // The spawn view turned toward the wing (south), as a visitor would: the live office from afar.
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        await waitFor("the office in view, far and polling", async () => {
+          const o = await probe(page);
+          return o.inView && o.far && o.polling;
+        });
+        await show(page, reply, statesA(Date.now()), "live", STATES_A);
+        await page.screenshot({ path: name("spawn-wing") });
+        await turnTo(page, 0);
+      }
+      if (wants("ring-south")) {
+        await driveTo(page, { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius }, SLOW);
+        await settle(page);
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        await waitFor("the office in view, far and polling", async () => {
+          const o = await probe(page);
+          return o.inView && o.far && o.polling;
+        });
+        await show(page, reply, statesA(Date.now()), "live", STATES_A);
+        if (!vp.mobile) {
+          // At the default desktop zoom the wing sits under the HUD's top bar: keep that view as ring-south-default, then
+          // tilt the view up (a visitor's drag) so the wall, the sign and the Rovers show clear of the bar.
+          await page.screenshot({ path: name("ring-south-default") });
+          await tiltBy(page, RING_TILT);
+          await waitForFrames(page, 20);
+        }
+        await page.screenshot({ path: name("ring-south") });
+        // One zoom key step out (a visitor's next move from here): the camera rises and the wing fills more of the frame.
+        if (wants("ring-south-out")) {
+          await page.keyboard.press("-");
+          await settle(page);
+          await waitForFrames(page, 20);
+          await page.screenshot({ path: name("ring-south-out") });
+        }
+        await page.keyboard.press("0");
+        await settle(page);
+      }
       const { lead } = LOBBY.officeWing;
       if (wants("approach")) {
         // On the lead road at the Lobby plaza edge, come in heading south (+z), the view turned to look into the wing.
@@ -395,6 +472,23 @@ async function captureShots(browser: Browser) {
           await waitForFrames(page, 20);
           await page.screenshot({ path: name("crew-a-near") });
           // A hand zoom suppresses the office view zone until the rover leaves it: reset, step out and come back.
+          await page.keyboard.press("0");
+          const { stop } = LOBBY.officeWing;
+          await driveTo(page, { x: stop.x, z: stop.z - 2 * OFFICE.view.half.z - 2 }, SLOW);
+          await driveTo(page, stop, SLOW);
+          await settle(page);
+        }
+      }
+      if (wants("crew-ten") || wants("crew-ten-near")) {
+        await showCrew(page, reply, "ten");
+        await officeHeld(page);
+        if (wants("crew-ten")) await page.screenshot({ path: name("crew-ten") });
+        // The near pose (one zoom key step on a landscape screen, two on a portrait one): ten sessions keep one line.
+        if (wants("crew-ten-near")) {
+          for (let i = 0; i < (vp.height > vp.width ? 2 : 1); i++) await page.keyboard.press("=");
+          await settle(page);
+          await waitForFrames(page, 20);
+          await page.screenshot({ path: name("crew-ten-near") });
           await page.keyboard.press("0");
           const { stop } = LOBBY.officeWing;
           await driveTo(page, { x: stop.x, z: stop.z - 2 * OFFICE.view.half.z - 2 }, SLOW);

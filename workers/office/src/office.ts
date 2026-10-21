@@ -1,5 +1,5 @@
 import { parseOfficeBeat } from "../../../src/lib/office/protocol";
-import { applyBeat, applyGithub, emptyDoc, isGithubMessage, view, viewV2, type OfficeDoc } from "./state";
+import { applyBeat, applyGithub, emptyDoc, isGithubMessage, migrateDoc, view, viewV2, viewV3, type OfficeDoc } from "./state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "./types";
 
 const DOC_KEY = "doc";
@@ -20,8 +20,14 @@ export class Office {
   }
 
   private async load(): Promise<OfficeDoc> {
-    if (!this.doc) this.doc = (await this.ctx.storage.get<OfficeDoc>(DOC_KEY)) ?? emptyDoc(this.now());
-    return this.doc;
+    if (this.doc) return this.doc;
+    const stored = await this.ctx.storage.get<OfficeDoc>(DOC_KEY);
+    if (!stored) return (this.doc = emptyDoc(this.now()));
+    // Back-row seats stored in `slot` move to `seat` at once, so a Worker rolled back to five desks reads the document.
+    const doc = migrateDoc(stored);
+    if (doc !== stored) await this.save(doc);
+    else this.doc = doc;
+    return doc;
   }
 
   private async save(doc: OfficeDoc): Promise<void> {
@@ -33,9 +39,10 @@ export class Office {
     const { pathname, searchParams } = new URL(request.url);
     if (pathname === "/snapshot") {
       if (request.method !== "GET") return status(405);
-      // v2 only for exactly ?v=2; anything else is the unchanged v1 body.
+      // v2 only for exactly ?v=2 and v3 only for exactly ?v=3; anything else is the unchanged v1 body.
       const doc = await this.load();
-      const body = JSON.stringify(searchParams.get("v") === "2" ? viewV2(doc, this.now()) : view(doc, this.now()));
+      const v = searchParams.get("v");
+      const body = JSON.stringify(v === "3" ? viewV3(doc, this.now()) : v === "2" ? viewV2(doc, this.now()) : view(doc, this.now()));
       return new Response(body, { headers: { "Content-Type": "application/json; charset=utf-8" } });
     }
     if (pathname !== "/beat" && pathname !== "/github") return status(404);

@@ -1,16 +1,30 @@
 import { useSyncExternalStore } from "react";
-import { createOfficePoller, OFFICE_V2_PATH, type OfficeFeed } from "@/lib/office/poll";
-import { parseOfficeResponseV2 } from "@/lib/office/protocol";
+import { createOfficePoller, OFFICE_V3_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
+import { parseOfficeResponseV3 } from "@/lib/office/protocol";
 
 /**
- * The 3D office's one poller (`src/lib/office/poll.ts`). It runs while any reason wants it: the office in view on
- * L1 ("view", OfficeScene) or an office drawer open ("drawer", OfficeBody). Visitor input resets its 10 minute
- * idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot v2 (desk helpers), which
- * also accepts a v1 body after a rollback. Chunk only.
+ * Why the scene's poller runs (design 5.9): the office in view inside `OFFICE_LOD.farDistance` ("near", OfficeScene),
+ * in view past it ("far") or an office drawer open ("drawer", OfficeBody).
+ */
+export type OfficePollReason = "near" | "far" | "drawer";
+
+/** The wait before the next request: the fast cadence (`pollInterval`) while near or a drawer is open, else 30 s. */
+export function officePollInterval(reasons: ReadonlySet<OfficePollReason>, feed: OfficeFeed): number {
+  return reasons.has("near") || reasons.has("drawer") ? pollInterval(feed) : POLL.restingMs;
+}
+
+/**
+ * The 3D office's one poller (`src/lib/office/poll.ts`). It runs while any reason wants it, at the cadence the reasons
+ * set (`officePollInterval`); out of view with no drawer open it stops, and the office watch polls instead. Coming
+ * back into view waits out the rest of the cadence since the last request (panning across the frustum edge never
+ * fetches faster than the cadence). Visitor
+ * input resets its 10 minute idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot
+ * v3 (ten seats, desk helpers), which also accepts a v2 or v1 body after a rollback; the feed keeps all ten desks (the
+ * signal reads every asker, and the scene draws all ten). Chunk only.
  */
 const clock = { skew: 0 };
-const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V2_PATH, parse: parseOfficeResponseV2 });
-const wants = new Set<string>();
+const wants = new Set<OfficePollReason>();
+const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V3_PATH, parse: parseOfficeResponseV3, interval: (feed) => officePollInterval(wants, feed) });
 const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;
 /** Unsubscribes the test hook's one-shot listener (set while its unwanted fetch is in flight). */
@@ -32,7 +46,7 @@ function attach(): () => void {
     if (document.visibilityState !== "visible" || !wants.size) return;
     poller.stop();
     poller.touch();
-    poller.start();
+    poller.start({ now: true });
   };
   for (const type of INPUT) window.addEventListener(type, touch, { passive: true });
   document.addEventListener("visibilitychange", onVisible);
@@ -43,7 +57,8 @@ function attach(): () => void {
 }
 
 export const officeLive = {
-  want(reason: string, on: boolean): void {
+  want(reason: OfficePollReason, on: boolean): void {
+    if (wants.has(reason) === on) return;
     const before = wants.size > 0;
     if (on) wants.add(reason);
     else wants.delete(reason);
@@ -56,10 +71,18 @@ export const officeLive = {
       poller.stop();
       detach?.();
       detach = null;
-    }
+    } else if (after) poller.retime();
+  },
+  /** The office's view reason: "near", "far" or out of view (null); the new one joins before the old leaves, so a switch never restarts the poller. */
+  view(mode: "near" | "far" | null): void {
+    if (mode) officeLive.want(mode, true);
+    if (mode !== "near") officeLive.want("near", false);
+    if (mode !== "far") officeLive.want("far", false);
   },
   /** Whether any reason wants the poller (it may still have stopped for idleness). */
   wanted: (): boolean => wants.size > 0,
+  /** The reasons wanting the poller now, sorted. */
+  reasons: (): OfficePollReason[] => [...wants].sort(),
 };
 
 const subscribe = (onChange: () => void) => poller.subscribe(onChange);
@@ -69,7 +92,7 @@ export function useOfficeFeed(): OfficeFeed {
 }
 
 /**
- * `__hq.office.test()` (Playwright): the feed, a fetch now, a clock skew to cross the keep-last window and the settled fetch count. While
+ * `__hq.office.test()` (Playwright): the feed, a fetch now, a clock skew to cross the keep-last window, the poll reasons and the settled fetch count. While
  * nothing wants the poller, poll() lets its one fetch land and stops the poller after the first settled feed.
  */
 export const officeTest = {
@@ -77,7 +100,7 @@ export const officeTest = {
   poll(): void {
     settle();
     poller.stop();
-    poller.start();
+    poller.start({ now: true });
     if (wants.size) return;
     release = poller.subscribe((feed) => {
       if (feed.status === "loading") return;
@@ -90,5 +113,6 @@ export const officeTest = {
     officeTest.poll();
   },
   wanted: (): boolean => wants.size > 0,
+  reasons: (): OfficePollReason[] => officeLive.reasons(),
   settled: (): number => settled,
 };

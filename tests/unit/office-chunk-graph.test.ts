@@ -23,6 +23,7 @@ const OFFICE_ONLY = [
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
+  `${DIR}/chipRows.ts`,
   "src/lib/office/poll.ts",
   "src/lib/office/model.ts",
 ];
@@ -49,7 +50,8 @@ function files(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-describe("Agent Office chunk boundary", () => {
+// Walks the import graph of src/; a loaded CI runner can pass the 5 s default.
+describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
   it("keeps the office-only code, the watch and the beacon out of the main 3D chunk, the gate and the HUD", () => {
     for (const entry of MAIN_ENTRIES) {
       const main = staticClosure(entry);
@@ -84,11 +86,18 @@ describe("Agent Office chunk boundary", () => {
     for (const f of MAIN) expect(main.has(f), f).toBe(true);
   });
 
+  it("keeps the chip row's placement in the scene chunk (`chipRows.ts`), off the main path's `officeShell.ts`", () => {
+    const shell = readFileSync(join(ROOT, "src/experience/floors/lobby/officeShell.ts"), "utf8");
+    for (const name of ["CHIP_ROW", "OFFICE_CHIP_ANCHORS", "OFFICE_CHIP_TOP", "OFFICE_CHIP_FAR", "officeHudBoxes", "segmentHitsBox", "chipRowBounds", "chipMaxWidth", "chipsOneLine", "chipsDotsOnly", "layoutChipRow", "layoutChipRows", "nextChipFar"])
+      expect(shell, name).not.toMatch(new RegExp(`export (const|function) ${name}\\b`));
+  });
+
   it("keeps the 3D-only office helpers, the mount and experience/config out of the Classic site's shared page chunk", () => {
-    // The Classic drawer host loads the office drawer body through the loader, which reads officeLayout.ts only.
+    // The Classic drawer host loads the office drawer body through the loader, which reads no layout (the always-live
+    // trigger asks no distance).
     const classic = staticClosure("src/hud/drawer/DrawerHost.tsx");
     expect(classic.has(`${DIR}/chunk.ts`)).toBe(true);
-    expect(classic.has("src/experience/floors/lobby/officeLayout.ts")).toBe(true);
+    expect(classic.has("src/experience/floors/lobby/officeLayout.ts")).toBe(false);
     expect(classic.has("src/experience/config.ts")).toBe(false);
     const threeD = MAIN.filter((f) => !f.endsWith("officeLayout.ts") && f !== `${DIR}/chunk.ts`);
     expect(threeD.filter((f) => classic.has(f))).toEqual([]);
@@ -113,7 +122,7 @@ describe("Agent Office chunk boundary", () => {
     const body = staticClosure(BODY);
     expect(BODY_ONLY.filter((f) => !body.has(f))).toEqual([]);
     // Turbopack copies a module shared by the two async chunks into each one: the body stays off the canvas and 3D code.
-    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "crew.ts", "crewFx.ts", "crewFrame.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
+    const sceneOnly = ["chipRows.ts", "officeAtlas.ts", "officeWall.ts", "officeRig.ts", "crew.ts", "crewFx.ts", "crewFrame.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
     expect(sceneOnly.filter((f) => body.has(f))).toEqual([]);
     const loader = readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8");
     expect(loader.match(/import\(\s*["'][^"']*["']\s*\)/g)).toEqual([`import("./scene")`, `import("./body")`]);

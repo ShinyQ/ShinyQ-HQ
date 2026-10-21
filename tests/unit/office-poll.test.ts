@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
-import { createOfficePoller, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH, parseOfficeResponseV2 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { createOfficePoller, OFFICE_V3_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
+import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
 import { officeDesk, officeSnapshot, statesA } from "../../e2e/office-fixtures";
 
 const T0 = 1_800_000_000_000;
@@ -68,6 +68,19 @@ describe("createOfficePoller", () => {
     expect(v1.calls[0].url).toBe(OFFICE_PATH);
     expect(plain.feed().status).toBe("offline");
     plain.stop();
+  });
+
+  it("polls v3 at OFFICE_V3_PATH and keeps all ten desks in the feed (a rolled-back v2 body reads as v3)", async () => {
+    expect(OFFICE_V3_PATH).toBe("/api/office?v=3");
+    const v3 = fakeFetch([{ status: 200, body: OFFICE_FIXTURES_V3.busy }, { status: 200, body: OFFICE_FIXTURES_V2.busy }]);
+    const poller = createOfficePoller({ fetcher: v3.fetcher, path: OFFICE_V3_PATH, parse: parseOfficeResponseV3 });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(v3.calls[0].url).toBe("/api/office?v=3");
+    expect(poller.feed().snapshot?.desks).toHaveLength(10);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(poller.feed()).toMatchObject({ status: "ready", snapshot: { ...OFFICE_FIXTURES_V2.busy, v: 3 } });
+    poller.stop();
   });
 
   it("slows to 30 s when every desk is asleep, the feed is semi-live or off, or there is no snapshot", async () => {
@@ -141,7 +154,7 @@ describe("createOfficePoller", () => {
     expect(poller.feed()).toMatchObject({ status: "disabled", snapshot: null });
   });
 
-  it("stop() ends the timers but keeps the feed; start() fetches again at once; unsubscribe stops notifications", async () => {
+  it("stop() ends the timers but keeps the feed; a later start() past the cadence fetches at once; unsubscribe stops notifications", async () => {
     const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
     const poller = createOfficePoller({ fetcher });
     const listener = vi.fn();
@@ -157,6 +170,61 @@ describe("createOfficePoller", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(calls).toHaveLength(2);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("a restart within the cadence waits out its remainder since the last request; start({ now }) fetches at once", async () => {
+    const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(calls).toHaveLength(1);
+    poller.stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(1);
+    // 4 s after the request: the 10 s cadence fetches 6 s later, not at once and not 10 s from the restart.
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 4_000 - 1);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toHaveLength(2);
+    poller.stop();
+    poller.start({ now: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(3);
+    poller.stop();
+  });
+});
+
+describe("createOfficePoller cadence option", () => {
+  it("waits as long as its interval says and retime() re-arms the wait from the last request", async () => {
+    const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
+    let wait: number = POLL.restingMs;
+    const poller = createOfficePoller({ fetcher, interval: () => wait });
+    poller.retime();
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(calls).toHaveLength(1);
+    // 10 s in, the cadence turns fast: due already, so it fetches at once.
+    wait = POLL.activeMs;
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 1);
+    expect(calls).toHaveLength(2);
+    // Back to 30 s, 9 s after the last request: the next one comes 30 s after it, not 30 s from now.
+    wait = POLL.restingMs;
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(POLL.restingMs - POLL.activeMs);
+    expect(calls).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toHaveLength(3);
+    poller.stop();
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(3 * POLL.restingMs);
+    expect(calls).toHaveLength(3);
   });
 });
 
@@ -189,7 +257,7 @@ describe("createOfficePoller robustness", () => {
     const listener = vi.fn();
     poller.subscribe(listener);
     poller.stop();
-    poller.start();
+    poller.start({ now: true });
     await vi.advanceTimersByTimeAsync(0);
     expect(pending).toHaveLength(2);
     const older = statesA(T0 - 5_000);
@@ -222,6 +290,45 @@ describe("createOfficePoller robustness", () => {
     await vi.advanceTimersByTimeAsync(POLL.restingMs);
     expect(listener).not.toHaveBeenCalled();
     expect(poller.feed().status).toBe("loading");
+  });
+
+  it("a start after stop() aborted the request in flight fetches at once", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(400);
+    expect(pending).toHaveLength(1);
+    poller.stop();
+    expect(pending[0].signal?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pending).toHaveLength(2);
+    pending[1].resolve({ status: 200, body: statesA(T0) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().status).toBe("ready");
+    poller.stop();
+  });
+
+  it("a request that settled still makes a quick restart wait out the cadence", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(400);
+    pending[0].resolve({ status: 200, body: statesA(T0) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().status).toBe("ready");
+    poller.stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pending).toHaveLength(1);
+    // The settled request began at T0, 1.4 s ago: the 10 s cadence fetches 8.6 s later.
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 1_400 - 1);
+    expect(pending).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(pending).toHaveLength(2);
+    poller.stop();
   });
 
   it("aborts a hung request after 10 s and follows the error path", async () => {

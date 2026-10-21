@@ -5,8 +5,9 @@ The backend of the L1 Agent Office (spec `docs/superpowers/specs/2026-10-18-agen
 
 | Route (site origin) | Worker route | Who calls it |
 |---|---|---|
-| `GET /api/office` | `GET /snapshot` | snapshot v1: the L1 beacon's watch (edge-cached 5 s per data center, ETag and 304) |
-| `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`): the 3D office and the Classic card (its own cache key, same headers) |
+| `GET /api/office` | `GET /snapshot` | snapshot v1 (five desks plus `extra`): clients cached from before v2 (edge-cached 5 s per data center, ETag and 304) |
+| `GET /api/office?v=2` | `GET /snapshot?v=2` | snapshot v2 (v1 plus desk `helpers`, five desks plus `extra`): clients cached from before v3 (its own cache key, same headers) |
+| `GET /api/office?v=3` | `GET /snapshot?v=3` | snapshot v3 (v2 with up to ten desks, slots 0 to 9): the 3D office, the Classic card and the L1 beacon's watch (its own cache key, same headers) |
 | `POST /api/office/beat` | `POST /beat` | `office-relay` on the owner's Mac (`X-Office-Signature`) |
 | `POST /api/office/github` | `POST /github` | repository webhooks (`X-Hub-Signature-256`) |
 
@@ -24,11 +25,18 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   `workers/office/` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
   failed" then turns the job red.
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
-- Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2` (the Worker forwards no other
-  query, and the Function, the Worker and the Durable Object answer v1 for no query, `?v=3` or junk). Rolled back to
+- Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2` and v3 only exactly `?v=3` (the
+  Worker forwards no other query, and the Function, the Worker and the Durable Object answer v1 for no query, `?v=4`
+  or junk). Ten seats (`assignSlots`, the front row, slots 0 to 4, filling first): v1 and v2 list the front row's five
+  desks and count the back row (slots 5 to 9) in `extra`, never a slot above 4; v3 lists all ten. Rolled back to
   before v2, the Worker rejects beats that carry `helpers` (the relay omits it at 0), so sessions with helpers go
   missing until the roll forward; v2 clients then get that Worker's v1 body (the Function and the client parsers
-  read it as v2 without helpers).
+  read it as v2 without helpers). Rolled back to before v3, it answers v1 to `?v=3` (read as v3) and reads the stored
+  document as before: a session record keeps a front-row seat (0 to 4) in `slot` and a back-row seat (5 to 9) only in
+  `seat` (the seat is `slot ?? seat`; a set `slot` wins and clears `seat`), so the old Worker sees back-row sessions
+  as waiting, counts them in `extra` and seats them on a free front desk at the next beat; its snapshots stay valid
+  (never mode off). On load the Durable Object moves a back-row seat still stored in `slot` to `seat` and writes the
+  document once.
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
     same value.

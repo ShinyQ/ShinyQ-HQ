@@ -5,7 +5,7 @@ import { LOBBY } from "@/experience/config";
 import { officeSlots } from "@/experience/floors/lobby/officeLayout";
 import { crewFx, DRONES, dronePoint, newActor, type FxPoint } from "@/experience/floors/lobby/office/crew";
 import { CREW_GLOW, DRONE_CORE, droneKey, TOWER, writeCrewGlow } from "@/experience/floors/lobby/office/crewFx";
-import { DRONE_PART, GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDrones, writeRover } from "@/experience/floors/lobby/office/officeRig";
+import { DRONE_PART, GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDrones, writeRover } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 
 const slots = officeSlots(LOBBY.officeWing);
@@ -57,6 +57,27 @@ describe("helper drones", () => {
     }
   });
 
+  it("ten Rovers with six helpers each draw four drones apiece, each in its own Rover's parts, inside the instance count", () => {
+    expect(slots).toHaveLength(10);
+    const n = officeInstances();
+    const parts = new Float32Array(n.parts * 16);
+    const treads = new Float32Array(n.treads * 16);
+    const p = stillPose("working");
+    const m = new Matrix4();
+    for (const s of slots) writeRover(roverFrame(s, p, m), p, parts, s.slot, treads, 6, 1.3, 0.2, false);
+    for (const s of slots) {
+      const at = s.slot * PARTS_PER_ROVER;
+      expect(Array.from({ length: DRONES.max }, (_, i) => scaleAt(parts, at + DRONE_PART + i) > 0), `desk ${s.slot + 1}`).toEqual([true, true, true, true]);
+      // Each drone orbits its own Rover's head (on its row's floor or riser), never another's.
+      for (let i = 0; i < DRONES.max; i++) {
+        const d = new Vector3().setFromMatrixPosition(new Matrix4().fromArray(parts, (at + DRONE_PART + i) * 16));
+        expect(Math.hypot(d.x - s.rover.x, d.z - s.rover.z)).toBeLessThan(DRONES.r + 0.5);
+        expect(d.y).toBeGreaterThan(s.lift + 1);
+      }
+      expect(scaleAt(treads, s.slot * TREADS_PER_ROVER + 1)).toBeGreaterThan(0);
+    }
+  });
+
   it("writeRover writes zero-scale drones by default (the rest instances) and the bodies when given helpers", () => {
     const parts = new Float32Array(PARTS_PER_ROVER * 16);
     const treads = new Float32Array(TREADS_PER_ROVER * 16);
@@ -72,7 +93,7 @@ describe("helper drones", () => {
     expect(CREW_GLOW.cores).toBe(16);
     expect(CREW_GLOW.count).toBe(20);
     expect(GLOW_PER_ROVER).toBe(38);
-    expect(TOWER.start).toBe(5 * GLOW_PER_ROVER);
+    expect(TOWER.start).toBe(10 * GLOW_PER_ROVER);
     const fx = crewFx(newActor("working"), false);
     const frame = roverFrame(slots[2], stillPose("working"), new Matrix4());
     const base = 2 * GLOW_PER_ROVER + 18 + CREW_GLOW.cores;

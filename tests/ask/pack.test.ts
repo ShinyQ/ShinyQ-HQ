@@ -382,6 +382,11 @@ describe("site-build chunk and the B1 Engine Room (2026-10-17)", () => {
     for (const text of [chunk.text_en, chunk.text_id]) expect(text).toContain("Agent Office");
     expect(chunk.text_en).toContain('"Client project"');
     expect(chunk.text_id).toContain('"Proyek klien"');
+    // Ten desks in two rows of five (2026-10-21), never the old five.
+    expect(chunk.text_en).toContain("up to ten desks (two rows of five)");
+    expect(chunk.text_id).toContain("hingga sepuluh meja (dua baris berisi lima)");
+    expect(chunk.text_en).not.toMatch(/at five desks/);
+    expect(chunk.text_id).not.toMatch(/di lima meja/);
   });
 });
 

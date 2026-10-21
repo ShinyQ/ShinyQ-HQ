@@ -1,11 +1,11 @@
 import { Matrix4, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { CHARGE_PAD, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
+import { CHARGE_PAD, CHARGE_PAD_TRIM, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
 import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
-import { GLOW_PER_ROVER, roverFrame } from "@/experience/floors/lobby/office/officeRig";
+import { GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeGlow } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
-import { OFFICE, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, OFFICE_SEAT_COUNT, officeRiser, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { LOBBY } from "@/experience/config";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
@@ -40,9 +40,33 @@ describe("crew glow", () => {
 });
 
 describe("crew glow layout", () => {
-  it("packs 38 glow instances per Rover (18 rig, 20 crew with 4 drone eyes) and the tower after the five Rovers", () => {
+  it("packs 38 glow instances per Rover (18 rig, 20 crew with 4 drone eyes) and the tower after the ten Rovers", () => {
     expect(GLOW_PER_ROVER).toBe(38);
-    expect(TOWER.start).toBe(5 * GLOW_PER_ROVER);
+    expect(TOWER.start).toBe(10 * GLOW_PER_ROVER);
+  });
+
+  it("derives every instance count from the one seat count (ten Rovers, the slots and `TOWER.start` alike), the tower's dots after every Rover's glow", () => {
+    const n = officeInstances();
+    expect(OFFICE_SLOTS).toHaveLength(OFFICE_SEAT_COUNT);
+    expect(n).toEqual({ parts: 10 * PARTS_PER_ROVER, treads: 10 * TREADS_PER_ROVER, glow: 10 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 30 });
+    expect(n.glow).toBe(TOWER.start + TOWER.lanes * TOWER.dots);
+    expect(TOWER.start).toBe(OFFICE_SEAT_COUNT * GLOW_PER_ROVER);
+    // Each Rover's rig and crew glow lands in its own block: the last Rover's ends exactly where the tower starts.
+    const m = new Float32Array(n.glow * 16);
+    const c = new Float32Array(n.glow * 3);
+    const fx = crewFx(newActor("working"), false);
+    for (const s of OFFICE_SLOTS) {
+      const f = roverFrame(s, stillPose("working"), new Matrix4());
+      writeGlow(s, f, "ci", { done: 3, total: 8 }, 1, 0.5, false, LOBBY.officeWing.stop, m, c);
+      writeCrewGlow(s, f, "working", fx, 0.5, 0, false, m, c, 4);
+    }
+    const last = OFFICE_SLOTS.length - 1;
+    expect(scaleAt(m, last * GLOW_PER_ROVER)).toBeGreaterThan(0);
+    expect(scaleAt(m, last * GLOW_PER_ROVER + 18 + CREW_GLOW.cores + 3)).toBeGreaterThan(0);
+    for (let i = TOWER.start; i < n.glow; i++) expect(scaleAt(m, i), `tower dot ${i}`).toBe(0);
+    // The back row's halos lie on the riser top.
+    for (const s of OFFICE_SLOTS) expect(posAt(m, s.slot * GLOW_PER_ROVER + 1).y).toBeGreaterThan(s.lift);
+    expect(OFFICE_SLOTS.filter((s) => s.lift > 0).map((s) => s.slot)).toEqual([5, 6, 7, 8, 9]);
   });
   it("writes crewFx into the given object", () => {
     const out = crewFx(newActor("thinking"), false);
@@ -68,8 +92,8 @@ describe("crew glow layout", () => {
     expect(scaleAt(m, base + CREW_GLOW.charge)).toBeGreaterThan(0);
   });
   it("lays the charge pad where the docked Rover stands, behind the desk and wider than the Rover, over the corner pads", () => {
-    const m = new Float32Array(5 * GLOW_PER_ROVER * 16);
-    const c = new Float32Array(5 * GLOW_PER_ROVER * 3);
+    const m = new Float32Array(OFFICE_SLOTS.length * GLOW_PER_ROVER * 16);
+    const c = new Float32Array(OFFICE_SLOTS.length * GLOW_PER_ROVER * 3);
     for (const slot of OFFICE_SLOTS) {
       const base = slot.slot * GLOW_PER_ROVER + 18;
       const asleep = newActor("asleep");
@@ -77,16 +101,37 @@ describe("crew glow layout", () => {
       writeCrewGlow(slot, frame, "asleep", crewFx(asleep, true), 0.1, 0, true, m, c);
       const at = posAt(m, base + CREW_GLOW.charge);
       const docked = new Vector3().setFromMatrixPosition(frame);
-      expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
-      const arc = LOBBY.officeWing.arc;
-      // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
-      expect(Math.hypot(at.x - arc.x, at.z - arc.z) - CHARGE_PAD.d / 2).toBeGreaterThanOrEqual(OFFICE.deskRadius + OFFICE.desk.d / 2 - 1e-5);
       const e = new Matrix4().fromArray(m, (base + CREW_GLOW.charge) * 16).elements;
+      const depth = Math.hypot(e[4], e[5], e[6]);
+      const arc = LOBBY.officeWing.arc;
+      const r = Math.hypot(at.x - arc.x, at.z - arc.z);
+      const row = OFFICE.rows[slot.row];
+      if (slot.lift > 0) {
+        // On the riser: trimmed at the back to end on the riser's back edge, never hanging past it in mid-air.
+        expect(CHARGE_PAD_TRIM).toBeCloseTo(0.45);
+        expect(depth).toBeCloseTo(CHARGE_PAD.d - CHARGE_PAD_TRIM);
+        const riser = officeRiser(LOBBY.officeWing, row, slot.theta)!;
+        const riserBack = Math.hypot(riser.center.x - arc.x, riser.center.z - arc.z) + riser.d / 2;
+        expect(r + depth / 2).toBeLessThanOrEqual(riserBack + 1e-5);
+        expect(r + depth / 2).toBeCloseTo(row.roverRadius + OFFICE.rover.radius);
+        expect(CHARGE_PAD.w).toBeLessThan(riser.w);
+        // Still under the docked Rover, on its radial line.
+        expect(Math.abs(Math.hypot(docked.x - arc.x, docked.z - arc.z) - r)).toBeLessThan(depth / 2);
+        expect(Math.abs((at.x - arc.x) * Math.cos(slot.theta) - (at.z - arc.z) * Math.sin(slot.theta))).toBeLessThan(1e-5);
+      } else {
+        expect(depth).toBeCloseTo(CHARGE_PAD.d);
+        expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
+      }
+      // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
+      expect(r - depth / 2).toBeGreaterThanOrEqual(row.deskRadius + OFFICE.desk.d / 2 - 1e-5);
+      expect(r - depth / 2).toBeCloseTo(row.deskRadius + OFFICE.desk.d / 2);
       // Its width runs along the desk (the Rover's local x), 0.85 u past the Rover's 0.75 u half width on each side.
       expect(Math.hypot(e[0], e[1], e[2])).toBeCloseTo(CHARGE_PAD.w);
       expect(Math.abs(e[0] * Math.cos(slot.yaw) - e[2] * Math.sin(slot.yaw)) / CHARGE_PAD.w).toBeCloseTo(1);
       expect(CHARGE_PAD.w / 2).toBeGreaterThan(0.75 + 0.5);
       expect(at.y).toBeGreaterThan(Math.max(OFFICE.tower.plinth, OFFICE.dock.pad));
+      // On its row's floor (the back row's riser top).
+      expect(at.y - slot.lift).toBeCloseTo(CHARGE_PAD.y);
       // Reduced motion: a steady 0.6 of the pad's colour.
       expect(Math.max(c[(base + CREW_GLOW.charge) * 3], c[(base + CREW_GLOW.charge) * 3 + 1], c[(base + CREW_GLOW.charge) * 3 + 2])).toBeGreaterThan(0.4);
     }

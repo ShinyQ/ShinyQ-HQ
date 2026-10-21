@@ -1,8 +1,10 @@
 /**
  * Agent Office contract (docs/superpowers/specs/2026-10-18-agent-office-design.md, docs/agents/office.md).
  * The relay (tools/office-relay) sends `OfficeBeatV1`; the hq-office Worker serves `OfficeResponseV1` through
- * GET /api/office (validated with `parseOfficeResponse`) and `OfficeResponseV2` (v1 plus desk `helpers`) through
- * GET /api/office?v=2 (validated with `parseOfficeResponseV2`, which also takes a v1 body after a rollback). Clients
+ * GET /api/office (validated with `parseOfficeResponse`), `OfficeResponseV2` (v1 plus desk `helpers`) through
+ * GET /api/office?v=2 (validated with `parseOfficeResponseV2`, which also takes a v1 body after a rollback) and
+ * `OfficeResponseV3` (v2 with up to ten desks, slots 0 to 9) through GET /api/office?v=3 (`parseOfficeResponseV3`,
+ * which also takes a v2 or v1 body after a rollback). v1 and v2 keep five desks (slots 0 to 4) plus `extra`. Clients
  * hide on null. v1 never changes: a new field means a new version, with every side in one PR.
  */
 export const OFFICE_AGENTS = ["copilot", "claude", "codex"] as const;
@@ -17,7 +19,10 @@ export type OfficeActivity = (typeof OFFICE_ACTIVITIES)[number];
 export const OFFICE_MODES = ["live", "semi-live", "off"] as const;
 export type OfficeMode = (typeof OFFICE_MODES)[number];
 
+/** Desks in snapshots v1 and v2 (slots 0 to 4: the front row); sessions on other seats count in `extra` there. */
 export const OFFICE_DESKS = 5;
+/** Seats (desks) in snapshot v3: two rows of five, slots 0 to 4 the front row (filled first), 5 to 9 the back row. */
+export const OFFICE_SEATS = 10;
 export const OFFICE_RECENT = 5;
 export const OFFICE_FEED = 20;
 export const OFFICE_PATH = "/api/office";
@@ -41,7 +46,7 @@ export interface OfficeRecent {
 }
 
 export interface OfficeDesk {
-  /** 0 to 4, east to west along the console arc (left to right from the office stop). */
+  /** 0 to 4 (v1, v2) or 0 to 9 (v3), east to west along each console arc (left to right from the office stop); 5 to 9 the back row. */
   slot: number;
   agent: OfficeAgent;
   state: OfficeState;
@@ -87,9 +92,9 @@ export interface OfficeSnapshotV1 {
   enabled: true;
   mode: OfficeMode;
   updatedAt: number;
-  /** Sessions that hold a desk (0 to 5), sorted by slot. */
+  /** Sessions that hold a desk (0 to 5 in v1/v2, 0 to 10 in v3), sorted by slot. */
   desks: OfficeDesk[];
-  /** Sessions beyond the five desks (the "+N" chip). */
+  /** Sessions beyond the snapshot's desks (five in v1/v2, ten in v3; the "+N" chip). */
   extra: number;
   /** Newest first, at most OFFICE_FEED. */
   github: OfficeGithubItem[];
@@ -115,9 +120,16 @@ export interface OfficeSnapshotV2 extends Omit<OfficeSnapshotV1, "v" | "desks"> 
 /** The disabled answer is the same body in every version. */
 export type OfficeResponseV2 = OfficeSnapshotV2 | OfficeDisabledV1;
 
+/** GET /api/office?v=3: the v2 snapshot with `v: 3`, up to OFFICE_SEATS desks (slots 0 to 9) and `extra` past ten. */
+export interface OfficeSnapshotV3 extends Omit<OfficeSnapshotV2, "v"> {
+  v: 3;
+}
+
+export type OfficeResponseV3 = OfficeSnapshotV3 | OfficeDisabledV1;
+
 /** What the clients hold: the newest snapshot version. */
-export type OfficeSnapshot = OfficeSnapshotV2;
-export type OfficeResponse = OfficeResponseV2;
+export type OfficeSnapshot = OfficeSnapshotV3;
+export type OfficeResponse = OfficeResponseV3;
 
 /** What the relay sends: enums and allowlisted public names only, never prompts, commands, paths or output. */
 export interface OfficeBeatV1 {
@@ -174,16 +186,18 @@ const DESK_KEYS = ["slot", "agent", "state", "activity", "since", "repo", "title
 const DESK_KEYS_V2 = [...DESK_KEYS, "helpers"];
 
 function isDesk(x: unknown): x is OfficeDesk {
-  return isObj(x) && onlyKeys(x, DESK_KEYS) && isDeskFields(x);
+  return isObj(x) && onlyKeys(x, DESK_KEYS) && isDeskFields(x, OFFICE_DESKS);
 }
 
-function isDeskV2(x: unknown): x is OfficeDeskV2 {
-  return isObj(x) && onlyKeys(x, DESK_KEYS_V2) && optional(x, "helpers", (h) => isInt(h, 1, OFFICE_HELPERS_MAX)) && isDeskFields(x);
+function isDeskV2(x: unknown, seats: number = OFFICE_DESKS): x is OfficeDeskV2 {
+  return isObj(x) && onlyKeys(x, DESK_KEYS_V2) && optional(x, "helpers", (h) => isInt(h, 1, OFFICE_HELPERS_MAX)) && isDeskFields(x, seats);
 }
 
-function isDeskFields(x: Obj): boolean {
+const isDeskV3 = (x: unknown): x is OfficeDeskV2 => isDeskV2(x, OFFICE_SEATS);
+
+function isDeskFields(x: Obj, seats: number): boolean {
   return (
-    isInt(x.slot, 0, OFFICE_DESKS - 1) &&
+    isInt(x.slot, 0, seats - 1) &&
     oneOf(OFFICE_AGENTS, x.agent) &&
     oneOf(OFFICE_STATES, x.state) &&
     oneOf(OFFICE_ACTIVITIES, x.activity) &&
@@ -231,12 +245,12 @@ function isToday(x: unknown): x is OfficeToday {
 const disabled = (): OfficeDisabledV1 => ({ v: 1, enabled: false });
 const SNAPSHOT_KEYS = ["v", "enabled", "mode", "updatedAt", "desks", "extra", "github", "today"];
 
-/** The checks every snapshot version shares, with that version's desk check. */
-function isSnapshot(raw: Obj, desk: (x: unknown) => boolean): boolean {
+/** The checks every snapshot version shares, with that version's desk check and desk count. */
+function isSnapshot(raw: Obj, desk: (x: unknown) => boolean, seats: number = OFFICE_DESKS): boolean {
   if (raw.enabled !== true || !onlyKeys(raw, SNAPSHOT_KEYS)) return false;
   if (!oneOf(OFFICE_MODES, raw.mode) || !isInt(raw.updatedAt) || !isInt(raw.extra, 0, 10_000)) return false;
   const desks = raw.desks;
-  if (!Array.isArray(desks) || desks.length > OFFICE_DESKS || !desks.every(desk)) return false;
+  if (!Array.isArray(desks) || desks.length > seats || !desks.every((d) => desk(d))) return false;
   if (new Set(desks.map((d: OfficeDesk) => d.slot)).size !== desks.length) return false;
   const github = raw.github;
   if (!Array.isArray(github) || github.length > OFFICE_FEED || !github.every(isGithubItem)) return false;
@@ -262,6 +276,24 @@ export function parseOfficeResponseV2(raw: unknown): OfficeResponseV2 | null {
   if (raw.v === 2) return isSnapshot(raw, isDeskV2) ? (raw as unknown as OfficeSnapshotV2) : null;
   const v1 = parseOfficeResponse(raw);
   return v1 && v1.enabled ? { ...v1, v: 2 } : null;
+}
+
+/** A v1 desk (no `helpers`) on any of the ten seats: only for a v1 body read as v3. */
+const isDeskV1Wide = (x: unknown): x is OfficeDesk => isObj(x) && onlyKeys(x, DESK_KEYS) && isDeskFields(x, OFFICE_SEATS);
+
+/**
+ * Validates GET /api/office?v=3 (strict keys, up to OFFICE_SEATS desks with slots 0 to 9, desk `helpers` as in v2). A
+ * v2 or v1 body is accepted too, returned as v3: a Worker or Pages deploy rolled back to before v3 answers v2 or v1.
+ * Read here, such a body may carry up to ten desks with slots 0 to 9 (a rolled-back Worker reading a ten-seat
+ * document); `parseOfficeResponse` and `parseOfficeResponseV2` stay strict at five.
+ */
+export function parseOfficeResponseV3(raw: unknown): OfficeResponseV3 | null {
+  if (!isObj(raw)) return null;
+  if (raw.enabled === false) return isDisabled(raw) ? disabled() : null;
+  if (raw.v === 3) return isSnapshot(raw, isDeskV3, OFFICE_SEATS) ? (raw as unknown as OfficeSnapshotV3) : null;
+  if (raw.v === 2) return isSnapshot(raw, isDeskV3, OFFICE_SEATS) ? { ...(raw as unknown as OfficeSnapshotV2), v: 3 } : null;
+  if (raw.v === 1) return isSnapshot(raw, isDeskV1Wide, OFFICE_SEATS) ? { ...(raw as unknown as OfficeSnapshotV1), v: 3 } : null;
+  return null;
 }
 
 const BEAT_KEYS = ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "helpers", "ts"];

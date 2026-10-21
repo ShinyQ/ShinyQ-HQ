@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, parseOfficeResponseV2, type OfficeBeatV1 } from "@/lib/office/protocol";
-import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, TIMING, view, viewV2, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { OFFICE_DESKS, OFFICE_SEATS, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeBeatV1 } from "@/lib/office/protocol";
+import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, migrateDoc, seatOf, TIMING, view, viewV2, viewV3, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { legacyAssignSlots, legacyView, legacyViewV2 } from "./legacy-five-desks";
 
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 const HQ = "ShinyQ/ShinyQ-HQ";
@@ -42,11 +43,165 @@ describe("desks", () => {
     expect(view(doc, T0 + 21).desks[2]).toMatchObject({ slot: 2, state: "testing" });
   });
 
-  it("lets a waiting awake session take the longest-asleep desk", () => {
-    const at = (lastBeat: number, slot: number | null, n: number, state: SessionRecord["state"]): SessionRecord => ({ id: sid(n), agent: "codex", slot, firstSeen: n, lastBeat, state, activity: state === "asleep" ? "resting" : "editing", since: lastBeat, recent: [] });
-    const out = assignSlots([at(T0 - 5 * 60_000, 0, 1, "working"), at(T0 - 4 * 60_000, 1, 2, "working"), at(T0, 2, 3, "working"), at(T0, 3, 4, "working"), at(T0, 4, 5, "working"), at(T0, null, 6, "working")], T0);
-    expect(out.find((s) => s.id === sid(6))?.slot).toBe(0);
-    expect(out.find((s) => s.id === sid(1))?.slot).toBeNull();
+  const at = (lastBeat: number, slot: number | null, n: number, state: SessionRecord["state"]): SessionRecord => ({ id: sid(n), agent: "codex", slot, firstSeen: n, lastBeat, state, activity: state === "asleep" ? "resting" : "editing", since: lastBeat, recent: [] });
+
+  it("lets a waiting awake session take the longest-asleep seat only when all ten are taken", () => {
+    const ten = Array.from({ length: OFFICE_SEATS }, (_, n) => at(n < 2 ? T0 - (5 - n) * 60_000 : T0, n, n + 1, "working"));
+    const out = assignSlots([...ten, at(T0, null, 11, "working")], T0);
+    expect(out.find((s) => s.id === sid(11))?.slot).toBe(0);
+    expect(seatOf(out.find((s) => s.id === sid(1))!)).toBeNull();
+    // With a free back-row seat the newcomer sits there and every sleeper keeps its desk.
+    const six = assignSlots([...ten.slice(0, 5), at(T0, null, 11, "working")], T0);
+    expect(seatOf(six.find((s) => s.id === sid(11))!)).toBe(5);
+    expect(six.slice(0, 5).map((s) => s.slot)).toEqual([0, 1, 2, 3, 4]);
+    // An asleep newcomer never takes a seat from anyone.
+    expect(seatOf(assignSlots([...ten, at(T0 - 5 * 60_000, null, 11, "working")], T0).find((s) => s.id === sid(11))!)).toBeNull();
+  });
+
+  it("fills the front row (slots 0 to 4) first, then the back row (5 to 9), oldest first", () => {
+    let doc = emptyDoc(T0);
+    for (let n = 1; n <= 12; n++) doc = applyBeat(doc, beat(n), T0 + n);
+    expect(doc.sessions.map((s) => [parseInt(s.id, 16), seatOf(s)]).sort((a, b) => (a[0] as number) - (b[0] as number))).toEqual([
+      [1, 0], [2, 1], [3, 2], [4, 3], [5, 4], [6, 5], [7, 6], [8, 7], [9, 8], [10, 9], [11, null], [12, null],
+    ]);
+    // Stored where a Worker from before ten seats reads them: the front row in `slot`, the back row only in `seat`.
+    for (const s of doc.sessions) {
+      const n = seatOf(s);
+      expect(s.slot, s.id).toBe(n !== null && n < OFFICE_DESKS ? n : null);
+      if (n !== null && n >= OFFICE_DESKS) expect(s.seat).toBe(n);
+      else expect(s).not.toHaveProperty("seat");
+    }
+  });
+
+  it("moves the oldest back-row session to a front-row seat as soon as one is free", () => {
+    const out = assignSlots([at(T0, 0, 1, "working"), at(T0, 1, 2, "working"), at(T0, 3, 4, "working"), at(T0, 4, 5, "working"), at(T0, 8, 9, "working"), at(T0, 6, 7, "asleep"), at(T0, null, 10, "working")], T0);
+    const slot = (n: number) => seatOf(out.find((s) => s.id === sid(n))!);
+    expect([slot(1), slot(2), slot(4), slot(5)]).toEqual([0, 1, 3, 4]);
+    expect(out.find((s) => s.id === sid(7))).not.toHaveProperty("seat");
+    expect(slot(7)).toBe(2);
+    expect(slot(9)).toBe(8);
+    expect(slot(10)).toBe(5);
+  });
+
+  it("drops a stored slot outside the ten seats and gives the session a free one", () => {
+    const out = assignSlots([at(T0, 12, 1, "working"), at(T0, 2.5, 2, "working"), { ...at(T0, null, 3, "working"), seat: 11 }], T0);
+    expect(out.map((s) => s.slot)).toEqual([0, 1, 2]);
+    expect(out[2]).not.toHaveProperty("seat");
+  });
+
+  it("reads a seat as `slot ?? seat`: a set slot wins and its stale seat is cleared", () => {
+    const out = assignSlots([{ ...at(T0, 2, 1, "working"), seat: 7 }, { ...at(T0, null, 2, "working"), seat: 7 }, ...[0, 1, 3, 4].map((n, i) => at(T0, n, 3 + i, "working"))], T0);
+    expect(out[0]).toEqual(at(T0, 2, 1, "working"));
+    expect(out[1]).toMatchObject({ slot: null, seat: 7 });
+  });
+});
+
+describe("stored seats stay readable by a Worker from before ten seats (rollback)", () => {
+  const tenSeatDoc = () => {
+    let doc = publicDoc();
+    for (let n = 1; n <= 12; n++) doc = applyBeat(doc, beat(n, { helpers: n % 4, ...(n === 8 ? { state: "input", activity: "asking" } : {}) }), T0 + n);
+    return doc;
+  };
+
+  it("the old view and viewV2 of a ten-seat document pass the v1 and v2 parsers: the back row reads as extra", () => {
+    const doc = tenSeatDoc();
+    for (const at of [T0 + 20, T0 + TIMING.asleepAfter + 20, T0 + TIMING.removeAfter - 1]) {
+      const v1 = legacyView(doc, at);
+      const v2 = legacyViewV2(doc, at);
+      expect(v1.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4]);
+      expect(v1.extra).toBe(7);
+      expect(parseOfficeResponse(JSON.parse(JSON.stringify(v1)))).toEqual(v1);
+      expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(v2)))).toEqual(v2);
+      // The old Worker's v1 is the new Worker's v1 for the same document.
+      expect(JSON.stringify(v1)).toBe(JSON.stringify(view(doc, at)));
+    }
+  });
+
+  it("the old assignSlots seats back-row sessions as waiting ones; the new Worker reads its document back", () => {
+    const doc = tenSeatDoc();
+    const live = doc.sessions.filter((s) => s.id !== sid(2) && s.id !== sid(4));
+    const old = legacyAssignSlots(live, T0 + 30);
+    // The two free front seats go to the oldest waiting sessions (6 and 7, back row), as before ten seats.
+    const front = Object.fromEntries(old.filter((s) => s.slot !== null).map((s) => [parseInt(s.id, 16), s.slot]));
+    expect(front).toEqual({ 1: 0, 3: 2, 5: 4, 6: 1, 7: 3 });
+    const rolledBack = { ...doc, sessions: old };
+    expect(parseOfficeResponse(JSON.parse(JSON.stringify(legacyView(rolledBack, T0 + 30))))).not.toBeNull();
+    // Rolled forward: a set slot wins over the stale back-row seat; the freed back-row seats are taken again.
+    const forward = assignSlots(old, T0 + 30);
+    expect(forward.find((s) => s.id === sid(6))).toMatchObject({ slot: 1 });
+    expect(forward.find((s) => s.id === sid(6))).not.toHaveProperty("seat");
+    expect(new Set(forward.map(seatOf).filter((n) => n !== null)).size).toBe(OFFICE_SEATS);
+  });
+
+  it("migrates a document stored with back-row slots (5 to 9) to `seat`, and leaves a current one as it is", () => {
+    const current = tenSeatDoc();
+    expect(migrateDoc(current)).toBe(current);
+    const stale: OfficeDoc = { ...current, sessions: current.sessions.map((s) => {
+        const copy: SessionRecord = { ...s, slot: seatOf(s) };
+        delete copy.seat;
+        return copy;
+      }) };
+    expect(stale.sessions.some((s) => s.slot !== null && s.slot >= OFFICE_DESKS)).toBe(true);
+    expect(parseOfficeResponse(JSON.parse(JSON.stringify(legacyView(stale, T0 + 20))))).toBeNull();
+    const migrated = migrateDoc(stale);
+    expect(migrated.sessions).toEqual(current.sessions);
+    expect(parseOfficeResponse(JSON.parse(JSON.stringify(legacyView(migrated, T0 + 20))))).not.toBeNull();
+    expect(viewV3(migrated, T0 + 20)).toEqual(viewV3(current, T0 + 20));
+    const both: OfficeDoc = { ...current, sessions: [{ ...current.sessions[0], seat: 6 }, ...current.sessions.slice(1)] };
+    expect(migrateDoc(both).sessions[0]).toEqual(current.sessions[0]);
+  });
+});
+
+describe("ten seats in v1, v2 and v3", () => {
+  const sevenDoc = () => {
+    let doc = publicDoc();
+    for (let n = 1; n <= 7; n++) doc = applyBeat(doc, beat(n, n === 7 ? { state: "input", activity: "asking", helpers: 2 } : { helpers: n === 6 ? 4 : 0 }), T0 + n);
+    return doc;
+  };
+
+  it("with seven sessions v1 and v2 carry five desks (slots 0 to 4) and extra 2; v3 carries seven", () => {
+    const doc = sevenDoc();
+    for (const snap of [view(doc, T0 + 10), viewV2(doc, T0 + 10)]) {
+      expect(snap.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4]);
+      expect(snap.extra).toBe(2);
+    }
+    const v3 = viewV3(doc, T0 + 10);
+    expect(v3.v).toBe(3);
+    expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(v3.desks.map((d) => d.helpers ?? 0)).toEqual([0, 0, 0, 0, 0, 4, 2]);
+    expect(v3.desks[6]).toMatchObject({ slot: 6, state: "input" });
+    expect(v3.extra).toBe(0);
+    expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(v3)))).toEqual(v3);
+    // v2 is v3's front row: the same desks for slots 0 to 4, with their helpers.
+    expect(viewV2(doc, T0 + 10)).toEqual({ ...v3, v: 2, desks: v3.desks.slice(0, 5), extra: 2 });
+  });
+
+  it("never puts a slot above 4 or more than five desks in v1 or v2, at any session count; v3 seats ten and counts the rest", () => {
+    let doc = publicDoc();
+    for (let n = 1; n <= 14; n++) {
+      doc = applyBeat(doc, beat(n, { helpers: n % 3 }), T0 + n);
+      const v1 = view(doc, T0 + 20);
+      const v2 = viewV2(doc, T0 + 20);
+      const v3 = viewV3(doc, T0 + 20);
+      for (const snap of [v1, v2]) {
+        expect(snap.desks.length).toBe(Math.min(n, OFFICE_DESKS));
+        expect(Math.max(...snap.desks.map((d) => d.slot))).toBeLessThanOrEqual(OFFICE_DESKS - 1);
+        expect(snap.extra).toBe(Math.max(0, n - OFFICE_DESKS));
+      }
+      expect(parseOfficeResponse(JSON.parse(JSON.stringify(v1)))).not.toBeNull();
+      expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(v2)))).not.toBeNull();
+      expect(v3.desks.length).toBe(Math.min(n, OFFICE_SEATS));
+      expect(v3.extra).toBe(Math.max(0, n - OFFICE_SEATS));
+      expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(v3)))).not.toBeNull();
+    }
+  });
+
+  it("keeps v1 and v2 unchanged for at most five sessions: v3 shows the same desks", () => {
+    let doc = publicDoc();
+    for (let n = 1; n <= 5; n++) doc = applyBeat(doc, beat(n, { helpers: n }), T0 + n);
+    const v2 = viewV2(doc, T0 + 10);
+    expect(viewV3(doc, T0 + 10)).toEqual({ ...v2, v: 3 });
+    expect(JSON.stringify(view(doc, T0 + 10))).not.toContain("helpers");
   });
 });
 
@@ -351,5 +506,25 @@ describe("view (v1) and viewV2", () => {
     expect(v2.desks[2]).not.toHaveProperty("helpers");
     expect(v2.desks[3]).not.toHaveProperty("helpers");
     expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(v2)))).toEqual(v2);
+  });
+
+  it("keeps the golden v1 byte for byte with ten seats, and v3 of the same document is v2 with v: 3", () => {
+    // The sixth session (no slot, stored before ten seats) stays in extra until the next beat seats it.
+    expect(JSON.stringify(view(goldenDoc(), T0))).toBe(GOLDEN_V1);
+    expect(viewV3(goldenDoc(), T0)).toEqual({ ...viewV2(goldenDoc(), T0), v: 3 });
+  });
+
+  it("keeps the golden v1 and v2 when the sixth session sits on a back-row seat (as stored after its beat)", () => {
+    const base = goldenDoc();
+    const seated = assignSlots(base.sessions, T0);
+    expect(seated[5]).toMatchObject({ slot: null, seat: 5 });
+    const doc = { ...base, sessions: seated };
+    expect(JSON.stringify(view(doc, T0))).toBe(GOLDEN_V1);
+    expect(viewV2(doc, T0)).toEqual(viewV2(base, T0));
+    expect(JSON.stringify(legacyView(doc, T0))).toBe(GOLDEN_V1);
+    const v3 = viewV3(doc, T0);
+    expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(v3.desks[5]).toMatchObject({ slot: 5, helpers: 1 });
+    expect(v3.extra).toBe(0);
   });
 });

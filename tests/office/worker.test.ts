@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, parseOfficeResponseV2, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "@/lib/office/protocol";
+import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3 } from "@/lib/office/protocol";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
+import { emptyDoc, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
 import { createOfficeWorker } from "../../workers/office/src/worker";
 
@@ -115,7 +116,7 @@ describe("hq-office Worker", () => {
     expect((await call("/beat", await signedBeat({ helpers: 4 }))).status).toBe(204);
     const v2 = parseOfficeResponseV2(await (await call("/snapshot?v=2")).json()) as OfficeSnapshotV2;
     expect(v2).toMatchObject({ v: 2, desks: [{ slot: 0, helpers: 4 }] });
-    for (const query of ["", "?v=1", "?v=3", "?v=2x", "?v=", "?x=2", "?v=%32%20"]) {
+    for (const query of ["", "?v=1", "?v=4", "?v=2x", "?v=3x", "?v=", "?x=2", "?v=%32%20"]) {
       const text = await (await call(`/snapshot${query}`)).text();
       expect(text, query).not.toContain('"helpers"');
       expect(parseOfficeResponse(JSON.parse(text)), query).toMatchObject({ v: 1, desks: [{ slot: 0 }] });
@@ -124,14 +125,42 @@ describe("hq-office Worker", () => {
     expect(await (await call("/snapshot?v=2")).text()).not.toContain('"helpers"');
   });
 
-  it("forwards only ?v=2 to the Durable Object", async () => {
+  it("serves v3 for ?v=3 with ten seats; v1 and v2 keep five desks (slots 0 to 4) and count the rest in extra", async () => {
+    const { call } = setup();
+    for (let n = 1; n <= 8; n++) {
+      const beat = await signedBeat({ session: n.toString(16).padStart(64, "0"), helpers: n === 8 ? 3 : 0, ...(n === 8 ? { state: "input", activity: "asking" } : {}) });
+      expect((await call("/beat", beat)).status).toBe(204);
+    }
+    const v3 = parseOfficeResponseV3(await (await call("/snapshot?v=3")).json()) as OfficeSnapshotV3;
+    expect(v3).toMatchObject({ v: 3, extra: 0 });
+    expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(v3.desks[7]).toMatchObject({ slot: 7, state: "input", helpers: 3 });
+    for (const [query, parse] of [["", parseOfficeResponse], ["?v=2", parseOfficeResponseV2]] as const) {
+      const body = await (await call(`/snapshot${query}`)).json();
+      const snap = parse(body) as OfficeSnapshotV1 | OfficeSnapshotV2;
+      expect(snap, query).not.toBeNull();
+      expect(snap.desks.map((d) => d.slot), query).toEqual([0, 1, 2, 3, 4]);
+      expect(snap.extra, query).toBe(3);
+    }
+  });
+
+  it("forwards only ?v=2 and ?v=3 to the Durable Object", async () => {
     const seen: string[] = [];
     const env: OfficeWorkerEnv = {
       OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json({})) }) },
     };
     const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
-    for (const query of ["", "?v=2", "?v=3", "?v=2&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
-    expect(seen).toEqual(["https://office/snapshot", "https://office/snapshot?v=2", "https://office/snapshot", "https://office/snapshot?v=2", "https://office/snapshot"]);
+    for (const query of ["", "?v=2", "?v=3", "?v=4", "?v=3x", "?v=2&x=<script>", "?v=3&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
+    expect(seen).toEqual([
+      "https://office/snapshot",
+      "https://office/snapshot?v=2",
+      "https://office/snapshot?v=3",
+      "https://office/snapshot",
+      "https://office/snapshot",
+      "https://office/snapshot?v=2",
+      "https://office/snapshot?v=3",
+      "https://office/snapshot",
+    ]);
   });
 
   it("keeps the document across a new Durable Object instance (cold start)", async () => {
@@ -143,5 +172,20 @@ describe("hq-office Worker", () => {
     const snap = (await (await second.fetch(new Request("https://office/snapshot"))).json()) as OfficeSnapshotV1;
     expect(snap.desks).toMatchObject([{ agent: "codex", state: "testing" }]);
     expect(map.size).toBe(1);
+  });
+
+  it("moves back-row seats stored in `slot` to `seat` on load and writes the document once", async () => {
+    const { map, ctx } = memoryStorage();
+    const doc = emptyDoc(T0);
+    const rec = (n: number, slot: number): SessionRecord => ({ id: n.toString(16).padStart(64, "0"), agent: "codex", slot, firstSeen: T0 + n, lastBeat: T0, state: "working", activity: "editing", since: T0, recent: [] });
+    map.set("doc", { ...doc, sessions: [0, 1, 2, 3, 4, 5, 6].map((n) => rec(n, n)) });
+    let puts = 0;
+    const office = new Office({ storage: { get: ctx.storage.get, put: async (k, v) => (puts++, ctx.storage.put(k, v)) } }, {} as OfficeWorkerEnv, () => T0 + 1000);
+    const v3 = (await (await office.fetch(new Request("https://office/snapshot?v=3"))).json()) as OfficeSnapshotV3;
+    expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    const stored = map.get("doc") as OfficeDoc;
+    expect(stored.sessions.map((s) => [s.slot, s.seat])).toEqual([[0, undefined], [1, undefined], [2, undefined], [3, undefined], [4, undefined], [null, 5], [null, 6]]);
+    await office.fetch(new Request("https://office/snapshot"));
+    expect(puts).toBe(1);
   });
 });

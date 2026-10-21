@@ -69,16 +69,19 @@ export class RoverWrites {
   }
 }
 
-/** When each atlas half is due: faces at most FACE_FPS_MAX a second on every tier, desk screens at the tier's rate. */
+/**
+ * When each atlas half is due: faces at most FACE_FPS_MAX a second on every tier (or `faceFps` when lower: the far level
+ * of detail), desk screens at the tier's rate.
+ */
 export class AtlasClock {
   faceDue = false;
   screenDue = false;
   private face = 0;
   private screen = 0;
 
-  tick(now: number, fps: number): void {
+  tick(now: number, fps: number, faceFps: number = FACE_FPS_MAX): void {
     this.faceDue = now >= this.face;
-    if (this.faceDue) this.face = now + 1 / FACE_FPS_MAX;
+    if (this.faceDue) this.face = now + 1 / Math.min(faceFps, FACE_FPS_MAX);
     this.screenDue = now >= this.screen;
     if (this.screenDue) this.screen = now + 1 / fps;
   }
@@ -151,8 +154,11 @@ export class WallGate {
   }
 }
 
-/** A chip's leader line: its opacity, faded where it would cross the wall's screens, and the tick at the wall's top (px). */
-export const LEAD = { opacity: 0.6, faded: 0.15, tick: 10 } as const;
+/**
+ * A chip's leader line: its opacity, faded where the chip itself sits over the wall's screens, the tick at the wall-top
+ * level (px), and how far a tick beside the wall keeps from a HUD box or the screen's edge (px).
+ */
+export const LEAD = { opacity: 0.6, faded: 0.15, tick: 10, clear: 4 } as const;
 
 /** Where a chip's leader line ends (`leadEnd`) and how it is drawn. */
 export interface LeadEnd {
@@ -162,29 +168,77 @@ export interface LeadEnd {
   faded: boolean;
 }
 
+/** Where a line meets an edge (`meet`): `t` along the line, `s` along the edge (0 to 1 on it). */
+const cut = { t: 0, s: 0 };
+
+/** Where the line from (x, y) along (dx, dy) meets the edge from (ax, ay) to (bx, by), into `cut`; false when parallel or NaN. */
+function meet(x: number, y: number, dx: number, dy: number, ax: number, ay: number, bx: number, by: number): boolean {
+  const ex = bx - ax;
+  const ey = by - ay;
+  const den = dx * ey - dy * ex;
+  if (!(Math.abs(den) > 1e-9)) return false;
+  cut.t = ((ax - x) * ey - (ay - y) * ex) / den;
+  cut.s = ((ax - x) * dy - (ay - y) * dx) / den;
+  return true;
+}
+
+/** A box a tick beside the wall keeps clear of (px; `ScreenBox`'s shape, the HUD boxes). */
+interface ClearBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 /**
  * The end of the leader line from (x, y), a chip's bottom centre, toward its Rover's head (hx, hy), with the screen wall's
- * top edge projected through (wx0, wy0) and (wx1, wy1) (px; NaN off the camera): at that edge, with a tick, when the line
- * crosses it at least `min` px under the chip, so the line never runs over the screens' text (the chip's colour and its
- * Rover's antenna keep the mapping); faded (`LEAD.faded`) all the way to the head when the edge is above that (the chip
- * itself sits over the screens); whole to the head when the head stands above the edge. Writes `out`, allocates nothing.
+ * top edge projected through (wx0, wy0) and (wx1, wy1) (px; NaN off the camera). Every line stops at the wall-top level
+ * with a tick, so none runs down past it (the chip's colour and its Rover's antenna carry the mapping): where the line
+ * crosses the top edge on the wall, at that crossing; where it would pass the edge beside the wall (a chip past the wall's
+ * end, toward an end Rover: ten chips span a row wider than the wall), on the edge's line (the wall-top level) above the
+ * Rover's head (or, `above` false, where the line itself meets that level: `OfficeWatch`'s fallback where the first would
+ * cross another chip), its x moved clear of the `hud` boxes and inside the screen's `width` (`LEAD.clear` px off them).
+ * Either needs the level at least `min` px under the chip; where it is not (the chip itself sits over the screens or
+ * under the level) the line runs to the head faded (`LEAD.faded`). The whole line, unfaded, when the head stands above
+ * the level or the wall is off the camera. Writes `out`, allocates nothing.
  */
-export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd): LeadEnd {
+export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, hud: readonly ClearBox[] = [], width = Infinity, above = true): LeadEnd {
   out.x = hx;
   out.y = hy;
   out.tick = out.faded = false;
-  const ex = wx1 - wx0;
-  const ey = wy1 - wy0;
   const dx = hx - x;
   const dy = hy - y;
-  const den = dx * ey - dy * ex;
-  // Parallel, or the wall off the camera (NaN): the whole line.
-  if (!(Math.abs(den) > 1e-9)) return out;
-  const t = ((wx0 - x) * ey - (wy0 - y) * ex) / den;
-  if (t >= 1) return out;
-  if (t * Math.hypot(dx, dy) >= min) {
-    out.x = x + t * dx;
-    out.y = y + t * dy;
+  // Parallel, the wall off the camera (NaN) or the head above the level: the whole line.
+  if (!meet(x, y, dx, dy, wx0, wy0, wx1, wy1) || cut.t >= 1) return out;
+  if (cut.s >= 0 && cut.s <= 1) {
+    if (cut.t * Math.hypot(dx, dy) >= min) {
+      out.x = x + cut.t * dx;
+      out.y = y + cut.t * dy;
+      out.tick = true;
+    } else out.faded = true;
+    return out;
+  }
+  // Beside the wall: the wall-top level (the top edge's line) above the head, the tick clear of the HUD boxes.
+  const slope = (wy1 - wy0) / (wx1 - wx0);
+  const half = LEAD.tick / 2 + LEAD.clear;
+  let ex = above ? hx : x + cut.t * dx;
+  let ey = wy0 + slope * (ex - wx0);
+  for (let pass = 0; pass <= hud.length; pass++) {
+    let moved = false;
+    for (let i = 0; i < hud.length; i++) {
+      const b = hud[i];
+      if (ey < b.y0 - half || ey > b.y1 + half || ex + half <= b.x0 || ex - half >= b.x1) continue;
+      ex = (b.x0 + b.x1) / 2 < width / 2 ? b.x1 + half : b.x0 - half;
+      ey = wy0 + slope * (ex - wx0);
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  ex = Math.min(Math.max(ex, half), width - half);
+  ey = wy0 + slope * (ex - wx0);
+  if (Number.isFinite(ey) && ey - y >= min) {
+    out.x = ex;
+    out.y = ey;
     out.tick = true;
   } else out.faded = true;
   return out;

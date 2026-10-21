@@ -1,57 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
-import content from "../../content/site-content.json";
 import { LOBBY } from "@/experience/config";
-import { isOfficeRoom, OFFICE } from "@/experience/floors/lobby/officeLayout";
-import { countOfficeAsk, loadOfficeBody, OFFICE_MISSION, officeChunkState, officeHandle, officeLoadWanted, officeModule } from "@/experience/floors/lobby/office/chunk";
+import { countOfficeAsk, loadOfficeBody, officeChunkState, officeHandle, officeLoadWanted, officeModule } from "@/experience/floors/lobby/office/chunk";
+import { OFFICE } from "@/experience/floors/lobby/officeLayout";
 
 // The drawer body chunk, stubbed: the real one renders React with next-intl (tests/hud/OfficeBody.test.tsx).
 vi.mock("@/experience/floors/lobby/office/body", () => ({ OfficeBody: () => null }));
 
-const { stop, rect, lead } = LOBBY.officeWing;
-const base = { idle: true, state: "idle", prefetch: true, floor: "L1", rideTo: null, at: stop, mission: null } as const;
-const dist = (p: { x: number; z: number }) => Math.hypot(p.x - stop.x, p.z - stop.z);
+const base = { idle: true, state: "idle", prefetch: true, floor: "L1", rideTo: null } as const;
 
-describe("Agent Office chunk trigger", () => {
-  it("loads after the first frame went idle, on L1 (or riding there) near the office, with prefetch on, once", () => {
+describe("Agent Office chunk trigger (always-live office, design 5.9)", () => {
+  it("loads at the spawn once the first frame went idle on L1, with prefetch on, at any distance from the wing", () => {
+    // Nothing about where the rover stands: the spawn, the elevator arrival and the wing all load it alike.
+    expect(Math.hypot(LOBBY.spawn.x - LOBBY.officeWing.stop.x, LOBBY.spawn.z - LOBBY.officeWing.stop.z)).toBeGreaterThan(30);
     expect(officeLoadWanted(base)).toBe(true);
     expect(officeLoadWanted({ ...base, idle: false })).toBe(false);
-    expect(officeLoadWanted({ ...base, prefetch: false })).toBe(false);
     for (const state of ["loading", "ready", "failed"] as const) expect(officeLoadWanted({ ...base, state })).toBe(false);
+    expect("loadRadius" in OFFICE).toBe(false);
+  });
+
+  it("never asks with ?prefetch=off (only an office drawer loads it then)", () => {
+    expect(officeLoadWanted({ ...base, prefetch: false })).toBe(false);
+    expect(officeLoadWanted({ ...base, floor: "L3", rideTo: "L1", prefetch: false })).toBe(false);
+  });
+
+  it("only on L1 or riding there", () => {
     expect(officeLoadWanted({ ...base, floor: "L3" })).toBe(false);
     expect(officeLoadWanted({ ...base, rideTo: "L4" })).toBe(false);
-    expect(officeLoadWanted({ ...base, at: { x: stop.x + OFFICE.loadRadius + 1, z: stop.z } })).toBe(false);
-    expect(officeLoadWanted({ ...base, at: { x: stop.x, z: stop.z - OFFICE.loadRadius + 1 } })).toBe(true);
-  });
-
-  it("measures 25 u from the wing's stop: the lead road and the wing load it, the spawn and the elevator arrival do not", () => {
-    expect(OFFICE.loadRadius).toBe(25);
-    // Spawn 33.2 u and arrival 44.4 u from the stop (the 54 u deep Lobby, more room 2026-10-19): a session that never
-    // heads south does not fetch the office.
-    expect(dist(LOBBY.spawn)).toBeCloseTo(33.21, 1);
-    expect(dist(LOBBY.arrival)).toBeCloseTo(44.42, 1);
-    expect(officeLoadWanted({ ...base, at: LOBBY.spawn })).toBe(false);
-    expect(officeLoadWanted({ ...base, floor: "L3", rideTo: "L1", at: LOBBY.arrival })).toBe(false);
-    // The lead road's Lobby end (24.5 u) and every corner of the wing are inside.
-    expect(dist({ x: lead.x, z: lead.from })).toBeLessThan(OFFICE.loadRadius);
-    expect(officeLoadWanted({ ...base, at: { x: lead.x, z: lead.from } })).toBe(true);
-    for (const x of [rect.minX, rect.maxX]) for (const z of [rect.minZ, rect.maxZ]) expect(officeLoadWanted({ ...base, at: { x, z } }), `${x}, ${z}`).toBe(true);
-  });
-
-  it("a mission bound for the office loads it at once, from the ride to L1 on (the office mission, a goto to an office room)", () => {
-    const ride = { ...base, floor: "L3", rideTo: "L1", at: LOBBY.arrival } as const;
-    expect(officeLoadWanted({ ...ride, mission: OFFICE_MISSION })).toBe(true);
-    expect(officeLoadWanted({ ...ride, mission: "goto:L1:office" })).toBe(true);
-    expect(officeLoadWanted({ ...ride, mission: "goto:L1:office-desk-3" })).toBe(true);
-    expect(officeLoadWanted({ ...base, at: LOBBY.spawn, mission: "goto:L1:office-github" })).toBe(true);
-    expect(officeLoadWanted({ ...ride, mission: "goto:L1:skills" })).toBe(false);
-    expect(officeLoadWanted({ ...ride, mission: "tour" })).toBe(false);
-    // Not before the ride to L1 starts, and never with prefetch off.
-    expect(officeLoadWanted({ ...ride, rideTo: null, mission: OFFICE_MISSION })).toBe(false);
-    expect(officeLoadWanted({ ...ride, prefetch: false, mission: OFFICE_MISSION })).toBe(false);
-    // The catalog mission it names rides to L1 and drives to an office room.
-    const mission = content.missions.find((m) => m.id === OFFICE_MISSION);
-    expect(mission?.steps.some((s) => s.kind === "elevator" && "floor" in s && s.floor === "L1")).toBe(true);
-    expect(mission?.steps.some((s) => s.kind === "drive" && "to" in s && typeof s.to === "string" && isOfficeRoom(s.to))).toBe(true);
+    expect(officeLoadWanted({ ...base, floor: "L3", rideTo: "L1" })).toBe(true);
+    expect(officeLoadWanted({ ...base, floor: "B1" })).toBe(false);
   });
 
   it("starts idle with no module and no test hooks", () => {

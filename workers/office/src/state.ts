@@ -1,5 +1,5 @@
-import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, wibDay } from "../../../src/lib/office/protocol";
-import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, OFFICE_SEATS, wibDay } from "../../../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeDeskV2, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
 
 /** Time rules and caps (spec section 3.3); every rule is applied from `now`, so the Durable Object needs no alarm. */
 export const TIMING = {
@@ -20,7 +20,13 @@ export const TIMING = {
 export interface SessionRecord {
   id: string;
   agent: OfficeAgent;
+  /**
+   * Front-row seat (0 to 4) or null. A Worker from before ten seats reads only this field, so it never holds a back-row
+   * seat: after a rollback that Worker counts back-row sessions as waiting (`extra`) and its snapshots stay valid.
+   */
   slot: number | null;
+  /** Back-row seat (5 to 9), absent otherwise. The seat is `slot ?? seat` (`seatOf`); a set `slot` wins. */
+  seat?: number;
   firstSeen: number;
   lastBeat: number;
   state: OfficeState;
@@ -127,30 +133,66 @@ export function effective(s: SessionRecord, now: number): Effective | null {
 
 const isAsleep = (s: SessionRecord, now: number) => effective(s, now)?.state === "asleep";
 
-/** Stable desks: keep valid slots, give free ones to waiting sessions (oldest first); an awake one may take the longest-asleep desk. */
+/** A session's seat (0 to 9) or null: `slot` (front row) wins over `seat` (back row). */
+export const seatOf = (s: SessionRecord): number | null => s.slot ?? s.seat ?? null;
+
+/** Stores seat `n` where a Worker from before ten seats can read it: 0 to 4 in `slot`, anything above in `seat`. */
+function withSeat(s: SessionRecord, n: number | null): SessionRecord {
+  const out: SessionRecord = { ...s, slot: n !== null && n >= OFFICE_DESKS ? null : n };
+  if (n !== null && n >= OFFICE_DESKS) out.seat = n;
+  else delete out.seat;
+  return out;
+}
+
+/**
+ * A stored document in the current seat layout: a slot of 5 or more (stored before back-row seats moved to `seat`)
+ * becomes `seat`, and a `seat` next to a set `slot` (an older Worker seated that session in front) is cleared. Returns
+ * the same document when nothing changes.
+ */
+export function migrateDoc(doc: OfficeDoc): OfficeDoc {
+  const stale = (s: SessionRecord) => s.slot !== null && (s.slot >= OFFICE_DESKS || s.seat !== undefined);
+  return doc.sessions.some(stale) ? { ...doc, sessions: doc.sessions.map((s) => (stale(s) ? withSeat(s, s.slot) : s)) } : doc;
+}
+
+/**
+ * Stable seats over OFFICE_SEATS (ten): keep valid seats; a back-row session (seat 5 to 9) moves to a free front-row
+ * seat (slots 0 to 4, oldest first), so the front row fills first; then free seats go to waiting sessions (oldest
+ * first, lowest seat first). Only when all ten are taken may an awake one take the longest-asleep seat. For at most
+ * five sessions, v1 and v2 (which show only the front row) see what they saw with five desks.
+ */
 export function assignSlots(sessions: SessionRecord[], now: number): SessionRecord[] {
-  const out = sessions.map((s) => ({ ...s }));
+  const out = sessions.map((s) => ({ s, n: seatOf(s) }));
   const taken = new Set<number>();
-  for (const s of out) {
-    if (s.slot !== null && s.slot >= 0 && s.slot < OFFICE_DESKS && !taken.has(s.slot)) taken.add(s.slot);
-    else s.slot = null;
+  for (const o of out) {
+    if (o.n !== null && Number.isInteger(o.n) && o.n >= 0 && o.n < OFFICE_SEATS && !taken.has(o.n)) taken.add(o.n);
+    else o.n = null;
   }
-  const waiting = out.filter((s) => s.slot === null).sort((a, b) => a.firstSeen - b.firstSeen || (a.id < b.id ? -1 : 1));
-  for (const s of waiting) {
-    const free = Array.from({ length: OFFICE_DESKS }, (_, n) => n).find((n) => !taken.has(n));
+  type Seat = (typeof out)[number];
+  const oldest = (a: Seat, b: Seat) => a.s.firstSeen - b.s.firstSeen || (a.s.id < b.s.id ? -1 : 1);
+  const freeSeat = (seats: number) => Array.from({ length: seats }, (_, n) => n).find((n) => !taken.has(n));
+  for (const o of out.filter((x) => x.n !== null && x.n >= OFFICE_DESKS).sort(oldest)) {
+    const front = freeSeat(OFFICE_DESKS);
+    if (front === undefined) break;
+    taken.delete(o.n as number);
+    o.n = front;
+    taken.add(front);
+  }
+  const waiting = out.filter((o) => o.n === null).sort(oldest);
+  for (const o of waiting) {
+    const free = freeSeat(OFFICE_SEATS);
     if (free !== undefined) {
-      s.slot = free;
+      o.n = free;
       taken.add(free);
       continue;
     }
-    if (isAsleep(s, now)) continue;
-    const sleeper = out.filter((o) => o.slot !== null && isAsleep(o, now)).sort((a, b) => a.lastBeat - b.lastBeat)[0];
+    if (isAsleep(o.s, now)) continue;
+    const sleeper = out.filter((x) => x.n !== null && isAsleep(x.s, now)).sort((a, b) => a.s.lastBeat - b.s.lastBeat)[0];
     if (sleeper) {
-      s.slot = sleeper.slot;
-      sleeper.slot = null;
+      o.n = sleeper.n;
+      sleeper.n = null;
     }
   }
-  return out;
+  return out.map(({ s, n }) => withSeat(s, n));
 }
 
 /** Applies one sanitized beat. `repo`, `branch` and `title` stay only for repositories a webhook reported public. */
@@ -164,6 +206,7 @@ export function applyBeat(doc: OfficeDoc, beat: OfficeBeatV1, now: number): Offi
     id: beat.session,
     agent: beat.agent,
     slot: prev?.slot ?? null,
+    ...(prev?.seat !== undefined ? { seat: prev.seat } : {}),
     firstSeen: prev?.firstSeen ?? now,
     lastBeat: now,
     state: beat.state,
@@ -238,7 +281,7 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
         runs: doc.runs.filter((r) => r.repo !== repo),
         prs: doc.prs.filter((p) => p.repo !== repo),
         feed: doc.feed.filter((f) => f.repo !== repo),
-        sessions: doc.sessions.map((s) => (s.repo === repo ? { id: s.id, agent: s.agent, slot: s.slot, firstSeen: s.firstSeen, lastBeat: s.lastBeat, state: s.state, activity: s.activity, since: s.since, ...(s.helpers ? { helpers: s.helpers } : {}), recent: s.recent } : s)),
+        sessions: doc.sessions.map((s) => (s.repo === repo ? { id: s.id, agent: s.agent, slot: s.slot, ...(s.seat !== undefined ? { seat: s.seat } : {}), firstSeen: s.firstSeen, lastBeat: s.lastBeat, state: s.state, activity: s.activity, since: s.since, ...(s.helpers ? { helpers: s.helpers } : {}), recent: s.recent } : s)),
       };
   }
 }
@@ -270,7 +313,7 @@ function deskOf(doc: OfficeDoc, s: SessionRecord, e: Effective): OfficeDesk {
   const progress = e.state === "ci" && run?.status === "running" ? progressOf(run) : undefined;
   const job = e.state === "failed" ? run?.failedJob : undefined;
   return {
-    slot: s.slot ?? 0,
+    slot: seatOf(s) ?? 0,
     agent: s.agent,
     state: e.state,
     activity: e.activity,
@@ -291,18 +334,22 @@ export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): n
   return Math.min(OFFICE_HELPERS_MAX, s.helpers);
 }
 
-function seats(doc: OfficeDoc, now: number) {
+/** The live sessions and those on seats below `count` (sorted by seat); the others count in `extra`. */
+function seats(doc: OfficeDoc, now: number, count: number) {
   const live = doc.sessions.flatMap((s) => {
     const e = effective(s, now);
-    return e ? [{ s, e }] : [];
+    return e ? [{ s, e, n: seatOf(s) }] : [];
   });
-  const seated = live.filter(({ s }) => s.slot !== null).sort((a, b) => (a.s.slot ?? 0) - (b.s.slot ?? 0));
+  const seated = live.filter(({ n }) => n !== null && n < count).sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
   return { live, seated };
 }
 
-/** The public v1 snapshot at `now` (time rules applied, nothing written). Never carries `helpers`: v1 never changes. */
+/**
+ * The public v1 snapshot at `now` (time rules applied, nothing written): the front row's five desks (slots 0 to 4),
+ * sessions on other seats in `extra`. Never carries `helpers`: v1 never changes.
+ */
 export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
-  const { live, seated } = seats(doc, now);
+  const { live, seated } = seats(doc, now, OFFICE_DESKS);
   return {
     v: 1,
     enabled: true,
@@ -315,19 +362,29 @@ export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
   };
 }
 
-/** The public v2 snapshot at `now`: the v1 view with `v: 2` and desk `helpers` (1 to 9, absent at 0). */
-export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
-  const { seated } = seats(doc, now);
-  const v1 = view(doc, now);
+/** The v1 view over `count` seats with `v` and desk `helpers` (1 to 9, absent at 0). */
+function withHelpers<V extends 2 | 3>(doc: OfficeDoc, now: number, count: number, v: V): Omit<OfficeSnapshotV1, "v" | "desks"> & { v: V; desks: OfficeDeskV2[] } {
+  const { live, seated } = seats(doc, now, count);
   return {
-    ...v1,
-    v: 2,
-    desks: v1.desks.map((d, i) => {
-      const { s, e } = seated[i];
+    ...view(doc, now),
+    v,
+    desks: seated.map(({ s, e }) => {
+      const d = deskOf(doc, s, e);
       const h = effectiveHelpers(s, e, now);
       return h > 0 ? { ...d, helpers: h } : d;
     }),
+    extra: live.length - seated.length,
   };
+}
+
+/** The public v2 snapshot at `now`: the v1 view (five desks, the rest in `extra`) with `v: 2` and desk `helpers`. */
+export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
+  return withHelpers(doc, now, OFFICE_DESKS, 2);
+}
+
+/** The public v3 snapshot at `now`: the v2 view over all ten seats (slots 0 to 9), sessions past ten in `extra`. */
+export function viewV3(doc: OfficeDoc, now: number): OfficeSnapshotV3 {
+  return withHelpers(doc, now, OFFICE_SEATS, 3);
 }
 
 /** Shape check of the Worker's internal /github message (already parsed and sanitized by the Worker). */
