@@ -140,10 +140,14 @@ describe("office replay feed", () => {
     h.feed.stop();
     expect(h.last().state).toMatchObject({ status: "off", day: null, auto: false, playS: 0 });
     expect(h.last().snapshot).toBeNull();
-    // Stopped while loading: the load lands silently.
+    // Stopped while loading (the copies are over 60 s old, so it fetches): the load lands silently.
+    h.clock.now += 61_000;
+    const calls = h.calls.length;
     const pending = h.feed.play(TODAY);
+    expect(h.last().state.status).toBe("loading");
     h.feed.stop();
     await pending;
+    expect(h.calls.length).toBeGreaterThan(calls);
     expect(h.last().state.status).toBe("off");
     expect(h.last().snapshot).toBeNull();
   });
