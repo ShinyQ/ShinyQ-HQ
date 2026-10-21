@@ -20,7 +20,7 @@ export function officePollInterval(reasons: ReadonlySet<OfficePollReason>, feed:
  * fetches faster than the cadence). Visitor
  * input resets its 10 minute idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot
  * v3 (ten seats, desk helpers), which also accepts a v2 or v1 body after a rollback; the feed keeps all ten desks (the
- * signal reads every asker), and `officeView` folds the back row into `extra` until the scene draws ten. Chunk only.
+ * signal reads every asker, and the scene draws all ten). Chunk only.
  */
 const clock = { skew: 0 };
 const wants = new Set<OfficePollReason>();

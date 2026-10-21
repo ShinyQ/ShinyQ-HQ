@@ -92,9 +92,9 @@ export interface OfficeSnapshotV1 {
   enabled: true;
   mode: OfficeMode;
   updatedAt: number;
-  /** Sessions that hold a desk (0 to 5), sorted by slot. */
+  /** Sessions that hold a desk (0 to 5 in v1/v2, 0 to 10 in v3), sorted by slot. */
   desks: OfficeDesk[];
-  /** Sessions beyond the five desks (the "+N" chip). */
+  /** Sessions beyond the snapshot's desks (five in v1/v2, ten in v3; the "+N" chip). */
   extra: number;
   /** Newest first, at most OFFICE_FEED. */
   github: OfficeGithubItem[];

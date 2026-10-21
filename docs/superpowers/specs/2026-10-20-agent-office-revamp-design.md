@@ -160,7 +160,8 @@ and the chip carry the same information).
   instead (one request stream, not two).
 - **Beacon** (`OfficeBeacon.tsx` in the beacon chunk, mounted by `OfficeMount` inside the wing's `IntroReveal` once loaded): one instanced mesh on the hall's stage material
   (`createStageMaterial`, `HOLO_MODE.stage`, no new program) over the unit open cylinder, all instances of the `beam`
-  stage kind: a column 1.6 u wide (owner) rising 26 u from the floor 1.25 u behind the asking Rover,
+  stage kind: a column 1.6 u wide (owner) rising 26 u from the floor 1.25 u behind an asking front-row Rover (1.8 u
+  behind a back-row Rover, just past the riser's back edge, so its base stands on the floor),
   between it and the wall (in front of the desk it hid the Rover and its flag in the prototype renders; from the wing
   plaza centre when more than one asks), plus three flat rings (0.4 u tall bands, 2.2 to 3.8 times the column's radius)
   that pulse up its lowest 8 u (the part a desktop sees from the spawn) every 1.6 s, fading in and out, in the input
@@ -293,8 +294,8 @@ runs whenever the office is in view from anywhere in the Lobby, without driving 
 
 - **Loading**: `officeLoadWanted` is true on L1 (or riding to L1) once the first frame went idle with speculative
   prefetch on, at any distance from the wing; the office chunks never load on the first-frame path. With
-  `?prefetch=off` the scene chunk never loads on its own: only the earlier triggers load it (lead road, wing, office
-  mission, go-to or drawer). Merging the beacon chunk into the scene chunk is allowed if simpler. The drawer body (an
+  `?prefetch=off` the scene chunk never loads on its own: only an office drawer loads it (an office mission or go-to
+  ends in that drawer). Merging the beacon chunk into the scene chunk is allowed if simpler. The drawer body (an
   office drawer), the beacon chunk if separate (the first ask) and the replay chunk (the idle loop or the drawer
   control) keep their triggers.
 - **Budgets**: the office scene chunk (and the beacon chunk if merged into it) counts in the L1 3D session totals,
@@ -340,7 +341,7 @@ Up to ten sessions get a desk, one Rover per session; helpers stay drones (5.8)
   tower and the dock still touch the end boxes. The front row stays in place. Rooms `L1:office-desk-6` to
   `L1:office-desk-10` join the desk rooms.
 - **Rendering**: instance counts derive from the slot count (ten Rovers, drones at most 4 per Rover); the atlas holds
-  ten faces, ten desk screens and the flag cell (grown to 1024 x 1024, or smaller back-row screen cells), still one
+  ten faces, ten desk screens and the flag cell (grown to 1024 x 576 with full-size cells), still one
   upload and partial copies. No new draw call or shader program.
 - **Chips**: on desktop one row of ten compact chips (a state dot and the agent; the activity only on the near pose),
   ordered by each Rover's projected head x (the two rows interleave; within a row, desk order; 5.7b); on phones
