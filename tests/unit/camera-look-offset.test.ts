@@ -432,14 +432,15 @@ describe("the office zone's look offset eases in and out with the zone", () => {
   const stop = LOBBY.officeWing.stop;
   const { forward = 0, up = 0 } = OFFICE.view.mobile.lookOffset as { forward?: number; up?: number };
 
-  it("is set per camera class only: toward the camera on a portrait screen, down (held through a hand zoom) on a desktop, none on the tablet camera", () => {
+  it("is set per camera class only: toward the camera on a portrait screen, up (held through a hand zoom, higher near) on a desktop, none on the tablet camera", () => {
     expect(office.lookOffset).toBeUndefined();
     expect(zoneView(office, "mobile").lookOffset).toEqual(OFFICE.view.mobile.lookOffset);
     expect(zoneView(office, "desktop").lookOffset).toEqual(OFFICE.view.desktop.lookOffset);
     expect(zoneView(office, "tablet").lookOffset).toBeUndefined();
     expect(forward).toBeLessThan(0);
     expect(zoneView(office, "mobile").lookOffset?.hold).toBeUndefined();
-    expect(zoneView(office, "desktop").lookOffset?.up).toBeLessThan(0);
+    expect(zoneView(office, "desktop").lookOffset?.up).toBeGreaterThan(0);
+    expect(zoneView(office, "desktop").lookOffset?.near?.up).toBeGreaterThan(zoneView(office, "desktop").lookOffset!.up!);
     expect(zoneView(office, "desktop").lookOffset?.hold).toBe(true);
   });
 

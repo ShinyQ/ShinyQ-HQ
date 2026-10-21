@@ -132,80 +132,68 @@ describe("Agent Office view model", () => {
 });
 
 /**
- * How the office fills the frame from the office stop (owner decision 2026-10-20: the wall's top 12% to 15% from the top
- * edge, the console and the Rovers 45% to 85% down, the CI tower column and the dock pad in frame on desktop sizes, the
- * visitor's Rover in frame; the chips moved to a row under the HUD's top bar to free that band). `OFFICE.view` takes, per
- * camera class, the view closest to those targets (`tests/helpers/office-frame.ts`; the search behind it is in the Task 19
- * report):
- * - desktop: no view keeps the tower and the dock in frame on 1180 x 820 (the narrowest desktop) with the console top under
- *   42.8% at a 15% wall top: the Rovers' heads start at 42.4%;
- * - tablet: the console from 45.8% down, the tower and the dock in frame; the wall's top at 17.7%, lower than the 15%
- *   target on purpose: there it clears the HUD's 62 px top bar on 844 x 390 (69 px) and the chip row's 32 px names on
- *   960 x 640 (114 px against the row's bottom at 98 px);
- * - portrait: width bound (the whole wall and the five desks across 390 px, every Rover in frame from the zone's corners),
- *   so the office spans under a third of the height: the console 31% to 43% down.
- * Those wall tops were measured on the 29 u wing; the 32 u wing (owner decision 2026-10-21) moves the wall 3 u back and its
- * top up the frame (`WALL_TOP`) until Task 6 retunes the view; the console bands stay.
+ * How the office fills the frame from the office stop (owner decisions 2026-10-20 and 2026-10-21: the wall's top 12% to
+ * 15% from the top edge, both console rows and their Rovers lower down, the CI tower column and the dock pad in frame on
+ * desktop sizes, the visitor's Rover in frame, the portrait screens' top-band fill accepted; the ten chips in a row under
+ * the HUD's top bar). `OFFICE.view` takes, per camera class, the view closest to those targets at the elevation the view
+ * had before the second row (`tests/helpers/office-frame.ts`):
+ * - desktop: the wall's top at 15%, under the chip row (66 px plus a 32 px chip) by 8 px or more from 720 px tall, so
+ *   the leader lines end on it with a tick; both rows 38.6% to 68.7% down;
+ * - tablet: both rows from 37.7% down, the tower and the dock in frame; the wall's top at 17.7%, lower than the 15% target
+ *   on purpose: there it clears the HUD's 62 px top bar on 844 x 390 (69 px) and the chip row's 32 px chips on 960 x 640
+ *   (113 px against the row's bottom at 98 px);
+ * - portrait: width bound (the whole wall and both rows across 390 px, every Rover in frame from the zone's corners), so
+ *   the office spans under half of the height: both rows 29.5% to 46.9% down.
  */
 describe("the office stop frame", () => {
-  /** The measured console top and bottom (fractions of the height from the top edge), per camera class. */
-  const MEASURED: Record<ViewportClass, readonly [number, number]> = {
-    desktop: [0.424, 0.618],
-    tablet: [0.458, 0.664],
-    mobile: [0.314, 0.426],
+  /** The measured wall top and both rows' top and bottom (fractions of the height from the top edge), per camera class. */
+  const MEASURED: Record<ViewportClass, readonly [number, number, number]> = {
+    desktop: [0.15, 0.386, 0.687],
+    tablet: [0.177, 0.377, 0.629],
+    mobile: [0.149, 0.295, 0.469],
   };
+  /** The front row's top (its Rovers' heads), measured at the same view: the back row on its riser stands higher. */
+  const FRONT_TOP: Record<ViewportClass, number> = { desktop: 0.492, tablet: 0.467, mobile: 0.358 };
   /**
-   * The wall's top, measured on the 32 u wing (4.5 u kept behind the back row, owner decision 2026-10-21) at the view tuned
-   * on the 29 u wing: higher than the 12% to 15% target (under the HUD's top bar on 844 x 390) until Task 6 retunes the
-   * view; the targets below are todo until then.
+   * The lowest the wall's top may stand: 15% (the target), but 18% on the tablet camera, whose screens are short: measured
+   * clear of the HUD's top bar (62 px) on 844 x 390 and of the chip row (66 px plus a 32 px chip) on 960 x 640.
    */
-  const WALL_TOP: Record<ViewportClass, number> = { desktop: 0.0766, tablet: 0.0959, mobile: 0.1008 };
-  /**
-   * Both rows' top (the back row's heads on the riser, owner decision 2026-10-21), measured at the same view: the view is
-   * tuned on the front row (`MEASURED`) until it is retuned for both rows; the back row stays under the wall's top.
-   */
-  const BOTH_TOP: Record<ViewportClass, number> = { desktop: 0.318, tablet: 0.347, mobile: 0.249 };
-  /** The lowest console top each class reaches (the 45% target where it can). */
-  const CONSOLE_TOP: Record<ViewportClass, number> = { desktop: 0.42, tablet: 0.45, mobile: 0.31 };
+  const WALL_TOP_MAX: Record<ViewportClass, number> = { desktop: 0.15, tablet: 0.18, mobile: 0.15 };
 
-  it.each(SIZES)("frames the office on $id ($width x $height): wall top, console band, the tower, the dock and the visitor's Rover", ({ width, height }) => {
+  it.each(SIZES)("frames the office on $id ($width x $height): wall top, both rows, the tower, the dock and the visitor's Rover", ({ width, height }) => {
     const cls = cameraClass(width, height);
     const f = officeFrame(width, height);
-    const [consoleTop, consoleBottom] = MEASURED[cls];
-    const front = f.rows[0];
-    // Until Task 6 retunes the view.
-    expect(f.wallTop, "wall top").toBeCloseTo(WALL_TOP[cls], 3);
-    expect(f.wallTop, "wall top in frame").toBeGreaterThan(0);
-    expect(front.top, "console top").toBeCloseTo(consoleTop, 3);
-    expect(front.bottom, "console bottom").toBeCloseTo(consoleBottom, 3);
-    expect(f.console.bottom, "both rows' bottom: the front row's").toBeCloseTo(consoleBottom, 3);
-    expect(f.console.top, "both rows' top").toBeCloseTo(BOTH_TOP[cls], 3);
+    const [wallTop, top, bottom] = MEASURED[cls];
+    expect(f.wallTop, "wall top").toBeCloseTo(wallTop, 3);
+    expect(f.wallTop, "wall top 12% down or lower").toBeGreaterThanOrEqual(0.12);
+    expect(f.wallTop, "wall top 15% down or higher (18% on the tablet camera)").toBeLessThanOrEqual(WALL_TOP_MAX[cls] + 5e-4);
+    if (cls === "desktop") expect(f.wallTop * height, "wall top under the chip row by 8 px").toBeGreaterThanOrEqual(66 + 32 + 8);
+    if (cls === "tablet") {
+      expect(f.wallTop * height, "wall top under the HUD's top bar").toBeGreaterThanOrEqual(62 + 4);
+      if (height > 390) expect(f.wallTop * height, "wall top under the chip row").toBeGreaterThanOrEqual(66 + 32 + 8);
+    }
+    expect(f.console.top, "both rows' top").toBeCloseTo(top, 3);
+    expect(f.console.bottom, "both rows' bottom").toBeCloseTo(bottom, 3);
+    expect(f.rows[0].bottom, "the front row's bottom").toBeCloseTo(bottom, 3);
+    expect(f.rows[0].top, "the front row's top").toBeCloseTo(FRONT_TOP[cls], 3);
+    expect(f.rows[1].top, "the back row stands higher").toBeLessThan(f.rows[0].top);
     expect(f.console.top, "the back row under the wall's top").toBeGreaterThan(f.wallTop);
-    expect(front.top, "console top").toBeGreaterThanOrEqual(CONSOLE_TOP[cls]);
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
     if (cls !== "mobile") expect([f.tower, f.dock], "the CI tower column and the dock pad").toEqual([true, true]);
   });
 
   /**
-   * The wall's targets (owner decision 2026-10-20), todo on the 32 u wing until Task 6 retunes the view: the wall's top 12%
-   * to 15% down (18% on the tablet camera, whose screens are short: clear of the HUD's top bar, 62 px, on 844 x 390 and of
-   * the chip row, 66 px plus a 32 px chip, on 960 x 640), and at the desktop near pose under the near chip row (66 px plus
-   * a 40 px chip with its CI bar) by 8 px or more.
+   * The near pose (one zoom key step in, `OFFICE.view.desktop.lookOffset.near`): the look target rises so the wall's top
+   * stands at 15.9%, under the near chip row (its top at 66 px plus a 40 px chip with its CI bar) by 8 px or more on every
+   * desktop size, both rows and the visitor's Rover still in frame (the Rover low, over the bottom edge).
    */
-  it.todo("holds the wall's top 12% to 15% down (18% on the tablet camera), under the HUD's top bar and the chip rows");
-
-  /**
-   * The near pose (one zoom key step in, `OFFICE.view.desktop.lookOffset.near`): the look target rises, the console and
-   * the visitor's Rover still in frame.
-   */
-  it.each(SIZES.filter((s) => cameraClass(s.width, s.height) === "desktop"))("aims the desktop near pose on $id ($width x $height)", ({ width, height }) => {
+  it.each(SIZES.filter((s) => cameraClass(s.width, s.height) === "desktop"))("aims the desktop near pose under the chip row on $id ($width x $height)", ({ width, height }) => {
     const f = officeFrame(width, height, 1);
-    // Until Task 6 retunes the view.
-    expect(f.wallTop, "wall top").toBeCloseTo(0.0763, 3);
-    expect(f.wallTop, "wall top in frame").toBeGreaterThan(0);
-    expect(f.rows[0].top, "console top").toBeCloseTo(0.498, 3);
-    expect(f.console.top, "both rows' top").toBeCloseTo(0.367, 3);
+    expect(f.wallTop, "wall top").toBeCloseTo(0.159, 3);
+    expect(f.wallTop * height, "wall top under the near chip row").toBeGreaterThanOrEqual(66 + 40 + 8);
+    expect(f.console.top, "both rows' top").toBeCloseTo(0.444, 3);
+    expect(f.console.top, "the back row under the wall's top").toBeGreaterThan(f.wallTop);
     expect(f.console.bottom, "console bottom").toBeLessThanOrEqual(0.85);
     expect(f.rover, "the visitor's Rover").toBe(true);
   });

@@ -147,28 +147,25 @@ export const OFFICE = {
   dock: { pad: 0.1 },
   /**
    * `L1:office` view zone per camera class (zoom, pitch as an offset from the rig's elevation, look offset) and the half
-   * size of its area around the stop. From the stop the office fills the frame (owner decision 2026-10-20, with the chips
-   * in one row under the HUD's top bar): each class raises the camera (`pitch`) and takes the view closest to the wall's
-   * top 12% to 15% from the top edge and the console and the Rovers 45% to 85% down, with the whole wall, the five desks,
-   * every Rover's head under the screen and the visitor's Rover in frame (tests/unit/office-view.test.ts measures them):
-   * - desktop: the CI tower column and the dock pad in frame too, which on 1180 x 820 (the narrowest desktop) holds the
-   *   camera back: the wall's top at 15%, the Rovers' heads from 42.4% down; the look target drops 1.25 u (`up`) and holds
-   *   through a hand zoom (`hold`); a hand zoom in (the near pose) raises it to 1.7 u over the rover (`near`), so the
-   *   wall's top stays at 15.9%, under the near chip row (66 px plus a 40 px chip) by 8 px or more from 720 px tall;
+   * size of its area around the stop. From the stop the office fills the frame (owner decisions 2026-10-20 and 2026-10-21,
+   * with the ten chips in a row under the HUD's top bar): each class takes the view closest to the wall's top 12% to 15%
+   * from the top edge with both console rows, the whole wall, every Rover's head (the front row's under the screen) and
+   * the visitor's Rover in frame, at the same elevation as before (tests/unit/office-view.test.ts measures them):
+   * - desktop: the CI tower column and the dock pad in frame too; the wall's top at 15%, both rows from 38.6% down; the
+   *   look target rises 1.15 u (`up`) and holds through a hand zoom (`hold`); a hand zoom in (the near pose) raises it to
+   *   4 u (`near`), so the wall's top stands at 15.9%, under the near chip row (66 px plus a 40 px chip) by 8 px or more
+   *   from 720 px tall;
    * - tablet (landscape phones and small landscape tablets): the wall's top at 17.7%, under the HUD's top bar on 844 x 390
-   *   and the chip row on 960 x 640, the console 45.8% to 66.4% down, the tower and the dock in frame, the plain aim;
-   * - mobile (portrait screens): width bound (the whole wall and the five desks across 390 px, every Rover's head in frame
-   *   with the rover anywhere in the stop's zone), so the office spans under a third of the height: the wall's top at 15%,
-   *   the console 31.4% to 42.6% down; the look target moves 5.25 u toward the camera, and a hand zoom hands the framing
-   *   back there (the offset eases out).
+   *   and the chip row on 960 x 640, both rows 37.7% to 62.9% down, the tower and the dock in frame, the plain aim;
+   * - mobile (portrait screens): width bound (the whole wall and both rows across 390 px, every Rover's head in frame with
+   *   the rover anywhere in the stop's zone): the wall's top at 14.9%, both rows 29.5% to 46.9% down; the look target
+   *   moves 3.75 u toward the camera, and a hand zoom hands the framing back there (the offset eases out).
    * A `pitch` also opts into the turn-back on exit: the tilt levels again when the rover leaves the stop.
-   * The wall-top figures above were measured on the 29 u wing; on the 32 u wing (4.5 u behind the back row) the wall's top
-   * stands at 7.7% desktop, 9.6% tablet and 10.1% portrait until the view is retuned for both rows.
    */
   view: {
-    desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: -1.25, hold: true, near: { zoom: 1.2, up: 1.7 } } },
-    tablet: { zoom: 1.2, pitch: 0.35 },
-    mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
+    desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: 1.15, hold: true, near: { zoom: 1.2, up: 4 } } },
+    tablet: { zoom: 1.5, pitch: 0.35 },
+    mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -3.75 } },
     half: { x: 2, z: 1.4 },
   },
 } as const;
