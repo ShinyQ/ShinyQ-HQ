@@ -8,9 +8,10 @@ import type { OfficeState } from "@/lib/office/protocol";
 
 /**
  * How much of each back-row Rover's face and desk screen the office stop's camera sees past the front row (design 5.10, a
- * projection test): rays from the camera to a grid of points on each quad, tested against the front row's boxes (each
- * Rover's chest, head, arms, stalk, antenna tip, treads and raised flag in a still pose, its desk top, legs and desk screen) and the
- * back row's riser blocks; a point off the screen counts as hidden. Pure geometry over the layout and the rig, so a
+ * projection test): rays from the camera to a grid of points on each quad (the target Rover in a state's still pose),
+ * tested against the front row's boxes (each Rover's chest, head, arms, stalk, antenna tip, treads and raised flag in the
+ * same still pose, its desk top, legs and desk screen), the back row's riser blocks and the target's back-row neighbours
+ * (their Rovers, desks and desk screens); a point off the screen counts as hidden. Pure geometry over the layout and the rig, so a
  * retuned `OFFICE.view` or `OFFICE.rows` reruns it unchanged (tests/unit/office-rows-visibility.test.ts).
  */
 
@@ -42,40 +43,43 @@ function quadCorners(positions: Float32Array, quad = 0): Vector3[] {
 
 const lift = (m: Matrix4) => new Matrix4().makeTranslation(0, Y, 0).multiply(m);
 
-/** The occluders: the front row in `state`'s still pose (its Rovers, desks and desk screens) and the riser blocks. */
-export function frontRowTris(state: OfficeState = "working", slots: readonly OfficeSlot[] = SLOTS): Tri[] {
-  const out: Tri[] = [];
+/** One slot's furniture and Rover in `state`'s still pose: the Rover's parts, treads, raised flag and antenna tip, its desk top, legs and desk screen. */
+function slotTris(s: OfficeSlot, state: OfficeState, out: Tri[]): void {
   const pose = stillPose(state);
   const frame = new Matrix4();
   const parts = new Float32Array(PARTS_PER_ROVER * 16);
   const treads = new Float32Array(TREADS_PER_ROVER * 16);
   const quad = new Float32Array(12);
   const { desk } = OFFICE;
-  for (const s of rowSlots(slots, 0)) {
-    roverFrame(s, pose, frame);
-    writeRover(frame, pose, parts, 0, treads);
-    for (let i = 0; i < PARTS_PER_ROVER + TREADS_PER_ROVER; i++) {
-      const m = new Matrix4().fromArray(i < PARTS_PER_ROVER ? parts : treads, (i < PARTS_PER_ROVER ? i : i - PARTS_PER_ROVER) * 16);
-      if (Math.abs(m.determinant()) < 1e-9) continue;
-      cubeTris(lift(m), out);
-    }
-    writeFlag(frame, pose, quad, 0);
-    const flag = quadCorners(quad);
-    out.push([flag[0], flag[1], flag[2]], [flag[0], flag[2], flag[3]]);
-    const tip = OFFICE_ROVER.tip;
-    cubeTris(lift(new Matrix4().multiplyMatrices(frame, new Matrix4().compose(new Vector3(tip.x, tip.y, tip.z), new Quaternion(), new Vector3(tip.size, tip.size, tip.size)))), out);
-    const turn = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), s.yaw);
-    const top = new Vector3(s.desk.x, Y + s.lift + desk.top - desk.slab / 2, s.desk.z);
-    cubeTris(new Matrix4().compose(top, turn, new Vector3(desk.w, desk.slab, desk.d)), out);
-    for (const side of [-1, 1]) {
-      const off = side * (desk.w / 2 - 0.2);
-      const leg = new Vector3(s.desk.x + off * Math.cos(s.yaw), Y + s.lift + (desk.top - desk.slab) / 2, s.desk.z - off * Math.sin(s.yaw));
-      cubeTris(new Matrix4().compose(leg, turn, new Vector3(desk.leg, desk.top - desk.slab, desk.d * 0.8)), out);
-    }
-    writeDeskScreen(s, quad, 0);
-    const [a, b, c, d] = quadCorners(quad);
-    out.push([a, b, c], [a, c, d]);
+  roverFrame(s, pose, frame);
+  writeRover(frame, pose, parts, 0, treads);
+  for (let i = 0; i < PARTS_PER_ROVER + TREADS_PER_ROVER; i++) {
+    const m = new Matrix4().fromArray(i < PARTS_PER_ROVER ? parts : treads, (i < PARTS_PER_ROVER ? i : i - PARTS_PER_ROVER) * 16);
+    if (Math.abs(m.determinant()) < 1e-9) continue;
+    cubeTris(lift(m), out);
   }
+  writeFlag(frame, pose, quad, 0);
+  const flag = quadCorners(quad);
+  out.push([flag[0], flag[1], flag[2]], [flag[0], flag[2], flag[3]]);
+  const tip = OFFICE_ROVER.tip;
+  cubeTris(lift(new Matrix4().multiplyMatrices(frame, new Matrix4().compose(new Vector3(tip.x, tip.y, tip.z), new Quaternion(), new Vector3(tip.size, tip.size, tip.size)))), out);
+  const turn = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), s.yaw);
+  const top = new Vector3(s.desk.x, Y + s.lift + desk.top - desk.slab / 2, s.desk.z);
+  cubeTris(new Matrix4().compose(top, turn, new Vector3(s.deskW, desk.slab, desk.d)), out);
+  for (const side of [-1, 1]) {
+    const off = side * (s.deskW / 2 - 0.2);
+    const leg = new Vector3(s.desk.x + off * Math.cos(s.yaw), Y + s.lift + (desk.top - desk.slab) / 2, s.desk.z - off * Math.sin(s.yaw));
+    cubeTris(new Matrix4().compose(leg, turn, new Vector3(desk.leg, desk.top - desk.slab, desk.d * 0.8)), out);
+  }
+  writeDeskScreen(s, quad, 0);
+  const [a, b, c, d] = quadCorners(quad);
+  out.push([a, b, c], [a, c, d]);
+}
+
+/** The occluders shared by every back-row target: the front row in `state`'s still pose and the riser blocks. */
+export function frontRowTris(state: OfficeState = "working", slots: readonly OfficeSlot[] = SLOTS): Tri[] {
+  const out: Tri[] = [];
+  for (const s of rowSlots(slots, 0)) slotTris(s, state, out);
   for (const s of rowSlots(slots, 1)) {
     const r = officeRiser(W, OFFICE.rows[s.row], s.theta)!;
     const turn = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), r.yaw);
@@ -136,13 +140,23 @@ export interface RowVisibility {
   screen: number;
 }
 
-/** Each back-row Rover's face and desk screen: the fraction `camera` sees past the front row (`state` its still pose). */
+/**
+ * Each back-row Rover's face and desk screen in `state`'s still pose: the fraction `camera` sees past the front row, the
+ * riser blocks and its back-row neighbours (their Rovers, desks and desk screens), every Rover in the same still pose.
+ */
 export function backRowVisibility(camera: PerspectiveCamera, size: Size, state: OfficeState = "working", slots: readonly OfficeSlot[] = SLOTS): RowVisibility[] {
-  const occluders = frontRowTris(state, slots);
-  const pose = stillPose("working");
+  const shared = frontRowTris(state, slots);
+  const back = rowSlots(slots, 1);
+  const own = back.map((s) => {
+    const out: Tri[] = [];
+    slotTris(s, state, out);
+    return out;
+  });
+  const pose = stillPose(state);
   const frame = new Matrix4();
   const quad = new Float32Array(12);
-  return rowSlots(slots, 1).map((s) => {
+  return back.map((s, i) => {
+    const occluders = [...shared, ...own.filter((_, j) => j !== i).flat()];
     roverFrame(s, pose, frame);
     writeFace(frame, quad, 0);
     const face = unoccluded(camera, size, quadCorners(quad), occluders);

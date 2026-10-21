@@ -465,16 +465,23 @@ describe("Agent Office chips at the office stop", () => {
       if (height > 390) expect(approach!.y0, "wing sign under the top bar").toBeGreaterThanOrEqual(hudBar(size));
     });
 
-    it("end every leader line at the screen wall's top with a tick, off the screens' text (faded to the head where the chip row sits over the wall: a landscape phone), also at a desktop's near pose", () => {
+    it("end every leader line at the screen wall's top with a tick, off the screens' text (faded to the head where the chip row sits over the wall), also at a desktop's near pose", () => {
       // The tablet camera's near pose raises the wall's top over the row (its leader lines fade); phones keep compact dots.
+      // Until Task 6 retunes the view: the 32 u wing (4.5 u behind the back row) raises the wall's top over the chip row on
+      // every size but the portrait tablet (`WALL_TOP` in tests/unit/office-view.test.ts), so those leader lines fade.
       for (const steps of cls === "desktop" ? [0, NEAR_STEPS[cls]] : [0]) {
         const camera = stopCamera(width, height, steps);
         const row = chipRow(camera, size);
         const [x0, y0, x1, y1] = wallTopLine(camera, size);
         for (const c of row.chips) {
           const lead = c.lead!;
+          // A faded line runs to the head, so it may cross a HUD box and hide: desk 5's at 1280 x 720's near pose.
+          if (lead === null && id !== "portrait tablet") {
+            expect(`${id} ${steps} ${c.slot}`, "the one hidden leader line").toBe(`small desktop ${NEAR_STEPS.desktop} 4`);
+            continue;
+          }
           expect(lead, `slot ${c.slot}'s leader line (${steps} steps)`).not.toBeNull();
-          if (id === "landscape phone") {
+          if (id !== "portrait tablet") {
             expect([lead.tick, lead.faded], `slot ${c.slot} faded over the wall`).toEqual([false, true]);
             continue;
           }

@@ -35,7 +35,7 @@ export function officeInteractables(slots: readonly OfficeSlot[], labels: Office
       const mid = (front + back) / 2;
       const d = back - front;
       const center = { x: w.arc.x + mid * Math.sin(s.theta), z: w.arc.z + mid * Math.cos(s.theta) };
-      const h = turnedHalf(OFFICE.desk.w, d, s.yaw);
+      const h = turnedHalf(s.deskW, d, s.yaw);
       return {
         id: `L1:station:office-desk-${s.slot + 1}`,
         floor: "L1",
@@ -43,7 +43,7 @@ export function officeInteractables(slots: readonly OfficeSlot[], labels: Office
         label: labels.desk(s.slot),
         at,
         bounds: { minX: center.x - h.x, maxX: center.x + h.x, minZ: center.z - h.z, maxZ: center.z + h.z },
-        box: { center, w: OFFICE.desk.w, d, yaw: s.yaw },
+        box: { center, w: s.deskW, d, yaw: s.yaw },
         ...(s.lift > 0 ? { base: s.lift } : {}),
         height: s.lift + ROVER_TOP,
         action: { type: "open-room", room: officeDeskRoom(s.slot) },

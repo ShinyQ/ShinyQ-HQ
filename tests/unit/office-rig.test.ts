@@ -34,14 +34,18 @@ describe("Agent Office Rover rig", () => {
     expect(new Vector3().setFromMatrixPosition(new Matrix4().fromArray(treads, 0)).y).toBeCloseTo(OFFICE_ROVER.treads[0][1], 5);
   });
 
-  it("stands each desk screen on its desk, inside the desk's width, facing the plaza", () => {
+  it("stands each desk screen on its desk, inside its row's desk width and depth, facing the plaza", () => {
     const positions = new Float32Array(slots.length * 4 * 3);
     for (const s of slots) writeDeskScreen(s, positions, s.slot);
     for (const s of slots) {
       for (let k = 0; k < 4; k++) {
         const c = corner(positions, s.slot, k);
-        expect(c.y).toBeGreaterThanOrEqual(OFFICE.desk.top);
-        expect(Math.hypot(c.x - s.desk.x, c.z - s.desk.z)).toBeLessThanOrEqual(OFFICE.desk.w / 2 + 0.05);
+        expect(c.y).toBeGreaterThanOrEqual(s.lift + OFFICE.desk.top);
+        // In the desk's frame: local x (cos yaw, -sin yaw) across, local z (sin yaw, cos yaw) along the radius.
+        const dx = c.x - s.desk.x;
+        const dz = c.z - s.desk.z;
+        expect(Math.abs(dx * Math.cos(s.yaw) - dz * Math.sin(s.yaw)), `desk ${s.slot + 1} across`).toBeLessThanOrEqual(s.deskW / 2);
+        expect(Math.abs(dx * Math.sin(s.yaw) + dz * Math.cos(s.yaw)), `desk ${s.slot + 1} along`).toBeLessThanOrEqual(OFFICE.desk.d / 2);
       }
       const bl = corner(positions, s.slot, 0);
       const br = corner(positions, s.slot, 1);

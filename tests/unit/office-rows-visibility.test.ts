@@ -12,8 +12,9 @@ import { backRowVisibility, everyRoverInFrame } from "../helpers/office-rows";
  * The second, raised console row from the office stop (owner decision 2026-10-21, design 5.10): every back-row Rover's
  * face and desk screen at least 80% unoccluded by the front row on the desktop and tablet camera classes; on portrait
  * screens every Rover (both rows) in frame and the back row at least 60% unoccluded. Measured from the settled follow
- * camera at the stop in the `L1:office` view zone (`OFFICE.view`, per class) and at the desktop near pose, against the front row
- * in every state's still pose (a raised flag included). A retuned `OFFICE.view` or `OFFICE.rows` reruns it unchanged.
+ * camera at the stop in the `L1:office` view zone (`OFFICE.view`, per class) and at the desktop near pose, in every state's
+ * still pose (a raised flag included) for the target Rovers and their occluders alike: the front row, the riser blocks and
+ * the target's back-row neighbours (their Rovers, desks and desk screens). A retuned `OFFICE.view` or `OFFICE.rows` reruns it unchanged.
  */
 const W = LOBBY.officeWing;
 const slots = officeSlots(W);

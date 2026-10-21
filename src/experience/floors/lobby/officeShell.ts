@@ -86,10 +86,10 @@ export function officeShellBoxes(): Box[] {
   const w = LOBBY.officeWing;
   const out: Box[] = [];
   for (const s of OFFICE_SLOTS) {
-    out.push({ x: s.desk.x, y: s.lift + desk.top - desk.slab, z: s.desk.z, w: desk.w, h: desk.slab, d: desk.d, yaw: s.yaw });
+    out.push({ x: s.desk.x, y: s.lift + desk.top - desk.slab, z: s.desk.z, w: s.deskW, h: desk.slab, d: desk.d, yaw: s.yaw });
     for (const side of [-1, 1]) {
       // Local x is (cos yaw, -sin yaw) in floor x and z.
-      const off = side * (desk.w / 2 - 0.2);
+      const off = side * (s.deskW / 2 - 0.2);
       out.push({ x: s.desk.x + off * Math.cos(s.yaw), y: s.lift, z: s.desk.z - off * Math.sin(s.yaw), w: desk.leg, h: desk.top - desk.slab, d: desk.d * 0.8, yaw: s.yaw });
     }
   }

@@ -50,7 +50,7 @@ export function officeFrameOf(camera: PerspectiveCamera, size: Size): OfficeFram
       const sn = Math.sin(s.yaw);
       const y = Y + s.lift;
       const desk = [-1, 1].flatMap((u) =>
-        [-1, 1].map((v) => [s.desk.x + (u * r.w * c) / 2 + (v * r.d * sn) / 2, y + r.top, s.desk.z - (u * r.w * sn) / 2 + (v * r.d * c) / 2] as const),
+        [-1, 1].map((v) => [s.desk.x + (u * s.deskW * c) / 2 + (v * r.d * sn) / 2, y + r.top, s.desk.z - (u * s.deskW * sn) / 2 + (v * r.d * c) / 2] as const),
       );
       return [...desk, [s.rover.x, y, s.rover.z] as const, [s.rover.x, y + HEAD_TOP, s.rover.z] as const];
     });

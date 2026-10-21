@@ -78,7 +78,7 @@ describe("Minimap", () => {
 
   it("draws a slab with a wing (L1's office wing) as one filled path and an outline without the joint", () => {
     const b = layouts.L1.bounds;
-    expect(layouts.L1.wings).toEqual([{ minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 29 }]);
+    expect(layouts.L1.wings).toEqual([{ minX: -12, maxX: 18, minZ: b.maxZ, maxZ: b.maxZ + 32 }]);
     mount();
     const slab = screen.getByTestId("minimap").querySelector("[data-map='slab']")!;
     const paths = slab.querySelectorAll("path");

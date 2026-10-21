@@ -82,7 +82,7 @@ export function writeCrewGlow(slot: OfficeSlot, frame: Matrix4, state: OfficeSta
   const desk = base + CREW_GLOW.desk;
   const edge = OFFICE.desk.d / 2 - 0.05;
   V.set(slot.desk.x + Math.sin(slot.yaw) * edge, slot.lift + OFFICE.desk.top + 0.01, slot.desk.z + Math.cos(slot.yaw) * edge);
-  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(OFFICE.desk.w * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
+  M.compose(V, Q.setFromAxisAngle(UP, slot.yaw).multiply(FLAT), S.set(slot.deskW * 0.85, 0.12, 1)).toArray(matrices, desk * 16);
   C.set(tone).multiplyScalar(0.6 * fx.deskLight).toArray(colors, desk * 3);
   for (let i = 0; i < DRONES.max; i++) {
     dronePoint(i, drones, t, phase, reduced, P);

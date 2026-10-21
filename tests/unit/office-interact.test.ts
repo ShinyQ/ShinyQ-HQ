@@ -33,7 +33,7 @@ describe("Agent Office point-and-go targets", () => {
       const item = items[2 + s.slot];
       const row = OFFICE.rows[s.row];
       expect(item.box?.yaw).toBe(s.yaw);
-      expect(item.box?.w).toBe(OFFICE.desk.w);
+      expect(item.box?.w).toBe(row.deskW);
       expect(item.box?.d).toBeCloseTo(row.roverRadius + OFFICE.rover.radius - (row.deskRadius - OFFICE.desk.d / 2));
       expect(item.base ?? 0).toBe(s.lift);
       expect(item.height).toBeCloseTo(s.lift + 2.7);
