@@ -60,6 +60,8 @@ const FRESH_MS = 60_000;
  */
 export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; reduced: () => boolean; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
   let s: ReplayState = { ...REPLAY_OFF };
+  /** The playback time, copied into `s` on a publish (or a `state()` read) only: no state copy per frame. */
+  let playS = 0;
   let h: OfficeHistoryV1 | null = null;
   let plan: ReplayPlan | null = null;
   let epoch = 0;
@@ -72,7 +74,8 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
   let index: { days: OfficeHistoryDay[]; at: number } | null = null;
 
   const set = (patch: Partial<ReplayState>, next: OfficeFeedSnapshot | null = snap) => {
-    s = { ...s, ...patch };
+    s = { ...s, playS, ...patch };
+    playS = s.playS;
     snap = next;
     deps.publish(s, snap);
   };
@@ -87,9 +90,9 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
   /** The snapshot at the current playback time, published when its content changed (or `force`), else only a new `dayS`. */
   function render(force = false): void {
     if (!h || !plan) return;
-    const next = snapshotAt(h, plan, s.playS, epoch);
+    const next = snapshotAt(h, plan, playS, epoch);
     const k = snapKey(next);
-    const dayS = Math.round(dayTime(plan, s.playS));
+    const dayS = Math.round(dayTime(plan, playS));
     if (force || k !== key) {
       key = k;
       set({ dayS }, next);
@@ -132,7 +135,7 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
     },
     resume() {
       if (s.status !== "paused" || deps.reduced()) return;
-      epoch = deps.now() - s.playS * 1000;
+      epoch = deps.now() - playS * 1000;
       set({ status: "playing", seq: s.seq + 1 });
     },
     seek(playS) {
@@ -167,8 +170,7 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
         return render(true);
       }
       if (s.status !== "playing") return;
-      const playS = Math.min(plan.duration, s.playS + dt);
-      s = { ...s, playS };
+      playS = Math.min(plan.duration, playS + dt);
       if (playS >= plan.duration) {
         if (s.auto) {
           rest = REPLAY.restS;
@@ -182,7 +184,7 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
         render();
       }
     },
-    state: () => s,
+    state: () => (s.playS === playS ? s : (s = { ...s, playS })),
   };
   return ctl;
 }

@@ -251,6 +251,22 @@ describe("office replay feed", () => {
     expect(h.last().state.playS).toBe(0);
   });
 
+  it("keeps the playback time off the published state between ticks, and state() reads it exact", async () => {
+    const h = harness();
+    await h.feed.play(TODAY);
+    h.feed.step(REPLAY.tickS / 5, false);
+    const before = h.published.length;
+    const s = h.last().state;
+    h.feed.step(REPLAY.tickS / 5, false);
+    h.feed.step(REPLAY.tickS / 5, false);
+    expect(h.published.length).toBe(before);
+    expect(h.last().state).toBe(s);
+    expect(s.playS).toBeLessThan((REPLAY.tickS * 2) / 5);
+    expect(h.feed.state().playS).toBeCloseTo((REPLAY.tickS * 3) / 5, 9);
+    h.feed.pause();
+    expect(h.last().state.playS).toBeCloseTo((REPLAY.tickS * 3) / 5, 9);
+  });
+
   it("ends an `auto` replay on a reduced-motion step, never a visitor's", async () => {
     const h = harness();
     await h.feed.auto();

@@ -960,7 +960,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     () => () => {
       Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false });
       Object.assign(sceneProbes.office.pipe, { packets: 0, bursts: 0, crowns: 0, packages: 0, deployFailed: 0, stack: 0 });
-      sceneProbes.office.replay = { status: "off", day: null, playS: 0, dayS: 0, auto: false, seq: 0 };
+      sceneProbes.office.replay = undefined;
     },
     [],
   );
