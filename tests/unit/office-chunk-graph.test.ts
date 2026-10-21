@@ -50,7 +50,8 @@ function files(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-describe("Agent Office chunk boundary", () => {
+// Walks the import graph of src/; a loaded CI runner can pass the 5 s default.
+describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
   it("keeps the office-only code, the watch and the beacon out of the main 3D chunk, the gate and the HUD", () => {
     for (const entry of MAIN_ENTRIES) {
       const main = staticClosure(entry);

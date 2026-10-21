@@ -310,7 +310,8 @@ function wallBox(camera: PerspectiveCamera, size: { width: number; height: numbe
   return boxOf(camera, size, xs.flatMap((px) => ys.map((py) => [px, py, z] as const)));
 }
 
-describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", () => {
+// Heavy: random rows and 3D pose sweeps; a loaded CI runner can pass the 5 s default.
+describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", { timeout: 30_000 }, () => {
   const gap = CHIP_ROW.gap;
   const run = (targets: number[], half: number[], bounds = { left: 0, right: 1000 }) => {
     const out: number[] = [];
@@ -411,7 +412,7 @@ describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", () => {
     expect(chipRowBounds(1100, top, officeHudBoxes(1100, 360, "desktop")).right).toBe(1100 - 235 - CHIP_ROW.edge);
     // The joystick and the panel of a tall window stay out of the band.
     expect(chipRowBounds(1440, top, officeHudBoxes(1440, 900, "desktop")).right).toBe(1440 - CHIP_ROW.edge);
-    // Five chips always fit: the max width shrinks on a narrow row.
+    // Five named chips (no dots) always fit: the max width shrinks on a narrow row.
     expect(chipMaxWidth({ left: 304, right: 1432 }, 5)).toBe(CHIP_ROW.max);
     expect(chipMaxWidth({ left: 8, right: 684 }, 5)).toBe(Math.floor((676 - 4 * CHIP_ROW.gap) / 5));
   });
@@ -506,7 +507,7 @@ describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", () => {
   });
 });
 
-describe("Agent Office chips at the office stop", () => {
+describe("Agent Office chips at the office stop", { timeout: 30_000 }, () => {
   it("anchor at each Rover's head top (no pose moves them)", () => {
     expect(OFFICE_ROVER_HEAD_TOP).toBeCloseTo(OFFICE_ROVER.head[1] + OFFICE_ROVER.head[4] / 2, 12);
     const all = officeSlots(W);

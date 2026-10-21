@@ -20,7 +20,8 @@ const W = LOBBY.officeWing;
 const slots = officeSlots(W);
 const MIN: Record<ViewportClass, number> = { desktop: 0.8, tablet: 0.8, mobile: 0.6 };
 
-describe("the back console row seen from the office stop", () => {
+// Heavy: ray-cast occlusion per state and pose; a loaded CI runner can pass the 5 s default.
+describe("the back console row seen from the office stop", { timeout: 30_000 }, () => {
   it("stands behind the front row, raised, one Rover per seat (slots 5 to 9)", () => {
     const [front, back] = [rowSlots(slots, 0), rowSlots(slots, 1)];
     expect(back.map((s) => s.slot)).toEqual([5, 6, 7, 8, 9]);
