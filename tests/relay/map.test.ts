@@ -42,8 +42,11 @@ describe("mapEvent", () => {
       preToolUse: ["testing", "testing"],
       preToolUseCi: ["ci", "ci"],
       preToolUseMcp: null,
-      // Mapped like any edit; runHook drops it before mapping (it comes from inside a helper).
+      // Mapped like the parent's own events; runHook counts them as a helper before mapping (they come from inside one).
       preToolUseInHelper: ["working", "editing"],
+      userPromptSubmittedInHelper: ["thinking", "planning"],
+      permissionRequestInHelper: ["input", "asking"],
+      agentStopInHelper: ["done", "finished"],
       postToolUseEdit: ["working", "editing"],
       postToolUseView: ["reviewing", "reading"],
       postToolUseBash: ["thinking", "planning"],

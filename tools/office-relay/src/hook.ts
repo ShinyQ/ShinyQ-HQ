@@ -1,7 +1,7 @@
 import { OFFICE_AGENTS, parseOfficeBeat, type OfficeAgent, type OfficeBeatV1 } from "../../../src/lib/office/protocol";
 import { buildBeat, shouldSend, type Sent } from "./beat";
 import type { GitInfo } from "./git";
-import { applyHelper, hashHelper, helperCount, helperEvent, helperId, parentSession } from "./helpers";
+import { applyHelper, copilotHelperOf, hashHelper, helperCount, helperEvent, helperId, parentSession } from "./helpers";
 import { isPermissionCheck, mapEvent, payloadCwd, rawSessionId, toolName, type Mapped } from "./map";
 import { sessionHash } from "./session";
 import { appendLog, clearHelpers, isPaused, loadConfig, loadSalt, readHelpers, readLastTool, readSent, withHelpersLock, writeHelpers, writeLastTool, writeSent, type RelayPaths } from "./store";
@@ -32,18 +32,21 @@ function send(deps: HookDeps, session: string, beat: OfficeBeatV1, label: string
 
 /**
  * A sub-agent start or stop: only the number of live helpers of the parent session leaves the machine (no name, type,
- * prompt, id or path). The beat repeats the session's last state; it is sent only when the count changes.
+ * prompt, id or path). The beat repeats the session's last state; it is sent only when the count changes. With
+ * `needsDesk`, a parent that has sent no beat yet is left alone (a nested helper's parent is a helper, not a desk).
  */
-function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", payload: Record<string, unknown>, deps: HookDeps, now: number): Outcome {
+function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", parent: string | null, id: string | null, payload: Record<string, unknown>, deps: HookDeps, now: number, needsDesk = false): Outcome {
   const { paths } = deps;
-  const parent = parentSession(agent, payload);
   if (!parent) {
     appendLog(paths, `${agent} ${event} no-parent ignored`);
     return "ignored";
   }
   const salt = loadSalt(paths);
   const session = sessionHash(agent, parent, salt);
-  const id = helperId(agent, payload);
+  if (needsDesk && !readSent(paths, session)) {
+    appendLog(paths, `${agent} ${event} ignored`);
+    return "ignored";
+  }
   // Read, apply, write and send under one lock: two helpers stopping at once both count.
   return withHelpersLock(paths, session, () => {
     const state = applyHelper(readHelpers(paths, session), kind, id ? hashHelper(id, salt) : null, now);
@@ -66,10 +69,25 @@ function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", pa
 }
 
 /**
- * Copilot reports a helper's own tool events under the helper's own session id, with `agentId` (camelCase hooks) or
+ * Copilot reports a helper's own events under the helper's own session id, with `agentId` (camelCase hooks) or
  * `agent_id` set ("hooks that fire inside a subagent include extra fields"); they would open a desk of their own.
  */
 const insideCopilotHelper = (p: Record<string, unknown>) => [p.agentId, p.agent_id].some((x) => typeof x === "string" && x.length > 0);
+
+/**
+ * An event from inside a Copilot helper counts that helper on its parent's desk (`parentAgentId`), and the helper's
+ * `agentStop` ends it. Copilot loads hooks when a session starts, so a session that began before `subagentStart` was
+ * installed never fires it; its helpers still count this way. Never a desk of its own, never a state change.
+ */
+function runCopilotHelperEvent(event: string, payload: Record<string, unknown>, deps: HookDeps, now: number): Outcome {
+  const inner = copilotHelperOf(payload);
+  const label = `${event} helper-event`;
+  if (!inner) {
+    appendLog(deps.paths, `copilot ${label} ignored`);
+    return "ignored";
+  }
+  return runHelper("copilot", label, event.toLowerCase() === "agentstop" ? "stop" : "start", inner.parent, inner.id, payload, deps, now, true);
+}
 
 /**
  * The hook path: local work only (map, git files, hash, dedupe), then `dispatch`. Throws nothing the caller must
@@ -90,12 +108,9 @@ export function runHook(agent: string, event: string, stdin: string, deps: HookD
   const safeEvent = event.replace(/[^A-Za-z]/g, "").slice(0, 32);
   const now = deps.now();
   const helper = helperEvent(agent, safeEvent);
-  if (helper) return runHelper(agent, safeEvent, helper, payload, deps, now);
+  if (helper) return runHelper(agent, safeEvent, helper, parentSession(agent, payload), helperId(agent, payload), payload, deps, now);
   // A helper counts once, as a drone on its parent's desk, never as its own desk.
-  if (agent === "copilot" && insideCopilotHelper(payload)) {
-    appendLog(paths, `${agent} ${safeEvent} helper-event ignored`);
-    return "ignored";
-  }
+  if (agent === "copilot" && insideCopilotHelper(payload)) return runCopilotHelperEvent(safeEvent, payload, deps, now);
   const sessionOf = () => sessionHash(agent, rawSessionId(payload) ?? `${payloadCwd(payload) ?? "unknown"}`, loadSalt(paths));
   // Copilot's permissionRequest right after the preToolUse of the same tool is a permission check, not a prompt (map.ts).
   const copilotEvent = agent === "copilot" ? safeEvent.toLowerCase() : "";

@@ -28,11 +28,21 @@ const str = (x: unknown): string | null => (typeof x === "string" && x.length > 
 
 /**
  * The tool's own id for the helper (never sent; only its salted hash is stored locally). Claude Code and Codex send
- * `agent_id` on both events. Copilot's `subagentStart` names no helper (an `agentId` there names the agent that fired
- * the hook), so Copilot helpers are anonymous: every start counts and every stop ends the oldest.
+ * `agent_id` on both events. Copilot CLI 1.0.99 sends the same `agentId` on `subagentStart` and `subagentStop` (it is
+ * also the helper's own `sessionId`); a build that omits it on the start counts that helper anonymously.
  */
 export function helperId(agent: OfficeAgent, p: Record<string, unknown>): string | null {
-  return agent === "copilot" ? null : str(p.agent_id);
+  return agent === "copilot" ? (str(p.agentId) ?? str(p.agent_id)) : str(p.agent_id);
+}
+
+/**
+ * A Copilot event fired inside a helper names the helper (`agentId`) and its parent session (`parentAgentId`, the
+ * parent's `sessionId`). Null when either is missing, or for a helper that names itself as its own parent.
+ */
+export function copilotHelperOf(p: Record<string, unknown>): { parent: string; id: string } | null {
+  const id = str(p.agentId) ?? str(p.agent_id);
+  const parent = str(p.parentAgentId) ?? str(p.parent_agent_id);
+  return id && parent && id !== parent ? { parent, id } : null;
 }
 
 /** The raw id of the session that runs the helper: every tool's sub-agent hooks carry the parent's session id. */
@@ -56,12 +66,10 @@ export function applyHelper(s: HelperState, kind: "start" | "stop", idHash: stri
     for (const old of keys.slice(0, Math.max(0, keys.length - MAX_IDS))) delete ids[old];
     return { ids };
   }
-  if (idHash) {
-    delete ids[idHash];
-  } else {
-    const oldest = entries[0];
-    if (oldest) delete ids[oldest[0]];
-  }
+  // A stop that names no helper ends the oldest one; one that names a helper never seen ends the oldest anonymous
+  // one (a Copilot build whose start omits `agentId`), else nothing (an internal agent, or a helper already ended).
+  const oldest = idHash === null ? entries[0] : idHash in ids ? ([idHash, 0] as const) : entries.find(([k]) => k.startsWith("anon:"));
+  if (oldest) delete ids[oldest[0]];
   return { ids };
 }
 

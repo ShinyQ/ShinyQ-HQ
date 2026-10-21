@@ -255,17 +255,26 @@ describe("runHook: sub-agent helpers (count only)", () => {
     });
   }
 
-  it("copilot: starts carry no helper id, so each counts and each stop ends the oldest", () => {
+  it("copilot: the start and stop name the helper by agentId; a start without one counts anonymously", () => {
     const { d, sent, tick } = deps();
     const cp = HOOK_FIXTURES.copilot;
-    runHook("copilot", "subagentStart", json(cp.subagentStart), d);
+    const other = { ...cp.subagentStart, agentId: "helper-b" };
+    expect(runHook("copilot", "subagentStart", json(cp.subagentStart), d)).toBe("sent");
     tick(10);
-    runHook("copilot", "subagentStart", json(cp.subagentStart), d);
+    expect(runHook("copilot", "subagentStart", json(cp.subagentStart), d)).toBe("skipped");
+    expect(runHook("copilot", "subagentStart", json(other), d)).toBe("sent");
     tick(10);
-    runHook("copilot", "subagentStop", json(cp.subagentStop), d);
+    // Out of order: the second helper stops first, and its own id ends it.
+    expect(runHook("copilot", "subagentStop", json({ ...cp.subagentStop, agentId: "helper-b" }), d)).toBe("sent");
     tick(10);
-    runHook("copilot", "subagentStop", json(cp.subagentStop), d);
-    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 2, 1, 0]);
+    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("sent");
+    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("skipped");
+    // The npm build: no agentId on the start, the stop's agentId is unknown, so it ends the oldest anonymous helper.
+    tick(10);
+    expect(runHook("copilot", "subagentStart", json(cp.subagentStartAnon), d)).toBe("sent");
+    tick(10);
+    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("sent");
+    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 2, 1, 0, 1, 0]);
   });
 
   it("a helper of a session with no beat yet shows the desk working", () => {
@@ -364,6 +373,7 @@ describe("runHook: sub-agent helpers (count only)", () => {
 
 describe("runHook: a helper counts once, as a drone, never as its own desk", () => {
   const json = (p: Record<string, unknown>) => JSON.stringify(p);
+  const beats = (sent: string[]) => sent.map((b) => JSON.parse(b) as Record<string, unknown>);
 
   it("copilot: ignores a tool event from inside a helper (its own session id, agentId set) and logs no payload text", () => {
     const { d, sent, home } = deps();
@@ -389,13 +399,62 @@ describe("runHook: a helper counts once, as a drone, never as its own desk", () 
     expect(sent.map((b) => JSON.parse(b).state)).toEqual(["testing", "working"]);
   });
 
-  it("copilot: the helper's start and stop still count on the parent's desk", () => {
+  it("copilot: the helper's start and stop still count on the parent's desk; its own events change nothing more", () => {
     const { d, sent } = deps();
     const cp = HOOK_FIXTURES.copilot;
     expect(runHook("copilot", "subagentStart", json(cp.subagentStart), d)).toBe("sent");
-    expect(runHook("copilot", "preToolUse", json(cp.preToolUseInHelper), d)).toBe("ignored");
-    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("sent");
+    for (const key of ["userPromptSubmittedInHelper", "preToolUseInHelper", "permissionRequestInHelper"]) {
+      expect(runHook("copilot", eventOf("copilot", key), json(cp[key]), d), key).toBe("skipped");
+    }
+    expect(runHook("copilot", "agentStop", json(cp.agentStopInHelper), d)).toBe("sent");
+    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("skipped");
     expect(sent.map((b) => JSON.parse(b).helpers)).toEqual([1, 0]);
+    expect(new Set(sent.map((b) => JSON.parse(b).state))).toEqual(new Set(["working"]));
+  });
+
+  it("copilot: a session that began before subagentStart was installed counts its helpers from their own events", () => {
+    // Copilot loads hooks when a session starts: such a session fires no subagentStart or subagentStop at all.
+    const { d, sent, tick, home } = deps();
+    const cp = HOOK_FIXTURES.copilot;
+    expect(runHook("copilot", "userPromptSubmitted", json(cp.userPromptSubmitted), d)).toBe("sent");
+    tick(10);
+    expect(runHook("copilot", "userPromptSubmitted", json(cp.userPromptSubmittedInHelper), d)).toBe("sent");
+    tick(10);
+    expect(runHook("copilot", "preToolUse", json(cp.preToolUseInHelper), d)).toBe("skipped");
+    expect(runHook("copilot", "permissionRequest", json(cp.permissionRequestInHelper), d)).toBe("skipped");
+    tick(10);
+    expect(runHook("copilot", "agentStop", json(cp.agentStopInHelper), d)).toBe("sent");
+    const [parent, started, ended] = beats(sent);
+    expect(started).toMatchObject({ session: parent.session, state: "thinking", activity: "planning", helpers: 1 });
+    expect(ended).toMatchObject({ session: parent.session, state: "thinking", activity: "planning", helpers: 0 });
+    const log = readFileSync(path.join(home, ".office-relay", "relay.log"), "utf8");
+    expect(log).toContain("copilot userPromptSubmitted helper-event helpers 1 sent");
+    expect(log).toContain("copilot agentStop helper-event helpers 0 sent");
+    for (const body of [...sent, log]) for (const secret of PLANTED) expect(body).not.toContain(secret);
+  });
+
+  it("copilot: a helper's own events keep it counted past the TTL while it works", () => {
+    const { d, sent, tick } = deps();
+    const cp = HOOK_FIXTURES.copilot;
+    runHook("copilot", "subagentStart", json(cp.subagentStart), d);
+    tick(HELPER_TTL_MS - 1000);
+    expect(runHook("copilot", "preToolUse", json(cp.preToolUseInHelper), d)).toBe("skipped");
+    tick(2000);
+    expect(runHook("copilot", "postToolUse", json(cp.postToolUseEdit), d)).toBe("sent");
+    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 1]);
+  });
+
+  it("copilot: a nested helper (its parent is a helper, not a desk) or one without parentAgentId counts nothing", () => {
+    const { d, sent, home } = deps();
+    const cp = HOOK_FIXTURES.copilot;
+    runHook("copilot", "userPromptSubmitted", json(cp.userPromptSubmitted), d);
+    const nested = { ...cp.preToolUseInHelper, sessionId: "raw-helper-session-456", agentId: "raw-helper-session-456", parentAgentId: "raw-parent-agent-789" };
+    expect(runHook("copilot", "preToolUse", json(nested), d)).toBe("ignored");
+    const { parentAgentId, ...orphan } = cp.preToolUseInHelper;
+    expect(parentAgentId).toBe("raw-session-123");
+    expect(runHook("copilot", "preToolUse", json(orphan), d)).toBe("ignored");
+    expect(sent.length).toBe(1);
+    expect(readFileSync(path.join(home, ".office-relay", "relay.log"), "utf8").match(/copilot preToolUse helper-event ignored/g)).toHaveLength(2);
   });
 
   for (const agent of ["claude", "codex"] as const) {
