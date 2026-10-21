@@ -24,10 +24,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 /**
  * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB. `failAt` gates the critical
  * path before the first frame (`?prefetch=off`), one cap for both tiers set by the larger, full: 466.4 KB (measured
- * 465.8 KB full, 450.0 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
+ * 465.4 KB full, 449.6 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks + the office
- * watch and scene chunks) has its own cap per tier: full 517.5 KB (measured 517.0 KB), lite 501.7 KB (measured 501.2 KB). Owner decisions 2026-10-16
+ * watch and scene chunks) has its own cap per tier: full 518.7 KB (measured 518.1 KB), lite 503.0 KB (measured 502.4 KB). Owner decisions 2026-10-16
  * and 2026-10-19 (the Study Vault; the floor layouts moved out of the Classic bundle, option A; the inline idle frame
  * cadence, option A), relayed for the L1 Agent Office 2026-10-19/20: each cap, `failAt` included, is the measured value
  * plus about 0.6 KB, re-set whenever the office merges main, for the office's look offset and ghost outline rule on the
@@ -37,7 +37,8 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * higher wall (2026-10-20: the camera's settled flag and the held look offset on the main path) and its fix round (the
  * camera's zone hold and the chip mode and placement helpers on the main path), and re-set for the office crew (2026-10-21:
  * the living crew, the helper drones, the beacon and the watch) and for the always-live office (owner decision 2026-10-21,
- * docs/decisions/2026-10-21-office-always-live-budgets.md: the office scene chunk joins the session total).
+ * docs/decisions/2026-10-21-office-always-live-budgets.md: the office scene chunk joins the session total) and for the ten
+ * desks (owner decision 2026-10-21, docs/decisions/2026-10-21-office-live-ten-budgets.md: ten Rovers on two rows).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
@@ -57,20 +58,20 @@ export const BYTES_3D_BUDGET = {
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
-  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 21,406 B, cap 22,020 B). */
-  office: Math.round(21.504 * 1024),
-  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,203 B, cap 7,526 B). */
+  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 22,923 B, cap 23,537 B). */
+  office: Math.round(22.985 * 1024),
+  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,291 B, cap 7,526 B). */
   officeBody: Math.round(7.35 * 1024),
   /** L1 Agent Office total: the scene chunk plus the drawer body (plus the replay chunk once it ships), the office chunks' own cap. */
   officeTotal: 40 * 1024,
-  /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,461 B, cap 2,075 B). */
+  /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,472 B, cap 2,075 B). */
   officeWatch: Math.round(2.026 * 1024),
-  /** L1 office beacon chunk (the beacon mesh, on the first Needs Kurniadi ask), incremental over the office chunks, outside the session total (measured 1,475 B, cap 2,085 B). */
+  /** L1 office beacon chunk (the beacon mesh, on the first Needs Kurniadi ask), incremental over the office chunks, outside the session total (measured 1,614 B, cap 2,085 B). */
   officeBeacon: Math.round(2.036 * 1024),
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
-  /** Main path + the session floors + the office watch and scene chunks (measured 513,242 B lite, 529,376 B full). */
-  session: { lite: Math.round(501.7 * 1024), full: Math.round(517.5 * 1024) },
+  /** Main path + the session floors + the office watch and scene chunks (measured 514,424 B lite, 530,558 B full). */
+  session: { lite: Math.round(503.0 * 1024), full: Math.round(518.7 * 1024) },
 } as const;
 
 /**
