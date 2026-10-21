@@ -122,6 +122,10 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 
 #### Program baseline and known peaks
 
+- Programs are read once settled (`waitForStablePrograms` in `e2e/perf/helpers.ts`, used by `floors.spec.ts` and `daynight.spec.ts`): the program count and the warmed floors must read the same over two `PROGRAM_SETTLE.frames` (60) frame windows in a row and at least 5 s.
+  - The deadline follows the frame rate, not a fixed time (`programSettleMs` in `e2e/budgets.ts`): room for `PROGRAM_SETTLE.windows` (3) windows at the slowest window's frame time, never under 90 s (or the caller's timeout), never over 6 min. Time granted past the 90 s floor extends the test's timeout, as `waitForFloor` does.
+  - Why: the slowest CI runner (4 x EPYC 7763) renders the full-tier L1 at about 1.5 s a frame, so one window takes about 90 s with no change in programs.
+  - A timeout names its cause (programs that changed, or too few windows with no change seen), the frames per window and the slowest measured frame time.
 - After an intended material or precompile change, regenerate the program baseline and say why in the PR:
   1. `PERF=1 E2E_PORT=<port> bunx playwright test e2e/perf/floors.spec.ts`
   2. `bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json`

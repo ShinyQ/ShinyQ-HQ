@@ -88,6 +88,19 @@ export const WARN_RATIO = 0.9;
 export const PROGRAM_HEADROOM = 2;
 
 /**
+ * Program settle (`waitForStablePrograms`): programs count as settled when two windows of `frames` frames in a row
+ * read the same programs and warmed floors. Its deadline follows the slowest window's frame time: room for `windows`
+ * windows, never under `floorMs` (or the caller's timeout), never over `ceilingMs` (a hung page still fails).
+ */
+export const PROGRAM_SETTLE = { frames: 60, windows: 3, floorMs: 90_000, ceilingMs: 360_000 } as const;
+
+/** The settle deadline in ms after its start, given the slowest measured frame time (ms) and the caller's floor. */
+export function programSettleMs(msPerFrame: number, floorMs: number = PROGRAM_SETTLE.floorMs): number {
+  const scaled = Math.ceil(PROGRAM_SETTLE.windows * PROGRAM_SETTLE.frames * msPerFrame);
+  return Math.max(floorMs, Math.min(PROGRAM_SETTLE.ceilingMs, scaled));
+}
+
+/**
  * Memory after round trips: GPU object deltas after `roundTrips` L1 to RF trips and JS heap growth after
  * a forced GC. Two gates use it: `e2e/memory.spec.ts` in the default suite (CI e2e shards; lite, reduced
  * motion: round trips and Page View toggles) and `e2e/perf/memory-full.spec.ts` in the perf lane (full tier,
