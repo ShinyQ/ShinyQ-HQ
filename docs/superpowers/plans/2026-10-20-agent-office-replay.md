@@ -4,6 +4,10 @@
 
 Status: planned (2026-10-20); starts after part B merges.
 
+Seats (part A2, [plan](2026-10-21-agent-office-live-ten.md)): the office seats up to ten sessions from snapshot v3, so a
+log event's `slot` is 0 to 9 (the v3 seats; -1 for a session past the ten) and a replayed snapshot carries up to ten
+desks in the v3-era shape (the stage B pipeline is snapshot v4); `parseOfficeHistory` bounds slots by `OFFICE_SEATS`.
+
 **Goal:** Today, or any of the last 7 days, plays back in the office as a 30 to 60 s time-lapse with floor tiles lit per
 merged PR, and an idle office loops the latest day (clearly labelled as a replay) so it never looks dead.
 
@@ -287,7 +291,7 @@ export function parseOfficeHistory(raw: unknown): OfficeHistoryV1 | null;
 - [ ] **Step 1: Tests first:** `historyDay` never contains a 64-hex string (`/[0-9a-f]{64}/`), drops a repo missing from
   `publicRepos`, replaces a blocked title (a term from the blocklist fixture) with nothing, fills the open `until`;
   `historyIndex` lists exactly 8 days, newest first, empty days with zeros; `parseOfficeHistory` rejects extra keys,
-  events with a state index of 9 or more, a helper count over 9, a slot of 5, `t` over 86,400, a title with `<`, more than 3,000 events, and
+  events with a state index of 9 or more, a helper count over 9, a slot of 10 (or below -1), `t` over 86,400, a title with `<`, more than 3,000 events, and
   accepts `historyDay` output; the DO answers `GET /history` (index) and `GET /history?day=YYYY-MM-DD` (a day in the
   window), `404` for anything else; the Worker forwards only a valid `day`.
 - [ ] **Step 2:** Run; expect FAIL.
@@ -417,7 +421,7 @@ days with a seeded sequence, and a reference that replays the same events throug
   3 min or 15 min for testing, ci and input) and each PR, run and deploy time plus 30 s; gaps over `gapS` play in
   `gapPlayS`; the rest maps linearly so that the total lands in `[minS, maxS]` (scale the active rate to fit, a shorter
   day stretched to 30 s, a longer one squeezed to 60 s). `snapshotAt` rebuilds each desk: the latest event at or before
-  the day time for each ordinal with a slot, then applies the rules of `effective` (thinking after 20 s past a working or
+  the day time for each ordinal with a slot (0 to 9, the front row 0 to 4 and the back row 5 to 9), then applies the rules of `effective` (thinking after 20 s past a working or
   reviewing event's `until`, asleep after 3 or 15 min, done for 20 s, removed after 30 min) using `until` as the last
   beat; the title is the ordinal's task title when present (else none: "Client project"), `helpers` the event's count while
   the desk is awake, the mode `live` while a desk is
