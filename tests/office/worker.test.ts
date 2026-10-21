@@ -340,6 +340,42 @@ describe("hq-office Durable Object history", () => {
     expect(served).not.toContain("Secret");
   });
 
+  it("closes the last active day after a quiet day, from the stored doc, on a cold start", async () => {
+    const fri = "2026-10-16";
+    const r = rig(dayStart(fri) + 21 * 3_600_000);
+    const o = r.make();
+    for (let m = 0; m <= 30; m++) {
+      r.clock.now = dayStart(fri) + 21 * 3_600_000 + m * 60_000;
+      await r.beat(o, 1);
+    }
+    r.clock.now = dayStart(DAY) + 10 * 3_600_000;
+    const sunday = r.make();
+    await r.beat(sunday, 2);
+    expect(r.row(fri).events).toEqual([[75_600, 0, 0, 0, 0, 77_400, 0]]);
+    const served = (await (await sunday.fetch(new Request(`https://office/history?day=${fri}`))).json()) as OfficeHistoryV1;
+    expect(served.events).toEqual([[75_600, 0, 0, 0, 0, 77_400, 0]]);
+  });
+
+  it("scrubs a privatize that is the first write of a new day in the same put as the doc", async () => {
+    const day1 = "2026-10-17";
+    const r = rig(dayStart(DAY) - 10 * 60_000);
+    const o = r.make();
+    await r.hook(o, ping, "d-0");
+    await r.beat(o, 1, { repo: "ShinyQ/ShinyQ-HQ", branch: "feat/x", title: "Secret plan" });
+    expect(JSON.stringify(r.row(day1))).toContain("Secret plan");
+    r.clock.now = dayStart(DAY) + 5 * 60_000;
+    const writes = r.writes.length;
+    expect((await r.hook(o, { repo: "ShinyQ/ShinyQ-HQ", changes: [{ type: "privatized" }] }, "d-1")).status).toBe(204);
+    expect(r.logKeys()).toEqual([`log:${day1}`, `log:${DAY}`]);
+    for (const key of r.logKeys()) {
+      const text = JSON.stringify(r.map.get(key));
+      expect(text, key).not.toContain("ShinyQ/ShinyQ-HQ");
+      expect(text, key).not.toContain("Secret");
+    }
+    expect(r.writes.length).toBe(writes + 1);
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${day1}`, `log:${DAY}`]);
+  });
+
   it("serves the index and any day in the window, read-only, 404 outside it, never a session hash", async () => {
     const r = rig();
     const o = r.make();

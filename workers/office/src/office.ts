@@ -42,24 +42,31 @@ export class Office {
     await this.ctx.storage.put(DOC_KEY, doc);
   }
 
-  /** Today's row, and on the first write of a new WIB day yesterday's row closed (null when it has nothing open). */
+  /**
+   * Today's row, and on the first write of a new WIB day the latest earlier row closed from `doc` (null when it has
+   * nothing open). After a cold start that row is read from storage, so a quiet day between keeps its open events.
+   */
   private async logs(doc: OfficeDoc, now: number): Promise<{ log: DayLog; closed: DayLog | null; fresh: boolean }> {
     const day = wibDay(now);
     if (this.log?.day === day) return { log: this.log, closed: null, fresh: false };
     const stored = await this.ctx.storage.get<DayLog>(logKey(day));
     if (stored) return { log: stored, closed: null, fresh: false };
-    const prev = this.log ?? (await this.ctx.storage.get<DayLog>(logKey(wibDay(now - 86_400_000)))) ?? null;
+    const prev = this.log ?? [...(await this.ctx.storage.list<DayLog>({ prefix: "log:", end: logKey(day) })).values()].at(-1) ?? null;
     const closed = prev ? closeLog(prev, doc) : null;
     return { log: startLog(day, doc), closed: closed !== prev ? closed : null, fresh: true };
   }
 
-  /** Saves `next` with the log rows it changes in one put (one transaction); a keepalive writes the doc row alone. */
-  private async commit(before: OfficeDoc, next: OfficeDoc, now: number): Promise<void> {
+  /**
+   * Saves `next` with the log rows it changes in one put (one transaction); a keepalive writes the doc row alone. A
+   * privatized `repo` leaves no name or title in any stored or new row, in that same put.
+   */
+  private async commit(before: OfficeDoc, next: OfficeDoc, now: number, privatized?: string): Promise<void> {
     const { log, closed, fresh } = await this.logs(before, now);
-    const logged = logDoc(log, before, next, now);
-    const rows: Record<string, unknown> = {};
+    const scrub = (row: DayLog) => (privatized === undefined ? row : scrubRepo(row, privatized));
+    const rows: Record<string, unknown> = privatized === undefined ? {} : await this.scrubbed(privatized);
+    const logged = scrub(logDoc(log, before, next, now));
     if (logged !== log || fresh) rows[logKey(logged.day)] = logged;
-    if (closed) rows[logKey(closed.day)] = closed;
+    if (closed) rows[logKey(closed.day)] = scrub(closed);
     if (Object.keys(rows).length) await this.ctx.storage.put({ [DOC_KEY]: next, ...rows });
     else await this.ctx.storage.put(DOC_KEY, next);
     this.doc = next;
@@ -74,16 +81,14 @@ export class Office {
     if (stale.size) await this.ctx.storage.delete([...stale.keys()]);
   }
 
-  /** A privatized repository leaves no name or title in any stored row (at most 8). */
-  private async scrub(repo: string): Promise<void> {
-    const rows = await this.ctx.storage.list<DayLog>({ prefix: "log:" });
+  /** The stored rows a privatized repository changes, scrubbed (not yet written). */
+  private async scrubbed(repo: string): Promise<Record<string, DayLog>> {
     const changed: Record<string, DayLog> = {};
-    for (const [key, row] of rows) {
+    for (const [key, row] of await this.ctx.storage.list<DayLog>({ prefix: "log:" })) {
       const next = scrubRepo(row, repo);
       if (JSON.stringify(next) !== JSON.stringify(row)) changed[key] = next;
     }
-    if (Object.keys(changed).length) await this.ctx.storage.put(changed);
-    if (this.log) this.log = scrubRepo(this.log, repo);
+    return changed;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -128,8 +133,7 @@ export class Office {
     if (!isGithubMessage(body)) return status(400);
     const next = applyGithub(doc, body.update, body.delivery, now);
     if (next === doc) return status(204);
-    if (body.update.changes.some((c) => c.type === "privatized")) await this.scrub(body.update.repo);
-    await this.commit(doc, next, now);
+    await this.commit(doc, next, now, body.update.changes.some((c) => c.type === "privatized") ? body.update.repo : undefined);
     return status(204);
   }
 }

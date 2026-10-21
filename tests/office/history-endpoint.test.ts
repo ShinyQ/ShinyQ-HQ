@@ -45,7 +45,7 @@ describe("GET /api/office/history", () => {
     expect(today.headers.get("Cache-Control")).toBe("public, max-age=30, stale-while-revalidate=60");
     const pastDay = wibDay(NOW - 2 * 86_400_000);
     const past = await h(ctx(`https://x/api/office/history?day=${pastDay}`, env));
-    expect(past.headers.get("Cache-Control")).toBe("public, max-age=3600, stale-while-revalidate=86400");
+    expect(past.headers.get("Cache-Control")).toBe("public, max-age=3600, stale-while-revalidate=300");
     const etag = past.headers.get("ETag")!;
     expect((await h(ctx(`https://x/api/office/history?day=${pastDay}`, env, { "If-None-Match": etag }))).status).toBe(304);
     for (const q of ["?day=2020-01-01", "?day=%3Cscript%3E", `?day=${wibDay(NOW)}&x=1`, `?day=${wibDay(NOW)}&day=${pastDay}`, "?foo=bar", `?DAY=${wibDay(NOW)}`]) {
@@ -112,12 +112,12 @@ describe("GET /api/office/history", () => {
     const [today, , , , , , , oldest] = historyWindow(NOW);
     expect(historyRoute(new URL("https://x/api/office/history"), NOW)).toMatchObject({ key: "/api/office/history", worker: "https://hq-office/history" });
     expect(historyRoute(new URL(`https://x/api/office/history?day=${today}`), NOW)).toMatchObject({ key: `/api/office/history?day=${today}`, cache: "public, max-age=30, stale-while-revalidate=60" });
-    expect(historyRoute(new URL(`https://x/api/office/history?day=${oldest}`), NOW)).toMatchObject({ worker: `https://hq-office/history?day=${oldest}`, cache: "public, max-age=3600, stale-while-revalidate=86400" });
+    expect(historyRoute(new URL(`https://x/api/office/history?day=${oldest}`), NOW)).toMatchObject({ worker: `https://hq-office/history?day=${oldest}`, cache: "public, max-age=3600, stale-while-revalidate=300" });
     expect(historyRoute(new URL(`https://x/api/office/history?day=${wibDay(NOW - 8 * 86_400_000)}`), NOW)).toBeNull();
     expect(historyRoute(new URL(`https://x/api/office/history?day=${wibDay(NOW + 86_400_000)}`), NOW)).toBeNull();
     // A day that is today before the WIB midnight is a past day just after it.
     const late = Date.parse(`${today}T16:59:59Z`);
     expect(historyRoute(new URL(`https://x/api/office/history?day=${today}`), late)?.cache).toBe("public, max-age=30, stale-while-revalidate=60");
-    expect(historyRoute(new URL(`https://x/api/office/history?day=${today}`), late + 1000)?.cache).toBe("public, max-age=3600, stale-while-revalidate=86400");
+    expect(historyRoute(new URL(`https://x/api/office/history?day=${today}`), late + 1000)?.cache).toBe("public, max-age=3600, stale-while-revalidate=300");
   });
 });

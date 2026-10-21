@@ -108,7 +108,7 @@ export interface HistoryRoute {
 }
 
 const HISTORY_RECENT = "public, max-age=30, stale-while-revalidate=60";
-const HISTORY_PAST = "public, max-age=3600, stale-while-revalidate=86400";
+const HISTORY_PAST = "public, max-age=3600, stale-while-revalidate=300";
 const HISTORY_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
