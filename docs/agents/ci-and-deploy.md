@@ -7,7 +7,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Scripts
 
-- Package manager: Bun.
+- Package manager: Bun, the version in `packageManager` (`package.json`; CI reads it through `bun-version-file`).
+- Node: one exact version in `.nvmrc` and `.node-version` (24.22.1, the 2026-10-21 security release), with `engines.node` at `>=` that version. `next build`, Playwright, wrangler and `@lhci/cli` run on Node (their bins have a node shebang), so every CI job that runs them sets it up with `actions/setup-node` (`node-version-file: .nvmrc`): the shared `.github/actions/setup` does, and a job without it (Lighthouse CI, the rollback) adds the step itself. Never rely on the runner's preinstalled Node. `tests/unit/workflows.test.ts` checks it. Bump all three files together on a Node security release.
 
 | Script | Notes |
 |---|---|

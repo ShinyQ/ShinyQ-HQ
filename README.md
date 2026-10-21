@@ -126,11 +126,11 @@ flowchart TB
 | Styling | Tailwind CSS 4, Neon Grid design tokens, self-hosted subset fonts |
 | Edge and AI | Cloudflare Pages, Pages Functions, Workers AI, AI Gateway, KV, Analytics Engine, Turnstile, Cron Worker |
 | Testing | Vitest, Testing Library, Playwright (WebGL on SwiftShader), Lighthouse CI |
-| Tooling | Bun 1.4.1, ESLint, wrangler, GitHub Actions, gitleaks, Dependabot |
+| Tooling | Bun 1.4.3, Node 24.22.1 (pinned), ESLint, wrangler, GitHub Actions, gitleaks, Dependabot |
 
 ## Quick start
 
-Prerequisites: [Bun](https://bun.sh) 1.4.1 (`packageManager` in `package.json`) and Chromium for the e2e tests.
+Prerequisites: [Bun](https://bun.sh) 1.4.3 (`packageManager` in `package.json`), Node 24.22.1 (`.nvmrc`) and Chromium for the e2e tests.
 
 ```bash
 bun install
