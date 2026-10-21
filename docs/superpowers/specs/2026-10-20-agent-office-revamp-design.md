@@ -42,8 +42,8 @@ in the Lobby sees when one needs him; the office moves (live or replay) whenever
 | R2 | Budget: the revamp gets its own office chunk budget of about 40 KB gzip (`officeTotal`, still the office chunks' own cap). L1 stays under 125 scene draw calls on both tiers and holds fps on lite; reuse instancing and the shared programs, no new shader program where avoidable. Its loading rule (only on the lead road, in the wing, or when an office mission, go-to or drawer starts, kept out of the 3D session totals like B1) is reversed by R5 ([decision 2026-10-21](../../decisions/2026-10-21-office-always-live.md)). |
 | R3 | History: a privacy-safe event log in the Durable Object for today plus the last 7 days: agent, state, timestamp, and repo, branch and title only for public allowlisted repos (everything else "Client project"). No prompts, code, paths or client names, ever. Bounded storage (row caps, daily rollover, prune past 7 days) inside the Workers and Durable Object free limits; a public read endpoint for replay with ETag and caching. Security review before merge. |
 | R4 | Optional "featured" touches (section 12) are proposals only: none is built without approval. |
-| R5 | Always-live office (2026-10-21, A2; section 5.9, [decision](../../decisions/2026-10-21-office-always-live.md)): the office chunks load on every L1 visit at idle after the first frame and count in the L1 session totals (caps raised by the measured bytes at measured plus 0.6 KB, first-frame cap unchanged); a far level of detail and near or far polls keep the runtime and request costs low. |
-| R6 | Ten desks (2026-10-21, A2; section 5.10, [decision](../../decisions/2026-10-21-office-ten-desks.md)): up to ten session desks in two rows of five, served only in snapshot v3; v1 and v2 keep five desks plus `extra`; stage B's pipeline moves to v4. |
+| R5 | Always-live office (2026-10-21, A2; section 5.9, [decision](../../decisions/2026-10-21-office-always-live.md)): the office scene chunk (and the beacon chunk if merged into it) loads on every L1 visit at idle after the first frame and counts in the L1 session totals (caps raised by the measured bytes at measured plus 0.6 KB, first-frame cap unchanged); the drawer body, the beacon chunk (if separate) and the replay chunk keep their triggers; a far level of detail and near or far polls keep the runtime and request costs low. |
+| R6 | Ten desks (2026-10-21, A2; section 5.10, [decision](../../decisions/2026-10-21-office-ten-desks.md)): up to ten session desks in two rows of five, served only in snapshot v3 (polled by the scene, the Classic card and the office watch); v1 and v2 keep five desks plus `extra`; stage B's pipeline moves to v4. |
 
 Unchanged from the office design: the privacy rules D3 (and `docs/agents/office.md`), the v1 contract (five desks
 plus `extra`; ten seats only in v3, section 5.10), the nine states, the time rules in `effective`, the wing's layout
@@ -62,9 +62,8 @@ flowchart LR
   DO -->|v3 snapshot with ten seats, A2| s5[GET /api/office?v=3]
   DO -->|v4 snapshot with pipeline, stage B| s4[GET /api/office?v=4]
   DO -->|history v1, stage C| s3[GET /api/office/history]
-  s1 --> watch[office watch chunk: beacon signal, minimap cue]
-  s2 --> old[clients cached before A2]
-  s5 --> card[Classic card] & scene[office scene chunk: crew, tower, packets]
+  s1 & s2 --> old[clients cached before A2]
+  s5 --> card[Classic card] & scene[office scene chunk: crew, tower, packets] & watch[office watch chunk: beacon signal, minimap cue]
   s4 --> scene
   s3 --> replay[office replay chunk: day timeline]
   replay -->|synthetic feed| scene
@@ -152,9 +151,11 @@ and the chip carry the same information).
   never the main path).
 - **Office watch** (in the watch chunk): while the visitor is on L1 (not riding), the tab is
   visible, the visitor was active in the last 10 min and the office scene's own poller is not running, it fetches
-  `GET /api/office` (v1, `cache: "no-store"`) every 30 s and keeps two values: the asking desks (`needsKurniadi`) and,
-  from stage B, `deployAt` (a deploy success at most 30 s old). It reads only those fields with tiny guards (it never
-  renders text from the body). The signal expires on its own 60 s after the last good answer (a module timer), so a
+  `GET /api/office?v=3` (`cache: "no-store"`; from A2, 5.10, so an asking Rover on the back row, slots 5 to 9, lights
+  the beacon too; the same one request per 30 s as the v1 watch) every 30 s and keeps two values: the asking desks
+  (`needsKurniadi`) and, from stage B, `deployAt` (a deploy success at most 30 s old). It reads only those fields with
+  tiny guards (`signalFromBody` accepts v1 to v3 bodies with up to ten desks and slots 0 to 9; it never renders text
+  from the body). The signal expires on its own 60 s after the last good answer (a module timer), so a
   beacon never outlives its data, also after leaving L1. Once the scene chunk's poller runs, the scene feeds the signal
   instead (one request stream, not two).
 - **Beacon** (`OfficeBeacon.tsx` in the beacon chunk, mounted by `OfficeMount` inside the wing's `IntroReveal` once loaded): one instanced mesh on the hall's stage material
@@ -189,6 +190,9 @@ chunk it lights the tower from v1 data: the newest running public run in the fee
 (done of total, anonymous). Stage B replaces that with named per-job lanes.
 
 ### 5.5 Rendering and budget (A)
+
+The counts below are for five desks; every per-desk count (glow instances, parts, atlas quads) scales with the seat
+count, so ten seats double them (5.10).
 
 - Sparks, the thought trail, confetti, flicker, charge pads and desk lights are extra instances of the existing glow mesh
   (`GLOW_PER_ROVER` grows from 18 to 34: 5 sparks, 3 trail, 6 confetti, the charge pad and the desk light; 170
@@ -235,7 +239,9 @@ in the lower middle, the CI tower and dock corners in frame on desktop, the visi
 unchanged. To free the sky band the chips move from over the wall into one compact row pinned under the HUD top bar,
 each x-aligned with its Rover (a state dot and the agent name; the activity on the near pose; dot-only on phones),
 nudged along x in desk order so they never overlap each other or the HUD (top bar, the desktop floor menu, the profile
-card, the minimap), with a thin leader line or colour cue to its Rover; the full text stays in the aria-label.
+card, the minimap), with a thin leader line or colour cue to its Rover; the full text stays in the aria-label. With
+ten desks (A2, 5.10) the desktop row holds ten compact chips in desk order, and phones show dot-only chips in up to two
+rows.
 
 ### 5.8 Sub-agent helpers (owner addition, 2026-10-20)
 
@@ -254,8 +260,8 @@ Each session is one Rover; the sub-agents a session starts become small **helper
   session is asleep or removed, or when no beat came for `TIMING.helpersTtl` (10 min). Old clients must never see the
   field (owner decision): `GET /api/office?v=2` serves snapshot v2, the v1 snapshot plus an optional desk `helpers` (1 to
   9, omitted at 0); `GET /api/office` (v1) stays byte for byte as before, asserted by a test that a v1 request never
-  carries `helpers`. The 3D scene and the Classic card built after this change poll `?v=2` (`?v=3` from A2, 5.10); the watch keeps v1 (it needs
-  no helpers). Deploy order: the Worker deploys before the Pages upload, so the new Function and the new clients always
+  carries `helpers`. The 3D scene and the Classic card built after this change poll `?v=2` (`?v=3` from A2, 5.10, the watch too; stage B
+  moves the scene to `?v=4`, 6.2); until A2 the watch keeps v1 (it needs no helpers). Deploy order: the Worker deploys before the Pages upload, so the new Function and the new clients always
   meet a Worker that serves v2; the old Function in the upload window still asks v1 and gets v1. After a rollback to a
   Worker without v2, a v2 request gets that Worker's v1 body, which the v2 parser accepts as a fallback (no helpers).
   The beat's optional `helpers` is accepted by the new Worker; an older Worker (after a rollback) rejects beats that
@@ -284,8 +290,10 @@ runs whenever the office is in view from anywhere in the Lobby, without driving 
 
 - **Loading**: `officeLoadWanted` is true on L1 (or riding to L1) once the first frame went idle with speculative
   prefetch on, at any distance from the wing; the office chunks never load on the first-frame path. With
-  `?prefetch=off` the earlier triggers stay (lead road, wing, office mission, go-to or drawer). Merging the beacon chunk
-  into the scene chunk is allowed if simpler. The drawer body still loads only when an office drawer opens.
+  `?prefetch=off` the scene chunk never loads on its own: only the earlier triggers load it (lead road, wing, office
+  mission, go-to or drawer). Merging the beacon chunk into the scene chunk is allowed if simpler. The drawer body (an
+  office drawer), the beacon chunk if separate (the first ask) and the replay chunk (the idle loop or the drawer
+  control) keep their triggers.
 - **Budgets**: the office scene chunk (and the beacon chunk if merged into it) counts in the L1 3D session totals,
   full and lite; the session caps rise by the measured office bytes at measured plus 0.6 KB (owner approved about
   +27 KB). The first-frame cap does not move. `BYTES_3D_BUDGET.officeTotal` 40 KB stays the office chunks' own cap.
@@ -296,7 +304,7 @@ runs whenever the office is in view from anywhere in the Lobby, without driving 
   it they step every frame. A still office still writes nothing per frame; reduced motion holds its poses as in 5.2.
 - **Requests**: no per-visitor fast poll from afar. The scene's poller has three reasons: `near` (in view and inside
   `farDistance`: the fast cadence, 10 s while a desk is awake, else 30 s), `far` (in view and past it: 30 s) and
-  `drawer` (an office drawer open: fast). Out of view the scene's poller stops and the office watch (5.3) polls v1 every
+  `drawer` (an office drawer open: fast). Out of view the scene's poller stops and the office watch (5.3) polls v3 every
   30 s, so one request stream runs at a time. The back-off, the hidden-tab stop and the 10 min idle stop are kept. The
   Workers requests per day estimate is in the decision (about 7,000 visitor polls on a day of 500 L1 sessions, the same
   far rate as the part A watch).
@@ -313,15 +321,18 @@ Up to ten sessions get a desk, one Rover per session; helpers stay drones (5.8)
 ([decision](../../decisions/2026-10-21-office-ten-desks.md)).
 
 - **Contract v3**: `OFFICE_SEATS = 10`. `GET /api/office?v=3` serves snapshot v3: the v2 snapshot with up to ten desks
-  (slots 0 to 9) and `extra` counting sessions past ten. v1 and v2 keep their meaning byte for byte: five desks (slots
-  0 to 4) plus `extra`, where sessions on seats 5 to 9 count in `extra`, never a slot above 4, so old clients never see
-  more. The Worker's `assignSlots` works over ten seats and fills the front row (slots 0 to 4) first. The 3D scene and
-  the Classic card poll v3; the watch keeps v1. The Function honours `v` 2 and 3 (anything else is v1) with one edge
-  cache entry per version; the v3 parser falls back to v2 and v1 bodies (a rolled-back Worker). Stage B's pipeline
+  (slots 0 to 9) and `extra` counting sessions past ten. v1 and v2 stay byte for byte for documents with up to five
+  sessions; beyond five they keep the same shape and rules: five desks (slots 0 to 4) plus `extra`, where sessions on
+  seats 5 to 9 count in `extra`, never a slot above 4, so old clients never see more. The Worker's `assignSlots` works
+  over ten seats and fills the front row (slots 0 to 4) first. The 3D scene, the Classic card and the office watch
+  poll v3: the watch so an asking Rover on the back row lights the beacon (still one request per 30 s, the same count
+  as the v1 watch), and the signal guard `signalFromBody` accepts v1 to v3 bodies with up to ten desks and slots 0 to 9.
+  The Function honours `v` 2 and 3 (anything else is v1) with one edge cache entry per version; the v3 parser falls back to v2 and v1 bodies (a rolled-back Worker). Stage B's pipeline
   becomes v4 (6.2) and stage C's log slots run 0 to 9 (7.1).
 - **3D**: a second, raised console row stands behind the first: a second arc on a riser, its angles, radius and
-  height chosen so every back-row Rover's face and desk screen is at least 80% unoccluded from the office stop camera
-  on the desktop and tablet sizes (a projection test against the front row's boxes). The 6 u `SPACE_RULES` hold
+  height chosen so every back-row Rover's face and desk screen is at least 80% unoccluded from the office stop on the
+  desktop and tablet camera classes, and on portrait every Rover is in frame with the back row at least 60% unoccluded
+  (a projection test against the front row's boxes). The 6 u `SPACE_RULES` hold
   (touch or 6 u, no pocket, the stop reachable); the wing may grow deeper, derived from S through `OFFICE_WING`, and the
   tower and the dock still touch the end boxes. The front row stays in place. Rooms `L1:office-desk-6` to
   `L1:office-desk-10` join the desk rooms.
@@ -360,7 +371,7 @@ screens they may fall outside the frame, where the CI drawer and the chips carry
 ### 6.2 Data: contract v4 (Worker, Function, scene in one PR)
 
 The v1, v2 and v3 responses cannot carry per-job lanes, so the scene moves to `GET /api/office?v=4` (v3 is the ten-seat
-snapshot, 5.10); v1, v2 and v3 stay byte for byte for the Classic card (v3), the watch (v1) and clients cached across a
+snapshot, 5.10); v1, v2 and v3 stay byte for byte for the Classic card and the watch (v3) and clients cached across a
 deploy.
 
 ```ts
@@ -385,7 +396,7 @@ interface OfficeSnapshotV4 extends Omit<OfficeSnapshotV3, "v"> {
 - Public repositories only, the same rules as today (allowlist, known-public set, fork and actor checks, blocked
   branches ignored, `privatized` strips runs and ships).
 - `parseOfficeAny` (the scene) accepts v4, then falls back to v3, v2 and v1 (`parseOfficeResponseV4` strict on keys
-  like v1); the Classic card stays on v3.
+  like v1) and returns one type, `OfficeSnapshotV3 & { pipeline?: OfficePipeline }`; the Classic card stays on v3.
 - `functions/_lib/office.ts`: the `v` query (only `2`, `3` and `4` are honoured; anything else is v1) is part of the
   edge cache key; the same ETag and cache headers.
 
@@ -458,8 +469,10 @@ interface DayLog {
   `truncated` and only PR, run and deploy counts keep growing. Daily rollover at the WIB midnight; on the first write of
   a new day, rows older than 7 days are deleted (`storage.list({ prefix: "log:" })`), so at most 8 log rows exist.
 - `privatized` also scrubs that repository's tasks and PR titles from every log row.
-- Free limits: a busy day (5 sessions, about 2,000 state changes, 30 PRs, 100 runs) writes about 4,500 rows (limit
-  100,000/day), stores under 1 MB in total (limit 5 GB), and adds no Durable Object request beyond the history reads.
+- Free limits: a busy day with all ten seats in use (10 sessions, about 2,800 state changes, 60 PRs, 200 runs, 10
+  deploys) logs about 90 KB (inside the 3,000 events and 120 KB caps; a busier day is marked `truncated`), writes about
+  6,500 rows (limit 100,000/day), stores under 1 MB in total (limit 5 GB), and adds no Durable Object request beyond the
+  history reads.
 
 ### 7.2 Endpoint
 
@@ -577,7 +590,7 @@ the first ask, and the replay chunk only on the idle-loop condition or the drawe
 
 | # | Touch | Cost | Notes |
 |---|---|---|---|
-| F1 | Classic card "Today" mini timeline: five thin rows over the WIB day, coloured by state, plus PR ticks, from the history endpoint | about 1.5 KB in the card's lazy `OfficePanel` chunk, one more cached request when the card is near | Classic JS budget has room; the card height (`OFFICE_RESERVE`) grows by one row, re-measured. |
+| F1 | Classic card "Today" mini timeline: ten thin rows (or five active rows) over the WIB day, coloured by state, plus PR ticks, from the history endpoint | about 1.5 KB in the card's lazy `OfficePanel` chunk, one more cached request when the card is near | Classic JS budget has room; the card height (`OFFICE_RESERVE`) grows by one row, re-measured. |
 | F2 | Ask: "what did the agents do today?" answered from today's history counts (no titles) fetched by the Ask Function at question time | Ask Function code only | Changes the Ask rule "never put live office data in the pack" into "only counts at question time"; needs a prompt version bump and golden questions. |
 | F3 | Visitor wave: the visitor's rover honks at the office stop and every awake Rover glances at it for 1 s | under 0.3 KB in the scene chunk | Client only, no data. |
 | F4 | Beacon chime: a soft chime when the beacon starts, only with sound enabled (`@/lib/audio`) | under 0.2 KB main path | Respects the audio setting. |

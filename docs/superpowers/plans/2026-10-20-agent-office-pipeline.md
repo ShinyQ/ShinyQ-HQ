@@ -4,7 +4,7 @@
 
 Status: planned (2026-10-20); starts after part A2 merges. Part A introduces snapshot v2 (v1 plus desk `helpers`, served
 at `?v=2`) and the watch and beacon chunks; part A2 ([plan](2026-10-21-agent-office-live-ten.md)) introduces snapshot v3
-(v2 with up to ten seats, slots 0 to 9, served at `?v=3` to the scene and the Classic card; v1 and v2 keep five desks
+(v2 with up to ten seats, slots 0 to 9, served at `?v=3` to the scene, the Classic card and the office watch; v1 and v2 keep five desks
 plus `extra`) and loads the scene chunk on every L1 visit. This plan adds v4 (v3 plus `pipeline`) for the scene only
 (v2 = helpers, v3 = ten seats, v4 = pipeline), and puts the deploy beam in the beacon chunk (loaded on the first ask or
 the first fresh deploy, or in the scene chunk if A2 merged the two). Where A or A2 already added a piece named here (the
@@ -15,7 +15,7 @@ wing: a CI tower with one light lane per workflow job, packets from the pushing 
 package flying to the ship dock per merged PR, and a beam over the dock per production deploy.
 
 **Architecture:** The Worker keeps job names and derives a `pipeline` block; a v4 snapshot (`GET /api/office?v=4`)
-carries it to the 3D scene while v1, v2 and v3 stay byte for byte (the Classic card polls v3, the watch v1). A pure
+carries it to the 3D scene while v1, v2 and v3 stay byte for byte (the Classic card and the watch poll v3). A pure
 `pipeline.ts` derives events from successive snapshots; `pipelineFx.ts` writes them into the existing glow and parts
 meshes and the main-path beacon mesh's spare instance (the beam). One contract change, every side in this PR.
 
@@ -173,7 +173,8 @@ export function viewV4(doc: OfficeDoc, now: number): OfficeSnapshotV4 {
 - Consumes (part A2): `OFFICE_SEATS` (10), `OfficeSnapshotV3`, `parseOfficeResponseV3` (v3, falling back to v2 and v1
   bodies), `OFFICE_FIXTURES_V3`.
 - Produces: `OfficePipelineJob`, `OfficePipelineRun`, `OfficeShip`, `OfficePipeline`, `OfficeSnapshotV4`, `OFFICE_PIPELINE = { runs: 3, jobs: 24, ships: 10, jobName: 40 }`,
-  `parseOfficeResponseV4(raw): OfficeSnapshotV4 | OfficeDisabledV1 | null`, `parseOfficeAny(raw): (OfficeSnapshotV1 & { pipeline?: OfficePipeline }) | OfficeDisabledV1 | null`,
+  `parseOfficeResponseV4(raw): OfficeSnapshotV4 | OfficeDisabledV1 | null`, `OfficeSceneSnapshot = OfficeSnapshotV3 & { pipeline?: OfficePipeline }` (the one type the scene reads),
+  `parseOfficeAny(raw): OfficeSceneSnapshot | OfficeDisabledV1 | null`,
   `OFFICE_FIXTURES_V4` (busy with two runs, 12 jobs, a merge and a deploy).
 
 - [ ] **Step 1: Tests first:**
@@ -191,10 +192,13 @@ describe("v4", () => {
     ];
     for (const b of bad) expect(parseOfficeResponseV4(b)).toBeNull();
   });
+  // Relies on part A2's v3 parser returning v1 and v2 bodies as v3-shaped snapshots (no pipeline).
   it("falls back to v3, v2 and v1 with no pipeline", () => {
-    expect(parseOfficeAny(OFFICE_FIXTURES.busy)).toMatchObject({ v: 1 });
-    expect(parseOfficeAny(OFFICE_FIXTURES.busy)?.["pipeline" as never]).toBeUndefined();
-    for (const f of Object.values(OFFICE_FIXTURES_V3)) expect(parseOfficeAny(f)?.["pipeline" as never]).toBeUndefined();
+    for (const f of [...Object.values(OFFICE_FIXTURES), ...Object.values(OFFICE_FIXTURES_V2), ...Object.values(OFFICE_FIXTURES_V3)]) {
+      const r = parseOfficeAny(f);
+      expect(r).not.toBeNull();
+      expect(r).not.toHaveProperty("pipeline");
+    }
     expect(parseOfficeAny(OFFICE_FIXTURES_V4.busy)).toHaveProperty("pipeline");
   });
   it("keeps v1 and v3 strict: their parsers reject a v4 body", () => {
@@ -246,16 +250,19 @@ export function parseOfficeResponseV4(raw: unknown): OfficeSnapshotV4 | OfficeDi
   return v3 && v3.enabled ? ({ ...v3, v: 4, pipeline } as OfficeSnapshotV4) : null;
 }
 
+/** The one shape the scene reads: the v3 snapshot (ten seats) plus the pipeline when the Worker serves v4. */
+export type OfficeSceneSnapshot = OfficeSnapshotV3 & { pipeline?: OfficePipeline };
+
 /** The scene's parser: v4 when the Worker serves it, else v3, v2 or v1 without a pipeline (an older Worker after a rollback). */
-export function parseOfficeAny(raw: unknown): OfficeSnapshot | OfficeDisabledV1 | null {
+export function parseOfficeAny(raw: unknown): OfficeSceneSnapshot | OfficeDisabledV1 | null {
   const v4 = parseOfficeResponseV4(raw);
-  if (v4) return v4;
-  return parseOfficeResponseV3(raw); // part A2: v3, falling back to v2 and v1 bodies
+  if (v4) return v4.enabled ? { ...v4, v: 3 } : v4;
+  return parseOfficeResponseV3(raw); // part A2: v3, returning v1 and v2 bodies as v3-shaped snapshots
 }
 ```
 
-(Note `parseOfficeAny` normalises to `v: 1` with an extra `pipeline`, so `officeView` and every v1 consumer keep their
-types.) Add `OFFICE_FIXTURES_V4` built from part A2's `OFFICE_FIXTURES_V3` (up to ten desks) with `v: 4` and a `pipeline` (a running run on desk 1
+(Every result is `OfficeSceneSnapshot` (or the disabled body), so `officeView`, `signalFromBody` (v1 to v3, part A2) and
+every v3 consumer read it unchanged; only `pipeline` tells a v4 body apart.) Add `OFFICE_FIXTURES_V4` built from part A2's `OFFICE_FIXTURES_V3` (up to ten desks) with `v: 4` and a `pipeline` (a running run on desk 1
 with 12 jobs: 5 done, 1 failed, 3 running, 3 queued, named like the real CI: "Typecheck, lint, unit tests", "Build, CV
 and e2e (1/8)" to "(8/8)", "Lighthouse CI", "3D perf gates 1/2", "3D perf gates 2/2"; a finished green run; a merge of
 desk 2 and a production deploy success; one fixture puts a run on a back-row desk, slot 7).
@@ -272,17 +279,20 @@ desk 2 and a production deploy success; one fixture puts a run on a back-row des
   `?v=3` still answers `viewV3` and `?v=2` `viewV2` unchanged, `GET /snapshot` and `?v=5` answer v1. Endpoint:
 
 ```ts
-it("serves v4 only for ?v=4, with its own cache entry, and v1 unchanged", async () => {
+it("serves v4 only for ?v=4, with cache entries separate from v3 and v1, and both unchanged", async () => {
   const cache = memoryCache();
-  const env = officeEnv({ snapshot: (v) => (v === "4" ? OFFICE_FIXTURES_V4.busy : OFFICE_FIXTURES.busy) });
+  const pick = (v: string | null) => (v === "4" ? OFFICE_FIXTURES_V4.busy : v === "3" ? OFFICE_FIXTURES_V3.busy : OFFICE_FIXTURES.busy);
+  const env = officeEnv({ snapshot: pick });
   const h = createOfficeSnapshotHandler({ cache: () => cache });
   const v1 = await h(ctx("https://x/api/office", env));
+  const v3 = await h(ctx("https://x/api/office?v=3", env));
   const v4 = await h(ctx("https://x/api/office?v=4", env));
   const junk = await h(ctx("https://x/api/office?v=4&x=<script>", env));
   expect((await v1.json()).v).toBe(1);
+  expect(await v3.json()).toEqual(OFFICE_FIXTURES_V3.busy);
   expect((await v4.json()).v).toBe(4);
   expect((await junk.json()).v).toBe(4);
-  expect(cache.keys()).toEqual(["https://x/api/office", "https://x/api/office?v=4"]);
+  expect(cache.keys()).toEqual(["https://x/api/office", "https://x/api/office?v=3", "https://x/api/office?v=4"]);
   expect(v4.headers.get("Cache-Control")).toBe("public, max-age=5, stale-while-revalidate=30");
 });
 ```
@@ -305,12 +315,12 @@ it("serves v4 only for ?v=4, with its own cache entry, and v1 unchanged", async 
 
 **Interfaces:**
 - Produces: `OfficePollerOptions.path?: string` (default `OFFICE_PATH`) and `parse?: (raw: unknown) => OfficeResponse | null`
-  (default `parseOfficeResponse`); `OfficeFeed.snapshot: (OfficeSnapshotV1 & { pipeline?: OfficePipeline }) | null`;
-  `OfficeView.pipeline: OfficePipeline | null` (null when off, offline or v1).
+  (default `parseOfficeResponse`); `OfficeFeed.snapshot: OfficeSceneSnapshot | null` (`OfficeSnapshotV3 & { pipeline?: OfficePipeline }`,
+  Task 2); `OfficeView.pipeline: OfficePipeline | null` (null when off, offline or a v1 to v3 body).
 
 - [ ] **Step 1: Tests first:** the poller fetches `path` and parses with `parse` (a stub records the URL and returns
-  `OFFICE_FIXTURES_V4.busy`; the feed keeps `pipeline`); `officeView` keeps `pipeline` when live and drops it when
-  offline or off.
+  `OFFICE_FIXTURES_V4.busy`; the feed keeps `pipeline`); `officeView` keeps `pipeline` when live and is null when
+  offline, off, or fed a v1, v2 or v3 body.
 - [ ] **Step 2:** Run; expect FAIL.
 - [ ] **Step 3: Implement:** in `createOfficePoller`, `const path = opts.path ?? OFFICE_PATH; const parse = opts.parse ?? parseOfficeResponse;`
   and use them where it fetches and validates today. `live.ts`: `createOfficePoller({ now: ..., path: \`${OFFICE_PATH}?v=4\`, parse: parseOfficeAny })`

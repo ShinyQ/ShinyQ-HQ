@@ -10,7 +10,8 @@ the office seats up to ten sessions (two rows of five) with helpers still drawn 
 **Architecture:** The office scene chunk loads on every L1 visit at idle after the first frame and counts in the session
 totals; a far level of detail (about 4 fps updates) and the existing in-view gate keep the runtime cost low; the scene
 polls fast only when near (or a drawer is open) and slowly otherwise, replacing the watch's stream. Ten seats come
-with snapshot v3 (`?v=3`, up to ten desks); v1 and v2 keep five desks plus `extra`, so old clients never see more. A
+with snapshot v3 (`?v=3`, up to ten desks, polled by the scene, the Classic card and the office watch); v1 and v2 keep
+five desks plus `extra`, so old clients never see more. A
 second, raised console row stands behind the first; the wing grows deeper from S if needed.
 
 **Tech Stack:** Next.js 16 static export, react-three-fiber, three.js, Cloudflare Workers and Durable Objects, Vitest, Playwright, Bun.
@@ -26,7 +27,8 @@ and 5.10 added by Task 1); owner decisions relayed 2026-10-21 (always-live offic
 - L1 under 125 scene draw calls in every view on both tiers (spawn views with the wing visible included); no new
   shader programs; memory gates flat; lite fps healthy.
 - Requests: no per-visitor fast poll from afar; fast only near or with a drawer; the 10 min idle stop and back-off kept.
-- Contract: v1 and v2 byte-for-byte semantics kept (five desks plus `extra`); ten desks only in v3; every side in one PR.
+- Contract: v1 and v2 byte for byte for up to five sessions, the same shape and rules beyond (five desks plus `extra`);
+  ten desks only in v3; the watch polls v3 at the same 30 s cadence; every side in one PR.
 - Every Rover and its screen readable from the office stop; none hides another; 6 u space rules.
 - Reduced motion, bilingual strings, chips never over the HUD or each other, zero layout shift on the Classic card.
 
@@ -52,11 +54,12 @@ prefetch on, regardless of distance (`OFFICE.loadRadius` removed or kept only fo
 - [ ] Tests first: `officeLoadWanted` true at the spawn after idle (prefetch on), false with `?prefetch=off`, false off L1;
   `lodStep` accumulates frame deltas and steps at 4 Hz past `farDistance`, every frame inside it; the crew frame in far
   LOD writes at most 4 times a second and still writes nothing while still; poll cadence: in view and near is fast, in
-  view and far is 30 s, out of view stops (the watch takes over at 30 s), drawer fast.
+  view and far is 30 s, out of view stops (the watch takes over at 30 s; it moves to `?v=3` in Task 3), drawer fast.
 - [ ] Implement: the scene mounts on L1 after idle; `OfficeWatch` computes the camera's distance to the office bounds
   each 0.5 s and sets `officeRuntime.far`; the crew, drones, sparks, atlas faces and the tower step through `lodStep`
   (desk screens and faces at most 2 fps far); `officeLive.want("near"|"far", ...)` replaces `"view"`; the watch keeps
-  running only while the scene is not feeding.
+  running only while the scene is not feeding (one request stream; its `?v=3` switch and the ten-desk signal guard land
+  in Task 3 with the contract).
 - [ ] E2E: a new test loads L1, waits for the idle frame, and asserts `__hq.probes.office.loaded` and `inView`-independent
   mounting without moving the rover; a ring-south spot (the rover on the lane ring's south point, view turned toward
   the wing) sees Rovers animating (`bob > 0` in full motion) at the far rate.
@@ -67,12 +70,15 @@ prefetch on, regardless of distance (`OFFICE.loadRadius` removed or kept only fo
 
 ### Task 3: Contract v3 with ten seats
 
-**Files:** `src/lib/office/protocol.ts` (`OFFICE_SEATS = 10`, `OfficeSnapshotV3`, `parseOfficeResponseV3`), `workers/office/src/state.ts` (`assignSlots` over ten seats; `view`/`viewV2` keep slots 0 to 4 as desks and the rest as `extra`; `viewV3` all ten), `office.ts`, `worker.ts`, `functions/_lib/office.ts` (`?v=3`), `office/live.ts` and `components/office/OfficePanel.tsx` (poll v3), fixtures (`OFFICE_FIXTURES_V3` with ten mixed desks and drones).
+**Files:** `src/lib/office/protocol.ts` (`OFFICE_SEATS = 10`, `OfficeSnapshotV3`, `parseOfficeResponseV3`), `workers/office/src/state.ts` (`assignSlots` over ten seats; `view`/`viewV2` keep slots 0 to 4 as desks and the rest as `extra`; `viewV3` all ten), `office.ts`, `worker.ts`, `functions/_lib/office.ts` (`?v=3`), `office/live.ts` and `components/office/OfficePanel.tsx` (poll v3), `office/officeWatch.ts` (poll `?v=3`, same 30 s cadence), `office/officeSignal.ts` (`signalFromBody` accepts v1 to v3 bodies with up to ten desks and slots 0 to 9), fixtures (`OFFICE_FIXTURES_V3` with ten mixed desks and drones), tests `office-signal`, `office-watch`.
 
 - [ ] Tests first: the v1 golden stays byte for byte for documents with at most five sessions; with seven sessions v1
   and v2 carry five desks (slots 0 to 4) and `extra: 2`, never a slot above 4; v3 carries seven desks; the front row
   (slots 0 to 4) fills first; a v3 request to a rolled-back Worker falls back to v2 or v1 bodies; the edge cache has one
-  entry per version; old v2 parsers (part A) reject nothing they used to accept.
+  entry per version; old v2 parsers (part A) reject nothing they used to accept; `signalFromBody` accepts v1, v2 and v3
+  bodies with up to ten desks and slots 0 to 9 and still rejects eleven desks, a slot of 10 and v4; the watch fetches
+  `/api/office?v=3` once per 30 s (the same request count as before); a seat-7 asker (slot 7 in a v3 fixture, the
+  scene not feeding) lights the beacon via the watch (`needsKurniadi` true, `asking` holds 7).
 - [ ] Implement and commit `feat(office): snapshot v3 with ten seats (v1 and v2 keep five)`.
 
 ### Task 4: The second console row
@@ -80,7 +86,8 @@ prefetch on, regardless of distance (`OFFICE.loadRadius` removed or kept only fo
 **Files:** `officeLayout.ts` (`OFFICE.rows`, back-row angles, radius and riser height; `officeSlots` for ten; obstacles; wing depth from S if needed), `officeShell.ts` (shell boxes, riser), `content/room-views/lobby.ts` and rooms (`L1:office-desk-6` to `-10`), `office/interact.ts`, tests `lobby-office`, `office-rooms`, `office-interact`, a new `office-rows-visibility` projection test.
 
 - [ ] Tests first: ten slots, the front row unchanged in place; every back-row Rover's face quad and desk screen at least
-  80% unoccluded from the office stop camera on the desktop and tablet sizes (projected against the front row's boxes);
+  80% unoccluded from the office stop on the desktop and tablet camera classes, and on portrait every Rover in frame with
+  the back row at least 60% unoccluded (projected against the front row's boxes);
   the space rules hold (touch or 6 u), the stop reachable, no pocket; the tower and dock still touch the end boxes.
 - [ ] Implement (back arc behind the front, raised on a riser, angles chosen by the visibility test) and commit
   `feat(office): a second, raised console row`.

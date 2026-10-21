@@ -6,7 +6,7 @@ Status: planned (2026-10-20); starts after part B merges.
 
 Seats (part A2, [plan](2026-10-21-agent-office-live-ten.md)): the office seats up to ten sessions from snapshot v3, so a
 log event's `slot` is 0 to 9 (the v3 seats; -1 for a session past the ten) and a replayed snapshot carries up to ten
-desks in the v3-era shape (the stage B pipeline is snapshot v4); `parseOfficeHistory` bounds slots by `OFFICE_SEATS`.
+desks in the v4 shape (the v3 fields plus stage B's `pipeline`, part B's `OfficeSceneSnapshot` with the pipeline set); `parseOfficeHistory` bounds slots by `OFFICE_SEATS`.
 
 **Goal:** Today, or any of the last 7 days, plays back in the office as a 30 to 60 s time-lapse with floor tiles lit per
 merged PR, and an idle office loops the latest day (clearly labelled as a replay) so it never looks dead.
@@ -376,7 +376,7 @@ export interface Span { from: number; to: number; play0: number; play1: number }
 export interface ReplayPlan { day: string; start: number; spans: Span[]; duration: number; prTimes: number[] }
 export function planReplay(h: OfficeHistoryV1): ReplayPlan | null;         // null for a day without events or PRs
 export function dayTime(plan: ReplayPlan, playS: number): number;           // playback seconds to day seconds
-export function snapshotAt(h: OfficeHistoryV1, plan: ReplayPlan, playS: number): OfficeSnapshotV1 & { pipeline: OfficePipeline };
+export function snapshotAt(h: OfficeHistoryV1, plan: ReplayPlan, playS: number): OfficeSnapshotV3 & { pipeline: OfficePipeline }; // the v4 shape
 export function mergedBy(plan: ReplayPlan, playS: number): number;          // PRs merged so far (tiles lit)
 ```
 
@@ -440,7 +440,7 @@ days with a seeded sequence, and a reference that replays the same events throug
 **Interfaces:**
 - Produces: `type ReplayState = { status: "off" | "loading" | "playing" | "resting" | "paused" | "unavailable"; day: string | null; playS: number; plan: ReplayPlan | null; auto: boolean }`;
   `createReplayFeed({ fetch, now })` with `index()`, `play(day, auto)`, `pause()`, `seek(playS)`, `stop()`, `step(dt, reduced)`,
-  `state()`, `snapshot(): OfficeSnapshot | null`, `subscribe(cb)`; `idleLoopWanted({ view, inView, reduced, quietFor }): boolean`;
+  `state()`, `snapshot(): OfficeSceneSnapshot | null`, `subscribe(cb)`; `idleLoopWanted({ view, inView, reduced, quietFor }): boolean`;
   `loadOfficeReplay(): Promise<typeof import("./replayChunk")>`.
 
 - [ ] **Step 1: Tests first:** `idleLoopWanted` is true only when the live view has no awake desk for 30 s, the office is
