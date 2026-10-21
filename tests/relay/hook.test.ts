@@ -11,11 +11,16 @@ import { CLIENT, eventOf, HELPER_EVENTS, HELPER_ID, HELPER_TYPE, HOOK_FIXTURES, 
 
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 
-function deps(git: { repo: string; branch?: string } | null = { repo: "ShinyQ/ShinyQ-HQ", branch: "feat/intro-orbit-reveal" }) {
+/**
+ * Most tests check what a beat says, so they turn the coalescing window off (`coalesceMs: 0`: every change goes out
+ * at once, repeats only as the keepalive, the rule before the throttle). The throttle has its own tests in
+ * tests/relay/throttle.test.ts.
+ */
+function deps(git: { repo: string; branch?: string } | null = { repo: "ShinyQ/ShinyQ-HQ", branch: "feat/intro-orbit-reveal" }, coalesceMs = 0) {
   const home = mkdtempSync(path.join(tmpdir(), "relay-home-"));
   const sent: string[] = [];
   let clock = T0;
-  const d: HookDeps = { paths: relayPaths({ HOME: home }), now: () => clock, readGit: () => git, dispatch: (body) => void sent.push(body) };
+  const d: HookDeps = { paths: relayPaths({ HOME: home }), now: () => clock, readGit: () => git, dispatch: (body) => void sent.push(body), schedule: () => undefined, coalesceMs };
   return { d, sent, home, tick: (ms: number) => (clock += ms) };
 }
 
@@ -56,7 +61,7 @@ describe("runHook", () => {
     expect(beat).not.toHaveProperty("title");
   });
 
-  it("dedupes repeats, sends a keepalive after 15 s and a change at once", () => {
+  it("dedupes repeats, sends a keepalive after 15 s and a change at once (no coalescing window)", () => {
     const { d, sent, tick } = deps();
     const edit = JSON.stringify(HOOK_FIXTURES.claude.PostToolUseEdit);
     expect(runHook("claude", "PostToolUse", edit, d)).toBe("sent");

@@ -186,24 +186,38 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Git data from `.git` files only (`git.ts`, worktrees included); titles from branch names (`title.ts`); a branch
   outside `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title (`beat.ts`); the session id is an HMAC with a
   local salt (`session.ts`). Relay files live in `~/.office-relay/` (the OS home when `HOME` is empty).
-- Hook path (`hook.ts`): local work, dedupe per session with a 15 s keepalive (`beat.ts`), then a detached `send`
-  child, dispatched before the beat is recorded as sent; `hook` and `send` always exit 0 with empty stdout (a failing
-  Copilot `preToolUse` hook would deny the tool).
+- Hook path (`hook.ts`): local work, the per-session throttle (`decide` in `beat.ts`, under `withSessionLock` in
+  `store.ts`, the same bounded lock as the helpers file, on `<hash>.json`), then a detached `send` child, dispatched
+  before the beat is recorded as sent; `hook`, `send` and `flush` always exit 0 with empty stdout (a failing Copilot
+  `preToolUse` hook would deny the tool).
+- Throttle (the relay README has the rules): a change (state, activity, helpers, repository, title) goes out at once
+  when the last beat is at least `COALESCE_MS` (10 s, the visitors' `POLL.activeMs`) old, else it waits and a trailing
+  send at the end of the window carries the newest state; final states (`done`, `asleep`, `failed`, `input`) go out
+  at once and cancel a waiting change; an awake session with events since its last beat gets a keepalive at
+  `KEEPALIVE_MS` (15 s). At most one beat per 10 s per busy session plus its final states. The trailing send and the
+  keepalive come from one detached `flush <session> <due> <token>` child per session (`flushSession` in `hook.ts`;
+  the token in the sent record names the owner, a new child starts only when none wakes in time or the owner is
+  `DUE_GRACE_MS` (5 s) late; it drops a send whose event is over `FLUSH_STALE_MS` (60 s) old). Keep
+  `KEEPALIVE_MS` plus `DUE_GRACE_MS` at most `TIMING.thinkingAfter` (20 s) and `COALESCE_MS` below `KEEPALIVE_MS`, so
+  an active desk never falls to thinking (tested). Tests: `tests/relay/throttle.test.ts` replays a busy Copilot
+  session (`tests/relay/busy-session.ts`, about 300 hook events over ten minutes shaped like the relay log) and checks
+  the cut, the final desk through `applyBeat`, a desk at most one window late, no rule-made thinking, and the rules.
 - Sender (`send.ts`): Keychain item `hq-office-ingest` (account `office-relay`), `X-Office-Signature`, 2 s timeout to
   `https://kurniadi.pages.dev/api/office/beat` by default; logs the status only.
 - Installer (`install.ts`): `~/.copilot/hooks/office.json`, merges `~/.claude/settings.json` and `~/.codex/hooks.json`
   (async handlers, backups, only entries containing `office-relay hook` are replaced); install and uninstall parse
   every file (and install builds the bundle) before writing and exit 1 on failure; uninstall also removes the program
   and keeps `~/.office-relay/`. Codex needs a trust in `/hooks`.
-- `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`
-  and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
+- `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`,
+  `OFFICE_RELAY_COALESCE_MS` (0 to 60000) and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the
+  installed hooks never set them.
 - Helpers (`helpers.ts`, mapping table in the relay README): Copilot `subagentStart` / `subagentStop`, Claude Code and
   Codex `SubagentStart` / `SubagentStop` keep a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
   (salted id hashes; Copilot sends the same `agentId` on start and stop, and a start without one, from the npm build,
   gets an anonymous key that a stop with an unknown id ends, oldest first), counted
   while younger than `HELPER_TTL_MS` (30 min) and capped at 9. Every tool's sub-agent hooks carry the parent's session
-  id; an event without one is ignored. A start or stop sends the session's last state with the new count only when the
-  count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
+  id; an event without one is ignored. A start or stop offers the session's newest state with the new count (through the
+  throttle) only when the count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
   helpers file and its beat carries `helpers: 0` only when the last sent count was above 0. The helpers file is read,
   applied and written (and the beat sent) under a bounded lock (`withHelpersLock` in `store.ts`: exclusive
   `<file>.lock`, a try every 2 ms for at most 30 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically

@@ -138,7 +138,8 @@ describe("office-relay CLI", () => {
     for (let round = 0; round < 3; round++) {
       const h = home();
       const spool = path.join(h, "spool");
-      const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool };
+      // No coalescing window: every count goes out at once, so the spool shows each one.
+      const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool, OFFICE_RELAY_COALESCE_MS: "0" };
       const ids = ["helper-a", "helper-b"];
       for (const agentId of ids) expect(run(["hook", "copilot", "subagentStart"], env, JSON.stringify({ ...HOOK_FIXTURES.copilot.subagentStart, agentId })).status).toBe(0);
       const stop = (agentId: string) =>
@@ -151,6 +152,38 @@ describe("office-relay CLI", () => {
       const counts = readFileSync(spool, "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { helpers?: number }).helpers);
       expect(counts).toEqual([1, 2, 1, 0]);
     }
+  }, 30_000);
+
+  it("hook: the detached trailing sender sends the queued change at the end of the window, and a final state cancels it", async () => {
+    // Windows far longer than a hook's spawn, so a slow machine still queues the second event.
+    const relayIn = (window: number) => {
+      const h = home();
+      const spool = path.join(h, "spool");
+      const env = { HOME: h, OFFICE_RELAY_SPOOL: spool, OFFICE_RELAY_COALESCE_MS: String(window) };
+      const hook = (event: string, payload: Record<string, unknown>) => run(["hook", "copilot", event], env, JSON.stringify(payload));
+      const states = () => (existsSync(spool) ? readFileSync(spool, "utf8").trim().split("\n").filter(Boolean) : []).map((l) => (JSON.parse(l) as { state: string }).state);
+      const log = () => readFileSync(path.join(h, ".office-relay", "relay.log"), "utf8");
+      return { hook, states, log };
+    };
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const a = relayIn(1500);
+    expect(a.hook("preToolUse", HOOK_FIXTURES.copilot.preToolUse).status).toBe(0);
+    const queued = a.hook("postToolUse", HOOK_FIXTURES.copilot.postToolUseView);
+    expect(queued.status).toBe(0);
+    expect(queued.stdout + queued.stderr).toBe("");
+    expect(a.states()).toEqual(["testing"]);
+    for (let i = 0; i < 100 && a.states().length < 2; i++) await sleep(50);
+    expect(a.states()).toEqual(["testing", "reviewing"]);
+    expect(a.log()).toContain("copilot postToolUse reviewing queued");
+    expect(a.log()).toContain("flush reviewing trailing sent");
+
+    const b = relayIn(2000);
+    expect(b.hook("preToolUse", HOOK_FIXTURES.copilot.preToolUse).status).toBe(0);
+    expect(b.hook("postToolUse", HOOK_FIXTURES.copilot.postToolUseView).status).toBe(0);
+    expect(b.hook("agentStop", HOOK_FIXTURES.copilot.agentStop).status).toBe(0);
+    await sleep(2600);
+    expect(b.states()).toEqual(["testing", "done"]);
   }, 30_000);
 
   it("pause: exit 1 with a message when the pause file cannot be written", () => {
