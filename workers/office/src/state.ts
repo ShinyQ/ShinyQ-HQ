@@ -386,7 +386,7 @@ export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): n
 }
 
 /** A run's laned job ids: `order`, or (a run stored before B) its first job ids. */
-const laneOrder = (r: RunRecord): string[] => r.order ?? Object.keys(r.jobs).slice(0, OFFICE_PIPELINE.jobs);
+export const laneOrder = (r: RunRecord): string[] => r.order ?? Object.keys(r.jobs).slice(0, OFFICE_PIPELINE.jobs);
 
 const JOB_RANK: Record<JobStatus, number> = { done: 0, queued: 1, running: 2, failed: 3 };
 
@@ -402,14 +402,14 @@ function lanesOf(r: RunRecord): OfficePipelineJob[] {
 }
 
 /** The effective seat (0 to 9, `seatOf`) of the live session on `repo` and `branch` that beat last, if any. */
-function seatFor(doc: OfficeDoc, repo: string, branch: string, now: number): number | undefined {
+export function seatFor(doc: OfficeDoc, repo: string, branch: string, now: number): number | undefined {
   let best: SessionRecord | undefined;
   for (const s of doc.sessions) if (s.repo === repo && s.branch === branch && seatOf(s) !== null && effective(s, now) !== null && (!best || s.lastBeat > best.lastBeat)) best = s;
   return best ? (seatOf(best) ?? undefined) : undefined;
 }
 
 /** Only production deploys ship (the dock's beam); an item stored before the `production` flag falls back to the ingest title. */
-const isProductionDeploy = (f: FeedRecord) => f.kind === "deploy" && (f.production ?? f.title === "Deploy · production");
+export const isProductionDeploy = (f: FeedRecord) => f.kind === "deploy" && (f.production ?? f.title === "Deploy · production");
 
 /** The v4 pipeline block (design 6.2): the newest runs with their lanes, and the latest merges and production deploys from the feed. */
 export function pipelineOf(doc: OfficeDoc, now: number): OfficePipeline {
