@@ -1,11 +1,11 @@
 import { Matrix4, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { CHARGE_PAD, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
+import { CHARGE_PAD, CHARGE_PAD_TRIM, CREW_GLOW, crewGlowKey, TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "@/experience/floors/lobby/office/crewFx";
 import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/office/crew";
 import { GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeGlow } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
-import { OFFICE, OFFICE_SEAT_COUNT, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, OFFICE_SEAT_COUNT, officeRiser, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { LOBBY } from "@/experience/config";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
@@ -101,11 +101,30 @@ describe("crew glow layout", () => {
       writeCrewGlow(slot, frame, "asleep", crewFx(asleep, true), 0.1, 0, true, m, c);
       const at = posAt(m, base + CREW_GLOW.charge);
       const docked = new Vector3().setFromMatrixPosition(frame);
-      expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
-      const arc = LOBBY.officeWing.arc;
-      // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
-      expect(Math.hypot(at.x - arc.x, at.z - arc.z) - CHARGE_PAD.d / 2).toBeGreaterThanOrEqual(OFFICE.rows[slot.row].deskRadius + OFFICE.desk.d / 2 - 1e-5);
       const e = new Matrix4().fromArray(m, (base + CREW_GLOW.charge) * 16).elements;
+      const depth = Math.hypot(e[4], e[5], e[6]);
+      const arc = LOBBY.officeWing.arc;
+      const r = Math.hypot(at.x - arc.x, at.z - arc.z);
+      const row = OFFICE.rows[slot.row];
+      if (slot.lift > 0) {
+        // On the riser: trimmed at the back to end on the riser's back edge, never hanging past it in mid-air.
+        expect(CHARGE_PAD_TRIM).toBeCloseTo(0.45);
+        expect(depth).toBeCloseTo(CHARGE_PAD.d - CHARGE_PAD_TRIM);
+        const riser = officeRiser(LOBBY.officeWing, row, slot.theta)!;
+        const riserBack = Math.hypot(riser.center.x - arc.x, riser.center.z - arc.z) + riser.d / 2;
+        expect(r + depth / 2).toBeLessThanOrEqual(riserBack + 1e-5);
+        expect(r + depth / 2).toBeCloseTo(row.roverRadius + OFFICE.rover.radius);
+        expect(CHARGE_PAD.w).toBeLessThan(riser.w);
+        // Still under the docked Rover, on its radial line.
+        expect(Math.abs(Math.hypot(docked.x - arc.x, docked.z - arc.z) - r)).toBeLessThan(depth / 2);
+        expect(Math.abs((at.x - arc.x) * Math.cos(slot.theta) - (at.z - arc.z) * Math.sin(slot.theta))).toBeLessThan(1e-5);
+      } else {
+        expect(depth).toBeCloseTo(CHARGE_PAD.d);
+        expect(Math.hypot(at.x - docked.x, at.z - docked.z)).toBeLessThan(1e-5);
+      }
+      // Its front edge (toward the arc centre) meets the desk's back edge: no part of it under the desk.
+      expect(r - depth / 2).toBeGreaterThanOrEqual(row.deskRadius + OFFICE.desk.d / 2 - 1e-5);
+      expect(r - depth / 2).toBeCloseTo(row.deskRadius + OFFICE.desk.d / 2);
       // Its width runs along the desk (the Rover's local x), 0.85 u past the Rover's 0.75 u half width on each side.
       expect(Math.hypot(e[0], e[1], e[2])).toBeCloseTo(CHARGE_PAD.w);
       expect(Math.abs(e[0] * Math.cos(slot.yaw) - e[2] * Math.sin(slot.yaw)) / CHARGE_PAD.w).toBeCloseTo(1);
