@@ -2,7 +2,8 @@ import { Vector3, type PerspectiveCamera } from "three";
 import { describe, expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { HALL } from "@/experience/floors/lobby/hallLayout";
-import { BEACON, beaconOrigin } from "@/experience/floors/lobby/office/beacon";
+import { BEAM, BEACON, beaconOrigin } from "@/experience/floors/lobby/office/beacon";
+import { officeDockPad } from "@/experience/floors/lobby/officeLayout";
 import type { Vec2 } from "@/experience/types";
 import { followCamera, SIZES } from "../helpers/office-cameras";
 
@@ -32,12 +33,12 @@ const VIEWS: Record<string, (s: Size) => PerspectiveCamera> = {
 };
 
 /** Share of the column's axis inside the screen (in front of the camera, inside the clip square), sampled every 0.1 u. */
-function onScreen(camera: PerspectiveCamera, o: Vec2): number {
-  const n = Math.round(BEACON.h * 10) + 1;
+function onScreen(camera: PerspectiveCamera, o: Vec2, h: number = BEACON.h): number {
+  const n = Math.round(h * 10) + 1;
   const v = new Vector3();
   let inside = 0;
   for (let i = 0; i < n; i++) {
-    v.set(o.x, (BEACON.h * i) / (n - 1), o.z).project(camera);
+    v.set(o.x, (h * i) / (n - 1), o.z).project(camera);
     if (v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1) inside += 1;
   }
   return inside / n;
@@ -78,6 +79,48 @@ describe("the beacon from the Lobby", () => {
     for (const view of Object.keys(VIEWS)) {
       const blind = SIZES.filter((s) => measured[view][s.id]["slot 2"] < VISIBLE).map((s) => s.id);
       expect(blind, view).toEqual(BLIND[view]);
+    }
+  });
+});
+
+/**
+ * The production deploy beam (`BEAM.h`, 40 u over the ship dock) from the same cameras. Its foot stands in frame from
+ * the primed spawn wherever the column shows there, and the beam leaves through the screen's top edge: on the desktop
+ * cameras its lowest 7.7 u show (19% of its height, the screen's top 14%), on the 844 x 390 and 960 x 640 tablet
+ * cameras its lowest 13.9 u (35%). A share of 40 u would not reach the column's 30% on the desktop cameras, so the bar
+ * is the length shown: at least `BEAM_SHOWN` u from the foot up. The portrait sizes and the other views miss it.
+ */
+const BEAM_SHOWN = 6;
+const BEAM_BLIND: Record<string, readonly string[]> = {
+  spawn: ["portrait tablet", "phone"],
+  arrival: SIZES.map((s) => s.id),
+  "hall road west": SIZES.map((s) => s.id),
+  "hall road east": SIZES.map((s) => s.id),
+};
+
+describe("the deploy beam from the Lobby", () => {
+  const dock = officeDockPad(LOBBY.officeWing);
+  const v = new Vector3();
+  const inFrame = (camera: PerspectiveCamera, y: number) => {
+    v.set(dock.x, y, dock.z).project(camera);
+    return v.z < 1 && Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1;
+  };
+
+  it.each(SIZES.filter((s) => landscape(s) && !BLIND.spawn.includes(s.id)))("stands in frame from its foot up and leaves through the top edge from the primed spawn on $id ($width x $height)", (s) => {
+    const camera = VIEWS.spawn(s);
+    expect(inFrame(camera, 0), "the foot").toBe(true);
+    expect(inFrame(camera, BEAM_SHOWN), `${BEAM_SHOWN} u up`).toBe(true);
+    expect(onScreen(camera, dock, BEAM.h) * BEAM.h).toBeGreaterThanOrEqual(BEAM_SHOWN);
+    // Past the visible part it runs off the top of the screen, never ending in view.
+    expect(inFrame(camera, BEAM.h)).toBe(false);
+    v.set(dock.x, BEAM.h, dock.z).project(camera);
+    expect(v.y).toBeGreaterThan(1);
+  });
+
+  it("misses it exactly where recorded", () => {
+    for (const view of Object.keys(VIEWS)) {
+      const blind = SIZES.filter((s) => onScreen(VIEWS[view](s), dock, BEAM.h) * BEAM.h < BEAM_SHOWN).map((s) => s.id);
+      expect(blind, view).toEqual(BEAM_BLIND[view]);
     }
   });
 });

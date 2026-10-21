@@ -58,7 +58,7 @@ export const beaconGain = (atStop: boolean): BeaconGain => (atStop ? STOP : FULL
 
 /**
  * Column (0) and rings (1 to 3) at time `t`, the rings climbing to `reach` (u, `BEACON.rise` by default), widening, fading
- * in over their first fifth and out as they climb; instance 4 (stage B's beam) is left as is. Reduced motion: rings fixed
+ * in over their first fifth and out as they climb; instance 4 (the deploy beam, `BEAM.slot`) is left as is. Reduced motion: rings fixed
  * at a quarter, a half and three quarters of the way up.
  */
 export function beaconInstances(t: number, reduced: boolean, out: BeaconInstance[], reach: number = BEACON.rise): void {
@@ -68,4 +68,39 @@ export function beaconInstances(t: number, reduced: boolean, out: BeaconInstance
     const u = reduced ? (i + 1) / (BEACON.bands + 1) : (t / BEACON.period + i / BEACON.bands) % 1;
     Object.assign(out[1 + i], { y: u * (reach - BEACON.band), r: BEACON.r * (r0 + u * (r1 - r0)), h: BEACON.band, alpha: reduced ? 0.7 : Math.min(1, u * 5) * (1 - u) });
   }
+}
+
+/**
+ * The production deploy beam (design 6.3), the beacon mesh's instance `slot`: a green column `h` u tall and `r` u wide
+ * over the ship dock for `s` seconds from the moment a client first sees a fresh deploy success, rising over `rise` s
+ * and fading over the last `fade` s. At the office stop it stops at `stopH` (the wall's top), so it never crosses the
+ * chip row or the HUD there.
+ */
+export const BEAM = { slot: 4, h: 40, r: 1.1, s: 8, rise: 0.6, fade: 1.5, stopH: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame } as const;
+
+/** Which deploy the beam showed last and when it started (scene seconds); kept across a cleared signal, so a deploy fires once. */
+export interface BeamClock {
+  deployAt: number | null;
+  t0: number;
+}
+
+/** Seconds into the beam at scene time `t`, or null when none shows: a `deployAt` the clock has not seen starts one now. */
+export function beamSince(deployAt: number | null, t: number, clock: BeamClock): number | null {
+  if (deployAt !== null && deployAt !== clock.deployAt) {
+    clock.deployAt = deployAt;
+    clock.t0 = t;
+  }
+  if (clock.deployAt === null || t - clock.t0 >= BEAM.s) return null;
+  return t - clock.t0;
+}
+
+/** Instance `BEAM.slot` at `since` seconds into the beam (zero size without one). Reduced motion: full height and steady for the 8 s. */
+export function beamInstance(since: number | null, reduced: boolean, atStop: boolean, out: BeaconInstance): void {
+  if (since === null) {
+    Object.assign(out, { y: 0, r: 0, h: 0, alpha: 0 });
+    return;
+  }
+  const rise = reduced ? 1 : Math.min(1, since / BEAM.rise);
+  const fade = reduced || since <= BEAM.s - BEAM.fade ? 1 : (BEAM.s - since) / BEAM.fade;
+  Object.assign(out, { y: 0, r: BEAM.r, h: (atStop ? BEAM.stopH : BEAM.h) * rise, alpha: (reduced ? 0.6 : 0.95) * fade });
 }

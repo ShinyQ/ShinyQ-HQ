@@ -4,8 +4,8 @@ import type * as WatchChunk from "./watchChunk";
 
 /**
  * Main-path loader of the office watch chunk (`./watchChunk.ts`: the signal, the 30 s watch, the minimap cue; idle
- * on L1, in the session total) and the beacon chunk (`./beaconChunk.ts`: the beacon mesh; on the first ask, outside
- * it), plus the one bit the minimap's label needs before either loads. These two import() calls are the only
+ * on L1, in the session total) and the beacon chunk (`./beaconChunk.ts`: the beacon and deploy beam mesh; on the first
+ * ask or the first fresh deploy, outside it), plus the one bit the minimap's label needs before either loads. These two import() calls are the only
  * references to the chunks; a failed import forgets its promise, so the next call retries.
  */
 export type OfficeWatchModule = typeof WatchChunk;
@@ -43,7 +43,7 @@ export function loadOfficeWatch(): Promise<OfficeWatchModule> {
   return pendingWatch;
 }
 
-/** Loads the beacon chunk once per page (the watch chunk, the first time a Rover needs Kurniadi). */
+/** Loads the beacon chunk once per page (the watch chunk, the first time a Rover needs Kurniadi or a fresh deploy succeeds). */
 export function loadOfficeBeacon(): Promise<OfficeBeaconModule> {
   pendingBeacon ??= import("./beaconChunk").then(
     (m) => {

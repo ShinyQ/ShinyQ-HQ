@@ -65,7 +65,7 @@ describe("office watch loader", () => {
     const loader: Loader = await import("@/experience/floors/lobby/office/watchLoader");
     const signal: Signal = await import("@/experience/floors/lobby/office/officeSignal");
     await import("@/experience/floors/lobby/office/watchChunk");
-    signal.setOfficeSignal({ asking: [], deployAt: Date.now(), goodAt: Date.now() });
+    signal.setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
     signal.setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
     expect(load).not.toHaveBeenCalled();
     expect(loader.officeAsks.on).toBe(false);
@@ -83,6 +83,24 @@ describe("office watch loader", () => {
     signal.setOfficeSignal({ asking: [3], goodAt: Date.now() });
     expect(load).toHaveBeenCalledTimes(2);
     signal.setOfficeSignal({ asking: [], goodAt: Date.now() });
+  });
+
+  it("the watch chunk loads the beacon once on a fresh deploy with nobody asking (the beam), without raising the minimap's label", async () => {
+    const load = vi.fn(() => Promise.resolve({}));
+    vi.doMock("@/experience/floors/lobby/office/watchLoader", async (orig) => ({ ...(await orig<Loader>()), loadOfficeBeacon: load }));
+    const loader: Loader = await import("@/experience/floors/lobby/office/watchLoader");
+    const signal: Signal = await import("@/experience/floors/lobby/office/officeSignal");
+    await import("@/experience/floors/lobby/office/watchChunk");
+    signal.setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
+    expect(load).not.toHaveBeenCalled();
+    signal.setOfficeSignal({ asking: [], deployAt: Date.now(), goodAt: Date.now() });
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(loader.officeAsks.on).toBe(false);
+    await Promise.resolve();
+    signal.setOfficeSignal({ asking: [], deployAt: Date.now() + 1, goodAt: Date.now() });
+    signal.setOfficeSignal({ asking: [2], goodAt: Date.now() });
+    expect(load).toHaveBeenCalledTimes(1);
+    signal.setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
   });
 
   it("mirrors a signal the scene fed before the watch chunk loaded", async () => {
