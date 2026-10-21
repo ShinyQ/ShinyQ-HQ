@@ -3,37 +3,12 @@ import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURE
 import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
-import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
+import type { EdgeCache, OfficeEnv } from "../../functions/_lib/types";
+import { memoryCache, worker } from "../helpers/office-endpoint";
 import { applyBeat, emptyDoc, viewV3, viewV4 } from "../../workers/office/src/state";
 
 const SITE = "https://kurniadi.pages.dev";
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
-
-function worker(reply: (path: string, init?: RequestInit) => Response | Promise<Response>) {
-  const calls: { path: string; init?: RequestInit }[] = [];
-  const binding: ServiceBinding = {
-    async fetch(input, init) {
-      const url = new URL(typeof input === "string" ? input : input.url);
-      const path = url.pathname + url.search;
-      calls.push({ path, init });
-      return reply(path, init);
-    },
-  };
-  return { binding, calls };
-}
-
-function memoryCache() {
-  const map = new Map<string, Response>();
-  const cache: EdgeCache = {
-    async match(request) {
-      return map.get(request.url)?.clone();
-    },
-    async put(request, response) {
-      map.set(request.url, response);
-    },
-  };
-  return { map, cache };
-}
 
 async function get(env: OfficeEnv, cache: EdgeCache | null = null, method = "GET", headers: Record<string, string> = {}, query = "?x=1") {
   const pending: Promise<unknown>[] = [];
