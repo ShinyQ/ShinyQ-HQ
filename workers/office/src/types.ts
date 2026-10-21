@@ -11,11 +11,15 @@ export interface DurableObjectNamespaceLike {
   get(id: unknown): DurableObjectStubLike;
 }
 
-/** The Durable Object's state: its storage API (backed by SQLite on the free plan). */
+/** The Durable Object's state: its storage API (backed by SQLite on the free plan); `list`'s `end` is exclusive. */
 export interface DurableObjectStateLike {
   storage: {
     get<T>(key: string): Promise<T | undefined>;
+    get<T>(keys: string[]): Promise<Map<string, T>>;
     put<T>(key: string, value: T): Promise<void>;
+    put(entries: Record<string, unknown>): Promise<void>;
+    delete(keys: string[]): Promise<number>;
+    list<T>(options: { prefix: string; end?: string }): Promise<Map<string, T>>;
   };
 }
 
