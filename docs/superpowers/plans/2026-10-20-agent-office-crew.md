@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review; look approved by the owner 2026-10-20 (thought trail only, beacon 1.6 u wide, slim LED-lane tower, the
+Status: shipped in #274 (bcb1080), 2026-10-21; look approved by the owner 2026-10-20 (thought trail only, beacon 1.6 u wide, slim LED-lane tower, the
 done spin ending on the camera, no debug labels in captures), and the look pass on 2026-10-21
 ([decision](../../decisions/2026-10-21-office-look-pass.md)).
 
