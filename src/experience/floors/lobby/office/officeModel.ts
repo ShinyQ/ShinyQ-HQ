@@ -26,6 +26,8 @@ export interface OfficeRoverView {
   job: string | null;
   since: number | null;
   recent: readonly OfficeRecent[];
+  /** Active helpers (sub-agents, the v2 desk count): 0 when asleep, off duty, or the view is off or offline. */
+  helpers: number;
 }
 
 export interface OfficeView {
@@ -38,7 +40,7 @@ export interface OfficeView {
   updatedAt: number | null;
 }
 
-const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [] });
+const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [], helpers: 0 });
 
 export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): OfficeView {
   const snap = feed.status === "disabled" ? null : feed.snapshot;
@@ -59,6 +61,7 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
       job: desk.state === "failed" ? (desk.job ?? null) : null,
       since: desk.since,
       recent: desk.recent,
+      helpers: desk.state === "asleep" ? 0 : (desk.helpers ?? 0),
     };
   });
   const live = snap && !sleeping ? snap : null;
@@ -73,13 +76,39 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
   };
 }
 
-/** Chip text: "<Agent> · <activity>", then the title or "Client project" (not for sleeping Rovers), then CI progress. */
-export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { head: string; task: string | null; progress: number | null } {
-  const head = r.agent ? `${t(`agent.${r.agent}`)} · ${t(`activity.${r.activity}`)}` : t("3d.offDuty");
+/** "3 helpers" / "3 asisten" for a Rover with active helpers, else null. */
+export const helpersText = (r: Pick<OfficeRoverView, "helpers">, t: OfficeTranslate): string | null => (r.helpers > 0 ? t("helpers", { n: r.helpers }) : null);
+
+/**
+ * Chip text: the agent's name ("Off duty" without one), its `activity` (null off duty), `base` "<Agent> · <activity>",
+ * `head` that plus the helpers ("<Agent> · <activity> · 3 helpers"), the helpers text alone, the title or "Client
+ * project" (not for sleeping Rovers), CI progress (0 to 1), and the full text for the chip's label: "Desk <n>: <head>,
+ * <task>, <done> of <total> jobs".
+ */
+export function chipLines(r: OfficeRoverView, t: OfficeTranslate): { name: string; activity: string | null; base: string; head: string; helpers: string | null; task: string | null; progress: number | null; label: string } {
+  const name = r.agent ? t(`agent.${r.agent}`) : t("3d.offDuty");
+  const activity = r.agent ? t(`activity.${r.activity}`) : null;
+  const base = activity ? `${name} · ${activity}` : name;
+  const helpers = r.agent ? helpersText(r, t) : null;
+  const head = helpers ? `${base} · ${helpers}` : base;
   const task = r.agent && r.state !== "asleep" ? (r.title ?? t("clientProject")) : null;
-  const progress = r.progress && r.progress.total > 0 ? Math.min(1, r.progress.done / r.progress.total) : null;
-  return { head, task, progress };
+  const ci = r.progress && r.progress.total > 0 ? r.progress : null;
+  const progress = ci ? Math.min(1, ci.done / ci.total) : null;
+  const label = [t("3d.target.desk", { n: r.slot + 1, agent: head }), task, ci && t("3d.jobs", { done: ci.done, total: ci.total })].filter(Boolean).join(", ");
+  return { name, activity, base, head, helpers, task, progress, label };
 }
+
+/**
+ * A near chip's head in three parts (`OfficeChips`): the agent's name and the helpers (whole, never cut) and the activity
+ * between them, which the chip cuts with an ellipsis when space runs out ("Copilot · Asking Kur…"). Past `drop` 1 the
+ * helpers keep only their count ("Claude · Watc… · 6", the word "helpers" goes); the "+N" pill is never dropped.
+ */
+export function nearParts(line: { name: string; activity: string | null; helpers: string | null }, helpers: number, drop: number): { name: string; activity: string | null; helpers: string | null } {
+  return { name: line.name, activity: line.activity, helpers: line.helpers && (drop > 0 ? `${helpers}` : line.helpers) };
+}
+
+/** The deepest drop level that still changes a near head: 1 (the word "helpers") with helpers, else 0. */
+export const nearDropsFor = (line: { helpers: string | null }): number => (line.helpers ? 1 : 0);
 
 export function screenInput(r: OfficeRoverView, t: OfficeTranslate): ScreenInput {
   const style = OFFICE_STATE_STYLE[r.state];

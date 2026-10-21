@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
 import { createOfficePoller, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH } from "@/lib/office/protocol";
+import { OFFICE_PATH, parseOfficeResponseV2 } from "@/lib/office/protocol";
 import { officeDesk, officeSnapshot, statesA } from "../../e2e/office-fixtures";
 
 const T0 = 1_800_000_000_000;
@@ -42,6 +42,32 @@ describe("createOfficePoller", () => {
     expect(seen.map((f) => f.status)).toEqual(["loading", "ready"]);
     await vi.advanceTimersByTimeAsync(POLL.activeMs);
     expect(calls).toHaveLength(2);
+  });
+
+  it("fetches its path and parses with its parse (v2 with helpers; v1 rejects a v2 body)", async () => {
+    const v2 = fakeFetch([{ status: 200, body: OFFICE_FIXTURES_V2.busy }]);
+    const poller = createOfficePoller({ fetcher: v2.fetcher, path: `${OFFICE_PATH}?v=2`, parse: parseOfficeResponseV2 });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(v2.calls[0].url).toBe("/api/office?v=2");
+    expect(poller.feed()).toMatchObject({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy });
+    poller.stop();
+    const parse = vi.fn(() => null);
+    const custom = fakeFetch([{ status: 200, body: OFFICE_FIXTURES.busy }]);
+    const rejecting = createOfficePoller({ fetcher: custom.fetcher, path: "/x", parse });
+    rejecting.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(custom.calls[0].url).toBe("/x");
+    expect(parse).toHaveBeenCalledWith(OFFICE_FIXTURES.busy);
+    expect(rejecting.feed().status).toBe("offline");
+    rejecting.stop();
+    const v1 = fakeFetch([{ status: 200, body: OFFICE_FIXTURES_V2.busy }]);
+    const plain = createOfficePoller({ fetcher: v1.fetcher });
+    plain.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(v1.calls[0].url).toBe(OFFICE_PATH);
+    expect(plain.feed().status).toBe("offline");
+    plain.stop();
   });
 
   it("slows to 30 s when every desk is asleep, the feed is semi-live or off, or there is no snapshot", async () => {

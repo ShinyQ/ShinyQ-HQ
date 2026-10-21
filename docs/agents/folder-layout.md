@@ -298,9 +298,11 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - spawn.ts (the kiosk axis, `LOBBY_SPAWN`, `LOBBY_SPAWN_HEADING`; types only, the store reads it; `LOBBY` in config.ts builds on it).
   - observatory.ts, observatoryLayout.ts and VisitsStation.tsx (the Visitor Observatory `L1:visits`: parts, door and view zones, scene).
   - officeLayout.ts (the Agent Office wing offsets and `officeWing`, layout, rooms, obstacles, stops, view zone and road; config.ts imports it, so it stays import-light; it reaches the Classic page chunk only through the office loader `office/chunk.ts`, which the drawer bodies import, never through config.ts), officeShell.ts (3D-only, main path: `OFFICE_SLOTS`, `officeShellBoxes`, `officeBounds`, `wingBounds`, `officeSign`, the stop gates `atOfficeStop`, `officeChipsHere` and `wingSignHidden`, the chip anchors and constants, the office canvas helpers) and office/ (see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office)):
-    - main path: `OfficeMount.tsx` (the furniture shell, the load trigger and the fade-in), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`);
+    - main path: `OfficeMount.tsx` (the furniture shell, the load trigger, the fade-in, the watch chunk's load and the watch's start, the beacon's mount), `chunk.ts` (`loadOffice`, `loadOfficeBody`, `officeHandle` for `__hq.office`) and `watchLoader.ts` (`loadOfficeWatch`, `loadOfficeBeacon`, `useOfficeWatchModule`, `useOfficeBeaconModule`, `officeAsks` with `setOfficeAsks` and `useOfficeAsks`, `officeWatchNow`; imports React only);
+    - the watch chunk `watchChunk.ts` (mirrors the signal into `officeAsks`, loads the beacon chunk on the first ask): `officeSignal.ts` (the beacon's signal: `officeSignal`, `setOfficeSignal`, `useOfficeSignal`, `signalFromBody`; imports React only, shared with the scene and beacon chunks), `officeWatch.ts` (`startOfficeWatch`, `officeWatchTick`) and `src/hud/minimap/OfficeCue.tsx`;
+    - the beacon chunk `beaconChunk.ts`: `OfficeBeacon.tsx` (the Needs Kurniadi beacon mesh) and `beacon.ts` (pure: `BEACON`, `beaconOrigin`, `beaconGain`, `beaconInstances`);
     - the scene chunk `scene.ts`: `OfficeScene.tsx` (Rovers, atlas, glow, wall, chip placement), `OfficeChips.tsx`, `runtime.ts` (in-view flag, chip elements, near/far flags), `live.ts` (the poller and `officeTest`), the pure modules `officeModel.ts`, `officeVisual.ts` (`OFFICE_STATE_STYLE`, `STATUS_COLOR`, poses), `officeRig.ts`, `officeAtlas.ts`, `officeFrame.ts`, `officeWall.ts` and `interact.ts`;
-    - the drawer body chunk `body.ts`: `OfficeBody.tsx`.
+    - the drawer body chunk `body.ts`: `OfficeBody.tsx` and `crewSummary.ts` (the summary drawer's crew sentences and announcements).
   - visitsRoom.ts (room id, `#visits` deep link; type-only imports, the gate uses it).
   - stations.ts (Highlights Hall ids, deep-link hash, experienceRows; type-only imports, the gate uses it).
   - hallLayout.ts (HALL, buildHighlightsHall, HALL_LAYOUT, stationOf, gatePillars).
@@ -367,6 +369,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `tests/helpers/space.ts`: expectSpaceRules(...) for walkable floor layouts.
 - `tests/helpers/edge-accents.ts`: static scanner for colored left/top edge stripes (`tests/unit/edge-accents.test.ts`).
+- `tests/helpers/office-cameras.ts`: settled L1 follow cameras and the six office sizes, shared by `office-chip-placement` and `office-beacon-view`.
 - `tests/unit/`: Vitest.
   - Schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors.
   - Career layout, labs layout, arrival framing and directory boards, sign facing, library concepts and layout.
@@ -392,7 +395,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 | L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
-| Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no task line, zoomed in), the L1 budget at the office (lite); snapshots from `e2e/office-fixtures.ts` |
+| Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no text, zoomed in), the L1 budget at the office (lite); snapshots from `e2e/office-fixtures.ts` |
 | RF roof deck | `roof.spec.ts` |
 | Missions + axe | missions |
 | Floor pads and pickers | `pads.spec.ts` |

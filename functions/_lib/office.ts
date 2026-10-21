@@ -1,4 +1,4 @@
-import { OFFICE_BEAT_MAX_BYTES, parseOfficeResponse, wibDay, type OfficeResponseV1, type OfficeSnapshotV1 } from "../../src/lib/office/protocol";
+import { OFFICE_BEAT_MAX_BYTES, parseOfficeResponse, parseOfficeResponseV2, wibDay, type OfficeResponseV1, type OfficeResponseV2, type OfficeSnapshotV1 } from "../../src/lib/office/protocol";
 import { etagOf, readCapped } from "./security";
 import type { EdgeCache, OfficeEnv, PagesContext } from "./types";
 
@@ -19,7 +19,7 @@ function defaultCache(): EdgeCache | null {
   return store?.default ?? null;
 }
 
-async function jsonAnswer(value: OfficeResponseV1, cacheControl: string): Promise<Response> {
+async function jsonAnswer(value: OfficeResponseV1 | OfficeResponseV2, cacheControl: string): Promise<Response> {
   const body = JSON.stringify(value);
   return new Response(body, {
     status: 200,
@@ -34,10 +34,16 @@ function conditional(request: Request, res: Response): Response {
   return request.method === "HEAD" ? new Response(null, { status: res.status, headers: res.headers }) : res;
 }
 
+/** The two snapshot versions: exactly `?v=2` is v2, anything else (no query, `?v=3`, junk) the unchanged v1. */
+const VERSIONS = {
+  1: { key: "/api/office", worker: `${WORKER}/snapshot`, parse: parseOfficeResponse, off: offSnapshot },
+  2: { key: "/api/office?v=2", worker: `${WORKER}/snapshot?v=2`, parse: parseOfficeResponseV2, off: (now: number) => ({ ...offSnapshot(now), v: 2 as const }) },
+} as const;
+
 /**
- * `GET /api/office`: the office snapshot from the hq-office Worker, validated again, edge-cached for 5 s per data
- * center (one Durable Object read per 5 s there). Always 200 JSON with an ETag (304 on a matching If-None-Match),
- * so clients need one code path.
+ * `GET /api/office` (v1) and `GET /api/office?v=2` (v2: desk helpers): the office snapshot from the hq-office Worker,
+ * validated again, edge-cached for 5 s per data center and version (one Durable Object read per 5 s there). Always
+ * 200 JSON with an ETag (304 on a matching If-None-Match), so clients need one code path.
  */
 export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | null; now?: () => number } = {}) {
   const cacheOf = opts.cache ?? defaultCache;
@@ -46,19 +52,20 @@ export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | nu
     const method = request.method;
     if (method !== "GET" && method !== "HEAD") return noStore(405, { Allow: "GET, HEAD" });
     if (env.OFFICE_ENABLED !== "true") return conditional(request, await jsonAnswer({ v: 1, enabled: false }, DISABLED_CACHE));
-    if (!env.OFFICE) return conditional(request, await jsonAnswer(offSnapshot(now()), SNAPSHOT_CACHE));
+    const version = VERSIONS[new URL(request.url).searchParams.get("v") === "2" ? 2 : 1];
+    if (!env.OFFICE) return conditional(request, await jsonAnswer(version.off(now()), SNAPSHOT_CACHE));
     const cache = cacheOf();
-    const key = new Request(new URL("/api/office", request.url).toString(), { method: "GET" });
+    const key = new Request(new URL(version.key, request.url).toString(), { method: "GET" });
     const hit = await cache?.match(key);
     if (hit) return conditional(request, hit);
-    let value: OfficeResponseV1 | null = null;
+    let value: OfficeResponseV1 | OfficeResponseV2 | null = null;
     try {
-      const res = await env.OFFICE.fetch(`${WORKER}/snapshot`);
-      value = res.ok ? parseOfficeResponse(await res.json()) : null;
+      const res = await env.OFFICE.fetch(version.worker);
+      value = res.ok ? version.parse(await res.json()) : null;
     } catch {
       value = null;
     }
-    const out = await jsonAnswer(value ?? offSnapshot(now()), SNAPSHOT_CACHE);
+    const out = await jsonAnswer(value ?? version.off(now()), SNAPSHOT_CACHE);
     if (cache) waitUntil(cache.put(key, out.clone()));
     return conditional(request, out);
   };

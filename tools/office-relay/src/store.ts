@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import type { Sent } from "./beat";
+import type { HelperState } from "./helpers";
 import type { LastTool } from "./map";
 
 export interface RelayConfig {
@@ -35,6 +36,70 @@ export function relayPaths(env: Partial<NodeJS.ProcessEnv> = process.env): Relay
 
 function ensure(dir: string): void {
   mkdirSync(dir, { recursive: true, mode: 0o700 });
+}
+
+/**
+ * Writes through a temp file in the same directory and renames it over the target, so a reader in another hook
+ * process sees the old or the new content, never a truncated file.
+ */
+function writeAtomic(file: string, data: string): void {
+  const tmp = `${file}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`;
+  try {
+    writeFileSync(tmp, data, { mode: 0o600 });
+    renameSync(tmp, file);
+  } catch (error) {
+    rmSync(tmp, { force: true });
+    throw error;
+  }
+}
+
+/**
+ * The pause between lock attempts, and the most a hook waits for the lock before going on unlocked: 30 ms covers another
+ * hook's whole critical section (a read, an apply and an atomic write) on a busy machine, and the hook still exits fast.
+ */
+export const LOCK_WAIT_MS = 2;
+export const LOCK_BUDGET_MS = 30;
+/** A lock older than this was left by a hook that died; it is removed. */
+export const LOCK_STALE_MS = 1000;
+
+const sleeper = new Int32Array(new SharedArrayBuffer(4));
+const sleep = (ms: number) => void Atomics.wait(sleeper, 0, 0, ms);
+
+function tryLock(lock: string): boolean {
+  try {
+    closeSync(openSync(lock, "wx", 0o600));
+    return true;
+  } catch {
+    try {
+      if (Date.now() - statSync(lock).mtimeMs <= LOCK_STALE_MS) return false;
+      unlinkSync(lock);
+      closeSync(openSync(lock, "wx", 0o600));
+      return true;
+    } catch {
+      // released or taken meanwhile
+      return false;
+    }
+  }
+}
+
+/**
+ * Runs `fn` while holding `<file>.lock` (created exclusively), so concurrent hook processes apply their updates one
+ * after another. Synchronous and bounded: a try every LOCK_WAIT_MS, and after `budget` ms (LOCK_BUDGET_MS; tests pass
+ * their own) it runs unlocked, so the hook stays fast.
+ */
+export function withFileLock<T>(file: string, fn: () => T, budget: number = LOCK_BUDGET_MS): T {
+  const lock = `${file}.lock`;
+  const deadline = performance.now() + budget;
+  let held = tryLock(lock);
+  for (let left = deadline - performance.now(); !held && left > 0; left = deadline - performance.now()) {
+    sleep(Math.min(LOCK_WAIT_MS, left));
+    held = tryLock(lock);
+  }
+  try {
+    return fn();
+  } finally {
+    if (held) rmSync(lock, { force: true });
+  }
 }
 
 export function loadConfig(paths: RelayPaths): RelayConfig {
@@ -79,7 +144,7 @@ export function readSent(paths: RelayPaths, session: string): Sent | null {
 
 export function writeSent(paths: RelayPaths, session: string, sent: Sent): void {
   ensure(paths.sessions);
-  writeFileSync(sentFile(paths, session), JSON.stringify(sent), { mode: 0o600 });
+  writeAtomic(sentFile(paths, session), JSON.stringify(sent));
 }
 
 const toolFile = (paths: RelayPaths, session: string) => path.join(paths.sessions, `${session.slice(0, 32)}.tool.json`);
@@ -95,7 +160,53 @@ export function readLastTool(paths: RelayPaths, session: string): LastTool | nul
 
 export function writeLastTool(paths: RelayPaths, session: string, last: LastTool): void {
   ensure(paths.sessions);
-  writeFileSync(toolFile(paths, session), JSON.stringify(last), { mode: 0o600 });
+  writeAtomic(toolFile(paths, session), JSON.stringify(last));
+}
+
+export const helpersFile = (paths: RelayPaths, session: string) => path.join(paths.sessions, `${session.slice(0, 32)}.helpers.json`);
+
+/** A session's helpers (salted id hashes to start times); a missing or broken file is an empty state. */
+export function readHelpers(paths: RelayPaths, session: string): HelperState {
+  try {
+    const raw = JSON.parse(readFileSync(helpersFile(paths, session), "utf8")) as { ids?: unknown };
+    const ids = typeof raw.ids === "object" && raw.ids !== null && !Array.isArray(raw.ids) ? (raw.ids as Record<string, unknown>) : {};
+    return { ids: Object.fromEntries(Object.entries(ids).filter((e): e is [string, number] => e[0].length <= 64 && typeof e[1] === "number" && Number.isFinite(e[1]))) };
+  } catch {
+    return { ids: {} };
+  }
+}
+
+export function writeHelpers(paths: RelayPaths, session: string, state: HelperState): void {
+  ensure(paths.sessions);
+  writeAtomic(helpersFile(paths, session), JSON.stringify(state));
+}
+
+/**
+ * Runs `fn` under the session's helpers lock (see `withFileLock`); `fn` reads, applies and writes the helpers file and
+ * may record what it sends, so two hook processes never apply their updates to the same old state.
+ */
+export function withHelpersLock<T>(paths: RelayPaths, session: string, fn: () => T, budget?: number): T {
+  ensure(paths.sessions);
+  return withFileLock(helpersFile(paths, session), fn, budget);
+}
+
+/** Read, apply, write under the lock (waiting at most `budget` ms for it); returns the written state. */
+export function updateHelpers(paths: RelayPaths, session: string, apply: (state: HelperState) => HelperState, budget?: number): HelperState {
+  return withHelpersLock(
+    paths,
+    session,
+    () => {
+      const next = apply(readHelpers(paths, session));
+      writeHelpers(paths, session, next);
+      return next;
+    },
+    budget,
+  );
+}
+
+/** Forgets a session's helpers (its session ended). */
+export function clearHelpers(paths: RelayPaths, session: string): void {
+  withHelpersLock(paths, session, () => rmSync(helpersFile(paths, session), { force: true }));
 }
 
 /** One line per decision (agent, event, state, outcome); never payload text. Rotates at 256 KB. */

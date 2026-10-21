@@ -58,7 +58,7 @@ function branchBlocked(branch: string, blocklist: readonly string[]): boolean {
 
 /** Server re-check of a parsed beat: repository data only for allowlisted names, titles through the blocklist. */
 export function sanitizeBeat(beat: OfficeBeatV1, allow: readonly string[], blocklist: readonly string[]): OfficeBeatV1 {
-  const base: OfficeBeatV1 = { v: 1, agent: beat.agent, session: beat.session, state: beat.state, activity: beat.activity, ts: beat.ts };
+  const base: OfficeBeatV1 = { v: 1, agent: beat.agent, session: beat.session, state: beat.state, activity: beat.activity, ...(beat.helpers !== undefined ? { helpers: beat.helpers } : {}), ts: beat.ts };
   if (!beat.repo || !repoAllowed(beat.repo, allow)) return base;
   if (beat.branch && branchBlocked(beat.branch, blocklist)) return { ...base, repo: beat.repo };
   const title = beat.title ? cleanTitle(beat.title, blocklist) : null;

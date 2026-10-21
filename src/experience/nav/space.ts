@@ -13,7 +13,8 @@ import { inPlaza, projectOnSegment, ROAD, roadSegments, type RoadNetwork } from 
  * - every road is at least 8 u wide and every plaza at least 16 u across;
  * - roads keep their whole width clear of obstacles, spurs keep the rover's radius clear;
  * - at least 6 u of clear floor around every obstacle: two obstacles (or an obstacle and the slab
- *   edge) either touch or leave 6 u between them, so no sliver of floor traps the rover;
+ *   edge) either touch or leave 6 u between them, so no sliver of floor traps the rover (a gap that a third
+ *   obstacle fills, touching both, holds no floor: `gapFilled`);
  * - every door has a spur from the road (or a plaza) ending on its pad;
  * - no door is reachable only through a gap narrower than 6 u: floor that is 6 u wide (a rover
  *   circle of 3 u) connects the start to within 4 u of every pad.
@@ -83,6 +84,19 @@ export function rectGap(a: Rect, b: Rect): number {
   const dx = Math.max(0, a.minX - b.maxX, b.minX - a.maxX);
   const dz = Math.max(0, a.minZ - b.maxZ, b.minZ - a.maxZ);
   return Math.hypot(dx, dz);
+}
+
+/**
+ * Whether another obstacle covers the whole strip between `a` and `b` (between their facing edges, over the span they
+ * share; the corner rect between them when they are diagonal): then no floor lies between them, the three touch as
+ * one chain (the Agent Office's CI tower beside its east row box, with the middle box and the wall frame past it).
+ */
+export function gapFilled(a: Rect, b: Rect, others: readonly Rect[]): boolean {
+  const span = (a0: number, a1: number, b0: number, b1: number): [number, number] =>
+    a1 < b0 ? [a1, b0] : b1 < a0 ? [b1, a0] : [Math.max(a0, b0), Math.min(a1, b1)];
+  const [x0, x1] = span(a.minX, a.maxX, b.minX, b.maxX);
+  const [z0, z1] = span(a.minZ, a.maxZ, b.minZ, b.maxZ);
+  return others.some((o) => o !== a && o !== b && o.minX <= x0 + EPS && o.maxX >= x1 - EPS && o.minZ <= z0 + EPS && o.maxZ >= z1 - EPS);
 }
 
 /** Samples along a segment every `step` u (both ends included). */
@@ -180,7 +194,7 @@ export function spaceViolations(input: SpaceInput, rules: SpaceRules = SPACE_RUL
   for (let i = 0; i < obstacles.length; i++) {
     for (let j = i + 1; j < obstacles.length; j++) {
       const gap = rectGap(obstacles[i], obstacles[j]);
-      if (gap > EPS && gap < rules.clear - EPS)
+      if (gap > EPS && gap < rules.clear - EPS && !gapFilled(obstacles[i], obstacles[j], obstacles))
         out.push({ rule: "obstacle-gap", detail: `${fmt(gap)} u between ${rectLabel(obstacles[i])} and ${rectLabel(obstacles[j])}` });
     }
     // Against the slab's outer edges only: a joint between two slab rects is open floor.

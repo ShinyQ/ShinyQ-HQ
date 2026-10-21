@@ -107,15 +107,33 @@ describe("gates", () => {
   it("reports the Agent Office chunk against its own cap, outside the session total", () => {
     const entry = { kind: "bytes3d", tier: "lite", js: { "x.js": 400 * 1024 }, other: {}, office: 9.5 * 1024 } as const;
     const s = renderGates([entry], []);
-    expect(s.markdown).toContain("Agent Office chunk (L1, lazy, not in the session total): 9.5 KB of 14.0 KB.");
+    expect(s.markdown).toContain(`Agent Office chunk (L1, lazy, not in the session total): 9.5 KB of ${(BYTES_3D_BUDGET.office / 1024).toFixed(1)} KB.`);
   });
 
   it("reports the Agent Office drawer body chunk as its own line, incremental over the scene chunk", () => {
     const entry = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, office: 12.5 * 1024, officeBody: 2.5 * 1024 } as const;
     const s = renderGates([entry], []);
-    expect(s.markdown).toContain("Agent Office drawer body (on drawer open): 2.5 KB of 6.0 KB.");
+    expect(s.markdown).toContain(`Agent Office drawer body (on drawer open): 2.5 KB of ${(BYTES_3D_BUDGET.officeBody / 1024).toFixed(1)} KB.`);
     const without = renderGates([{ ...entry, officeBody: undefined }], []);
     expect(without.markdown).not.toContain("Agent Office drawer body");
+  });
+
+  it("reports the office total (scene and drawer body) against its own 40 KB cap", () => {
+    const entry = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, office: 12.5 * 1024, officeBody: 2.5 * 1024, officeTotal: 15 * 1024 } as const;
+    expect(renderGates([entry], []).markdown).toContain("Agent Office total (scene and drawer body, not in the session total): 15.0 KB of 40.0 KB.");
+    expect(renderGates([{ ...entry, officeTotal: undefined }], []).markdown).not.toContain("Agent Office total");
+  });
+
+  it("reports the office watch chunk in the session total and the beacon chunk outside it", () => {
+    const floors = { L3: 10 * 1024, L4: 8 * 1024, RF: 4 * 1024 };
+    const entry = { kind: "bytes3d", tier: "full", js: { "x.js": 420 * 1024 }, other: {}, floors, sessionTotal: 445.5 * 1024, officeWatch: 1.5 * 1024, officeBeacon: 1.2 * 1024 } as const;
+    const s = renderGates([entry], []);
+    expect(s.markdown).toContain(`Session total with every public floor chunk and the office watch chunk (B1 excluded): 445.5 KB of ${(BYTES_3D_BUDGET.session.full / 1024).toFixed(1)} KB.`);
+    expect(s.markdown).toContain(`Agent Office watch chunk (L1, idle, in the session total): 1.5 KB of ${(BYTES_3D_BUDGET.officeWatch / 1024).toFixed(1)} KB.`);
+    expect(s.markdown).toContain(`Agent Office beacon chunk (on the first ask, not in the session total): 1.2 KB of ${(BYTES_3D_BUDGET.officeBeacon / 1024).toFixed(1)} KB.`);
+    const without = renderGates([{ ...entry, officeWatch: undefined, officeBeacon: undefined }], []);
+    expect(without.markdown).not.toContain("Agent Office watch chunk");
+    expect(without.markdown).not.toContain("beacon chunk");
   });
 
   it("renders P3's memory entries", () => {

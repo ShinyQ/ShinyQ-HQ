@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dirtyCells, FACE_FPS_MAX } from "@/experience/floors/lobby/office/officeAtlas";
-import { AtlasClock, CAMERA_EPS, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate } from "@/experience/floors/lobby/office/officeFrame";
+import { AtlasClock, CAMERA_EPS, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate } from "@/experience/floors/lobby/office/officeFrame";
 import { glowKey } from "@/experience/floors/lobby/office/officeRig";
 import { CROSSFADE_S, pose, slotPhase, stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { wallSpin, type WallModel } from "@/experience/floors/lobby/office/officeWall";
@@ -66,6 +66,14 @@ describe("Agent Office frame gate: Rover writes", () => {
     let moved = false;
     for (let k = 1; k <= 4; k++) moved = g.camera(STOP.x + k * CAMERA_EPS * 0.4, STOP.z + 0.5) || moved;
     expect(moved).toBe(true);
+  });
+
+  it("marks a pose write when only an offset, the turn or the flag changed", () => {
+    const w = new RoverWrites(1, stillPose("asleep"), "asleep", { x: 0, z: 0 });
+    for (const k of ["x", "z", "yaw", "flag", "wave"] as const) {
+      w.done(0);
+      expect(w.pose(0, { ...w.poses[0], [k]: w.poses[0][k] + 0.1 })).toBe(true);
+    }
   });
 });
 
@@ -150,5 +158,29 @@ describe("Agent Office frame gate: wall", () => {
     expect(g.changed(model(true), 0)).toBe(false);
     expect(wallSpin(model(false), 9)).toBe(0);
     expect(wallSpin(model(true), 1.6)).toBe(3);
+  });
+});
+
+describe("Agent Office leader line ends (`leadEnd`)", () => {
+  const out = () => ({ x: 0, y: 0, tick: false, faded: false });
+
+  it("ends at the wall's top edge with a tick where the line crosses it far enough under the chip", () => {
+    // A level edge at y 140: the line from (300, 106) to (340, 306) meets it a fifth of the way down.
+    expect(leadEnd(300, 106, 340, 276, 0, 140, 1000, 140, 8, out())).toEqual({ x: 308, y: 140, tick: true, faded: false });
+    // A tilted edge (from y 120 at x 0 to 160 at x 400): straight down at x 200 it meets it at 140.
+    const e = leadEnd(200, 100, 200, 300, 0, 120, 400, 160, 8, out());
+    expect([e.x, e.y, e.tick]).toEqual([200, 140, true]);
+  });
+
+  it("fades the whole line to the head where the chip sits over the screens (the edge above it, or under it by less than the minimum)", () => {
+    expect(leadEnd(300, 106, 340, 306, 0, 90, 1000, 90, 8, out())).toEqual({ x: 340, y: 306, tick: false, faded: true });
+    expect(leadEnd(300, 106, 340, 306, 0, 110, 1000, 110, 8, out())).toEqual({ x: 340, y: 306, tick: false, faded: true });
+    expect(LEAD.faded).toBeCloseTo(0.15, 6);
+    expect(LEAD.opacity).toBeGreaterThan(LEAD.faded);
+  });
+
+  it("draws the whole line, unfaded, when the head stands above the edge or the wall is off the camera", () => {
+    expect(leadEnd(300, 106, 340, 130, 0, 140, 1000, 140, 8, out())).toEqual({ x: 340, y: 130, tick: false, faded: false });
+    expect(leadEnd(300, 106, 340, 306, NaN, NaN, NaN, NaN, 8, out())).toEqual({ x: 340, y: 306, tick: false, faded: false });
   });
 });

@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { StrictMode, type ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
+import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
-import type { OfficeFeed } from "@/lib/office/poll";
+import { OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
+import type { OfficeDesk } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
@@ -38,12 +42,12 @@ const view = (office: NonNullable<RoomView["office"]>, id: string): RoomView => 
   tabs: [],
   office,
 });
-const body = (office: NonNullable<RoomView["office"]>, id = "L1:office") =>
-  render(
-    <NextIntlClientProvider locale="en" messages={en}>
-      <OfficeBody view={view(office, id)} locale="en" />
-    </NextIntlClientProvider>,
-  );
+const tree = (office: NonNullable<RoomView["office"]>, id = "L1:office", locale: "en" | "id" = "en") => (
+  <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : ids}>
+    <OfficeBody view={view(office, id)} locale={locale} />
+  </NextIntlClientProvider>
+);
+const body = (office: NonNullable<RoomView["office"]>, id = "L1:office") => render(tree(office, id));
 const o = en.office["3d"];
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 /** An external link's accessible name: its text, then "(opens in a new tab)" (the arrow is hidden from screen readers). */
@@ -94,6 +98,25 @@ describe("Agent Office drawers", () => {
     expect(getHQStore().getState().activeRoom).toBe("L1:office-desk-3");
     expect(screen.getAllByTestId("metric").map((m) => m.textContent)).toEqual([`3${o.drawer.tasksDone}`, `2${o.drawer.prsMerged}`, `5/6${o.drawer.ciGreen}`]);
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.hooks);
+  });
+
+  it("shows a desk's helpers on its activity and on the summary's agent rows, in both locales", () => {
+    live.feed = { status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot, fetchedAt: Date.now() };
+    body({ panel: "desk", slot: 0 }, "L1:office-desk-1");
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Editing · 3 helpers$/);
+    cleanup();
+    body({ panel: "desk", slot: 1 }, "L1:office-desk-2");
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Planning$/);
+    cleanup();
+    body({ panel: "summary" });
+    const rows = screen.getAllByTestId("office-agent");
+    expect(rows[0]).toHaveTextContent("Desk 1: Copilot · Editing · 3 helpers");
+    expect(rows[2]).toHaveTextContent("Desk 3: Copilot · Watching CI · 6 helpers");
+    expect(rows[1]).not.toHaveTextContent("helper");
+    expect(screen.getByTestId("office-crew")).toHaveTextContent("Desk 1: Copilot is working with 3 helpers");
+    cleanup();
+    render(tree({ panel: "desk", slot: 0 }, "L1:office-desk-1", "id"));
+    expect(screen.getByTestId("office-activity")).toHaveTextContent(/^Mengedit · 3 asisten$/);
   });
 
   it("lists public GitHub activity with status, links and progress, and its note", () => {
@@ -198,5 +221,94 @@ describe("Agent Office drawers", () => {
     body({ panel: "github" }, "L1:office-github");
     expect(screen.getByTestId("office-offline")).toHaveTextContent(o.drawer.offline);
     expect(screen.getAllByTestId("office-feed-row")).toHaveLength(2);
+  });
+
+  describe("crew summary", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+    /** Sets desk states on the current snapshot (a fresh object, as each poll gives) and re-renders. */
+    const poll = (rerender: (ui: ReactElement) => void, states: Record<number, Partial<OfficeDesk>>, locale: "en" | "id" = "en") => {
+      const snap = live.feed.snapshot!;
+      live.feed = { ...live.feed, snapshot: { ...snap, desks: snap.desks.map((d) => ({ ...d, ...states[d.slot] })) } };
+      rerender(tree({ panel: "summary" }, "L1:office", locale));
+      act(() => vi.advanceTimersByTime(0));
+    };
+    const wait = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+    const clock = (slot: number, locale = "en") => new Intl.DateTimeFormat(locale, { timeStyle: "short" }).format(live.feed.snapshot!.desks.find((d) => d.slot === slot)!.since!);
+
+    it("reads one sentence per desk and keeps a polite live region, silent on open", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const crew = screen.getByTestId("office-crew");
+      expect(crew).toHaveClass("sr-only");
+      expect(within(crew).getByRole("heading")).toHaveTextContent(o.crew.title);
+      expect(within(crew).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+        `Desk 1: Copilot is working, since ${clock(0)}`,
+        `Desk 2: Claude is thinking, since ${clock(1)}`,
+        `Desk 3: Codex is reviewing, since ${clock(2)}`,
+        `Desk 4: Copilot is running tests, since ${clock(3)}`,
+        `Desk 5: Claude is waiting on CI, since ${clock(4)}`,
+      ]);
+      const news = screen.getByRole("status");
+      expect(news).toHaveAttribute("aria-live", "polite");
+      expect(news).toBeEmptyDOMElement();
+      poll(rerender, { 0: { activity: "reading", title: "Other title" } });
+      expect(news).toBeEmptyDOMElement();
+    });
+
+    it("announces a state change, then coalesces the changes of the next 10 s into one announcement", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      poll(rerender, { 0: { state: "input", activity: "asking" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(2000);
+      poll(rerender, { 1: { state: "done", activity: "finished" } });
+      wait(2000);
+      poll(rerender, { 2: { state: "failed", activity: "failed" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(5900);
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+      wait(100);
+      expect(news).toHaveTextContent(/^Desk 2: Claude is now done\. Desk 3: Codex is now stopped on a failed CI run\.$/);
+    });
+
+    it("announces nothing when a desk changes and changes back within the window", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      poll(rerender, { 0: { state: "input" } });
+      poll(rerender, { 1: { state: "done" } });
+      poll(rerender, { 1: { state: "thinking" } });
+      wait(10_000);
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+    });
+
+    it("still announces after React Strict Mode mounts the drawer twice", () => {
+      const strict = (ui: ReactElement) => <StrictMode>{ui}</StrictMode>;
+      const { rerender } = render(strict(tree({ panel: "summary" })));
+      wait(0);
+      const news = screen.getByTestId("office-crew-news");
+      expect(news).toBeEmptyDOMElement();
+      poll((ui) => rerender(strict(ui)), { 0: { state: "input", activity: "asking" } });
+      expect(news).toHaveTextContent(/^Desk 1: Copilot is now waiting for Kurniadi\.$/);
+    });
+
+    it("says one sentence, not one per desk, when the office goes offline", () => {
+      const { rerender } = body({ panel: "summary" });
+      wait(0);
+      live.feed = { ...live.feed, status: "offline" };
+      rerender(tree({ panel: "summary" }));
+      wait(0);
+      expect(screen.getByTestId("office-crew-news")).toHaveTextContent(/^The office went offline\. Every Rover is asleep\.$/);
+    });
+
+    it("speaks Indonesian in the Indonesian drawer", () => {
+      const { rerender } = render(tree({ panel: "summary" }, "L1:office", "id"));
+      wait(0);
+      expect(within(screen.getByTestId("office-crew")).getAllByRole("listitem")[0]).toHaveTextContent(`Meja 1: Copilot sedang bekerja, sejak ${clock(0, "id")}`);
+      poll(rerender, { 0: { state: "input", activity: "asking" } }, "id");
+      expect(screen.getByTestId("office-crew-news")).toHaveTextContent("Meja 1: Copilot kini sedang menunggu Kurniadi.");
+    });
   });
 });

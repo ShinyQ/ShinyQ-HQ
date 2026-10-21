@@ -1,4 +1,4 @@
-import { wibDay, type OfficeDesk, type OfficeGithubItem, type OfficeResponseV1, type OfficeSnapshotV1 } from "./protocol";
+import { wibDay, type OfficeDesk, type OfficeGithubItem, type OfficeResponseV1, type OfficeResponseV2, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "./protocol";
 
 /** Fixed clock of the fixtures: 2026-10-18 15:00 WIB. */
 export const OFFICE_FIXTURE_NOW = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -48,6 +48,8 @@ const rough: OfficeSnapshotV1 = {
 const quiet: OfficeSnapshotV1 = {
   ...busy,
   extra: 0,
+  // No run in flight: the branch's CI finished green (the CI tower stays dark).
+  github: [{ kind: "run", status: "success", repo: HQ, title: "CI · feat/intro-orbit-reveal", at: ago(6), url: `${RUNS}/1001` }, ...BUSY_GITHUB.slice(1)],
   desks: BUSY_DESKS.map((d) =>
     d.slot === 1 ? desk({ slot: 1, agent: "claude", state: "reviewing", activity: "reading", since: ago(4) }) : desk({ slot: d.slot, agent: d.agent, state: "asleep", activity: "resting", since: ago(60 + d.slot) }),
   ),
@@ -64,5 +66,17 @@ export const OFFICE_FIXTURES: Record<"busy" | "rough" | "quiet" | "semiLive" | "
   quiet,
   semiLive,
   off,
+  disabled: { v: 1, enabled: false },
+};
+
+const v2 = (snap: OfficeSnapshotV1): OfficeSnapshotV2 => ({ ...snap, v: 2 });
+
+/** The same snapshots as GET /api/office?v=2: busy has helpers at two awake desks (3 at slot 0, 6 at slot 2). */
+export const OFFICE_FIXTURES_V2: Record<keyof typeof OFFICE_FIXTURES, OfficeResponseV2> = {
+  busy: { ...v2(busy), desks: BUSY_DESKS.map((d) => (d.slot === 0 ? { ...d, helpers: 3 } : d.slot === 2 ? { ...d, helpers: 6 } : d)) },
+  rough: v2(rough),
+  quiet: v2(quiet),
+  semiLive: v2(semiLive),
+  off: v2(off),
   disabled: { v: 1, enabled: false },
 };

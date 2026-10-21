@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { RoomView } from "@/content/room-views/types";
 import type { Locale } from "@/content/schema";
 import type { RoomBodyProps } from "@/hud/drawer/bodies";
@@ -10,10 +10,11 @@ import { sinceLabel } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
 import type { OfficeGithubItem } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
-import { officeDeskRoom } from "../officeLayout";
+import { officeDeskRoom, type OfficeTranslate } from "../officeLayout";
 import { loadOffice } from "./chunk";
+import { crewAnnouncement, crewLines } from "./crewSummary";
 import { officeLive, useOfficeFeed } from "./live";
-import { chipLines, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
+import { chipLines, helpersText, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
 // Existing classes only (no new Tailwind utilities: the CSS budget rides on every page).
@@ -51,6 +52,7 @@ function Field({ label, children, testId }: { label: string; children: ReactNode
 function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; updatedAt: number | null; locale: Locale; now: number }) {
   const t = useTranslations("office");
   const repo = safeRepoUrl(rover.repo);
+  const helpers = rover.agent ? helpersText(rover, t) : null;
   // A public repository without a title is not a client project: say the title was not shared instead.
   const task = !rover.agent ? t("3d.drawer.none") : (rover.title ?? (rover.state === "asleep" ? t("3d.drawer.none") : repo ? t("3d.drawer.untitled") : t("3d.clientPrivate")));
   return (
@@ -61,7 +63,9 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
       </p>
       <dl className="space-y-2 text-[15px] leading-6">
         <Field label={t("3d.drawer.agent")}>{rover.agent ? t(`3d.agentFull.${rover.agent}`) : t("3d.offDuty")}</Field>
-        <Field label={t("3d.drawer.activity")}>{t(`activity.${rover.activity}`)}</Field>
+        <Field label={t("3d.drawer.activity")} testId="office-activity">
+          {helpers ? `${t(`activity.${rover.activity}`)} · ${helpers}` : t(`activity.${rover.activity}`)}
+        </Field>
         <Field label={t("3d.drawer.task")} testId="office-task">
           {task}
         </Field>
@@ -93,8 +97,36 @@ function DeskPanel({ rover, updatedAt, locale, now }: { rover: OfficeRoverView; 
   );
 }
 
-function SummaryPanel({ office }: { office: OfficeView }) {
+/** The live region's text: the state changes since the last announcement, at most one announcement per 10 s. */
+function useCrewNews(office: OfficeView, t: OfficeTranslate): string {
+  const [news, setNews] = useState("");
+  const s = useRef({ said: office, next: office, at: 0, timer: 0 });
+  useEffect(() => {
+    const r = s.current;
+    r.next = office;
+    if (r.timer) return;
+    r.timer = window.setTimeout(() => {
+      r.timer = 0;
+      const text = crewAnnouncement(r.said, r.next, t);
+      if (!text) return;
+      r.said = r.next;
+      r.at = Date.now();
+      setNews(text);
+    }, Math.max(0, r.at + 10_000 - Date.now()));
+  }, [office, t]);
+  useEffect(() => {
+    const r = s.current;
+    return () => {
+      window.clearTimeout(r.timer);
+      r.timer = 0;
+    };
+  }, []);
+  return news;
+}
+
+function SummaryPanel({ office, locale }: { office: OfficeView; locale: Locale }) {
   const t = useTranslations("office");
+  const news = useCrewNews(office, t);
   const today = office.today;
   return (
     <>
@@ -114,6 +146,17 @@ function SummaryPanel({ office }: { office: OfficeView }) {
             );
           })}
         </ul>
+      </section>
+      <section className="sr-only" data-testid="office-crew">
+        <h3>{t("3d.crew.title")}</h3>
+        <ul>
+          {crewLines(office, t, locale).map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+        <p className="sr-only" role="status" aria-live="polite" data-testid="office-crew-news">
+          {news}
+        </p>
       </section>
       {today && (
         <section className="space-y-2">
@@ -228,7 +271,7 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
           ) : (
-            <SummaryPanel office={office} />
+            <SummaryPanel office={office} locale={locale} />
           )}
         </>
       )}

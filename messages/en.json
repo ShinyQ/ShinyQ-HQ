@@ -500,7 +500,8 @@
       "title": "{floor} {name}",
       "rooms": "Places on this floor",
       "visited": "visited",
-      "close": "Close map"
+      "close": "Close map",
+      "officeAsks": ", Agent Office: a Rover is waiting for Kurniadi"
     },
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
@@ -1228,6 +1229,7 @@
     "state": { "working": "Working", "thinking": "Thinking", "reviewing": "Reviewing", "testing": "Running tests", "ci": "Waiting on CI", "input": "Needs Kurniadi", "done": "Done", "failed": "CI failed", "asleep": "Asleep" },
     "activity": { "editing": "Editing", "planning": "Planning", "reading": "Reading", "testing": "Testing", "building": "Building", "shell": "Running commands", "ci": "Watching CI", "git": "Using git", "asking": "Asking Kurniadi", "finished": "Finished", "failed": "Failed", "resting": "Resting" },
     "clientProject": "Client project",
+    "helpers": "{n, plural, one {# helper} other {# helpers}}",
     "classic": {
       "title": "Live Agent Office",
       "intro": "The AI coding agents Kurniadi works with, shown live: what each one is doing right now, plus public GitHub activity. The same office stands in a wing of the 3D Lobby.",
@@ -1263,6 +1265,19 @@
       "mode": { "live": "LIVE", "semi": "SEMI-LIVE", "off": "RESTING", "offline": "OFFLINE" },
       "wall": { "control": "MISSION CONTROL", "active": "ACTIVE", "thinking": "THINKING", "waiting": "WAITING", "asleep": "ASLEEP", "now": "Now", "resting": "Every agent is resting. Public GitHub work is on the board.", "today": "Today: tasks done {tasks} · PRs merged {prs} · CI green {green} of {runs}", "github": "GITHUB", "githubSub": "Public repositories", "empty": "No public activity yet" },
       "drawer": { "agent": "Agent", "activity": "Activity", "task": "Task", "repo": "Repository", "since": "In this state", "updated": "Last update", "recent": "Recent activity", "agents": "Agents", "today": "Today", "tasksDone": "Tasks done", "prsMerged": "PRs merged", "ciGreen": "CI runs green", "none": "Nothing right now", "offline": "The office is offline. This is the last known activity.", "offlineEmpty": "The office is offline right now. Try again in a few minutes.", "loading": "Connecting to the live office.", "disabled": "The live office is off right now.", "untitled": "No title shared" },
+      "crew": {
+        "title": "Crew now",
+        "line": "Desk {n}: {agent} is {state}{helpers, select, none {} other { with {helpers}}}{time, select, none {} other {, since {time}}}",
+        "offDuty": "Desk {n}: off duty",
+        "change": "Desk {n}: {agent} is now {state}.",
+        "mode": {
+          "live": "The office is live again.",
+          "semi-live": "No agent is reporting right now.",
+          "off": "The office is resting.",
+          "offline": "The office went offline. Every Rover is asleep."
+        },
+        "state": { "working": "working", "thinking": "thinking", "reviewing": "reviewing", "testing": "running tests", "ci": "waiting on CI", "input": "waiting for Kurniadi", "done": "done", "failed": "stopped on a failed CI run", "asleep": "asleep" }
+      },
       "hooks": "Live from agent hooks on Kurniadi's machine, refreshed about every 10 seconds while you watch.",
       "githubNote": "From public GitHub webhooks. Private repositories never appear here.",
       "target": { "office": "Agent Office: summary", "github": "Agent Office: GitHub board", "desk": "Desk {n}: {agent}" },

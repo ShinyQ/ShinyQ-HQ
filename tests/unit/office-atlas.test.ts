@@ -8,13 +8,16 @@ import {
   CODE_LINES,
   dirtyCells,
   drawFace,
+  drawFlag,
   drawScreen,
   FACE_FPS_MAX,
   faceCell,
   faceKey,
+  FLAG_CELL,
   screenCell,
   screenKey,
   uploadOrigin,
+  type Cell,
   type ScreenInput,
 } from "@/experience/floors/lobby/office/officeAtlas";
 import { OFFICE_STATE_STYLE } from "@/experience/floors/lobby/office/officeVisual";
@@ -131,5 +134,26 @@ describe("Agent Office atlas", () => {
       expect(uploadOrigin(cell)).toEqual({ x: u0 * ATLAS.w, y: Math.round(v0 * ATLAS.h) });
     }
     expect(uploadOrigin(faceCell(0))).toEqual({ x: 0, y: ATLAS.h - FACE_H });
+  });
+
+  it("keeps the flag cell clear of the faces and screens", () => {
+    const cells = Array.from({ length: ATLAS_CELLS }, (_, i) => atlasCell(i));
+    const overlap = (a: Cell, b: Cell) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    expect(cells.some((c) => overlap(c, FLAG_CELL))).toBe(false);
+    expect(FLAG_CELL.x + FLAG_CELL.w).toBeLessThanOrEqual(ATLAS.w);
+  });
+
+  it("draws the flag inside its cell as a mark, never text", () => {
+    const rec = recordingContext();
+    drawFlag(rec.ctx, FLAG_CELL, OFFICE_STATE_STYLE.input.color);
+    expect(rec.named("clearRect")[0].args).toEqual([FLAG_CELL.x, FLAG_CELL.y, FLAG_CELL.w, FLAG_CELL.h]);
+    for (const { args } of rec.named("fillRect")) {
+      const [x, y, w, h] = args as number[];
+      expect(x).toBeGreaterThanOrEqual(FLAG_CELL.x);
+      expect(y).toBeGreaterThanOrEqual(FLAG_CELL.y);
+      expect(x + w).toBeLessThanOrEqual(FLAG_CELL.x + FLAG_CELL.w);
+      expect(y + h).toBeLessThanOrEqual(FLAG_CELL.y + FLAG_CELL.h);
+    }
+    expect(rec.named("fillText")).toHaveLength(0);
   });
 });

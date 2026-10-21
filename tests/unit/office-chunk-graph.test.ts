@@ -17,6 +17,9 @@ const OFFICE_ONLY = [
   `${DIR}/officeAtlas.ts`,
   `${DIR}/officeModel.ts`,
   `${DIR}/officeWall.ts`,
+  `${DIR}/crew.ts`,
+  `${DIR}/crewFx.ts`,
+  `${DIR}/crewFrame.ts`,
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
@@ -24,9 +27,18 @@ const OFFICE_ONLY = [
   "src/lib/office/model.ts",
 ];
 /** Office-only modules reached from the drawer body entry only (never from the scene entry). */
-const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`];
-/** The main-path part of the office: the loader, the mount with the furniture shell and the layout. */
-const MAIN = [`${DIR}/chunk.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
+const BODY_ONLY = [BODY, `${DIR}/OfficeBody.tsx`, `${DIR}/crewSummary.ts`];
+/** The watch chunk entry (idle on L1, in the session total) and the beacon chunk entry (on the first ask). */
+const WATCH = `${DIR}/watchChunk.ts`;
+const BEACON = `${DIR}/beaconChunk.ts`;
+/** Reached from the watch chunk entry, never from the main path (the signal is shared with the scene and beacon chunks). */
+const WATCH_ONLY = [WATCH, `${DIR}/officeSignal.ts`, `${DIR}/officeWatch.ts`, "src/hud/minimap/OfficeCue.tsx"];
+/** Reached from the beacon chunk entry only: never from the main path or the watch chunk. */
+const BEACON_ONLY = [BEACON, `${DIR}/beacon.ts`, `${DIR}/OfficeBeacon.tsx`];
+/** The main-path part of the office: the loaders, the mount with the furniture shell and the layout. */
+const MAIN = [`${DIR}/chunk.ts`, `${DIR}/watchLoader.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
+/** Main-path entries: the 3D chunk, the gate and the HUD (the minimap draws the cue from the watch chunk). */
+const MAIN_ENTRIES = ["src/experience/Experience.tsx", "src/experience/ExperienceGate.tsx", "src/hud/Hud.tsx", "src/hud/minimap/Minimap.tsx", "src/hud/minimap/MapLayers.tsx"];
 
 function files(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -38,10 +50,32 @@ function files(dir: string, out: string[] = []): string[] {
 }
 
 describe("Agent Office chunk boundary", () => {
-  it("keeps the office-only code out of the main 3D chunk and the gate", () => {
-    for (const entry of ["src/experience/Experience.tsx", "src/experience/ExperienceGate.tsx"]) {
+  it("keeps the office-only code, the watch and the beacon out of the main 3D chunk, the gate and the HUD", () => {
+    for (const entry of MAIN_ENTRIES) {
       const main = staticClosure(entry);
-      expect([...OFFICE_ONLY, ...BODY_ONLY].filter((f) => main.has(f)), entry).toEqual([]);
+      expect([...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY].filter((f) => main.has(f)), entry).toEqual([]);
+    }
+  });
+
+  it("keeps the beacon mesh out of the watch chunk and both out of the scene and body chunks", () => {
+    const watch = staticClosure(WATCH);
+    expect(WATCH_ONLY.filter((f) => !watch.has(f))).toEqual([]);
+    expect(BEACON_ONLY.filter((f) => watch.has(f))).toEqual([]);
+    const beacon = staticClosure(BEACON);
+    expect(BEACON_ONLY.filter((f) => !beacon.has(f))).toEqual([]);
+    for (const entry of [ENTRY, BODY]) {
+      const chunk = staticClosure(entry);
+      expect([WATCH, `${DIR}/officeWatch.ts`, "src/hud/minimap/OfficeCue.tsx", ...BEACON_ONLY].filter((f) => chunk.has(f)), entry).toEqual([]);
+    }
+  });
+
+  it("references the watch and beacon chunks only through the two import() calls of watchLoader.ts", () => {
+    const loader = readFileSync(join(ROOT, `${DIR}/watchLoader.ts`), "utf8");
+    expect(loader.match(/import\(\s*["'][^"']*["']\s*\)/g)).toEqual([`import("./watchChunk")`, `import("./beaconChunk")`]);
+    expect(loader.match(/^import .* from "([^"]+)";$/gm)).toEqual(['import { useSyncExternalStore } from "react";', 'import type * as BeaconChunk from "./beaconChunk";', 'import type * as WatchChunk from "./watchChunk";']);
+    for (const name of ["watchChunk", "beaconChunk"]) {
+      const importers = files(join(ROOT, "src")).filter((f) => new RegExp(`import\\(\\s*["'][^"']*${name}["']\\s*\\)`).test(readFileSync(join(ROOT, f), "utf8")));
+      expect(importers, name).toEqual([`${DIR}/watchLoader.ts`]);
     }
   });
 
@@ -63,10 +97,10 @@ describe("Agent Office chunk boundary", () => {
   });
 
   it("lets no main-path file under src/experience or src/hud import a value from the office chunks", () => {
-    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY)]);
+    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY), ...staticClosure(WATCH), ...staticClosure(BEACON)]);
     const offenders = [...files(join(ROOT, "src/experience")), ...files(join(ROOT, "src/hud"))]
       .filter((f) => !chunks.has(f))
-      .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY].some((only) => staticClosure(f).has(only)));
+      .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY].some((only) => staticClosure(f).has(only)));
     expect(offenders).toEqual([]);
     // One closure per file under two folders: slower than the default 5 s on a busy machine.
   }, 60_000);
@@ -79,7 +113,7 @@ describe("Agent Office chunk boundary", () => {
     const body = staticClosure(BODY);
     expect(BODY_ONLY.filter((f) => !body.has(f))).toEqual([]);
     // Turbopack copies a module shared by the two async chunks into each one: the body stays off the canvas and 3D code.
-    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
+    const sceneOnly = ["officeAtlas.ts", "officeWall.ts", "officeRig.ts", "crew.ts", "crewFx.ts", "crewFrame.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
     expect(sceneOnly.filter((f) => body.has(f))).toEqual([]);
     const loader = readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8");
     expect(loader.match(/import\(\s*["'][^"']*["']\s*\)/g)).toEqual([`import("./scene")`, `import("./body")`]);
@@ -98,7 +132,13 @@ describe("Agent Office chunk boundary", () => {
     // The idle flag starts false and flips only inside the afterFirstFrameIdle callback.
     expect(mount).toMatch(/const idle = useRef\(false\)/);
     expect(mount.match(/idle\.current = true/g)).toHaveLength(1);
-    expect(mount).toMatch(/afterFirstFrameIdle\(\(\) => \{\s*idle\.current = true;\s*\}\)/);
+    expect(mount).toMatch(/afterFirstFrameIdle\(\(\) => \{\s*idle\.current = true;\s*setIdleNow\(true\);\s*\}\)/);
+    // The watch chunk loads after that idle flag, on L1 only and with prefetch on; its watch runs once the chunk is here.
+    expect(mount).toMatch(/if \(idleNow && onL1 && speculativePrefetchOn\(window\.location\.search\)\) void loadOfficeWatch\(\)/);
+    expect(mount.match(/loadOfficeWatch\(\)/g)).toHaveLength(1);
+    expect(mount).toMatch(/idleNow && watch \? watch\.startOfficeWatch\(\) : undefined/);
+    // The beacon mounts from its chunk once ready (the full tier's composer exists).
+    expect(mount).toMatch(/\{ready && beacon && <beacon\.OfficeBeacon \/>\}/);
     // The one loadOffice call is gated by officeLoadWanted fed with that flag and speculativePrefetchOn.
     expect(mount.match(/loadOffice\(\)/g)).toHaveLength(1);
     expect(mount).toMatch(/const want = officeLoadWanted\(\{\s*idle: idle\.current,[^}]*prefetch: prefetch\.current,/);

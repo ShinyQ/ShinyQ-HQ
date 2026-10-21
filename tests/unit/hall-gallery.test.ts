@@ -19,7 +19,7 @@ import {
   statTiles,
 } from "@/experience/floors/lobby/hallGallery";
 import { gatePillars, HALL, HALL_LAYOUT, stationOf } from "@/experience/floors/lobby/hallLayout";
-import { officeTall } from "@/experience/floors/lobby/officeLayout";
+import { officeTall, officeTowerTall } from "@/experience/floors/lobby/officeLayout";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 import { buildRoadGraph } from "@/experience/nav/road";
 import { roadRoute } from "@/experience/nav/roadRoute";
@@ -163,7 +163,7 @@ describe("Highlights Hall gallery: lights and camera", () => {
     expect(tall.length).toBe(2 + 3 + 2 + 2);
     for (const t of tall) expect(t.h).toBeGreaterThan(3.2);
     // The L1 layout carries them (`FloorLayout.tall`), so CameraDirector clamps against them.
-    expect(l1.tall).toEqual([...tall, LOBBY.observatory, officeTall(LOBBY.officeWing)]);
+    expect(l1.tall).toEqual([...tall, LOBBY.observatory, officeTall(LOBBY.officeWing), officeTowerTall(LOBBY.officeWing)]);
     const world: CameraWorld = { obstacles: l1.obstacles, bounds: l1.bounds, floorY: 0, tall };
     const m = monoliths(3)[1];
     expect(cameraBlocked([m.box.x, 6, m.box.z], world)).toBe(true);

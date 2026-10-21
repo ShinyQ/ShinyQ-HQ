@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { createElement, forwardRef, Suspense, useEffect, useId, useLayoutEffect, useReducer, useRef, useSyncExternalStore, type ComponentProps } from "react";
 import { Modal } from "@/components/Modal";
+import { useOfficeAsks } from "@/experience/floors/lobby/office/watchLoader";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
@@ -92,6 +93,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
   const floorLabel = useFloorLabel();
   const map = useFloorMap(layouts);
   const rover = useHQStore((s) => s.rover);
+  const asks = useOfficeAsks();
   const clipId = `minimap-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const { floor } = map;
   return (
@@ -100,7 +102,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
       type="button"
       data-testid="minimap"
       data-floor={floor}
-      aria-label={t("map.label", { floor, name: floorLabel(floor) })}
+      aria-label={t("map.label", { floor, name: floorLabel(floor) }) + (asks && floor === "L1" ? t("map.officeAsks") : "")}
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={onOpen}
@@ -113,7 +115,7 @@ const MinimapButton = forwardRef<HTMLButtonElement, { layouts: FloorLayouts; siz
           </clipPath>
         </defs>
         <g clipPath={`url(#${clipId})`}>
-          <MapLayers map={map} roomRadius={2} arrowScale={1.6} />
+          <MapLayers map={map} roomRadius={2} arrowScale={1.6} cueCenter={rover} />
         </g>
       </svg>
     </button>

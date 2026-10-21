@@ -1,4 +1,4 @@
-import type { OfficeActivity, OfficeAgent, OfficeDesk, OfficeSnapshotV1, OfficeState } from "../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, OfficeSnapshotV2, OfficeState } from "../src/lib/office/protocol";
 
 /**
  * Deterministic Agent Office snapshots: the nine states over two snapshots, one private desk (no title) and one
@@ -6,11 +6,15 @@ import type { OfficeActivity, OfficeAgent, OfficeDesk, OfficeSnapshotV1, OfficeS
  */
 export const OFFICE_REPO = "ShinyQ/ShinyQ-HQ";
 
-export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDesk> = {}): OfficeDesk {
+/** Playwright URL patterns: both snapshot versions (the beacon's watch asks v1, the 3D office's poller `?v=2`), and v2 alone. */
+export const OFFICE_API = /\/api\/office(\?v=2)?$/;
+export const OFFICE_API_V2 = /\/api\/office\?v=2$/;
+
+export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDeskV2> = {}): OfficeDeskV2 {
   return { slot, agent, state, activity, since: now - 14 * 60_000, recent: [], ...extra };
 }
 
-export function officeSnapshot(desks: OfficeDesk[], now: number, extra = 0): OfficeSnapshotV1 {
+export function officeSnapshot(desks: OfficeDeskV2[], now: number, extra = 0): OfficeSnapshotV1 {
   return {
     v: 1,
     enabled: true,
@@ -63,3 +67,55 @@ export function statesB(now: number): OfficeSnapshotV1 {
 
 export const STATES_A: readonly OfficeState[] = ["working", "thinking", "reviewing", "testing", "ci"];
 export const STATES_B: readonly OfficeState[] = ["input", "done", "failed", "asleep", "asleep"];
+
+/**
+ * The living crew's lineups (v2, `?v=2`): `CREW_A` working, thinking, waiting on CI 7 of 12, asking (needs Kurniadi),
+ * done; `CREW_B` failed, asleep, working, thinking, asleep. Each has one desk with 3 helpers (3 drones) and one with 6
+ * (4 drones drawn, "+2" on its near chip); `CREW_B`'s last sleeping desk keeps a stale count of 2 that draws nothing. Titles are public ones from this site's own repository.
+ */
+export function crewA(now: number): OfficeSnapshotV2 {
+  return {
+    ...officeSnapshot(
+      [
+        officeDesk(0, "copilot", "working", "editing", now, { repo: OFFICE_REPO, title: "Agent Office Revamp: Living Crew", helpers: 3 }),
+        officeDesk(1, "claude", "thinking", "planning", now, { repo: OFFICE_REPO, title: "Helper Drones Orbit Their Rover", helpers: 6 }),
+        officeDesk(2, "codex", "ci", "ci", now, { repo: OFFICE_REPO, title: "Ship-It Pipeline Tower", progress: { done: 7, total: 12 } }),
+        officeDesk(3, "copilot", "input", "asking", now, { repo: OFFICE_REPO, title: "Needs Kurniadi Beacon" }),
+        officeDesk(4, "claude", "done", "finished", now, { repo: OFFICE_REPO, title: "Office Chips Under the Top Bar" }),
+      ],
+      now,
+    ),
+    v: 2,
+  };
+}
+
+export function crewB(now: number): OfficeSnapshotV2 {
+  return {
+    ...officeSnapshot(
+      [
+        officeDesk(0, "codex", "failed", "failed", now, { repo: OFFICE_REPO, title: "Ship-It Pipeline Tower", job: "Build, CV and e2e" }),
+        officeDesk(1, "copilot", "asleep", "resting", now),
+        officeDesk(2, "claude", "working", "editing", now, { repo: OFFICE_REPO, title: "Agent Office Revamp: Living Crew", helpers: 6 }),
+        officeDesk(3, "copilot", "thinking", "planning", now, { repo: OFFICE_REPO, title: "Helper Drones Orbit Their Rover", helpers: 3 }),
+        // A stale count on a sleeping desk: the scene draws no drones and the chip shows no helpers for it.
+        officeDesk(4, "codex", "asleep", "resting", now, { helpers: 2 }),
+      ],
+      now,
+    ),
+    v: 2,
+  };
+}
+
+export const CREW_A = crewA(Date.now());
+export const CREW_B = crewB(Date.now());
+export const CREW_A_STATES: readonly OfficeState[] = ["working", "thinking", "ci", "input", "done"];
+export const CREW_B_STATES: readonly OfficeState[] = ["failed", "asleep", "working", "thinking", "asleep"];
+/** `CREW_A`'s desk slots: 3 helpers, 6 helpers (4 drones drawn), waiting on CI, asking. */
+export const CREW_SLOT = { three: 0, six: 1, ci: 2, input: 3 } as const;
+
+/** The v1 body the beacon's watch reads (GET /api/office): a v2 snapshot without `helpers`, `v: 1`; any other body as is. */
+export function asV1(body: unknown): unknown {
+  const snap = body as Partial<OfficeSnapshotV2> | null;
+  if (snap?.v !== 2 || !Array.isArray(snap.desks)) return body;
+  return { ...snap, v: 1, desks: snap.desks.map((desk) => Object.fromEntries(Object.entries(desk).filter(([key]) => key !== "helpers"))) };
+}

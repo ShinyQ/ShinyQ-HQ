@@ -336,8 +336,8 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 ### Agent Office chips
 
 - `OfficeLayer` (`src/hud/OfficeLayer.tsx`, main path, a few lines, mounted by `Hud`) renders the office scene chunk's `OfficeChips` only once that chunk is loaded and the rover is on L1, not riding, while exploring or with a drawer open; it never loads the chunk itself.
-- `OfficeChips` (in the chunk) renders five chip buttons; `OfficeScene` moves them every frame like `HintProbe` moves its bubble (through `officeRuntime.chips`). A chip click drives to the office stop and opens that Rover's desk drawer (`goToRoom`).
-- Chip content, the near/far band, the compact phone chips and the edge clamp: [floor-l1-lobby.md](floor-l1-lobby.md#agent-office).
+- `OfficeChips` (in the chunk) renders five chip buttons and their 1 px leader lines; `OfficeScene` lays them out every frame like `HintProbe` moves its bubble (through `officeRuntime.chips` and `officeRuntime.leads`): one row pinned under the top bar, clear of the profile card, the floor menu panel, the minimap and the joystick. A chip click drives to the office stop and opens that Rover's desk drawer (`goToRoom`).
+- Chip content, the row layout, the near/far band and the compact phone chips: [floor-l1-lobby.md](floor-l1-lobby.md#agent-office).
 
 ### Copy
 

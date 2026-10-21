@@ -12,20 +12,24 @@ const DO_BASE = "https://office";
 const status = (code: number) => new Response(null, { status: code, headers: { "Cache-Control": "no-store" } });
 
 /**
- * hq-office routes, reached only through the Pages service binding (no public route): GET /snapshot,
+ * hq-office routes, reached only through the Pages service binding (no public route): GET /snapshot (v1, or v2 for `?v=2`),
  * POST /beat (relay, X-Office-Signature) and POST /github (webhooks, X-Hub-Signature-256).
  */
 export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: () => number }) {
   const now = deps.now ?? Date.now;
   return {
     async fetch(request: Request, env: OfficeWorkerEnv): Promise<Response> {
-      const { pathname } = new URL(request.url);
+      const { pathname, searchParams } = new URL(request.url);
       const office = env.OFFICE_DO.get(env.OFFICE_DO.idFromName(DO_NAME));
       const post = async (path: string, value: unknown) => {
         const res = await office.fetch(`${DO_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
         return status(res.ok ? 204 : 502);
       };
-      if (pathname === "/snapshot") return request.method === "GET" ? office.fetch(`${DO_BASE}/snapshot`) : status(405);
+      if (pathname === "/snapshot") {
+        if (request.method !== "GET") return status(405);
+        // Only `?v=2` is forwarded: any other query reaches the Durable Object as the plain v1 request.
+        return office.fetch(`${DO_BASE}/snapshot${searchParams.get("v") === "2" ? "?v=2" : ""}`);
+      }
       if (pathname === "/beat") {
         if (request.method !== "POST") return status(405);
         if (!env.OFFICE_INGEST_KEY) return status(503);

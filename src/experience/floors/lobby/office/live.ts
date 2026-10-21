@@ -1,13 +1,15 @@
 import { useSyncExternalStore } from "react";
-import { createOfficePoller, type OfficeFeed } from "@/lib/office/poll";
+import { createOfficePoller, OFFICE_V2_PATH, type OfficeFeed } from "@/lib/office/poll";
+import { parseOfficeResponseV2 } from "@/lib/office/protocol";
 
 /**
  * The 3D office's one poller (`src/lib/office/poll.ts`). It runs while any reason wants it: the office in view on
  * L1 ("view", OfficeScene) or an office drawer open ("drawer", OfficeBody). Visitor input resets its 10 minute
- * idle stop; the tab turning visible counts as input and fetches at once. Chunk only.
+ * idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot v2 (desk helpers), which
+ * also accepts a v1 body after a rollback. Chunk only.
  */
 const clock = { skew: 0 };
-const poller = createOfficePoller({ now: () => Date.now() + clock.skew });
+const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V2_PATH, parse: parseOfficeResponseV2 });
 const wants = new Set<string>();
 const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;

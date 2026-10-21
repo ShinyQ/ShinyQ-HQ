@@ -10,7 +10,7 @@ import { buildLibraryLayout } from "./floors/library/layout";
 import { hallTall } from "./floors/lobby/hallGallery";
 import { HALL, HALL_LAYOUT } from "./floors/lobby/hallLayout";
 import { lobbyObservatory } from "./floors/lobby/observatoryLayout";
-import { officeObstacles, officeRoad, officeStops, officeTall, officeWing, officeZone } from "./floors/lobby/officeLayout";
+import { officeObstacles, officeRoad, officeStops, officeTall, officeTowerTall, officeWing, officeZone } from "./floors/lobby/officeLayout";
 import {
   KIOSK_AXIS,
   KIOSK_CENTER,
@@ -280,7 +280,7 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
           kioskRect(),
           ...HALL_LAYOUT.obstacles,
           { minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ },
-          // Agent Office wing: the desk row (three touching boxes) and the screen wall (floors/lobby/officeLayout.ts).
+          // Agent Office wing: the desk row (three touching boxes), the screen wall, the CI tower and the ship dock (floors/lobby/officeLayout.ts).
           ...officeObstacles(wing),
         ],
         LOBBY.spawn,
@@ -300,8 +300,8 @@ export function buildFloorLayouts(yearCount: number, extras: LayoutExtras = {}):
       // Every Agent Office room drives to the office stop (the rooms have no door).
       stops: officeStops(wing),
       // Gallery shapes taller than the camera clearance (gateway arch, monoliths, experience arch, beacon, contact
-      // card), the observatory globe and the Agent Office screen wall.
-      tall: [...hallTall(), LOBBY.observatory, officeTall(wing)],
+      // card), the observatory globe, the Agent Office screen wall and its CI tower column.
+      tall: [...hallTall(), LOBBY.observatory, officeTall(wing), officeTowerTall(wing)],
     },
     L2: careerLayout(yearCount, extras),
     // Project Roads: hub plaza in front of the shaft door, wing roads looping east (walkable floors plan).

@@ -2,13 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES } from "../src/lib/office/fixtures";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "../src/lib/office/fixtures";
 import { collectErrors, openPage } from "./hq";
+import { OFFICE_API, OFFICE_API_V2 } from "./office-fixtures";
 
 /**
  * Live Agent Office on the Classic home page (`#office`, part 4 of the office): the lazy card after the intro, its
  * states, the hidden section when the office is switched off, and no request before the card nears the viewport.
- * `/api/office` is answered from `OFFICE_FIXTURES`. Set `OFFICE_SHOTS=<dir>` to write the owner's review captures.
+ * `/api/office?v=2` (the card's poll) is answered from `OFFICE_FIXTURES` (a v1 body, as after a rollback) or `OFFICE_FIXTURES_V2`. Set `OFFICE_SHOTS=<dir>` to write the owner's review captures.
  */
 
 type Reply = unknown | number;
@@ -17,7 +18,7 @@ type Reply = unknown | number;
 async function mockOffice(page: Page, first: Reply) {
   let reply = first;
   let calls = 0;
-  await page.route("**/api/office", (route: Route) => {
+  await page.route(OFFICE_API, (route: Route) => {
     calls += 1;
     return typeof reply === "number"
       ? route.fulfill({ status: reply })
@@ -30,7 +31,7 @@ async function mockOffice(page: Page, first: Reply) {
 async function heldOffice(page: Page, reply: Reply) {
   let release: () => void = () => undefined;
   const held = new Promise<void>((resolve) => (release = resolve));
-  await page.route("**/api/office", async (route) => {
+  await page.route(OFFICE_API, async (route) => {
     await held;
     await (typeof reply === "number" ? route.fulfill({ status: reply }) : route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(reply) }));
   });
@@ -85,6 +86,23 @@ test.describe("Classic: Live Agent Office", () => {
     const axe = await new AxeBuilder({ page }).include("#office").analyze();
     expect(axe.violations).toEqual([]);
     expect(errors).toEqual([]);
+  });
+
+  test("asks snapshot v2 and shows an awake desk's helpers on its activity line, in both locales", async ({ page }) => {
+    await mockOffice(page, OFFICE_FIXTURES_V2.busy);
+    const asked = page.waitForRequest(OFFICE_API_V2);
+    await open(page);
+    await asked;
+    await expect(section(page)).toHaveAttribute("data-status", "ready");
+    const desks = page.getByTestId("office-desk");
+    await expect(desks.nth(0)).toContainText("Copilot \u00b7 Editing \u00b7 3 helpers");
+    await expect(desks.nth(2)).toContainText("Copilot \u00b7 Watching CI \u00b7 6 helpers");
+    await expect(desks.nth(1)).not.toContainText("helper");
+    await page.unrouteAll();
+    await mockOffice(page, OFFICE_FIXTURES_V2.busy);
+    await open(page, home("id"));
+    await expect(section(page)).toHaveAttribute("data-status", "ready");
+    await expect(desks.nth(0)).toContainText("Copilot \u00b7 Mengedit \u00b7 3 asisten");
   });
 
   test("a disabled office stays in place while on screen, then hides once scrolled away", async ({ page }) => {
@@ -175,6 +193,7 @@ test.describe("Classic: Live Agent Office", () => {
         ["semiLive", OFFICE_FIXTURES.semiLive, "ready"],
         ["quiet", OFFICE_FIXTURES.quiet, "ready"],
         ["off", OFFICE_FIXTURES.off, "ready"],
+        ["helpers", OFFICE_FIXTURES_V2.busy, "ready"],
         ["offline", 500, "offline"],
       ] as const) {
         await page.unrouteAll();

@@ -5,9 +5,9 @@ import path from "node:path";
 /** Every command the installer writes contains this, so it only ever replaces or removes its own entries. */
 export const MARKER = "office-relay hook";
 
-export const COPILOT_EVENTS = ["sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse", "postToolUseFailure", "permissionRequest", "notification", "agentStop", "errorOccurred", "sessionEnd"] as const;
-export const CLAUDE_EVENTS = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd"] as const;
-export const CODEX_EVENTS = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Stop", "SessionEnd"] as const;
+export const COPILOT_EVENTS = ["sessionStart", "userPromptSubmitted", "preToolUse", "postToolUse", "postToolUseFailure", "permissionRequest", "notification", "agentStop", "errorOccurred", "sessionEnd", "subagentStart", "subagentStop"] as const;
+export const CLAUDE_EVENTS = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd", "SubagentStart", "SubagentStop"] as const;
+export const CODEX_EVENTS = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PermissionRequest", "Stop", "SessionEnd", "SubagentStart", "SubagentStop"] as const;
 
 export interface InstallPaths {
   copilot: string;

@@ -17,13 +17,15 @@ afterEach(() => {
 });
 
 describe("Agent Office live feed (3D)", () => {
-  it("polls while any reason wants it (in view, a drawer open) and stops when none does", async () => {
+  it("polls snapshot v2 while any reason wants it (in view, a drawer open) and stops when none does", async () => {
     officeLive.want("view", true);
     officeLive.want("drawer", true);
     expect(officeLive.wanted()).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe(OFFICE_PATH);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${OFFICE_PATH}?v=2`);
     await vi.waitFor(() => expect(officeTest.feed().status).toBe("ready"));
+    // The fixture is a v1 body (as after a rollback): it reads as a v2 snapshot.
+    expect(officeTest.feed().snapshot?.v).toBe(2);
     officeLive.want("view", false);
     expect(officeLive.wanted()).toBe(true);
     officeLive.want("drawer", false);

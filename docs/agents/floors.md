@@ -171,7 +171,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 449.8 KB and full 465.5 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 478.7 KB and full 494.5 KB, under their caps of 479.3 and 495.1 KB; the Agent Office scene chunk 14,262 B and its drawer body 6,043 B, outside the session total ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 450.1 KB and full 465.9 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 480.5 KB and full 496.2 KB (the office watch chunk included), under their caps of 481.0 and 496.7 KB; the Agent Office scene chunk 20,907 B and its drawer body 6.8 KB (27.2 KB together, office total cap 40 KB), outside the session total ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 
@@ -284,7 +284,7 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 
 - roads at least 8 u wide, plazas at least 16 u;
 - roads clear of obstacles over their full width, spurs by the rover radius;
-- obstacles either touching or at least 6 u apart (also from the slab edges: the outer edges of the slab and its wings, never a joint);
+- obstacles either touching or at least 6 u apart (also from the slab edges: the outer edges of the slab and its wings, never a joint); a narrower gap passes only when a third obstacle covers the whole strip between the two (`gapFilled`: no floor there, the three touch as one chain, like the Agent Office's CI tower and ship dock beside the end row boxes);
 - every door has a spur ending on its pad;
 - 6 u wide floor connects the start to within 4 u of every pad.
 - Layouts with floor pads pass them as `pads` (see [pad rules](#pad-rules)).

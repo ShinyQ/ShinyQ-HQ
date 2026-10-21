@@ -14,14 +14,25 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Contract
 
-- `src/lib/office/protocol.ts` (v1): `OfficeBeatV1` (relay to Worker) and `OfficeResponseV1` (GET /api/office).
-- Clients validate with `parseOfficeResponse` and hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Fixtures: `OFFICE_FIXTURES` in `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
+- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`) and
+  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0;
+  `OfficeSnapshot` is v2). The disabled answer `{v:1, enabled:false}` is the same in both.
+- v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
+  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2; no query, `?v=3` or junk
+  get v1.
+- Clients validate with `parseOfficeResponse` (v1) or `parseOfficeResponseV2` (strict v2, plus a v1 body read as v2
+  without helpers, for a rolled-back Worker) and hide on null; the Worker validates beats with `parseOfficeBeat`.
+- Who polls what: the 3D office's poller (`createOfficePoller({ path, parse })` in `office/live.ts`) and the Classic
+  card v2; the L1 beacon's watch v1. `signalFromBody` reads both.
+- Fixtures: `OFFICE_FIXTURES` (v1) and `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) in
+  `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.
 
 ### Privacy (owner decision D3)
 
-- A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, ts}`; `session` is a salted hash.
+- A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, helpers?, ts}`; `session` is a
+  salted hash and `helpers` a count of active sub-agents (0 to `OFFICE_HELPERS_MAX`, 9), never their names, types or
+  ids. `sanitizeBeat` keeps it for every repository; the session stores it, and only snapshot v2 shows it.
 - `repo`, `branch` and `title` survive only for repositories in `OFFICE_REPO_ALLOWLIST` that a webhook reported public.
 - Titles (beats and GitHub items) go through the public safety blocklist (`cleanTitle`, `findBlockedTerms` from
   `src/content/safety-match.ts`); a blocked title is dropped or replaced by a generic one.
@@ -44,6 +55,10 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Time rules run at read time (`effective`): thinking after 20 s quiet while working or reviewing, asleep after 3 min
   (15 min while testing, on CI or waiting for input), done for 20 s, failed until the next beat, removed after 30 min.
   No alarms.
+- Helpers: a beat's `helpers` replaces the stored count, a beat without it keeps it, 0 clears it; a count change adds
+  no `recent` entry; a privatized repository keeps it. `viewV2` shows it (`effectiveHelpers`, capped at 9) while the
+  session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1) never does.
+  The Durable Object's `/snapshot` answers `viewV2` for `?v=2`, else `view`; the Worker forwards only `?v=2`.
 - Desks: five stable slots (`assignSlots`); an awake newcomer may take the longest-asleep desk; others are `extra`.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
@@ -52,10 +67,12 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (always 200 JSON: the snapshot, `mode: "off"` on failure, or
-  `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
+- `functions/_lib/office.ts`: `GET /api/office` (v1) and `GET /api/office?v=2` (v2) (always 200 JSON: the snapshot,
+  `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
-  `caches.default` for 5 s per data center; `POST /api/office/beat` and `/github` forward the raw body and signature
+  `caches.default` for 5 s per data center under one key per version (`/api/office`, `/api/office?v=2`); v2 fetches
+  the Worker's `/snapshot?v=2` and validates with `parseOfficeResponseV2`, so a rolled-back Worker's v1 body is served
+  as v2 without helpers; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
@@ -68,7 +85,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   `office-worker.yml` bundles it on pull requests (no secrets).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
-  `workers/office` leaves it at the live version).
+  `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
+  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
@@ -112,6 +130,22 @@ Index: [AGENTS.md](../../AGENTS.md).
   and keeps `~/.office-relay/`. Codex needs a trust in `/hooks`.
 - `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`
   and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
+- Helpers (`helpers.ts`, mapping table in the relay README): Copilot `subagentStart` / `subagentStop`, Claude Code and
+  Codex `SubagentStart` / `SubagentStop` keep a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
+  (salted id hashes, or anonymous keys for Copilot, whose start names no helper; a stop then ends the oldest), counted
+  while younger than `HELPER_TTL_MS` (30 min) and capped at 9. Every tool's sub-agent hooks carry the parent's session
+  id; an event without one is ignored. A start or stop sends the session's last state with the new count only when the
+  count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
+  helpers file and its beat carries `helpers: 0` only when the last sent count was above 0. The helpers file is read,
+  applied and written (and the beat sent) under a bounded lock (`withHelpersLock` in `store.ts`: exclusive
+  `<file>.lock`, a try every 2 ms for at most 30 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically
+  (temp file plus rename, mode 0600; also the sent and last-tool files). A helper counts once, as a drone, never as
+  its own desk: Copilot events other than `subagentStart` / `subagentStop` with a non-empty `agentId` / `agent_id`
+  (from inside a helper, under the helper's own session id) are ignored (`helper-event ignored`); Claude Code and
+  Codex helper tool events carry the parent's `session_id` and move the parent's desk. Tests:
+  `tests/relay/helpers.test.ts`, `tests/relay/hook.test.ts` (planted prompt, client name, private transcript paths,
+  helper id and type never reach a beat or the log; dispatch is the only sink), `tests/relay/store.test.ts` (two
+  processes, torn reads, stale and held locks), `tests/relay/cli.test.ts` (two concurrent stops).
 - Never add a beat field, a log field or a debug mode that records payload text.
 
 ## Classic card and Ask
@@ -133,16 +167,20 @@ Index: [AGENTS.md](../../AGENTS.md).
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
   the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does).
 - What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
-  activity and task, the latest 4 public GitHub events and today's numbers (without the CI clause on a day with no
-  runs). No privacy note shows on the card or in the 3D drawers (owner request 2026-10-20); the rule itself is unchanged
-  ([Privacy](#privacy-owner-decision-d3)).
+  activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
+  raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with
+  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub
+  events and today's numbers (without the CI clause on a day with no runs). No privacy note shows on the card or in
+  the 3D drawers (owner request 2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
   - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
     title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
     beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
   - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
     keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
     (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
-    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line).
+    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line). The dimmed rows keep
+    their "· 3 helpers", like their last known activity, whereas the 3D office zeroes the helpers offline
+    (`OfficeRoverView.helpers`: no drones, no helpers on the chips or in the drawers).
   - English counts are ICU plurals in `office.classic` ("+1 more session", "1 task done", "1 of 1 CI run green"),
     filled on the client by `fill` (`src/components/office/fill.ts`: `{name}` and `{n, plural, ...}`).
   - A disabled office (`{"v":1,"enabled":false}`) hides the whole section, but only once it is off screen: while the
@@ -155,7 +193,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
   on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in
   both locales, 1020 for an Indonesian semi-live line at 320), about 8 px of headroom over the tallest.
-  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, offline before and after a snapshot)
+  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, offline before and after a snapshot)
   moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
   `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks

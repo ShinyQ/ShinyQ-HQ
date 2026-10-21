@@ -438,8 +438,9 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 - `rollback.yml` rolls it back with Pages: when the Worker's sources (`workers/office`, `src/lib/office`,
   `src/content/safety-match.ts`, `functions/_lib/security.ts`) differ between the rollback target and the live
   commit, it rebuilds the safety list and redeploys the Worker from the target (its secrets persist). A target
-  without `workers/office` leaves the Worker at the live version; `OFFICE_WORKER_DEPLOY = "false"` skips it.
-- `GET /api/office` answers with an ETag (304 on a matching `If-None-Match`) and
+  without `workers/office` leaves the Worker at the live version; `OFFICE_WORKER_DEPLOY = "false"` skips it. A Worker
+  rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2` (see the Worker README).
+- `GET /api/office` (v1) and `GET /api/office?v=2` (v2, its own edge cache key) answer with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).
 - First setup, webhooks, key rotation and the kill switch (`OFFICE_ENABLED`): `workers/office/README.md`.
 

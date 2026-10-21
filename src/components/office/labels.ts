@@ -34,6 +34,8 @@ export interface OfficeCardLabels {
   todayNoCi: string;
   status: Record<OfficeGithubStatus, string>;
   clientProject: string;
+  /** An awake desk's helpers ("{n, plural, one {# helper} other {# helpers}}"), filled by `fill`. */
+  helpers: string;
   states: Record<OfficeState, string>;
   activities: Record<OfficeActivity, string>;
   agentNames: Record<OfficeAgent, string>;

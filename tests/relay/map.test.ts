@@ -42,6 +42,8 @@ describe("mapEvent", () => {
       preToolUse: ["testing", "testing"],
       preToolUseCi: ["ci", "ci"],
       preToolUseMcp: null,
+      // Mapped like any edit; runHook drops it before mapping (it comes from inside a helper).
+      preToolUseInHelper: ["working", "editing"],
       postToolUseEdit: ["working", "editing"],
       postToolUseView: ["reviewing", "reading"],
       postToolUseBash: ["thinking", "planning"],

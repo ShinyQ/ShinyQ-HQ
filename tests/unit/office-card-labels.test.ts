@@ -33,6 +33,14 @@ describe("office card copy", () => {
     expect(fill("{n, plural, one {# sesi} other {# sesi}}", { n: 1 }, "id")).toBe("1 sesi");
   });
 
+  it("fills the helpers count: one helper, 3 helpers, 3 asisten", () => {
+    expect(fill(en.office.helpers, { n: 1 }, "en")).toBe("1 helper");
+    expect(fill(en.office.helpers, { n: 3 }, "en")).toBe("3 helpers");
+    expect(fill(id.office.helpers, { n: 1 }, "id")).toBe("1 asisten");
+    expect(fill(id.office.helpers, { n: 3 }, "id")).toBe("3 asisten");
+    for (const text of [en.office.helpers, id.office.helpers]) expect(text).not.toContain("\u2014");
+  });
+
   it("says one session, task, PR and CI run in English and keeps Indonesian unchanged", () => {
     const c = en.office.classic;
     expect(fill(c.extra, { count: 1 }, "en")).toBe("+1 more session");

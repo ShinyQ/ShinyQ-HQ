@@ -1,7 +1,7 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useFrame, type RootState } from "@react-three/fiber";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box3,
   BoxGeometry,
@@ -24,6 +24,7 @@ import {
   type Object3D,
   type WebGLRenderer,
 } from "three";
+import { STATE_TONE } from "@/lib/office/model";
 import type { OfficeState } from "@/lib/office/protocol";
 import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -32,47 +33,75 @@ import { neonColor } from "../../../fx/materials";
 import { sceneProbes } from "../../../fx/probes";
 import { useDispose } from "../../../fx/useDispose";
 import { registerExtraInteractables } from "../../../interact/registry";
+import { MAX_FRAME_DT } from "../../../rover/controller";
+import { animationSpeed } from "../../../scene/animationSpeed";
 import { forgetDrawn, shownInScene, whenDrawn } from "../../../scene/drawnWork";
 import { sceneTarget } from "../../../scene/postHandle";
 import { precompileObject } from "../../../scene/precompile";
 import { renderProbe } from "../../../scene/renderProbe";
 import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
-import type { GpuTier } from "../../../types";
+import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
-import { OFFICE, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import { canvasTexture, chipSpots, chipsOneLine, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_SLOTS, officeBounds, officeChipMode, placeChip, useCanvasFonts } from "../officeShell";
+import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
+import {
+  canvasTexture,
+  CHIP_ROW,
+  chipMaxWidth,
+  chipRowBounds,
+  chipsOneLine,
+  layoutChipRow,
+  nextChipFar,
+  OFFICE_CHIP_ANCHORS,
+  OFFICE_CHIP_TOP,
+  OFFICE_SLOTS,
+  officeBounds,
+  officeChipMode,
+  officeHudBoxes,
+  segmentHitsBox,
+  useCanvasFonts,
+} from "../officeShell";
+import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
-import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawScreen, FACE_FPS_MAX, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
-import { AtlasClock, fadeLevel, fadeTag, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
+import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
+import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
+import { officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "./crewFrame";
+import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
+import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
-import { GLOW_PER_ROVER, glowKey, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeGlow, writeRover } from "./officeRig";
-import { OFFICE_STATE_STYLE, pose, poseOffset, slotPhase, STILL_T, stillPose } from "./officeVisual";
+import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
+import { GLOW_PER_ROVER, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
+import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { officeRuntime, setChipFar, setChipsCompact } from "./runtime";
+import { loadOfficeWatch } from "./watchLoader";
 
 const NO_RAYCAST = () => null;
-const QUADS = 10;
+/** Faces, desk screens, then the input flags: one quad each per Rover. */
+const QUADS = 3 * OFFICE_SLOTS.length;
 /** Desk screens redraw at most this often (faces at most FACE_FPS_MAX on both tiers), only the cells whose frame key changed. */
 const SCREEN_FPS = { full: 10, lite: 5 } as const;
 const FRAME = new Matrix4();
 const ORIGIN = new Vector2();
 
-/** Five faces then five desk screens as one merged quad mesh (one draw call, one atlas). */
+/** Five faces, five desk screens and five flag plates as one merged quad mesh (one draw call, one atlas). */
 function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
+  const n = slots.length;
   const positions = new Float32Array(QUADS * 12);
   const uvs = new Float32Array(QUADS * 8);
   const index: number[] = [];
   for (let q = 0; q < QUADS; q++) {
-    const [u0, v0, u1, v1] = cellUv(q < slots.length ? faceCell(q) : screenCell(q - slots.length));
+    const [u0, v0, u1, v1] = cellUv(q < n ? faceCell(q) : q < 2 * n ? screenCell(q - n) : FLAG_CELL);
     uvs.set([u0, v0, u1, v0, u1, v1, u0, v1], q * 8);
     const b = q * 4;
     index.push(b, b + 1, b + 2, b, b + 2, b + 3);
   }
+  const rest = restCrewPose();
   for (const s of slots) {
-    writeFace(roverFrame(s, stillPose("asleep"), FRAME), positions, s.slot);
-    writeDeskScreen(s, positions, slots.length + s.slot);
+    writeFace(roverFrame(s, rest, FRAME), positions, s.slot);
+    writeDeskScreen(s, positions, n + s.slot);
+    writeFlag(FRAME, rest, positions, 2 * n + s.slot);
   }
   const g = new BufferGeometry();
   g.setAttribute("position", new BufferAttribute(positions, 3).setUsage(DynamicDrawUsage));
@@ -81,23 +110,38 @@ function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   g.setAttribute("normal", new BufferAttribute(new Float32Array(QUADS * 12), 3));
   g.setIndex(index);
   // The faces move with their Rovers: one fixed sphere around the whole office, so culling never trusts stale bounds.
-  const b = officeBounds();
-  g.boundingSphere = new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
+  g.boundingSphere = officeSphere();
   return g;
 }
 
-/** Rest instances (every Rover asleep), attached at creation so precompile, bounds and culling see the final meshes. */
+/** One fixed sphere around the whole office (3 u past its corners): the bounds of everything that moves with the Rovers. */
+function officeSphere(): Sphere {
+  const b = officeBounds();
+  return new Sphere(new Vector3((b.minX + b.maxX) / 2, 2, (b.minZ + b.maxZ) / 2), Math.hypot(b.maxX - b.minX, b.maxZ - b.minZ) / 2 + 3);
+}
+
+/** Glow instances: each Rover's (rig and crew), then the CI tower's lane dots at `TOWER.start`. */
+const glowCount = (slots: readonly OfficeSlot[]) => slots.length * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots;
+const DARK_TOWER = { total: 0, done: 0, running: false } as const;
+
+/**
+ * Rest instances (every Rover asleep and docked, the tower dark), attached at creation so precompile, bounds and
+ * culling see the final meshes: the glow mesh's bounds take in the tower's dots from here.
+ */
 function restInstances(slots: readonly OfficeSlot[]) {
   const parts = new Float32Array(slots.length * PARTS_PER_ROVER * 16);
   const treads = new Float32Array(slots.length * TREADS_PER_ROVER * 16);
-  const glow = new Float32Array(slots.length * GLOW_PER_ROVER * 16);
-  const colors = new Float32Array(slots.length * GLOW_PER_ROVER * 3);
-  const p = stillPose("asleep");
+  const glow = new Float32Array(glowCount(slots) * 16);
+  const colors = new Float32Array(glowCount(slots) * 3);
+  const p = restCrewPose();
+  const fx = crewFx(newActor("asleep"), true);
   for (const s of slots) {
     roverFrame(s, p, FRAME);
     writeRover(FRAME, p, parts, s.slot, treads);
-    writeGlow(s, FRAME, "asleep", null, 1, 0, true, LOBBY.officeWing.stop, glow, colors);
+    writeGlow(s, FRAME, "asleep", null, p.tipScale, 0, true, LOBBY.officeWing.stop, glow, colors, fx.flicker);
+    writeCrewGlow(s, FRAME, "asleep", fx, 0, slotPhase(s.slot), true, glow, colors);
   }
+  writeTower(DARK_TOWER, 0, true, glow, colors);
   return { parts, treads, glow, colors };
 }
 
@@ -143,10 +187,18 @@ interface RoverMeshes {
   quads: Mesh;
 }
 
-/** Writes the marked Rovers (instance matrices, face quads, glow) from the poses `writes` recorded, then clears their marks. */
-function flushRovers(writes: RoverWrites, slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], now: number, reduced: boolean, m: RoverMeshes): void {
+/**
+ * Writes the marked Rovers (instance matrices, face and flag quads, rig and crew glow) from the poses `writes` recorded
+ * and the crew's fx, then clears their marks. The helper drones' bodies move with the glow key, so a glow-only write
+ * rewrites them too while a Rover has (or just lost) drones; `drawn` holds each slot's drawn drone count.
+ */
+function flushRovers(writes: RoverWrites, fxs: readonly CrewFx[], slots: readonly OfficeSlot[], rovers: readonly OfficeRoverView[], now: number, reduced: boolean, lite: boolean, m: RoverMeshes, drawn: number[]): void {
   const position = m.quads.geometry.getAttribute("position") as BufferAttribute;
+  const matrices = m.glow.instanceMatrix.array as Float32Array;
+  const colors = m.glow.instanceColor!.array as Float32Array;
+  const parts = m.parts.instanceMatrix.array as Float32Array;
   let posed = false;
+  let droned = false;
   let glowed = false;
   for (const r of rovers) {
     const slot = r.slot;
@@ -154,20 +206,29 @@ function flushRovers(writes: RoverWrites, slots: readonly OfficeSlot[], rovers: 
     const glowDue = writes.glowPending[slot];
     if (!poseDue && !glowDue) continue;
     const p = writes.poses[slot];
+    const phase = slotPhase(slot);
+    const drones = Math.min(r.helpers, DRONES.max);
     roverFrame(slots[slot], p, FRAME);
     if (poseDue) {
-      writeRover(FRAME, p, m.parts.instanceMatrix.array as Float32Array, slot, m.treads.instanceMatrix.array as Float32Array);
+      writeRover(FRAME, p, parts, slot, m.treads.instanceMatrix.array as Float32Array, drones, now, phase, reduced);
       writeFace(FRAME, position.array as Float32Array, slot);
+      writeFlag(FRAME, p, position.array as Float32Array, 2 * slots.length + slot);
       posed = true;
+    } else if (glowDue && (drones > 0 || drawn[slot] > 0)) {
+      writeDrones(FRAME, drones, now, phase, reduced, parts, slot * PARTS_PER_ROVER);
+      droned = true;
     }
+    drawn[slot] = drones;
     if (glowDue) {
-      writeGlow(slots[slot], FRAME, r.state, r.progress, p.tipScale, now, reduced, writes.cam, m.glow.instanceMatrix.array as Float32Array, m.glow.instanceColor!.array as Float32Array);
+      const fx = fxs[slot];
+      writeGlow(slots[slot], FRAME, r.state, r.progress, p.tipScale, now, reduced, writes.cam, matrices, colors, fx.flicker);
+      writeCrewGlow(slots[slot], FRAME, r.state, fx, now, phase, reduced, matrices, colors, drones, lite, writes.cam);
       glowed = true;
     }
     writes.done(slot);
   }
+  if (posed || droned) m.parts.instanceMatrix.needsUpdate = true;
   if (posed) {
-    m.parts.instanceMatrix.needsUpdate = true;
     m.treads.instanceMatrix.needsUpdate = true;
     position.needsUpdate = true;
   }
@@ -264,6 +325,8 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
     l.keys[i] = l.next[i];
   }
   if (!l.primed) {
+    // The flag cell sits outside the keyed cells: painted once, before the one whole upload, and never again.
+    drawFlag(atlasCtx, FLAG_CELL, STATE_TONE.input);
     l.primed = true;
     map.needsUpdate = true;
   }
@@ -272,8 +335,9 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
 /**
  * The five office Rovers: light parts and treads (two instanced standard meshes with `alphaHash`, the player
  * Rover's wheel program), their faces and the desk screens (one quad mesh on one canvas atlas, the player
- * face's material settings), and the glow (one instanced holo mesh: antenna tips, halos, progress dots).
- * Nothing is written while no pose, glow key or camera changed; the atlas uploads only its changed cells.
+ * face's material settings), and the glow (one instanced holo mesh: antenna tips, halos, progress dots, the crew's
+ * effects and the CI tower's lane dots). Each desk's crew actor acts out its state (`crew.ts`). Nothing is written
+ * while no pose, glow key, tower key or camera changed; the atlas uploads only its changed cells.
  */
 function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: readonly OfficeSlot[]; tier: GpuTier; t: OfficeTranslate }) {
   const reduced = useHQStore((s) => s.reducedMotion);
@@ -305,7 +369,11 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const quads = useMemo(() => atlasQuads(slots), [slots]);
   useDispose(quads);
   const rest = useMemo(() => restInstances(slots), [slots]);
-  const writes = useMemo(() => new RoverWrites(slots.length, stillPose("asleep"), glowKey("asleep", null, true, 0), LOBBY.officeWing.stop), [slots]);
+  const writes = useMemo(() => new RoverWrites(slots.length, restCrewPose(), restCrewKey(), LOBBY.officeWing.stop), [slots]);
+  const crew = useMemo(() => officeCrew(slots, LOBBY.officeWing.stop, officeTowerColumn(LOBBY.officeWing)), [slots]);
+  const lanes = useMemo(() => towerLanes(view), [view]);
+  // The tower key last written (the rest instances drew it dark): "" writes the tower on the first frame in view.
+  const lanesKey = useRef("");
   const texts = useMemo((): ScreenTexts => ({ waiting: t("3d.waiting"), jobs: (done, total) => t("3d.jobs", { done, total }), sleep: "z Z" }), [t]);
   const group = useRef<Group>(null);
   const parts = useRef<InstancedMesh>(null);
@@ -327,6 +395,9 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   }, []);
   const fonts = useCanvasFonts(redraw);
   const fps = SCREEN_FPS[tier === "full" ? "full" : "lite"];
+  const lite = tier !== "full";
+  // Each slot's drawn helper drones (the rest instances draw none).
+  const drawn = useMemo(() => slots.map(() => 0), [slots]);
 
   useEffect(() => {
     const g = group.current;
@@ -334,8 +405,26 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
       if (g) forgetDrawn(g);
     };
   }, [slots]);
+  // Fixed bounds (like the quads'): instance bounds from the rest instances would miss orbiting drones and confetti past
+  // the end Rovers, so they could pop at the screen edges; the glow keeps the tower's dots too.
+  useLayoutEffect(() => {
+    const sphere = officeSphere();
+    if (parts.current) parts.current.boundingSphere = sphere.clone();
+    if (treads.current) treads.current.boundingSphere = sphere.clone();
+    const G = glows.current;
+    if (G) {
+      G.computeBoundingSphere();
+      G.boundingSphere!.union(sphere);
+    }
+  }, [slots]);
+  useEffect(() => {
+    officeRuntime.crew = crew.actors;
+    return () => {
+      officeRuntime.crew = [];
+    };
+  }, [crew]);
 
-  useFrame(({ clock, camera, gl }) => {
+  useFrame(({ clock, camera, gl }, rawDt) => {
     const g = group.current;
     const P = parts.current;
     const D = treads.current;
@@ -343,19 +432,21 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     const Q = screenMesh.current;
     if (!g || !P || !D || !G || !Q || !officeRuntime.inView) return;
     const now = clock.elapsedTime;
-    let bob = 0;
-    for (const r of view.rovers) {
-      const p = pose(r.state, now, slotPhase(r.slot), reduced);
-      bob = Math.max(bob, poseOffset(r.state, p));
-      writes.pose(r.slot, p);
-      writes.glow(r.slot, glowKey(r.state, r.progress, reduced, now));
-    }
-    writes.camera(camera.position.x, camera.position.z);
-    sceneProbes.office.bob = bob;
-    if (writes.pending()) {
+    const dt = Math.min(rawDt, MAX_FRAME_DT) * animationSpeed();
+    sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, dt, now, reduced, camera.position, lite);
+    const tk = towerKey(lanes, now, reduced);
+    if (writes.pending() || tk !== lanesKey.current) {
       const rovers = view.rovers;
       // Only how the meshes look: wait for a drawn frame (a hidden L1 or the office before its precompile skips it).
-      whenDrawn(g, () => flushRovers(writes, slots, rovers, now, reduced, { parts: P, treads: D, glow: G, quads: Q }));
+      // One callback per object (the latest wins), so it covers both the Rovers and the tower.
+      whenDrawn(g, () => {
+        flushRovers(writes, crew.fx, slots, rovers, now, reduced, lite, { parts: P, treads: D, glow: G, quads: Q }, drawn);
+        if (tk === lanesKey.current) return;
+        writeTower(lanes, now, reduced, G.instanceMatrix.array as Float32Array, G.instanceColor!.array as Float32Array);
+        lanesKey.current = tk;
+        G.instanceMatrix.needsUpdate = true;
+        G.instanceColor!.needsUpdate = true;
+      });
     }
     paintAtlas(gl, g, Q, local.current, { rovers: view.rovers, now, reduced, fps, fonts: fonts.current, texts, t });
   });
@@ -369,7 +460,7 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
         <instancedBufferAttribute attach="instanceMatrix" args={[rest.treads, 16]} usage={DynamicDrawUsage} />
       </instancedMesh>
       <mesh ref={screenMesh} geometry={quads} material={screens} raycast={NO_RAYCAST} name="office-screens" />
-      <instancedMesh ref={glows} args={[dot, glow, slots.length * GLOW_PER_ROVER]} raycast={NO_RAYCAST} name="office-glow" renderOrder={1}>
+      <instancedMesh ref={glows} args={[dot, glow, glowCount(slots)]} raycast={NO_RAYCAST} name="office-glow" renderOrder={1}>
         <instancedBufferAttribute attach="instanceMatrix" args={[rest.glow, 16]} usage={DynamicDrawUsage} />
         <instancedBufferAttribute attach="instanceColor" args={[rest.colors, 3]} usage={DynamicDrawUsage} />
       </instancedMesh>
@@ -440,37 +531,270 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
   );
 }
 
+/** `OfficeWatch`'s per-frame state, one entry per slot (made once, so a frame allocates nothing). */
+function createWatchState() {
+  const perSlot = <T,>(make: () => T) => officeRuntime.chips.map(make);
+  return {
+    box: new Box3(),
+    frustum: new Frustum(),
+    m: new Matrix4(),
+    v: new Vector3(),
+    els: perSlot((): HTMLElement | null => null),
+    shown: perSlot(() => false),
+    half: perSlot(() => 0),
+    h: perSlot(() => 0),
+    // The Rover's head projected this frame (px).
+    hx: perSlot(() => 0),
+    hy: perSlot(() => 0),
+    // What the cached size was read for: the far flag, the compact layout and the view.
+    wFar: perSlot((): boolean | null => null),
+    wSmall: perSlot(() => false),
+    wView: perSlot((): OfficeView | null => null),
+    // The max width last written to the chip (px; NaN until written for this element).
+    wMax: perSlot(() => NaN),
+    // The row this frame: the shown chips' targets, half widths and slots, and their laid out centres.
+    tx: perSlot(() => 0),
+    th: perSlot(() => 0),
+    ts: perSlot(() => 0),
+    out: perSlot(() => 0),
+    // The last written chip x and leader line (x, y, length, angle), its fade and its tick (x, y; NaN hidden).
+    cx: perSlot(() => NaN),
+    lead: perSlot(() => [NaN, NaN, NaN, NaN]),
+    leadOn: perSlot(() => false),
+    leadFaded: perSlot(() => false),
+    tick: perSlot(() => [NaN, NaN]),
+    // The wall's top edge projected this frame (x0, y0, x1, y1 px; NaN off the camera) and a leader line's end.
+    wall: [NaN, NaN, NaN, NaN],
+    end: { x: 0, y: 0, tick: false, faded: false },
+    // When the office-in-view test runs next (s).
+    next: 0,
+    // The HUD boxes, the row's bounds and the chips' widest fit for one screen size and HUD layout.
+    width: 0,
+    height: 0,
+    layout: "",
+    hud: [] as ScreenBox[],
+    bounds: { left: 0, right: 0 },
+    max: CHIP_ROW.max as number,
+  };
+}
+type WatchState = ReturnType<typeof createWatchState>;
+
+/** The HUD boxes, the row's bounds and the chips' max width, again only when the screen size or the HUD layout changes. */
+function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number) {
+  if (w.width === width && w.height === height && w.layout === hud) return;
+  w.width = width;
+  w.height = height;
+  w.layout = hud;
+  w.hud = officeHudBoxes(width, height, hud);
+  chipRowBounds(width, top, w.hud, w.bounds);
+  w.max = chipMaxWidth(w.bounds, OFFICE_CHIP_ANCHORS.length);
+}
+
+/** Hides chip `slot` once (it turns far), then leaves it alone until it comes back into view; its leader line too. */
+function hideChip(w: WatchState, slot: number, el: HTMLElement | null) {
+  if (w.shown[slot] && el) {
+    el.style.visibility = "hidden";
+    el.style.opacity = "0";
+    w.shown[slot] = false;
+    setChipFar(slot, true);
+  }
+  writeLead(w, slot, NaN, NaN);
+}
+
+/** The screen wall's top edge (the frame's top, its front face): the leader lines end there (`leadEnd`). */
+const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
+
+/** Projects the wall's top edge ends into `w.wall` (px; NaN when either is behind the camera). */
+function projectWallTop(w: WatchState, camera: RootState["camera"], width: number, height: number) {
+  for (let k = 0; k < 2; k++) {
+    w.v.set(LOBBY.officeWing.wall.x + (k ? WALL_TOP.x : -WALL_TOP.x), WALL_TOP.y, WALL_TOP.z).project(camera);
+    const back = w.v.z >= 1;
+    w.wall[2 * k] = back ? NaN : ((w.v.x + 1) / 2) * width;
+    w.wall[2 * k + 1] = back ? NaN : ((1 - w.v.y) / 2) * height;
+  }
+}
+
+/** Shows chip `slot`'s tick at (x, y) (its centre, px), or hides it (NaN). */
+function writeTick(w: WatchState, slot: number, x: number, y: number) {
+  const tick = officeRuntime.ticks[slot];
+  const last = w.tick[slot];
+  if (!tick || (last[0] === x && last[1] === y) || (Number.isNaN(x) && Number.isNaN(last[0]))) return;
+  last[0] = x;
+  last[1] = y;
+  if (Number.isNaN(x)) tick.style.visibility = "hidden";
+  else {
+    tick.style.transform = `translate3d(${x - LEAD.tick / 2}px, ${y - 1}px, 0)`;
+    tick.style.visibility = "visible";
+  }
+}
+
+/**
+ * The leader line of chip `slot` from (x, y), the chip's bottom centre, toward its Rover's head (`w.hx`, `w.hy`): drawn while
+ * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box (`segmentHitsBox`); it ends
+ * at the screen wall's top with a tick, or runs faded to the head where the chip sits over the screens (`leadEnd`); NaN
+ * hides it.
+ */
+function writeLead(w: WatchState, slot: number, x: number, y: number) {
+  const lead = officeRuntime.leads[slot];
+  if (!lead) return;
+  const e = leadEnd(x, y, w.hx[slot], w.hy[slot], w.wall[0], w.wall[1], w.wall[2], w.wall[3], CHIP_ROW.lead, w.end);
+  const hx = e.x;
+  const hy = e.y;
+  let on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead;
+  for (let i = 0; on && i < w.hud.length; i++) on = !segmentHitsBox(x, y, hx, hy, w.hud[i]);
+  writeTick(w, slot, on && e.tick ? Math.round(hx) : NaN, Math.round(hy));
+  if (!on) {
+    if (w.leadOn[slot]) {
+      lead.style.visibility = "hidden";
+      w.leadOn[slot] = false;
+    }
+    return;
+  }
+  if (w.leadFaded[slot] !== e.faded) {
+    w.leadFaded[slot] = e.faded;
+    lead.style.opacity = String(e.faded ? LEAD.faded : LEAD.opacity);
+  }
+  const dx = Math.round(hx - x);
+  const length = Math.round(Math.hypot(dx, hy - y));
+  const angle = Math.round(Math.atan2(-dx, hy - y) * 1000) / 1000;
+  const last = w.lead[slot];
+  if (last[0] !== x || last[1] !== y || last[2] !== length || last[3] !== angle) {
+    last[0] = x;
+    last[1] = y;
+    last[2] = length;
+    last[3] = angle;
+    lead.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle}rad)`;
+    lead.style.height = `${length}px`;
+  }
+  if (!w.leadOn[slot]) {
+    lead.style.visibility = "visible";
+    w.leadOn[slot] = true;
+  }
+}
+
+/** One frame of `OfficeWatch` (a plain function, so the watch state it updates stays out of React's render rules). */
+function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clock, size }: RootState) {
+  const s = getHQStore().getState();
+  const here = s.floor === "L1" && !s.ride && (s.phase === "explore" || s.phase === "room");
+  const now = clock.elapsedTime;
+  if (now >= w.next) {
+    w.next = now + 0.5;
+    w.box.min.set(office.minX, 0, office.minZ);
+    w.box.max.set(office.maxX, OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, office.maxZ);
+    w.frustum.setFromProjectionMatrix(w.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const inView = here && w.frustum.intersectsBox(w.box);
+    officeRuntime.inView = inView;
+    officeLive.want("view", inView);
+    // While this chunk's poller runs, its feed drives the beacon's signal and the office watch stops fetching.
+    const feeding = officeLive.wanted();
+    if (officeSignal.sceneFeeding !== feeding) setOfficeSignal({ sceneFeeding: feeding });
+    const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
+    const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
+    Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted(), crew, drones });
+  }
+  const mobile = s.device.viewport === "mobile";
+  const mode = here ? officeChipMode(s.activeRoom) : null;
+  // The committed layout (React has rendered the previous frame's flags by now), then this frame's.
+  const small = mobile || officeRuntime.compact;
+  const hud = hudLayout(s.device.viewport, s.device.coarse);
+  const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
+  fitRow(w, size.width, size.height, hud, top);
+  const oneLine = chipsOneLine(s.device.viewport, mode === "compact", w.max);
+  if (mode) setChipsCompact(mode === "compact");
+  let n = 0;
+  for (let slot = 0; slot < officeRuntime.chips.length; slot++) {
+    const el = officeRuntime.chips[slot];
+    let on = false;
+    if (el) {
+      if (w.els[slot] !== el) {
+        // A freshly mounted chip starts hidden (its inline style), its leader line and tick (mounted with it) too.
+        w.els[slot] = el;
+        w.shown[slot] = false;
+        w.wFar[slot] = null;
+        w.wMax[slot] = NaN;
+        w.cx[slot] = NaN;
+        w.leadOn[slot] = w.leadFaded[slot] = false;
+        w.lead[slot].fill(NaN);
+        w.tick[slot].fill(NaN);
+      }
+      const a = OFFICE_CHIP_ANCHORS[slot];
+      const dist = camera.position.distanceTo(w.v.set(a.x, a.y, a.z));
+      on = mode !== null && officeRuntime.inView && (w.v.project(camera), w.v.z < 1 && Math.abs(w.v.x) <= 1 && Math.abs(w.v.y) <= 1);
+      if (on) {
+        // Read before this frame's far update: React has committed the previous flag's content by now.
+        const far = officeRuntime.far[slot];
+        // The row's fit (`chipMaxWidth`) caps the chip's width; a new cap changes its size.
+        if (w.wMax[slot] !== w.max) {
+          w.wMax[slot] = w.max;
+          el.style.maxWidth = `${w.max}px`;
+          w.wFar[slot] = null;
+        }
+        if (w.wFar[slot] !== far || w.wSmall[slot] !== small || w.wView[slot] !== view) {
+          w.wFar[slot] = far;
+          w.wSmall[slot] = small;
+          w.wView[slot] = view;
+          w.half[slot] = el.offsetWidth / 2;
+          w.h[slot] = el.offsetHeight;
+        }
+        // A far chip turns near only once the camera holds still (its wider line would push its neighbours along the
+        // row while the camera zooms in); turning far is at once.
+        const nextFar = nextChipFar(far, dist, oneLine);
+        if (nextFar || roverRuntime.cameraSettled) setChipFar(slot, nextFar);
+        w.hx[slot] = ((w.v.x + 1) / 2) * size.width;
+        w.hy[slot] = ((1 - w.v.y) / 2) * size.height;
+        w.tx[n] = w.hx[slot];
+        w.th[n] = w.half[slot];
+        w.ts[n] = slot;
+        n++;
+      }
+    }
+    if (!on) hideChip(w, slot, el);
+  }
+  layoutChipRow(w.tx, w.th, w.out, n, w.bounds);
+  if (n) projectWallTop(w, camera, size.width, size.height);
+  let chips = 0;
+  for (let k = 0; k < n; k++) {
+    const slot = w.ts[k];
+    const el = w.els[slot]!;
+    const half = w.th[k];
+    const x = Math.round(w.out[k] * 2) / 2;
+    // Past the row's right bound only when the chips cannot fit side by side: hidden.
+    if (x + half > w.bounds.right + 0.5) {
+      hideChip(w, slot, el);
+      continue;
+    }
+    if (w.cx[slot] !== x - half) {
+      w.cx[slot] = x - half;
+      el.style.transform = `translate3d(${(x - half).toFixed(1)}px, ${top}px, 0)`;
+    }
+    if (!w.shown[slot]) {
+      el.style.visibility = "visible";
+      el.style.opacity = "1";
+      w.shown[slot] = true;
+    }
+    writeLead(w, slot, x, top + w.h[slot]);
+    chips += 1;
+  }
+  sceneProbes.office.chips = chips;
+}
+
 /**
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
- * wall redraws and the polling ("view"). Every frame: moves the HTML chips over their Rovers (HintProbe pattern),
- * hanging up from their anchors over the screen wall, clamped 8 px inside the screen edges and under the HUD's top bar, as
- * `officeChipMode` lets them (far and compact on phones at any distance, and everywhere outside the office view; a hidden
- * chip turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far
- * flag, its compact layout or the feed). Renders nothing.
+ * wall redraws and the polling ("view"). Every frame: lays the HTML chips out in one row under the HUD's top bar, each
+ * over its Rover's head (`layoutChipRow`: nudged apart along x in desk order, clear of the HUD boxes in the row's band),
+ * with a leader line from the chip down to the head, as `officeChipMode` lets them (far and compact on phones at any
+ * distance, one line where five full chips would not fit the row, and everywhere outside the office view; a hidden chip
+ * turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far flag,
+ * its compact layout or the feed), and a style is written only when its value changes. Renders nothing.
  */
 function OfficeWatch({ view }: { view: OfficeView }) {
-  const tmp = useMemo(
-    () => ({
-      box: new Box3(),
-      frustum: new Frustum(),
-      m: new Matrix4(),
-      v: new Vector3(),
-      spots: chipSpots(),
-      els: officeRuntime.chips.map((): HTMLElement | null => null),
-      shown: officeRuntime.chips.map(() => false),
-      // What the cached half width was read for: the far flag, the compact layout and the view.
-      wFar: officeRuntime.chips.map((): boolean | null => null),
-      wSmall: officeRuntime.chips.map(() => false),
-      wView: officeRuntime.chips.map((): OfficeView | null => null),
-    }),
-    [],
-  );
+  const tmp = useMemo(() => createWatchState(), []);
   const bounds = useMemo(() => officeBounds(), []);
-  const next = useRef(0);
   useEffect(
     () => () => {
       officeRuntime.inView = false;
       officeLive.want("view", false);
+      setOfficeSignal({ sceneFeeding: false });
       // The chips live in the HUD and outlive a canvas remount: hide them (far), as a new watcher assumes they start hidden.
       officeRuntime.chips.forEach((el, slot) => {
         setChipFar(slot, true);
@@ -478,79 +802,11 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         el.style.visibility = "hidden";
         el.style.opacity = "0";
       });
+      for (const lead of [...officeRuntime.leads, ...officeRuntime.ticks]) if (lead) lead.style.visibility = "hidden";
     },
     [],
   );
-  useFrame(({ camera, clock, size }) => {
-    const s = getHQStore().getState();
-    const here = s.floor === "L1" && !s.ride && (s.phase === "explore" || s.phase === "room");
-    const now = clock.elapsedTime;
-    if (now >= next.current) {
-      next.current = now + 0.5;
-      tmp.box.min.set(bounds.minX, 0, bounds.minZ);
-      tmp.box.max.set(bounds.maxX, OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, bounds.maxZ);
-      tmp.frustum.setFromProjectionMatrix(tmp.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-      const inView = here && tmp.frustum.intersectsBox(tmp.box);
-      officeRuntime.inView = inView;
-      officeLive.want("view", inView);
-      Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted() });
-    }
-    let chips = 0;
-    const mobile = s.device.viewport === "mobile";
-    const mode = here ? officeChipMode(s.activeRoom) : null;
-    const oneLine = chipsOneLine(s.device.viewport, size.width, size.height, mode === "compact");
-    // The committed layout (React has rendered the previous frame's flags by now), then this frame's.
-    const small = mobile || officeRuntime.compact;
-    const hud = hudLayout(s.device.viewport, s.device.coarse);
-    if (mode) setChipsCompact(mode === "compact");
-    officeRuntime.chips.forEach((el, slot) => {
-      tmp.spots.x[slot] = NaN;
-      if (!el) return;
-      if (tmp.els[slot] !== el) {
-        // A freshly mounted chip starts hidden (its inline style).
-        tmp.els[slot] = el;
-        tmp.shown[slot] = false;
-        tmp.wFar[slot] = null;
-      }
-      const a = OFFICE_CHIP_ANCHORS[slot];
-      const dist = camera.position.distanceTo(tmp.v.set(a.x, a.y, a.z));
-      let on = mode !== null && officeRuntime.inView && (tmp.v.project(camera), tmp.v.z < 1 && Math.abs(tmp.v.x) <= 1 && Math.abs(tmp.v.y) <= 1);
-      if (on) {
-        // Read before this frame's far update: React has committed the previous flag's content by now.
-        const far = officeRuntime.far[slot];
-        if (tmp.wFar[slot] !== far || tmp.wSmall[slot] !== small || tmp.wView[slot] !== view) {
-          tmp.wFar[slot] = far;
-          tmp.wSmall[slot] = small;
-          tmp.wView[slot] = view;
-          tmp.spots.half[slot] = el.offsetWidth / 2;
-          tmp.spots.h[slot] = el.offsetHeight;
-        }
-        // A far chip turns near only once the camera holds still (its taller task lines would sweep over its neighbours as
-        // the camera zooms in); turning far is at once.
-        const next = nextChipFar(far, dist, oneLine);
-        if (next || roverRuntime.cameraSettled) setChipFar(slot, next);
-        on = placeChip(tmp.spots, slot, ((tmp.v.x + 1) / 2) * size.width, ((1 - tmp.v.y) / 2) * size.height, size.width, size.height, hud, mode === "compact");
-      }
-      if (!on) {
-        // A hidden chip is written once (and turns far), then left alone until it comes back into view.
-        if (tmp.shown[slot]) {
-          el.style.visibility = "hidden";
-          el.style.opacity = "0";
-          tmp.shown[slot] = false;
-          setChipFar(slot, true);
-        }
-        return;
-      }
-      el.style.transform = `translate3d(${tmp.spots.x[slot].toFixed(1)}px, ${tmp.spots.y[slot].toFixed(1)}px, 0) translate(-50%, -100%)`;
-      if (!tmp.shown[slot]) {
-        el.style.visibility = "visible";
-        el.style.opacity = "1";
-        tmp.shown[slot] = true;
-      }
-      chips += 1;
-    });
-    sceneProbes.office.chips = chips;
-  });
+  useFrame((state) => watchFrame(tmp, view, bounds, state));
   return null;
 }
 
@@ -562,6 +818,15 @@ function OfficeWatch({ view }: { view: OfficeView }) {
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {
   const feed = useOfficeFeed();
   const view = useMemo(() => officeView(feed), [feed]);
+  // The beacon's signal from this feed while its poller runs (a frozen feed never writes): the same reading as the
+  // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window. The watch
+  // chunk mirrors the signal to the minimap and loads the beacon, so it loads here too (it may not have yet).
+  useEffect(() => {
+    if (!officeLive.wanted() || feed.status === "idle" || feed.status === "loading") return;
+    const sig = feed.status === "ready" ? signalFromBody(feed.snapshot, Date.now()) : null;
+    setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
+    void loadOfficeWatch().catch(() => null);
+  }, [feed]);
   const slots = OFFICE_SLOTS;
   const agents = view.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
@@ -577,7 +842,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, [agents, slots, t]);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, polling: false });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, polling: false, crew: [], drones: [] });
     },
     [],
   );

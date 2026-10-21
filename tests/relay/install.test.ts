@@ -49,6 +49,27 @@ describe("install", () => {
     expect(installed(p)).toEqual({ copilot: true, claude: true, codex: true });
   });
 
+  it("hooks every tool's sub-agent start and stop (no matcher, so every helper type counts) and uninstall removes them", () => {
+    const home = homeWithClaude({ hooks: { SubagentStop: [{ hooks: [{ type: "command", command: "~/bin/mine.sh" }] }] } });
+    install(home, opts);
+    const p = installPaths(home);
+    expect(COPILOT_EVENTS).toEqual(expect.arrayContaining(["subagentStart", "subagentStop"]));
+    expect(CLAUDE_EVENTS).toEqual(expect.arrayContaining(["SubagentStart", "SubagentStop"]));
+    expect(CODEX_EVENTS).toEqual(expect.arrayContaining(["SubagentStart", "SubagentStop"]));
+    const copilot = json(p.copilot).hooks;
+    for (const e of ["subagentStart", "subagentStop"]) expect(copilot[e]).toEqual([{ type: "command", bash: cmd(p.bin, "copilot", e), timeoutSec: 5 }]);
+    const claude = json(p.claude).hooks;
+    expect(claude.SubagentStart).toEqual([{ hooks: [{ type: "command", command: cmd(p.bin, "claude", "SubagentStart"), async: true, timeout: 5 }] }]);
+    expect(claude.SubagentStop[1]).toEqual({ hooks: [{ type: "command", command: cmd(p.bin, "claude", "SubagentStop"), async: true, timeout: 5 }] });
+    const codex = json(p.codex).hooks;
+    for (const e of ["SubagentStart", "SubagentStop"]) expect(codex[e]).toEqual([{ hooks: [{ type: "command", command: cmd(p.bin, "codex", e), async: true, timeout: 5 }] }]);
+
+    uninstall(home);
+    expect(json(p.claude).hooks).toEqual({ SubagentStop: [{ hooks: [{ type: "command", command: "~/bin/mine.sh" }] }] });
+    expect(json(p.codex).hooks).toEqual({});
+    expect(existsSync(p.copilot)).toBe(false);
+  });
+
   it("writes hook commands that never fail, even when the shim is missing", () => {
     const bin = path.join(mkdtempSync(path.join(tmpdir(), "relay-install-")), "missing", "office-relay");
     const hooks = copilotHooks(bin) as { hooks: Record<string, { bash: string }[]> };
