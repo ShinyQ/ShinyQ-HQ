@@ -1,10 +1,41 @@
 import { describe, expect, it } from "vitest";
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { dayTime, planReplay, playTime, REPLAY, RULES, snapshotAt } from "@/experience/floors/lobby/office/replay";
-import { TIMING } from "../../workers/office/src/state";
+import { dayStart, parseOfficeHistory, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
+import type { OfficeActivity, OfficeState } from "@/lib/office/protocol";
+import { historyDay, logDoc, startLog } from "../../workers/office/src/history";
+import { applyBeat, emptyDoc, TIMING } from "../../workers/office/src/state";
 import { expectedState, makeHistory, ordinalAt } from "../helpers/office-history";
 
 const EPOCH = Date.UTC(2026, 9, 21, 3, 0, 0);
+
+/**
+ * A day with carry-ins, built by the Worker: session A finished (done) 60 s before midnight, B is working through it;
+ * after midnight B works on and is done at 00:10 (`afterMidnight` false: only the carry-ins).
+ */
+function carryDay(afterMidnight = true): OfficeHistoryV1 {
+  const day = "2026-10-21";
+  const base = dayStart(day);
+  const A = "a".repeat(64);
+  const B = "b".repeat(64);
+  let doc = emptyDoc(base - 600_000);
+  const beat = (session: string, state: OfficeState, activity: OfficeActivity, s: number) => {
+    const before = doc;
+    doc = applyBeat(doc, { v: 1, agent: session === A ? "claude" : "codex", session, state, activity, ts: base + s * 1000 }, base + s * 1000);
+    return before;
+  };
+  beat(A, "working", "editing", -300);
+  beat(A, "done", "finished", -60);
+  beat(B, "working", "editing", -10);
+  let log = startLog(day, doc);
+  if (afterMidnight) {
+    for (let s = 60; s < 600; s += 60) log = logDoc(log, beat(B, "working", "editing", s), doc, base + s * 1000);
+    log = logDoc(log, beat(B, "done", "finished", 600), doc, base + 600_000);
+  }
+  const h = parseOfficeHistory(historyDay(log, doc));
+  if (!h || !("events" in h)) throw new Error("carryDay built an invalid day");
+  return h;
+}
 
 describe("replay engine", () => {
   it("mirrors the Worker's time rules", () => {
@@ -71,6 +102,20 @@ describe("replay engine", () => {
     ]);
     expect(snap.extra).toBe(1);
     expect(snap.today.tasksDone).toBe(2);
+  });
+  it("shows a session carried over midnight in done as asleep, and never counts or plays it as a new done", () => {
+    const h = carryDay();
+    expect(h.events.filter((e) => e[0] === 0)).toHaveLength(2);
+    const p = planReplay(h)!;
+    // B's carry-in opens the day at 0; A finished before midnight.
+    expect(p.spans[0].from).toBe(0);
+    expect(p.doneAt).toEqual([600]);
+    for (const s of [0, 0.1, playTime(p, 10)]) expect(snapshotAt(h, p, s, EPOCH).desks.find((d) => d.agent === "claude")?.state).toBe("asleep");
+    expect(snapshotAt(h, p, p.duration, EPOCH).today.tasksDone).toBe(1);
+    // Only the carry-in done: nothing to play.
+    const only = carryDay(false);
+    only.events = only.events.filter((e) => e[1] === 0);
+    expect(planReplay(only)).toBeNull();
   });
   it("times every snapshot on the playback clock", () => {
     const h = makeHistory({ seats: 2, hours: 1, changesPerHour: 10 });

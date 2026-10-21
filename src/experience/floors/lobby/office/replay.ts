@@ -36,12 +36,17 @@ const sleepAfter = (state: OfficeState) => (LONG.includes(state) ? RULES.longWai
 /** Whether event `e` keeps the state of `p` (the same session's previous event) with no removal between; `activity` also compares the activities. */
 const goesOn = (p: OfficeHistoryEvent, e: OfficeHistoryEvent, activity = true) => p[3] === e[3] && (!activity || p[4] === e[4]) && p[5] + RULES.removeAfter > e[0];
 
-/** Day seconds where something happens: an awake event until its session would sleep, a merge or deploy plus 30 s, a run from start to end plus 30 s. */
+/**
+ * Day seconds where something happens: an awake event until its session would sleep (not a carry-in done, which
+ * shows asleep), a merge or deploy plus 30 s, a run from start to end plus 30 s.
+ */
 function busy(h: OfficeHistoryV1): [number, number][] {
   const out: [number, number][] = [];
-  for (const [t, , , s, , until] of h.events) {
+  const seen = new Set<number>();
+  for (const [t, n, , s, , until] of h.events) {
     const state = OFFICE_STATES[s];
-    if (state !== "asleep") out.push([t, Math.max(t, until) + sleepAfter(state)]);
+    if (state !== "asleep" && (state !== "done" || t || seen.has(n))) out.push([t, Math.max(t, until) + sleepAfter(state)]);
+    seen.add(n);
   }
   for (const [t] of h.prs) out.push([t, t + REPLAY.tailS]);
   for (const [t] of h.deploys) out.push([t, t + REPLAY.tailS]);
@@ -75,7 +80,8 @@ export function planReplay(h: OfficeHistoryV1): ReplayPlan | null {
   const doneAt: number[] = [];
   h.events.forEach((e, i) => {
     const prev = byN[e[1]].at(-1);
-    if (OFFICE_STATES[e[3]] === "done" && (prev === undefined || !goesOn(h.events[prev], e, false))) doneAt.push(e[0]);
+    // A carry-in (an ordinal's first event at t 0, workers/office/src/history.ts startLog) finished before midnight: not counted.
+    if (OFFICE_STATES[e[3]] === "done" && (prev === undefined ? e[0] > 0 : !goesOn(h.events[prev], e, false))) doneAt.push(e[0]);
     byN[e[1]].push(i);
   });
   return { day: h.day, spans, duration: p, byN, doneAt };
@@ -108,7 +114,7 @@ interface DeskAt {
 /**
  * Ordinal `n` at day second `T` under the live rules (`effective`, `effectiveHelpers`) with `min(T, until)` as its last
  * beat; `since` is its first event of the same state and activity, back to a removal (a returning session starts
- * over). Null before its first event or once removed.
+ * over), and a carry-in done's is before midnight. Null before its first event or once removed.
  */
 function deskAt(h: OfficeHistoryV1, plan: ReplayPlan, n: number, T: number): DeskAt | null {
   const idx = plan.byN[n];
@@ -126,6 +132,8 @@ function deskAt(h: OfficeHistoryV1, plan: ReplayPlan, n: number, T: number): Des
   let activity = OFFICE_ACTIVITIES[e[4]];
   let since = ev(first)[0];
   if (state === "done") {
+    // A carry-in done finished before midnight: asleep from the start.
+    if (!first && !since) since = -RULES.doneFor;
     if (T - since >= RULES.doneFor) [state, activity, since] = ["asleep", "resting", since + RULES.doneFor];
   } else if (state !== "asleep" && state !== "failed") {
     const sleep = sleepAfter(state);
