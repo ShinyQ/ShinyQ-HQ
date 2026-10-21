@@ -28,7 +28,7 @@ export interface OfficeFeed {
 export interface OfficePoller {
   /**
    * Begin polling (idempotent). The first start fetches at once; a later one waits out what is left of `interval`
-   * since the last request (so a view flickering in and out never fetches more often than the cadence), unless
+   * since the last settled request (so a view flickering in and out never fetches more often than the cadence), unless
    * `now` asks for a fetch at once (the tab turning visible, the test hook).
    */
   start(opts?: { now?: boolean }): void;
@@ -88,7 +88,10 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   let timer: unknown = null;
   /** `now()` when the pending wait was armed (the last request settled). */
   let armedAt = 0;
-  /** `now()` when the last request began (null before the first). */
+  /**
+   * `now()` when the last request that settled in its own generation began (null before the first). A request that
+   * stop() aborted or dropped does not count, so a quick stop then start does not wait for a result that never came.
+   */
   let requestedAt: number | null = null;
   let generation = 0;
   let inflight: AbortController | null = null;
@@ -110,7 +113,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
 
   /** One request; its result is dropped when stop() or a restart changed the generation while it was in flight. */
   async function load(gen: number): Promise<void> {
-    requestedAt = now();
+    const begunAt = now();
     if (current.status === "idle") set({ ...current, status: "loading" });
     const controller = new AbortController();
     inflight = controller;
@@ -132,6 +135,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     } finally {
       clearTimer(abortTimer);
       if (inflight === controller) inflight = null;
+      if (gen === generation) requestedAt = begunAt;
     }
   }
 

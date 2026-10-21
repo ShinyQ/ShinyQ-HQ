@@ -279,6 +279,45 @@ describe("createOfficePoller robustness", () => {
     expect(poller.feed().status).toBe("loading");
   });
 
+  it("a start after stop() aborted the request in flight fetches at once", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(400);
+    expect(pending).toHaveLength(1);
+    poller.stop();
+    expect(pending[0].signal?.aborted).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pending).toHaveLength(2);
+    pending[1].resolve({ status: 200, body: statesA(T0) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().status).toBe("ready");
+    poller.stop();
+  });
+
+  it("a request that settled still makes a quick restart wait out the cadence", async () => {
+    const { fetcher, pending } = deferredFetch();
+    const poller = createOfficePoller({ fetcher });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(400);
+    pending[0].resolve({ status: 200, body: statesA(T0) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(poller.feed().status).toBe("ready");
+    poller.stop();
+    await vi.advanceTimersByTimeAsync(1_000);
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pending).toHaveLength(1);
+    // The settled request began at T0, 1.4 s ago: the 10 s cadence fetches 8.6 s later.
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 1_400 - 1);
+    expect(pending).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(pending).toHaveLength(2);
+    poller.stop();
+  });
+
   it("aborts a hung request after 10 s and follows the error path", async () => {
     const { fetcher, pending } = deferredFetch();
     const poller = createOfficePoller({ fetcher });
