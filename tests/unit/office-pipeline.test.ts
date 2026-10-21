@@ -94,6 +94,21 @@ describe("office pipeline events", () => {
     expect(off.size()).toBe(0);
   });
 
+  it("resets to a silent baseline: the next `see` queues nothing and the queued events go (the live and replay feeds switched)", () => {
+    const k = P.runs[1].jobs.findIndex((j) => j.status === "running");
+    const q = new PipeQueue();
+    q.see(P, now);
+    q.see(withJob(P, 1001, k, "done"), now + 1_000);
+    expect(q.size()).toBe(1);
+    q.reset();
+    expect(q.size()).toBe(0);
+    expect(q.due(0, now + 1_000)).toHaveLength(0);
+    q.see(withJob(P, 1001, k, "failed"), now + 2_000);
+    expect(q.size()).toBe(0);
+    q.see(withJob(withJob(P, 1001, k, "failed"), 1001, k + 1, "done"), now + 3_000);
+    expect(q.size()).toBe(1);
+  });
+
   it("never lets a second package cut off the first in flight", () => {
     expect(PIPE.packageGap).toBeGreaterThanOrEqual(PIPE_FX.package.s);
     const q = new PipeQueue();

@@ -25,6 +25,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
+import type { OfficeFeedStatus } from "@/lib/office/poll";
 import type { OfficeState } from "@/lib/office/protocol";
 import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -48,19 +49,20 @@ import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFon
 import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, segmentHitsBox } from "./chipRows";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
-import { officeLive, useOfficeFeed } from "./live";
+import { officeLive } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew, type LodStep } from "./crewFrame";
 import { DARK_TOWER, PIPE_PARTS, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
-import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
+import { screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
 import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
+import { idleLoopWanted, liveEvent, liveLevels, loadOfficeReplay, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
 
@@ -373,6 +375,11 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const skew = useRef(0);
   const deployAt = useMemo(() => runningDeployAt(view.pipeline), [view.pipeline]);
   const fxKey = useRef("");
+  // A replay started, seeked or looped, or the live feed is back: the next snapshot is a silent baseline (declared first, so it runs first).
+  const seq = view.replay?.seq ?? -1;
+  useEffect(() => {
+    queue.reset();
+  }, [seq, queue]);
   // Each new feed: diff against the last pipeline (a silent baseline after a load, offline, off or out of view).
   useEffect(() => {
     if (view.updatedAt !== null) skew.current = view.updatedAt - Date.now();
@@ -445,6 +452,8 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     paintAtlas(gl, g, Q, local.current, { rovers: view.rovers, now, reduced, fps: far ? Math.min(fps, OFFICE_LOD.atlasFps) : fps, faceFps: far ? OFFICE_LOD.atlasFps : Infinity, fonts: fonts.current, texts, t });
     const step = lodStep(officeRuntime.distance, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), lod.current.acc, lod.current);
     if (!step.step) return;
+    // The replay's clock steps here only: in view, at the far rate past `OFFICE_LOD.farDistance`, never without a frame.
+    officeReplay.controller?.step(step.dt, reduced);
     sceneProbes.office.steps += 1;
     sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, step.dt, now, reduced, camera.position, lite);
     const wall = Date.now() + skew.current;
@@ -736,8 +745,37 @@ function anyChipShown(w: WatchState): boolean {
   return false;
 }
 
+/** The idle loop's import or its `auto()` is under way (one at a time). */
+let looping = false;
+
+/**
+ * The idle loop (every 0.5 s with the watch): an awake live desk restarts the quiet timer and ends an `auto` replay,
+ * reduced motion ends one too; a quiet office in view (`idleLoopWanted`) loads the replay chunk and loops the latest
+ * day. A failed import, an unavailable history or nothing to play waits `REPLAY.retryS` before the next try.
+ */
+function idleLoop(live: OfficeView, feed: OfficeFeedStatus, inView: boolean, reduced: boolean): void {
+  const r = officeReplay;
+  const now = officeLive.now();
+  const awake = live.rovers.some((x) => x.agent && x.state !== "asleep");
+  if (awake) r.quietSince = now;
+  if (r.state.auto && r.state.status !== "off" && (awake || reduced)) r.controller?.stop();
+  if (looping || !idleLoopWanted({ feed, awake, quietMs: now - r.quietSince, inView, reduced, status: r.state.status, sinceFailMs: now - r.failedAt })) return;
+  looping = true;
+  const failed = () => {
+    r.failedAt = officeLive.now();
+  };
+  void loadOfficeReplay()
+    .then((m) => m.replayController.auto())
+    .then(() => {
+      if (r.state.status === "unavailable" || r.state.empty) failed();
+    }, failed)
+    .finally(() => {
+      looping = false;
+    });
+}
+
 /** One frame of `OfficeWatch` (a plain function, so the watch state it updates stays out of React's render rules). */
-function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clock, size }: RootState) {
+function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: OfficeFeedStatus, office: Rect, { camera, clock, size }: RootState) {
   const s = getHQStore().getState();
   const here = s.floor === "L1" && !s.ride && (s.phase === "explore" || s.phase === "room");
   const now = clock.elapsedTime;
@@ -760,6 +798,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
     const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
+    idleLoop(live, feed, inView, s.reducedMotion);
   }
   // Out of view with every chip already hidden: no chip work this frame.
   if (!officeRuntime.inView && !anyChipShown(w)) return;
@@ -872,7 +911,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
  * turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far flag,
  * its compact layout or the feed), and a style is written only when its value changes. Renders nothing.
  */
-function OfficeWatch({ view }: { view: OfficeView }) {
+function OfficeWatch({ view, live, feed }: { view: OfficeView; live: OfficeView; feed: OfficeFeedStatus }) {
   const tmp = useMemo(() => createWatchState(), []);
   const bounds = useMemo(() => officeBounds(), []);
   useEffect(
@@ -893,7 +932,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
     },
     [],
   );
-  useFrame((state) => watchFrame(tmp, view, bounds, state));
+  useFrame((state) => watchFrame(tmp, view, live, feed, bounds, state));
   return null;
 }
 
@@ -904,8 +943,9 @@ function OfficeWatch({ view }: { view: OfficeView }) {
  * Five draw calls here (parts, treads, screens, glow, wall), on programs L1 already has.
  */
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {
-  const feed = useOfficeFeed();
-  const view = useMemo(() => officeView(feed), [feed]);
+  // The replay's view while one plays (the Rovers, the wall, the chips' positions); the live view and feed for the
+  // signal and the point-and-go targets, so a replay never lights the beacon, the minimap cue or the deploy beam.
+  const { view, live, feed } = useOfficeSource();
   // The beacon's signal from this feed while its poller runs (a frozen feed never writes): the same reading as the
   // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window. The watch
   // chunk mirrors the signal to the minimap and loads the beacon, so it loads here too (it may not have yet).
@@ -915,8 +955,19 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     setOfficeSignal({ asking: sig?.asking ?? [], deployAt: sig?.deployAt ?? null, goodAt: feed.fetchedAt });
     void loadOfficeWatch().catch(() => null);
   }, [feed]);
+  // A live event ends any replay at once (owner decision): a desk waking or starting to ask, or a fresh production
+  // deploy not seen before. The first ready answer is the baseline.
+  const mark = useRef<{ levels: number[]; deployAt: number | null } | null>(null);
+  useEffect(() => {
+    if (feed.status !== "ready") return;
+    const levels = liveLevels(live);
+    const deployAt = signalFromBody(feed.snapshot, Date.now())?.deployAt ?? null;
+    const last = mark.current;
+    if (last && (liveEvent(last.levels, levels) || (deployAt !== null && deployAt !== last.deployAt)) && officeReplay.state.status !== "off") officeReplay.controller?.stop();
+    mark.current = { levels, deployAt };
+  }, [feed, live]);
   const slots = SLOTS;
-  const agents = view.rovers.map((r) => r.agent ?? "").join(",");
+  const agents = live.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
     const names = agents.split(",");
     return registerExtraInteractables(
@@ -929,10 +980,27 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
       }),
     );
   }, [agents, t]);
+  useEffect(() => {
+    const off = subscribeReplay(() => {
+      const { status, day, playS, dayS, auto, seq } = officeReplay.state;
+      sceneProbes.office.replay = { status, day, playS, dayS, auto, seq };
+    });
+    officeReplay.quietSince = officeLive.now();
+    officeReplay.mounted = true;
+    publishReplay(officeReplay.state, officeReplay.snapshot);
+    return () => {
+      // Riding off L1 ends a replay (live again on the way back).
+      officeReplay.mounted = false;
+      officeReplay.controller?.stop();
+      publishReplay(officeReplay.state, null);
+      off();
+    };
+  }, []);
   useEffect(
     () => () => {
       Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false });
       Object.assign(sceneProbes.office.pipe, { packets: 0, bursts: 0, crowns: 0, packages: 0, deployFailed: 0, stack: 0 });
+      sceneProbes.office.replay = { status: "off", day: null, playS: 0, dayS: 0, auto: false, seq: 0 };
     },
     [],
   );
@@ -940,7 +1008,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     <OfficeReady>
       <OfficeRovers view={view} slots={slots} tier={tier} t={t} />
       <OfficeWall view={view} tier={tier} t={t} />
-      <OfficeWatch view={view} />
+      <OfficeWatch view={view} live={live} feed={feed.status} />
     </OfficeReady>
   );
 }

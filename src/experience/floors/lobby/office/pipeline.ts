@@ -101,6 +101,12 @@ export class PipeQueue {
     this.prevAt = now;
   }
 
+  /** Forgets the last pipeline and the queue: the next `see` is a silent baseline (the live and replay feeds switched, or a replay seeked). */
+  reset(): void {
+    this.prev = null;
+    this.items.length = 0;
+  }
+
   push(events: readonly PipeEvent[]): void {
     this.items.push(...events);
     if (this.items.length > PIPE.maxQueue) this.items.splice(0, this.items.length - PIPE.maxQueue);

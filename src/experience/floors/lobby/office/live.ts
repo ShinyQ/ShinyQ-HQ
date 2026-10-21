@@ -83,6 +83,8 @@ export const officeLive = {
   wanted: (): boolean => wants.size > 0,
   /** The reasons wanting the poller now, sorted. */
   reasons: (): OfficePollReason[] => [...wants].sort(),
+  /** Epoch ms on the poller's clock: the idle loop's quiet timer and the replay clock follow `officeTest.advance`. */
+  now: (): number => Date.now() + clock.skew,
 };
 
 const subscribe = (onChange: () => void) => poller.subscribe(onChange);

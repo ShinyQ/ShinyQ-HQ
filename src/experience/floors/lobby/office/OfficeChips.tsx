@@ -1,15 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
+import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
 import { CHIP_ROW } from "./chipRows";
 import { DRONES } from "./crew";
-import { useOfficeFeed } from "./live";
-import { chipLines, nearDropsFor, nearParts, officeView, type OfficeRoverView } from "./officeModel";
+import { chipLines, nearDropsFor, nearParts, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
+import { useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, useChipFar, useChipsCompact } from "./runtime";
 
 /**
@@ -152,8 +152,7 @@ function NearHead({ parts, drop, ref }: { parts: ReturnType<typeof nearParts>; d
  * sheet) is open. Mounted by the HUD's OfficeLayer.
  */
 export function OfficeChips() {
-  const feed = useOfficeFeed();
-  const view = useMemo(() => officeView(feed), [feed]);
+  const { view } = useOfficeSource();
   const hidden = useHQStore((s) => s.phase === "room" && s.device.viewport === "mobile");
   if (hidden) return null;
   return (
