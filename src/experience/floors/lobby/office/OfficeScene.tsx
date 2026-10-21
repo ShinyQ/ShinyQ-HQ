@@ -10,6 +10,7 @@ import {
   CanvasTexture,
   DynamicDrawUsage,
   Frustum,
+  InstancedBufferAttribute,
   Matrix4,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -44,6 +45,8 @@ import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
+import { createStageMaterial } from "../HallFx";
+import { STAGE_KIND } from "../hallStage";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
 import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, segmentHitsBox } from "./chipRows";
@@ -58,9 +61,10 @@ import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, W
 import { screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
-import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
+import { OFFICE_STATE_STYLE, slotPhase, STATUS_COLOR, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
+import { stepTileAlpha, TILE_COUNT, TILES, tileCenters, tileLevels } from "./tiles";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { idleLoop, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
@@ -499,6 +503,67 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
         <instancedBufferAttribute attach="instanceColor" args={[rest.colors, 3]} usage={DynamicDrawUsage} />
       </instancedMesh>
     </group>
+  );
+}
+
+/**
+ * The merged-PR floor tiles (design 7.4): one instanced `STAGE_KIND.tile` draw on the hall's stage program (no new
+ * program), the grid's fixed bounds so it is frustum culled out of view. The frame fades the tiles toward today's
+ * merge count (`tiles.ts`) and writes `aStage2.w` only on change; the instance data itself is written once.
+ */
+function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
+  const reduced = useHQStore((s) => s.reducedMotion);
+  const mesh = useRef<InstancedMesh>(null);
+  const built = useMemo(() => {
+    const at = new Float32Array(TILE_COUNT * 16);
+    const color = new Float32Array(TILE_COUNT * 3);
+    const stage = new Float32Array(TILE_COUNT * 4);
+    const stage2 = new Float32Array(TILE_COUNT * 4);
+    const rgb = neonColor(STATUS_COLOR.merged, 1.4, tier).toArray();
+    const centers = tileCenters(LOBBY.officeWing);
+    centers.forEach((p, i) => {
+      at.set([1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, p.x, TILES.y, p.z, 1], i * 16);
+      color.set(rgb, i * 3);
+      stage.set([STAGE_KIND.tile, TILES.size, TILES.size, 0], i * 4);
+      stage2[i * 4 + 3] = TILES.dim;
+    });
+    const [a, b] = [centers[0], centers[TILE_COUNT - 1]];
+    const bounds = new Sphere(new Vector3((a.x + b.x) / 2, 0, (a.z + b.z) / 2), Math.hypot(b.x - a.x, b.z - a.z) / 2 + TILES.size);
+    const geometry = new PlaneGeometry(1, 1).setAttribute("aStage", new InstancedBufferAttribute(stage, 4)).setAttribute("aStage2", new InstancedBufferAttribute(stage2, 4));
+    return { at, color, bounds, geometry };
+  }, [tier]);
+  useDispose(built.geometry);
+  const material = useMemo(() => createStageMaterial({ additive: true }), []);
+    useDispose(material);
+  const fadeRef = useRef({ alpha: new Float32Array(TILE_COUNT).fill(TILES.dim), target: new Float32Array(TILE_COUNT).fill(TILES.dim), clock: { next: 0 } });
+  useEffect(() => {
+    const m = mesh.current;
+    return () => {
+      if (m) forgetDrawn(m);
+      sceneProbes.office.tiles = 0;
+    };
+  }, []);
+  useFrame(({ clock }, rawDt) => {
+    const m = mesh.current;
+    if (!m || !officeRuntime.inView) return;
+    const fade = fadeRef.current;
+    if (!stepTileAlpha(fade.alpha, tileLevels(view.today?.prsMerged ?? 0, fade.target), fade.clock, clock.elapsedTime, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reduced)) return;
+    whenDrawn(m, () => {
+      const w = m.geometry.attributes.aStage2;
+      let lit = 0;
+      for (let i = 0; i < TILE_COUNT; i++) {
+        (w.array as Float32Array)[i * 4 + 3] = fade.alpha[i];
+        if (fade.alpha[i] >= TILES.lit) lit++;
+      }
+      w.needsUpdate = true;
+      sceneProbes.office.tiles = lit;
+    });
+  });
+  return (
+    <instancedMesh ref={mesh} args={[built.geometry, material, TILE_COUNT]} boundingSphere={built.bounds} raycast={NO_RAYCAST} name="office-tiles">
+      <instancedBufferAttribute attach="instanceMatrix" args={[built.at, 16]} />
+      <instancedBufferAttribute attach="instanceColor" args={[built.color, 3]} />
+    </instancedMesh>
   );
 }
 
@@ -966,6 +1031,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   return (
     <OfficeReady>
       <OfficeRovers view={view} slots={slots} tier={tier} t={t} />
+      <OfficeTiles view={view} tier={tier} />
       <OfficeWall view={view} tier={tier} t={t} />
       <OfficeWatch view={view} live={live} feed={feed.status} />
     </OfficeReady>
