@@ -1284,7 +1284,7 @@
       "githubNote": "Dari webhook GitHub publik. Repositori privat tidak pernah muncul di sini.",
       "ciTitle": "Jalur Rilis",
       "ciNote": "Menara CI: satu jalur lampu per job dari run terbaru di repositori publik, satu paket di dermaga per pull request yang digabung, satu sinar per deploy produksi.",
-      "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "ci": "Kantor Agen: menara CI", "desk": "Meja {n}: {agent}" },
+      "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "ci": "Agent Office: menara CI", "desk": "Meja {n}: {agent}" },
       "ci": {
         "runs": "Run terbaru",
         "ships": "Digabung dan dirilis",
