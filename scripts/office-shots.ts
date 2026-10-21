@@ -5,7 +5,7 @@
  * (the first one also zoomed in to the near pose: the chips add the activity, compact on a phone), the summary,
  * GitHub and Rover drawers, and the semi-live and off modes, at 1440x900, 1280x720, 820x1180 (touch tablet), 390x844
  * and 844x390 (phones) on the full and lite tiers,
- * on a served export with `/api/office` answered from fixtures. SwiftShader WebGL. Never committed; the waits
+ * on a served export with `/api/office` and `/api/stats` answered from fixtures. SwiftShader WebGL. Never committed; the waits
  * follow e2e/office.spec.ts (state, never time).
  *
  *   bun run build && bun scripts/serve-static.ts --port 4481 --dir out &
@@ -87,6 +87,7 @@ import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
+import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 
 const VIEWPORTS = [
   { width: 1440, height: 900, touch: false, mobile: false },
@@ -240,8 +241,14 @@ async function showCrew(page: Page, reply: { body: unknown }, crew: keyof typeof
   if (frames) await waitForFrames(page, frames);
 }
 
-/** Answers `/api/office` from `reply`: `?v=4` (the poller) as is, `?v=3` (the beacon watch) a v4 body as the Worker's v3 (`asV3`), the v1 path (no client asks it) `asV1`. */
+/**
+ * Answers `/api/office` from `reply`: `?v=4` (the poller) as is, `?v=3` (the beacon watch) a v4 body as the Worker's v3
+ * (`asV3`), the v1 path (no client asks it) `asV1`; and `/api/stats` with the stats fixture (as e2e/visits.spec.ts does,
+ * updated 2 h ago), so no capture shows "Stats unavailable".
+ */
 async function serveOffice(page: Page, reply: { body: unknown }) {
+  const stats: StatsSnapshotV1 = { ...STATS_FIXTURE, updatedAt: new Date(Date.now() - 2 * 3_600_000).toISOString() };
+  await page.route("**/api/stats", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(stats) }));
   await page.route(OFFICE_API, (route) => {
     const url = route.request().url();
     const body = OFFICE_API_V4.test(url) ? reply.body : OFFICE_API_V3.test(url) ? asV3(reply.body) : asV1(reply.body);
