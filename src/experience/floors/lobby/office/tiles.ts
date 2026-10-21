@@ -12,29 +12,32 @@ export function tileCenters(w: OfficeWing): Vec2[] {
   return Array.from({ length: TILE_COUNT }, (_, i) => ({ x: x0 + (i % TILES.cols) * pitch, z: z0 + Math.floor(i / TILES.cols) * pitch }));
 }
 
-/** Target alpha per tile for `merged` PRs (writes `out`): the first 24 at `lit` in merge order, the next 24 brighten to `full`, the rest `dim`. */
-export function tileLevels(merged: number, out: Float32Array): Float32Array {
-  for (let i = 0; i < TILE_COUNT; i++) out[i] = merged > TILE_COUNT + i ? TILES.full : merged > i ? TILES.lit : TILES.dim;
-  return out;
-}
+const { dim: DIM, lit: LIT, full: FULL } = { dim: Math.fround(TILES.dim), lit: Math.fround(TILES.lit), full: 1 };
 
-/** One step of the fades toward `target` (writes `alpha`): at most one tile starts brightening per `gapS`, each over `fadeS`; reduced motion jumps. Returns whether anything changed. */
-export function stepTileAlpha(alpha: Float32Array, target: Float32Array, clock: { next: number }, t: number, dt: number, reduced: boolean): boolean {
+/**
+ * One step of the fades toward the levels for `merged` PRs (writes `alpha`, a Float32Array, so the resting levels are
+ * its rounded values): the first 24 settle at `lit` in merge order, the next 24 brighten to `full`, the rest `dim`. At
+ * most one tile starts brightening per `gapS`, each over `fadeS`; dimming and reduced motion jump. Returns whether
+ * anything changed and leaves the count of tiles at or over `lit` in `clock.lit`.
+ */
+export function stepTileAlpha(alpha: Float32Array, merged: number, clock: { next: number; lit: number }, t: number, dt: number, reduced: boolean): boolean {
   let changed = false;
+  clock.lit = 0;
   for (let i = 0; i < TILE_COUNT; i++) {
     const a = alpha[i];
-    const goal = target[i];
-    if (a === goal) continue;
+    const goal = merged > TILE_COUNT + i ? FULL : merged > i ? LIT : DIM;
     let next = goal;
     if (!reduced && goal > a) {
-      // A tile not yet moving waits for its turn; one that is moving keeps going.
-      const moving = a > TILES.dim && a < TILES.full && a !== TILES.lit;
-      if (!moving && t < clock.next) continue;
-      if (!moving) clock.next = t + TILES.gapS;
-      next = Math.min(goal, a + (dt * (TILES.full - TILES.dim)) / TILES.fadeS);
+      // A tile off its resting levels is mid-fade and keeps going; one at rest waits for its turn.
+      const moving = a !== DIM && a !== LIT;
+      next = moving || t >= clock.next ? Math.min(goal, a + (dt * (FULL - DIM)) / TILES.fadeS) : a;
+      if (!moving && next !== a) clock.next = t + TILES.gapS;
     }
-    alpha[i] = next;
-    changed = true;
+    if (next !== a) {
+      alpha[i] = next;
+      changed = true;
+    }
+    if (alpha[i] >= LIT) clock.lit++;
   }
   return changed;
 }

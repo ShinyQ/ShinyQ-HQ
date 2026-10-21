@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { officeObstacles, officeRoad, officeSlots, officeZone } from "@/experience/floors/lobby/officeLayout";
-import { stepTileAlpha, TILE_COUNT, TILES, tileCenters, tileLevels } from "@/experience/floors/lobby/office/tiles";
+import { stepTileAlpha, TILE_COUNT, TILES, tileCenters } from "@/experience/floors/lobby/office/tiles";
 import type { Rect } from "@/experience/types";
 
 const W = LOBBY.officeWing;
@@ -44,79 +44,82 @@ describe("tile grid", () => {
   });
 });
 
-describe("tileLevels", () => {
-  it("dims all with no merges", () => {
-    expect([...tileLevels(0, f32(TILE_COUNT))].every((v) => Math.fround(TILES.dim) === v)).toBe(true);
-  });
-  it("lights the first merges in order", () => {
-    const l = tileLevels(5, f32(TILE_COUNT));
-    expect([...l].filter((v) => v === Math.fround(TILES.lit))).toHaveLength(5);
-    expect(l[4]).toBeCloseTo(TILES.lit);
-    expect(l[5]).toBeCloseTo(TILES.dim);
-  });
-  it("brightens the next 24 past the first 24", () => {
-    const l = tileLevels(30, f32(TILE_COUNT));
-    expect([...l].filter((v) => v === 1)).toHaveLength(6);
-    expect([...l].filter((v) => v === Math.fround(TILES.lit))).toHaveLength(18);
-    expect([...tileLevels(99, f32(TILE_COUNT))].every((v) => v === 1)).toBe(true);
-  });
-});
+const lit = Math.fround(TILES.lit);
+const dim = Math.fround(TILES.dim);
+const fresh = () => ({ alpha: f32(TILE_COUNT, TILES.dim), clock: { next: 0, lit: 0 } });
+const run = (alpha: Float32Array, clock: { next: number; lit: number }, merged: number, from: number, reduced = false, seconds = 30) => {
+  const starts: number[] = [];
+  let t = from;
+  for (let i = 0; i < seconds / 0.016; i++, t += 0.016) {
+    const before = alpha.slice();
+    stepTileAlpha(alpha, merged, clock, t, 0.016, reduced);
+    const begun = [...alpha].filter((v, k) => v > before[k] && (before[k] === dim || before[k] === lit)).length;
+    if (begun) starts.push(t);
+    if (!reduced && begun > 1) throw new Error(`${begun} tiles started in one frame`);
+  }
+  return { starts, t };
+};
 
 describe("stepTileAlpha", () => {
-  const settle = (reduced: boolean, merged: number) => {
-    const alpha = f32(TILE_COUNT, TILES.dim);
-    const target = tileLevels(merged, f32(TILE_COUNT));
-    const clock = { next: 0 };
-    let t = 0;
-    for (let i = 0; i < 2000 && stepTileAlpha(alpha, target, clock, t, 0.016, reduced); i++) t += 0.016;
-    return { alpha, target, t };
-  };
-
-  it("lights a tile over its fade", () => {
-    const alpha = f32(TILE_COUNT, TILES.dim);
-    const target = tileLevels(1, f32(TILE_COUNT));
-    const clock = { next: 0 };
-    expect(stepTileAlpha(alpha, target, clock, 0, 0.1, false)).toBe(true);
+  it("lights a tile over its fade to the rounded resting level", () => {
+    const { alpha, clock } = fresh();
+    expect(stepTileAlpha(alpha, 1, clock, 0, 0.1, false)).toBe(true);
     expect(alpha[0]).toBeGreaterThan(TILES.dim);
     expect(alpha[0]).toBeLessThan(TILES.lit);
     let t = 0.1;
-    while (stepTileAlpha(alpha, target, clock, t, 0.05, false)) t += 0.05;
-    expect(alpha[0]).toBe(target[0]);
+    while (stepTileAlpha(alpha, 1, clock, t, 0.05, false)) t += 0.05;
+    expect(alpha[0]).toBe(lit);
     expect(t).toBeLessThan(TILES.fadeS + 0.2);
+    expect(clock.lit).toBe(1);
   });
 
   it("starts at most one tile per gap", () => {
-    const alpha = f32(TILE_COUNT, TILES.dim);
-    const target = tileLevels(10, f32(TILE_COUNT));
-    const clock = { next: 0 };
-    const started: number[] = [];
-    let t = 0;
-    for (let i = 0; i < 400; i++, t += 0.016) {
-      const before = alpha.slice();
-      stepTileAlpha(alpha, target, clock, t, 0.016, false);
-      for (let k = 0; k < TILE_COUNT; k++) if (before[k] === Math.fround(TILES.dim) && alpha[k] > before[k]) started.push(t);
+    const { alpha, clock } = fresh();
+    const { starts } = run(alpha, clock, 10, 0);
+    expect(starts).toHaveLength(10);
+    for (let i = 1; i < starts.length; i++) expect(starts[i] - starts[i - 1]).toBeGreaterThanOrEqual(TILES.gapS - 1e-9);
+  });
+
+  it("settled lit tiles do not all start together when more merges come", () => {
+    const { alpha, clock } = fresh();
+    const { t } = run(alpha, clock, 24, 0);
+    expect([...alpha].every((v) => v === lit)).toBe(true);
+    const { starts } = run(alpha, clock, 48, t + 1);
+    expect(starts).toHaveLength(24);
+    for (let i = 1; i < starts.length; i++) expect(starts[i] - starts[i - 1]).toBeGreaterThanOrEqual(TILES.gapS - 1e-9);
+    expect([...alpha].every((v) => v === 1)).toBe(true);
+  });
+
+  it("settles, then writes nothing, and counts the lit tiles", () => {
+    const { alpha, clock } = fresh();
+    run(alpha, clock, 30, 0);
+    expect([...alpha].filter((v) => v === 1)).toHaveLength(6);
+    expect(stepTileAlpha(alpha, 30, clock, 99, 0.016, false)).toBe(false);
+    expect(clock.lit).toBe(24);
+  });
+
+  it("holds the levels for 0, 5 and 30 merges", () => {
+    for (const [merged, full, litN] of [[0, 0, 0], [5, 0, 5], [30, 6, 18]]) {
+      const { alpha, clock } = fresh();
+      stepTileAlpha(alpha, merged, clock, 0, 0.016, true);
+      expect([...alpha].filter((v) => v === 1)).toHaveLength(full);
+      expect([...alpha].filter((v) => v === lit)).toHaveLength(litN);
+      expect([...alpha].filter((v) => v === dim)).toHaveLength(TILE_COUNT - full - litN);
     }
-    expect(started).toHaveLength(10);
-    for (let i = 1; i < started.length; i++) expect(started[i] - started[i - 1]).toBeGreaterThanOrEqual(TILES.gapS - 1e-9);
   });
 
-  it("settles, then writes nothing", () => {
-    const { alpha, target } = settle(false, 30);
-    expect([...alpha]).toEqual([...target]);
-    expect(stepTileAlpha(alpha, target, { next: 0 }, 99, 0.016, false)).toBe(false);
-  });
-
-  it("jumps to every target in one step under reduced motion", () => {
-    const alpha = f32(TILE_COUNT, TILES.dim);
-    const target = tileLevels(40, f32(TILE_COUNT));
-    expect(stepTileAlpha(alpha, target, { next: 0 }, 0, 0.016, true)).toBe(true);
-    expect([...alpha]).toEqual([...target]);
+  it("jumps to every level in one step under reduced motion", () => {
+    const { alpha, clock } = fresh();
+    expect(stepTileAlpha(alpha, 40, clock, 0, 0.016, true)).toBe(true);
+    expect([...alpha]).toEqual(Array.from({ length: TILE_COUNT }, (_, i) => (i < 16 ? 1 : lit)));
   });
 
   it("dims at once, never staggered", () => {
-    const alpha = tileLevels(24, f32(TILE_COUNT));
-    const target = tileLevels(3, f32(TILE_COUNT));
-    expect(stepTileAlpha(alpha, target, { next: 1e9 }, 0, 0.016, false)).toBe(true);
-    expect([...alpha]).toEqual([...target]);
+    const { alpha, clock } = fresh();
+    stepTileAlpha(alpha, 24, clock, 0, 0.016, true);
+    clock.next = 1e9;
+    expect(stepTileAlpha(alpha, 3, clock, 0, 0.016, false)).toBe(true);
+    expect([...alpha].filter((v) => v === lit)).toHaveLength(3);
+    expect([...alpha].filter((v) => v === dim)).toHaveLength(21);
   });
 });

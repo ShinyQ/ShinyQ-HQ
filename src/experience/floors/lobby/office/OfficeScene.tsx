@@ -64,7 +64,7 @@ import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFac
 import { OFFICE_STATE_STYLE, slotPhase, STATUS_COLOR, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
-import { stepTileAlpha, TILE_COUNT, TILES, tileCenters, tileLevels } from "./tiles";
+import { stepTileAlpha, TILE_COUNT, TILES, tileCenters } from "./tiles";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { idleLoop, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
@@ -522,41 +522,37 @@ function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
     const rgb = neonColor(STATUS_COLOR.merged, 1.4, tier).toArray();
     const centers = tileCenters(LOBBY.officeWing);
     centers.forEach((p, i) => {
-      at.set([1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, p.x, TILES.y, p.z, 1], i * 16);
+      FRAME.makeRotationX(-Math.PI / 2).setPosition(p.x, TILES.y, p.z).toArray(at, i * 16);
       color.set(rgb, i * 3);
       stage.set([STAGE_KIND.tile, TILES.size, TILES.size, 0], i * 4);
       stage2[i * 4 + 3] = TILES.dim;
     });
-    const [a, b] = [centers[0], centers[TILE_COUNT - 1]];
-    const bounds = new Sphere(new Vector3((a.x + b.x) / 2, 0, (a.z + b.z) / 2), Math.hypot(b.x - a.x, b.z - a.z) / 2 + TILES.size);
+    const { lead, rect } = LOBBY.officeWing;
+    const bounds = new Sphere(new Vector3(lead.x, 0, rect.minZ + TILES.z0 + 3.8), 7);
     const geometry = new PlaneGeometry(1, 1).setAttribute("aStage", new InstancedBufferAttribute(stage, 4)).setAttribute("aStage2", new InstancedBufferAttribute(stage2, 4));
     return { at, color, bounds, geometry };
   }, [tier]);
   useDispose(built.geometry);
   const material = useMemo(() => createStageMaterial({ additive: true }), []);
     useDispose(material);
-  const fadeRef = useRef({ alpha: new Float32Array(TILE_COUNT).fill(TILES.dim), target: new Float32Array(TILE_COUNT).fill(TILES.dim), clock: { next: 0 } });
+  const fadeRef = useRef({ alpha: new Float32Array(TILE_COUNT).fill(TILES.dim), clock: { next: 0, lit: 0 } });
+  // A waiting upload must not outlive the mesh.
   useEffect(() => {
     const m = mesh.current;
     return () => {
       if (m) forgetDrawn(m);
-      sceneProbes.office.tiles = 0;
     };
   }, []);
+  // No in-view gate: the grid sits outside the office's own box, and a settled step writes nothing.
   useFrame(({ clock }, rawDt) => {
     const m = mesh.current;
-    if (!m || !officeRuntime.inView) return;
     const fade = fadeRef.current;
-    if (!stepTileAlpha(fade.alpha, tileLevels(view.today?.prsMerged ?? 0, fade.target), fade.clock, clock.elapsedTime, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reduced)) return;
+    if (!m || !stepTileAlpha(fade.alpha, view.today?.prsMerged ?? 0, fade.clock, clock.elapsedTime, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reduced)) return;
     whenDrawn(m, () => {
       const w = m.geometry.attributes.aStage2;
-      let lit = 0;
-      for (let i = 0; i < TILE_COUNT; i++) {
-        (w.array as Float32Array)[i * 4 + 3] = fade.alpha[i];
-        if (fade.alpha[i] >= TILES.lit) lit++;
-      }
+      for (let i = 0; i < TILE_COUNT; i++) (w.array as Float32Array)[i * 4 + 3] = fade.alpha[i];
       w.needsUpdate = true;
-      sceneProbes.office.tiles = lit;
+      sceneProbes.office.tiles = fade.clock.lit;
     });
   });
   return (
@@ -1022,7 +1018,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, []);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false, tiles: 0 });
       Object.assign(sceneProbes.office.pipe, { packets: 0, bursts: 0, crowns: 0, packages: 0, deployFailed: 0, stack: 0 });
       sceneProbes.office.replay = undefined;
     },
