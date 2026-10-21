@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { cfBeaconScript } from "../src/components/Analytics";
 import { parseVisitPayload } from "../src/lib/stats/visit";
 import { CLASSIC_DWELL_MS } from "../src/lib/stats/visitClient";
-import { asReturningVisitor, openPage, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asHumanBrowser, asReturningVisitor, openPage, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * Public visit stats: the first-party visit beacon sends one point per page lifetime (3D, Classic or
@@ -95,4 +96,54 @@ test("Do Not Track and plain automation send nothing", async ({ page }) => {
   await leave(page);
   await page.waitForTimeout(300);
   expect(await beacons(page)).toEqual([]);
+});
+
+/** Runs the production Web Analytics guard (test builds carry no token) and waits until its idle step has run. */
+async function runAnalyticsGuard(page: Page) {
+  // Hydrated, so the app chunk scripts are in the page: the guard queues its idle step at once, and idle
+  // callbacks run in order, so the one queued next runs after it.
+  await page.evaluate(cfBeaconScript("0123456789abcdef0123456789abcdef"));
+  await page.evaluate(() => new Promise<void>((resolve) => requestIdleCallback(() => resolve())));
+}
+
+const CF_BEACON = 'script[src="https://static.cloudflareinsights.com/beacon.min.js"]';
+
+test("an automated browser sends no visit or RUM beacon and never loads the Cloudflare beacon", async ({ page, context }) => {
+  test.setTimeout(90_000);
+  await context.route("https://static.cloudflareinsights.com/**", (route) => route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+
+  // Control: the same guard in a browser that does not report automation injects the beacon.
+  const human = await context.newPage();
+  await asHumanBrowser(human);
+  await openPage(human, "/en/quick?tier=static");
+  await runAnalyticsGuard(human);
+  await expect(human.locator(CF_BEACON)).toHaveCount(1);
+  await human.close();
+
+  const counted: string[] = [];
+  page.on("request", (r) => {
+    const url = new URL(r.url());
+    if (url.hostname === "static.cloudflareinsights.com" || url.pathname === "/api/visit" || url.pathname === "/api/rum") counted.push(r.url());
+  });
+  await stubBeacon(page);
+  await asReturningVisitor(page);
+
+  await openPage(page, "/en/quick?tier=static");
+  await runAnalyticsGuard(page);
+  await expect(page.locator(CF_BEACON)).toHaveCount(0);
+  await leave(page);
+
+  // The 3D tower (forced, since automation gets the Classic site) without ?visit=1 or ?rum=1.
+  await page.goto("/en?tier=lite");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await waitForFrames(page, 30);
+  await leave(page);
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await waitForFrames(page, 10);
+
+  expect(await page.evaluate(() => sessionStorage.getItem("hq:rum"))).toBe("off");
+  expect(await page.evaluate(() => (window as unknown as { __beacons: { url: string }[] }).__beacons)).toEqual([]);
+  expect(counted).toEqual([]);
 });

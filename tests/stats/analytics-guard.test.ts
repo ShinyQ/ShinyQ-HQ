@@ -125,6 +125,17 @@ describe("Cloudflare Web Analytics beacon guard", () => {
     expect(run()).toBeNull();
   });
 
+  it("loads nothing in an automated browser (navigator.webdriver)", () => {
+    Object.defineProperty(navigator, "webdriver", { configurable: true, get: () => true });
+    try {
+      expect(run()).toBeNull();
+    } finally {
+      Reflect.deleteProperty(navigator, "webdriver");
+    }
+    expect(navigator.webdriver).not.toBe(true);
+    expect(run()).not.toBeNull();
+  });
+
   it("still loads when storage is blocked", () => {
     const original = Object.getOwnPropertyDescriptor(window, "localStorage");
     Object.defineProperty(window, "localStorage", {
