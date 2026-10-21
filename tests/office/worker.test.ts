@@ -4,7 +4,7 @@ import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
 import { dayStart, historyWindow, parseOfficeHistory, parseOfficeHistoryIndex, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
-import { emptyLog, historyIndex, logKey, type DayLog } from "../../workers/office/src/history";
+import { emptyLog, historyDay, historyIndex, logKey, type DayLog } from "../../workers/office/src/history";
 import { emptyDoc, view, viewV2, viewV3, viewV4, type GithubUpdate, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
 import { createOfficeWorker } from "../../workers/office/src/worker";
@@ -372,6 +372,57 @@ describe("hq-office Durable Object history", () => {
     expect((await o.fetch(new Request("https://office/history", { method: "POST", body: "{}" }))).status).toBe(405);
     expect(r.writes.length).toBe(writes);
     for (const text of texts) expect(text).not.toMatch(HEX64);
+  });
+});
+
+describe("hq-office Worker history route", () => {
+  const DAY = "2026-10-18";
+
+  it("forwards no query for the index and a well-formed day alone; anything else is a 404 that never reaches the Durable Object", async () => {
+    const seen: string[] = [];
+    const env: OfficeWorkerEnv = {
+      OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json(input.includes("?day=") ? { ...historyDay(emptyLog(DAY), emptyDoc(T0)) } : { v: 1, days: [] })) }) },
+    };
+    const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
+    const get = (q: string, init?: RequestInit) => worker.fetch(new Request(`https://hq-office/history${q}`, init), env);
+    expect((await get("")).status).toBe(200);
+    expect((await get(`?day=${DAY}`)).status).toBe(200);
+    for (const q of ["?day=x", "?foo=1", "?day=", `?day=${DAY}x`, `?day=${DAY}&foo=1`, `?day=${DAY}&day=${DAY}`, `?DAY=${DAY}`, "?day=%3Cscript%3E"]) {
+      const res = await get(q);
+      expect(res.status, q).toBe(404);
+      expect(res.headers.get("Cache-Control"), q).toBe("no-store");
+    }
+    for (const method of ["POST", "PUT", "DELETE"]) {
+      const res = await get("", { method });
+      expect(res.status, method).toBe(405);
+      expect(res.headers.get("Cache-Control"), method).toBe("no-store");
+    }
+    expect(seen).toEqual(["https://office/history", `https://office/history?day=${DAY}`]);
+  });
+
+  it("cleans a day again (blocklist, allowlist) and passes a Durable Object 404 through with no-store", async () => {
+    const { map, call } = setup();
+    map.set("doc", { ...emptyDoc(T0), publicRepos: ["ShinyQ/ShinyQ-HQ", "Other/repo"] });
+    map.set(logKey(DAY), {
+      ...emptyLog(DAY),
+      keys: ["a".repeat(64), "b".repeat(64), "c".repeat(64)],
+      agents: ["copilot", "codex", "claude"],
+      tasks: { 0: { repo: "ShinyQ/ShinyQ-HQ", title: "Fix Acme Bank Login" }, 1: { repo: "Other/repo", title: "Hidden Work" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } },
+      events: [[0, 0, 0, 0, 0, 60, 0], [0, 1, 1, 0, 0, 60, 0], [0, 2, 2, 0, 0, 60, 0]],
+      prs: [[30, 0, "ShinyQ/ShinyQ-HQ", 3, "Acme Bank Report"], [31, 1, "Other/repo", 4, "Hidden Merge"], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]],
+    } satisfies DayLog);
+    const res = await call(`/history?day=${DAY}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
+    const day = parseOfficeHistory(await res.json()) as OfficeHistoryV1;
+    expect(day.tasks).toEqual({ 0: { repo: "ShinyQ/ShinyQ-HQ" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } });
+    expect(day.prs).toEqual([[30, 0, "", 3, ""], [31, 1, "", 4, ""], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]]);
+    const index = await call("/history");
+    const indexed = parseOfficeHistoryIndex(await index.json());
+    expect(indexed && "days" in indexed ? indexed.days[0] : null).toEqual({ day: DAY, events: 3, prs: 3, runs: 0, deploys: 0 });
+    const outside = await call(`/history?day=${historyWindow(T0 - 8 * 86_400_000)[0]}`);
+    expect(outside.status).toBe(404);
+    expect(outside.headers.get("Cache-Control")).toBe("no-store");
   });
 });
 
