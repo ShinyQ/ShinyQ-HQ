@@ -543,6 +543,21 @@ describe("pipeline (v4)", () => {
     expect(lanes[0]).toEqual({ name: "E2E (1/30)", status: "done" });
     expect(lanes[23]).toEqual({ name: "E2E (24/30)", status: "failed" });
     expect(view(d, T0 + 100).github[0].progress).toEqual({ done: 30, total: 30 });
+    expect(d.runs[0].order).toHaveLength(24);
+    expect(Object.keys(d.runs[0].names ?? {})).toHaveLength(24);
+  });
+
+  it("cuts a long job name to 40 characters so the v4 snapshot still parses", () => {
+    let d = applyGithub(publicDoc(), { repo: HQ, changes: [run(1)] }, "r1", T0);
+    d = applyGithub(d, { repo: HQ, changes: [{ ...job(1, 0, "running"), name: "L".repeat(60) }] }, "j0", T0 + 1);
+    expect(pipelineOf(d, T0 + 2).runs[0].jobs[0].name.length).toBeLessThanOrEqual(40);
+    expect(parseOfficeResponseV4(viewV4(d, T0 + 2))).not.toBeNull();
+  });
+
+  it("drops a run that went quiet past the stale window, even without a new webhook", () => {
+    const d = applyGithub(publicDoc(), { repo: HQ, changes: [run(1)] }, "r1", T0);
+    expect(pipelineOf(d, T0 + TIMING.runStaleAfter - 1).runs).toHaveLength(1);
+    expect(pipelineOf(d, T0 + TIMING.runStaleAfter).runs).toEqual([]);
   });
 
   it("links a run and a merged PR to the seat of the live session on that public repo and branch, back row included", () => {

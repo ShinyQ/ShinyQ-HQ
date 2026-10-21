@@ -413,7 +413,8 @@ const isProductionDeploy = (f: FeedRecord) => f.kind === "deploy" && (f.producti
 
 /** The v4 pipeline block (design 6.2): the newest runs with their lanes, and the latest merges and production deploys from the feed. */
 export function pipelineOf(doc: OfficeDoc, now: number): OfficePipeline {
-  const runs = [...doc.runs]
+  const runs = doc.runs
+    .filter((r) => now - r.updated < TIMING.runStaleAfter)
     .sort((a, b) => (b.started ?? b.updated) - (a.started ?? a.updated))
     .slice(0, OFFICE_PIPELINE.runs)
     .map((r): OfficePipelineRun => {
