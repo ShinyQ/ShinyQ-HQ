@@ -44,24 +44,8 @@ import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
-import {
-  canvasTexture,
-  CHIP_ROW,
-  chipMaxWidth,
-  chipRowBounds,
-  chipsDotsOnly,
-  chipsOneLine,
-  layoutChipRows,
-  nextChipFar,
-  OFFICE_CHIP_ANCHORS,
-  OFFICE_CHIP_TOP,
-  OFFICE_SLOTS,
-  officeBounds,
-  officeChipMode,
-  officeHudBoxes,
-  segmentHitsBox,
-  useCanvasFonts,
-} from "../officeShell";
+import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
+import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, segmentHitsBox } from "./chipRows";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
@@ -660,9 +644,9 @@ function writeTick(w: WatchState, slot: number, x: number, y: number) {
 }
 
 /** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`). */
-function endLead(w: WatchState, slot: number, x: number, y: number, beside: boolean) {
+function endLead(w: WatchState, slot: number, x: number, y: number) {
   const a = w.wall;
-  return leadEnd(x, y, w.hx[slot], w.hy[slot], a[0], a[1], a[2], a[3], CHIP_ROW.lead, w.end, a[4], a[5], a[6], a[7], beside);
+  return leadEnd(x, y, w.hx[slot], w.hy[slot], a[0], a[1], a[2], a[3], CHIP_ROW.lead, w.end, a[4], a[5], a[6], a[7]);
 }
 
 /** Whether the line from (x, y) to `e` crosses no HUD box and none of the row's other `n` chips (`self` its own index). */
@@ -677,16 +661,14 @@ function clearLead(w: WatchState, x: number, y: number, e: { x: number; y: numbe
  * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box and none of the row's other
  * `n` chips (`segmentHitsBox`; `self` its own index in the row: a top chip's line in two rows of dots passes between the
  * chips under it); it ends at the screen wall's top with a tick, or runs faded to the head where the chip sits over the
- * screens (`leadEnd`); NaN hides it.
+ * screens (`leadEnd`); NaN hides it. A whole line beside the wall that would cross the HUD or a chip (the floor menu on
+ * 1280 x 720) hides too, never a tick in mid-air past the wall's end: the chip's colour still maps it to its Rover.
  */
 function writeLead(w: WatchState, slot: number, x: number, y: number, n = 0, self = -1) {
   const lead = officeRuntime.leads[slot];
   if (!lead) return;
-  // A whole line beside the wall that would cross the HUD or a chip ends on the wall's top line past its end instead.
-  let e = endLead(w, slot, x, y, true);
-  let on = clearLead(w, x, y, e, n, self);
-  if (!on && !e.tick && !e.faded) on = clearLead(w, x, y, (e = endLead(w, slot, x, y, false)), n, self);
-  on &&= !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead;
+  const e = endLead(w, slot, x, y);
+  const on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead && clearLead(w, x, y, e, n, self);
   const hx = e.x;
   const hy = e.y;
   writeTick(w, slot, on && e.tick ? Math.round(hx) : NaN, Math.round(hy));

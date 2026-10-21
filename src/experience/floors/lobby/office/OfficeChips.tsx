@@ -5,7 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState, type Ref } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
 import { officeDeskRoom } from "../officeLayout";
-import { CHIP_ROW } from "../officeShell";
+import { CHIP_ROW } from "./chipRows";
 import { DRONES } from "./crew";
 import { useOfficeFeed } from "./live";
 import { chipLines, nearDropsFor, nearParts, officeView, type OfficeRoverView } from "./officeModel";

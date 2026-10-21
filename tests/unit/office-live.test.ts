@@ -9,7 +9,7 @@ vi.stubGlobal("fetch", fetchMock);
 const { officeLive, officePollInterval, officeTest } = await import("@/experience/floors/lobby/office/live");
 const { POLL } = await import("@/lib/office/poll");
 const { officeRuntime, setChipFar, setChipsCompact, subscribeChipFar } = await import("@/experience/floors/lobby/office/runtime");
-const { OFFICE_CHIP_ANCHORS } = await import("@/experience/floors/lobby/officeShell");
+const { OFFICE_CHIP_ANCHORS } = await import("@/experience/floors/lobby/office/chipRows");
 
 /** A live module with a poller that never fetched (its first start fetches at once). */
 async function freshLive() {

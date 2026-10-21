@@ -213,4 +213,15 @@ describe("Agent Office leader line ends (`leadEnd`)", () => {
     // A chip under the top's line but beside the wall (a landscape phone's row past the wall's end): the whole line.
     expect(leadEnd(300, 160, 330, 360, ...wall, 8, out(), ...bottom)).toEqual({ x: 330, y: 360, tick: false, faded: false });
   });
+
+  it("never ends a line past the wall's end on the top edge's line (a tick in mid-air)", () => {
+    const wall = [400, 140, 1000, 140] as const;
+    const bottom = [400, 260, 1000, 260] as const;
+    // A chip far past the west end, its line crossing the top edge's line outside the wall: the whole line, no tick.
+    for (const [x, hx] of [[100, 150], [1300, 1250], [200, 380]] as const) {
+      const e = leadEnd(x, 106, hx, 406, ...wall, 8, out(), ...bottom);
+      expect(e.tick, `${x} to ${hx}`).toBe(false);
+      expect([e.x, e.y]).toEqual([hx, 406]);
+    }
+  });
 });

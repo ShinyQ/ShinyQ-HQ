@@ -187,10 +187,9 @@ function meet(x: number, y: number, dx: number, dy: number, ax: number, ay: numb
  * (`LEAD.faded`) all the way to the head when the edge is above that (the chip itself sits over the screens) or when the
  * line passes the top edge beside the wall and runs into it through its side (it meets the bottom edge on the wall);
  * whole to the head when the head stands above the edge or the line passes beside the wall (a chip in a row wider than
- * the wall; `beside` false ends it on the edge's line past the wall's end with a tick instead, `OfficeWatch`'s fallback
- * where the whole line would cross the HUD). Writes `out`, allocates nothing.
+ * the wall; never a tick on the edge's line past the wall's end, in mid-air). Writes `out`, allocates nothing.
  */
-export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, bx0 = NaN, by0 = NaN, bx1 = NaN, by1 = NaN, beside = true): LeadEnd {
+export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, bx0 = NaN, by0 = NaN, bx1 = NaN, by1 = NaN): LeadEnd {
   out.x = hx;
   out.y = hy;
   out.tick = out.faded = false;
@@ -198,7 +197,7 @@ export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: numbe
   const dy = hy - y;
   // Parallel, the wall off the camera (NaN) or the head above the edge: the whole line.
   if (!meet(x, y, dx, dy, wx0, wy0, wx1, wy1) || cut.t >= 1) return out;
-  if (!beside || (cut.s >= 0 && cut.s <= 1)) {
+  if (cut.s >= 0 && cut.s <= 1) {
     if (cut.t * Math.hypot(dx, dy) >= min) {
       out.x = x + cut.t * dx;
       out.y = y + cut.t * dy;

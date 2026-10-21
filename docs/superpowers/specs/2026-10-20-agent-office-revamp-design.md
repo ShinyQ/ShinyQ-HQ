@@ -240,8 +240,11 @@ unchanged. To free the sky band the chips move from over the wall into one compa
 each x-aligned with its Rover (a state dot and the agent name; the activity on the near pose; dot-only on phones),
 nudged along x in desk order so they never overlap each other or the HUD (top bar, the desktop floor menu, the profile
 card, the minimap), with a thin leader line or colour cue to its Rover; the full text stays in the aria-label. With
-ten desks (A2, 5.10) the desktop row holds ten compact chips in desk order, and phones show dot-only chips in up to two
-rows.
+ten desks (A2, 5.10) the desktop row holds ten compact chips, and phones show dot-only chips in up to two rows. Chip
+order: the row sorts the chips by each Rover's projected head x, so the front and back rows interleave and no leader
+lines cross; within one console row that follows desk order. A leader line ends with a tick on the wall's top edge, runs
+whole beside the wall, or fades to the head where the chip sits over the screens; where a whole line would cross the HUD
+it hides (the chip's colour still maps it), never a tick in mid-air past the wall's end.
 
 ### 5.8 Sub-agent helpers (owner addition, 2026-10-20)
 
@@ -340,9 +343,12 @@ Up to ten sessions get a desk, one Rover per session; helpers stay drones (5.8)
   ten faces, ten desk screens and the flag cell (grown to 1024 x 1024, or smaller back-row screen cells), still one
   upload and partial copies. No new draw call or shader program.
 - **Chips**: on desktop one row of ten compact chips (a state dot and the agent; the activity only on the near pose),
-  in desk order; on phones dot-only chips in up to two rows. Chips never cover the HUD (the top bar, the floor menu,
-  the profile card, the minimap) or each other. Empty desks show docked or dim; the "+N more" pill appears only past
-  ten sessions.
+  ordered by each Rover's projected head x (the two rows interleave; within a row, desk order; 5.7b); on phones
+  dot-only chips in up to two rows. Chips never cover the HUD (the top bar, the floor menu, the profile card, the
+  minimap) or each other. Empty desks show docked or dim; the "+N more" pill appears only past ten sessions. With ten
+  sessions no screen size leaves a chip wide enough for the activity (107 px or narrower, under the 128 px near
+  threshold), so near chips show names only and the activity stays in the aria-label and the desk drawer; pending owner
+  review.
 - **Stop view**: retuned to frame both rows and the wall (desktop wall top about 12 to 15% from the top edge; portrait
   keeps the accepted top-band fill); other view zones bit-identical.
 - **Classic card**: keeps its fixed height with five desk rows. Active desks (any state but asleep, front row first)
