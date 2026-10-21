@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { createElement, Suspense, useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import { createElement, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { READY_FLOORS } from "@/experience/floorOrder";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
@@ -165,6 +165,38 @@ function DesktopCorner({ data, layouts, explorable }: { data: ExperienceData; la
   );
 }
 
+/** Gap the elevator rail keeps from the top bar and from the bottom-right corner stack (the corner's own gap). */
+const RAIL_GAP = 8;
+
+/**
+ * Desktop: measures the room the elevator rail leaves free above (the top bar) and below (the corner
+ * stack: minimap, settings gear, view controls) into `--hq-rail-top` and `--hq-rail-bottom` on the HUD
+ * root. `ElevatorPanel` centres the rail between two spacers with those minimum heights, so it keeps
+ * its centred spot when there is room and rises clear of the minimap on short screens. A
+ * ResizeObserver follows the viewport, the minimap setting and the controls that come and go.
+ */
+function useRailRoom(root: RefObject<HTMLDivElement | null>, active: boolean) {
+  useLayoutEffect(() => {
+    const hud = root.current;
+    if (!active || !hud) return;
+    const bar = hud.querySelector<HTMLElement>("[data-testid='hud-topbar']");
+    const corner = hud.querySelector<HTMLElement>("[data-testid='hud-corner']");
+    const place = () => {
+      const box = hud.getBoundingClientRect();
+      if (bar) hud.style.setProperty("--hq-rail-top", `${Math.ceil(bar.getBoundingClientRect().bottom - box.top + RAIL_GAP)}px`);
+      if (corner) hud.style.setProperty("--hq-rail-bottom", `${Math.ceil(box.bottom - corner.getBoundingClientRect().top + RAIL_GAP)}px`);
+    };
+    place();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(place) : null;
+    for (const el of [hud, bar, corner]) if (el) observer?.observe(el);
+    return () => {
+      observer?.disconnect();
+      hud.style.removeProperty("--hq-rail-top");
+      hud.style.removeProperty("--hq-rail-bottom");
+    };
+  }, [root, active]);
+}
+
 /**
  * HTML HUD over the canvas. It talks to the scene only through the store and intents. Desktops keep
  * the profile card, the top bar and the elevator rail; phones and tablets get the Corners HUD (floor
@@ -181,6 +213,8 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
   const speaking = useDialog((v) => v.line !== null);
   const explorable = phase !== "intro" && phase !== "room";
   const drive = coarse && phase !== "intro";
+  const root = useRef<HTMLDivElement>(null);
+  useRailRoom(root, desktop && phase !== "boot" && phase !== "hologram");
 
   // The Ask teaser and other page-level styles position against the HUD layout: the teaser sits under the
   // minimap on phones and tablets, and under the desktop top bar (the profile card's right edge) otherwise.
@@ -199,7 +233,7 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
   }, [layout]);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
+    <div ref={root} className="pointer-events-none absolute inset-0 z-10" data-testid="hud" data-phase={phase}>
       <CutFade />
       <BeamFade />
       <OfficeLayer />
