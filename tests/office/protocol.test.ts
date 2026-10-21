@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay } from "@/lib/office/protocol";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, wibDay, type OfficeSnapshotV4 } from "@/lib/office/protocol";
 
 const SESSION = "a".repeat(64);
 const beat = (extra: Record<string, unknown> = {}) => ({ v: 1, agent: "copilot", session: SESSION, state: "working", activity: "editing", ts: OFFICE_FIXTURE_NOW, ...extra });
@@ -180,5 +180,45 @@ describe("parseOfficeBeat", () => {
     expect(OFFICE_HELPERS_MAX).toBe(9);
     for (const helpers of [0, 1, 9]) expect(parseOfficeBeat(beat({ helpers }))).toEqual(beat({ helpers }));
     for (const helpers of [-1, 10, 1.5, "2", null, true]) expect(parseOfficeBeat(beat({ helpers })), String(helpers)).toBeNull();
+  });
+});
+
+describe("snapshot v4", () => {
+  const busy = OFFICE_FIXTURES_V4.busy as OfficeSnapshotV4;
+  const run = busy.pipeline.runs[0];
+  const withPipeline = (pipeline: unknown) => ({ ...busy, pipeline });
+
+  it("accepts the fixtures and rejects extra keys, long lists, bad jobs, a slot past 9 and unknown statuses", () => {
+    for (const f of Object.values(OFFICE_FIXTURES_V4)) expect(parseOfficeResponseV4(f)).toEqual(f);
+    const bad = [
+      withPipeline({ runs: [], ships: [], x: 1 }),
+      withPipeline({ runs: Array(OFFICE_PIPELINE.runs + 1).fill(run), ships: [] }),
+      withPipeline({ runs: [{ ...run, jobs: Array(OFFICE_PIPELINE.jobs + 1).fill(run.jobs[0]) }], ships: [] }),
+      withPipeline({ runs: [{ ...run, jobs: [{ name: "<b>", status: "done" }] }], ships: [] }),
+      withPipeline({ runs: [{ ...run, jobs: [{ name: "x".repeat(OFFICE_PIPELINE.jobName + 1), status: "done" }] }], ships: [] }),
+      withPipeline({ runs: [{ ...run, slot: OFFICE_SEATS }], ships: [] }),
+      withPipeline({ runs: [{ ...run, status: "cancelled" }], ships: [] }),
+      withPipeline({ runs: [{ ...run, url: "javascript:alert(1)" }], ships: [] }),
+      withPipeline({ runs: [], ships: [{ key: "k", kind: "merge", status: "pushed", at: 1 }] }),
+      withPipeline({ runs: [], ships: [{ key: "k".repeat(OFFICE_PIPELINE.key + 1), kind: "deploy", status: "success", at: 1 }] }),
+      { ...busy, pipeline: undefined },
+      { ...busy, enabled: false },
+    ];
+    for (const b of bad) expect(parseOfficeResponseV4(b)).toBeNull();
+  });
+
+  it("reads a v3, v2 or v1 body (a rolled-back Worker or Function) as v4 with an empty pipeline; the disabled body as is", () => {
+    for (const f of [OFFICE_FIXTURES_V3.busy, OFFICE_FIXTURES_V2.busy, OFFICE_FIXTURES.busy]) expect(parseOfficeResponseV4(f)).toEqual({ ...f, v: 4, pipeline: { runs: [], ships: [] } });
+    expect(parseOfficeResponseV4(OFFICE_FIXTURES.disabled)).toEqual({ v: 1, enabled: false });
+  });
+
+  it("keeps v1, v2 and v3 strict: their parsers reject a v4 body", () => {
+    expect(parseOfficeResponse(busy)).toBeNull();
+    expect(parseOfficeResponseV2(busy)).toBeNull();
+    expect(parseOfficeResponseV3(busy)).toBeNull();
+  });
+
+  it("links runs to seats on both rows (the busy fixture's newest run is on back-row desk 6, slot 5)", () => {
+    expect(busy.pipeline.runs.map((r) => r.slot)).toEqual([5, 2, undefined]);
   });
 });
