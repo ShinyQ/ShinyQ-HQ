@@ -19,6 +19,9 @@ describe("history contract", () => {
     expect(parseOfficeHistory(day)).toEqual(day);
     expect(parseOfficeHistory({ v: 1, enabled: false })).toEqual({ v: 1, enabled: false });
   });
+  it("accepts an event whose until comes before its t (a seat move while already quiet)", () => {
+    expect(parseOfficeHistory(withDay({ events: [[600, 0, 0, 0, 0, 120, 0], [1860, 0, 3, 0, 0, 120, 0]] }))).not.toBeNull();
+  });
   it("rejects hostile or out-of-range bodies", () => {
     const bad = [
       withDay({ keys: ["a".repeat(64)] }),

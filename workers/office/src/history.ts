@@ -1,14 +1,15 @@
 import { OFFICE_ACTIVITIES, OFFICE_STATES, type OfficeAgent } from "../../../src/lib/office/protocol";
 import { dayStart, OFFICE_HISTORY, type OfficeHistoryDeploy, type OfficeHistoryEvent, type OfficeHistoryIndexV1, type OfficeHistoryPr, type OfficeHistoryRun, type OfficeHistoryV1 } from "../../../src/lib/office/protocolHistory";
 import { cleanTitle, repoAllowed } from "./ingest";
-import { effective, isProductionDeploy, laneOrder, seatFor, seatOf, type OfficeDoc, type SessionRecord } from "./state";
+import { effective, isProductionDeploy, laneOrder, seatFor, seatOf, TIMING, type OfficeDoc, type SessionRecord } from "./state";
 
 /**
  * The replay log (design 7.1): one row per WIB day beside the doc, bounded. Built by diffing the doc before and after
  * every accepted beat or webhook, so a seat that moves because another session left is logged too. `keys` (the session
  * hashes) never leave the Durable Object; branches are never stored.
  */
-export const HISTORY = { ...OFFICE_HISTORY, maxBytes: 120 * 1024 } as const;
+/** `headroom`: a change must leave this much under `maxBytes`, so the byte-cap fallback's closes (null to at most "86400" or "-1800", one per open event) always fit. */
+export const HISTORY = { ...OFFICE_HISTORY, maxBytes: 120 * 1024, headroom: 4 * 1024 } as const;
 
 /** Stored events: `until` is null while the event is open (its session has not changed since). */
 export type LogEvent = [t: number, n: number, seat: number, state: number, activity: number, until: number | null, helpers: number];
@@ -31,11 +32,23 @@ export const logKey = (day: string) => `log:${day}`;
 export const emptyLog = (day: string): DayLog => ({ v: 1, day, keys: [], agents: [], tasks: {}, events: [], prs: [], runs: [], deploys: [], truncated: false });
 /** Seconds since `day`'s WIB midnight, clamped to -1800 (a carry-in's last beat) to 86,400. */
 export const secondsOf = (day: string, ms: number) => Math.max(-HISTORY.carryS, Math.min(HISTORY.daySeconds, Math.floor((ms - dayStart(day)) / 1000)));
-const fits = (log: DayLog) => new TextEncoder().encode(JSON.stringify(log)).length <= HISTORY.maxBytes;
+const fits = (log: DayLog) => new TextEncoder().encode(JSON.stringify(log)).length <= HISTORY.maxBytes - HISTORY.headroom;
 const seatNo = (s: SessionRecord) => seatOf(s) ?? -1;
 const same = (a: SessionRecord, b: SessionRecord) => a.state === b.state && a.activity === b.activity && seatNo(a) === seatNo(b) && (a.helpers ?? 0) === (b.helpers ?? 0);
 const taskOf = (s: SessionRecord): Task | null => (s.repo ? { repo: s.repo, ...(s.title ? { title: s.title } : {}) } : null);
 const sameTask = (a: Task | undefined, b: Task) => a !== undefined && a.repo === b.repo && a.title === b.title;
+/**
+ * `p` went quiet long enough that live saw it change without a beat: removed, asleep, or its helpers decayed. Thinking
+ * after 20 s is left out (it would log most pauses); the replay derives it only after an event's `until`.
+ */
+function quietGap(p: SessionRecord, now: number): boolean {
+  const e = effective(p, now);
+  if (!e) return true;
+  if (e.state === "asleep" && p.state !== "asleep" && p.state !== "done") return true;
+  return (p.helpers ?? 0) > 0 && now - p.lastBeat >= TIMING.helpersTtl;
+}
+/** The latest time already logged, so a backwards clock step never writes an earlier one. */
+const lastLogged = (log: DayLog) => Math.max(0, log.events.at(-1)?.[0] ?? 0, log.prs.at(-1)?.[0] ?? 0, log.runs.at(-1)?.[1] ?? 0, log.deploys.at(-1)?.[0] ?? 0);
 const eventOf = (t: number, n: number, s: SessionRecord): LogEvent => [t, n, seatNo(s), OFFICE_STATES.indexOf(s.state), OFFICE_ACTIVITIES.indexOf(s.activity), null, s.helpers ?? 0];
 
 /** Closes ordinal `n`'s open event (if any) at `until`, in the caller's copy. */
@@ -50,7 +63,7 @@ function close(events: LogEvent[], n: number, until: number): void {
 
 /** The log after one accepted beat or webhook took the doc from `before` to `after`; the same object when nothing loggable changed. */
 export function logDoc(log: DayLog, before: OfficeDoc, after: OfficeDoc, now: number): DayLog {
-  const t = Math.max(0, secondsOf(log.day, now));
+  const t = Math.max(lastLogged(log), secondsOf(log.day, now));
   const events = log.events.slice();
   let { keys, agents, tasks, truncated } = log;
   let changed = false;
@@ -65,10 +78,12 @@ export function logDoc(log: DayLog, before: OfficeDoc, after: OfficeDoc, now: nu
       tasks = { ...tasks, [n]: task };
       changed = true;
     }
-    if (p && same(p, s)) continue;
+    // A session missing from the row (started after its midnight carry-in) or back from a quiet gap logs even unchanged.
+    if (p && n >= 0 && same(p, s) && !(s.lastBeat !== p.lastBeat && quietGap(p, now))) continue;
     if (n < 0) {
       if (keys.length >= HISTORY.sessions) {
-        truncated = changed = true;
+        if (!truncated) changed = true;
+        truncated = true;
         continue;
       }
       n = keys.length;
@@ -94,7 +109,7 @@ export function logDoc(log: DayLog, before: OfficeDoc, after: OfficeDoc, now: nu
   if (!changed) return log;
   const out: DayLog = { ...log, keys, agents, tasks, events, prs: g.prs, runs: g.runs, deploys: g.deploys, truncated: truncated || g.truncated };
   if (fits(out)) return out;
-  // Over the byte cap: keep the closes (they never grow the row), drop what this change added.
+  // Over the byte cap (less the headroom): keep the closes (a few bytes each, inside the headroom), drop what this change added.
   return { ...log, events: log.events.map((e, i) => events[i] ?? e), truncated: true };
 }
 

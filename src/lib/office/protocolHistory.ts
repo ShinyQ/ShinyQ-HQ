@@ -9,7 +9,7 @@ import { OFFICE_ACTIVITIES, OFFICE_AGENTS, OFFICE_HELPERS_MAX, OFFICE_SEATS, OFF
 export const OFFICE_HISTORY_PATH = "/api/office/history";
 export const OFFICE_HISTORY = { days: 8, sessions: 200, events: 3000, prs: 200, runs: 500, deploys: 50, jobs: 24, carryS: 1800, daySeconds: 86_400 } as const;
 
-/** Seconds since the WIB midnight; `seat` -1 for a session past the ten seats; `state` and `activity` index OFFICE_STATES and OFFICE_ACTIVITIES; `until` the session's last beat before its next event (down to -1800 for a session carried over midnight). */
+/** Seconds since the WIB midnight; `seat` -1 for a session past the ten seats; `state` and `activity` index OFFICE_STATES and OFFICE_ACTIVITIES; `until` the session's last beat before its next event (down to -1800 for a session carried over midnight); `until` may come before `t` when the event starts already quiet (a seat that moved because another session left). */
 export type OfficeHistoryEvent = [t: number, n: number, seat: number, state: number, activity: number, until: number, helpers: number];
 /** A merge: repo and title "" when not public (shown as "Client project"). */
 export type OfficeHistoryPr = [t: number, seat: number, repo: string, number: number, title: string];
