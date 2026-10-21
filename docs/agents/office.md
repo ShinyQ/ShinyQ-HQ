@@ -212,8 +212,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
   - Desk rows (owner decision 2026-10-21, [ten desks](../decisions/2026-10-21-office-ten-desks.md)): only awake desks
     (any state but asleep) take a row, by seat (front row first). Up to five fill the rows; past five, four show and
-    the fifth row reads "+N more active desks" / "+N meja aktif lainnya" (`office.classic.moreActive`, N the awake desks
-    beyond the four, `data-testid="office-more"`). With no awake desk (and a snapshot) the first row reads "Every Rover
+    the fifth row reads "+N more desks" / "+N meja lainnya" (`office.classic.moreDesks`, N the awake desks
+    beyond the four, `data-testid="office-more"`; "desks", not "active desks", so it never seems to contradict the Active
+    count, which counts only the Active state; [more desks](../decisions/2026-10-21-office-card-more-desks.md)). With no awake desk (and a snapshot) the first row reads "Every Rover
     is asleep." (`office-none`). Unused rows are quiet, aria-hidden rows (`office-desk-empty`) with the same two lines.
   - An awake desk shows agent, activity (plus "· 3 helpers" on the same truncating line when it has helpers:
     `office.helpers`, resolved raw into `OfficeCardLabels.helpers` and filled by `fill`), state and task: its title for
@@ -235,7 +236,7 @@ Index: [AGENTS.md](../../AGENTS.md).
     `disabled` report until a 0 px margin observer says it left the viewport). The panel loads a screen ahead, so in a
     normal scroll the answer arrives below the viewport and the section hides without a visible shift.
 - One height in every state (CLS): every state draws the same rows (five desk rows, each with two lines: a desk, "+N
-  more active desks", "Every Rover is asleep." or a quiet row; four GitHub rows with quiet empty rows filling the slots
+  more desks", "Every Rover is asleep." or a quiet row; four GitHub rows with quiet empty rows filling the slots
   and "No public activity yet today." when a snapshot has none; the idle summary line, which truncates; today's line),
   titles and heads truncate, and the status line and today's line hold two lines below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
   on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in

@@ -27,8 +27,8 @@ export interface OfficeCardLabels {
   noAgents: string;
   /** Sessions past the ten seats ("+{count, plural, ...}"), after the idle count on the summary line. */
   extra: string;
-  /** The fifth desk row past five active desks ("+{n, plural, ...}"), filled by `fill`. */
-  moreActive: string;
+  /** The fifth desk row past five awake desks ("+{n, plural, ...}": every awake desk beyond the four shown), filled by `fill`. */
+  moreDesks: string;
   /** The summary line under the desk rows: asleep and empty seats ("{n, plural, =0 ... one ... other ...}"). */
   idle: string;
   github: string;

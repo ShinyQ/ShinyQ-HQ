@@ -66,7 +66,7 @@ async function open(page: Page, path = home()) {
 }
 
 const section = (page: Page) => page.getByTestId("office-section");
-/** The card's five desk rows: awake desks, then "+N more active desks", "Every Rover is asleep." or quiet slots. */
+/** The card's five desk rows: awake desks, then "+N more desks", "Every Rover is asleep." or quiet slots. */
 const deskRows = (page: Page) => page.getByTestId("office-desks").locator(":scope > li");
 
 /** The ten-seat busy office with every desk awake (the asleep slot 8 at work) and no session past ten. */
@@ -77,8 +77,8 @@ const TEN_AWAKE = {
 };
 /** The fifth row and the idle line for `OFFICE_FIXTURES_V3.busy` (nine awake, one session past ten) and `TEN_AWAKE`. */
 const TEN_LINES = {
-  en: { ten: { more: "+5 more active desks", idle: "1 desk idle \u00b7 +1 more session" }, tenAwake: { more: "+6 more active desks", idle: "No desks idle" } },
-  id: { ten: { more: "+5 meja aktif lainnya", idle: "1 meja menganggur \u00b7 +1 sesi lainnya" }, tenAwake: { more: "+6 meja aktif lainnya", idle: "Tidak ada meja yang menganggur" } },
+  en: { ten: { more: "+5 more desks", idle: "1 desk idle \u00b7 +1 more session" }, tenAwake: { more: "+6 more desks", idle: "No desks idle" } },
+  id: { ten: { more: "+5 meja lainnya", idle: "1 meja menganggur \u00b7 +1 sesi lainnya" }, tenAwake: { more: "+6 meja lainnya", idle: "Tidak ada meja yang menganggur" } },
 } as const;
 
 test.describe("Classic: Live Agent Office", () => {
@@ -112,11 +112,11 @@ test.describe("Classic: Live Agent Office", () => {
     await expect(desks.nth(0)).toContainText("Copilot \u00b7 Editing \u00b7 3 helpers");
     await expect(desks.nth(2)).toContainText("Copilot \u00b7 Watching CI \u00b7 6 helpers");
     await expect(desks.nth(1)).not.toContainText("helper");
-    // Nine awake desks over ten seats: four rows by seat, then "+5 more active desks"; the asleep one and the session past ten on the idle line.
+    // Nine awake desks over ten seats: four rows by seat, then "+5 more desks"; the asleep one and the session past ten on the idle line.
     await expect(desks).toHaveCount(4);
     await expect(deskRows(page)).toHaveCount(5);
     await expect(deskRows(page).nth(4)).toHaveAttribute("data-testid", "office-more");
-    await expect(page.getByTestId("office-more")).toHaveText("+5 more active desks");
+    await expect(page.getByTestId("office-more")).toHaveText("+5 more desks");
     await expect(page.getByTestId("office-extra")).toHaveText("1 desk idle \u00b7 +1 more session");
     await expect(page.getByTestId("office-count-asleep")).toContainText("1");
     await page.unrouteAll();
@@ -235,7 +235,7 @@ test.describe("Classic: Live Agent Office", () => {
         await expect(section(page), name).toHaveAttribute("data-status", status);
         await expect(deskRows(page), name).toHaveCount(5);
         if (name === "ten" || name === "tenAwake") {
-          // Ten seats: four awake desks by seat, then "+N more active desks" in the fifth row.
+          // Ten seats: four awake desks by seat, then "+N more desks" in the fifth row.
           await expect(page.getByTestId("office-desk"), name).toHaveCount(4);
           await expect(page.getByTestId("office-more"), name).toHaveText(TEN_LINES[locale][name].more);
           await expect(page.getByTestId("office-extra"), name).toHaveText(TEN_LINES[locale][name].idle);

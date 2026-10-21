@@ -29,7 +29,7 @@ export async function officeCardLabels(locale: Locale): Promise<OfficeCardLabels
     agents: c("agents"),
     noAgents: c("noAgents"),
     extra: c("extra"),
-    moreActive: c("moreActive"),
+    moreDesks: c("moreDesks"),
     idle: c("idle"),
     github: c("github"),
     noGithub: c("noGithub"),

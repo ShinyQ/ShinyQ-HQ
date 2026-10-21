@@ -163,7 +163,7 @@ describe("OfficePanel", () => {
     expect(screen.getByTestId("office-count-asleep").textContent).toContain("9");
   });
 
-  it("reads a ten-desk v3 snapshot: four awake desks by seat, then +5 more active desks; the asleep one and the session past ten on the idle line", () => {
+  it("reads a ten-desk v3 snapshot: four awake desks by seat, then +5 more desks; the asleep one and the session past ten on the idle line", () => {
     const v3 = OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot;
     const { poller } = fakePoller({ status: "ready", snapshot: v3, fetchedAt: OFFICE_FIXTURE_NOW });
     render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
@@ -171,7 +171,7 @@ describe("OfficePanel", () => {
     expect(desks.map((d) => d.getAttribute("data-state"))).toEqual(["working", "thinking", "ci", "input"]);
     expect(desks[0].textContent).toContain("Narrower 3D perf selection");
     expect(rows()[4]).toBe(screen.getByTestId("office-more"));
-    expect(screen.getByTestId("office-more").textContent).toBe("+5 more active desks\u00a0");
+    expect(screen.getByTestId("office-more").textContent).toBe("+5 more desks\u00a0");
     expect(screen.getByTestId("office-extra").textContent).toBe("1 desk idle \u00b7 +1 more session");
     // The 3D wall's counts over ten seats.
     expect(["active", "thinking", "waiting", "asleep"].map((k) => screen.getByTestId(`office-count-${k}`).querySelector("dd")!.textContent)).toEqual(["5", "1", "3", "1"]);
@@ -392,8 +392,8 @@ describe("OfficePanel with ten seats", () => {
     [[], [], null, "10 desks idle", null, "10 meja menganggur"],
     [[9, 0, 6], [0, 6, 9], null, "7 desks idle", null, "7 meja menganggur"],
     [[1, 3, 5, 7, 9], [1, 3, 5, 7, 9], null, "5 desks idle", null, "5 meja menganggur"],
-    [[0, 1, 2, 3, 4, 7], [0, 1, 2, 3], "+2 more active desks", "4 desks idle", "+2 meja aktif lainnya", "4 meja menganggur"],
-    [ALL, [0, 1, 2, 3], "+6 more active desks", "No desks idle", "+6 meja aktif lainnya", "Tidak ada meja yang menganggur"],
+    [[0, 1, 2, 3, 4, 7], [0, 1, 2, 3], "+2 more desks", "4 desks idle", "+2 meja lainnya", "4 meja menganggur"],
+    [ALL, [0, 1, 2, 3], "+6 more desks", "No desks idle", "+6 meja lainnya", "Tidak ada meja yang menganggur"],
   ] as const;
 
   it.each(CASES)("awake %j: rows %j, fifth row %s, idle line %s (and in Indonesian)", (awake, shown, more, idle, moreId, idleId) => {

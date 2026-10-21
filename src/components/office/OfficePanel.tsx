@@ -80,7 +80,7 @@ function DeskRow({ desk, labels, locale }: { desk: OfficeDeskV2; labels: OfficeC
 }
 
 /**
- * A desk row without a desk, with the same two lines (so every row has one height): "+N more active desks", "Every
+ * A desk row without a desk, with the same two lines (so every row has one height): "+N more desks", "Every
  * Rover is asleep." when no desk is awake, or an empty slot.
  */
 function QuietRow({ text, testId }: { text?: string; testId: string }) {
@@ -120,7 +120,7 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
 
 /**
  * The Classic home card (lazy chunk): counts over the ten seats of snapshot v3, five desk rows (the awake desks, front
- * row first, with their helpers; past five the fifth row is "+N more active desks"), the idle summary (asleep and empty
+ * row first, with their helpers; past five the fifth row is "+N more desks"), the idle summary (asleep and empty
  * seats, plus sessions past ten), the latest public GitHub events and today (spec sections 4.2 and 5.10). Every state
  * draws the same rows (quiet rows fill the desk and GitHub slots, offline keeps the last known rows dimmed), so the
  * card keeps one height (`OFFICE_RESERVE`). Polls only
@@ -256,7 +256,7 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
             {shown.map((desk) => (
               <DeskRow key={desk.slot} desk={desk} labels={labels} locale={locale} />
             ))}
-            {more > 0 && <QuietRow testId="office-more" text={fill(labels.moreActive, { n: more }, locale)} />}
+            {more > 0 && <QuietRow testId="office-more" text={fill(labels.moreDesks, { n: more }, locale)} />}
             {snap && active.length === 0 && <QuietRow testId="office-none" text={labels.noAgents} />}
             {Array.from({ length: quiet }, (_, i) => (
               <QuietRow key={i} testId="office-desk-empty" />

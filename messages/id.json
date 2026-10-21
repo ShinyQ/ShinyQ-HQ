@@ -1247,7 +1247,7 @@
       "agents": "Di meja",
       "noAgents": "Semua Rover sedang tidur.",
       "extra": "+{count} sesi lainnya",
-      "moreActive": "+{n} meja aktif lainnya",
+      "moreDesks": "+{n} meja lainnya",
       "idle": "{n, plural, =0 {Tidak ada meja yang menganggur} other {# meja menganggur}}",
       "github": "Terbaru di GitHub",
       "noGithub": "Belum ada aktivitas publik hari ini.",

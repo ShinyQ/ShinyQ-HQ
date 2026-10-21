@@ -1247,7 +1247,7 @@
       "agents": "At the desks",
       "noAgents": "Every Rover is asleep.",
       "extra": "+{count, plural, one {# more session} other {# more sessions}}",
-      "moreActive": "+{n, plural, one {# more active desk} other {# more active desks}}",
+      "moreDesks": "+{n, plural, one {# more desk} other {# more desks}}",
       "idle": "{n, plural, =0 {No desks idle} one {# desk idle} other {# desks idle}}",
       "github": "Latest on GitHub",
       "noGithub": "No public activity yet today.",

@@ -353,7 +353,8 @@ Up to ten sessions get a desk, one Rover per session; helpers stay drones (5.8)
 - **Stop view**: retuned to frame both rows and the wall (desktop wall top about 12 to 15% from the top edge; portrait
   keeps the accepted top-band fill); other view zones bit-identical.
 - **Classic card**: keeps its fixed height with five desk rows. Active desks (any state but asleep, front row first)
-  fill the rows; with more than five active, the fifth row becomes "+N more active desks" ("+N meja aktif lainnya");
+  fill the rows; with more than five active, the fifth row becomes "+N more desks" ("+N meja lainnya";
+  N counts every awake desk past the four shown, worded without "active" so it never contradicts the Active count);
   asleep and off-duty desks collapse into the existing summary line. Zero layout shift in every state (`OFFICE_RESERVE`
   re-measured only if a line changes height).
 - **Budgets**: L1 under 125 scene draw calls in every view on both tiers, lite fps healthy, the office chunks inside
