@@ -132,7 +132,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the installed hooks never set them.
 - Helpers (`helpers.ts`, mapping table in the relay README): Copilot `subagentStart` / `subagentStop`, Claude Code and
   Codex `SubagentStart` / `SubagentStop` keep a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
-  (salted id hashes, or anonymous keys for Copilot, whose start names no helper; a stop then ends the oldest), counted
+  (salted id hashes; Copilot sends the same `agentId` on start and stop, and a start without one, from the npm build,
+  gets an anonymous key that a stop with an unknown id ends, oldest first), counted
   while younger than `HELPER_TTL_MS` (30 min) and capped at 9. Every tool's sub-agent hooks carry the parent's session
   id; an event without one is ignored. A start or stop sends the session's last state with the new count only when the
   count changes; other beats carry the count while it is above 0 and once more as 0. The session end deletes the
@@ -141,7 +142,11 @@ Index: [AGENTS.md](../../AGENTS.md).
   `<file>.lock`, a try every 2 ms for at most 30 ms, stale after 1 s, then unlocked so the hook stays fast) and written atomically
   (temp file plus rename, mode 0600; also the sent and last-tool files). A helper counts once, as a drone, never as
   its own desk: Copilot events other than `subagentStart` / `subagentStop` with a non-empty `agentId` / `agent_id`
-  (from inside a helper, under the helper's own session id) are ignored (`helper-event ignored`); Claude Code and
+  (from inside a helper, under the helper's own session id) never move a desk. With a `parentAgentId` (the parent's
+  `sessionId`) whose desk has sent a beat, they count the helper there (`helper-event helpers N`) and refresh its
+  TTL, and the helper's own `agentStop` ends it; otherwise (a nested helper, no parent) they are ignored
+  (`helper-event ignored`). Copilot loads hooks when a session starts, so a session older than the install fires no
+  `subagentStart` / `subagentStop`; its helpers count this way. Claude Code and
   Codex helper tool events carry the parent's `session_id` and move the parent's desk. Tests:
   `tests/relay/helpers.test.ts`, `tests/relay/hook.test.ts` (planted prompt, client name, private transcript paths,
   helper id and type never reach a beat or the log; dispatch is the only sink), `tests/relay/store.test.ts` (two

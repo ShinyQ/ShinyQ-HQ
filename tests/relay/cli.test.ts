@@ -139,15 +139,15 @@ describe("office-relay CLI", () => {
       const h = home();
       const spool = path.join(h, "spool");
       const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool };
-      const start = JSON.stringify(HOOK_FIXTURES.copilot.subagentStart);
-      for (let i = 0; i < 2; i++) expect(run(["hook", "copilot", "subagentStart"], env, start).status).toBe(0);
-      const stop = () =>
+      const ids = ["helper-a", "helper-b"];
+      for (const agentId of ids) expect(run(["hook", "copilot", "subagentStart"], env, JSON.stringify({ ...HOOK_FIXTURES.copilot.subagentStart, agentId })).status).toBe(0);
+      const stop = (agentId: string) =>
         new Promise<number | null>((resolve) => {
           const child = spawn("bun", [CLI, "hook", "copilot", "subagentStop"], { env, stdio: ["pipe", "ignore", "ignore"] });
           child.on("exit", resolve);
-          child.stdin.end(JSON.stringify(HOOK_FIXTURES.copilot.subagentStop));
+          child.stdin.end(JSON.stringify({ ...HOOK_FIXTURES.copilot.subagentStop, agentId }));
         });
-      expect(await Promise.all([stop(), stop()])).toEqual([0, 0]);
+      expect(await Promise.all(ids.map(stop))).toEqual([0, 0]);
       const counts = readFileSync(spool, "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { helpers?: number }).helpers);
       expect(counts).toEqual([1, 2, 1, 0]);
     }

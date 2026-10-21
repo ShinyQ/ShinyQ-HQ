@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { OFFICE_AGENTS } from "@/lib/office/protocol";
-import { applyHelper, hashHelper, HELPER_TTL_MS, helperCount, helperEvent, helperId, parentSession } from "../../tools/office-relay/src/helpers";
+import { applyHelper, copilotHelperOf, hashHelper, HELPER_TTL_MS, helperCount, helperEvent, helperId, parentSession } from "../../tools/office-relay/src/helpers";
 import { readHelpers, relayPaths, writeHelpers } from "../../tools/office-relay/src/store";
 import { HELPER_EVENTS, HELPER_ID, HOOK_FIXTURES } from "./fixtures";
 
@@ -54,6 +54,15 @@ describe("helpers", () => {
     expect(helperCount(applyHelper({ ids: {} }, "stop", null, 10), 11)).toBe(0);
   });
 
+  it("a stop naming a helper never seen ends the oldest anonymous one (a Copilot start without agentId)", () => {
+    let s = applyHelper({ ids: { a: 0 } }, "start", null, 5);
+    s = applyHelper(s, "start", null, 6);
+    s = applyHelper(s, "stop", "zzz", 10);
+    expect(Object.entries(s.ids)).toEqual([["a", 0], ["anon:6:0", 6]]);
+    s = applyHelper(s, "stop", "a", 11);
+    expect(Object.keys(s.ids)).toEqual(["anon:6:0"]);
+  });
+
   it("drops expired ids from the stored state", () => {
     const s = applyHelper({ ids: { old: 0 } }, "start", "new", HELPER_TTL_MS + 1);
     expect(Object.keys(s.ids)).toEqual(["new"]);
@@ -69,12 +78,26 @@ describe("helpers", () => {
     expect(helperId("claude", HOOK_FIXTURES.claude.SubagentStop)).toBe(HELPER_ID);
     expect(helperId("codex", HOOK_FIXTURES.codex.SubagentStart)).toBe(HELPER_ID);
     expect(helperId("codex", HOOK_FIXTURES.codex.SubagentStop)).toBe(HELPER_ID);
-    // Copilot's start names no helper (an `agentId` there would be the agent that spawned it), so neither event keys on one.
-    expect(helperId("copilot", HOOK_FIXTURES.copilot.subagentStart)).toBeNull();
-    expect(helperId("copilot", HOOK_FIXTURES.copilot.subagentStop)).toBeNull();
+    // Copilot's start and stop carry the same `agentId`; the npm build's start carries none (counted anonymously).
+    expect(helperId("copilot", HOOK_FIXTURES.copilot.subagentStart)).toBe(HELPER_ID);
+    expect(helperId("copilot", HOOK_FIXTURES.copilot.subagentStop)).toBe(HELPER_ID);
+    expect(helperId("copilot", HOOK_FIXTURES.copilot.subagentStartAnon)).toBeNull();
+    expect(parentSession("copilot", HOOK_FIXTURES.copilot.subagentStartAnon)).toBe("raw-session-123");
     expect(parentSession("claude", { agent_id: HELPER_ID })).toBeNull();
     expect(helperId("claude", { agent_id: "x".repeat(201) })).toBeNull();
     expect(helperId("claude", { agent_id: 7 })).toBeNull();
+  });
+
+  it("reads a Copilot in-helper event's helper id and parent session, never a helper as its own parent", () => {
+    const cp = HOOK_FIXTURES.copilot;
+    for (const key of ["preToolUseInHelper", "userPromptSubmittedInHelper", "permissionRequestInHelper", "agentStopInHelper"]) {
+      expect(copilotHelperOf(cp[key]), key).toEqual({ parent: "raw-session-123", id: HELPER_ID });
+    }
+    expect(copilotHelperOf({ agent_id: "h", parent_agent_id: "p" })).toEqual({ parent: "p", id: "h" });
+    expect(copilotHelperOf({ agentId: "h" })).toBeNull();
+    expect(copilotHelperOf({ agentId: "h", parentAgentId: "h" })).toBeNull();
+    expect(copilotHelperOf({ agentId: "h", parentAgentId: 7 })).toBeNull();
+    expect(copilotHelperOf(cp.preToolUse)).toBeNull();
   });
 
   it("hashes helper ids with the salt (32 hex, never the raw id)", () => {

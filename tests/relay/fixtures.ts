@@ -18,6 +18,12 @@ export const HELPER_TYPE = "ledger-sleuth";
 export const PLANTED = [PROMPT, SECRET_CMD, CWD, OUTPUT, "hunter2", "client-portal", "abc123", "transcript.jsonl", "raw-session-123", HELPER_PROMPT, "sk-live-secret", HELPER_DESC, CLIENT, "/Users/someone/private", HELPER_ID, HELPER_TYPE, "raw-helper-session-456", "raw-parent-agent-789"] as const;
 
 const copilot = (extra: Record<string, unknown>) => ({ sessionId: "raw-session-123", timestamp: 1_792_327_344_000, cwd: CWD, ...extra });
+/**
+ * An event fired inside a Copilot helper. Key names captured from the Copilot CLI 1.0.99 build the Copilot app runs
+ * (`copilot --server`, also `-p`) on 2026-10-21: the helper's own `sessionId` equals its `agentId`, and
+ * `parentAgentId` is the parent's `sessionId`.
+ */
+const inHelper = (extra: Record<string, unknown>) => ({ ...copilot(extra), sessionId: HELPER_ID, agentId: HELPER_ID, agentType: HELPER_TYPE, parentAgentId: "raw-session-123" });
 const snake = (event: string, extra: Record<string, unknown>) => ({ session_id: "raw-session-123", transcript_path: `${CWD}/transcript.jsonl`, cwd: CWD, hook_event_name: event, permission_mode: "default", ...extra });
 
 export const HOOK_FIXTURES: Record<OfficeAgent, Record<string, Record<string, unknown>>> = {
@@ -30,9 +36,12 @@ export const HOOK_FIXTURES: Record<OfficeAgent, Record<string, Record<string, un
     postToolUseView: copilot({ toolName: "view", toolArgs: { path: `${CWD}/src/login.ts` }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseBash: copilot({ toolName: "bash", toolArgs: { command: SECRET_CMD }, toolResult: { resultType: "success", textResultForLlm: OUTPUT } }),
     postToolUseFailureCi: copilot({ toolName: "bash", toolArgs: { command: "gh pr checks 230 --watch" }, error: OUTPUT }),
-    // A tool call inside a helper (hooks reference: "hooks that fire inside a subagent include extra fields"): the
-    // helper's own session id plus `agentId`, `agentType` and `parentAgentId`. The relay ignores it.
-    preToolUseInHelper: { ...copilot({ toolName: "edit", toolArgs: { path: `${CWD}/src/login.ts` } }), sessionId: "raw-helper-session-456", agentId: HELPER_ID, agentType: HELPER_TYPE, parentAgentId: "raw-parent-agent-789" },
+    // Events inside a helper (hooks reference: "hooks that fire inside a subagent include extra fields"). They count the
+    // helper on the parent's desk and never move a desk; the helper's `permissionRequest` carries the parent's `sessionId`.
+    preToolUseInHelper: inHelper({ toolName: "edit", toolArgs: { path: `${CWD}/src/login.ts` } }),
+    userPromptSubmittedInHelper: inHelper({ prompt: HELPER_PROMPT }),
+    permissionRequestInHelper: { ...inHelper({ hookName: "permissionRequest", toolName: "bash", toolInput: { command: SECRET_CMD }, permissionSuggestions: [] }), sessionId: "raw-session-123" },
+    agentStopInHelper: inHelper({ transcriptPath: HELPER_TRANSCRIPT, stopReason: "end_turn", stop_hook_active: false }),
     preToolUseMcp: copilot({ toolName: "github-mcp-server-get_file_contents", toolArgs: { path: `${CWD}/src/login.ts` } }),
     // The shape Copilot CLI 1.0.97 sends (captured): `toolInput`, not `toolArgs`, and nothing about auto-approval.
     permissionRequest: copilot({ hookName: "permissionRequest", toolName: "bash", toolInput: { command: SECRET_CMD }, permissionSuggestions: [] }),
@@ -41,10 +50,14 @@ export const HOOK_FIXTURES: Record<OfficeAgent, Record<string, Record<string, un
     agentStop: copilot({ transcriptPath: `${CWD}/transcript.jsonl`, stopReason: "end_turn" }),
     errorOccurred: copilot({ error: { message: OUTPUT, name: "Error" }, errorContext: "model_call", recoverable: false }),
     sessionEnd: copilot({ reason: "complete" }),
-    // Copilot CLI 1.0.99 (hooks reference, SDK `SubagentStartHookInput`): `sessionId` is the parent session, and the start
-    // names no helper id (only the stop carries `agentId`). `prompt` is not documented; planted to prove it is never read.
-    subagentStart: copilot({ transcriptPath: PRIVATE_TRANSCRIPT, agentName: HELPER_TYPE, agentDisplayName: "Ledger Sleuth", agentDescription: HELPER_DESC, prompt: HELPER_PROMPT }),
-    subagentStop: copilot({ transcriptPath: PRIVATE_TRANSCRIPT, agentId: HELPER_ID, agentType: HELPER_TYPE, agentName: HELPER_TYPE, agentDisplayName: "Ledger Sleuth", response: `${HELPER_PROMPT}. ${HELPER_DESC}`, stopReason: "end_turn" }),
+    // Copilot CLI 1.0.99, captured (app build, 2026-10-21): keys `agentId, agentName, agentType, cwd, parentAgentId,
+    // sessionId, timestamp, transcriptPath` on the start, plus `response, stopReason, stop_hook_active` on the stop.
+    // `sessionId` is the parent session; the start and stop carry the same `agentId`. `agentDisplayName`,
+    // `agentDescription` (SDK `SubagentStartHookInput`) and `prompt` are planted to prove they are never read.
+    subagentStart: copilot({ transcriptPath: PRIVATE_TRANSCRIPT, agentId: HELPER_ID, agentName: HELPER_TYPE, agentType: HELPER_TYPE, parentAgentId: "raw-session-123", agentDisplayName: "Ledger Sleuth", agentDescription: HELPER_DESC, prompt: HELPER_PROMPT }),
+    // The npm build of the same version, captured: no `agentId`, `agentType` or `parentAgentId` on the start.
+    subagentStartAnon: copilot({ transcriptPath: PRIVATE_TRANSCRIPT, agentName: HELPER_TYPE }),
+    subagentStop: copilot({ transcriptPath: PRIVATE_TRANSCRIPT, agentId: HELPER_ID, agentType: HELPER_TYPE, agentName: HELPER_TYPE, parentAgentId: "raw-session-123", agentDisplayName: "Ledger Sleuth", response: `${HELPER_PROMPT}. ${HELPER_DESC}`, stopReason: "end_turn", stop_hook_active: false }),
   },
   claude: {
     SessionStart: snake("SessionStart", { source: "startup" }),

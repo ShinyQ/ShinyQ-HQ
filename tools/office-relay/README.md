@@ -27,7 +27,9 @@ number of active helpers leaves the machine.
 After an update that adds hook events (the sub-agent events below, for example), reinstall from the newer checkout
 (step 2) only after the Worker and Pages from that change are deployed: a Worker without snapshot v2 and helpers support
 rejects every beat that carries `helpers`, so a relay that sends them too early hides busy desks while helpers run. Then
-trust the new Codex hooks in `/hooks` (step 3) and restart running agent sessions, which load their hooks at start.
+trust the new Codex hooks in `/hooks` (step 3) and restart running agent sessions, which load their hooks at start
+(Copilot snapshots them per session, so a Copilot app session that predates the install never fires the new events;
+the relay still counts its helpers from the helpers' own events, see below).
 Then start a helper in each tool (Copilot: an explore or task agent; Claude Code: any subagent; Codex: a
 subagent) and look for `<agent> <event> helpers 1 sent` in `office-relay status`.
 
@@ -71,7 +73,8 @@ file before writing anything: a file they cannot parse aborts the command with e
 ## Helpers (sub-agents)
 
 Each tool's sub-agent start and stop hooks update a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
-(salted hashes of the helper ids, or anonymous keys, with their start times; never names, types, prompts or paths). A
+(salted hashes of the helper ids, or anonymous keys, with their latest start or activity times; never names, types,
+prompts or paths). A
 start or stop sends a beat with the session's last state and activity (or working / editing for a session with no beat
 yet) and the new count, only when the count changes. Other beats carry the count while it is above 0 and once more as
 0. A helper with no stop event for 30 minutes no longer counts. A start or stop without a parent session id is ignored
@@ -81,15 +84,20 @@ processes run concurrently, so the helpers file is updated under a short lock (`
 every 2 ms, a lock older than 1 s is removed; after 30 ms the hook goes on unlocked so it stays fast) and
 replaced whole through a temp file and a rename (a reader never sees a truncated file).
 
-A helper counts once, as a drone on its parent's desk, never as a desk of its own. Copilot reports a helper's own tool
-events under the helper's own session id with `agentId` (or `agent_id`) set, so every Copilot event other than
-`subagentStart` / `subagentStop` that carries a non-empty `agentId` is ignored (logged `helper-event ignored`). Claude
-Code and Codex report a helper's tool events under the parent's `session_id`, so they move the parent's desk (state and
+A helper counts once, as a drone on its parent's desk, never as a desk of its own. Copilot reports a helper's own
+events under the helper's own session id with `agentId` (or `agent_id`) and `parentAgentId` (the parent's `sessionId`)
+set, so no Copilot event other than `subagentStart` / `subagentStop` that carries a non-empty `agentId` moves a desk.
+Instead it counts that helper on the parent's desk, if that desk has sent a beat (logged `helper-event helpers N sent`
+or `skipped`), keeps it alive past the 30 minute TTL while it works, and the helper's own `agentStop` ends it. Without
+a `parentAgentId`, or for a nested helper whose parent is itself a helper, it is ignored (logged `helper-event
+ignored`). This also counts the helpers of a Copilot session that started before the sub-agent hooks were installed:
+Copilot loads hooks when a session starts, so such a session fires no `subagentStart` or `subagentStop`. Claude Code
+and Codex report a helper's tool events under the parent's `session_id`, so they move the parent's desk (state and
 activity) as the main agent's own events do.
 
 | Tool (version checked) | Events | Parent session | Helper id | Notes |
 |---|---|---|---|---|
-| GitHub Copilot CLI (1.0.99) | `subagentStart`, `subagentStop` | `sessionId` (the parent's) | none on the start (`agentId` only on the stop) | Helpers are anonymous: each start counts, each stop ends the oldest. The built-in general-purpose agent fires neither event; a helper that fails or is cancelled fires no stop and expires after 30 minutes. Nested helpers: a helper that starts its own helper fires `subagentStart` under the helper's own session id, which opens a desk of its own (a known limit; nested helpers are rare). Known limits of anonymous counting: a helper running longer than the 30 min TTL, a duplicate stop, or a start missed while paused can make a later stop remove a different helper; the count heals itself within 30 minutes. A helper's own tool events (with `agentId`) are ignored |
+| GitHub Copilot CLI (1.0.99, captured 2026-10-21) | `subagentStart`, `subagentStop`, plus the helper's own events | `sessionId` on the start and stop, `parentAgentId` on the helper's own events (both the parent's session id) | `agentId`, the same on start, stop and the helper's own events (it is also the helper's own `sessionId`) | Every built-in agent fires both events (general-purpose, explore and task checked, sync and background). The npm build of the same version sends no `agentId` on the start: that helper counts anonymously and the stop, whose `agentId` it never saw, ends the oldest anonymous helper. The helper's own `agentStop` ends it just before `subagentStop`. A session older than the install fires neither event; its helpers count from their own events. A helper that fails or is cancelled fires no stop and expires 30 minutes after its last event. Nested helpers: a helper that starts its own helper fires `subagentStart` under the helper's own session id, which opens a desk of its own (a known limit; nested helpers are rare) |
 | Claude Code (2.1.223) | `SubagentStart`, `SubagentStop` | `session_id` (the main session) | `agent_id` | A resumed subagent or a teammate's new message repeats the start (deduped by id); a stop of an internal agent (prompt suggestions, `/btw`) with no start changes nothing |
 | OpenAI Codex (0.154.0) | `SubagentStart`, `SubagentStop` | `session_id` (the parent's) | `agent_id` | Both events are async hooks like the others; trust them in `/hooks` |
 
