@@ -59,7 +59,7 @@ describe("helper drones", () => {
 
   it("ten Rovers with six helpers each draw four drones apiece, each in its own Rover's parts, inside the instance count", () => {
     expect(slots).toHaveLength(10);
-    const n = officeInstances(slots.length);
+    const n = officeInstances();
     const parts = new Float32Array(n.parts * 16);
     const treads = new Float32Array(n.treads * 16);
     const p = stillPose("working");

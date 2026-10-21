@@ -1248,7 +1248,7 @@
       "noAgents": "Every Rover is asleep.",
       "extra": "+{count, plural, one {# more session} other {# more sessions}}",
       "moreActive": "+{n, plural, one {# more active desk} other {# more active desks}}",
-      "idle": "{n, plural, =0 {No desk idle} one {# desk idle} other {# desks idle}}",
+      "idle": "{n, plural, =0 {No desks idle} one {# desk idle} other {# desks idle}}",
       "github": "Latest on GitHub",
       "noGithub": "No public activity yet today.",
       "today": "Today: {tasks, plural, one {# task} other {# tasks}} done, {prs, plural, one {# PR} other {# PRs}} merged, {green} of {runs, plural, one {# CI run} other {# CI runs}} green",

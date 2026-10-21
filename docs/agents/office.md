@@ -219,13 +219,13 @@ Index: [AGENTS.md](../../AGENTS.md).
     `office.helpers`, resolved raw into `OfficeCardLabels.helpers` and filled by `fill`), state and task: its title for
     an allowlisted public repository, else "Client project".
   - The summary line under the rows (`office-extra`) collapses asleep desks and empty seats into the idle count, which
-    is the Asleep count (`office.classic.idle`: "No desk idle", "1 desk idle", "8 desks idle" / "Tidak ada meja yang
+    is the Asleep count (`office.classic.idle`: "No desks idle", "1 desk idle", "8 desks idle" / "Tidak ada meja yang
     menganggur", "8 meja menganggur"); sessions past the ten seats add " · +N more sessions" (`office.classic.extra`).
     A v1 or v2 body (a rolled-back Worker) seats five, so the other five seats read as idle.
   - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
     keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
     (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
-    HH:MM"; before any snapshot, off-duty desks and empty GitHub rows under the offline line). The dimmed rows keep
+    HH:MM"; before any snapshot, five quiet desk rows (`office-desk-empty`) and empty GitHub rows under the offline line). The dimmed rows keep
     their "· 3 helpers", like their last known activity, whereas the 3D office zeroes the helpers offline
     (`OfficeRoverView.helpers`: no drones, no helpers on the chips or in the drawers).
   - English counts are ICU plurals in `office.classic` ("+1 more session", "1 task done", "1 of 1 CI run green"),

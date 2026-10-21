@@ -77,7 +77,7 @@ const TEN_AWAKE = {
 };
 /** The fifth row and the idle line for `OFFICE_FIXTURES_V3.busy` (nine awake, one session past ten) and `TEN_AWAKE`. */
 const TEN_LINES = {
-  en: { ten: { more: "+5 more active desks", idle: "1 desk idle \u00b7 +1 more session" }, tenAwake: { more: "+6 more active desks", idle: "No desk idle" } },
+  en: { ten: { more: "+5 more active desks", idle: "1 desk idle \u00b7 +1 more session" }, tenAwake: { more: "+6 more active desks", idle: "No desks idle" } },
   id: { ten: { more: "+5 meja aktif lainnya", idle: "1 meja menganggur \u00b7 +1 sesi lainnya" }, tenAwake: { more: "+6 meja aktif lainnya", idle: "Tidak ada meja yang menganggur" } },
 } as const;
 

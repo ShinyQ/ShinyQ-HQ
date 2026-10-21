@@ -5,7 +5,7 @@ import { CREW, crewFx, newActor, stepCrew } from "@/experience/floors/lobby/offi
 import { GLOW_PER_ROVER, officeInstances, PARTS_PER_ROVER, roverFrame, TREADS_PER_ROVER, writeGlow } from "@/experience/floors/lobby/office/officeRig";
 import { stillPose } from "@/experience/floors/lobby/office/officeVisual";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
-import { OFFICE, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, OFFICE_SEAT_COUNT, officeTowerColumn } from "@/experience/floors/lobby/officeLayout";
 import { LOBBY } from "@/experience/config";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { OFFICE_FIXTURES } from "@/lib/office/fixtures";
@@ -45,11 +45,12 @@ describe("crew glow layout", () => {
     expect(TOWER.start).toBe(10 * GLOW_PER_ROVER);
   });
 
-  it("derives every instance count from the slot count (ten Rovers), the tower's dots after every Rover's glow", () => {
-    const n = officeInstances(OFFICE_SLOTS.length);
+  it("derives every instance count from the one seat count (ten Rovers, the slots and `TOWER.start` alike), the tower's dots after every Rover's glow", () => {
+    const n = officeInstances();
+    expect(OFFICE_SLOTS).toHaveLength(OFFICE_SEAT_COUNT);
     expect(n).toEqual({ parts: 10 * PARTS_PER_ROVER, treads: 10 * TREADS_PER_ROVER, glow: 10 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 30 });
     expect(n.glow).toBe(TOWER.start + TOWER.lanes * TOWER.dots);
-    expect(officeInstances(5)).toEqual({ parts: 50, treads: 10, glow: 5 * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 15 });
+    expect(TOWER.start).toBe(OFFICE_SEAT_COUNT * GLOW_PER_ROVER);
     // Each Rover's rig and crew glow lands in its own block: the last Rover's ends exactly where the tower starts.
     const m = new Float32Array(n.glow * 16);
     const c = new Float32Array(n.glow * 3);

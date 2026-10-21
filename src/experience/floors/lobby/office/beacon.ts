@@ -1,5 +1,6 @@
 import { LOBBY } from "../../../config";
 import type { Vec2 } from "../../../types";
+import { OFFICE } from "../officeLayout";
 import { OFFICE_SLOTS } from "../officeShell";
 
 /**
@@ -25,15 +26,24 @@ export interface BeaconInstance {
 }
 
 /**
- * 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), at its row's
- * floor (`y`: a back-row Rover's riser top, `lift`), or the wing plaza's centre on the floor when several Rovers ask or
- * the asking seat has no desk in the layout.
+ * On the floor behind the asking Rover (between it and the wall, so the column never hides it or its flag): 1.25 u behind
+ * a front-row Rover, and just past the riser's back edge behind a back-row Rover (`OFFICE.rover.radius + BEACON.r`, 1.8 u:
+ * the riser ends at the Rover's footprint, so the whole base stands on the floor, never overhanging the riser); the wing
+ * plaza's centre when several Rovers ask or the asking seat has no desk in the layout. Writes into `out` (the frame passes
+ * one object, so nothing allocates per frame).
  */
-export function beaconOrigin(asking: readonly number[]): Vec2 & { y: number } {
+export function beaconOrigin(asking: readonly number[], out: Vec2 = { x: 0, z: 0 }): Vec2 {
   const s = asking.length === 1 ? OFFICE_SLOTS[asking[0]] : undefined;
-  if (!s) return { ...LOBBY.officeWing.plaza.center, y: 0 };
+  if (!s) {
+    out.x = LOBBY.officeWing.plaza.center.x;
+    out.z = LOBBY.officeWing.plaza.center.z;
+    return out;
+  }
+  const back = s.lift > 0 ? OFFICE.rover.radius + BEACON.r : 1.25;
   // Forward (sin yaw, cos yaw) points at the arc centre, so behind is the opposite way.
-  return { x: s.rover.x - Math.sin(s.yaw) * 1.25, y: s.lift, z: s.rover.z - Math.cos(s.yaw) * 1.25 };
+  out.x = s.rover.x - Math.sin(s.yaw) * back;
+  out.z = s.rover.z - Math.cos(s.yaw) * back;
+  return out;
 }
 
 const FULL: BeaconGain = { column: 1, bands: 1, reach: BEACON.rise };

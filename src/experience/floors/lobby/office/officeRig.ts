@@ -1,6 +1,6 @@
 import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import type { OfficeProgress, OfficeState } from "@/lib/office/protocol";
-import type { OfficeSlot } from "../officeLayout";
+import { OFFICE_SEAT_COUNT, type OfficeSlot } from "../officeLayout";
 import { dronePoint, DRONES, type FxPoint } from "./crew";
 import { CREW_GLOW, TOWER } from "./crewFx";
 import { DESK_SCREEN, OFFICE_ROVER, OFFICE_STATE_STYLE, type OfficePose } from "./officeVisual";
@@ -18,11 +18,14 @@ export const TREADS_PER_ROVER = 2;
 /** Glow instances per Rover: the rig's 18 (tip, halo, 16 progress dots, indexes `base` to `base + 17`), then the crew's (`crewFx.ts`). */
 export const GLOW_PER_ROVER = 2 + OFFICE_ROVER.progress.count + CREW_GLOW.count;
 /**
- * The office meshes' instance (and quad) counts for `rovers` Rovers: parts and treads per Rover, the glow (each Rover's
- * rig and crew instances, then the CI tower's lane dots from `TOWER.start`), and one face, desk screen and flag quad each.
+ * The office meshes' instance (and quad) counts, one Rover per seat (`OFFICE_SEAT_COUNT`, the same count `TOWER.start`
+ * is derived from, so the tower's dots always follow the last Rover's glow): parts and treads per Rover, the glow (each
+ * Rover's rig and crew instances, then the CI tower's lane dots from `TOWER.start`), and one face, desk screen and flag
+ * quad each.
  */
-export function officeInstances(rovers: number): { parts: number; treads: number; glow: number; quads: number } {
-  return { parts: rovers * PARTS_PER_ROVER, treads: rovers * TREADS_PER_ROVER, glow: rovers * GLOW_PER_ROVER + TOWER.lanes * TOWER.dots, quads: 3 * rovers };
+export function officeInstances(): { parts: number; treads: number; glow: number; quads: number } {
+  const rovers = OFFICE_SEAT_COUNT;
+  return { parts: rovers * PARTS_PER_ROVER, treads: rovers * TREADS_PER_ROVER, glow: TOWER.start + TOWER.lanes * TOWER.dots, quads: 3 * rovers };
 }
 /** The flag pole (in the parts mesh) and plate (a quad on the atlas's flag cell), held in the raised left hand. */
 export const FLAG = { pole: { w: 0.06, h: 1.2 }, plate: { w: 0.6, h: 0.4 } } as const;

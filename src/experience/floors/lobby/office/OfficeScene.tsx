@@ -65,8 +65,8 @@ import { loadOfficeWatch } from "./watchLoader";
 const NO_RAYCAST = () => null;
 /** The Rovers this scene draws: both rows (slots 0 to 9; the desks and the riser are in the main-path shell). */
 const SLOTS = OFFICE_SLOTS;
-/** Instance and quad counts, from the slot count. */
-const COUNTS = officeInstances(SLOTS.length);
+/** Instance and quad counts, one Rover per seat (`SLOTS` holds every seat). */
+const COUNTS = officeInstances();
 /** Desk screens redraw at most this often (faces at most FACE_FPS_MAX on both tiers), only the cells whose frame key changed. */
 const SCREEN_FPS = { full: 10, lite: 5 } as const;
 const FRAME = new Matrix4();
@@ -75,7 +75,7 @@ const ORIGIN = new Vector2();
 /** Ten faces, ten desk screens and ten flag plates as one merged quad mesh (one draw call, one atlas). */
 function atlasQuads(slots: readonly OfficeSlot[]): BufferGeometry {
   const n = slots.length;
-  const quads = officeInstances(n).quads;
+  const quads = COUNTS.quads;
   const positions = new Float32Array(quads * 12);
   const uvs = new Float32Array(quads * 8);
   const index: number[] = [];
@@ -115,7 +115,7 @@ const DARK_TOWER = { total: 0, done: 0, running: false } as const;
  * culling see the final meshes: the glow mesh's bounds take in the tower's dots from here.
  */
 function restInstances(slots: readonly OfficeSlot[]) {
-  const n = officeInstances(slots.length);
+  const n = COUNTS;
   const parts = new Float32Array(n.parts * 16);
   const treads = new Float32Array(n.treads * 16);
   const glow = new Float32Array(n.glow * 16);

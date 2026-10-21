@@ -56,7 +56,7 @@ describe("office card copy", () => {
     const c = en.office.classic;
     const i = id.office.classic;
     expect([1, 6].map((n) => fill(c.moreActive, { n }, "en"))).toEqual(["+1 more active desk", "+6 more active desks"]);
-    expect([0, 1, 8].map((n) => fill(c.idle, { n }, "en"))).toEqual(["No desk idle", "1 desk idle", "8 desks idle"]);
+    expect([0, 1, 8].map((n) => fill(c.idle, { n }, "en"))).toEqual(["No desks idle", "1 desk idle", "8 desks idle"]);
     expect([1, 6].map((n) => fill(i.moreActive, { n }, "id"))).toEqual(["+1 meja aktif lainnya", "+6 meja aktif lainnya"]);
     expect([0, 1, 8].map((n) => fill(i.idle, { n }, "id"))).toEqual(["Tidak ada meja yang menganggur", "1 meja menganggur", "8 meja menganggur"]);
   });

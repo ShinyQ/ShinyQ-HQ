@@ -4,7 +4,7 @@ import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
-import { officeSlots } from "../src/experience/floors/lobby/officeLayout";
+import { OFFICE, officeSlots } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
@@ -822,7 +822,7 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     expect(lift).toBeGreaterThan(0);
     const nine = (await droneParts(page))[9].at;
     for (let i = 0; i < 4; i++) expect(nine[i * 3 + 1]).toBeGreaterThan(lift + 1);
-    // The scene's feed lights the beacon for the back-row asker; its column stands on the riser top behind that Rover.
+    // The scene's feed lights the beacon for the back-row asker; its column stands on the floor just past the riser behind that Rover.
     await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
     const column = await page.evaluate(() => {
       type M = { instanceMatrix: { array: ArrayLike<number> } };
@@ -831,8 +831,8 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
       return { x: a[12], y: a[13], z: a[14] };
     });
     const asker = officeSlots(LOBBY.officeWing)[7];
-    expect(column.y).toBeCloseTo(asker.lift, 4);
-    expect(Math.hypot(column.x - asker.rover.x, column.z - asker.rover.z)).toBeCloseTo(1.25, 3);
+    expect(column.y).toBeCloseTo(0, 4);
+    expect(Math.hypot(column.x - asker.rover.x, column.z - asker.rover.z)).toBeCloseTo(OFFICE.rover.radius + 0.8, 3); // + BEACON.r
     // The summary drawer lists ten desks; a back-row desk's drawer shows its Rover.
     // At the stop all ten sessions' chips share one row under the top bar: the names (one line, no room for the activity),
     // apart, each with its leader line drawn.

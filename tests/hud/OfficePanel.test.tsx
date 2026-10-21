@@ -393,7 +393,7 @@ describe("OfficePanel with ten seats", () => {
     [[9, 0, 6], [0, 6, 9], null, "7 desks idle", null, "7 meja menganggur"],
     [[1, 3, 5, 7, 9], [1, 3, 5, 7, 9], null, "5 desks idle", null, "5 meja menganggur"],
     [[0, 1, 2, 3, 4, 7], [0, 1, 2, 3], "+2 more active desks", "4 desks idle", "+2 meja aktif lainnya", "4 meja menganggur"],
-    [ALL, [0, 1, 2, 3], "+6 more active desks", "No desk idle", "+6 meja aktif lainnya", "Tidak ada meja yang menganggur"],
+    [ALL, [0, 1, 2, 3], "+6 more active desks", "No desks idle", "+6 meja aktif lainnya", "Tidak ada meja yang menganggur"],
   ] as const;
 
   it.each(CASES)("awake %j: rows %j, fifth row %s, idle line %s (and in Indonesian)", (awake, shown, more, idle, moreId, idleId) => {

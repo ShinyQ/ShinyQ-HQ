@@ -8,7 +8,7 @@ import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
 /**
  * The screen wall (owner decision D1): as seen from the plaza, mission control on the left half (the mode with
- * the snapshot's age, four counters, up to two awake desks, today, a "+N" chip for sessions beyond five) and the
+ * the snapshot's age, four counters, up to two awake desks, today, a "+N" chip for sessions beyond the ten seats) and the
  * public GitHub board on the right half. Drawn in 1280 x 392 base units (the 17 x 5.2 u screen's aspect, 75 px per u
  * on the full tier), scaled to the tier's canvas.
  */
