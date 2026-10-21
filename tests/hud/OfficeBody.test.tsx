@@ -14,9 +14,15 @@ import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed, want: vi.fn() }));
-vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } }));
-const chunk = vi.hoisted(() => ({ loadOffice: vi.fn(() => Promise.resolve()) }));
-vi.mock("@/experience/floors/lobby/office/chunk", () => ({ loadOffice: chunk.loadOffice }));
+// The drawer reads the feed from the loaded scene chunk (`officeModule()`), never from `./live` itself.
+const chunk = vi.hoisted(() => {
+  const scene = { useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } };
+  return { scene, module: scene as typeof scene | null, loadOffice: vi.fn(() => Promise.resolve()) };
+});
+vi.mock("@/experience/floors/lobby/office/chunk", () => ({ loadOffice: chunk.loadOffice, useOfficeModule: () => chunk.module }));
+vi.mock("@/experience/floors/lobby/office/live", () => {
+  throw new Error("the drawer body must not import ./live");
+});
 // The drawer blocks import the localized Link (next-intl navigation), which needs the Next.js router.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
@@ -60,6 +66,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   live.want.mockClear();
+  chunk.module = chunk.scene;
+  chunk.loadOffice.mockImplementation(() => Promise.resolve());
 });
 
 describe("Agent Office drawers", () => {
@@ -135,6 +143,26 @@ describe("Agent Office drawers", () => {
     body({ panel: "summary" }).unmount();
     body({ panel: "github" });
     expect(chunk.loadOffice).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the loading note until the scene chunk (and its one poller) is loaded, then the live feed", () => {
+    chunk.module = null;
+    const view = { panel: "summary" } as const;
+    const { rerender } = body(view);
+    expect(screen.getByTestId("office-notice")).toHaveTextContent(o.drawer.loading);
+    expect(screen.getByTestId("office-body")).toHaveTextContent(o.hooks);
+    expect(live.want).not.toHaveBeenCalled();
+    chunk.module = chunk.scene;
+    rerender(tree(view));
+    expect(screen.queryByTestId("office-notice")).toBeNull();
+    expect(live.want).toHaveBeenLastCalledWith("drawer", true);
+  });
+
+  it("shows the offline note when the scene chunk fails to load", async () => {
+    chunk.module = null;
+    chunk.loadOffice.mockImplementation(() => Promise.reject(new Error("chunk")));
+    body({ panel: "github" });
+    expect(await screen.findByText(o.drawer.offlineEmpty)).toHaveAttribute("data-testid", "office-notice");
   });
 
   it("stops wanting the drawer poll when it closes", () => {
