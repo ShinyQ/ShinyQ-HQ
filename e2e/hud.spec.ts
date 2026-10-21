@@ -204,6 +204,66 @@ test.describe("bottom band", () => {
   }
 });
 
+/**
+ * No two HUD boxes overlap at common desktop, tablet and landscape phone sizes (owner fix 2026-10-21):
+ * the desktop minimap once sat on the elevator rail's locked B1 row ("Visit all 5 floors") on short
+ * screens. Desktops check the profile card, the top bar, the elevator rail, the minimap, the settings
+ * gear and the view controls; Corners checks the floor chip, the top bar, the minimap, the joystick and
+ * the reset button. Indonesian has the widest rail labels.
+ */
+const NO_OVERLAP_SIZES = [
+  { width: 1024, height: 640, touch: false },
+  { width: 1280, height: 720, touch: false },
+  { width: 1366, height: 768, touch: false },
+  { width: 1440, height: 900, touch: false },
+  { width: 1920, height: 1080, touch: false },
+  { width: 1180, height: 820, touch: true },
+  { width: 820, height: 1180, touch: true },
+  { width: 844, height: 390, touch: true },
+] as const;
+const DESKTOP_BOXES = ["hud-topbar", "elevator-panel", "minimap", "settings-open", "view-controls"] as const;
+const CORNERS_BOXES = ["floor-chip", "hud-topbar", "minimap", "joystick", "view-controls"] as const;
+
+/** Every pair that overlaps, plus any box that leaves the viewport. */
+function clashes(all: Record<string, Box>, vp: { width: number; height: number }) {
+  const names = Object.keys(all);
+  const found: string[] = [];
+  for (const [i, a] of names.entries()) {
+    const b = all[a];
+    if (b.x < 0 || b.y < 0 || b.x + b.width > vp.width + 0.5 || b.y + b.height > vp.height + 0.5) found.push(`${a} off screen`);
+    for (const c of names.slice(i + 1)) if (overlaps(b, all[c])) found.push(`${a} x ${c}`);
+  }
+  return found;
+}
+
+test.describe("HUD boxes never overlap", () => {
+  for (const { locale, messages } of LOCALES) {
+    for (const vp of NO_OVERLAP_SIZES) {
+      test(`${locale} ${vp.width}x${vp.height}${vp.touch ? " touch" : ""}`, async ({ browser }) => {
+        const { context, page } = await newPage(browser, vp);
+        await enterHQ(page, { path: `/${locale}` });
+        const hud = page.getByTestId("hud");
+        await expect(hud.locator("[data-testid='ask-pill']:visible")).toBeVisible({ timeout: 15_000 });
+        const desktop = (await page.evaluate(() => document.documentElement.dataset.hqHud)) === "desktop";
+        const all: Record<string, Box> = {};
+        for (const id of desktop ? DESKTOP_BOXES : CORNERS_BOXES) {
+          const locator = hud.getByTestId(id).first();
+          await expect(locator, id).toBeVisible();
+          all[id] = await box(locator);
+        }
+        if (desktop) {
+          // The locked B1 row carries the widest label ("Visit all 5 floors (0/5)"), the case the owner saw.
+          await expect(hud.getByTestId("elevator-panel").locator("[data-floor='B1'][data-locked]")).toBeVisible();
+          all.profile = await box(hud.getByRole("region", { name: messages.hud.profile }));
+        }
+        await page.screenshot({ path: test.info().outputPath(`hud-${locale}-${vp.width}x${vp.height}.png`) });
+        expect(clashes(all, vp), JSON.stringify(all)).toEqual([]);
+        await context.close();
+      });
+    }
+  }
+});
+
 const DRAWER = [
   { name: "desktop", width: 1440, height: 900, touch: false },
   { name: "phone", width: 390, height: 844, touch: true },
