@@ -2,14 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "../src/lib/office/fixtures";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "../src/lib/office/fixtures";
 import { collectErrors, openPage } from "./hq";
-import { OFFICE_API, OFFICE_API_V2 } from "./office-fixtures";
+import { OFFICE_API, OFFICE_API_V3 } from "./office-fixtures";
 
 /**
  * Live Agent Office on the Classic home page (`#office`, part 4 of the office): the lazy card after the intro, its
  * states, the hidden section when the office is switched off, and no request before the card nears the viewport.
- * `/api/office?v=2` (the card's poll) is answered from `OFFICE_FIXTURES` (a v1 body, as after a rollback) or `OFFICE_FIXTURES_V2`. Set `OFFICE_SHOTS=<dir>` to write the owner's review captures.
+ * `/api/office?v=3` (the card's poll) is answered from `OFFICE_FIXTURES` (a v1 body, as after a rollback), `OFFICE_FIXTURES_V2` (v2, as after a rollback) or `OFFICE_FIXTURES_V3`. Set `OFFICE_SHOTS=<dir>` to write the owner's review captures.
  */
 
 type Reply = unknown | number;
@@ -88,9 +88,9 @@ test.describe("Classic: Live Agent Office", () => {
     expect(errors).toEqual([]);
   });
 
-  test("asks snapshot v2 and shows an awake desk's helpers on its activity line, in both locales", async ({ page }) => {
-    await mockOffice(page, OFFICE_FIXTURES_V2.busy);
-    const asked = page.waitForRequest(OFFICE_API_V2);
+  test("asks snapshot v3 and shows an awake desk's helpers on its activity line, in both locales; ten desks keep five rows", async ({ page }) => {
+    await mockOffice(page, OFFICE_FIXTURES_V3.busy);
+    const asked = page.waitForRequest(OFFICE_API_V3);
     await open(page);
     await asked;
     await expect(section(page)).toHaveAttribute("data-status", "ready");
@@ -98,7 +98,11 @@ test.describe("Classic: Live Agent Office", () => {
     await expect(desks.nth(0)).toContainText("Copilot \u00b7 Editing \u00b7 3 helpers");
     await expect(desks.nth(2)).toContainText("Copilot \u00b7 Watching CI \u00b7 6 helpers");
     await expect(desks.nth(1)).not.toContainText("helper");
+    // The back row (slots 5 to 9) counts in the "+N more" line until the card lists ten.
+    await expect(desks).toHaveCount(5);
+    await expect(page.getByTestId("office-extra")).toHaveText("+6 more sessions");
     await page.unrouteAll();
+    // A v2 body (a rolled-back Worker) reads as v3.
     await mockOffice(page, OFFICE_FIXTURES_V2.busy);
     await open(page, home("id"));
     await expect(section(page)).toHaveAttribute("data-status", "ready");
@@ -194,6 +198,7 @@ test.describe("Classic: Live Agent Office", () => {
         ["quiet", OFFICE_FIXTURES.quiet, "ready"],
         ["off", OFFICE_FIXTURES.off, "ready"],
         ["helpers", OFFICE_FIXTURES_V2.busy, "ready"],
+        ["ten", OFFICE_FIXTURES_V3.busy, "ready"],
         ["offline", 500, "offline"],
       ] as const) {
         await page.unrouteAll();

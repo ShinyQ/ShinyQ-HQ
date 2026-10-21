@@ -14,6 +14,8 @@ describe("beacon", () => {
     expect(Math.hypot(one.x - r.x, one.z - r.z)).toBeCloseTo(1.25, 5);
     expect(Math.hypot(one.x - arc.x, one.z - arc.z)).toBeGreaterThan(Math.hypot(r.x - arc.x, r.z - arc.z));
     expect(beaconOrigin([0, 4])).toEqual(LOBBY.officeWing.plaza.center);
+    // A back-row seat the layout has no desk for yet (slot 7 of snapshot v3) stands at the plaza centre, never crashes.
+    for (const slot of [5, 7, 9]) if (!OFFICE_SLOTS[slot]) expect(beaconOrigin([slot])).toEqual(LOBBY.officeWing.plaza.center);
   });
   it("rings pulse up the column's lowest part and widen, then restart: flat bands well wider than the column", () => {
     const a = make();

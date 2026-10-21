@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/content/locales";
-import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, type OfficeCounts } from "@/lib/office/model";
-import { createOfficePoller, OFFICE_V2_PATH, POLL, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
-import { OFFICE_DESKS, parseOfficeResponseV2, type OfficeDeskV2, type OfficeGithubItem, type OfficeGithubStatus } from "@/lib/office/protocol";
+import { deskTitle, officeCounts, safeGithubUrl, sinceLabel, STATE_TONE, withSeats, type OfficeCounts } from "@/lib/office/model";
+import { createOfficePoller, OFFICE_V3_PATH, POLL, type OfficeFeed, type OfficeFeedStatus, type OfficePoller } from "@/lib/office/poll";
+import { OFFICE_DESKS, parseOfficeResponseV3, type OfficeDeskV2, type OfficeGithubItem, type OfficeGithubStatus } from "@/lib/office/protocol";
 import { fill } from "./fill";
 import { OFFICE_RESERVE, type OfficeCardLabels } from "./labels";
 
@@ -106,7 +106,8 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
 }
 
 /**
- * The Classic home card (lazy chunk): counts, the five desks (with their helpers, from snapshot v2), the latest public
+ * The Classic home card (lazy chunk): counts, the five desks (with their helpers, from snapshot v3; desks on the back
+ * row, slots 5 to 9, count in the "+N more" line until the card lists ten), the latest public
  * GitHub events and today (spec section 4.2). Every state draws the same rows (an empty desk is "Off duty", empty GitHub slots stay as
  * quiet rows, offline keeps the last known rows dimmed), so the card keeps one height (`OFFICE_RESERVE`). Polls only
  * while the card is within a screen of the viewport; the poller skips hidden tabs, stops after 10 min without input,
@@ -114,7 +115,7 @@ function GithubRow({ item, locale, labels, t }: { item: OfficeGithubItem; locale
  * screen, so the switch never moves what the visitor is reading.
  */
 export function OfficePanel({ locale, labels, onStatus, poller: injected, now = Date.now }: OfficePanelProps) {
-  const poller = useMemo(() => injected ?? createOfficePoller({ path: OFFICE_V2_PATH, parse: parseOfficeResponseV2 }), [injected]);
+  const poller = useMemo(() => injected ?? createOfficePoller({ path: OFFICE_V3_PATH, parse: parseOfficeResponseV3 }), [injected]);
   const [feed, setFeed] = useState<OfficeFeed>(() => poller.feed());
   const [onScreen, setOnScreen] = useState(false);
   const [, setTick] = useState(0);
@@ -169,7 +170,7 @@ export function OfficePanel({ locale, labels, onStatus, poller: injected, now = 
     if (reported) onStatus?.(reported);
   }, [reported, onStatus]);
 
-  const snap = feed.status === "disabled" ? null : feed.snapshot;
+  const snap = feed.status === "disabled" || !feed.snapshot ? null : withSeats(feed.snapshot, OFFICE_DESKS);
   const t = now();
   const fresh = feed.status === "ready" && t - feed.fetchedAt < POLL.keepLastMs;
   // Live turns into Paused once the snapshot is older than the keep-last window (no poll since: idle stop, hidden tab).

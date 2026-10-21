@@ -5,7 +5,7 @@ import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, nearDropsFor, nearParts, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
 import * as shared from "@/lib/office/model";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import type { OfficeFeedSnapshot } from "@/lib/office/poll";
 import en from "../../messages/en.json";
 import { STATES_A, STATES_B, statesA, statesB } from "../../e2e/office-fixtures";
@@ -17,6 +17,19 @@ const t = createTranslator({ locale: "en", messages: en, namespace: "office" }) 
 const ready = (snapshot: ReturnType<typeof statesA>) => officeView({ status: "ready", snapshot });
 
 describe("Agent Office view model", () => {
+  it("reads a ten-desk v3 snapshot as five Rovers: the back row (slots 5 to 9) counts in extra until the scene draws ten", () => {
+    const v3 = OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot;
+    const view = officeView({ status: "ready", snapshot: v3 });
+    const v2 = officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot });
+    expect(view.rovers.map((r) => r.slot)).toEqual([0, 1, 2, 3, 4]);
+    expect(view.rovers).toEqual(v2.rovers);
+    expect(view.counts).toEqual(v2.counts);
+    expect(view.extra).toBe(1 + 5);
+    expect(shared.withSeats(v3)).toEqual({ ...v3, desks: v3.desks.slice(0, 5), extra: 6 });
+    expect(shared.withSeats(v3, 10)).toBe(v3);
+  });
+
+
   it("always shows five Rovers in slot order, live desks with their state, title only when public", () => {
     const view = ready(statesA(NOW));
     expect(view.mode).toBe("live");

@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import { OFFICE_PATH } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeSignal, setOfficeSignal } from "@/experience/floors/lobby/office/officeSignal";
@@ -26,6 +27,36 @@ describe("office watch", () => {
     expect(officeSignal.needsKurniadi).toBe(true);
     await vi.advanceTimersByTimeAsync(30_000);
     expect(f).toHaveBeenCalledTimes(2);
+    stop();
+  });
+  it("asks /api/office?v=3 once per 30 s by default (the same request count as the v1 watch)", async () => {
+    vi.useFakeTimers();
+    getHQStore().setState({ floor: "L1", ride: null });
+    const f = fetcher("working");
+    const stop = startOfficeWatch({ fetch: f, now: () => Date.now() });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(f).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(29_980);
+    expect(f).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(f).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(f).toHaveBeenCalledTimes(5);
+    for (const call of f.mock.calls as unknown[][]) expect(call[0]).toBe("/api/office?v=3");
+    stop();
+  });
+  it("lights the beacon for a seat-7 asker on the back row while the scene is not feeding", async () => {
+    vi.useFakeTimers();
+    getHQStore().setState({ floor: "L1", ride: null });
+    const busy = OFFICE_FIXTURES_V3.busy;
+    if (!busy.enabled) throw new Error("the v3 busy fixture is enabled");
+    // Only the back-row Rover at slot 7 asks (the front row's asker at slot 3 is thinking here).
+    const body = { ...busy, desks: busy.desks.map((d) => (d.slot === 3 ? { ...d, state: "thinking", activity: "planning" } : d)) };
+    const f = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+    expect(officeSignal.sceneFeeding).toBe(false);
+    const stop = startOfficeWatch({ fetch: f, now: () => Date.now() });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(officeSignal).toMatchObject({ needsKurniadi: true, asking: [7] });
     stop();
   });
   it("does not fetch off L1, while the scene feeds, or with a hidden tab", async () => {
@@ -182,12 +213,12 @@ describe("office watch", () => {
     for (const call of f.mock.calls as unknown[][]) expect((call[1] as RequestInit | undefined)?.cache).toBe("no-store");
     stop();
   });
-  it("fetches the protocol path and keeps the watch chunk modules free of the protocol, the content schema and zod", () => {
+  it("fetches the protocol's v3 path and keeps the watch chunk modules free of the protocol, the content schema and zod", () => {
     const f = fetcher("asleep");
     getHQStore().setState({ floor: "L1", ride: null });
     const stop = startOfficeWatch({ fetch: f, every: 60_000 });
     return officeWatchTick().then(() => {
-      expect(f.mock.calls[0]).toEqual([OFFICE_PATH, expect.objectContaining({ credentials: "omit" })]);
+      expect(f.mock.calls[0]).toEqual([`${OFFICE_PATH}?v=3`, expect.objectContaining({ credentials: "omit" })]);
       stop();
       for (const file of ["officeSignal.ts", "officeWatch.ts"]) {
         const text = readFileSync(join(process.cwd(), "src/experience/floors/lobby/office", file), "utf8");

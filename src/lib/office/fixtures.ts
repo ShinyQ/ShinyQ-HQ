@@ -1,4 +1,4 @@
-import { wibDay, type OfficeDesk, type OfficeGithubItem, type OfficeResponseV1, type OfficeResponseV2, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "./protocol";
+import { wibDay, type OfficeDesk, type OfficeDeskV2, type OfficeGithubItem, type OfficeResponseV1, type OfficeResponseV2, type OfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3 } from "./protocol";
 
 /** Fixed clock of the fixtures: 2026-10-18 15:00 WIB. */
 export const OFFICE_FIXTURE_NOW = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -70,13 +70,38 @@ export const OFFICE_FIXTURES: Record<"busy" | "rough" | "quiet" | "semiLive" | "
 };
 
 const v2 = (snap: OfficeSnapshotV1): OfficeSnapshotV2 => ({ ...snap, v: 2 });
+const BUSY_DESKS_V2: OfficeDeskV2[] = BUSY_DESKS.map((d) => (d.slot === 0 ? { ...d, helpers: 3 } : d.slot === 2 ? { ...d, helpers: 6 } : d));
 
 /** The same snapshots as GET /api/office?v=2: busy has helpers at two awake desks (3 at slot 0, 6 at slot 2). */
 export const OFFICE_FIXTURES_V2: Record<keyof typeof OFFICE_FIXTURES, OfficeResponseV2> = {
-  busy: { ...v2(busy), desks: BUSY_DESKS.map((d) => (d.slot === 0 ? { ...d, helpers: 3 } : d.slot === 2 ? { ...d, helpers: 6 } : d)) },
+  busy: { ...v2(busy), desks: BUSY_DESKS_V2 },
   rough: v2(rough),
   quiet: v2(quiet),
   semiLive: v2(semiLive),
   off: v2(off),
+  disabled: { v: 1, enabled: false },
+};
+
+/** The back row of the ten-seat busy office (slots 5 to 9): reviewing with 2 helpers, testing, asking, asleep, working with 4 helpers. */
+const BACK_ROW: OfficeDeskV2[] = [
+  { ...desk({ slot: 5, agent: "codex", state: "reviewing", activity: "reading", since: ago(4), repo: HQ, title: "Second console row" }), helpers: 2 },
+  desk({ slot: 6, agent: "copilot", state: "testing", activity: "testing", since: ago(1) }),
+  desk({ slot: 7, agent: "claude", state: "input", activity: "asking", since: ago(1), repo: HQ, title: "Ten Rovers in the live scene" }),
+  desk({ slot: 8, agent: "codex", state: "asleep", activity: "resting", since: ago(40) }),
+  { ...desk({ slot: 9, agent: "copilot", state: "working", activity: "editing", since: ago(6), repo: HQ, title: "Chips for ten" }), helpers: 4 },
+];
+
+const v3 = (snap: OfficeSnapshotV1): OfficeSnapshotV3 => ({ ...snap, v: 3 });
+
+/**
+ * The same snapshots as GET /api/office?v=3: busy seats ten (the v2 busy front row, then `BACK_ROW`: helpers 3, 6, 2
+ * and 4 at slots 0, 2, 5 and 9, askers at slots 3 and 7) with one more session in `extra`; the others as in v2.
+ */
+export const OFFICE_FIXTURES_V3: Record<keyof typeof OFFICE_FIXTURES, OfficeResponseV3> = {
+  busy: { ...v3(busy), desks: [...BUSY_DESKS_V2, ...BACK_ROW] },
+  rough: v3(rough),
+  quiet: v3(quiet),
+  semiLive: v3(semiLive),
+  off: v3(off),
   disabled: { v: 1, enabled: false },
 };

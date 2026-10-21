@@ -32,8 +32,9 @@ export const officeWatchTick = async (): Promise<void> => {
 };
 
 /**
- * The beacon's own small poll of GET /api/office (watch chunk; v1, design section 5.3; the path is a literal so the
- * watch chunk never imports the protocol module): at once, then every `every` ms while the visitor is on L1 (not riding), the tab is
+ * The beacon's own small poll of GET /api/office?v=3 (watch chunk; snapshot v3, design sections 5.3 and 5.10, so an
+ * asking Rover on the back row lights the beacon too; the path is a literal so the watch chunk never imports the
+ * protocol module): at once, then every `every` ms while the visitor is on L1 (not riding), the tab is
  * visible, there was input in the last 10 min and the office scene's poller is not feeding the signal itself. Only the
  * newest answer applies. The signal expires on its own 60 s after its last good answer (`setOfficeSignal`); stopping
  * the watch clears it at once.
@@ -51,7 +52,7 @@ export function startOfficeWatch(opts: { fetch?: (input: string, init?: RequestI
     if (s.floor !== "L1" || s.ride || officeSignal.sceneFeeding || document.visibilityState === "hidden" || now() - lastInput >= IDLE_MS) return;
     const mine = ++seq;
     try {
-      const res = await get("/api/office", { cache: "no-store", credentials: "omit" });
+      const res = await get("/api/office?v=3", { cache: "no-store", credentials: "omit" });
       const sig = res.status === 200 ? signalFromBody(await res.json(), now()) : null;
       if (sig && mine === seq && !officeSignal.sceneFeeding) setOfficeSignal({ ...sig, goodAt: now() });
     } catch {

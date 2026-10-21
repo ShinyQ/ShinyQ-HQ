@@ -24,10 +24,13 @@ export interface BeaconInstance {
   alpha: number;
 }
 
-/** 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), or the wing plaza's centre when several Rovers ask. */
+/**
+ * 1.25 u behind the asking Rover (between it and the wall, so the column never hides it or its flag), or the wing
+ * plaza's centre when several Rovers ask or the asking seat has no desk in the layout.
+ */
 export function beaconOrigin(asking: readonly number[]): Vec2 {
-  if (asking.length !== 1) return LOBBY.officeWing.plaza.center;
-  const s = OFFICE_SLOTS[asking[0]];
+  const s = asking.length === 1 ? OFFICE_SLOTS[asking[0]] : undefined;
+  if (!s) return LOBBY.officeWing.plaza.center;
   // Forward (sin yaw, cos yaw) points at the arc centre, so behind is the opposite way.
   return { x: s.rover.x - Math.sin(s.yaw) * 1.25, z: s.rover.z - Math.cos(s.yaw) * 1.25 };
 }

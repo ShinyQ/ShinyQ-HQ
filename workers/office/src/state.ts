@@ -1,5 +1,5 @@
-import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, wibDay } from "../../../src/lib/office/protocol";
-import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, OFFICE_SEATS, wibDay } from "../../../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeDeskV2, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
 
 /** Time rules and caps (spec section 3.3); every rule is applied from `now`, so the Durable Object needs no alarm. */
 export const TIMING = {
@@ -127,17 +127,31 @@ export function effective(s: SessionRecord, now: number): Effective | null {
 
 const isAsleep = (s: SessionRecord, now: number) => effective(s, now)?.state === "asleep";
 
-/** Stable desks: keep valid slots, give free ones to waiting sessions (oldest first); an awake one may take the longest-asleep desk. */
+/**
+ * Stable seats over OFFICE_SEATS (ten): keep valid slots; a back-row session (slot 5 to 9) moves to a free front-row
+ * seat (slots 0 to 4, oldest first), so the front row fills first and v1 and v2 (which show only the front row) see
+ * what they did with five desks; then free seats go to waiting sessions (oldest first, lowest seat first). Only when
+ * all ten are taken may an awake one take the longest-asleep seat.
+ */
 export function assignSlots(sessions: SessionRecord[], now: number): SessionRecord[] {
   const out = sessions.map((s) => ({ ...s }));
   const taken = new Set<number>();
   for (const s of out) {
-    if (s.slot !== null && s.slot >= 0 && s.slot < OFFICE_DESKS && !taken.has(s.slot)) taken.add(s.slot);
+    if (s.slot !== null && Number.isInteger(s.slot) && s.slot >= 0 && s.slot < OFFICE_SEATS && !taken.has(s.slot)) taken.add(s.slot);
     else s.slot = null;
   }
-  const waiting = out.filter((s) => s.slot === null).sort((a, b) => a.firstSeen - b.firstSeen || (a.id < b.id ? -1 : 1));
+  const oldest = (a: SessionRecord, b: SessionRecord) => a.firstSeen - b.firstSeen || (a.id < b.id ? -1 : 1);
+  const freeSeat = (seats: number) => Array.from({ length: seats }, (_, n) => n).find((n) => !taken.has(n));
+  for (const s of out.filter((o) => o.slot !== null && o.slot >= OFFICE_DESKS).sort(oldest)) {
+    const front = freeSeat(OFFICE_DESKS);
+    if (front === undefined) break;
+    taken.delete(s.slot as number);
+    s.slot = front;
+    taken.add(front);
+  }
+  const waiting = out.filter((s) => s.slot === null).sort(oldest);
   for (const s of waiting) {
-    const free = Array.from({ length: OFFICE_DESKS }, (_, n) => n).find((n) => !taken.has(n));
+    const free = freeSeat(OFFICE_SEATS);
     if (free !== undefined) {
       s.slot = free;
       taken.add(free);
@@ -291,18 +305,22 @@ export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): n
   return Math.min(OFFICE_HELPERS_MAX, s.helpers);
 }
 
-function seats(doc: OfficeDoc, now: number) {
+/** The live sessions and those seated on slots below `count` (sorted by slot); the others count in `extra`. */
+function seats(doc: OfficeDoc, now: number, count: number) {
   const live = doc.sessions.flatMap((s) => {
     const e = effective(s, now);
     return e ? [{ s, e }] : [];
   });
-  const seated = live.filter(({ s }) => s.slot !== null).sort((a, b) => (a.s.slot ?? 0) - (b.s.slot ?? 0));
+  const seated = live.filter(({ s }) => s.slot !== null && s.slot < count).sort((a, b) => (a.s.slot ?? 0) - (b.s.slot ?? 0));
   return { live, seated };
 }
 
-/** The public v1 snapshot at `now` (time rules applied, nothing written). Never carries `helpers`: v1 never changes. */
+/**
+ * The public v1 snapshot at `now` (time rules applied, nothing written): the front row's five desks (slots 0 to 4),
+ * sessions on other seats in `extra`. Never carries `helpers`: v1 never changes.
+ */
 export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
-  const { live, seated } = seats(doc, now);
+  const { live, seated } = seats(doc, now, OFFICE_DESKS);
   return {
     v: 1,
     enabled: true,
@@ -315,19 +333,29 @@ export function view(doc: OfficeDoc, now: number): OfficeSnapshotV1 {
   };
 }
 
-/** The public v2 snapshot at `now`: the v1 view with `v: 2` and desk `helpers` (1 to 9, absent at 0). */
-export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
-  const { seated } = seats(doc, now);
-  const v1 = view(doc, now);
+/** The v1 view over `count` seats with `v` and desk `helpers` (1 to 9, absent at 0). */
+function withHelpers<V extends 2 | 3>(doc: OfficeDoc, now: number, count: number, v: V): Omit<OfficeSnapshotV1, "v" | "desks"> & { v: V; desks: OfficeDeskV2[] } {
+  const { live, seated } = seats(doc, now, count);
   return {
-    ...v1,
-    v: 2,
-    desks: v1.desks.map((d, i) => {
-      const { s, e } = seated[i];
+    ...view(doc, now),
+    v,
+    desks: seated.map(({ s, e }) => {
+      const d = deskOf(doc, s, e);
       const h = effectiveHelpers(s, e, now);
       return h > 0 ? { ...d, helpers: h } : d;
     }),
+    extra: live.length - seated.length,
   };
+}
+
+/** The public v2 snapshot at `now`: the v1 view (five desks, the rest in `extra`) with `v: 2` and desk `helpers`. */
+export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
+  return withHelpers(doc, now, OFFICE_DESKS, 2);
+}
+
+/** The public v3 snapshot at `now`: the v2 view over all ten seats (slots 0 to 9), sessions past ten in `extra`. */
+export function viewV3(doc: OfficeDoc, now: number): OfficeSnapshotV3 {
+  return withHelpers(doc, now, OFFICE_SEATS, 3);
 }
 
 /** Shape check of the Worker's internal /github message (already parsed and sanitized by the Worker). */

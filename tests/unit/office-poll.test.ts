@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
-import { createOfficePoller, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH, parseOfficeResponseV2 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { createOfficePoller, OFFICE_V3_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
+import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
 import { officeDesk, officeSnapshot, statesA } from "../../e2e/office-fixtures";
 
 const T0 = 1_800_000_000_000;
@@ -68,6 +68,19 @@ describe("createOfficePoller", () => {
     expect(v1.calls[0].url).toBe(OFFICE_PATH);
     expect(plain.feed().status).toBe("offline");
     plain.stop();
+  });
+
+  it("polls v3 at OFFICE_V3_PATH and keeps all ten desks in the feed (a rolled-back v2 body reads as v3)", async () => {
+    expect(OFFICE_V3_PATH).toBe("/api/office?v=3");
+    const v3 = fakeFetch([{ status: 200, body: OFFICE_FIXTURES_V3.busy }, { status: 200, body: OFFICE_FIXTURES_V2.busy }]);
+    const poller = createOfficePoller({ fetcher: v3.fetcher, path: OFFICE_V3_PATH, parse: parseOfficeResponseV3 });
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(v3.calls[0].url).toBe("/api/office?v=3");
+    expect(poller.feed().snapshot?.desks).toHaveLength(10);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(poller.feed()).toMatchObject({ status: "ready", snapshot: { ...OFFICE_FIXTURES_V2.busy, v: 3 } });
+    poller.stop();
   });
 
   it("slows to 30 s when every desk is asleep, the feed is semi-live or off, or there is no snapshot", async () => {

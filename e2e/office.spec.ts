@@ -22,7 +22,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asV1, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V2, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asV1, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V3, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
@@ -30,7 +30,7 @@ import { asV1, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_A
  * Rovers with their states and chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
- * (the lazy watch's v1 fetch from the spawn) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
+ * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones. `/api/office` is answered from fixtures (Playwright route); waits
  * are on state, never on time.
  */
 test.describe.configure({ timeout: 180_000 });
@@ -131,8 +131,9 @@ const roverAt = (page: Page) => page.evaluate(() => (window as unknown as { __hq
 const reasons = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.reasons() ?? []);
 
 /**
- * Answers `/api/office` (v1 for the watch, `?v=2` for the poller) from a mutable reply, so a test can switch fixtures or
- * fail the endpoint mid-run. A v2 body answers the v1 path as v1 (`asV1`); `requests` lists the asked URLs' paths.
+ * Answers `/api/office` (`?v=3` for the watch and the poller; a v2 body reads as v3, as after a rollback) from a mutable
+ * reply, so a test can switch fixtures or fail the endpoint mid-run. A v2 body answers the v1 path (no client asks it)
+ * as v1 (`asV1`); `requests` lists the asked URLs' paths.
  */
 async function serveOffice(page: Page) {
   const reply: { status: number; body: unknown } = { status: 200, body: OFFICE_FIXTURES.disabled };
@@ -140,7 +141,7 @@ async function serveOffice(page: Page) {
   await page.route(OFFICE_API, (route) => {
     const url = new URL(route.request().url());
     requests.push(url.pathname + url.search);
-    const body = OFFICE_API_V2.test(url.href) ? reply.body : asV1(reply.body);
+    const body = OFFICE_API_V3.test(url.href) ? reply.body : asV1(reply.body);
     return route.fulfill(reply.status === 200 ? { status: 200, contentType: "application/json", body: JSON.stringify(body) } : { status: reply.status, body: "" });
   });
   return {
@@ -202,7 +203,7 @@ const droneParts = (page: Page) =>
 
 /** Fetches now (the poller restarts) and waits for that response. */
 async function pollNow(page: Page) {
-  await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
 }
 
 /** Parks inside the office view, off the stop (a click still drives), once the office is loaded, in view and polling. */
@@ -504,7 +505,7 @@ test.describe("Agent Office (L1)", () => {
     expect(await feed(page)).toMatchObject({ status: "ready", fetchedAt: before });
     expect((await probe(page)).states).toEqual(STATES_A);
     office.set(null, 500);
-    await Promise.all([page.waitForResponse(OFFICE_API_V2), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
+    await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.advance(61_000))]);
     await expect.poll(async () => (await feed(page))?.status).toBe("offline");
     await expect.poll(async () => (await probe(page)).mode).toBe("offline");
     expect((await probe(page)).states).toEqual(["asleep", "asleep", "asleep", "asleep", "asleep"]);
@@ -558,13 +559,13 @@ test.describe("Agent Office (L1)", () => {
     office.set(CREW_A);
     await enterHQ(page);
     const cue = page.locator('[data-map="office-cue"]');
-    // At the spawn the lazy watch's v1 fetch (or the scene's own poll once it loaded and the office is in view) feeds the
+    // At the spawn the lazy watch's v3 fetch (or the scene's own poll once it loaded and the office is in view) feeds the
     // signal, which loads the beacon chunk on the first ask.
     await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
     await expect(cue).toBeVisible();
     expect(office.requests().length).toBeGreaterThan(0);
     // Out of view (the elevator arrival, the camera looking north away from the wing) the scene's poller stops and the
-    // watch alone polls, v1.
+    // watch alone polls, v3.
     await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
     await driveTo(page, LOBBY.arrival);
     await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
@@ -583,7 +584,15 @@ test.describe("Agent Office (L1)", () => {
     await watchNow(page);
     await expect.poll(async () => (await probe(page)).beacon).toBe(true);
     await expect(cue).toBeVisible();
-    expect(office.requests().slice(before).every((path) => path === "/api/office")).toBe(true);
+    // A back-row asker (seat 7 of a ten-desk v3 snapshot, nobody asking in front) lights it too, through the watch.
+    office.set(statesA(Date.now()));
+    await watchNow(page);
+    await expect.poll(async () => (await probe(page)).beacon).toBe(false);
+    office.set(backRowAsker(Date.now()));
+    await watchNow(page);
+    await expect.poll(async () => (await probe(page)).beacon).toBe(true);
+    await expect(cue).toBeVisible();
+    expect(office.requests().slice(before).every((path) => path === "/api/office?v=3")).toBe(true);
     expect(errors).toEqual([]);
   });
 

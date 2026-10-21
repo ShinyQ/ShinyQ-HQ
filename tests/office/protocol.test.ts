@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, OFFICE_HELPERS_MAX, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, wibDay } from "@/lib/office/protocol";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay } from "@/lib/office/protocol";
 
 const SESSION = "a".repeat(64);
 const beat = (extra: Record<string, unknown> = {}) => ({ v: 1, agent: "copilot", session: SESSION, state: "working", activity: "editing", ts: OFFICE_FIXTURE_NOW, ...extra });
@@ -73,6 +73,68 @@ describe("parseOfficeResponseV2", () => {
     }
     const busy = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
     expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], helpers: 3 }] })).toBeNull();
+  });
+});
+
+describe("parseOfficeResponseV2 after snapshot v3 (part A clients)", () => {
+  it("accepts everything it accepted before: every v1 and v2 fixture, five desks with slots 0 to 4", () => {
+    for (const value of [...Object.values(OFFICE_FIXTURES), ...Object.values(OFFICE_FIXTURES_V2)]) expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(value)))).not.toBeNull();
+    const busy = JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
+    expect(parseOfficeResponseV2({ ...busy, desks: busy.desks.map((d: object, slot: number) => ({ ...d, slot: 4 - slot })) })).not.toBeNull();
+  });
+
+  it("still rejects a v3 body, a slot above 4 and more than five desks (v1 and v2 never carry them)", () => {
+    expect(parseOfficeResponseV2(JSON.parse(JSON.stringify(OFFICE_FIXTURES_V3.busy)))).toBeNull();
+    const busy = JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
+    expect(parseOfficeResponseV2({ ...busy, desks: [{ ...busy.desks[0], slot: 5 }] })).toBeNull();
+    expect(parseOfficeResponseV2({ ...busy, desks: Array.from({ length: 6 }, (_, slot) => ({ ...busy.desks[0], slot })) })).toBeNull();
+    const busy1 = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
+    expect(parseOfficeResponse({ ...busy1, desks: [{ ...busy1.desks[0], slot: 5 }] })).toBeNull();
+  });
+});
+
+describe("parseOfficeResponseV3", () => {
+  const busy3 = () => JSON.parse(JSON.stringify(OFFICE_FIXTURES_V3.busy));
+
+  it("accepts every v3 fixture unchanged: busy seats ten with drones and askers on both rows", () => {
+    const busy = OFFICE_FIXTURES_V3.busy;
+    expect(busy.enabled && busy.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(busy.enabled && busy.desks.map((d) => d.helpers ?? 0)).toEqual([3, 0, 6, 0, 0, 2, 0, 0, 0, 4]);
+    expect(busy.enabled && busy.desks.filter((d) => d.state === "input").map((d) => d.slot)).toEqual([3, 7]);
+    for (const [name, value] of Object.entries(OFFICE_FIXTURES_V3)) expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(value))), name).toEqual(value);
+  });
+
+  it("takes up to ten desks with slots 0 to 9 and rejects eleven desks, a slot of 10, duplicates and bad helpers", () => {
+    const busy = busy3();
+    expect(OFFICE_SEATS).toBe(10);
+    expect(parseOfficeResponseV3({ ...busy, desks: [{ ...busy.desks[0], slot: 9 }] })).not.toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: [{ ...busy.desks[0], slot: 10 }] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: [{ ...busy.desks[0], slot: -1 }] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: [...busy.desks, { ...busy.desks[0], slot: 10 }] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: Array.from({ length: 11 }, (_, slot) => ({ ...busy.desks[0], slot: slot % 10 })) })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: [busy.desks[7], { ...busy.desks[8], slot: 7 }] })).toBeNull();
+    for (const helpers of [0, 10, 1.5]) expect(parseOfficeResponseV3({ ...busy, desks: [{ ...busy.desks[9], helpers }] }), String(helpers)).toBeNull();
+  });
+
+  it("keeps the strict checks: unknown keys, v4, a v3 disabled body", () => {
+    const busy = busy3();
+    expect(parseOfficeResponseV3({ ...busy, extraField: 1 })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, desks: [{ ...busy.desks[5], prompt: "hello" }] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, pipeline: [] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy, v: 4 })).toBeNull();
+    expect(parseOfficeResponseV3({ v: 3, enabled: false })).toBeNull();
+    expect(parseOfficeResponseV3({ v: 1, enabled: false })).toEqual({ v: 1, enabled: false });
+    expect(parseOfficeResponseV3(null)).toBeNull();
+  });
+
+  it("accepts a v2 or v1 body as a fallback after a rollback, returned as v3", () => {
+    for (const [name, value] of Object.entries(OFFICE_FIXTURES_V2)) expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(value))), name).toEqual(value.enabled ? { ...value, v: 3 } : value);
+    for (const [name, value] of Object.entries(OFFICE_FIXTURES)) expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(value))), name).toEqual(value.enabled ? { ...value, v: 3 } : value);
+    // A v2 or v1 body still follows its own rules: five desks, slots 0 to 4, no helpers in v1.
+    const busy2 = JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
+    expect(parseOfficeResponseV3({ ...busy2, desks: [{ ...busy2.desks[0], slot: 7 }] })).toBeNull();
+    const busy1 = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
+    expect(parseOfficeResponseV3({ ...busy1, desks: [{ ...busy1.desks[0], helpers: 3 }] })).toBeNull();
   });
 });
 

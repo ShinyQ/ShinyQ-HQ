@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OfficeLazy, OfficeShell } from "@/components/office/OfficeLazy";
 import { OfficePanel } from "@/components/office/OfficePanel";
 import { OFFICE_RESERVE, type OfficeCardLabels } from "@/components/office/labels";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
 import { POLL, type OfficeFeed, type OfficeFeedSnapshot, type OfficePoller } from "@/lib/office/poll";
 import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
 import en from "../../messages/en.json";
@@ -153,6 +153,19 @@ describe("OfficePanel", () => {
     expect(snap.desks.some((d) => d.state !== "asleep" && !d.title)).toBe(true);
   });
 
+  it("reads a ten-desk v3 snapshot with five rows: the back row (slots 5 to 9) counts in the +N more line, never vanishes", () => {
+    const v3 = OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot;
+    const { poller } = fakePoller({ status: "ready", snapshot: v3, fetchedAt: OFFICE_FIXTURE_NOW });
+    render(<OfficePanel locale="en" labels={labels} poller={poller} now={() => OFFICE_FIXTURE_NOW} />);
+    const desks = screen.getAllByTestId("office-desk");
+    expect(desks).toHaveLength(5);
+    expect(desks[0].textContent).toContain("Narrower 3D perf selection");
+    expect(screen.getByTestId("office-panel").textContent).not.toContain("Ten Rovers in the live scene");
+    // One session past ten plus the five on the back row.
+    expect(screen.getByTestId("office-extra").textContent).toBe("+6 more sessions");
+    expect(screen.getByTestId("office-count-active").textContent).toContain("2");
+  });
+
   it("shows an awake desk's helpers after its activity on the same truncating line (one helper, Indonesian asisten)", () => {
     const v2 = OFFICE_FIXTURES_V2.busy as OfficeFeedSnapshot;
     const { poller } = fakePoller({ status: "ready", snapshot: v2, fetchedAt: OFFICE_FIXTURE_NOW });
@@ -173,7 +186,7 @@ describe("OfficePanel", () => {
     expect(screen.getAllByTestId("office-desk")[0].querySelector(".truncate")!.textContent).toBe("Copilot \u00b7 Mengedit \u00b7 3 asisten");
   });
 
-  it("polls snapshot v2 by default and reads a v1 body (a rollback) as a desk list without helpers", async () => {
+  it("polls snapshot v3 by default and reads a v1 body (a rollback) as a desk list without helpers", async () => {
     const urls: string[] = [];
     vi.stubGlobal(
       "fetch",
@@ -184,7 +197,7 @@ describe("OfficePanel", () => {
     );
     render(<OfficePanel locale="en" labels={labels} />);
     await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "ready"));
-    expect(urls[0]).toBe("/api/office?v=2");
+    expect(urls[0]).toBe("/api/office?v=3");
     expect(screen.getAllByTestId("office-desk")[0].querySelector(".truncate")!.textContent).toBe("Copilot \u00b7 Editing");
   });
 
@@ -398,7 +411,7 @@ describe("OfficeLazy", () => {
     expect(screen.getByRole("status").textContent).toBe(labels.disabled);
     io.fire(false);
     await waitFor(() => expect(section).toHaveAttribute("data-status", "disabled"));
-    expect(fetcher).toHaveBeenCalledWith("/api/office?v=2", expect.objectContaining({ credentials: "omit" }));
+    expect(fetcher).toHaveBeenCalledWith("/api/office?v=3", expect.objectContaining({ credentials: "omit" }));
     expect(section).not.toBeVisible();
   });
 });

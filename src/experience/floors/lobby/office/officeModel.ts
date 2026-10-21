@@ -1,4 +1,4 @@
-import { deskTitle, officeCounts, type OfficeCounts } from "@/lib/office/model";
+import { deskTitle, officeCounts, withSeats, type OfficeCounts } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
 import { OFFICE_DESKS, type OfficeActivity, type OfficeAgent, type OfficeGithubItem, type OfficeProgress, type OfficeRecent, type OfficeState, type OfficeToday } from "@/lib/office/protocol";
 import type { OfficeTranslate } from "../officeLayout";
@@ -9,8 +9,9 @@ import { OFFICE_STATE_STYLE } from "./officeVisual";
 export { safeGithubUrl, safeRepoUrl } from "@/lib/office/model";
 
 /**
- * The 3D office's view of a feed: always five Rovers (a slot without a session is an off-duty Rover asleep),
- * every Rover asleep when the office is off, disabled or offline, and only protocol fields (owner decision D3).
+ * The 3D office's view of a feed: always five Rovers (a slot without a session is an off-duty Rover asleep; a v3
+ * snapshot's back-row desks, slots 5 to 9, count in `extra` until the scene draws ten), every Rover asleep when the
+ * office is off, disabled or offline, and only protocol fields (owner decision D3).
  */
 export type OfficeViewMode = "live" | "semi-live" | "off" | "offline";
 
@@ -43,7 +44,7 @@ export interface OfficeView {
 const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [], helpers: 0 });
 
 export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): OfficeView {
-  const snap = feed.status === "disabled" ? null : feed.snapshot;
+  const snap = feed.status === "disabled" || !feed.snapshot ? null : withSeats(feed.snapshot, OFFICE_DESKS);
   const mode: OfficeViewMode = feed.status === "offline" ? "offline" : snap ? snap.mode : "off";
   const sleeping = mode === "off" || mode === "offline";
   const rovers = Array.from({ length: OFFICE_DESKS }, (_, slot): OfficeRoverView => {

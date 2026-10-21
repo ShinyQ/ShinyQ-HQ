@@ -14,19 +14,29 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Contract
 
-- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`) and
-  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0;
-  `OfficeSnapshot` is v2). The disabled answer `{v:1, enabled:false}` is the same in both.
+- `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`),
+  `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0) and
+  `OfficeResponseV3` (`GET /api/office?v=3`: v2 with `v: 3` and up to `OFFICE_SEATS` (10) desks, slots 0 to 9, `extra`
+  counting sessions past ten; `OfficeSnapshot` is v3). The disabled answer `{v:1, enabled:false}` is the same in all.
+- Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
+  front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
+  seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
+  with at most five sessions (part A clients, already deployed and polling v2, see no change).
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
-  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2; no query, `?v=3` or junk
-  get v1.
-- Clients validate with `parseOfficeResponse` (v1) or `parseOfficeResponseV2` (strict v2, plus a v1 body read as v2
-  without helpers, for a rolled-back Worker) and hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Who polls what: the 3D office's poller (`createOfficePoller({ path, parse, interval })` in `office/live.ts`: the fast
-  cadence near the office or with a drawer open, 30 s from afar, nothing out of view) and the Classic card v2; the L1
-  beacon's watch v1, every 30 s while the scene's poller is not running. `signalFromBody` reads both.
-- Fixtures: `OFFICE_FIXTURES` (v1) and `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) in
-  `src/lib/office/fixtures.ts` (busy, rough, quiet, semiLive, off, disabled).
+  `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
+  v3; no query, `?v=4` or junk get v1.
+- Clients validate with `parseOfficeResponse` (v1), `parseOfficeResponseV2` (strict v2, five desks, plus a v1 body read
+  as v2 without helpers) or `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
+  rolled-back Worker or Function) and hide on null; the Worker validates beats with `parseOfficeBeat`.
+- Who polls what (all `?v=3`, `OFFICE_V3_PATH`): the 3D office's poller (`createOfficePoller({ path, parse, interval })`
+  in `office/live.ts`: the fast cadence near the office or with a drawer open, 30 s from afar, nothing out of view),
+  the Classic card, and the L1 beacon's watch every 30 s while the scene's poller is not running (so a back-row asker
+  lights the beacon; the same one request per 30 s as before). `signalFromBody` reads v1 to v3 bodies with up to ten
+  desks and slots 0 to 9. Until the scene and the card draw ten (A2 Tasks 5 and 7), `withSeats` (`src/lib/office/model.ts`)
+  folds the back row into `extra` for `officeView` and the card's "+N more" line; the signal keeps every asker.
+- Fixtures: `OFFICE_FIXTURES` (v1), `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) and `OFFICE_FIXTURES_V3` (busy
+  seats ten: drones at slots 0, 2, 5 and 9, askers at 3 and 7, one more in `extra`) in `src/lib/office/fixtures.ts`
+  (busy, rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.
 
 ### Privacy (owner decision D3)
@@ -57,10 +67,14 @@ Index: [AGENTS.md](../../AGENTS.md).
   (15 min while testing, on CI or waiting for input), done for 20 s, failed until the next beat, removed after 30 min.
   No alarms.
 - Helpers: a beat's `helpers` replaces the stored count, a beat without it keeps it, 0 clears it; a count change adds
-  no `recent` entry; a privatized repository keeps it. `viewV2` shows it (`effectiveHelpers`, capped at 9) while the
-  session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1) never does.
-  The Durable Object's `/snapshot` answers `viewV2` for `?v=2`, else `view`; the Worker forwards only `?v=2`.
-- Desks: five stable slots (`assignSlots`); an awake newcomer may take the longest-asleep desk; others are `extra`.
+  no `recent` entry; a privatized repository keeps it. `viewV2` and `viewV3` show it (`effectiveHelpers`, capped at 9)
+  while the session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1)
+  never does. The Durable Object's `/snapshot` answers `viewV3` for `?v=3`, `viewV2` for `?v=2`, else `view`; the
+  Worker forwards only `?v=2` and `?v=3`.
+- Seats: ten stable slots (`assignSlots`, `OFFICE_SEATS`). The front row fills first: a free seat goes to the lowest
+  free slot, and a back-row session moves to a front-row seat as soon as one is free (oldest first), so v1 and v2 show
+  what five desks showed. Only when all ten are taken may an awake newcomer take the longest-asleep seat; others are
+  `extra`. `view` and `viewV2` list slots 0 to 4 and count the rest in `extra`; `viewV3` lists all ten.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
 - Workflow runs carry `run_attempt` (deliveries arrive in any order): an older attempt and a late `running` of a
@@ -68,12 +82,13 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (v1) and `GET /api/office?v=2` (v2) (always 200 JSON: the snapshot,
-  `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
-  `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
-  `caches.default` for 5 s per data center under one key per version (`/api/office`, `/api/office?v=2`); v2 fetches
-  the Worker's `/snapshot?v=2` and validates with `parseOfficeResponseV2`, so a rolled-back Worker's v1 body is served
-  as v2 without helpers; `POST /api/office/beat` and `/github` forward the raw body and signature
+- `functions/_lib/office.ts`: `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3)
+  (always 200 JSON: the snapshot, `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching
+  `If-None-Match`) and `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer
+  `public, max-age=60`), stored in `caches.default` for 5 s per data center under one key per version (`/api/office`,
+  `/api/office?v=2`, `/api/office?v=3`; any other query shares the v1 entry); v2 and v3 fetch the Worker's
+  `/snapshot?v=2` or `?v=3` and validate with `parseOfficeResponseV2` or `parseOfficeResponseV3`, so a rolled-back
+  Worker's older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
@@ -87,7 +102,11 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
   `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
-  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2).
+  `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2). A Worker
+  rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, five desks without helpers) and seats only five
+  (the rest in `extra`); it reseats a stored back-row slot on the next beat (until then its snapshot fails validation
+  and the Function answers mode off, so a rollback with more than five sessions reads off for a few seconds). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
+  Function gets v1 (read as v3).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
