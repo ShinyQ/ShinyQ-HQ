@@ -1,11 +1,12 @@
 import { Color, Euler, Matrix4, Quaternion, Vector3 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
-import type { OfficeState } from "@/lib/office/protocol";
+import type { OfficeJobStatus, OfficeState } from "@/lib/office/protocol";
 import { LOBBY } from "../../../config";
 import { OFFICE, OFFICE_SEAT_COUNT, officeTowerColumn, officeTowerYaw, type OfficeSlot } from "../officeLayout";
 import { confettiAt, CREW, DRONES, dronePoint, sparkAt, trailAt, TRAIL_SIZE, type CrewFx, type FxPoint } from "./crew";
 import type { OfficeView } from "./officeModel";
-import { OFFICE_ROVER } from "./officeVisual";
+import { OFFICE_ROVER, STATUS_COLOR } from "./officeVisual";
+import { lanesOf } from "./pipeline";
 
 /**
  * The crew's glow effects and the CI tower's lane dots, written in place into the office glow mesh (no allocation in
@@ -120,26 +121,64 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
 /**
  * The tower's LED matrix after the ten Rovers' glow (`start`: the glow instance count derives from the seat count): up
  * to 24 lanes of 8 dots, bottom to top, over most of the slim column's stop-facing face (`base` over the plinth, `gap`
- * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (0.91 u of its 1.2 u face). Idle dots stay a
- * dim visible grid (`idle`), a run's pending lanes a little brighter, done lanes bright green, the next lane chasing.
+ * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (1.16 u of its 1.2 u face with the lit
+ * size), sized to read from the office stop on desktop (owner decision 2026-10-21: about 1.6 times part A's dots). Idle
+ * dots stay a dim visible grid (`idle`), queued lanes a dim steady slate (`pending`), done lanes green and failed lanes
+ * red (`done`), running lanes violet and brighter (`run`): a chase in full motion (the head dot, the one behind it,
+ * the rest at `base`), steady at `still` under reduced motion, so they never read as queued without motion either.
  */
-export const TOWER = { lanes: 24, dots: 8, start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
+export const TOWER = {
+  lanes: 24,
+  dots: 8,
+  start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count),
+  base: 0.4,
+  gap: 0.36,
+  across: 0.14,
+  size: { lit: 0.18, idle: 0.14 },
+  idle: 0.35,
+  pending: 0.6,
+  done: 1.8,
+  run: { base: 1, head: 2.8, tail: 1.7, still: 1.6 },
+} as const;
+
+/**
+ * The pipeline effects' glow instances right after the tower's last dot (`pipelineFx.ts`), in this order: 3 packets of
+ * 4 dots, 3 bursts of 8 dots, the crown's 8 dots, the flying package's 6-dot trail, 13 package cores (the flying one,
+ * then the 12 stacked), the dock ring's 8 dots.
+ */
+export const PIPE_GLOW = { start: TOWER.start + TOWER.lanes * TOWER.dots, packets: 3, packetDots: 4, bursts: 3, burstDots: 8, crown: 8, trail: 6, cores: 13, dock: 8, count: 71 } as const;
+/** The package boxes in the parts mesh after every Rover's parts (`PACKAGE_START`): the flying one, then the dock's stack of 12 (3 per row), `size` u. */
+export const PIPE_PARTS = { flying: 1, stack: 12, perRow: 3, size: 0.5, count: 13 } as const;
+
+export type LaneStatus = "idle" | OfficeJobStatus;
 
 export interface TowerLanes {
-  total: number;
-  done: number;
-  running: boolean;
+  /** Lane states bottom to top, at most `TOWER.lanes`; the lanes past them stay the dim idle grid. */
+  states: readonly LaneStatus[];
+  /** Whether any lane runs (its dots chase). */
+  chasing: boolean;
+  /** The states as one string, built once per view, for `towerKey`. */
+  sig: string;
 }
 
-/** Stage A (v1 data): the newest running public run's progress as anonymous lanes (scaled to 24 past 24 jobs); dark without one. */
+const tower = (states: LaneStatus[]): TowerLanes => ({ states, chasing: states.includes("running"), sig: states.map((s) => s[0]).join("") });
+export const DARK_TOWER: TowerLanes = tower([]);
+
+/**
+ * The tower's lanes: one per job from snapshot v4's pipeline (`lanesOf`: running runs first, at most 24), else part A's
+ * anonymous lanes from the newest running public run's `progress` (a v4 body with no runs, after a rollback), dark without either.
+ */
 export function towerLanes(view: OfficeView): TowerLanes {
+  const lanes = lanesOf(view.pipeline);
+  if (lanes.length > 0) return tower(lanes.map((l) => l.status));
   let run: OfficeView["github"][number] | null = null;
   for (const g of view.github) if (g.kind === "run" && g.status === "running" && (!run || g.at > run.at)) run = g;
-  if (!run) return { total: 0, done: 0, running: false };
+  if (!run) return DARK_TOWER;
   const jobs = run.progress?.total ?? 1;
   const total = Math.min(TOWER.lanes, jobs);
-  const done = Math.min(jobs, run.progress?.done ?? 0);
-  return { total, done: jobs > TOWER.lanes ? Math.floor((done * total) / jobs) : done, running: true };
+  const finished = Math.min(jobs, run.progress?.done ?? 0);
+  const done = jobs > TOWER.lanes ? Math.floor((finished * total) / jobs) : finished;
+  return tower(Array.from({ length: total }, (_, i): LaneStatus => (i < done ? "done" : i === done ? "running" : "queued")));
 }
 
 const COL = officeTowerColumn(LOBBY.officeWing);
@@ -148,31 +187,32 @@ const FACE = officeTowerYaw(LOBBY.officeWing);
 const FACE_Q = new Quaternion().setFromAxisAngle(UP, FACE);
 const IDLE = "#64748b";
 
-/** Writes the lane dots on the column's stop-facing side: done lanes green, the next lane chasing, the rest a dim grid. */
+/** Writes the lane dots on the column's stop-facing side: done lanes green, failed lanes red, running lanes violet (chasing, or steady and bright under reduced motion), queued and idle lanes a dim slate grid. */
 export function writeTower(lanes: TowerLanes, t: number, reduced: boolean, matrices: Float32Array, colors: Float32Array): void {
   const cx = Math.cos(FACE);
   const sx = -Math.sin(FACE);
   const fx = Math.sin(FACE);
   const fz = Math.cos(FACE);
   const out = OFFICE.tower.column / 2 + 0.02;
-  const head = reduced ? 0 : Math.floor(t * 8) % TOWER.dots;
+  const head = reduced ? -1 : Math.floor(t * 8) % TOWER.dots;
+  const tail = (head + TOWER.dots - 1) % TOWER.dots;
+  const { run } = TOWER;
   for (let lane = 0; lane < TOWER.lanes; lane++) {
-    const shown = lane < lanes.total;
-    const chasing = shown && lanes.running && lane === lanes.done;
+    const s = lanes.states[lane] ?? "idle";
     for (let d = 0; d < TOWER.dots; d++) {
       const i = TOWER.start + lane * TOWER.dots + d;
       const across = (d - (TOWER.dots - 1) / 2) * TOWER.across;
       V.set(COL.x + cx * across + fx * out, OFFICE.tower.plinth + TOWER.base + lane * TOWER.gap, COL.z + sx * across + fz * out);
-      M.compose(V, FACE_Q, S.setScalar(shown ? TOWER.size.lit : TOWER.size.idle)).toArray(matrices, i * 16);
-      const color = lane < lanes.done ? "#34d399" : chasing ? "#a78bfa" : IDLE;
-      const on = lane < lanes.done ? TOWER.done : chasing ? (d === head ? 1.4 : 0.5) : shown ? TOWER.pending : TOWER.idle;
+      M.compose(V, FACE_Q, S.setScalar(s === "idle" ? TOWER.size.idle : TOWER.size.lit)).toArray(matrices, i * 16);
+      const color = s === "done" ? "#34d399" : s === "failed" ? STATUS_COLOR.failure : s === "running" ? "#a78bfa" : IDLE;
+      const runGain = head < 0 ? run.still : d === head ? run.head : d === tail ? run.tail : run.base;
+      const on = s === "done" || s === "failed" ? TOWER.done : s === "running" ? runGain : s === "queued" ? TOWER.pending : TOWER.idle;
       C.set(color).multiplyScalar(on).toArray(colors, i * 3);
     }
   }
 }
 
-/** Changes when `writeTower` would write other colours: the lanes, and the chasing dot while a lane is chasing. */
+/** Changes when `writeTower` would write other colours: the lane states, and the chasing dot while a lane runs. */
 export function towerKey(lanes: TowerLanes, t: number, reduced: boolean): string {
-  const chasing = lanes.running && lanes.done < lanes.total;
-  return `${lanes.total}:${lanes.done}:${lanes.running}:${reduced || !chasing ? 0 : Math.floor(t * 8) % TOWER.dots}`;
+  return `${lanes.sig}:${reduced || !lanes.chasing ? 0 : Math.floor(t * 8) % TOWER.dots}`;
 }

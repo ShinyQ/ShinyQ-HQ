@@ -4,8 +4,9 @@
  * GET /api/office (validated with `parseOfficeResponse`), `OfficeResponseV2` (v1 plus desk `helpers`) through
  * GET /api/office?v=2 (validated with `parseOfficeResponseV2`, which also takes a v1 body after a rollback) and
  * `OfficeResponseV3` (v2 with up to ten desks, slots 0 to 9) through GET /api/office?v=3 (`parseOfficeResponseV3`,
- * which also takes a v2 or v1 body after a rollback). v1 and v2 keep five desks (slots 0 to 4) plus `extra`. Clients
- * hide on null. v1 never changes: a new field means a new version, with every side in one PR.
+ * which also takes a v2 or v1 body after a rollback) and `OfficeResponseV4` (v3 plus the CI `pipeline`, for the 3D scene
+ * only) through GET /api/office?v=4 (`parseOfficeResponseV4` in `./protocolV4.ts`, which also takes a v3, v2 or v1 body after a rollback, with
+ * an empty pipeline). v1 and v2 keep five desks (slots 0 to 4) plus `extra`. Clients hide on null. v1 never changes: a new field means a new version, with every side in one PR.
  */
 export const OFFICE_AGENTS = ["copilot", "claude", "codex"] as const;
 export type OfficeAgent = (typeof OFFICE_AGENTS)[number];
@@ -127,6 +128,50 @@ export interface OfficeSnapshotV3 extends Omit<OfficeSnapshotV2, "v"> {
 
 export type OfficeResponseV3 = OfficeSnapshotV3 | OfficeDisabledV1;
 
+/** Snapshot v4's pipeline caps: newest runs, lanes (jobs) per run, ships, a job name's length and a ship key's. */
+export const OFFICE_PIPELINE = { runs: 3, jobs: 24, ships: 10, jobName: 40, key: 160 } as const;
+
+export type OfficeJobStatus = "queued" | "running" | "done" | "failed";
+export interface OfficePipelineJob {
+  name: string;
+  status: OfficeJobStatus;
+}
+export interface OfficePipelineRun {
+  id: number;
+  repo: string;
+  title: string;
+  url: string;
+  status: "running" | "success" | "failure";
+  /** The seat (0 to 9) of the live session on the run's public repo and head branch; absent without one (a push to main). */
+  slot?: number;
+  /** Epoch ms the Worker first saw this attempt. */
+  at: number;
+  /** First-seen order, at most OFFICE_PIPELINE.jobs; later jobs fold into the last lane's status. */
+  jobs: OfficePipelineJob[];
+}
+export interface OfficeShip {
+  /** The feed key: `pr:<repo>#<number>` or `deploy:<id>`. */
+  key: string;
+  kind: "merge" | "deploy";
+  status: "running" | "success" | "failure" | "merged";
+  at: number;
+  /** A merge's desk (0 to 9), as for runs. */
+  slot?: number;
+}
+export interface OfficePipeline {
+  /** Newest first, at most OFFICE_PIPELINE.runs. */
+  runs: OfficePipelineRun[];
+  /** Newest first, at most OFFICE_PIPELINE.ships. */
+  ships: OfficeShip[];
+}
+
+/** GET /api/office?v=4 (the 3D scene only): the v3 snapshot (ten seats) with `v: 4` and the pipeline. */
+export interface OfficeSnapshotV4 extends Omit<OfficeSnapshotV3, "v"> {
+  v: 4;
+  pipeline: OfficePipeline;
+}
+export type OfficeResponseV4 = OfficeSnapshotV4 | OfficeDisabledV1;
+
 /** What the clients hold: the newest snapshot version. */
 export type OfficeSnapshot = OfficeSnapshotV3;
 export type OfficeResponse = OfficeResponseV3;
@@ -156,23 +201,24 @@ export function wibDay(now: number): string {
   return new Date(now + 7 * 3_600_000).toISOString().slice(0, 10);
 }
 
-type Obj = Record<string, unknown>;
+/** Shared with the v4 validators (`./protocolV4.ts`), kept out of this module so the Classic card never carries them. */
+export type Obj = Record<string, unknown>;
 
-const REPO = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
+export const REPO = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
 const BRANCH = /^[A-Za-z0-9._/-]{1,120}$/;
 const SESSION = /^[0-9a-f]{64}$/;
 const BEAT_TITLE = /^[\p{L}\p{N} .,:;'()#&+/!?-]{1,80}$/u;
-const URL_RE = /^https:\/\/[^\s"'<>\\]{1,300}$/;
+export const URL_RE = /^https:\/\/[^\s"'<>\\]{1,300}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const UNSAFE_TEXT = /[\u0000-\u001f\u007f<>]/;
+export const UNSAFE_TEXT = /[\u0000-\u001f\u007f<>]/;
 
-const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
-const isInt = (x: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): x is number => typeof x === "number" && Number.isInteger(x) && x >= min && x <= max;
-const oneOf = <T extends string>(list: readonly T[], x: unknown): x is T => typeof x === "string" && (list as readonly string[]).includes(x);
-const onlyKeys = (o: Obj, allowed: readonly string[]) => Object.keys(o).every((k) => allowed.includes(k));
-const optional = (o: Obj, key: string, ok: (x: unknown) => boolean) => o[key] === undefined || ok(o[key]);
-const matches = (re: RegExp) => (x: unknown) => typeof x === "string" && re.test(x);
-const isText = (x: unknown) => typeof x === "string" && x.length >= 1 && x.length <= OFFICE_FEED_TITLE_MAX && !UNSAFE_TEXT.test(x);
+export const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
+export const isInt = (x: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): x is number => typeof x === "number" && Number.isInteger(x) && x >= min && x <= max;
+export const oneOf = <T extends string>(list: readonly T[], x: unknown): x is T => typeof x === "string" && (list as readonly string[]).includes(x);
+export const onlyKeys = (o: Obj, allowed: readonly string[]) => Object.keys(o).every((k) => allowed.includes(k));
+export const optional = (o: Obj, key: string, ok: (x: unknown) => boolean) => o[key] === undefined || ok(o[key]);
+export const matches = (re: RegExp) => (x: unknown) => typeof x === "string" && re.test(x);
+export const isText = (x: unknown) => typeof x === "string" && x.length >= 1 && x.length <= OFFICE_FEED_TITLE_MAX && !UNSAFE_TEXT.test(x);
 
 function isProgress(x: unknown): boolean {
   return isObj(x) && onlyKeys(x, ["done", "total"]) && isInt(x.total, 1, 1000) && isInt(x.done, 0, 1000) && x.done <= x.total;

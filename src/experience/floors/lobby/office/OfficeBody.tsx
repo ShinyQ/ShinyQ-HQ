@@ -8,12 +8,11 @@ import type { RoomBodyProps } from "@/hud/drawer/bodies";
 import { External, MetricTiles } from "@/hud/drawer/blocks";
 import { sinceLabel } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
-import type { OfficeGithubItem } from "@/lib/office/protocol";
+import type { OfficeGithubItem, OfficePipeline } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDeskRoom, type OfficeTranslate } from "../officeLayout";
-import { loadOffice } from "./chunk";
+import { loadOffice, useOfficeModule, type OfficeModule } from "./chunk";
 import { crewAnnouncement, crewLines } from "./crewSummary";
-import { officeLive, useOfficeFeed } from "./live";
 import { chipLines, helpersText, officeView, safeGithubUrl, safeRepoUrl, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { OFFICE_STATE_STYLE, STATUS_COLOR } from "./officeVisual";
 
@@ -220,45 +219,130 @@ function GithubPanel({ items, locale, now }: { items: readonly OfficeGithubItem[
   );
 }
 
+const JOB_COLOR = { queued: "#8a93b5", running: STATUS_COLOR.running, done: STATUS_COLOR.success, failed: STATUS_COLOR.failure } as const;
+
+/** A shipped production deploy: the feed title the Worker gives the production environment (as `officeSignal.ts`; a preview never ships). */
+const shipped = (g: OfficeGithubItem) => (g.kind === "pr" && g.status === "merged") || (g.kind === "deploy" && g.status === "success" && g.title === "Deploy · production");
+
+/**
+ * The CI tower's text alternative: the latest runs with their lanes (the last snapshot's while offline, under the
+ * offline note; for a snapshot without a pipeline, a rollback to v3, the running run's anonymous progress), then the
+ * latest merges and production deploys that succeeded.
+ */
+function CiPanel({ office, pipeline, locale, now }: { office: OfficeView; pipeline: OfficePipeline | undefined; locale: Locale; now: number }) {
+  const t = useTranslations("office");
+  const runs = pipeline?.runs ?? [];
+  const ships = office.github.filter(shipped);
+  const anonymous = pipeline ? undefined : office.github.find((g) => g.kind === "run" && g.status === "running");
+  if (runs.length === 0 && ships.length === 0 && !anonymous) return <p className={NOTE}>{t("3d.ci.none")}</p>;
+  return (
+    <dl className="grid gap-6" data-testid="office-ci">
+      {(anonymous || runs.length > 0) && (
+        <Field label={t("3d.ci.runs")}>
+          <ul className="space-y-2">
+            {anonymous && <GithubRow item={anonymous} locale={locale} now={now} />}
+            {runs.map((r) => {
+              const url = safeGithubUrl(r.url);
+              return (
+                <li key={r.id} className={ROW} data-testid="office-ci-run" data-status={r.status}>
+                  <p className="flex items-center gap-2 text-ink">
+                    <Dot color={STATUS_COLOR[r.status]} />
+                    {url ? <External href={url}>{r.title}</External> : r.title}
+                  </p>
+                  <p className="text-xs text-ink-3">{[r.repo, t(`3d.github.status.${r.status}`), r.slot !== undefined && t("3d.ci.desk", { n: r.slot + 1 }), sinceLabel(r.at, locale, now)].filter(Boolean).join(" · ")}</p>
+                  <ol className="mt-2 grid gap-1 text-[13px] leading-5 text-ink-2">
+                    {r.jobs.map((j, k) => (
+                      <li key={k} className="flex items-center gap-2" data-status={j.status}>
+                        <Dot color={JOB_COLOR[j.status]} />
+                        {`${j.name}: ${t(`3d.ci.job.${j.status}`)}`}
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              );
+            })}
+          </ul>
+        </Field>
+      )}
+      {ships.length > 0 && (
+        <Field label={t("3d.ci.ships")}>
+          <ul className="space-y-2">
+            {ships.map((item, i) => (
+              <GithubRow key={`${item.url}-${i}`} item={item} locale={locale} now={now} />
+            ))}
+          </ul>
+        </Field>
+      )}
+    </dl>
+  );
+}
+
 /** The panel's standing note (how the data arrives), shown in every feed state. */
 function PanelNotes({ panel }: { panel: OfficePanel }) {
   const t = useTranslations("office");
-  return <p className={NOTE}>{t(panel === "github" ? "3d.githubNote" : "3d.hooks")}</p>;
+  return <p className={NOTE}>{t(panel === "github" || panel === "ci" ? "3d.githubNote" : "3d.hooks")}</p>;
 }
 
+type FeedNotice = "loading" | "offlineEmpty" | "disabled";
+
 /** No data to show yet or any more: the first fetch is pending or failed, or the live office is switched off. */
-function feedNotice(feed: OfficeFeed): "loading" | "offlineEmpty" | "disabled" | null {
+function feedNotice(feed: OfficeFeed): FeedNotice | null {
   if (feed.status === "disabled") return "disabled";
   if (feed.snapshot) return null;
   return feed.status === "offline" ? "offlineEmpty" : "loading";
 }
 
+function Notice({ notice }: { notice: FeedNotice }) {
+  const t = useTranslations("office");
+  return (
+    <p className="text-[15px] leading-6 text-ink-2" role="status" data-testid="office-notice">
+      {t(`3d.drawer.${notice}`)}
+    </p>
+  );
+}
+
 /**
  * Agent Office drawer bodies (chunk; registered as the `office` kind in hud/drawer/bodies.tsx): the summary half
- * of the wall, the GitHub half, or one Rover's desk, from the live feed. Opening any of them polls (reason
- * "drawer") until it closes. Only protocol fields: no prompt, no path, no private title.
+ * of the wall, the GitHub half, the CI tower, or one Rover's desk, from the live feed. The feed is the scene chunk's one poller
+ * (`./live.ts`, read through the loaded `./scene.ts`, so this chunk carries no poller or protocol validators): until
+ * that chunk is here the drawer shows its loading note, or the offline note when the chunk fails to load (the next
+ * open retries). Opening any of them polls (reason "drawer") until it closes. Only protocol fields: no prompt, no
+ * path, no private title.
  */
 export function OfficeBody({ view, locale }: RoomBodyProps) {
-  const t = useTranslations("office");
-  const feed = useOfficeFeed();
-  const office = useMemo(() => officeView(feed), [feed]);
-  const now = useNow(5000);
+  const office = useOfficeModule();
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    officeLive.want("drawer", true);
-    // Opening a drawer is a user action: start (or retry) the 3D office too, even with `?prefetch=off`.
-    void loadOffice().catch(() => null);
-    return () => officeLive.want("drawer", false);
+    // Opening a drawer is a user action: start (or retry) the 3D office, even with `?prefetch=off`; its feed lives there.
+    void loadOffice().catch(() => setFailed(true));
   }, []);
   const panel = view.office;
   if (!panel) return null;
+  if (office) return <LiveBody live={office} panel={panel} locale={locale} />;
+  return (
+    <div className="grid gap-6" data-testid="office-body" data-panel={panel.panel}>
+      <Notice notice={failed ? "offlineEmpty" : "loading"} />
+      <PanelNotes panel={panel.panel} />
+    </div>
+  );
+}
+
+function LiveBody({ live, panel, locale }: { live: OfficeModule; panel: NonNullable<RoomView["office"]>; locale: Locale }) {
+  const t = useTranslations("office");
+  const feed = live.useOfficeFeed();
+  const office = useMemo(() => officeView(feed), [feed]);
+  const now = useNow(5000);
+  const { officeLive } = live;
+  useEffect(() => {
+    officeLive.want("drawer", true);
+    return () => officeLive.want("drawer", false);
+  }, [officeLive]);
   const notice = feedNotice(feed);
   const rover = panel.panel === "desk" ? office.rovers[panel.slot ?? 0] : undefined;
   return (
     <div className="grid gap-6" data-testid="office-body" data-panel={panel.panel}>
       {notice ? (
-        <p className="text-[15px] leading-6 text-ink-2" role="status" data-testid="office-notice">
-          {t(`3d.drawer.${notice}`)}
-        </p>
+        <Notice notice={notice} />
       ) : (
         <>
           {feed.status === "offline" && (
@@ -270,6 +354,8 @@ export function OfficeBody({ view, locale }: RoomBodyProps) {
             rover && <DeskPanel rover={rover} updatedAt={office.updatedAt} locale={locale} now={now} />
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
+          ) : panel.panel === "ci" ? (
+            <CiPanel office={office} pipeline={feed.snapshot?.pipeline} locale={locale} now={now} />
           ) : (
             <SummaryPanel office={office} locale={locale} />
           )}

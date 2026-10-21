@@ -1282,7 +1282,16 @@
       },
       "hooks": "Live from agent hooks on Kurniadi's machine, refreshed about every 10 seconds while you watch.",
       "githubNote": "From public GitHub webhooks. Private repositories never appear here.",
-      "target": { "office": "Agent Office: summary", "github": "Agent Office: GitHub board", "desk": "Desk {n}: {agent}" },
+      "ciTitle": "Ship-It Pipeline",
+      "ciNote": "The CI tower: one light lane per job of the latest runs on public repositories, a package on the dock per merged pull request, a beam per production deploy.",
+      "target": { "office": "Agent Office: summary", "github": "Agent Office: GitHub board", "ci": "Agent Office: CI tower", "desk": "Desk {n}: {agent}" },
+      "ci": {
+        "runs": "Latest runs",
+        "ships": "Merged and deployed",
+        "none": "No recent runs",
+        "desk": "From desk {n}",
+        "job": { "queued": "queued", "running": "running", "done": "done", "failed": "failed" }
+      },
       "github": {
         "kind": { "run": "Workflow run", "pr": "Pull request", "push": "Push", "deploy": "Deploy" },
         "status": { "running": "running", "success": "passed", "failure": "failed", "merged": "merged", "opened": "opened", "pushed": "pushed" }

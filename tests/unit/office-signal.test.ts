@@ -1,16 +1,41 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { officeSignal, setOfficeSignal, signalFromBody } from "@/experience/floors/lobby/office/officeSignal";
-import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
-import type { OfficeSnapshotV1 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
+import type { OfficeSnapshotV1, OfficeSnapshotV4 } from "@/lib/office/protocol";
 
 const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
 
 describe("signalFromBody", () => {
   it("lists asking desks and a recent deploy", () => {
     // The busy fixture's desk 3 already asks; desk 1 asks too.
-    const snap = { ...busy, desks: busy.desks.map((d, i) => (i === 1 ? { ...d, state: "input" } : d)), github: [{ kind: "deploy", status: "success", repo: "ShinyQ/ShinyQ-HQ", title: "Deploy · production", at: 1_000, url: "https://github.com/ShinyQ/ShinyQ-HQ" }] };
+    const snap = { ...busy, updatedAt: undefined, desks: busy.desks.map((d, i) => (i === 1 ? { ...d, state: "input" } : d)), github: [{ kind: "deploy", status: "success", repo: "ShinyQ/ShinyQ-HQ", title: "Deploy · production", at: 1_000, url: "https://github.com/ShinyQ/ShinyQ-HQ" }] };
     expect(signalFromBody(snap, 20_000)).toEqual({ asking: [snap.desks[1].slot, snap.desks[3].slot], deployAt: 1_000 });
     expect(signalFromBody(snap, 40_000)?.deployAt).toBeNull();
+  });
+  it("fires only for production deploys: a preview or other environment never sets deployAt", () => {
+    const deploy = (title: string, status = "success") => ({ kind: "deploy", status, repo: "ShinyQ/ShinyQ-HQ", title, at: 1_000, url: "https://github.com/ShinyQ/ShinyQ-HQ" });
+    const v3 = { v: 3, enabled: true, updatedAt: 2_000, desks: [], github: [deploy("Deploy · Preview")] };
+    expect(signalFromBody(v3, 2_000)).toEqual({ asking: [], deployAt: null });
+    for (const title of ["Deploy · preview", "Deploy · staging", "Deploy", "Deploy · production (preview)"]) expect(signalFromBody({ ...v3, github: [deploy(title)] }, 2_000)?.deployAt, title).toBeNull();
+    expect(signalFromBody({ ...v3, github: [deploy("Deploy · production", "running")] }, 2_000)?.deployAt).toBeNull();
+    expect(signalFromBody({ ...v3, github: [deploy("Deploy · Preview"), deploy("Deploy · production")] }, 2_000)?.deployAt).toBe(1_000);
+  });
+  it("takes a v4 body's deploy from the pipeline's production ships, not the feed", () => {
+    const github = [{ kind: "deploy", status: "success", title: "Deploy · production", at: 1_500 }];
+    const ship = (status: string, at: number) => ({ key: `deploy:${at}`, kind: "deploy", status, at });
+    const v4 = (ships: unknown[]) => ({ v: 4, enabled: true, updatedAt: 2_000, desks: [], github, pipeline: { runs: [], ships } });
+    expect(signalFromBody(v4([ship("success", 1_000), { key: "pr:x", kind: "merge", status: "merged", at: 1_900 }]), 2_000)?.deployAt).toBe(1_000);
+    expect(signalFromBody(v4([ship("failure", 1_800), ship("running", 1_900)]), 2_000)?.deployAt).toBeNull();
+    expect(signalFromBody(v4([]), 2_000)?.deployAt).toBeNull();
+    const busyV4 = OFFICE_FIXTURES_V4.busy as OfficeSnapshotV4;
+    const at = busyV4.pipeline.ships.find((s) => s.kind === "deploy")!.at;
+    expect(signalFromBody({ ...busyV4, updatedAt: at + 1_000 }, 0)?.deployAt).toBe(at);
+  });
+  it("judges a deploy fresh on the snapshot's server clock (updatedAt) when it has one", () => {
+    const body = (updatedAt: unknown) => ({ v: 3, enabled: true, updatedAt, desks: [], github: [{ kind: "deploy", status: "success", title: "Deploy · production", at: 1_000 }] });
+    expect(signalFromBody(body(20_000), 999_999)?.deployAt).toBe(1_000);
+    expect(signalFromBody(body(40_000), 2_000)?.deployAt).toBeNull();
+    for (const bad of [undefined, "20000", 20_000.5]) expect(signalFromBody(body(bad), 20_000)?.deployAt, String(bad)).toBe(1_000);
   });
   it("returns null for anything malformed, never throws", () => {
     for (const bad of [null, 1, "x", [], { v: 1 }, { v: 1, enabled: true, desks: "x" }, { v: 1, enabled: true, desks: [{ state: 1, slot: "a" }], github: [] }]) expect(signalFromBody(bad, 0)).toBeNull();
@@ -25,23 +50,26 @@ describe("signalFromBody", () => {
     expect(signalFromBody({ ...ok, github: {} }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, v: 2 }, 0)).toEqual({ asking: [2], deployAt: null });
     expect(signalFromBody({ ...ok, v: 3 }, 0)).toEqual({ asking: [2], deployAt: null });
-    for (const v of [0, 4, "3", null]) expect(signalFromBody({ ...ok, v }, 0)).toBeNull();
+    expect(signalFromBody({ ...ok, v: 4 }, 0)).toEqual({ asking: [2], deployAt: null });
+    for (const v of [0, 5, "3", null]) expect(signalFromBody({ ...ok, v }, 0)).toBeNull();
     expect(signalFromBody({ ...ok, enabled: "true" }, 0)).toBeNull();
     const hostile = Object.defineProperty({ v: 1, enabled: true, github: [] }, "desks", { get: () => [{ slot: 0, state: "input" }] });
     expect(signalFromBody(hostile, 0)).toEqual({ asking: [0], deployAt: null });
     // GitHub items it cannot read are skipped (they only feed the deploy time), failures and old deploys too.
-    const github = [null, 1, { kind: "deploy", status: "failure", at: 0 }, { kind: "deploy", status: "success", at: "0" }, { kind: "run", status: "success", at: 0 }, { kind: "deploy", status: "success", at: 9_000 }, { kind: "deploy", status: "success", at: 5_000 }];
+    const title = "Deploy · production";
+    const github = [null, 1, { kind: "deploy", status: "failure", title, at: 0 }, { kind: "deploy", status: "success", title, at: "0" }, { kind: "run", status: "success", title, at: 0 }, { kind: "deploy", status: "success", title, at: 9_000 }, { kind: "deploy", status: "success", title, at: 5_000 }];
     expect(signalFromBody({ ...ok, github }, 10_000)).toEqual({ asking: [2], deployAt: 9_000 });
   });
-  it("accepts v1, v2 and v3 bodies with up to ten desks and slots 0 to 9 (a back-row asker counts)", () => {
+  it("accepts v1 to v4 bodies with up to ten desks and slots 0 to 9 (a back-row asker counts)", () => {
+    expect(signalFromBody(OFFICE_FIXTURES_V4.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3, 7], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES_V3.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3, 7], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES_V2.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3], deployAt: null });
     expect(signalFromBody(OFFICE_FIXTURES.busy, OFFICE_FIXTURE_NOW)).toEqual({ asking: [3], deployAt: null });
     const ten = Array.from({ length: 10 }, (_, slot) => ({ slot, state: slot === 9 ? "input" : "working" }));
-    for (const v of [1, 2, 3]) expect(signalFromBody({ v, enabled: true, desks: ten, github: [] }, 0), String(v)).toEqual({ asking: [9], deployAt: null });
+    for (const v of [1, 2, 3, 4]) expect(signalFromBody({ v, enabled: true, desks: ten, github: [] }, 0), String(v)).toEqual({ asking: [9], deployAt: null });
     expect(signalFromBody({ v: 3, enabled: true, desks: [...ten, { slot: 9, state: "input" }], github: [] }, 0)).toBeNull();
     expect(signalFromBody({ v: 3, enabled: true, desks: [{ slot: 10, state: "input" }], github: [] }, 0)).toBeNull();
-    expect(signalFromBody({ ...OFFICE_FIXTURES_V3.busy, v: 4 }, 0)).toBeNull();
+    expect(signalFromBody({ ...OFFICE_FIXTURES_V3.busy, v: 5 }, 0)).toBeNull();
   });
 
   it("reads no mode: only enabled, the desks and the deploys count", () => {

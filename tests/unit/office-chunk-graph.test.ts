@@ -20,6 +20,8 @@ const OFFICE_ONLY = [
   `${DIR}/crew.ts`,
   `${DIR}/crewFx.ts`,
   `${DIR}/crewFrame.ts`,
+  `${DIR}/pipeline.ts`,
+  `${DIR}/pipelineFx.ts`,
   `${DIR}/interact.ts`,
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
@@ -81,6 +83,13 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
     }
   });
 
+  it("keeps the v4 validators (`protocolV4.ts`) in the scene chunk only: off the drawer body, the watch and the Classic card", () => {
+    const v4 = "src/lib/office/protocolV4.ts";
+    expect(staticClosure(ENTRY).has(v4)).toBe(true);
+    for (const entry of [BODY, WATCH, BEACON, "src/components/office/OfficePanel.tsx"]) expect(staticClosure(entry).has(v4), entry).toBe(false);
+    expect(readFileSync(join(ROOT, "src/lib/office/protocol.ts"), "utf8")).not.toMatch(/^export .* from "\.\/protocolV4";$/m);
+  });
+
   it("keeps the loader, the mount and the layout on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
     for (const f of MAIN) expect(main.has(f), f).toBe(true);
@@ -122,6 +131,8 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
     const body = staticClosure(BODY);
     expect(BODY_ONLY.filter((f) => !body.has(f))).toEqual([]);
     // Turbopack copies a module shared by the two async chunks into each one: the body stays off the canvas and 3D code.
+    // The drawer reads the one poller from the loaded scene module (`useOfficeModule`): no copy of it, the poll loop or the protocol validators.
+    expect([`${DIR}/live.ts`, "src/lib/office/poll.ts"].filter((f) => body.has(f))).toEqual([]);
     const sceneOnly = ["chipRows.ts", "officeAtlas.ts", "officeWall.ts", "officeRig.ts", "crew.ts", "crewFx.ts", "crewFrame.ts", "OfficeScene.tsx", "OfficeChips.tsx", "interact.ts", "runtime.ts"].map((f) => `${DIR}/${f}`);
     expect(sceneOnly.filter((f) => body.has(f))).toEqual([]);
     const loader = readFileSync(join(ROOT, `${DIR}/chunk.ts`), "utf8");
@@ -157,7 +168,8 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
 
   it("starts the 3D office beside the body when an office drawer opens (a user action, so even with `?prefetch=off`)", () => {
     const body = readFileSync(join(ROOT, `${DIR}/OfficeBody.tsx`), "utf8");
-    expect(body).toMatch(/officeLive\.want\("drawer", true\);[^}]*void loadOffice\(\)\.catch\(\(\) => null\);/);
+    expect(body).toMatch(/useEffect\(\(\) => \{\s*\/\/[^\n]*\n\s*void loadOffice\(\)\.catch\(/);
+    expect(body).toMatch(/officeLive\.want\("drawer", true\);/);
     expect(readFileSync(join(ROOT, "src/hud/drawer/bodies.tsx"), "utf8")).toMatch(/const OfficeBody = chunkBody\(\(\) => loadOfficeBody\(\)/);
   });
 });

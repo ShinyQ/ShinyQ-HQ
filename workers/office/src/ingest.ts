@@ -153,7 +153,8 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const state = deployStatus(text(status?.state));
       if (!status || id === null || !state) break;
       const environment = text(status.environment) || text(deployment?.environment) || "production";
-      changes.push({ type: "deploy", id, title: title(`Deploy · ${environment}`, "Deploy"), url: url(status.target_url ?? status.log_url), status: state });
+      // Only the production environment ships in the v4 pipeline (the dock's beam); every deploy stays in the feed.
+      changes.push({ type: "deploy", id, title: title(`Deploy · ${environment}`, "Deploy"), url: url(status.target_url ?? status.log_url), status: state, production: environment.toLowerCase() === "production" });
       break;
     }
     default:

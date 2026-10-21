@@ -5,7 +5,7 @@
  * (the first one also zoomed in to the near pose: the chips add the activity, compact on a phone), the summary,
  * GitHub and Rover drawers, and the semi-live and off modes, at 1440x900, 1280x720, 820x1180 (touch tablet), 390x844
  * and 844x390 (phones) on the full and lite tiers,
- * on a served export with `/api/office` answered from fixtures. SwiftShader WebGL. Never committed; the waits
+ * on a served export with `/api/office` and `/api/stats` answered from fixtures. SwiftShader WebGL. Never committed; the waits
  * follow e2e/office.spec.ts (state, never time).
  *
  *   bun run build && bun scripts/serve-static.ts --port 4481 --dir out &
@@ -27,7 +27,7 @@
  * control, so it pins the drawn camera (`__hq.render.camera`) over the slab after the Director's own pose, lifts the
  * fog, hides the floor groups other than L1 (the ghost slabs above would cover it) and the HTML HUD.
  *
- * The living crew (v2 snapshots, `e2e/office-fixtures.ts`, read as v3; the scene, the card and the beacon's watch ask `?v=3`):
+ * The living crew (v2 snapshots, `e2e/office-fixtures.ts`, read as v3 or v4; the card and the beacon's watch ask `?v=3`, the scene `?v=4`):
  * `crew-a` and `crew-b` at the office stop (far chips) once each Rover holds its state's pose and the helper drones
  * are drawn; `crew-a-near` (desktop sizes only) one zoom key step in, the near chips with "· 3 helpers" and the "+2"
  * pill (an activity that does not fit ends in an ellipsis, a head that still does not fit drops the word "helpers", never the pill); `beacon-spawn` at the
@@ -36,13 +36,26 @@
  * dimmed desks, charge pads). `crew-ten` ten sessions on both rows (`crewTen`: mixed states, drones on both rows, public
  * titles) at the stop, the ten chips in one row (dots on a phone, in two rows); `crew-ten-near` the near pose.
  *
- * `--video <dir>` records one 1440x900 full-tier take (Playwright `recordVideo`) into `<dir>/crew-states.webm` (and
- * `crew-states.mp4` when `ffmpeg` is on the PATH, both trimmed to start at the spawn): the beacon from the Lobby,
- * the drive to the office stop, then `CREW_A`, `CREW_B` and every desk asleep, each held about 6 s of recording once
- * the crew probe shows its poses, and `CREW_A` again one zoom step in (near chips and drones). Alone it records only
- * the video; with `--only` or `--shots` the shots run first.
+ * The ship-it pipeline (v4 snapshots, `shipOffice`: ten desks, nobody asks, public run and PR titles from this site's own
+ * repository; the effects are short, so the page's animation clock is frozen (`freezeOn`) once the probes show the
+ * effect and the scene clock has run the given seconds into it, and the shot is taken on that held frame):
+ * `ship-spawn` at the spawn (default view) a production deploy the beacon's watch sees, the deploy beam over the wing
+ * with no Rover asking (`ship-spawn-wing`: the next deploy with the view turned toward the wing, as `spawn-wing`);
+ * `pipeline` at the office stop the busy pipeline (24 tower lanes lit, one per job) as two jobs finish (bursts on their
+ * lanes) and back-row desk 6 starts a run (a packet from the riser); `ship` at the stop a merge from desk 1 flying its
+ * package to the dock stack while the production deploy beam fires.
  *
- *   bun scripts/office-shots.ts --base http://127.0.0.1:4481 --video screenshots/office
+ * `--video <dir>` records 1440x900 full-tier takes (Playwright `recordVideo`) into `<dir>/<take>.webm` (and `<take>.mp4`
+ * when `ffmpeg` is on the PATH, both trimmed to start at the take's first held view); `--take crew-states,ship-it`
+ * picks them (default both). `crew-states`: the beacon from the Lobby, the drive to the office stop, then `CREW_A`,
+ * `CREW_B` and every desk asleep, each held about 6 s of recording once the crew probe shows its poses, and `CREW_A`
+ * again one zoom step in (near chips and drones). `ship-it` (about 40 s, at the office stop): a quiet tower, a run
+ * starting at desk 5 (a packet, its 12 lanes), the jobs finishing (bursts), "3D perf gates 1/2" failing (a red burst,
+ * then the run's red crown), a run from back-row desk 6, a merge from desk 1 flying its package to the dock, a
+ * production deploy running (the dock shimmers), then succeeding (the deploy beam). Alone `--video` records only the
+ * takes; with `--only` or `--shots` the shots run first.
+ *
+ *   bun scripts/office-shots.ts --base http://127.0.0.1:4481 --video screenshots/office --take ship-it
  */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, rmSync } from "node:fs";
@@ -51,13 +64,16 @@ import { type Browser, chromium, type Page } from "@playwright/test";
 import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, turnCameraTo, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
 import {
   asV1,
+  asV3,
   CREW_A_STATES,
   CREW_B_STATES,
   CREW_SLOT,
   crewA,
   crewB,
+  deployed,
   OFFICE_API,
   OFFICE_API_V3,
+  OFFICE_API_V4,
   OFFICE_REPO,
   officeDesk,
   officeSnapshot,
@@ -66,11 +82,12 @@ import {
   statesA,
   statesB,
 } from "../e2e/office-fixtures";
-import type { OfficeSnapshotV2, OfficeSnapshotV3 } from "../src/lib/office/protocol";
+import type { OfficeGithubItem, OfficeJobStatus, OfficePipelineRun, OfficeShip, OfficeSnapshotV2, OfficeSnapshotV3, OfficeSnapshotV4 } from "../src/lib/office/protocol";
 import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
+import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
 
 const VIEWPORTS = [
   { width: 1440, height: 900, touch: false, mobile: false },
@@ -82,14 +99,29 @@ const VIEWPORTS = [
 const TIERS = ["full", "lite"] as const;
 
 type CrewProbe = { state: string; yaw: number; flag: number; z: number };
-type OfficeProbe = { loaded: boolean; states: string[]; mode: string; inView: boolean; far: boolean; polling: boolean; beacon: boolean; crew: CrewProbe[]; drones: number[] };
+type PipeProbe = { packets: number; bursts: number; crowns: number; packages: number; deployFailed: number; stack: number };
+type OfficeProbe = {
+  loaded: boolean;
+  states: string[];
+  mode: string;
+  inView: boolean;
+  far: boolean;
+  polling: boolean;
+  beacon: boolean;
+  crew: CrewProbe[];
+  drones: number[];
+  lanes: number;
+  pipe: PipeProbe;
+  beam: boolean;
+};
 type OfficeWindow = Window & {
   __hq: {
     store: { getState: () => { phase: string; openRoom: (r: string) => void; closeRoom: () => void } };
     camera: () => [number, number, number];
+    clock: () => number;
     rover: { cameraYaw: number; heading: number; cameraView: string | null; cameraHeld: boolean };
     probes: { office: OfficeProbe };
-    office: { load(): Promise<void>; test(): { poll(): void } | null; watchNow(): Promise<void> };
+    office: { load(): Promise<void>; test(): { poll(): void } | null; watchNow(): Promise<void>; loadBeacon(): Promise<unknown> };
   };
 };
 
@@ -98,6 +130,8 @@ let out = "screenshots/office";
 let only: string[] | null = null;
 let shots: string[] | null = null;
 let video: string | null = null;
+const TAKES = ["crew-states", "ship-it"] as const;
+let takes: readonly string[] = TAKES;
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--base") base = argv[++i];
@@ -105,7 +139,9 @@ for (let i = 0; i < argv.length; i++) {
   else if (argv[i] === "--only") only = argv[++i].split(",");
   else if (argv[i] === "--shots") shots = argv[++i].split(",");
   else if (argv[i] === "--video") video = argv[++i];
+  else if (argv[i] === "--take") takes = argv[++i].split(",");
 }
+for (const take of takes) if (!(TAKES as readonly string[]).includes(take)) throw new Error(`office shots: no take "${take}" (${TAKES.join(", ")})`);
 const wants = (shot: string) => !shots || shots.includes(shot);
 const runShots = !video || only !== null || shots !== null;
 if (runShots) mkdirSync(out, { recursive: true });
@@ -132,7 +168,7 @@ const ten = <T,>(front: readonly T[], rest: T): T[] => [...front, ...Array.from(
 async function show(page: Page, reply: { body: unknown }, body: unknown, mode: string, front: readonly string[], frames = 30) {
   const states = ten(front, "asleep");
   reply.body = body;
-  await Promise.all([page.waitForResponse(OFFICE_API_V3), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
   await waitFor(`${mode} ${states.join(",")}`, async () => {
     const o = await probe(page);
     return o.mode === mode && JSON.stringify(o.states) === JSON.stringify(states);
@@ -205,12 +241,164 @@ async function showCrew(page: Page, reply: { body: unknown }, crew: keyof typeof
   if (frames) await waitForFrames(page, frames);
 }
 
-/** Answers `/api/office` from `reply`: `?v=3` (the poller and the beacon watch) as is, the v1 path (no client asks it) `asV1`. */
+/**
+ * Answers `/api/office` from `reply`: `?v=4` (the poller) as is, `?v=3` (the beacon watch) a v4 body as the Worker's v3
+ * (`asV3`), the v1 path (no client asks it) `asV1`; and `/api/stats` with the stats fixture (as e2e/visits.spec.ts does,
+ * updated 2 h ago), so no capture shows "Stats unavailable".
+ */
 async function serveOffice(page: Page, reply: { body: unknown }) {
+  const stats: StatsSnapshotV1 = { ...STATS_FIXTURE, updatedAt: new Date(Date.now() - 2 * 3_600_000).toISOString() };
+  await page.route("**/api/stats", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(stats) }));
   await page.route(OFFICE_API, (route) => {
-    const body = OFFICE_API_V3.test(route.request().url()) ? reply.body : asV1(reply.body);
+    const url = route.request().url();
+    const body = OFFICE_API_V4.test(url) ? reply.body : OFFICE_API_V3.test(url) ? asV3(reply.body) : asV1(reply.body);
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
+}
+
+/** The real CI's twelve jobs (the full PR run), named as GitHub names them. */
+const CI_JOBS = ["Typecheck, lint, unit tests", ...Array.from({ length: 8 }, (_, i) => `Build, CV and e2e (${i + 1}/8)`), "Lighthouse CI", "3D perf gates 1/2", "3D perf gates 2/2"];
+const MIN = 60_000;
+const runUrl = (id: number) => `https://github.com/${OFFICE_REPO}/actions/runs/${id}`;
+/** Twelve job statuses: `done` done, then `running` running, the rest queued; `failed` lists the failed job indexes. */
+function ciJobs(done: number, running: number, failed: readonly number[] = []): OfficeJobStatus[] {
+  return CI_JOBS.map((_, i) => (failed.includes(i) ? "failed" : i < done ? "done" : i < done + running ? "running" : "queued"));
+}
+
+/**
+ * One ship-it step at `now` (v4): `statesA`'s front row (nobody asks; desk 5, slot 4, waits on its run) and a public back
+ * row, run 4101 "CI · feat/ship-it-pipeline" on desk 5 with `jobs` (first seen at `runAt`, none without `jobs`), run 4102
+ * from back-row desk 6 (slot 5) first seen at `second`, the push to main's green run 4098 (`main`), and the ships: an old
+ * merge and an old deploy, a merge of PR #301 from desk 1 (slot 0) at `merge`, and a production `deploy` (its GitHub deployment id). Today's merges
+ * count the new one, so the dock stack follows.
+ */
+type ShipStep = {
+  jobs?: readonly OfficeJobStatus[];
+  runAt?: number;
+  status?: OfficePipelineRun["status"];
+  second?: number;
+  main?: boolean;
+  merge?: number;
+  deploy?: { id: number; at: number; status: "running" | "success" };
+};
+function shipOffice(now: number, s: ShipStep): OfficeSnapshotV4 {
+  const front = statesA(now, 0);
+  const finished = s.jobs?.filter((j) => j === "done" || j === "failed").length ?? 0;
+  const failedJob = s.jobs ? CI_JOBS[s.jobs.indexOf("failed")] : undefined;
+  const desks = front.desks.map((d) => {
+    if (d.slot !== 4) return d;
+    if (!s.jobs) return officeDesk(4, d.agent, "working", "editing", now, { repo: OFFICE_REPO, title: "Ship-It Pipeline Tower" });
+    if (s.status === "failure") return officeDesk(4, d.agent, "failed", "failed", now, { repo: OFFICE_REPO, title: "Ship-It Pipeline Tower", job: failedJob });
+    return { ...d, title: "Ship-It Pipeline Tower", progress: { done: finished, total: CI_JOBS.length } };
+  });
+  const back = [
+    officeDesk(5, "codex", "working", "editing", now, { repo: OFFICE_REPO, title: "Second Console Row", helpers: 2 }),
+    officeDesk(6, "claude", "thinking", "planning", now),
+    officeDesk(7, "copilot", "reviewing", "reading", now, { repo: OFFICE_REPO, title: "CI Drawer for the Tower" }),
+    officeDesk(8, "codex", "asleep", "resting", now),
+    officeDesk(9, "claude", "testing", "testing", now, { repo: OFFICE_REPO, title: "Deploy Beam Over the Dock" }),
+  ];
+  const runs: OfficePipelineRun[] = [];
+  if (s.second !== undefined) runs.push({ id: 4102, repo: OFFICE_REPO, title: "CI · feat/second-console-row", url: runUrl(4102), status: "running", slot: 5, at: s.second, jobs: ciJobs(0, 1).slice(0, 3).map((status, i) => ({ name: CI_JOBS[i], status })) });
+  if (s.jobs) runs.push({ id: 4101, repo: OFFICE_REPO, title: "CI · feat/ship-it-pipeline", url: runUrl(4101), status: s.status ?? "running", slot: 4, at: s.runAt ?? now - 6 * MIN, jobs: s.jobs.map((status, i) => ({ name: CI_JOBS[i], status })) });
+  if (s.main) runs.push({ id: 4098, repo: OFFICE_REPO, title: "CI · main", url: runUrl(4098), status: "success", at: now - 40 * MIN, jobs: ciJobs(12, 0).map((status, i) => ({ name: CI_JOBS[i], status })) });
+  const ships: OfficeShip[] = [];
+  if (s.deploy) ships.push({ key: `deploy:${s.deploy.id}`, kind: "deploy", status: s.deploy.status, at: s.deploy.at });
+  if (s.merge !== undefined) ships.push({ key: `pr:${OFFICE_REPO}#301`, kind: "merge", status: "merged", at: s.merge, slot: 0 });
+  ships.push({ key: "deploy:3214466810", kind: "deploy", status: "success", at: now - 36 * MIN }, { key: `pr:${OFFICE_REPO}#300`, kind: "merge", status: "merged", at: now - 38 * MIN });
+  // The GitHub feed as the Worker writes it from the same events: the runs (a running one with its progress), the merged
+  // PRs and the production deploys, newest first.
+  const pr = (n: number, title: string, at: number): OfficeGithubItem => ({ kind: "pr", status: "merged", repo: OFFICE_REPO, title, at, url: `https://github.com/${OFFICE_REPO}/pull/${n}` });
+  const deploy = (status: OfficeGithubItem["status"], at: number): OfficeGithubItem => ({ kind: "deploy", status, repo: OFFICE_REPO, title: "Deploy · production", at, url: `https://github.com/${OFFICE_REPO}/deployments` });
+  const github: OfficeGithubItem[] = [
+    ...runs.map((r): OfficeGithubItem => {
+      const done = r.jobs.filter((j) => j.status === "done" || j.status === "failed").length;
+      return { kind: "run", status: r.status, repo: OFFICE_REPO, title: r.title, at: r.at, url: r.url, ...(r.status === "running" ? { progress: { done, total: r.jobs.length } } : {}) };
+    }),
+    ...(s.merge !== undefined ? [pr(301, "feat: agent office scene", s.merge)] : []),
+    ...(s.deploy ? [deploy(s.deploy.status, s.deploy.at)] : []),
+    pr(300, "feat: agent office", now - 38 * MIN),
+    deploy("success", now - 36 * MIN),
+  ].sort((x, y) => y.at - x.at);
+  return { ...front, v: 4, desks: [...desks, ...back], github, today: { ...front.today, prsMerged: s.merge !== undefined ? 3 : 2 }, pipeline: { runs, ships } };
+}
+
+/** Serves a ship-it step and waits until the office shows its desks and the tower its lanes (one per job, at most 24). */
+async function showShip(page: Page, reply: { body: unknown }, body: OfficeSnapshotV4, frames = 30) {
+  await show(page, reply, body, "live", body.desks.map((d) => d.state), frames);
+  const lanes = Math.min(24, body.pipeline.runs.reduce((n, r) => n + r.jobs.length, 0));
+  await waitFor(`${lanes} tower lanes`, async () => (await probe(page)).lanes === lanes);
+}
+
+/** The pipeline effects played so far and the dock stack (`__hq.probes.office.pipe`). */
+const pipe = async (page: Page) => (await probe(page)).pipe;
+
+type ShotClockWindow = Window & { __shotClock: { frozenAt: number | null; last: number; raf: typeof requestAnimationFrame } };
+/**
+ * A pausable animation clock: every `requestAnimationFrame` callback gets the frame's timestamp, or `frozenAt` while the
+ * shot holds a frame, so the frame pacer renders nothing new and the canvas keeps the frame on screen. The first frame
+ * after a hold sees the held time as one long frame (as after a stalled tab).
+ */
+async function pausableClock(page: Page) {
+  await page.addInitScript(() => {
+    const raf = window.requestAnimationFrame.bind(window);
+    const c: ShotClockWindow["__shotClock"] = { frozenAt: null, last: 0, raf };
+    (window as unknown as ShotClockWindow).__shotClock = c;
+    window.requestAnimationFrame = (cb) =>
+      raf((ts) => {
+        c.last = ts;
+        cb(c.frozenAt ?? ts);
+      });
+  });
+}
+
+/**
+ * Holds the frame once the office probes show `when` (the pipe counts reached, the deploy beam lit) and the scene clock
+ * (`__hq.clock()`) has run `after` seconds since, checked on every animation frame after the scene's own.
+ */
+async function freezeOn(page: Page, what: string, when: { pipe?: Partial<PipeProbe>; beam?: boolean }, after: number) {
+  const outcome = await page.evaluate(
+    ({ when, after }) =>
+      new Promise<string>((resolve) => {
+        const w = window as unknown as OfficeWindow & ShotClockWindow;
+        const c = w.__shotClock;
+        const end = performance.now() + 60_000;
+        let t0: number | null = null;
+        const tick = () => {
+          const o = w.__hq.probes.office;
+          const counts = Object.entries(when.pipe ?? {}).every(([k, n]) => o.pipe[k as keyof PipeProbe] >= (n as number));
+          if (t0 === null && counts && (!when.beam || o.beam)) t0 = w.__hq.clock();
+          if (t0 !== null && w.__hq.clock() - t0 >= after && (!when.beam || o.beam)) {
+            c.frozenAt = c.last;
+            return resolve(`held ${(w.__hq.clock() - t0).toFixed(2)} s in`);
+          }
+          if (performance.now() > end) return resolve(`timeout ${JSON.stringify({ pipe: o.pipe, beam: o.beam, t0 })}`);
+          c.raf(tick);
+        };
+        c.raf(tick);
+      }),
+    { when, after },
+  );
+  if (outcome.startsWith("timeout")) throw new Error(`office shots: ${what} never showed (${outcome})`);
+  console.log(`office shots: ${what} ${outcome}`);
+}
+const unfreeze = (page: Page) =>
+  page.evaluate(() => {
+    (window as unknown as ShotClockWindow).__shotClock.frozenAt = null;
+  });
+
+/** Takes `path` on the held frame, then lets the clock run again. */
+async function heldShot(page: Page, path: string) {
+  await page.screenshot({ path });
+  await unfreeze(page);
+}
+
+/** Polls `body` now with the hold armed first (an effect is over in a second): resolves on the held frame. */
+async function playAndHold(page: Page, reply: { body: unknown }, body: unknown, what: string, when: Parameters<typeof freezeOn>[2], after: number) {
+  const held = freezeOn(page, what, when, after);
+  reply.body = body;
+  await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.poll())]);
+  await held;
 }
 
 /** The rover parked and the follow camera still. */
@@ -311,7 +499,10 @@ const asleep = ["asleep", "asleep", "asleep", "asleep", "asleep"];
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 try {
   if (runShots) await captureShots(browser);
-  if (video) await recordStates(browser, video);
+  if (video) {
+    if (takes.includes("crew-states")) await recordStates(browser, video);
+    if (takes.includes("ship-it")) await recordShipIt(browser, video);
+  }
 } finally {
   await browser.close();
 }
@@ -324,6 +515,7 @@ async function captureShots(browser: Browser) {
       const page = await context.newPage();
       await asReturningVisitor(page);
       await skipFloorLines(page);
+      await pausableClock(page);
       const reply: { body: unknown } = { body: statesA(Date.now()) };
       await serveOffice(page, reply);
       await page.goto(`${base}/en?tier=${tier}`);
@@ -346,6 +538,28 @@ async function captureShots(browser: Browser) {
         reply.body = statesA(Date.now());
         await watchNow(page);
         await waitFor("the beacon off", async () => !(await probe(page)).beacon);
+      }
+      if (wants("ship-spawn")) {
+        // A production deploy 2 s old and nobody asking: the watch's next tick loads the beacon chunk and fires the deploy
+        // beam over the wing; held 1.5 s in (risen in full), then nobody deploys again.
+        reply.body = deployed(Date.now(), Date.now() - 2_000);
+        const held = freezeOn(page, "the deploy beam from the spawn", { beam: true }, 1.5);
+        await watchNow(page);
+        await held;
+        await heldShot(page, name("ship-spawn"));
+        reply.body = statesA(Date.now());
+        await waitFor("the deploy beam off", async () => !(await probe(page)).beam);
+        // The default spawn view leaves the wing out on portrait screens: the next deploy with the view turned toward the
+        // wing (a wheel rotate, as for spawn-wing), then back.
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        reply.body = deployed(Date.now(), Date.now() - 2_000);
+        const turned = freezeOn(page, "the deploy beam from the spawn, turned to the wing", { beam: true }, 1.5);
+        await watchNow(page);
+        await turned;
+        await heldShot(page, name("ship-spawn-wing"));
+        reply.body = statesA(Date.now());
+        await waitFor("the deploy beam off", async () => !(await probe(page)).beam);
+        await turnTo(page, 0);
       }
       // The scene chunk loads on its own at idle on L1 (always live); the load here only waits for it.
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
@@ -447,6 +661,33 @@ async function captureShots(browser: Browser) {
         await settle(page);
       }
 
+      if (wants("pipeline") || wants("ship")) {
+        // The silent baseline (the first pipeline seen): run 4101 on desk 5 at 7 of 12 with three jobs running, main's green
+        // run, 24 lanes lit; today's 2 merges on the dock stack.
+        await showShip(page, reply, shipOffice(Date.now(), { jobs: ciJobs(7, 3), main: true }));
+        await officeHeld(page);
+        // Jobs 8 and 9 finish (green bursts on their lanes, 0.15 s apart) as back-row desk 6 starts run 4102 (a packet from
+        // the riser to the tower): held 0.2 s in, the first burst a third grown and the packet just off the desk.
+        const busy: ShipStep = { jobs: ciJobs(9, 1), main: true, second: Date.now() };
+        const was = await pipe(page);
+        if (wants("pipeline")) {
+          await playAndHold(page, reply, shipOffice(Date.now(), busy), "the burst and the packet", { pipe: { bursts: was.bursts + 1, packets: was.packets + 1 } }, 0.2);
+          await heldShot(page, name("pipeline"));
+        }
+        await showShip(page, reply, shipOffice(Date.now(), busy));
+        if (wants("ship")) {
+          // PR #301 merges from desk 1 (its package flies to the dock stack, now 3) and production deploys (the beam over
+          // the dock, wall high at the stop): held 2 s into the package's 2.5 s flight, the beam risen.
+          await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.loadBeacon());
+          const at = await pipe(page);
+          const now = Date.now();
+          await playAndHold(page, reply, shipOffice(now, { ...busy, merge: now, deploy: { id: 3214470152, at: now, status: "success" } }), "the package and the beam", { pipe: { packages: at.packages + 1 }, beam: true }, 2);
+          await heldShot(page, name("ship"));
+          await waitFor("the dock stack of 3", async () => (await pipe(page)).stack === 3);
+          await waitFor("the deploy beam off", async () => !(await probe(page)).beam);
+        }
+      }
+
       await show(page, reply, statesB(Date.now()), "live", STATES_B);
       if (wants("states-b")) {
         await officeHeld(page);
@@ -532,9 +773,8 @@ async function captureShots(browser: Browser) {
  */
 async function recordStates(browser: Browser, dir: string) {
   mkdirSync(dir, { recursive: true });
-  const raw = join(dir, "crew-states.raw");
   const size = { width: 1440, height: 900 };
-  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 1, recordVideo: { dir: raw, size } });
+  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 1, recordVideo: { dir: join(dir, "crew-states.raw"), size } });
   const started = Date.now();
   const page = await context.newPage();
   const hold = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -571,10 +811,15 @@ async function recordStates(browser: Browser, dir: string) {
   await settle(page);
   await page.locator(`[data-testid="office-chip"][data-slot="${CREW_SLOT.six}"]`).getByTestId("office-chip-more").waitFor({ timeout: SLOW });
   await hold(6000);
+  await saveTake(page, dir, "crew-states", from);
+}
+
+/** Closes the take's context and writes `<dir>/<take>.webm` and `.mp4`, trimmed to start at `from` s into the recording. */
+async function saveTake(page: Page, dir: string, take: string, from: number) {
   const recording = page.video()!;
-  await context.close();
-  const webm = join(dir, "crew-states.webm");
-  const mp4 = join(dir, "crew-states.mp4");
+  await page.context().close();
+  const webm = join(dir, `${take}.webm`);
+  const mp4 = join(dir, `${take}.mp4`);
   const source = await recording.path();
   if (spawnSync("which", ["ffmpeg"]).status === 0) {
     const start = Math.max(0, from - 0.5).toFixed(2);
@@ -588,6 +833,76 @@ async function recordStates(browser: Browser, dir: string) {
     renameSync(source, webm);
     console.warn("office shots: no ffmpeg, the webm is untrimmed and there is no mp4");
   }
-  rmSync(raw, { recursive: true, force: true });
+  rmSync(join(dir, `${take}.raw`), { recursive: true, force: true });
   console.log(`office shots: video ${webm}`);
+}
+
+/**
+ * The ship-it video: one 1440x900 full-tier take at the office stop, trimmed to start there. Each step is served, then
+ * waited on (the desks and the lanes, the effect counts, the beam), then held for its recording length.
+ */
+async function recordShipIt(browser: Browser, dir: string) {
+  mkdirSync(dir, { recursive: true });
+  const size = { width: 1440, height: 900 };
+  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 1, recordVideo: { dir: join(dir, "ship-it.raw"), size } });
+  const started = Date.now();
+  const page = await context.newPage();
+  const hold = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  await asReturningVisitor(page);
+  await skipFloorLines(page);
+  await chooseMotion(page, "full");
+  // A quiet pipeline: no run, today's 2 merges on the dock stack.
+  const reply: { body: unknown } = { body: shipOffice(Date.now(), {}) };
+  await serveOffice(page, reply);
+  await page.goto(`${base}/en?tier=full`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore", SLOW);
+  await waitForSceneLive(page, SLOW);
+  await settle(page);
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
+  await waitFor("the office chunk", async () => (await probe(page)).loaded);
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.loadBeacon());
+  const { lead, stop } = LOBBY.officeWing;
+  await driveTo(page, { x: lead.x, z: lead.from - 4 }, SLOW);
+  await driveTo(page, stop, SLOW);
+  await settle(page);
+  await waitFor("office polling", async () => (await probe(page)).polling);
+  await showShip(page, reply, shipOffice(Date.now(), {}), 0);
+  await officeHeld(page);
+  await waitFor("the dock stack of 2", async () => (await pipe(page)).stack === 2);
+  const from = (Date.now() - started) / 1000;
+  await hold(3000);
+  const runAt = Date.now();
+  const step = async (s: ShipStep, what: string, done: (p: PipeProbe, o: OfficeProbe) => boolean, ms: number) => {
+    await showShip(page, reply, shipOffice(Date.now(), { runAt, ...s }), 0);
+    await waitFor(what, async () => {
+      const o = await probe(page);
+      return done(o.pipe, o);
+    });
+    await hold(ms);
+  };
+  const p0 = await pipe(page);
+  // Desk 5 pushes: run 4101 starts (a packet to the tower) and its 12 lanes light, the first job running.
+  await step({ jobs: ciJobs(0, 1) }, "the run's packet", (p) => p.packets >= p0.packets + 1, 3000);
+  // The lanes fill: the jobs finish in waves (green bursts).
+  await step({ jobs: ciJobs(1, 4) }, "the first burst", (p) => p.bursts >= p0.bursts + 1, 2500);
+  await step({ jobs: ciJobs(5, 4) }, "the second wave", (p) => p.bursts >= p0.bursts + 5, 2500);
+  await step({ jobs: ciJobs(10, 2) }, "the third wave", (p) => p.bursts >= p0.bursts + 10, 2500);
+  // "3D perf gates 1/2" fails (a red burst), then the last job finishes and the run fails (a red crown, desk 5 failed).
+  await step({ jobs: ciJobs(10, 2, [10]) }, "the failed job's burst", (p) => p.bursts >= p0.bursts + 11, 3000);
+  await step({ jobs: ciJobs(12, 0, [10]), status: "failure" }, "the run's red crown", (p) => p.crowns >= p0.crowns + 1, 3000);
+  const failed: ShipStep = { jobs: ciJobs(12, 0, [10]), status: "failure" };
+  // Back-row desk 6 pushes: run 4102 sends its packet from the riser.
+  const second = Date.now();
+  await step({ ...failed, second }, "the back-row packet", (p) => p.packets >= p0.packets + 2, 3000);
+  // PR #301 merges from desk 1: its package flies to the dock and the stack grows to 3.
+  const merge = Date.now();
+  await step({ ...failed, second, merge }, "the merge's package", (p) => p.packages >= p0.packages + 1 && p.stack === 3, 3500);
+  // Production deploys: the dock shimmers while it runs, then the deploy beam fires over the dock.
+  const deploy = Date.now();
+  await step({ ...failed, second, merge, deploy: { id: 3214471093, at: deploy, status: "running" } }, "the deploy running", () => true, 3000);
+  await step({ ...failed, second, merge, deploy: { id: 3214471093, at: Date.now(), status: "success" } }, "the deploy beam", (_, o) => o.beam, 0);
+  await waitFor("the deploy beam off", async () => !(await probe(page)).beam);
+  await hold(1000);
+  await saveTake(page, dir, "ship-it", from);
 }

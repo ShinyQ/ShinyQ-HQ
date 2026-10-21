@@ -12,7 +12,7 @@ const DO_BASE = "https://office";
 const status = (code: number) => new Response(null, { status: code, headers: { "Cache-Control": "no-store" } });
 
 /**
- * hq-office routes, reached only through the Pages service binding (no public route): GET /snapshot (v1, v2 for `?v=2`, v3 for `?v=3`),
+ * hq-office routes, reached only through the Pages service binding (no public route): GET /snapshot (v1, v2 for `?v=2`, v3 for `?v=3`, v4 for `?v=4`),
  * POST /beat (relay, X-Office-Signature) and POST /github (webhooks, X-Hub-Signature-256).
  */
 export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: () => number }) {
@@ -27,9 +27,9 @@ export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: (
       };
       if (pathname === "/snapshot") {
         if (request.method !== "GET") return status(405);
-        // Only `?v=2` and `?v=3` are forwarded: any other query reaches the Durable Object as the plain v1 request.
+        // Only `?v=2`, `?v=3` and `?v=4` are forwarded: any other query reaches the Durable Object as the plain v1 request.
         const v = searchParams.get("v");
-        return office.fetch(`${DO_BASE}/snapshot${v === "2" || v === "3" ? `?v=${v}` : ""}`);
+        return office.fetch(`${DO_BASE}/snapshot${v === "2" || v === "3" || v === "4" ? `?v=${v}` : ""}`);
       }
       if (pathname === "/beat") {
         if (request.method !== "POST") return status(405);

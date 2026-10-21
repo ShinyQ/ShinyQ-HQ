@@ -67,7 +67,8 @@ export function setOfficeFade(slots: readonly FadeSlot[], k: number): void {
  * `OFFICE_FADE_IN` the first time it shows (a cut under reduced motion), so the Rovers do not pop in beside the shell.
  * Once the first frame went idle on L1 (`?prefetch=off` respected) it loads the office watch chunk (`watchLoader.ts`: the
  * beacon's signal from anywhere on L1, the minimap cue) and runs its watch while mounted, and it draws the Needs Kurniadi
- * beacon from its own chunk (loaded on the first ask) once `ready`, so no canvas-target program compiles.
+ * beacon and the deploy beam from their own chunk (loaded on the first ask or the first fresh deploy) once `ready`, so no
+ * canvas-target program compiles.
  */
 export function OfficeMount({ tier, t, ready }: { tier: GpuTier; t: OfficeTranslate; ready: boolean }) {
   const mod = useOfficeModule();

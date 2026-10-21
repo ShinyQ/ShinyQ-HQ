@@ -94,7 +94,9 @@ describe("parseGithubEvent", () => {
     expect(parseGithubEvent("push", push("refs/heads/main"), ALLOW, BLOCK)?.changes).toEqual([{ type: "push", sha: "abc1234def", title: "main · feat: office (#230)", url: "https://github.com/ShinyQ/ShinyQ-HQ/commit/abc1234def" }]);
     expect(parseGithubEvent("push", push("refs/heads/feat/x"), ALLOW, BLOCK)?.changes).toEqual([]);
     const deploy = { repository: repository(), deployment: { id: 9, environment: "production" }, deployment_status: { state: "success", environment: "production", target_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
-    expect(parseGithubEvent("deployment_status", deploy, ALLOW, BLOCK)?.changes).toEqual([{ type: "deploy", id: 9, title: "Deploy · production", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43", status: "success" }]);
+    expect(parseGithubEvent("deployment_status", deploy, ALLOW, BLOCK)?.changes).toEqual([{ type: "deploy", id: 9, title: "Deploy · production", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43", status: "success", production: true }]);
+    const preview = { ...deploy, deployment: { id: 10, environment: "Preview" }, deployment_status: { ...deploy.deployment_status, environment: "Preview" } };
+    expect(parseGithubEvent("deployment_status", preview, ALLOW, BLOCK)?.changes[0]).toMatchObject({ type: "deploy", title: "Deploy · Preview", production: false });
   });
 
   it("replaces a blocked title with a generic one and an unsafe URL with the repository URL", () => {

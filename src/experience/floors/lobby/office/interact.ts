@@ -1,10 +1,11 @@
 import { LOBBY } from "../../../config";
 import type { Interactable } from "../../../interact/registry";
-import { OFFICE, OFFICE_GITHUB_ROOM, OFFICE_ROOM, officeDeskRoom, officeWallRect, turnedHalf, type OfficeSlot } from "../officeLayout";
+import { OFFICE, OFFICE_CI_ROOM, OFFICE_GITHUB_ROOM, OFFICE_ROOM, officeDeskRoom, officeTowerColumn, officeTowerTall, officeTowerYaw, officeWallRect, turnedHalf, type OfficeSlot } from "../officeLayout";
 
 export interface OfficeTargetLabels {
   office: string;
   github: string;
+  ci: string;
   desk: (slot: number) => string;
 }
 
@@ -13,7 +14,7 @@ const ROVER_TOP = 2.7;
 
 /**
  * The office's point-and-go targets, registered by OfficeScene while it is mounted (`registerExtraInteractables`,
- * like the Highlights Hall): the summary and GitHub halves of the wall and one per Rover (both rows). Every drive stops at
+ * like the Highlights Hall): the summary and GitHub halves of the wall, the CI tower's column and one per Rover (both rows). Every drive stops at
  * the office stop; the drawer opens there.
  */
 export function officeInteractables(slots: readonly OfficeSlot[], labels: OfficeTargetLabels): Interactable[] {
@@ -23,10 +24,23 @@ export function officeInteractables(slots: readonly OfficeSlot[], labels: Office
   const face = { minZ: wall.minZ, maxZ: wall.minZ + OFFICE.wall.t };
   const base = OFFICE.wall.bottom;
   const height = OFFICE.wall.bottom + OFFICE.wall.h;
+  const tall = officeTowerTall(w);
   return [
     // Seen from the stop (looking south) the canvas's left half, the summary, is the wall's east half.
     { id: "L1:station:office", floor: "L1", kind: "station", label: labels.office, at, bounds: { minX: w.wall.x, maxX: wall.maxX, ...face }, base, height, action: { type: "open-room", room: OFFICE_ROOM } },
     { id: "L1:station:office-github", floor: "L1", kind: "station", label: labels.github, at, bounds: { minX: wall.minX, maxX: w.wall.x, ...face }, base, height, action: { type: "open-room", room: OFFICE_GITHUB_ROOM } },
+    {
+      id: "L1:station:office-ci",
+      floor: "L1",
+      kind: "station",
+      label: labels.ci,
+      at,
+      bounds: { minX: tall.minX, maxX: tall.maxX, minZ: tall.minZ, maxZ: tall.maxZ },
+      box: { center: officeTowerColumn(w), w: OFFICE.tower.column, d: OFFICE.tower.column, yaw: officeTowerYaw(w) },
+      base: OFFICE.tower.plinth,
+      height: tall.h,
+      action: { type: "open-room", room: OFFICE_CI_ROOM },
+    },
     ...slots.map((s): Interactable => {
       // From its desk's front to its Rover's back, on its row's floor (the back row stands on the riser).
       const row = OFFICE.rows[s.row];

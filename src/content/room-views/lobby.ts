@@ -76,7 +76,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
 }
 
 /**
- * L1 Agent Office: the summary half of the wall, the GitHub half and one drawer per desk, both rows (`OfficeBody`, live data on the client).
+ * L1 Agent Office: the summary half of the wall, the GitHub half, the CI tower and one drawer per desk, both rows (`OfficeBody`, live data on the client).
  * Each keeps one standing note as its section: the drawer shows it if the office chunk fails to load.
  */
 function buildOfficeViews(locale: Locale): RoomView[] {
@@ -85,6 +85,7 @@ function buildOfficeViews(locale: Locale): RoomView[] {
   return chain([
     single({ id: roomId("L1", "office"), kind: "office", title: m.hud.rooms.office, subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "summary" } }),
     single({ id: roomId("L1", "office-github"), kind: "office", title: o.githubTitle, subtitle: o.subtitle, accent: "green", sections: [{ body: o.githubNote }], office: { panel: "github" } }),
+    single({ id: roomId("L1", "office-ci"), kind: "office", title: o.ciTitle, subtitle: o.subtitle, accent: "violet", sections: [{ body: o.ciNote }], office: { panel: "ci" } }),
     ...Array.from({ length: OFFICE_SEATS }, (_, slot) =>
       single({ id: roomId("L1", `office-desk-${slot + 1}`), kind: "office", title: fill(o.desk, { n: String(slot + 1) }), subtitle: o.subtitle, accent: "cyan", sections: [{ body: o.hooks }], office: { panel: "desk", slot } }),
     ),

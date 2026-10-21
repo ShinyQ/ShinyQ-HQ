@@ -1,2 +1,2 @@
-/** The Needs Kurniadi beacon chunk, loaded through `watchLoader.ts` the first time a Rover asks (later the deploy beam). */
+/** The Needs Kurniadi beacon and deploy beam chunk, loaded through `watchLoader.ts` on the first ask or the first fresh deploy. */
 export { OfficeBeacon } from "./OfficeBeacon";

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { BEACON, beaconGain, beaconInstances, beaconOrigin } from "@/experience/floors/lobby/office/beacon";
+import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, putInstance, type BeaconInstance, type BeamClock } from "@/experience/floors/lobby/office/beacon";
 import { COLORS, LOBBY } from "@/experience/config";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
@@ -92,5 +93,70 @@ describe("beacon", () => {
     beaconInstances(0.7, false, plain);
     expect(lobby).toEqual(plain);
     expect(COLORS.pink).toBe(STATE_TONE.input);
+  });
+});
+
+describe("deploy beam", () => {
+  it("fires once per new deploy, for 8 s of scene time from the moment it is first seen", () => {
+    const clock: BeamClock = { deployAt: null, t0: 0 };
+    expect(beamSince(null, 1, clock)).toBeNull();
+    expect(beamSince(5_000, 10, clock)).toBe(0);
+    expect(beamSince(5_000, 13, clock)).toBe(3);
+    expect(beamSince(5_000, 10 + BEAM.s, clock)).toBeNull();
+    expect(beamSince(null, 30, clock)).toBeNull();
+    expect(beamSince(5_000, 31, clock)).toBeNull();
+    expect(beamSince(9_000, 40, clock)).toBe(0);
+  });
+
+  it("lasts 8 s of the R3F clock at any frame time: the beacon frame passes the rendered time, not clamped deltas (CI frames of 0.27 to 1.3 s stretched it to 80 frames)", () => {
+    const clock: BeamClock = { deployAt: null, t0: 0 };
+    let frames = 0;
+    for (let t = 0; beamSince(5_000, t, clock) !== null; t += 1.3) frames += 1;
+    expect(frames).toBe(Math.ceil(BEAM.s / 1.3));
+    const src = readFileSync("src/experience/floors/lobby/office/OfficeBeacon.tsx", "utf8");
+    expect(src).toMatch(/beamSince\(officeSignal\.deployAt, clock\.elapsedTime,/);
+  });
+
+  it("rises over 0.6 s, holds, fades over the last 1.5 s; steady under reduced motion; no higher than the wall's top at the stop", () => {
+    const b: BeaconInstance = { y: 0, r: 0, h: 0, alpha: 0 };
+    beamInstance(0.3, false, false, b);
+    expect(b.h).toBeCloseTo(BEAM.h / 2);
+    beamInstance(3, false, false, b);
+    expect(b).toMatchObject({ h: BEAM.h, r: BEAM.r });
+    beamInstance(BEAM.s - 0.75, false, false, b);
+    expect(b.alpha).toBeCloseTo(0.95 / 2);
+    beamInstance(0.1, true, false, b);
+    const steady = { ...b };
+    beamInstance(BEAM.s - 0.1, true, false, b);
+    expect(b).toEqual(steady);
+    beamInstance(3, false, true, b);
+    expect(b.h).toBe(BEAM.stopH);
+    beamInstance(null, false, false, b);
+    expect(b).toEqual({ y: 0, r: 0, h: 0, alpha: 0 });
+  });
+
+  it("uses the reserved slot, and stops at the wall's top (6.6 u) at the office stop", () => {
+    expect(BEAM.slot).toBe(BEACON.slots - 1);
+    expect(BEAM.stopH).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
+    expect(BEAM.stopH).toBeCloseTo(6.6);
+  });
+});
+
+describe("beacon frame writes", () => {
+  it("write the instances in place: no Object.assign or fresh object per frame", () => {
+    const out = Array.from({ length: BEACON.slots }, (): BeaconInstance => ({ y: 0, r: 0, h: 0, alpha: 0 }));
+    const assign = vi.spyOn(Object, "assign");
+    try {
+      beaconInstances(1.3, false, out);
+      beaconInstances(1.3, true, out, 2);
+      beamInstance(null, false, false, out[BEAM.slot]);
+      beamInstance(2, false, true, out[BEAM.slot]);
+      putInstance(out[1], 0, 0, 0, 0);
+      expect(assign).not.toHaveBeenCalled();
+    } finally {
+      assign.mockRestore();
+    }
+    expect(out[1]).toEqual({ y: 0, r: 0, h: 0, alpha: 0 });
+    expect(out[BEAM.slot]).toEqual({ y: 0, r: BEAM.r, h: BEAM.stopH, alpha: 0.95 });
   });
 });

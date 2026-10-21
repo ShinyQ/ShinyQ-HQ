@@ -1282,7 +1282,16 @@
       },
       "hooks": "Langsung dari hook agen di mesin Kurniadi, diperbarui sekitar setiap 10 detik selama Anda melihat.",
       "githubNote": "Dari webhook GitHub publik. Repositori privat tidak pernah muncul di sini.",
-      "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "desk": "Meja {n}: {agent}" },
+      "ciTitle": "Jalur Rilis",
+      "ciNote": "Menara CI: satu jalur lampu per job dari run terbaru di repositori publik, satu paket di dermaga per pull request yang digabung, satu sinar per deploy produksi.",
+      "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "ci": "Agent Office: menara CI", "desk": "Meja {n}: {agent}" },
+      "ci": {
+        "runs": "Run terbaru",
+        "ships": "Digabung dan dirilis",
+        "none": "Belum ada run terbaru",
+        "desk": "Dari meja {n}",
+        "job": { "queued": "antre", "running": "berjalan", "done": "selesai", "failed": "gagal" }
+      },
       "github": {
         "kind": { "run": "Workflow run", "pr": "Pull request", "push": "Push", "deploy": "Deploy" },
         "status": { "running": "berjalan", "success": "lulus", "failure": "gagal", "merged": "di-merge", "opened": "dibuka", "pushed": "di-push" }

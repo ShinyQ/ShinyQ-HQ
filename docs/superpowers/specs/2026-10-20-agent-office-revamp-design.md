@@ -399,13 +399,16 @@ interface OfficeSnapshotV4 extends Omit<OfficeSnapshotV3, "v"> {
 }
 ```
 
-- Worker: `RunRecord` gains `names: Record<jobId, string>` (job names already pass `cleanTitle`; cut to 40 chars) and
-  a jobs cap of 24 per run (later jobs fold into the last lane); `PrRecord` and the deploy feed keep what they have;
-  `ships` derive from the feed's `merged` PRs and `deploy` items. Older stored documents read with `names` absent.
+- Worker: `RunRecord` gains `order` (the laned job ids in first-seen order, at most 24 per run; later jobs fold into
+  the last lane), `names: Record<jobId, string>` (job names already pass `cleanTitle`; cut to 40 chars) and `started`
+  (the attempt's first sighting, the run's `at`); `PrRecord` and the deploy feed keep what they have; `ships` derive
+  from the feed's `merged` PRs and production `deploy` items (`pipelineOf`, served by `viewV4`). Runs and merges link
+  to a desk through the session's effective seat (`seatOf`). Older stored documents read with the three absent.
 - Public repositories only, the same rules as today (allowlist, known-public set, fork and actor checks, blocked
   branches ignored, `privatized` strips runs and ships).
-- `parseOfficeAny` (the scene) accepts v4, then falls back to v3, v2 and v1 (`parseOfficeResponseV4` strict on keys
-  like v1) and returns one type, `OfficeSnapshotV3 & { pipeline?: OfficePipeline }`; the Classic card stays on v3.
+- `parseOfficeResponseV4` (the scene's poller and the Function; in `protocolV4.ts`, so the Classic card and the
+  watch never carry it) is strict on a v4 body (keys like v1) and reads a v3, v2 or v1 body as v4 with an empty
+  pipeline, so the scene reads one type, `OfficeResponseV4`; the Classic card and the watch stay on v3.
 - `functions/_lib/office.ts`: the `v` query (only `2`, `3` and `4` are honoured; anything else is v1) is part of the
   edge cache key; the same ETag and cache headers.
 
@@ -420,12 +423,17 @@ All on existing meshes unless noted; tones from `STATUS_COLOR` and `STATE_TONE`.
   run without a desk (a push to main) launches from the wall's centre.
 - **Bursts**: a job turning `done` or `failed` fires a ring of 8 dots from its lane (green or red), staggered at least
   0.15 s apart; a whole run finishing flashes the tower's crown (top dots) once.
-- **Package**: a merged PR sends a small box (a parts-mesh instance, violet) from its desk (or the tower) over the wall
-  to the dock on a 2.5 s parabola, with a 6-dot glow trail; it stays on the dock pad until the WIB day ends (at most 12
-  stacked, the dock's pile is today's merged count).
-- **Deploy beam**: a `deploy` ship with `success` fires a green column up from the dock for 8 s (`running`: a slow
-  violet shimmer at the pad; `failure`: one red pulse). The beam is an instance of the main-path beacon mesh (5.3), so
-  it reads from the Lobby too (the watch's `deployFlash`).
+- **Package**: a merged PR sends a small box from its desk (or the tower) to the dock on a 2.5 s parabola, with a 6-dot
+  violet glow trail; it stays on the dock pad until the WIB day ends (at most 12 stacked, the dock's pile is today's
+  merged count). The box is a plain parts-mesh instance (the parts mesh has no instance colour; one would compile a
+  new program variant), so its violet comes from a glow core at its centre and the trail.
+- **Ceiling**: every arc (packets and packages) stays under the wall's top (6.6 u, `FX_CEILING`, `arcLift`), so from
+  the office stop nothing rises into the chip row (5.7b); the beam stops at that height at the stop too.
+- **Deploy beam**: a production `deploy` ship with `success` fires a green column up from the dock for 8 s (`running`:
+  a slow violet shimmer at the pad; `failure`: one red pulse, both in the scene chunk). The beam is the beacon mesh's
+  instance 4 in the beacon chunk (5.3), fired from the office signal's `deployAt` (the newest production deploy success
+  at most 30 s old, from the scene's feed or the watch's), so it reads from the Lobby too, with the office out of view;
+  the first fresh deploy loads the beacon chunk like the first ask.
 - **CI drawer**: a new room `L1:office-ci` (point-and-go target `L1:station:office-ci` at the tower, driving to the
   stop like the other office rooms, URL stays `/{locale}`): the latest runs with their lanes as text (job name and
   status), the latest merges and deploys. This is the text alternative of the tower.
@@ -434,14 +442,21 @@ All on existing meshes unless noted; tones from `STATUS_COLOR` and `STATE_TONE`.
 
 Polling brings snapshots, not events, so `diffPipeline(prev, next, now)` derives events (packet, burst, crown, package,
 beam) by comparing run ids, job statuses and ship keys. Rules: the first snapshot after a load sets the baseline
-silently (no backlog replays), except a deploy success under 30 s old; events older than 60 s are dropped; a queue
-plays them staggered (at most 1 burst per 0.15 s, 1 package per 1 s). Reduced motion: no packets or flights; the
+silently (no backlog replays; the deploy beam does not come from the diff: it follows the signal's `deployAt`, any
+production deploy success under 30 s old, 6.3); events older than 60 s on the server's clock (the skew read from
+`updatedAt`) are dropped; a queue plays them staggered (at most 1 burst per 0.15 s, 1 package per 2.6 s, over the
+2.5 s flight). Reduced motion: no packets or flights; the
 end state shows at once (lanes lit, package on the dock, a static beam glow for 8 s).
 
 ### 6.5 Budget and tests (B)
 
 - Expected: scene chunk +6 to 8 KB, main path +0.1 KB (the beam kind in the beacon mesh, the watch's deploy flag); calls
   at the office stop +0 (all instances) beyond the beacon mesh while lit.
+- Measured (owner decision 2026-10-21, `docs/decisions/2026-10-21-office-pipeline-budgets.md`): the scene chunk 26,586 B
+  (+3,663 B over A2's 22,923 B), the drawer body 6,483 B (the drawer reads the scene chunk's poller, so it shrank), the
+  watch chunk 1,555 B, the beacon chunk 2,043 B; the first frame full 476,592 B and lite 460,458 B (under the unchanged
+  `failAt`); L1 under 125 scene calls in every view with a burst playing and the beam running, programs at the
+  baseline, no new draw call.
 - Unit: `office/state` (job names, caps, ships, privatized), `office/protocol` (v4 parse, hostile inputs),
   `office-endpoint` (v4 query, cache key, v1 to v3 unchanged), `office-pipeline` (diff rules, baseline, staleness, queue),
   `office-rooms` (the CI room), `lobby-office` (fixture rects). E2E: a run's lanes fill from fixture snapshots, a burst,
@@ -540,14 +555,14 @@ interface DayLog {
 
 | Budget | Today | Target after C | Gate |
 |---|---|---|---|
-| Office chunks total (scene + replay + drawer body), gzip | 19.8 KB (14,290 + 5,996 B) | at most 40 KB, also after A2's ten desks (the office chunks' own cap) | new `BYTES_3D_BUDGET.officeTotal` 40 KB |
-| Office scene chunk | 14 KB cap | measured plus 0.6 KB per stage (about 26 KB after B) | `BYTES_3D_BUDGET.office` |
+| Office chunks total (scene + replay + drawer body), gzip | 19.8 KB (14,290 + 5,996 B) | at most 40 KB, also after A2's ten desks (the office chunks' own cap); after B 33,069 B | new `BYTES_3D_BUDGET.officeTotal` 40 KB |
+| Office scene chunk | 14 KB cap | measured plus 0.6 KB per stage (after B: 26,586 B, cap 27,200 B) | `BYTES_3D_BUDGET.office` |
 | Office replay chunk (C) | none | about 7 KB | `BYTES_3D_BUDGET.officeReplay` |
-| Drawer body | 6 KB cap | measured plus 0.6 KB (about 8 KB after C) | `BYTES_3D_BUDGET.officeBody` |
-| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | first frame grows only by the loader and the furniture shells (A2 does not move it); the session totals also count the watch chunk and, from A2, the office scene chunk (5.9: raised by the measured office bytes, about +27 KB approved); caps re-set to measured plus 0.6 KB per stage | `BYTES_3D_BUDGET` |
-| Office watch chunk (A, every L1 session) | none | measured plus 0.6 KB, inside the session total | `BYTES_3D_BUDGET.officeWatch` |
-| Beacon chunk (A, on the first ask) | none | measured plus 0.6 KB, outside the session total | `BYTES_3D_BUDGET.officeBeacon` |
-| L1 scene calls | 101 / 103 spawn, 51 / 53 stop | under 125 in every view, the live office in view from the spawn and the lane ring's south point included (A2); spawn +1 only while asking or a beam fires; stop +2 at most (beacon mesh, tiles) | under 125 both tiers |
+| Drawer body | 6 KB cap | measured plus 0.6 KB (after B: 6,483 B, cap 7,097 B; about 8 KB after C) | `BYTES_3D_BUDGET.officeBody` |
+| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | first frame grows only by the loader and the furniture shells (A2 does not move it); the session totals also count the watch chunk and, from A2, the office scene chunk (5.9: raised by the measured office bytes, about +27 KB approved); caps re-set to measured plus 0.6 KB per stage (after B: first frame 476,592 B full under `failAt` 477,594 B; session totals full 534,358 B and lite 518,224 B, caps 534,972 B and 518,838 B) | `BYTES_3D_BUDGET` |
+| Office watch chunk (A, every L1 session) | none | measured plus 0.6 KB, inside the session total (after B: 1,555 B, cap 2,075 B) | `BYTES_3D_BUDGET.officeWatch` |
+| Beacon chunk (A, on the first ask; B, or the first fresh production deploy) | none | measured plus 0.6 KB, outside the session total (after B with the deploy beam: 2,043 B, cap 2,657 B) | `BYTES_3D_BUDGET.officeBeacon` |
+| L1 scene calls | 101 / 103 spawn, 51 / 53 stop | under 125 in every view, the live office in view from the spawn and the lane ring's south point included (A2); spawn +1 only while asking or a beam fires; stop +2 at most (beacon mesh, tiles). After B, with a burst playing and the beam running: spawn toward the wing 100 / 102, ring south 65 / 67, stop 44 / 45 | under 125 both tiers |
 | Shader programs per floor | baseline | baseline (stage-mode and dot-mode meshes reuse compiled programs) | `e2e/perf/baseline.json` plus 0 for the office |
 | Memory | zero growth | zero growth in geometries, textures and programs across a replay loop and live switches | perf memory gate |
 | Lite fps | holds | the crew's per-frame writes stay keyed; far LOD at about 4 fps (5.9); replay drives the same writers | perf lane, office stop and ring-south spots |

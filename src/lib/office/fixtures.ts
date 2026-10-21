@@ -1,4 +1,21 @@
-import { wibDay, type OfficeDesk, type OfficeDeskV2, type OfficeGithubItem, type OfficeResponseV1, type OfficeResponseV2, type OfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3 } from "./protocol";
+import {
+  wibDay,
+  type OfficeDesk,
+  type OfficeDeskV2,
+  type OfficeGithubItem,
+  type OfficeJobStatus,
+  type OfficePipeline,
+  type OfficePipelineJob,
+  type OfficePipelineRun,
+  type OfficeResponseV1,
+  type OfficeResponseV2,
+  type OfficeResponseV3,
+  type OfficeResponseV4,
+  type OfficeSnapshotV1,
+  type OfficeSnapshotV2,
+  type OfficeSnapshotV3,
+  type OfficeSnapshotV4,
+} from "./protocol";
 
 /** Fixed clock of the fixtures: 2026-10-18 15:00 WIB. */
 export const OFFICE_FIXTURE_NOW = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -103,5 +120,36 @@ export const OFFICE_FIXTURES_V3: Record<keyof typeof OFFICE_FIXTURES, OfficeResp
   quiet: v3(quiet),
   semiLive: v3(semiLive),
   off: v3(off),
+  disabled: { v: 1, enabled: false },
+};
+
+const v4 = (snap: OfficeSnapshotV3, pipeline: OfficePipeline): OfficeSnapshotV4 => ({ ...snap, v: 4, pipeline });
+
+/** The real CI's twelve jobs (the full PR run), named as GitHub names them. */
+const CI_JOBS = ["Typecheck, lint, unit tests", ...Array.from({ length: 8 }, (_, i) => `Build, CV and e2e (${i + 1}/8)`), "Lighthouse CI", "3D perf gates 1/2", "3D perf gates 2/2"];
+const jobs = (statuses: readonly OfficeJobStatus[]): OfficePipelineJob[] => statuses.map((status, i) => ({ name: CI_JOBS[i], status }));
+/** Run 1001 on desk 3 (slot 2): 7 of 12 finished (6 done, 1 failed), 2 running, 3 queued, as that desk's `progress`. */
+const RUN_1001: OfficePipelineRun = { id: 1001, repo: HQ, title: "CI · feat/intro-orbit-reveal", url: `${RUNS}/1001`, status: "running", slot: 2, at: ago(6), jobs: jobs(["done", "done", "done", "done", "done", "failed", "done", "running", "running", "queued", "queued", "queued"]) };
+const BUSY_PIPELINE: OfficePipeline = {
+  runs: [
+    // The newest run is back-row desk 6's (slot 5, reviewing on the public repo): its packet starts from the riser.
+    { id: 1002, repo: HQ, title: "CI · feat/second-console-row", url: `${RUNS}/1002`, status: "running", slot: 5, at: ago(1), jobs: jobs(["running", "queued", "queued"]) },
+    RUN_1001,
+    { id: 998, repo: HQ, title: "CI · main", url: `${RUNS}/998`, status: "success", at: ago(121), jobs: jobs(Array(12).fill("done")) },
+  ],
+  ships: [
+    { key: "deploy:999", kind: "deploy", status: "success", at: ago(118) },
+    { key: `pr:${HQ}#227`, kind: "merge", status: "merged", at: ago(125) },
+  ],
+};
+const EMPTY: OfficePipeline = { runs: [], ships: [] };
+
+/** The same snapshots as GET /api/office?v=4: busy adds `BUSY_PIPELINE`, rough the same with run 1001 failed, the others an empty pipeline. */
+export const OFFICE_FIXTURES_V4: Record<keyof typeof OFFICE_FIXTURES, OfficeResponseV4> = {
+  busy: v4(OFFICE_FIXTURES_V3.busy as OfficeSnapshotV3, BUSY_PIPELINE),
+  rough: v4(OFFICE_FIXTURES_V3.rough as OfficeSnapshotV3, { ...BUSY_PIPELINE, runs: BUSY_PIPELINE.runs.map((r) => (r.id === 1001 ? { ...r, status: "failure" as const, jobs: r.jobs.map((j) => (j.status === "failed" ? j : { ...j, status: "done" as const })) } : r)) }),
+  quiet: v4(OFFICE_FIXTURES_V3.quiet as OfficeSnapshotV3, EMPTY),
+  semiLive: v4(OFFICE_FIXTURES_V3.semiLive as OfficeSnapshotV3, EMPTY),
+  off: v4(OFFICE_FIXTURES_V3.off as OfficeSnapshotV3, EMPTY),
   disabled: { v: 1, enabled: false },
 };

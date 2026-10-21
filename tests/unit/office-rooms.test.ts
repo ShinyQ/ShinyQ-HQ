@@ -2,13 +2,20 @@ import { describe, expect, it } from "vitest";
 import { getContent } from "@/content/load";
 import { buildFloorRoomViews, buildRoomViews } from "@/content/room-views";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
-import { OFFICE_ROOMS } from "@/experience/floors/lobby/officeLayout";
+import { isOfficeRoom, OFFICE_CI_ROOM, OFFICE_ROOMS } from "@/experience/floors/lobby/officeLayout";
 import { structuralLabels } from "@/hud/index-data";
 import { OFFICE_ACTIVITIES, OFFICE_AGENTS, OFFICE_STATES } from "@/lib/office/protocol";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
 describe("Agent Office rooms and copy", () => {
+  it("makes L1:office-ci an office room after the GitHub board, with no route of its own beyond the home anchor", () => {
+    expect(OFFICE_CI_ROOM).toBe("L1:office-ci");
+    expect(OFFICE_ROOMS.indexOf(OFFICE_CI_ROOM)).toBe(OFFICE_ROOMS.indexOf("L1:office-github" as never) + 1);
+    expect(isOfficeRoom(OFFICE_CI_ROOM)).toBe(true);
+    expect(buildRoomCatalog(getContent(), structuralLabels()).some((r) => r.id === OFFICE_CI_ROOM)).toBe(false);
+  });
+
   it("lists one catalog room, L1:office, with no route of its own beyond the home anchor", () => {
     const catalog = buildRoomCatalog(getContent(), structuralLabels());
     const office = catalog.filter((r) => r.kind === "office");
@@ -22,6 +29,11 @@ describe("Agent Office rooms and copy", () => {
       for (const room of OFFICE_ROOMS) expect(views[room]?.kind, room).toBe("office");
       expect(views["L1:office"].office).toEqual({ panel: "summary" });
       expect(views["L1:office-github"].office).toEqual({ panel: "github" });
+      expect(views["L1:office-ci"].office).toEqual({ panel: "ci" });
+      expect(views["L1:office-github"].next).toBe("L1:office-ci");
+      expect(views["L1:office-ci"].prev).toBe("L1:office-github");
+      expect(views["L1:office-ci"].next).toBe("L1:office-desk-1");
+      expect(views["L1:office-ci"].title).toBe(locale === "en" ? "Ship-It Pipeline" : "Jalur Rilis");
       for (let slot = 0; slot < 10; slot++) expect(views[`L1:office-desk-${slot + 1}`].office).toEqual({ panel: "desk", slot });
       expect(views["L1:office"].prev).toBeUndefined();
       expect(views["L1:office-desk-5"].next).toBe("L1:office-desk-6");
@@ -32,6 +44,7 @@ describe("Agent Office rooms and copy", () => {
       const m = locale === "en" ? en : id;
       expect(views["L1:office"].sections).toEqual([{ body: m.office["3d"].hooks }]);
       expect(views["L1:office-github"].sections).toEqual([{ body: m.office["3d"].githubNote }]);
+      expect(views["L1:office-ci"].sections).toEqual([{ body: m.office["3d"].ciNote }]);
       for (let slot = 0; slot < 10; slot++) expect(views[`L1:office-desk-${slot + 1}`].sections).toEqual([{ body: m.office["3d"].hooks }]);
     });
 

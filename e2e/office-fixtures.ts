@@ -1,4 +1,4 @@
-import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeState } from "../src/lib/office/protocol";
+import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeJobStatus, OfficePipelineRun, OfficeShip, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeSnapshotV4, OfficeState } from "../src/lib/office/protocol";
 
 /**
  * Deterministic Agent Office snapshots: the nine states over two snapshots, one private desk (no title) and one
@@ -7,11 +7,12 @@ import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeSnapshotV1, Offic
 export const OFFICE_REPO = "ShinyQ/ShinyQ-HQ";
 
 /**
- * Playwright URL patterns: every snapshot version (v1, `?v=2`, `?v=3`; the 3D office's poller, the beacon's watch and
- * the Classic card all ask `?v=3`), and v3 alone.
+ * Playwright URL patterns: every snapshot version (v1, `?v=2`, `?v=3`, `?v=4`; the beacon's watch and the Classic card
+ * ask `?v=3`, the 3D office's poller `?v=4`), v3 alone and v4 alone.
  */
-export const OFFICE_API = /\/api\/office(\?v=[23])?$/;
+export const OFFICE_API = /\/api\/office(\?v=[234])?$/;
 export const OFFICE_API_V3 = /\/api\/office\?v=3$/;
+export const OFFICE_API_V4 = /\/api\/office\?v=4$/;
 
 export function officeDesk(slot: number, agent: OfficeAgent, state: OfficeState, activity: OfficeActivity, now: number, extra: Partial<OfficeDeskV2> = {}): OfficeDeskV2 {
   return { slot, agent, state, activity, since: now - 14 * 60_000, recent: [], ...extra };
@@ -137,4 +138,63 @@ export function asV1(body: unknown): unknown {
   const snap = body as Partial<OfficeSnapshotV2> | null;
   if (snap?.v !== 2 || !Array.isArray(snap.desks)) return body;
   return { ...snap, v: 1, desks: snap.desks.map((desk) => Object.fromEntries(Object.entries(desk).filter(([key]) => key !== "helpers"))) };
+}
+
+/** The run URL of a pipeline run in this site's own public repository. */
+const runUrl = (id: number) => `https://github.com/${OFFICE_REPO}/actions/runs/${id}`;
+const pipelineJobs = (statuses: readonly OfficeJobStatus[]) => statuses.map((status, i) => ({ name: `Job ${i + 1}`, status }));
+
+/**
+ * The ship-it script's steps (v4, `?v=4`), each a snapshot for `now` over `statesA`'s front row (nobody asks) plus
+ * back-row desk 6 (slot 5) working; every time is relative to `now`, so a new run or merge is fresh when served.
+ * - `base`: run 4101 on desk 5 (slot 4) running with jobs done, running, queued, queued; one merge 5 min old; 2 PRs merged today (the silent baseline).
+ * - `burst`: run 4101's second job finished (a burst on its lane).
+ * - `packet`: plus run 4102 on back-row desk 6 (slot 5), new at `now` (a packet from the riser).
+ * - `merge`: plus a merge from desk 1 (slot 0), new at `now`, and 3 PRs merged today (a package, then the stack of 3).
+ * With `deployAt`, a production deploy that succeeded then is added (`deployed`).
+ */
+export const SHIP_STEPS = ["base", "burst", "packet", "merge"] as const;
+export type ShipStep = (typeof SHIP_STEPS)[number];
+
+export function shipStep(now: number, step: ShipStep, deployAt?: number): OfficeSnapshotV4 {
+  const k = SHIP_STEPS.indexOf(step);
+  const front = statesA(now, 0);
+  const runs: OfficePipelineRun[] = [
+    { id: 4101, repo: OFFICE_REPO, title: "CI · feat/ship-it-pipeline", url: runUrl(4101), status: "running", slot: 4, at: now - 2 * 60_000, jobs: pipelineJobs(k >= 1 ? ["done", "done", "running", "queued"] : ["done", "running", "queued", "queued"]) },
+  ];
+  if (k >= 2) runs.unshift({ id: 4102, repo: OFFICE_REPO, title: "CI · feat/second-console-row", url: runUrl(4102), status: "running", slot: 5, at: now, jobs: pipelineJobs(["running", "queued"]) });
+  const ships: OfficeShip[] = [{ key: `pr:${OFFICE_REPO}#300`, kind: "merge", status: "merged", at: now - 5 * 60_000 }];
+  if (k >= 3) ships.unshift({ key: `pr:${OFFICE_REPO}#301`, kind: "merge", status: "merged", at: now, slot: 0 });
+  const snap: OfficeSnapshotV4 = {
+    ...front,
+    v: 4,
+    desks: [...front.desks, officeDesk(5, "codex", "working", "editing", now, { repo: OFFICE_REPO, title: "Second Console Row" })],
+    today: { ...front.today, prsMerged: k >= 3 ? 3 : 2 },
+    pipeline: { runs, ships },
+  };
+  return deployAt === undefined ? snap : withDeploy(snap, deployAt);
+}
+
+/**
+ * A production deploy that succeeded at `at` (v4, `?v=4`): `statesA`'s office (nobody asks) with the deploy in the
+ * pipeline's ships and, as the Worker writes it, in the GitHub feed titled "Deploy · production" (what a v3 reader sees).
+ */
+export function deployed(now: number, at: number): OfficeSnapshotV4 {
+  return withDeploy({ ...statesA(now, 0), v: 4, pipeline: { runs: [], ships: [] } }, at);
+}
+
+/** `snap` plus a production deploy that succeeded at `at` (its key from `at`, so every deploy time is a new deploy), newest first. */
+function withDeploy(snap: OfficeSnapshotV4, at: number): OfficeSnapshotV4 {
+  return {
+    ...snap,
+    github: [{ kind: "deploy", status: "success", repo: OFFICE_REPO, title: "Deploy · production", at, url: `https://github.com/${OFFICE_REPO}/deployments` }, ...snap.github],
+    pipeline: { ...snap.pipeline, ships: [{ key: `deploy:${at}`, kind: "deploy", status: "success", at }, ...snap.pipeline.ships] },
+  };
+}
+
+/** The v3 body of GET /api/office?v=3 for a v4 snapshot (the Worker's `viewV3`: no pipeline, `v: 3`); any other body as is. */
+export function asV3(body: unknown): unknown {
+  const snap = body as Partial<OfficeSnapshotV4> | null;
+  if (snap?.v !== 4) return body;
+  return Object.fromEntries(Object.entries({ ...snap, v: 3 }).filter(([key]) => key !== "pipeline"));
 }

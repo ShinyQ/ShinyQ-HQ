@@ -1,5 +1,5 @@
 import { parseOfficeBeat } from "../../../src/lib/office/protocol";
-import { applyBeat, applyGithub, emptyDoc, isGithubMessage, migrateDoc, view, viewV2, viewV3, type OfficeDoc } from "./state";
+import { applyBeat, applyGithub, emptyDoc, isGithubMessage, migrateDoc, view, viewV2, viewV3, viewV4, type OfficeDoc } from "./state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "./types";
 
 const DOC_KEY = "doc";
@@ -39,10 +39,11 @@ export class Office {
     const { pathname, searchParams } = new URL(request.url);
     if (pathname === "/snapshot") {
       if (request.method !== "GET") return status(405);
-      // v2 only for exactly ?v=2 and v3 only for exactly ?v=3; anything else is the unchanged v1 body.
+      // v2, v3 and v4 only for exactly ?v=2, ?v=3 and ?v=4; anything else is the unchanged v1 body.
       const doc = await this.load();
       const v = searchParams.get("v");
-      const body = JSON.stringify(v === "3" ? viewV3(doc, this.now()) : v === "2" ? viewV2(doc, this.now()) : view(doc, this.now()));
+      const now = this.now();
+      const body = JSON.stringify(v === "4" ? viewV4(doc, now) : v === "3" ? viewV3(doc, now) : v === "2" ? viewV2(doc, now) : view(doc, now));
       return new Response(body, { headers: { "Content-Type": "application/json; charset=utf-8" } });
     }
     if (pathname !== "/beat" && pathname !== "/github") return status(404);

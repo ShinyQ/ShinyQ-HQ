@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { createOfficePoller, OFFICE_V3_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { parseOfficeResponseV3 } from "@/lib/office/protocol";
+import { createOfficePoller, OFFICE_V4_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 
 /**
  * Why the scene's poller runs (design 5.9): the office in view inside `OFFICE_LOD.farDistance` ("near", OfficeScene),
@@ -19,12 +19,12 @@ export function officePollInterval(reasons: ReadonlySet<OfficePollReason>, feed:
  * back into view waits out the rest of the cadence since the last request (panning across the frustum edge never
  * fetches faster than the cadence). Visitor
  * input resets its 10 minute idle stop; the tab turning visible counts as input and fetches at once. It polls snapshot
- * v3 (ten seats, desk helpers), which also accepts a v2 or v1 body after a rollback; the feed keeps all ten desks (the
- * signal reads every asker, and the scene draws all ten). Chunk only.
+ * v4 (v3's ten seats and desk helpers plus the CI pipeline), reading a rolled-back v3, v2 or v1 body as v4 with an
+ * empty pipeline; the feed keeps all ten desks (the signal reads every asker, and the scene draws all ten). Chunk only.
  */
 const clock = { skew: 0 };
 const wants = new Set<OfficePollReason>();
-const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V3_PATH, parse: parseOfficeResponseV3, interval: (feed) => officePollInterval(wants, feed) });
+const poller = createOfficePoller({ now: () => Date.now() + clock.skew, path: OFFICE_V4_PATH, parse: parseOfficeResponseV4, interval: (feed) => officePollInterval(wants, feed) });
 const INPUT = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 let detach: (() => void) | null = null;
 /** Unsubscribes the test hook's one-shot listener (set while its unwanted fetch is in flight). */

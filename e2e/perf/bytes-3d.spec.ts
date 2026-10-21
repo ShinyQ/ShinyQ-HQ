@@ -22,7 +22,7 @@ import { writePerfEntry } from "./helpers";
  * `BYTES_3D_BUDGET.officeBody`; the two (plus the replay chunk, `__hq.office.loadReplay()`, once it ships) are held together to
  * `BYTES_3D_BUDGET.officeTotal`. The office watch chunk (`__hq.office.loadWatch()`, idle on every L1 session, so never
  * with `?prefetch=off`) is measured right after the session floors, held to `BYTES_3D_BUDGET.officeWatch` and counted in
- * the session total; the beacon chunk (`__hq.office.loadBeacon()`, on the first Needs Kurniadi ask) is measured last and
+ * the session total; the beacon chunk (`__hq.office.loadBeacon()`, on the first Needs Kurniadi ask or fresh production deploy) is measured last and
  * held to `BYTES_3D_BUDGET.officeBeacon`, outside the session total.
  */
 test.describe.configure({ timeout: 150_000 });

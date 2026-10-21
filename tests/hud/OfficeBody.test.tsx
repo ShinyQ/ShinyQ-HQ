@@ -7,16 +7,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
-import { OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
-import type { OfficeDesk } from "@/lib/office/protocol";
+import type { OfficeDesk, OfficeSnapshotV4 } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed, want: vi.fn() }));
-vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } }));
-const chunk = vi.hoisted(() => ({ loadOffice: vi.fn(() => Promise.resolve()) }));
-vi.mock("@/experience/floors/lobby/office/chunk", () => ({ loadOffice: chunk.loadOffice }));
+// The drawer reads the feed from the loaded scene chunk (`officeModule()`), never from `./live` itself.
+const chunk = vi.hoisted(() => {
+  const scene = { useOfficeFeed: () => live.feed, officeLive: { want: live.want, wanted: () => true } };
+  return { scene, module: scene as typeof scene | null, loadOffice: vi.fn(() => Promise.resolve()) };
+});
+vi.mock("@/experience/floors/lobby/office/chunk", () => ({ loadOffice: chunk.loadOffice, useOfficeModule: () => chunk.module }));
+vi.mock("@/experience/floors/lobby/office/live", () => {
+  throw new Error("the drawer body must not import ./live");
+});
 // The drawer blocks import the localized Link (next-intl navigation), which needs the Next.js router.
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
@@ -60,6 +66,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   live.want.mockClear();
+  chunk.module = chunk.scene;
+  chunk.loadOffice.mockImplementation(() => Promise.resolve());
 });
 
 describe("Agent Office drawers", () => {
@@ -130,11 +138,140 @@ describe("Agent Office drawers", () => {
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.githubNote);
   });
 
+  describe("ship-it pipeline", () => {
+    const busy = () => structuredClone(OFFICE_FIXTURES_V4.busy as OfficeSnapshotV4);
+    const ciTree = (locale: "en" | "id") => tree({ panel: "ci" }, "L1:office-ci", locale);
+
+    for (const locale of ["en", "id"] as const) {
+      it(`lists the latest runs with their lanes, then the merges and deploys, and the GitHub note (${locale})`, () => {
+        const m = (locale === "en" ? en : ids).office["3d"];
+        live.feed = { status: "ready", snapshot: busy() as OfficeFeedSnapshot, fetchedAt: Date.now() };
+        render(ciTree(locale));
+        expect(screen.getByTestId("office-body")).toHaveAttribute("data-panel", "ci");
+        const runs = screen.getAllByTestId("office-ci-run");
+        expect(runs.map((r) => r.dataset.status)).toEqual(["running", "running", "success"]);
+        const [r1002, r1001, r998] = runs;
+        expect(within(r1002).getByRole("link", { name: new RegExp(`^${escape("CI · feat/second-console-row")}`) })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/1002");
+        expect(r1002).toHaveTextContent(m.github.status.running);
+        expect(r1002).toHaveTextContent(m.ci.desk.replace("{n}", "6"));
+        expect(r1001).toHaveTextContent(m.ci.desk.replace("{n}", "3"));
+        expect(r998).not.toHaveTextContent(m.ci.desk.replace("{n}", ""));
+        expect(r998).toHaveTextContent(m.github.status.success);
+        const lanes = within(r1001).getAllByRole("listitem");
+        expect(lanes).toHaveLength(12);
+        expect(lanes[0]).toHaveTextContent(`Typecheck, lint, unit tests: ${m.ci.job.done}`);
+        expect(lanes[5]).toHaveTextContent(`Build, CV and e2e (5/8): ${m.ci.job.failed}`);
+        expect(lanes[5]).toHaveAttribute("data-status", "failed");
+        expect(lanes.filter((l) => l.dataset.status === "failed")).toHaveLength(1);
+        expect(lanes[11]).toHaveTextContent(`3D perf gates 2/2: ${m.ci.job.queued}`);
+        expect(within(r1002).getAllByRole("listitem")[0]).toHaveTextContent(`Typecheck, lint, unit tests: ${m.ci.job.running}`);
+        const body = screen.getByTestId("office-ci");
+        expect(body).toHaveTextContent(m.ci.runs);
+        expect(body).toHaveTextContent(m.ci.ships);
+        const ships = within(body).getAllByTestId("office-feed-row");
+        expect(ships.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+        expect(ships[0]).toHaveTextContent("Deploy · production");
+        expect(within(ships[1]).getByRole("link", { name: new RegExp(`^${escape("#227 Rover wakes up, then a reveal orbit")}`) })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pull/227");
+        expect(screen.getByTestId("office-body")).toHaveTextContent(m.githubNote);
+      });
+    }
+
+    it("lists only production deploys that succeeded under merged and deployed, never a preview, running or failed one", () => {
+      const snap = busy();
+      const deploy = snap.github.find((g) => g.kind === "deploy")!;
+      snap.github = [
+        { ...deploy, title: "Deploy · Preview", url: `${deploy.url}-preview` },
+        { ...deploy, status: "failure", url: `${deploy.url}-failed` },
+        { ...deploy, status: "running", url: `${deploy.url}-running` },
+        ...snap.github,
+      ];
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      const ships = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(ships.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(ships[0]).toHaveTextContent("Deploy · production");
+      expect(screen.getByTestId("office-ci")).not.toHaveTextContent("Deploy · Preview");
+      expect(screen.getByTestId("office-ci").querySelectorAll('[data-status="failure"], [data-testid="office-feed-row"][data-status="running"]')).toHaveLength(0);
+    });
+
+    it("keeps the last pipeline while offline, with the offline note and no anonymous run row", () => {
+      live.feed = { status: "offline", snapshot: busy() as OfficeFeedSnapshot, fetchedAt: Date.now() - 120_000 };
+      render(ciTree("en"));
+      expect(screen.getByTestId("office-offline")).toHaveTextContent(o.drawer.offline);
+      expect(screen.getAllByTestId("office-ci-run")).toHaveLength(3);
+      const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(rows.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(screen.queryByRole("progressbar")).toBeNull();
+    });
+
+    it("shows no anonymous run row for a v4 snapshot with an empty pipeline", () => {
+      const snap = busy();
+      snap.pipeline = { runs: [], ships: [] };
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
+      expect(within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row").map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(screen.queryByRole("progressbar")).toBeNull();
+    });
+
+    it("shows the running run's anonymous progress line for a snapshot without a pipeline (v3, a rollback)", () => {
+      const snap = structuredClone(OFFICE_FIXTURES_V3.busy) as OfficeFeedSnapshot;
+      live.feed = { status: "ready", snapshot: snap, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
+      const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(rows[0]).toHaveAttribute("data-status", "running");
+      expect(within(rows[0]).getByRole("progressbar")).toHaveAccessibleName(o.jobs.replace("{done}", "7").replace("{total}", "12"));
+    });
+
+    it("says there are no recent runs without runs or ships", () => {
+      const snap = busy();
+      snap.pipeline = { runs: [], ships: [] };
+      // A running run (no anonymous row beside a v4 pipeline) and a preview deploy (never shipped) still say "none".
+      snap.github = snap.github.flatMap((g) => (g.kind === "run" ? [g] : g.kind === "deploy" ? [{ ...g, title: "Deploy · Preview" }] : []));
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("id"));
+      expect(screen.queryByTestId("office-ci")).toBeNull();
+      expect(screen.getByTestId("office-body")).toHaveTextContent(ids.office["3d"].ci.none);
+    });
+
+    it("never links a run outside github.com", () => {
+      const snap = busy();
+      snap.pipeline.runs[0].url = "javascript:alert(1)";
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      const run = screen.getAllByTestId("office-ci-run")[0];
+      expect(run).toHaveTextContent("CI · feat/second-console-row");
+      expect(within(run).queryByRole("link")).toBeNull();
+      expect(screen.getByTestId("office-ci").querySelector('a[href^="javascript"]')).toBeNull();
+    });
+  });
+
   it("starts the 3D office on every drawer open (a user action, so even with `?prefetch=off`)", () => {
     chunk.loadOffice.mockClear();
     body({ panel: "summary" }).unmount();
     body({ panel: "github" });
     expect(chunk.loadOffice).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the loading note until the scene chunk (and its one poller) is loaded, then the live feed", () => {
+    chunk.module = null;
+    const view = { panel: "summary" } as const;
+    const { rerender } = body(view);
+    expect(screen.getByTestId("office-notice")).toHaveTextContent(o.drawer.loading);
+    expect(screen.getByTestId("office-body")).toHaveTextContent(o.hooks);
+    expect(live.want).not.toHaveBeenCalled();
+    chunk.module = chunk.scene;
+    rerender(tree(view));
+    expect(screen.queryByTestId("office-notice")).toBeNull();
+    expect(live.want).toHaveBeenLastCalledWith("drawer", true);
+  });
+
+  it("shows the offline note when the scene chunk fails to load", async () => {
+    chunk.module = null;
+    chunk.loadOffice.mockImplementation(() => Promise.reject(new Error("chunk")));
+    body({ panel: "github" });
+    expect(await screen.findByText(o.drawer.offlineEmpty)).toHaveAttribute("data-testid", "office-notice");
   });
 
   it("stops wanting the drawer poll when it closes", () => {

@@ -1,4 +1,16 @@
-import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeResponseV2, type OfficeResponseV3, type OfficeSnapshot, type OfficeSnapshotV1, type OfficeSnapshotV2 } from "./protocol";
+import {
+  OFFICE_PATH,
+  parseOfficeResponse,
+  type OfficePipeline,
+  type OfficeResponseV1,
+  type OfficeResponseV2,
+  type OfficeResponseV3,
+  type OfficeResponseV4,
+  type OfficeSnapshot,
+  type OfficeSnapshotV1,
+  type OfficeSnapshotV2,
+  type OfficeSnapshotV4,
+} from "./protocol";
 
 /**
  * Agent Office polling (owner decision D6, spec section 8), shared by the 3D office on L1 and the Classic home card.
@@ -6,17 +18,20 @@ import { OFFICE_PATH, parseOfficeResponse, type OfficeResponseV1, type OfficeRes
  */
 export const POLL = { activeMs: 10_000, restingMs: 30_000, idleStopMs: 600_000, keepLastMs: 60_000 } as const;
 
-/** The snapshot v3 request (ten seats, desk helpers) the 3D office, the Classic card and the office watch make. */
+/** The snapshot v3 request (ten seats, desk helpers) the Classic card and the office watch make. */
 export const OFFICE_V3_PATH = `${OFFICE_PATH}?v=3`;
+/** The snapshot v4 request (v3 plus the CI pipeline): the 3D scene's poller only. */
+export const OFFICE_V4_PATH = `${OFFICE_PATH}?v=4`;
 
 export type OfficeFeedStatus = "idle" | "loading" | "ready" | "offline" | "disabled";
 
 /**
- * The v3 snapshot shape with any version number: the 3D office and the Classic card poll v3 (`OFFICE_V3_PATH`,
- * `parseOfficeResponseV3`), while unit fixtures and other callers may still hand in a v1 or v2 snapshot (five desks at
- * most, v1 desks without `helpers`), so every consumer reads one type.
+ * The v3 snapshot shape with any version number and an optional pipeline: the 3D office polls v4 (`OFFICE_V4_PATH`,
+ * `parseOfficeResponseV4` from `./protocolV4.ts`, with the pipeline) and the Classic card v3 (`OFFICE_V3_PATH`, `parseOfficeResponseV3`),
+ * while unit fixtures and other callers may still hand in a v1 or v2 snapshot (five desks at most, v1 desks without
+ * `helpers`), so every consumer reads one type.
  */
-export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshotV2["v"] | OfficeSnapshot["v"] };
+export type OfficeFeedSnapshot = Omit<OfficeSnapshot, "v"> & { v: OfficeSnapshotV1["v"] | OfficeSnapshotV2["v"] | OfficeSnapshot["v"] | OfficeSnapshotV4["v"]; pipeline?: OfficePipeline };
 
 export interface OfficeFeed {
   status: OfficeFeedStatus;
@@ -46,10 +61,10 @@ export interface OfficePoller {
 }
 
 export interface OfficePollerOptions {
-  /** What to fetch (default `OFFICE_PATH`, v1); both clients ask `OFFICE_V3_PATH`. */
+  /** What to fetch (default `OFFICE_PATH`, v1): the 3D scene asks `OFFICE_V4_PATH`, the Classic card `OFFICE_V3_PATH`. */
   path?: string;
   /** The body's validator for that path (default `parseOfficeResponse`, v1). */
-  parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | null;
+  parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | OfficeResponseV4 | null;
   /** The wait before the next request, from the feed (default `pollInterval`). */
   interval?: (feed: OfficeFeed) => number;
   fetcher?: typeof fetch;

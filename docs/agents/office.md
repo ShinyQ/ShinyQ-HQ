@@ -17,7 +17,22 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `src/lib/office/protocol.ts`: `OfficeBeatV1` (relay to Worker), `OfficeResponseV1` (`GET /api/office`),
   `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0) and
   `OfficeResponseV3` (`GET /api/office?v=3`: v2 with `v: 3` and up to `OFFICE_SEATS` (10) desks, slots 0 to 9, `extra`
-  counting sessions past ten; `OfficeSnapshot` is v3). The disabled answer `{v:1, enabled:false}` is the same in all.
+  counting sessions past ten; `OfficeSnapshot` is v3) and `OfficeResponseV4` (`GET /api/office?v=4`: `OfficeSnapshotV4`,
+  v3 with `v: 4` and `pipeline`, the 3D scene only). The disabled answer `{v:1, enabled:false}` is the same in all.
+- Snapshot v4's `pipeline` (`OfficePipeline`, caps in `OFFICE_PIPELINE`: `runs` 3, `jobs` 24, `ships` 10, `jobName` 40,
+  `key` 160): `runs`, newest first, each `OfficePipelineRun` `{ id, repo, title, url, status (running, success,
+  failure), slot?, at, jobs }` with its jobs (`OfficePipelineJob` `{ name, status }`, `OfficeJobStatus` queued, running,
+  done or failed) in first-seen order, `slot` the seat (0 to 9) of the live session on the run's repository and head
+  branch, `at` when the Worker first saw this attempt; `ships`, newest first, each `OfficeShip` `{ key, kind (merge,
+  deploy), status (running, success, failure, merged), at, slot? }`, `key` the feed key (`pr:<repo>#<number>` or
+  `deploy:<id>`), only merged pull requests and production deploys.
+- `src/lib/office/protocolV4.ts`: the v4 validators (`parseOfficeResponseV4` and the pipeline checks, `GET /api/office?v=4`),
+  imported only by the 3D scene's poller (`office/live.ts`) and the Pages Function, never re-exported from
+  `protocol.ts`, so the Classic card and the office watch (both on v3) never carry them; the v4 types and
+  `OFFICE_PIPELINE` stay in `protocol.ts`. `parseOfficeResponseV4` is strict on a v4 body (every key, the caps, job
+  names and ship keys free of control characters and `<` `>`, seats 0 to 9, URLs `https`) and reads a v3, v2 or v1 body
+  (a rolled-back Worker or Function) as v4 with an empty pipeline (`{ runs: [], ships: [] }`), so the scene reads one
+  type and shows part A's anonymous tower progress from the GitHub feed; the disabled body passes as is.
 - Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
   front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
   seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
@@ -27,21 +42,25 @@ Index: [AGENTS.md](../../AGENTS.md).
   `extra`.
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
   `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
-  v3; no query, `?v=4` or junk get v1.
+  v3, and only exactly `?v=4` gets v4; no query, `?v=5` or junk get v1.
 - Clients validate with `parseOfficeResponse` (v1), `parseOfficeResponseV2` (strict v2, five desks, plus a v1 body read
-  as v2 without helpers) or `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
-  rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) and
-  hide on null; the Worker validates beats with `parseOfficeBeat`.
-- Who polls what (all `?v=3`, `OFFICE_V3_PATH`): the 3D office's poller (`createOfficePoller({ path, parse, interval })`
-  in `office/live.ts`: the fast cadence near the office or with a drawer open, 30 s from afar, nothing out of view),
-  the Classic card, and the L1 beacon's watch every 30 s while the scene's poller is not running (so a back-row asker
-  lights the beacon; the same one request per 30 s as before). `signalFromBody` reads v1 to v3 bodies with up to ten
-  desks and slots 0 to 9. The 3D scene's `officeView` and the Classic card both read all ten (slots 0 to 9, `extra` past
-  ten); there `withSeats(snap, OFFICE_SEATS)` (`src/lib/office/model.ts`) only guards against a slot past the seat
-  count; the signal keeps every asker.
-- Fixtures: `OFFICE_FIXTURES` (v1), `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6) and `OFFICE_FIXTURES_V3` (busy
-  seats ten: drones at slots 0, 2, 5 and 9, askers at 3 and 7, one more in `extra`) in `src/lib/office/fixtures.ts`
-  (busy, rough, quiet, semiLive, off, disabled).
+  as v2 without helpers), `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
+  rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) or
+  `parseOfficeResponseV4` (above) and hide on null; the Worker validates beats with `parseOfficeBeat`.
+- Who polls what: the 3D office's poller asks `?v=4` (`OFFICE_V4_PATH` with `parseOfficeResponseV4`;
+  `createOfficePoller({ path, parse, interval })` in `office/live.ts`: the fast cadence near the office or with a drawer
+  open, 30 s from afar, nothing out of view); the Classic card and the L1 beacon's watch ask `?v=3` (`OFFICE_V3_PATH`),
+  the watch every 30 s while the scene's poller is not running (so a back-row asker lights the beacon; the same one
+  request per 30 s as before). `signalFromBody` reads v1 to v4 bodies with up to ten desks and slots 0 to 9, and the
+  newest production deploy success at most 30 s old (v4: `pipeline.ships`; older: the feed item titled
+  `Deploy · production`). The 3D scene's `officeView` (with `OfficeView.pipeline`, null when off, offline or disabled)
+  and the Classic card both read all ten (slots 0 to 9, `extra` past ten); there `withSeats(snap, OFFICE_SEATS)`
+  (`src/lib/office/model.ts`) only guards against a slot past the seat count; the signal keeps every asker.
+- Fixtures: `OFFICE_FIXTURES` (v1), `OFFICE_FIXTURES_V2` (busy with helpers 3 and 6), `OFFICE_FIXTURES_V3` (busy
+  seats ten: drones at slots 0, 2, 5 and 9, askers at 3 and 7, one more in `extra`) and `OFFICE_FIXTURES_V4` (busy adds
+  a pipeline of three runs, 3, 12 and 12 jobs named as the real CI names them, one on back-row desk 6, plus a merge and
+  a production deploy; rough fails one of them; the others an empty pipeline) in `src/lib/office/fixtures.ts` (busy,
+  rough, quiet, semiLive, off, disabled).
 - Change the contract only with a new version and every side in one PR.
 
 ### Privacy (owner decision D3)
@@ -74,8 +93,18 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Helpers: a beat's `helpers` replaces the stored count, a beat without it keeps it, 0 clears it; a count change adds
   no `recent` entry; a privatized repository keeps it. `viewV2` and `viewV3` show it (`effectiveHelpers`, capped at 9)
   while the session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1)
-  never does. The Durable Object's `/snapshot` answers `viewV3` for `?v=3`, `viewV2` for `?v=2`, else `view`; the
-  Worker forwards only `?v=2` and `?v=3`.
+  never does. The Durable Object's `/snapshot` answers `viewV4` for `?v=4`, `viewV3` for `?v=3`, `viewV2` for `?v=2`,
+  else `view`; the Worker forwards only `?v=2`, `?v=3` and `?v=4`.
+- Pipeline (`pipelineOf(doc, now)`, served only by `viewV4`, which is `viewV3` plus it): `RunRecord` keeps `order` (the
+  job ids in first-seen order, at most `OFFICE_PIPELINE.jobs`, 24), `names` (each laned job's name, already through
+  `cleanTitle` and the blocklist at ingest, cut to 40 characters) and `started` (when this attempt was first seen; a
+  newer attempt resets it), all optional, so a document stored before v4 reads with its first job ids, "Job" names and
+  `updated`. Jobs past the 24th fold into the last lane (its status the worst of them: failed over running over queued
+  over done). The served runs are the 3 newest by `started` that are not stale; the ships are the latest merged pull
+  requests and production deploys from the feed (at most 10; a deploy item stored before the `production` flag counts
+  by its ingest title). A run or merge links to a desk through the session's effective seat (`seatOf`: the front-row
+  `slot` or the back-row `seat`) of the newest live session on the same repository and branch, so `slot` ranges 0 to 9.
+  `privatized` strips runs and feed items, so the pipeline empties with them.
 - Seats: ten stable seats (`assignSlots`, `OFFICE_SEATS`). The front row fills first: a free seat goes to the lowest
   free seat, and a back-row session moves to a front-row seat as soon as one is free (oldest first), so for at most
   five sessions v1 and v2 show what five desks showed. Only when all ten are taken may an awake newcomer take the
@@ -92,13 +121,15 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3)
-  (always 200 JSON: the snapshot, `mode: "off"` on failure, or `{v:1, enabled:false}`) with an ETag (304 on a matching
-  `If-None-Match`) and `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer
-  `public, max-age=60`), stored in `caches.default` for 5 s per data center under one key per version (`/api/office`,
-  `/api/office?v=2`, `/api/office?v=3`; any other query shares the v1 entry); v2 and v3 fetch the Worker's
-  `/snapshot?v=2` or `?v=3` and validate with `parseOfficeResponseV2` or `parseOfficeResponseV3`, so a rolled-back
-  Worker's older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
+- `functions/_lib/office.ts`: `GET /api/office` (v1), `GET /api/office?v=2` (v2), `GET /api/office?v=3` (v3) and
+  `GET /api/office?v=4` (v4) (always 200 JSON: the snapshot, `mode: "off"` on failure (v4 with an empty pipeline), or
+  `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
+  `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
+  `caches.default` for 5 s per data center under one key per version (`VERSIONS`: `/api/office`, `/api/office?v=2`,
+  `/api/office?v=3`, `/api/office?v=4`; only exactly `2`, `3` and `4` are honoured, any other query shares the v1
+  entry, so junk queries never fill the cache); v2 to v4 fetch the Worker's `/snapshot?v=2`, `?v=3` or `?v=4` and
+  validate with `parseOfficeResponseV2`, `parseOfficeResponseV3` or `parseOfficeResponseV4`, so a rolled-back Worker's
+  older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
@@ -117,12 +148,16 @@ Index: [AGENTS.md](../../AGENTS.md).
   only the stored `slot`, so back-row sessions count in `extra` and take a free front desk at the next beat, and its
   snapshots stay valid (no mode off, at any session count; tested against a frozen copy of its rules in
   `tests/office/legacy-five-desks.ts`). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
-  Function gets v1 (read as v3).
+  Function gets v1 (read as v3). A Worker or Function rolled back to before v4 answers `?v=4` as v1 (the Worker
+  forwards no `?v=4`, the Function shares the v1 entry); the v4 Function and the scene read that body as v4 with an
+  empty pipeline (part A's anonymous lanes, no effects).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
 
-- `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/office/legacy-five-desks.ts` is
+- `tests/office/`: protocol (v4 parse, its fallback and hostile inputs), state (job names, lanes folding past 24,
+  `started`, ships, seats, privatized, v4 views), ingest, Worker and Durable Object (`?v=4` routing), Functions
+  (`office-endpoint`: the v4 query, cache keys and ETags per version, v1 to v3 unchanged); `tests/office/legacy-five-desks.ts` is
   a frozen copy of the pre-ten-seat Worker's seat and view rules (never update it); `tests/unit/office-deploy.test.ts`.
 
 ## Relay

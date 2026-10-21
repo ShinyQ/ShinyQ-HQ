@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
-import { OFFICE, officeSlots, officeWallRect } from "@/experience/floors/lobby/officeLayout";
+import { OFFICE, officeSlots, officeTowerColumn, officeTowerTall, officeTowerYaw, officeWallRect } from "@/experience/floors/lobby/officeLayout";
 import { officeInteractables } from "@/experience/floors/lobby/office/interact";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
 
 const W = LOBBY.officeWing;
 const slots = officeSlots(W);
-const items = officeInteractables(slots, { office: "Agent Office: summary", github: "Agent Office: GitHub board", desk: (slot) => `Desk ${slot + 1}` });
+const items = officeInteractables(slots, { office: "Agent Office: summary", github: "Agent Office: GitHub board", ci: "Agent Office: CI tower", desk: (slot) => `Desk ${slot + 1}` });
 
 describe("Agent Office point-and-go targets", () => {
-  it("adds the two wall halves and one target per Rover (both rows), each opening its drawer from the office stop", () => {
+  it("adds the two wall halves, the CI tower and one target per Rover (both rows), each opening its drawer from the office stop", () => {
     const desks = Array.from({ length: 10 }, (_, i) => i + 1);
-    expect(items.map((i) => i.id)).toEqual(["L1:station:office", "L1:station:office-github", ...desks.map((n) => `L1:station:office-desk-${n}`)]);
-    expect(items.map((i) => (i.action.type === "open-room" ? i.action.room : null))).toEqual(["L1:office", "L1:office-github", ...desks.map((n) => `L1:office-desk-${n}`)]);
+    expect(items.map((i) => i.id)).toEqual(["L1:station:office", "L1:station:office-github", "L1:station:office-ci", ...desks.map((n) => `L1:station:office-desk-${n}`)]);
+    expect(items.map((i) => (i.action.type === "open-room" ? i.action.room : null))).toEqual(["L1:office", "L1:office-github", "L1:office-ci", ...desks.map((n) => `L1:office-desk-${n}`)]);
     for (const item of items) {
       expect(item).toMatchObject({ floor: "L1", kind: "station", at: W.stop });
     }
@@ -28,9 +28,20 @@ describe("Agent Office point-and-go targets", () => {
     expect(summary.height).toBe(OFFICE.wall.bottom + OFFICE.wall.h);
   });
 
+  it("picks the CI tower by its turned column, from the plinth to the column's top", () => {
+    const ci = items[2];
+    const tall = officeTowerTall(W);
+    expect(ci.label).toBe("Agent Office: CI tower");
+    expect(ci.box).toEqual({ center: officeTowerColumn(W), w: OFFICE.tower.column, d: OFFICE.tower.column, yaw: officeTowerYaw(W) });
+    expect(ci.bounds).toEqual({ minX: tall.minX, maxX: tall.maxX, minZ: tall.minZ, maxZ: tall.maxZ });
+    expect(ci.base).toBe(OFFICE.tower.plinth);
+    expect(ci.height).toBe(tall.h);
+    expect(tall.h).toBeCloseTo(OFFICE.tower.plinth + OFFICE.tower.h);
+  });
+
   it("gives each Rover a turned pick box from its desk front to its back, on its row's floor (the back row's on the riser)", () => {
     for (const s of slots) {
-      const item = items[2 + s.slot];
+      const item = items[3 + s.slot];
       const row = OFFICE.rows[s.row];
       expect(item.box?.yaw).toBe(s.yaw);
       expect(item.box?.w).toBe(row.deskW);

@@ -75,7 +75,7 @@ describe("office crew frame (the keyed write decision)", () => {
     const busy = OFFICE_FIXTURES.busy as OfficeSnapshotV1;
     const semi = officeView({ status: "ready", snapshot: { ...busy, mode: "off" } });
     expect(semi.rovers.every((r) => r.state === "asleep")).toBe(true);
-    expect(towerLanes(semi).running).toBe(true);
+    expect(towerLanes(semi).chasing).toBe(true);
     const { due } = run(semi, true, 300);
     expect(due.slice(1).some(Boolean)).toBe(false);
   });

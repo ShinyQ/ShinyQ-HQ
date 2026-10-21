@@ -188,7 +188,7 @@ export interface RoomView {
   /** B1:<station>: the Engine Room station (`EngineBody`). */
   engine?: RoomEngine;
   /** L1 Agent Office: which panel `OfficeBody` shows; the live data is fetched on the client (`/api/office`). */
-  office?: { panel: "summary" | "github" | "desk"; slot?: number };
+  office?: { panel: "summary" | "github" | "ci" | "desk"; slot?: number };
 }
 
 /** One before or after capture on the B1 timeline. */
