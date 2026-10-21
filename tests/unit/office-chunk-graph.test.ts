@@ -85,10 +85,11 @@ describe("Agent Office chunk boundary", () => {
   });
 
   it("keeps the 3D-only office helpers, the mount and experience/config out of the Classic site's shared page chunk", () => {
-    // The Classic drawer host loads the office drawer body through the loader, which reads officeLayout.ts only.
+    // The Classic drawer host loads the office drawer body through the loader, which reads no layout (the always-live
+    // trigger asks no distance).
     const classic = staticClosure("src/hud/drawer/DrawerHost.tsx");
     expect(classic.has(`${DIR}/chunk.ts`)).toBe(true);
-    expect(classic.has("src/experience/floors/lobby/officeLayout.ts")).toBe(true);
+    expect(classic.has("src/experience/floors/lobby/officeLayout.ts")).toBe(false);
     expect(classic.has("src/experience/config.ts")).toBe(false);
     const threeD = MAIN.filter((f) => !f.endsWith("officeLayout.ts") && f !== `${DIR}/chunk.ts`);
     expect(threeD.filter((f) => classic.has(f))).toEqual([]);

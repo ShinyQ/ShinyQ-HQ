@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
+import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE_FIXTURES } from "../src/lib/office/fixtures";
 import { FLOOR_SCENE_CAPS } from "./budgets";
@@ -13,6 +14,7 @@ import {
   driveTo,
   enterHQ,
   expectRenderBudget,
+  turnCameraTo,
   waitForCameraSettle,
   waitForFrames,
   waitForHQ,
@@ -23,7 +25,8 @@ import {
 import { asV1, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, OFFICE_API, OFFICE_API_V2, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
- * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk near the wing, five
+ * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
+ * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, five
  * Rovers with their states and chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
@@ -42,12 +45,14 @@ type OfficeProbe = {
   chips: number;
   bob: number;
   inView: boolean;
+  far: boolean;
+  steps: number;
   polling: boolean;
   beacon: boolean;
   crew: CrewProbe[];
   drones: number[];
 };
-type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number };
+type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number; reasons(): string[] };
 type OfficeWindow = Window & {
   __hq: { probes: { office: OfficeProbe }; office: { load(): Promise<void>; state(): string; asks(): number; test(): OfficeHooks | null; watchNow(): Promise<void> } };
 };
@@ -118,8 +123,12 @@ const lookOut = (page: Page) =>
       outlines: ["L2", "L3", "L4", "RF"].filter(outline),
     };
   });
-/** On the lead road, just inside the Lobby edge: within OFFICE.loadRadius of the office stop. */
-const LEAD = { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 2 };
+/** The Lobby lane ring's south point: the hologram's centre plus `LOBBY.laneRadius` toward the office wing. */
+const RING_SOUTH = { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius };
+/** The rover's position (the store's, refreshed every frame). */
+const roverAt = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { rover: { x: number; z: number } } } } }).__hq.store.getState().rover);
+/** The scene poller's reasons (`officeLive.reasons()`: "near", "far", "drawer"). */
+const reasons = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()?.reasons() ?? []);
 
 /**
  * Answers `/api/office` (v1 for the watch, `?v=2` for the poller) from a mutable reply, so a test can switch fixtures or
@@ -280,12 +289,11 @@ const glErrors = (page: Page) =>
   });
 
 test.describe("Agent Office (L1)", () => {
-  test("loads once the rover heads into the wing and shows five Rovers with their states and chips", async ({ page }) => {
+  test("loads at idle on L1 and shows five Rovers with their states and chips at the office", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
-    // The lead road is within OFFICE.loadRadius of the stop (the spawn is not): driving onto it loads the chunk, with no drawer.
-    await driveTo(page, LEAD);
+    // The chunk loads on its own once the first frame went idle on L1, with no drive and no drawer.
     await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
@@ -302,19 +310,48 @@ test.describe("Agent Office (L1)", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the speculative trigger declines at the spawn and loads the chunk once the rover drives onto the lead road", async ({ page }) => {
+  test("the live layer mounts at idle on L1 without moving the rover, whether or not the office is in view", async ({ page }) => {
     await serveOffice(page);
     await asReturningVisitor(page);
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
     await waitForPhase(page, "explore");
     await waitForSceneLive(page);
-    // Positive control for the ?prefetch=off test below. The spawn is 30.8 u from the stop, outside OFFICE.loadRadius:
-    // three counted asks declined (an accepted ask leaves "idle" and stops the count).
-    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
-    expect(await trigger(page)).toMatchObject({ state: "idle" });
-    await driveTo(page, LEAD);
-    await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
+    const at = await roverAt(page);
+    // Positive control for the ?prefetch=off test below: the first ask after the first frame went idle loads the chunk
+    // (an accepted ask leaves "idle" and stops the count), and the scene compiles and shows (`loaded`) at the spawn.
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    expect(await trigger(page)).toMatchObject({ state: "ready", asks: expect.any(Number) });
+    expect((await trigger(page)).asks).toBeGreaterThanOrEqual(1);
+    const now = await roverAt(page);
+    expect(Math.hypot(now.x - at.x, now.z - at.z), "the rover never moved").toBeLessThan(0.01);
+  });
+
+  test("from the lane ring's south point the office is in view and far: a 30 s poll, Rovers animating at the far rate", async ({ page }) => {
+    await chooseMotion(page, "full");
+    const office = await serveOffice(page);
+    office.set(statesA(Date.now()));
+    await enterHQ(page);
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    // The rover on the ring's south point, the view turned south toward the wing (a wheel turn, as a visitor would).
+    await driveTo(page, RING_SOUTH);
+    await turnCameraTo(page, yawLooking({ x: 0, z: 1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, far: o.far, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: true, far: true, polling: true });
+    expect(await reasons(page)).toEqual(["far"]);
+    await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(STATES_A);
+    await expect.poll(async () => (await probe(page)).bob, { timeout: 30_000 }).toBeGreaterThan(0);
+    // The crew steps about 4 times a second of scene clock (`OFFICE_LOD.farHz`), never every frame.
+    const sample = () => page.evaluate(() => ({ steps: (window as unknown as OfficeWindow).__hq.probes.office.steps, t: (window as unknown as GlWindow).__hq.clock() }));
+    const a = await sample();
+    await waitForSceneSeconds(page, 3);
+    const b = await sample();
+    const rate = (b.steps - a.steps) / (b.t - a.t);
+    expect(rate, `${b.steps - a.steps} crew steps in ${(b.t - a.t).toFixed(2)} s`).toBeGreaterThan(1);
+    expect(rate).toBeLessThanOrEqual(4.5);
+    expect((await probe(page)).far).toBe(true);
   });
 
   test("never loads on its own with ?prefetch=off; an office drawer loads the body and starts the scene", async ({ page }) => {
@@ -515,13 +552,21 @@ test.describe("Agent Office (L1)", () => {
     office.set(CREW_A);
     await enterHQ(page);
     const cue = page.locator('[data-map="office-cue"]');
-    // At the spawn the office scene stays unloaded (outside OFFICE.loadRadius): the lazy watch's v1 fetch feeds the
+    // At the spawn the lazy watch's v1 fetch (or the scene's own poll once it loaded and the office is in view) feeds the
     // signal, which loads the beacon chunk on the first ask.
     await expect.poll(async () => (await probe(page)).beacon, { timeout: 60_000 }).toBe(true);
     await expect(cue).toBeVisible();
-    expect(await chunkState(page)).toBe("idle");
     expect(office.requests().length).toBeGreaterThan(0);
-    expect(office.requests().every((path) => path === "/api/office")).toBe(true);
+    // Out of view (the elevator arrival, the camera looking north away from the wing) the scene's poller stops and the
+    // watch alone polls, v1.
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    await driveTo(page, LOBBY.arrival);
+    await turnCameraTo(page, yawLooking({ x: 0, z: -1 }));
+    await expect.poll(async () => {
+      const o = await probe(page);
+      return { inView: o.inView, polling: o.polling };
+    }, { timeout: 30_000 }).toEqual({ inView: false, polling: false });
+    const before = office.requests().length;
     // Nobody asks any more: one watch tick now, and both go dark.
     office.set(statesA(Date.now()));
     await watchNow(page);
@@ -532,6 +577,7 @@ test.describe("Agent Office (L1)", () => {
     await watchNow(page);
     await expect.poll(async () => (await probe(page)).beacon).toBe(true);
     await expect(cue).toBeVisible();
+    expect(office.requests().slice(before).every((path) => path === "/api/office")).toBe(true);
     expect(errors).toEqual([]);
   });
 

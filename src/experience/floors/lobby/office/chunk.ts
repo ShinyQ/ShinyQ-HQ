@@ -1,6 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { isOfficeRoom, OFFICE, officeWing } from "../officeLayout";
-import { LOBBY_SOUTH_EDGE } from "../spawn";
 import type * as OfficeBodyChunk from "./body";
 import type * as OfficeChunk from "./scene";
 
@@ -9,12 +7,6 @@ export type OfficeModule = typeof OfficeChunk;
 /** The office drawer body chunk (`./body.ts`), loaded only when an office drawer opens. */
 export type OfficeBodyModule = typeof OfficeBodyChunk;
 export type OfficeChunkState = "idle" | "loading" | "ready" | "failed";
-
-/**
- * The wing as `LOBBY.officeWing` builds it, from the light modules only: bodies.tsx (the Classic drawer host) imports
- * this loader, so it never imports experience/config (check-client-chunks, tests/unit/floor-order.test.ts).
- */
-const OFFICE_WING_PLAN = officeWing(LOBBY_SOUTH_EDGE);
 
 let pending: Promise<OfficeModule> | null = null;
 let loaded: OfficeModule | null = null;
@@ -91,25 +83,15 @@ export interface OfficeLoadInput {
   prefetch: boolean;
   floor: string;
   rideTo: string | null;
-  /** The rover, or the elevator arrival point during a ride. */
-  at: { x: number; z: number };
-  /** The running mission's id, if any: a catalog mission or `goto:<room>` (`MissionRunner.goTo`). */
-  mission: string | null;
 }
 
-/** The Rover menu's office mission (content/site-content.json `missions`): the elevator to L1, a drive to the office, its drawer. */
-export const OFFICE_MISSION = "office";
-
 /**
- * The speculative trigger: after the first frame on idle, on L1 or riding there, either within `OFFICE.loadRadius` of
- * the stop or running a mission bound for the office (the office mission, a `goto:` an office room: a chip, a Rover,
- * a palette result), so a ride to L1 for the office preloads it.
+ * The speculative trigger (always-live office, design 5.9): once the first frame went idle, on L1 or riding there,
+ * with speculative prefetch on, at any distance from the wing, so the office lives whenever it comes into view.
+ * With `?prefetch=off` it never asks; an office drawer still loads the chunk (`OfficeBody`).
  */
-export function officeLoadWanted({ idle, state: chunk, prefetch, floor, rideTo, at, mission }: OfficeLoadInput): boolean {
-  if (!idle || chunk !== "idle" || !prefetch || (rideTo ?? floor) !== "L1") return false;
-  if (mission === OFFICE_MISSION || isOfficeRoom(mission?.replace(/^goto:/, ""))) return true;
-  const { stop } = OFFICE_WING_PLAN;
-  return Math.hypot(at.x - stop.x, at.z - stop.z) <= OFFICE.loadRadius;
+export function officeLoadWanted({ idle, state: chunk, prefetch, floor, rideTo }: OfficeLoadInput): boolean {
+  return idle && chunk === "idle" && prefetch && (rideTo ?? floor) === "L1";
 }
 
 let asks = 0;

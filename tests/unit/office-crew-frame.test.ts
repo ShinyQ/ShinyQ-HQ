@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { towerKey, towerLanes } from "@/experience/floors/lobby/office/crewFx";
-import { crewOffset, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "@/experience/floors/lobby/office/crewFrame";
+import { crewOffset, lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "@/experience/floors/lobby/office/crewFrame";
 import { RoverWrites } from "@/experience/floors/lobby/office/officeFrame";
 import { officeView, type OfficeView } from "@/experience/floors/lobby/office/officeModel";
 import { slotPhase } from "@/experience/floors/lobby/office/officeVisual";
@@ -133,3 +133,73 @@ describe("office crew frame (the keyed write decision)", () => {
     expect(writes.glowPending).toEqual([true, false, false, false, false]);
   });
 });
+
+/** Runs `frames` frames like OfficeRovers with the camera `distance` u from the office: the frames that wrote (a Rover marked or the tower key changed). */
+function runLod(view: OfficeView, reduced: boolean, frames: number, distance: number) {
+  const { writes, crew } = setup();
+  const lanes = towerLanes(view);
+  let lanesKey = "";
+  const lod = { step: false, dt: 0, acc: 0 };
+  const wrote: number[] = [];
+  let steps = 0;
+  for (let f = 0; f < frames; f++) {
+    const now = f * DT;
+    lodStep(distance, DT, lod.acc, lod);
+    if (!lod.step) continue;
+    steps += 1;
+    stepOfficeCrew(crew, writes, OFFICE_SLOTS, view.rovers, lod.dt, now, reduced, CAM);
+    const tk = towerKey(lanes, now, reduced);
+    if (writes.pending() || tk !== lanesKey) wrote.push(f);
+    for (const s of OFFICE_SLOTS) writes.done(s.slot);
+    lanesKey = tk;
+  }
+  return { wrote, steps };
+}
+
+describe("office far level of detail (lodStep)", () => {
+  it("steps every frame inside farDistance, carrying no time", () => {
+    expect(OFFICE_LOD).toMatchObject({ farDistance: 40, farHz: 4 });
+    const out = { step: false, dt: 0, acc: 0 };
+    for (const d of [0, 20, OFFICE_LOD.farDistance]) {
+      expect(lodStep(d, DT, 0, out)).toEqual({ step: true, dt: DT, acc: 0 });
+    }
+    // Coming near with time carried from the far rate: it steps by all of it at once.
+    expect(lodStep(10, DT, 0.1)).toEqual({ step: true, dt: 0.1 + DT, acc: 0 });
+  });
+
+  it("accumulates the frame deltas past farDistance and steps by them at 4 Hz", () => {
+    let acc = 0;
+    let steps = 0;
+    let time = 0;
+    for (let f = 0; f < 600; f++) {
+      const r = lodStep(OFFICE_LOD.farDistance + 0.01, DT, acc);
+      acc = r.acc;
+      if (r.step) {
+        steps += 1;
+        time += r.dt;
+        expect(r.dt).toBeCloseTo(1 / OFFICE_LOD.farHz, 6);
+      } else expect(r.dt).toBe(0);
+    }
+    // Ten seconds of frames: 40 steps, and the stepped time plus what is carried is the whole ten seconds.
+    expect(steps).toBe(40);
+    expect(time + acc).toBeCloseTo(600 * DT, 6);
+    // A long frame steps at once.
+    expect(lodStep(100, 0.3, 0)).toEqual({ step: true, dt: 0.3, acc: 0 });
+  });
+
+  it("writes a busy far office at most 4 times a second, every frame near, and a still far office not at all", () => {
+    const busy = officeView({ status: "ready", snapshot: OFFICE_FIXTURES.busy as OfficeSnapshotV1 });
+    const far = runLod(busy, false, 600, 60);
+    expect(far.steps).toBe(40);
+    expect(far.wrote.length).toBeGreaterThan(30);
+    expect(far.wrote.length).toBeLessThanOrEqual(40);
+    // Never two writes inside a quarter second.
+    for (let i = 1; i < far.wrote.length; i++) expect((far.wrote[i] - far.wrote[i - 1]) * DT).toBeGreaterThanOrEqual(1 / OFFICE_LOD.farHz - 1e-6);
+    const near = runLod(busy, false, 120, 20);
+    expect(near.steps).toBe(120);
+    expect(near.wrote.length).toBeGreaterThan(100);
+    const still = runLod(asleep, true, 600, 60);
+    expect(still.wrote.slice(1)).toEqual([]);
+  });
+});
+

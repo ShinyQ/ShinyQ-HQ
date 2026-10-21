@@ -66,7 +66,7 @@ import { officeInteractables } from "./interact";
 import { officeLive, useOfficeFeed } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
-import { officeCrew, restCrewKey, restCrewPose, stepOfficeCrew } from "./crewFrame";
+import { lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew, type LodStep } from "./crewFrame";
 import { TOWER, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
 import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
@@ -267,7 +267,9 @@ interface AtlasFrame {
   rovers: readonly OfficeRoverView[];
   now: number;
   reduced: boolean;
+  /** Desk screens' and faces' most repaints a second (the far level of detail lowers both). */
   fps: number;
+  faceFps: number;
   fonts: CanvasFonts;
   texts: ScreenTexts;
   t: OfficeTranslate;
@@ -279,12 +281,12 @@ interface AtlasFrame {
  * cell-sized canvas copied into place on the GPU (`copyTextureToTexture`), never a whole re-upload.
  */
 function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: AtlasFrame): void {
-  const { rovers, now, reduced, fps, fonts, texts, t } = a;
+  const { rovers, now, reduced, fps, faceFps, fonts, texts, t } = a;
   for (const r of rovers) {
     l.fades[r.slot] = stepFade(l.states[r.slot], r.state, l.fades[r.slot], reduced, now);
     l.states[r.slot] = r.state;
   }
-  l.clock.tick(now, fps);
+  l.clock.tick(now, fps, faceFps);
   // Until the atlas is primed both halves count as due, so the first upload never ships blank cells.
   const faceDue = l.clock.faceDue || !l.primed;
   const screenDue = l.clock.screenDue || !l.primed;
@@ -337,7 +339,9 @@ function paintAtlas(gl: WebGLRenderer, g: Group, Q: Mesh, l: AtlasState, a: Atla
  * Rover's wheel program), their faces and the desk screens (one quad mesh on one canvas atlas, the player
  * face's material settings), and the glow (one instanced holo mesh: antenna tips, halos, progress dots, the crew's
  * effects and the CI tower's lane dots). Each desk's crew actor acts out its state (`crew.ts`). Nothing is written
- * while no pose, glow key, tower key or camera changed; the atlas uploads only its changed cells.
+ * while no pose, glow key, tower key or camera changed; the atlas uploads only its changed cells. Past
+ * `OFFICE_LOD.farDistance` the crew, its effects and the tower step `OFFICE_LOD.farHz` times a second (`lodStep`) and the
+ * faces and desk screens repaint at most `OFFICE_LOD.atlasFps` times a second.
  */
 function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: readonly OfficeSlot[]; tier: GpuTier; t: OfficeTranslate }) {
   const reduced = useHQStore((s) => s.reducedMotion);
@@ -398,6 +402,8 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const lite = tier !== "full";
   // Each slot's drawn helper drones (the rest instances draw none).
   const drawn = useMemo(() => slots.map(() => 0), [slots]);
+  // The level of detail's carried time and its per-frame answer (one object, written in place).
+  const lod = useRef<LodStep>({ step: false, dt: 0, acc: 0 });
 
   useEffect(() => {
     const g = group.current;
@@ -432,8 +438,12 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     const Q = screenMesh.current;
     if (!g || !P || !D || !G || !Q || !officeRuntime.inView) return;
     const now = clock.elapsedTime;
-    const dt = Math.min(rawDt, MAX_FRAME_DT) * animationSpeed();
-    sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, dt, now, reduced, camera.position, lite);
+    const far = officeRuntime.far;
+    paintAtlas(gl, g, Q, local.current, { rovers: view.rovers, now, reduced, fps: far ? Math.min(fps, OFFICE_LOD.atlasFps) : fps, faceFps: far ? OFFICE_LOD.atlasFps : Infinity, fonts: fonts.current, texts, t });
+    const step = lodStep(officeRuntime.distance, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), lod.current.acc, lod.current);
+    if (!step.step) return;
+    sceneProbes.office.steps += 1;
+    sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, step.dt, now, reduced, camera.position, lite);
     const tk = towerKey(lanes, now, reduced);
     if (writes.pending() || tk !== lanesKey.current) {
       const rovers = view.rovers;
@@ -448,7 +458,6 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
         G.instanceColor!.needsUpdate = true;
       });
     }
-    paintAtlas(gl, g, Q, local.current, { rovers: view.rovers, now, reduced, fps, fonts: fonts.current, texts, t });
   });
 
   return (
@@ -683,14 +692,19 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     w.box.max.set(office.maxX, OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, office.maxZ);
     w.frustum.setFromProjectionMatrix(w.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
     const inView = here && w.frustum.intersectsBox(w.box);
+    const distance = w.box.distanceToPoint(camera.position);
+    const far = distance > OFFICE_LOD.farDistance;
     officeRuntime.inView = inView;
-    officeLive.want("view", inView);
+    officeRuntime.distance = distance;
+    officeRuntime.far = far;
+    // In view: the near (fast) or far (30 s) poll; out of view the scene's poller stops and the office watch takes over.
+    officeLive.view(inView ? (far ? "far" : "near") : null);
     // While this chunk's poller runs, its feed drives the beacon's signal and the office watch stops fetching.
     const feeding = officeLive.wanted();
     if (officeSignal.sceneFeeding !== feeding) setOfficeSignal({ sceneFeeding: feeding });
     const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
     const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
-    Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, polling: officeLive.wanted(), crew, drones });
+    Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
   }
   const mobile = s.device.viewport === "mobile";
   const mode = here ? officeChipMode(s.activeRoom) : null;
@@ -722,7 +736,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
       on = mode !== null && officeRuntime.inView && (w.v.project(camera), w.v.z < 1 && Math.abs(w.v.x) <= 1 && Math.abs(w.v.y) <= 1);
       if (on) {
         // Read before this frame's far update: React has committed the previous flag's content by now.
-        const far = officeRuntime.far[slot];
+        const far = officeRuntime.chipFar[slot];
         // The row's fit (`chipMaxWidth`) caps the chip's width; a new cap changes its size.
         if (w.wMax[slot] !== w.max) {
           w.wMax[slot] = w.max;
@@ -779,8 +793,9 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
 }
 
 /**
- * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds)? That gates the per-frame work, the
- * wall redraws and the polling ("view"). Every frame: lays the HTML chips out in one row under the HUD's top bar, each
+ * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds), and how far is the camera from those bounds
+ * (`officeRuntime.distance`, `far` past `OFFICE_LOD.farDistance`)? That gates the per-frame work, the wall redraws, the
+ * far level of detail and the polling ("near" or "far" in view; out of view the office watch polls). Every frame: lays the HTML chips out in one row under the HUD's top bar, each
  * over its Rover's head (`layoutChipRow`: nudged apart along x in desk order, clear of the HUD boxes in the row's band),
  * with a leader line from the chip down to the head, as `officeChipMode` lets them (far and compact on phones at any
  * distance, one line where five full chips would not fit the row, and everywhere outside the office view; a hidden chip
@@ -793,7 +808,9 @@ function OfficeWatch({ view }: { view: OfficeView }) {
   useEffect(
     () => () => {
       officeRuntime.inView = false;
-      officeLive.want("view", false);
+      officeRuntime.distance = Infinity;
+      officeRuntime.far = true;
+      officeLive.view(null);
       setOfficeSignal({ sceneFeeding: false });
       // The chips live in the HUD and outlive a canvas remount: hide them (far), as a new watcher assumes they start hidden.
       officeRuntime.chips.forEach((el, slot) => {
@@ -842,7 +859,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, [agents, slots, t]);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, polling: false, crew: [], drones: [] });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [] });
     },
     [],
   );

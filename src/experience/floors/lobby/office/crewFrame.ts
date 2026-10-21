@@ -73,3 +73,32 @@ export function stepOfficeCrew(c: OfficeCrew, writes: RoverWrites, slots: readon
   }
   return bob;
 }
+
+/**
+ * The far level of detail (design 5.9): past `farDistance` (u from the office bounds to the camera) the crew, the
+ * drones, the effects and the CI tower step `farHz` times a second, the faces and desk screens repaint at most
+ * `atlasFps` times a second; inside it everything steps every frame.
+ */
+export const OFFICE_LOD = { farDistance: 40, farHz: 4, atlasFps: 2 } as const;
+
+export interface LodStep {
+  /** Step this frame. */
+  step: boolean;
+  /** The time to step by (s): the frame's delta plus what accumulated since the last step; 0 when not stepping. */
+  dt: number;
+  /** The time carried to the next frame (s). */
+  acc: number;
+}
+
+/**
+ * One frame of the level of detail (pure; writes `out`, so a frame allocates nothing): inside `OFFICE_LOD.farDistance`
+ * it steps every frame, past it it accumulates the frame deltas and steps once they reach `1 / farHz`, by all of them,
+ * so the animations keep their real time.
+ */
+export function lodStep(distance: number, dt: number, acc: number, out: LodStep = { step: false, dt: 0, acc: 0 }): LodStep {
+  const sum = acc + dt;
+  out.step = distance <= OFFICE_LOD.farDistance || sum >= 1 / OFFICE_LOD.farHz - 1e-6;
+  out.dt = out.step ? sum : 0;
+  out.acc = out.step ? 0 : sum;
+  return out;
+}

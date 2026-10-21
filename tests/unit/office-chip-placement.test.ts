@@ -485,7 +485,7 @@ describe("Agent Office chips at the office stop", () => {
     it("show all five far (the name; a dot on a phone) in one row over their Rovers, with a leader line down to each", () => {
       const row = chipRow(stopCamera(width, height), size);
       for (const c of row.chips) {
-        // A chip starts far (`officeRuntime.far`) and turns far again whenever it hides, so it stays far past the band's near edge.
+        // A chip starts far (`officeRuntime.chipFar`) and turns far again whenever it hides, so it stays far past the band's near edge.
         expect(c.far, `slot ${c.slot} far`).toBe(true);
         expect(c.box, `slot ${c.slot} on screen`).not.toBeNull();
         expect(c.lead, `slot ${c.slot}'s leader line`).not.toBeNull();

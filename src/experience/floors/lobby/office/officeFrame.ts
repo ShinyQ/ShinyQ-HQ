@@ -69,16 +69,19 @@ export class RoverWrites {
   }
 }
 
-/** When each atlas half is due: faces at most FACE_FPS_MAX a second on every tier, desk screens at the tier's rate. */
+/**
+ * When each atlas half is due: faces at most FACE_FPS_MAX a second on every tier (or `faceFps` when lower: the far level
+ * of detail), desk screens at the tier's rate.
+ */
 export class AtlasClock {
   faceDue = false;
   screenDue = false;
   private face = 0;
   private screen = 0;
 
-  tick(now: number, fps: number): void {
+  tick(now: number, fps: number, faceFps: number = FACE_FPS_MAX): void {
     this.faceDue = now >= this.face;
-    if (this.faceDue) this.face = now + 1 / FACE_FPS_MAX;
+    if (this.faceDue) this.face = now + 1 / Math.min(faceFps, FACE_FPS_MAX);
     this.screenDue = now >= this.screen;
     if (this.screenDue) this.screen = now + 1 / fps;
   }

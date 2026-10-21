@@ -32,6 +32,11 @@ export interface OfficePoller {
   stop(): void;
   /** Visitor input: resets the 10 min idle stop, restarts if it had stopped for idleness. */
   touch(): void;
+  /**
+   * Re-arms the pending wait for the current `interval` (a reason changed the cadence), counted from when the last
+   * request settled: a shorter cadence that is already due fetches at once. A no-op while stopped or fetching.
+   */
+  retime(): void;
   feed(): OfficeFeed;
   subscribe(listener: (feed: OfficeFeed) => void): () => void;
 }
@@ -41,6 +46,8 @@ export interface OfficePollerOptions {
   path?: string;
   /** The body's validator for that path (default `parseOfficeResponse`, v1). */
   parse?: (raw: unknown) => OfficeResponseV1 | OfficeResponseV2 | null;
+  /** The wait before the next request, from the feed (default `pollInterval`). */
+  interval?: (feed: OfficeFeed) => number;
   fetcher?: typeof fetch;
   now?: () => number;
   visible?: () => boolean;
@@ -63,6 +70,7 @@ export function pollInterval(feed: OfficeFeed): number {
 export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller {
   const path = opts.path ?? OFFICE_PATH;
   const parse = opts.parse ?? parseOfficeResponse;
+  const interval = opts.interval ?? pollInterval;
   const fetcher = opts.fetcher ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   const now = opts.now ?? Date.now;
   const visible = opts.visible ?? pageVisible;
@@ -74,6 +82,8 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
   let idleStopped = false;
   let lastTouch = 0;
   let timer: unknown = null;
+  /** `now()` when the pending wait was armed (the last request settled). */
+  let armedAt = 0;
   let generation = 0;
   let inflight: AbortController | null = null;
 
@@ -128,7 +138,8 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     }
     if (visible()) await load(gen);
     if (!running || gen !== generation) return;
-    timer = setTimer(() => void tick(gen), pollInterval(current));
+    armedAt = now();
+    timer = setTimer(() => void tick(gen), interval(current));
   }
 
   const poller: OfficePoller = {
@@ -151,6 +162,12 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
     touch() {
       lastTouch = now();
       if (idleStopped) poller.start();
+    },
+    retime() {
+      if (!running || timer === null) return;
+      clear();
+      const gen = generation;
+      timer = setTimer(() => void tick(gen), Math.max(0, armedAt + interval(current) - now()));
     },
     feed: () => current,
     subscribe(listener) {

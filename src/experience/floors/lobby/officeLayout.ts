@@ -128,12 +128,6 @@ export const OFFICE = {
     mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -5.25 } },
     half: { x: 2, z: 1.4 },
   },
-  /**
-   * The chunk loads once the rover is this close to the stop: on the lead road (its Lobby end is 24.5 u away) or in
-   * the wing, not at the spawn (30.8 u) or the elevator arrival (38.6 u). A ride or a drive of an office mission
-   * loads it at once (`officeLoadWanted`), and an office drawer loads it on open.
-   */
-  loadRadius: 25,
 } as const;
 
 export const OFFICE_ROOM = "L1:office" as RoomId;

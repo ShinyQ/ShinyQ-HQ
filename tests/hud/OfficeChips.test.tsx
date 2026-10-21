@@ -30,7 +30,7 @@ const head = (slot: number) => chip(slot).querySelector<HTMLElement>("[data-test
 beforeEach(() => {
   getHQStore().setState({ phase: "explore", floor: "L1", activeRoom: null, device: { viewport: "desktop", camera: "desktop", coarse: false } });
   live.feed = { status: "ready", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
-  // Chips start far (`officeRuntime.far`); these tests start them near, as at the near pose.
+  // Chips start far (`officeRuntime.chipFar`); these tests start them near, as at the near pose.
   for (let slot = 0; slot < 5; slot++) setChipFar(slot, false);
 });
 afterEach(() => {

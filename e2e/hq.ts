@@ -497,6 +497,25 @@ export async function waitForCameraSettle(page: Page, { frames = 12, minMs = 300
   );
 }
 
+/**
+ * Turns the follow camera to `yaw` (its orbit offset from the default angle, e.g. `yawLooking(dir)` from
+ * src/experience/camera/look.ts) with horizontal wheel rotates over the canvas centre, as a visitor would, then waits
+ * until the camera settles.
+ */
+export async function turnCameraTo(page: Page, yaw: number, timeout = 60_000) {
+  const vp = page.viewportSize()!;
+  await page.mouse.move(vp.width / 2, vp.height / 2);
+  for (let i = 0; i < 4; i++) {
+    const now = await page.evaluate(() => (window as unknown as { __hq: { rover: { cameraYaw: number } } }).__hq.rover.cameraYaw);
+    const left = Math.atan2(Math.sin(yaw - now), Math.cos(yaw - now));
+    if (Math.abs(left) < 0.01) break;
+    // useInputSources: a horizontal wheel turns the view by -deltaX * 0.004 rad.
+    await page.mouse.wheel(-left / 0.004, 0);
+    await waitForFrames(page, 4);
+  }
+  await waitForCameraSettle(page, { timeout });
+}
+
 /** Resolves after `count` rendered animation frames and at least `minMs` (state that updates per frame, not per millisecond). */
 export async function waitForFrames(page: Page, count = 10, minMs = 0) {
   await page.evaluate(

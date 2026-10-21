@@ -94,6 +94,20 @@ describe("Agent Office frame gate: atlas", () => {
     }
   });
 
+  it("slows faces and desk screens to 2 fps in the far level of detail", () => {
+    const clock = new AtlasClock();
+    let faces = 0;
+    let screens = 0;
+    for (let frame = 0; frame <= 120; frame++) {
+      clock.tick(frame / 60, 2, 2);
+      if (clock.faceDue) faces += 1;
+      if (clock.screenDue) screens += 1;
+    }
+    expect(faces).toBeLessThanOrEqual(2 * 2 + 1);
+    expect(screens).toBeLessThanOrEqual(2 * 2 + 1);
+    expect(faces).toBeGreaterThan(2);
+  });
+
   it("starts a crossfade on a state change under reduced motion only, and ends it after CROSSFADE_S", () => {
     expect(stepFade("working", "done", null, false, 3)).toBeNull();
     const fade = stepFade("working", "done", null, true, 3);

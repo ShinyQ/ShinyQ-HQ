@@ -160,6 +160,38 @@ describe("createOfficePoller", () => {
   });
 });
 
+describe("createOfficePoller cadence option", () => {
+  it("waits as long as its interval says and retime() re-arms the wait from the last request", async () => {
+    const { fetcher, calls } = fakeFetch([{ status: 200, body: statesA(T0) }]);
+    let wait: number = POLL.restingMs;
+    const poller = createOfficePoller({ fetcher, interval: () => wait });
+    poller.retime();
+    poller.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs);
+    expect(calls).toHaveLength(1);
+    // 10 s in, the cadence turns fast: due already, so it fetches at once.
+    wait = POLL.activeMs;
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(POLL.activeMs - 1);
+    expect(calls).toHaveLength(2);
+    // Back to 30 s, 9 s after the last request: the next one comes 30 s after it, not 30 s from now.
+    wait = POLL.restingMs;
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(POLL.restingMs - POLL.activeMs);
+    expect(calls).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toHaveLength(3);
+    poller.stop();
+    poller.retime();
+    await vi.advanceTimersByTimeAsync(3 * POLL.restingMs);
+    expect(calls).toHaveLength(3);
+  });
+});
+
 describe("createOfficePoller robustness", () => {
   /** A fetch stand-in whose calls stay pending until the test resolves them; it rejects when its signal aborts. */
   function deferredFetch() {

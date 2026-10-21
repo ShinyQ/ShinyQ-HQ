@@ -14,6 +14,10 @@
  * `--only full-1440x900,lite-390x844` limits the run to those tier and viewport combos (while iterating), and
  * `--shots spawn,approach,states-a` to those shots (the drives between them still run).
  *
+ * `ring-south` (always-live office, design 5.9): the rover on the Lobby lane ring's south point (the hologram's centre plus
+ * `LOBBY.laneRadius` toward the wing), the view turned to look south at the wing, once the office is in view, far
+ * (past `OFFICE_LOD.farDistance`) and polling: the live Rovers from afar, the scene chunk loaded on its own at idle.
+ *
  * `approach`: the rover on the wing's lead road at the Lobby plaza edge (x 3, S - 6), the view turned (a shift-wheel
  * rotate, as a visitor would) to look south into the wing. `overview` (full tier, 1440x900 only): a top-down still of
  * the whole L1 slab, the south wing included, taken with the rover at the office stop; `window.__hq` has no camera
@@ -40,7 +44,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { type Browser, chromium, type Page } from "@playwright/test";
-import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
+import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, turnCameraTo, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
 import {
   asV1,
   CREW_A_STATES,
@@ -73,7 +77,7 @@ const VIEWPORTS = [
 const TIERS = ["full", "lite"] as const;
 
 type CrewProbe = { state: string; yaw: number; flag: number; z: number };
-type OfficeProbe = { loaded: boolean; states: string[]; mode: string; polling: boolean; beacon: boolean; crew: CrewProbe[]; drones: number[] };
+type OfficeProbe = { loaded: boolean; states: string[]; mode: string; inView: boolean; far: boolean; polling: boolean; beacon: boolean; crew: CrewProbe[]; drones: number[] };
 type OfficeWindow = Window & {
   __hq: {
     store: { getState: () => { phase: string; openRoom: (r: string) => void; closeRoom: () => void } };
@@ -205,20 +209,8 @@ async function viewShiftSettled(page: Page) {
   await waitForFrames(page, 10);
 }
 
-/** Turns the follow camera to `yaw` (`yawLooking`, from the default angle) with shift-wheel rotates over the canvas centre. */
-async function turnTo(page: Page, yaw: number) {
-  const vp = page.viewportSize()!;
-  await page.mouse.move(vp.width / 2, vp.height / 2);
-  for (let i = 0; i < 4; i++) {
-    const now = await page.evaluate(() => (window as unknown as OfficeWindow).__hq.rover.cameraYaw);
-    const left = Math.atan2(Math.sin(yaw - now), Math.cos(yaw - now));
-    if (Math.abs(left) < 0.01) break;
-    // useInputSources: a horizontal wheel turns the view by -deltaX * 0.004 rad.
-    await page.mouse.wheel(-left / 0.004, 0);
-    await waitForFrames(page, 4);
-  }
-  await settle(page);
-}
+/** Turns the follow camera to `yaw` (`yawLooking`, from the default angle) with wheel rotates over the canvas centre (`turnCameraTo`). */
+const turnTo = (page: Page, yaw: number) => turnCameraTo(page, yaw, SLOW);
 
 /**
  * Pins the drawn camera straight over the L1 slab (the Lobby, the hall and the south wing), north up: replaces the
@@ -309,8 +301,22 @@ async function captureShots(browser: Browser) {
         await watchNow(page);
         await waitFor("the beacon off", async () => !(await probe(page)).beacon);
       }
+      // The scene chunk loads on its own at idle on L1 (always live); the load here only waits for it.
       await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
       await waitFor("the office chunk", async () => (await probe(page)).loaded);
+      if (wants("ring-south")) {
+        await driveTo(page, { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius }, SLOW);
+        await settle(page);
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        await waitFor("the office in view, far and polling", async () => {
+          const o = await probe(page);
+          return o.inView && o.far && o.polling;
+        });
+        await show(page, reply, statesA(Date.now()), "live", STATES_A);
+        await page.screenshot({ path: name("ring-south") });
+        await page.keyboard.press("0");
+        await settle(page);
+      }
       const { lead } = LOBBY.officeWing;
       if (wants("approach")) {
         // On the lead road at the Lobby plaza edge, come in heading south (+z), the view turned to look into the wing.
