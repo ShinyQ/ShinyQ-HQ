@@ -50,6 +50,34 @@ describe("office pipeline visuals", () => {
     expect(still.key(0, 2, false, true)).toBe(still.key(5, 2, false, true));
   });
 
+  it("sizes the packets, bursts and crown to read from the office stop (owner decision 2026-10-21: 1.5 to 2 times the first cut) and draws them at those sizes", () => {
+    const first = { packet: 0.14, burst: 0.12, crown: 0.16 };
+    for (const k of ["packet", "burst", "crown"] as const) {
+      expect(PIPE_FX[k].size / first[k], k).toBeGreaterThanOrEqual(1.5);
+      expect(PIPE_FX[k].size / first[k], k).toBeLessThanOrEqual(2);
+    }
+    expect(PIPE_FX.packet.gain).toBeGreaterThanOrEqual(1.5 * 1.4);
+    expect(PIPE_FX.burst.gain).toBeGreaterThanOrEqual(1.5 * 1.5);
+    expect(PIPE_FX.crown.gain).toBeGreaterThanOrEqual(1.5 * 1.8);
+    // The crown is a wider ring and holds long enough to catch from the stop.
+    expect(PIPE_FX.crown.r).toBeGreaterThanOrEqual(1.5 * 0.55);
+    expect(PIPE_FX.crown.s).toBeGreaterThanOrEqual(0.9);
+    expect(PIPE_FX.burst.r1).toBeGreaterThanOrEqual(1.5);
+    const fx = new PipelineFx();
+    const g = glow();
+    fx.play({ kind: "packet", from: 2, at: 0 }, 0, false);
+    fx.play({ kind: "burst", lane: 5, ok: true, at: 0 }, 0, false);
+    fx.play({ kind: "crown", ok: true, at: 0 }, 0, false);
+    fx.write(PIPE_FX.crown.s / 2, 0, false, false, g.m, g.c, parts());
+    const burst = PIPE_GLOW.start + PIPE_GLOW.packets * PIPE_GLOW.packetDots;
+    const crown = burst + PIPE_GLOW.bursts * PIPE_GLOW.burstDots;
+    expect(scaleAt(g.m, PIPE_GLOW.start)).toBeCloseTo(PIPE_FX.packet.size);
+    expect(scaleAt(g.m, burst)).toBeCloseTo(PIPE_FX.burst.size);
+    expect(scaleAt(g.m, crown)).toBeCloseTo(PIPE_FX.crown.size);
+    // At its peak the crown's green is the brightest glow there.
+    expect(g.c[crown * 3 + 1]).toBeGreaterThan(1);
+  });
+
   it("counts what played for the probe and skips packets, bursts and the crown under reduced motion", () => {
     const fx = new PipelineFx();
     fx.play({ kind: "packet", from: 2, at: 0 }, 0, false);

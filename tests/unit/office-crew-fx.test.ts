@@ -226,6 +226,54 @@ describe("tower lanes", () => {
     expect(scaleAt(m, TOWER.start + 5 * TOWER.dots)).toBeCloseTo(TOWER.size.idle);
     expect(scaleAt(m, TOWER.start + 4 * TOWER.dots)).toBeCloseTo(TOWER.size.lit);
   });
+  it("sizes the dots to read from the office stop (owner decision 2026-10-21: about 1.6 times part A's), never overlapping across a lane", () => {
+    expect(TOWER.size.lit / 0.11).toBeGreaterThanOrEqual(1.5);
+    expect(TOWER.size.lit / 0.11).toBeLessThanOrEqual(2);
+    expect(TOWER.size.idle / 0.09).toBeGreaterThanOrEqual(1.5);
+    // The dot's visible disc is about 0.75 of its quad: neighbours across a lane and lanes above each other stay apart.
+    expect(TOWER.size.lit * 0.75).toBeLessThan(TOWER.across);
+    expect(TOWER.size.lit).toBeLessThan(TOWER.gap / 1.5);
+    // Done and failed lanes brighter than part A's (1.2).
+    expect(TOWER.done).toBeGreaterThanOrEqual(1.5 * 1.2);
+  });
+  it("sets running lanes apart from queued ones: violet and chasing in full motion, queued dim slate and steady", () => {
+    const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
+    const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
+    const lanes: TowerLanes = { states: ["running", "queued"], chasing: true, sig: "rq" };
+    const at = (lane: number, d: number) => Array.from(c.slice((TOWER.start + lane * TOWER.dots + d) * 3, (TOWER.start + lane * TOWER.dots + d) * 3 + 3));
+    const peak = (lane: number, d: number) => Math.max(...at(lane, d));
+    const frames: number[][] = [];
+    for (const t of [0, 0.125, 0.25, 0.375]) {
+      writeTower(lanes, t, false, m, c);
+      frames.push(Array.from({ length: TOWER.dots }, (_, d) => peak(0, d)));
+      // The queued lane is the same at every step: dim and steady, every dot alike.
+      for (let d = 0; d < TOWER.dots; d++) expect(peak(1, d)).toBeCloseTo(peak(1, 0));
+      // Every running dot (even the dimmest) is brighter than any queued one, and in another tone (violet over slate).
+      expect(Math.min(...frames.at(-1)!)).toBeGreaterThan(peak(1, 0) * 1.5);
+      expect(at(0, 0)[0] / at(0, 0)[2]).not.toBeCloseTo(at(1, 0)[0] / at(1, 0)[2], 1);
+    }
+    // The chase moves: the brightest dot steps one along each eighth of a second, a dimmer tail behind it.
+    const heads = frames.map((f) => f.indexOf(Math.max(...f)));
+    expect(heads).toEqual([0, 1, 2, 3]);
+    expect(frames[1][0]).toBeGreaterThan(frames[1][4]);
+    expect(frames[1][0]).toBeLessThan(frames[1][1]);
+    expect(towerKey(lanes, 0, false)).not.toBe(towerKey(lanes, 0.125, false));
+  });
+  it("keeps running lanes steady under reduced motion, still brighter than queued and in another tone", () => {
+    const m = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 16);
+    const c = new Float32Array((TOWER.start + TOWER.lanes * TOWER.dots) * 3);
+    const lanes: TowerLanes = { states: ["running", "queued"], chasing: true, sig: "rq" };
+    const peak = (lane: number, d: number) => Math.max(c[(TOWER.start + lane * TOWER.dots + d) * 3], c[(TOWER.start + lane * TOWER.dots + d) * 3 + 1], c[(TOWER.start + lane * TOWER.dots + d) * 3 + 2]);
+    writeTower(lanes, 0, true, m, c);
+    const first = Array.from({ length: TOWER.dots }, (_, d) => peak(0, d));
+    writeTower(lanes, 0.3, true, m, c);
+    expect(Array.from({ length: TOWER.dots }, (_, d) => peak(0, d))).toEqual(first);
+    for (const v of first) expect(v).toBeCloseTo(first[0]);
+    expect(first[0]).toBeGreaterThan(peak(1, 0) * 2);
+    const violet = new Color("#a78bfa").multiplyScalar(TOWER.run.still);
+    expect(c[TOWER.start * 3 + 2]).toBeCloseTo(violet.b);
+    expect(towerKey(lanes, 0, true)).toBe(towerKey(lanes, 0.3, true));
+  });
   it("is dark and keyed still without a run", () => {
     const view = officeView({ status: "ready", snapshot: OFFICE_FIXTURES.quiet as OfficeSnapshotV1 });
     const lanes = towerLanes(view);

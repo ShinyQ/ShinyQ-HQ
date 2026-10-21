@@ -23,8 +23,20 @@ export interface Vec3 {
 /** The highest any pipeline effect flies (u): the wall's top, so from the office stop nothing rises into the chip row (5.7b). */
 export const FX_CEILING = OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame;
 
-/** Durations (s) and shapes: packets arc 1.5 s up to 2 u, packages 2.5 s, bursts widen from 0.2 u to 1 u over 0.6 s, the crown flashes 0.5 s, a failed deploy pulses the dock ring 0.8 s, a running deploy shimmers it at 0.5 Hz. */
-export const PIPE_FX = { packet: { s: 1.5, lift: 2 }, package: { s: 2.5 }, burst: { s: 0.6, r0: 0.2, r1: 1 }, crown: { s: 0.5 }, deployFailed: { s: 0.8 }, shimmerHz: 0.5 } as const;
+/**
+ * Durations (s), shapes, dot sizes (u) and peak gains, sized to read from the office stop on desktop (owner decision
+ * 2026-10-21: the packets, bursts and crown about 1.6 to 2 times part B's first cut): packets arc 1.5 s up to 2 u, 4 dots
+ * `step` u apart; packages 2.5 s; bursts widen from 0.3 u to 1.6 u over 0.6 s; the crown (a flat ring `r` u over the
+ * column) flashes 1 s; a failed deploy pulses the dock ring 0.8 s, a running deploy shimmers it at 0.5 Hz.
+ */
+export const PIPE_FX = {
+  packet: { s: 1.5, lift: 2, size: 0.24, gain: 2.2, step: 0.13 },
+  package: { s: 2.5 },
+  burst: { s: 0.6, r0: 0.3, r1: 1.6, size: 0.22, gain: 2.4 },
+  crown: { s: 1, r: 0.95, size: 0.32, gain: 3 },
+  deployFailed: { s: 0.8 },
+  shimmerHz: 0.5,
+} as const;
 
 /** A point `u` (0 to 1) along a parabola from `a` to `b` that rises `lift` u over the straight line at its middle (writes `out`). */
 export function arcPoint(a: Vec3, b: Vec3, u: number, lift: number, out: Vec3): Vec3 {
@@ -128,7 +140,7 @@ const progress = (s: Slot, t: number, d: number): number => (t - s.t0) / d;
 const live = (u: number) => u >= 0 && u < 1;
 const still = () => false;
 const COUNT = { packet: "packets", burst: "bursts", crown: "crowns", package: "packages", deployFailed: "deployFailed" } as const;
-const CROWN: Vec3 = { x: COL.x, y: OFFICE.tower.plinth + OFFICE.tower.h + 0.3, z: COL.z };
+const CROWN: Vec3 = { x: COL.x, y: OFFICE.tower.plinth + OFFICE.tower.h + 0.4, z: COL.z };
 const DOCK: Vec3 = { x: PAD.x, y: OFFICE.dock.pad + 0.2, z: PAD.z };
 
 /** The pipeline effects' state: fixed pools, played by `play`, drawn by `write` when `key` changes. */
@@ -173,21 +185,21 @@ export class PipelineFx {
       deskOr(s.at, WALL_MID, A);
       lanePoint(MID_LANE, B);
       const lift = arcLift(A, B, PIPE_FX.packet.lift);
-      const step = 0.08 / Math.hypot(B.x - A.x, B.y - A.y, B.z - A.z);
+      const step = PIPE_FX.packet.step / Math.hypot(B.x - A.x, B.y - A.y, B.z - A.z);
       for (let j = 0; j < PIPE_GLOW.packetDots; j++, i++) {
         const v = u - j * step;
-        if (on(u) && v >= 0) dot(m, c, i, arcPoint(A, B, v, lift, P), 0.14, CYAN, 1.4 - j * 0.25);
+        if (on(u) && v >= 0) dot(m, c, i, arcPoint(A, B, v, lift, P), PIPE_FX.packet.size, CYAN, PIPE_FX.packet.gain * (1 - j * 0.18));
         else hide(m, c, i);
       }
     }
-    const { r0, r1 } = PIPE_FX.burst;
+    const { r0, r1, size, gain } = PIPE_FX.burst;
     for (const s of this.bursts) {
       const u = progress(s, t, PIPE_FX.burst.s);
-      ring(m, c, i, lanePoint(s.at, B), r0 + u * (r1 - r0), false, 0.12, s.ok ? GREEN : RED, on(u) ? (1 - u) * 1.5 : 0);
+      ring(m, c, i, lanePoint(s.at, B), r0 + u * (r1 - r0), false, size, s.ok ? GREEN : RED, on(u) ? (1 - u) * gain : 0);
       i += PIPE_GLOW.burstDots;
     }
     const cu = progress(this.crown, t, PIPE_FX.crown.s);
-    ring(m, c, i, CROWN, 0.55, true, 0.16, this.crown.ok ? GREEN : RED, on(cu) ? Math.sin(Math.PI * cu) * 1.8 : 0);
+    ring(m, c, i, CROWN, PIPE_FX.crown.r, true, PIPE_FX.crown.size, this.crown.ok ? GREEN : RED, on(cu) ? Math.sin(Math.PI * cu) * PIPE_FX.crown.gain : 0);
     i += PIPE_GLOW.crown;
     // The flying package (a parts box with a violet core and trail) lands as the next box on the stack.
     const pu = progress(this.pkg, t, PIPE_FX.package.s);

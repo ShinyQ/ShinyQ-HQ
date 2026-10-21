@@ -121,11 +121,25 @@ export function crewGlowKey(state: OfficeState, fx: CrewFx, t: number, reduced: 
 /**
  * The tower's LED matrix after the ten Rovers' glow (`start`: the glow instance count derives from the seat count): up
  * to 24 lanes of 8 dots, bottom to top, over most of the slim column's stop-facing face (`base` over the plinth, `gap`
- * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (0.91 u of its 1.2 u face). Idle dots stay a
- * dim visible grid (`idle`), queued lanes a little brighter (`pending`), done lanes green and failed lanes red (`done`),
- * running lanes chasing.
+ * between lanes: 0.5 u to 8.78 u of its 9.1 u), `across` apart within a lane (1.16 u of its 1.2 u face with the lit
+ * size), sized to read from the office stop on desktop (owner decision 2026-10-21: about 1.6 times part A's dots). Idle
+ * dots stay a dim visible grid (`idle`), queued lanes a dim steady slate (`pending`), done lanes green and failed lanes
+ * red (`done`), running lanes violet and brighter (`run`): a chase in full motion (the head dot, the one behind it,
+ * the rest at `base`), steady at `still` under reduced motion, so they never read as queued without motion either.
  */
-export const TOWER = { lanes: 24, dots: 8, start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count), base: 0.4, gap: 0.36, across: 0.13, size: { lit: 0.11, idle: 0.09 }, idle: 0.35, pending: 0.6, done: 1.2 } as const;
+export const TOWER = {
+  lanes: 24,
+  dots: 8,
+  start: OFFICE_SEAT_COUNT * (RIG_GLOW + CREW_GLOW.count),
+  base: 0.4,
+  gap: 0.36,
+  across: 0.14,
+  size: { lit: 0.18, idle: 0.14 },
+  idle: 0.35,
+  pending: 0.6,
+  done: 1.8,
+  run: { base: 1, head: 2.8, tail: 1.7, still: 1.6 },
+} as const;
 
 /**
  * The pipeline effects' glow instances right after the tower's last dot (`pipelineFx.ts`), in this order: 3 packets of
@@ -173,14 +187,16 @@ const FACE = officeTowerYaw(LOBBY.officeWing);
 const FACE_Q = new Quaternion().setFromAxisAngle(UP, FACE);
 const IDLE = "#64748b";
 
-/** Writes the lane dots on the column's stop-facing side: done lanes green, failed lanes red, running lanes chasing, queued and idle lanes a dim grid. */
+/** Writes the lane dots on the column's stop-facing side: done lanes green, failed lanes red, running lanes violet (chasing, or steady and bright under reduced motion), queued and idle lanes a dim slate grid. */
 export function writeTower(lanes: TowerLanes, t: number, reduced: boolean, matrices: Float32Array, colors: Float32Array): void {
   const cx = Math.cos(FACE);
   const sx = -Math.sin(FACE);
   const fx = Math.sin(FACE);
   const fz = Math.cos(FACE);
   const out = OFFICE.tower.column / 2 + 0.02;
-  const head = reduced ? 0 : Math.floor(t * 8) % TOWER.dots;
+  const head = reduced ? -1 : Math.floor(t * 8) % TOWER.dots;
+  const tail = (head + TOWER.dots - 1) % TOWER.dots;
+  const { run } = TOWER;
   for (let lane = 0; lane < TOWER.lanes; lane++) {
     const s = lanes.states[lane] ?? "idle";
     for (let d = 0; d < TOWER.dots; d++) {
@@ -189,7 +205,8 @@ export function writeTower(lanes: TowerLanes, t: number, reduced: boolean, matri
       V.set(COL.x + cx * across + fx * out, OFFICE.tower.plinth + TOWER.base + lane * TOWER.gap, COL.z + sx * across + fz * out);
       M.compose(V, FACE_Q, S.setScalar(s === "idle" ? TOWER.size.idle : TOWER.size.lit)).toArray(matrices, i * 16);
       const color = s === "done" ? "#34d399" : s === "failed" ? STATUS_COLOR.failure : s === "running" ? "#a78bfa" : IDLE;
-      const on = s === "done" || s === "failed" ? TOWER.done : s === "running" ? (d === head ? 1.4 : 0.5) : s === "queued" ? TOWER.pending : TOWER.idle;
+      const runGain = head < 0 ? run.still : d === head ? run.head : d === tail ? run.tail : run.base;
+      const on = s === "done" || s === "failed" ? TOWER.done : s === "running" ? runGain : s === "queued" ? TOWER.pending : TOWER.idle;
       C.set(color).multiplyScalar(on).toArray(colors, i * 3);
     }
   }
