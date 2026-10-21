@@ -4,6 +4,7 @@ import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3 } fro
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
 import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
+import { applyBeat, emptyDoc, viewV3, viewV4 } from "../../workers/office/src/state";
 
 const SITE = "https://kurniadi.pages.dev";
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -147,6 +148,41 @@ describe("GET /api/office", () => {
     expect([...map.keys()].sort()).toEqual([`${SITE}/api/office`, `${SITE}/api/office?v=2`, `${SITE}/api/office?v=3`]);
     expect(calls.map((c) => c.path)).toEqual(["/snapshot?v=3", "/snapshot?v=2", "/snapshot"]);
     expect(await (await get(env, cache, "GET", {}, "?v=3")).json()).toEqual(OFFICE_FIXTURES_V3.busy);
+  });
+
+  it("keeps v3 and v4 apart: one doc, two ETags; a v3 ETag never revalidates ?v=4; a HEAD or 304 on ?v=4 keeps its Cache-Control", async () => {
+    const doc = applyBeat(emptyDoc(T0), { v: 1, agent: "copilot", session: "a".repeat(64), state: "working", activity: "editing", ts: T0 }, T0);
+    const { binding } = worker((path) => Response.json(path === "/snapshot?v=4" ? viewV4(doc, T0) : viewV3(doc, T0)));
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    const v3 = await get(env, null, "GET", {}, "?v=3");
+    const v4 = await get(env, null, "GET", {}, "?v=4");
+    expect(await v3.json()).toEqual(viewV3(doc, T0));
+    expect(await v4.json()).toEqual(viewV4(doc, T0));
+    const etag3 = v3.headers.get("ETag") ?? "";
+    const etag4 = v4.headers.get("ETag") ?? "";
+    expect(etag3).toMatch(/^"[0-9a-f]{32}"$/);
+    expect(etag4).toMatch(/^"[0-9a-f]{32}"$/);
+    expect(etag4).not.toBe(etag3);
+    const cache4 = v4.headers.get("Cache-Control");
+    expect(cache4).toBe("public, max-age=5, stale-while-revalidate=30");
+    // A client switching from v3 to v4 (or a shared cache) sending the v3 ETag gets the full v4 body.
+    const crossed = await get(env, null, "GET", { "If-None-Match": etag3 }, "?v=4");
+    expect(crossed.status).toBe(200);
+    expect(crossed.headers.get("ETag")).toBe(etag4);
+    expect(await crossed.json()).toEqual(viewV4(doc, T0));
+    const notModified = await get(env, null, "GET", { "If-None-Match": etag4 }, "?v=4");
+    expect(notModified.status).toBe(304);
+    expect(await notModified.text()).toBe("");
+    expect(notModified.headers.get("ETag")).toBe(etag4);
+    expect(notModified.headers.get("Cache-Control")).toBe(cache4);
+    const head = await get(env, null, "HEAD", {}, "?v=4");
+    expect(head.status).toBe(200);
+    expect(await head.text()).toBe("");
+    expect(head.headers.get("ETag")).toBe(etag4);
+    expect(head.headers.get("Cache-Control")).toBe(cache4);
+    const headNotModified = await get(env, null, "HEAD", { "If-None-Match": etag4 }, "?v=4");
+    expect(headNotModified.status).toBe(304);
+    expect(headNotModified.headers.get("Cache-Control")).toBe(cache4);
   });
 
   it("serves v4 only for ?v=4, from the Worker's v4 snapshot, with one cache entry per version; v1 to v3 unchanged", async () => {
