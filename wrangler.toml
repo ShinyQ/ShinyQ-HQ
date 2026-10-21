@@ -13,7 +13,7 @@
 
 name = "kurniadi"
 pages_build_output_dir = "out"
-compatibility_date = "2026-10-01"
+compatibility_date = "2026-10-19"
 
 # Workers AI. The Function routes every model call through the AI Gateway named in ASK_GATEWAY_ID
 # (cache, logs and the global rate limit live there).

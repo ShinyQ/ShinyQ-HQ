@@ -145,7 +145,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: target/workers/stats
-          wranglerVersion: "4.151.0"
+          wranglerVersion: "4.151.3"
           packageManager: npm
           quiet: true
           command: deploy
