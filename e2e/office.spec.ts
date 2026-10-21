@@ -794,7 +794,7 @@ test.describe("Agent Office (L1) ship-it pipeline", () => {
     expect((await probe(page)).beam).toBe(false);
     // A deploy 5 s old: the watch loads the beacon chunk and the beam shows for its 8 s, with no Rover asking.
     const watched = await beamRun(page, async () => {
-      office.set(deployed(Date.now(), Date.now() - 5_000, 7002));
+      office.set(deployed(Date.now(), Date.now() - 5_000));
       await watchNow(page);
     });
     expect(watched, `beam for ${watched.toFixed(2)} s of scene clock (watch)`).toBeGreaterThan(7);
@@ -809,7 +809,7 @@ test.describe("Agent Office (L1) ship-it pipeline", () => {
     }, { timeout: 30_000 }).toEqual({ inView: true, polling: true });
     const before = office.requests().length;
     const seen = await beamRun(page, async () => {
-      office.set(deployed(Date.now(), Date.now() - 3_000, 7003));
+      office.set(deployed(Date.now(), Date.now() - 3_000));
       await pollNow(page);
     });
     expect(seen, `beam for ${seen.toFixed(2)} s of scene clock (scene)`).toBeGreaterThan(7);

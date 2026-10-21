@@ -151,11 +151,12 @@ const pipelineJobs = (statuses: readonly OfficeJobStatus[]) => statuses.map((sta
  * - `burst`: run 4101's second job finished (a burst on its lane).
  * - `packet`: plus run 4102 on back-row desk 6 (slot 5), new at `now` (a packet from the riser).
  * - `merge`: plus a merge from desk 1 (slot 0), new at `now`, and 3 PRs merged today (a package, then the stack of 3).
+ * With `deployAt`, a production deploy that succeeded then is added (`deployed`).
  */
 export const SHIP_STEPS = ["base", "burst", "packet", "merge"] as const;
 export type ShipStep = (typeof SHIP_STEPS)[number];
 
-export function shipStep(now: number, step: ShipStep): OfficeSnapshotV4 {
+export function shipStep(now: number, step: ShipStep, deployAt?: number): OfficeSnapshotV4 {
   const k = SHIP_STEPS.indexOf(step);
   const front = statesA(now, 0);
   const runs: OfficePipelineRun[] = [
@@ -164,26 +165,30 @@ export function shipStep(now: number, step: ShipStep): OfficeSnapshotV4 {
   if (k >= 2) runs.unshift({ id: 4102, repo: OFFICE_REPO, title: "CI · feat/second-console-row", url: runUrl(4102), status: "running", slot: 5, at: now, jobs: pipelineJobs(["running", "queued"]) });
   const ships: OfficeShip[] = [{ key: `pr:${OFFICE_REPO}#300`, kind: "merge", status: "merged", at: now - 5 * 60_000 }];
   if (k >= 3) ships.unshift({ key: `pr:${OFFICE_REPO}#301`, kind: "merge", status: "merged", at: now, slot: 0 });
-  return {
+  const snap: OfficeSnapshotV4 = {
     ...front,
     v: 4,
     desks: [...front.desks, officeDesk(5, "codex", "working", "editing", now, { repo: OFFICE_REPO, title: "Second Console Row" })],
     today: { ...front.today, prsMerged: k >= 3 ? 3 : 2 },
     pipeline: { runs, ships },
   };
+  return deployAt === undefined ? snap : withDeploy(snap, deployAt);
 }
 
 /**
  * A production deploy that succeeded at `at` (v4, `?v=4`): `statesA`'s office (nobody asks) with the deploy in the
  * pipeline's ships and, as the Worker writes it, in the GitHub feed titled "Deploy · production" (what a v3 reader sees).
  */
-export function deployed(now: number, at: number, id = 7001): OfficeSnapshotV4 {
-  const front = statesA(now, 0);
+export function deployed(now: number, at: number): OfficeSnapshotV4 {
+  return withDeploy({ ...statesA(now, 0), v: 4, pipeline: { runs: [], ships: [] } }, at);
+}
+
+/** `snap` plus a production deploy that succeeded at `at` (its key from `at`, so every deploy time is a new deploy), newest first. */
+function withDeploy(snap: OfficeSnapshotV4, at: number): OfficeSnapshotV4 {
   return {
-    ...front,
-    v: 4,
-    github: [{ kind: "deploy", status: "success", repo: OFFICE_REPO, title: "Deploy · production", at, url: `https://github.com/${OFFICE_REPO}/deployments` }, ...front.github],
-    pipeline: { runs: [], ships: [{ key: `deploy:${id}`, kind: "deploy", status: "success", at }] },
+    ...snap,
+    github: [{ kind: "deploy", status: "success", repo: OFFICE_REPO, title: "Deploy · production", at, url: `https://github.com/${OFFICE_REPO}/deployments` }, ...snap.github],
+    pipeline: { ...snap.pipeline, ships: [{ key: `deploy:${at}`, kind: "deploy", status: "success", at }, ...snap.pipeline.ships] },
   };
 }
 
