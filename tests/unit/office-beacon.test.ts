@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, putInstance, type BeaconInstance, type BeamClock } from "@/experience/floors/lobby/office/beacon";
 import { COLORS, LOBBY } from "@/experience/config";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
@@ -105,6 +106,15 @@ describe("deploy beam", () => {
     expect(beamSince(null, 30, clock)).toBeNull();
     expect(beamSince(5_000, 31, clock)).toBeNull();
     expect(beamSince(9_000, 40, clock)).toBe(0);
+  });
+
+  it("lasts 8 s of the R3F clock at any frame time: the beacon frame passes the rendered time, not clamped deltas (CI frames of 0.27 to 1.3 s stretched it to 80 frames)", () => {
+    const clock: BeamClock = { deployAt: null, t0: 0 };
+    let frames = 0;
+    for (let t = 0; beamSince(5_000, t, clock) !== null; t += 1.3) frames += 1;
+    expect(frames).toBe(Math.ceil(BEAM.s / 1.3));
+    const src = readFileSync("src/experience/floors/lobby/office/OfficeBeacon.tsx", "utf8");
+    expect(src).toMatch(/beamSince\(officeSignal\.deployAt, clock\.elapsedTime,/);
   });
 
   it("rises over 0.6 s, holds, fades over the last 1.5 s; steady under reduced motion; no higher than the wall's top at the stop", () => {

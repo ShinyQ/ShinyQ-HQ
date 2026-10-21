@@ -28,7 +28,9 @@ const stage = () => new InstancedBufferAttribute(new Float32Array(BEACON.slots *
  * (0 to 3) and the beam in green (`BEAM.slot`). The stage shader takes only the position from the instance matrix and
  * the shape from `aStage` (beams never read `aStageUv`), so every instance starts as a zero-size beam (all zeros). No
  * React state: the frame reads the signal and draws the mesh while a Rover asks or a beam runs (1 call either way),
- * else keeps it out of the draw. Its scene clock runs every frame, so a beam's 8 s run in real time. `OfficeMount`
+ * else keeps it out of the draw. The bands pulse on clamped frame deltas; the beam times its 8 s on the R3F clock (rendered
+ * time, `__hq.clock()`), never on clamped deltas, which on frames over 0.1 s (a slow GPU, SwiftShader) would stretch it to 80
+ * frames. `OfficeMount`
  * mounts it once the chunk loaded (the watch chunk loads it on the first ask or the first fresh deploy) and `ready`
  * (the full tier's composer exists), so no canvas-target program compiles; it stays mounted.
  */
@@ -41,12 +43,12 @@ export function OfficeBeacon() {
   const mesh = useRef<InstancedMesh>(null);
   const t = useRef(0);
   const beam = useRef<BeamClock>({ deployAt: null, t0: 0 });
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const m = mesh.current;
     if (!m) return;
     const now = (t.current += Math.min(dt, 0.1));
     const asking = officeSignal.needsKurniadi;
-    const since = beamSince(officeSignal.deployAt, now, beam.current);
+    const since = beamSince(officeSignal.deployAt, clock.elapsedTime, beam.current);
     sceneProbes.office.beacon = asking;
     sceneProbes.office.beam = since !== null;
     m.visible = asking || since !== null;
