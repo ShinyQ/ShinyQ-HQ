@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in progress (2026-10-21); follows part A (#274, bcb1080).
+Status: in review (2026-10-21); follows part A (#274, bcb1080).
 
 **Goal:** The office's live layer runs whenever the office is in view from anywhere in the Lobby (no drive needed), and
 the office seats up to ten sessions (two rows of five) with helpers still drawn as drones.

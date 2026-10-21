@@ -72,7 +72,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Agent Office: a higher wall | 2026-10-20: a taller screen wall raised over the console and set 4.5 u behind the Rovers in a deeper wing, the office view retuned on every screen (the chips wait for the camera to settle, stay shown through a zoom, and show as dots where the office view does not apply), and no privacy note on the Classic card or in the drawers | In review |
 | Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
 | Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
-| Agent Office: always live | 2026-10-21: the office loads at idle on every Lobby visit and lives whenever it is in view from anywhere in the Lobby (a far level of detail at about 4 fps past 40 u, a 30 s poll from afar, the fast poll only near it or with a drawer open); its scene chunk joins the 3D session total | In review |
+| Agent Office: always live, ten desks | 2026-10-21: the office loads at idle on every Lobby visit and lives whenever it is in view from anywhere in the Lobby (a far level of detail at about 4 fps past 40 u, a 30 s poll from afar, the fast poll only near it or with a drawer open); its scene chunk joins the 3D session total. Ten desks on two console rows (the back row on a riser), ten Rovers and chips, snapshot v3 with ten seats, and the Classic card over ten seats | In review |
 
 ## Controls and first visit
 
@@ -492,7 +492,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 466.4 KB gzip per tier; session total full 517.5 KB, lite 501.7 KB (the office scene chunk included) | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 466.4 KB gzip per tier; session total full 518.7 KB, lite 503.0 KB (the office scene chunk included) | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 
 - Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.
