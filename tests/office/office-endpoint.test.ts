@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
-import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
+import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
+import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4 } from "@/lib/office/protocol";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
 import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
 
@@ -142,10 +142,33 @@ describe("GET /api/office", () => {
     const v2 = await get(env, cache, "GET", {}, "?v=2");
     const v1 = await get(env, cache, "GET", {}, "");
     expect(new Set([v1, v2, v3].map((r) => r.headers.get("ETag"))).size).toBe(3);
-    for (let i = 0; i < 2; i++) for (const query of ["?v=3", "?v=2", "", "?v=4", "?v=3x"]) await get(env, cache, "GET", {}, query);
+    for (let i = 0; i < 2; i++) for (const query of ["?v=3", "?v=2", "", "?v=5", "?v=3x"]) await get(env, cache, "GET", {}, query);
     expect([...map.keys()].sort()).toEqual([`${SITE}/api/office`, `${SITE}/api/office?v=2`, `${SITE}/api/office?v=3`]);
     expect(calls.map((c) => c.path)).toEqual(["/snapshot?v=3", "/snapshot?v=2", "/snapshot"]);
     expect(await (await get(env, cache, "GET", {}, "?v=3")).json()).toEqual(OFFICE_FIXTURES_V3.busy);
+  });
+
+  it("serves v4 only for ?v=4, from the Worker's v4 snapshot, with one cache entry per version; v1 to v3 unchanged", async () => {
+    const bodies: Record<string, unknown> = { "/snapshot": OFFICE_FIXTURES.busy, "/snapshot?v=2": OFFICE_FIXTURES_V2.busy, "/snapshot?v=3": OFFICE_FIXTURES_V3.busy, "/snapshot?v=4": OFFICE_FIXTURES_V4.busy };
+    const { binding, calls } = worker((path) => Response.json(bodies[path]));
+    const { cache, map } = memoryCache();
+    const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
+    expect(await (await get(env, cache, "GET", {}, "?v=4")).json()).toEqual(OFFICE_FIXTURES_V4.busy);
+    for (const [query, body] of [["?v=3", OFFICE_FIXTURES_V3.busy], ["?v=2", OFFICE_FIXTURES_V2.busy], ["", OFFICE_FIXTURES.busy], ["?v=5", OFFICE_FIXTURES.busy], ["?v=4x", OFFICE_FIXTURES.busy], ["?v=4&x=%3Cscript%3E", OFFICE_FIXTURES_V4.busy]] as const) expect(await (await get(env, cache, "GET", {}, query)).json(), query).toEqual(body);
+    expect([...map.keys()].sort()).toEqual([`${SITE}/api/office`, `${SITE}/api/office?v=2`, `${SITE}/api/office?v=3`, `${SITE}/api/office?v=4`]);
+    expect(calls.map((c) => c.path)).toEqual(["/snapshot?v=4", "/snapshot?v=3", "/snapshot?v=2", "/snapshot"]);
+  });
+
+  it("serves a v3, v2 or v1 body as v4 with an empty pipeline after a rollback, and mode off as v4 on failure", async () => {
+    for (const body of [OFFICE_FIXTURES_V3.busy, OFFICE_FIXTURES_V2.busy, OFFICE_FIXTURES.busy]) {
+      const rolledBack = worker(() => Response.json(body)).binding;
+      expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: rolledBack }, null, "GET", {}, "?v=4")).json()).toEqual({ ...body, v: 4, pipeline: { runs: [], ships: [] } });
+    }
+    const off4 = { ...offSnapshot(T0), v: 4, pipeline: { runs: [], ships: [] } };
+    expect(parseOfficeResponseV4(off4)).toEqual(off4);
+    expect(await (await get({ OFFICE_ENABLED: "true" }, null, "GET", {}, "?v=4")).json()).toEqual(off4);
+    expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: worker(() => new Response(null, { status: 500 })).binding }, null, "GET", {}, "?v=4")).json()).toEqual(off4);
+    expect(await (await get({ OFFICE_ENABLED: "false" }, null, "GET", {}, "?v=4")).json()).toEqual({ v: 1, enabled: false });
   });
 
   it("never serves a slot above 4 or more than five desks on v1 or v2, even if a Worker answered ten", async () => {
@@ -185,10 +208,10 @@ describe("GET /api/office", () => {
     expect(await (await get({ OFFICE_ENABLED: "false" }, null, "GET", {}, "?v=3")).json()).toEqual({ v: 1, enabled: false });
   });
 
-  it("serves v1 without helpers for no query, ?v=4 and junk, even if a Worker answered helpers", async () => {
+  it("serves v1 without helpers for no query, ?v=5 and junk, even if a Worker answered helpers", async () => {
     const { binding, calls } = worker((path) => Response.json(path === "/snapshot?v=2" ? OFFICE_FIXTURES_V2.busy : OFFICE_FIXTURES.busy));
     const env: OfficeEnv = { OFFICE_ENABLED: "true", OFFICE: binding };
-    for (const query of ["", "?v=1", "?v=4", "?v=3x", "?v=2x", "?v=%3Cscript%3E", "?x=2"]) {
+    for (const query of ["", "?v=1", "?v=5", "?v=3x", "?v=2x", "?v=%3Cscript%3E", "?x=2"]) {
       const text = await (await get(env, null, "GET", {}, query)).text();
       expect(text, query).not.toContain('"helpers"');
       expect(JSON.parse(text), query).toEqual(OFFICE_FIXTURES.busy);

@@ -1,4 +1,16 @@
-import { OFFICE_BEAT_MAX_BYTES, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay, type OfficeResponseV1, type OfficeResponseV2, type OfficeResponseV3, type OfficeSnapshotV1 } from "../../src/lib/office/protocol";
+import {
+  OFFICE_BEAT_MAX_BYTES,
+  parseOfficeResponse,
+  parseOfficeResponseV2,
+  parseOfficeResponseV3,
+  parseOfficeResponseV4,
+  wibDay,
+  type OfficeResponseV1,
+  type OfficeResponseV2,
+  type OfficeResponseV3,
+  type OfficeResponseV4,
+  type OfficeSnapshotV1,
+} from "../../src/lib/office/protocol";
 import { etagOf, readCapped } from "./security";
 import type { EdgeCache, OfficeEnv, PagesContext } from "./types";
 
@@ -19,7 +31,7 @@ function defaultCache(): EdgeCache | null {
   return store?.default ?? null;
 }
 
-async function jsonAnswer(value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3, cacheControl: string): Promise<Response> {
+async function jsonAnswer(value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | OfficeResponseV4, cacheControl: string): Promise<Response> {
   const body = JSON.stringify(value);
   return new Response(body, {
     status: 200,
@@ -34,20 +46,24 @@ function conditional(request: Request, res: Response): Response {
   return request.method === "HEAD" ? new Response(null, { status: res.status, headers: res.headers }) : res;
 }
 
-/** The snapshot versions: exactly `?v=2` is v2, exactly `?v=3` is v3, anything else (no query, `?v=4`, junk) the unchanged v1. */
+/**
+ * The snapshot versions: exactly `?v=2` is v2, exactly `?v=3` is v3, exactly `?v=4` is v4 (v4: the pipeline, the 3D
+ * scene only), anything else (no query, `?v=5`, junk) the unchanged v1.
+ */
 const VERSIONS = {
   1: { key: "/api/office", worker: `${WORKER}/snapshot`, parse: parseOfficeResponse, off: offSnapshot },
   2: { key: "/api/office?v=2", worker: `${WORKER}/snapshot?v=2`, parse: parseOfficeResponseV2, off: (now: number) => ({ ...offSnapshot(now), v: 2 as const }) },
   3: { key: "/api/office?v=3", worker: `${WORKER}/snapshot?v=3`, parse: parseOfficeResponseV3, off: (now: number) => ({ ...offSnapshot(now), v: 3 as const }) },
+  4: { key: "/api/office?v=4", worker: `${WORKER}/snapshot?v=4`, parse: parseOfficeResponseV4, off: (now: number) => ({ ...offSnapshot(now), v: 4 as const, pipeline: { runs: [], ships: [] } }) },
 } as const;
 
-const versionOf = (v: string | null): keyof typeof VERSIONS => (v === "2" ? 2 : v === "3" ? 3 : 1);
+const versionOf = (v: string | null): keyof typeof VERSIONS => (v === "2" ? 2 : v === "3" ? 3 : v === "4" ? 4 : 1);
 
 /**
- * `GET /api/office` (v1), `GET /api/office?v=2` (v2: desk helpers) and `GET /api/office?v=3` (v3: ten seats): the
- * office snapshot from the hq-office Worker, validated again, edge-cached for 5 s per data center and version (one
- * Durable Object read per 5 s there). A rolled-back Worker's older body is served in the asked version (its parser's
- * fallback). Always 200 JSON with an ETag (304 on a matching If-None-Match), so clients need one code path.
+ * `GET /api/office` (v1), `GET /api/office?v=2` (v2: desk helpers), `GET /api/office?v=3` (v3: ten seats) and
+ * `GET /api/office?v=4` (v4: the pipeline, the 3D scene only): the office snapshot from the hq-office Worker, validated
+ * again, edge-cached for 5 s per data center and version (one Durable Object read per 5 s there). A rolled-back
+ * Worker's older body is served in the asked version (its parser's fallback; v4 with an empty pipeline). Always 200 JSON with an ETag (304 on a matching If-None-Match), so clients need one code path.
  */
 export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | null; now?: () => number } = {}) {
   const cacheOf = opts.cache ?? defaultCache;
@@ -62,7 +78,7 @@ export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | nu
     const key = new Request(new URL(version.key, request.url).toString(), { method: "GET" });
     const hit = await cache?.match(key);
     if (hit) return conditional(request, hit);
-    let value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | null = null;
+    let value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | OfficeResponseV4 | null = null;
     try {
       const res = await env.OFFICE.fetch(version.worker);
       value = res.ok ? version.parse(await res.json()) : null;

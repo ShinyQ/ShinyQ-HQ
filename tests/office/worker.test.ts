@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3 } from "@/lib/office/protocol";
+import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3, type OfficeSnapshotV4 } from "@/lib/office/protocol";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
-import { emptyDoc, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { emptyDoc, view, viewV2, viewV3, viewV4, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
 import { createOfficeWorker } from "../../workers/office/src/worker";
 
@@ -116,7 +116,7 @@ describe("hq-office Worker", () => {
     expect((await call("/beat", await signedBeat({ helpers: 4 }))).status).toBe(204);
     const v2 = parseOfficeResponseV2(await (await call("/snapshot?v=2")).json()) as OfficeSnapshotV2;
     expect(v2).toMatchObject({ v: 2, desks: [{ slot: 0, helpers: 4 }] });
-    for (const query of ["", "?v=1", "?v=4", "?v=2x", "?v=3x", "?v=", "?x=2", "?v=%32%20"]) {
+    for (const query of ["", "?v=1", "?v=5", "?v=4x", "?v=2x", "?v=3x", "?v=", "?x=2", "?v=%32%20"]) {
       const text = await (await call(`/snapshot${query}`)).text();
       expect(text, query).not.toContain('"helpers"');
       expect(parseOfficeResponse(JSON.parse(text)), query).toMatchObject({ v: 1, desks: [{ slot: 0 }] });
@@ -144,21 +144,43 @@ describe("hq-office Worker", () => {
     }
   });
 
-  it("forwards only ?v=2 and ?v=3 to the Durable Object", async () => {
+  it("serves v4 for ?v=4 (the v3 view plus the pipeline); ?v=3, ?v=2 and v1 stay as they were", async () => {
+    const { call, map } = setup();
+    expect((await call("/beat", await signedBeat({ repo: "ShinyQ/ShinyQ-HQ", branch: "feat/x" }))).status).toBe(204);
+    const run = { repository, workflow_run: { id: 42, run_attempt: 1, name: "CI", head_branch: "feat/x", head_repository: { full_name: "ShinyQ/ShinyQ-HQ" }, status: "in_progress", conclusion: null, html_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/42" } };
+    const job = { repository, workflow_job: { id: 7, run_id: 42, run_attempt: 1, name: "Lint", status: "in_progress", conclusion: null } };
+    expect((await call("/github", await signedHook("workflow_run", run, "d-run"))).status).toBe(204);
+    expect((await call("/github", await signedHook("workflow_job", job, "d-job"))).status).toBe(204);
+    const text = await (await call("/snapshot?v=4")).text();
+    const v4 = parseOfficeResponseV4(JSON.parse(text)) as OfficeSnapshotV4;
+    expect(v4).toMatchObject({ v: 4, pipeline: { runs: [{ id: 42, jobs: [{ name: "Lint", status: "running" }] }] } });
+    const doc = map.get("doc") as OfficeDoc;
+    expect(text).toBe(JSON.stringify(viewV4(doc, T0)));
+    for (const [query, body] of [["?v=3", viewV3(doc, T0)], ["?v=2", viewV2(doc, T0)], ["", view(doc, T0)], ["?v=5", view(doc, T0)], ["?v=4x", view(doc, T0)]] as const) {
+      const served = await (await call(`/snapshot${query}`)).text();
+      expect(served, query).toBe(JSON.stringify(body));
+      expect(served, query).not.toContain('"pipeline"');
+    }
+  });
+
+  it("forwards only ?v=2, ?v=3 and ?v=4 to the Durable Object", async () => {
     const seen: string[] = [];
     const env: OfficeWorkerEnv = {
       OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json({})) }) },
     };
     const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
-    for (const query of ["", "?v=2", "?v=3", "?v=4", "?v=3x", "?v=2&x=<script>", "?v=3&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
+    for (const query of ["", "?v=2", "?v=3", "?v=4", "?v=5", "?v=4x", "?v=3x", "?v=2&x=<script>", "?v=3&x=<script>", "?v=4&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
     expect(seen).toEqual([
       "https://office/snapshot",
       "https://office/snapshot?v=2",
       "https://office/snapshot?v=3",
+      "https://office/snapshot?v=4",
+      "https://office/snapshot",
       "https://office/snapshot",
       "https://office/snapshot",
       "https://office/snapshot?v=2",
       "https://office/snapshot?v=3",
+      "https://office/snapshot?v=4",
       "https://office/snapshot",
     ]);
   });
