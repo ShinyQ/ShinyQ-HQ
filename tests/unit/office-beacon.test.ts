@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, type BeaconInstance, type BeamClock } from "@/experience/floors/lobby/office/beacon";
+import { describe, expect, it, vi } from "vitest";
+import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, putInstance, type BeaconInstance, type BeamClock } from "@/experience/floors/lobby/office/beacon";
 import { COLORS, LOBBY } from "@/experience/config";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
 import { OFFICE_SLOTS } from "@/experience/floors/lobby/officeShell";
@@ -129,5 +129,24 @@ describe("deploy beam", () => {
     expect(BEAM.slot).toBe(BEACON.slots - 1);
     expect(BEAM.stopH).toBeCloseTo(OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame);
     expect(BEAM.stopH).toBeCloseTo(6.6);
+  });
+});
+
+describe("beacon frame writes", () => {
+  it("write the instances in place: no Object.assign or fresh object per frame", () => {
+    const out = Array.from({ length: BEACON.slots }, (): BeaconInstance => ({ y: 0, r: 0, h: 0, alpha: 0 }));
+    const assign = vi.spyOn(Object, "assign");
+    try {
+      beaconInstances(1.3, false, out);
+      beaconInstances(1.3, true, out, 2);
+      beamInstance(null, false, false, out[BEAM.slot]);
+      beamInstance(2, false, true, out[BEAM.slot]);
+      putInstance(out[1], 0, 0, 0, 0);
+      expect(assign).not.toHaveBeenCalled();
+    } finally {
+      assign.mockRestore();
+    }
+    expect(out[1]).toEqual({ y: 0, r: 0, h: 0, alpha: 0 });
+    expect(out[BEAM.slot]).toEqual({ y: 0, r: BEAM.r, h: BEAM.stopH, alpha: 0.95 });
   });
 });

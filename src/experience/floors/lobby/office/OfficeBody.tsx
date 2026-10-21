@@ -8,7 +8,7 @@ import type { RoomBodyProps } from "@/hud/drawer/bodies";
 import { External, MetricTiles } from "@/hud/drawer/blocks";
 import { sinceLabel } from "@/lib/office/model";
 import type { OfficeFeed } from "@/lib/office/poll";
-import type { OfficeGithubItem } from "@/lib/office/protocol";
+import type { OfficeGithubItem, OfficePipeline } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDeskRoom, type OfficeTranslate } from "../officeLayout";
 import { loadOffice, useOfficeModule, type OfficeModule } from "./chunk";
@@ -221,12 +221,19 @@ function GithubPanel({ items, locale, now }: { items: readonly OfficeGithubItem[
 
 const JOB_COLOR = { queued: "#8a93b5", running: STATUS_COLOR.running, done: STATUS_COLOR.success, failed: STATUS_COLOR.failure } as const;
 
-/** The CI tower's text alternative: the latest runs with their lanes (after a rollback to v3, the running run's anonymous progress), then the latest merges and deploys. */
-function CiPanel({ office, locale, now }: { office: OfficeView; locale: Locale; now: number }) {
+/** A shipped production deploy: the feed title the Worker gives the production environment (as `officeSignal.ts`; a preview never ships). */
+const shipped = (g: OfficeGithubItem) => (g.kind === "pr" && g.status === "merged") || (g.kind === "deploy" && g.status === "success" && g.title === "Deploy · production");
+
+/**
+ * The CI tower's text alternative: the latest runs with their lanes (the last snapshot's while offline, under the
+ * offline note; for a snapshot without a pipeline, a rollback to v3, the running run's anonymous progress), then the
+ * latest merges and production deploys that succeeded.
+ */
+function CiPanel({ office, pipeline, locale, now }: { office: OfficeView; pipeline: OfficePipeline | undefined; locale: Locale; now: number }) {
   const t = useTranslations("office");
-  const runs = office.pipeline?.runs ?? [];
-  const ships = office.github.filter((g) => (g.kind === "pr" && g.status === "merged") || g.kind === "deploy");
-  const anonymous = runs.length === 0 ? office.github.find((g) => g.kind === "run" && g.status === "running") : undefined;
+  const runs = pipeline?.runs ?? [];
+  const ships = office.github.filter(shipped);
+  const anonymous = pipeline ? undefined : office.github.find((g) => g.kind === "run" && g.status === "running");
   if (runs.length === 0 && ships.length === 0 && !anonymous) return <p className={NOTE}>{t("3d.ci.none")}</p>;
   return (
     <dl className="grid gap-6" data-testid="office-ci">
@@ -348,7 +355,7 @@ function LiveBody({ live, panel, locale }: { live: OfficeModule; panel: NonNulla
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
           ) : panel.panel === "ci" ? (
-            <CiPanel office={office} locale={locale} now={now} />
+            <CiPanel office={office} pipeline={feed.snapshot?.pipeline} locale={locale} now={now} />
           ) : (
             <SummaryPanel office={office} locale={locale} />
           )}

@@ -10,7 +10,7 @@ import { useDispose } from "../../../fx/useDispose";
 import { createStageMaterial } from "../HallFx";
 import { officeDockPad } from "../officeLayout";
 import { atOfficeStop } from "../officeShell";
-import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, type BeaconInstance, type BeamClock } from "./beacon";
+import { BEAM, BEACON, beaconGain, beaconInstances, beaconOrigin, beamInstance, beamSince, putInstance, type BeaconInstance, type BeamClock } from "./beacon";
 import { officeSignal } from "./officeSignal";
 
 const NO_RAYCAST = () => null;
@@ -55,7 +55,7 @@ export function OfficeBeacon() {
     const reduced = getHQStore().getState().reducedMotion;
     const gain = beaconGain(stop);
     beaconInstances(now, reduced, INST, gain.reach);
-    if (!asking) for (let i = 0; i <= BEACON.bands; i++) Object.assign(INST[i], { r: 0, h: 0, alpha: 0 });
+    if (!asking) for (let i = 0; i <= BEACON.bands; i++) putInstance(INST[i], 0, 0, 0, 0);
     beamInstance(since, reduced, stop, INST[BEAM.slot]);
     const o = beaconOrigin(officeSignal.asking, ORIGIN);
     const at = m.instanceMatrix.array;

@@ -46,6 +46,14 @@ export function beaconOrigin(asking: readonly number[], out: Vec2 = { x: 0, z: 0
   return out;
 }
 
+/** Writes one instance in place (the frame runs this every frame, so no object literal or `Object.assign`). */
+export function putInstance(o: BeaconInstance, y: number, r: number, h: number, alpha: number): void {
+  o.y = y;
+  o.r = r;
+  o.h = h;
+  o.alpha = alpha;
+}
+
 const FULL: BeaconGain = { column: 1, bands: 1, reach: BEACON.rise };
 const STOP: BeaconGain = { column: 0, ...BEACON.stop };
 
@@ -62,11 +70,11 @@ export const beaconGain = (atStop: boolean): BeaconGain => (atStop ? STOP : FULL
  * at a quarter, a half and three quarters of the way up.
  */
 export function beaconInstances(t: number, reduced: boolean, out: BeaconInstance[], reach: number = BEACON.rise): void {
-  Object.assign(out[0], { y: 0, r: BEACON.r, h: BEACON.h, alpha: 0.9 });
+  putInstance(out[0], 0, BEACON.r, BEACON.h, 0.9);
   const [r0, r1] = BEACON.grow;
   for (let i = 0; i < BEACON.bands; i++) {
     const u = reduced ? (i + 1) / (BEACON.bands + 1) : (t / BEACON.period + i / BEACON.bands) % 1;
-    Object.assign(out[1 + i], { y: u * (reach - BEACON.band), r: BEACON.r * (r0 + u * (r1 - r0)), h: BEACON.band, alpha: reduced ? 0.7 : Math.min(1, u * 5) * (1 - u) });
+    putInstance(out[1 + i], u * (reach - BEACON.band), BEACON.r * (r0 + u * (r1 - r0)), BEACON.band, reduced ? 0.7 : Math.min(1, u * 5) * (1 - u));
   }
 }
 
@@ -96,11 +104,8 @@ export function beamSince(deployAt: number | null, t: number, clock: BeamClock):
 
 /** Instance `BEAM.slot` at `since` seconds into the beam (zero size without one). Reduced motion: full height and steady for the 8 s. */
 export function beamInstance(since: number | null, reduced: boolean, atStop: boolean, out: BeaconInstance): void {
-  if (since === null) {
-    Object.assign(out, { y: 0, r: 0, h: 0, alpha: 0 });
-    return;
-  }
+  if (since === null) return putInstance(out, 0, 0, 0, 0);
   const rise = reduced ? 1 : Math.min(1, since / BEAM.rise);
   const fade = reduced || since <= BEAM.s - BEAM.fade ? 1 : (BEAM.s - since) / BEAM.fade;
-  Object.assign(out, { y: 0, r: BEAM.r, h: (atStop ? BEAM.stopH : BEAM.h) * rise, alpha: (reduced ? 0.6 : 0.95) * fade });
+  putInstance(out, 0, BEAM.r, (atStop ? BEAM.stopH : BEAM.h) * rise, (reduced ? 0.6 : 0.95) * fade);
 }

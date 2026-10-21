@@ -176,10 +176,47 @@ describe("Agent Office drawers", () => {
       });
     }
 
-    it("shows the running run's anonymous progress line when the pipeline is empty (a rollback)", () => {
+    it("lists only production deploys that succeeded under merged and deployed, never a preview, running or failed one", () => {
+      const snap = busy();
+      const deploy = snap.github.find((g) => g.kind === "deploy")!;
+      snap.github = [
+        { ...deploy, title: "Deploy · Preview", url: `${deploy.url}-preview` },
+        { ...deploy, status: "failure", url: `${deploy.url}-failed` },
+        { ...deploy, status: "running", url: `${deploy.url}-running` },
+        ...snap.github,
+      ];
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      const ships = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(ships.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(ships[0]).toHaveTextContent("Deploy · production");
+      expect(screen.getByTestId("office-ci")).not.toHaveTextContent("Deploy · Preview");
+      expect(screen.getByTestId("office-ci").querySelectorAll('[data-status="failure"], [data-testid="office-feed-row"][data-status="running"]')).toHaveLength(0);
+    });
+
+    it("keeps the last pipeline while offline, with the offline note and no anonymous run row", () => {
+      live.feed = { status: "offline", snapshot: busy() as OfficeFeedSnapshot, fetchedAt: Date.now() - 120_000 };
+      render(ciTree("en"));
+      expect(screen.getByTestId("office-offline")).toHaveTextContent(o.drawer.offline);
+      expect(screen.getAllByTestId("office-ci-run")).toHaveLength(3);
+      const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(rows.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(screen.queryByRole("progressbar")).toBeNull();
+    });
+
+    it("shows no anonymous run row for a v4 snapshot with an empty pipeline", () => {
       const snap = busy();
       snap.pipeline = { runs: [], ships: [] };
       live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
+      expect(within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row").map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+      expect(screen.queryByRole("progressbar")).toBeNull();
+    });
+
+    it("shows the running run's anonymous progress line for a snapshot without a pipeline (v3, a rollback)", () => {
+      const snap = structuredClone(OFFICE_FIXTURES_V3.busy) as OfficeFeedSnapshot;
+      live.feed = { status: "ready", snapshot: snap, fetchedAt: Date.now() };
       render(ciTree("en"));
       expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
       const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
@@ -190,7 +227,8 @@ describe("Agent Office drawers", () => {
     it("says there are no recent runs without runs or ships", () => {
       const snap = busy();
       snap.pipeline = { runs: [], ships: [] };
-      snap.github = snap.github.filter((g) => g.kind === "run" && g.status !== "running");
+      // A running run (no anonymous row beside a v4 pipeline) and a preview deploy (never shipped) still say "none".
+      snap.github = snap.github.flatMap((g) => (g.kind === "run" ? [g] : g.kind === "deploy" ? [{ ...g, title: "Deploy · Preview" }] : []));
       live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
       render(ciTree("id"));
       expect(screen.queryByTestId("office-ci")).toBeNull();

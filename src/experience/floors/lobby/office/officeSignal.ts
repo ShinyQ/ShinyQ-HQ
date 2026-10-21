@@ -55,10 +55,14 @@ const SEATS = 10;
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
 const isSlot = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0 && (x as number) < SEATS;
 
+/** The feed title the Worker gives a production deploy (`workers/office/src/ingest.ts`); a preview never fires the beam. */
+const PRODUCTION = "Deploy · production";
+
 /**
  * Reads only what the beacon needs from a GET /api/office body (v3 from the watch, the v4 snapshot from the scene's
- * poller, v2 or v1 after a rollback; the fields it reads are the same in all four): up to ten desks with slots 0 to 9,
- * so an asker on the back row counts. Null when it does not look like one. Never throws and never keeps text.
+ * poller, v2 or v1 after a rollback): up to ten desks with slots 0 to 9, so an asker on the back row counts, and the
+ * last production deploy success (v4: the pipeline's ships, production only; older: a feed item titled `PRODUCTION`),
+ * fresh on the body's own clock (`updatedAt`, else `now`). Null when it does not look like one. Never throws and never keeps text.
  */
 export function signalFromBody(body: unknown, now: number): { asking: number[]; deployAt: number | null } | null {
   if (!isObj(body) || (body.v !== 1 && body.v !== 2 && body.v !== 3 && body.v !== 4)) return null;
@@ -71,8 +75,10 @@ export function signalFromBody(body: unknown, now: number): { asking: number[]; 
     if (d.state === "input") asking.push(d.slot);
   }
   let deployAt: number | null = null;
-  for (const g of github) {
-    if (isObj(g) && g.kind === "deploy" && g.status === "success" && Number.isInteger(g.at) && now - (g.at as number) <= DEPLOY_FRESH_MS) deployAt = Math.max(deployAt ?? 0, g.at as number);
+  const ships = isObj(body.pipeline) && Array.isArray(body.pipeline.ships) ? body.pipeline.ships : null;
+  if (Number.isInteger(body.updatedAt)) now = body.updatedAt as number;
+  for (const g of ships ?? github) {
+    if (isObj(g) && g.kind === "deploy" && g.status === "success" && (ships || g.title === PRODUCTION) && Number.isInteger(g.at) && now - (g.at as number) <= DEPLOY_FRESH_MS) deployAt = Math.max(deployAt ?? 0, g.at as number);
   }
   return { asking, deployAt };
 }

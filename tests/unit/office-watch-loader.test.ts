@@ -103,6 +103,31 @@ describe("office watch loader", () => {
     signal.setOfficeSignal({ asking: [], deployAt: null, goodAt: Date.now() });
   });
 
+  it("the watch never loads the beacon for a preview deploy, only for a production one", async () => {
+    const load = vi.fn(() => Promise.resolve({}));
+    vi.doMock("@/experience/floors/lobby/office/watchLoader", async (orig) => ({ ...(await orig<Loader>()), loadOfficeBeacon: load }));
+    const signal: Signal = await import("@/experience/floors/lobby/office/officeSignal");
+    await import("@/experience/floors/lobby/office/watchChunk");
+    const { startOfficeWatch } = await import("@/experience/floors/lobby/office/officeWatch");
+    getHQStore().setState({ floor: "L1", ride: null });
+    let title = "Deploy · Preview";
+    const f = vi.fn(async () => {
+      const at = Date.now();
+      return new Response(JSON.stringify({ ...body("working"), v: 3, updatedAt: at, github: [{ kind: "deploy", status: "success", repo: "ShinyQ/ShinyQ-HQ", title, at, url: "https://github.com/ShinyQ/ShinyQ-HQ" }] }), { status: 200 });
+    });
+    const stop = startOfficeWatch({ fetch: f, every: 60_000 });
+    await vi.waitFor(() => expect(f).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(signal.officeSignal.goodAt).toBeGreaterThan(0));
+    expect(signal.officeSignal.deployAt).toBeNull();
+    expect(load).not.toHaveBeenCalled();
+    title = "Deploy · production";
+    const { officeWatchTick } = await import("@/experience/floors/lobby/office/officeWatch");
+    await officeWatchTick();
+    expect(signal.officeSignal.deployAt).not.toBeNull();
+    expect(load).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
   it("mirrors a signal the scene fed before the watch chunk loaded", async () => {
     const load = vi.fn(() => Promise.resolve({}));
     vi.doMock("@/experience/floors/lobby/office/watchLoader", async (orig) => ({ ...(await orig<Loader>()), loadOfficeBeacon: load }));
