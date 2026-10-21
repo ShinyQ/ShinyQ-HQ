@@ -246,3 +246,30 @@ describe("Ask samples (ask-samples.yml)", () => {
     expect(withKey[0]).toContain("run: bun scripts/ask-samples.ts --groq");
   });
 });
+
+describe("pinned Node (security release 2026-10-21)", () => {
+  const nvmrc = read(path.join(root, ".nvmrc")).trim();
+  const jobsOf = (text: string) => (text.split(/\njobs:\n/)[1] ?? "").split(/\n  (?=[a-z][\w-]*:\n)/);
+  // Steps that run a node-shebang bin (next, playwright, wrangler, lhci) or the repo's install and build.
+  const usesNode = /wrangler|lhci|playwright|bun run |bun install|\.github\/actions\/setup\b/;
+  const setupNode = /actions\/setup-node@[0-9a-f]{40} # v\d[^\n]*\n(\s+if:[^\n]*\n)?\s+with:\n\s+node-version-file: \.nvmrc/;
+
+  it("pins one exact Node version in .nvmrc, .node-version and package.json engines", () => {
+    expect(nvmrc).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(read(path.join(root, ".node-version")).trim()).toBe(nvmrc);
+    expect(pkg.engines.node).toBe(`>=${nvmrc}`);
+  });
+
+  it("sets up that Node in the shared setup action and in every job that runs Node without it", () => {
+    expect(read(path.join(root, ".github", "actions", "setup", "action.yml"))).toMatch(setupNode);
+    const missing = files
+      .filter((f) => f.includes(`${path.sep}workflows${path.sep}`))
+      .flatMap((f) =>
+        jobsOf(read(f))
+          .filter((job) => usesNode.test(job.split("\n").filter((line) => !/^\s*#/.test(line)).join("\n")))
+          .filter((job) => !job.includes("uses: ./.github/actions/setup") && !setupNode.test(job))
+          .map((job) => `${path.basename(f)}: ${job.split(":")[0]}`),
+      );
+    expect(missing).toEqual([]);
+  });
+});
