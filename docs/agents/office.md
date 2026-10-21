@@ -190,8 +190,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 - `#office` on the Classic home page, after `#intro`, titled "Live Agent Office" (ID "Kantor Agen Langsung"): code in
   `src/components/office/`.
   - `OfficeSection` (server) resolves every string on the server (`officeCardLabels`: `office.classic.*` plus the shared
-    `office.agent`, `office.state`, `office.activity` and `office.clientProject`, and the 3D office's `office.3d.offDuty`
-    and `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
+    `office.agent`, `office.state`, `office.activity`, `office.clientProject` and `office.helpers`, and the 3D office's
+    `office.3d.drawer.disabled`) and passes them as props (`OfficeCardLabels` in `labels.ts`).
   - `office.classic` is a server-only path (`SERVER_PATHS` in `src/i18n/client-messages.ts`): `ClientMessages` drops it
     with `omitMessages`, so the card's copy never rides in the client messages
     ([styling-and-i18n.md](styling-and-i18n.md)).
@@ -204,15 +204,24 @@ Index: [AGENTS.md](../../AGENTS.md).
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
   the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does; scrolling the
   card back near waits out the rest of the cadence since the last request).
-- What it shows: the counts (active, thinking, waiting, asleep; 2 by 2 below 768 px), the five desks with agent, state,
-  activity (plus "· 3 helpers" on the same truncating line for an awake desk with helpers: `office.helpers`, resolved
-  raw into `OfficeCardLabels.helpers` and filled by `fill`; the panel polls `OFFICE_V2_PATH` with
-  `parseOfficeResponseV2`, which reads a v1 body as a desk list without helpers) and task, the latest 4 public GitHub
-  events and today's numbers (without the CI clause on a day with no runs). No privacy note shows on the card or in
-  the 3D drawers (owner request 2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
-  - A desk's task is its title for an allowlisted public repository, else "Client project" (an asleep desk without a
-    title shows none); a desk without a session is "Off duty" / "Tidak bertugas", asleep, like the 3D office; sessions
-    beyond the five desks show as "+N more sessions" (that line says "Every Rover is asleep." when no desk has one).
+- What it shows (the panel polls `OFFICE_V3_PATH` with `parseOfficeResponseV3`, which reads a v2 or v1 body too, and
+  seats it with `withSeats(snapshot, OFFICE_SEATS)`): the counts over the ten seats (`officeCounts(desks,
+  OFFICE_SEATS)`: active, thinking, waiting, asleep, with empty seats asleep, the same numbers as the 3D wall; 2 by 2
+  below 768 px), five desk rows, the idle summary line, the latest 4 public GitHub events and today's numbers (without
+  the CI clause on a day with no runs). No privacy note shows on the card or in the 3D drawers (owner request
+  2026-10-20); the rule itself is unchanged ([Privacy](#privacy-owner-decision-d3)).
+  - Desk rows (owner decision 2026-10-21, [ten desks](../decisions/2026-10-21-office-ten-desks.md)): only awake desks
+    (any state but asleep) take a row, by seat (front row first). Up to five fill the rows; past five, four show and
+    the fifth row reads "+N more active desks" / "+N meja aktif lainnya" (`office.classic.moreActive`, N the awake desks
+    beyond the four, `data-testid="office-more"`). With no awake desk (and a snapshot) the first row reads "Every Rover
+    is asleep." (`office-none`). Unused rows are quiet, aria-hidden rows (`office-desk-empty`) with the same two lines.
+  - An awake desk shows agent, activity (plus "· 3 helpers" on the same truncating line when it has helpers:
+    `office.helpers`, resolved raw into `OfficeCardLabels.helpers` and filled by `fill`), state and task: its title for
+    an allowlisted public repository, else "Client project".
+  - The summary line under the rows (`office-extra`) collapses asleep desks and empty seats into the idle count, which
+    is the Asleep count (`office.classic.idle`: "No desk idle", "1 desk idle", "8 desks idle" / "Tidak ada meja yang
+    menganggur", "8 meja menganggur"); sessions past the ten seats add " · +N more sessions" (`office.classic.extra`).
+    A v1 or v2 body (a rolled-back Worker) seats five, so the other five seats read as idle.
   - States: Live (with "updated HH:MM", outside the `role="status"` line), Paused (a live snapshot older than the 60 s
     keep-last window: the poller stopped for idleness or the tab was hidden), Semi-live (no agent reporting), Resting
     (`mode: "off"`), Offline (after 60 s without a good snapshot: the last known rows stay in place, dimmed, with "as of
@@ -225,17 +234,20 @@ Index: [AGENTS.md](../../AGENTS.md).
     visitor can see it, the card keeps its height with "The live office is off right now." (the panel holds the
     `disabled` report until a 0 px margin observer says it left the viewport). The panel loads a screen ahead, so in a
     normal scroll the answer arrives below the viewport and the section hides without a visible shift.
-- One height in every state (CLS): every state draws the same rows (five desks with a task line or an empty one, four
-  GitHub rows with quiet empty rows filling the slots and "No public activity yet today." when a snapshot has none,
-  the "+N more" line, today's line), titles and heads truncate, and the status line and today's line hold two lines
-  below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
+- One height in every state (CLS): every state draws the same rows (five desk rows, each with two lines: a desk, "+N
+  more active desks", "Every Rover is asleep." or a quiet row; four GitHub rows with quiet empty rows filling the slots
+  and "No public activity yet today." when a snapshot has none; the idle summary line, which truncates; today's line),
+  titles and heads truncate, and the status line and today's line hold two lines below `md`. `OFFICE_RESERVE` (per locale, in `labels.ts`) is that height per breakpoint, held from the loading line
   on: 889 px from 768 (measured 881 in every state, both locales) and 1028 px below (measured 1004 from 360 to 414 px in
   both locales, 1020 for an Indonesian semi-live line at 320), about 8 px of headroom over the tallest.
-  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, offline before and after a snapshot)
-  moves the next section or reports a layout shift, at 1440x900 and 390x844 in both locales.
+  The ten-desk states measure the same 881 and 1004 px.
+  `e2e/office-classic.spec.ts` checks that no state (busy, semi-live, quiet, off, busy with helpers, ten desks with
+  nine and with ten awake, offline before and after a snapshot) moves the next section or reports a layout shift, at
+  1440x900 and 390x844 in both locales.
 - Tests: `tests/unit/office-card-labels.test.ts`, `tests/unit/office-section.test.ts`,
   `tests/unit/client-namespaces.test.ts`, `tests/hud/OfficePanel.test.tsx`, `e2e/office-classic.spec.ts` (mocks
-  `/api/office` from `OFFICE_FIXTURES`; `OFFICE_SHOTS=<dir>` writes the owner's review captures).
+  `/api/office` from `OFFICE_FIXTURES`, `OFFICE_FIXTURES_V2` and `OFFICE_FIXTURES_V3`; `OFFICE_SHOTS=<dir>` writes the
+  owner's review captures, the ten-desk ones in their own test, `-g "ten desks"`).
 - Ask: one paragraph in `content/ask/site-build.json` (what the office is, in its own wing of the Lobby, and its privacy
   rule); "Agent Office" and "kantor agen" questions are site questions (`SITE` in `functions/_lib/scope.ts`), but not
   the business sense ("a travel agent office", "kantor agen asuransi"); golden q92 and q93. Never put live office data

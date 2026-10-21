@@ -23,10 +23,14 @@ export interface OfficeCardLabels {
   asOf: string;
   counts: Record<"active" | "thinking" | "waiting" | "asleep", string>;
   agents: string;
-  /** A desk without a session. */
-  offDuty: string;
+  /** The first desk row when no desk is active (every Rover asleep or no session). */
   noAgents: string;
+  /** Sessions past the ten seats ("+{count, plural, ...}"), after the idle count on the summary line. */
   extra: string;
+  /** The fifth desk row past five active desks ("+{n, plural, ...}"), filled by `fill`. */
+  moreActive: string;
+  /** The summary line under the desk rows: asleep and empty seats ("{n, plural, =0 ... one ... other ...}"). */
+  idle: string;
   github: string;
   noGithub: string;
   today: string;
@@ -42,7 +46,7 @@ export interface OfficeCardLabels {
 }
 
 /**
- * The card's one height in every state (five desk rows, four GitHub rows, the counts, the "+N more" and today lines;
+ * The card's one height in every state (five desk rows, four GitHub rows, the counts, the idle summary and today lines;
  * measured from 320 to 1440 px wide per locale: 881 px from 768, 1004 below, 1020 for an Indonesian semi-live line at
  * 320) plus about 8 px of headroom (889 px from 768, 1028 below), held from the loading line on, so neither the first
  * answer nor a later change of state moves the sections below (CLS).

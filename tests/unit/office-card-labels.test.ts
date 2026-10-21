@@ -51,4 +51,13 @@ describe("office card copy", () => {
     expect(fill(id.office.classic.extra, { count: 1 }, "id")).toBe("+1 sesi lainnya");
     expect(fill(id.office.classic.today, { tasks: 1, prs: 1, green: 1, runs: 1 }, "id")).toBe("Hari ini: 1 tugas selesai, 1 PR di-merge, 1 dari 1 CI run hijau");
   });
+
+  it("says +1 more active desk and 1 desk idle in English, +N meja aktif lainnya and N meja menganggur in Indonesian", () => {
+    const c = en.office.classic;
+    const i = id.office.classic;
+    expect([1, 6].map((n) => fill(c.moreActive, { n }, "en"))).toEqual(["+1 more active desk", "+6 more active desks"]);
+    expect([0, 1, 8].map((n) => fill(c.idle, { n }, "en"))).toEqual(["No desk idle", "1 desk idle", "8 desks idle"]);
+    expect([1, 6].map((n) => fill(i.moreActive, { n }, "id"))).toEqual(["+1 meja aktif lainnya", "+6 meja aktif lainnya"]);
+    expect([0, 1, 8].map((n) => fill(i.idle, { n }, "id"))).toEqual(["Tidak ada meja yang menganggur", "1 meja menganggur", "8 meja menganggur"]);
+  });
 });
