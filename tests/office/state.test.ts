@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_DESKS, OFFICE_SEATS, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeBeatV1 } from "@/lib/office/protocol";
-import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, migrateDoc, seatOf, TIMING, view, viewV2, viewV3, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { OFFICE_DESKS, OFFICE_SEATS, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, type OfficeBeatV1 } from "@/lib/office/protocol";
+import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, migrateDoc, pipelineOf, seatOf, TIMING, view, viewV2, viewV3, viewV4, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import { legacyAssignSlots, legacyView, legacyViewV2 } from "./legacy-five-desks";
 
 const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -526,5 +526,71 @@ describe("view (v1) and viewV2", () => {
     expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5]);
     expect(v3.desks[5]).toMatchObject({ slot: 5, helpers: 1 });
     expect(v3.extra).toBe(0);
+  });
+});
+
+describe("pipeline (v4)", () => {
+  const url = (id: number) => `https://github.com/${HQ}/actions/runs/${id}`;
+  const run = (id: number, branch = "feat/x", status: "running" | "success" | "failure" = "running", attempt = 1) => ({ type: "run" as const, id, attempt, branch, title: `CI · ${branch}`, url: url(id), status });
+  const job = (runId: number, n: number, status: "queued" | "running" | "done" | "failed", attempt = 1) => ({ type: "job" as const, runId, attempt, jobId: String(n), name: `E2E (${n + 1}/30)`, status });
+  const merged = (n: number, branch = "feat/x") => ({ type: "pr" as const, number: n, branch, title: "Thing", url: `https://github.com/${HQ}/pull/${n}`, action: "merged" as const });
+
+  it("keeps job names in first-seen order on 24 lanes; later jobs fold into the last lane; v1 progress still counts all", () => {
+    let d = applyGithub(publicDoc(), { repo: HQ, changes: [run(1)] }, "r1", T0);
+    for (let n = 0; n < 30; n++) d = applyGithub(d, { repo: HQ, changes: [job(1, n, n === 27 ? "failed" : "done")] }, `j${n}`, T0 + n + 1);
+    const lanes = pipelineOf(d, T0 + 100).runs[0].jobs;
+    expect(lanes).toHaveLength(24);
+    expect(lanes[0]).toEqual({ name: "E2E (1/30)", status: "done" });
+    expect(lanes[23]).toEqual({ name: "E2E (24/30)", status: "failed" });
+    expect(view(d, T0 + 100).github[0].progress).toEqual({ done: 30, total: 30 });
+  });
+
+  it("links a run and a merged PR to the seat of the live session on that public repo and branch, back row included", () => {
+    let d = publicDoc();
+    for (let n = 1; n <= 7; n++) d = applyBeat(d, beat(n, n === 7 ? { repo: HQ, branch: "feat/x" } : {}), T0 + n);
+    d = applyGithub(d, { repo: HQ, changes: [run(2), merged(7)] }, "d2", T0 + 10);
+    const p = pipelineOf(d, T0 + 20);
+    expect(p.runs[0].slot).toBe(6);
+    expect(p.ships[0]).toEqual({ key: `pr:${HQ}#7`, kind: "merge", status: "merged", at: T0 + 10, slot: 6 });
+    expect(pipelineOf(d, T0 + 7 + TIMING.removeAfter).runs[0].slot).toBeUndefined();
+  });
+
+  it("lists merges and deploys as ships, newest first, and forgets a privatized repository", () => {
+    let d = applyGithub(publicDoc(), { repo: HQ, changes: [merged(7)] }, "p7", T0 + 1);
+    d = applyGithub(d, { repo: HQ, changes: [{ type: "deploy", id: 9, title: "Deploy · production", url: `https://github.com/${HQ}`, status: "success" }] }, "x9", T0 + 2);
+    expect(pipelineOf(d, T0 + 3).ships.map((s) => [s.kind, s.status])).toEqual([["deploy", "success"], ["merge", "merged"]]);
+    d = applyGithub(d, { repo: HQ, changes: [{ type: "privatized" }] }, "pv", T0 + 4);
+    expect(pipelineOf(d, T0 + 5)).toEqual({ runs: [], ships: [] });
+  });
+
+  it("ships only production deploys; a deploy to another environment stays a feed item", () => {
+    const deploy = (id: number, environment: string, production?: boolean) => ({ type: "deploy" as const, id, title: `Deploy · ${environment}`, url: `https://github.com/${HQ}`, status: "success" as const, ...(production !== undefined ? { production } : {}) });
+    let d = applyGithub(publicDoc(), { repo: HQ, changes: [deploy(1, "production", true)] }, "x1", T0 + 1);
+    d = applyGithub(d, { repo: HQ, changes: [deploy(2, "preview", false)] }, "x2", T0 + 2);
+    d = applyGithub(d, { repo: HQ, changes: [deploy(3, "staging")] }, "x3", T0 + 3);
+    expect(pipelineOf(d, T0 + 4).ships.map((s) => s.key)).toEqual(["deploy:1"]);
+    expect(view(d, T0 + 4).github.map((g) => g.title)).toEqual(["Deploy · staging", "Deploy · preview", "Deploy · production"]);
+    expect(JSON.stringify(view(d, T0 + 4))).not.toContain("production\":");
+  });
+
+  it("orders runs by first seen; a re-run clears its lanes and restarts its clock", () => {
+    let d = applyGithub(publicDoc(), { repo: HQ, changes: [run(1), job(1, 0, "done")] }, "a", T0);
+    d = applyGithub(d, { repo: HQ, changes: [run(2, "feat/y")] }, "b", T0 + 5);
+    d = applyGithub(d, { repo: HQ, changes: [job(1, 1, "running")] }, "c", T0 + 9);
+    expect(pipelineOf(d, T0 + 10).runs.map((r) => r.id)).toEqual([2, 1]);
+    d = applyGithub(d, { repo: HQ, changes: [run(1, "feat/x", "running", 2)] }, "e", T0 + 20);
+    expect(pipelineOf(d, T0 + 21).runs[0]).toMatchObject({ id: 1, at: T0 + 20, jobs: [] });
+  });
+
+  it("reads a stored run from before B (no order, names or started) through the fallbacks", () => {
+    const legacy: OfficeDoc = { ...publicDoc(), runs: [{ id: 3, attempt: 1, repo: HQ, branch: "main", title: "CI · main", url: url(3), status: "running", jobs: { a: "done", b: "running" }, updated: T0 }] };
+    expect(pipelineOf(legacy, T0 + 1).runs[0]).toMatchObject({ at: T0, jobs: [{ name: "Job", status: "done" }, { name: "Job", status: "running" }] });
+  });
+
+  it("serves v4 as the v3 view plus the pipeline, valid for the v4 parser", () => {
+    const doc = goldenDoc();
+    const v4 = viewV4(doc, T0);
+    expect(v4).toEqual({ ...viewV3(doc, T0), v: 4, pipeline: pipelineOf(doc, T0) });
+    expect(parseOfficeResponseV4(JSON.parse(JSON.stringify(v4)))).toEqual(v4);
   });
 });

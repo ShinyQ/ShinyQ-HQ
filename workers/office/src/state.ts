@@ -1,5 +1,24 @@
-import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_RECENT, OFFICE_SEATS, wibDay } from "../../../src/lib/office/protocol";
-import type { OfficeActivity, OfficeAgent, OfficeBeatV1, OfficeDesk, OfficeDeskV2, OfficeGithubItem, OfficeProgress, OfficeRecent, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeState, OfficeToday } from "../../../src/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_FEED, OFFICE_FEED_TITLE_MAX, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_RECENT, OFFICE_SEATS, wibDay } from "../../../src/lib/office/protocol";
+import type {
+  OfficeActivity,
+  OfficeAgent,
+  OfficeBeatV1,
+  OfficeDesk,
+  OfficeDeskV2,
+  OfficeGithubItem,
+  OfficePipeline,
+  OfficePipelineJob,
+  OfficePipelineRun,
+  OfficeProgress,
+  OfficeRecent,
+  OfficeShip,
+  OfficeSnapshotV1,
+  OfficeSnapshotV2,
+  OfficeSnapshotV3,
+  OfficeSnapshotV4,
+  OfficeState,
+  OfficeToday,
+} from "../../../src/lib/office/protocol";
 
 /** Time rules and caps (spec section 3.3); every rule is applied from `now`, so the Durable Object needs no alarm. */
 export const TIMING = {
@@ -53,7 +72,13 @@ export interface RunRecord {
   url: string;
   status: Exclude<RunStatus, "cancelled">;
   jobs: Record<string, JobStatus>;
+  /** Laned job ids in first-seen order, at most OFFICE_PIPELINE.jobs (absent in runs stored before snapshot v4). */
+  order?: string[];
+  /** Laned job names, cut to OFFICE_PIPELINE.jobName (absent in runs stored before snapshot v4). */
+  names?: Record<string, string>;
   failedJob?: string;
+  /** First seen, this attempt (absent in runs stored before snapshot v4, which fall back to `updated`). */
+  started?: number;
   updated: number;
 }
 
@@ -67,6 +92,8 @@ export interface PrRecord {
 
 export interface FeedRecord extends OfficeGithubItem {
   key: string;
+  /** A deploy to the `production` environment (deploys only; absent in items stored before snapshot v4). */
+  production?: boolean;
 }
 
 /** The Durable Object's whole state: one JSON document, one storage row. */
@@ -88,7 +115,7 @@ export type GithubChange =
   | { type: "job"; runId: number; attempt: number; jobId: string; name: string; status: JobStatus }
   | { type: "pr"; number: number; branch: string; title: string; url: string; action: "opened" | "merged" }
   | { type: "push"; sha: string; title: string; url: string }
-  | { type: "deploy"; id: number; title: string; url: string; status: "running" | "success" | "failure" }
+  | { type: "deploy"; id: number; title: string; url: string; status: "running" | "success" | "failure"; production?: boolean }
   | { type: "privatized" };
 
 /** One webhook delivery for one allowlisted public repository. */
@@ -249,7 +276,22 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
       const others = doc.cancelled.filter((x) => x.id !== c.id);
       if (c.status === "cancelled") return { ...doc, runs: doc.runs.filter((r) => r.id !== c.id), feed: doc.feed.filter((f) => f.key !== key), cancelled: [{ id: c.id, attempt: c.attempt }, ...others].slice(0, TIMING.runsKept) };
       const restart = prev !== undefined && c.attempt > prev.attempt;
-      const run: RunRecord = { id: c.id, attempt: c.attempt, repo, branch: c.branch, title: c.title, url: c.url, status: c.status, jobs: restart ? {} : (prev?.jobs ?? {}), ...(!restart && prev?.failedJob ? { failedJob: prev.failedJob } : {}), updated: now };
+      const kept = restart ? undefined : prev;
+      const run: RunRecord = {
+        id: c.id,
+        attempt: c.attempt,
+        repo,
+        branch: c.branch,
+        title: c.title,
+        url: c.url,
+        status: c.status,
+        jobs: kept?.jobs ?? {},
+        ...(kept?.order ? { order: kept.order } : {}),
+        ...(kept?.names ? { names: kept.names } : {}),
+        ...(kept?.failedJob ? { failedJob: kept.failedJob } : {}),
+        started: kept ? (kept.started ?? kept.updated) : now,
+        updated: now,
+      };
       const counted = c.status !== "running" && (!prev || prev.status === "running" || restart);
       const today = counted ? { ...doc.today, ciRuns: doc.today.ciRuns + 1, ciGreen: doc.today.ciGreen + (c.status === "success" ? 1 : 0) } : doc.today;
       const sessions = c.status === "failure" ? doc.sessions.map((s) => (s.state === "ci" && s.repo === repo && s.branch === c.branch ? failSession(s, now) : s)) : doc.sessions;
@@ -260,7 +302,16 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
     case "job": {
       const run = doc.runs.find((r) => r.id === c.runId && r.repo === repo);
       if (!run || c.attempt < run.attempt) return doc;
-      const updated: RunRecord = { ...run, jobs: { ...run.jobs, [c.jobId]: c.status }, ...(c.status === "failed" ? { failedJob: c.name } : {}), updated: now };
+      const order = laneOrder(run);
+      const known = order.includes(c.jobId);
+      const laned = known || order.length < OFFICE_PIPELINE.jobs;
+      const updated: RunRecord = {
+        ...run,
+        jobs: { ...run.jobs, [c.jobId]: c.status },
+        ...(laned ? { order: known ? order : [...order, c.jobId], names: { ...run.names, [c.jobId]: c.name.slice(0, OFFICE_PIPELINE.jobName).trim() } } : {}),
+        ...(c.status === "failed" ? { failedJob: c.name } : {}),
+        updated: now,
+      };
       const progress = progressOf(updated);
       const feed = doc.feed.map((f) => (f.key === `run:${run.id}` && f.status === "running" && progress ? { ...f, progress } : f));
       return { ...doc, runs: doc.runs.map((r) => (r.id === run.id ? updated : r)), feed };
@@ -273,7 +324,7 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
     case "push":
       return { ...doc, feed: upsertFeed(doc.feed, { key: `push:${c.sha}`, kind: "push", status: "pushed", repo, title: c.title, at: now, url: c.url }) };
     case "deploy":
-      return { ...doc, feed: upsertFeed(doc.feed, { key: `deploy:${c.id}`, kind: "deploy", status: c.status, repo, title: c.title, at: now, url: c.url }) };
+      return { ...doc, feed: upsertFeed(doc.feed, { key: `deploy:${c.id}`, kind: "deploy", status: c.status, repo, title: c.title, at: now, url: c.url, ...(c.production !== undefined ? { production: c.production } : {}) }) };
     case "privatized":
       return {
         ...doc,
@@ -334,6 +385,52 @@ export function effectiveHelpers(s: SessionRecord, e: Effective, now: number): n
   return Math.min(OFFICE_HELPERS_MAX, s.helpers);
 }
 
+/** A run's laned job ids: `order`, or (a run stored before B) its first job ids. */
+const laneOrder = (r: RunRecord): string[] => r.order ?? Object.keys(r.jobs).slice(0, OFFICE_PIPELINE.jobs);
+
+const JOB_RANK: Record<JobStatus, number> = { done: 0, queued: 1, running: 2, failed: 3 };
+
+/** The served lanes: laned jobs in first-seen order; jobs past the cap fold into the last lane (failed over running over queued over done). */
+function lanesOf(r: RunRecord): OfficePipelineJob[] {
+  const order = laneOrder(r);
+  const rest = Object.keys(r.jobs).filter((id) => !order.includes(id));
+  return order.map((id, i) => {
+    let status: JobStatus = r.jobs[id] ?? "queued";
+    if (i === order.length - 1) for (const k of rest) if (JOB_RANK[r.jobs[k]] > JOB_RANK[status]) status = r.jobs[k];
+    return { name: r.names?.[id] ?? "Job", status };
+  });
+}
+
+/** The effective seat (0 to 9, `seatOf`) of the live session on `repo` and `branch` that beat last, if any. */
+function seatFor(doc: OfficeDoc, repo: string, branch: string, now: number): number | undefined {
+  let best: SessionRecord | undefined;
+  for (const s of doc.sessions) if (s.repo === repo && s.branch === branch && seatOf(s) !== null && effective(s, now) !== null && (!best || s.lastBeat > best.lastBeat)) best = s;
+  return best ? (seatOf(best) ?? undefined) : undefined;
+}
+
+/** Only production deploys ship (the dock's beam); an item stored before the `production` flag falls back to the ingest title. */
+const isProductionDeploy = (f: FeedRecord) => f.kind === "deploy" && (f.production ?? f.title === "Deploy · production");
+
+/** The v4 pipeline block (design 6.2): the newest runs with their lanes, and the latest merges and production deploys from the feed. */
+export function pipelineOf(doc: OfficeDoc, now: number): OfficePipeline {
+  const runs = [...doc.runs]
+    .sort((a, b) => (b.started ?? b.updated) - (a.started ?? a.updated))
+    .slice(0, OFFICE_PIPELINE.runs)
+    .map((r): OfficePipelineRun => {
+      const slot = seatFor(doc, r.repo, r.branch, now);
+      return { id: r.id, repo: r.repo, title: r.title.slice(0, OFFICE_FEED_TITLE_MAX), url: r.url, status: r.status, ...(slot !== undefined ? { slot } : {}), at: r.started ?? r.updated, jobs: lanesOf(r) };
+    });
+  const ships = doc.feed
+    .filter((f) => (f.kind === "pr" && f.status === "merged") || isProductionDeploy(f))
+    .slice(0, OFFICE_PIPELINE.ships)
+    .map((f): OfficeShip => {
+      const pr = f.kind === "pr" ? doc.prs.find((p) => f.key === `pr:${p.repo}#${p.number}`) : undefined;
+      const slot = pr ? seatFor(doc, pr.repo, pr.branch, now) : undefined;
+      return { key: f.key, kind: f.kind === "pr" ? "merge" : "deploy", status: f.status as OfficeShip["status"], at: f.at, ...(slot !== undefined ? { slot } : {}) };
+    });
+  return { runs, ships };
+}
+
 /** The live sessions and those on seats below `count` (sorted by seat); the others count in `extra`. */
 function seats(doc: OfficeDoc, now: number, count: number) {
   const live = doc.sessions.flatMap((s) => {
@@ -385,6 +482,11 @@ export function viewV2(doc: OfficeDoc, now: number): OfficeSnapshotV2 {
 /** The public v3 snapshot at `now`: the v2 view over all ten seats (slots 0 to 9), sessions past ten in `extra`. */
 export function viewV3(doc: OfficeDoc, now: number): OfficeSnapshotV3 {
   return withHelpers(doc, now, OFFICE_SEATS, 3);
+}
+
+/** The public v4 snapshot at `now` (the 3D scene only): the v3 view (ten seats) with `v: 4` and the pipeline. */
+export function viewV4(doc: OfficeDoc, now: number): OfficeSnapshotV4 {
+  return { ...viewV3(doc, now), v: 4, pipeline: pipelineOf(doc, now) };
 }
 
 /** Shape check of the Worker's internal /github message (already parsed and sanitized by the Worker). */
