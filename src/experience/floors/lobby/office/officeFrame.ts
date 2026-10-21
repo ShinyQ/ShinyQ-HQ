@@ -154,8 +154,11 @@ export class WallGate {
   }
 }
 
-/** A chip's leader line: its opacity, faded where it would cross the wall's screens, and the tick at the wall's top (px). */
-export const LEAD = { opacity: 0.6, faded: 0.15, tick: 10 } as const;
+/**
+ * A chip's leader line: its opacity, faded where the chip itself sits over the wall's screens, the tick at the wall-top
+ * level (px), and how far a tick beside the wall keeps from a HUD box or the screen's edge (px).
+ */
+export const LEAD = { opacity: 0.6, faded: 0.15, tick: 10, clear: 4 } as const;
 
 /** Where a chip's leader line ends (`leadEnd`) and how it is drawn. */
 export interface LeadEnd {
@@ -179,23 +182,33 @@ function meet(x: number, y: number, dx: number, dy: number, ax: number, ay: numb
   return true;
 }
 
+/** A box a tick beside the wall keeps clear of (px; `ScreenBox`'s shape, the HUD boxes). */
+interface ClearBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 /**
  * The end of the leader line from (x, y), a chip's bottom centre, toward its Rover's head (hx, hy), with the screen wall's
- * top edge projected through (wx0, wy0) and (wx1, wy1) and its bottom edge through (bx0, by0) and (bx1, by1) (px; NaN off
- * the camera): at the top edge, with a tick, when the line crosses it on the wall at least `min` px under the chip, so the
- * line never runs over the screens' text (the chip's colour and its Rover's antenna keep the mapping); faded
- * (`LEAD.faded`) all the way to the head when the edge is above that (the chip itself sits over the screens) or when the
- * line passes the top edge beside the wall and runs into it through its side (it meets the bottom edge on the wall);
- * whole to the head when the head stands above the edge or the line passes beside the wall (a chip in a row wider than
- * the wall; never a tick on the edge's line past the wall's end, in mid-air). Writes `out`, allocates nothing.
+ * top edge projected through (wx0, wy0) and (wx1, wy1) (px; NaN off the camera). Every line stops at the wall-top level
+ * with a tick, so none runs down past it (the chip's colour and its Rover's antenna carry the mapping): where the line
+ * crosses the top edge on the wall, at that crossing; where it would pass the edge beside the wall (a chip past the wall's
+ * end, toward an end Rover: ten chips span a row wider than the wall), on the edge's line (the wall-top level) above the
+ * Rover's head (or, `above` false, where the line itself meets that level: `OfficeWatch`'s fallback where the first would
+ * cross another chip), its x moved clear of the `hud` boxes and inside the screen's `width` (`LEAD.clear` px off them).
+ * Either needs the level at least `min` px under the chip; where it is not (the chip itself sits over the screens or
+ * under the level) the line runs to the head faded (`LEAD.faded`). The whole line, unfaded, when the head stands above
+ * the level or the wall is off the camera. Writes `out`, allocates nothing.
  */
-export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, bx0 = NaN, by0 = NaN, bx1 = NaN, by1 = NaN): LeadEnd {
+export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, hud: readonly ClearBox[] = [], width = Infinity, above = true): LeadEnd {
   out.x = hx;
   out.y = hy;
   out.tick = out.faded = false;
   const dx = hx - x;
   const dy = hy - y;
-  // Parallel, the wall off the camera (NaN) or the head above the edge: the whole line.
+  // Parallel, the wall off the camera (NaN) or the head above the level: the whole line.
   if (!meet(x, y, dx, dy, wx0, wy0, wx1, wy1) || cut.t >= 1) return out;
   if (cut.s >= 0 && cut.s <= 1) {
     if (cut.t * Math.hypot(dx, dy) >= min) {
@@ -205,6 +218,28 @@ export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: numbe
     } else out.faded = true;
     return out;
   }
-  out.faded = meet(x, y, dx, dy, bx0, by0, bx1, by1) && cut.t > 0 && cut.t < 1 && cut.s >= 0 && cut.s <= 1;
+  // Beside the wall: the wall-top level (the top edge's line) above the head, the tick clear of the HUD boxes.
+  const slope = (wy1 - wy0) / (wx1 - wx0);
+  const half = LEAD.tick / 2 + LEAD.clear;
+  let ex = above ? hx : x + cut.t * dx;
+  let ey = wy0 + slope * (ex - wx0);
+  for (let pass = 0; pass <= hud.length; pass++) {
+    let moved = false;
+    for (let i = 0; i < hud.length; i++) {
+      const b = hud[i];
+      if (ey < b.y0 - half || ey > b.y1 + half || ex + half <= b.x0 || ex - half >= b.x1) continue;
+      ex = (b.x0 + b.x1) / 2 < width / 2 ? b.x1 + half : b.x0 - half;
+      ey = wy0 + slope * (ex - wx0);
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  ex = Math.min(Math.max(ex, half), width - half);
+  ey = wy0 + slope * (ex - wx0);
+  if (Number.isFinite(ey) && ey - y >= min) {
+    out.x = ex;
+    out.y = ey;
+    out.tick = true;
+  } else out.faded = true;
   return out;
 }

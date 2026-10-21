@@ -8,7 +8,7 @@ import { yawTowards } from "@/experience/fx/facing";
 import { signPlate } from "@/experience/fx/signLayout";
 import { roverScreenBox } from "@/experience/floors/library/decor/signFrame";
 import { OFFICE, officeSlots, rowSlots } from "@/experience/floors/lobby/officeLayout";
-import { leadEnd } from "@/experience/floors/lobby/office/officeFrame";
+import { LEAD, leadEnd } from "@/experience/floors/lobby/office/officeFrame";
 import { OFFICE_ROVER } from "@/experience/floors/lobby/office/officeVisual";
 import {
   CHIP_ROW,
@@ -141,11 +141,6 @@ function wallTopLine(camera: PerspectiveCamera, size: { width: number; height: n
   return wallEdge(camera, size, bottom + h + frame);
 }
 
-/** The frame's bottom edge on screen (px), as `OfficeWatch` projects it: a leader line into the wall's side fades. */
-function wallBottomLine(camera: PerspectiveCamera, size: { width: number; height: number }): [number, number, number, number] {
-  return wallEdge(camera, size, OFFICE.wall.bottom - OFFICE.wall.frame);
-}
-
 function wallEdge(camera: PerspectiveCamera, { width, height }: { width: number; height: number }, y: number): [number, number, number, number] {
   const { w, frame, t } = OFFICE.wall;
   const ends = [-1, 1].map((k) => new Vector3(W.wall.x + k * (w / 2 + frame), y, W.wall.z - t / 2).project(camera));
@@ -160,8 +155,9 @@ function wallEdge(camera: PerspectiveCamera, { width, height }: { width: number;
  * the names do not fit (`chipsDotsOnly`). The row then nudges them apart in the order of their heads inside
  * `chipRowBounds`, in two rows of dots where one does not fit (`layoutChipRows`). A leader line runs from a chip's bottom
  * centre toward its Rover's head where that head sits `CHIP_ROW.lead` px or more under the chip and the drawn line crosses
- * no HUD box and no other chip, ending at the screen wall's top on the wall (`leadEnd`; past the wall's ends the whole
- * line, hidden where that would cross the HUD or a chip: never a tick in mid-air past the wall's end).
+ * no HUD box and no other chip, stopping at the wall-top level with a tick (`leadEnd`: on the wall's top edge, or beside
+ * the wall above an end Rover, the tick clear of the HUD boxes), faded to the head where the chip sits over the level;
+ * hidden where the line would still cross the HUD or a chip.
  */
 function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was = ALL.map(() => true) as readonly boolean[], still = true, named = ALL as readonly number[] } = {}) {
   const { width, height } = size;
@@ -199,7 +195,6 @@ function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was =
   );
   expect(fits, "the row fits").toBe(true);
   const wall = wallTopLine(camera, size);
-  const under = wallBottomLine(camera, size);
   shown.forEach(({ chip, w, h }, k) => {
     chip.x = out[k];
     chip.row = rows[k];
@@ -211,10 +206,16 @@ function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was =
     const { x, y } = chip.head;
     const others = shown.filter((o) => o.chip !== chip).map((o) => o.chip.box!);
     if (y - box.y1 < CHIP_ROW.lead) return;
-    const end = leadEnd(chip.x, box.y1, x, y, ...wall, CHIP_ROW.lead, { x: 0, y: 0, tick: false, faded: false }, ...under);
-    const lead = { x0: chip.x, y0: box.y1, x1: end.x, y1: end.y, tick: end.tick, faded: end.faded };
-    // One that would cross the HUD or another chip hides (the chip's colour maps it).
-    if ([...boxes, ...others].some((b) => segmentHits(lead, b))) chip.blocked = lead;
+    const end = (above: boolean) => {
+      const e = leadEnd(chip.x, box.y1, x, y, ...wall, CHIP_ROW.lead, { x: 0, y: 0, tick: false, faded: false }, boxes, width, above);
+      return { x0: chip.x, y0: box.y1, x1: e.x, y1: e.y, tick: e.tick, faded: e.faded };
+    };
+    const blocked = (l: ReturnType<typeof end>) => [...boxes, ...others].some((b) => segmentHits(l, b));
+    // A tick above the head whose line would cross another chip moves to where the line meets the level; one that would
+    // still cross the HUD or another chip hides (the chip's colour maps it).
+    let lead = end(true);
+    if (blocked(lead) && lead.tick) lead = end(false);
+    if (blocked(lead)) chip.blocked = lead;
     else chip.lead = lead;
   });
   return { top, bounds, max, oneLine, two: rows.slice(0, shown.length).some((r) => r === 1), chips };
@@ -576,44 +577,29 @@ describe("Agent Office chips at the office stop", { timeout: 30_000 }, () => {
     });
 
     /**
-     * Where the chips sit over the screens (the wall's top above the chips' bottom: a landscape phone's row, a phone's
-     * second row of dots) the leader lines run faded to the heads; a chip past the wall's ends (ten chips span a row wider
-     * than the wall) draws its whole line beside the wall, or hides it where that line would cross the HUD (the floor menu
-     * on 1280 x 720): never a tick in mid-air on the wall's top line past its end; a phone's top-row dots' lines pass
-     * between the dots under them (`OfficeWatch` would hide one that crossed a chip).
+     * Every leader line stops at the wall-top level (the screen wall's top edge, extended past its ends) with a tick, so
+     * none runs down past it: on the wall's top edge where it crosses it there, beside the wall above its end Rover's head
+     * (ten chips span a row wider than the wall), the tick clear of the HUD boxes. Where the chips sit over the level (a
+     * landscape phone's row, a phone's second row of dots) the lines run faded to the heads. A phone's top-row dots' lines
+     * pass between the dots under them (`OfficeWatch` would hide one that crossed a chip).
      */
-    it("end every leader line at the screen wall's top with a tick or beside the wall, off the screens' text (faded to the head where the chip sits over the wall), also at a desktop's near pose", () => {
+    it("stop every leader line at the wall-top level with a tick, on the wall or beside it, none below it (faded to the head where the chip sits over the wall), also at a desktop's near pose", () => {
       for (const named of [ALL, FRONT])
         for (const steps of cls === "desktop" ? [0, NEAR_STEPS[cls]] : [0]) {
           const camera = stopCamera(width, height, steps);
           const row = chipRow(camera, size, { named, was: ALL.map(() => steps === 0) });
           const [x0, y0, x1, y1] = wallTopLine(camera, size);
-          const [bx0, by0, bx1, by1] = wallBottomLine(camera, size);
-          // The wall's four edges on screen (a trapezoid: its bottom wider than its top).
-          const edges = [
-            [x0, y0, x1, y1],
-            [bx0, by0, bx1, by1],
-            [x0, y0, bx0, by0],
-            [x1, y1, bx1, by1],
-          ] as const;
-          const crosses = (l: { x0: number; y0: number; x1: number; y1: number }, [ax, ay, cx, cy]: readonly number[]) => {
-            const d = (l.x1 - l.x0) * (cy - ay) - (l.y1 - l.y0) * (cx - ax);
-            if (Math.abs(d) < 1e-9) return false;
-            const t = ((ax - l.x0) * (cy - ay) - (ay - l.y0) * (cx - ax)) / d;
-            const u = ((ax - l.x0) * (l.y1 - l.y0) - (ay - l.y0) * (l.x1 - l.x0)) / d;
-            return t > 1e-6 && t < 1 - 1e-6 && u > 1e-6 && u < 1 - 1e-6;
-          };
+          const level = (x: number) => y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+          const hud = officeHudBoxes(width, height, hudLayout(viewportClass(width, height), size.coarse ?? false));
           const what = `${named.length} sessions, ${steps} steps`;
-          const kinds = { tick: 0, beside: 0, faded: 0, side: 0, hidden: 0 };
+          const kinds = { tick: 0, beside: 0, faded: 0, hidden: 0 };
           expect(row.chips.every((c) => c.box), `${what}: every chip shown`).toBe(true);
           expect(row.two, `${what}: two rows of dots on a portrait phone only`).toBe(id === "phone");
           for (const c of row.chips) {
             if (!c.lead) {
-              // Hidden only where a whole line beside the wall would cross the HUD or another chip.
-              const b = c.blocked;
-              expect(b, `${what}: slot ${c.slot}'s leader line`).not.toBeNull();
-              expect(b!.tick, `${what}: slot ${c.slot} hidden, not a tick`).toBe(false);
-              expect([b!.x1, b!.y1], `${what}: slot ${c.slot}'s hidden line runs to its head`).toEqual([c.head.x, c.head.y]);
+              // Hidden only where the line would cross the HUD or another chip; even then it would stop at the level.
+              expect(c.blocked, `${what}: slot ${c.slot}'s leader line`).not.toBeNull();
+              expect(c.blocked!.tick || c.blocked!.faded, `${what}: slot ${c.slot}'s hidden line stops at the level`).toBe(true);
               kinds.hidden++;
               continue;
             }
@@ -621,36 +607,34 @@ describe("Agent Office chips at the office stop", { timeout: 30_000 }, () => {
             if (lead.faded) {
               expect(lead.tick).toBe(false);
               expect([lead.x1, lead.y1], `${what}: slot ${c.slot} faded to its head`).toEqual([c.head.x, c.head.y]);
-              if (crosses(lead, edges[2]) || crosses(lead, edges[3])) {
-                // Past the wall's top beside it, into the wall through its side.
-                kinds.side++;
-                continue;
-              }
               kinds.faded++;
-              expect(c.box!.y1 + CHIP_ROW.lead, `${what}: slot ${c.slot} faded: over the wall`).toBeGreaterThan(y0 + ((y1 - y0) * (c.x - x0)) / (x1 - x0));
+              expect(c.box!.y1 + CHIP_ROW.lead, `${what}: slot ${c.slot} faded: over the level`).toBeGreaterThan(level(c.x));
               expect(id === "landscape phone" || (compact && c.row === 1), `${what}: slot ${c.slot} over the wall`).toBe(true);
               continue;
             }
-            if (!lead.tick) {
-              // Beside the wall: the whole line to the head, never into the wall.
-              kinds.beside++;
-              for (const edge of edges) expect(crosses(lead, edge), `${what}: slot ${c.slot}'s whole line beside the wall`).toBe(false);
-              expect([lead.x1, lead.y1], `${what}: slot ${c.slot} to its head`).toEqual([c.head.x, c.head.y]);
-              continue;
-            }
-            // A tick on the wall's top, on the wall: never past its end, in mid-air.
-            expect(lead.x1, `${what}: slot ${c.slot}'s tick on the wall`).toBeGreaterThanOrEqual(Math.min(x0, x1) - 1e-6);
-            expect(lead.x1, `${what}: slot ${c.slot}'s tick on the wall`).toBeLessThanOrEqual(Math.max(x0, x1) + 1e-6);
-            kinds.tick++;
-            expect(lead.y1, `${what}: slot ${c.slot} on the wall's top edge`).toBeCloseTo(y0 + ((y1 - y0) * (lead.x1 - x0)) / (x1 - x0), 6);
+            // Never down past the wall-top level: a tick on it, above the Rover's head.
+            expect(lead.tick, `${what}: slot ${c.slot} ends with a tick`).toBe(true);
+            expect(lead.y1, `${what}: slot ${c.slot} on the wall-top level`).toBeCloseTo(level(lead.x1), 6);
             expect(lead.y1 - lead.y0, `${what}: slot ${c.slot} at least ${CHIP_ROW.lead} px long`).toBeGreaterThanOrEqual(CHIP_ROW.lead);
             expect(lead.y1, `${what}: slot ${c.slot} above its Rover's head`).toBeLessThan(c.head.y);
+            const tick = { x0: lead.x1 - LEAD.tick / 2, y0: lead.y1 - 1, x1: lead.x1 + LEAD.tick / 2, y1: lead.y1 + 1 };
+            for (const b of hud) expect(boxesOverlap(tick, b), `${what}: slot ${c.slot}'s tick clear of the HUD`).toBe(false);
+            expect(tick.x0 >= 0 && tick.x1 <= width, `${what}: slot ${c.slot}'s tick on screen`).toBe(true);
+            // Where: above its Rover's head, or where the line toward the head meets the level (crossing the wall's top on
+            // the wall, or the fallback where the line above the head would cross another chip), or moved clear of the HUD.
+            const t = (lead.y1 - lead.y0) / (c.head.y - lead.y0);
+            const onLine = Math.abs(lead.x1 - (lead.x0 + t * (c.head.x - lead.x0))) < 1e-6;
+            const aboveHead = Math.abs(lead.x1 - c.head.x) < 1e-6;
+            const byHud = hud.some((b) => Math.abs(lead.x1 - b.x0) <= LEAD.tick || Math.abs(lead.x1 - b.x1) <= LEAD.tick);
+            expect(onLine || aboveHead || byHud, `${what}: slot ${c.slot}'s tick above its Rover or on its line`).toBe(true);
+            if (lead.x1 >= Math.min(x0, x1) - 1e-6 && lead.x1 <= Math.max(x0, x1) + 1e-6) kinds.tick++;
+            else kinds.beside++;
           }
-          // Most lines end on the wall with a tick; on a landscape phone the row sits over the wall.
-          if (id !== "landscape phone") expect(kinds.tick, `${what}: ticks on the wall`).toBeGreaterThanOrEqual(4);
-          // Only an outermost desktop chip whose whole line would cross the floor menu loses it (1280 x 720, and the near
-          // pose); at the 1440 x 900 stop every line shows (e2e/office.spec.ts).
-          expect(kinds.hidden, `${what}: hidden leader lines`).toBeLessThanOrEqual(cls !== "desktop" || (id === "desktop" && steps === 0) ? 0 : 1);
+          // Every line at the stop ends with a tick (a phone's second row of dots fades); on a landscape phone the row sits
+          // over the wall.
+          if (id !== "landscape phone") expect(kinds.tick + kinds.beside, `${what}: ticks at the wall-top level`).toBeGreaterThanOrEqual(compact ? 4 : 10);
+          // None hides, at the stop or the near pose (an off-duty dot nudged past a wide near chip takes the fallback).
+          expect(kinds.hidden, `${what}: hidden leader lines`).toBe(0);
           expectRow(row, size, what);
         }
     });

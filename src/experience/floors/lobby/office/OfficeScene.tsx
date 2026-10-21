@@ -563,8 +563,8 @@ function createWatchState() {
     leadOn: perSlot(() => false),
     leadFaded: perSlot(() => false),
     tick: perSlot(() => [NaN, NaN]),
-    // The wall's top and bottom edges projected this frame (x0, y0, x1, y1 each, px; NaN off the camera) and a leader line's end.
-    wall: [NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
+    // The wall's top edge projected this frame (x0, y0, x1, y1, px; NaN off the camera) and a leader line's end.
+    wall: [NaN, NaN, NaN, NaN],
     end: { x: 0, y: 0, tick: false, faded: false },
     // When the office-in-view test runs next (s).
     next: 0,
@@ -613,16 +613,13 @@ function hideChip(w: WatchState, slot: number, el: HTMLElement | null) {
   writeLead(w, slot, NaN, NaN);
 }
 
-/**
- * The screen wall's top edge (the frame's top, its front face): the leader lines end there; and the frame's bottom (`b`),
- * so a line beside the wall's top that runs into its side fades (`leadEnd`).
- */
-const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, b: OFFICE.wall.bottom - OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
+/** The screen wall's top edge (the frame's top, its front face): every leader line stops at its level (`leadEnd`). */
+const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
 
-/** Projects the wall's top and bottom edge ends into `w.wall` (px; NaN when either is behind the camera). */
+/** Projects the wall's top edge ends into `w.wall` (px; NaN when either is behind the camera). */
 function projectWallTop(w: WatchState, camera: RootState["camera"], width: number, height: number) {
-  for (let k = 0; k < 4; k++) {
-    w.v.set(LOBBY.officeWing.wall.x + (k & 1 ? WALL_TOP.x : -WALL_TOP.x), k < 2 ? WALL_TOP.y : WALL_TOP.b, WALL_TOP.z).project(camera);
+  for (let k = 0; k < 2; k++) {
+    w.v.set(LOBBY.officeWing.wall.x + (k ? WALL_TOP.x : -WALL_TOP.x), WALL_TOP.y, WALL_TOP.z).project(camera);
     const back = w.v.z >= 1;
     w.wall[2 * k] = back ? NaN : ((w.v.x + 1) / 2) * width;
     w.wall[2 * k + 1] = back ? NaN : ((1 - w.v.y) / 2) * height;
@@ -643,10 +640,10 @@ function writeTick(w: WatchState, slot: number, x: number, y: number) {
   }
 }
 
-/** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`). */
-function endLead(w: WatchState, slot: number, x: number, y: number) {
+/** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`; a tick beside the wall clear of the HUD boxes, `above` its Rover's head). */
+function endLead(w: WatchState, slot: number, x: number, y: number, above = true) {
   const a = w.wall;
-  return leadEnd(x, y, w.hx[slot], w.hy[slot], a[0], a[1], a[2], a[3], CHIP_ROW.lead, w.end, a[4], a[5], a[6], a[7]);
+  return leadEnd(x, y, w.hx[slot], w.hy[slot], a[0], a[1], a[2], a[3], CHIP_ROW.lead, w.end, w.hud, w.width, above);
 }
 
 /** Whether the line from (x, y) to `e` crosses no HUD box and none of the row's other `n` chips (`self` its own index). */
@@ -660,15 +657,18 @@ function clearLead(w: WatchState, x: number, y: number, e: { x: number; y: numbe
  * The leader line of chip `slot` from (x, y), the chip's bottom centre, toward its Rover's head (`w.hx`, `w.hy`): drawn while
  * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box and none of the row's other
  * `n` chips (`segmentHitsBox`; `self` its own index in the row: a top chip's line in two rows of dots passes between the
- * chips under it); it ends at the screen wall's top with a tick, or runs faded to the head where the chip sits over the
- * screens (`leadEnd`); NaN hides it. A whole line beside the wall that would cross the HUD or a chip (the floor menu on
- * 1280 x 720) hides too, never a tick in mid-air past the wall's end: the chip's colour still maps it to its Rover.
+ * chips under it); every line stops at the wall-top level with a tick (on the wall's top edge, or beside the wall above
+ * an end Rover, the tick clear of the HUD boxes; where that line would cross another chip, a phone's two rows of dots,
+ * where the line itself meets the level), or runs faded to the head where the chip sits over the screens (`leadEnd`);
+ * NaN hides it. A line that would still cross the HUD or a chip hides: the chip's colour and its Rover's
+ * antenna still map it.
  */
 function writeLead(w: WatchState, slot: number, x: number, y: number, n = 0, self = -1) {
   const lead = officeRuntime.leads[slot];
   if (!lead) return;
-  const e = endLead(w, slot, x, y);
-  const on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead && clearLead(w, x, y, e, n, self);
+  let e = endLead(w, slot, x, y);
+  let on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead && clearLead(w, x, y, e, n, self);
+  if (!on && e.tick && !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead) on = clearLead(w, x, y, (e = endLead(w, slot, x, y, false)), n, self);
   const hx = e.x;
   const hy = e.y;
   writeTick(w, slot, on && e.tick ? Math.round(hx) : NaN, Math.round(hy));

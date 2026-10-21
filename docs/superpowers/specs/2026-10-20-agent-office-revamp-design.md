@@ -243,9 +243,10 @@ nudged along x in desk order so they never overlap each other or the HUD (top ba
 card, the minimap), with a thin leader line or colour cue to its Rover; the full text stays in the aria-label. With
 ten desks (A2, 5.10) the desktop row holds ten compact chips, and phones show dot-only chips in up to two rows. Chip
 order: the row sorts the chips by each Rover's projected head x, so the front and back rows interleave and no leader
-lines cross; within one console row that follows desk order. A leader line ends with a tick on the wall's top edge, runs
-whole beside the wall, or fades to the head where the chip sits over the screens; where a whole line would cross the HUD
-it hides (the chip's colour still maps it), never a tick in mid-air past the wall's end.
+lines cross; within one console row that follows desk order. Every leader line stops at the wall-top level with a
+tick, on the wall's top edge or, beside the wall toward an end Rover, at that level above the Rover's head (clear of the
+HUD boxes); it fades to the head only where the chip sits over the screens. The chip's colour and the Rover's antenna
+carry the mapping; a line that would still cross the HUD or a chip hides.
 
 ### 5.8 Sub-agent helpers (owner addition, 2026-10-20)
 

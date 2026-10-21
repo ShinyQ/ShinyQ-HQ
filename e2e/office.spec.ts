@@ -701,8 +701,8 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     for (const desks of [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]) for (let i = 1; i < desks.length; i++) expect(row[desks[i]].left).toBeGreaterThan(row[desks[i - 1]].left);
     const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
     expect(leads).toEqual(Array.from({ length: 10 }, () => "visible"));
-    // Over the wall each ends at the screen wall's top with a tick, above its Rover's head (never across the screens' text);
-    // a chip past the wall's end (ten chips span more than the wall) draws its whole line beside the wall, to the head.
+    // Every line stops at the wall-top level with a tick, above its Rover's head (never across the screens' text, never
+    // down beside the wall to an end Rover: the chip's colour and the antenna carry the mapping).
     const ends = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) =>
       els.map((el) => {
         const tick = el.nextElementSibling as HTMLElement;
@@ -711,8 +711,8 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
         return { tick: tick.dataset.testid === "office-chip-tick" && tick.style.visibility === "visible", meets: Math.abs(lead.bottom - (t.top + t.height / 2)) <= 2 };
       }),
     );
-    expect(ends.filter((e) => e.tick).length).toBeGreaterThanOrEqual(4);
-    for (const e of ends) if (e.tick) expect(e.meets).toBe(true);
+    expect(ends.filter((e) => e.tick).length).toBe(10);
+    for (const e of ends) expect(e.meets).toBe(true);
     // Still far a moment later (the settle gate holds past the first settled frame).
     await waitForFrames(page, 30);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
