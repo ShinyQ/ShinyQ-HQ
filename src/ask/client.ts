@@ -256,6 +256,9 @@ export interface AskDeps {
   status: () => Promise<AskStatus | null>;
 }
 
+/** Automated browser (`navigator.webdriver`): its questions stay out of the public stats. */
+const automated = (): boolean => typeof navigator !== "undefined" && navigator.webdriver === true;
+
 const defaultDeps = (): AskDeps => ({
   fetch: (input, init) => fetch(input, init),
   getToken: (siteKey) => getTurnstileToken(siteKey),
@@ -306,7 +309,7 @@ export async function askQuestion(options: AskOptions, overrides: Partial<AskDep
   };
 
   const post = (turnstileToken: string | null) => {
-    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}), ...(chip && chip.length <= 64 ? { chip } : {}), ...(history.length ? { history } : {}) };
+    const body: AskRequest = { q: question, locale, ...(turnstileToken ? { turnstileToken } : {}), ...(source ? { source } : {}), ...(chip && chip.length <= 64 ? { chip } : {}), ...(automated() ? { auto: true as const } : {}), ...(history.length ? { history } : {}) };
     return deps.fetch(ASK_ENDPOINT, {
       method: "POST",
       credentials: "same-origin",

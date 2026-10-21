@@ -386,10 +386,21 @@ describe("privacy (T10)", () => {
     const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
     const { call, events } = setup();
     await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
-    expect(events[0].blobs).toHaveLength(12);
+    expect(events[0].blobs).toHaveLength(13);
     expect(events[0].blobs?.[6]).toBe("pill");
     expect(events[0].blobs?.slice(7, 9)).toEqual(["work", "work-best"]);
-    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory"]);
+    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory", ""]);
+  });
+
+  it("tags questions from automated browsers (blob13) for counting only, the same answer either way", async () => {
+    const { call, events } = setup();
+    const human = answerOf(await frames(await call({ body: { q: "Where does he work?", locale: "en" } })));
+    const automated = answerOf(await frames(await call({ body: { q: "Where does he work?", locale: "en", auto: true } })));
+    expect(automated).toBe(human);
+    expect(events.map((e) => e.blobs?.[12])).toEqual(["", "auto"]);
+    // Only a literal true counts; anything else is ignored, never a rejection.
+    expect((await call({ body: { q: "What are his skills?", locale: "en", auto: "yes" } })).status).toBe(200);
+    expect(events[2].blobs?.[12]).toBe("");
   });
 
   it("derives the topic from the answer tags for typed questions and drops a chip id that does not match", async () => {
@@ -409,7 +420,7 @@ describe("privacy (T10)", () => {
     const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
     expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
     expect(events[0].blobs?.[0]).toBe("rejected");
-    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory"]);
+    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory", ""]);
   });
 });
 

@@ -131,6 +131,7 @@ describe("hq-stats run", () => {
     expect(query).toContain("bot: 0");
     expect(query).toContain("requestHost_in: $hosts");
     expect(calls.sql[0]).toContain("blob1 != 'rejected'");
+    expect(calls.sql[0]).toContain("blob13 != 'auto'");
     expect(calls.sql.join(" ")).toContain("SUM(_sample_interval)");
     expect(calls.auth.every((h) => h === `Bearer ${TOKEN}`)).toBe(true);
   });

@@ -100,11 +100,12 @@ async function sql(cfg: SourceConfig, query: string, fetcher: Fetcher): Promise<
 const at = (day: string) => `toDateTime('${day} 00:00:00')`;
 
 /**
- * Questions asked per day, topic (blob8) and chip (blob9); Turnstile rejects are not questions.
- * Rows from before blob8 existed come back with empty strings and count only in the total.
+ * Questions asked per day, topic (blob8) and chip (blob9); Turnstile rejects are not questions, nor are questions
+ * from automated browsers (blob13 "auto", reported by the client for counting only).
+ * Rows from before blob8 or blob13 existed come back with empty strings: they count (in the total only before blob8).
  */
 export const asksSql = (start: string, end: string) =>
-  `SELECT toDate(timestamp) AS day, blob8 AS topic, blob9 AS chip, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 != 'rejected' GROUP BY day, topic, chip FORMAT JSONEachRow`;
+  `SELECT toDate(timestamp) AS day, blob8 AS topic, blob9 AS chip, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 != 'rejected' AND blob13 != 'auto' GROUP BY day, topic, chip FORMAT JSONEachRow`;
 
 /** Visit beacon points per day and mode. A dataset that was never written answers with no rows. */
 export const visitsSql = (start: string, end: string) =>

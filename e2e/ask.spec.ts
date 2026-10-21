@@ -7,7 +7,8 @@ import { ASK_SEED_KEY, starterQuestions } from "../src/ask/suggestions";
 /**
  * Ask the HQ in the browser, against a mocked `/api/ask` (the static server has no Functions):
  * the shared chat dock (launcher, teaser, side panel or bottom sheet), the home hero bar, topic
- * and follow-up pills, and every entry point that opens the dock.
+ * and follow-up pills, and every entry point that opens the dock. Playwright reports automation
+ * (`navigator.webdriver`), so every POST carries `auto: true` (counting only, kept out of the public stats).
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6/T13, 8).
  */
 
@@ -170,7 +171,7 @@ test("Page View launcher: topic, pill, inert answer, follow-ups, Esc", async ({ 
   await expect(thread(page)).toContainText(`Here is markup: ${HOSTILE} and text.`);
   await expect(thread(page)).toContainText(AS_OF_LINE);
   await expect(thread(page).locator("img")).toHaveCount(0);
-  expect(api.bodies()[0]).toEqual({ q: "How does the voice AI contact center work?", locale: "en", source: "pill", chip: "ai-voice" });
+  expect(api.bodies()[0]).toEqual({ q: "How does the voice AI contact center work?", locale: "en", source: "pill", chip: "ai-voice", auto: true });
 
   const followUps = dock(page).getByTestId("ask-followups");
   await expect(followUps.getByRole("button", { name: "What latency did the voice agent reach?", exact: true })).toBeVisible();
@@ -267,7 +268,7 @@ test("hero bar: typing a question or a topic opens the dock", async ({ page }) =
   await input.fill("What is he building now?");
   await input.press("Enter");
   await expect(thread(page)).toContainText("Kurniadi is building AI agents.");
-  expect(api.bodies()[0]).toEqual({ q: "What is he building now?", locale: "en", source: "hero" });
+  expect(api.bodies()[0]).toEqual({ q: "What is he building now?", locale: "en", source: "hero", auto: true });
   await dock(page).getByRole("button", { name: "Close chat" }).click();
 
   await hero.getByRole("button", { name: "Career" }).click();
@@ -475,7 +476,7 @@ test("Turnstile: lazy script, invisible widget, token in the POST", async ({ pag
     execution: "execute",
     appearance: "interaction-only",
   });
-  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill", chip: "contact-reach" });
+  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", turnstileToken: "fake-token", source: "pill", chip: "contact-reach", auto: true });
   expect(errors).toEqual([]);
   expect(csp).toEqual([]);
 });
@@ -492,7 +493,7 @@ test("Cmd-K Ask row sends the question to the dock", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(palette).toBeHidden();
   await expect(thread(page)).toContainText("Kurniadi is building AI agents.");
-  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", source: "palette", chip: "contact-reach" });
+  expect(api.bodies()[0]).toEqual({ q: "How can I contact him?", locale: "en", source: "palette", chip: "contact-reach", auto: true });
 });
 
 test("3D: the top-right pill opens the dock over the tower, and typing does not drive the rover", async ({ page }) => {
@@ -527,7 +528,7 @@ test("Perspectives topic: a cited answer links to its written source on About", 
   await dock(page).getByTestId("ask-topics").getByRole("button", { name: "Perspectives" }).click();
   await dock(page).getByRole("button", { name: "What are his coding principles?", exact: true }).click();
   await expect(thread(page)).toContainText("owns every merge decision");
-  expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill", chip: "persp-principles" });
+  expect(api.bodies()[0]).toEqual({ q: "What are his coding principles?", locale: "en", source: "pill", chip: "persp-principles", auto: true });
   const link = thread(page).getByTestId("ask-cite");
   await expect(link).toHaveText(en.ask.dock.source.replace("{label}", en.ask.cite.how));
   await link.click();

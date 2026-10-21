@@ -118,6 +118,20 @@ describe("askQuestion", () => {
     expect(bodyOf(d.fetch.mock.calls[2])).not.toHaveProperty("chip");
   });
 
+  it("flags an automated browser (navigator.webdriver) so its questions stay out of the public stats", async () => {
+    const done = () => sse([frame({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-01" })]);
+    const d = deps([done(), done()]);
+    await askQuestion({ q: "Typed?", locale: "en", onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[0])).not.toHaveProperty("auto");
+    vi.stubGlobal("navigator", { webdriver: true });
+    try {
+      await askQuestion({ q: "Typed?", locale: "en", onDelta: () => {} }, d);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(bodyOf(d.fetch.mock.calls[1])).toMatchObject({ q: "Typed?", auto: true });
+  });
+
   it("reports a stream that ends without a done frame", async () => {
     const d = deps([sse([frame({ delta: "half" })])]);
     expect(await askQuestion({ q: "hi there", locale: "en", onDelta: () => {} }, d)).toEqual({ error: "stream" });

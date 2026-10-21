@@ -152,6 +152,11 @@ export interface AskRequest {
   source?: AskEntry;
   /** Curated question id (content/ask/suggestions.json) when the text is that chip's, for the public stats. At most 64 characters. */
   chip?: string;
+  /**
+   * The browser reports automation (`navigator.webdriver`). Counting only: the public question total leaves these
+   * out; never trusted for safety, limits or answers.
+   */
+  auto?: true;
   /** Earlier signed turns of this conversation, oldest first, at most `ASK_HISTORY_TURNS`. */
   history?: AskTurn[];
 }
