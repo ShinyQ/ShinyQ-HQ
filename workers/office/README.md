@@ -31,8 +31,12 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   desks and count the back row (slots 5 to 9) in `extra`, never a slot above 4; v3 lists all ten. Rolled back to
   before v2, the Worker rejects beats that carry `helpers` (the relay omits it at 0), so sessions with helpers go
   missing until the roll forward; v2 clients then get that Worker's v1 body (the Function and the client parsers
-  read it as v2 without helpers). Rolled back to before v3, it answers v1 to `?v=3` (read as v3 with five desks) and
-  reseats a stored back-row session on the next beat (until then its snapshot fails validation and reads mode off).
+  read it as v2 without helpers). Rolled back to before v3, it answers v1 to `?v=3` (read as v3) and reads the stored
+  document as before: a session record keeps a front-row seat (0 to 4) in `slot` and a back-row seat (5 to 9) only in
+  `seat` (the seat is `slot ?? seat`; a set `slot` wins and clears `seat`), so the old Worker sees back-row sessions
+  as waiting, counts them in `extra` and seats them on a free front desk at the next beat; its snapshots stay valid
+  (never mode off). On load the Durable Object moves a back-row seat still stored in `slot` to `seat` and writes the
+  document once.
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
     same value.

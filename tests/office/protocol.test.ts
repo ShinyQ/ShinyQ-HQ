@@ -130,11 +130,30 @@ describe("parseOfficeResponseV3", () => {
   it("accepts a v2 or v1 body as a fallback after a rollback, returned as v3", () => {
     for (const [name, value] of Object.entries(OFFICE_FIXTURES_V2)) expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(value))), name).toEqual(value.enabled ? { ...value, v: 3 } : value);
     for (const [name, value] of Object.entries(OFFICE_FIXTURES)) expect(parseOfficeResponseV3(JSON.parse(JSON.stringify(value))), name).toEqual(value.enabled ? { ...value, v: 3 } : value);
-    // A v2 or v1 body still follows its own rules: five desks, slots 0 to 4, no helpers in v1.
+    // Still no helpers in a v1 body, and no v4.
     const busy2 = JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
-    expect(parseOfficeResponseV3({ ...busy2, desks: [{ ...busy2.desks[0], slot: 7 }] })).toBeNull();
     const busy1 = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
     expect(parseOfficeResponseV3({ ...busy1, desks: [{ ...busy1.desks[0], helpers: 3 }] })).toBeNull();
+    expect(parseOfficeResponseV3({ ...busy2, v: 4 })).toBeNull();
+  });
+
+  it("reads a v2 or v1 body with up to ten desks and slots 0 to 9 (a rolled-back Worker on a ten-seat document); v1 and v2 parsers stay at five", () => {
+    const busy2 = JSON.parse(JSON.stringify(OFFICE_FIXTURES_V2.busy));
+    const busy1 = JSON.parse(JSON.stringify(OFFICE_FIXTURES.busy));
+    const ten = (body: { desks: object[] }) => Array.from({ length: OFFICE_SEATS }, (_, slot) => ({ ...body.desks[0], slot }));
+    const v2Ten = { ...busy2, desks: ten(busy2) };
+    const v1Ten = { ...busy1, desks: ten(busy1) };
+    expect(parseOfficeResponseV3(v2Ten)).toEqual({ ...v2Ten, v: 3 });
+    expect(parseOfficeResponseV3(v1Ten)).toEqual({ ...v1Ten, v: 3 });
+    expect(parseOfficeResponseV3({ ...busy2, desks: [{ ...busy2.desks[0], slot: 7 }] })).not.toBeNull();
+    expect(parseOfficeResponseV2(v2Ten)).toBeNull();
+    expect(parseOfficeResponseV2(v1Ten)).toBeNull();
+    expect(parseOfficeResponse(v1Ten)).toBeNull();
+    for (const body of [busy2, busy1]) {
+      expect(parseOfficeResponseV3({ ...body, desks: [...ten(body), { ...body.desks[0], slot: 9 }] })).toBeNull();
+      expect(parseOfficeResponseV3({ ...body, desks: [{ ...body.desks[0], slot: 10 }] })).toBeNull();
+      expect(parseOfficeResponseV3({ ...body, desks: [body.desks[0], { ...body.desks[1], slot: body.desks[0].slot }] })).toBeNull();
+    }
   });
 });
 

@@ -440,7 +440,9 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
   commit, it rebuilds the safety list and redeploys the Worker from the target (its secrets persist). A target
   without `workers/office` leaves the Worker at the live version; `OFFICE_WORKER_DEPLOY = "false"` skips it. A Worker
   rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2`; one rolled back to before
-  v3 answers v1 to `?v=3` (read as v3 with five desks; see the Worker README).
+  v3 answers v1 to `?v=3` (read as v3) and keeps reading the stored document: back-row seats are stored apart from
+  the front-row `slot`, so it counts those sessions in `extra` and seats them on its five desks as before (no mode
+  off; see the Worker README).
 - `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3, ten seats), each under its own
   edge cache key, answer with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).

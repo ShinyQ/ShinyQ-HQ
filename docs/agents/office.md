@@ -21,13 +21,17 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
   front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
   seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
-  with at most five sessions (part A clients, already deployed and polling v2, see no change).
+  with at most five sessions (part A clients, already deployed and polling v2, see no change for at most five
+  sessions). With more than five sessions the eviction rule changed: an awake newcomer takes the longest-asleep seat
+  only when all ten are taken, so v1 and v2 clients may show a sleeping front desk while an awake session is in
+  `extra`.
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
   `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
   v3; no query, `?v=4` or junk get v1.
 - Clients validate with `parseOfficeResponse` (v1), `parseOfficeResponseV2` (strict v2, five desks, plus a v1 body read
   as v2 without helpers) or `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
-  rolled-back Worker or Function) and hide on null; the Worker validates beats with `parseOfficeBeat`.
+  rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) and
+  hide on null; the Worker validates beats with `parseOfficeBeat`.
 - Who polls what (all `?v=3`, `OFFICE_V3_PATH`): the 3D office's poller (`createOfficePoller({ path, parse, interval })`
   in `office/live.ts`: the fast cadence near the office or with a drawer open, 30 s from afar, nothing out of view),
   the Classic card, and the L1 beacon's watch every 30 s while the scene's poller is not running (so a back-row asker
@@ -71,10 +75,15 @@ Index: [AGENTS.md](../../AGENTS.md).
   while the session is awake and beat within `TIMING.helpersTtl` (10 min, so a lost stop event decays); `view` (v1)
   never does. The Durable Object's `/snapshot` answers `viewV3` for `?v=3`, `viewV2` for `?v=2`, else `view`; the
   Worker forwards only `?v=2` and `?v=3`.
-- Seats: ten stable slots (`assignSlots`, `OFFICE_SEATS`). The front row fills first: a free seat goes to the lowest
-  free slot, and a back-row session moves to a front-row seat as soon as one is free (oldest first), so v1 and v2 show
-  what five desks showed. Only when all ten are taken may an awake newcomer take the longest-asleep seat; others are
-  `extra`. `view` and `viewV2` list slots 0 to 4 and count the rest in `extra`; `viewV3` lists all ten.
+- Seats: ten stable seats (`assignSlots`, `OFFICE_SEATS`). The front row fills first: a free seat goes to the lowest
+  free seat, and a back-row session moves to a front-row seat as soon as one is free (oldest first), so for at most
+  five sessions v1 and v2 show what five desks showed. Only when all ten are taken may an awake newcomer take the
+  longest-asleep seat; others are `extra`. `view` and `viewV2` list seats 0 to 4 and count the rest in `extra`;
+  `viewV3` lists all ten.
+- Stored seats (`SessionRecord`): `slot` holds only a front-row seat (0 to 4, or null) and the optional `seat` only a
+  back-row seat (5 to 9); the seat is `slot ?? seat` (`seatOf`; a set `slot` wins and clears `seat`). A Worker from
+  before ten seats reads only `slot`, so after a rollback it counts back-row sessions in `extra` and seats them as
+  before. `migrateDoc` (on load, written once) moves a back-row seat stored in `slot` to `seat`.
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
 - Workflow runs carry `run_attempt` (deliveries arrive in any order): an older attempt and a late `running` of a
@@ -103,15 +112,17 @@ Index: [AGENTS.md](../../AGENTS.md).
   `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
   `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
   `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2). A Worker
-  rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, five desks without helpers) and seats only five
-  (the rest in `extra`); it reseats a stored back-row slot on the next beat (until then its snapshot fails validation
-  and the Function answers mode off, so a rollback with more than five sessions reads off for a few seconds). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
+  rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, without helpers) and seats only five: it reads
+  only the stored `slot`, so back-row sessions count in `extra` and take a free front desk at the next beat, and its
+  snapshots stay valid (no mode off, at any session count; tested against a frozen copy of its rules in
+  `tests/office/legacy-five-desks.ts`). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
   Function gets v1 (read as v3).
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
 
-- `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/unit/office-deploy.test.ts`.
+- `tests/office/`: protocol, state, ingest, Worker and Durable Object, Functions; `tests/office/legacy-five-desks.ts` is
+  a frozen copy of the pre-ten-seat Worker's seat and view rules (never update it); `tests/unit/office-deploy.test.ts`.
 
 ## Relay
 

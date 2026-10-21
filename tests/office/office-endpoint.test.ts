@@ -165,6 +165,18 @@ describe("GET /api/office", () => {
       const rolledBack = worker(() => Response.json(body)).binding;
       expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: rolledBack }, null, "GET", {}, "?v=3")).json()).toEqual({ ...body, v: 3 });
     }
+    // A rolled-back Worker's v1 or v2 body with up to ten desks (slots 0 to 9) still reads as v3, not off.
+    const tenV3 = OFFICE_FIXTURES_V3.busy;
+    if (!tenV3.enabled) throw new Error("busy is enabled");
+    const tenV1 = { ...tenV3, v: 1, desks: tenV3.desks.map((d) => {
+      const copy = { ...d };
+      delete copy.helpers;
+      return copy;
+    }) };
+    for (const body of [tenV1, { ...tenV3, v: 2 }]) {
+      const rolledBack = worker(() => Response.json(body)).binding;
+      expect(await (await get({ OFFICE_ENABLED: "true", OFFICE: rolledBack }, null, "GET", {}, "?v=3")).json()).toEqual({ ...body, v: 3 });
+    }
     const off3 = { ...offSnapshot(T0), v: 3 };
     expect(parseOfficeResponseV3(off3)).toEqual(off3);
     expect(await (await get({ OFFICE_ENABLED: "true" }, null, "GET", {}, "?v=3")).json()).toEqual(off3);

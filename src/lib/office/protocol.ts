@@ -278,17 +278,22 @@ export function parseOfficeResponseV2(raw: unknown): OfficeResponseV2 | null {
   return v1 && v1.enabled ? { ...v1, v: 2 } : null;
 }
 
+/** A v1 desk (no `helpers`) on any of the ten seats: only for a v1 body read as v3. */
+const isDeskV1Wide = (x: unknown): x is OfficeDesk => isObj(x) && onlyKeys(x, DESK_KEYS) && isDeskFields(x, OFFICE_SEATS);
+
 /**
  * Validates GET /api/office?v=3 (strict keys, up to OFFICE_SEATS desks with slots 0 to 9, desk `helpers` as in v2). A
- * valid v2 or v1 body is accepted too, returned as v3 (five desks at most): a Worker or Pages deploy rolled back to
- * before v3 answers v2 or v1.
+ * v2 or v1 body is accepted too, returned as v3: a Worker or Pages deploy rolled back to before v3 answers v2 or v1.
+ * Read here, such a body may carry up to ten desks with slots 0 to 9 (a rolled-back Worker reading a ten-seat
+ * document); `parseOfficeResponse` and `parseOfficeResponseV2` stay strict at five.
  */
 export function parseOfficeResponseV3(raw: unknown): OfficeResponseV3 | null {
   if (!isObj(raw)) return null;
   if (raw.enabled === false) return isDisabled(raw) ? disabled() : null;
   if (raw.v === 3) return isSnapshot(raw, isDeskV3, OFFICE_SEATS) ? (raw as unknown as OfficeSnapshotV3) : null;
-  const v2 = parseOfficeResponseV2(raw);
-  return v2 && v2.enabled ? { ...v2, v: 3 } : null;
+  if (raw.v === 2) return isSnapshot(raw, isDeskV3, OFFICE_SEATS) ? { ...(raw as unknown as OfficeSnapshotV2), v: 3 } : null;
+  if (raw.v === 1) return isSnapshot(raw, isDeskV1Wide, OFFICE_SEATS) ? { ...(raw as unknown as OfficeSnapshotV1), v: 3 } : null;
+  return null;
 }
 
 const BEAT_KEYS = ["v", "agent", "session", "state", "activity", "repo", "branch", "title", "helpers", "ts"];

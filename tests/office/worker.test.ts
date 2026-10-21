@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3 } from "@/lib/office/protocol";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
+import { emptyDoc, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
 import { createOfficeWorker } from "../../workers/office/src/worker";
 
@@ -171,5 +172,20 @@ describe("hq-office Worker", () => {
     const snap = (await (await second.fetch(new Request("https://office/snapshot"))).json()) as OfficeSnapshotV1;
     expect(snap.desks).toMatchObject([{ agent: "codex", state: "testing" }]);
     expect(map.size).toBe(1);
+  });
+
+  it("moves back-row seats stored in `slot` to `seat` on load and writes the document once", async () => {
+    const { map, ctx } = memoryStorage();
+    const doc = emptyDoc(T0);
+    const rec = (n: number, slot: number): SessionRecord => ({ id: n.toString(16).padStart(64, "0"), agent: "codex", slot, firstSeen: T0 + n, lastBeat: T0, state: "working", activity: "editing", since: T0, recent: [] });
+    map.set("doc", { ...doc, sessions: [0, 1, 2, 3, 4, 5, 6].map((n) => rec(n, n)) });
+    let puts = 0;
+    const office = new Office({ storage: { get: ctx.storage.get, put: async (k, v) => (puts++, ctx.storage.put(k, v)) } }, {} as OfficeWorkerEnv, () => T0 + 1000);
+    const v3 = (await (await office.fetch(new Request("https://office/snapshot?v=3"))).json()) as OfficeSnapshotV3;
+    expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    const stored = map.get("doc") as OfficeDoc;
+    expect(stored.sessions.map((s) => [s.slot, s.seat])).toEqual([[0, undefined], [1, undefined], [2, undefined], [3, undefined], [4, undefined], [null, 5], [null, 6]]);
+    await office.fetch(new Request("https://office/snapshot"));
+    expect(puts).toBe(1);
   });
 });
