@@ -27,7 +27,7 @@ export type OfficeFeedStatus = "idle" | "loading" | "ready" | "offline" | "disab
 
 /**
  * The v3 snapshot shape with any version number and an optional pipeline: the 3D office polls v4 (`OFFICE_V4_PATH`,
- * `parseOfficeResponseV4`, with the pipeline) and the Classic card v3 (`OFFICE_V3_PATH`, `parseOfficeResponseV3`),
+ * `parseOfficeResponseV4` from `./protocolV4.ts`, with the pipeline) and the Classic card v3 (`OFFICE_V3_PATH`, `parseOfficeResponseV3`),
  * while unit fixtures and other callers may still hand in a v1 or v2 snapshot (five desks at most, v1 desks without
  * `helpers`), so every consumer reads one type.
  */

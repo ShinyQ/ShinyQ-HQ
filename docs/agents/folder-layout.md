@@ -219,7 +219,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - labels.ts (server: chip and floor labels).
 - `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
 - `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts.
-- `src/lib/office/`: the Agent Office client contract (`protocol.ts`), fixtures (`fixtures.ts`), poller (`poll.ts`, `POLL`) and shared model (`model.ts`: `STATE_TONE`, counts, desk titles), shared by the 3D office and the Classic card; no React, no three.
+- `src/lib/office/`: the Agent Office client contract (`protocol.ts`; the v4 validators in `protocolV4.ts`, for the 3D scene and the Function only), fixtures (`fixtures.ts`), poller (`poll.ts`, `POLL`) and shared model (`model.ts`: `STATE_TONE`, counts, desk titles), shared by the 3D office and the Classic card; no React, no three.
 - `src/lib/brand-mark.ts`: the rover brand mark (owner decision).
   - Geometry, colors and SVG bodies for every variant.
   - `RoverMark` (src/components/RoverMark.tsx) inlines it in the header.

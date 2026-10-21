@@ -18,6 +18,10 @@ Index: [AGENTS.md](../../AGENTS.md).
   `OfficeResponseV2` (`GET /api/office?v=2`: v1 with `v: 2` and an optional desk `helpers`, 1 to 9, omitted at 0) and
   `OfficeResponseV3` (`GET /api/office?v=3`: v2 with `v: 3` and up to `OFFICE_SEATS` (10) desks, slots 0 to 9, `extra`
   counting sessions past ten; `OfficeSnapshot` is v3). The disabled answer `{v:1, enabled:false}` is the same in all.
+- `src/lib/office/protocolV4.ts`: the v4 validators (`parseOfficeResponseV4` and the pipeline checks, `GET /api/office?v=4`),
+  imported only by the 3D scene's poller (`office/live.ts`) and the Pages Function, never re-exported from
+  `protocol.ts`, so the Classic card and the office watch (both on v3) never carry them; the v4 types and
+  `OFFICE_PIPELINE` stay in `protocol.ts`.
 - Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
   front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
   seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
@@ -27,7 +31,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   `extra`.
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
   `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
-  v3; no query, `?v=4` or junk get v1.
+  v3, and only exactly `?v=4` gets v4; no query, `?v=5` or junk get v1.
 - Clients validate with `parseOfficeResponse` (v1), `parseOfficeResponseV2` (strict v2, five desks, plus a v1 body read
   as v2 without helpers) or `parseOfficeResponseV3` (strict v3, ten desks, plus a v2 or v1 body read as v3, for a
   rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) and

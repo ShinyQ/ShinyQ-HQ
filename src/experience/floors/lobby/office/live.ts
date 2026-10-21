@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { createOfficePoller, OFFICE_V4_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { parseOfficeResponseV4 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 
 /**
  * Why the scene's poller runs (design 5.9): the office in view inside `OFFICE_LOD.farDistance` ("near", OfficeScene),

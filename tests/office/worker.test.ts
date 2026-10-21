@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
 import { emptyDoc, view, viewV2, viewV3, viewV4, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";

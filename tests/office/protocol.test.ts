@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, wibDay, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 
 const SESSION = "a".repeat(64);
 const beat = (extra: Record<string, unknown> = {}) => ({ v: 1, agent: "copilot", session: SESSION, state: "working", activity: "editing", ts: OFFICE_FIXTURE_NOW, ...extra });

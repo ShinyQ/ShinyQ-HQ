@@ -81,6 +81,13 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
     }
   });
 
+  it("keeps the v4 validators (`protocolV4.ts`) in the scene chunk only: off the drawer body, the watch and the Classic card", () => {
+    const v4 = "src/lib/office/protocolV4.ts";
+    expect(staticClosure(ENTRY).has(v4)).toBe(true);
+    for (const entry of [BODY, WATCH, BEACON, "src/components/office/OfficePanel.tsx"]) expect(staticClosure(entry).has(v4), entry).toBe(false);
+    expect(readFileSync(join(ROOT, "src/lib/office/protocol.ts"), "utf8")).not.toMatch(/^export .* from "\.\/protocolV4";$/m);
+  });
+
   it("keeps the loader, the mount and the layout on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
     for (const f of MAIN) expect(main.has(f), f).toBe(true);

@@ -3,7 +3,6 @@ import {
   parseOfficeResponse,
   parseOfficeResponseV2,
   parseOfficeResponseV3,
-  parseOfficeResponseV4,
   wibDay,
   type OfficeResponseV1,
   type OfficeResponseV2,
@@ -11,6 +10,7 @@ import {
   type OfficeResponseV4,
   type OfficeSnapshotV1,
 } from "../../src/lib/office/protocol";
+import { parseOfficeResponseV4 } from "../../src/lib/office/protocolV4";
 import { etagOf, readCapped } from "./security";
 import type { EdgeCache, OfficeEnv, PagesContext } from "./types";
 

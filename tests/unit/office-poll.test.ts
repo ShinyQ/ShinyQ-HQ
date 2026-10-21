@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import { createOfficePoller, OFFICE_V3_PATH, OFFICE_V4_PATH, POLL, pollInterval, type OfficeFeed } from "@/lib/office/poll";
-import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4 } from "@/lib/office/protocol";
+import { OFFICE_PATH, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { officeDesk, officeSnapshot, statesA } from "../../e2e/office-fixtures";
 
 const T0 = 1_800_000_000_000;

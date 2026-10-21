@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OFFICE_DESKS, OFFICE_SEATS, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4, type OfficeBeatV1 } from "@/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_SEATS, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeBeatV1 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { applyBeat, applyGithub, assignSlots, effectiveHelpers, emptyDoc, effective, migrateDoc, pipelineOf, seatOf, TIMING, view, viewV2, viewV3, viewV4, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import { legacyAssignSlots, legacyView, legacyViewV2 } from "./legacy-five-desks";
 

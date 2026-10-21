@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
-import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, parseOfficeResponseV4 } from "@/lib/office/protocol";
+import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3 } from "@/lib/office/protocol";
+import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { createOfficeForwardHandler, createOfficeSnapshotHandler, offSnapshot } from "../../functions/_lib/office";
 import type { EdgeCache, OfficeEnv, ServiceBinding } from "../../functions/_lib/types";
 
