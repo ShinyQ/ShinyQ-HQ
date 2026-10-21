@@ -172,10 +172,11 @@ export const OFFICE = {
 
 export const OFFICE_ROOM = "L1:office" as RoomId;
 export const OFFICE_GITHUB_ROOM = "L1:office-github" as RoomId;
+export const OFFICE_CI_ROOM = "L1:office-ci" as RoomId;
 export const officeDeskRoom = (slot: number): RoomId => `L1:office-desk-${slot + 1}` as RoomId;
 /** Seats over both rows (`OFFICE_SEATS` in the office protocol, kept literal here so the layout imports no protocol module). */
 export const OFFICE_SEAT_COUNT = OFFICE.rows.reduce((n, r) => n + r.angles.length, 0);
-export const OFFICE_ROOMS: readonly RoomId[] = [OFFICE_ROOM, OFFICE_GITHUB_ROOM, ...Array.from({ length: OFFICE_SEAT_COUNT }, (_, slot) => officeDeskRoom(slot))];
+export const OFFICE_ROOMS: readonly RoomId[] = [OFFICE_ROOM, OFFICE_GITHUB_ROOM, OFFICE_CI_ROOM, ...Array.from({ length: OFFICE_SEAT_COUNT }, (_, slot) => officeDeskRoom(slot))];
 
 /** The office rooms have no route of their own (they keep /{locale}, like the Visitor Observatory). */
 export function isOfficeRoom(room: string | null | undefined): boolean {

@@ -219,10 +219,61 @@ function GithubPanel({ items, locale, now }: { items: readonly OfficeGithubItem[
   );
 }
 
+const JOB_COLOR = { queued: "#8a93b5", running: STATUS_COLOR.running, done: STATUS_COLOR.success, failed: STATUS_COLOR.failure } as const;
+
+/** The CI tower's text alternative: the latest runs with their lanes (after a rollback to v3, the running run's anonymous progress), then the latest merges and deploys. */
+function CiPanel({ office, locale, now }: { office: OfficeView; locale: Locale; now: number }) {
+  const t = useTranslations("office");
+  const runs = office.pipeline?.runs ?? [];
+  const ships = office.github.filter((g) => (g.kind === "pr" && g.status === "merged") || g.kind === "deploy");
+  const anonymous = runs.length === 0 ? office.github.find((g) => g.kind === "run" && g.status === "running") : undefined;
+  if (runs.length === 0 && ships.length === 0 && !anonymous) return <p className={NOTE}>{t("3d.ci.none")}</p>;
+  return (
+    <dl className="grid gap-6" data-testid="office-ci">
+      {(anonymous || runs.length > 0) && (
+        <Field label={t("3d.ci.runs")}>
+          <ul className="space-y-2">
+            {anonymous && <GithubRow item={anonymous} locale={locale} now={now} />}
+            {runs.map((r) => {
+              const url = safeGithubUrl(r.url);
+              return (
+                <li key={r.id} className={ROW} data-testid="office-ci-run" data-status={r.status}>
+                  <p className="flex items-center gap-2 text-ink">
+                    <Dot color={STATUS_COLOR[r.status]} />
+                    {url ? <External href={url}>{r.title}</External> : r.title}
+                  </p>
+                  <p className="text-xs text-ink-3">{[r.repo, t(`3d.github.status.${r.status}`), r.slot !== undefined && t("3d.ci.desk", { n: r.slot + 1 }), sinceLabel(r.at, locale, now)].filter(Boolean).join(" · ")}</p>
+                  <ol className="mt-2 grid gap-1 text-[13px] leading-5 text-ink-2">
+                    {r.jobs.map((j, k) => (
+                      <li key={k} className="flex items-center gap-2" data-status={j.status}>
+                        <Dot color={JOB_COLOR[j.status]} />
+                        {`${j.name}: ${t(`3d.ci.job.${j.status}`)}`}
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              );
+            })}
+          </ul>
+        </Field>
+      )}
+      {ships.length > 0 && (
+        <Field label={t("3d.ci.ships")}>
+          <ul className="space-y-2">
+            {ships.map((item, i) => (
+              <GithubRow key={`${item.url}-${i}`} item={item} locale={locale} now={now} />
+            ))}
+          </ul>
+        </Field>
+      )}
+    </dl>
+  );
+}
+
 /** The panel's standing note (how the data arrives), shown in every feed state. */
 function PanelNotes({ panel }: { panel: OfficePanel }) {
   const t = useTranslations("office");
-  return <p className={NOTE}>{t(panel === "github" ? "3d.githubNote" : "3d.hooks")}</p>;
+  return <p className={NOTE}>{t(panel === "github" || panel === "ci" ? "3d.githubNote" : "3d.hooks")}</p>;
 }
 
 type FeedNotice = "loading" | "offlineEmpty" | "disabled";
@@ -245,7 +296,7 @@ function Notice({ notice }: { notice: FeedNotice }) {
 
 /**
  * Agent Office drawer bodies (chunk; registered as the `office` kind in hud/drawer/bodies.tsx): the summary half
- * of the wall, the GitHub half, or one Rover's desk, from the live feed. The feed is the scene chunk's one poller
+ * of the wall, the GitHub half, the CI tower, or one Rover's desk, from the live feed. The feed is the scene chunk's one poller
  * (`./live.ts`, read through the loaded `./scene.ts`, so this chunk carries no poller or protocol validators): until
  * that chunk is here the drawer shows its loading note, or the offline note when the chunk fails to load (the next
  * open retries). Opening any of them polls (reason "drawer") until it closes. Only protocol fields: no prompt, no
@@ -296,6 +347,8 @@ function LiveBody({ live, panel, locale }: { live: OfficeModule; panel: NonNulla
             rover && <DeskPanel rover={rover} updatedAt={office.updatedAt} locale={locale} now={now} />
           ) : panel.panel === "github" ? (
             <GithubPanel items={office.github} locale={locale} now={now} />
+          ) : panel.panel === "ci" ? (
+            <CiPanel office={office} locale={locale} now={now} />
           ) : (
             <SummaryPanel office={office} locale={locale} />
           )}

@@ -328,7 +328,7 @@ describe("Agent Office wing (owner decision 2026-10-20)", () => {
   });
 
   it("names the rooms, stops every office drive at the stop and turns the camera south there", () => {
-    expect(OFFICE_ROOMS).toEqual(["L1:office", "L1:office-github", ...Array.from({ length: 10 }, (_, i) => `L1:office-desk-${i + 1}`)]);
+    expect(OFFICE_ROOMS).toEqual(["L1:office", "L1:office-github", "L1:office-ci", ...Array.from({ length: 10 }, (_, i) => `L1:office-desk-${i + 1}`)]);
     expect(officeDeskRoom(0)).toBe("L1:office-desk-1");
     expect(officeDeskRoom(9)).toBe("L1:office-desk-10");
     for (const room of OFFICE_ROOMS) {

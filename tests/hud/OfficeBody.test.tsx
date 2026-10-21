@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import ids from "../../messages/id.json";
 import type { RoomView } from "@/content/room-views/types";
-import { OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3 } from "@/lib/office/fixtures";
+import { OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
-import type { OfficeDesk } from "@/lib/office/protocol";
+import type { OfficeDesk, OfficeSnapshotV4 } from "@/lib/office/protocol";
 import { getHQStore } from "@/store/useHQStore";
 import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-fixtures";
 
@@ -136,6 +136,77 @@ describe("Agent Office drawers", () => {
     expect(within(rows[1]).getByRole("link", { name: external("feat: agent office") })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pulls");
     expect(within(rows[1]).getByRole("link")).toHaveAttribute("target", "_blank");
     expect(screen.getByTestId("office-body")).toHaveTextContent(o.githubNote);
+  });
+
+  describe("ship-it pipeline", () => {
+    const busy = () => structuredClone(OFFICE_FIXTURES_V4.busy as OfficeSnapshotV4);
+    const ciTree = (locale: "en" | "id") => tree({ panel: "ci" }, "L1:office-ci", locale);
+
+    for (const locale of ["en", "id"] as const) {
+      it(`lists the latest runs with their lanes, then the merges and deploys, and the GitHub note (${locale})`, () => {
+        const m = (locale === "en" ? en : ids).office["3d"];
+        live.feed = { status: "ready", snapshot: busy() as OfficeFeedSnapshot, fetchedAt: Date.now() };
+        render(ciTree(locale));
+        expect(screen.getByTestId("office-body")).toHaveAttribute("data-panel", "ci");
+        const runs = screen.getAllByTestId("office-ci-run");
+        expect(runs.map((r) => r.dataset.status)).toEqual(["running", "running", "success"]);
+        const [r1002, r1001, r998] = runs;
+        expect(within(r1002).getByRole("link", { name: new RegExp(`^${escape("CI · feat/second-console-row")}`) })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/1002");
+        expect(r1002).toHaveTextContent(m.github.status.running);
+        expect(r1002).toHaveTextContent(m.ci.desk.replace("{n}", "6"));
+        expect(r1001).toHaveTextContent(m.ci.desk.replace("{n}", "3"));
+        expect(r998).not.toHaveTextContent(m.ci.desk.replace("{n}", ""));
+        expect(r998).toHaveTextContent(m.github.status.success);
+        const lanes = within(r1001).getAllByRole("listitem");
+        expect(lanes).toHaveLength(12);
+        expect(lanes[0]).toHaveTextContent(`Typecheck, lint, unit tests: ${m.ci.job.done}`);
+        expect(lanes[5]).toHaveTextContent(`Build, CV and e2e (5/8): ${m.ci.job.failed}`);
+        expect(lanes[5]).toHaveAttribute("data-status", "failed");
+        expect(lanes.filter((l) => l.dataset.status === "failed")).toHaveLength(1);
+        expect(lanes[11]).toHaveTextContent(`3D perf gates 2/2: ${m.ci.job.queued}`);
+        expect(within(r1002).getAllByRole("listitem")[0]).toHaveTextContent(`Typecheck, lint, unit tests: ${m.ci.job.running}`);
+        const body = screen.getByTestId("office-ci");
+        expect(body).toHaveTextContent(m.ci.runs);
+        expect(body).toHaveTextContent(m.ci.ships);
+        const ships = within(body).getAllByTestId("office-feed-row");
+        expect(ships.map((r) => r.dataset.status)).toEqual(["success", "merged"]);
+        expect(ships[0]).toHaveTextContent("Deploy · production");
+        expect(within(ships[1]).getByRole("link", { name: new RegExp(`^${escape("#227 Rover wakes up, then a reveal orbit")}`) })).toHaveAttribute("href", "https://github.com/ShinyQ/ShinyQ-HQ/pull/227");
+        expect(screen.getByTestId("office-body")).toHaveTextContent(m.githubNote);
+      });
+    }
+
+    it("shows the running run's anonymous progress line when the pipeline is empty (a rollback)", () => {
+      const snap = busy();
+      snap.pipeline = { runs: [], ships: [] };
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
+      const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
+      expect(rows[0]).toHaveAttribute("data-status", "running");
+      expect(within(rows[0]).getByRole("progressbar")).toHaveAccessibleName(o.jobs.replace("{done}", "7").replace("{total}", "12"));
+    });
+
+    it("says there are no recent runs without runs or ships", () => {
+      const snap = busy();
+      snap.pipeline = { runs: [], ships: [] };
+      snap.github = snap.github.filter((g) => g.kind === "run" && g.status !== "running");
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("id"));
+      expect(screen.queryByTestId("office-ci")).toBeNull();
+      expect(screen.getByTestId("office-body")).toHaveTextContent(ids.office["3d"].ci.none);
+    });
+
+    it("never links a run outside github.com", () => {
+      const snap = busy();
+      snap.pipeline.runs[0].url = "javascript:alert(1)";
+      live.feed = { status: "ready", snapshot: snap as OfficeFeedSnapshot, fetchedAt: Date.now() };
+      render(ciTree("en"));
+      const run = screen.getAllByTestId("office-ci-run")[0];
+      expect(run).toHaveTextContent("CI · feat/second-console-row");
+      expect(within(run).queryByRole("link")).toBeNull();
+      expect(screen.getByTestId("office-ci").querySelector('a[href^="javascript"]')).toBeNull();
+    });
   });
 
   it("starts the 3D office on every drawer open (a user action, so even with `?prefetch=off`)", () => {

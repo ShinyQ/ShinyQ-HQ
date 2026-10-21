@@ -924,6 +924,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
       officeInteractables(OFFICE_SLOTS, {
         office: t("3d.target.office"),
         github: t("3d.target.github"),
+        ci: t("3d.target.ci"),
         desk: (slot) => t("3d.target.desk", { n: slot + 1, agent: names[slot] ? t(`agent.${names[slot]}`) : t("3d.offDuty") }),
       }),
     );
