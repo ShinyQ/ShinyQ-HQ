@@ -13,10 +13,11 @@ import { writePerfEntry } from "./helpers";
  * images are reported. The main path is measured with `?prefetch=off`; then each public on-demand floor
  * chunk (L3, L4, RF) is loaded on its own and held to its cap. The main path fails at `BYTES_3D_BUDGET.failAt`
  * (466.4 KB); main plus every public floor chunk (`BYTES_3D_BUDGET.sessionFloors`, what idle prefetch downloads in
- * a normal session) must stay under the session cap (`BYTES_3D_BUDGET.session`: full 496.7 KB, lite 481.0 KB).
+ * a normal session) must stay under the session cap (`BYTES_3D_BUDGET.session`).
  * B1 (the Engine Room) loads only for an unlocked session, so it is never part of that total: it is
- * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office chunk
- * (`__hq.office.load()`) is measured after the session floors and held to `BYTES_3D_BUDGET.office`, outside the session total;
+ * measured in a second, unlocked session (`?unlock=b1&debug=1`) and held to its own cap. The L1 Agent Office scene chunk
+ * (`__hq.office.load()`, idle on every L1 visit: the always-live office, owner decision 2026-10-21) is measured after the
+ * office watch chunk, held to `BYTES_3D_BUDGET.office` and counted in the session total;
  * its drawer body chunk (`__hq.office.loadBody()`, loaded on an office drawer open) is measured after it and held to
  * `BYTES_3D_BUDGET.officeBody`; the two (plus the replay chunk, `__hq.office.loadReplay()`, once it ships) are held together to
  * `BYTES_3D_BUDGET.officeTotal`. The office watch chunk (`__hq.office.loadWatch()`, idle on every L1 session, so never
@@ -124,7 +125,7 @@ for (const tier of ["lite", "full"] as const) {
     // The office watch chunk loads once the first frame went idle on L1 (every L1 session): in the session total. First,
     // so a module it shares with the office chunks (the signal) counts here.
     const officeWatch = await measureOffice(page, "loadWatch", seen, mainPaths);
-    // The Agent Office (L1) loads when the rover heads into its wing (or on an office mission or drawer): its own cap, outside the session total.
+    // The Agent Office scene (L1) loads at idle on every L1 visit (the always-live office): its own cap, in the session total.
     const office = await measureOffice(page, "load", seen, mainPaths);
     // Its drawer body is a second chunk, loaded only when an office drawer opens: incremental over the scene chunk.
     const officeBody = await measureOffice(page, "loadBody", seen, mainPaths);
@@ -167,7 +168,7 @@ for (const tier of ["lite", "full"] as const) {
     }
     const total = sum(js);
     const floorsTotal = Object.values(floors).reduce((n, bytes) => n + bytes, 0);
-    const sessionTotal = total + floorsTotal + (officeWatch ?? 0);
+    const sessionTotal = total + floorsTotal + (officeWatch ?? 0) + (office ?? 0);
     writePerfEntry({
       kind: "bytes3d",
       tier,
@@ -181,12 +182,12 @@ for (const tier of ["lite", "full"] as const) {
       ...(officeBeacon === null ? {} : { officeBeacon }),
     });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
-    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
+    if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)} + office scene ${kb(office ?? 0)}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
     for (const [floor, bytes] of Object.entries(floors)) console.log(`floor chunk ${floor} (${tier}): ${kb(bytes)} gzip (cap ${kb(BYTES_3D_BUDGET.floors[floor as FloorChunkId])})`);
     if (b1 !== null) console.log(`floor chunk B1 (${tier}, unlocked session): ${kb(b1)} gzip (cap ${kb(BYTES_3D_BUDGET.floors.B1)}), not in the session total`);
-    if (office !== null) console.log(`Agent Office chunk (${tier}): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), not in the session total`);
+    if (office !== null) console.log(`Agent Office chunk (${tier}, idle on L1): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), in the session total`);
     if (officeBody !== null) console.log(`Agent Office drawer body (${tier}, on drawer open): ${kb(officeBody)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBody)}), over the scene chunk`);
-    if (officeTotal !== null) console.log(`Agent Office total (${tier}, scene + drawer body${officeReplay === null ? "" : " + replay"}): ${kb(officeTotal)} gzip (cap ${kb(BYTES_3D_BUDGET.officeTotal)}), not in the session total`);
+    if (officeTotal !== null) console.log(`Agent Office total (${tier}, scene + drawer body${officeReplay === null ? "" : " + replay"}): ${kb(officeTotal)} gzip (cap ${kb(BYTES_3D_BUDGET.officeTotal)}), the office chunks' own cap`);
     if (officeWatch !== null) console.log(`Agent Office watch chunk (${tier}, idle on L1): ${kb(officeWatch)} gzip (cap ${kb(BYTES_3D_BUDGET.officeWatch)}), in the session total`);
     if (officeBeacon !== null) console.log(`Agent Office beacon chunk (${tier}, on the first ask): ${kb(officeBeacon)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBeacon)}), not in the session total`);
 

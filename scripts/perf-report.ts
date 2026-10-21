@@ -173,12 +173,12 @@ export function renderGates(head: readonly PerfEntry[], base: readonly PerfEntry
       const parts = (Object.keys(caps) as (keyof typeof caps)[])
         .filter((f) => e.floors?.[f] !== undefined)
         .map((f) => `${f} ${kb(e.floors?.[f] ?? 0)} of ${kb(caps[f])}`);
-      const total = e.sessionTotal === undefined ? "" : ` Session total with every public floor chunk${e.officeWatch === undefined ? "" : " and the office watch chunk"} (B1 excluded): ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.session[e.tier])}.`;
+      const total = e.sessionTotal === undefined ? "" : ` Session total with every public floor chunk${e.officeWatch === undefined ? "" : " and the office watch and scene chunks"} (B1 excluded): ${kb(e.sessionTotal)} of ${kb(BYTES_3D_BUDGET.session[e.tier])}.`;
       if (parts.length) out.markdown += `Floor chunks (loaded on demand): ${parts.join(", ")}.${total}\n\n`;
     }
-    if (e.office !== undefined) out.markdown += `Agent Office chunk (L1, lazy, not in the session total): ${kb(e.office)} of ${kb(BYTES_3D_BUDGET.office)}.\n\n`;
+    if (e.office !== undefined) out.markdown += `Agent Office chunk (L1, idle, in the session total): ${kb(e.office)} of ${kb(BYTES_3D_BUDGET.office)}.\n\n`;
     if (e.officeBody !== undefined) out.markdown += `Agent Office drawer body (on drawer open): ${kb(e.officeBody)} of ${kb(BYTES_3D_BUDGET.officeBody)}.\n\n`;
-    if (e.officeTotal !== undefined) out.markdown += `Agent Office total (scene and drawer body, not in the session total): ${kb(e.officeTotal)} of ${kb(BYTES_3D_BUDGET.officeTotal)}.\n\n`;
+    if (e.officeTotal !== undefined) out.markdown += `Agent Office total (scene and drawer body, the office chunks' own cap): ${kb(e.officeTotal)} of ${kb(BYTES_3D_BUDGET.officeTotal)}.\n\n`;
     if (e.officeWatch !== undefined) out.markdown += `Agent Office watch chunk (L1, idle, in the session total): ${kb(e.officeWatch)} of ${kb(BYTES_3D_BUDGET.officeWatch)}.\n\n`;
     if (e.officeBeacon !== undefined) out.markdown += `Agent Office beacon chunk (on the first ask, not in the session total): ${kb(e.officeBeacon)} of ${kb(BYTES_3D_BUDGET.officeBeacon)}.\n\n`;
     out.warnings.push(...s.warnings);
