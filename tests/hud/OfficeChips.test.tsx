@@ -31,19 +31,19 @@ beforeEach(() => {
   getHQStore().setState({ phase: "explore", floor: "L1", activeRoom: null, device: { viewport: "desktop", camera: "desktop", coarse: false } });
   live.feed = { status: "ready", snapshot: statesA(Date.now()), fetchedAt: Date.now() };
   // Chips start far (`officeRuntime.chipFar`); these tests start them near, as at the near pose.
-  for (let slot = 0; slot < 5; slot++) setChipFar(slot, false);
+  for (let slot = 0; slot < 10; slot++) setChipFar(slot, false);
 });
 afterEach(() => {
   cleanup();
   bridge.goToRoom.mockClear();
-  for (let slot = 0; slot < 5; slot++) setChipFar(slot, true);
+  for (let slot = 0; slot < 10; slot++) setChipFar(slot, true);
   setChipsCompact(false);
 });
 
 describe("Agent Office chips", () => {
   it("shows one near chip per Rover with agent and activity and CI progress; the label keeps the title or Client project and the jobs", () => {
     renderChips();
-    expect(screen.getAllByTestId("office-chip")).toHaveLength(5);
+    expect(screen.getAllByTestId("office-chip")).toHaveLength(10);
     expect(chip(0)).toHaveTextContent(/^Copilot · Editing$/);
     expect(chip(0)).not.toHaveTextContent("Agent office scene");
     expect(chip(0)).toHaveAttribute("aria-label", "Desk 1: Copilot · Editing, Agent office scene");
@@ -52,8 +52,13 @@ describe("Agent Office chips", () => {
     expect(chip(0)).not.toHaveAttribute("aria-describedby");
     expect(chip(4).querySelector("[data-progress]")).toHaveAttribute("data-progress", "58");
     expect(chip(0)).toHaveAttribute("data-state", "working");
-    // The front row's five chips (the back row's Rovers have none yet; their runtime entries stay empty).
-    expect(officeRuntime.chips.map((el) => el instanceof HTMLElement)).toEqual([true, true, true, true, true, false, false, false, false, false]);
+    // One chip per seat, both rows; the five-desk snapshot leaves the back row off duty: dim dots, their labels kept.
+    expect(officeRuntime.chips.map((el) => el instanceof HTMLElement)).toEqual(Array.from({ length: 10 }, () => true));
+    for (const slot of [5, 6, 7, 8, 9]) {
+      expect(chip(slot)).toHaveAttribute("data-compact", "true");
+      expect(chip(slot)).toHaveTextContent(/^$/);
+      expect(chip(slot)).toHaveAttribute("aria-label", `Desk ${slot + 1}: ${en.office["3d"].offDuty}`);
+    }
   });
 
   it("adds the helpers to a near chip's head and label, with a +N pill past the four drones drawn", () => {
@@ -212,9 +217,8 @@ describe("Agent Office chips", () => {
   it("draws a hidden 1 px leader line and its tick per chip in its state's colour, out of the way of pointers and the accessibility tree", () => {
     renderChips();
     const leads = screen.getAllByTestId("office-chip-lead", { exact: true });
-    expect(leads).toHaveLength(5);
-    expect(officeRuntime.leads.slice(0, 5)).toEqual(leads.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
-    expect(officeRuntime.leads.slice(5)).toEqual([null, null, null, null, null]);
+    expect(leads).toHaveLength(10);
+    expect(officeRuntime.leads).toEqual(leads.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
     for (const lead of leads) {
       expect(lead).toHaveAttribute("aria-hidden", "true");
       expect(lead).toHaveClass("pointer-events-none");
@@ -225,8 +229,7 @@ describe("Agent Office chips", () => {
     expect(leads[0].style.background).toBe(chip(0).querySelector<HTMLElement>(".hq-dot")!.style.color);
     // The tick where the line meets the screen wall's top: hidden until drawn, in the same colour.
     const ticks = screen.getAllByTestId("office-chip-tick", { exact: true });
-    expect(officeRuntime.ticks.slice(0, 5)).toEqual(ticks.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
-    expect(officeRuntime.ticks.slice(5)).toEqual([null, null, null, null, null]);
+    expect(officeRuntime.ticks).toEqual(ticks.sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot)));
     for (const tick of ticks) {
       expect(tick).toHaveAttribute("aria-hidden", "true");
       expect(tick).toHaveClass("pointer-events-none");
@@ -236,10 +239,13 @@ describe("Agent Office chips", () => {
     expect(ticks[0].style.background).toBe(leads[0].style.background);
   });
 
-  it("labels an off-duty Rover and shows a far chip's name only, its label kept whole", () => {
+  it("shows an off-duty desk as a dim dot near or far, its label kept, and a far chip's name only, its label kept whole", () => {
     live.feed = { status: "ready", snapshot: statesB(Date.now()), fetchedAt: Date.now() };
     renderChips();
-    expect(chip(4)).toHaveTextContent(en.office["3d"].offDuty);
+    expect(chip(4)).toHaveAttribute("data-far", "false");
+    expect(chip(4)).toHaveAttribute("data-compact", "true");
+    expect(chip(4)).toHaveTextContent(/^$/);
+    expect(chip(4).querySelector("[data-off=true]")).not.toBeNull();
     expect(chip(4)).toHaveAttribute("aria-label", `Desk 5: ${en.office["3d"].offDuty}`);
     expect(chip(1)).toHaveAttribute("aria-label", expect.stringContaining("Office drawers"));
     act(() => setChipFar(1, true));

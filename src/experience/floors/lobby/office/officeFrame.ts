@@ -165,30 +165,47 @@ export interface LeadEnd {
   faded: boolean;
 }
 
+/** Where a line meets an edge (`meet`): `t` along the line, `s` along the edge (0 to 1 on it). */
+const cut = { t: 0, s: 0 };
+
+/** Where the line from (x, y) along (dx, dy) meets the edge from (ax, ay) to (bx, by), into `cut`; false when parallel or NaN. */
+function meet(x: number, y: number, dx: number, dy: number, ax: number, ay: number, bx: number, by: number): boolean {
+  const ex = bx - ax;
+  const ey = by - ay;
+  const den = dx * ey - dy * ex;
+  if (!(Math.abs(den) > 1e-9)) return false;
+  cut.t = ((ax - x) * ey - (ay - y) * ex) / den;
+  cut.s = ((ax - x) * dy - (ay - y) * dx) / den;
+  return true;
+}
+
 /**
  * The end of the leader line from (x, y), a chip's bottom centre, toward its Rover's head (hx, hy), with the screen wall's
- * top edge projected through (wx0, wy0) and (wx1, wy1) (px; NaN off the camera): at that edge, with a tick, when the line
- * crosses it at least `min` px under the chip, so the line never runs over the screens' text (the chip's colour and its
- * Rover's antenna keep the mapping); faded (`LEAD.faded`) all the way to the head when the edge is above that (the chip
- * itself sits over the screens); whole to the head when the head stands above the edge. Writes `out`, allocates nothing.
+ * top edge projected through (wx0, wy0) and (wx1, wy1) and its bottom edge through (bx0, by0) and (bx1, by1) (px; NaN off
+ * the camera): at the top edge, with a tick, when the line crosses it on the wall at least `min` px under the chip, so the
+ * line never runs over the screens' text (the chip's colour and its Rover's antenna keep the mapping); faded
+ * (`LEAD.faded`) all the way to the head when the edge is above that (the chip itself sits over the screens) or when the
+ * line passes the top edge beside the wall and runs into it through its side (it meets the bottom edge on the wall);
+ * whole to the head when the head stands above the edge or the line passes beside the wall (a chip in a row wider than
+ * the wall; `beside` false ends it on the edge's line past the wall's end with a tick instead, `OfficeWatch`'s fallback
+ * where the whole line would cross the HUD). Writes `out`, allocates nothing.
  */
-export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd): LeadEnd {
+export function leadEnd(x: number, y: number, hx: number, hy: number, wx0: number, wy0: number, wx1: number, wy1: number, min: number, out: LeadEnd, bx0 = NaN, by0 = NaN, bx1 = NaN, by1 = NaN, beside = true): LeadEnd {
   out.x = hx;
   out.y = hy;
   out.tick = out.faded = false;
-  const ex = wx1 - wx0;
-  const ey = wy1 - wy0;
   const dx = hx - x;
   const dy = hy - y;
-  const den = dx * ey - dy * ex;
-  // Parallel, or the wall off the camera (NaN): the whole line.
-  if (!(Math.abs(den) > 1e-9)) return out;
-  const t = ((wx0 - x) * ey - (wy0 - y) * ex) / den;
-  if (t >= 1) return out;
-  if (t * Math.hypot(dx, dy) >= min) {
-    out.x = x + t * dx;
-    out.y = y + t * dy;
-    out.tick = true;
-  } else out.faded = true;
+  // Parallel, the wall off the camera (NaN) or the head above the edge: the whole line.
+  if (!meet(x, y, dx, dy, wx0, wy0, wx1, wy1) || cut.t >= 1) return out;
+  if (!beside || (cut.s >= 0 && cut.s <= 1)) {
+    if (cut.t * Math.hypot(dx, dy) >= min) {
+      out.x = x + cut.t * dx;
+      out.y = y + cut.t * dy;
+      out.tick = true;
+    } else out.faded = true;
+    return out;
+  }
+  out.faded = meet(x, y, dx, dy, bx0, by0, bx1, by1) && cut.t > 0 && cut.t < 1 && cut.s >= 0 && cut.s <= 1;
   return out;
 }

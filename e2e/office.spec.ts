@@ -298,7 +298,7 @@ const glErrors = (page: Page) =>
   });
 
 test.describe("Agent Office (L1)", () => {
-  test("loads at idle on L1 and shows ten Rovers with their states and the front row's chips at the office", async ({ page }) => {
+  test("loads at idle on L1 and shows ten Rovers with their states and their chips at the office", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -315,7 +315,10 @@ test.describe("Agent Office (L1)", () => {
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expect.poll(async () => (await probe(page)).wallFrames).toBeGreaterThan(0);
     await show(page, office, statesB(Date.now()), STATES_B);
-    await expect(chip(page, 4)).toContainText(en.office["3d"].offDuty);
+    // An off-duty desk's chip is a dim dot near or far; its label keeps the text.
+    await expect(chip(page, 4)).toHaveAttribute("data-compact", "true");
+    await expect(chip(page, 4)).toHaveAttribute("aria-label", `Desk 5: ${en.office["3d"].offDuty}`);
+    await expect(chip(page, 4)).toHaveText("");
     expect(errors).toEqual([]);
   });
 
@@ -673,7 +676,7 @@ test.describe("Agent Office (L1)", () => {
 test.describe("Agent Office (L1) at 1440 x 900", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("at the stop the chips wait for the camera, then all five show far; a hand zoom keeps them shown; a drag turns them into dots", async ({ page }) => {
+  test("at the stop the chips wait for the camera, then all ten show far in one row; a hand zoom keeps them shown; a drag turns them into dots", async ({ page }) => {
     const errors = collectErrors(page);
     const office = await serveOffice(page);
     await enterHQ(page);
@@ -681,37 +684,41 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
-    // Settled in the office view: all five on screen, one line (far, past the band's near edge from a far start), not dots.
+    // Settled in the office view: all ten on screen, one line (far, past the band's near edge from a far start); the five
+    // sessions' chips keep the name, the back row's off-duty desks are dots.
     await expect.poll(() => cameraView(page)).toEqual({ view: "L1:office", held: true });
-    await expect.poll(async () => (await probe(page)).chips).toBe(5);
-    for (const slot of [0, 1, 2, 3, 4]) {
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) {
       await expect(chip(page, slot)).toBeVisible();
       await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
-      await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", slot < 5 ? "false" : "true");
     }
     await expectChipsApart(page);
-    // One row pinned under the top bar (`OFFICE_CHIP_TOP.desktop`, 66 px), in desk order left to right, each with its leader
-    // line drawn down to its Rover.
+    // One row pinned under the top bar (`OFFICE_CHIP_TOP.desktop`, 66 px), each row's desks left to right (the row orders the
+    // chips by their Rovers' heads), each with its leader line drawn.
     const row = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; top: number }));
     for (const box of row) expect(box.top).toBeCloseTo(66, 0);
-    for (let i = 1; i < row.length; i++) expect(row[i].left).toBeGreaterThan(row[i - 1].left);
+    for (const desks of [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]) for (let i = 1; i < desks.length; i++) expect(row[desks[i]].left).toBeGreaterThan(row[desks[i - 1]].left);
     const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
-    expect(leads).toEqual(["visible", "visible", "visible", "visible", "visible"]);
-    // Until Task 6 retunes the view: the 32 u wing (4.5 u behind the back row) raises the wall's top over the chip row
-    // here, so each line runs faded down to its Rover's head, without a tick (tests/unit/office-chip-placement.test.ts).
+    expect(leads).toEqual(Array.from({ length: 10 }, () => "visible"));
+    // Over the wall each ends at the screen wall's top with a tick, above its Rover's head (never across the screens' text);
+    // a chip past the wall's end (ten chips span more than the wall) draws its whole line beside the wall, to the head.
     const ends = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) =>
       els.map((el) => {
         const tick = el.nextElementSibling as HTMLElement;
-        return { tick: tick.dataset.testid === "office-chip-tick" && tick.style.visibility === "visible", faded: Number((el as HTMLElement).style.opacity) < 0.3 };
+        const lead = el.getBoundingClientRect();
+        const t = tick.getBoundingClientRect();
+        return { tick: tick.dataset.testid === "office-chip-tick" && tick.style.visibility === "visible", meets: Math.abs(lead.bottom - (t.top + t.height / 2)) <= 2 };
       }),
     );
-    expect(ends).toEqual(Array.from({ length: 5 }, () => ({ tick: false, faded: true })));
+    expect(ends.filter((e) => e.tick).length).toBeGreaterThanOrEqual(4);
+    for (const e of ends) if (e.tick) expect(e.meets).toBe(true);
     // Still far a moment later (the settle gate holds past the first settled frame).
     await waitForFrames(page, 30);
     for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
     // One zoom key step: the camera eases in for about a second; the chips never blink out, and once it rests they add
     // the activity.
-    expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(5);
+    expect(await fewestChipsWhile(page, 90, () => page.keyboard.press("=")), "chips shown on every frame of the zoom").toBe(10);
     await waitForCameraSettle(page);
     for (const slot of [1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
     await expectChipsApart(page);
@@ -722,7 +729,7 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     for (let i = 1; i <= 8; i++) await page.mouse.move(Math.round(width * 0.78) - i * 6, Math.round(height * 0.6));
     await page.mouse.up();
     await expect.poll(() => cameraView(page)).toEqual({ view: null, held: expect.any(Boolean) });
-    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
     await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
     await expectChipsApart(page);
     expect(errors).toEqual([]);
@@ -827,6 +834,22 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     expect(column.y).toBeCloseTo(asker.lift, 4);
     expect(Math.hypot(column.x - asker.rover.x, column.z - asker.rover.z)).toBeCloseTo(1.25, 3);
     // The summary drawer lists ten desks; a back-row desk's drawer shows its Rover.
+    // At the stop all ten sessions' chips share one row under the top bar: the names (one line, no room for the activity),
+    // apart, each with its leader line drawn.
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(() => cameraView(page)).toEqual({ view: "L1:office", held: true });
+    await expect.poll(async () => (await probe(page)).chips).toBe(SEATS);
+    for (let slot = 0; slot < SEATS; slot++) {
+      await expect(chip(page, slot)).toHaveAttribute("data-compact", "false");
+      await expect(chip(page, slot)).toHaveAttribute("data-far", "true");
+    }
+    await expect(chip(page, 7)).toHaveAttribute("aria-label", /^Desk 8: Codex · Asking Kurniadi/);
+    const tops = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    expect(tops).toEqual(Array.from({ length: SEATS }, () => 66));
+    await expectChipsApart(page);
+    const leads = await page.locator('[data-testid="office-chip-lead"]').evaluateAll((els) => els.map((el) => (el as HTMLElement).style.visibility));
+    expect(leads).toEqual(Array.from({ length: SEATS }, () => "visible"));
     await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office-desk-8"));
     await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "desk", { timeout: 60_000 });
     await expect(page.getByTestId("office-activity")).toHaveText(en.office.activity.asking);
@@ -875,9 +898,16 @@ test.describe("Agent Office (L1) on a phone", () => {
     await show(page, office, statesA(Date.now()), STATES_A);
     await driveTo(page, LOBBY.officeWing.stop);
     await waitForCameraSettle(page);
-    // At the stop, once the camera holds still, every chip shows as a compact dot.
-    await expect.poll(async () => (await probe(page)).chips).toBe(5);
-    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    // At the stop, once the camera holds still, every chip shows as a compact dot: ten dots in two rows beside the minimap
+    // (the row's top at 64 px, the second a dot and a gap lower), neighbours along x in alternate rows.
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    for (const slot of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) await expect(chip(page, slot)).toHaveAttribute("data-compact", "true");
+    const dots = await page.locator('[data-testid="office-chip"]').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; top: number; right: number }));
+    expect(new Set(dots.map((d) => Math.round(d.top)))).toEqual(new Set([64, 102]));
+    const byX = [...dots].sort((a, b) => a.left - b.left);
+    for (let i = 1; i < byX.length; i++) expect(Math.round(byX[i].top)).not.toBe(Math.round(byX[i - 1].top));
+    for (const d of dots) expect(d.right).toBeLessThanOrEqual(390 - 84);
+    await expectChipsApart(page);
     // Two zoom key steps (0.8 each): the portrait camera's near pose, where a desktop's chips add the activity.
     const start = await zoom(page);
     for (let i = 0; i < 2; i++) await page.keyboard.press("=");

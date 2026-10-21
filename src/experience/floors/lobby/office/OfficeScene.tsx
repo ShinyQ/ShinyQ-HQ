@@ -49,8 +49,9 @@ import {
   CHIP_ROW,
   chipMaxWidth,
   chipRowBounds,
+  chipsDotsOnly,
   chipsOneLine,
-  layoutChipRow,
+  layoutChipRows,
   nextChipFar,
   OFFICE_CHIP_ANCHORS,
   OFFICE_CHIP_TOP,
@@ -563,26 +564,31 @@ function createWatchState() {
     wView: perSlot((): OfficeView | null => null),
     // The max width last written to the chip (px; NaN until written for this element).
     wMax: perSlot(() => NaN),
-    // The row this frame: the shown chips' targets, half widths and slots, and their laid out centres.
+    // The row this frame: the shown chips' targets, half widths and slots, their laid out centres and rows (0 the top),
+    // and their boxes (x0, y0, x1, y1 px; the leader lines keep off the other chips).
     tx: perSlot(() => 0),
     th: perSlot(() => 0),
     ts: perSlot(() => 0),
     out: perSlot(() => 0),
-    // The last written chip x and leader line (x, y, length, angle), its fade and its tick (x, y; NaN hidden).
+    row: perSlot(() => 0),
+    bx: perSlot((): ScreenBox => ({ x0: 0, y0: 0, x1: 0, y1: 0 })),
+    // The last written chip x and y and leader line (x, y, length, angle), its fade and its tick (x, y; NaN hidden).
     cx: perSlot(() => NaN),
+    cy: perSlot(() => NaN),
     lead: perSlot(() => [NaN, NaN, NaN, NaN]),
     leadOn: perSlot(() => false),
     leadFaded: perSlot(() => false),
     tick: perSlot(() => [NaN, NaN]),
-    // The wall's top edge projected this frame (x0, y0, x1, y1 px; NaN off the camera) and a leader line's end.
-    wall: [NaN, NaN, NaN, NaN],
+    // The wall's top and bottom edges projected this frame (x0, y0, x1, y1 each, px; NaN off the camera) and a leader line's end.
+    wall: [NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN],
     end: { x: 0, y: 0, tick: false, faded: false },
     // When the office-in-view test runs next (s).
     next: 0,
-    // The HUD boxes, the row's bounds and the chips' widest fit for one screen size and HUD layout.
+    // The HUD boxes, the row's bounds and the chips' widest fit for one screen size, HUD layout and count of named chips.
     width: 0,
     height: 0,
     layout: "",
+    named: -1,
     hud: [] as ScreenBox[],
     bounds: { left: 0, right: 0 },
     max: CHIP_ROW.max as number,
@@ -590,15 +596,26 @@ function createWatchState() {
 }
 type WatchState = ReturnType<typeof createWatchState>;
 
-/** The HUD boxes, the row's bounds and the chips' max width, again only when the screen size or the HUD layout changes. */
-function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number) {
-  if (w.width === width && w.height === height && w.layout === hud) return;
+/**
+ * The HUD boxes, the row's bounds and the chips' max width, again only when the screen size, the HUD layout or the count
+ * of chips with a name (`named`: the desks with an agent; an off-duty desk's chip is a dot) changes.
+ */
+function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number) {
+  if (w.width === width && w.height === height && w.layout === hud && w.named === named) return;
   w.width = width;
   w.height = height;
   w.layout = hud;
+  w.named = named;
   w.hud = officeHudBoxes(width, height, hud);
   chipRowBounds(width, top, w.hud, w.bounds);
-  w.max = chipMaxWidth(w.bounds, OFFICE_CHIP_COUNT);
+  w.max = chipMaxWidth(w.bounds, named, OFFICE_CHIP_COUNT - named);
+}
+
+/** How many of the view's chips carry a name (an agent at the desk). */
+function namedChips(view: OfficeView): number {
+  let n = 0;
+  for (let i = 0; i < OFFICE_CHIP_COUNT && i < view.rovers.length; i++) if (view.rovers[i].agent !== null) n++;
+  return n;
 }
 
 /** Hides chip `slot` once (it turns far), then leaves it alone until it comes back into view; its leader line too. */
@@ -612,13 +629,16 @@ function hideChip(w: WatchState, slot: number, el: HTMLElement | null) {
   writeLead(w, slot, NaN, NaN);
 }
 
-/** The screen wall's top edge (the frame's top, its front face): the leader lines end there (`leadEnd`). */
-const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
+/**
+ * The screen wall's top edge (the frame's top, its front face): the leader lines end there; and the frame's bottom (`b`),
+ * so a line beside the wall's top that runs into its side fades (`leadEnd`).
+ */
+const WALL_TOP = { y: OFFICE.wall.bottom + OFFICE.wall.h + OFFICE.wall.frame, b: OFFICE.wall.bottom - OFFICE.wall.frame, z: LOBBY.officeWing.wall.z - OFFICE.wall.t / 2, x: OFFICE.wall.w / 2 + OFFICE.wall.frame } as const;
 
-/** Projects the wall's top edge ends into `w.wall` (px; NaN when either is behind the camera). */
+/** Projects the wall's top and bottom edge ends into `w.wall` (px; NaN when either is behind the camera). */
 function projectWallTop(w: WatchState, camera: RootState["camera"], width: number, height: number) {
-  for (let k = 0; k < 2; k++) {
-    w.v.set(LOBBY.officeWing.wall.x + (k ? WALL_TOP.x : -WALL_TOP.x), WALL_TOP.y, WALL_TOP.z).project(camera);
+  for (let k = 0; k < 4; k++) {
+    w.v.set(LOBBY.officeWing.wall.x + (k & 1 ? WALL_TOP.x : -WALL_TOP.x), k < 2 ? WALL_TOP.y : WALL_TOP.b, WALL_TOP.z).project(camera);
     const back = w.v.z >= 1;
     w.wall[2 * k] = back ? NaN : ((w.v.x + 1) / 2) * width;
     w.wall[2 * k + 1] = back ? NaN : ((1 - w.v.y) / 2) * height;
@@ -639,20 +659,36 @@ function writeTick(w: WatchState, slot: number, x: number, y: number) {
   }
 }
 
+/** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`). */
+function endLead(w: WatchState, slot: number, x: number, y: number, beside: boolean) {
+  const a = w.wall;
+  return leadEnd(x, y, w.hx[slot], w.hy[slot], a[0], a[1], a[2], a[3], CHIP_ROW.lead, w.end, a[4], a[5], a[6], a[7], beside);
+}
+
+/** Whether the line from (x, y) to `e` crosses no HUD box and none of the row's other `n` chips (`self` its own index). */
+function clearLead(w: WatchState, x: number, y: number, e: { x: number; y: number }, n: number, self: number): boolean {
+  for (let i = 0; i < w.hud.length; i++) if (segmentHitsBox(x, y, e.x, e.y, w.hud[i])) return false;
+  for (let k = 0; k < n; k++) if (k !== self && !Number.isNaN(w.bx[k].x0) && segmentHitsBox(x, y, e.x, e.y, w.bx[k])) return false;
+  return true;
+}
+
 /**
  * The leader line of chip `slot` from (x, y), the chip's bottom centre, toward its Rover's head (`w.hx`, `w.hy`): drawn while
- * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box (`segmentHitsBox`); it ends
- * at the screen wall's top with a tick, or runs faded to the head where the chip sits over the screens (`leadEnd`); NaN
- * hides it.
+ * the head sits at least `CHIP_ROW.lead` px under the chip and the drawn line crosses no HUD box and none of the row's other
+ * `n` chips (`segmentHitsBox`; `self` its own index in the row: a top chip's line in two rows of dots passes between the
+ * chips under it); it ends at the screen wall's top with a tick, or runs faded to the head where the chip sits over the
+ * screens (`leadEnd`); NaN hides it.
  */
-function writeLead(w: WatchState, slot: number, x: number, y: number) {
+function writeLead(w: WatchState, slot: number, x: number, y: number, n = 0, self = -1) {
   const lead = officeRuntime.leads[slot];
   if (!lead) return;
-  const e = leadEnd(x, y, w.hx[slot], w.hy[slot], w.wall[0], w.wall[1], w.wall[2], w.wall[3], CHIP_ROW.lead, w.end);
+  // A whole line beside the wall that would cross the HUD or a chip ends on the wall's top line past its end instead.
+  let e = endLead(w, slot, x, y, true);
+  let on = clearLead(w, x, y, e, n, self);
+  if (!on && !e.tick && !e.faded) on = clearLead(w, x, y, (e = endLead(w, slot, x, y, false)), n, self);
+  on &&= !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead;
   const hx = e.x;
   const hy = e.y;
-  let on = !Number.isNaN(x) && w.hy[slot] - y >= CHIP_ROW.lead;
-  for (let i = 0; on && i < w.hud.length; i++) on = !segmentHitsBox(x, y, hx, hy, w.hud[i]);
   writeTick(w, slot, on && e.tick ? Math.round(hx) : NaN, Math.round(hy));
   if (!on) {
     if (w.leadOn[slot]) {
@@ -722,9 +758,9 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
   const small = mobile || officeRuntime.compact;
   const hud = hudLayout(s.device.viewport, s.device.coarse);
   const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
-  fitRow(w, size.width, size.height, hud, top);
+  fitRow(w, size.width, size.height, hud, top, namedChips(view));
   const oneLine = chipsOneLine(s.device.viewport, mode === "compact", w.max);
-  if (mode) setChipsCompact(mode === "compact");
+  if (mode) setChipsCompact(mode === "compact" || chipsDotsOnly(w.max));
   let n = 0;
   for (let slot = 0; slot < officeRuntime.chips.length; slot++) {
     const el = officeRuntime.chips[slot];
@@ -736,7 +772,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
         w.shown[slot] = false;
         w.wFar[slot] = null;
         w.wMax[slot] = NaN;
-        w.cx[slot] = NaN;
+        w.cx[slot] = w.cy[slot] = NaN;
         w.leadOn[slot] = w.leadFaded[slot] = false;
         w.lead[slot].fill(NaN);
         w.tick[slot].fill(NaN);
@@ -774,30 +810,42 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     }
     if (!on) hideChip(w, slot, el);
   }
-  layoutChipRow(w.tx, w.th, w.out, n, w.bounds);
+  layoutChipRows(w.tx, w.th, w.out, w.row, n, w.bounds);
   if (n) projectWallTop(w, camera, size.width, size.height);
+  // Place the chips first (a second row of dots sits a dot and a gap lower), then draw the leader lines clear of them all.
   let chips = 0;
   for (let k = 0; k < n; k++) {
     const slot = w.ts[k];
     const el = w.els[slot]!;
     const half = w.th[k];
     const x = Math.round(w.out[k] * 2) / 2;
-    // Past the row's right bound only when the chips cannot fit side by side: hidden.
+    const y = top + w.row[k] * (CHIP_ROW.dot + CHIP_ROW.gap);
+    const b = w.bx[k];
+    // Past the row's right bound only when the chips cannot fit: hidden (its box empty).
     if (x + half > w.bounds.right + 0.5) {
+      b.x0 = b.x1 = NaN;
       hideChip(w, slot, el);
       continue;
     }
-    if (w.cx[slot] !== x - half) {
+    b.x0 = x - half;
+    b.y0 = y;
+    b.x1 = x + half;
+    b.y1 = y + w.h[slot];
+    if (w.cx[slot] !== x - half || w.cy[slot] !== y) {
       w.cx[slot] = x - half;
-      el.style.transform = `translate3d(${(x - half).toFixed(1)}px, ${top}px, 0)`;
+      w.cy[slot] = y;
+      el.style.transform = `translate3d(${(x - half).toFixed(1)}px, ${y}px, 0)`;
     }
     if (!w.shown[slot]) {
       el.style.visibility = "visible";
       el.style.opacity = "1";
       w.shown[slot] = true;
     }
-    writeLead(w, slot, x, top + w.h[slot]);
     chips += 1;
+  }
+  for (let k = 0; k < n; k++) {
+    const b = w.bx[k];
+    if (!Number.isNaN(b.x0)) writeLead(w, w.ts[k], (b.x0 + b.x1) / 2, b.y1, n, k);
   }
   sceneProbes.office.chips = chips;
 }
@@ -806,9 +854,10 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
  * Every 0.5 s: is the office in view on L1 (a frustum test of its bounds), and how far is the camera from those bounds
  * (`officeRuntime.distance`, `far` past `OFFICE_LOD.farDistance`)? That gates the per-frame work, the wall redraws, the
  * far level of detail and the polling ("near" or "far" in view; out of view the office watch polls). Every frame: lays the HTML chips out in one row under the HUD's top bar, each
- * over its Rover's head (`layoutChipRow`: nudged apart along x in desk order, clear of the HUD boxes in the row's band),
+ * over its Rover's head (`layoutChipRows`: nudged apart along x in the order of the heads, clear of the HUD boxes in the row's band),
  * with a leader line from the chip down to the head, as `officeChipMode` lets them (far and compact on phones at any
- * distance, one line where five full chips would not fit the row, and everywhere outside the office view; a hidden chip
+ * distance, one line where the row leaves a chip under `CHIP_ROW.near`, dots where it leaves no room for the names and
+ * everywhere outside the office view, two rows of dots where one does not fit, `layoutChipRows`; a hidden chip
  * turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far flag,
  * its compact layout or the feed), and a style is written only when its value changes. Renders nothing.
  */
@@ -839,7 +888,7 @@ function OfficeWatch({ view }: { view: OfficeView }) {
 
 /**
  * The live L1 Agent Office (lazy chunk; the furniture shell is drawn by the main-path OfficeMount): ten Rovers on two
- * console rows, their faces and desk screens, the glow, the screen wall, the front row's chips' positions and twelve
+ * console rows, their faces and desk screens, the glow, the screen wall, the ten chips' positions and twelve
  * point-and-go targets (the office, GitHub and the ten desks).
  * Five draw calls here (parts, treads, screens, glow, wall), on programs L1 already has.
  */

@@ -122,10 +122,12 @@ export const OFFICE_CHIP_TOP = { desktop: 66, mobile: 64 } as const;
 
 /**
  * The pinned chip row (px): `gap` between neighbours, `edge` from the screen edges and the HUD boxes, `max` the widest
- * chip (its inline max width; where five would not fit the row the chips keep one line, `chipsOneLine`), `band` the row's
- * height the HUD boxes are tested against (a near chip with its CI bar is 40 px), `lead` the shortest leader line drawn.
+ * chip, `dot` a compact dot chip (the state dot in a 32 px pill: phones, off-duty desks, outside the office view), `name`
+ * the narrowest chip that keeps the agent's name (narrower, every chip is a dot) and `near` the narrowest that adds the
+ * activity near (narrower, the chips keep one line, `chipsOneLine`), `band` the height the HUD boxes are tested against
+ * (two rows of dots, `layoutChipRows`; a near chip with its CI bar is 40 px), `lead` the shortest leader line drawn.
  */
-export const CHIP_ROW = { gap: 6, edge: 8, max: 176, band: 44, lead: 8 } as const;
+export const CHIP_ROW = { gap: 6, edge: 8, max: 176, dot: 32, name: 84, near: 128, band: 70, lead: 8 } as const;
 
 /**
  * The HUD boxes the chip row and the leader lines keep off (px, measured in the browser): the desktop profile card (top
@@ -193,16 +195,25 @@ export function chipRowBounds(width: number, top: number, boxes: readonly Screen
   return out;
 }
 
-/** The widest `n` chips may be to fit the row side by side (px, at most `CHIP_ROW.max`). */
-export const chipMaxWidth = (bounds: ChipRowBounds, n: number): number => Math.max(32, Math.min(CHIP_ROW.max, Math.floor((bounds.right - bounds.left - (n - 1) * CHIP_ROW.gap) / n)));
+/**
+ * The widest a chip with a name may be (px, at most `CHIP_ROW.max`) so `named` such chips and `dots` dot chips (the off-duty
+ * desks) fit the row side by side: ten desks share one row on a desktop (`OfficeWatch`, tests/unit/office-chip-placement.test.ts).
+ */
+export function chipMaxWidth(bounds: ChipRowBounds, named: number, dots = 0): number {
+  if (named <= 0) return CHIP_ROW.max;
+  const free = bounds.right - bounds.left - (named + dots - 1) * CHIP_ROW.gap - dots * CHIP_ROW.dot;
+  return Math.max(CHIP_ROW.dot, Math.min(CHIP_ROW.max, Math.floor(free / named)));
+}
 
 /**
- * Whether the chips keep one line (the name) at any distance (`OfficeWatch`): on a phone (`viewport` "mobile", where they
- * are dots), outside the office view (`compact`), and where five chips `CHIP_ROW.max` px wide would not fit the row side
- * by side (`max`, `chipMaxWidth`: the tablet camera's 960 x 640, a portrait tablet), so the activity never ends in an
- * ellipsis a few letters in (tests/unit/office-chip-placement.test.ts).
+ * Whether the chips keep one line (the name, or a dot) at any distance (`OfficeWatch`): on a phone (`viewport` "mobile",
+ * where they are dots), outside the office view (`compact`), and where the row's fit (`max`, `chipMaxWidth`) leaves a chip
+ * narrower than `CHIP_ROW.near`, so the activity never ends in an ellipsis a few letters in (tests/unit/office-chip-placement.test.ts).
  */
-export const chipsOneLine = (viewport: string, compact: boolean, max: number): boolean => viewport === "mobile" || compact || max < CHIP_ROW.max;
+export const chipsOneLine = (viewport: string, compact: boolean, max: number): boolean => viewport === "mobile" || compact || max < CHIP_ROW.near;
+
+/** Whether every chip shows as a dot because the row's fit (`max`) leaves no room for the names (`CHIP_ROW.name`). */
+export const chipsDotsOnly = (max: number): boolean => max < CHIP_ROW.name;
 
 // Scratch for `layoutChipRow` (grown on demand): the order, the packed offsets and the pool-adjacent-violators blocks.
 let order = new Int32Array(8);
@@ -258,11 +269,48 @@ export function layoutChipRow(targets: ArrayLike<number>, half: ArrayLike<number
   return fits;
 }
 
+// Scratch for `layoutChipRows`: the chips' common half width in two rows and the inset bounds.
+let zigHalf = new Float64Array(8);
+const zigBounds: ChipRowBounds = { left: 0, right: 0 };
+
+/**
+ * Lays out up to two rows of chips (phones: ten dots on a 390 px screen, beside the minimap): one row by `layoutChipRow`
+ * where it fits, else neighbours in the order of their targets alternate rows (`rows[i]`: 0 the top row, 1 the one under
+ * it), `pitch` apart along x (up to a chip's width, so a top chip's leader line passes between the two chips under it),
+ * and chips in one row stay at least `CHIP_ROW.gap` apart; the row nudges and shifts as one (`layoutChipRow` with every
+ * chip `pitch` wide). Returns false when two rows cannot hold them either (then one row is packed from the left bound,
+ * and the caller hides the chips past the right one). Allocates nothing past its scratch.
+ */
+export function layoutChipRows(targets: ArrayLike<number>, half: ArrayLike<number>, out: number[], rows: number[], n: number, bounds: ChipRowBounds): boolean {
+  for (let i = 0; i < n; i++) rows[i] = 0;
+  if (layoutChipRow(targets, half, out, n, bounds)) return true;
+  if (n < 2) return false;
+  let h = 0;
+  for (let i = 0; i < n; i++) h = Math.max(h, half[i]);
+  const pitch = Math.min(2 * h, (bounds.right - bounds.left - 2 * h) / (n - 1));
+  if (2 * pitch < 2 * h + CHIP_ROW.gap) {
+    layoutChipRow(targets, half, out, n, bounds);
+    return false;
+  }
+  if (zigHalf.length < n) zigHalf = new Float64Array(n);
+  const v = (pitch - CHIP_ROW.gap) / 2;
+  for (let i = 0; i < n; i++) zigHalf[i] = v;
+  zigBounds.left = bounds.left + h - v;
+  zigBounds.right = bounds.right - h + v;
+  layoutChipRow(targets, zigHalf, out, n, zigBounds);
+  for (let i = 0; i < n; i++) {
+    let rank = 0;
+    for (let j = 0; j < n; j++) if (out[j] < out[i]) rank++;
+    rows[i] = rank % 2;
+  }
+  return true;
+}
+
 /**
  * A chip whose anchor (its Rover's head) is farther than this from the camera shows the agent's name only (the mock's
  * `.tag.far`; near, the activity follows it): at the office stop, with the rover anywhere in the stop's zone, the heads
- * sit 34.8 u or more from a desktop camera and 39 u from a portrait one, and one zoom step (two on a portrait screen)
- * brings all five within 29.4 u (26.7 u) (tests/unit/office-chip-placement.test.ts).
+ * of both rows sit 34.8 u or more from a desktop camera, and one zoom step brings all ten within 30.7 u
+ * (tests/unit/office-chip-placement.test.ts). The tablet and portrait cameras' chips keep one line (a row too narrow, dots).
  */
 export const OFFICE_CHIP_FAR = 33;
 
@@ -287,7 +335,7 @@ export const OFFICE_CHIP_FAR_BAND = 1;
 
 /**
  * The next far flag for a chip at `dist` from the camera: far above 34, near below 32, unchanged between. One line
- * (`phone`, `chipsOneLine`) always far: a phone's row holds five dots, and the desk's drawer shows the rest.
+ * (`phone`, `chipsOneLine`) always far: a phone's rows hold ten dots, and the desk's drawer shows the rest.
  */
 export function nextChipFar(far: boolean, dist: number, phone = false): boolean {
   return phone || (far ? dist > OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND : dist > OFFICE_CHIP_FAR + OFFICE_CHIP_FAR_BAND);

@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
-import { OFFICE_DESKS, OFFICE_SEATS } from "@/lib/office/protocol";
+import { OFFICE_SEATS } from "@/lib/office/protocol";
 import type { CrewActor } from "./crew";
 
-/** Chips in the row under the top bar: the front row's desks (slots 0 to 4); the back row's Rovers have none yet. */
-export const OFFICE_CHIP_COUNT = OFFICE_DESKS;
+/** Chips under the top bar: one per seat, both rows (slots 0 to 9). */
+export const OFFICE_CHIP_COUNT = OFFICE_SEATS;
 
 /**
  * Shared between the office scene (in the canvas) and its HUD chips, mutated outside React render: whether the

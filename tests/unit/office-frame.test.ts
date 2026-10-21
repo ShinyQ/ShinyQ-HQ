@@ -197,4 +197,20 @@ describe("Agent Office leader line ends (`leadEnd`)", () => {
     expect(leadEnd(300, 106, 340, 130, 0, 140, 1000, 140, 8, out())).toEqual({ x: 340, y: 130, tick: false, faded: false });
     expect(leadEnd(300, 106, 340, 306, NaN, NaN, NaN, NaN, 8, out())).toEqual({ x: 340, y: 306, tick: false, faded: false });
   });
+
+  it("draws the whole line beside the wall (a chip past the wall's end), and fades one that runs into the wall through its side", () => {
+    // The wall from x 400 to 1000, its top at y 140, its bottom at y 260.
+    const wall = [400, 140, 1000, 140] as const;
+    const bottom = [400, 260, 1000, 260] as const;
+    // Straight down past its west end: the whole line, no tick (no screen text beside the wall).
+    expect(leadEnd(300, 106, 320, 506, ...wall, 8, out(), ...bottom)).toEqual({ x: 320, y: 506, tick: false, faded: false });
+    // From past the west end down into the wall's side, crossing its bottom edge on the wall: faded to the head.
+    expect(leadEnd(300, 106, 600, 406, ...wall, 8, out(), ...bottom)).toEqual({ x: 600, y: 406, tick: false, faded: true });
+    // From past the end to a head under the wall's top on the wall's span: it still meets the top edge on the wall, a tick.
+    const e = leadEnd(380, 106, 480, 206, ...wall, 8, out(), ...bottom);
+    expect([e.tick, e.faded]).toEqual([true, false]);
+    expect(e.y).toBeCloseTo(140, 9);
+    // A chip under the top's line but beside the wall (a landscape phone's row past the wall's end): the whole line.
+    expect(leadEnd(300, 160, 330, 360, ...wall, 8, out(), ...bottom)).toEqual({ x: 330, y: 360, tick: false, faded: false });
+  });
 });
