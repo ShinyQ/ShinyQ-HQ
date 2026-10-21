@@ -101,4 +101,37 @@ describe("VisitsPanel with an early snapshot", () => {
     expect(within(screen.getByTestId("visits-chips")).getByText(en.stats.noChips)).toBeInTheDocument();
     expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(2);
   });
+
+  it("uses singular words for a count of one, in both languages", async () => {
+    const { STATS_FIXTURE_EMPTY } = await import("@/lib/visits/contract");
+    const one = {
+      ...STATS_FIXTURE_EMPTY,
+      visits: { d30: 1, all: 1 },
+      countries: { d30: ["ID"], all: ["ID"] },
+      asks: { ...STATS_FIXTURE_EMPTY.asks, d30: { total: 1, topics: { work: 1, ai: 0, career: 0, contact: 0, perspectives: 0 }, chips: [{ id: "work-best", topic: "work" as const, n: 1 }] } },
+    };
+    __setStatsForTests({ status: "ready", snapshot: one, freshness: "fresh" });
+    renderPanel();
+    expect(screen.getByRole("status")).toHaveTextContent("Last 30 days, topic All: 1 visit from 1 country, 1 question.");
+    expect(within(screen.getByTestId("visits-chips")).getByText("1 pick")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "World map with 1 highlighted country" })).toBeInTheDocument();
+    cleanup();
+    renderPanel("id");
+    expect(screen.getByRole("status")).toHaveTextContent("30 hari terakhir, topik Semua: 1 kunjungan dari 1 negara, 1 pertanyaan.");
+    expect(within(screen.getByTestId("visits-chips")).getByText("1 kali dipilih")).toBeInTheDocument();
+  });
+
+  it("notes that the 3D and Classic split comes from the site's own beacon", () => {
+    __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
+    renderPanel();
+    expect(screen.getByTestId("visits-split")).toHaveTextContent("Share of the visits the site's own beacon saw");
+  });
+
+  it("states the sampling plainly and bases the country list on page views", () => {
+    __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
+    renderPanel();
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Cloudflare Web Analytics, sampled, rounded to tens");
+    expect(screen.getByText(/countries with at least one page view/)).toBeInTheDocument();
+    expect(screen.getByText("Last 30 days, including today: countries with page views")).toBeInTheDocument();
+  });
 });

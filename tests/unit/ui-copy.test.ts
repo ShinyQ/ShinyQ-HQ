@@ -64,7 +64,7 @@ describe("bilingual UI copy", () => {
   });
 
   it("formats every message with representative variables and counts", () => {
-    const numeric = new Set(["count", "issuers", "shown", "total", "page", "index", "minutes", "year", "w", "d", "rooms", "plazas", "calls", "triangles", "archive", "employment", "freelance", "citations", "hIndex", "posts", "papers", "visits", "countries", "questions", "n", "threeD", "classic", "tasks", "prs", "green", "runs"]);
+    const numeric = new Set(["count", "issuers", "shown", "total", "page", "index", "minutes", "year", "w", "d", "rooms", "plazas", "calls", "triangles", "archive", "employment", "freelance", "citations", "hIndex", "posts", "papers", "visits", "countries", "questions", "n", "threeD", "classic", "tasks", "prs", "green", "runs", "visitCount", "countryCount", "questionCount"]);
     for (const [locale, messages] of [["en", en], ["id", id]] as const) {
       for (const { path, value } of collectStrings(messages)) {
         const t = createTranslator({ locale, messages: { sample: value }, onError: (error) => { throw error; } });

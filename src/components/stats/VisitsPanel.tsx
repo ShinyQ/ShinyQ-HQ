@@ -74,7 +74,16 @@ export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, 
   const windowText = period === "d30" ? t("window.d30") : t("window.all", { date: formatDate(s.since, locale) });
   const topicName = t(`topics.${topic}`);
   const long = (n: number) => formatCountLong(n, locale);
-  const status = t("status", { period: t(`periods.${period}`), topic: topicName, visits: long(v.visits), countries: long(v.countries.length), questions: long(v.asks.total) });
+  const status = t("status", {
+    period: t(`periods.${period}`),
+    topic: topicName,
+    visits: long(v.visits),
+    visitCount: v.visits,
+    countries: long(v.countries.length),
+    countryCount: v.countries.length,
+    questions: long(v.asks.total),
+    questionCount: v.asks.total,
+  });
   const counters: { key: string; label: string; value: string; long?: string }[] = [
     { key: "visits", label: t("counters.visits"), value: count(v.visits), long: formatCountLong(v.visits, locale) },
     { key: "countries", label: t("counters.countries"), value: count(v.countries.length) },
@@ -198,7 +207,7 @@ export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, 
               {v.asks.chips.map((c) => (
                 <li key={c.id} className="pv-small flex items-baseline justify-between gap-3 border-t border-line pt-2" data-chip={c.id}>
                   <span className="text-ink-2">{chipLabels[c.id] ?? c.id}</span>
-                  <span className="pv-data shrink-0 text-ink-3">{t("chipCount", { n: count(c.n) })}</span>
+                  <span className="pv-data shrink-0 text-ink-3">{t("chipCount", { n: count(c.n), count: c.n })}</span>
                 </li>
               ))}
             </ul>
