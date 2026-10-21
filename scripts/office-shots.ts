@@ -16,7 +16,8 @@
  *
  * `ring-south` (always-live office, design 5.9): the rover on the Lobby lane ring's south point (the hologram's centre plus
  * `LOBBY.laneRadius` toward the wing), the view turned to look south at the wing, once the office is in view, far
- * (past `OFFICE_LOD.farDistance`) and polling: the live Rovers from afar, the scene chunk loaded on its own at idle.
+ * (past `OFFICE_LOD.farDistance`) and polling: the live Rovers from afar, the scene chunk loaded on its own at idle;
+ * `ring-south-out` (with `ring-south`) the same view one zoom key step out.
  *
  * `approach`: the rover on the wing's lead road at the Lobby plaza edge (x 3, S - 6), the view turned (a shift-wheel
  * rotate, as a visitor would) to look south into the wing. `overview` (full tier, 1440x900 only): a top-down still of
@@ -314,6 +315,13 @@ async function captureShots(browser: Browser) {
         });
         await show(page, reply, statesA(Date.now()), "live", STATES_A);
         await page.screenshot({ path: name("ring-south") });
+        // One zoom key step out (a visitor's next move from here): the camera rises and the wing fills more of the frame.
+        if (wants("ring-south-out")) {
+          await page.keyboard.press("-");
+          await settle(page);
+          await waitForFrames(page, 20);
+          await page.screenshot({ path: name("ring-south-out") });
+        }
         await page.keyboard.press("0");
         await settle(page);
       }
