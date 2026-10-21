@@ -33,6 +33,11 @@ the relay still counts its helpers from the helpers' own events, see below).
 Then start a helper in each tool (Copilot: an explore or task agent; Claude Code: any subagent; Codex: a
 subagent) and look for `<agent> <event> helpers 1 sent` in `office-relay status`.
 
+After the throttle update (below), reinstall from a checkout that has it: `bun tools/office-relay/src/cli.ts install`
+(step 2; no Worker deploy and no new Codex trust are needed: the beats and the hook commands are unchanged). Running
+agent sessions use the new program from their next hook call, because the shim always runs the installed file. Check
+with `office-relay status`: busy sessions now log `queued`, then `flush <state> trailing sent`.
+
 Every hook command is written as `'<dir>'/office-relay hook <agent> <event> 2>/dev/null || true` (the directory
 single-quoted), so a hook never fails, even when Bun or the program is missing. The shim runs Bun from `/` with
 `--no-env-file`, so a project's `bunfig.toml` or `.env` never affects the relay. Install and uninstall parse every
@@ -70,13 +75,33 @@ file before writing anything: a file they cannot parse aborts the command with e
 - Helpers: the count of active sub-agents of a session, 0 to 9 (`helpers`; see below). Nothing else about a helper
   leaves the machine.
 
+## How often a beat goes out (the throttle)
+
+A busy agent fires two or three hook events per tool call, and the desk state flips on most of them (a shell command's
+`preToolUse` is working, its `postToolUse` thinking). Per session, the relay therefore sends:
+
+- a change (state, activity, helper count, repository or title) at once when the last beat is 10 s old or more
+  (`COALESCE_MS`, the visitors' active poll); a change inside those 10 s waits, and a trailing send at the end of the
+  window carries the newest state. A change that flaps back to the sent state inside the window sends nothing;
+- a final state (stop, session end, failure, "Needs Kurniadi") at once, always, cancelling a waiting change;
+- a keepalive (the last beat again) 15 s after the last beat while the session is awake and its events keep coming
+  (`KEEPALIVE_MS`), so the office never shows a busy desk as thinking (it does after 20 s without a beat);
+- nothing else: so at most one beat per 10 s per busy session, plus its final states.
+
+The hook still exits at once: the trailing send and the keepalive come from one detached `flush` child per session,
+which sleeps until it is due, sends, and ends when nothing is left (it gives up a send whose event is more than 60 s old,
+after the Mac slept). The throttle state (the last sent beat, the waiting change, the newest event time and the
+child's wake time and token) lives in the session's `~/.office-relay/sessions/<hash>.json`, read and written under a
+short lock like the helpers file. The log shows `queued` for a waiting change and `flush <state> trailing sent` or
+`flush <state> keepalive sent` for the child's beats.
+
 ## Helpers (sub-agents)
 
 Each tool's sub-agent start and stop hooks update a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`
 (salted hashes of the helper ids, or anonymous keys, with their latest start or activity times; never names, types,
 prompts or paths). A
-start or stop sends a beat with the session's last state and activity (or working / editing for a session with no beat
-yet) and the new count, only when the count changes. Other beats carry the count while it is above 0 and once more as
+start or stop offers a beat with the session's newest state and activity (or working / editing for a session with no
+beat yet) and the new count, only when the count changes; the throttle above decides when it goes out. Other beats carry the count while it is above 0 and once more as
 0. A helper with no stop event for 30 minutes no longer counts. A start or stop without a parent session id is ignored
 (logged `no-parent ignored`). The session end (Copilot `sessionEnd`, Claude Code and Codex `SessionEnd`) deletes the
 session's helpers file; its beat carries `helpers: 0` when the last sent count was above 0, else no count. Hook
@@ -108,7 +133,8 @@ set them.
 
 - `OFFICE_RELAY_KEY`: the ingest key instead of the Keychain item.
 - `OFFICE_RELAY_ENDPOINT`: another endpoint, accepted only on `http://127.0.0.1:<port>/`.
-- `OFFICE_RELAY_SPOOL`: append beats to this file instead of starting the sender.
+- `OFFICE_RELAY_SPOOL`: append beats to this file instead of starting the sender (the `flush` child appends there too).
+- `OFFICE_RELAY_COALESCE_MS`: the coalescing window in ms (0 to 60000) instead of 10 s.
 - `OFFICE_RELAY_HOME`: the relay directory instead of `~/.office-relay` (an empty `HOME` falls back to the OS home).
 - `OFFICE_RELAY_INSTALL_DIR`: the program directory instead of `~/.hq-office-relay` (tests only).
 
