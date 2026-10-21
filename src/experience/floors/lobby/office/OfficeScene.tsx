@@ -942,8 +942,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
   }, [agents, t]);
   useEffect(() => {
     const off = subscribeReplay(() => {
-      const { status, day, playS, dayS, auto, seq } = officeReplay.state;
-      sceneProbes.office.replay = { status, day, playS, dayS, auto, seq };
+      sceneProbes.office.replay = officeReplay.state;
     });
     officeReplay.quietSince = officeLive.now();
     officeReplay.mounted = true;

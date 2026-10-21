@@ -3,12 +3,11 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { REPLAY } from "@/experience/floors/lobby/office/replay";
-import { idleLoopWanted, officeReplay, publishReplay, REPLAY_OFF, replayClock, replayDayLabel, subscribeReplay, useOfficeSource, useReplay } from "@/experience/floors/lobby/office/replayLink";
+import { officeReplay, publishReplay, REPLAY_OFF, replayClock, replayDayLabel, subscribeReplay, useOfficeSource, useReplay } from "@/experience/floors/lobby/office/replayLink";
 import { OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficeFeedSnapshot, OfficeFeedStatus } from "@/lib/office/poll";
 import type { ReplayStatus } from "@/experience/floors/lobby/office/replayFeed";
 
-const BASE = { feed: "ready" as OfficeFeedStatus, quietMs: REPLAY.idleS * 1000, reduced: false, status: "off" as ReplayStatus, sinceFailMs: Infinity };
 const CHUNK = "@/experience/floors/lobby/office/replayChunk";
 
 afterEach(() => {
@@ -16,19 +15,6 @@ afterEach(() => {
 });
 
 describe("office replay link", () => {
-  it("wants the idle loop only for a quiet office, motion on, the replay off and no recent failure", () => {
-    expect(idleLoopWanted(BASE)).toBe(true);
-    // Offline counts: the loop may play a cached day.
-    expect(idleLoopWanted({ ...BASE, feed: "offline" })).toBe(true);
-    for (const feed of ["idle", "loading", "disabled"] as const) expect(idleLoopWanted({ ...BASE, feed }), feed).toBe(false);
-    expect(idleLoopWanted({ ...BASE, quietMs: REPLAY.idleS * 1000 - 1 })).toBe(false);
-    expect(idleLoopWanted({ ...BASE, reduced: true })).toBe(false);
-    for (const status of ["loading", "playing", "resting", "paused"] as const) expect(idleLoopWanted({ ...BASE, status }), status).toBe(false);
-    expect(idleLoopWanted({ ...BASE, status: "unavailable" })).toBe(true);
-    expect(idleLoopWanted({ ...BASE, sinceFailMs: REPLAY.retryS * 1000 - 1 })).toBe(false);
-    expect(idleLoopWanted({ ...BASE, sinceFailMs: REPLAY.retryS * 1000 })).toBe(true);
-  });
-
   it("labels a day and a day time", () => {
     expect(replayDayLabel("2026-10-19", "en")).toBe("Mon 19 Oct");
     expect(replayDayLabel("2026-10-19", "id")).toBe("Sen 19 Okt");
@@ -90,6 +76,43 @@ describe("office idle loop", () => {
     vi.doUnmock(CHUNK);
   });
   const link = () => import("@/experience/floors/lobby/office/replayLink");
+
+  it("loads the chunk and calls auto() only for a quiet office, motion on, the replay off and no recent failure", async () => {
+    const NOW = 1_800_000_000_000;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    const auto = vi.fn(async () => {});
+    vi.doMock(CHUNK, () => ({ replayController: { auto } }));
+    const { idleLoop, loadOfficeReplay, officeReplay: r, REPLAY_OFF: OFF } = await link();
+    await loadOfficeReplay();
+    const BASE = { feed: "ready" as OfficeFeedStatus, awake: false, inView: true, quietMs: REPLAY.idleS * 1000, reduced: false, status: "off" as ReplayStatus, sinceFailMs: REPLAY.retryS * 1000 };
+    const calls = async (c: Partial<typeof BASE>) => {
+      const i = { ...BASE, ...c };
+      auto.mockClear();
+      r.quietSince = NOW - i.quietMs;
+      r.failedAt = NOW - i.sinceFailMs;
+      r.state = { ...OFF, status: i.status };
+      idleLoop(i.awake, i.feed, i.inView, i.reduced);
+      await loadOfficeReplay();
+      return auto.mock.calls.length;
+    };
+    try {
+      expect(await calls({})).toBe(1);
+      // Offline counts: the loop may play a cached day.
+      expect(await calls({ feed: "offline" })).toBe(1);
+      for (const feed of ["idle", "loading", "disabled"] as const) expect(await calls({ feed }), feed).toBe(0);
+      expect(await calls({ awake: true })).toBe(0);
+      expect(await calls({ inView: false })).toBe(0);
+      expect(await calls({ quietMs: REPLAY.idleS * 1000 - 1 })).toBe(0);
+      expect(await calls({ reduced: true })).toBe(0);
+      for (const status of ["loading", "playing", "resting", "paused"] as const) expect(await calls({ status }), status).toBe(0);
+      expect(await calls({ status: "unavailable" })).toBe(1);
+      expect(await calls({ sinceFailMs: REPLAY.retryS * 1000 - 1 })).toBe(0);
+    } finally {
+      r.state = OFF;
+      vi.useRealTimers();
+    }
+  });
 
   it("restarts the quiet timer while a desk is awake or the office is out of view, then calls the chunk's auto()", async () => {
     const auto = vi.fn(async () => {});

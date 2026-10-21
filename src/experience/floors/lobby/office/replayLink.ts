@@ -2,7 +2,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { OfficeFeed, OfficeFeedSnapshot, OfficeFeedStatus } from "@/lib/office/poll";
 import { officeLive, useOfficeFeed } from "./live";
 import { officeView, type OfficeView } from "./officeModel";
-import type { ReplayController, ReplayState, ReplayStatus } from "./replayFeed";
+import type { ReplayController, ReplayState } from "./replayFeed";
 
 /**
  * The scene chunk's side of the day replay (design 7.3): the store the replay chunk publishes to, the scene's source
@@ -70,24 +70,18 @@ export function useOfficeSource(): { view: OfficeView; live: OfficeView; feed: O
 }
 
 /**
- * The idle loop's rule: a feed past its first answer and not disabled (offline counts: a cached day may play),
- * `REPLAY.idleS` quiet (`idleLoop` restarts the timer on an awake desk or the office out of view), motion on, no
- * replay running (off, or unavailable before) and `REPLAY.retryS` since a failed or empty attempt.
- */
-export function idleLoopWanted(i: { feed: OfficeFeedStatus; quietMs: number; reduced: boolean; status: ReplayStatus; sinceFailMs: number }): boolean {
-  return (i.feed === "ready" || i.feed === "offline") && i.quietMs >= IDLE_MS && !i.reduced && (i.status === "off" || i.status === "unavailable") && i.sinceFailMs >= RETRY_MS;
-}
-
-/**
  * The idle loop (every 0.5 s with the scene's watch): an awake live desk or the office out of view restarts the quiet
- * timer; a quiet office (`idleLoopWanted`) loads the replay chunk and calls its `auto()`, which checks again, ends on a
- * live event and records a failure itself (`linkReplay`). A failed import waits `REPLAY.retryS` too.
+ * timer. A feed past its first answer and not disabled (offline counts: a cached day may play), `REPLAY.idleS` quiet,
+ * motion on, no replay running (off, or unavailable before) and `REPLAY.retryS` since a failed or empty attempt load
+ * the replay chunk and call its `auto()`, which checks again, ends on a live event and records a failure itself
+ * (`linkReplay`). A failed import waits `REPLAY.retryS` too.
  */
 export function idleLoop(awake: boolean, feed: OfficeFeedStatus, inView: boolean, reduced: boolean): void {
   const r = officeReplay;
   const now = officeLive.now();
+  const { status } = r.state;
   if (awake || !inView) r.quietSince = now;
-  if (idleLoopWanted({ feed, quietMs: now - r.quietSince, reduced, status: r.state.status, sinceFailMs: now - r.failedAt }))
+  if ((feed === "ready" || feed === "offline") && now - r.quietSince >= IDLE_MS && !reduced && (status === "off" || status === "unavailable") && now - r.failedAt >= RETRY_MS)
     void loadOfficeReplay().then(
       (m) => m.replayController.auto(),
       () => {

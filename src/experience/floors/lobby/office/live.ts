@@ -56,8 +56,6 @@ function attach(): () => void {
   };
 }
 
-const subscribe = (onChange: (feed: OfficeFeed) => void) => poller.subscribe(onChange);
-
 export const officeLive = {
   want(reason: OfficePollReason, on: boolean): void {
     if (wants.has(reason) === on) return;
@@ -88,12 +86,12 @@ export const officeLive = {
   /** Epoch ms on the poller's clock: the idle loop's quiet timer and the replay clock follow `officeTest.advance`. */
   now: (): number => Date.now() + clock.skew,
   /** The feed now, and every new one (the replay chunk's live events). */
-  feed: (): OfficeFeed => poller.feed(),
-  subscribe,
+  feed: poller.feed,
+  subscribe: poller.subscribe,
 };
 
 export function useOfficeFeed(): OfficeFeed {
-  return useSyncExternalStore(subscribe, poller.feed, poller.feed);
+  return useSyncExternalStore(poller.subscribe, poller.feed, poller.feed);
 }
 
 /**
