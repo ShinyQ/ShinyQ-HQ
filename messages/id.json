@@ -1161,7 +1161,7 @@
       "d30": "30 hari terakhir, termasuk hari ini",
       "all": "Sejak {date}"
     },
-    "source": "Estimasi kunjungan: data sampel Cloudflare Web Analytics",
+    "source": "Cloudflare Web Analytics, sampel, dibulatkan ke puluhan",
     "updated": "Diperbarui setiap 2 jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
@@ -1180,7 +1180,7 @@
       "d30": "30 hari terakhir",
       "all": "Sejak peluncuran"
     },
-    "status": "{period}, topik {topic}: {visits} kunjungan dari {countries} negara, {questions} pertanyaan.",
+    "status": "{period}, topik {topic}: {visitCount, plural, other {{visits} kunjungan}} dari {countryCount, plural, other {{countries} negara}}, {questionCount, plural, other {{questions} pertanyaan}}.",
     "counters": {
       "visits": "Kunjungan",
       "countries": "Negara",
@@ -1193,21 +1193,21 @@
       "title": "Menara 3D atau situs klasik",
       "threeD": "Menara 3D",
       "classic": "Situs klasik",
-      "note": "Kunjungan yang memakai keduanya dihitung di kedua sisi."
+      "note": "Porsi kunjungan yang tercatat oleh beacon milik situs ini (beacon ini melewati opt-out, Do Not Track, dan browser otomatis), sehingga mencakup lebih sedikit kunjungan daripada total. Kunjungan yang memakai keduanya dihitung di kedua sisi."
     },
     "topicsTitle": "Pertanyaan per topik",
     "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
     "chipsTitle": "Pertanyaan yang disarankan",
     "chipsNote": "Seberapa sering pertanyaan yang disarankan dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
-    "chipCount": "{n} kali dipilih",
+    "chipCount": "{count, plural, other {{n} kali dipilih}}",
     "noChips": "Pertanyaan yang disarankan untuk topik ini belum pernah dipilih.",
     "map": {
-      "label": "Peta dunia dengan {n} negara yang disorot",
-      "caption": "{window}: negara dengan minimal satu kunjungan. Hanya titik, tanpa angka per negara."
+      "label": "Peta dunia dengan {n, plural, other {# negara}} yang disorot",
+      "caption": "{window}: negara dengan minimal satu tampilan halaman. Hanya titik, tanpa angka per negara."
     },
     "table": {
       "open": "Lihat sebagai tabel",
-      "caption": "{window}: negara dengan kunjungan",
+      "caption": "{window}: negara dengan tampilan halaman",
       "country": "Negara",
       "code": "Kode"
     },

@@ -1161,7 +1161,7 @@
       "d30": "Last 30 days, including today",
       "all": "Since {date}"
     },
-    "source": "Visit estimates: Cloudflare Web Analytics, sampled data",
+    "source": "Cloudflare Web Analytics, sampled, rounded to tens",
     "updated": "Updated every 2 hours",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
@@ -1180,7 +1180,7 @@
       "d30": "Last 30 days",
       "all": "Since launch"
     },
-    "status": "{period}, topic {topic}: {visits} visits from {countries} countries, {questions} questions.",
+    "status": "{period}, topic {topic}: {visitCount, plural, one {{visits} visit} other {{visits} visits}} from {countryCount, plural, one {{countries} country} other {{countries} countries}}, {questionCount, plural, one {{questions} question} other {{questions} questions}}.",
     "counters": {
       "visits": "Visits",
       "countries": "Countries",
@@ -1193,21 +1193,21 @@
       "title": "3D tower or Classic site",
       "threeD": "3D tower",
       "classic": "Classic site",
-      "note": "A visit that used both views counts on both sides."
+      "note": "Share of the visits the site's own beacon saw (it skips opt-outs, Do Not Track and automated browsers), so it covers fewer visits than the total. A visit that used both views counts on both sides."
     },
     "topicsTitle": "Questions by topic",
     "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
     "chipsTitle": "Suggested questions",
     "chipsNote": "How often each suggested question was picked. Visitor-entered text is not shown in these stats.",
-    "chipCount": "{n} picks",
+    "chipCount": "{count, plural, one {{n} pick} other {{n} picks}}",
     "noChips": "No suggested question picked for this topic yet.",
     "map": {
-      "label": "World map with {n} highlighted countries",
-      "caption": "{window}: countries with at least one visit. Dots only, no numbers per country."
+      "label": "World map with {n, plural, one {# highlighted country} other {# highlighted countries}}",
+      "caption": "{window}: countries with at least one page view. Dots only, no numbers per country."
     },
     "table": {
       "open": "View as table",
-      "caption": "{window}: countries with visits",
+      "caption": "{window}: countries with page views",
       "country": "Country",
       "code": "Code"
     },
@@ -1261,7 +1261,7 @@
       "offDuty": "Off duty",
       "clientPrivate": "Client project (private, details hidden)",
       "waiting": "Waiting for Kurniadi",
-      "jobs": "{done} of {total} jobs",
+      "jobs": "{done} of {total, plural, one {# job} other {# jobs}}",
       "desk": "Desk {n}",
       "githubTitle": "GitHub board",
       "mode": { "live": "LIVE", "semi": "SEMI-LIVE", "off": "RESTING", "offline": "OFFLINE" },

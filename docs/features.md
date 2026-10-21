@@ -220,11 +220,13 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 `L1:visits`, `/en#visits` or the old `/en/contact#visits`, also in Cmd-K. It is also the first thing in view when you step out of the elevator.
 
-- A hologram globe with a dot for every country visits came from (dots only, never a number per country).
+- A hologram globe with a dot for every country with at least one page view (dots only, never a number per country).
 - A panel with visits in the last 30 days (today included) and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
 - Its drawer filters by Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch).
-- The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates, refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
+- The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates rounded to tens, so small numbers move in steps of 10; refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
 - The observatory drawer carries a **Don't count my visits** switch, stored only in this browser.
+- Automated browsers (Playwright, Lighthouse, headless checks; `navigator.webdriver`) are never counted: no visit, performance or Cloudflare beacon, and their Ask questions stay out of the question totals (still answered).
+- The 3D vs Classic split comes from the site's own visit beacon (it skips opt-outs, Do Not Track and automation), so its base is smaller than the visit total; its note says so.
 
 ### Agent Office
 

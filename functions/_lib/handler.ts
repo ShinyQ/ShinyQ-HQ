@@ -73,6 +73,8 @@ interface ParsedBody {
   entry: AskEntry | "";
   /** Curated chip id the client sent (checked against the question by `chipFor` before it is logged). */
   chip?: string;
+  /** The client reports an automated browser; counting only, never a safety decision. */
+  auto: boolean;
   /** Well-formed earlier turns, not yet verified. */
   history: AskTurn[];
 }
@@ -85,12 +87,12 @@ function parseBody(raw: string): ParsedBody | null {
     return null;
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  const { q, locale, turnstileToken, source, chip, history } = data as Record<string, unknown>;
+  const { q, locale, turnstileToken, source, chip, auto, history } = data as Record<string, unknown>;
   if (typeof q !== "string" || (locale !== "en" && locale !== "id")) return null;
   if (turnstileToken !== undefined && (typeof turnstileToken !== "string" || turnstileToken.length > 2048)) return null;
   if (source !== undefined && typeof source !== "string") return null;
   if (chip !== undefined && (typeof chip !== "string" || chip.length > 64)) return null;
-  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "", ...(chip ? { chip } : {}), history: parseHistory(history) };
+  return { q, locale, token: turnstileToken as string | undefined, entry: isAskEntry(source) ? source : "", ...(chip ? { chip } : {}), auto: auto === true, history: parseHistory(history) };
 }
 
 /** SSE frames are JSON, so a model token can never break the event stream (T6). */
@@ -153,6 +155,8 @@ interface EventData {
   /** Public visit stats: the question's topic (chip topic, else from the answer tags) and curated chip id, or "". */
   topic?: StatsTopic | "";
   chip?: string;
+  /** The client reported an automated browser (blob13 "auto"); the public stats leave these out. */
+  auto?: boolean;
   /** Model that produced the text (backup tiers included), or "". */
   model?: string;
   /** Failed attempts before the answer, `model:reason > model:reason`, or "". */
@@ -167,12 +171,12 @@ interface EventData {
  * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
  * topic, chip id (these two feed the public visit stats), answering model id (blob10), failure trail
  * `model:reason > model:reason` cut at 200 characters (blob11), pack tier that served (blob12: memory, kv, pin,
- * fallback). Appended so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
+ * fallback), "auto" when the client reported an automated browser (blob13, counting only, else ""). Appended so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
  */
 function logEvent(env: AskEnv, loaded: LoadedPack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier],
+      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier, e.auto ? "auto" : ""],
       doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
@@ -223,7 +227,7 @@ export function createAskHandler(deps: HandlerDeps) {
     if (turnstileOn(env) && !(await hasValidSession(request, env.ASK_COOKIE_KEY, visitor, started))) {
       const hostname = new URL(request.url).hostname;
       if (!(await verifyTurnstile(body.token, env.TURNSTILE_SECRET as string, ip, hostname, deps.fetcher))) {
-        logEvent(env, loaded, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", entry: body.entry, latencyMs: now() - started });
+        logEvent(env, loaded, { outcome: "rejected", locale: body.locale, source: "", reason: "turnstile", entry: body.entry, auto: body.auto, latencyMs: now() - started });
         return fail(403, "turnstile");
       }
       if (env.ASK_COOKIE_KEY) responseHeaders["Set-Cookie"] = await issueSession(env.ASK_COOKIE_KEY, visitor, started);
@@ -257,7 +261,7 @@ export function createAskHandler(deps: HandlerDeps) {
         const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
-        logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, ...stats(tags), latencyMs: now() - started });
+        logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, auto: body.auto, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
@@ -301,7 +305,7 @@ export function createAskHandler(deps: HandlerDeps) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
+    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
     const tags = shareable ? result.tags : [];
     const cite = shareable ? result.cite : undefined;

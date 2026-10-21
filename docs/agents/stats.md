@@ -34,7 +34,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - The Cron Worker `hq-stats` (`workers/stats/`, `17 */2 * * *` UTC, scheduled only, `workers_dev = false`) reads:
   - Web Analytics: GraphQL `rumPageloadEventsAdaptiveGroups`, filtered by siteTag, `bot: 0` and `WA_HOSTS`;
-  - Analytics Engine: `ask_events`, `visit_events`, `SUM(_sample_interval)`.
+  - Analytics Engine: `ask_events` (Turnstile rejects and blob13 `auto` left out), `visit_events`, `SUM(_sample_interval)`.
 - It appends one rollup per finalized UTC day to the KV ledger `stats:days:v1` and writes `stats:v1` (today so far included, never stored).
 - A stored day is never recomputed, so it is stored only from an exact Web Analytics answer.
   - `waExact`: unsampled, groups adding up; else the day stays provisional for up to 3 days.
@@ -57,12 +57,15 @@ Security S7.
 
 - Ask events carry blob8 `topic` and blob9 `chip` (`functions/_lib/askStats.ts`).
 - The client sends `chip` (the curated id, `useAskThread`); the server keeps it only when the question is that chip's text.
+- Automated browsers: the client sends `auto: true` when `navigator.webdriver` is set (`src/ask/client.ts`); the handler logs blob13 `auto` (only a literal `true`, anything else is ignored) and the Worker leaves those rows out of the question counts.
+  - Counting only: the flag never changes an answer, a limit, Turnstile or any safety check (a forged flag can only hide a question from the public count).
 - Ids only, never question text. See [ask.md](ask.md).
 
 ### Cloudflare Web Analytics beacon
 
 - `src/components/Analytics.tsx` renders an inline loader (only when `NEXT_PUBLIC_CF_BEACON_TOKEN` is set at build) that injects `beacon.min.js` with `defer`, `data-cf-beacon` and `spa: true`.
 - It waits for the `load` event, then for the app chunk requests (the defer-scripts loader inserts every chunk script in one loop after first paint, often after `load`; a MutationObserver waits for one `/_next/static/chunks/` script, `nomodule` polyfills excluded, at most `CHUNK_WAIT_MS` = 1 s), then for idle (`requestIdleCallback`, `IDLE_TIMEOUT_MS` = 500 ms deadline).
+- Never in an automated browser (`navigator.webdriver`: Playwright, Lighthouse, headless checks), checked at inject time like the opt-out; Cloudflare's own `bot: 0` filter does not catch every headless browser.
 - Page views are kept: the beacon sends the page load at once when the document is already complete (from the Navigation Timing entry), and `spa: true` records later History navigations. Only a visit that leaves before the beacon loads is not counted.
 - The loader must never contain the text `data-hq-defer`: `scripts/defer-scripts.ts` skips a page that carries it (`tests/stats/analytics-guard.test.ts`).
 - Its sha256 is added to the page's script policy at build (`scripts/csp-hashes.ts`); the beacon host is in script-src.
@@ -81,6 +84,7 @@ Security S7.
   - the visit beacon;
   - the RUM beacon (`decideRum`);
   - the Cloudflare Web Analytics beacon, which `Analytics.tsx` injects from an inline guard after the page loads (read at inject time; CSP unchanged).
+- Automation (`navigator.webdriver`) stops all three the same way, plus counts Ask questions out (blob13 `auto`): only `?visit=1` and `?rum=1` force the first-party beacons in tests; nothing forces the Cloudflare beacon.
 - Keep it that way: never render the beacon tag directly.
 
 ### Kill switch and tokens
@@ -93,7 +97,7 @@ Security S7.
 ### Pipeline tests
 
 - `tests/stats/`: protocol, rollup, Worker run with mocked APIs, Functions, beacon client, guard, token checks.
-- `tests/ask/ask-stats.test.ts`, `e2e/visit.spec.ts`.
+- `tests/ask/ask-stats.test.ts`, `e2e/visit.spec.ts` (an automated session sends no visit or RUM beacon and never loads the Cloudflare beacon).
 
 ## Display
 
@@ -115,10 +119,12 @@ Owner plan "Public visit stats, Layer 1", S2.
 ### Owner rules for the copy
 
 - Numbers show now (no thresholds).
-- Countries are dots only (never a number per country, the table lists names).
+- Countries are dots only (never a number per country, the table lists names). A country counts with at least one sampled page view (the Worker keeps a country with page views or visits), so the captions say "page view", not "visit".
 - The label is "visits" / "kunjungan".
-- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled estimates") and "Updated every 2 hours" (`stats.updated`).
+- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled, rounded to tens": Web Analytics samples page loads, so small counts move in steps of 10 and a quiet day can read 0) and "Updated every 2 hours" (`stats.updated`).
 - Copy lives in `messages/*.json` `stats`.
+- Counts in sentences use ICU plurals with the number as the selector and the formatted text as a separate argument (`{count, plural, one {{n} pick} other {{n} picks}}`); Indonesian has no plural forms.
+- The 3D vs Classic split's note says it is the share of visits the site's own beacon saw (it skips opt-outs, Do Not Track and automation), so its base is smaller than the Web Analytics visit total.
 - Numbers go through `formatCount` (exact below 10,000, CLDR compact above: "12.3K", "12,3 rb"; ID uses a no-break space) and `formatCountLong` for screen readers.
 
 ### Filters

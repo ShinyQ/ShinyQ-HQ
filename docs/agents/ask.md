@@ -213,7 +213,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
 - No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
 - Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
-- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most) and blob12 the pack tier; the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models and Pack tier tables.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier and blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)); the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models and Pack tier tables.
 - Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks

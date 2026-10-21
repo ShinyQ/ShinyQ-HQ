@@ -221,7 +221,7 @@ describe("Agent Office drawers", () => {
       expect(screen.queryAllByTestId("office-ci-run")).toHaveLength(0);
       const rows = within(screen.getByTestId("office-ci")).getAllByTestId("office-feed-row");
       expect(rows[0]).toHaveAttribute("data-status", "running");
-      expect(within(rows[0]).getByRole("progressbar")).toHaveAccessibleName(o.jobs.replace("{done}", "7").replace("{total}", "12"));
+      expect(within(rows[0]).getByRole("progressbar")).toHaveAccessibleName("7 of 12 jobs");
     });
 
     it("says there are no recent runs without runs or ships", () => {
