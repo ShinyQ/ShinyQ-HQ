@@ -101,6 +101,22 @@ export function playTime(plan: ReplayPlan, dayS: number): number {
   return lerp(Math.max(s.from, Math.min(s.to, dayS)), s.from, s.to, s.play0, s.play1);
 }
 
+/** Whether an index day has anything to play. */
+export const playable = (d: { events: number; prs: number; runs: number; deploys: number }): boolean => d.events + d.prs + d.runs + d.deploys > 0;
+
+/** "Mon 19 Oct" / "Sen 19 Okt". */
+export function dayLabel(day: string, locale: "en" | "id"): string {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .formatToParts(Date.UTC(y, m - 1, d))
+    .filter((p) => p.type !== "literal")
+    .map((p) => p.value)
+    .join(" ");
+}
+
+/** Day seconds as "14:05". */
+export const clockOf = (dayS: number): string => [Math.floor(dayS / 3600) % 24, Math.floor(dayS / 60) % 60].map((n) => String(n).padStart(2, "0")).join(":");
+
 interface DeskAt {
   n: number;
   t: number;

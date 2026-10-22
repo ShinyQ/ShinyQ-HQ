@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
-import { dayTime, planReplay, playTime, REPLAY, RULES, snapshotAt } from "@/experience/floors/lobby/office/replay";
+import { clockOf, dayLabel, dayTime, planReplay, playable, playTime, REPLAY, RULES, snapshotAt } from "@/experience/floors/lobby/office/replay";
 import { dayStart, parseOfficeHistory, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
 import type { OfficeActivity, OfficeState } from "@/lib/office/protocol";
 import { historyDay, logDoc, startLog } from "../../workers/office/src/history";
@@ -121,5 +121,20 @@ describe("replay engine", () => {
     const h = makeHistory({ seats: 2, hours: 1, changesPerHour: 10 });
     const p = planReplay(h)!;
     expect(snapshotAt(h, p, 12, EPOCH).updatedAt).toBe(EPOCH + 12_000);
+  });
+});
+
+describe("replay labels", () => {
+  it("formats a day and a day time for the scene chunk (the banner, the chips, the pill)", () => {
+    expect(dayLabel("2026-10-19", "en")).toBe("Mon 19 Oct");
+    expect(dayLabel("2026-10-19", "id")).toBe("Sen 19 Okt");
+    expect(clockOf(50_700)).toBe("14:05");
+    expect(clockOf(0)).toBe("00:00");
+    expect(clockOf(86_399)).toBe("23:59");
+  });
+
+  it("tells an index day with nothing to play", () => {
+    expect(playable({ events: 0, prs: 0, runs: 0, deploys: 0 })).toBe(false);
+    expect(playable({ events: 0, prs: 0, runs: 0, deploys: 1 })).toBe(true);
   });
 });

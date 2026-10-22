@@ -1,9 +1,9 @@
 import type { OfficeFeed, OfficeFeedSnapshot } from "@/lib/office/poll";
 import { OFFICE_SEATS } from "@/lib/office/protocol";
 import { OFFICE_HISTORY_PATH, parseOfficeHistory, parseOfficeHistoryIndex, type OfficeHistoryDay, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
-import { dayTime, planReplay, playTime, REPLAY, snapshotAt, type ReplayPlan } from "./replay";
+import { clockOf, dayLabel, dayTime, planReplay, playable, playTime, REPLAY, snapshotAt, type ReplayPlan } from "./replay";
 import type { officeLive } from "./live";
-import { officeReplay, REPLAY_OFF } from "./replayLink";
+import { officeReplay } from "./replayLink";
 
 export type ReplayStatus = "off" | "loading" | "playing" | "resting" | "paused" | "unavailable";
 export interface ReplayState {
@@ -13,8 +13,11 @@ export interface ReplayState {
   days: OfficeHistoryDay[];
   playS: number;
   duration: number;
-  /** Day seconds at `playS` (the banner's and the scrubber's time). */
+  /** Day seconds at `playS` (the scrubber's time). */
   dayS: number;
+  /** `dayS` as "14:05" and the day as "Mon 19 Oct" / "Sen 19 Okt", formatted here so the scene chunk only reads strings (the wall's banner, the chips, the pill). */
+  clock: string;
+  label: { en: string; id: string } | null;
   /** The idle loop (true) or a visitor's choice in the drawer (false, held until "Back to live"). */
   auto: boolean;
   truncated: boolean;
@@ -24,6 +27,8 @@ export interface ReplayState {
   seq: number;
 }
 export interface ReplayController {
+  /** The drawer's controls: fetches the 8-day index (days and `empty` only; a no-op unless the replay is off or unavailable). */
+  open(): Promise<void>;
   /** The idle loop: the latest day with anything to play, looping; a no-op while loading, playing, resting or paused. */
   auto(): Promise<void>;
   /** A visitor's day (auto false); starts paused under reduced motion. */
@@ -39,6 +44,9 @@ export interface ReplayController {
   step(dt: number, reduced: boolean): void;
   state(): ReplayState;
 }
+
+/** The replay off, every field (the scene chunk's `REPLAY_OFF` carries the `status` it reads before this chunk loads). */
+export const REPLAY_STATE_OFF: ReplayState = { status: "off", day: null, days: [], playS: 0, duration: 0, dayS: 0, clock: "", label: null, auto: false, truncated: false, empty: false, seq: 0 };
 
 /** What a snapshot shows: each desk's slot, state, activity and helpers, each run's id, status and jobs done, each ship's key and status, and today's counts. */
 export const snapKey = (x: OfficeFeedSnapshot): string =>
@@ -59,7 +67,7 @@ const FRESH_MS = 60_000;
  * or `stop` drops a load still in flight.
  */
 export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; reduced: () => boolean; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
-  let s: ReplayState = { ...REPLAY_OFF };
+  let s: ReplayState = { ...REPLAY_STATE_OFF };
   /** The playback time, copied into `s` on a publish (or a `state()` read) only: no state copy per frame. */
   let playS = 0;
   let h: OfficeHistoryV1 | null = null;
@@ -95,39 +103,52 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
     const dayS = Math.round(dayTime(plan, playS));
     if (force || k !== key) {
       key = k;
-      set({ dayS }, next);
-    } else if (dayS !== s.dayS) set({ dayS });
+      set({ dayS, clock: clockOf(dayS) }, next);
+    } else if (dayS !== s.dayS) set({ dayS, clock: clockOf(dayS) });
+  }
+  /** The 8-day index (a copy younger than `FRESH_MS` is not fetched again), or null when unavailable. */
+  async function fresh(): Promise<OfficeHistoryDay[] | null> {
+    const now = deps.now();
+    if (!index || now - index.at > FRESH_MS) {
+      const got = await get(OFFICE_HISTORY_PATH, parseOfficeHistoryIndex);
+      if (!got || !("days" in got)) return null;
+      index = { days: got.days, at: now };
+    }
+    return index.days;
   }
   async function load(day: string | null, auto: boolean): Promise<void> {
     const my = ++gen;
     set({ status: "loading", auto });
     const now = deps.now();
-    if (!index || now - index.at > FRESH_MS) {
-      const got = await get(OFFICE_HISTORY_PATH, parseOfficeHistoryIndex);
-      if (my !== gen) return;
-      if (!got || !("days" in got)) return set({ status: "unavailable" }, null);
-      index = { days: got.days, at: now };
-    }
-    const pick = day ?? index.days.find((d) => d.events + d.prs + d.runs + d.deploys > 0)?.day;
-    if (!pick) return set({ status: "off", days: index.days, empty: true }, null);
+    const list = await fresh();
+    if (my !== gen) return;
+    if (!list) return set({ status: "unavailable" }, null);
+    const pick = day ?? list.find(playable)?.day;
+    if (!pick) return set({ status: "off", days: list, empty: true }, null);
     let cached = days.get(pick);
-    if (!cached || (pick === index.days[0].day && now - cached.at > FRESH_MS)) {
+    if (!cached || (pick === list[0].day && now - cached.at > FRESH_MS)) {
       const got = await get(`${OFFICE_HISTORY_PATH}?day=${pick}`, parseOfficeHistory);
       if (my !== gen) return;
-      if (!got || !("events" in got)) return set({ status: "unavailable", days: index.days }, null);
+      if (!got || !("events" in got)) return set({ status: "unavailable", days: list }, null);
       days.set(pick, (cached = { h: got, at: now }));
     }
     h = cached.h;
     plan = planReplay(h);
-    if (!plan) return set({ status: "off", day: null, days: index.days, empty: true }, null);
+    if (!plan) return set({ status: "off", day: null, days: list, empty: true }, null);
     const reduced = deps.reduced();
     const start = reduced ? playTime(plan, plan.spans[0].from) : 0;
     epoch = deps.now() - start * 1000;
     tick = -1;
-    set({ status: reduced ? "paused" : "playing", day: pick, days: index.days, playS: start, duration: plan.duration, truncated: h.truncated, empty: false, seq: s.seq + 1 });
+    set({ status: reduced ? "paused" : "playing", day: pick, label: { en: dayLabel(pick, "en"), id: dayLabel(pick, "id") }, days: list, playS: start, duration: plan.duration, truncated: h.truncated, empty: false, seq: s.seq + 1 });
     render(true);
   }
   const ctl: ReplayController = {
+    async open() {
+      if (s.status !== "off" && s.status !== "unavailable") return;
+      const my = gen;
+      const list = await fresh();
+      if (my === gen && (s.status === "off" || s.status === "unavailable")) set(list ? { status: "off", days: list, empty: !list.some(playable) } : { status: "unavailable" }, null);
+    },
     auto: () => (s.status === "off" || s.status === "unavailable" ? load(null, true) : Promise.resolve()),
     play: (day) => load(day, false),
     pause() {
@@ -152,7 +173,7 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
       gen++;
       h = plan = null;
       key = "";
-      set({ ...REPLAY_OFF, days: s.days, seq: s.seq + 1 }, null);
+      set({ ...REPLAY_STATE_OFF, days: s.days, seq: s.seq + 1 }, null);
     },
     step(dt, reduced) {
       if (reduced) {

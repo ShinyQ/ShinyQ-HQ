@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
@@ -9,8 +9,10 @@ import { CHIP_ROW } from "./chipRows";
 import { DRONES } from "./crew";
 import { chipLines, nearDropsFor, nearParts, type OfficeRoverView } from "./officeModel";
 import { OFFICE_STATE_STYLE } from "./officeVisual";
-import { useOfficeSource } from "./replayLink";
+import { officeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, useChipFar, useChipsCompact } from "./runtime";
+
+const RING = { background: "transparent", border: "1.5px solid currentColor" } as const;
 
 /**
  * One chip in the row pinned under the HUD's top bar (the mock's `.tag`, in HUD tokens), over its Rover: a state dot
@@ -30,7 +32,7 @@ import { OFFICE_CHIP_COUNT, officeRuntime, useChipFar, useChipsCompact } from ".
  * changes nothing). A click opens
  * the Rover's drawer the way its point-and-go target does (drive to the office stop, then open).
  */
-function Chip({ rover }: { rover: OfficeRoverView }) {
+function Chip({ rover, day }: { rover: OfficeRoverView; day: string | null }) {
   const t = useTranslations("office");
   const far = useChipFar(rover.slot);
   const plain = useChipsCompact();
@@ -40,6 +42,8 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
   const line = chipLines(rover, t);
   const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
+  // A replay's dots are rings (a shape cue besides the label's prefix).
+  const dot = day ? { color, ...RING } : { color };
   // A near head that overflows even with its activity cut down to its least width drops the word "helpers", measured again
   // before paint; new text or a far turn starts whole again. A head with nothing left to drop is not measured again.
   const last = nearDropsFor(line);
@@ -85,18 +89,19 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
         data-state={rover.state}
         data-far={far ? "true" : "false"}
         data-compact={compact ? "true" : "false"}
-        aria-label={line.label}
+        data-replay={day ? "true" : undefined}
+        aria-label={day ? `${t("3d.replay.chip", { day })}: ${line.label}` : line.label}
         // Hidden until OfficeScene has placed it (it then writes the transform, visibility and opacity every frame).
         style={{ opacity: 0, visibility: "hidden", maxWidth: CHIP_ROW.max }}
         className="pointer-events-auto absolute top-0 left-0 flex flex-col items-center gap-1 will-change-transform"
       >
         {compact ? (
           <span className="glass glass-solid inline-flex min-h-8 items-center rounded-full" data-off={off ? "true" : undefined} style={{ minWidth: CHIP_ROW.dot, justifyContent: "center", opacity: off ? 0.7 : undefined }}>
-            <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color }} />
+            <span aria-hidden="true" className="hq-dot hq-dot-md" style={dot} />
           </span>
         ) : (
           <span className="glass glass-solid inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] text-ink" style={{ maxWidth: "100%" }}>
-            <span aria-hidden="true" className="hq-dot hq-dot-md shrink-0" style={{ color }} />
+            <span aria-hidden="true" className="hq-dot hq-dot-md shrink-0" style={dot} />
             {far ? (
               <span className="min-w-0 truncate">{line.name}</span>
             ) : (
@@ -104,7 +109,7 @@ function Chip({ rover }: { rover: OfficeRoverView }) {
             )}
             {line.helpers && far && (
               <span aria-hidden="true" data-testid="office-chip-helpers" className="inline-flex shrink-0 items-center gap-1 text-xs text-ink-2">
-                <span className="hq-dot hq-dot-md" style={{ background: "transparent", border: "1.5px solid currentColor" }} />
+                <span className="hq-dot hq-dot-md" style={RING} />
                 {rover.helpers}
               </span>
             )}
@@ -153,12 +158,17 @@ function NearHead({ parts, drop, ref }: { parts: ReturnType<typeof nearParts>; d
  */
 export function OfficeChips() {
   const { view } = useOfficeSource();
+  const locale = useLocale() as "en" | "id";
+  const day = view.replay?.label[locale] ?? null;
+  // The replay chunk's pill (a replay plays only once it is loaded).
+  const Pill = officeReplay.ui?.Pill;
   const hidden = useHQStore((s) => s.phase === "room" && s.device.viewport === "mobile");
   if (hidden) return null;
   return (
     <div data-testid="office-chips">
+      {day && Pill && <Pill />}
       {view.rovers.slice(0, OFFICE_CHIP_COUNT).map((rover) => (
-        <Chip key={rover.slot} rover={rover} />
+        <Chip key={rover.slot} rover={rover} day={day} />
       ))}
     </div>
   );

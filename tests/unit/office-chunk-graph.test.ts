@@ -41,8 +41,8 @@ const WATCH_ONLY = [WATCH, `${DIR}/officeSignal.ts`, `${DIR}/officeWatch.ts`, "s
 const BEACON_ONLY = [BEACON, `${DIR}/beacon.ts`, `${DIR}/OfficeBeacon.tsx`];
 /** The replay chunk entry (on the idle-loop condition or the drawer's replay control, through `replayLink.ts`). */
 const REPLAY = `${DIR}/replayChunk.ts`;
-/** Reached from the replay chunk entry only: never from the main path, the scene or body entries, the watch, the beacon or the Classic card (`ReplayControls.tsx` joins in Task 9). */
-const REPLAY_ONLY = [REPLAY, `${DIR}/replay.ts`, `${DIR}/replayFeed.ts`, "src/lib/office/protocolHistory.ts"];
+/** Reached from the replay chunk entry only: never from the main path, the scene or body entries, the watch, the beacon or the Classic card. */
+const REPLAY_ONLY = [REPLAY, `${DIR}/replay.ts`, `${DIR}/replayFeed.ts`, `${DIR}/ReplayControls.tsx`, "src/lib/office/protocolHistory.ts"];
 /** The main-path part of the office: the loaders, the mount with the furniture shell and the layout. */
 const MAIN = [`${DIR}/chunk.ts`, `${DIR}/watchLoader.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
 /** Main-path entries: the 3D chunk, the gate and the HUD (the minimap draws the cue from the watch chunk). */

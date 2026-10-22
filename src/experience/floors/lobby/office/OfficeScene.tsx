@@ -595,8 +595,10 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
     const w = wall.current;
     if (now < l.next || !officeRuntime.inView || !w) return;
     l.next = now + 0.5;
-    if (l.gate.stale([view, t, locale], now) || !l.model) {
-      l.model = wallModel(view, t, locale, Date.now());
+    // The replay's clock minute is a dependency: the banner redraws when it changes.
+    const { clock: time } = officeReplay.state;
+    if (l.gate.stale([view, t, locale, time], now) || !l.model) {
+      l.model = wallModel(view, t, locale, Date.now(), view.replay && { day: view.replay.label[locale], clock: time });
       l.gate.built(l.model);
     }
     const model = l.model;
@@ -675,6 +677,8 @@ function createWatchState() {
     hud: [] as ScreenBox[],
     bounds: { left: 0, right: 0 },
     max: CHIP_ROW.max as number,
+    // The replay pill's width and row gap the bounds were shifted by (px).
+    shift: 0,
   };
 }
 type WatchState = ReturnType<typeof createWatchState>;
@@ -683,14 +687,16 @@ type WatchState = ReturnType<typeof createWatchState>;
  * The HUD boxes, the row's bounds and the chips' max width, again only when the screen size, the HUD layout or the count
  * of chips with a name (`named`: the desks with an agent; an off-duty desk's chip is a dot) changes.
  */
-function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number) {
-  if (w.width === width && w.height === height && w.layout === hud && w.named === named) return;
+function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number, shift: number) {
+  if (w.width === width && w.height === height && w.layout === hud && w.named === named && w.shift === shift) return;
+  w.shift = shift;
   w.width = width;
   w.height = height;
   w.layout = hud;
   w.named = named;
   w.hud = officeHudBoxes(width, height, hud);
   chipRowBounds(width, top, w.hud, w.bounds);
+  w.bounds.left += shift;
   w.max = chipMaxWidth(w.bounds, named, OFFICE_CHIP_COUNT - named);
 }
 
@@ -832,15 +838,18 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
     idleLoop(live.rovers.some((x) => x.agent && x.state !== "asleep"), feed, inView, s.reducedMotion);
   }
+  const mode = here ? officeChipMode(s.activeRoom) : null;
+  // The replay pill leads the row (the chips' bounds start after it) and hides with the chips.
+  const ui = officeReplay.ui;
+  const pillW = ui ? ui.width(!!mode && officeRuntime.inView, now, CHIP_ROW.gap) : 0;
   // Out of view with every chip already hidden: no chip work this frame.
   if (!officeRuntime.inView && !anyChipShown(w)) return;
   const mobile = s.device.viewport === "mobile";
-  const mode = here ? officeChipMode(s.activeRoom) : null;
   // The committed layout (React has rendered the previous frame's flags by now), then this frame's.
   const small = mobile || officeRuntime.compact;
   const hud = hudLayout(s.device.viewport, s.device.coarse);
   const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
-  fitRow(w, size.width, size.height, hud, top, namedChips(view));
+  fitRow(w, size.width, size.height, hud, top, namedChips(view), pillW);
   const oneLine = chipsOneLine(s.device.viewport, mode === "compact", w.max);
   if (mode) setChipsCompact(mode === "compact" || chipsDotsOnly(w.max));
   let n = 0;
@@ -893,6 +902,7 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
     if (!on) hideChip(w, slot, el);
   }
   layoutChipRows(w.tx, w.th, w.out, w.row, n, w.bounds);
+  ui?.at(w.shift ? w.bounds.left - w.shift : NaN, top);
   if (n) projectWallTop(w, camera, size.width, size.height);
   // Place the chips first (a second row of dots sits a dot and a gap lower), then draw the leader lines clear of them all.
   let chips = 0;
@@ -961,6 +971,7 @@ function OfficeWatch({ view, live, feed }: { view: OfficeView; live: OfficeView;
         el.style.opacity = "0";
       });
       for (const lead of [...officeRuntime.leads, ...officeRuntime.ticks]) if (lead) lead.style.visibility = "hidden";
+      officeReplay.ui?.at(NaN, 0);
     },
     [],
   );

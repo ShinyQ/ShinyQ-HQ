@@ -1285,6 +1285,23 @@
       "ciTitle": "Jalur Rilis",
       "ciNote": "Menara CI: satu jalur lampu per job dari run terbaru di repositori publik, satu paket di dermaga per pull request yang digabung, satu sinar per deploy produksi.",
       "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "ci": "Agent Office: menara CI", "desk": "Meja {n}: {agent}" },
+      "replay": {
+        "banner": "Putar ulang · {day} · {time}",
+        "pill": "Putar ulang",
+        "chip": "Putar ulang {day}",
+        "title": "Putar ulang harian",
+        "open": "Tampilkan putar ulang harian",
+        "play": "Putar",
+        "pause": "Jeda",
+        "nextHour": "Jam berikutnya",
+        "time": "Waktu putar ulang",
+        "timeValue": "{time} WIB",
+        "live": "Kembali ke live",
+        "playing": "Memutar ulang {day}",
+        "unavailable": "Putar ulang tidak tersedia",
+        "partial": "Sebagian hari",
+        "empty": "Tidak ada aktivitas"
+      },
       "ci": {
         "runs": "Run terbaru",
         "ships": "Digabung dan dirilis",

@@ -46,14 +46,15 @@ export interface WallModel {
   empty: string;
 }
 
-export function wallModel(view: OfficeView, t: OfficeTranslate, locale: "en" | "id", now: number): WallModel {
+/** `replay`: the replay chunk's formatted day and clock, passed while a replay plays (its banner replaces the status line). */
+export function wallModel(view: OfficeView, t: OfficeTranslate, locale: "en" | "id", now: number, replay: { day: string; clock: string } | null = null): WallModel {
   const c = view.counts;
   const awake = view.rovers.filter((r) => r.agent && r.state !== "asleep");
   const label = t(`3d.mode.${view.mode === "semi-live" ? "semi" : view.mode}`);
   return {
     control: t("3d.wall.control"),
-    status: view.mode === "live" && view.updatedAt !== null ? `${label} · ${sinceLabel(view.updatedAt, locale, now)}` : label,
-    statusColor: MODE_COLOR[view.mode],
+    status: replay ? t("3d.replay.banner", { day: replay.day, time: replay.clock }) : view.mode === "live" && view.updatedAt !== null ? `${label} · ${sinceLabel(view.updatedAt, locale, now)}` : label,
+    statusColor: replay ? COLORS.violet : MODE_COLOR[view.mode],
     extra: view.extra > 0 ? `+${view.extra}` : null,
     tiles: [
       { value: c.active, label: t("3d.wall.active"), color: COLORS.cyan },

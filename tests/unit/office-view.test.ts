@@ -59,8 +59,8 @@ describe("Agent Office view model", () => {
     const snapshot = OFFICE_FIXTURES_V4.busy as OfficeFeedSnapshot;
     const live = officeView({ status: "ready", snapshot });
     expect(live.replay).toBeNull();
-    const replay = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 2, truncated: false });
-    expect(replay.replay).toEqual({ day: "2026-10-18", seq: 2, truncated: false });
+    const replay = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 2, truncated: false, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
+    expect(replay.replay).toEqual({ day: "2026-10-18", seq: 2, truncated: false, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
     expect({ ...replay, replay: null }).toEqual(live);
   });
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { dayTime, planReplay, REPLAY } from "@/experience/floors/lobby/office/replay";
+import { clockOf, dayLabel, dayTime, planReplay, REPLAY } from "@/experience/floors/lobby/office/replay";
 import { createReplayFeed, linkReplay, liveMark, snapKey, type ReplayState } from "@/experience/floors/lobby/office/replayFeed";
 import { officeReplay } from "@/experience/floors/lobby/office/replayLink";
 import { OFFICE_FIXTURE_NOW, OFFICE_HISTORY_FIXTURES } from "@/lib/office/fixtures";
@@ -93,6 +93,8 @@ describe("office replay feed", () => {
     expect(state.seq).toBeGreaterThan(0);
     expect(snapshot?.v).toBe(4);
     expect(state.dayS).toBe(Math.round(dayTime(PLAN, 0)));
+    expect(state.clock).toBe(clockOf(state.dayS));
+    expect(state.label).toEqual({ en: dayLabel(TODAY, "en"), id: dayLabel(TODAY, "id") });
     // A second auto() while playing does nothing.
     await h.feed.auto();
     expect(h.calls).toHaveLength(2);
@@ -279,6 +281,39 @@ describe("office replay feed", () => {
     await h.feed.play(TODAY);
     h.feed.step(0.1, true);
     expect(h.last().state).toMatchObject({ status: "playing", auto: false });
+  });
+});
+
+describe("office replay controls' index", () => {
+  it("open() publishes the days without playing, so the drawer's day buttons show; the day buttons then play", async () => {
+    const h = harness();
+    await h.feed.open();
+    expect(h.calls).toEqual([OFFICE_HISTORY_PATH]);
+    expect(h.last()).toMatchObject({ state: { status: "off", days: INDEX.days, empty: false, day: null }, snapshot: null });
+    await h.feed.play(TODAY);
+    expect(h.last().state.status).toBe("playing");
+    // Playing already: nothing to fetch.
+    await h.feed.open();
+    expect(h.calls).toHaveLength(2);
+  });
+
+  it("open() says unavailable when the index cannot load, and nothing to play when no day has activity", async () => {
+    const down = harness({ index: { status: 404, body: { v: 1, error: "off" } } });
+    await down.feed.open();
+    expect(down.last().state.status).toBe("unavailable");
+    const days = INDEX.days.map((d) => ({ ...d, events: 0, prs: 0, runs: 0, deploys: 0 }));
+    const quiet = harness({ index: { status: 200, body: { ...INDEX, days } } });
+    await quiet.feed.open();
+    expect(quiet.last().state).toMatchObject({ status: "off", empty: true });
+  });
+
+  it("keeps the clock on every tick's state", async () => {
+    const h = harness();
+    await h.feed.play(TODAY);
+    h.play(5);
+    const { state } = h.last();
+    expect(state.clock).toBe(clockOf(state.dayS));
+    expect(state.dayS).toBeGreaterThan(Math.round(dayTime(PLAN, 0)));
   });
 });
 

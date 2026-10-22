@@ -3,10 +3,10 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { REPLAY } from "@/experience/floors/lobby/office/replay";
-import { officeReplay, publishReplay, REPLAY_OFF, replayClock, replayDayLabel, subscribeReplay, useOfficeSource, useReplay } from "@/experience/floors/lobby/office/replayLink";
+import { officeReplay, publishReplay, REPLAY_OFF, subscribeReplay, useOfficeSource, useReplay } from "@/experience/floors/lobby/office/replayLink";
+import { REPLAY_STATE_OFF, type ReplayStatus } from "@/experience/floors/lobby/office/replayFeed";
 import { OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
 import type { OfficeFeed, OfficeFeedSnapshot, OfficeFeedStatus } from "@/lib/office/poll";
-import type { ReplayStatus } from "@/experience/floors/lobby/office/replayFeed";
 
 const CHUNK = "@/experience/floors/lobby/office/replayChunk";
 
@@ -15,24 +15,18 @@ afterEach(() => {
 });
 
 describe("office replay link", () => {
-  it("labels a day and a day time", () => {
-    expect(replayDayLabel("2026-10-19", "en")).toBe("Mon 19 Oct");
-    expect(replayDayLabel("2026-10-19", "id")).toBe("Sen 19 Okt");
-    expect(replayClock(50_700)).toBe("14:05");
-    expect(replayClock(0)).toBe("00:00");
-    expect(replayClock(86_399)).toBe("23:59");
-  });
-
   it("serves the replay's view while a snapshot is published and the live view otherwise; `live` is always the live feed's", () => {
     const hook = renderHook(() => ({ src: useOfficeSource(), replay: useReplay() }));
     const live = hook.result.current.src.live;
     expect(hook.result.current.src.view).toBe(live);
     expect(live.replay).toBeNull();
     const snapshot = OFFICE_FIXTURES_V4.busy as OfficeFeedSnapshot;
-    const state = { ...REPLAY_OFF, status: "playing" as const, day: "2026-10-18", seq: 3, truncated: true, playS: 2, dayS: 40_000, auto: true };
-    act(() => publishReplay(state, snapshot));
+    const state = { ...REPLAY_STATE_OFF, status: "playing" as const, day: "2026-10-18", seq: 3, truncated: true, playS: 2, dayS: 40_000, clock: "11:06", label: { en: "Sun 18 Oct", id: "Min 18 Okt" }, auto: true };
+    const replayView = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 3, truncated: true, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
+    act(() => publishReplay(state, snapshot, replayView));
     const { src, replay } = hook.result.current;
-    expect(src.view.replay).toEqual({ day: "2026-10-18", seq: 3, truncated: true });
+    expect(src.view).toBe(replayView);
+    expect(src.view.replay).toEqual({ day: "2026-10-18", seq: 3, truncated: true, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
     expect(src.view.rovers).toEqual(officeView({ status: "ready", snapshot }).rovers);
     expect(src.live).toBe(live);
     expect(src.feed.status).toBe("idle");
@@ -41,9 +35,9 @@ describe("office replay link", () => {
     expect(officeReplay.state).toBe(state);
     // A dayS-only publish keeps the view.
     const view = src.view;
-    act(() => publishReplay({ ...state, dayS: 40_100 }, snapshot));
+    act(() => publishReplay({ ...state, dayS: 40_100 }, snapshot, replayView));
     expect(hook.result.current.src.view).toBe(view);
-    act(() => publishReplay({ ...REPLAY_OFF, seq: 4 }, null));
+    act(() => publishReplay({ ...REPLAY_STATE_OFF, seq: 4 }, null));
     expect(hook.result.current.src.view).toBe(live);
     expect(hook.result.current.src.view.replay).toBeNull();
   });
@@ -51,19 +45,11 @@ describe("office replay link", () => {
   it("tells subscribers after every publish, until they leave", () => {
     let n = 0;
     const off = subscribeReplay(() => n++);
-    publishReplay({ ...REPLAY_OFF, dayS: 1 }, null);
-    publishReplay({ ...REPLAY_OFF, dayS: 2 }, null);
+    publishReplay({ ...REPLAY_STATE_OFF, dayS: 1 }, null);
+    publishReplay({ ...REPLAY_STATE_OFF, dayS: 2 }, null);
     off();
     publishReplay(REPLAY_OFF, null);
     expect(n).toBe(2);
-  });
-
-  it("restarts the quiet timer when a replay ends, so the idle loop waits again", () => {
-    officeReplay.quietSince = 0;
-    publishReplay({ ...REPLAY_OFF, status: "playing", day: "2026-10-18", auto: true }, OFFICE_FIXTURES_V4.quiet as OfficeFeedSnapshot);
-    expect(officeReplay.quietSince).toBe(0);
-    publishReplay(REPLAY_OFF, null);
-    expect(officeReplay.quietSince).toBeGreaterThan(0);
   });
 });
 
@@ -133,22 +119,6 @@ describe("office idle loop", () => {
     expect(auto).not.toHaveBeenCalled();
     idleLoop(false, "offline", true, false);
     await vi.waitFor(() => expect(auto).toHaveBeenCalledTimes(1));
-  });
-
-  it("waits again after an auto replay stops, and never calls auto() while one runs", async () => {
-    const auto = vi.fn(async () => {});
-    vi.doMock(CHUNK, () => ({ replayController: { auto } }));
-    const { idleLoop, officeReplay: r, publishReplay, REPLAY_OFF: OFF } = await link();
-    const { officeLive } = await import("@/experience/floors/lobby/office/live");
-    r.quietSince = officeLive.now() - REPLAY.idleS * 1000 - 10;
-    publishReplay({ ...OFF, status: "playing", day: "2026-10-18", auto: true }, OFFICE_FIXTURES_V4.quiet as OfficeFeedSnapshot);
-    idleLoop(false, "ready", true, false);
-    // Stopped (a live event, "Back to live"): the quiet timer starts over.
-    publishReplay(OFF, null);
-    idleLoop(false, "ready", true, false);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(auto).not.toHaveBeenCalled();
-    expect(officeLive.now() - r.quietSince).toBeLessThan(1000);
   });
 
   it("records a failure when the import is rejected, and waits `REPLAY.retryS` before the next try", async () => {
