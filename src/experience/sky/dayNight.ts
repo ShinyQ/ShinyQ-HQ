@@ -141,11 +141,6 @@ function writeOrb(phase: number, offset: number, azimuth: number, out: Vector3):
   return Math.asin(Math.min(1, Math.max(-1, out.y)));
 }
 
-export function orbDirection(phase: number, offset: number, out = new Vector3(), azimuth: number = SKY.azimuth.desktop): Orb {
-  const elevation = writeOrb(phase, offset, azimuth, out);
-  return { dir: out, elevation, alpha: horizonFade(elevation) };
-}
-
 /** An orb starts to show `HANDOFF` below the horizon and is fully shown `HORIZON_FADE_UP` above it. */
 const HANDOFF = 0.06;
 const HORIZON_FADE_UP = 0.03;

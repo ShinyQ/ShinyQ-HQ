@@ -129,8 +129,6 @@ export function createReactorLive(opts: ReactorLiveOptions = {}) {
   return live;
 }
 
-export type ReactorLive = ReturnType<typeof createReactorLive>;
-
 /** The app's reactor poller (EngineRoom starts it on B1 and stops it on leaving). */
 export const reactorLive = createReactorLive();
 

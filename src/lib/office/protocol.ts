@@ -27,8 +27,6 @@ export const OFFICE_SEATS = 10;
 export const OFFICE_RECENT = 5;
 export const OFFICE_FEED = 20;
 export const OFFICE_PATH = "/api/office";
-export const OFFICE_BEAT_PATH = "/api/office/beat";
-export const OFFICE_GITHUB_PATH = "/api/office/github";
 export const OFFICE_BEAT_MAX_BYTES = 2048;
 export const OFFICE_TITLE_MAX = 80;
 export const OFFICE_FEED_TITLE_MAX = 120;
@@ -174,7 +172,6 @@ export type OfficeResponseV4 = OfficeSnapshotV4 | OfficeDisabledV1;
 
 /** What the clients hold: the newest snapshot version. */
 export type OfficeSnapshot = OfficeSnapshotV3;
-export type OfficeResponse = OfficeResponseV3;
 
 /** What the relay sends: enums and allowlisted public names only, never prompts, commands, paths or output. */
 export interface OfficeBeatV1 {
