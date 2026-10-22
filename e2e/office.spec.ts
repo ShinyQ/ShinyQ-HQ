@@ -23,7 +23,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asleepAll, asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, deployed, historyDayFor, HISTORY_API, historyIndexFor, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, shipStep, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asleepAll, asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, deployed, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, serveHistory, shipStep, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
@@ -845,31 +845,6 @@ test.describe("Agent Office (L1) ship-it pipeline", () => {
     expect(errors).toEqual([]);
   });
 });
-
-/**
- * Answers `/api/office/history` from the fixtures of `now`: the 8-day index (the two newest days play) and each day; `set`
- * changes the status of the index and of the days (a non-200 has an empty body), `requests` lists the asked paths.
- */
-async function serveHistory(page: Page, now = Date.now()) {
-  const reply = { index: 200, day: 200 };
-  const requests: string[] = [];
-  const days = historyIndexFor(now).days.map((d) => d.day);
-  await page.route(HISTORY_API, (route) => {
-    const url = new URL(route.request().url());
-    requests.push(url.pathname + url.search);
-    const day = url.searchParams.get("day");
-    const status = day ? reply.day : reply.index;
-    if (status !== 200 || (day && !days.includes(day))) return route.fulfill({ status: status !== 200 ? status : 404, body: "" });
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(day ? historyDayFor(now, days.indexOf(day)) : historyIndexFor(now)) });
-  });
-  return {
-    set(index: number, day = 200) {
-      Object.assign(reply, { index, day });
-    },
-    requests: () => [...requests],
-    days,
-  };
-}
 
 const replayState = (page: Page) => probe(page).then((o) => o.replay);
 const replayStatus = async (page: Page) => (await replayState(page))?.status ?? null;

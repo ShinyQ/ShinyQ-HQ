@@ -24,10 +24,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 /**
  * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB. `failAt` gates the critical
  * path before the first frame (`?prefetch=off`), one cap for both tiers set by the larger, full: 466.4 KB (measured
- * 465.4 KB full, 449.6 KB lite). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
+ * 477,542 B full, 461,408 B lite; cap 477,594 B). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks + the office
- * watch and scene chunks) has its own cap per tier: full 522.4 KB (measured 521.8 KB), lite 506.7 KB (measured 506.1 KB). Owner decisions 2026-10-16
+ * watch, scene and replay chunks) has its own cap per tier: full 530.3 KB (measured 529.7 KB), lite 514.5 KB (measured 513.9 KB). Owner decisions 2026-10-16
  * and 2026-10-19 (the Study Vault; the floor layouts moved out of the Classic bundle, option A; the inline idle frame
  * cadence, option A), relayed for the L1 Agent Office 2026-10-19/20: each cap, `failAt` included, is the measured value
  * plus about 0.6 KB, re-set whenever the office merges main, for the office's look offset and ghost outline rule on the
@@ -40,7 +40,9 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * docs/decisions/2026-10-21-office-always-live-budgets.md: the office scene chunk joins the session total) and for the ten
  * desks (owner decision 2026-10-21, docs/decisions/2026-10-21-office-live-ten-budgets.md: ten Rovers on two rows) and for the
  * ship-it pipeline (owner decision 2026-10-21, docs/decisions/2026-10-21-office-pipeline-budgets.md: snapshot v4, the
- * tower's lanes per job and the pipeline effects in the scene chunk, the deploy beam in the beacon chunk).
+ * tower's lanes per job and the pipeline effects in the scene chunk, the deploy beam in the beacon chunk) and for the day
+ * replay (owner decision 2026-10-22, docs/decisions/2026-10-22-office-replay-budgets.md: the replay chunk joins the session
+ * total, the scene chunk grew by its tiles, banner, pill and chip mark; `failAt` did not move).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
@@ -51,22 +53,26 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * session) is measured right after the session floors, counted in the session total and held to `officeWatch`; the
  * beacon chunk (`floors/lobby/office/beaconChunk.ts`, on the first Needs Kurniadi ask or the first fresh production deploy) is measured last and held to
  * `officeBeacon`, outside the session total; each cap is its measured value plus 0.6 KB (614 B). The office revamp's own
- * budget (owner decision 2026-10-20) caps the scene chunk plus the drawer body (and the replay chunk once it ships) at
- * `officeTotal`, 40 KB gzip (the office chunks' own cap; the drawer body and the replay chunk stay outside the session
- * total); `office` and `officeBody` stay sanity caps inside it, re-set by the same rule (last for the ship-it pipeline, 2026-10-21).
+ * budget (owner decision 2026-10-20) caps the scene chunk plus the drawer body and the replay chunk at
+ * `officeTotal`, 40 KB gzip (the office chunks' own cap; the drawer body stays outside the session total, the replay chunk
+ * is in it, owner decision 2026-10-22); `office`, `officeBody` and `officeReplay` stay sanity caps inside it, re-set by the
+ * same rule (last for the day replay, 2026-10-22). The replay controls chunk (loaded only by the drawer's "Show day replay"
+ * press) has its own cap, `officeControls`, outside the office total and the session total.
  */
 export const BYTES_3D_BUDGET = {
   failAt: Math.round(466.4 * 1024),
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
-  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 26,586 B, cap 27,200 B). */
-  office: Math.round(26.5625 * 1024),
-  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 6,483 B, cap 7,097 B). */
+  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 28,238 B, cap 28,852 B; was 26,586 B before the day replay, owner decision 2026-10-22). */
+  office: 28_238 + 614,
+  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,018 B, cap 7,097 B). */
   officeBody: Math.round(6.931 * 1024),
-  /** L1 day replay controls (a lazy chunk of the replay chunk, loaded with the drawer's "Show day replay" press), outside the session total: measured 826 B, cap 1,440 B (provisional until the re-set of every cap). */
+  /** L1 day replay chunk (the engine, the feed, the label formatting and the replay view; loaded by the idle loop on a quiet L1 visit or the drawer's press, in the session total): measured 5,237 B, cap 5,851 B. */
+  officeReplay: 5_237 + 614,
+  /** L1 day replay controls (a lazy chunk of the replay chunk, loaded with the drawer's "Show day replay" press), outside the session total and the office total (it loads only on that explicit press, like the beacon): measured 826 B, cap 1,440 B. */
   officeControls: 826 + 614,
-  /** L1 Agent Office total: the scene chunk plus the drawer body, the replay chunk and its controls, the office chunks' own cap. */
+  /** L1 Agent Office total: the scene chunk plus the drawer body and the replay chunk (the chunks that load with the office), the office chunks' own cap (measured 40,493 B, cap 40,960 B). The watch, beacon and controls chunks keep their own caps outside it. */
   officeTotal: 40 * 1024,
   /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,555 B, cap 2,075 B). */
   officeWatch: Math.round(2.026 * 1024),
@@ -74,8 +80,8 @@ export const BYTES_3D_BUDGET = {
   officeBeacon: Math.round(2.595 * 1024),
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
-  /** Main path + the session floors + the office watch and scene chunks (measured 518,224 B lite, 534,358 B full; caps 518,838 B and 534,972 B). */
-  session: { lite: Math.round(506.678 * 1024), full: Math.round(522.434 * 1024) },
+  /** Main path + the session floors + the office watch, scene and replay chunks (measured 526,245 B lite, 542,379 B full; caps 526,859 B and 542,993 B). */
+  session: { lite: 526_245 + 614, full: 542_379 + 614 },
 } as const;
 
 /**

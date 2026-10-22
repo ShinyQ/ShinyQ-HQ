@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { historyWindow, dayStart, type OfficeHistoryEvent, type OfficeHistoryIndexV1, type OfficeHistoryV1 } from "../src/lib/office/protocolHistory";
 import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeJobStatus, OfficePipelineRun, OfficeShip, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeSnapshotV4, OfficeState } from "../src/lib/office/protocol";
 
@@ -272,3 +273,27 @@ export function asleepAll(now: number): OfficeSnapshotV4 {
   return { ...front, v: 4, desks: front.desks.map((d) => officeDesk(d.slot, d.agent, "asleep", "resting", now)), pipeline: { runs: [], ships: [] } };
 }
 
+/**
+ * Answers `/api/office/history` from the fixtures of `now`: the 8-day index (the two newest days play) and each day; `set`
+ * changes the status of the index and of the days (a non-200 has an empty body), `requests` lists the asked paths.
+ */
+export async function serveHistory(page: Page, now = Date.now()) {
+  const reply = { index: 200, day: 200 };
+  const requests: string[] = [];
+  const days = historyIndexFor(now).days.map((d) => d.day);
+  await page.route(HISTORY_API, (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url.pathname + url.search);
+    const day = url.searchParams.get("day");
+    const status = day ? reply.day : reply.index;
+    if (status !== 200 || (day && !days.includes(day))) return route.fulfill({ status: status !== 200 ? status : 404, body: "" });
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(day ? historyDayFor(now, days.indexOf(day)) : historyIndexFor(now)) });
+  });
+  return {
+    set(index: number, day = 200) {
+      Object.assign(reply, { index, day });
+    },
+    requests: () => [...requests],
+    days,
+  };
+}
