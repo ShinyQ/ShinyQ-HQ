@@ -442,8 +442,8 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
   rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2`; one rolled back to before
   v3 answers v1 to `?v=3` (read as v3) and keeps reading the stored document: back-row seats are stored apart from
   the front-row `slot`, so it counts those sessions in `extra` and seats them on its five desks as before (no mode
-  off; see the Worker README); one rolled back to before the day replay has no `/history`, so the Function answers
-  503 and the drawer says "Replay unavailable" (its stored `log:` rows wait untouched).
+  off; see the Worker README); one rolled back to before the day replay has no `/history`: the index answers 503 (a day
+  request, the fixed 404) and the drawer says "Replay unavailable" (its stored `log:` rows wait untouched).
 - `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3, ten seats), each under its own
   edge cache key, answer with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).
