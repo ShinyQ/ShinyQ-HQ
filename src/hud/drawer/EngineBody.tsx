@@ -4,7 +4,12 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { BuildVisits } from "@/components/build/BuildVisits";
 import { DiagramSvg } from "@/components/diagram/DiagramSvg";
-import type { RoomEngine } from "@/content/room-views/types";
+import type { RoomEngine, RoomMetric } from "@/content/room-views/types";
+import type { Locale } from "@/content/schema";
+import { reactorState } from "@/experience/floors/engine/reactor";
+import { reactorLive, useReactorFeed } from "@/experience/floors/engine/reactorLive";
+import { sinceLabel } from "@/lib/office/model";
+import { useStats } from "@/lib/visits/store";
 import type { RoomBodyProps } from "./bodies";
 import { MetricTiles, Sections } from "./blocks";
 
@@ -39,6 +44,38 @@ function Blueprint({ diagram }: { diagram: NonNullable<RoomEngine["diagram"]> })
 }
 
 /**
+ * The Reactor's live block: the same feed and stats the core reads (`ReactorCore` polls while the rover is on B1; the
+ * drawer never starts it). Motion does not matter here, the numbers are text. Offline or stale: the idle line and
+ * whatever stats arrived.
+ */
+function ReactorPanel({ labels: l, locale }: { labels: NonNullable<RoomEngine["reactor"]>["labels"]; locale: Locale }) {
+  const feed = useReactorFeed();
+  const stats = useStats();
+  const now = reactorLive.now();
+  const s = reactorState(feed, stats, { reducedMotion: false, now });
+  const n = new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID");
+  const count = (lane: string) => n.format(s.lanes.filter((x) => x === lane).length);
+  const tiles: RoomMetric[] = s.live
+    ? [
+        { value: count("running"), label: l.running },
+        { value: count("done"), label: l.done },
+        { value: count("failed"), label: l.failed },
+        { value: n.format(s.sparks), label: l.agents },
+        { value: s.deployAt === null ? l.noDeploy : sinceLabel(s.deployAt, locale, now), label: l.deploy },
+      ]
+    : [];
+  if (s.visits !== null) tiles.push({ value: n.format(s.visits), label: l.visits });
+  if (s.asks !== null) tiles.push({ value: n.format(s.asks), label: l.asks });
+  return (
+    <div className="space-y-3" data-reactor-live={s.live}>
+      <p className="label text-ink-2">{l.live}</p>
+      {!s.live && <p className="text-sm text-ink-2">{l.offline}</p>}
+      {tiles.length > 0 && <MetricTiles metrics={tiles} fluid />}
+    </div>
+  );
+}
+
+/**
  * B1 Engine Room station drawer (ships in the B1 chunk): the station's own block (diagram, rounds, gates, ideas,
  * numbers or the plan excerpt) around the generic sections. Uses only utility classes the site already
  * ships (CSS budget).
@@ -50,6 +87,7 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
   return (
     <div className="space-y-6" data-engine-station={e.station}>
       {e.diagram && <Blueprint diagram={e.diagram} />}
+      {e.reactor && <ReactorPanel labels={e.reactor.labels} locale={locale} />}
       {e.tiles && (
         <div className="space-y-3">
           <MetricTiles metrics={e.tiles.map(({ value, label }) => ({ value, label }))} fluid />

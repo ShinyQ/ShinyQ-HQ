@@ -235,9 +235,11 @@ export interface RoofData {
   subheadline: string;
 }
 
-/** B1 Engine Room payload (locale-resolved): one entry per station bay in `ENGINE_BAYS` order. */
+/** B1 Engine Room payload (locale-resolved): one entry per station bay in `ENGINE_BAYS` order, and the reactor's title. */
 export interface EngineData {
   bays: { id: EngineBayId; room: RoomId; title: string }[];
+  /** The `B1:reactor` drawer title (its point-and-go label). */
+  reactor: string;
 }
 
 /** L1 Highlights Hall payload (locale-resolved; drawer content comes from `room-views/highlights.ts`). */

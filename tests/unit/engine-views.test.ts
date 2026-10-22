@@ -3,6 +3,8 @@ import * as buildStory from "@/content/build-story";
 import { getBuildFacts, getBuildStory, STATION_IDS } from "@/content/build-story";
 import { buildEngineRoomViews, buildRoomViews } from "@/content/room-views";
 import { LOCALES } from "@/content/schema";
+import enMessages from "../../messages/en.json";
+import idMessages from "../../messages/id.json";
 import { DIAGRAM_PRESETS } from "@/components/diagram/layout";
 import { dashboardTiles, prUrl, timelineRows } from "@/lib/build-page";
 
@@ -49,14 +51,38 @@ describe("B1 Engine Room drawers", () => {
         expect(view(id).prev).toBe(i > 0 ? `B1:${STATION_IDS[i - 1]}` : undefined);
         expect(JSON.parse(JSON.stringify(view(id)))).toEqual(view(id));
       }
-      expect(Object.keys(views).filter((k) => k.startsWith("B1:")).sort()).toEqual(STATION_IDS.map((id) => `B1:${id}`).sort());
+      expect(Object.keys(views).filter((k) => k.startsWith("B1:")).sort()).toEqual([...STATION_IDS, "reactor"].map((id) => `B1:${id}`).sort());
     });
 
-    it(`opens all seven stations in bay order, Rover's Brain and Rejected Designs included (${locale})`, () => {
+    it(`opens all seven stations in bay order, Rover's Brain and Rejected Designs included, then the reactor (${locale})`, () => {
       expect(STATION_IDS).toEqual(["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"]);
       const chained: string[] = [];
       for (let id: string | undefined = "B1:blueprint"; id; id = views[id as keyof typeof views]?.next) chained.push(id);
-      expect(chained).toEqual(STATION_IDS.map((id) => `B1:${id}`));
+      expect(chained).toEqual([...STATION_IDS, "reactor"].map((id) => `B1:${id}`));
+    });
+
+    it(`explains the reactor in plain words with its live labels and no Classic page (${locale})`, () => {
+      const r = (locale === "en" ? enMessages : idMessages).build.reactor;
+      const reactor = view("reactor");
+      expect(reactor).toMatchObject({ floor: "B1", kind: "engine", variant: "single", accent: "amber", title: r.title, subtitle: r.subtitle, badges: [{ label: "B1", accent: "amber" }] });
+      expect(reactor.title).toBe(locale === "en" ? "The Reactor" : "Reaktor");
+      expect(reactor.page).toBeUndefined();
+      expect(reactor.engine?.station).toBe("reactor");
+      expect(reactor.sections).toEqual([{ title: r.howItReads, bullets: [r.segments, r.flash, r.sparks, r.pulse, r.idle] }, { body: r.polls }]);
+      expect(reactor.engine?.reactor?.labels).toEqual({
+        live: r.live,
+        running: r.running,
+        done: r.done,
+        failed: r.failed,
+        agents: r.agents,
+        deploy: r.deploy,
+        noDeploy: r.noDeploy,
+        visits: r.visits,
+        asks: r.asks,
+        offline: r.offline,
+      });
+      for (const station of STATION_IDS) expect(view(station).engine?.reactor).toBeUndefined();
+      expect(JSON.parse(JSON.stringify(reactor))).toEqual(reactor);
     });
 
     it(`draws Rover's Brain for the phone and the wide drawer and lists how it answers (${locale})`, () => {

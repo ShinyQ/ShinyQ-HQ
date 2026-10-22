@@ -63,8 +63,8 @@ export function buildRoofData(locale: Locale): RoofData {
   };
 }
 
-/** B1 Engine Room bay titles from the build story, one per station. */
+/** B1 Engine Room bay titles from the build story, one per station, and the reactor's drawer title. */
 export function buildEngineData(locale: Locale): EngineData {
   const story = getBuildStory();
-  return { bays: ENGINE_BAYS.map((id) => ({ id, room: engineRoom(id), title: story.stations[id].title[locale] })) };
+  return { bays: ENGINE_BAYS.map((id) => ({ id, room: engineRoom(id), title: story.stations[id].title[locale] })), reactor: messages(locale).build.reactor.title };
 }

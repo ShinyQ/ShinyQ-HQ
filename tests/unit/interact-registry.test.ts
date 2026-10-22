@@ -150,7 +150,8 @@ describe("interactablesFor on the real content", () => {
   it("makes the B1 reactor a point-and-go station over the core's whole footprint", () => {
     const { reactor } = buildEngineLayout();
     const item = find("B1", "B1:station:reactor")!;
-    expect(item).toMatchObject({ kind: "station", action: { type: "open-room", room: ENGINE_REACTOR_ROOM }, height: ENGINE.reactor.h });
+    expect(item).toMatchObject({ kind: "station", label: en.build.reactor.title, action: { type: "open-room", room: ENGINE_REACTOR_ROOM }, height: ENGINE.reactor.h });
+    expect(interactablesFor("B1", layouts, setup("id").data).find((i) => i.id === "B1:station:reactor")?.label).toBe(id.build.reactor.title);
     expect(item.at).toEqual(ENGINE.reactorDoor);
     expect(item.bounds.minX).toBeLessThanOrEqual(reactor.minX);
     expect(item.bounds.maxX).toBe(reactor.maxX);

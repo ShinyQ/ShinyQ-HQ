@@ -166,6 +166,7 @@ function roomLabel(room: RoomId, data: InteractData): string {
     if (post) return post.title;
   }
   if (room.startsWith("B1:")) {
+    if (room === ENGINE_REACTOR_ROOM) return experience.engine.reactor;
     const bay = experience.engine.bays.find((b) => b.room === room);
     if (bay) return bay.title;
   }
