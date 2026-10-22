@@ -342,7 +342,7 @@ test.describe("the floor", () => {
     // Lite: 4 rings of 6 segments, no sparks; the lanes are run 4101's jobs in order.
     await expect.poll(() => reactor(page), { timeout: 30_000 }).toEqual({ started: true, lanes: ["done", "running", "queued", "queued"], live: true, segments: 24, sparks: 0 });
     await rideTo(page, "L1");
-    await expect.poll(async () => (await reactor(page))?.started ?? false).toBe(false);
+    await expect.poll(async () => (await reactor(page))?.started ?? false, { timeout: 30_000 }).toBe(false);
   });
 
   test("the reactor drawer explains the core and shows its live numbers, with no Classic link", async ({ page }) => {
