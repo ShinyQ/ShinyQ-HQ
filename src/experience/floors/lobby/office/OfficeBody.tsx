@@ -169,13 +169,15 @@ function ReplaySection({ live, locale }: { live: OfficeModule; locale: Locale })
   const t = useTranslations("office");
   const { mounted, state } = live.useReplay();
   const open = useRef<HTMLButtonElement>(null);
-  // The button stays while a replay is loading, playing, resting or paused ("Back to live" is the badge's); its focus moves to the day buttons as it hides.
-  const active = state.status !== "off" && state.status !== "unavailable";
-  useLayoutEffect(() => {
-    if (active && document.activeElement === open.current) (document.querySelector<HTMLElement>("[data-testid=office-replay] [aria-pressed=true]") ?? open.current?.closest<HTMLElement>("[data-testid=office-body]"))?.focus();
-  }, [active]);
   const [Controls, setControls] = useState<ComponentType<{ locale: Locale }> | null>(null);
   const [failed, setFailed] = useState(false);
+  // A replay that started on its own (the idle loop) leaves the button up until the controls are open: the day picker and pause live there.
+  // The button hides once the controls are open while a replay is active ("Back to live" is the badge's); its focus moves to the day buttons as it hides.
+  const active = state.status !== "off" && state.status !== "unavailable";
+  const hide = active && Controls !== null;
+  useLayoutEffect(() => {
+    if (hide && document.activeElement === open.current) (document.querySelector<HTMLElement>("[data-testid=office-replay] [aria-pressed=true]") ?? open.current?.closest<HTMLElement>("[data-testid=office-body]"))?.focus();
+  }, [hide]);
   if (!mounted) return null;
   return (
     <section className="space-y-2" data-testid="office-replay-section">
@@ -184,7 +186,7 @@ function ReplaySection({ live, locale }: { live: OfficeModule; locale: Locale })
         ref={open}
         type="button"
         className="chip min-h-11"
-        hidden={active}
+        hidden={hide}
         aria-expanded={Controls !== null}
         onClick={() =>
           void live

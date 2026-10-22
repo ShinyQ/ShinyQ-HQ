@@ -163,7 +163,7 @@ Index: [AGENTS.md](../../AGENTS.md).
     | Rows read | the doc and today's row once per cold start; the index reads 8 rows and a day 1, per edge cache miss | 5,000,000 a day |
     | Stored | at most 8 log rows (under 1 MB) plus the doc | 5 GB |
     | Durable Object requests | history only on edge cache misses: at most about 5,900 a day per data center under continuous load (index and today every 30 s, 7 past days every hour), far fewer in practice | 100,000 a day, shared |
-    | Pages Function requests | 2 per replay start (the index and a day), plus 2 more per 5 min only while the visitor gave input in the last 10 min (a parked tab loops its copy and fetches nothing more): at most about 6 a session, 3,000 on a day of 500 L1 sessions (a 5 min visit 2 to 4, so about 1,000 to 2,000), 3% of the limit | 100,000 a day, shared |
+    | Pages Function requests | 2 per replay start (the index and a day), then up to 2 more per 5 min while the visitor gave input in the last 10 min, and up to 4 more after the input stops (a parked tab loops its copy and fetches nothing more); typical: about 16 for 30 min of active watching (about 2 per 5 min of input), 3,000 on a day of 500 L1 sessions (a 5 min visit 2 to 4, so about 1,000 to 2,000), 3% of the limit | 100,000 a day, shared |
     | CPU | `logDoc` serializes the row once per loggable change to check its size (at most 120 KB, about 1 ms) | free plan CPU per request |
 
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,

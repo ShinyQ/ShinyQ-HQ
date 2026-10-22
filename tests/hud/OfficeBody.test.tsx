@@ -611,11 +611,13 @@ describe("Agent Office day replay in the drawers", () => {
     expect(screen.getByTestId("office-body")).not.toHaveTextContent(line);
   });
 
-  it("hides Show day replay while a replay is active, shows it live, and moves its focus to the pressed day button", () => {
+  it("hides Show day replay once its controls are open while a replay is active, shows it live, and moves its focus to the pressed day button", async () => {
     replay.store.mounted = true;
     const { rerender } = body({ panel: "summary" });
     const open = screen.getByRole("button", { name: o.replay.open });
     expect(open).toBeVisible();
+    fireEvent.click(open);
+    await screen.findByTestId("stub-controls");
     open.focus();
     expect(open).toHaveFocus();
     const pressed = document.createElement("button");
@@ -644,6 +646,19 @@ describe("Agent Office day replay in the drawers", () => {
     screen.getByText(o.replay.open).focus();
     replay.store = { state: { status: "playing", label: "Mon 19 Oct" }, snapshot: {}, mounted: true };
     rerender(tree({ panel: "summary" }));
+    expect(screen.getByTestId("office-body")).toHaveFocus();
+  });
+
+  it("keeps Show day replay during an automatic replay until its controls are open, then hides it and moves focus", async () => {
+    playing();
+    body({ panel: "summary" });
+    const open = screen.getByRole("button", { name: o.replay.open });
+    expect(open).toBeVisible();
+    expect(screen.queryByTestId("stub-controls")).toBeNull();
+    open.focus();
+    fireEvent.click(open);
+    expect(await screen.findByTestId("stub-controls")).toHaveTextContent("controls en");
+    expect(open).not.toBeVisible();
     expect(screen.getByTestId("office-body")).toHaveFocus();
   });
 
