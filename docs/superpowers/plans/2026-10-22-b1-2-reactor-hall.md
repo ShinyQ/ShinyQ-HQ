@@ -151,3 +151,19 @@ or where `setFloor` is exposed), `ReactorCore.tsx` (distance to the core, 4 upda
 - [ ] Docs: `docs/agents/floor-b1-engine-room.md` (hall, reactor, poller, drawer, budgets), `docs/features.md`,
   decision `docs/decisions/2026-10-22-b1-reactor-hall.md` with the request estimate (visits per day on B1 times the
   polls per B1 visit at 10 s or 30 s, capped by the 10 minute idle stop) and the measured bytes.
+
+## Resume state (2026-10-22, pushed as WIP before a machine wipe)
+
+- Tasks 1 to 6 are done, each reviewed clean (subagent-driven, task review per task): hall layout (workbench moved to
+  x 42 to 50, z -14 to -11 with a north-looking zone, after review), the live model, the B1-only poller, the core
+  (rings and sparks on holo `strip`, coolant on `core`, same program), the reactor station and drawer, the hum near the
+  core (`engineHum.ts` holder, one runtime instance confirmed in the build). Measured: B1 chunk 11.8 KB (cap 16), main
+  path unchanged (first-frame full 465.9, lite 450.2; session full 529.5, lite 513.7), settled B1 scene calls lite 46,
+  full 49, worst ride whole frame 137.
+- Task 7 was in progress: the review fixes, the docs (`docs/agents/floor-b1-engine-room.md`, `docs/features.md`), the
+  decision (`docs/decisions/2026-10-22-b1-reactor-hall.md`) and the captures script are committed. Not yet confirmed
+  on this branch: `bun run verify:quick`, `bun run e2e:changed`, the B1 perf gates and `e2e/memory.spec.ts`; the
+  captures (arrival, aisle, each bay, the reactor with live data and its drawer; 1440x900, 820x1180, 390x844; full and
+  lite) still have to be taken and sent to the owner's reviewer before the PR merges.
+- Next: finish Task 7, open the ready-for-review PR, merge after the captures are approved, then
+  `2026-10-22-b1-3-power-up-tour.md` (stack it on main after B1-2 merges).
