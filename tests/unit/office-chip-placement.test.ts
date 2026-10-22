@@ -17,6 +17,7 @@ import {
   chipsOneLine,
   chipsDotsOnly,
   layoutChipRow,
+  drawerEdge,
   layoutChipRows,
   nextChipFar,
   OFFICE_CHIP_ANCHORS,
@@ -412,6 +413,26 @@ describe("the chip row layout (`layoutChipRow`, `chipRowBounds`)", { timeout: 30
         start = k;
       }
     }
+  });
+
+  it("an open drawer: a bottom sheet (tablets, phones) hides the row, a side panel is a HUD box the row keeps off", () => {
+    for (const [w, h] of [[820, 1180], [768, 1024], [390, 844], [844, 390], [899, 600]]) {
+      expect(drawerEdge(true, w, h), `${w} x ${h} sheet`).toBe(0);
+      expect(drawerEdge(false, w, h), `${w} x ${h} closed`).toBe(w);
+    }
+    // The side panel's left edge: its width and the 16 px margin (480, 560 from 1280, 600 from 1400).
+    expect(drawerEdge(true, 1440, 900)).toBe(1440 - 16 - 600);
+    expect(drawerEdge(true, 1280, 720)).toBe(1280 - 16 - 560);
+    expect(drawerEdge(true, 1024, 768)).toBe(1024 - 16 - 480);
+    // A landscape tablet from 900 px wide has the side panel too.
+    expect(drawerEdge(true, 900 + 100, 800)).toBe(1000 - 16 - 480);
+    const edge = drawerEdge(true, 1440, 900);
+    const boxes = officeHudBoxes(1440, 900, "desktop", edge);
+    expect(boxes).toHaveLength(3);
+    expect(boxes[2]).toEqual({ x0: edge, y0: 0, x1: 1440, y1: 900 });
+    expect(chipRowBounds(1440, OFFICE_CHIP_TOP.desktop, boxes).right).toBe(edge - CHIP_ROW.edge);
+    // No drawer: the boxes are the HUD's own.
+    expect(officeHudBoxes(1440, 900, "desktop", 1440)).toHaveLength(2);
   });
 
   it("trims the row past the HUD boxes in its band: the desktop profile card, the Corners minimap", () => {

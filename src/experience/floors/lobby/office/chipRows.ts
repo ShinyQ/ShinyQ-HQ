@@ -1,3 +1,4 @@
+import { drawerLayout, SIDE_MARGIN, sideWidth } from "@/hud/drawer/layout";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { OFFICE_SLOTS } from "../officeShell";
 
@@ -32,16 +33,29 @@ export const CHIP_ROW = { gap: 6, edge: 8, max: 176, dot: 32, name: 84, near: 12
 /**
  * The HUD boxes the chip row and the leader lines keep off (px, measured in the browser): the desktop profile card (top
  * left) and floor menu panel (right, 219 by 284 px, centred), the Corners minimap (top right: phones 72 px at top 64,
- * 12 px in; tablets 112 px at top 76, 16 px in) and joystick (bottom left, 160 by 144 px). The top bar is above the row.
+ * 12 px in; tablets 112 px at top 76, 16 px in) and joystick (bottom left, 160 by 144 px), and an open side drawer
+ * (`edge`, `drawerEdge`: its left edge to the screen's right). The top bar is above the row.
  */
-export function officeHudBoxes(width: number, height: number, hud: "desktop" | "tablet" | "phone"): ScreenBox[] {
-  if (hud === "desktop")
-    return [
-      { x0: 16, y0: 16, x1: 296, y1: 153 },
-      { x0: width - 235, y0: (height - 284) / 2, x1: width - 16, y1: (height + 284) / 2 },
-    ];
-  const minimap = hud === "phone" ? { x0: width - 84, y0: 64, x1: width - 12, y1: 136 } : { x0: width - 128, y0: 76, x1: width - 16, y1: 188 };
-  return [minimap, { x0: 0, y0: height - 144, x1: 160, y1: height }];
+export function officeHudBoxes(width: number, height: number, hud: "desktop" | "tablet" | "phone", edge = width): ScreenBox[] {
+  const boxes: ScreenBox[] =
+    hud === "desktop"
+      ? [
+          { x0: 16, y0: 16, x1: 296, y1: 153 },
+          { x0: width - 235, y0: (height - 284) / 2, x1: width - 16, y1: (height + 284) / 2 },
+        ]
+      : [hud === "phone" ? { x0: width - 84, y0: 64, x1: width - 12, y1: 136 } : { x0: width - 128, y0: 76, x1: width - 16, y1: 188 }, { x0: 0, y0: height - 144, x1: 160, y1: height }];
+  if (edge < width) boxes.push({ x0: edge, y0: 0, x1: width, y1: height });
+  return boxes;
+}
+
+/**
+ * Where an open Glass Drawer starts along x (px), so the chip row keeps off it: the screen's `width` with none open, the
+ * side panel's left edge on a desktop or a wide landscape tablet, and 0 for a bottom sheet (tablets and phones), which
+ * hides the row (`OfficeWatch`: the chips, the leader lines and the replay pill all go, and return when it closes).
+ */
+export function drawerEdge(open: boolean, width: number, height: number): number {
+  if (!open) return width;
+  return drawerLayout(width, height) === "sheet" ? 0 : width - SIDE_MARGIN - sideWidth(width);
 }
 
 /**
