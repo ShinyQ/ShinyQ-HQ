@@ -1074,6 +1074,25 @@ test.describe("Agent Office (L1) day replay", () => {
   });
 });
 
+/** Opens an office room's drawer (the store's room, as a wall press would) and waits for it. */
+async function openDrawer(page: Page, room = "L1:office") {
+  await page.evaluate((r) => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom(r), room);
+  await expect(page.getByTestId("room-drawer")).toBeVisible({ timeout: 60_000 });
+}
+
+const closeDrawer = async (page: Page) => {
+  await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { closeRoom: () => void } } } }).__hq.store.getState().closeRoom());
+  await expect(page.getByTestId("room-drawer")).toBeHidden();
+};
+
+/** Every chip, leader line and tick is hidden (the leaders and ticks keep their elements, hidden with the chips). */
+async function expectRowHidden(page: Page) {
+  await expect.poll(async () => (await probe(page)).chips).toBe(0);
+  for (let slot = 0; slot < SEATS; slot++) await expect(chip(page, slot)).toBeHidden();
+  const visible = await page.locator('[data-testid="office-chip-lead"], [data-testid="office-chip-tick"]').evaluateAll((els) => els.filter((el) => (el as HTMLElement).style.visibility === "visible").length);
+  expect(visible).toBe(0);
+}
+
 test.describe("Agent Office (L1) at 1440 x 900", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -1255,6 +1274,66 @@ test.describe("Agent Office (L1) at 1440 x 900", () => {
     await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "desk", { timeout: 60_000 });
     await expect(page.getByTestId("office-activity")).toHaveText(en.office.activity.asking);
     expect(errors).toEqual([]);
+  });
+
+  test("a side drawer panel is a HUD box: the chips stay on screen and clear of it", async ({ page }) => {
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    await openDrawer(page);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBeGreaterThanOrEqual(3);
+    // The 600 px panel and its 16 px margin start at 824 px: no chip runs under it.
+    const rights = await page.locator('[data-testid="office-chip"]:visible').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    for (const right of rights) expect(right).toBeLessThanOrEqual(1440 - 16 - 600);
+    await expectChipsApart(page);
+  });
+});
+
+test.describe("Agent Office (L1) on a tablet", () => {
+  test.use({ viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+
+  test("the chip row hides while a drawer sheet is open and returns when it closes", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    await openDrawer(page);
+    await expectRowHidden(page);
+    await closeDrawer(page);
+    await waitForCameraSettle(page);
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
+    for (const slot of [0, 1, 2, 3, 4]) await expect(chip(page, slot)).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("a replay's pill hides with the chips while a drawer sheet is open", async ({ page }) => {
+    const office = await serveOffice(page);
+    await serveHistory(page);
+    office.set(asleepAll(Date.now()));
+    await enterHQ(page);
+    await atOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await show(page, office, asleepAll(Date.now()), ["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()!.advance(31_000));
+    await expect.poll(() => replayStatus(page), { timeout: 60_000 }).toBe("playing");
+    await expect(page.getByTestId("office-replay-pill")).toBeVisible();
+    await openDrawer(page);
+    await expectRowHidden(page);
+    await expect(page.getByTestId("office-replay-pill")).toBeHidden();
+    await closeDrawer(page);
+    await waitForCameraSettle(page);
+    await expect(page.getByTestId("office-replay-pill")).toBeVisible();
+    await expect.poll(async () => (await probe(page)).chips).toBe(10);
   });
 });
 

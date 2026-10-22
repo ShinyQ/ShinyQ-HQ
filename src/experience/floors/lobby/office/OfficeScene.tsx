@@ -47,7 +47,7 @@ import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
-import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, placeAt, segmentHitsBox } from "./chipRows";
+import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, drawerEdge, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, placeAt, segmentHitsBox } from "./chipRows";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
 import { officeLive } from "./live";
@@ -673,6 +673,7 @@ function createWatchState() {
     height: 0,
     layout: "",
     named: -1,
+    edge: 0,
     hud: [] as ScreenBox[],
     bounds: { left: 0, right: 0 },
     max: CHIP_ROW.max as number,
@@ -688,14 +689,15 @@ type WatchState = ReturnType<typeof createWatchState>;
  * The HUD boxes, the row's bounds and the chips' max width, again only when the screen size, the HUD layout or the count
  * of chips with a name (`named`: the desks with an agent; an off-duty desk's chip is a dot) changes.
  */
-function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number, shift: number) {
-  if (w.width === width && w.height === height && w.layout === hud && w.named === named && w.shift === shift) return;
+function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number, shift: number, edge: number) {
+  if (w.width === width && w.height === height && w.layout === hud && w.named === named && w.shift === shift && w.edge === edge) return;
   w.shift = shift;
+  w.edge = edge;
   w.width = width;
   w.height = height;
   w.layout = hud;
   w.named = named;
-  w.hud = officeHudBoxes(width, height, hud);
+  w.hud = officeHudBoxes(width, height, hud, edge);
   chipRowBounds(width, top, w.hud, w.bounds);
   w.bounds.left += shift;
   w.max = chipMaxWidth(w.bounds, named, OFFICE_CHIP_COUNT - named);
@@ -828,7 +830,9 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
     idleLoop(live.rovers.some((x) => x.agent && x.state !== "asleep"), feed, inView, s.reducedMotion);
   }
-  const mode = here ? officeChipMode(s.activeRoom) : null;
+  // A bottom sheet (edge 0) hides the row; a side panel is a HUD box.
+  const edge = drawerEdge(s.phase === "room", size.width, size.height);
+  const mode = here && edge ? officeChipMode(s.activeRoom) : null;
   // The replay pill leads the row (the chips' bounds start after it) and hides with the chips.
   const ui = officeReplay.ui;
   const pillW = ui ? ui.width(!!mode && officeRuntime.inView, now, CHIP_ROW.gap) : 0;
@@ -845,7 +849,7 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
   const small = mobile || officeRuntime.compact;
   const hud = hudLayout(s.device.viewport, s.device.coarse);
   const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
-  fitRow(w, size.width, size.height, hud, top, namedChips(view), pillW);
+  fitRow(w, size.width, size.height, hud, top, namedChips(view), pillW, edge || size.width);
   const oneLine = chipsOneLine(s.device.viewport, mode === "compact", w.max);
   if (mode) setChipsCompact(mode === "compact" || chipsDotsOnly(w.max));
   let n = 0;
