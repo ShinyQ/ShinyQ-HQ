@@ -136,7 +136,9 @@ describe("createOfficePoller", () => {
     expect(calls).toHaveLength(POLL.idleStopMs / POLL.restingMs);
     await vi.advanceTimersByTimeAsync(POLL.restingMs * 4);
     expect(calls).toHaveLength(POLL.idleStopMs / POLL.restingMs);
+    expect(Date.now() - poller.touchedAt()).toBeGreaterThanOrEqual(POLL.idleStopMs);
     poller.touch();
+    expect(poller.touchedAt()).toBe(Date.now());
     await vi.advanceTimersByTimeAsync(0);
     expect(calls).toHaveLength(POLL.idleStopMs / POLL.restingMs + 1);
   });

@@ -41,6 +41,7 @@ function fakePoller(feed: OfficeFeed) {
     start: () => void calls.push("start"),
     stop: () => void calls.push("stop"),
     touch: () => void calls.push("touch"),
+    touchedAt: () => 0,
     retime: () => void calls.push("retime"),
     feed: () => feed,
     subscribe: (l) => {

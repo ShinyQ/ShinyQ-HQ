@@ -147,7 +147,7 @@ describe("office idle loop", () => {
       vi.doMock(CHUNK, async () => {
         const { createReplayFeed, linkReplay } = await import("@/experience/floors/lobby/office/replayFeed");
         const { officeLive } = await import("@/experience/floors/lobby/office/live");
-        const ctl = createReplayFeed({ fetch: async (url) => (fetches.push(url), new Response(null, { status: 404 })), now: officeLive.now, reduced: () => false, locale: () => "en", publish: () => {} });
+        const ctl = createReplayFeed({ fetch: async (url) => (fetches.push(url), new Response(null, { status: 404 })), now: officeLive.now, active: () => true, reduced: () => false, locale: () => "en", publish: () => {} });
         return { replayController: linkReplay(ctl, { now: officeLive.now, feed: () => feed, subscribe: () => () => {} }, () => false) };
       });
       const l = await link();

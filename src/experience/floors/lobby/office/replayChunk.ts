@@ -1,4 +1,4 @@
-import type { OfficeFeedSnapshot } from "@/lib/office/poll";
+import { POLL, type OfficeFeedSnapshot } from "@/lib/office/poll";
 import { getHQStore } from "@/store/useHQStore";
 import { officeLive } from "./live";
 import { officeView } from "./officeModel";
@@ -21,7 +21,7 @@ function publish(state: ReplayState, snapshot: OfficeFeedSnapshot | null): void 
 }
 
 /** The replay chunk (loaded by `loadOfficeReplay` in ./replayLink.ts on the idle-loop condition or the drawer's control): one controller per page, tied to the live feed (`linkReplay`). */
-export const replayController = linkReplay(createReplayFeed({ fetch: (url) => fetch(url), now: officeLive.now, reduced, locale, publish }), officeLive, reduced);
+export const replayController = linkReplay(createReplayFeed({ fetch: (url) => fetch(url), now: officeLive.now, active: () => officeLive.now() - officeLive.touchedAt() < POLL.idleStopMs, reduced, locale, publish }), officeLive, reduced);
 officeReplay.controller = replayController;
 officeReplay.state = replayController.state();
 officeReplay.ui = replayUi;

@@ -21,6 +21,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
   const reduced = { on: opts.reduced ?? false };
   const locale = { is: "en" as "en" | "id" };
   const fail = { index: false, day: false };
+  const input = { active: true };
   const answer = (url: string): Answer => {
     if (url === OFFICE_HISTORY_PATH) return fail.index ? { status: 503, body: { v: 1, error: "office" } } : (opts.index ?? { status: 200, body: INDEX });
     if (fail.day) return { status: 404, body: { v: 1, error: "day" } };
@@ -36,6 +37,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
       return new Response(JSON.stringify(a.body ?? null), { status: a.status });
     },
     now: () => clock.now,
+    active: () => input.active,
     reduced: () => reduced.on,
     locale: () => locale.is,
     publish: (state, snapshot) => published.push({ state, snapshot }),
@@ -45,7 +47,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
   const play = (s: number, dt = 0.05) => {
     for (let t = 0; t < s - 1e-9; t += dt) feed.step(dt, reduced.on);
   };
-  return { feed, calls, clock, published, last, play, reduced, locale, fail };
+  return { feed, calls, clock, published, last, play, reduced, locale, fail, input };
 }
 
 /** A live snapshot at `at` with `desks` (slot, state) and deploy ships (time, status). */
@@ -86,6 +88,9 @@ function linked(first: OfficeFeed, opts: Parameters<typeof harness>[0] = {}) {
 /** The fixture day moved to `day` (an older day in the window). */
 const dayAs = (day: string): OfficeHistoryV1 => ({ ...DAY, day, start: dayStart(day) });
 
+/** One full loop of the harness's plan in seconds, rest included. */
+const REPLAY_LAP = () => PLAN.duration + REPLAY.restS + 0.2;
+
 describe("office replay feed", () => {
   it("auto() fetches the index once, picks today when it has anything and plays it with a snapshot published", async () => {
     const h = harness();
@@ -113,7 +118,7 @@ describe("office replay feed", () => {
     expect(h.last().state).toMatchObject({ status: "playing", day: older });
   });
 
-  it("rests 6 s at the end holding the last snapshot, then loops from 0 with `seq` bumped and no fetch; today refetches once its copy is over 60 s old", async () => {
+  it("rests 6 s at the end holding the last snapshot, then loops from 0 with `seq` bumped and no fetch; today refetches once its copy is over 5 min old and a visitor is about", async () => {
     const h = harness();
     await h.feed.auto();
     const seq = h.last().state.seq;
@@ -128,12 +133,75 @@ describe("office replay feed", () => {
     expect(h.last().state).toMatchObject({ status: "playing", seq: seq + 1 });
     expect(h.last().state.playS).toBeLessThan(1);
     expect(h.calls).toHaveLength(2);
-    // The second loop ends over 60 s after the first fetch: today is fetched again (the index too).
-    h.clock.now += 60_001;
+    // The second loop ends over 5 min after the first fetch: today is fetched again (the index too).
+    h.clock.now += REPLAY.retryS * 1000 + 1;
     h.play(PLAN.duration + REPLAY.restS + 0.2);
     await vi.waitFor(() => expect(h.last().state.status).toBe("playing"));
     expect(h.calls.filter((c) => c.endsWith(`?day=${TODAY}`))).toHaveLength(2);
     expect(h.calls.filter((c) => c === OFFICE_HISTORY_PATH)).toHaveLength(2);
+  });
+
+  describe("today's copy at a loop restart", () => {
+    const lap = REPLAY_LAP;
+    const refetches = (h: ReturnType<typeof harness>) => h.calls.filter((c) => c.endsWith(`?day=${TODAY}`)).length;
+
+    it("is not fetched again without visitor input, however old: the parked tab loops its copy", async () => {
+      const h = harness();
+      await h.feed.auto();
+      h.input.active = false;
+      for (let i = 0; i < 5; i++) {
+        h.clock.now += 3_600_000;
+        h.play(lap());
+        expect(h.last().state.status).toBe("playing");
+      }
+      expect(h.calls).toHaveLength(2);
+    });
+
+    it("is fetched at most once per 5 min while there is input", async () => {
+      const h = harness();
+      await h.feed.auto();
+      // Loops every 66 to 72 s: only the one that ends over 5 min after the copy fetches again.
+      const end = h.clock.now + REPLAY.retryS * 1000;
+      let loops = 0;
+      while (h.clock.now < end + 120_000) {
+        h.clock.now += 70_000;
+        h.play(lap());
+        await vi.waitFor(() => expect(h.last().state.status).toBe("playing"));
+        loops++;
+      }
+      expect(loops).toBeGreaterThanOrEqual(6);
+      expect(refetches(h)).toBe(2);
+      expect(h.calls.filter((c) => c === OFFICE_HISTORY_PATH)).toHaveLength(2);
+    });
+
+    it("follows the same rule when a visitor pauses during the rest and resumes", async () => {
+      const h = harness();
+      await h.feed.auto();
+      h.play(PLAN.duration + 0.1);
+      expect(h.last().state.status).toBe("resting");
+      h.feed.pause();
+      expect(h.last().state.status).toBe("paused");
+      // Young copy: resumes from the start without a fetch.
+      h.clock.now += REPLAY.retryS * 1000 - 1000;
+      h.feed.resume();
+      expect(h.last().state).toMatchObject({ status: "playing", playS: 0 });
+      expect(h.calls).toHaveLength(2);
+      h.play(PLAN.duration + 0.1);
+      h.feed.pause();
+      // Old copy, no input: no fetch.
+      h.clock.now += 2000;
+      h.input.active = false;
+      h.feed.resume();
+      expect(h.last().state).toMatchObject({ status: "playing", playS: 0 });
+      expect(h.calls).toHaveLength(2);
+      h.play(PLAN.duration + 0.1);
+      h.feed.pause();
+      // Old copy and input: today is loaded again before it plays.
+      h.input.active = true;
+      h.feed.resume();
+      await vi.waitFor(() => expect(h.last().state).toMatchObject({ status: "playing", playS: 0, auto: true }));
+      expect(refetches(h)).toBe(2);
+    });
   });
 
   it("play(day) is the visitor's (auto false) and ends paused instead of looping; stop() publishes off and no snapshot", async () => {

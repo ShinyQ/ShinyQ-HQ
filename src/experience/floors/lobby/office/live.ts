@@ -85,6 +85,8 @@ export const officeLive = {
   reasons: (): OfficePollReason[] => [...wants].sort(),
   /** Epoch ms on the poller's clock: the idle loop's quiet timer and the replay clock follow `officeTest.advance`. */
   now: (): number => Date.now() + clock.skew,
+  /** Epoch ms of the last visitor input on the poller's clock (the poller's 10 minute idle stop counts from it). */
+  touchedAt: poller.touchedAt,
   /** The feed now, and every new one (the replay chunk's live events). */
   feed: poller.feed,
   subscribe: poller.subscribe,

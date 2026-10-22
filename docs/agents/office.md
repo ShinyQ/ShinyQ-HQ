@@ -163,7 +163,7 @@ Index: [AGENTS.md](../../AGENTS.md).
     | Rows read | the doc and today's row once per cold start; the index reads 8 rows and a day 1, per edge cache miss | 5,000,000 a day |
     | Stored | at most 8 log rows (under 1 MB) plus the doc | 5 GB |
     | Durable Object requests | history only on edge cache misses: at most about 5,900 a day per data center under continuous load (index and today every 30 s, 7 past days every hour), far fewer in practice | 100,000 a day, shared |
-    | Pages Function requests | about 2 per replay start (the index and a day), about 1,000 on a day of 500 L1 sessions | 100,000 a day, shared |
+    | Pages Function requests | 2 per replay start (the index and a day), plus 2 more per 5 min only while the visitor gave input in the last 10 min (a parked tab loops its copy and fetches nothing more): at most about 6 a session, 3,000 on a day of 500 L1 sessions (a 5 min visit 2 to 4, so about 1,000 to 2,000), 3% of the limit | 100,000 a day, shared |
     | CPU | `logDoc` serializes the row once per loggable change to check its size (at most 120 KB, about 1 ms) | free plan CPU per request |
 
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
@@ -214,8 +214,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   Function gets v1 (read as v3). A Worker or Function rolled back to before v4 answers `?v=4` as v1 (the Worker
   forwards no `?v=4`, the Function shares the v1 entry); the v4 Function and the scene read that body as v4 with an
   empty pipeline (part A's anonymous lanes, no effects).
-  A Worker rolled back to before the replay has no `/history` (a 404), so the Function answers 503 and the drawer says "Replay
-  unavailable"; the stored `log:` rows wait untouched in the Durable Object (that Worker never reads or writes them, and the
+  A Worker rolled back to before the replay has no `/history` (a 404): the index answers 503 (a day request, the fixed 404) and the drawer
+  says "Replay unavailable"; the stored `log:` rows wait untouched in the Durable Object (that Worker never reads or writes them, and the
   served window only ever names the 8 current days), and the first write of a new WIB day after the roll forward prunes
   those outside the window. A Function rolled back to before the replay has no route: the replay chunk's request gets a non-200
   answer and the replay is unavailable the same way.

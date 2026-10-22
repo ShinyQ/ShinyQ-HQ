@@ -66,9 +66,10 @@ const FRESH_MS = 60_000;
  * The day replay's feed (replay chunk): fetches the 8-day index and one day (`/api/office/history`), plans it
  * (`planReplay`) and publishes the snapshot at the playback time (`snapshotAt`) when its content changed, at most once
  * per `REPLAY.tickS` of playback. The clock steps only from the scene's frame (`step`): no timer, no rAF. A later play
- * or `stop` drops a load still in flight.
+ * or `stop` drops a load still in flight. Today's copy is fetched again at a loop restart (or a resume from the end) only
+ * when it is over `REPLAY.retryS` old and `active()` (visitor input within the live poller's idle stop): a parked tab loops its copy.
  */
-export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; reduced: () => boolean; locale: () => "en" | "id"; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
+export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; active: () => boolean; reduced: () => boolean; locale: () => "en" | "id"; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
   let s: ReplayState = { ...REPLAY_STATE_OFF };
   /** The playback time, copied into `s` on a publish (or a `state()` read) only: no state copy per frame. */
   let playS = 0;
@@ -146,6 +147,11 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
     set({ status: reduced ? "paused" : "playing", day: pick, label: dayLabel(pick, deps.locale()), days: list, playS: start, duration: plan.duration, truncated: h.truncated, empty: false, seq: s.seq + 1 });
     render(true);
   }
+  /** Today's copy is over `REPLAY.retryS` old and a visitor is about: it is loaded again before the replay restarts. */
+  const stale = (): boolean => {
+    const copy = s.day && days.get(s.day);
+    return !!copy && s.day === index?.days[0].day && deps.now() - copy.at > REPLAY.retryS * 1000 && deps.active();
+  };
   const ctl: ReplayController = {
     async open() {
       if (s.status !== "off" && s.status !== "unavailable") return;
@@ -160,8 +166,11 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
     },
     resume() {
       if (s.status !== "paused" || deps.reduced()) return;
-      // Paused at the end (a visitor's day, or the rest): play again from the start.
-      if (plan && playS >= plan.duration) ctl.seek(0);
+      // Paused at the end (a visitor's day, or the rest): play again from the start, today's old copy loaded again first.
+      if (plan && playS >= plan.duration) {
+        if (stale()) return void load(s.day, s.auto);
+        ctl.seek(0);
+      }
       epoch = deps.now() - playS * 1000;
       set({ status: "playing", seq: s.seq + 1 });
     },
@@ -189,9 +198,7 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
       if (!plan) return;
       if (s.status === "resting") {
         if ((rest -= dt) > 0) return;
-        // Today grows: a copy over a minute old is fetched again before the next loop.
-        const copy = s.day && days.get(s.day);
-        if (copy && s.day === index?.days[0].day && deps.now() - copy.at > FRESH_MS) return void load(s.day, true);
+        if (stale()) return void load(s.day, true);
         epoch = deps.now();
         set({ status: "playing", playS: 0, seq: s.seq + 1 });
         return render(true);
