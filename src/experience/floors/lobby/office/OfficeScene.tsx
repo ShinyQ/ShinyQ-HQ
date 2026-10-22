@@ -518,7 +518,7 @@ function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
     const color = new Float32Array(TILE_COUNT * 3);
     const stage = new Float32Array(TILE_COUNT * 4);
     const stage2 = new Float32Array(TILE_COUNT * 4);
-    const rgb = neonColor(STATUS_COLOR.merged, 1.4, tier).toArray();
+    const rgb = neonColor(STATUS_COLOR.merged, 2.2, tier).toArray();
     const centers = tileCenters(LOBBY.officeWing);
     centers.forEach((p, i) => {
       FRAME.makeRotationX(-Math.PI / 2).setPosition(p.x, TILES.y, p.z).toArray(at, i * 16);

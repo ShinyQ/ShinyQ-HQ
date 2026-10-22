@@ -32,7 +32,7 @@ function Pill() {
       className="glass glass-solid pointer-events-none absolute top-0 left-0 inline-flex min-h-8 items-center rounded-full px-2.5 text-[13px] text-ink will-change-transform"
       style={{ visibility: "hidden", fontVariantNumeric: "tabular-nums" }}
     >
-      {!phone && `${t("3d.replay.pill")} · `}
+      {!phone && `${t("3d.replay.pill")} ·\u00a0`}
       <span>{officeReplay.state.clock}</span>
     </span>
   );
