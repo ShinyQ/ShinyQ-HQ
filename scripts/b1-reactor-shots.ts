@@ -7,7 +7,9 @@
  * `/api/stats` with `STATS_FIXTURE`. SwiftShader WebGL. Station drawers: `scripts/b1-shots.ts`.
  *
  *   bun scripts/serve-static.ts --port 4300 --dir out &
- *   bun scripts/b1-reactor-shots.ts --base http://127.0.0.1:4300 --out screenshots/b1-2 [--only 1440x900-full,390x844-lite] [--bays 1440x900-full,390x844-lite]
+ *   bun scripts/b1-reactor-shots.ts --base http://127.0.0.1:4300 --out screenshots/b1-2 [--only 1440x900-full,390x844-lite] [--bays 1440x900-full,390x844-lite] [--shots 04-reactor,05-reactor-flash]
+ *
+ * `--shots` saves only the named shots (the drive still runs); `--bays none` skips every bay.
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -35,12 +37,15 @@ let out = "screenshots/b1-2";
 let only: string[] | null = null;
 /** Runs that also capture the seven bays (default: every run). */
 let bays: string[] | null = null;
+/** Shot names to save (default: every shot). */
+let shots: string[] | null = null;
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--base") base = argv[++i];
   else if (argv[i] === "--out") out = argv[++i];
   else if (argv[i] === "--only") only = argv[++i].split(",");
   else if (argv[i] === "--bays") bays = argv[++i].split(",");
+  else if (argv[i] === "--shots") shots = argv[++i].split(",");
 }
 mkdirSync(out, { recursive: true });
 
@@ -120,6 +125,7 @@ try {
     if (only && !only.includes(run.key)) continue;
     const started = Date.now();
     const shot = async (page: Page, name: string) => {
+      if (shots && !shots.includes(name)) return;
       const file = join(out, `${name}-${run.key}.png`);
       await page.screenshot({ path: file });
       saved.push(file);

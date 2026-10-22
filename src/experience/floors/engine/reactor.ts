@@ -29,6 +29,8 @@ export const REACTOR = { lanes: 24, sparks: 10, flashMs: 1500, pulse: { idle: 0.
 
 /** Twice the poller's keep-last window (`POLL.keepLastMs`, 60 s), copied so this chunk never imports the poller. */
 export const REACTOR_STALE_MS = 120_000;
+/** The reactor drawer re-reads the model this often while open, so it turns offline once the feed goes stale. */
+export const REACTOR_DRAWER_TICK_MS = 20_000;
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 

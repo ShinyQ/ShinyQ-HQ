@@ -1,12 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AccentDot } from "@/components/AccentDot";
 import { BuildVisits } from "@/components/build/BuildVisits";
 import { DiagramSvg } from "@/components/diagram/DiagramSvg";
 import type { RoomEngine, RoomMetric } from "@/content/room-views/types";
 import type { Locale } from "@/content/schema";
-import { reactorState } from "@/experience/floors/engine/reactor";
+import { REACTOR_DRAWER_TICK_MS, reactorState } from "@/experience/floors/engine/reactor";
 import { reactorLive, useReactorFeed } from "@/experience/floors/engine/reactorLive";
 import { sinceLabel } from "@/lib/office/model";
 import { useStats } from "@/lib/visits/store";
@@ -51,6 +51,12 @@ function Blueprint({ diagram }: { diagram: NonNullable<RoomEngine["diagram"]> })
 function ReactorPanel({ labels: l, locale }: { labels: NonNullable<RoomEngine["reactor"]>["labels"]; locale: Locale }) {
   const feed = useReactorFeed();
   const stats = useStats();
+  // A feed that stops updating never re-renders: tick so "Live now" and the tiles go offline once it is stale.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), REACTOR_DRAWER_TICK_MS);
+    return () => clearInterval(id);
+  }, []);
   const now = reactorLive.now();
   const s = reactorState(feed, stats, { reducedMotion: false, now });
   const n = new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID");

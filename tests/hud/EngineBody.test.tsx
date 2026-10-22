@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildEngineRoomViews } from "@/content/room-views";
 import { EngineBody } from "@/hud/drawer/EngineBody";
 import type { OfficeFeed } from "@/lib/office/poll";
+import { REACTOR_DRAWER_TICK_MS, REACTOR_STALE_MS } from "@/experience/floors/engine/reactor";
 import { STATS_FIXTURE } from "@/lib/stats/fixtures";
 import { __setStatsForTests } from "@/lib/visits/store";
 import { shipStep } from "../../e2e/office-fixtures";
@@ -14,9 +15,9 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 const NOW = Date.UTC(2026, 9, 22, 12);
-const feedBox = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as unknown }));
+const feedBox = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as unknown, now: Date.UTC(2026, 9, 22, 12) }));
 vi.mock("@/experience/floors/engine/reactorLive", () => ({
-  reactorLive: { now: () => Date.UTC(2026, 9, 22, 12), start: vi.fn(), stop: vi.fn() },
+  reactorLive: { now: () => feedBox.now, start: vi.fn(), stop: vi.fn() },
   useReactorFeed: () => feedBox.feed,
 }));
 
@@ -28,6 +29,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   feedBox.feed = { status: "idle", snapshot: null, fetchedAt: 0 };
+  feedBox.now = NOW;
   __setStatsForTests(null);
 });
 
@@ -161,6 +163,31 @@ describe("EngineBody (B1 station drawers)", () => {
       expect(tiles(stale)).toEqual({});
       expect(stale.textContent).toContain("Feed langsung sedang offline");
       expect(stale.textContent).not.toContain("Data langsung");
+    });
+
+    it("goes offline while open once the feed goes stale, ticking on an interval it clears on unmount", () => {
+      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+      try {
+        feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW } satisfies OfficeFeed;
+        const view = render(<EngineBody view={buildEngineRoomViews("en")["B1:reactor"]!} locale="en" />);
+        const live = () => view.container.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live");
+        expect(live()).toBe("true");
+        expect(REACTOR_DRAWER_TICK_MS).toBeGreaterThanOrEqual(15_000);
+        expect(REACTOR_DRAWER_TICK_MS).toBeLessThanOrEqual(30_000);
+        // The feed stops updating (no new render from it); the clock runs past the stale window.
+        feedBox.now = NOW + REACTOR_STALE_MS + 1;
+        act(() => vi.advanceTimersByTime(REACTOR_DRAWER_TICK_MS - 1));
+        expect(live()).toBe("true");
+        act(() => vi.advanceTimersByTime(1));
+        expect(live()).toBe("false");
+        expect(view.container.textContent).toContain("The live feed is offline right now");
+        expect(view.container.textContent).not.toContain("Live now");
+        expect(vi.getTimerCount()).toBe(1);
+        view.unmount();
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

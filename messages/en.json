@@ -170,7 +170,7 @@
       "title": "The Reactor",
       "subtitle": "The live heart of the build: CI, deploys, agents and visits in one machine.",
       "howItReads": "How it reads",
-      "segments": "Ring segments are the jobs of the newest CI run: cyan running, green done, red failed, grey queued.",
+      "segments": "Ring segments are the jobs of the latest CI runs, in the Agent Office tower's colors: violet running (a light chases around the ring), green done, red failed, dim grey queued.",
       "flash": "A white flash is a production deploy.",
       "sparks": "Orbiting sparks are AI agent sessions awake in the Agent Office.",
       "pulse": "The pulse speed follows the visits and Ask questions of the last 30 days.",

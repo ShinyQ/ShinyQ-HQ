@@ -91,7 +91,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
 | B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 3): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
-| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 3): the aisle ends in a reactor hall with a live core (rings from the newest CI run, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core | In review |
+| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 3): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core | In review |
 
 ## Controls and first visit
 
@@ -369,17 +369,18 @@ The basement under the Lobby: a workshop where each station explains one part of
   - **Rover's Brain**: how Ask Rover Assistant answers, as a pipeline diagram (gatekeeper, answer cache, scope router, BM25 retrieval over the knowledge pack, the model chain, output checks, the streamed answer) and eight steps, including the nightly evals.
   - **Rejected Designs**: thirteen ideas that were tried or proposed and dropped, each with the reason and, where it is linkable, the pull request.
 - **The reactor hall**: the aisle ends at a live reactor core, the site's heartbeat:
-  - four rings of segments colored by the jobs of the newest CI run (cyan running, green done, red failed, grey queued), turning slowly in alternating directions;
+  - four rings of segments colored by the jobs of the CI runs in the Agent Office tower's order and colors (violet running with a light chasing around the ring, green done, red failed, dim grey queued), turning slowly in alternating directions;
+  - a bright energy column open to the top (a coolant shell, a brighter inner beam rising past the ceiling pipes, a thin crown ring and two thin rails instead of a cap) with bands flowing up it, and a soft glow pool on the platform under it;
   - a white flash when a new successful production deploy shows up;
   - sparks orbiting inside the rings, one per AI agent awake in the Agent Office (full quality);
   - a coolant pulse whose speed follows the visits and Ask questions of the last 30 days, and a counter plate with both numbers;
-  - offline, stale or under reduced motion it rests in a calm amber glow (no turn, no orbit, no flash). Lite quality draws half the segments and no sparks.
+  - offline or stale it shows amber segments, no sparks and no flash, with a slow idle pulse; reduced motion also stops the turn (and holds the glow steady). Lite quality draws half the segments and no sparks.
   - It checks for new data only while the rover is on B1 (every 10 s while agents are awake, 30 s otherwise), stops after 10 minutes without input and picks up again on the next input; the visit numbers come from the page's one stats fetch.
-- **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the newest CI run, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions in the last 30 days) and how to read it, in plain words; offline it says so and shows the idle glow. It has no `/build` section and checks for new data only while the rover is on B1.
+- **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the latest CI runs, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions in the last 30 days) and how to read it, in plain words; offline it says so and shows the idle glow, and an open drawer turns offline by itself once the feed goes stale. It has no `/build` section and checks for new data only while the rover is on B1.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers, that rises (up to about 6 dB) as the rover nears the reactor core.
 - A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car looking down the aisle at the reactor. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
 - The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
-- Budgets: its own 11.8 KB floor chunk (cap 16 KB, loaded only when unlocked), 46 scene calls on lite and 49 on full when settled.
+- Budgets: its own 12.7 KB floor chunk (cap 16 KB, loaded only when unlocked), 47 scene calls on lite and 50 on full when settled.
 
 ## Routes
 
@@ -545,7 +546,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
 | L1 Agent Office chunks | 40 KB gzip for the scene, drawer body and replay chunks together; the watch, beacon and replay controls chunks have their own caps | `bun run e2e:perf` |
 
-- Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured today: main 3D path 450.0 KB (lite) and 465.8 KB (full), chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB.
+- Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured today: main 3D path 450.2 KB (lite) and 465.9 KB (full), chunks L3 13.9, L4 11.7, RF 3.3, B1 12.7 KB.
 - The peaks of the intro, every elevator ride and hover count too. During a ride, meshes hidden under a solid slab are skipped (`src/experience/tower/rideCull.ts`).
 - Real-device frame rate is checked with `?perf=1`.
 - The pixel budget (`renderBudget` in `src/experience/scene/settings.ts`) keeps desktops at DPR up to 2 within 8.3 MP and skips composer MSAA from DPR 1.5 up; touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite).
