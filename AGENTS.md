@@ -156,9 +156,9 @@ Numbers live in `e2e/budgets.ts` (3D) and `lighthouserc.json` (Classic site). De
 | Budget | Limit |
 |---|---|
 | 3D JS on the first-frame path (`?prefetch=off`, per tier) | under 466.4 KB gzip |
-| 3D session total (main path, the public floor chunks, the L1 office watch and scene chunks) | full 522.4 KB, lite 506.7 KB gzip |
+| 3D session total (main path, the public floor chunks, the L1 office watch, scene and replay chunks) | full 529.7 KB, lite 513.9 KB gzip |
 | Floor chunks (incremental) | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip |
-| Agent Office chunks (L1, lazy) | own cap: scene plus drawer body 40 KB (scene 26.6 KB, body 6.93 KB); the scene (idle on every L1 visit) and the watch chunk 2.03 KB count in the session total, the drawer body and the beacon 2.59 KB gzip do not |
+| Agent Office chunks (L1, lazy) | own cap: scene, drawer body and replay 40 KB (scene 28.2 KB, body 6.93 KB, replay 5.7 KB); the scene (idle on every L1 visit), the replay and the watch chunk 2.03 KB count in the session total, the drawer body, the beacon 2.59 KB and the replay controls 1.41 KB gzip do not |
 | Scene draw calls per frame, any floor | under 150 (L1 125, RF 79, B1 100); at most 20 post passes |
 | Triangles per frame | under 30k |
 | Shader programs per floor | `e2e/perf/baseline.json` plus 2 |
