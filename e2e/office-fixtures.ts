@@ -1,3 +1,4 @@
+import { historyWindow, dayStart, type OfficeHistoryEvent, type OfficeHistoryIndexV1, type OfficeHistoryV1 } from "../src/lib/office/protocolHistory";
 import type { OfficeActivity, OfficeAgent, OfficeDeskV2, OfficeJobStatus, OfficePipelineRun, OfficeShip, OfficeSnapshotV1, OfficeSnapshotV2, OfficeSnapshotV3, OfficeSnapshotV4, OfficeState } from "../src/lib/office/protocol";
 
 /**
@@ -198,3 +199,76 @@ export function asV3(body: unknown): unknown {
   if (snap?.v !== 4) return body;
   return Object.fromEntries(Object.entries({ ...snap, v: 3 }).filter(([key]) => key !== "pipeline"));
 }
+
+/** `/api/office/history` (the 8-day index) and `/api/office/history?day=YYYY-MM-DD`. */
+export const HISTORY_API = /\/api\/office\/history(\?day=\d{4}-\d{2}-\d{2})?$/;
+
+/** Seconds since the WIB midnight at `h`:`m`. */
+const hm = (h: number, m: number) => h * 3600 + m * 60;
+/** One session's step: its start (h, m), then its state and activity by OFFICE_STATES and OFFICE_ACTIVITIES index, its helpers, and the clock it lasts until (else 20 s before its next step). */
+type Step = [h: number, m: number, state: number, activity: number, helpers: number, until?: number];
+function track(n: number, seat: number, steps: Step[]): OfficeHistoryEvent[] {
+  return steps.map(([h, m, state, activity, helpers, until], i) => {
+    const next = steps[i + 1];
+    return [hm(h, m), n, seat, state, activity, until ?? (next ? hm(next[0], next[1]) - 20 : hm(h, m) + 600), helpers];
+  });
+}
+
+/**
+ * A replayable WIB day (`back` days before the day of `now`): ten sessions on the ten seats between 09:05 and 14:05 (the
+ * back row from 09:05 to 09:14), seat 0 with 3 helpers and seat 1 with 6 for the five hours, seat 3 asking (Needs Kurniadi)
+ * the whole time, three merges (09:30, 10:30 and 11:30), two runs (one green, one failed) and one production deploy. With
+ * 600 day seconds per playback second the loop lasts the minimum 30 s.
+ */
+export function historyDayFor(now: number, back = 0): OfficeHistoryV1 {
+  const day = historyWindow(now)[back];
+  const events = [
+    ...track(0, 0, [[9, 5, 0, 0, 3, hm(14, 5)]]),
+    ...track(1, 1, [[9, 5, 1, 1, 6, hm(14, 5)]]),
+    ...track(2, 2, [[9, 6, 3, 3, 0], [9, 40, 6, 9, 0]]),
+    ...track(3, 3, [[9, 6, 5, 8, 0, hm(14, 5)]]),
+    ...track(4, 4, [[9, 7, 4, 6, 0], [11, 0, 6, 9, 0]]),
+    ...track(5, 5, [[9, 8, 0, 0, 0], [12, 0, 6, 9, 0]]),
+    ...track(6, 6, [[9, 9, 2, 2, 0], [12, 30, 6, 9, 0]]),
+    ...track(7, 7, [[9, 10, 0, 0, 0], [13, 0, 6, 9, 0]]),
+    ...track(8, 8, [[9, 12, 1, 1, 0], [13, 30, 6, 9, 0]]),
+    ...track(9, 9, [[9, 14, 0, 0, 0], [14, 0, 6, 9, 0]]),
+  ].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  return {
+    v: 1,
+    day,
+    start: dayStart(day),
+    agents: ["copilot", "claude", "codex", "copilot", "claude", "codex", "copilot", "claude", "codex", "copilot"],
+    tasks: { "0": { repo: OFFICE_REPO, title: "Replay The Day In The Office" }, "3": { repo: OFFICE_REPO, title: "Needs Kurniadi Beacon" } },
+    events,
+    prs: [
+      [hm(9, 30), 0, OFFICE_REPO, 241, "Replay the day in the office"],
+      [hm(10, 30), 5, OFFICE_REPO, 242, "Second console row"],
+      [hm(11, 30), 0, OFFICE_REPO, 243, "Floor tiles per merged PR"],
+    ],
+    runs: [
+      [hm(9, 40), hm(9, 55), 0, 1, 3],
+      [hm(12, 0), hm(12, 20), 5, 0, 6],
+    ],
+    deploys: [[hm(11, 45), 1]],
+    truncated: false,
+  };
+}
+
+/** The 8-day index for `now`: the two newest days play (`historyDayFor`), the six older ones are empty. */
+export function historyIndexFor(now: number): OfficeHistoryIndexV1 {
+  const counts = historyDayFor(now);
+  return {
+    v: 1,
+    days: historyWindow(now).map((day, i) =>
+      i < 2 ? { day, events: counts.events.length, prs: counts.prs.length, runs: counts.runs.length, deploys: counts.deploys.length } : { day, events: 0, prs: 0, runs: 0, deploys: 0 },
+    ),
+  };
+}
+
+/** A v4 snapshot with every desk asleep and nothing in the pipeline: the quiet live office the idle loop waits for. */
+export function asleepAll(now: number): OfficeSnapshotV4 {
+  const front = statesA(now, 0);
+  return { ...front, v: 4, desks: front.desks.map((d) => officeDesk(d.slot, d.agent, "asleep", "resting", now)), pipeline: { runs: [], ships: [] } };
+}
+
