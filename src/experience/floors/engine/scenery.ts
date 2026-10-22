@@ -2,6 +2,7 @@ import type { SignSpec } from "../../fx/signLayout";
 import type { EngineData, GpuTier, Rect } from "../../types";
 import type { Box } from "../roof/solids";
 import { ENGINE, type EngineBay, type EngineLayout } from "./layout";
+import { CORE_FX, coreSolids } from "./reactorFx";
 
 /**
  * Pure scenery of the B1 Engine Room (no React or three): the solid boxes (one merged mesh plus its edges), the
@@ -39,10 +40,17 @@ export interface EngineScenery {
   panels: PanelInstance[];
 }
 
-/** Floor words (engine.*): the workbench title and subtitle. */
+/** Floor words (engine.*): the workbench title and subtitle, and the reactor's title and counter lines (`n` comes formatted). */
 export interface EngineLabels {
   title: string;
   subtitle: string;
+  reactor?: { title: string; visits: (n: string) => string; asks: (n: string) => string };
+}
+
+/** The reactor counter plate's numbers, formatted with the locale; null hides that line. */
+export interface ReactorCounts {
+  visits: string | null;
+  asks: string | null;
 }
 
 export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
@@ -233,13 +241,16 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
     flows.push(...row.flows);
   });
   const bench = workbenchProps(layout.workbench);
-  solids.push(...bench.solids);
+  solids.push(...bench.solids, ...coreSolids());
   panels.push(...bench.panels);
   return { solids, flows, panels };
 }
 
-/** Station names over every bay (amber) and the title over the workbench (it turns to the camera). */
-export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels): SignSpec[] {
+/**
+ * Station names over every bay (amber), the title over the workbench, the reactor's title over its cap and its counter
+ * plate (visits and questions, cyan) low on the core's aisle side, below the rings. Every sign turns to the camera.
+ */
+export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels, counts?: ReactorCounts): SignSpec[] {
   const titles = new Map(data.bays.map((bay) => [bay.id, bay.title]));
   const signs: SignSpec[] = [];
   for (const bay of layout.bays) {
@@ -250,5 +261,11 @@ export function engineSigns(layout: EngineLayout, data: EngineData, labels: Engi
   const z = (layout.workbench.minZ + layout.workbench.maxZ) / 2;
   signs.push({ text: labels.title.toLocaleUpperCase(), x, y: 6.6, z, color: ENGINE_TONES.amber, fontSize: 0.7 });
   signs.push({ text: labels.subtitle, x, y: 5.7, z, color: ENGINE_TONES.warm, fontSize: 0.36 });
+  const reactor = labels.reactor;
+  if (!reactor) return signs;
+  const R = ENGINE.reactor;
+  signs.push({ text: reactor.title.toLocaleUpperCase(), x: R.x, y: (R.h + ENGINE.ceiling) / 2, z: R.z, color: ENGINE_TONES.amber, fontSize: 0.36 });
+  const lines = [counts?.visits != null ? reactor.visits(counts.visits) : null, counts?.asks != null ? reactor.asks(counts.asks) : null].filter((l) => l !== null);
+  if (lines.length > 0) signs.push({ text: lines.join("\n"), x: layout.reactor.minX + 0.6, y: CORE_FX.rings[0].y - 0.65, z: R.z, color: ENGINE_TONES.cyan, fontSize: 0.28 });
   return signs;
 }
