@@ -47,7 +47,7 @@ describe("B1 Engine Room scenery", () => {
     expect(full.panels.length).toBeLessThan(40);
   });
 
-  it("stands the workbench props inside the moved workbench, its wall screen facing the room (north)", () => {
+  it("stands the workbench props inside the moved workbench, its wall screen facing the room (south)", () => {
     const w = layout.workbench;
     const s = engineScenery(layout, "full");
     const bench = s.solids.filter((x) => inRect(x, w));
@@ -55,9 +55,9 @@ describe("B1 Engine Room scenery", () => {
     for (const solid of bench) expect(inside(box(solid), w), JSON.stringify(solid)).toBe(true);
     const screens = s.panels.filter((p) => inRect(p, w));
     expect(screens).toHaveLength(1);
-    // Forward is (sin yaw, cos yaw): the screen on the south wall looks north (-z), into the hall.
+    // Forward is (sin yaw, cos yaw): the screen on the north wall looks south (+z), into the hall.
     expect(Math.sin(screens[0].yaw)).toBeCloseTo(0);
-    expect(Math.cos(screens[0].yaw)).toBeCloseTo(-1);
+    expect(Math.cos(screens[0].yaw)).toBeCloseTo(1);
     expect(inside(panelRect(screens[0]), w)).toBe(true);
   });
 

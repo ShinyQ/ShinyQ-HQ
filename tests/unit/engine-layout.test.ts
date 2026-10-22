@@ -3,6 +3,7 @@ import { STATION_IDS } from "@/content/build-story";
 import { RoomIdSchema } from "@/content/schema";
 import { yawLooking } from "@/experience/camera/look";
 import { buildEngineLayout, ENGINE, ENGINE_BAYS, ENGINE_REACTOR_ROOM, ENGINE_STATIONS, engineRoom } from "@/experience/floors/engine/layout";
+import { rectGap } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";
 import { realLayouts } from "../helpers/real-layouts";
 import { expectSpaceRules } from "../helpers/space";
@@ -11,8 +12,6 @@ const layout = buildEngineLayout();
 const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && b.minX < a.maxX && a.minZ < b.maxZ && b.minZ < a.maxZ;
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX && r.maxX <= b.maxX && r.minZ >= b.minZ && r.maxZ <= b.maxZ;
 const contains = (r: Rect, p: { x: number; z: number }) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
-/** Gap between two rects along the axis that separates them (0 when they touch or overlap). */
-const gap = (a: Rect, b: Rect) => Math.max(0, b.minX - a.maxX, a.minX - b.maxX, b.minZ - a.maxZ, a.minZ - b.maxZ);
 
 describe("B1 Engine Room layout", () => {
   it("keeps the bays in the build story's order: all seven are stations", () => {
@@ -76,18 +75,17 @@ describe("B1 Engine Room layout", () => {
     expect(spur?.to).toEqual(door!.at);
   });
 
-  it("moves the workbench beside the core, flush with the south wall, an obstacle 6 u from the core", () => {
+  it("moves the workbench to the hall's north-west, flush with the north wall, out of the core's shadow and 6 u from every obstacle", () => {
     const { workbench, reactor } = layout;
     expect(layout.floor.obstacles).toContainEqual(workbench);
     expect(inside(workbench, layout.floor.bounds)).toBe(true);
-    expect(workbench.maxZ).toBe(ENGINE.bounds.maxZ);
-    expect(workbench.minZ - reactor.maxZ).toBe(6);
-    expect(workbench.minX).toBeGreaterThanOrEqual(reactor.minX);
-    expect(workbench.maxX).toBeLessThanOrEqual(reactor.maxX);
-    for (const o of layout.floor.obstacles) if (o !== workbench && o !== reactor) expect(gap(o, workbench), JSON.stringify(o)).toBeGreaterThanOrEqual(6);
+    expect(workbench.minZ).toBe(ENGINE.bounds.minZ);
+    expect(workbench.maxX).toBeLessThanOrEqual(reactor.minX);
+    expect(workbench.minX).toBeGreaterThan(Math.max(...layout.bays.map((b) => b.rect.maxX)));
+    for (const o of layout.floor.obstacles) if (o !== workbench) expect(rectGap(o, workbench), JSON.stringify(o)).toBeGreaterThanOrEqual(6);
   });
 
-  it("rolls the rover on east along the aisle, looks east at the core and south at the workbench; every station has a view into its bay", () => {
+  it("rolls the rover on east along the aisle, looks east at the core and north at the workbench; every station has a view into its bay", () => {
     const { floor } = layout;
     expect(floor.arrival).toEqual(ENGINE.arrival);
     expect(floor.spawn).toEqual(ENGINE.arrival);
@@ -98,9 +96,11 @@ describe("B1 Engine Room layout", () => {
     expect(contains(reactor.area, ENGINE.reactorDoor)).toBe(true);
     expect(reactor.area.minX).toBe(ENGINE.aisle.endX);
     expect(reactor.area.maxX).toBe(layout.reactor.minX);
+    // Between the aisle and the bench, looking north: the follow camera stands over the open aisle, never behind the core.
     const bench = zones.get("B1:workbench")!;
-    expect(bench.yaw).toBe(yawLooking({ x: 0, z: 1 }));
-    expect(bench.area).toEqual({ minX: layout.workbench.minX, maxX: layout.workbench.maxX, minZ: layout.reactor.maxZ, maxZ: layout.workbench.minZ });
+    expect(bench.yaw).toBe(yawLooking({ x: 0, z: -1 }));
+    expect(bench.area).toEqual({ minX: layout.workbench.minX, maxX: layout.workbench.maxX, minZ: layout.workbench.maxZ, maxZ: -4.5 });
+    expect(bench.area.maxZ).toBeLessThan(0);
     for (const o of floor.obstacles) expect(overlaps(o, bench.area), JSON.stringify(o)).toBe(false);
     for (const bay of layout.bays) expect(zones.get(`B1:${bay.id}`)?.yaw, bay.id).toBe(yawLooking(bay.facing));
     expect(floor.viewZones?.filter((z) => ENGINE_STATIONS.some((id) => z.id === `B1:${id}`))).toHaveLength(7);
