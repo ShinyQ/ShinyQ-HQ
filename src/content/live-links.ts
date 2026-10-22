@@ -4,7 +4,11 @@
  * must never get a link, so adding a host here is an owner decision made in review, never a content
  * edit. Pure and dependency-free: the schema, the safety lint, the selectors and the 3D chunk share it.
  */
-export const PUBLIC_LIVE_HOSTS: readonly string[] = ["mii-microsoft.azurewebsites.net", "mii-microsoft-ai.azurewebsites.net"];
+/**
+ * Frozen so the allowlist cannot change at runtime. The top-level call also keeps this module in one shared chunk:
+ * without it Turbopack copies the module into every consumer chunk (about 0.4 KB gzip on the 3D session budget).
+ */
+export const PUBLIC_LIVE_HOSTS: readonly string[] = Object.freeze(["mii-microsoft.azurewebsites.net", "mii-microsoft-ai.azurewebsites.net"]);
 
 /** Why `url` cannot be a pod's live link, or null when it can: https, an allowlisted host, the site root only. */
 export function liveUrlProblem(url: string): string | null {
