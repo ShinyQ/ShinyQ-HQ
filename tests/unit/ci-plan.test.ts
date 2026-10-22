@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { classify, importClosure, importing3d, LIGHTHOUSE_PAGES, locateFromDisk, pagesFromRepo, planFor, planOutputs, reverseImports, ROOTS, sharedPerfKeys, type PlanOptions } from "../../scripts/ci-plan";
+import { classify, importClosure, importing3d, LIGHTHOUSE_PAGES, locateFromDisk, pagesFromRepo, planFor, planOutputs, PR_HEAVY_SHARDS, reverseImports, ROOTS, sharedPerfKeys, type PlanOptions } from "../../scripts/ci-plan";
 import { locateTest, type DurationsFile } from "../../scripts/e2e-plan";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS } from "../../scripts/perf-plan";
 
@@ -87,9 +87,11 @@ describe("ci-plan importClosure", () => {
 });
 
 const repoRead = (f: string) => (existsSync(f) && statSync(f).isFile() ? readFileSync(f, "utf8") : null);
-const durations = (JSON.parse(readFileSync("e2e/durations.json", "utf8")) as DurationsFile).e2e;
+const durationsFile = JSON.parse(readFileSync("e2e/durations.json", "utf8")) as DurationsFile;
+const durations = durationsFile.e2e;
+const perfDurations = durationsFile.perf;
 const locate = locateFromDisk(".");
-const opts: PlanOptions = { durations, locate };
+const opts: PlanOptions = { durations, perfDurations, locate };
 const line = (spec: string, title: string) => `e2e/${spec}.spec.ts:${locateTest(readFileSync(`e2e/${spec}.spec.ts`, "utf8"), title)}`;
 const RIDE_SMOKE = line("ride", "the car waits for the new floor with the doors closed, then compiles nothing while it moves");
 const HUD_SMOKE = line("experience", "the 3D HUD has no serious accessibility violations");
@@ -161,12 +163,12 @@ describe("ci-plan shared perf keys", () => {
 });
 
 describe("ci-plan planFor: full runs", () => {
-  const fullOutputs = (perfShards: string, perfTotal: string) => ({
+  const fullOutputs = (perfShards: string, perfTotal: string, e2eShards = 8) => ({
     full: "true",
     e2e: "all",
     e2e_files: "",
-    e2e_shards: "[1,2,3,4,5,6,7,8]",
-    e2e_total: "8",
+    e2e_shards: JSON.stringify(Array.from({ length: e2eShards }, (_, i) => i + 1)),
+    e2e_total: String(e2eShards),
     perf: "true",
     perf_grep: "",
     perf_shards: perfShards,
@@ -182,23 +184,24 @@ describe("ci-plan planFor: full runs", () => {
     expect(planOutputs(plan, lhciUrls)).toEqual(fullOutputs("[1,2,3,4]", "4"));
   });
 
-  it("keeps 2 perf shards for a pull request whose file list is unknown", () => {
-    expect(planFor(null, none, { event: "pull_request" })).toMatchObject({ full: true, e2eShards: 8, perfShards: 2 });
+  it("runs a full pull request on 6 e2e and 4 perf shards, so it peaks at 12 jobs", () => {
+    expect(planFor(null, none, { event: "pull_request" })).toMatchObject({ full: true, e2eShards: 6, perfShards: 4 });
+    expect(PR_HEAVY_SHARDS).toBe(10);
   });
 
   it("runs everything for a non-PR event even with a file list", () => {
     expect(planFor(["docs/a.md"], none, { event: "other" })).toMatchObject({ full: true, e2eShards: 8, perfShards: 4 });
   });
 
-  it("runs everything on 2 perf shards for the full-ci label", () => {
+  it("runs everything on 6 e2e and 4 perf shards for the full-ci label", () => {
     const plan = planFor(["docs/a.md"], none, { ...opts, fullLabel: true });
-    expect(plan).toMatchObject({ full: true, e2e: "all", perfShards: 2, lighthouse: "all" });
+    expect(plan).toMatchObject({ full: true, e2e: "all", e2eShards: 6, perfShards: 4, lighthouse: "all" });
     expect(plan.reasons.join(" ")).toContain("full-ci");
-    expect(planOutputs(plan, lhciUrls)).toEqual(fullOutputs("[1,2]", "2"));
+    expect(planOutputs(plan, lhciUrls)).toEqual(fullOutputs("[1,2,3,4]", "4", 6));
   });
 
   it("runs everything for CI files and unknown paths", () => {
-    expect(planFor([".github/workflows/ci.yml"], none)).toMatchObject({ full: true, perfShards: 2 });
+    expect(planFor([".github/workflows/ci.yml"], none)).toMatchObject({ full: true, e2eShards: 6, perfShards: 4 });
     expect(planFor(["weird/file.bin"], none).full).toBe(true);
     expect(planFor(["scripts/perf-plan.ts"], none).full).toBe(true);
   });
@@ -216,8 +219,8 @@ describe("ci-plan planFor: selective pull request runs", () => {
       e2e_total: "1",
       perf: "false",
       perf_grep: "",
-      perf_shards: "[1,2]",
-      perf_total: "2",
+      perf_shards: "[1]",
+      perf_total: "1",
       lighthouse: "false",
       lighthouse_urls: "",
       source_run: "",
@@ -238,7 +241,7 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(plan.e2eShards).toBeGreaterThanOrEqual(1);
     expect(plan.e2eShards).toBeLessThanOrEqual(3);
     const out = planOutputs(plan, lhciUrls);
-    expect(out).toMatchObject({ full: "false", e2e: "specs", perf: "true", perf_grep: "(3D JS after the gate)", perf_shards: "[1,2]", lighthouse: "true", lighthouse_urls: "" });
+    expect(out).toMatchObject({ full: "false", e2e: "specs", perf: "true", perf_grep: "(3D JS after the gate)", perf_shards: "[1]", perf_total: "1", lighthouse: "true", lighthouse_urls: "" });
     // Whole spec files first (sorted as file names), then the smoke test filters.
     expect(out.e2e_files).toBe(["boot-first", "deploy", "hud-corners", "hud", "onboarding", "static-routes"].map((s) => `e2e/${s}.spec.ts`).concat(RIDE_SMOKE, HUD_SMOKE).join(" "));
     expect(out.e2e_shards).toBe(JSON.stringify(Array.from({ length: plan.e2eShards }, (_, i) => i + 1)));
@@ -275,9 +278,9 @@ describe("ci-plan planFor: selective pull request runs", () => {
 
   it("plans a full run for a path no e2e rule maps, listing it", () => {
     const plan = planFor(["src/unknown/thing.ts"], none, opts);
-    expect(plan).toMatchObject({ full: true, e2e: "all", e2eTests: [], e2eShards: 8, perf: [...ALL_PERF_KEYS], perfShards: 2, lighthouse: "all" });
+    expect(plan).toMatchObject({ full: true, e2e: "all", e2eTests: [], e2eShards: 6, perf: [...ALL_PERF_KEYS], perfShards: 4, lighthouse: "all" });
     expect(plan.reasons.join(" ")).toContain("src/unknown/thing.ts");
-    expect(planOutputs(plan, lhciUrls)).toMatchObject({ full: "true", e2e: "all", e2e_files: "", e2e_shards: "[1,2,3,4,5,6,7,8]", perf: "true", perf_grep: "", perf_shards: "[1,2]", lighthouse: "true", lighthouse_urls: "" });
+    expect(planOutputs(plan, lhciUrls)).toMatchObject({ full: "true", e2e: "all", e2e_files: "", e2e_shards: "[1,2,3,4,5,6]", perf: "true", perf_grep: "", perf_shards: "[1,2,3,4]", lighthouse: "true", lighthouse_urls: "" });
   });
 
   it("runs perf for page code only when the 3D roots import it", () => {
@@ -311,8 +314,32 @@ describe("ci-plan planFor: selective pull request runs", () => {
   });
 
   it("runs every e2e shard for a changed e2e helper", () => {
-    expect(planFor(["e2e/edge-audit.ts"], none, opts)).toMatchObject({ e2e: "all", e2eShards: 8, perf: false, lighthouse: false });
+    expect(planFor(["e2e/edge-audit.ts"], none, opts)).toMatchObject({ e2e: "all", e2eShards: 8, perf: false, perfShards: 1, lighthouse: false });
     expect(planFor(["e2e/topics.spec.ts", "e2e/edge-audit.ts"], none, opts).e2e).toBe("all");
+  });
+
+  it("sizes the perf shards of a pull request from the perf durations: the whole lane 4, a part ceil(seconds / 960), 1 to 4", () => {
+    const l3 = (seconds: number) => ({ "floors.spec.ts \u203a L3 full: settled draw calls and shader programs": seconds });
+    const plan = (seconds: number) => planFor(["src/experience/floors/labs/OpsRoom.tsx"], none, { ...opts, perfDurations: l3(seconds) });
+    expect(plan(100).perfShards).toBe(1);
+    expect(plan(1000).perfShards).toBe(2);
+    expect(plan(2000).perfShards).toBe(3);
+    expect(plan(100_000).perfShards).toBe(4);
+    expect(plan(2000).reasons).toContain("3D perf gates: bytes, floor:L3, ride:L3 on 3 shards");
+    // Without perf durations a part runs on 1 shard, as in a complement run; the whole lane always on 4.
+    expect(planFor(["src/experience/floors/labs/OpsRoom.tsx"], none, { durations, locate }).perfShards).toBe(1);
+    expect(planFor(["src/lib/audio/engine.ts"], () => [...ALL_PERF_KEYS], { ...opts, perfDurations: l3(1) }).perfShards).toBe(4);
+  });
+
+  it("keeps e2e plus perf shards of a pull request within PR_HEAVY_SHARDS (6 e2e beside the whole perf lane)", () => {
+    const plan = planFor(["e2e/edge-audit.ts", "src/lib/audio/engine.ts"], (f) => (f === "src/lib/audio/engine.ts" ? [...ALL_PERF_KEYS] : []), opts);
+    expect(plan).toMatchObject({ full: false, e2e: "all", e2eShards: 6, perfShards: 4 });
+    expect(plan.reasons).toContain("e2e on 6 shards beside 4 perf shards (at most 10 per pull request run)");
+    const d = (seconds: number) => ({ "topics.spec.ts \u203a a": seconds });
+    const l3 = { "floors.spec.ts \u203a L3 full: settled draw calls and shader programs": 2000 };
+    const both = planFor(["e2e/topics.spec.ts", "src/experience/floors/labs/OpsRoom.tsx"], none, { durations: d(100_000), perfDurations: l3, locate });
+    expect(both).toMatchObject({ e2eShards: 7, perfShards: 3 });
+    expect(both.e2eShards + both.perfShards).toBeLessThanOrEqual(PR_HEAVY_SHARDS);
   });
 
   it("sizes e2e shards from the durations: ceil(seconds / 480), 1 to 8", () => {
