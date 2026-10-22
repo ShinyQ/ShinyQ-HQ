@@ -18,6 +18,7 @@ record of its state, so parallel PRs never edit a shared table or count:
   one updates it);
 - `Later removed in #N: ...`, `Later replaced in #N: ...` or `reverted` on the same line when later work changed
   part of it.
+- `Status: dropped by owner YYYY-MM-DD ...` for a plan the owner cancelled before it shipped (nothing merged).
 
 Browse [`plans/`](plans/) (file names start with the date), or print the table with status, PRs and counts:
 `bun scripts/docs-index.ts plans`. `tests/unit/docs-index.test.ts` fails on a plan without a readable status line.
@@ -36,6 +37,7 @@ Browse [`plans/`](plans/) (file names start with the date), or print the table w
 | [Ask the HQ: Rover voice, adjacent grounded questions and the knowledge pack in Workers KV (design)](specs/2026-10-19-ask-kv-pack-and-rover-voice-design.md) | implemented | [#238](https://github.com/ShinyQ/ShinyQ-HQ/pull/238), [#241](https://github.com/ShinyQ/ShinyQ-HQ/pull/241), [#254](https://github.com/ShinyQ/ShinyQ-HQ/pull/254), [#256](https://github.com/ShinyQ/ShinyQ-HQ/pull/256) |
 | [Classic site design refinement](specs/2026-10-19-classic-design-refinement.md) | implemented | [#240](https://github.com/ShinyQ/ShinyQ-HQ/pull/240) |
 | [Agent Office revamp: living crew, ship-it pipeline, day replay (design)](specs/2026-10-20-agent-office-revamp-design.md) | implemented | [#274](https://github.com/ShinyQ/ShinyQ-HQ/pull/274), [#276](https://github.com/ShinyQ/ShinyQ-HQ/pull/276), [#279](https://github.com/ShinyQ/ShinyQ-HQ/pull/279), [#284](https://github.com/ShinyQ/ShinyQ-HQ/pull/284), [#287](https://github.com/ShinyQ/ShinyQ-HQ/pull/287) |
+| [B1 living machine: detailed story, reactor hall and power-up tour (design)](specs/2026-10-22-b1-living-machine-design.md) | implemented; the power-up tour (PR 3) dropped by owner 2026-10-23 | [#290](https://github.com/ShinyQ/ShinyQ-HQ/pull/290), [#291](https://github.com/ShinyQ/ShinyQ-HQ/pull/291) |
 | [Appendix 01: World and Layout](specs/agent-hq/01-world-and-layout.md) | living appendix | [#1](https://github.com/ShinyQ/ShinyQ-HQ/pull/1) to [#12](https://github.com/ShinyQ/ShinyQ-HQ/pull/12), last updated in [#168](https://github.com/ShinyQ/ShinyQ-HQ/pull/168) |
 | [Appendix 02: Interaction Model and State Machine](specs/agent-hq/02-interaction-and-states.md) | living appendix | [#1](https://github.com/ShinyQ/ShinyQ-HQ/pull/1) to [#12](https://github.com/ShinyQ/ShinyQ-HQ/pull/12), last updated in [#104](https://github.com/ShinyQ/ShinyQ-HQ/pull/104) |
 | [Appendix 03: Rover, Camera and Input](specs/agent-hq/03-rover-camera-input.md) | living appendix | [#1](https://github.com/ShinyQ/ShinyQ-HQ/pull/1) to [#12](https://github.com/ShinyQ/ShinyQ-HQ/pull/12), last updated in [#104](https://github.com/ShinyQ/ShinyQ-HQ/pull/104) |

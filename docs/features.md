@@ -90,8 +90,8 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Office chips under drawers | 2026-10-22: the office chip row hides while a drawer sheet is open (#287) | Done |
 | Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
-| B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 3): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
-| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 3): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core | In review |
+| B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 2): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
+| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 2): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core (#291) | Done |
 
 ## Controls and first visit
 

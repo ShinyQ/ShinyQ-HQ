@@ -1,6 +1,6 @@
 # B1 Living Machine: Detailed Story, Reactor Hall and Power-Up Tour
 
-Status: approved by the owner (coordinator chat, 2026-10-22); three PRs in order.
+Status: PR B1-1 shipped in #290 and PR B1-2 in #291; PR B1-3 (section 4, the bay power-up and tour) dropped by owner 2026-10-23 ("Skip the tour things"), so the bays stay lit.
 
 Owner request (verbatim): "i need you to update our B1 information to be detailed and the game to be looks more WOW
 since its hidden floor".
@@ -14,7 +14,7 @@ Builds on the B1 Engine Room (plans `2026-10-17-b1-build-story-page.md`, `2026-1
    multi-agent workflow, the CI as it is now, refreshed numbers, and the two dark bays opened as real stations.
 2. B1 looks like a living machine: a reactor hall at the aisle end whose core reacts to live CI, deploys, agent
    desks, visits and Ask questions.
-3. The first visit after the unlock is a moment: the bays power up one by one while Rover drives the aisle, ending
+3. (Dropped 2026-10-23, see section 4.) The first visit after the unlock is a moment: the bays power up one by one while Rover drives the aisle, ending
    at the reactor as it spins up.
 
 Non-goals: no new route, no new Pages Function, no new Worker, no change to how B1 unlocks, no change to public floors.
@@ -127,7 +127,10 @@ build page test sees seven sections. B1 stays hidden for locked visitors (existi
 Written into the decision file: polls happen only on B1 at the office cadence (10 s active, 30 s resting) and stop
 after 10 minutes idle. A B1 visit is short, so the estimate is visits per day to B1 times the polls per visit.
 
-## 4. PR B1-3: bay power-up and tour
+## 4. PR B1-3: bay power-up and tour (dropped by owner 2026-10-23)
+
+Not built: the owner dropped it before implementation. Kept as a record of the proposal.
+
 
 - Each bay has a powered state; unpowered bays are dark (sign dim, panels off, front strip off). Powered bays are
   stored per visitor in `hq:v1` (`b1Powered: EngineBayId[]` or a `b1Toured` flag plus visited bays); all light after

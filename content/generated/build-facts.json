@@ -1,11 +1,11 @@
 {
   "generatedAt": "2026-10-22",
-  "commit": "645d01b",
+  "commit": "05f2f28",
   "git": {
-    "commits": 256,
+    "commits": 251,
     "firstCommit": "2026-10-09",
-    "mergedPrs": 235,
-    "latestPr": 289
+    "mergedPrs": 237,
+    "latestPr": 291
   },
   "rounds": [
     {
@@ -329,20 +329,22 @@
         284,
         287,
         288,
-        289
+        289,
+        290,
+        291
       ],
       "first": "2026-10-21",
       "last": "2026-10-22"
     }
   ],
   "tests": {
-    "unitFiles": 453,
-    "e2e": 684,
+    "unitFiles": 457,
+    "e2e": 686,
     "e2eFiles": 55
   },
   "docs": {
     "specs": 19,
-    "plans": 109
+    "plans": 111
   },
   "ci": {
     "jobs": [

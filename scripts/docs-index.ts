@@ -18,7 +18,7 @@ export const PR_LINK = /^\[#(\d+)\]\(https:\/\/github\.com\/ShinyQ\/ShinyQ-HQ\/p
 export const STATUS_WITHIN_LINES = 12;
 
 export type Decision = { file: string; date: string; area: string; pr: string; text: string };
-export type PlanCategory = "shipped" | "shipped, later changed" | "in progress";
+export type PlanCategory = "shipped" | "shipped, later changed" | "in progress" | "dropped";
 export type Plan = { file: string; title: string; status: string; category: PlanCategory | null; prs: number[] };
 
 /** Parses one decision file; throws with the reason when the file breaks the format. */
@@ -66,6 +66,7 @@ export function statusLine(markdown: string): string | null {
 export function planCategory(status: string): PlanCategory | null {
   const s = status.toLowerCase();
   if (/^(?:part \d+ )?(?:in review|in progress|planned)\b/.test(s)) return "in progress";
+  if (/^dropped\b/.test(s)) return "dropped";
   if (!/\b(?:shipped|implemented)\b/.test(s)) return null;
   return /\blater (?:removed|replaced)\b|\breverted\b/.test(s) ? "shipped, later changed" : "shipped";
 }
@@ -115,7 +116,7 @@ export function renderDecisions(decisions: Decision[]): string {
 
 export function renderPlans(plans: Plan[]): string {
   const count = (c: PlanCategory) => plans.filter((p) => p.category === c).length;
-  const summary = `${plans.length} plans: ${count("shipped")} shipped and still current, ${count("shipped, later changed")} shipped with a part later removed or replaced, ${count("in progress")} in progress or in review.`;
+  const summary = `${plans.length} plans: ${count("shipped")} shipped and still current, ${count("shipped, later changed")} shipped with a part later removed or replaced, ${count("in progress")} in progress or in review, ${count("dropped")} dropped before shipping.`;
   const rows = plans.map((p) => `| [${cell(p.title)}](plans/${p.file}) | ${p.category ?? "unknown"} | ${p.prs.map(prLink).join(", ")} |`);
   return [summary, "", "| Plan | Status | PR |", "|---|---|---|", ...rows].join("\n");
 }

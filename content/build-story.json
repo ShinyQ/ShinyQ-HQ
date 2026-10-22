@@ -385,10 +385,10 @@
         {
           "id": "r13",
           "number": 13,
-          "title": { "en": "The Office Revamp, Upgrades and Safety", "id": "Revamp Kantor, Pembaruan, dan Keamanan" },
+          "title": { "en": "The Office Revamp, Upgrades and the Living B1", "id": "Revamp Kantor, Pembaruan, dan B1 yang Hidup" },
           "summary": {
-            "en": "The office revamp seated a living Rover crew at ten desks in two rows, with helper drones, a Needs Kurniadi beacon, the ship-it pipeline from CI to production and a day replay. Visit stats became accurate (automated visits skipped), Node, Bun, Next.js and other packages were upgraded, and the public-safety blocklist was removed: client names stay out by review.",
-            "id": "Revamp kantor menempatkan kru Rover yang hidup di sepuluh meja dalam dua baris, dengan drone pembantu, beacon Needs Kurniadi, pipeline ship-it dari CI ke produksi, dan replay harian. Statistik kunjungan menjadi akurat (kunjungan otomatis dilewati), Node, Bun, Next.js, dan paket lain diperbarui, dan blocklist keamanan publik dihapus: nama klien dijaga lewat review."
+            "en": "The office revamp seated a living Rover crew at ten desks in two rows, with helper drones, a Needs Kurniadi beacon, the ship-it pipeline from CI to production and a day replay. Visit stats became accurate (automated visits skipped), Node, Bun, Next.js and other packages were upgraded, and the public-safety blocklist was removed: client names stay out by review. B1 grew into a living machine: this detailed story with Rover's Brain and Rejected Designs as stations, and a reactor hall whose core runs on live CI runs, deploys, awake agents and visits.",
+            "id": "Revamp kantor menempatkan kru Rover yang hidup di sepuluh meja dalam dua baris, dengan drone pembantu, beacon Needs Kurniadi, pipeline ship-it dari CI ke produksi, dan replay harian. Statistik kunjungan menjadi akurat (kunjungan otomatis dilewati), Node, Bun, Next.js, dan paket lain diperbarui, dan blocklist keamanan publik dihapus: nama klien dijaga lewat review. B1 menjadi mesin yang hidup: kisah yang lebih rinci ini dengan stasiun Otak Rover dan Desain yang Ditolak, serta aula reaktor yang intinya bergerak mengikuti run CI, deploy, agent yang aktif, dan kunjungan secara langsung."
           },
           "prs": { "from": 274, "to": null }
         }
@@ -811,7 +811,7 @@
           },
           "reason": {
             "en": "It had to carry the very names it guarded; the owner removed it, and client names stay out by review.",
-            "id": "Daftar itu harus memuat nama-nama yang justru dijaganya; pemilik menghapusnya, dan nama klien dijaga lewat review."
+            "id": "Daftar itu harus memuat nama-nama yang justru dijaganya; pemilik menghapusnya, dan nama klien dijaga lewat review. B1 menjadi mesin yang hidup: kisah yang lebih rinci ini dengan stasiun Otak Rover dan Desain yang Ditolak, serta aula reaktor yang intinya bergerak mengikuti run CI, deploy, agent yang aktif, dan kunjungan secara langsung."
           },
           "pr": 288
         },

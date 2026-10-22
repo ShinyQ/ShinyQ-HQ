@@ -82,6 +82,7 @@ describe("plans, status in each plan only", () => {
     expect(planCategory("measurements for the plan shipped in #74")).toBe("shipped");
     expect(planCategory("shipped in #1. Later replaced: the CV in #24")).toBe("shipped, later changed");
     expect(planCategory("shipped in #201; its warm-up was reverted in a follow-up, #203")).toBe("shipped, later changed");
+    expect(planCategory("dropped by owner 2026-10-23 (not implemented)")).toBe("dropped");
     expect(planCategory("draft")).toBeNull();
     expect(statusPrs("shipped in [#188](https://github.com/ShinyQ/ShinyQ-HQ/pull/188) and #185; later #188")).toEqual([188, 185]);
   });
