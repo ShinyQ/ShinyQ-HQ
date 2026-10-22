@@ -1,5 +1,5 @@
 {
-  "$comment": "The build story (B1 Engine Room, owner request 2026-10-17): how this site was built, for the Classic page /{locale}/build and the secret B1 floor. Text only: every count comes from content/generated/build-facts.json (scripts/build-facts.ts), never from here. Round ranges are merged pull request numbers. Third person or neutral voice; never a client company (C3), a cloud resource id, a gateway id or a hostname. Validated by BuildStorySchema (src/content/build-story.ts) and the public-safety lint.",
+  "$comment": "The build story (B1 Engine Room, owner request 2026-10-17): how this site was built, for the Classic page /{locale}/build and the secret B1 floor. Text only: every count comes from content/generated/build-facts.json (scripts/build-facts.ts), never from here. Round ranges are merged pull request numbers. Third person or neutral voice; never a client company (C3), a cloud resource id, a gateway id or a hostname. Validated by BuildStorySchema (src/content/build-story.ts); check new text by hand for client names (the blocklist is gone).",
   "published": "2026-10-17",
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
@@ -26,7 +26,7 @@
           {
             "id": "agents",
             "label": { "en": "AI coding agents", "id": "Agent penulis kode" },
-            "sublabel": { "en": "GitHub Copilot and Claude Code", "id": "GitHub Copilot dan Claude Code" },
+            "sublabel": { "en": "GitHub Copilot, Claude Code and Codex", "id": "GitHub Copilot, Claude Code, dan Codex" },
             "layer": 0,
             "row": 1,
             "kind": "ai"
@@ -38,6 +38,14 @@
             "layer": 1,
             "row": 0,
             "kind": "external"
+          },
+          {
+            "id": "relay",
+            "label": { "en": "Office relay", "id": "Relay kantor" },
+            "sublabel": { "en": "On the owner's Mac: agent state only", "id": "Di Mac pemilik: hanya status agent" },
+            "layer": 0,
+            "row": 2,
+            "kind": "service"
           },
           {
             "id": "visitor",
@@ -59,7 +67,7 @@
           {
             "id": "functions",
             "label": "Pages Functions",
-            "sublabel": { "en": "ask, rum, visit and stats", "id": "ask, rum, visit, dan stats" },
+            "sublabel": { "en": "ask, office, guides, rum, visit and stats", "id": "ask, office, guides, rum, visit, dan stats" },
             "layer": 2,
             "row": 3,
             "kind": "service",
@@ -77,21 +85,44 @@
           {
             "id": "workers-ai",
             "label": "Workers AI",
-            "sublabel": {
-              "en": "Through AI Gateway: Gemma 4, Mistral Small 3.1 and Groq fallbacks",
-              "id": "Lewat AI Gateway: Gemma 4, fallback Mistral Small 3.1 dan Groq"
-            },
+            "sublabel": { "en": "Gemma 4, then Mistral Small 3.1, through AI Gateway", "id": "Gemma 4, lalu Mistral Small 3.1, lewat AI Gateway" },
             "layer": 3,
-            "row": 2,
+            "row": 1,
             "kind": "ai",
             "group": "Cloudflare"
           },
           {
             "id": "kv",
             "label": { "en": "KV and Analytics Engine", "id": "KV dan Analytics Engine" },
-            "sublabel": { "en": "Visit counts and beacons", "id": "Hitungan kunjungan dan beacon" },
+            "sublabel": { "en": "Ask knowledge pack, visit counts, beacons", "id": "Knowledge pack Ask, hitungan kunjungan, beacon" },
             "layer": 3,
             "row": 4,
+            "kind": "data",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "groq",
+            "label": "Groq",
+            "sublabel": { "en": "Backup tiers: Qwen 3.8 27B, then gpt-oss-120b", "id": "Tier cadangan: Qwen 3.8 27B, lalu gpt-oss-120b" },
+            "layer": 3,
+            "row": 2,
+            "kind": "ai"
+          },
+          {
+            "id": "office",
+            "label": "hq-office Worker",
+            "sublabel": { "en": "Durable Object: live desks, CI lanes, replay", "id": "Durable Object: meja live, jalur CI, replay" },
+            "layer": 3,
+            "row": 3,
+            "kind": "service",
+            "group": "Cloudflare"
+          },
+          {
+            "id": "r2",
+            "label": "R2",
+            "sublabel": { "en": "Certification study guides", "id": "Panduan belajar sertifikasi" },
+            "layer": 3,
+            "row": 5,
             "kind": "data",
             "group": "Cloudflare"
           }
@@ -101,9 +132,15 @@
           { "from": "agents", "to": "github", "label": "Pull requests" },
           { "from": "github", "to": "pages", "label": { "en": "After green CI", "id": "Setelah CI lolos" } },
           { "from": "visitor", "to": "pages", "label": "HTML, JS, 3D" },
-          { "from": "visitor", "to": "functions", "label": { "en": "Ask, beacons, stats", "id": "Ask, beacon, statistik" } },
+          { "from": "visitor", "to": "functions", "label": { "en": "Ask, office, guides, stats", "id": "Ask, kantor, panduan, statistik" } },
+          { "from": "agents", "to": "relay", "label": { "en": "Hooks", "id": "Hook" } },
+          { "from": "relay", "to": "functions", "label": { "en": "State beats", "id": "Beat status" } },
+          { "from": "github", "to": "functions", "label": "Webhook" },
           { "from": "functions", "to": "workers-ai" },
+          { "from": "functions", "to": "groq", "label": { "en": "Backup", "id": "Cadangan" } },
+          { "from": "functions", "to": "office", "label": { "en": "Service binding", "id": "Service binding" } },
           { "from": "functions", "to": "kv" },
+          { "from": "functions", "to": "r2" },
           { "from": "cron", "to": "kv", "async": true }
         ]
       },
@@ -127,6 +164,22 @@
         {
           "en": "A merge to main triggers the deploy workflow. It can reuse a green pull request on the same tree; otherwise it waits for complete CI on main. A red main CI run rolls production back to the last good deployment.",
           "id": "Merge ke main memicu workflow deploy. Hasil pull request yang lolos pada tree yang sama dapat dipakai ulang; jika tidak, workflow menunggu CI lengkap di main. CI main yang gagal memicu rollback ke deployment produksi terakhir yang baik."
+        },
+        {
+          "en": "The Agent Office runs live. Hooks in GitHub Copilot, Claude Code and Codex call a relay on the owner's Mac, which sends only each session's state and activity type; code, prompts and file paths never leave the machine.",
+          "id": "Agent Office berjalan live. Hook di GitHub Copilot, Claude Code, dan Codex memanggil relay di Mac pemilik, yang hanya mengirim status dan jenis aktivitas tiap sesi; kode, prompt, dan path file tidak pernah keluar dari mesin itu."
+        },
+        {
+          "en": "The hq-office Worker has no public route: Pages Functions reach it through a service binding. Its Durable Object keeps the ten desks, the CI lanes reported by the GitHub webhook and an eight-day replay.",
+          "id": "Worker hq-office tidak punya rute publik: Pages Functions menjangkaunya lewat service binding. Durable Object-nya menyimpan sepuluh meja, jalur CI dari webhook GitHub, dan replay delapan hari."
+        },
+        {
+          "en": "Ask reads its knowledge pack from Workers KV, checked by its hash, with a small bundled fallback. Gemma 4 on Workers AI answers first; Mistral Small 3.1 and two free Groq tiers take over when a tier fails.",
+          "id": "Ask membaca knowledge pack dari Workers KV, yang diperiksa hash-nya, dengan fallback kecil di dalam bundle. Gemma 4 di Workers AI menjawab lebih dulu; Mistral Small 3.1 dan dua tier Groq gratis mengambil alih jika satu tier gagal."
+        },
+        {
+          "en": "The certification study guides live as PDFs in a private R2 bucket. A Pages Function serves them in byte ranges, so the in-site reader opens a guide without downloading all of it.",
+          "id": "Panduan belajar sertifikasi disimpan sebagai PDF di bucket R2 privat. Pages Function menyajikannya per rentang byte, sehingga pembaca di situs membuka panduan tanpa mengunduh seluruh file."
         }
       ]
     },
@@ -292,23 +345,70 @@
         {
           "id": "r9",
           "number": 9,
-          "title": { "en": "Camera Polish and the Engine Room", "id": "Poles Kamera dan Ruang Mesin" },
+          "title": { "en": "Rover Menu, Ambience and the Engine Room", "id": "Menu Rover, Suara Latar, dan Ruang Mesin" },
           "summary": {
-            "en": "Camera fixes and an intro fly-in came first, then this build story and the secret B1 Engine Room floor that tells it.",
-            "id": "Perbaikan kamera dan gerakan kamera pembuka dikerjakan lebih dulu, lalu kisah pembangunan ini disajikan juga di lantai rahasia B1 Ruang Mesin."
+            "en": "Ask gained 100 curated question pills, multi-turn memory and free Groq backup tiers; Rover got a menu and idle animations, and every floor its own ambience. Deploys now start on merge and roll back on a red main CI. The intro got its fly-in, and this build story arrived with the secret B1 Engine Room, unlocked by visiting all five floors.",
+            "id": "Ask mendapat 100 pertanyaan pilihan, memori multi-turn, dan tier cadangan Groq gratis; Rover mendapat menu dan animasi saat diam, dan setiap lantai punya suara latarnya sendiri. Deploy kini berjalan saat merge dan rollback jika CI main gagal. Intro mendapat gerakan kamera pembuka, dan kisah pembangunan ini hadir bersama lantai rahasia B1 Ruang Mesin, yang terbuka setelah kelima lantai dikunjungi."
           },
-          "prs": { "from": 187, "to": null }
+          "prs": { "from": 187, "to": 213 }
+        },
+        {
+          "id": "r10",
+          "number": 10,
+          "title": { "en": "Faster CI, a Living Sky and a New Intro", "id": "CI Lebih Cepat, Langit Hidup, dan Intro Baru" },
+          "summary": {
+            "en": "A CI speed-up series: main runs only the complement of its pull request's green run, perf gates follow shared imports, budget sweeps moved to the nightly, Lighthouse checks only the affected pages and e2e shards are packed by worker time. The sun and moon now rise and set on a four-minute cycle, Rover wakes up before a reveal orbit of the Lobby, and every owner decision became its own file.",
+            "id": "Serangkaian percepatan CI: main hanya menjalankan pelengkap dari run pull request yang sudah lolos, gate performa mengikuti import bersama, sapuan budget pindah ke run malam, Lighthouse hanya memeriksa halaman yang terdampak, dan shard e2e dibagi menurut waktu worker. Matahari dan bulan kini terbit dan terbenam dalam siklus empat menit, Rover bangun sebelum orbit pembuka mengelilingi Lobi, dan setiap keputusan pemilik menjadi file tersendiri."
+          },
+          "prs": { "from": 214, "to": 232 }
+        },
+        {
+          "id": "r11",
+          "number": 11,
+          "title": { "en": "Agent Office, Study Guides and the Rover Voice", "id": "Agent Office, Panduan Belajar, dan Suara Rover" },
+          "summary": {
+            "en": "The Agent Office backend arrived: a Worker with a Durable Object, and a relay with hooks for Copilot, Claude Code and Codex. Certification study guides moved to R2 with an in-site reader and the L4 Study Vault. The Classic site got quick performance wins and a design refinement, public stats refresh every two hours, Rover answers in its own voice and the Ask knowledge pack moved to Workers KV.",
+            "id": "Backend Agent Office hadir: Worker dengan Durable Object, serta relay dengan hook untuk Copilot, Claude Code, dan Codex. Panduan belajar sertifikasi pindah ke R2 dengan pembaca di dalam situs dan Study Vault di L4. Situs klasik mendapat percepatan cepat dan penyempurnaan desain, statistik publik diperbarui setiap dua jam, Rover menjawab dengan suaranya sendiri, dan knowledge pack Ask pindah ke Workers KV."
+          },
+          "prs": { "from": 233, "to": 251 }
+        },
+        {
+          "id": "r12",
+          "number": 12,
+          "title": { "en": "A Roomier Lobby, Faster 3D and the 3D Office", "id": "Lobi Lebih Lega, 3D Lebih Cepat, dan Kantor 3D" },
+          "summary": {
+            "en": "The Lobby slab grew to 54 u with every obstacle 6 u apart, and the Agent Office opened in its own L1 wing, with a Live Agent Office card on the Classic home. Performance passes C to E moved floor layouts out of the Classic site, served 3D data as static JSON, built one logo atlas, slowed the frame rate when nothing moves and mounted the 3D chunk about 250 ms sooner. Nightly Ask evals moved to Groq models production never uses.",
+            "id": "Lantai Lobi melebar menjadi 54 u dengan jarak 6 u antar-penghalang, dan Agent Office dibuka di sayap L1 tersendiri, dengan kartu Kantor Agen Langsung di beranda Situs klasik. Putaran performa C sampai E mengeluarkan layout lantai dari Situs klasik, menyajikan data 3D sebagai JSON statis, membuat satu atlas logo, menurunkan frame rate saat tidak ada yang bergerak, dan memasang chunk 3D sekitar 250 ms lebih cepat. Evaluasi Ask malam hari pindah ke model Groq yang tidak dipakai produksi."
+          },
+          "prs": { "from": 252, "to": 273 }
+        },
+        {
+          "id": "r13",
+          "number": 13,
+          "title": { "en": "The Office Revamp, Upgrades and Safety", "id": "Revamp Kantor, Pembaruan, dan Keamanan" },
+          "summary": {
+            "en": "The office revamp seated a living Rover crew at ten desks in two rows, with helper drones, a Needs Kurniadi beacon, the ship-it pipeline from CI to production and a day replay. Visit stats became accurate (automated visits skipped), Node, Bun, Next.js and other packages were upgraded, and the public-safety blocklist was removed: client names stay out by review.",
+            "id": "Revamp kantor menempatkan kru Rover yang hidup di sepuluh meja dalam dua baris, dengan drone pembantu, beacon Needs Kurniadi, pipeline ship-it dari CI ke produksi, dan replay harian. Statistik kunjungan menjadi akurat (kunjungan otomatis dilewati), Node, Bun, Next.js, dan paket lain diperbarui, dan blocklist keamanan publik dihapus: nama klien dijaga lewat review."
+          },
+          "prs": { "from": 274, "to": null }
         }
       ],
-      "unlinkedPrs": [26]
+      "unlinkedPrs": [26, 288]
     },
     "agents": {
       "title": { "en": "Working with AI Agents", "id": "Bekerja dengan AI Agent" },
       "summary": {
-        "en": "Agents write the code; the human owns the decisions. Every change followed the same loop, with the plan and spec committed to the repository.",
-        "id": "Agent menulis kode; manusia bertanggung jawab atas keputusan. Setiap perubahan mengikuti alur yang sama, dengan rencana dan spec tersimpan di repositori."
+        "en": "Agents write the code; the human owns the decisions. A coordinator splits the work across parallel sessions, and every change follows the same loop, with its spec and plan committed to the repository.",
+        "id": "Agent menulis kode; manusia bertanggung jawab atas keputusan. Koordinator membagi pekerjaan ke beberapa sesi paralel, dan setiap perubahan mengikuti alur yang sama, dengan spec dan rencananya tersimpan di repositori."
       },
       "steps": [
+        {
+          "title": { "en": "Coordinator", "id": "Koordinator" },
+          "text": {
+            "en": "A coordinator chat holds the owner's requests and decisions. It splits the work into features and starts one project session per feature, each in its own git worktree and branch, so parallel work never collides, and it keeps at most two CI runs in flight.",
+            "id": "Chat koordinator menyimpan permintaan dan keputusan pemilik. Ia membagi pekerjaan per fitur dan membuka satu sesi proyek untuk setiap fitur, masing-masing dengan git worktree dan branch sendiri, sehingga pekerjaan paralel tidak bertabrakan, dan menjaga paling banyak dua run CI berjalan bersamaan."
+          }
+        },
         {
           "title": { "en": "Spec", "id": "Spec" },
           "text": {
@@ -326,8 +426,8 @@
         {
           "title": { "en": "Agent Tasks", "id": "Tugas Agent" },
           "text": {
-            "en": "The superpowers workflow runs the plan as subagent-driven tasks: one fresh agent per task, each returning a report with test evidence.",
-            "id": "Workflow superpowers membagi rencana menjadi tugas subagent. Setiap tugas ditangani agent baru yang mengembalikan laporan beserta hasil pengujian."
+            "en": "Inside a session, the superpowers workflow runs the plan as subagent-driven tasks: one fresh agent per task, each returning a report with test evidence. Smaller sub-agents explore the code, run long commands and review diffs in their own context.",
+            "id": "Di dalam sesi, workflow superpowers menjalankan rencana sebagai tugas subagent: satu agent baru untuk setiap tugas, masing-masing mengembalikan laporan beserta bukti pengujian. Sub-agent yang lebih kecil menjelajahi kode, menjalankan perintah panjang, dan meninjau diff dalam konteksnya sendiri."
           }
         },
         {
@@ -335,6 +435,13 @@
           "text": {
             "en": "Each task is reviewed before the next begins. Changes to the look of a floor also pass a local look-preserving visual gate (scripts/visual-gate.ts) that compares screenshots across devices and camera poses.",
             "id": "Setiap tugas ditinjau sebelum tugas berikutnya dimulai. Perubahan tampilan lantai juga diperiksa melalui visual gate lokal (scripts/visual-gate.ts), yang membandingkan screenshot di berbagai perangkat dan sudut kamera."
+          }
+        },
+        {
+          "title": { "en": "Owner Gates", "id": "Gerbang Pemilik" },
+          "text": {
+            "en": "The owner reviews at fixed gates: the spec, any list that needs approval (the Rejected Designs on this floor went through one), screenshots across phone, tablet and desktop for a visual change, and finally the merge.",
+            "id": "Pemilik meninjau di gerbang yang tetap: spec, daftar yang perlu persetujuan (Desain yang Ditolak di lantai ini melewati salah satunya), screenshot di ponsel, tablet, dan desktop untuk perubahan visual, dan terakhir merge."
           }
         },
         {
@@ -352,7 +459,7 @@
           }
         }
       ],
-      "tools": ["GitHub Copilot", "Claude Code"],
+      "tools": ["GitHub Copilot", "Claude Code", "Codex"],
       "excerpt": {
         "path": "docs/superpowers/plans/2026-10-15-floor-chunks.md",
         "text": "### Task 5: Bundle gate with per-floor chunk caps\n\n**Files:**\n- Modify: `e2e/budgets.ts` (`BYTES_3D_BUDGET.floors`)\n- Modify: `e2e/perf/bytes-3d.spec.ts`\n- Modify: `scripts/perf-report.ts` (`bytes3d` entry `floors?`, summary line)\n- Test: `tests/unit/perf-report.test.ts`\n\n**Interfaces:**\n- Consumes: `window.__hq.floorChunks.load(id)` and `?prefetch=off` (Tasks 1 and 4).\n- Produces: `BYTES_3D_BUDGET.floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024 }`; perf entry `{ kind: \"bytes3d\"; tier; js; other; floors?: Partial<Record<\"L3\" | \"L4\" | \"RF\", number>> }`."
@@ -369,10 +476,11 @@
           "id": "quality",
           "title": { "en": "Types, Lint and Unit Tests", "id": "Tipe, Lint, dan Unit Test" },
           "text": {
-            "en": "Strict TypeScript, the linter and the Vitest suite, including the content and public-safety tests.",
-            "id": "TypeScript strict, linter, dan suite Vitest, termasuk pengujian konten serta pemeriksaan data yang tidak boleh dipublikasikan."
+            "en": "Strict TypeScript, ESLint and the Vitest suite, including the content and docs tests: Title Case, both languages, no em dash.",
+            "id": "TypeScript strict, ESLint, dan suite Vitest, termasuk pengujian konten dan dokumen: Title Case, dua bahasa, tanpa em dash."
           },
           "budget": { "en": "Zero type errors, lint errors and failing tests", "id": "Nol error tipe, error lint, dan test yang gagal" },
+          "where": "ci",
           "jobs": ["Typecheck, lint, unit tests"],
           "required": true
         },
@@ -384,6 +492,7 @@
             "id": "Memindai riwayat repositori publik untuk mendeteksi kredensial yang ikut tersimpan dalam commit."
           },
           "budget": { "en": "Zero secrets found", "id": "Tidak ada kredensial yang terdeteksi" },
+          "where": "ci",
           "jobs": ["Secret scan"],
           "required": true
         },
@@ -391,21 +500,47 @@
           "id": "csp",
           "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP untuk Setiap Halaman" },
           "text": {
-            "en": "Hashes every inline script of every page and fails the build when one is missing its hash.",
-            "id": "Menghitung hash setiap inline script pada tiap halaman. Build gagal jika ada script yang belum memiliki hash."
+            "en": "The build hashes every inline script of every page, and the export scan fails when a page carries a script its own policy does not allow.",
+            "id": "Build menghitung hash setiap inline script pada tiap halaman, dan pemindaian hasil export gagal jika sebuah halaman memuat script yang tidak diizinkan kebijakannya sendiri."
           },
           "budget": { "en": "No inline script without a hash", "id": "Tidak ada inline script tanpa hash" },
+          "where": "ci",
           "jobs": ["Build static export"],
+          "required": true
+        },
+        {
+          "id": "smart-ci",
+          "title": { "en": "Selective Pull Request Runs", "id": "Run Pull Request Selektif" },
+          "text": {
+            "en": "Reads a pull request's changed paths and runs only the e2e specs, perf tests and Lighthouse pages they affect, plus a smoke set. Any planner error runs everything.",
+            "id": "Membaca path yang berubah dalam pull request dan hanya menjalankan spec e2e, tes performa, dan halaman Lighthouse yang terdampak, ditambah satu set smoke. Jika perencana gagal, semuanya dijalankan."
+          },
+          "budget": { "en": "Docs-only and test-only pull requests run no heavy job", "id": "Pull request yang hanya mengubah dokumen atau tes tidak menjalankan job berat" },
+          "where": "ci",
+          "jobs": ["Plan CI"],
+          "required": true
+        },
+        {
+          "id": "main-complement",
+          "title": { "en": "Complement Runs on Main", "id": "Run Pelengkap di Main" },
+          "text": {
+            "en": "A push to main runs only what its merged pull request's green run on the same tree skipped, so main still covers everything once per merge without repeating tests.",
+            "id": "Push ke main hanya menjalankan apa yang dilewati run pull request yang lolos pada tree yang sama, sehingga main tetap mencakup semuanya sekali per merge tanpa mengulang tes."
+          },
+          "budget": { "en": "Every e2e spec, perf gate and Lighthouse page once per merge", "id": "Setiap spec e2e, gate performa, dan halaman Lighthouse sekali per merge" },
+          "where": "ci",
+          "jobs": ["Plan CI"],
           "required": true
         },
         {
           "id": "e2e",
           "title": { "en": "End-to-End Shards", "id": "Shard End-to-End" },
           "text": {
-            "en": "Playwright tests the exported site in duration-balanced shards. Actions wait for the required application state, rather than relying on fixed delays.",
-            "id": "Playwright menguji situs hasil export dalam shard dengan pembagian durasi seimbang. Tindakan menunggu kondisi aplikasi yang diperlukan, bukan jeda tetap."
+            "en": "Playwright tests the exported site in shards packed by measured worker time, so they finish together. Actions wait for the required application state, never for fixed delays.",
+            "id": "Playwright menguji situs hasil export dalam shard yang dibagi menurut waktu worker terukur, sehingga semuanya selesai bersamaan. Tindakan menunggu kondisi aplikasi yang diperlukan, bukan jeda tetap."
           },
           "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
+          "where": "ci",
           "jobs": ["E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}"],
           "required": true
         },
@@ -413,10 +548,11 @@
           "id": "bytes-3d",
           "title": { "en": "3D Download Size", "id": "Ukuran Unduhan 3D" },
           "text": {
-            "en": "Measures the gzip JavaScript the 3D experience downloads before its first frame, for the lite and full tiers.",
-            "id": "Mengukur JavaScript gzip yang diunduh pengalaman 3D sebelum frame pertama, untuk tier lite dan full."
+            "en": "Measures the gzip JavaScript the 3D experience downloads before its first frame, for the lite and full tiers, and each floor chunk on its own. A cap rises only to the measured size plus about 0.6 KB, and only with the owner's approval.",
+            "id": "Mengukur JavaScript gzip yang diunduh pengalaman 3D sebelum frame pertama, untuk tier lite dan full, serta setiap chunk lantai secara terpisah. Batas hanya naik ke ukuran terukur ditambah sekitar 0,6 KB, dan hanya dengan persetujuan pemilik."
           },
           "budget": { "en": "Under 466.4 KB gzip on the first-frame path", "id": "Di bawah 466,4 KB gzip pada jalur frame pertama" },
+          "where": "ci",
           "jobs": ["3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}"],
           "required": true
         },
@@ -427,10 +563,8 @@
             "en": "Counts draw calls and triangles on every floor. Elevator round trips then check GPU object counts and JS heap growth against the memory budgets.",
             "id": "Menghitung draw call dan segitiga pada setiap lantai. Perjalanan lift bolak-balik kemudian memeriksa jumlah objek GPU dan pertumbuhan heap JS terhadap batas memori."
           },
-          "budget": {
-            "en": "Under 150 scene draw calls and 30k triangles; zero GPU object growth and under 2 MB heap growth",
-            "id": "Di bawah 150 draw call scene dan 30 ribu segitiga; nol pertumbuhan objek GPU dan pertumbuhan heap di bawah 2 MB"
-          },
+          "budget": { "en": "Under 150 scene draw calls and 30k triangles; zero GPU object growth and under 2 MB heap growth", "id": "Di bawah 150 draw call scene dan 30 ribu segitiga; nol pertumbuhan objek GPU dan pertumbuhan heap di bawah 2 MB" },
+          "where": "ci",
           "jobs": ["3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}"],
           "required": true
         },
@@ -438,26 +572,37 @@
           "id": "lighthouse",
           "title": { "en": "Classic Site Speed", "id": "Kecepatan Situs Klasik" },
           "text": {
-            "en": "Lighthouse CI loads the Classic pages and fails the check on slow paint, layout shift, blocking time or heavy scripts.",
-            "id": "Lighthouse CI memuat halaman klasik dan menolak hasil yang melampaui batas waktu tampil, pergeseran layout, waktu blocking, atau ukuran script."
+            "en": "Lighthouse CI loads the affected Classic pages plus the home page and fails the check on slow paint, layout shift, blocking time or heavy scripts.",
+            "id": "Lighthouse CI memuat halaman klasik yang terdampak beserta beranda, dan menolak hasil yang melampaui batas waktu tampil, pergeseran layout, waktu blocking, atau ukuran script."
           },
-          "budget": {
-            "en": "LCP 2 s, CLS 0.01, TBT 200 ms and JS 240 KB on Classic pages",
-            "id": "LCP 2 detik, CLS 0,01, TBT 200 ms, dan JS 240 KB pada halaman klasik"
-          },
+          "budget": { "en": "LCP 2 s, CLS 0.01, TBT 200 ms and JS 240 KB on Classic pages", "id": "LCP 2 detik, CLS 0,01, TBT 200 ms, dan JS 240 KB pada halaman klasik" },
+          "where": "ci",
           "jobs": ["Lighthouse CI"],
           "required": true
         },
         {
-          "id": "smart-ci",
-          "title": { "en": "Smart CI Plan", "id": "Rencana Smart CI" },
+          "id": "visual",
+          "title": { "en": "Look-Preserving Visual Gate", "id": "Visual Gate Penjaga Tampilan" },
           "text": {
-            "en": "Reads a pull request's changed paths and runs only the heavy jobs they need. Any planner failure runs everything.",
-            "id": "Membaca path yang berubah dalam pull request dan hanya menjalankan job berat yang dibutuhkan. Jika perencana gagal, semuanya dijalankan."
+            "en": "Compares screenshots of a change against its base on 3 devices and 8 camera poses. It needs a real GPU, which hosted runners lack, so it runs locally before a visual change merges.",
+            "id": "Membandingkan screenshot perubahan dengan versi dasarnya di 3 perangkat dan 8 sudut kamera. Gate ini butuh GPU sungguhan yang tidak dimiliki runner hosted, jadi dijalankan secara lokal sebelum perubahan visual digabungkan."
           },
-          "budget": { "en": "Pushes to main always run every job", "id": "Push ke main selalu menjalankan semua job" },
-          "jobs": ["Plan CI"],
-          "required": true
+          "budget": { "en": "Strict profile: at most 0.1% of pixels differ", "id": "Profil strict: paling banyak 0,1% piksel berbeda" },
+          "where": "local",
+          "jobs": [],
+          "required": false
+        },
+        {
+          "id": "nightly",
+          "title": { "en": "Nightly Full Run", "id": "Run Lengkap Malam Hari" },
+          "text": {
+            "en": "Every night the whole suite runs on 8 e2e and 4 perf shards, including the slow budget sweeps kept out of pull requests. A failure opens an issue, which closes once a later night is green.",
+            "id": "Setiap malam seluruh suite berjalan di 8 shard e2e dan 4 shard performa, termasuk sapuan budget lambat yang tidak dijalankan di pull request. Kegagalan membuka issue, yang ditutup setelah run malam berikutnya lolos."
+          },
+          "budget": { "en": "Everything, every night", "id": "Semuanya, setiap malam" },
+          "where": "nightly",
+          "jobs": ["Nightly report"],
+          "required": false
         }
       ]
     },
@@ -467,22 +612,326 @@
         "en": "A repository snapshot of commits, merged pull requests, tests, specs and plans, alongside the enforced performance budgets.",
         "id": "Snapshot repositori berisi jumlah commit, pull request yang sudah digabungkan, pengujian, spec, dan rencana, beserta batas performa yang diterapkan."
       }
-    }
-  },
-  "comingSoon": {
+    },
     "brain": {
       "title": { "en": "Rover's Brain", "id": "Otak Rover" },
       "summary": {
-        "en": "How Ask the HQ finds, grounds and checks its answers.",
-        "id": "Cara Ask the HQ menemukan sumber, menyusun jawaban, dan memeriksanya."
-      }
+        "en": "How Ask Rover Assistant finds, grounds and checks its answers, from the question to the streamed reply.",
+        "id": "Cara Asisten Rover menemukan sumber, menyusun jawaban, dan memeriksanya, dari pertanyaan hingga balasan yang dikirim."
+      },
+      "architecture": {
+        "nodes": [
+            {
+              "id": "visitor",
+              "label": { "en": "Visitor", "id": "Pengunjung" },
+              "sublabel": { "en": "Question plus 3 signed turns", "id": "Pertanyaan dan 3 giliran bertanda tangan" },
+              "layer": 0,
+              "row": 0,
+              "kind": "client"
+            },
+            {
+              "id": "guard",
+              "label": { "en": "Gatekeeper", "id": "Penjaga" },
+              "sublabel": { "en": "Turnstile, rate limits, data scrub", "id": "Turnstile, rate limit, pembersihan data" },
+              "layer": 1,
+              "row": 0,
+              "kind": "service",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "cache",
+              "label": { "en": "Answer cache", "id": "Cache jawaban" },
+              "sublabel": { "en": "First turns, Workers KV", "id": "Giliran pertama, Workers KV" },
+              "layer": 1,
+              "row": 1,
+              "kind": "data",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "scope",
+              "label": { "en": "Scope router", "id": "Router cakupan" },
+              "sublabel": { "en": "Rules, no model call", "id": "Aturan, tanpa panggilan model" },
+              "layer": 2,
+              "row": 0,
+              "kind": "service",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "pack",
+              "label": { "en": "Knowledge pack", "id": "Knowledge pack" },
+              "sublabel": { "en": "Workers KV, bundled fallback", "id": "Workers KV, fallback di bundle" },
+              "layer": 2,
+              "row": 1,
+              "kind": "data",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "retrieve",
+              "label": { "en": "BM25 retrieval", "id": "Retrieval BM25" },
+              "sublabel": { "en": "Top 6 chunks, 6,000 characters", "id": "6 chunk teratas, 6.000 karakter" },
+              "layer": 3,
+              "row": 0,
+              "kind": "service",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "models",
+              "label": { "en": "Model chain", "id": "Rantai model" },
+              "sublabel": { "en": "Gemma 4, Mistral, then Groq", "id": "Gemma 4, Mistral, lalu Groq" },
+              "layer": 4,
+              "row": 0,
+              "kind": "ai"
+            },
+            {
+              "id": "checks",
+              "label": { "en": "Output checks", "id": "Pemeriksaan output" },
+              "sublabel": { "en": "Grounding, links, secrets, voice", "id": "Grounding, tautan, rahasia, gaya" },
+              "layer": 5,
+              "row": 0,
+              "kind": "service",
+              "group": "Cloudflare"
+            },
+            {
+              "id": "answer",
+              "label": { "en": "Streamed answer", "id": "Jawaban streaming" },
+              "sublabel": { "en": "Rover's voice, follow-ups", "id": "Suara Rover, pertanyaan lanjutan" },
+              "layer": 6,
+              "row": 0,
+              "kind": "client"
+            }
+        ],
+        "edges": [
+            { "from": "visitor", "to": "guard", "label": { "en": "Question", "id": "Pertanyaan" } },
+            { "from": "guard", "to": "cache", "label": { "en": "Lookup", "id": "Cek" } },
+            { "from": "guard", "to": "scope" },
+            { "from": "scope", "to": "retrieve", "label": { "en": "In scope", "id": "Dalam cakupan" } },
+            { "from": "pack", "to": "retrieve", "label": { "en": "Chunks", "id": "Chunk" } },
+            { "from": "retrieve", "to": "models", "label": { "en": "Context", "id": "Konteks" } },
+            { "from": "models", "to": "checks", "label": { "en": "Draft", "id": "Draf" } },
+            { "from": "checks", "to": "answer" }
+        ]
+      },
+      "steps": [
+        {
+          "title": { "en": "Gatekeeper", "id": "Penjaga" },
+          "text": {
+            "en": "Each question passes a Turnstile check (or a signed 30-minute cookie), rate limits of 8 a minute and 40 a day per visitor, and a scrub of personal data. Earlier turns arrive signed; a turn whose signature fails is dropped.",
+            "id": "Setiap pertanyaan melewati pemeriksaan Turnstile (atau cookie bertanda tangan 30 menit), rate limit 8 per menit dan 40 per hari untuk setiap pengunjung, serta pembersihan data pribadi. Giliran sebelumnya dikirim bertanda tangan; giliran yang tanda tangannya gagal dibuang."
+          }
+        },
+        {
+          "title": { "en": "Scope Routing", "id": "Penentuan Cakupan" },
+          "text": {
+            "en": "Rules, not a model, decide what Rover answers. Private topics, opinions about other people and general-assistant requests are declined; lifestyle questions are answered only from Kurniadi's written perspectives, and questions about this site always get the site-build note.",
+            "id": "Aturan, bukan model, menentukan apa yang dijawab Rover. Topik pribadi, opini tentang orang lain, dan permintaan asisten umum ditolak; pertanyaan gaya hidup hanya dijawab dari perspektif tertulis Kurniadi, dan pertanyaan tentang situs ini selalu memakai catatan pembangunan situs."
+          }
+        },
+        {
+          "title": { "en": "Retrieval", "id": "Retrieval" },
+          "text": {
+            "en": "BM25 with title and intent boosts picks the top 6 chunks, at most 6,000 characters, from the knowledge pack. The pack lives in Workers KV, checked by its hash, with a small bundled fallback.",
+            "id": "BM25 dengan bobot judul dan intent memilih 6 chunk teratas, paling banyak 6.000 karakter, dari knowledge pack. Pack disimpan di Workers KV, diperiksa hash-nya, dengan fallback kecil di dalam bundle."
+          }
+        },
+        {
+          "title": { "en": "Model Chain", "id": "Rantai Model" },
+          "text": {
+            "en": "Gemma 4 on Workers AI answers first, through AI Gateway. After an error, a timeout or an empty answer the next tier takes over: Mistral Small 3.1, then Qwen 3.8 27B and gpt-oss-120b on Groq. Every tier gets the same prompt and the same checks.",
+            "id": "Gemma 4 di Workers AI menjawab lebih dulu, lewat AI Gateway. Jika terjadi error, timeout, atau jawaban kosong, tier berikutnya mengambil alih: Mistral Small 3.1, lalu Qwen 3.8 27B dan gpt-oss-120b di Groq. Setiap tier mendapat prompt dan pemeriksaan yang sama."
+          }
+        },
+        {
+          "title": { "en": "Output Checks", "id": "Pemeriksaan Output" },
+          "text": {
+            "en": "Every answer is checked before it reaches the visitor: no secrets or prompt leaks, numbers grounded in the retrieved context, links only to pages it retrieved, and an opinion only when a written source exists.",
+            "id": "Setiap jawaban diperiksa sebelum sampai ke pengunjung: tanpa rahasia atau bocoran prompt, angka sesuai konteks yang diambil, tautan hanya ke halaman yang diambil, dan opini hanya jika ada sumber tertulis."
+          }
+        },
+        {
+          "title": { "en": "Rover's Voice", "id": "Suara Rover" },
+          "text": {
+            "en": "Rover speaks as the guide (\"I found\") and always of Kurniadi in the third person. A factual answer opens with its content; a touch of personality fits only a greeting or a decline.",
+            "id": "Rover berbicara sebagai pemandu (\"saya menemukan\") dan selalu menyebut Kurniadi sebagai orang ketiga. Jawaban faktual langsung dibuka dengan isinya; sentuhan kepribadian hanya untuk sapaan atau penolakan."
+          }
+        },
+        {
+          "title": { "en": "Memory and Follow-Ups", "id": "Memori dan Pertanyaan Lanjutan" },
+          "text": {
+            "en": "The last 3 turns travel with each question, signed with HMAC so they cannot be forged. The answer streams in, and its follow-up questions are picked in the browser from the answer's tags, not by the model.",
+            "id": "Tiga giliran terakhir ikut dikirim bersama setiap pertanyaan, ditandatangani dengan HMAC agar tidak bisa dipalsukan. Jawaban dikirim secara streaming, dan pertanyaan lanjutannya dipilih di browser dari tag jawaban, bukan oleh model."
+          }
+        },
+        {
+          "title": { "en": "Nightly Evals", "id": "Evaluasi Malam Hari" },
+          "text": {
+            "en": "Every night a 20-question smoke test runs on Gemma 4, and slices of the golden set, the curated questions and a red team run on a Groq model production never uses; a fidelity set checks the first backup. A red-team failure opens an issue.",
+            "id": "Setiap malam tes smoke 20 pertanyaan berjalan di Gemma 4, dan potongan golden set, pertanyaan pilihan, serta red team berjalan di model Groq yang tidak dipakai produksi; satu set fidelity memeriksa cadangan pertama. Kegagalan red team membuka issue."
+          }
+        }
+      ]
     },
     "rejected": {
       "title": { "en": "Rejected Designs", "id": "Desain yang Ditolak" },
       "summary": {
-        "en": "Ideas that were tried and dropped, and why.",
-        "id": "Ide yang dicoba lalu dibuang, beserta alasannya."
-      }
+        "en": "Ideas that were tried or proposed and then dropped, each with the reason.",
+        "id": "Ide yang pernah dicoba atau diusulkan lalu dibatalkan, masing-masing dengan alasannya."
+      },
+      "ideas": [
+        {
+          "id": "iframe-previews",
+          "title": { "en": "Iframe Previews of Certificates", "id": "Pratinjau Sertifikat dalam Iframe" },
+          "tried": {
+            "en": "Showing certificate and paper pages from their issuers inside the site, in an iframe.",
+            "id": "Menampilkan halaman sertifikat dan paper dari penerbitnya di dalam situs, lewat iframe."
+          },
+          "reason": {
+            "en": "The issuers' pages refuse to be framed (X-Frame-Options and frame-ancestors), and the site only frames itself; in-site preview cards and viewers took their place.",
+            "id": "Halaman penerbit menolak dibingkai (X-Frame-Options dan frame-ancestors), dan situs hanya membingkai dirinya sendiri; kartu pratinjau dan penampil di dalam situs menggantikannya."
+          }
+        },
+        {
+          "id": "office-public-route",
+          "title": { "en": "A Public Route for the Office Worker", "id": "Rute Publik untuk Worker Kantor" },
+          "tried": {
+            "en": "Giving the hq-office Worker its own public workers.dev route.",
+            "id": "Memberi Worker hq-office rute publik workers.dev sendiri."
+          },
+          "reason": {
+            "en": "Every public request already passes the Pages Functions' checks, so the Worker has no route at all and only a service binding reaches it.",
+            "id": "Setiap permintaan publik sudah melewati pemeriksaan Pages Functions, jadi Worker itu tidak punya rute sama sekali dan hanya bisa dijangkau lewat service binding."
+          },
+          "pr": 233
+        },
+        {
+          "id": "safety-blocklist",
+          "title": { "en": "The Safety Blocklist", "id": "Blocklist Keamanan" },
+          "tried": {
+            "en": "A list of client names to block, first private in a CI secret, then committed in the public repository, scanning the content, the built site and Ask answers.",
+            "id": "Daftar nama klien yang diblokir, awalnya privat di secret CI, lalu disimpan di repositori publik, untuk memindai konten, hasil build, dan jawaban Ask."
+          },
+          "reason": {
+            "en": "A public list of names to hide shows the very names it hides; the owner removed it, and client names stay out by review.",
+            "id": "Daftar publik berisi nama yang harus disembunyikan justru menampilkan nama-nama itu; pemilik menghapusnya, dan nama klien dijaga lewat review."
+          },
+          "pr": 288
+        },
+        {
+          "id": "memory-gate-split",
+          "title": { "en": "Memory Gate Split in Three", "id": "Gate Memori Dibagi Tiga" },
+          "tried": {
+            "en": "Splitting the full-tier memory test into three parallel CI parts to shorten main's wall time.",
+            "id": "Membagi tes memori tier full menjadi tiga bagian CI paralel untuk mempersingkat waktu run main."
+          },
+          "reason": {
+            "en": "On hold: uneven e2e shards set the wall time, not the memory test, and the split cost 11 more worker-minutes; packing shards by measured time fixed it.",
+            "id": "Ditunda: waktu run ditentukan shard e2e yang tidak seimbang, bukan tes memori, dan pembagian itu menambah 11 menit worker; membagi shard menurut waktu terukur menyelesaikannya."
+          },
+          "pr": 228
+        },
+        {
+          "id": "oxlint-knip",
+          "title": { "en": "Oxlint and Knip", "id": "Oxlint dan Knip" },
+          "tried": {
+            "en": "Moving most lint rules to oxlint and adding knip to find unused files, dependencies and exports.",
+            "id": "Memindahkan sebagian besar aturan lint ke oxlint dan menambah knip untuk mencari file, dependensi, dan export yang tidak terpakai."
+          },
+          "reason": {
+            "en": "Skipped: with ESLint cut to 7 rules a run still took about 11 s, so the time a swap could save was small.",
+            "id": "Dilewati: dengan ESLint tinggal 7 aturan, satu run masih sekitar 11 detik, jadi waktu yang bisa dihemat kecil."
+          }
+        },
+        {
+          "id": "b1-phone-aisle-view",
+          "title": { "en": "A Phone View Down the B1 Aisle", "id": "Tampilan Ponsel Menyusuri Lorong B1" },
+          "tried": {
+            "en": "Arriving on B1 on a phone with the camera looking straight down the aisle.",
+            "id": "Tiba di B1 di ponsel dengan kamera menghadap lurus ke sepanjang lorong."
+          },
+          "reason": {
+            "en": "In portrait it cut every station sign at the edges and showed mostly floor, so the phone camera turns across the aisle to two whole signs.",
+            "id": "Dalam mode potret, setiap papan nama stasiun terpotong di tepi dan yang terlihat kebanyakan lantai, jadi kamera ponsel berbelok melintasi lorong ke dua papan nama yang utuh."
+          },
+          "pr": 209
+        },
+        {
+          "id": "suspense-mount",
+          "title": { "en": "A Lazy 3D Mount", "id": "Pemasangan 3D Secara Lazy" },
+          "tried": {
+            "en": "Mounting the 3D scene as a lazy React component behind Suspense.",
+            "id": "Memasang scene 3D sebagai komponen React lazy di balik Suspense."
+          },
+          "reason": {
+            "en": "A lazy component suspends once even when its chunk is already loaded, and React holds the retry, so the first frame came about 250 ms later.",
+            "id": "Komponen lazy tetap menunda sekali meski chunk-nya sudah dimuat, dan React menahan percobaan ulangnya, sehingga frame pertama muncul sekitar 250 ms lebih lambat."
+          },
+          "pr": 268
+        },
+        {
+          "id": "postprocessing-wrapper",
+          "title": { "en": "The Postprocessing Wrapper", "id": "Wrapper Postprocessing" },
+          "tried": {
+            "en": "Building the glow pass with the @react-three/postprocessing wrapper.",
+            "id": "Membangun efek glow dengan wrapper @react-three/postprocessing."
+          },
+          "reason": {
+            "en": "It bundled an ambient occlusion library the site never used, about 8 KB gzip, so the chain now uses postprocessing directly.",
+            "id": "Wrapper itu ikut membawa library ambient occlusion yang tidak pernah dipakai, sekitar 8 KB gzip, jadi rangkaian efek kini memakai postprocessing secara langsung."
+          },
+          "pr": 257
+        },
+        {
+          "id": "per-view-idle-check",
+          "title": { "en": "A Per-View Idle Check", "id": "Pemeriksaan Idle Tiap Tampilan" },
+          "tried": {
+            "en": "Dropping to 30 fps only on the quiet parts of each floor's view when Rover is parked.",
+            "id": "Turun ke 30 fps hanya pada bagian tampilan lantai yang tenang saat Rover diam."
+          },
+          "reason": {
+            "en": "It added 2.0 KB gzip to the 3D session and broke both caps; one idle frame rate per floor does the job.",
+            "id": "Fitur itu menambah 2,0 KB gzip ke sesi 3D dan melewati kedua batas; satu frame rate idle per lantai sudah cukup."
+          },
+          "pr": 259
+        },
+        {
+          "id": "blank-box-intro",
+          "title": { "en": "A Blank-Box Intro", "id": "Intro Kotak Kosong" },
+          "tried": {
+            "en": "An intro that opened on plain boxes before cutting to Rover.",
+            "id": "Intro yang dibuka dengan kotak-kotak polos sebelum beralih ke Rover."
+          },
+          "reason": {
+            "en": "The owner found it looked bad; Rover now wakes up first, then a reveal orbit circles the Lobby.",
+            "id": "Pemilik menilai tampilannya buruk; kini Rover bangun lebih dulu, lalu orbit pembuka mengelilingi Lobi."
+          },
+          "pr": 227
+        },
+        {
+          "id": "guided-walks",
+          "title": { "en": "Guided Floor Walks", "id": "Tur Lantai Terpandu" },
+          "tried": {
+            "en": "Guided walks that drove Rover past each floor's stations.",
+            "id": "Tur terpandu yang mengantar Rover melewati stasiun di setiap lantai."
+          },
+          "reason": {
+            "en": "Removed at the owner's request: one first-visit line per floor and point-and-go took their place.",
+            "id": "Dihapus atas permintaan pemilik: satu kalimat kunjungan pertama per lantai dan point-and-go menggantikannya."
+          },
+          "pr": 167
+        },
+        {
+          "id": "web-cv-export",
+          "title": { "en": "A Generated Web CV", "id": "CV Web Hasil Generate" },
+          "tried": {
+            "en": "Generating the CV from the site's data as a web export in both languages.",
+            "id": "Membuat CV dari data situs sebagai export web dalam dua bahasa."
+          },
+          "reason": {
+            "en": "The owner preferred his own PDF, shown byte for byte in an in-site viewer.",
+            "id": "Pemilik memilih PDF miliknya sendiri, ditampilkan apa adanya di penampil dalam situs."
+          },
+          "pr": 24
+        }
+      ]
     }
   }
 }
