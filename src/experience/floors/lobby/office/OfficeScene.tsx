@@ -10,6 +10,7 @@ import {
   CanvasTexture,
   DynamicDrawUsage,
   Frustum,
+  InstancedBufferAttribute,
   Matrix4,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -25,6 +26,7 @@ import {
   type WebGLRenderer,
 } from "three";
 import { STATE_TONE } from "@/lib/office/model";
+import type { OfficeFeedStatus } from "@/lib/office/poll";
 import type { OfficeState } from "@/lib/office/protocol";
 import { hudLayout } from "@/hud/layout";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -45,22 +47,24 @@ import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
-import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, segmentHitsBox } from "./chipRows";
+import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, placeAt, segmentHitsBox } from "./chipRows";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
-import { officeLive, useOfficeFeed } from "./live";
+import { officeLive } from "./live";
 import { ATLAS, ATLAS_CELLS, atlasCell, cellUv, dirtyCells, drawFace, drawFlag, drawScreen, FACE_FPS_MAX, FLAG_CELL, faceCell, faceKey, screenCell, screenKey, uploadOrigin, type CanvasFonts, type Cell, type ScreenTexts } from "./officeAtlas";
 import { crewFx, DRONES, newActor, type CrewFx } from "./crew";
 import { lodStep, OFFICE_LOD, officeCrew, restCrewKey, restCrewPose, stepOfficeCrew, type LodStep } from "./crewFrame";
 import { DARK_TOWER, PIPE_PARTS, towerKey, towerLanes, writeCrewGlow, writeTower } from "./crewFx";
 import { AtlasClock, fadeLevel, fadeTag, LEAD, leadEnd, RoverWrites, stepFade, WallGate, type Fade } from "./officeFrame";
-import { officeView, screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
+import { screenInput, type OfficeRoverView, type OfficeView } from "./officeModel";
 import { officeSignal, setOfficeSignal, signalFromBody } from "./officeSignal";
 import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFace, writeFlag, writeGlow, writeDrones, writeRover } from "./officeRig";
-import { OFFICE_STATE_STYLE, slotPhase, STILL_T } from "./officeVisual";
+import { OFFICE_STATE_STYLE, slotPhase, STATUS_COLOR, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
+import { stepTileAlpha, TILE_COUNT, TILE_KIND, TILES, tileCenters } from "./tiles";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
+import { idleLoop, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
 import { loadOfficeWatch } from "./watchLoader";
 
@@ -373,6 +377,11 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
   const skew = useRef(0);
   const deployAt = useMemo(() => runningDeployAt(view.pipeline), [view.pipeline]);
   const fxKey = useRef("");
+  // A replay started, seeked or looped, or the live feed is back: the next snapshot is a silent baseline (declared first, so it runs first).
+  const seq = view.replay?.seq ?? -1;
+  useEffect(() => {
+    queue.reset();
+  }, [seq, queue]);
   // Each new feed: diff against the last pipeline (a silent baseline after a load, offline, off or out of view).
   useEffect(() => {
     if (view.updatedAt !== null) skew.current = view.updatedAt - Date.now();
@@ -445,6 +454,8 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
     paintAtlas(gl, g, Q, local.current, { rovers: view.rovers, now, reduced, fps: far ? Math.min(fps, OFFICE_LOD.atlasFps) : fps, faceFps: far ? OFFICE_LOD.atlasFps : Infinity, fonts: fonts.current, texts, t });
     const step = lodStep(officeRuntime.distance, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), lod.current.acc, lod.current);
     if (!step.step) return;
+    // The replay's clock steps here only: in view, at the far rate past `OFFICE_LOD.farDistance`, never without a frame.
+    officeReplay.controller?.step(step.dt, reduced);
     sceneProbes.office.steps += 1;
     sceneProbes.office.bob = stepOfficeCrew(crew, writes, slots, view.rovers, step.dt, now, reduced, camera.position, lite);
     const wall = Date.now() + skew.current;
@@ -494,6 +505,64 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
 }
 
 /**
+ * The merged-PR floor tiles (design 7.4): one instanced `STAGE_KIND.tile` draw on the stage mode of the holo program
+ * (the hall's stage shader, no new program), taken through `holoFx` and a literal tile kind (`TILE_KIND`) rather than
+ * `HallFx`, which keeps the hall modules out of the office chunk's graph and off the first-frame path. The grid's fixed bounds let it be frustum culled out of view. The frame fades the tiles toward today's
+ * merge count (`tiles.ts`) and writes `aStage2.w` only on change; the instance data itself is written once.
+ */
+function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
+  const reduced = useHQStore((s) => s.reducedMotion);
+  const mesh = useRef<InstancedMesh>(null);
+  const built = useMemo(() => {
+    const at = new Float32Array(TILE_COUNT * 16);
+    const color = new Float32Array(TILE_COUNT * 3);
+    const stage = new Float32Array(TILE_COUNT * 4);
+    const stage2 = new Float32Array(TILE_COUNT * 4);
+    const rgb = neonColor(STATUS_COLOR.merged, 2.2, tier).toArray();
+    const centers = tileCenters(LOBBY.officeWing);
+    centers.forEach((p, i) => {
+      FRAME.makeRotationX(-Math.PI / 2).setPosition(p.x, TILES.y, p.z).toArray(at, i * 16);
+      color.set(rgb, i * 3);
+      stage.set([TILE_KIND, TILES.size, TILES.size, 0], i * 4);
+      stage2[i * 4 + 3] = TILES.dim;
+    });
+    const { lead, rect } = LOBBY.officeWing;
+    const bounds = new Sphere(new Vector3(lead.x, 0, rect.minZ + TILES.z0 + 3.8), 7);
+    const geometry = new PlaneGeometry(1, 1).setAttribute("aStage", new InstancedBufferAttribute(stage, 4)).setAttribute("aStage2", new InstancedBufferAttribute(stage2, 4));
+    return { at, color, bounds, geometry };
+  }, [tier]);
+  useDispose(built.geometry);
+  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.stage, additive: true, depthWrite: false }), []);
+  useDispose(material);
+  const fadeRef = useRef({ alpha: new Float32Array(TILE_COUNT).fill(TILES.dim), clock: { next: 0, lit: 0 } });
+  // A waiting upload must not outlive the mesh.
+  useEffect(() => {
+    const m = mesh.current;
+    return () => {
+      if (m) forgetDrawn(m);
+    };
+  }, []);
+  // No in-view gate: the grid sits outside the office's own box, and a settled step writes nothing.
+  useFrame(({ clock }, rawDt) => {
+    const m = mesh.current;
+    const fade = fadeRef.current;
+    if (!m || !stepTileAlpha(fade.alpha, view.today?.prsMerged ?? 0, fade.clock, clock.elapsedTime, Math.min(rawDt, MAX_FRAME_DT) * animationSpeed(), reduced)) return;
+    whenDrawn(m, () => {
+      const w = m.geometry.attributes.aStage2;
+      for (let i = 0; i < TILE_COUNT; i++) (w.array as Float32Array)[i * 4 + 3] = fade.alpha[i];
+      w.needsUpdate = true;
+      sceneProbes.office.tiles = fade.clock.lit;
+    });
+  });
+  return (
+    <instancedMesh ref={mesh} args={[built.geometry, material, TILE_COUNT]} boundingSphere={built.bounds} raycast={NO_RAYCAST} name="office-tiles">
+      <instancedBufferAttribute attach="instanceMatrix" args={[built.at, 16]} />
+      <instancedBufferAttribute attach="instanceColor" args={[built.color, 3]} />
+    </instancedMesh>
+  );
+}
+
+/**
  * The screen wall: one quad with its own canvas texture, checked twice a second; the model rebuilds only when the
  * feed (or the locale) changed or a second passed, and the texture redraws only when its content or spinner changed.
  */
@@ -525,8 +594,10 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
     const w = wall.current;
     if (now < l.next || !officeRuntime.inView || !w) return;
     l.next = now + 0.5;
-    if (l.gate.stale([view, t, locale], now) || !l.model) {
-      l.model = wallModel(view, t, locale, Date.now());
+    // The replay's clock minute is a dependency: the banner redraws when it changes.
+    const { clock: time } = officeReplay.state;
+    if (l.gate.stale([view, t, locale, time], now) || !l.model) {
+      l.model = wallModel(view, t, locale, Date.now(), view.replay && { day: view.replay.label, clock: time });
       l.gate.built(l.model);
     }
     const model = l.model;
@@ -605,6 +676,10 @@ function createWatchState() {
     hud: [] as ScreenBox[],
     bounds: { left: 0, right: 0 },
     max: CHIP_ROW.max as number,
+    // The replay pill's width and row gap the bounds were shifted by (px), and its element and last x, y (NaN hidden).
+    shift: 0,
+    pill: null as HTMLElement | null,
+    pillAt: [NaN, NaN],
   };
 }
 type WatchState = ReturnType<typeof createWatchState>;
@@ -613,14 +688,16 @@ type WatchState = ReturnType<typeof createWatchState>;
  * The HUD boxes, the row's bounds and the chips' max width, again only when the screen size, the HUD layout or the count
  * of chips with a name (`named`: the desks with an agent; an off-duty desk's chip is a dot) changes.
  */
-function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number) {
-  if (w.width === width && w.height === height && w.layout === hud && w.named === named) return;
+function fitRow(w: WatchState, width: number, height: number, hud: "desktop" | "tablet" | "phone", top: number, named: number, shift: number) {
+  if (w.width === width && w.height === height && w.layout === hud && w.named === named && w.shift === shift) return;
+  w.shift = shift;
   w.width = width;
   w.height = height;
   w.layout = hud;
   w.named = named;
   w.hud = officeHudBoxes(width, height, hud);
   chipRowBounds(width, top, w.hud, w.bounds);
+  w.bounds.left += shift;
   w.max = chipMaxWidth(w.bounds, named, OFFICE_CHIP_COUNT - named);
 }
 
@@ -656,18 +733,7 @@ function projectWallTop(w: WatchState, camera: RootState["camera"], width: numbe
 }
 
 /** Shows chip `slot`'s tick at (x, y) (its centre, px), or hides it (NaN). */
-function writeTick(w: WatchState, slot: number, x: number, y: number) {
-  const tick = officeRuntime.ticks[slot];
-  const last = w.tick[slot];
-  if (!tick || (last[0] === x && last[1] === y) || (Number.isNaN(x) && Number.isNaN(last[0]))) return;
-  last[0] = x;
-  last[1] = y;
-  if (Number.isNaN(x)) tick.style.visibility = "hidden";
-  else {
-    tick.style.transform = `translate3d(${x - LEAD.tick / 2}px, ${y - 1}px, 0)`;
-    tick.style.visibility = "visible";
-  }
-}
+const writeTick = (w: WatchState, slot: number, x: number, y: number) => placeAt(officeRuntime.ticks[slot], w.tick[slot], x - LEAD.tick / 2, y - 1);
 
 /** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`; a tick beside the wall clear of the HUD boxes, `above` its Rover's head). */
 function endLead(w: WatchState, slot: number, x: number, y: number, above = true) {
@@ -737,7 +803,7 @@ function anyChipShown(w: WatchState): boolean {
 }
 
 /** One frame of `OfficeWatch` (a plain function, so the watch state it updates stays out of React's render rules). */
-function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clock, size }: RootState) {
+function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: OfficeFeedStatus, office: Rect, { camera, clock, size }: RootState) {
   const s = getHQStore().getState();
   const here = s.floor === "L1" && !s.ride && (s.phase === "explore" || s.phase === "room");
   const now = clock.elapsedTime;
@@ -760,16 +826,26 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     const crew = officeRuntime.crew.map((a) => ({ state: a.state, yaw: a.pose.yaw, flag: a.pose.flag, z: a.pose.z }));
     const drones = view.rovers.map((r) => Math.min(r.helpers, DRONES.max));
     Object.assign(sceneProbes.office, { desks: view.rovers.length, states: view.rovers.map((r) => r.state), mode: view.mode, inView, far, polling: feeding, crew, drones });
+    idleLoop(live.rovers.some((x) => x.agent && x.state !== "asleep"), feed, inView, s.reducedMotion);
   }
+  const mode = here ? officeChipMode(s.activeRoom) : null;
+  // The replay pill leads the row (the chips' bounds start after it) and hides with the chips.
+  const ui = officeReplay.ui;
+  const pillW = ui ? ui.width(!!mode && officeRuntime.inView, now, CHIP_ROW.gap) : 0;
+  if (w.pill !== officeRuntime.pill) {
+    // A freshly mounted pill starts hidden (its inline style).
+    w.pill = officeRuntime.pill;
+    w.pillAt.fill(NaN);
+  }
+  if (!pillW) placeAt(w.pill, w.pillAt, NaN, 0);
   // Out of view with every chip already hidden: no chip work this frame.
   if (!officeRuntime.inView && !anyChipShown(w)) return;
   const mobile = s.device.viewport === "mobile";
-  const mode = here ? officeChipMode(s.activeRoom) : null;
   // The committed layout (React has rendered the previous frame's flags by now), then this frame's.
   const small = mobile || officeRuntime.compact;
   const hud = hudLayout(s.device.viewport, s.device.coarse);
   const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
-  fitRow(w, size.width, size.height, hud, top, namedChips(view));
+  fitRow(w, size.width, size.height, hud, top, namedChips(view), pillW);
   const oneLine = chipsOneLine(s.device.viewport, mode === "compact", w.max);
   if (mode) setChipsCompact(mode === "compact" || chipsDotsOnly(w.max));
   let n = 0;
@@ -822,6 +898,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
     if (!on) hideChip(w, slot, el);
   }
   layoutChipRows(w.tx, w.th, w.out, w.row, n, w.bounds);
+  if (pillW) placeAt(w.pill, w.pillAt, w.bounds.left - pillW, top);
   if (n) projectWallTop(w, camera, size.width, size.height);
   // Place the chips first (a second row of dots sits a dot and a gap lower), then draw the leader lines clear of them all.
   let chips = 0;
@@ -872,7 +949,7 @@ function watchFrame(w: WatchState, view: OfficeView, office: Rect, { camera, clo
  * turns far again), and writes the probes. A chip's size is read only when it can change (a new element, its far flag,
  * its compact layout or the feed), and a style is written only when its value changes. Renders nothing.
  */
-function OfficeWatch({ view }: { view: OfficeView }) {
+function OfficeWatch({ view, live, feed }: { view: OfficeView; live: OfficeView; feed: OfficeFeedStatus }) {
   const tmp = useMemo(() => createWatchState(), []);
   const bounds = useMemo(() => officeBounds(), []);
   useEffect(
@@ -890,10 +967,11 @@ function OfficeWatch({ view }: { view: OfficeView }) {
         el.style.opacity = "0";
       });
       for (const lead of [...officeRuntime.leads, ...officeRuntime.ticks]) if (lead) lead.style.visibility = "hidden";
+      if (officeRuntime.pill) officeRuntime.pill.style.visibility = "hidden";
     },
     [],
   );
-  useFrame((state) => watchFrame(tmp, view, bounds, state));
+  useFrame((state) => watchFrame(tmp, view, live, feed, bounds, state));
   return null;
 }
 
@@ -904,8 +982,9 @@ function OfficeWatch({ view }: { view: OfficeView }) {
  * Five draw calls here (parts, treads, screens, glow, wall), on programs L1 already has.
  */
 export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) {
-  const feed = useOfficeFeed();
-  const view = useMemo(() => officeView(feed), [feed]);
+  // The replay's view while one plays (the Rovers, the wall, the chips' positions); the live view and feed for the
+  // signal and the point-and-go targets, so a replay never lights the beacon, the minimap cue or the deploy beam.
+  const { view, live, feed } = useOfficeSource();
   // The beacon's signal from this feed while its poller runs (a frozen feed never writes): the same reading as the
   // watch's, an offline or disabled feed asks nothing, and the good answer's time keeps the 60 s window. The watch
   // chunk mirrors the signal to the minimap and loads the beacon, so it loads here too (it may not have yet).
@@ -916,7 +995,7 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
     void loadOfficeWatch().catch(() => null);
   }, [feed]);
   const slots = SLOTS;
-  const agents = view.rovers.map((r) => r.agent ?? "").join(",");
+  const agents = live.rovers.map((r) => r.agent ?? "").join(",");
   useEffect(() => {
     const names = agents.split(",");
     return registerExtraInteractables(
@@ -929,18 +1008,35 @@ export function OfficeScene({ tier, t }: { tier: GpuTier; t: OfficeTranslate }) 
       }),
     );
   }, [agents, t]);
+  useEffect(() => {
+    const off = subscribeReplay(() => {
+      sceneProbes.office.replay = officeReplay.state;
+    });
+    officeReplay.quietSince = officeLive.now();
+    officeReplay.mounted = true;
+    publishReplay(officeReplay.state, officeReplay.snapshot);
+    return () => {
+      // Riding off L1 ends a replay (live again on the way back).
+      officeReplay.mounted = false;
+      officeReplay.controller?.stop();
+      publishReplay(officeReplay.state, null);
+      off();
+    };
+  }, []);
   useEffect(
     () => () => {
-      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false });
+      Object.assign(sceneProbes.office, { loaded: false, desks: 0, states: [], chips: 0, bob: 0, inView: false, far: true, steps: 0, polling: false, crew: [], drones: [], lanes: 0, beam: false, tiles: 0 });
       Object.assign(sceneProbes.office.pipe, { packets: 0, bursts: 0, crowns: 0, packages: 0, deployFailed: 0, stack: 0 });
+      sceneProbes.office.replay = undefined;
     },
     [],
   );
   return (
     <OfficeReady>
       <OfficeRovers view={view} slots={slots} tier={tier} t={t} />
+      <OfficeTiles view={view} tier={tier} />
       <OfficeWall view={view} tier={tier} t={t} />
-      <OfficeWatch view={view} />
+      <OfficeWatch view={view} live={live} feed={feed.status} />
     </OfficeReady>
   );
 }

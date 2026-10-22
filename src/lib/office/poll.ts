@@ -51,6 +51,8 @@ export interface OfficePoller {
   stop(): void;
   /** Visitor input: resets the 10 min idle stop, restarts if it had stopped for idleness. */
   touch(): void;
+  /** `now()` of the last visitor input (or start). */
+  touchedAt(): number;
   /**
    * Re-arms the pending wait for the current `interval` (a reason changed the cadence), counted from when the last
    * request settled: a shorter cadence that is already due fetches at once. A no-op while stopped or fetching.
@@ -203,6 +205,7 @@ export function createOfficePoller(opts: OfficePollerOptions = {}): OfficePoller
       const gen = generation;
       timer = setTimer(() => void tick(gen), Math.max(0, armedAt + interval(current) - now()));
     },
+    touchedAt: () => lastTouch,
     feed: () => current,
     subscribe(listener) {
       listeners.add(listener);

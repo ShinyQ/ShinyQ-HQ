@@ -101,10 +101,12 @@ export function countOfficeAsk(): void {
   asks += 1;
 }
 
-/** `window.__hq.office` (Playwright and the perf lane): load, load the drawer body, the chunk state, the trigger's idle asks and the chunk's test hooks once loaded. */
+/** `window.__hq.office` (Playwright and the perf lane): load, load the drawer body, load the replay chunk and its controls chunk, the chunk state, the trigger's idle asks and the chunk's test hooks once loaded. */
 export const officeHandle = {
   load: (): Promise<void> => loadOffice().then(() => undefined),
   loadBody: (): Promise<void> => loadOfficeBody().then(() => undefined),
+  loadReplay: (): Promise<void> => loadOffice().then((m) => m.loadOfficeReplay()).then(() => undefined),
+  loadControls: (): Promise<void> => loadOffice().then((m) => m.loadOfficeReplay()).then((m) => m.loadControls()).then(() => undefined),
   state: officeChunkState,
   asks: (): number => asks,
   test: () => loaded?.officeTest ?? null,

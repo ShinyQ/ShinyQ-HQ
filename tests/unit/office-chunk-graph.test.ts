@@ -26,6 +26,7 @@ const OFFICE_ONLY = [
   `${DIR}/OfficeScene.tsx`,
   `${DIR}/OfficeChips.tsx`,
   `${DIR}/chipRows.ts`,
+  `${DIR}/replayLink.ts`,
   "src/lib/office/poll.ts",
   "src/lib/office/model.ts",
 ];
@@ -38,6 +39,12 @@ const BEACON = `${DIR}/beaconChunk.ts`;
 const WATCH_ONLY = [WATCH, `${DIR}/officeSignal.ts`, `${DIR}/officeWatch.ts`, "src/hud/minimap/OfficeCue.tsx"];
 /** Reached from the beacon chunk entry only: never from the main path or the watch chunk. */
 const BEACON_ONLY = [BEACON, `${DIR}/beacon.ts`, `${DIR}/OfficeBeacon.tsx`];
+/** The replay chunk entry (on the idle-loop condition or the drawer's replay control, through `replayLink.ts`). */
+const REPLAY = `${DIR}/replayChunk.ts`;
+/** Reached from the replay chunk entry only: never from the main path, the scene or body entries, the watch, the beacon or the Classic card. */
+const REPLAY_ONLY = [REPLAY, `${DIR}/replay.ts`, `${DIR}/replayFeed.ts`, "src/lib/office/protocolHistory.ts"];
+/** The drawer's day replay controls: their own lazy chunk, imported from the replay chunk entry (so `replay.ts` is shared, never copied). */
+const CONTROLS = `${DIR}/ReplayControls.tsx`;
 /** The main-path part of the office: the loaders, the mount with the furniture shell and the layout. */
 const MAIN = [`${DIR}/chunk.ts`, `${DIR}/watchLoader.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
 /** Main-path entries: the 3D chunk, the gate and the HUD (the minimap draws the cue from the watch chunk). */
@@ -57,7 +64,7 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
   it("keeps the office-only code, the watch and the beacon out of the main 3D chunk, the gate and the HUD", () => {
     for (const entry of MAIN_ENTRIES) {
       const main = staticClosure(entry);
-      expect([...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY].filter((f) => main.has(f)), entry).toEqual([]);
+      expect([...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY, ...REPLAY_ONLY].filter((f) => main.has(f)), entry).toEqual([]);
     }
   });
 
@@ -90,6 +97,30 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
     expect(readFileSync(join(ROOT, "src/lib/office/protocol.ts"), "utf8")).not.toMatch(/^export .* from "\.\/protocolV4";$/m);
   });
 
+  it("keeps the replay engine, feed and history validators in the replay chunk, loaded only through replayLink.ts", () => {
+    const replay = staticClosure(REPLAY);
+    expect(REPLAY_ONLY.filter((f) => !replay.has(f))).toEqual([]);
+    for (const entry of [...MAIN_ENTRIES, ENTRY, BODY, WATCH, BEACON, "src/components/office/OfficePanel.tsx", "src/hud/drawer/DrawerHost.tsx"]) {
+      const closure = staticClosure(entry);
+      expect(REPLAY_ONLY.filter((f) => closure.has(f)), entry).toEqual([]);
+    }
+    expect(staticClosure(ENTRY).has(`${DIR}/replayLink.ts`)).toBe(true);
+    // No three in the replay chunk's closure (the probes import it): a three import from it splits three out of the main 3D chunk.
+    expect([...replay].filter((f) => /^import [^;]*from "three";$/m.test(readFileSync(join(ROOT, f), "utf8")))).toEqual([]);
+    const importers = files(join(ROOT, "src")).filter((f) => /import\(\s*["'][^"']*replayChunk["']\s*\)/.test(readFileSync(join(ROOT, f), "utf8")));
+    expect(importers).toEqual([`${DIR}/replayLink.ts`]);
+    expect(readFileSync(join(ROOT, "src/lib/office/protocol.ts"), "utf8")).not.toMatch(/^export .* from "\.\/protocolHistory";$/m);
+  });
+
+  it("keeps the day replay controls in their own chunk, imported only from the replay chunk entry", () => {
+    expect(staticClosure(REPLAY).has(CONTROLS)).toBe(false);
+    for (const entry of [...MAIN_ENTRIES, ENTRY, BODY, WATCH, BEACON, "src/components/office/OfficePanel.tsx", "src/hud/drawer/DrawerHost.tsx"]) expect(staticClosure(entry).has(CONTROLS), entry).toBe(false);
+    const controls = [...staticClosure(CONTROLS)];
+    expect(controls.filter((f) => /^import [^;]*from "three";$/m.test(readFileSync(join(ROOT, f), "utf8")))).toEqual([]);
+    const importers = files(join(ROOT, "src")).filter((f) => /import\(\s*["'][^"']*ReplayControls["']\s*\)/.test(readFileSync(join(ROOT, f), "utf8")));
+    expect(importers).toEqual([REPLAY]);
+  });
+
   it("keeps the loader, the mount and the layout on the main path", () => {
     const main = staticClosure("src/experience/Experience.tsx");
     for (const f of MAIN) expect(main.has(f), f).toBe(true);
@@ -115,10 +146,10 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
   });
 
   it("lets no main-path file under src/experience or src/hud import a value from the office chunks", () => {
-    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY), ...staticClosure(WATCH), ...staticClosure(BEACON)]);
+    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY), ...staticClosure(WATCH), ...staticClosure(BEACON), ...staticClosure(REPLAY), ...staticClosure(CONTROLS)]);
     const offenders = [...files(join(ROOT, "src/experience")), ...files(join(ROOT, "src/hud"))]
       .filter((f) => !chunks.has(f))
-      .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY].some((only) => staticClosure(f).has(only)));
+      .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY, ...REPLAY_ONLY].some((only) => staticClosure(f).has(only)));
     expect(offenders).toEqual([]);
     // One closure per file under two folders: slower than the default 5 s on a busy machine.
   }, 60_000);

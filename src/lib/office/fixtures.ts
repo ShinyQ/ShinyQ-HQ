@@ -16,6 +16,7 @@ import {
   type OfficeSnapshotV3,
   type OfficeSnapshotV4,
 } from "./protocol";
+import { dayStart, historyWindow, type OfficeHistoryEvent, type OfficeHistoryIndexV1, type OfficeHistoryV1 } from "./protocolHistory";
 
 /** Fixed clock of the fixtures: 2026-10-18 15:00 WIB. */
 export const OFFICE_FIXTURE_NOW = Date.UTC(2026, 9, 18, 8, 0, 0);
@@ -153,3 +154,63 @@ export const OFFICE_FIXTURES_V4: Record<keyof typeof OFFICE_FIXTURES, OfficeResp
   off: v4(OFFICE_FIXTURES_V3.off as OfficeSnapshotV3, EMPTY),
   disabled: { v: 1, enabled: false },
 };
+
+/** Seconds since the WIB midnight at `h`:`m`. */
+const hm = (h: number, m: number) => h * 3600 + m * 60;
+/** One session's day: [hour, minute, state, activity, helpers] by OFFICE_STATES and OFFICE_ACTIVITIES index; a sixth number sets `until` (else 20 s before its next event, or 10 min after its last). */
+type Step = [h: number, m: number, state: number, activity: number, helpers: number, until?: number];
+function track(n: number, seat: number, steps: Step[]): OfficeHistoryEvent[] {
+  return steps.map(([h, m, state, activity, helpers, until], i) => {
+    const next = steps[i + 1];
+    return [hm(h, m), n, seat, state, activity, until ?? (next ? hm(next[0], next[1]) - 20 : hm(h, m) + 600), helpers];
+  });
+}
+const HISTORY_DAY = wibDay(OFFICE_FIXTURE_NOW);
+const HISTORY_EVENTS: OfficeHistoryEvent[] = [
+  // Copilot on seat 0, on the public repo with up to 3 helpers; its 14:00 CI fails.
+  ...track(0, 0, [
+    [9, 0, 0, 0, 0], [9, 12, 1, 1, 0], [9, 15, 0, 0, 3], [9, 40, 3, 3, 3], [9, 48, 0, 0, 3], [10, 20, 4, 6, 0], [10, 32, 0, 0, 0], [11, 5, 2, 2, 0], [11, 30, 4, 6, 0],
+    [11, 50, 6, 9, 0], [12, 25, 0, 0, 0], [13, 0, 1, 1, 0], [13, 5, 0, 0, 2], [13, 45, 3, 3, 0], [14, 0, 4, 6, 0], [14, 20, 7, 10, 0], [14, 30, 0, 0, 0],
+  ]),
+  // Claude on back-row seat 6, on a repository that is not public (a "Client project").
+  ...track(1, 6, [
+    [9, 5, 1, 1, 0], [9, 8, 0, 0, 0], [9, 30, 2, 2, 0], [10, 0, 0, 5, 0], [10, 40, 5, 8, 0], [10, 50, 0, 0, 0], [11, 20, 3, 3, 0], [11, 40, 7, 10, 0],
+    [11, 55, 0, 0, 0], [12, 30, 0, 4, 0], [13, 10, 2, 2, 0], [13, 40, 6, 9, 0], [14, 10, 0, 0, 0], [14, 45, 6, 9, 0],
+  ]),
+  // Codex on seat 2: quiet for 25 min from 10:05 and from 11:20, so the time rules put it to sleep; gone from 11:50 to 13:20.
+  ...track(2, 2, [
+    [9, 20, 0, 0, 0], [9, 50, 1, 1, 0], [10, 0, 0, 7, 0, hm(10, 5)], [10, 30, 0, 0, 0], [11, 0, 5, 8, 0], [11, 10, 0, 0, 0, hm(11, 20)], [11, 45, 6, 9, 0, hm(11, 50)],
+    [13, 20, 0, 0, 0], [13, 50, 3, 3, 0], [14, 15, 6, 9, 0],
+  ]),
+].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+/** A replayable day (2026-10-18 WIB, 09:00 to 15:00): three sessions, no event from 11:55 to 12:25, three merges (one private), a green and a failed run, one production deploy. */
+const historyDay: OfficeHistoryV1 = {
+  v: 1,
+  day: HISTORY_DAY,
+  start: dayStart(HISTORY_DAY),
+  agents: ["copilot", "claude", "codex"],
+  tasks: { "0": { repo: HQ, title: "Replay the day in the office" } },
+  events: HISTORY_EVENTS,
+  prs: [
+    [hm(11, 52), 0, HQ, 241, "Replay the day in the office"],
+    [hm(13, 42), 6, "", 58, ""],
+    [hm(14, 32), 0, HQ, 243, "Floor tiles per merged PR"],
+  ],
+  runs: [
+    [hm(11, 30), hm(11, 48), 0, 1, 3],
+    [hm(14, 0), hm(14, 19), 0, 0, 12],
+  ],
+  deploys: [[hm(11, 58), 1]],
+  truncated: false,
+};
+
+const historyIndex: OfficeHistoryIndexV1 = {
+  v: 1,
+  days: historyWindow(OFFICE_FIXTURE_NOW).map((day, i) =>
+    i === 0 ? { day, events: historyDay.events.length, prs: historyDay.prs.length, runs: historyDay.runs.length, deploys: historyDay.deploys.length } : { day, events: 0, prs: 0, runs: 0, deploys: 0 },
+  ),
+};
+
+/** GET /api/office/history (`index`: the fixture day first, then seven empty days) and GET /api/office/history?day= for the fixture day (`day`). */
+export const OFFICE_HISTORY_FIXTURES = { index: historyIndex, day: historyDay } as const;

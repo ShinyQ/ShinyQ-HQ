@@ -1,9 +1,9 @@
 # Agent Office revamp (living crew, ship-it pipeline, day replay): design
 
-Date: 2026-10-20. Status: approved by the owner on 2026-10-20 (direction D, staged all-in; section 2), relayed by the
-coordinator; the stage A look approved on 2026-10-20 from the prototype renders (thought trail only, beacon 1.6 u,
-slim LED-lane tower, the done spin ending on the camera); A2 (the always-live office and ten desks, sections 5.9 and
-5.10) approved on 2026-10-21.
+Date: 2026-10-20. Status: implemented (A #274, A2 #276, B #279, C #284). Approved by the owner on 2026-10-20
+(direction D, staged all-in; section 2), relayed by the coordinator; the stage A look approved on 2026-10-20 from the
+prototype renders (thought trail only, beacon 1.6 u, slim LED-lane tower, the done spin ending on the camera); A2 (the
+always-live office and ten desks, sections 5.9 and 5.10) approved on 2026-10-21.
 
 Owner request (verbatim): "I see thats good but current Agent Office just not feel so WOW i need you to think and do
 revamp for it (or add featured)".
@@ -464,120 +464,161 @@ end state shows at once (lanes lit, package on the dock, a static beam glow for 
 
 ## 7. Stage C: day replay
 
+Shipped as stage C ([plan](../plans/2026-10-20-agent-office-replay.md), budgets
+[decision](../../decisions/2026-10-22-office-replay-budgets.md)). Current rules: [office.md](../../agents/office.md)
+(backend) and [floor-l1-lobby.md](../../agents/floor-l1-lobby.md#day-replay) (experience).
+
 ### 7.1 Storage (Durable Object)
 
-Beside the existing `doc` row, one row per WIB day, `log:YYYY-MM-DD`, written in the same `storage.put` as the doc
-(one transaction, two rows) only when something loggable changed:
+Beside the `doc` row, one row per WIB day, `log:YYYY-MM-DD`, written in the same `storage.put` as the doc (one
+transaction) only when something loggable changed. The Durable Object diffs the doc before and after every accepted
+beat or webhook over every session (`logDoc` in `workers/office/src/history.ts`), so a seat that moves because another
+session left is logged too (a per-session beat log would miss it).
 
 ```ts
 interface DayLog {
   v: 1; day: string;
   keys: string[];                    // private: session hash per ordinal; never served
   agents: OfficeAgent[];             // per ordinal
-  tasks: Record<number, { repo: string; branch?: string; title?: string }>; // public allowlisted repos only
-  events: [t: number, n: number, slot: number, state: number, activity: number, until: number, helpers: number][];
-  prs: [t: number, slot: number, repo: string, number: number, title: string][];
-  runs: [t: number, ok: 0 | 1][];
-  deploys: [t: number, ok: 0 | 1][];
+  tasks: Record<string, { repo: string; title?: string }>; // allowlisted public repos only; no branches
+  events: [t, n, seat, state, activity, until | null, helpers][];
+  prs: [t, seat, repo, number, title][];            // repo and title "" when not public
+  runs: [start, end, seat, ok, lanes][];            // finished runs: lanes 0 to 24
+  deploys: [t, ok][];                               // production deploy results
   truncated: boolean;
 }
 ```
 
-- `t` and `until` are seconds since the WIB midnight; `slot` 0 to 9 (the v3 seats, 5.10), -1 for a session beyond the
-  ten seats; states and
-  activities are indexes into `OFFICE_STATES` and `OFFICE_ACTIVITIES`.
-- Logged: a beat that changes a session's state, activity or helper count (keepalives are not logged; the previous event's `until`
-  is set from that session's `lastBeat` when its next event arrives, and the open event's `until` comes from the doc's
-  `lastBeat` at read time), a slot change, a CI failure, a merged PR, a finished run, a deploy result.
-- Caps: 3,000 events, 200 PRs, 500 runs, 50 deploys and 120 KB serialized per day; past a cap the day is marked
-  `truncated` and only PR, run and deploy counts keep growing. Daily rollover at the WIB midnight; on the first write of
-  a new day, rows older than 7 days are deleted (`storage.list({ prefix: "log:" })`), so at most 8 log rows exist.
-- `privatized` also scrubs that repository's tasks and PR titles from every log row.
+- `t`, `start`, `end` and `until` are seconds since the WIB midnight; `seat` 0 to 9 (the v3 seats, 5.10) through
+  `seatOf`, -1 past the ten; states and activities are indexes into `OFFICE_STATES` and `OFFICE_ACTIVITIES`. An event's
+  `until` is null while it is open (its session has not changed); the served day closes it from the session's
+  `lastBeat`.
+- Logged: a change of a session's state, activity, seat or helper count (keepalives are not), a session back from a
+  quiet gap (removed, asleep or helpers decayed: `quietGap`; thinking after 20 s is not logged, the replay derives it
+  after `until`), a merge, a run that finished (a new finished attempt included) and a production deploy result.
+- Caps: 200 sessions, 3,000 events, 200 merges, 500 runs, 50 deploys and 120 KB serialized per day (less a 4 KB
+  headroom so the closes always fit); past a cap the row is marked `truncated`, what the change added is dropped and the
+  merge, run and deploy counts keep growing to their own caps.
+- Rollover: the first write of a new WIB day starts its row with one carry-in event at t 0 for each session still live
+  at the midnight (its `until` closes from its last beat, down to -1800), closes the latest earlier row from the doc and
+  deletes rows older than the 8-day window (`storage.list({ prefix: "log:" })`), so at most 8 log rows exist.
+- `privatized` scrubs that repository from every stored row in the same write: its tasks go and its merges keep only
+  time, desk and number.
 - Free limits: a busy day with all ten seats in use (10 sessions, about 2,800 state changes, 60 PRs, 200 runs, 10
-  deploys) logs about 90 KB (inside the 3,000 events and 120 KB caps; a busier day is marked `truncated`), writes about
-  6,500 rows (limit 100,000/day), stores under 1 MB in total (limit 5 GB), and adds no Durable Object request beyond the
-  history reads.
+  deploys) logs about 95 KB (inside the 3,000 events and 120 KB caps; a busier day is marked `truncated`), writes under
+  about 10,000 rows (limit 100,000 a day), stores under 1 MB in total (limit 5 GB), and adds no Durable Object request
+  beyond the history reads (office.md has the table).
 
 ### 7.2 Endpoint
 
-- `GET /api/office/history`: the index, `{ v: 1, days: [{ day, events, prs, runs }] }` for the 8 days (empty days
-  included).
+- `GET /api/office/history`: the index, `{ v: 1, days: [{ day, events, prs, runs, deploys }] }` for the 8 days (empty
+  days included), newest first.
 - `GET /api/office/history?day=YYYY-MM-DD`: `OfficeHistoryV1`: `{ v: 1, day, start (epoch ms of the WIB midnight),
-  agents, tasks, events, prs, runs, deploys, truncated }`, where `tasks` and PR titles go through the blocklist again at
-  read time (a later blocklist update applies retroactively) and every repository must still be in the known-public
-  set; `keys` is never serialized.
-- A `day` outside the window, malformed, or any other query key: `404` with `{ v: 1, error: "day" }` (no echo of the
-  input). The edge cache key is the canonical URL (only `day`), so junk queries cannot fill the cache.
-- Caching: today `Cache-Control: public, max-age=30, stale-while-revalidate=60`, edge-cached 30 s; past days
-  `public, max-age=3600, stale-while-revalidate=86400` (not immutable: a privatize can scrub them). ETag and 304 like
-  `/api/office`. The kill switch `OFFICE_ENABLED` answers `{ v: 1, enabled: false }`.
-- The client validates with `parseOfficeHistory` (strict keys, tuple shapes, bounds) and drops the whole body on any
-  mismatch.
+  agents, tasks, events, prs, runs, deploys, truncated }`; `keys` is never serialized. The Durable Object serves the
+  day (open events closed; tasks and merge titles only for repositories still in the known-public set) and the Worker
+  cleans it again at read time (`cleanHistory`: the allowlist on every repository and `cleanTitle` with the current
+  blocklist on every title, so a later blocklist update applies retroactively).
+- A `day` outside the window, malformed, or any other query key: `404` with `{ v: 1, error: "day" }` from the Function
+  (no echo of the input); the Worker answers such a query with a 404 that never reaches the Durable Object. The edge
+  cache key is built from the validated values, so junk queries cannot fill the cache.
+- Caching: the index and today `Cache-Control: public, max-age=30, stale-while-revalidate=60`; past days `public,
+  max-age=3600, stale-while-revalidate=300` (not immutable: a privatize can scrub them). ETag and 304 like
+  `/api/office`, GET and HEAD. The kill switch `OFFICE_ENABLED` answers `{ v: 1, enabled: false }`. Any other failure
+  (no binding, a Worker error or invalid body, a Worker rolled back to before C) is a 503 with `no-store`, which the
+  client shows as "Replay unavailable".
+- The Function and the replay chunk validate with `parseOfficeHistory` and `parseOfficeHistoryIndex`
+  (`src/lib/office/protocolHistory.ts`: strict keys, tuple shapes, bounds, sorted lists) and drop the whole body on any
+  mismatch. The parsers stay out of `protocol.ts`, so the Classic card, the watch, the scene chunk and the drawer body
+  never carry them.
 
-### 7.3 Replay engine (`replay.ts`, pure)
+### 7.3 Replay engine (`replay.ts`, pure, in the replay chunk)
 
-- Rebuilds each desk's state over the day from the events with the same rules as `effective` (thinking after 20 s
-  quiet, asleep after 3 or 15 min, done for 20 s), driven by `until`, so a replayed desk matches what the live office
-  showed.
-- **Time compression**: active spans (any desk awake, or a PR, run or deploy) play at a constant rate; quiet gaps over
-  10 min shrink to 1.5 s each; the total is clamped to 30 to 60 s. A day without events has nothing to play.
-- **Output**: a synthetic `OfficeSnapshot` per frame time (desks, a pipeline view of the day's runs and ships), fed to
-  the same scene as a live feed, so A's crew and B's pipeline render replay with no extra render code. Tasks show the
-  day's public titles or "Client project".
+- Rebuilds each desk's state over the day from the events with the same rules as `effective` (`RULES`, mirrored from
+  the Worker's `TIMING` and pinned equal by a test: thinking after an event's `until` plus 20 s, asleep after 3 or 15
+  min, done for 20 s, removed after 30 min, helpers for 10 min), so a replayed desk matches what the live office showed.
+- **Time compression** (`planReplay`): active stretches (an awake event until its session would sleep, a merge or
+  deploy plus 30 s, a run from its start to its end plus 30 s) play at 600 day seconds per playback second; a quiet gap
+  over 600 s plays in 1.5 s (less when there are many); the total is clamped to 30 to 60 s. A day with nothing to play
+  has no plan.
+- **Output** (`snapshotAt`): a synthetic v4-shaped `OfficeFeedSnapshot` per playback second (desks, the merges so far
+  as the GitHub feed, `today` counts so far, a pipeline view of the day's runs and ships), never parsed, cached or
+  served, fed to the same scene as a live feed through `useOfficeSource`, so A's crew and B's pipeline render a replay
+  with no extra render code. Tasks show the day's public titles or "Client project".
+- **Clock and feed** (`replayFeed.ts`): the playback clock steps only from the scene's frame (after the in-view gate and
+  the level-of-detail step), with no timer or rAF loop; the snapshot is published when its content changed, at most once
+  per 0.25 s of playback. A `seq` bumps on every play, seek and loop restart, and the scene's pipeline queue resets on it.
+- **Live is separate**: the beacon's signal, the minimap cue, the deploy beam and the point-and-go targets read the live
+  feed, so a replay never lights them; replayed deploys show only on the dock ring. A live event ends a replay at once
+  (owner decision Q4): a desk waking or asking, or a newer production deploy; an awake desk ends an idle-loop replay
+  (a day the visitor picked stays until "Back to live").
 
 ### 7.4 Experience
 
-- **Floor tiles**: a 6 x 4 grid of tiles (1.6 u, 0.4 u gaps) on the wing plaza floor lights one tile per merged PR in
-  the order merged (more than 24 brighten the grid in a second pass). Live, the tiles show today's merges; in a replay
-  they light as the PRs come. Instances of a second `HOLO_MODE.stage` mesh in the scene chunk (+1 call in the wing,
-  no new program). Tiles carry no text (the floor text rule).
+- **Floor tiles** (`tiles.ts`): a 6 x 4 grid of 1.6 u tiles with 0.4 u gaps on the wing's lead plaza (3 u past the slab
+  edge, on the road's axis) lights one tile per merged PR in the order merged (merges 25 to 48 brighten the grid in a
+  second pass). Live, the tiles show today's merges; in a replay the merges so far. One instanced mesh on the holo
+  program's stage mode (+1 call, no new program), through `holoFx` and a literal tile kind so the hall modules stay
+  out of the office chunk's graph. Tiles carry no text (the floor text rule). They are visible on the approach and in
+  the portrait stop views; at the desktop stop they are behind the camera, where the wall's GitHub half and the dock's
+  stack carry the merges.
 - **Idle loop**: when the live office has no awake desk for 30 s (semi-live, or all asleep) and is in view, and motion
-  is not reduced, the replay chunk loads and plays the latest day with events (today, else the newest of the last 7)
-  on a loop with a 6 s rest between loops. It is always labelled: the wall shows a "REPLAY" banner with the day
-  ("Replay · Mon 19 Oct" / "Putar ulang · Sen 19 Okt") and the time of day, every chip gets a "Replay" tag, the drawer a
-  badge and "Back to live". Any awake desk in a live snapshot ends the loop within one poll (crossfade 0.4 s).
-- **Controls** (summary drawer): the 8 days as buttons (empty days disabled), play and pause, and a scrubber
-  (`input type="range"`, `aria-valuetext` "14:05 WIB"). Reduced motion: no auto loop; play steps through the day in
-  1-hour jumps on demand, and the tiles show their end state.
+  is not reduced, the replay chunk loads and plays the latest day with events (today, else the newest of the window) on
+  a loop with a 6 s rest between loops. A failed or empty attempt is not retried for 300 s.
+- **Labels** (owner decision Q3), always visible: one "Replay" pill leads the chip row ("Replay · 14:05", the clock
+  alone on a phone), every chip's dot is a ring and its accessible name reads "Replay of <day>: ...", the wall shows a
+  violet banner in place of its status line ("Replay · Mon 19 Oct · 14:05" / the Indonesian day), and the drawer's
+  panels carry a "Replay" badge with the day and "Back to live", with a polite status region. The pill is aria-hidden;
+  the chips and the drawer carry the label for assistive technology.
+- **Controls** (summary drawer, their own lazy chunk loaded by the "Show day replay" press with the index): the 8 days as
+  buttons (empty days disabled), play and pause, and a native range (`aria-valuetext` "14:05 WIB"), "Partial day" for a
+  truncated day and "Replay unavailable" when the history is missing. Reduced motion: no idle loop; a picked day starts
+  paused and "Next hour" steps through it in 1-hour jumps, and the tiles jump to their level.
 
 ### 7.5 Budget and tests (C)
 
-- Expected: replay chunk 5 to 7 KB gzip, drawer body +1 to 2 KB; calls in the wing +1 (tiles).
+- Measured (decision [2026-10-22](../../decisions/2026-10-22-office-replay-budgets.md)): replay chunk 5,240 B (cap 5,854
+  B), controls chunk 826 B (cap 1,440 B), scene chunk +1,631 B (28,217 B), drawer body 7,018 B, office total 40,475 B of
+  40 KB; the session totals grew by 7,428 B each; calls in the wing +1 at most (tiles); no new program.
 - Unit: `office/history` storage (logging rules, `until`, caps, truncation, rollover, prune at 8 rows, privatize
-  scrub, keys never serialized), `office-history-endpoint` (index, day, window, junk queries, cache headers, ETag,
-  canonical cache key, disabled), `office/protocol` (`parseOfficeHistory` with hostile inputs), `office-replay`
-  (reconstruction equals `effective` on generated days, compression bounds 30 to 60 s, empty day, truncated day).
-- E2E: the idle loop starts on an all-asleep fixture with a history fixture, shows the label, stops on a live awake
-  snapshot; drawer controls; reduced motion stepping.
-- Security review of the storage, the endpoint and the replay parsing before merge.
+  scrub, keys never served), `history-endpoint` (index, day, window, junk queries, cache headers, ETag, canonical cache
+  key, disabled, 404 and 503), `protocol-history` (both parsers with hostile inputs), `office-replay` (reconstruction
+  equals `effective`, compression bounds 30 to 60 s, empty day, truncated day), `office-replay-feed`,
+  `office-replay-link`, `office-replay-chunk`, `office-tiles`, and the HUD tests for the pill, ring dots, badge and
+  controls.
+- E2E (`e2e/office.spec.ts`): the idle loop starts on an all-asleep fixture with a history fixture, shows the label and
+  the tiles, stops on a live event; drawer controls; reduced motion stepping; an unavailable history; the replay and
+  controls chunks load lazily. Perf: the replay chunk, the controls chunk and the replay looping at the office stops.
+- Security review of the storage, the endpoint and the replay parsing before merge (findings in the PR).
 
 ## 8. Budgets
 
 | Budget | Today | Target after C | Gate |
 |---|---|---|---|
-| Office chunks total (scene + replay + drawer body), gzip | 19.8 KB (14,290 + 5,996 B) | at most 40 KB, also after A2's ten desks (the office chunks' own cap); after B 33,069 B | new `BYTES_3D_BUDGET.officeTotal` 40 KB |
-| Office scene chunk | 14 KB cap | measured plus 0.6 KB per stage (after B: 26,586 B, cap 27,200 B) | `BYTES_3D_BUDGET.office` |
-| Office replay chunk (C) | none | about 7 KB | `BYTES_3D_BUDGET.officeReplay` |
-| Drawer body | 6 KB cap | measured plus 0.6 KB (after B: 6,483 B, cap 7,097 B; about 8 KB after C) | `BYTES_3D_BUDGET.officeBody` |
-| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | first frame grows only by the loader and the furniture shells (A2 does not move it); the session totals also count the watch chunk and, from A2, the office scene chunk (5.9: raised by the measured office bytes, about +27 KB approved); caps re-set to measured plus 0.6 KB per stage (after B: first frame 476,592 B full under `failAt` 477,594 B; session totals full 534,358 B and lite 518,224 B, caps 534,972 B and 518,838 B) | `BYTES_3D_BUDGET` |
-| Office watch chunk (A, every L1 session) | none | measured plus 0.6 KB, inside the session total (after B: 1,555 B, cap 2,075 B) | `BYTES_3D_BUDGET.officeWatch` |
+| Office chunks total (scene + drawer body + replay), gzip | 19.8 KB (14,290 + 5,996 B) | at most 40 KB, also after A2's ten desks (the office chunks' own cap); after B 33,069 B; after C 40,475 B (39.5 KB; owner Q1: the replay chunk is in it, the watch, beacon and controls chunks keep their own caps outside it) | `BYTES_3D_BUDGET.officeTotal` 40 KB |
+| Office scene chunk | 14 KB cap | measured plus 0.6 KB per stage (after C: 28,217 B, cap 28,831 B) | `BYTES_3D_BUDGET.office` |
+| Office replay chunk (C) | none | measured plus 0.6 KB: 5,240 B, cap 5,854 B (the engine, the feed, the label formatting and the replay view; in the session totals, measured with the idle loop triggered: owner Q2) | `BYTES_3D_BUDGET.officeReplay` |
+| Replay controls chunk (C, the drawer's press) | none | measured plus 0.6 KB: 826 B, cap 1,440 B, outside the 40 KB office gate and the session totals, like the beacon (owner decision) | `BYTES_3D_BUDGET.officeControls` |
+| Drawer body | 6 KB cap | measured plus 0.6 KB (after C: 7,018 B, cap 7,097 B) | `BYTES_3D_BUDGET.officeBody` |
+| Main path (first frame and session caps) | 462.2 / 491.1 / 475.4 KB | first frame grows only by the loader and the furniture shells (A2 does not move it); the session totals also count the watch chunk and, from A2, the office scene chunk (5.9: raised by the measured office bytes, about +27 KB approved); caps re-set to measured plus 0.6 KB per stage (after B: first frame 476,592 B full under `failAt` 477,594 B; after C: first frame 476,967 B full, 460,833 B lite, session totals full 541,786 B and lite 525,652 B, caps 542,400 B and 526,266 B) | `BYTES_3D_BUDGET` |
+| Office watch chunk (A, every L1 session) | none | measured plus 0.6 KB, inside the session total (after C: 1,737 B, cap 2,075 B) | `BYTES_3D_BUDGET.officeWatch` |
 | Beacon chunk (A, on the first ask; B, or the first fresh production deploy) | none | measured plus 0.6 KB, outside the session total (after B with the deploy beam: 2,043 B, cap 2,657 B) | `BYTES_3D_BUDGET.officeBeacon` |
-| L1 scene calls | 101 / 103 spawn, 51 / 53 stop | under 125 in every view, the live office in view from the spawn and the lane ring's south point included (A2); spawn +1 only while asking or a beam fires; stop +2 at most (beacon mesh, tiles). After B, with a burst playing and the beam running: spawn toward the wing 100 / 102, ring south 65 / 67, stop 44 / 45 | under 125 both tiers |
-| Shader programs per floor | baseline | baseline (stage-mode and dot-mode meshes reuse compiled programs) | `e2e/perf/baseline.json` plus 0 for the office |
+| L1 scene calls | 101 / 103 spawn, 51 / 53 stop | under 125 in every view, the live office in view from the spawn and the lane ring's south point included (A2); spawn +1 only while asking or a beam fires; stop +2 at most (beacon mesh, tiles). After B, with a burst playing and the beam running: spawn toward the wing 100 / 102, ring south 65 / 67, stop 44 / 45; after C, with the replay looping: spawn 101 / 103, spawn toward the wing 106 / 103, ring south 65 / 67, stop 44 / 45 (the tiles add at most 1) | under 125 both tiers |
+| Shader programs per floor | baseline | baseline (stage-mode and dot-mode meshes reuse compiled programs; the replay adds none, checked against the same page's count before it started) | `e2e/perf/baseline.json` plus 0 for the office |
 | Memory | zero growth | zero growth in geometries, textures and programs across a replay loop and live switches | perf memory gate |
 | Lite fps | holds | the crew's per-frame writes stay keyed; far LOD at about 4 fps (5.9); replay drives the same writers | perf lane, office stop and ring-south spots |
 
 From A2 the office scene chunk loads on every L1 visit at idle after the first frame and counts in the 3D session
-totals (R5, 5.9); the drawer body loads on an office drawer, the beacon chunk (unless merged into the scene chunk) on
-the first ask, and the replay chunk only on the idle-loop condition or the drawer control.
+totals (R5, 5.9); the drawer body loads on an office drawer, the beacon chunk on the first ask or fresh deploy, the
+replay chunk on the idle-loop condition or the drawer control (it counts in the session totals, since a quiet L1 visit
+loads it), and the replay controls chunk (loaded from the replay chunk) only on the drawer's "Show day replay" press.
 
 ## 9. Privacy and security
 
 - The only new data leaving the relay is the helper count (0 to 9) per session (5.8); otherwise stages A to C use
   the v1 beat unchanged. The history stores what the doc already
-  holds, minus the session hash in served output (per-day ordinals that do not link across days).
-- Titles, job names and branch-derived text pass `cleanTitle` at ingest and again at history read time; repositories
-  must be allowlisted and in the known-public set at read time.
+  holds, minus the session hash and any branch in served output (per-day ordinals that do not link across days).
+- Titles, job names and branch-derived text pass `cleanTitle` at ingest and again at history read time (the Worker's
+  `cleanHistory`); repositories must be allowlisted and in the known-public set at read time.
 - Every new text reaches the page through React text nodes or canvas `fillText` (never HTML), URLs through
   `safeGithubUrl`.
 - Endpoints: strict query validation, canonical cache keys, bounded response sizes (history under about 150 KB raw),
@@ -589,12 +630,13 @@ the first ask, and the replay chunk only on the idle-loop condition or the drawe
 
 | Case | Behaviour |
 |---|---|
-| Offline or errors | Unchanged rules: last snapshot kept 60 s, then every Rover docks asleep and the chips say offline; the watch clears `needsKurniadi` after 60 s without a good answer (no stale beacon); the idle loop may still play a cached history day, labelled. |
+| Offline or errors | Unchanged rules: last snapshot kept 60 s, then every Rover docks asleep and the chips say offline; the watch clears `needsKurniadi` after 60 s without a good answer (no stale beacon); the idle loop may still play a cached history day, labelled (the controller keeps days fetched in the last minute and plays a day it already has). |
 | Stale data (paused poller, hidden tab) | Crew holds its last pose; on resume the first fresh snapshot retargets with normal transitions; pipeline events older than 60 s are dropped. |
-| No events today | The idle loop picks the newest of the last 7 days with events; with none at all, the office stays docked asleep (no replay label). |
-| Disabled office | Everything hides as today; the beacon, minimap cue, tiles and replay never show. |
-| History endpoint down or invalid | No replay; the live office as before; the drawer's replay controls show "Replay unavailable". |
-| Truncated day | Replays what it has; the drawer notes "Partial day". |
+| No events today | The idle loop picks the newest of the 8 days with events; with none at all, the office stays docked asleep (no replay label) and the next attempt waits 300 s. |
+| Disabled office | Everything hides as today; the beacon, minimap cue, tiles and replay never show (the history endpoint answers `{ v: 1, enabled: false }`). |
+| History endpoint down or invalid | No replay; the live office as before; the drawer's replay controls show "Replay unavailable" and the idle loop waits 300 s. A Worker rolled back to before C has no `/history`, so the Function answers 503; its stored rows wait untouched until a roll forward prunes them. |
+| Live event during a replay | A desk waking or asking, or a newer production deploy, ends any replay at once; an awake desk ends an idle-loop replay (owner decision Q4). Riding off L1 ends it too. |
+| Truncated day | Replays what it has (the counts of merges, runs and deploys kept growing); the drawer notes "Partial day". |
 | Webhook gaps (missed job events) | Lanes show what arrived; a finished run fills its remaining lanes to its conclusion. |
 | Old cached client after a deploy | Every version is served byte for byte as it was (v1 for old clients, v2 for stage A clients, v3 for A2 clients); a new field only ever appears in a new version that old clients never request. The Worker deploys before the Pages upload, so a new client always meets a Worker that knows its version; a client asking a version an older Worker (after a rollback) does not know gets that Worker's v1 body, which the client's parser accepts as a fallback with no helpers or pipeline. |
 | Many asks at once | One beacon at the plaza centre; every asking Rover waves its flag. |
@@ -602,11 +644,13 @@ the first ask, and the replay chunk only on the idle-loop condition or the drawe
 
 ## 11. Accessibility
 
-- Reduced motion: every state has a held pose (5.2); no packets, flights, spins, flickers or auto loops; the replay
-  steps on demand; transitions cut.
+- Reduced motion: every state has a held pose (5.2); no packets, flights, spins, flickers or auto loops; a picked
+  replay day starts paused and steps on demand ("Next hour"); the tiles jump; transitions cut.
 - Screen readers: the crew summary live region (5.6); the CI drawer as the tower's text alternative (6.3); replay
-  controls are real buttons and a labelled range; the replay label is text in the drawer and the chips, not only on the
-  wall's canvas.
+  controls are real buttons and a labelled range (`aria-valuetext` "14:05 WIB"); the replay label is text in the drawer
+  badge (with a polite status region, "Replaying Mon 19 Oct") and in every chip's accessible name ("Replay of ..."), not
+  only on the wall's canvas; the pill is aria-hidden (the chips and the drawer carry the label) and the ringed dots are
+  a shape cue besides the colour.
 - Flashing: at most 3 flashes per second anywhere; the beacon pulses at 0.6 Hz.
 - Colour is never the only cue: each state keeps its face, screen, pose and chip text.
 

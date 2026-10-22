@@ -41,11 +41,21 @@ export interface OfficeView {
   /** The v4 CI pipeline: null when the view is off, offline or disabled, or the snapshot carries none. */
   pipeline: OfficePipeline | null;
   updatedAt: number | null;
+  /** A day replay's view (its day, the playback's `seq` and whether the day was truncated); null for the live feed. */
+  replay: OfficeViewReplay | null;
+}
+
+export interface OfficeViewReplay {
+  day: string;
+  seq: number;
+  truncated: boolean;
+  /** The day as "Mon 19 Oct" / "Sen 19 Okt" in the page's locale, formatted by the replay chunk. */
+  label: string;
 }
 
 const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [], helpers: 0 });
 
-export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): OfficeView {
+export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">, replay: OfficeViewReplay | null = null): OfficeView {
   const snap = feed.status === "disabled" || !feed.snapshot ? null : withSeats(feed.snapshot, OFFICE_SEATS);
   const mode: OfficeViewMode = feed.status === "offline" ? "offline" : snap ? snap.mode : "off";
   const sleeping = mode === "off" || mode === "offline";
@@ -77,6 +87,7 @@ export function officeView(feed: Pick<OfficeFeed, "status" | "snapshot">): Offic
     today: live ? live.today : null,
     pipeline: live?.pipeline ?? null,
     updatedAt: snap ? snap.updatedAt : null,
+    replay,
   };
 }
 

@@ -24,6 +24,8 @@ export const officeRuntime = {
   leads: Array.from({ length: OFFICE_SEATS }, (): HTMLElement | null => null),
   /** The ticks where the leader lines meet the screen wall's top. */
   ticks: Array.from({ length: OFFICE_SEATS }, (): HTMLElement | null => null),
+  /** The replay pill leading the row (the replay chunk's `Pill` registers it; `OfficeWatch` places it with the chips). */
+  pill: null as HTMLElement | null,
   chipFar: Array.from({ length: OFFICE_SEATS }, () => true),
   compact: false,
   /** The scene's crew actors in slot order (empty while the Rovers are not mounted). */

@@ -10,6 +10,14 @@ import {
   type OfficeResponseV4,
   type OfficeSnapshotV1,
 } from "../../src/lib/office/protocol";
+import {
+  historyWindow,
+  OFFICE_HISTORY_PATH,
+  parseOfficeHistory,
+  parseOfficeHistoryIndex,
+  type OfficeHistoryIndexResponse,
+  type OfficeHistoryResponse,
+} from "../../src/lib/office/protocolHistory";
 import { parseOfficeResponseV4 } from "../../src/lib/office/protocolV4";
 import { etagOf, readCapped } from "./security";
 import type { EdgeCache, OfficeEnv, PagesContext } from "./types";
@@ -31,7 +39,7 @@ function defaultCache(): EdgeCache | null {
   return store?.default ?? null;
 }
 
-async function jsonAnswer(value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | OfficeResponseV4, cacheControl: string): Promise<Response> {
+async function jsonAnswer(value: OfficeResponseV1 | OfficeResponseV2 | OfficeResponseV3 | OfficeResponseV4 | OfficeHistoryIndexResponse | OfficeHistoryResponse, cacheControl: string): Promise<Response> {
   const body = JSON.stringify(value);
   return new Response(body, {
     status: 200,
@@ -86,6 +94,69 @@ export function createOfficeSnapshotHandler(opts: { cache?: () => EdgeCache | nu
       value = null;
     }
     const out = await jsonAnswer(value ?? version.off(now()), SNAPSHOT_CACHE);
+    if (cache) waitUntil(cache.put(key, out.clone()));
+    return conditional(request, out);
+  };
+}
+
+/** One history route, on the VERSIONS pattern: its canonical edge cache key, the Worker URL, the validator and its Cache-Control. */
+export interface HistoryRoute {
+  key: string;
+  worker: string;
+  parse: (raw: unknown) => OfficeHistoryIndexResponse | OfficeHistoryResponse | null;
+  cache: string;
+}
+
+const HISTORY_RECENT = "public, max-age=30, stale-while-revalidate=60";
+const HISTORY_PAST = "public, max-age=3600, stale-while-revalidate=300";
+const HISTORY_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * The history routes, like VERSIONS: no query is the index; exactly one `day` inside the 8-day WIB window is that day
+ * (today cached like the index, past days for an hour: not immutable, a privatize can scrub them); anything else null.
+ * The key is built from the validated values, never the raw URL, so junk queries cannot fill the cache.
+ */
+export function historyRoute(url: URL, now: number): HistoryRoute | null {
+  const names = [...url.searchParams.keys()];
+  if (names.length === 0) return { key: OFFICE_HISTORY_PATH, worker: `${WORKER}/history`, parse: parseOfficeHistoryIndex, cache: HISTORY_RECENT };
+  const day = url.searchParams.get("day");
+  if (names.length !== 1 || names[0] !== "day" || day === null || !HISTORY_DAY.test(day) || !historyWindow(now).includes(day)) return null;
+  return { key: `${OFFICE_HISTORY_PATH}?day=${day}`, worker: `${WORKER}/history?day=${day}`, parse: parseOfficeHistory, cache: day === wibDay(now) ? HISTORY_RECENT : HISTORY_PAST };
+}
+
+const notFoundDay = () =>
+  new Response('{"v":1,"error":"day"}', { status: 404, headers: { "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store" } });
+
+/**
+ * `GET /api/office/history` (the 8-day index) and `GET /api/office/history?day=YYYY-MM-DD` (one WIB day) from the
+ * hq-office Worker, validated again, edge-cached per canonical key, with an ETag (304 on a matching If-None-Match).
+ * A Worker 404 for a day (the window turned over between the edge and the Durable Object) is the fixed 404; any other
+ * failure a 503 with no-store (the client shows "Replay unavailable").
+ */
+export function createOfficeHistoryHandler(opts: { cache?: () => EdgeCache | null; now?: () => number } = {}) {
+  const cacheOf = opts.cache ?? defaultCache;
+  const now = opts.now ?? Date.now;
+  return async function handle({ request, env, waitUntil }: PagesContext<OfficeEnv>): Promise<Response> {
+    const method = request.method;
+    if (method !== "GET" && method !== "HEAD") return noStore(405, { Allow: "GET, HEAD" });
+    if (env.OFFICE_ENABLED !== "true") return conditional(request, await jsonAnswer({ v: 1, enabled: false }, DISABLED_CACHE));
+    const route = historyRoute(new URL(request.url), now());
+    if (!route) return notFoundDay();
+    if (!env.OFFICE) return noStore(503);
+    const cache = cacheOf();
+    const key = new Request(new URL(route.key, request.url).toString(), { method: "GET" });
+    const hit = await cache?.match(key);
+    if (hit) return conditional(request, hit);
+    let value: ReturnType<HistoryRoute["parse"]> = null;
+    try {
+      const res = await env.OFFICE.fetch(route.worker);
+      if (res.status === 404 && route.key !== OFFICE_HISTORY_PATH) return notFoundDay();
+      value = res.ok ? route.parse(await res.json()) : null;
+    } catch {
+      value = null;
+    }
+    if (!value) return noStore(503);
+    const out = await jsonAnswer(value, route.cache);
     if (cache) waitUntil(cache.put(key, out.clone()));
     return conditional(request, out);
   };

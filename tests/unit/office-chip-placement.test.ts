@@ -66,6 +66,8 @@ const CHIP = { far: { w: 128, h: 32 }, near: { w: 176, h: 40 }, compact: { w: CH
  * and the bottom band (the hint's top is 62 px over the bottom edge, 82 px on a portrait tablet).
  */
 const HUD = { bottom: 84 } as const;
+/** A replay pill's widest widths (px): "Putar ulang · 14:05" and, on a phone (ten dots in two rows leave 80 px), the clock alone. */
+const PILL = { wide: 130, phone: 70 } as const;
 
 function hudBoxes({ width: w, height: h }: { width: number; height: number }, coarse: boolean): { id: string; box: ScreenBox }[] {
   const layout = hudLayout(viewportClass(w, h), coarse);
@@ -159,13 +161,16 @@ function wallEdge(camera: PerspectiveCamera, { width, height }: { width: number;
  * the wall above an end Rover, the tick clear of the HUD boxes), faded to the head where the chip sits over the level;
  * hidden where the line would still cross the HUD or a chip.
  */
-function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was = ALL.map(() => true) as readonly boolean[], still = true, named = ALL as readonly number[] } = {}) {
+function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was = ALL.map(() => true) as readonly boolean[], still = true, named = ALL as readonly number[], pill = 0 } = {}) {
   const { width, height } = size;
   const viewport = viewportClass(width, height);
   const hud = hudLayout(viewport, size.coarse ?? false);
   const top = OFFICE_CHIP_TOP[hud === "phone" ? "mobile" : "desktop"];
   const boxes = officeHudBoxes(width, height, hud);
   const bounds = chipRowBounds(width, top, boxes);
+  // A day replay's pill (`pill` px wide) sits at the row's left bound; the chips' bounds start after it and the gap (`OfficeWatch`).
+  const pillBox: ScreenBox | null = pill ? { x0: bounds.left, y0: top, x1: bounds.left + pill, y1: top + CHIP_ROW.dot } : null;
+  if (pill) bounds.left += pill + CHIP_ROW.gap;
   const max = chipMaxWidth(bounds, named.length, slots.length - named.length);
   const small = compact || viewport === "mobile" || chipsDotsOnly(max);
   const oneLine = chipsOneLine(viewport, compact, max);
@@ -218,7 +223,7 @@ function chipRow(camera: PerspectiveCamera, size: Size, { compact = false, was =
     if (blocked(lead)) chip.blocked = lead;
     else chip.lead = lead;
   });
-  return { top, bounds, max, oneLine, two: rows.slice(0, shown.length).some((r) => r === 1), chips };
+  return { top, bounds, max, oneLine, two: rows.slice(0, shown.length).some((r) => r === 1), chips, pill: pillBox };
 }
 
 /** Whether the leader line crosses the box (`segmentHitsBox`, the scene's test). */
@@ -251,6 +256,11 @@ function expectRow(row: ReturnType<typeof chipRow>, size: Size, what: string) {
       expect(boxesOverlap(box!, other.box!), `${name} on chip ${other.slot}`).toBe(false);
       if (lead) expect(segmentHits(lead, other.box!), `${name}'s leader line under chip ${other.slot}`).toBe(false);
     }
+  }
+  if (row.pill) {
+    for (const { id, box: h } of hud) expect(boxesOverlap(row.pill, h), `${what}: the pill on the ${id}`).toBe(false);
+    for (const c of shown) expect(boxesOverlap(row.pill, c.box!), `${what}: the pill on chip ${c.slot}`).toBe(false);
+    expect(row.pill.x0, `${what}: the pill inside the screen`).toBeGreaterThanOrEqual(0);
   }
   const byHead = [...shown].sort((a, b) => a.head.x - b.head.x || a.slot - b.slot);
   // In two rows neighbours alternate rows, `pitch` apart (up to a dot's width, `layoutChipRows`).
@@ -652,6 +662,16 @@ describe("Agent Office chips at the office stop", { timeout: 30_000 }, () => {
         for (const c of row.chips) if (dots || !named.includes(c.slot)) expect(c.box!.x1 - c.box!.x0, `slot ${c.slot} a dot`).toBeCloseTo(CHIP.compact.w, 6);
         if (!dots) expect(row.max, "a name fits").toBeGreaterThanOrEqual(CHIP_ROW.name);
         expectRow(row, size, `stop, ${named.length} sessions`);
+      }
+    });
+
+    it("keep their places clear of the HUD and of each other with a day replay's pill leading the row (the chips' bounds start after it; on a phone the pill is the clock alone)", () => {
+      const pill = compact ? PILL.phone : PILL.wide;
+      for (const named of [ALL, FRONT]) {
+        const row = chipRow(stopCamera(width, height), size, { named, pill });
+        expect(row.pill, "the pill leads the row").not.toBeNull();
+        for (const c of row.chips) expect(c.box, `slot ${c.slot} on screen`).not.toBeNull();
+        expectRow(row, size, `stop with the pill, ${named.length} sessions`);
       }
     });
 

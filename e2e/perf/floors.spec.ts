@@ -1,10 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route, rideTo } from "../b1";
+import en from "../../messages/en.json";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
 import { yawLooking } from "../../src/experience/camera/look";
 import { LOBBY } from "../../src/experience/config";
-import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, turnCameraTo, waitForCameraSettle } from "../hq";
-import { asV1, asV3, crewA, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, shipStep } from "../office-fixtures";
+import { driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, turnCameraTo, waitForCameraSettle, waitForPhase } from "../hq";
+import { asleepAll, asV1, asV3, crewA, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, serveHistory, shipStep } from "../office-fixtures";
 import baseline from "./baseline.json";
 import { waitForStablePrograms, writePerfEntry } from "./helpers";
 
@@ -45,7 +46,7 @@ const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
 type OfficeWindow = {
   __hq: {
     office?: { load(): Promise<void>; test(): { poll(): void; advance(ms: number): void } | null };
-    probes: { office?: { loaded: boolean; beacon?: boolean; inView?: boolean; far?: boolean; beam?: boolean; pipe?: { bursts: number } } };
+    probes: { office?: { loaded: boolean; beacon?: boolean; inView?: boolean; far?: boolean; beam?: boolean; pipe?: { bursts: number }; tiles?: number; replay?: { status: string; playS: number; seq: number; auto: boolean } } };
     frames(): number;
   };
 };
@@ -131,7 +132,7 @@ async function fps(page: Page, ms = 3_000) {
  * (`settled-<floor>-<pose>`), so the program baseline keeps one entry per floor. `before` runs after the programs
  * settled, right before the draw calls are read (the office's pipeline effects).
  */
-async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string, before?: () => Promise<void>) {
+async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string, before?: () => Promise<void>): Promise<{ programs: number }> {
   await waitForCameraSettle(page);
   const programs = await waitForStablePrograms(page);
   await before?.();
@@ -151,7 +152,34 @@ async function measureFloor(page: Page, tier: "lite" | "full", floor: string, po
   const base = PROGRAMS[tier]?.[floor];
   expect(base, `no shader program baseline for ${tier} ${floor}: run "bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json"`).toBeDefined();
   expect(programs, `${programs} programs vs baseline ${base} + ${PROGRAM_HEADROOM}`).toBeLessThanOrEqual(base! + PROGRAM_HEADROOM);
+  return { programs };
 }
+
+const replayOf = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office?.replay ?? null);
+
+/**
+ * Starts the idle loop's day replay on a quiet office (`office` answers every desk asleep): the poller's clock past the 30 s
+ * quiet rule, again if the replay did not start (the office out of view restarts the quiet timer), until it plays or rests.
+ */
+async function startReplay(page: Page) {
+  for (let i = 0; i < 6 && !["loading", "playing", "resting"].includes((await replayOf(page))?.status ?? "off"); i++) {
+    await Promise.all([page.waitForResponse(OFFICE_API_V4), page.evaluate(() => (window as unknown as OfficeWindow).__hq.office?.test()?.advance(31_000))]);
+    await page.waitForFunction(() => (window as unknown as OfficeWindow).__hq.probes.office?.replay?.status !== "off", null, { timeout: 20_000 }).catch(() => undefined);
+  }
+  await page.waitForFunction(() => ["playing", "resting"].includes((window as unknown as OfficeWindow).__hq.probes.office?.replay?.status ?? ""), null, { timeout: 90_000 });
+}
+
+/** Waits until the replay plays at `playS` or later: the busy part of the fixture day (every desk awake, merges, runs, the deploy). */
+const playedTo = async (page: Page, playS: number): Promise<void> => {
+  await page.waitForFunction(
+    (s) => {
+      const r = (window as unknown as OfficeWindow).__hq.probes.office?.replay;
+      return r?.status === "playing" && r.playS >= s;
+    },
+    playS,
+    { timeout: 180_000 },
+  );
+};
 
 for (const tier of ["lite", "full"] as const) {
   for (const { floor, path } of FLOORS) {
@@ -255,5 +283,66 @@ for (const tier of ["lite", "full"] as const) {
     const after = await readGpuCounters(page);
     console.log(`L1 office ${tier} live switches: geometries ${gpu.geometries} to ${after.geometries}, textures ${gpu.textures} to ${after.textures}, programs ${gpu.programs} to ${after.programs}`);
     expect(after).toEqual(gpu);
+  });
+
+  // The day replay looping (owner decision 2026-10-22; the idle loop on a quiet office, the fixture day: ten desks, helpers,
+  // merges, runs, one deploy): at the office stop and at the lane ring's south point, in the busy part of the day and later in
+  // it, the same L1 cap and the program baseline with no new program, the lite frame rate within the still office's band, and
+  // the GPU objects flat across three replay loops and a seek.
+  test(`L1 ${tier}: settled draw calls and shader programs with the day replay looping`, async ({ page }) => {
+    test.setTimeout(900_000);
+    const office = await servePipeline(page);
+    await serveHistory(page);
+    office.set(asleepAll(Date.now()));
+    await enterFloorRoute(page, "/en", { tier });
+    await settleOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await pollOffice(page);
+    const still = await fps(page);
+    // The programs the still office settled at: the replay adds none (the count of a full-tier page is fixed by when its precompile resolved).
+    const programs = await waitForStablePrograms(page);
+    await startReplay(page);
+    await playedTo(page, 4);
+    const stop = await measureFloor(page, tier, "L1", "replay", () => playedTo(page, 4));
+    expect(stop.programs, `the replay adds no program (${programs} before it)`).toBeLessThanOrEqual(programs);
+    // Later in the day (runs, the deploy, the second merge) under the same cap.
+    await playedTo(page, 17);
+    expect((await expectRenderBudget(page)).sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
+    const playing = await fps(page);
+    console.log(`L1 replay ${tier}: ${still.toFixed(1)} fps still, ${playing.toFixed(1)} fps with the replay looping`);
+    if (tier === "lite") expect(playing, `${playing.toFixed(1)} fps with the replay vs ${still.toFixed(1)} still`).toBeGreaterThanOrEqual(still * 0.75);
+    // The lane ring's south point: the replay goes on there (restarted if the office left the view on the way).
+    const south = yawLooking({ x: 0, z: 1 });
+    await driveTo(page, { x: LOBBY.hologram.x, z: LOBBY.hologram.z + LOBBY.laneRadius }, 120_000);
+    await turnCameraTo(page, south);
+    await page.waitForFunction(() => (window as unknown as OfficeWindow).__hq.probes.office?.inView === true, null, { timeout: 60_000 });
+    await startReplay(page);
+    const ring = await measureFloor(page, tier, "L1", "ring-south-replay", () => playedTo(page, 4));
+    expect(ring.programs, `the replay adds no program (${programs} before it)`).toBeLessThanOrEqual(programs);
+    // Three replay loops (the range's End ends one, the loop restarts) and a seek into the middle of the day, GPU objects flat.
+    await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office"));
+    await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "summary", { timeout: 60_000 });
+    await page.getByRole("button", { name: en.office["3d"].replay.open }).click();
+    const range = page.getByRole("slider", { name: en.office["3d"].replay.time });
+    await expect(range).toBeEnabled({ timeout: 30_000 });
+    await playedTo(page, 1);
+    await waitForStablePrograms(page);
+    const gpu = await readGpuCounters(page);
+    for (let i = 0; i < 3; i++) {
+      const seq = (await replayOf(page))!.seq;
+      await range.press("End");
+      await page.waitForFunction((seq) => {
+        const r = (window as unknown as OfficeWindow).__hq.probes.office?.replay;
+        return r !== undefined && r.seq > seq && r.status === "playing";
+      }, seq, { timeout: 180_000 });
+    }
+    await range.fill("12");
+    await playedTo(page, 13);
+    const after = await readGpuCounters(page);
+    console.log(`L1 replay ${tier} loops and a seek: geometries ${gpu.geometries} to ${after.geometries}, textures ${gpu.textures} to ${after.textures}, programs ${gpu.programs} to ${after.programs}`);
+    expect(after).toEqual(gpu);
+    await page.keyboard.press("Escape");
+    await waitForPhase(page, "explore");
   });
 }

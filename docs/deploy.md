@@ -229,7 +229,7 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 - Budgets (tighter than appendix 08 since the October 2026 performance pass): LCP under 2000 ms, CLS under 0.01, TBT under 200 ms (error level, median run); transfer bytes per page at most 60 KB of fonts, 82 KB of HTML (raised from 80 KB on 2026-10-18 as an owner-approved stopgap), 20 KB of CSS and 240 KB of JavaScript (error level); performance score at least 0.9, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
 - Per-chunk diff: after the run, `scripts/perf-base.sh` downloads `lighthouse-reports` of the last green `main` push run and `bun scripts/perf-summary.ts lhci` writes "Page View JavaScript per chunk" to the job summary: total per page, share of the 240 KB budget (a warning at 90%), and the chunks added or removed against main (names are content hashes, so a changed chunk shows as one removed and one added row). The 3D side (3D JS after the gate, the per-floor chunk sizes, floors, peaks, memory) is in the `Build, CV and e2e` job summary, from the `3D perf gates` job (appendix 08 section 2).
-- 3D bytes (`e2e/perf/bytes-3d.spec.ts`, budgets in `e2e/budgets.ts` `BYTES_3D_BUDGET`): the main path before the first frame (measured with `?prefetch=off`) fails at 465.1 KB gzip per tier; each on-demand floor chunk has its own cap (L3 20 KB, L4 16 KB, RF 8 KB); the session total, main path plus every floor chunk that the idle prefetch downloads, is capped at 494.1 KB on full and 478.3 KB on lite (owner decisions 2026-10-19: each cap is the measured value plus about 0.6 KB, so creep is caught early); the Agent Office's lazy scene and drawer body chunks have their own caps outside it (14 KB and 6 KB). Raise a cap only with an owner note in the PR.
+- 3D bytes (`e2e/perf/bytes-3d.spec.ts`, budgets in `e2e/budgets.ts` `BYTES_3D_BUDGET`): the main path before the first frame (measured with `?prefetch=off`) fails at 466.4 KB gzip per tier; each on-demand floor chunk has its own cap (L3 20 KB, L4 16 KB, RF 8 KB); the session total, main path plus every floor chunk that the idle prefetch downloads, is capped at 529.7 KB on full and 513.9 KB on lite (owner decisions 2026-10-19: each cap is the measured value plus about 0.6 KB, so creep is caught early; the office's watch, scene and replay chunks are in it); the Agent Office's drawer body and its beacon and replay controls chunks have their own caps outside it, and the scene, drawer body and replay chunks share a 40 KB office total. Raise a cap only with an owner note in the PR.
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
 - Blocking: a failed error-level budget fails `Lighthouse CI`, and the aggregate `Build, CV and e2e` job (the required check) needs it, so a PR cannot merge over budget. Branch rules may also list `Lighthouse CI` directly.
 - LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint, so the bytes of the HTML, the CSS and the preloaded fonts decide it (the text paints before any JavaScript runs). Keep these measures when changing fonts, the layout or the build:
@@ -427,7 +427,7 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 ## 18. Agent Office (hq-office)
 
 - The Worker `hq-office` (`workers/office/`) holds the office state in a SQLite-backed Durable Object; the Pages
-  Functions `/api/office`, `/api/office/beat` and `/api/office/github` reach it through the service binding `OFFICE`.
+  Functions `/api/office`, `/api/office/history`, `/api/office/beat` and `/api/office/github` reach it through the service binding `OFFICE`.
 - `deploy.yml` deploys it inside the Pages job ("Cloudflare Pages production"), after the gates (fast path still
   open, complete green main CI) and before the upload, because Pages rejects a deploy whose service binding names a
   missing Worker. It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` from the `production` environment secrets `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET` (GitHub rejects secret names starting with `GITHUB_`); a missing secret
@@ -442,7 +442,8 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
   rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2`; one rolled back to before
   v3 answers v1 to `?v=3` (read as v3) and keeps reading the stored document: back-row seats are stored apart from
   the front-row `slot`, so it counts those sessions in `extra` and seats them on its five desks as before (no mode
-  off; see the Worker README).
+  off; see the Worker README); one rolled back to before the day replay has no `/history`: the index answers 503 (a day
+  request, the fixed 404) and the drawer says "Replay unavailable" (its stored `log:` rows wait untouched).
 - `GET /api/office` (v1), `GET /api/office?v=2` (v2) and `GET /api/office?v=3` (v3, ten seats), each under its own
   edge cache key, answer with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`).

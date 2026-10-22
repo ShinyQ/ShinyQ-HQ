@@ -55,6 +55,15 @@ describe("Agent Office view model", () => {
     expect(officeView({ status: "ready", snapshot: OFFICE_FIXTURES_V3.busy as OfficeFeedSnapshot }).pipeline).toBeNull();
   });
 
+  it("marks a replay's view with its day, seq and truncation (null for the live feed), the rest read the same way", () => {
+    const snapshot = OFFICE_FIXTURES_V4.busy as OfficeFeedSnapshot;
+    const live = officeView({ status: "ready", snapshot });
+    expect(live.replay).toBeNull();
+    const replay = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 2, truncated: false, label: "Sun 18 Oct" });
+    expect(replay.replay).toEqual({ day: "2026-10-18", seq: 2, truncated: false, label: "Sun 18 Oct" });
+    expect({ ...replay, replay: null }).toEqual(live);
+  });
+
   it("always shows ten Rovers in slot order, live desks with their state, title only when public", () => {
     const view = ready(statesA(NOW));
     expect(view.mode).toBe("live");

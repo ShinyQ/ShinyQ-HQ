@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { OFFICE_STATES, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, type OfficeSnapshotV1, type OfficeSnapshotV2, type OfficeSnapshotV3, type OfficeSnapshotV4 } from "@/lib/office/protocol";
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 import { hmacHex } from "../../workers/office/src/crypto";
 import { Office } from "../../workers/office/src/office";
-import { emptyDoc, view, viewV2, viewV3, viewV4, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
+import { dayStart, historyWindow, parseOfficeHistory, parseOfficeHistoryIndex, type OfficeHistoryV1 } from "@/lib/office/protocolHistory";
+import { emptyLog, historyDay, historyIndex, logKey, type DayLog } from "../../workers/office/src/history";
+import { emptyDoc, view, viewV2, viewV3, viewV4, type GithubUpdate, type OfficeDoc, type SessionRecord } from "../../workers/office/src/state";
 import type { DurableObjectStateLike, OfficeWorkerEnv } from "../../workers/office/src/types";
 import { createOfficeWorker } from "../../workers/office/src/worker";
 
@@ -11,21 +13,35 @@ const T0 = Date.UTC(2026, 9, 18, 8, 0, 0);
 const KEY = "ingest-key";
 const HOOK = "webhook-secret";
 
+/** The SQLite-backed storage API as a Map: `writes` keeps the row keys of every put call, `list` is sorted with an exclusive `end`. */
 function memoryStorage() {
   const map = new Map<string, unknown>();
+  const writes: string[][] = [];
+  const get = (async (key: string | string[]) => {
+    if (typeof key === "string") return structuredClone(map.get(key));
+    return new Map(key.filter((k) => map.has(k)).map((k) => [k, structuredClone(map.get(k))]));
+  }) as DurableObjectStateLike["storage"]["get"];
+  const put = (async (key: string | Record<string, unknown>, value?: unknown) => {
+    const rows = typeof key === "string" ? { [key]: value } : key;
+    writes.push(Object.keys(rows).sort());
+    for (const [k, v] of Object.entries(rows)) map.set(k, structuredClone(v));
+  }) as DurableObjectStateLike["storage"]["put"];
   const storage: DurableObjectStateLike["storage"] = {
-    async get<T>(key: string) {
-      return map.get(key) as T | undefined;
+    get,
+    put,
+    async delete(keys: string[]) {
+      return keys.filter((k) => map.delete(k)).length;
     },
-    async put<T>(key: string, value: T) {
-      map.set(key, structuredClone(value));
+    async list<T>({ prefix, end }: { prefix: string; end?: string }) {
+      const keys = [...map.keys()].filter((k) => k.startsWith(prefix) && (end === undefined || k < end)).sort();
+      return new Map(keys.map((k) => [k, structuredClone(map.get(k)) as T]));
     },
   };
-  return { map, ctx: { storage } };
+  return { map, writes, ctx: { storage } };
 }
 
 function setup(now = () => T0) {
-  const { map, ctx } = memoryStorage();
+  const { map, writes, ctx } = memoryStorage();
   const office = new Office(ctx, {} as OfficeWorkerEnv, now);
   const env: OfficeWorkerEnv = {
     OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: (input: string, init?: RequestInit) => office.fetch(new Request(input, init)) }) },
@@ -35,7 +51,7 @@ function setup(now = () => T0) {
   };
   const worker = createOfficeWorker({ blocklist: ["acme bank"], now });
   const call = (path: string, init?: RequestInit) => worker.fetch(new Request(`https://hq-office${path}`, init), env);
-  return { map, env, call };
+  return { map, writes, env, call };
 }
 
 async function signedBeat(extra: Record<string, unknown> = {}, key = KEY) {
@@ -60,7 +76,7 @@ describe("hq-office Worker", () => {
   it("accepts a signed beat and stores one document", async () => {
     const { call, map } = setup();
     expect((await call("/beat", await signedBeat())).status).toBe(204);
-    expect([...map.keys()]).toEqual(["doc"]);
+    expect([...map.keys()]).toEqual(["doc", "log:2026-10-18"]);
     expect((await snapshot(call)).desks).toMatchObject([{ slot: 0, agent: "copilot", state: "working" }]);
   });
 
@@ -194,21 +210,256 @@ describe("hq-office Worker", () => {
     const second = new Office({ storage: ctx.storage }, {} as OfficeWorkerEnv, () => T0 + 1000);
     const snap = (await (await second.fetch(new Request("https://office/snapshot"))).json()) as OfficeSnapshotV1;
     expect(snap.desks).toMatchObject([{ agent: "codex", state: "testing" }]);
-    expect(map.size).toBe(1);
+    expect([...map.keys()]).toEqual(["doc", "log:2026-10-18"]);
   });
 
   it("moves back-row seats stored in `slot` to `seat` on load and writes the document once", async () => {
-    const { map, ctx } = memoryStorage();
+    const { map, writes, ctx } = memoryStorage();
     const doc = emptyDoc(T0);
     const rec = (n: number, slot: number): SessionRecord => ({ id: n.toString(16).padStart(64, "0"), agent: "codex", slot, firstSeen: T0 + n, lastBeat: T0, state: "working", activity: "editing", since: T0, recent: [] });
     map.set("doc", { ...doc, sessions: [0, 1, 2, 3, 4, 5, 6].map((n) => rec(n, n)) });
-    let puts = 0;
-    const office = new Office({ storage: { get: ctx.storage.get, put: async (k, v) => (puts++, ctx.storage.put(k, v)) } }, {} as OfficeWorkerEnv, () => T0 + 1000);
+    const office = new Office(ctx, {} as OfficeWorkerEnv, () => T0 + 1000);
     const v3 = (await (await office.fetch(new Request("https://office/snapshot?v=3"))).json()) as OfficeSnapshotV3;
     expect(v3.desks.map((d) => d.slot)).toEqual([0, 1, 2, 3, 4, 5, 6]);
     const stored = map.get("doc") as OfficeDoc;
     expect(stored.sessions.map((s) => [s.slot, s.seat])).toEqual([[0, undefined], [1, undefined], [2, undefined], [3, undefined], [4, undefined], [null, 5], [null, 6]]);
     await office.fetch(new Request("https://office/snapshot"));
-    expect(puts).toBe(1);
+    expect(writes).toEqual([["doc"]]);
   });
 });
+
+describe("hq-office Durable Object history", () => {
+  const DAY = "2026-10-18";
+  const sid = (n: number) => n.toString(16).padStart(64, "0");
+  const HEX64 = /[0-9a-f]{64}/;
+  function rig(start = T0) {
+    const clock = { now: start };
+    const store = memoryStorage();
+    const make = () => new Office(store.ctx, {} as OfficeWorkerEnv, () => clock.now);
+    const beat = (o: Office, n: number, extra: Record<string, unknown> = {}) =>
+      o.fetch(new Request("https://office/beat", { method: "POST", body: JSON.stringify({ v: 1, agent: "copilot", session: sid(n), state: "working", activity: "editing", ts: clock.now, ...extra }) }));
+    const hook = (o: Office, update: GithubUpdate, delivery: string) => o.fetch(new Request("https://office/github", { method: "POST", body: JSON.stringify({ delivery, update }) }));
+    const row = (day: string) => store.map.get(logKey(day)) as DayLog;
+    const logKeys = () => [...store.map.keys()].filter((k) => k.startsWith("log:")).sort();
+    return { clock, ...store, make, beat, hook, row, logKeys };
+  }
+  const merge = (n: number, title: string): GithubUpdate => ({ repo: "ShinyQ/ShinyQ-HQ", changes: [{ type: "pr", number: n, branch: "feat/x", title, url: `https://github.com/ShinyQ/ShinyQ-HQ/pull/${n}`, action: "merged" }] });
+  const ping: GithubUpdate = { repo: "ShinyQ/ShinyQ-HQ", changes: [] };
+
+  it("writes the doc and today's row in one put on a change, the doc alone on a keepalive, a merge with the doc", async () => {
+    const r = rig();
+    const o = r.make();
+    expect((await r.beat(o, 1)).status).toBe(204);
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${DAY}`]);
+    r.clock.now += 15_000;
+    await r.beat(o, 1);
+    expect(r.writes.at(-1)).toEqual(["doc"]);
+    r.clock.now += 15_000;
+    await r.beat(o, 1, { state: "testing", activity: "testing" });
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${DAY}`]);
+    expect(r.row(DAY).events.map((e) => OFFICE_STATES[e[3]])).toEqual(["working", "testing"]);
+    const before = r.writes.length;
+    await r.hook(o, merge(7, "Ship It"), "d-1");
+    expect(r.writes.length).toBe(before + 1);
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${DAY}`]);
+    expect(r.row(DAY).prs).toEqual([[r.row(DAY).prs[0][0], -1, "ShinyQ/ShinyQ-HQ", 7, "Ship It"]]);
+    await r.hook(o, merge(7, "Ship It"), "d-1");
+    expect(r.writes.length).toBe(before + 1);
+  });
+
+  it("logs a back-row session moved to seat 0 when another beat removes a quiet session", async () => {
+    const r = rig();
+    const o = r.make();
+    for (let n = 1; n <= 6; n++) await r.beat(o, n);
+    expect(r.row(DAY).events.map((e) => e[2])).toEqual([0, 1, 2, 3, 4, 5]);
+    r.clock.now = T0 + 20 * 60_000;
+    for (let n = 2; n <= 6; n++) await r.beat(o, n);
+    const events = r.row(DAY).events.length;
+    r.clock.now = T0 + 31 * 60_000;
+    await r.beat(o, 2);
+    const log = r.row(DAY);
+    const moved = log.events.slice(events).filter((e) => e[1] === 5);
+    expect(moved).toEqual([[log.events.at(-1)![0], 5, 0, 0, 0, null, 0]]);
+    expect(log.events.find((e) => e[1] === 0)?.[5]).toBe(secondsAt(DAY, T0));
+  });
+
+  it("rolls over at the WIB midnight: three rows (the doc, yesterday closed, today with its carry-ins)", async () => {
+    const day1 = "2026-10-18";
+    const day2 = "2026-10-19";
+    const r = rig(dayStart(day2) - 10 * 60_000);
+    const o = r.make();
+    await r.beat(o, 1);
+    expect(r.row(day1).events).toEqual([[85_800, 0, 0, 0, 0, null, 0]]);
+    r.clock.now = dayStart(day2) + 10_000;
+    await r.beat(o, 2);
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${day1}`, `log:${day2}`]);
+    expect(r.row(day1).events).toEqual([[85_800, 0, 0, 0, 0, 85_800, 0]]);
+    expect(r.row(day2).keys).toEqual([sid(1), sid(2)]);
+    expect(r.row(day2).events).toEqual([[0, 0, 0, 0, 0, null, 0], [10, 1, 1, 0, 0, null, 0]]);
+    expect(r.logKeys()).toEqual([`log:${day1}`, `log:${day2}`]);
+  });
+
+  it("keeps only the 8-day window when rows for 10 earlier days are stored", async () => {
+    const r = rig();
+    for (let i = 1; i <= 10; i++) {
+      const day = historyWindow(T0 - i * 86_400_000)[0];
+      r.map.set(logKey(day), emptyLog(day));
+    }
+    expect(r.logKeys()).toHaveLength(10);
+    await r.beat(r.make(), 1);
+    expect(r.logKeys()).toEqual(historyWindow(T0).map(logKey).sort());
+  });
+
+  it("appends to the stored row after a cold start mid-day", async () => {
+    const r = rig();
+    await r.beat(r.make(), 1);
+    r.clock.now += 60_000;
+    await r.beat(r.make(), 2);
+    expect(r.row(DAY).keys).toEqual([sid(1), sid(2)]);
+    expect(r.row(DAY).events.map((e) => e[1])).toEqual([0, 1]);
+  });
+
+  it("scrubs a privatized repository from every stored row", async () => {
+    const r = rig();
+    const o = r.make();
+    const past = historyWindow(T0 - 86_400_000)[0];
+    r.map.set(logKey(past), { ...emptyLog(past), keys: [sid(9)], agents: ["codex"], tasks: { 0: { repo: "ShinyQ/ShinyQ-HQ", title: "Old Secret Task" } }, events: [[0, 0, 0, 0, 0, 60, 0]], prs: [[30, 0, "ShinyQ/ShinyQ-HQ", 3, "Old Secret Merge"]] });
+    await r.hook(o, ping, "d-0");
+    await r.beat(o, 1, { repo: "ShinyQ/ShinyQ-HQ", branch: "feat/x", title: "Secret Task" });
+    await r.hook(o, merge(8, "Secret Merge"), "d-1");
+    expect(JSON.stringify(r.row(DAY))).toContain("Secret Task");
+    expect(JSON.stringify(r.row(DAY))).toContain("Secret Merge");
+    expect((await r.hook(o, { repo: "ShinyQ/ShinyQ-HQ", changes: [{ type: "privatized" }] }, "d-2")).status).toBe(204);
+    for (const key of r.logKeys()) {
+      const text = JSON.stringify(r.map.get(key));
+      expect(text, key).not.toContain("ShinyQ/ShinyQ-HQ");
+      expect(text, key).not.toContain("Secret");
+    }
+    expect(r.row(past).prs).toEqual([[30, 0, "", 3, ""]]);
+    const served = await (await o.fetch(new Request(`https://office/history?day=${DAY}`))).text();
+    expect(served).not.toContain("Secret");
+  });
+
+  it("closes the last active day after a quiet day, from the stored doc, on a cold start", async () => {
+    const fri = "2026-10-16";
+    const r = rig(dayStart(fri) + 21 * 3_600_000);
+    const o = r.make();
+    for (let m = 0; m <= 30; m++) {
+      r.clock.now = dayStart(fri) + 21 * 3_600_000 + m * 60_000;
+      await r.beat(o, 1);
+    }
+    r.clock.now = dayStart(DAY) + 10 * 3_600_000;
+    const sunday = r.make();
+    await r.beat(sunday, 2);
+    expect(r.row(fri).events).toEqual([[75_600, 0, 0, 0, 0, 77_400, 0]]);
+    const served = (await (await sunday.fetch(new Request(`https://office/history?day=${fri}`))).json()) as OfficeHistoryV1;
+    expect(served.events).toEqual([[75_600, 0, 0, 0, 0, 77_400, 0]]);
+  });
+
+  it("scrubs a privatize that is the first write of a new day in the same put as the doc", async () => {
+    const day1 = "2026-10-17";
+    const r = rig(dayStart(DAY) - 10 * 60_000);
+    const o = r.make();
+    await r.hook(o, ping, "d-0");
+    await r.beat(o, 1, { repo: "ShinyQ/ShinyQ-HQ", branch: "feat/x", title: "Secret plan" });
+    expect(JSON.stringify(r.row(day1))).toContain("Secret plan");
+    r.clock.now = dayStart(DAY) + 5 * 60_000;
+    const writes = r.writes.length;
+    expect((await r.hook(o, { repo: "ShinyQ/ShinyQ-HQ", changes: [{ type: "privatized" }] }, "d-1")).status).toBe(204);
+    expect(r.logKeys()).toEqual([`log:${day1}`, `log:${DAY}`]);
+    for (const key of r.logKeys()) {
+      const text = JSON.stringify(r.map.get(key));
+      expect(text, key).not.toContain("ShinyQ/ShinyQ-HQ");
+      expect(text, key).not.toContain("Secret");
+    }
+    expect(r.writes.length).toBe(writes + 1);
+    expect(r.writes.at(-1)).toEqual(["doc", `log:${day1}`, `log:${DAY}`]);
+  });
+
+  it("serves the index and any day in the window, read-only, 404 outside it, never a session hash", async () => {
+    const r = rig();
+    const o = r.make();
+    const past = historyWindow(T0 - 2 * 86_400_000)[0];
+    const empty = historyWindow(T0 - 86_400_000)[0];
+    r.map.set(logKey(past), { ...emptyLog(past), keys: [sid(9)], agents: ["claude"], events: [[100, 0, 3, 0, 0, null, 2]] });
+    for (let n = 1; n <= 3; n++) await r.beat(o, n, { helpers: n });
+    const writes = r.writes.length;
+    const texts: string[] = [];
+    const get = async (q: string) => {
+      const res = await o.fetch(new Request(`https://office/history${q}`));
+      texts.push(await res.clone().text());
+      return res;
+    };
+    const index = await (await get("")).json();
+    expect(parseOfficeHistoryIndex(index)).not.toBeNull();
+    expect(index).toEqual(historyIndex(historyWindow(T0), new Map([[logKey(DAY), r.row(DAY)], [logKey(past), r.row(past)]])));
+    expect(index.days[0]).toEqual({ day: DAY, events: 3, prs: 0, runs: 0, deploys: 0 });
+    const today = (await (await get(`?day=${DAY}`)).json()) as OfficeHistoryV1;
+    expect(parseOfficeHistory(today)).toEqual(today);
+    expect(today).toMatchObject({ day: DAY, start: dayStart(DAY), agents: ["copilot", "copilot", "copilot"] });
+    expect(today.events.map((e) => e[6])).toEqual([1, 2, 3]);
+    const old = (await (await get(`?day=${past}`)).json()) as OfficeHistoryV1;
+    expect(parseOfficeHistory(old)).toEqual(old);
+    expect(old.events).toEqual([[100, 0, 3, 0, 0, 100, 2]]);
+    const none = (await (await get(`?day=${empty}`)).json()) as OfficeHistoryV1;
+    expect(parseOfficeHistory(none)).toEqual(none);
+    expect(none).toMatchObject({ day: empty, agents: [], events: [] });
+    for (const q of [`?day=${historyWindow(T0 - 8 * 86_400_000)[0]}`, "?day=2026-10-19", "?day=x", "?day=", `?day=${DAY}x`]) expect((await get(q)).status, q).toBe(404);
+    expect((await o.fetch(new Request("https://office/history", { method: "POST", body: "{}" }))).status).toBe(405);
+    expect(r.writes.length).toBe(writes);
+    for (const text of texts) expect(text).not.toMatch(HEX64);
+  });
+});
+
+describe("hq-office Worker history route", () => {
+  const DAY = "2026-10-18";
+
+  it("forwards no query for the index and a well-formed day alone; anything else is a 404 that never reaches the Durable Object", async () => {
+    const seen: string[] = [];
+    const env: OfficeWorkerEnv = {
+      OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json(input.includes("?day=") ? { ...historyDay(emptyLog(DAY), emptyDoc(T0)) } : { v: 1, days: [] })) }) },
+    };
+    const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
+    const get = (q: string, init?: RequestInit) => worker.fetch(new Request(`https://hq-office/history${q}`, init), env);
+    expect((await get("")).status).toBe(200);
+    expect((await get(`?day=${DAY}`)).status).toBe(200);
+    for (const q of ["?day=x", "?foo=1", "?day=", `?day=${DAY}x`, `?day=${DAY}&foo=1`, `?day=${DAY}&day=${DAY}`, `?DAY=${DAY}`, "?day=%3Cscript%3E"]) {
+      const res = await get(q);
+      expect(res.status, q).toBe(404);
+      expect(res.headers.get("Cache-Control"), q).toBe("no-store");
+    }
+    for (const method of ["POST", "PUT", "DELETE"]) {
+      const res = await get("", { method });
+      expect(res.status, method).toBe(405);
+      expect(res.headers.get("Cache-Control"), method).toBe("no-store");
+    }
+    expect(seen).toEqual(["https://office/history", `https://office/history?day=${DAY}`]);
+  });
+
+  it("cleans a day again (blocklist, allowlist) and passes a Durable Object 404 through with no-store", async () => {
+    const { map, call } = setup();
+    map.set("doc", { ...emptyDoc(T0), publicRepos: ["ShinyQ/ShinyQ-HQ", "Other/repo"] });
+    map.set(logKey(DAY), {
+      ...emptyLog(DAY),
+      keys: ["a".repeat(64), "b".repeat(64), "c".repeat(64)],
+      agents: ["copilot", "codex", "claude"],
+      tasks: { 0: { repo: "ShinyQ/ShinyQ-HQ", title: "Fix Acme Bank Login" }, 1: { repo: "Other/repo", title: "Hidden Work" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } },
+      events: [[0, 0, 0, 0, 0, 60, 0], [0, 1, 1, 0, 0, 60, 0], [0, 2, 2, 0, 0, 60, 0]],
+      prs: [[30, 0, "ShinyQ/ShinyQ-HQ", 3, "Acme Bank Report"], [31, 1, "Other/repo", 4, "Hidden Merge"], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]],
+    } satisfies DayLog);
+    const res = await call(`/history?day=${DAY}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/json; charset=utf-8");
+    const day = parseOfficeHistory(await res.json()) as OfficeHistoryV1;
+    expect(day.tasks).toEqual({ 0: { repo: "ShinyQ/ShinyQ-HQ" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } });
+    expect(day.prs).toEqual([[30, 0, "", 3, ""], [31, 1, "", 4, ""], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]]);
+    const index = await call("/history");
+    const indexed = parseOfficeHistoryIndex(await index.json());
+    expect(indexed && "days" in indexed ? indexed.days[0] : null).toEqual({ day: DAY, events: 3, prs: 3, runs: 0, deploys: 0 });
+    const outside = await call(`/history?day=${historyWindow(T0 - 8 * 86_400_000)[0]}`);
+    expect(outside.status).toBe(404);
+    expect(outside.headers.get("Cache-Control")).toBe("no-store");
+  });
+});
+
+const secondsAt = (day: string, ms: number) => Math.floor((ms - dayStart(day)) / 1000);

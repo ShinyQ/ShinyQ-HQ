@@ -33,6 +33,20 @@ Index: [AGENTS.md](../../AGENTS.md).
   names and ship keys free of control characters and `<` `>`, seats 0 to 9, URLs `https`) and reads a v3, v2 or v1 body
   (a rolled-back Worker or Function) as v4 with an empty pipeline (`{ runs: [], ships: [] }`), so the scene reads one
   type and shows part A's anonymous tower progress from the GitHub feed; the disabled body passes as is.
+- `src/lib/office/protocolHistory.ts`: the day replay's contract (`GET /api/office/history`, `OFFICE_HISTORY_PATH`),
+  imported only by the Pages Function, the hq-office Worker and the replay chunk, never re-exported from `protocol.ts`,
+  so the Classic card, the watch, the scene chunk and the drawer body never carry it (`tests/unit/office-chunk-graph.test.ts`).
+  Caps in `OFFICE_HISTORY`: 8 days, 200 sessions, 3,000 events, 200 merges, 500 runs, 50 deploys, 24 jobs, a 1,800 s
+  carry-in. `OfficeHistoryIndexV1` is `{ v: 1, days }`, the 8 WIB days newest first, each `{ day, events, prs, runs,
+  deploys }` counts (empty days included). `OfficeHistoryV1` is `{ v: 1, day, start (epoch ms of the WIB midnight, `dayStart`),
+  agents, tasks, events, prs, runs, deploys, truncated }`; times are seconds since the WIB midnight, ordinals are per day
+  (they never link across days), a seat is 0 to 9 or -1 past the ten seats, states and activities index `OFFICE_STATES` and
+  `OFFICE_ACTIVITIES`. Tuples: an event `[t, n, seat, state, activity, until, helpers]` (`until` the session's last beat before
+  its next event, down to -1800 for a session carried over midnight), a merge `[t, seat, repo, number, title]` (repo and title
+  "" when not public: "Client project"), a run `[t, end, seat, ok, jobs]` (start, finish, the desk, the result and its lane
+  count), a deploy `[t, ok]`. No branch is stored or served. `parseOfficeHistory` and `parseOfficeHistoryIndex` are strict
+  (every key, tuple lengths and bounds, sorted lists, `start` equal to `dayStart(day)`, ordinals under the agent count) and
+  return null on any mismatch; the disabled answer `{v:1, enabled:false}` passes.
 - Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
   front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
   seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
@@ -114,6 +128,44 @@ Index: [AGENTS.md](../../AGENTS.md).
   back-row seat (5 to 9); the seat is `slot ?? seat` (`seatOf`; a set `slot` wins and clears `seat`). A Worker from
   before ten seats reads only `slot`, so after a rollback it counts back-row sessions in `extra` and seats them as
   before. `migrateDoc` (on load, written once) moves a back-row seat stored in `slot` to `seat`.
+- Replay log (`workers/office/src/history.ts`, `HISTORY`: the contract's caps plus `maxBytes` 120 KB and a 4 KB `headroom`):
+  one row per WIB day, `log:YYYY-MM-DD` (`logKey`), at most 8, beside the `doc` row. The Durable Object diffs the doc before
+  and after every accepted beat or webhook (`logDoc`, over every session, so a seat that moves because another session left is
+  logged too) and writes the doc and the changed rows in one `storage.put`; a keepalive that changes nothing loggable writes the doc
+  row alone.
+  - Logged: a session's change of state, activity, seat or helper count, a session back from a quiet gap (removed, asleep or helpers
+    decayed: `quietGap`; thinking after 20 s is left out, the replay derives it after an event's `until`), a merge (a new
+    `merged` feed item, with its desk through `seatFor`), a run that left running or a new finished attempt (`[start, end,
+    seat, ok, lanes]`, lanes over `laneOrder` capped at 24) and a production deploy result. Seats 0 to 9 through `seatOf`, -1
+    past ten; helper counts as stored. `t` never goes backwards (`lastLogged`).
+  - `DayLog` also carries `keys` (the session hash per ordinal) and an open event's `until` as null; both stay inside the Durable Object
+    (`historyDay` serves no `keys` and closes every open event from its session's `lastBeat`, `closeLog`). Branches are never
+    stored; tasks and merge titles are the doc's, for allowlisted repositories only.
+  - Caps: past 200 sessions, 3,000 events or the byte cap (less the headroom, so the closes of a fallback always fit) the row is marked
+    `truncated`, only what the change added is dropped and the counts of merges, runs and deploys keep growing to their own caps.
+  - Rollover: the first write of a new WIB day starts the row with one carry-in event at t 0 for each session still live at the
+    midnight (`startLog`), closes the latest earlier row from the doc (after a cold start it is read from storage, so a quiet day between
+    keeps its open events; `closeLog`), and prunes rows older than the 8-day window in the same call (`prune`: normally one delete).
+  - Privatize: a `repository` `privatized` scrubs that repository from every stored row and the new one in the same put (`scrubRepo`:
+    its tasks go, its merges keep only time, desk and number); the served day also drops tasks and merge titles of repositories no longer
+    in `publicRepos`.
+  - Served by `GET /history` (the Durable Object: `historyIndex` over the window, 8 rows read in one `get`) and `GET /history?day=` (the
+    row of a day in the window, an empty row for a quiet day, 404 outside the window); read-only, GET only. The Worker's `/history` forwards no
+    query but a well-formed `day` (any other query is a 404 that never reaches the Durable Object) and cleans a day again at read time
+    (`cleanHistory`: `repoAllowed` against `OFFICE_REPO_ALLOWLIST` on every repository and `cleanTitle` with the current blocklist on every
+    title, so a later blocklist update applies to stored days); the index (counts only) passes through.
+  - Free plan (Workers free: a SQLite-backed Durable Object's 100,000 rows written and 5,000,000 rows read a day, 5 GB stored, 100,000 requests a day; the 2 MB value limit):
+
+    | Item | Busy day (ten seats used: 10 sessions, about 2,800 state, seat or helper changes, 60 merges, 200 runs, 10 deploys) | Limit |
+    |---|---|---|
+    | Today's row | about 95 KB (events about 78 KB, merges about 10 KB, runs about 4 KB, keys and tasks about 2 KB); a busier day stops at 3,000 events or 120 KB and says `truncated` | 120 KB cap |
+    | Rows written | the doc row on every accepted beat or webhook (about 3,000 to 7,000), a log row on each loggable change (about 3,100) and 3 at the rollover: under about 10,000 | 100,000 a day |
+    | Rows read | the doc and today's row once per cold start; the index reads 8 rows and a day 1, per edge cache miss | 5,000,000 a day |
+    | Stored | at most 8 log rows (under 1 MB) plus the doc | 5 GB |
+    | Durable Object requests | history only on edge cache misses: at most about 5,900 a day per data center under continuous load (index and today every 30 s, 7 past days every hour), far fewer in practice | 100,000 a day, shared |
+    | Pages Function requests | 2 per replay start (the index and a day), then up to 2 more per 5 min while the visitor gave input in the last 10 min, and up to 4 more after the input stops (a parked tab loops its copy and fetches nothing more); typical: about 16 for 30 min of active watching (about 2 per 5 min of input), 3,000 on a day of 500 L1 sessions (a 5 min visit 2 to 4, so about 1,000 to 2,000), 3% of the limit | 100,000 a day, shared |
+    | CPU | `logDoc` serializes the row once per loggable change to check its size (at most 120 KB, about 1 ms) | free plan CPU per request |
+
 - GitHub: `workflow_run`, `workflow_job` (job progress), `pull_request`, `push` (default branch), `deployment_status`,
   `repository` (`privatized` only); CI progress and PR titles join a desk by repository and branch.
 - Workflow runs carry `run_attempt` (deliveries arrive in any order): an older attempt and a late `running` of a
@@ -131,6 +183,17 @@ Index: [AGENTS.md](../../AGENTS.md).
   validate with `parseOfficeResponseV2`, `parseOfficeResponseV3` or `parseOfficeResponseV4`, so a rolled-back Worker's
   older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
+- `GET /api/office/history` and `GET /api/office/history?day=YYYY-MM-DD` (`functions/api/office/history.ts`,
+  `createOfficeHistoryHandler`, `historyRoute`): GET and HEAD only (405 with `Allow` otherwise). No query is the index; exactly one
+  `day` query inside the 8-day WIB window (`historyWindow`) is that day; any other query, a malformed or out-of-window day is the
+  fixed 404 `{"v":1,"error":"day"}` (`no-store`, no echo of the input), never reaching the Worker. The edge cache key is built
+  from the validated values (`/api/office/history` or `/api/office/history?day=<day>`), so junk queries cannot fill the cache. Both
+  fetch the Worker's `/history` through the binding `OFFICE` and validate with `parseOfficeHistoryIndex` or `parseOfficeHistory`,
+  with an ETag (304 on a matching `If-None-Match`). Headers: the index and today `public, max-age=30,
+  stale-while-revalidate=60`; a past day `public, max-age=3600, stale-while-revalidate=300` (not immutable: a privatize can scrub
+  it); the disabled answer `{v:1,enabled:false}` like `/api/office`. A Worker 404 for a day (the window turned over between the edge
+  and the Durable Object) is the fixed 404; any other failure (no binding, an error, an invalid body, a Worker rolled back to before
+  the replay) is a 503 with no `Cache-Control` and `no-store`, which the replay shows as "Replay unavailable".
 - Kill switch `OFFICE_ENABLED` (root `wrangler.toml`).
 
 ### Deploy and CI
@@ -151,6 +214,11 @@ Index: [AGENTS.md](../../AGENTS.md).
   Function gets v1 (read as v3). A Worker or Function rolled back to before v4 answers `?v=4` as v1 (the Worker
   forwards no `?v=4`, the Function shares the v1 entry); the v4 Function and the scene read that body as v4 with an
   empty pipeline (part A's anonymous lanes, no effects).
+  A Worker rolled back to before the replay has no `/history` (a 404): the index answers 503 (a day request, the fixed 404) and the drawer
+  says "Replay unavailable"; the stored `log:` rows wait untouched in the Durable Object (that Worker never reads or writes them, and the
+  served window only ever names the 8 current days), and the first write of a new WIB day after the roll forward prunes
+  those outside the window. A Function rolled back to before the replay has no route: the replay chunk's request gets a non-200
+  answer and the replay is unavailable the same way.
 - Runbook: `workers/office/README.md`; deploy notes: [`docs/deploy.md`](../deploy.md) section 18.
 
 ### Tests
@@ -159,6 +227,11 @@ Index: [AGENTS.md](../../AGENTS.md).
   `started`, ships, seats, privatized, v4 views), ingest, Worker and Durable Object (`?v=4` routing), Functions
   (`office-endpoint`: the v4 query, cache keys and ETags per version, v1 to v3 unchanged); `tests/office/legacy-five-desks.ts` is
   a frozen copy of the pre-ten-seat Worker's seat and view rules (never update it); `tests/unit/office-deploy.test.ts`.
+  The replay's backend: `tests/office/history.test.ts` (the log rules over `logDoc`, `until`, quiet gaps, caps and truncation,
+  rollover with carry-ins, prune at 8 rows, the privatize scrub, `keys` never served, the Durable Object's `/history`),
+  `tests/office/protocol-history.test.ts` (both parsers with hostile inputs), `tests/office/worker.test.ts` (the `/history` query
+  rules and `cleanHistory`) and `tests/office/history-endpoint.test.ts` (`historyRoute`, canonical keys, cache headers, ETag and
+  304, HEAD, 404 and 503); fixtures in `tests/helpers/office-history.ts`.
 
 ## Relay
 

@@ -1,6 +1,8 @@
 import { readCapped } from "../../../functions/_lib/security";
 import { OFFICE_BEAT_MAX_BYTES, parseOfficeBeat } from "../../../src/lib/office/protocol";
+import type { OfficeHistoryV1 } from "../../../src/lib/office/protocolHistory";
 import { signatureOk } from "./crypto";
+import { cleanHistory } from "./history";
 import { parseActors, parseAllowlist, parseGithubEvent, sanitizeBeat } from "./ingest";
 import type { OfficeWorkerEnv } from "./types";
 
@@ -10,9 +12,11 @@ const DO_NAME = "office";
 const DO_BASE = "https://office";
 
 const status = (code: number) => new Response(null, { status: code, headers: { "Cache-Control": "no-store" } });
+const HISTORY_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * hq-office routes, reached only through the Pages service binding (no public route): GET /snapshot (v1, v2 for `?v=2`, v3 for `?v=3`, v4 for `?v=4`),
+ * GET /history (the 8-day replay index), GET /history?day=YYYY-MM-DD (one WIB day, cleaned again),
  * POST /beat (relay, X-Office-Signature) and POST /github (webhooks, X-Hub-Signature-256).
  */
 export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: () => number }) {
@@ -30,6 +34,19 @@ export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: (
         // Only `?v=2`, `?v=3` and `?v=4` are forwarded: any other query reaches the Durable Object as the plain v1 request.
         const v = searchParams.get("v");
         return office.fetch(`${DO_BASE}/snapshot${v === "2" || v === "3" || v === "4" ? `?v=${v}` : ""}`);
+      }
+      if (pathname === "/history") {
+        if (request.method !== "GET") return status(405);
+        // No query is the index; exactly one well-formed `day` is that day; any other query is a 404 that never reaches the Durable Object.
+        const names = [...searchParams.keys()];
+        const day = searchParams.get("day");
+        if (names.length > 1 || (names.length === 1 && (names[0] !== "day" || day === null || !HISTORY_DAY.test(day)))) return status(404);
+        const res = await office.fetch(`${DO_BASE}/history${day === null ? "" : `?day=${day}`}`);
+        if (!res.ok) return status(res.status);
+        // The index carries counts only; a day's titles and repositories pass the allowlist and the current blocklist again.
+        if (day === null) return res;
+        const clean = cleanHistory((await res.json()) as OfficeHistoryV1, parseAllowlist(env.OFFICE_REPO_ALLOWLIST), deps.blocklist);
+        return new Response(JSON.stringify(clean), { headers: { "Content-Type": "application/json; charset=utf-8" } });
       }
       if (pathname === "/beat") {
         if (request.method !== "POST") return status(405);

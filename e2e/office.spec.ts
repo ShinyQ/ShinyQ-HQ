@@ -23,7 +23,7 @@ import {
   waitForRoom,
   waitForSceneLive,
 } from "./hq";
-import { asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, deployed, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, shipStep, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
+import { asleepAll, asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES, CREW_SLOT, deployed, OFFICE_API, OFFICE_API_V3, OFFICE_API_V4, serveHistory, shipStep, STATES_A, STATES_B, statesA, statesB } from "./office-fixtures";
 
 /**
  * L1 Agent Office (docs/superpowers/plans/2026-10-19-agent-office-3d.md): the lazy chunk at idle on every L1 visit
@@ -32,8 +32,9 @@ import { asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CREW_B_STATES,
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
  * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
  * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones; the ship-it pipeline (snapshot
- * v4: the tower's lanes per job, packets, bursts and packages, the production deploy beam, the CI drawer). `/api/office` is answered from fixtures (Playwright route); waits
- * are on state, never on time.
+ * v4: the tower's lanes per job, packets, bursts and packages, the production deploy beam, the CI drawer); the day replay
+ * (the idle loop, the merge tiles, the drawer's controls, reduced motion, an unavailable history, the lazy chunk).
+ * `/api/office` and `/api/office/history` are answered from fixtures (Playwright routes); waits are on state, never on time.
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -56,6 +57,8 @@ type OfficeProbe = {
   lanes: number;
   pipe: { packets: number; bursts: number; crowns: number; packages: number; deployFailed: number; stack: number };
   beam: boolean;
+  tiles: number;
+  replay?: { status: string; day: string | null; playS: number; dayS: number; auto: boolean; seq: number };
 };
 type OfficeHooks = { feed(): { status: string; fetchedAt: number }; poll(): void; advance(ms: number): void; settled(): number; reasons(): string[] };
 type OfficeWindow = Window & {
@@ -840,6 +843,234 @@ test.describe("Agent Office (L1) ship-it pipeline", () => {
     await expect(runs.nth(1)).toContainText(`Job 2: ${en.office["3d"].ci.job.done}`);
     await expect(drawer).toContainText(en.office["3d"].githubNote);
     expect(errors).toEqual([]);
+  });
+});
+
+const replayState = (page: Page) => probe(page).then((o) => o.replay);
+const replayStatus = async (page: Page) => (await replayState(page))?.status ?? null;
+const tilesLit = async (page: Page) => (await probe(page)).tiles;
+const REPLAY_TEXT = en.office["3d"].replay;
+const NOW_STATES = tenStates(STATES_A);
+
+/** Opens the summary drawer (the store's room, as a wall press would) and presses "Show day replay": the controls and the day index. */
+async function openReplayControls(page: Page) {
+  await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office"));
+  await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "summary", { timeout: 60_000 });
+  await page.getByRole("button", { name: REPLAY_TEXT.open }).click();
+  await expect(page.getByTestId("office-replay")).toBeVisible({ timeout: 30_000 });
+}
+
+/** The drawer's day buttons (the index's days, newest first). */
+const dayButtons = (page: Page) => page.getByTestId("office-replay").locator("button[aria-pressed]");
+const timeRange = (page: Page) => page.getByRole("slider", { name: REPLAY_TEXT.time });
+
+test.describe("Agent Office (L1) day replay", () => {
+  test("a quiet office replays the latest day by itself: the pill, ringed chips, the replayed crew and drones, one index and one day request", async ({ page }) => {
+    const errors = collectErrors(page);
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    office.set(asleepAll(Date.now()));
+    await enterHQ(page);
+    await atOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await show(page, office, asleepAll(Date.now()), ["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    expect(await replayStatus(page)).toBe("off");
+    expect(history.requests()).toEqual([]);
+    // Past the 30 s quiet rule on the poller's clock the idle loop loads the replay chunk and plays the newest day.
+    await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()!.advance(31_000));
+    await expect.poll(() => replayStatus(page), { timeout: 60_000 }).toBe("playing");
+    expect(await replayState(page)).toMatchObject({ auto: true, day: history.days[0] });
+    expect(history.requests()).toEqual(["/api/office/history", `/api/office/history?day=${history.days[0]}`]);
+    await expect(page.getByTestId("office-replay-pill")).toContainText(REPLAY_TEXT.pill);
+    const chips = page.locator('[data-testid="office-chip"]');
+    await expect(chips).toHaveCount(SEATS);
+    await expect(page.locator('[data-testid="office-chip"]:not([data-replay="true"])')).toHaveCount(0);
+    for (let slot = 0; slot < SEATS; slot++) await expect(chip(page, slot)).toHaveAttribute("aria-label", /^Replay of /);
+    // The replayed crew: the back row wakes, desk 4 asks, seat 1's six helpers draw four drones and seat 0's three draw three.
+    await expect.poll(async () => (await probe(page)).desks, { timeout: 30_000 }).toBe(SEATS);
+    await expect.poll(async () => (await probe(page)).states.slice(5).filter((s) => s !== "asleep").length, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
+    await expect.poll(async () => (await probe(page)).states[3], { timeout: 60_000 }).toBe("input");
+    await expect.poll(async () => (await probe(page)).drones.slice(0, 2), { timeout: 60_000 }).toEqual([3, 4]);
+    // The beacon follows the live feed only: a replayed desk asking lights nothing.
+    expect((await probe(page)).beacon).toBe(false);
+    expect(history.requests()).toHaveLength(2);
+    expect(errors).toEqual([]);
+  });
+
+  test("the merge tiles follow the replay's merges and go back to the live count after Back to live", async ({ page }) => {
+    const office = await serveOffice(page);
+    await serveHistory(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    // The live fixture merged 2 PRs today.
+    await expect.poll(() => tilesLit(page), { timeout: 30_000 }).toBe(2);
+    await openReplayControls(page);
+    const packages = (await probe(page)).pipe.packages;
+    await page.getByRole("button", { name: REPLAY_TEXT.play }).click();
+    await expect.poll(() => replayStatus(page), { timeout: 30_000 }).toBe("playing");
+    // The first merge of the day flies a package to the dock while the day plays.
+    await expect.poll(async () => (await probe(page)).pipe.packages, { timeout: 60_000 }).toBeGreaterThan(packages);
+    // The end of the range: the day's three merges light three tiles.
+    await timeRange(page).press("End");
+    await expect.poll(() => tilesLit(page), { timeout: 30_000 }).toBe(3);
+    await page.getByRole("button", { name: REPLAY_TEXT.live }).click();
+    await expect.poll(() => replayStatus(page), { timeout: 30_000 }).toBe("off");
+    await expect.poll(() => tilesLit(page), { timeout: 30_000 }).toBe(2);
+  });
+
+  test("a live awake snapshot ends the idle loop at once: the chips lose their mark, and the beacon only ever followed the live feed", async ({ page }) => {
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    office.set(asleepAll(Date.now()));
+    await enterHQ(page);
+    await atOffice(page);
+    await driveTo(page, LOBBY.officeWing.stop);
+    await waitForCameraSettle(page);
+    await show(page, office, asleepAll(Date.now()), ["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()!.advance(31_000));
+    await expect.poll(() => replayStatus(page), { timeout: 60_000 }).toBe("playing");
+    // The replayed desk 4 asks (input) while the live office sleeps: no beacon.
+    await expect.poll(async () => (await probe(page)).states[3], { timeout: 60_000 }).toBe("input");
+    expect((await probe(page)).beacon).toBe(false);
+    await expect(page.locator('[data-testid="office-chip"][data-replay="true"]')).toHaveCount(SEATS);
+    // The live office wakes up (and one desk asks): the replay is over before the next frame's view.
+    office.set(CREW_A);
+    await pollNow(page);
+    await expect.poll(() => replayStatus(page), { timeout: 30_000 }).toBe("off");
+    await expect(page.locator('[data-testid="office-chip"][data-replay="true"]')).toHaveCount(0);
+    await expect(page.getByTestId("office-replay-pill")).toHaveCount(0);
+    await expect.poll(async () => (await probe(page)).states, { timeout: 30_000 }).toEqual(tenStates(CREW_A_STATES));
+    await expect.poll(async () => (await probe(page)).beacon, { timeout: 30_000 }).toBe(true);
+    expect(history.requests()).toHaveLength(2);
+  });
+
+  test("the drawer plays another day; pause toggles its button and the range reads the clock in WIB", async ({ page }) => {
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, statesA(Date.now()), STATES_A);
+    await openReplayControls(page);
+    await expect(dayButtons(page)).toHaveCount(8);
+    await expect(dayButtons(page).nth(1)).toBeEnabled();
+    await expect(dayButtons(page).nth(2)).toBeDisabled();
+    await dayButtons(page).nth(1).click();
+    await expect(dayButtons(page).nth(1)).toHaveAttribute("aria-pressed", "true");
+    await expect(dayButtons(page).nth(0)).toHaveAttribute("aria-pressed", "false");
+    await expect.poll(() => replayState(page), { timeout: 30_000 }).toMatchObject({ status: "playing", day: history.days[1], auto: false });
+    await expect(timeRange(page)).toHaveAttribute("aria-valuetext", /^\d\d:\d\d WIB$/);
+    // The open button hides while a replay is active and the footer swaps the hooks note for the replay line; Back to live restores both.
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.open })).toBeHidden();
+    await expect(page.getByTestId("office-body")).toContainText("Replay of ");
+    await expect(page.getByTestId("office-body")).not.toContainText(en.office["3d"].hooks);
+    await page.getByRole("button", { name: REPLAY_TEXT.live }).click();
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.open })).toBeVisible();
+    await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
+    await dayButtons(page).nth(1).click();
+    await expect.poll(() => replayState(page), { timeout: 30_000 }).toMatchObject({ status: "playing", day: history.days[1], auto: false });
+    await expect(timeRange(page)).toHaveAttribute("aria-valuetext", /^\d\d:\d\d WIB$/);
+    await page.getByRole("button", { name: REPLAY_TEXT.pause }).click();
+    await expect.poll(() => replayStatus(page)).toBe("paused");
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.play })).toBeVisible();
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.pause })).toHaveCount(0);
+    // A seek moves the clock; the clock is the day's own, to the minute.
+    await timeRange(page).press("End");
+    await expect(timeRange(page)).toHaveAttribute("aria-valuetext", /^1[45]:\d\d WIB$/);
+    await page.getByRole("button", { name: REPLAY_TEXT.play }).click();
+    await expect.poll(() => replayStatus(page), { timeout: 30_000 }).toBe("playing");
+    expect(history.requests().filter((r) => r.includes("?day=")).map((r) => r.slice(-10))).toEqual([history.days[1]]);
+  });
+
+  test("reduced motion: no idle loop; the drawer's replay starts paused, steps by the hour and shows the day's tiles at once", async ({ page }) => {
+    await chooseMotion(page, "reduced");
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    office.set(asleepAll(Date.now()));
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, asleepAll(Date.now()), ["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()!.advance(31_000));
+    await waitForSceneSeconds(page, 2);
+    expect(await replayStatus(page)).toBe("off");
+    expect(history.requests()).toEqual([]);
+    await openReplayControls(page);
+    await dayButtons(page).first().click();
+    await expect.poll(() => replayState(page), { timeout: 30_000 }).toMatchObject({ status: "paused", auto: false, day: history.days[0] });
+    const first = (await replayState(page))!.dayS;
+    await page.getByRole("button", { name: REPLAY_TEXT.nextHour }).click();
+    const next = (Math.floor(first / 3600) + 1) * 3600;
+    await expect.poll(async () => (await replayState(page))?.dayS).toBe(next);
+    expect(await replayStatus(page)).toBe("paused");
+    await timeRange(page).press("End");
+    await expect.poll(() => tilesLit(page), { timeout: 10_000 }).toBe(3);
+    expect(await replayStatus(page)).toBe("paused");
+  });
+
+  test("an unavailable history leaves the live office as it was: the drawer says so, no console error, no refetch inside 5 minutes", async ({ page }) => {
+    const errors = collectErrors(page);
+    // The browser logs a failed fetch itself ("Failed to load resource"); only the app's own errors count.
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && !/Failed to load resource/.test(msg.text())) errors.push(msg.text());
+    });
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    history.set(503);
+    office.set(asleepAll(Date.now()));
+    await enterHQ(page);
+    await atOffice(page);
+    await show(page, office, asleepAll(Date.now()), ["asleep", "asleep", "asleep", "asleep", "asleep"]);
+    const advance = (ms: number) => page.evaluate((ms) => (window as unknown as OfficeWindow).__hq.office.test()!.advance(ms), ms);
+    await advance(31_000);
+    await expect.poll(() => replayStatus(page), { timeout: 60_000 }).toBe("unavailable");
+    expect(history.requests()).toEqual(["/api/office/history"]);
+    // Another 31 s is inside the 5 minute retry wait: the same one request.
+    await advance(31_000);
+    await waitForSceneSeconds(page, 2);
+    expect(history.requests()).toEqual(["/api/office/history"]);
+    expect((await probe(page)).states).toEqual(NOW_STATES.map(() => "asleep"));
+    await openReplayControls(page);
+    await expect(page.getByTestId("office-replay").getByText(REPLAY_TEXT.unavailable)).toBeVisible();
+    await expect(page.locator('[data-testid="office-chip"][data-replay="true"]')).toHaveCount(0);
+    // The index answers but the day is gone (404): unavailable again after the wait, the live office untouched.
+    history.set(200, 404);
+    const asked = history.requests().length;
+    await advance(300_000);
+    await expect.poll(() => history.requests().length, { timeout: 60_000 }).toBeGreaterThan(asked);
+    await expect.poll(() => history.requests().filter((r) => r.includes("?day=")).length, { timeout: 60_000 }).toBe(1);
+    await expect.poll(() => replayStatus(page), { timeout: 30_000 }).toBe("unavailable");
+    expect((await probe(page)).states).toEqual(NOW_STATES.map(() => "asleep"));
+    expect(errors).toEqual([]);
+  });
+
+  test("with ?prefetch=off the replay chunk waits for the drawer's Show day replay press", async ({ page }) => {
+    const scripts: string[] = [];
+    page.on("request", (request) => {
+      if (request.resourceType() === "script") scripts.push(request.url());
+    });
+    const office = await serveOffice(page);
+    const history = await serveHistory(page);
+    // A disabled office has no summary panel, so no replay section: the drawer needs a live answer.
+    office.set(statesA(Date.now()));
+    await asReturningVisitor(page);
+    await page.goto("/en?tier=lite&prefetch=off");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
+    await expect.poll(async () => (await trigger(page)).asks, { timeout: 60_000 }).toBeGreaterThanOrEqual(3);
+    expect(await trigger(page)).toMatchObject({ state: "idle" });
+    await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office"));
+    await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "summary", { timeout: 60_000 });
+    await expect.poll(() => chunkState(page), { timeout: 60_000 }).toBe("ready");
+    await expect.poll(async () => (await probe(page)).loaded, { timeout: 60_000 }).toBe(true);
+    // The office is up (scene, drawer body) and nothing asked for the history: the replay chunk is the only thing that does.
+    expect(history.requests()).toEqual([]);
+    const before = scripts.length;
+    await page.getByRole("button", { name: REPLAY_TEXT.open }).click();
+    await expect(page.getByTestId("office-replay")).toBeVisible({ timeout: 30_000 });
+    expect(scripts.length, "the press loads the replay and its controls chunks").toBeGreaterThan(before);
+    expect(history.requests()).toEqual(["/api/office/history"]);
   });
 });
 

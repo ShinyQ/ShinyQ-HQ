@@ -5,6 +5,7 @@ import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { drawWall, WALL_BASE, WALL_CANVAS, wallKey, wallModel } from "@/experience/floors/lobby/office/officeWall";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
+import { COLORS } from "@/experience/config";
 import { statesA, statesB } from "../../e2e/office-fixtures";
 import { recordingContext } from "../helpers/fake-canvas";
 
@@ -52,5 +53,28 @@ describe("Agent Office screen wall", () => {
     const idle = { ...running, rows: running.rows.filter((r) => r.status !== "running") };
     expect(wallKey(idle, 0)).toBe(wallKey(idle, 1));
     expect(wallKey(idle, 0)).not.toBe(wallKey({ ...idle, extra: "+3" }, 0));
+  });
+
+  it("shows the replay banner in place of the status line only while a replay is passed, in both locales", () => {
+    const view = officeView({ status: "ready", snapshot: statesA(NOW) });
+    const live = wallModel(view, tEn, "en", NOW + 20_000);
+    expect(live.status).toBe("LIVE · just now");
+    const en14 = wallModel(view, tEn, "en", NOW, { day: "Mon 19 Oct", clock: "14:05" });
+    expect(en14.status).toBe("Replay · Mon 19 Oct · 14:05");
+    expect(en14.statusColor).toBe(COLORS.violet);
+    expect(wallModel(view, tId, "id", NOW, { day: "Sen 19 Okt", clock: "14:05" }).status).toBe("Putar ulang · Sen 19 Okt · 14:05");
+    // Everything else reads the view as before; without a replay the model is unchanged.
+    expect({ ...en14, status: live.status, statusColor: live.statusColor }).toEqual(wallModel(view, tEn, "en", NOW));
+    expect(wallModel(view, tEn, "en", NOW + 20_000, null)).toEqual(live);
+  });
+
+  it("redraws when the replay's minute changes and draws the banner", () => {
+    const view = officeView({ status: "ready", snapshot: statesA(NOW) });
+    const a = wallModel(view, tEn, "en", NOW, { day: "Mon 19 Oct", clock: "14:05" });
+    const b = wallModel(view, tEn, "en", NOW, { day: "Mon 19 Oct", clock: "14:06" });
+    expect(wallKey(a, 0)).not.toBe(wallKey(b, 0));
+    const rec = recordingContext();
+    drawWall(rec.ctx, WALL_CANVAS.lite, a, 0, FONTS);
+    expect(rec.texts()).toContain("Replay · Mon 19 Oct · 14:05");
   });
 });

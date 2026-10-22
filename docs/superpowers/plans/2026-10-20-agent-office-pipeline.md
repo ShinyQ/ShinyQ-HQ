@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: in review (2026-10-21); follows A2 (#276)
+Status: shipped in #279 (aed3e5b), 2026-10-21; follows A2 (#276)
 
 Built on what shipped: part A ([#274](https://github.com/ShinyQ/ShinyQ-HQ/pull/274), bcb1080: snapshot v2 with desk
 `helpers`, the crew, the watch and beacon chunks, the tower and dock shells with v1 lane light) and part A2

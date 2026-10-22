@@ -6,3 +6,4 @@
 export { officeLive, officeTest, useOfficeFeed } from "./live";
 export { OfficeScene } from "./OfficeScene";
 export { OfficeChips } from "./OfficeChips";
+export { loadOfficeReplay, useReplay } from "./replayLink";

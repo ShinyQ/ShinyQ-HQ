@@ -224,3 +224,15 @@ export const OFFICE_CHIP_FAR_BAND = 1;
 export function nextChipFar(far: boolean, dist: number, phone = false): boolean {
   return phone || (far ? dist > OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND : dist > OFFICE_CHIP_FAR + OFFICE_CHIP_FAR_BAND);
 }
+
+/** Shows `el` at (x, y) (px), or hides it (NaN); `last` is what was written (the ticks and the replay pill). */
+export function placeAt(el: HTMLElement | null, last: number[], x: number, y: number) {
+  if (!el || (last[0] === x && last[1] === y) || (Number.isNaN(x) && Number.isNaN(last[0]))) return;
+  last[0] = x;
+  last[1] = y;
+  if (Number.isNaN(x)) el.style.visibility = "hidden";
+  else {
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    el.style.visibility = "visible";
+  }
+}
