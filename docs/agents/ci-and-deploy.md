@@ -72,7 +72,7 @@ the nightly run everything on 8 e2e and 4 perf shards.
   - `Plan CI` (`changes` job, `scripts/ci-plan.ts`): plans the heavy jobs (see [What a pull request runs](#what-a-pull-request-runs) and [Complement runs on `main`](#complement-runs-on-main)) and uploads the run's record, the `ci-plan` artifact (`ci-plan.json`, 30 days): what the run covers (e2e "all" or the specs plus the single smoke tests, perf "all" or the perf keys, Lighthouse "all" or the URL paths).
   - `Typecheck, lint, unit tests` (`check` job).
   - `Secret scan` (gitleaks).
-  - `Build static export` (`site` job): the build with its CSP hashes, the public-safety scan of `out/` and `og:check`.
+  - `Build static export` (`site` job): the build with its CSP hashes, the script policy check of `out/` (`scripts/scan-export.ts`) and `og:check`.
     - It checks out the full history (`fetch-depth: 0`) and first runs `bun scripts/build-facts.ts --write` (right after the setup action), which rewrites `content/generated/build-facts.json` (commits, PRs per round, unit test files, the end-to-end test count, spec and plan documents, CI jobs, the 3D budgets) for the build page.
     - The `site` job of `deploy.yml` (full-history checkout) runs the same step before its builds, so the shipped build page carries fresh numbers.
     - Local builds use the committed snapshot; refresh it with `bun scripts/build-facts.ts --write`. `--no-runners` skips the `playwright test --list` count and cannot be combined with `--write` (it would drop it from the file). No unit test count is measured (`vitest list` counts each `it.each` template once); only unit test files are. A shallow clone keeps the committed file. A failing runner prints a warning and omits only its number.
@@ -187,12 +187,12 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
   4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
   5. Opens a `deploy-failed` issue on failure. A smoke failure after the flip flips the pack pointer back first.
-- The deploy job (Cloudflare Pages production) deploys the hq-office Worker after the gates (fast path still open, complete green main CI) and the knowledge pack (which writes `functions/_generated/safety.json`), and before the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
+- The deploy job (Cloudflare Pages production) deploys the hq-office Worker after the gates (fast path still open, complete green main CI) and the knowledge pack, and before the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
   It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment, in step env;
   a commit without `workers/office/` skips it with a notice. The Worker step has `continue-on-error`, so a failure
   does not stop the upload while the Worker exists; a check after the smoke check then fails the job (and opens the
   `deploy-failed` issue). The rollback redeploys it from the rollback target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,
-  `src/lib/office/`, `src/content/safety-match.ts`, `functions/_lib/security.ts` or `scripts/build-knowledge.ts`
+  `src/lib/office/` or `functions/_lib/security.ts`
   (not a required check). `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps in the deploy job and the rollback redeploy.
   Runbook: `workers/office/README.md`; rules: [office.md](office.md).
 - Rollback (`.github/workflows/rollback.yml`, `scripts/rollback.ts`), on every completed CI run from a push to `main`:

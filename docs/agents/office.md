@@ -83,10 +83,9 @@ Index: [AGENTS.md](../../AGENTS.md).
   salted hash and `helpers` a count of active sub-agents (0 to `OFFICE_HELPERS_MAX`, 9), never their names, types or
   ids. `sanitizeBeat` keeps it for every repository; the session stores it, and only snapshot v2 shows it.
 - `repo`, `branch` and `title` survive only for repositories in `OFFICE_REPO_ALLOWLIST` that a webhook reported public.
-- Titles (beats and GitHub items) go through the public safety blocklist (`cleanTitle`, `findBlockedTerms` from
-  `src/content/safety-match.ts`); a blocked title is dropped or replaced by a generic one.
-- Branch names go through the same blocklist (also with `/`, `_`, `.` and `-` read as word breaks): a blocked branch
-  is dropped from a beat (with its title), and a workflow run or pull request on a blocked branch (or a push to a blocked default branch) is ignored.
+- Titles (beats and GitHub items) go through `cleanTitle`: one clean line (an em dash becomes a comma, control
+  characters and angle brackets are removed, whitespace collapses, cut to the length cap); an empty title is dropped
+  or replaced by a generic one. There is no term blocklist: the repository allowlist is the privacy boundary.
 - Only same-repository GitHub activity shows: pull requests from forks and workflow runs whose `head_repository` is
   another repository are ignored, and a pull request also needs a sender in `OFFICE_GITHUB_ACTORS` (Worker var,
   default `ShinyQ,Copilot`) or an OWNER, MEMBER or COLLABORATOR author association.
@@ -111,7 +110,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   else `view`; the Worker forwards only `?v=2`, `?v=3` and `?v=4`.
 - Pipeline (`pipelineOf(doc, now)`, served only by `viewV4`, which is `viewV3` plus it): `RunRecord` keeps `order` (the
   job ids in first-seen order, at most `OFFICE_PIPELINE.jobs`, 24), `names` (each laned job's name, already through
-  `cleanTitle` and the blocklist at ingest, cut to 40 characters) and `started` (when this attempt was first seen; a
+  `cleanTitle` at ingest, cut to 40 characters) and `started` (when this attempt was first seen; a
   newer attempt resets it), all optional, so a document stored before v4 reads with its first job ids, "Job" names and
   `updated`. Jobs past the 24th fold into the last lane (its status the worst of them: failed over running over queued
   over done). The served runs are the 3 newest by `started` that are not stale; the ships are the latest merged pull
@@ -152,8 +151,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   - Served by `GET /history` (the Durable Object: `historyIndex` over the window, 8 rows read in one `get`) and `GET /history?day=` (the
     row of a day in the window, an empty row for a quiet day, 404 outside the window); read-only, GET only. The Worker's `/history` forwards no
     query but a well-formed `day` (any other query is a 404 that never reaches the Durable Object) and cleans a day again at read time
-    (`cleanHistory`: `repoAllowed` against `OFFICE_REPO_ALLOWLIST` on every repository and `cleanTitle` with the current blocklist on every
-    title, so a later blocklist update applies to stored days); the index (counts only) passes through.
+    (`cleanHistory`: `repoAllowed` against `OFFICE_REPO_ALLOWLIST` on every repository and `cleanTitle` on every
+    title); the index (counts only) passes through.
   - Free plan (Workers free: a SQLite-backed Durable Object's 100,000 rows written and 5,000,000 rows read a day, 5 GB stored, 100,000 requests a day; the 2 MB value limit):
 
     | Item | Busy day (ten seats used: 10 sessions, about 2,800 state, seat or helper changes, 60 merges, 200 runs, 10 deploys) | Limit |
@@ -203,9 +202,10 @@ Index: [AGENTS.md](../../AGENTS.md).
   It sets its secrets from the `production` environment; a commit without `workers/office/` or
   `OFFICE_WORKER_DEPLOY = "false"` skips it. A failed Worker step does not stop the upload; a later step fails the job.
   `office-worker.yml` bundles it on pull requests (no secrets).
-- `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office`,
-  `src/content/safety-match.ts` or `functions/_lib/security.ts` differ (secrets persist; a target without
-  `workers/office` leaves it at the live version). A Worker rolled back to before snapshot v2 rejects beats that carry
+- `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office` or
+  `functions/_lib/security.ts` differ (secrets persist; a target without `workers/office` leaves it at the live
+  version; it runs `bun scripts/build-knowledge.ts` in the target first, because a target from before 2026-10-22
+  bundles `functions/_generated/safety.json`). A Worker rolled back to before snapshot v2 rejects beats that carry
   `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2). A Worker
   rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, without helpers) and seats only five: it reads
   only the stored `slot`, so back-row sessions count in `extra` and take a free front desk at the next beat, and its

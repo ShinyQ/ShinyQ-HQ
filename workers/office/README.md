@@ -43,7 +43,7 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
   as waiting, counts them in `extra` and seats them on a free front desk at the next beat; its snapshots stay valid
   (never mode off). On load the Durable Object moves a back-row seat still stored in `slot` to `seat` and writes the
   document once.
-- Replay log: beside the `doc` row the Durable Object keeps one row per WIB day, `log:YYYY-MM-DD` (at most 8), built by diffing the document over every accepted beat or webhook (`logDoc` in `src/history.ts`) and written in the same `put`. It holds, per day, the session hashes (`keys`, never served), each session's agent, its public task (repository and title, allowlisted repositories only), events `[t, ordinal, seat, state, activity, until, helpers]`, merges, finished runs and production deploys; never a branch, prompt text or session hash in served output. Caps per day: 200 sessions, 3,000 events, 200 merges, 500 runs, 50 deploys and 120 KB (past one the row says `truncated`). The first write of a new WIB day starts the row with a carry-in event for each live session, closes the previous row and deletes rows older than the window. A `privatized` repository is scrubbed from every stored row in the same write. The served day is cleaned again in the Worker (`cleanHistory`: the allowlist and the current blocklist). Free-plan estimates (a busy day writes under about 10,000 rows of 100,000) are in `docs/agents/office.md`. Rolled back to before the replay, the Worker answers 404 to `/history` (the Function then answers the index 503, a day request the fixed 404, and the drawer says "Replay unavailable"); the stored rows wait untouched until a later roll forward prunes those outside the window.
+- Replay log: beside the `doc` row the Durable Object keeps one row per WIB day, `log:YYYY-MM-DD` (at most 8), built by diffing the document over every accepted beat or webhook (`logDoc` in `src/history.ts`) and written in the same `put`. It holds, per day, the session hashes (`keys`, never served), each session's agent, its public task (repository and title, allowlisted repositories only), events `[t, ordinal, seat, state, activity, until, helpers]`, merges, finished runs and production deploys; never a branch, prompt text or session hash in served output. Caps per day: 200 sessions, 3,000 events, 200 merges, 500 runs, 50 deploys and 120 KB (past one the row says `truncated`). The first write of a new WIB day starts the row with a carry-in event for each live session, closes the previous row and deletes rows older than the window. A `privatized` repository is scrubbed from every stored row in the same write. The served day is cleaned again in the Worker (`cleanHistory`: the repository allowlist and `cleanTitle`). Free-plan estimates (a busy day writes under about 10,000 rows of 100,000) are in `docs/agents/office.md`. Rolled back to before the replay, the Worker answers 404 to `/history` (the Function then answers the index 503, a day request the fixed 404, and the drawer says "Replay unavailable"); the stored rows wait untouched until a later roll forward prunes those outside the window.
 - Secrets (set by `deploy.yml` from the `production` environment's GitHub secrets):
   - `OFFICE_INGEST_KEY` (GitHub secret `OFFICE_INGEST_KEY`): HMAC key of relay beats; the owner's Keychain holds the
     same value.
@@ -56,8 +56,8 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Pull requests only when the head branch is in the same repository (forks are ignored) and the sender is in
   `OFFICE_GITHUB_ACTORS` or the author association is OWNER, MEMBER or COLLABORATOR.
 - Workflow runs only when `head_repository` is the same repository (runs from forks are ignored).
-- A branch name with a blocklisted term drops the branch: a beat keeps only its repository, a workflow run or pull
-  request on it is ignored, and so is a push to a blocked default branch.
+- Titles go through `cleanTitle` (one clean line, cut to the cap); there is no term blocklist, so the repository
+  allowlist is the privacy boundary.
 - A `repository` event with action `privatized` removes the repository from the known-public set and strips its
   runs, pull requests, feed items and the repository data of its sessions.
 
@@ -87,8 +87,7 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Skip the Worker steps inside the Pages job and its rollback redeploy: repository variable
   `OFFICE_WORKER_DEPLOY = "false"` (for
   example while deploying by hand, from the repository root:
-  `bun scripts/build-knowledge.ts && cd workers/office && bunx wrangler deploy`; the first step writes
-  `functions/_generated/safety.json`, which the Worker bundles).
+  `cd workers/office && bunx wrangler deploy`).
 - Logs: Cloudflare dashboard, Workers, `hq-office`, Observability. The Worker logs no beat or webhook body.
 - Free plan: Durable Object requests and Workers requests are 100,000 per day each; one row is written per accepted
   beat or webhook plus a log row per loggable change (100,000 rows per day; a busy day stays under about 10,000). Spec section 7 has the estimates.

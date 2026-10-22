@@ -30,7 +30,7 @@ How the site's content is stored, checked and published. The authoritative rules
 
 The "How this site was built" page (`/{locale}/build`) renders `content/build-story.json`; its numbers come from a snapshot, never from the text.
 
-- Edit `content/build-story.json` (title, lead, the five stations, the quality gates, the "coming soon" notes). Text is `{ en, id }`, neutral or third person, no client names (C3), no cloud resource ids or hostnames. `tests/content/build-story.test.ts` (schema) and `tests/content/safety.test.ts` (public-safety lint) check it.
+- Edit `content/build-story.json` (title, lead, the five stations, the quality gates, the "coming soon" notes). Text is `{ en, id }`, neutral or third person, no client names (C3), no cloud resource ids or hostnames. `tests/content/build-story.test.ts` (schema) and `tests/content/safety.test.ts` (forbidden patterns) check it; client names are kept out by review.
 - Build rounds: each round lists its merged pull request range (`prs.from` to `prs.to`, `to: null` while the round is open). Add a round with its range when a round ships; the page counts pull requests and dates per round from the snapshot.
 - Never type a snapshot count in the text (commits, pull requests, tests, files, documents): put it in the snapshot or leave it out. Budgets may be written in a gate's copy (`budget`) because `tests/content/build-story.test.ts` pins each one to its source (`e2e/budgets.ts`, `lighthouserc.json`); change the number in both places.
 - Pull requests whose diff exposes text the site hides (client names, C3) go into the timeline's `unlinkedPrs`: they are still counted and listed, as plain text without a link. Round summaries never mention what was hidden.
@@ -100,7 +100,7 @@ A paper or thesis with `document` in `site-content.json` gets "Read the paper" (
 
 1. **Check the publisher's posting rule.** IEEE allows the authors' accepted manuscript with IEEE's notice, never the publisher's final PDF, so IEEE papers must use `version: "manuscript"` and `notice: "ieee"` (the schema enforces both; the notice and the DOI link render next to the reader). Today the ICAIBDA 2021 e-wallet paper is the authors' manuscript; the ICICyTA 2021 COVID-19 paper has no hosted PDF because only the IEEE final version exists. Its accepted manuscript can be added later the same way.
 2. **Redact personal data first**: student or staff IDs, home addresses, phone numbers, signatures and QR codes that link to them. Rasterize the affected pages with the regions blacked out (so no text is left to extract) and keep the other pages as they are; never commit the unredacted original. Use `version: "redacted"`. The thesis PDF (`sentiboard-bsc-thesis`) was redacted this way on pages 1 to 4.
-3. **Render the pages.** Save it as `public/papers/{file}.pdf` (`file` = the publication id), add `"document": { "file", "version", "notice"? }` and run `bun run paper:pages` (needs `pdftoppm`, `pdftotext` and `cwebp`). It refuses a PDF whose text still holds personal data patterns or blocklisted names, then writes `public/papers/{file}/` (1400 px webp per page) and `content/generated/paper-pages.json`; `tests/content/papers.test.ts` fails until the images match the PDF.
+3. **Render the pages.** Save it as `public/papers/{file}.pdf` (`file` = the publication id), add `"document": { "file", "version", "notice"? }` and run `bun run paper:pages` (needs `pdftoppm`, `pdftotext` and `cwebp`). It refuses a PDF whose text still holds personal data patterns (NIM, NIP, NIK/NPWP, RT/RW address, phone), then writes `public/papers/{file}/` (1400 px webp per page) and `content/generated/paper-pages.json`; `tests/content/papers.test.ts` fails until the images match the PDF.
 
 ## Study guides
 
@@ -109,15 +109,16 @@ The owner's certification study guides (today AI-103, AI-901, GH-600 and Google 
 - **Dataset**: `content/study-guides.json`, a separate file (zod `StudyGuidesFileSchema`), one entry per guide in shelf order.
   - Written by hand: `slug`, `certId` (a `certifications[].id`; it links the guide to its certification card), `code` (or `null`), `spine` (at most 14 characters, for the L4 Study Vault's book spines), `issuer`, `title` and `summary` (`{ en, id }`; titles in Title Case with no first person), `edition` (`YYYY-MM`), `file` (the download file name) and 1 to 8 exam `domains` (`weight` `[min, max]` percent and a `{ en, id }` label).
   - Written by the script: `pages`, `bytes`, `version` (12 hex characters of the prepared file's sha256) and `cover`.
-- **Prepare and upload**: `bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...` scans the text, rewrites the PDF metadata, packs it into object streams (range friendly for pdf.js), records the machine fields and renders the cover; `bun scripts/study-guides.ts upload [<slug> ...]` puts the prepared files into the private R2 bucket `hq-study-guides` as `<slug>/<version>.pdf`; `check` compares the prepared files with the JSON. Needs `qpdf`, poppler and `cwebp` (`brew install qpdf poppler webp`) and `bunx wrangler login`.
+- **Prepare and upload**: `bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...` checks the text for phone numbers, rewrites the PDF metadata, packs it into object streams (range friendly for pdf.js), records the machine fields and renders the cover; `bun scripts/study-guides.ts upload [<slug> ...]` puts the prepared files into the private R2 bucket `hq-study-guides` as `<slug>/<version>.pdf`; `check` compares the prepared files with the JSON. Needs `qpdf`, poppler and `cwebp` (`brew install qpdf poppler webp`) and `bunx wrangler login`.
 - **Covers**: page 1 of each prepared PDF, 480 px wide webp in `public/study-guides/<slug>.webp`, committed.
 - **Never commit a PDF.** The source and prepared PDFs stay out of the repository (prepared copies go to the gitignored `.study-guides/`); the site serves them only through `/api/guides/<slug>`.
 - **Replacing a guide** gives it a new version and key; delete the old object only after the new deploy is live (runbook).
-- **Safety**: `prepare` refuses text with a blocklisted term or a phone number; reviewed textbook phrases that trip the list sit in `BENIGN_PHRASES` in the script.
+- **Safety**: `prepare` refuses text with an Indonesian phone number; review the guide yourself for client names (C3) before preparing it.
 
 ## Public safety
 
 - Private evidence never enters the repo.
-- The public-safety lint blocks client company names (committed in `content/safety-blocklist.default.txt`) and private repository names (`content/.safety-blocklist.local.txt`, gitignored, and the `SAFETY_BLOCKLIST` env var / CI secret).
-- Product names in `content/safety-allowlist.txt` are never flagged.
-- `scripts/scan-export.ts` scans every text file of the built `out/` (JS, CSS, SVG and MD included) after the CI and production builds, and fails `main` and deploys when the private list is missing; an e2e check repeats the scan.
+- The content lint (`tests/content/safety.test.ts`, `bun run validate:content`) blocks the forbidden patterns in the dataset, MDX and messages: em dashes, money amounts, phone numbers, Azure resource hostnames and the Master's degree. A pod's `liveUrl` on a public live host (`PUBLIC_LIVE_HOSTS`) is exempt from the hostname rule.
+- Client company names (C3) and private repository or cloud resource names have no automated list (owner decision 2026-10-22): review keeps them out, and Ask prompt rule 6 names clients only by sector.
+- Product names in `content/safety-allowlist.txt` feed the Ask entity allowlist; never add a client name there.
+- `scripts/scan-export.ts` checks the built `out/` after the CI and production builds for the per-page script policy only (one `data-hq-csp` meta, a sha256 for every inline script, no `'unsafe-inline'`).

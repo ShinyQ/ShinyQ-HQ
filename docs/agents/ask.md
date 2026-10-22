@@ -34,8 +34,7 @@ Owner decision 2026-10-19 ([decision](../decisions/2026-10-19-ask-rover-voice.md
 - Pack builder: `scripts/build-knowledge.ts` (runs in `build` and `typecheck`), writing `functions/_generated/` (gitignored, never served):
   - `pack.json`: the stored pack (`StoredPack`: the text pack plus its precomputed BM25 index, `storePack` in `functions/_lib/pack-index.ts`), the Workers KV value; never imported by the Function;
   - `fallback.json`: the fallback text pack (`FALLBACK_CHUNKS`: profile, now, contact, site-build, principles; its own `packVersion`), bundled and indexed only when served;
-  - `pack-meta.json`: the bundle's pin `{ schema, version, packDate, sha256, bytes }` of `pack.json`;
-  - `safety.json`: the output blocklist, always bundled, never in KV, so a KV write can never relax the output checks.
+  - `pack-meta.json`: the bundle's pin `{ schema, version, packDate, sha256, bytes }` of `pack.json`.
 - Pack source (`functions/_lib/pack-source.ts`), per request, never throwing:
   - memory (the pointer is re-read at most every 60 s per isolate), then KV `pack:current` (`cacheTtl` 60) and `pack:v1:<version>` (`cacheTtl` 86,400);
   - a value is served only when its SHA-256 equals the pointer's, its `schema` is `PACK_SCHEMA` and its shape holds (required chunks, index lengths); otherwise the bundle's pin (`pack-meta.json`), then the fallback pack;
@@ -88,7 +87,7 @@ All bindings and vars live in `wrangler.toml`.
   - `content/ask/site-build.json` when the site's own stack, hosting or gates change.
 - Keep `content/ask/suggestions.json` true too (its retrieval test fails when a pill no longer finds its chunks).
 - Live facts in the golden or red-team sets are `{{facts.<path>}}` placeholders (`src/ask/golden-facts.ts`), never literals.
-- A new client of an employer goes into the blocklist first.
+- A new client of an employer is named only by its sector (C3, prompt rule 6); there is no client name list to update.
 
 ## Live facts
 
@@ -192,7 +191,7 @@ Security order (spec 7.4):
 7. Global cap.
 8. Scope declines (harmful, persona requests, rule overrides, private topics, opinions about people, employers or clients; no model call).
 9. Retrieval + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
-10. Output checks: blocklist, forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source.
+10. Output checks: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source.
 11. Then cache, event, SSE.
 
 - Bump `PROMPT_VERSION` in `functions/_lib/prompt.ts` with any prompt change.

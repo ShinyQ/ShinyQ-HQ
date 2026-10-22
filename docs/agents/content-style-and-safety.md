@@ -1,6 +1,6 @@
 # Content style and safety
 
-The hard rules in full, the editorial voice and title rules for content, and the public-safety lint that keeps private data and client names out of the repo and the export. Index: [AGENTS.md](../../AGENTS.md).
+The hard rules in full, the editorial voice and title rules for content, and the public-safety lint (forbidden patterns) that keeps private data out of the repo. Index: [AGENTS.md](../../AGENTS.md).
 
 ## Hard rules
 
@@ -155,63 +155,27 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 ## Public-safety lint
 
-### Content scan
+### Forbidden patterns
 
-- `tests/content/safety.test.ts` scans `site-content.json`, MDX and messages.
-- It uses the merged blocklist:
-  - the committed default list
-  - `content/.safety-blocklist.local.txt`
-  - the `SAFETY_BLOCKLIST` env var, which CI reads from the required repository secret
-- And the forbidden patterns: em dash, money, phone numbers, Azure hostnames, Master's degree.
-- Validate content edits quickly with `bun run validate:content`.
-
-### Blocklist sources and format
-
-- The committed default list names the client companies (C3); they are public companies, not secrets.
-- SMBC Indonesia was also an employer, so its term is a regex that only allows the exact employer label "Jenius (SMBC Indonesia)".
-- Add any new client of an employer there.
-- Format: one term per line or comma separated, `#` comments.
-  - Plain terms match case-insensitively on word boundaries.
-  - `/regex/` terms are case-sensitive.
-
-### Allowlist
-
-- `content/safety-allowlist.txt` lists the allowed product names.
-- `loadBlocklist` drops matching terms from every source (a plain term equal to one, or a `/regex/` that names one), so an older private list never flags them.
-- Never add a client name (a unit test checks).
-
-### Build output scan
-
-- `scanBuildOutput(out, loadBlocklist())` covers every `.html`, `.txt`, `.json`, `.xml`, `.webmanifest`, `.js`, `.mjs`, `.css`, `.svg` and `.md` file of the export (`BUILD_TEXT_FILE`).
-- Why: client chunks do carry content strings (Ask pills, TS constants), so a client name cannot reach a page, RSC payload, script, sitemap or room data file.
-- Blocklist terms only: forbidden patterns would flag RSC references such as `"$1c"`.
-- Machine-made tokens are masked before matching (`maskBuildTokens`): CSP and SRI hashes (`sha256-<base64>`), base64 data URIs, the exact Next.js build id (the `_next/static/<id>/` directory name) and the hash segment of chunk and media file names (a bare hash with a digit after `chunks/`; the part after the readable stem in `media/`). They differ per build, so one could spell a short term such as `/\b[Ss][Mm][Bb][Cc]/` by chance (a CSP hash did once in CI, PR #228). Readable text, payload strings and asset name stems stay scanned.
-- `scripts/scan-export.ts` runs it:
-  - right after the CI build (`site` job)
-  - after the production build in `deploy.yml`, the artifact that ships
-- `e2e/deploy.spec.ts` repeats it.
-
-### Private blocklist gate (owner decision)
-
-- `scripts/scan-export.ts` fails `push`, `workflow_dispatch` and `schedule` runs (main, deploy) when the merged list has no term beyond the committed default list.
-- On `pull_request` it warns with a job summary line instead (forks and Dependabot get no secrets), so a skip is never silent.
-- It never prints the terms or their number.
-- The repository variable `SAFETY_BLOCKLIST_GRACE_UNTIL` (`YYYY-MM-DD`) turns the failure into a warning until that day while the owner sets the secret.
-
-### Never print a private term
-
-- Anything that can print a match (tests, `scanBuildOutput` hits, scripts, ask-eval logs and reports) uses:
-  - `findBlockedLabels` / `formatBlockedTerms`: committed default terms stay readable; every other term shows as `private term #n`.
-    - `n` is its position among the private terms: `.safety-blocklist.local.txt` order, then the secret.
-  - `redactBlockedText` for free text.
-- ask-eval shows a blocklist replacement as a count.
-- `tests/unit/safety-redaction.test.ts` is the canary.
+- `tests/content/safety.test.ts` scans `site-content.json`, MDX and messages for the forbidden patterns (`FORBIDDEN_PATTERNS` in `src/content/safety.ts`): em dash, money amounts, phone numbers, Azure resource hostnames, Master's degree.
+- Validate content edits quickly with `bun run validate:content` (schema, forbidden patterns, Title Case).
 
 ### Live links
 
-- The Azure hostname pattern stays forbidden in all copy, except a pod's `liveUrl` leaf whose URL passes `isPublicLiveUrl`.
+- The Azure hostname pattern stays forbidden in all copy, except a pod's `liveUrl` leaf whose URL passes `isPublicLiveUrl` (`PUBLIC_LIVE_HOSTS` in `src/content/live-links.ts`).
   - `leafForbiddenPatterns(leaf)` in `src/content/safety.ts`, used by the content test and `validate:content`.
-- `loadBlocklist` also drops a private term equal to a public host or its App Service name (`PUBLIC_LIVE_NAMES`: `mii-microsoft`, `mii-microsoft-ai`).
-  - So a private list naming them cannot flag the public URLs.
-  - Every other resource name stays private and blocked.
-- They stay out of `content/safety-allowlist.txt` on purpose: that file also feeds the Ask entity allowlist, where `mii-microsoft` would let "worked at Microsoft" pass the employer check.
+
+### Build output scan
+
+- `scanBuildOutput(out, terms)` in `src/content/safety.ts` is a generic term scanner of the export: every `.html`, `.txt`, `.json`, `.xml`, `.webmanifest`, `.js`, `.mjs`, `.css`, `.svg` and `.md` file (`BUILD_TEXT_FILE`).
+- Machine-made tokens are masked before matching (`maskBuildTokens`): CSP and SRI hashes, base64 data URIs, the Next.js build id and the hash segment of chunk and media file names, so a per-build hash never spells a term by chance.
+- `e2e/pageview.spec.ts` uses it to prove perspective fingerprints never reach `out/`.
+- `scripts/scan-export.ts` does not scan terms: it runs only the per-page script policy check (`exportPolicyProblems`), see [ci-and-deploy.md](ci-and-deploy.md).
+
+### Client names (C3)
+
+- There is no automated list of client names (owner decision 2026-10-22, [`docs/decisions/2026-10-22-safety-blocklist-removed.md`](../decisions/2026-10-22-safety-blocklist-removed.md)).
+- The C3 rule stays: review keeps client names out of the repo and the export, and Ask prompt rule 6 names clients only by sector.
+- `content/safety-allowlist.txt` lists product names; it feeds the Ask knowledge pack's `products`, part of the entity allowlist of the Ask output entity check.
+  - Never add a client name.
+  - Public live hosts (`mii-microsoft`, for example) stay out of it: there `mii-microsoft` would let "worked at Microsoft" pass the employer check.

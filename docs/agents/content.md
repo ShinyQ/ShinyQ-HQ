@@ -4,7 +4,7 @@ How code reads the dataset and its side files (CV, paper PDFs, logos, diagrams, 
 
 Index: [AGENTS.md](../../AGENTS.md).
 
-Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules, Title Case, public-safety lint), [../content.md](../content.md) (content workflows), [../superpowers/specs/agent-hq/06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contracts.md) (appendix 06).
+Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules, Title Case, forbidden patterns), [../content.md](../content.md) (content workflows), [../superpowers/specs/agent-hq/06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contracts.md) (appendix 06).
 
 ## Accessors and types
 
@@ -46,7 +46,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - the content in `content/site-content.json`;
   - the markers in `tests/content/cv-facts.test.ts` (site side always runs; the PDF side runs where `pdftotext` exists, so locally, not on CI).
 - Facts with stronger evidence that the CV does not contradict (git history, credential records) stay and are listed in the PR for the owner.
-- The PDF is exempt from the public-safety lint (binary; it lists items the site text hides, by the owner's choice).
+- The PDF is exempt from the forbidden patterns lint (binary; it lists items the site text hides, by the owner's choice).
 - Old per-locale URLs 301 to it (`public/_redirects`).
 
 ## Paper PDFs
@@ -56,7 +56,7 @@ Related: [content-style-and-safety.md](content-style-and-safety.md) (hard rules,
   - Personal data (student or staff IDs, home addresses, phone numbers, signatures, QR codes) is redacted by rasterizing the page with the regions blacked out, never by covering text.
   - The unredacted original is never committed.
   - IEEE papers host only the authors' manuscript with `notice: "ieee"` (schema check), never IEEE's final PDF. The ICICyTA 2021 COVID-19 paper has none yet; its accepted manuscript can be added later.
-- After adding or replacing a PDF run `bun run paper:pages`: it refuses text that matches `PERSONAL_DATA_PATTERNS` or the blocklist. `tests/content/papers.test.ts` pins the sha256 and runs the same check when `pdftotext` exists.
+- After adding or replacing a PDF run `bun run paper:pages`: it refuses text that matches `PERSONAL_DATA_PATTERNS` (`paperTextProblems`: NIM, NIP, NIK/NPWP, RT/RW address, phone). `tests/content/papers.test.ts` pins the sha256 and runs the same check when `pdftotext` exists.
 - Preview data: `buildPaperPreview` adds `PaperPreview.document` (`pdf`, `version`, `notice`, `pageCount`). Page images stay out of the preview; the lazy reader reads `paperPages(file)` from `@/lib/papers`.
 - "Read the paper" (`PaperReadLink`: a real link to the PDF that calls `openPaper(preview, { read: true })`):
   - sits in the Page View research list and the L4 Research drawer;
