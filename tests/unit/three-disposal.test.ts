@@ -45,7 +45,7 @@ function undisposedMemos(source: string, file = "component.tsx"): string[] {
     ) {
       const name = n.name.text;
       const scope = enclosingFunction(n).getText(sf);
-      if (!new RegExp(`\\b${name}\\??\\.dispose\\(|\\buseDispose\\(\\s*${name}\\s*\\)`).test(scope)) missing.push(name);
+      if (!new RegExp(`\\b${name}\\??\\.dispose\\(|\\buseDispose\\(\\s*${name}(?:\\.\\w+)?\\s*\\)`).test(scope)) missing.push(name);
     }
     ts.forEachChild(n, visit);
   };
@@ -71,6 +71,7 @@ describe("three.js disposal lint", () => {
     expect(undisposedMemos("function A() { const g = useMemo(() => new BoxGeometry(), []); useDispose(g); return g; }")).toEqual([]);
     expect(undisposedMemos("function A() { const g = useMemo(() => new BoxGeometry(), []); useEffect(() => () => g.dispose(), [g]); }")).toEqual([]);
     expect(undisposedMemos("function A() { const g = useMemo(() => new BoxGeometry(), []); useEffect(() => () => g?.dispose(), [g]); }")).toEqual([]);
+    expect(undisposedMemos("function A() { const g = useMemo(() => new BoxGeometry(), []); useDispose(g.geometry); return g; }")).toEqual([]);
     expect(undisposedMemos("function A() { const c = useMemo(() => new Color(), []); return c; }")).toEqual([]);
     // Another component disposing a value of the same name does not count.
     expect(undisposedMemos("function A() { const g = useMemo(() => new BoxGeometry(), []); } function B() { const g = useMemo(() => new BoxGeometry(), []); useDispose(g); }")).toEqual(["g"]);
