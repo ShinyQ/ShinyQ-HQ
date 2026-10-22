@@ -135,6 +135,7 @@ set them.
 - `OFFICE_RELAY_ENDPOINT`: another endpoint, accepted only on `http://127.0.0.1:<port>/`.
 - `OFFICE_RELAY_SPOOL`: append beats to this file instead of starting the sender (the `flush` child appends there too).
 - `OFFICE_RELAY_COALESCE_MS`: the coalescing window in ms (0 to 60000) instead of 10 s.
+- `OFFICE_RELAY_LOCK_MS`: how long a hook waits for a session lock in ms (0 to 10000) instead of 30 ms.
 - `OFFICE_RELAY_HOME`: the relay directory instead of `~/.office-relay` (an empty `HOME` falls back to the OS home).
 - `OFFICE_RELAY_INSTALL_DIR`: the program directory instead of `~/.hq-office-relay` (tests only).
 

@@ -9,7 +9,7 @@ import { COALESCE_MS } from "./beat";
 import { flushSession, runHook } from "./hook";
 import { install, installed, installPaths, uninstall } from "./install";
 import { endpointOf, postBeat, readIngestKey } from "./send";
-import { appendLog, isPaused, loadConfig, relayPaths, type RelayPaths } from "./store";
+import { appendLog, isPaused, loadConfig, LOCK_BUDGET_MS, relayPaths, type RelayPaths } from "./store";
 
 /** This file, or the installed bundle when running from it (Bun keeps `import.meta.url` as the bundle's own URL). */
 const SELF = fileURLToPath(import.meta.url);
@@ -60,6 +60,13 @@ function coalesceMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env.OFFICE_RELAY_COALESCE_MS;
   const n = raw && /^\d{1,5}$/.test(raw) ? Number(raw) : NaN;
   return n >= 0 && n <= 60_000 ? n : COALESCE_MS;
+}
+
+/** The lock wait: LOCK_BUDGET_MS, or OFFICE_RELAY_LOCK_MS (0 to 10000 ms) for tests that check the lock, not the clock. */
+function lockBudgetMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.OFFICE_RELAY_LOCK_MS;
+  const n = raw && /^\d{1,5}$/.test(raw) ? Number(raw) : NaN;
+  return n >= 0 && n <= 10_000 ? n : LOCK_BUDGET_MS;
 }
 
 /** The trailing sender ends after this many wakes (at most one per 10 to 15 s: about an hour); a stale `due` lets the next hook start another. */
@@ -132,7 +139,7 @@ async function main(argv: string[]): Promise<void> {
   const paths = relayPaths();
   switch (command) {
     case "hook":
-      runHook(a, b, await readStdin(), { paths, now: Date.now, readGit: (cwd) => readGit(cwd), dispatch, schedule, coalesceMs: coalesceMs() });
+      runHook(a, b, await readStdin(), { paths, now: Date.now, readGit: (cwd) => readGit(cwd), dispatch, schedule, coalesceMs: coalesceMs(), lockBudgetMs: lockBudgetMs() });
       return;
     case "send":
       return send(paths);

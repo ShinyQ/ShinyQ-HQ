@@ -284,7 +284,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   every file (and install builds the bundle) before writing and exit 1 on failure; uninstall also removes the program
   and keeps `~/.office-relay/`. Codex needs a trust in `/hooks`.
 - `OFFICE_RELAY_KEY`, `OFFICE_RELAY_ENDPOINT` (`http://127.0.0.1` only), `OFFICE_RELAY_SPOOL`, `OFFICE_RELAY_HOME`,
-  `OFFICE_RELAY_COALESCE_MS` (0 to 60000) and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the
+  `OFFICE_RELAY_COALESCE_MS` (0 to 60000), `OFFICE_RELAY_LOCK_MS` (0 to 10000) and `OFFICE_RELAY_INSTALL_DIR` are test and debugging overrides; the
   installed hooks never set them.
 - Helpers (`helpers.ts`, mapping table in the relay README): Copilot `subagentStart` / `subagentStop`, Claude Code and
   Codex `SubagentStart` / `SubagentStop` keep a per-session list in `~/.office-relay/sessions/<hash>.helpers.json`

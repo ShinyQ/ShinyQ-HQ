@@ -17,6 +17,8 @@ export interface HookDeps {
   schedule: (session: string, due: number, token: string) => void;
   /** The coalescing window, COALESCE_MS unless a test (or OFFICE_RELAY_COALESCE_MS) sets it. */
   coalesceMs?: number;
+  /** How long a hook waits for a session lock, LOCK_BUDGET_MS unless a test (or OFFICE_RELAY_LOCK_MS) sets it. */
+  lockBudgetMs?: number;
 }
 
 const isAgent = (x: string): x is OfficeAgent => (OFFICE_AGENTS as readonly string[]).includes(x);
@@ -65,7 +67,7 @@ function offer(deps: HookDeps, session: string, beat: OfficeBeatV1, label: strin
     const outcome = plan === "queue" ? "queued" : "skipped";
     appendLog(paths, `${label} ${outcome}`);
     return outcome;
-  });
+  }, deps.lockBudgetMs);
 }
 
 /**
@@ -138,7 +140,7 @@ function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", pa
       return "ignored";
     }
     return offer(deps, session, beat, `${agent} ${event} helpers ${helpers}`);
-  });
+  }, deps.lockBudgetMs);
 }
 
 /**

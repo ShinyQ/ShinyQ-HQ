@@ -138,8 +138,9 @@ describe("office-relay CLI", () => {
     for (let round = 0; round < 3; round++) {
       const h = home();
       const spool = path.join(h, "spool");
-      // No coalescing window: every count goes out at once, so the spool shows each one.
-      const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool, OFFICE_RELAY_COALESCE_MS: "0" };
+      // No coalescing window: every count goes out at once, so the spool shows each one. A lock wait far over any
+      // critical section under load, so the test checks the lock, not the clock.
+      const env = { ...BASE_ENV, HOME: h, OFFICE_RELAY_SPOOL: spool, OFFICE_RELAY_COALESCE_MS: "0", OFFICE_RELAY_LOCK_MS: "5000" };
       const ids = ["helper-a", "helper-b"];
       for (const agentId of ids) expect(run(["hook", "copilot", "subagentStart"], env, JSON.stringify({ ...HOOK_FIXTURES.copilot.subagentStart, agentId })).status).toBe(0);
       const stop = (agentId: string) =>
