@@ -1,6 +1,6 @@
 # Agent Office revamp (living crew, ship-it pipeline, day replay): design
 
-Date: 2026-10-20. Status: implemented (A #274, A2 #276, B #279, C (this PR)). Approved by the owner on 2026-10-20
+Date: 2026-10-20. Status: implemented (A #274, A2 #276, B #279, C #284). Approved by the owner on 2026-10-20
 (direction D, staged all-in; section 2), relayed by the coordinator; the stage A look approved on 2026-10-20 from the
 prototype renders (thought trail only, beacon 1.6 u, slim LED-lane tower, the done spin ending on the camera); A2 (the
 always-live office and ten desks, sections 5.9 and 5.10) approved on 2026-10-21.
