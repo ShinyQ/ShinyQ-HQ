@@ -93,7 +93,7 @@ export const RULES: Rule[] = [
   // The generated study guide PDF (with its byte-range route) only the guides specs use.
   { test: /^e2e\/fixtures\/guide-pdf\.ts$/, specs: ["guides", "guides-vault"] },
   // Not part of the site or the e2e suite.
-  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|measure-delivery|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
+  { test: /^(docs|tests|\.github)\/|\.md$|^scripts\/(e2e-|validate-|build-facts|floor-thumbs|og-stills|visual-gate|perf-|shot-diff|ci-status|merge-gate|rollback|flaky-report)|^lighthouserc\.json$|^eslint\.config\.mjs$|^vitest\.config\.mts$/, specs: [] },
   // Offline tools (captures, Ask evaluation and upkeep, media and PDF renders, deploy and uptime checks, the docs index): never part of the export.
   {
     test: /^scripts\/(arrival-shots|ask-eval|ask-pack|ask-samples|ask-staleness|b1-reactor-shots|b1-shots|brand-marks|brand-wordmark|capture-dev|ci-nightly|content-gap|cv-pages|deploy-smoke|docs-index|intro-shots|media-sizes|office-shots|paper-pages|pdf-pages|provision-ask|purge-ask-logs|readme-hero|refresh-facts|sky-shots|study-guides|subset-fonts|title-case|uptime|check-client-chunks)\./,
