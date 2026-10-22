@@ -5,8 +5,8 @@
  * user agent, after the page reports ready. Writes PNGs and metrics.json (draw calls and triangles
  * per shot) to --out.
  *
- *   bun scripts/capture-dev.ts --base http://localhost:3000 --out screenshots/roof-concepts \
- *     'observatory-spawn=/en/dev/roof?concept=observatory&at=spawn&ui=0'
+ *   bun scripts/capture-dev.ts --base http://localhost:3000 --out screenshots/cert-wall \
+ *     'certs-30=/en/dev/certs?view=3d&n=30&tier=full'
  *
  * --ready takes a CSS selector (default: [data-ready='1']) or `hq` (waits for the 3D tower to draw).
  */
