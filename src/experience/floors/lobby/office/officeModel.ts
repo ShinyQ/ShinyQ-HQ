@@ -49,8 +49,8 @@ export interface OfficeViewReplay {
   day: string;
   seq: number;
   truncated: boolean;
-  /** The day as "Mon 19 Oct" and "Sen 19 Okt", formatted by the replay chunk. */
-  label: { en: string; id: string };
+  /** The day as "Mon 19 Oct" / "Sen 19 Okt" in the page's locale, formatted by the replay chunk. */
+  label: string;
 }
 
 const offDuty = (slot: number): OfficeRoverView => ({ slot, agent: null, state: "asleep", activity: "resting", title: null, repo: null, progress: null, job: null, since: null, recent: [], helpers: 0 });

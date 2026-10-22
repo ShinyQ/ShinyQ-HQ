@@ -19,8 +19,11 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
   const clock = { now: OFFICE_FIXTURE_NOW };
   const published: { state: ReplayState; snapshot: OfficeFeedSnapshot | null }[] = [];
   const reduced = { on: opts.reduced ?? false };
+  const locale = { is: "en" as "en" | "id" };
+  const fail = { index: false, day: false };
   const answer = (url: string): Answer => {
-    if (url === OFFICE_HISTORY_PATH) return opts.index ?? { status: 200, body: INDEX };
+    if (url === OFFICE_HISTORY_PATH) return fail.index ? { status: 503, body: { v: 1, error: "office" } } : (opts.index ?? { status: 200, body: INDEX });
+    if (fail.day) return { status: 404, body: { v: 1, error: "day" } };
     const day = new URL(url, "https://hq.test").searchParams.get("day")!;
     return opts.day ? opts.day(day) : day === DAY.day ? { status: 200, body: DAY } : { status: 404, body: { v: 1, error: "day" } };
   };
@@ -34,6 +37,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
     },
     now: () => clock.now,
     reduced: () => reduced.on,
+    locale: () => locale.is,
     publish: (state, snapshot) => published.push({ state, snapshot }),
   });
   const last = () => published.at(-1)!;
@@ -41,7 +45,7 @@ function harness(opts: { index?: Answer; day?: (day: string) => Answer; reduced?
   const play = (s: number, dt = 0.05) => {
     for (let t = 0; t < s - 1e-9; t += dt) feed.step(dt, reduced.on);
   };
-  return { feed, calls, clock, published, last, play, reduced };
+  return { feed, calls, clock, published, last, play, reduced, locale, fail };
 }
 
 /** A live snapshot at `at` with `desks` (slot, state) and deploy ships (time, status). */
@@ -94,7 +98,7 @@ describe("office replay feed", () => {
     expect(snapshot?.v).toBe(4);
     expect(state.dayS).toBe(Math.round(dayTime(PLAN, 0)));
     expect(state.clock).toBe(clockOf(state.dayS));
-    expect(state.label).toEqual({ en: dayLabel(TODAY, "en"), id: dayLabel(TODAY, "id") });
+    expect(state.label).toBe(dayLabel(TODAY, "en"));
     // A second auto() while playing does nothing.
     await h.feed.auto();
     expect(h.calls).toHaveLength(2);
@@ -255,6 +259,47 @@ describe("office replay feed", () => {
     expect(h.last().state).toMatchObject({ playS: PLAN.duration, seq: seq + 1 });
     h.feed.seek(-5);
     expect(h.last().state.playS).toBe(0);
+  });
+
+  it("pauses an `auto` replay while it rests and resumes it from the start; a visitor's day paused at its end plays again from 0", async () => {
+    const h = harness();
+    await h.feed.auto();
+    h.play(PLAN.duration + 0.1);
+    expect(h.last().state.status).toBe("resting");
+    h.feed.pause();
+    expect(h.last().state.status).toBe("paused");
+    h.play(REPLAY.restS + 1);
+    expect(h.last().state.status).toBe("paused");
+    h.feed.resume();
+    expect(h.last().state).toMatchObject({ status: "playing", playS: 0 });
+    h.play(1);
+    expect(h.last().state.status).toBe("playing");
+    expect(h.last().state.playS).toBeGreaterThan(0.5);
+    const v = harness();
+    await v.feed.play(TODAY);
+    v.play(PLAN.duration + 1);
+    expect(v.last().state).toMatchObject({ status: "paused", playS: PLAN.duration });
+    v.feed.resume();
+    v.play(0.5);
+    expect(v.last().state.status).toBe("playing");
+    expect(v.last().state.playS).toBeLessThan(2);
+  });
+
+  it("labels the day in the page's locale, and a load that ends without a day drops the old day and label", async () => {
+    const h = harness();
+    h.locale.is = "id";
+    await h.feed.play(TODAY);
+    expect(h.last().state.label).toBe(dayLabel(TODAY, "id"));
+    h.clock.now += 61_000;
+    h.fail.index = true;
+    await h.feed.play(TODAY);
+    expect(h.last().state).toMatchObject({ status: "unavailable", day: null, label: null });
+    h.fail.index = false;
+    await h.feed.play(TODAY);
+    h.clock.now += 61_000;
+    h.fail.day = true;
+    await h.feed.play(TODAY);
+    expect(h.last().state).toMatchObject({ status: "unavailable", day: null, label: null });
   });
 
   it("keeps the playback time off the published state between ticks, and state() reads it exact", async () => {

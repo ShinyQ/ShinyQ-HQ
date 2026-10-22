@@ -105,17 +105,11 @@ export function playTime(plan: ReplayPlan, dayS: number): number {
 export const playable = (d: { events: number; prs: number; runs: number; deploys: number }): boolean => d.events + d.prs + d.runs + d.deploys > 0;
 
 /** "Mon 19 Oct" / "Sen 19 Okt". */
-export function dayLabel(day: string, locale: "en" | "id"): string {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
-    .formatToParts(Date.UTC(y, m - 1, d))
-    .filter((p) => p.type !== "literal")
-    .map((p) => p.value)
-    .join(" ");
-}
+export const dayLabel = (day: string, locale: "en" | "id"): string =>
+  new Date(`${day}T00:00Z`).toLocaleDateString(locale === "id" ? "id" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).replace(",", "");
 
 /** Day seconds as "14:05". */
-export const clockOf = (dayS: number): string => [Math.floor(dayS / 3600) % 24, Math.floor(dayS / 60) % 60].map((n) => String(n).padStart(2, "0")).join(":");
+export const clockOf = (dayS: number): string => new Date(dayS * 1e3).toISOString().slice(11, 16);
 
 interface DeskAt {
   n: number;

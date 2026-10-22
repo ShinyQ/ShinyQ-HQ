@@ -16,7 +16,7 @@ vi.mock("@/experience/floors/lobby/office/live", () => ({ useOfficeFeed: () => l
 vi.mock("@/experience/missions/bridge", () => bridge);
 
 import { OfficeChips } from "@/experience/floors/lobby/office/OfficeChips";
-import { CHIP_ROW } from "@/experience/floors/lobby/office/chipRows";
+import { CHIP_ROW, placeAt } from "@/experience/floors/lobby/office/chipRows";
 import { officeRuntime, setChipFar, setChipsCompact } from "@/experience/floors/lobby/office/runtime";
 import { officeView } from "@/experience/floors/lobby/office/officeModel";
 import { officeReplay, publishReplay, REPLAY_OFF } from "@/experience/floors/lobby/office/replayLink";
@@ -331,7 +331,7 @@ describe("Agent Office chips during a day replay", () => {
   afterEach(() => {
     officeReplay.ui = null;
   });
-  const replay = { ...REPLAY_STATE_OFF, status: "playing" as const, day: "2026-10-19", label: { en: "Mon 19 Oct", id: "Sen 19 Okt" }, clock: "14:05", dayS: 50_700, seq: 1, auto: true };
+  const replay = { ...REPLAY_STATE_OFF, status: "playing" as const, day: "2026-10-19", label: "Mon 19 Oct", clock: "14:05", dayS: 50_700, seq: 1, auto: true };
   // What the replay chunk publishes: the state, its snapshot and the scene's view of it.
   const show = (state: typeof replay, snap: OfficeFeedSnapshot = statesA(Date.now())) => act(() => publishReplay(state, snap, officeView({ status: "ready", snapshot: snap }, { day: state.day, seq: state.seq, truncated: false, label: state.label })));
   const play = () => show(replay);
@@ -360,14 +360,14 @@ describe("Agent Office chips during a day replay", () => {
   it("draws the compact dots as rings too, in Indonesian, and shows the clock alone on a phone's pill", () => {
     getHQStore().setState({ phase: "explore", device: { viewport: "mobile", camera: "mobile", coarse: true } });
     renderChips("id");
-    play();
+    show({ ...replay, label: "Sen 19 Okt" });
     expect(chip(5).querySelector<HTMLElement>(".hq-dot")!.style.border).toMatch(/^1\.5px solid/);
     expect(chip(0)).toHaveAttribute("aria-label", expect.stringMatching(/^Putar ulang Sen 19 Okt: Meja 1: /));
     expect(screen.getByTestId("office-replay-pill")).toHaveTextContent(/^14:05$/);
     cleanup();
     getHQStore().setState({ device: { viewport: "desktop", camera: "desktop", coarse: false } });
     renderChips("id");
-    play();
+    show({ ...replay, label: "Sen 19 Okt" });
     expect(screen.getByTestId("office-replay-pill")).toHaveTextContent(/^Putar ulang · 14:05$/);
   });
 
@@ -391,36 +391,42 @@ describe("Agent Office chips during a day replay", () => {
     expect(screen.queryByTestId("office-replay-pill")).toBeNull();
   });
 
-  it("places the pill at the row's left bound and writes its clock twice a second: the chips' bounds start after its width and the gap, a style only when it changes", () => {
+  it("registers the pill's element, writes its clock twice a second and gives its width plus the gap: a style only when it changes", () => {
     renderChips();
     // The same snapshot and view: a tick that moves only the clock re-renders nothing (the pill's clock is written by the watch).
     const snap = statesA(Date.now());
     show(replay, snap);
     const pill = screen.getByTestId("office-replay-pill");
+    expect(officeRuntime.pill).toBe(pill);
+    expect(pill.style.visibility).toBe("hidden");
     Object.defineProperty(pill, "offsetWidth", { configurable: true, value: 100 });
-    // Not shown: no shift, nothing written.
+    // Not shown: no shift.
     expect(replayUi.width(false, 0, CHIP_ROW.gap)).toBe(0);
     expect(replayUi.width(true, 0, CHIP_ROW.gap)).toBe(100 + CHIP_ROW.gap);
-    replayUi.at(8, 20);
-    expect(pill.style.transform).toBe("translate3d(8px, 20px, 0)");
-    expect(pill.style.visibility).toBe("visible");
     // The clock moves on the 0.5 s check only.
     act(() => publishReplay({ ...replay, clock: "14:06" }, snap, officeReplay.view));
     expect(replayUi.width(true, 0.2, CHIP_ROW.gap)).toBe(100 + CHIP_ROW.gap);
     expect(pill).toHaveTextContent(/^Replay · 14:05$/);
     expect(replayUi.width(true, 0.5, CHIP_ROW.gap)).toBe(100 + CHIP_ROW.gap);
     expect(pill).toHaveTextContent(/^Replay · 14:06$/);
-    pill.style.transform = "";
-    replayUi.at(8, 20);
-    expect(pill.style.transform).toBe("");
-    replayUi.at(NaN, 20);
-    expect(pill.style.visibility).toBe("hidden");
-    expect(pill.style.opacity).toBe("0");
-    // Shown again, then hidden with the chips (the office out of view or no chip mode): `width(false)` hides it and its bounds shift.
-    replayUi.at(8, 20);
-    expect(pill.style.visibility).toBe("visible");
-    expect(replayUi.width(false, 1, CHIP_ROW.gap)).toBe(0);
-    expect(pill.style.visibility).toBe("hidden");
-    expect(pill.style.opacity).toBe("0");
+    act(() => publishReplay(REPLAY_OFF, null));
+    expect(officeRuntime.pill).toBeNull();
+  });
+
+  it("places the pill with the chips' writer: a style only when it changes, hidden with NaN", () => {
+    const el = document.createElement("span");
+    const at = [NaN, NaN];
+    placeAt(el, at, 8, 20);
+    expect(el.style.transform).toBe("translate3d(8px, 20px, 0)");
+    expect(el.style.visibility).toBe("visible");
+    el.style.transform = "";
+    placeAt(el, at, 8, 20);
+    expect(el.style.transform).toBe("");
+    placeAt(el, at, NaN, 20);
+    expect(el.style.visibility).toBe("hidden");
+    placeAt(el, at, 12, 20);
+    expect(el.style.transform).toBe("translate3d(12px, 20px, 0)");
+    expect(el.style.visibility).toBe("visible");
+    expect(() => placeAt(null, at, 1, 1)).not.toThrow();
   });
 });

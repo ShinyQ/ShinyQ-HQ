@@ -49,7 +49,7 @@ import { createStageMaterial } from "../HallFx";
 import { STAGE_KIND } from "../hallStage";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
-import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, segmentHitsBox } from "./chipRows";
+import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, placeAt, segmentHitsBox } from "./chipRows";
 import type { ScreenBox } from "../../../fx/labelPlacement";
 import { officeInteractables } from "./interact";
 import { officeLive } from "./live";
@@ -598,7 +598,7 @@ function OfficeWall({ view, tier, t }: { view: OfficeView; tier: GpuTier; t: Off
     // The replay's clock minute is a dependency: the banner redraws when it changes.
     const { clock: time } = officeReplay.state;
     if (l.gate.stale([view, t, locale, time], now) || !l.model) {
-      l.model = wallModel(view, t, locale, Date.now(), view.replay && { day: view.replay.label[locale], clock: time });
+      l.model = wallModel(view, t, locale, Date.now(), view.replay && { day: view.replay.label, clock: time });
       l.gate.built(l.model);
     }
     const model = l.model;
@@ -677,8 +677,10 @@ function createWatchState() {
     hud: [] as ScreenBox[],
     bounds: { left: 0, right: 0 },
     max: CHIP_ROW.max as number,
-    // The replay pill's width and row gap the bounds were shifted by (px).
+    // The replay pill's width and row gap the bounds were shifted by (px), and its element and last x, y (NaN hidden).
     shift: 0,
+    pill: null as HTMLElement | null,
+    pillAt: [NaN, NaN],
   };
 }
 type WatchState = ReturnType<typeof createWatchState>;
@@ -732,18 +734,7 @@ function projectWallTop(w: WatchState, camera: RootState["camera"], width: numbe
 }
 
 /** Shows chip `slot`'s tick at (x, y) (its centre, px), or hides it (NaN). */
-function writeTick(w: WatchState, slot: number, x: number, y: number) {
-  const tick = officeRuntime.ticks[slot];
-  const last = w.tick[slot];
-  if (!tick || (last[0] === x && last[1] === y) || (Number.isNaN(x) && Number.isNaN(last[0]))) return;
-  last[0] = x;
-  last[1] = y;
-  if (Number.isNaN(x)) tick.style.visibility = "hidden";
-  else {
-    tick.style.transform = `translate3d(${x - LEAD.tick / 2}px, ${y - 1}px, 0)`;
-    tick.style.visibility = "visible";
-  }
-}
+const writeTick = (w: WatchState, slot: number, x: number, y: number) => placeAt(officeRuntime.ticks[slot], w.tick[slot], x - LEAD.tick / 2, y - 1);
 
 /** The end of chip `slot`'s leader line from (x, y) (`leadEnd`, into `w.end`; a tick beside the wall clear of the HUD boxes, `above` its Rover's head). */
 function endLead(w: WatchState, slot: number, x: number, y: number, above = true) {
@@ -842,6 +833,12 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
   // The replay pill leads the row (the chips' bounds start after it) and hides with the chips.
   const ui = officeReplay.ui;
   const pillW = ui ? ui.width(!!mode && officeRuntime.inView, now, CHIP_ROW.gap) : 0;
+  if (w.pill !== officeRuntime.pill) {
+    // A freshly mounted pill starts hidden (its inline style).
+    w.pill = officeRuntime.pill;
+    w.pillAt.fill(NaN);
+  }
+  if (!pillW) placeAt(w.pill, w.pillAt, NaN, 0);
   // Out of view with every chip already hidden: no chip work this frame.
   if (!officeRuntime.inView && !anyChipShown(w)) return;
   const mobile = s.device.viewport === "mobile";
@@ -902,7 +899,7 @@ function watchFrame(w: WatchState, view: OfficeView, live: OfficeView, feed: Off
     if (!on) hideChip(w, slot, el);
   }
   layoutChipRows(w.tx, w.th, w.out, w.row, n, w.bounds);
-  ui?.at(w.shift ? w.bounds.left - w.shift : NaN, top);
+  if (pillW) placeAt(w.pill, w.pillAt, w.bounds.left - pillW, top);
   if (n) projectWallTop(w, camera, size.width, size.height);
   // Place the chips first (a second row of dots sits a dot and a gap lower), then draw the leader lines clear of them all.
   let chips = 0;
@@ -971,7 +968,7 @@ function OfficeWatch({ view, live, feed }: { view: OfficeView; live: OfficeView;
         el.style.opacity = "0";
       });
       for (const lead of [...officeRuntime.leads, ...officeRuntime.ticks]) if (lead) lead.style.visibility = "hidden";
-      officeReplay.ui?.at(NaN, 0);
+      if (officeRuntime.pill) officeRuntime.pill.style.visibility = "hidden";
     },
     [],
   );

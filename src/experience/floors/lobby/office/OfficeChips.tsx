@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { goToRoom } from "@/experience/missions/bridge";
 import { useHQStore } from "@/store/useHQStore";
@@ -32,7 +32,7 @@ const RING = { background: "transparent", border: "1.5px solid currentColor" } a
  * changes nothing). A click opens
  * the Rover's drawer the way its point-and-go target does (drive to the office stop, then open).
  */
-function Chip({ rover, day }: { rover: OfficeRoverView; day: string | null }) {
+function Chip({ rover, pre }: { rover: OfficeRoverView; pre: string }) {
   const t = useTranslations("office");
   const far = useChipFar(rover.slot);
   const plain = useChipsCompact();
@@ -42,8 +42,8 @@ function Chip({ rover, day }: { rover: OfficeRoverView; day: string | null }) {
   const line = chipLines(rover, t);
   const more = rover.helpers > DRONES.max ? rover.helpers - DRONES.max : 0;
   const color = OFFICE_STATE_STYLE[rover.state].color;
-  // A replay's dots are rings (a shape cue besides the label's prefix).
-  const dot = day ? { color, ...RING } : { color };
+  // A replay's dots are rings (a shape cue besides the label's prefix `pre`).
+  const dot = pre ? { color, ...RING } : { color };
   // A near head that overflows even with its activity cut down to its least width drops the word "helpers", measured again
   // before paint; new text or a far turn starts whole again. A head with nothing left to drop is not measured again.
   const last = nearDropsFor(line);
@@ -89,8 +89,8 @@ function Chip({ rover, day }: { rover: OfficeRoverView; day: string | null }) {
         data-state={rover.state}
         data-far={far ? "true" : "false"}
         data-compact={compact ? "true" : "false"}
-        data-replay={day ? "true" : undefined}
-        aria-label={day ? `${t("3d.replay.chip", { day })}: ${line.label}` : line.label}
+        data-replay={pre ? "true" : undefined}
+        aria-label={pre + line.label}
         // Hidden until OfficeScene has placed it (it then writes the transform, visibility and opacity every frame).
         style={{ opacity: 0, visibility: "hidden", maxWidth: CHIP_ROW.max }}
         className="pointer-events-auto absolute top-0 left-0 flex flex-col items-center gap-1 will-change-transform"
@@ -158,8 +158,10 @@ function NearHead({ parts, drop, ref }: { parts: ReturnType<typeof nearParts>; d
  */
 export function OfficeChips() {
   const { view } = useOfficeSource();
-  const locale = useLocale() as "en" | "id";
-  const day = view.replay?.label[locale] ?? null;
+  const t = useTranslations("office");
+  const day = view.replay?.label;
+  // The label's prefix: the day only, so the label does not change every tick.
+  const pre = day ? `${t("3d.replay.chip", { day })}: ` : "";
   // The replay chunk's pill (a replay plays only once it is loaded).
   const Pill = officeReplay.ui?.Pill;
   const hidden = useHQStore((s) => s.phase === "room" && s.device.viewport === "mobile");
@@ -168,7 +170,7 @@ export function OfficeChips() {
     <div data-testid="office-chips">
       {day && Pill && <Pill />}
       {view.rovers.slice(0, OFFICE_CHIP_COUNT).map((rover) => (
-        <Chip key={rover.slot} rover={rover} day={day} />
+        <Chip key={rover.slot} rover={rover} pre={pre} />
       ))}
     </div>
   );

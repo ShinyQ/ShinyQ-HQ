@@ -126,37 +126,45 @@ function useCrewNews(office: OfficeView, t: OfficeTranslate): string {
 
 /**
  * Every panel's replay badge while a day replay plays (the panels below keep showing the live office): a ringed dot
- * with "Replay", the day in a polite status region and "Back to live". The replay chunk is loaded by then; pressing
- * the button hands focus to the drawer body, as the button leaves with the badge.
+ * with "Replay", the day and "Back to live". The polite status region is always mounted (a region that appears with its
+ * text is not announced) and changes only its text; the visible day is hidden from assistive technology. The replay chunk
+ * is loaded by then; pressing the button hands focus to the drawer body, as the button leaves with the badge.
  */
-function ReplayBadge({ live, locale }: { live: OfficeModule; locale: Locale }) {
+function ReplayBadge({ live }: { live: OfficeModule }) {
   const t = useTranslations("office");
   const { state, snapshot } = live.useReplay();
-  if (!snapshot || !state.label) return null;
+  const day = snapshot && state.label ? t("3d.replay.playing", { day: state.label }) : "";
   return (
-    <div className="flex flex-wrap items-center gap-2" data-testid="office-replay-badge">
-      <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-glass-border px-2.5 text-[13px] text-ink-2">
-        <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color: COLORS.violet, background: "transparent", border: "1.5px solid currentColor" }} />
-        {t("3d.replay.pill")}
-      </span>
-      <p className={NOTE} role="status" aria-live="polite">
-        {t("3d.replay.playing", { day: state.label[locale] })}
+    <>
+      <p className="sr-only" role="status" aria-live="polite" data-testid="office-replay-news">
+        {day}
       </p>
-      <button
-        type="button"
-        className="chip min-h-11"
-        onClick={(e) => {
-          e.currentTarget.closest<HTMLElement>("[data-testid=office-body]")?.focus();
-          void live.loadOfficeReplay().then((m) => m.replayController.stop());
-        }}
-      >
-        {t("3d.replay.live")}
-      </button>
-    </div>
+      {day && (
+        <div className="flex flex-wrap items-center gap-2" data-testid="office-replay-badge">
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-glass-border px-2.5 text-[13px] text-ink-2">
+            <span aria-hidden="true" className="hq-dot hq-dot-md" style={{ color: COLORS.violet, background: "transparent", border: "1.5px solid currentColor" }} />
+            {t("3d.replay.pill")}
+          </span>
+          <p className={NOTE} aria-hidden="true">
+            {day}
+          </p>
+          <button
+            type="button"
+            className="chip min-h-11"
+            onClick={(e) => {
+              e.currentTarget.closest<HTMLElement>("[data-testid=office-body]")?.focus();
+              void live.loadOfficeReplay().then((m) => m.replayController.stop());
+            }}
+          >
+            {t("3d.replay.live")}
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
-/** The summary drawer's day replay: shown while the 3D office is mounted; the button loads the replay chunk and its controls (a failed load says so, and the next press retries). */
+/** The summary drawer's day replay: shown while the 3D office is mounted; the button loads the replay chunk, its controls chunk and the day index (a failed load says so, and the next press retries). */
 function ReplaySection({ live, locale }: { live: OfficeModule; locale: Locale }) {
   const t = useTranslations("office");
   const { mounted } = live.useReplay();
@@ -171,13 +179,16 @@ function ReplaySection({ live, locale }: { live: OfficeModule; locale: Locale })
         className="chip min-h-11"
         aria-expanded={Controls !== null}
         onClick={() =>
-          void live.loadOfficeReplay().then(
-            (m) => {
-              setFailed(false);
-              setControls(() => m.ReplayControls);
-            },
-            () => setFailed(true),
-          )
+          void live
+            .loadOfficeReplay()
+            .then((m) => Promise.all([m.loadControls(), m.replayController.open()]))
+            .then(
+              ([c]) => {
+                setFailed(false);
+                setControls(() => c.ReplayControls);
+              },
+              () => setFailed(true),
+            )
         }
       >
         {t("3d.replay.open")}
@@ -411,7 +422,7 @@ function LiveBody({ live, panel, locale }: { live: OfficeModule; panel: NonNulla
   const rover = panel.panel === "desk" ? office.rovers[panel.slot ?? 0] : undefined;
   return (
     <div className="grid gap-6" data-testid="office-body" data-panel={panel.panel} tabIndex={-1} style={{ outline: "none" }}>
-      <ReplayBadge live={live} locale={locale} />
+      <ReplayBadge live={live} />
       {notice ? (
         <Notice notice={notice} />
       ) : (

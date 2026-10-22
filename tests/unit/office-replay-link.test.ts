@@ -21,12 +21,12 @@ describe("office replay link", () => {
     expect(hook.result.current.src.view).toBe(live);
     expect(live.replay).toBeNull();
     const snapshot = OFFICE_FIXTURES_V4.busy as OfficeFeedSnapshot;
-    const state = { ...REPLAY_STATE_OFF, status: "playing" as const, day: "2026-10-18", seq: 3, truncated: true, playS: 2, dayS: 40_000, clock: "11:06", label: { en: "Sun 18 Oct", id: "Min 18 Okt" }, auto: true };
-    const replayView = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 3, truncated: true, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
+    const state = { ...REPLAY_STATE_OFF, status: "playing" as const, day: "2026-10-18", seq: 3, truncated: true, playS: 2, dayS: 40_000, clock: "11:06", label: "Sun 18 Oct", auto: true };
+    const replayView = officeView({ status: "ready", snapshot }, { day: "2026-10-18", seq: 3, truncated: true, label: "Sun 18 Oct" });
     act(() => publishReplay(state, snapshot, replayView));
     const { src, replay } = hook.result.current;
     expect(src.view).toBe(replayView);
-    expect(src.view.replay).toEqual({ day: "2026-10-18", seq: 3, truncated: true, label: { en: "Sun 18 Oct", id: "Min 18 Okt" } });
+    expect(src.view.replay).toEqual({ day: "2026-10-18", seq: 3, truncated: true, label: "Sun 18 Oct" });
     expect(src.view.rovers).toEqual(officeView({ status: "ready", snapshot }).rovers);
     expect(src.live).toBe(live);
     expect(src.feed.status).toBe("idle");
@@ -147,7 +147,7 @@ describe("office idle loop", () => {
       vi.doMock(CHUNK, async () => {
         const { createReplayFeed, linkReplay } = await import("@/experience/floors/lobby/office/replayFeed");
         const { officeLive } = await import("@/experience/floors/lobby/office/live");
-        const ctl = createReplayFeed({ fetch: async (url) => (fetches.push(url), new Response(null, { status: 404 })), now: officeLive.now, reduced: () => false, publish: () => {} });
+        const ctl = createReplayFeed({ fetch: async (url) => (fetches.push(url), new Response(null, { status: 404 })), now: officeLive.now, reduced: () => false, locale: () => "en", publish: () => {} });
         return { replayController: linkReplay(ctl, { now: officeLive.now, feed: () => feed, subscribe: () => () => {} }, () => false) };
       });
       const l = await link();

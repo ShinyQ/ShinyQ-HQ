@@ -21,7 +21,9 @@ import { writePerfEntry } from "./helpers";
  * office watch chunk, held to `BYTES_3D_BUDGET.office` and counted in the session total;
  * its drawer body chunk (`__hq.office.loadBody()`, loaded on an office drawer open) is measured after it and held to
  * `BYTES_3D_BUDGET.officeBody`; the replay chunk is measured after it as the idle loop loads it (at the office stop, the
- * poller's clock past the quiet rule) and counted in the session total (owner decision 2026-10-22); the three are held together to
+ * poller's clock past the quiet rule) and counted in the session total (owner decision 2026-10-22); the day replay controls
+ * (`__hq.office.loadControls()`, a lazy chunk of the replay chunk that loads with the drawer's "Show day replay" press) are measured
+ * after it, held to `BYTES_3D_BUDGET.officeControls`, outside the session total; the four are held together to
  * `BYTES_3D_BUDGET.officeTotal`. The office watch chunk (`__hq.office.loadWatch()`, idle on every L1 session, so never
  * with `?prefetch=off`) is measured right after the session floors, held to `BYTES_3D_BUDGET.officeWatch` and counted in
  * the session total; the beacon chunk (`__hq.office.loadBeacon()`, on the first Needs Kurniadi ask or fresh production deploy) is measured last and
@@ -40,11 +42,11 @@ async function measureFloor(page: Page, floor: FloorChunkId, seen: Set<string>, 
   return bytes;
 }
 
-type OfficeLoader = "load" | "loadBody" | "loadReplay" | "loadWatch" | "loadBeacon";
+type OfficeLoader = "load" | "loadBody" | "loadReplay" | "loadControls" | "loadWatch" | "loadBeacon";
 type OfficeLoad = { __hq: { office?: Partial<Record<OfficeLoader, () => Promise<unknown>>> } };
 
 /**
- * Bytes of an Agent Office chunk (`load`: the scene, `loadBody`: the drawer body, `loadWatch`: the watch chunk,
+ * Bytes of an Agent Office chunk (`load`: the scene, `loadBody`: the drawer body, `loadControls`: the day replay controls, `loadWatch`: the watch chunk,
  * `loadBeacon`: the beacon chunk) on top of the Page View, the main path and the chunks already counted; null on a
  * build without that loader.
  */
@@ -160,7 +162,9 @@ for (const tier of ["lite", "full"] as const) {
     const officeBody = await measureOffice(page, "loadBody", seen, mainPaths);
     // The replay chunk loads on most quiet L1 visits through the idle loop (triggered here, not skipped): in the session total and the office total.
     const officeReplay = await measureReplay(page, seen, mainPaths);
-    const officeTotal = office === null ? null : office + (officeBody ?? 0) + (officeReplay ?? 0);
+    // Its drawer controls are a lazy chunk of the replay chunk, loaded with the drawer: in the office total, not the session total.
+    const officeControls = officeReplay === null ? null : await measureOffice(page, "loadControls", seen, mainPaths);
+    const officeTotal = office === null ? null : office + (officeBody ?? 0) + (officeReplay ?? 0) + (officeControls ?? 0);
     // The beacon chunk loads only on the first Needs Kurniadi ask: its own cap, outside the session total.
     const officeBeacon = await measureOffice(page, "loadBeacon", seen, mainPaths);
     await context.close();
@@ -207,6 +211,7 @@ for (const tier of ["lite", "full"] as const) {
       ...(office === null ? {} : { office }),
       ...(officeBody === null ? {} : { officeBody }),
       ...(officeReplay === null ? {} : { officeReplay }),
+      ...(officeControls === null ? {} : { officeControls }),
       ...(officeTotal === null ? {} : { officeTotal }),
       ...(officeWatch === null ? {} : { officeWatch }),
       ...(officeBeacon === null ? {} : { officeBeacon }),
@@ -218,7 +223,8 @@ for (const tier of ["lite", "full"] as const) {
     if (office !== null) console.log(`Agent Office chunk (${tier}, idle on L1): ${kb(office)} gzip (cap ${kb(BYTES_3D_BUDGET.office)}), in the session total`);
     if (officeBody !== null) console.log(`Agent Office drawer body (${tier}, on drawer open): ${kb(officeBody)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBody)}), over the scene chunk`);
     if (officeReplay !== null) console.log(`Agent Office replay chunk (${tier}, idle loop on L1): ${kb(officeReplay)} gzip (${officeReplay} B), in the session total`);
-    if (officeTotal !== null) console.log(`Agent Office total (${tier}, scene + drawer body${officeReplay === null ? "" : " + replay"}): ${kb(officeTotal)} gzip (cap ${kb(BYTES_3D_BUDGET.officeTotal)}), the office chunks' own cap`);
+    if (officeControls !== null) console.log(`Agent Office replay controls (${tier}, on the drawer's replay press): ${kb(officeControls)} gzip (${officeControls} B, cap ${kb(BYTES_3D_BUDGET.officeControls)}), not in the session total`);
+    if (officeTotal !== null) console.log(`Agent Office total (${tier}, scene + drawer body${officeReplay === null ? "" : " + replay + controls"}): ${kb(officeTotal)} gzip (cap ${kb(BYTES_3D_BUDGET.officeTotal)}), the office chunks' own cap`);
     if (officeWatch !== null) console.log(`Agent Office watch chunk (${tier}, idle on L1): ${kb(officeWatch)} gzip (cap ${kb(BYTES_3D_BUDGET.officeWatch)}), in the session total`);
     if (officeBeacon !== null) console.log(`Agent Office beacon chunk (${tier}, on the first ask): ${kb(officeBeacon)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBeacon)}), not in the session total`);
 
@@ -239,12 +245,16 @@ for (const tier of ["lite", "full"] as const) {
       expect(office, `Agent Office chunk ${kb(office)} is over its ${kb(BYTES_3D_BUDGET.office)} cap`).toBeLessThan(BYTES_3D_BUDGET.office);
     }
     if (officeReplay !== null) expect(officeReplay, "Agent Office replay chunk: did the idle loop fetch any script?").toBeGreaterThan(0);
+    if (officeControls !== null) {
+      expect(officeControls, "Agent Office replay controls: did __hq.office.loadControls fetch any script?").toBeGreaterThan(0);
+      expect(officeControls, `Agent Office replay controls ${kb(officeControls)} are over their ${kb(BYTES_3D_BUDGET.officeControls)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeControls);
+    }
     if (officeBody !== null) {
       expect(officeBody, "Agent Office drawer body: did __hq.office.loadBody fetch any script?").toBeGreaterThan(0);
       expect(officeBody, `Agent Office drawer body ${kb(officeBody)} is over its ${kb(BYTES_3D_BUDGET.officeBody)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeBody);
     }
     if (officeTotal !== null) {
-      expect(officeTotal, `Agent Office total ${kb(officeTotal)} (scene + drawer body${officeReplay === null ? "" : " + replay"}) is over its ${kb(BYTES_3D_BUDGET.officeTotal)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeTotal);
+      expect(officeTotal, `Agent Office total ${kb(officeTotal)} (scene + drawer body${officeReplay === null ? "" : " + replay + controls"}) is over its ${kb(BYTES_3D_BUDGET.officeTotal)} cap`).toBeLessThan(BYTES_3D_BUDGET.officeTotal);
     }
     if (officeWatch !== null) {
       expect(officeWatch, "Agent Office watch chunk: did __hq.office.loadWatch fetch any script?").toBeGreaterThan(0);

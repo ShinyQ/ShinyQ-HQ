@@ -7,6 +7,7 @@ import { officeReplay, publishReplay } from "./replayLink";
 import { replayUi } from "./ReplayPill";
 
 const reduced = () => getHQStore().getState().reducedMotion;
+const locale = () => getHQStore().getState().locale;
 
 /**
  * Publishes with the scene's view of the replay (`officeView` of its snapshot), built again only when the snapshot or `seq`
@@ -20,8 +21,9 @@ function publish(state: ReplayState, snapshot: OfficeFeedSnapshot | null): void 
 }
 
 /** The replay chunk (loaded by `loadOfficeReplay` in ./replayLink.ts on the idle-loop condition or the drawer's control): one controller per page, tied to the live feed (`linkReplay`). */
-export const replayController = linkReplay(createReplayFeed({ fetch: (url) => fetch(url), now: officeLive.now, reduced, publish }), officeLive, reduced);
+export const replayController = linkReplay(createReplayFeed({ fetch: (url) => fetch(url), now: officeLive.now, reduced, locale, publish }), officeLive, reduced);
 officeReplay.controller = replayController;
 officeReplay.state = replayController.state();
 officeReplay.ui = replayUi;
-export { ReplayControls } from "./ReplayControls";
+/** The drawer's controls (their own chunk, imported here so `replay.ts` stays shared with this one): loaded by the drawer's "Show day replay" press. */
+export const loadControls = () => import("./ReplayControls");

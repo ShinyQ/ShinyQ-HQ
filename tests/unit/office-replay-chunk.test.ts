@@ -38,7 +38,7 @@ describe("replay chunk entry", () => {
     await replayController.play(day.day);
     const { state, snapshot, view } = officeReplay;
     expect(state.status).toBe("playing");
-    expect(view?.replay).toEqual({ day: day.day, seq: state.seq, truncated: false, label: { en: dayLabel(day.day, "en"), id: dayLabel(day.day, "id") } });
+    expect(view?.replay).toEqual({ day: day.day, seq: state.seq, truncated: false, label: dayLabel(day.day, "en") });
     expect(view?.rovers).toHaveLength(10);
     expect(state.clock).toBe(clockOf(state.dayS));
     // A pause keeps the snapshot and seq: the same view (the scene re-renders nothing).

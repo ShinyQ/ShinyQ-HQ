@@ -15,9 +15,9 @@ export interface ReplayState {
   duration: number;
   /** Day seconds at `playS` (the scrubber's time). */
   dayS: number;
-  /** `dayS` as "14:05" and the day as "Mon 19 Oct" / "Sen 19 Okt", formatted here so the scene chunk only reads strings (the wall's banner, the chips, the pill). */
+  /** `dayS` as "14:05" and the day as "Mon 19 Oct" / "Sen 19 Okt" in the page's locale (a switch reloads the page), formatted here so the scene chunk only reads strings (the wall's banner, the chips, the pill). */
   clock: string;
-  label: { en: string; id: string } | null;
+  label: string | null;
   /** The idle loop (true) or a visitor's choice in the drawer (false, held until "Back to live"). */
   auto: boolean;
   truncated: boolean;
@@ -33,7 +33,9 @@ export interface ReplayController {
   auto(): Promise<void>;
   /** A visitor's day (auto false); starts paused under reduced motion. */
   play(day: string): Promise<void>;
+  /** Pauses a playing replay, or an `auto` one resting between loops. */
   pause(): void;
+  /** Resumes a paused replay (from the start when it paused at its end); a no-op under reduced motion. */
   resume(): void;
   seek(playS: number): void;
   /** To the next whole hour of day time (reduced motion's step). */
@@ -66,7 +68,7 @@ const FRESH_MS = 60_000;
  * per `REPLAY.tickS` of playback. The clock steps only from the scene's frame (`step`): no timer, no rAF. A later play
  * or `stop` drops a load still in flight.
  */
-export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; reduced: () => boolean; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
+export function createReplayFeed(deps: { fetch: (url: string) => Promise<Response>; now: () => number; reduced: () => boolean; locale: () => "en" | "id"; publish: (state: ReplayState, snapshot: OfficeFeedSnapshot | null) => void }): ReplayController {
   let s: ReplayState = { ...REPLAY_STATE_OFF };
   /** The playback time, copied into `s` on a publish (or a `state()` read) only: no state copy per frame. */
   let playS = 0;
@@ -80,6 +82,8 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
   let snap: OfficeFeedSnapshot | null = null;
   const days = new Map<string, { h: OfficeHistoryV1; at: number }>();
   let index: { days: OfficeHistoryDay[]; at: number } | null = null;
+  /** A load that ends without a day to play (unavailable, nothing to play) drops the old day and its label. */
+  const GONE = { day: null, label: null };
 
   const set = (patch: Partial<ReplayState>, next: OfficeFeedSnapshot | null = snap) => {
     s = { ...s, playS, ...patch };
@@ -122,24 +126,24 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
     const now = deps.now();
     const list = await fresh();
     if (my !== gen) return;
-    if (!list) return set({ status: "unavailable" }, null);
+    if (!list) return set({ status: "unavailable", ...GONE }, null);
     const pick = day ?? list.find(playable)?.day;
-    if (!pick) return set({ status: "off", days: list, empty: true }, null);
+    if (!pick) return set({ status: "off", days: list, empty: true, ...GONE }, null);
     let cached = days.get(pick);
     if (!cached || (pick === list[0].day && now - cached.at > FRESH_MS)) {
       const got = await get(`${OFFICE_HISTORY_PATH}?day=${pick}`, parseOfficeHistory);
       if (my !== gen) return;
-      if (!got || !("events" in got)) return set({ status: "unavailable", days: list }, null);
+      if (!got || !("events" in got)) return set({ status: "unavailable", days: list, ...GONE }, null);
       days.set(pick, (cached = { h: got, at: now }));
     }
     h = cached.h;
     plan = planReplay(h);
-    if (!plan) return set({ status: "off", day: null, days: list, empty: true }, null);
+    if (!plan) return set({ status: "off", days: list, empty: true, ...GONE }, null);
     const reduced = deps.reduced();
     const start = reduced ? playTime(plan, plan.spans[0].from) : 0;
     epoch = deps.now() - start * 1000;
     tick = -1;
-    set({ status: reduced ? "paused" : "playing", day: pick, label: { en: dayLabel(pick, "en"), id: dayLabel(pick, "id") }, days: list, playS: start, duration: plan.duration, truncated: h.truncated, empty: false, seq: s.seq + 1 });
+    set({ status: reduced ? "paused" : "playing", day: pick, label: dayLabel(pick, deps.locale()), days: list, playS: start, duration: plan.duration, truncated: h.truncated, empty: false, seq: s.seq + 1 });
     render(true);
   }
   const ctl: ReplayController = {
@@ -147,15 +151,17 @@ export function createReplayFeed(deps: { fetch: (url: string) => Promise<Respons
       if (s.status !== "off" && s.status !== "unavailable") return;
       const my = gen;
       const list = await fresh();
-      if (my === gen && (s.status === "off" || s.status === "unavailable")) set(list ? { status: "off", days: list, empty: !list.some(playable) } : { status: "unavailable" }, null);
+      if (my === gen) set(list ? { status: "off", days: list, empty: !list.some(playable) } : { status: "unavailable" }, null);
     },
     auto: () => (s.status === "off" || s.status === "unavailable" ? load(null, true) : Promise.resolve()),
     play: (day) => load(day, false),
     pause() {
-      if (s.status === "playing") set({ status: "paused" });
+      if (s.status === "playing" || s.status === "resting") set({ status: "paused" });
     },
     resume() {
       if (s.status !== "paused" || deps.reduced()) return;
+      // Paused at the end (a visitor's day, or the rest): play again from the start.
+      if (plan && playS >= plan.duration) ctl.seek(0);
       epoch = deps.now() - playS * 1000;
       set({ status: "playing", seq: s.seq + 1 });
     },

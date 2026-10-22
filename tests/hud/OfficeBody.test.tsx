@@ -16,10 +16,12 @@ import { officeDesk, officeSnapshot, statesA, statesB } from "../../e2e/office-f
 const live = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as OfficeFeed, want: vi.fn() }));
 /** The replay chunk's side as the loaded scene module hands it out: its store, its loader and its controls (a stub component), its controller. */
 const replay = vi.hoisted(() => ({
-  store: { state: { status: "off", label: null as { en: string; id: string } | null }, snapshot: null as unknown, mounted: false },
+  store: { state: { status: "off", label: null as string | null }, snapshot: null as unknown, mounted: false },
   stop: vi.fn(),
+  open: vi.fn(() => Promise.resolve()),
   Controls: (() => null) as (props: { locale: string }) => unknown,
   fail: false,
+  failControls: false,
 }));
 // The drawer reads the feed from the loaded scene chunk (`officeModule()`), never from `./live` itself.
 const chunk = vi.hoisted(() => {
@@ -27,7 +29,7 @@ const chunk = vi.hoisted(() => {
     useOfficeFeed: () => live.feed,
     officeLive: { want: live.want, wanted: () => true },
     useReplay: () => replay.store,
-    loadOfficeReplay: () => (replay.fail ? Promise.reject(new Error("chunk")) : Promise.resolve({ ReplayControls: replay.Controls, replayController: { stop: replay.stop } })),
+    loadOfficeReplay: () => (replay.fail ? Promise.reject(new Error("chunk")) : Promise.resolve({ loadControls: () => (replay.failControls ? Promise.reject(new Error("chunk")) : Promise.resolve({ ReplayControls: replay.Controls })), replayController: { stop: replay.stop, open: replay.open } })),
   };
   return { scene, module: scene as typeof scene | null, loadOffice: vi.fn(() => Promise.resolve()) };
 });
@@ -74,6 +76,7 @@ const external = (text: string) => new RegExp(`^${escape(text)}\\s*\\(${escape(e
 beforeEach(() => {
   replay.store = { state: { status: "off", label: null }, snapshot: null, mounted: false };
   replay.fail = false;
+  replay.failControls = false;
   replay.Controls = function Controls({ locale }) {
     return <p data-testid="stub-controls">{`controls ${locale}`}</p>;
   };
@@ -86,6 +89,7 @@ afterEach(() => {
   chunk.module = chunk.scene;
   chunk.loadOffice.mockImplementation(() => Promise.resolve());
   replay.stop.mockClear();
+  replay.open.mockClear();
 });
 
 describe("Agent Office drawers", () => {
@@ -415,7 +419,7 @@ describe("Agent Office drawers", () => {
         `Desk 5: Claude is waiting on CI, since ${clock(4)}`,
         ...[6, 7, 8, 9, 10].map((n) => `Desk ${n}: off duty`),
       ]);
-      const news = screen.getByRole("status");
+      const news = screen.getByTestId("office-crew-news");
       expect(news).toHaveAttribute("aria-live", "polite");
       expect(news).toBeEmptyDOMElement();
       poll(rerender, { 0: { activity: "reading", title: "Other title" } });
@@ -481,7 +485,7 @@ describe("Agent Office drawers", () => {
 
 describe("Agent Office day replay in the drawers", () => {
   const playing = () => {
-    replay.store = { state: { status: "playing", label: { en: "Mon 19 Oct", id: "Sen 19 Okt" } }, snapshot: {}, mounted: true };
+    replay.store = { state: { status: "playing", label: "Mon 19 Oct" }, snapshot: {}, mounted: true };
   };
   const PANELS: [NonNullable<RoomView["office"]>, string][] = [
     [{ panel: "summary" }, "L1:office"],
@@ -502,6 +506,8 @@ describe("Agent Office day replay in the drawers", () => {
     open.focus();
     fireEvent.click(open);
     expect(await screen.findByTestId("stub-controls")).toHaveTextContent("controls en");
+    // The press fetches the day index too.
+    expect(replay.open).toHaveBeenCalledTimes(1);
     expect(open).toHaveAttribute("aria-expanded", "true");
     expect(open).toHaveFocus();
     for (const [panel, id] of PANELS.slice(1)) {
@@ -523,12 +529,41 @@ describe("Agent Office day replay in the drawers", () => {
     expect(screen.queryByText(o.replay.unavailable)).toBeNull();
   });
 
+  it("says the replay is unavailable when only the controls chunk cannot load, and the next press retries", async () => {
+    replay.store.mounted = true;
+    replay.failControls = true;
+    body({ panel: "summary" });
+    fireEvent.click(screen.getByRole("button", { name: o.replay.open }));
+    expect(await screen.findByText(o.replay.unavailable)).toBeInTheDocument();
+    replay.failControls = false;
+    fireEvent.click(screen.getByRole("button", { name: o.replay.open }));
+    expect(await screen.findByTestId("stub-controls")).toBeInTheDocument();
+    // Every press asks for the day index, so a history that failed before is tried again.
+    expect(replay.open).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps one polite status region mounted live and fills it when a replay starts (a region that appears with its text is not announced)", () => {
+    const { rerender } = body({ panel: "summary" });
+    const news = screen.getByTestId("office-replay-news");
+    expect(news).toHaveAttribute("role", "status");
+    expect(news).toHaveAttribute("aria-live", "polite");
+    expect(news).toBeEmptyDOMElement();
+    playing();
+    rerender(tree({ panel: "summary" }));
+    expect(screen.getByTestId("office-replay-news")).toBe(news);
+    expect(news).toHaveTextContent("Replaying Mon 19 Oct");
+    replay.store = { state: { status: "off", label: null }, snapshot: null, mounted: true };
+    rerender(tree({ panel: "summary" }));
+    expect(screen.getByTestId("office-replay-news")).toBe(news);
+    expect(news).toBeEmptyDOMElement();
+  });
+
   it.each(PANELS)("badges every panel while a replay plays (%j): the day in a polite status, Back to live, the content still the live office", async (panel, id) => {
     playing();
     body(panel, id);
     const badge = screen.getByTestId("office-replay-badge");
     expect(within(badge).getByText(o.replay.pill)).toBeInTheDocument();
-    const status = within(badge).getByRole("status");
+    const status = screen.getByTestId("office-replay-news");
     expect(status).toHaveAttribute("aria-live", "polite");
     expect(status).toHaveTextContent("Replaying Mon 19 Oct");
     // The panel below keeps the live feed.
@@ -550,10 +585,10 @@ describe("Agent Office day replay in the drawers", () => {
   });
 
   it("reads the day in Indonesian", () => {
-    playing();
+    replay.store = { state: { status: "playing", label: "Sen 19 Okt" }, snapshot: {}, mounted: true };
     render(tree({ panel: "summary" }, "L1:office", "id"));
     expect(screen.getByTestId("office-replay-badge")).toHaveTextContent(`${ids.office["3d"].replay.pill}`);
-    expect(within(screen.getByTestId("office-replay-badge")).getByRole("status")).toHaveTextContent("Memutar ulang Sen 19 Okt");
+    expect(screen.getByTestId("office-replay-news")).toHaveTextContent("Memutar ulang Sen 19 Okt");
     expect(screen.getByRole("button", { name: ids.office["3d"].replay.live })).toBeInTheDocument();
   });
 });

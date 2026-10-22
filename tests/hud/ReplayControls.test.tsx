@@ -32,7 +32,7 @@ const ctl = {
 const state = (patch: Partial<ReplayState>): ReplayState => ({ ...REPLAY_STATE_OFF, days: DAYS, ...patch });
 const snapshot = OFFICE_FIXTURES_V4.busy as OfficeFeedSnapshot;
 const publish = (patch: Partial<ReplayState>, snap: OfficeFeedSnapshot | null = snapshot) => act(() => publishReplay(state(patch), snap));
-const playing = { status: "playing" as const, day: "2026-10-19", label: { en: "Mon 19 Oct", id: "Sen 19 Okt" }, playS: 12, duration: 45, dayS: 50_700, clock: "14:05", seq: 1 };
+const playing = { status: "playing" as const, day: "2026-10-19", label: "Mon 19 Oct", playS: 12, duration: 45, dayS: 50_700, clock: "14:05", seq: 1 };
 const view = (locale: "en" | "id" = "en") =>
   render(
     <NextIntlClientProvider locale={locale} messages={locale === "en" ? en : ids}>
@@ -52,10 +52,9 @@ afterEach(() => {
 });
 
 describe("day replay controls", () => {
-  it("asks the controller for the index on mount and shows eight day buttons: the playing day pressed, a quiet day disabled with its title", () => {
+  it("shows eight day buttons from the index: the playing day pressed, a quiet day disabled with its title", () => {
     publish({ status: "off", day: null }, null);
     view();
-    expect(ctl.open).toHaveBeenCalledTimes(1);
     const buttons = screen.getAllByRole("button").filter((b) => b.hasAttribute("aria-pressed"));
     expect(buttons.map((b) => b.textContent)).toEqual(["Mon 19 Oct", "Sun 18 Oct", "Sat 17 Oct", "Fri 16 Oct", "Thu 15 Oct", "Wed 14 Oct", "Tue 13 Oct", "Mon 12 Oct"]);
     expect(buttons.map((b) => b.hasAttribute("disabled"))).toEqual([false, false, false, true, false, false, false, true]);
@@ -85,6 +84,45 @@ describe("day replay controls", () => {
     expect(ctl.resume).toHaveBeenCalledTimes(1);
     // Focus stays on the activated control through the re-render.
     expect(screen.getByRole("button", { name: o.play })).toHaveFocus();
+  });
+
+  it("keeps the focus on the play button through the loading state (it is never disabled then, and a press does nothing)", () => {
+    publish({ status: "off", day: null }, null);
+    view();
+    const play = screen.getByRole("button", { name: o.play });
+    play.focus();
+    fireEvent.click(play);
+    expect(ctl.play).toHaveBeenCalledTimes(1);
+    // The controller publishes "loading" at once.
+    publish({ status: "loading", day: null }, null);
+    expect(screen.getByRole("button", { name: o.play })).toBe(play);
+    expect(play).not.toBeDisabled();
+    expect(play).toHaveFocus();
+    fireEvent.click(play);
+    expect(ctl.play).toHaveBeenCalledTimes(1);
+    expect(ctl.resume).not.toHaveBeenCalled();
+    publish(playing);
+    expect(screen.getByRole("button", { name: o.pause })).toBe(play);
+    expect(play).toHaveFocus();
+  });
+
+  it("counts the rest between an auto replay's loops as playing: the button pauses it", () => {
+    publish({ ...playing, status: "resting", playS: 45, auto: true });
+    view();
+    fireEvent.click(screen.getByRole("button", { name: o.pause }));
+    expect(ctl.pause).toHaveBeenCalledTimes(1);
+    expect(ctl.resume).not.toHaveBeenCalled();
+    expect(screen.getByRole("slider")).toBeEnabled();
+  });
+
+  it("lets the range reach the end of a day whose duration is not a step: its max rounds up to a whole step", () => {
+    publish({ ...playing, duration: 37.42, playS: 37.42 });
+    view();
+    const range = screen.getByRole("slider", { name: o.time });
+    expect(range).toHaveAttribute("max", "37.5");
+    expect(range).toHaveAttribute("step", "0.25");
+    fireEvent.change(range, { target: { value: "37.5" } });
+    expect(ctl.seek).toHaveBeenLastCalledWith(37.5);
   });
 
   it("has a native range over the playback, labelled and valued by the clock, that seeks", () => {

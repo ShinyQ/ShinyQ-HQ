@@ -64,7 +64,9 @@ export const BYTES_3D_BUDGET = {
   office: Math.round(26.5625 * 1024),
   /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 6,483 B, cap 7,097 B). */
   officeBody: Math.round(6.931 * 1024),
-  /** L1 Agent Office total: the scene chunk plus the drawer body (plus the replay chunk once it ships), the office chunks' own cap. */
+  /** L1 day replay controls (a lazy chunk of the replay chunk, loaded with the drawer's "Show day replay" press), outside the session total: measured 826 B, cap 1,440 B (provisional until the re-set of every cap). */
+  officeControls: 826 + 614,
+  /** L1 Agent Office total: the scene chunk plus the drawer body, the replay chunk and its controls, the office chunks' own cap. */
   officeTotal: 40 * 1024,
   /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,555 B, cap 2,075 B). */
   officeWatch: Math.round(2.026 * 1024),
