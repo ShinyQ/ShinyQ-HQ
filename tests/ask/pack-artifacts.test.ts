@@ -6,14 +6,12 @@ import { PACK_SCHEMA } from "../../functions/_lib/pack-index";
 import type { KnowledgePack, StoredPack } from "../../functions/_lib/types";
 
 let pack: KnowledgePack;
-let blocklist: string[];
 let artifacts: PackArtifacts;
 
 beforeAll(() => {
   const built = buildRepoPack("2026-10-11");
   pack = built.pack;
-  blocklist = built.safety.blocklist;
-  artifacts = buildPackArtifacts(pack, blocklist);
+  artifacts = buildPackArtifacts(pack);
 });
 
 const mutate = (change: (stored: StoredPack) => void) => {
@@ -53,35 +51,35 @@ describe("pack artifacts (KV value, fallback, pin)", () => {
   });
 
   it("accepts the built value", () => {
-    expect(validateStoredPack(artifacts.json, blocklist)).toEqual([]);
+    expect(validateStoredPack(artifacts.json)).toEqual([]);
   });
 
   it("rejects a value missing a required chunk", () => {
     const json = mutate((s) => (s.pack.chunks = s.pack.chunks.filter((c) => c.id !== "contact")));
-    expect(validateStoredPack(json, blocklist).join("\n")).toMatch(/missing required chunk "contact"/);
+    expect(validateStoredPack(json).join("\n")).toMatch(/missing required chunk "contact"/);
   });
 
   it("rejects a wrong schema", () => {
     const json = mutate((s) => ((s as { schema: number }).schema = 2));
-    expect(validateStoredPack(json, blocklist).join("\n")).toMatch(/schema 2 is not 1/);
+    expect(validateStoredPack(json).join("\n")).toMatch(/schema 2 is not 1/);
   });
 
   it("rejects index arrays of the wrong length and an index that does not match the text", () => {
-    expect(validateStoredPack(mutate((s) => s.index.postings.pop()), blocklist).join("\n")).toMatch(/terms and postings differ/);
-    expect(validateStoredPack(mutate((s) => s.index.len.pop()), blocklist).join("\n")).toMatch(/lengths differ/);
-    expect(validateStoredPack(mutate((s) => (s.index.postings[0] = [0, 99])), blocklist).join("\n")).toMatch(/index does not match the pack text/);
+    expect(validateStoredPack(mutate((s) => s.index.postings.pop())).join("\n")).toMatch(/terms and postings differ/);
+    expect(validateStoredPack(mutate((s) => s.index.len.pop())).join("\n")).toMatch(/lengths differ/);
+    expect(validateStoredPack(mutate((s) => (s.index.postings[0] = [0, 99]))).join("\n")).toMatch(/index does not match the pack text/);
   });
 
-  it("rejects blocklisted text and a tampered packVersion", () => {
-    const json = mutate((s) => (s.pack.chunks[0].text_en += " ZZTESTCLIENT"));
-    const errors = validateStoredPack(json, [...blocklist, "ZZTESTCLIENT"]).join("\n");
-    expect(errors).toMatch(/blocklisted terms/);
+  it("rejects an em dash in the text and a tampered packVersion", () => {
+    const json = mutate((s) => (s.pack.chunks[0].text_en += " one \u2014 two"));
+    const errors = validateStoredPack(json).join("\n");
+    expect(errors).toMatch(/contains an em dash/);
     expect(errors).toMatch(/does not match the pack content/);
   });
 
   it("rejects an oversized value and malformed JSON", () => {
-    expect(validateStoredPack(artifacts.json, blocklist, { maxBytes: 1024 }).join("\n")).toMatch(/over the 1024 byte cap/);
-    expect(validateStoredPack("{not json", blocklist)).toEqual(["stored pack is not valid JSON"]);
-    expect(validateStoredPack("null", blocklist)).toEqual(["stored pack is not a StoredPack"]);
+    expect(validateStoredPack(artifacts.json, { maxBytes: 1024 }).join("\n")).toMatch(/over the 1024 byte cap/);
+    expect(validateStoredPack("{not json")).toEqual(["stored pack is not valid JSON"]);
+    expect(validateStoredPack("null")).toEqual(["stored pack is not a StoredPack"]);
   });
 });

@@ -1,4 +1,3 @@
-import { findBlockedTerms } from "../../../src/content/safety-match";
 import { OFFICE_FEED_TITLE_MAX, type OfficeBeatV1 } from "../../../src/lib/office/protocol";
 import type { GithubChange, GithubUpdate, JobStatus, RunStatus } from "./state";
 
@@ -38,8 +37,8 @@ export function repoAllowed(repo: string, allow: readonly string[]): boolean {
   });
 }
 
-/** One clean line of at most `max` characters, or null when empty or when it contains a blocklisted term. */
-export function cleanTitle(text: string, blocklist: readonly string[], max = OFFICE_FEED_TITLE_MAX): string | null {
+/** One clean line of at most `max` characters, or null when empty. */
+export function cleanTitle(text: string, max = OFFICE_FEED_TITLE_MAX): string | null {
   const line = text
     .replace(/\s*\u2014\s*/g, ", ")
     .replace(/[\u0000-\u001f\u007f<>]/g, " ")
@@ -47,21 +46,14 @@ export function cleanTitle(text: string, blocklist: readonly string[], max = OFF
     .trim()
     .slice(0, max)
     .trim();
-  if (!line || findBlockedTerms(line, blocklist).length > 0) return null;
-  return line;
+  return line || null;
 }
 
-/** True when a branch name holds a blocklisted term, also with "/", "-", "_" and "." read as word breaks. */
-function branchBlocked(branch: string, blocklist: readonly string[]): boolean {
-  return findBlockedTerms(branch, blocklist).length > 0 || findBlockedTerms(branch.replace(/[/_.-]/g, " "), blocklist).length > 0;
-}
-
-/** Server re-check of a parsed beat: repository data only for allowlisted names, titles through the blocklist. */
-export function sanitizeBeat(beat: OfficeBeatV1, allow: readonly string[], blocklist: readonly string[]): OfficeBeatV1 {
+/** Server re-check of a parsed beat: repository data only for allowlisted names, titles cleaned (`cleanTitle`). */
+export function sanitizeBeat(beat: OfficeBeatV1, allow: readonly string[]): OfficeBeatV1 {
   const base: OfficeBeatV1 = { v: 1, agent: beat.agent, session: beat.session, state: beat.state, activity: beat.activity, ...(beat.helpers !== undefined ? { helpers: beat.helpers } : {}), ts: beat.ts };
   if (!beat.repo || !repoAllowed(beat.repo, allow)) return base;
-  if (beat.branch && branchBlocked(beat.branch, blocklist)) return { ...base, repo: beat.repo };
-  const title = beat.title ? cleanTitle(beat.title, blocklist) : null;
+  const title = beat.title ? cleanTitle(beat.title) : null;
   return { ...base, repo: beat.repo, ...(beat.branch ? { branch: beat.branch } : {}), ...(beat.title ? { title: title ?? undefined } : {}) };
 }
 
@@ -91,10 +83,10 @@ function deployStatus(state: string): "running" | "success" | "failure" | null {
 
 /**
  * One GitHub webhook delivery to office changes, for allowlisted public repositories only (null otherwise, which also
- * keeps private repositories out of the known-public list). Titles go through the blocklist; URLs must be https.
+ * keeps private repositories out of the known-public list). Titles are cleaned (`cleanTitle`); URLs must be https.
  * Pull requests and runs from forks are ignored; pull requests also need a listed sender or a trusted author association.
  */
-export function parseGithubEvent(event: string, payload: unknown, allow: readonly string[], blocklist: readonly string[], actors: readonly string[] = DEFAULT_GITHUB_ACTORS): GithubUpdate | null {
+export function parseGithubEvent(event: string, payload: unknown, allow: readonly string[], actors: readonly string[] = DEFAULT_GITHUB_ACTORS): GithubUpdate | null {
   const body = obj(payload);
   const repository = obj(body?.repository);
   const repo = text(repository?.full_name);
@@ -103,14 +95,14 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
   if (repository.private !== false) return null;
   const home = `https://github.com/${repo}`;
   const url = (x: unknown) => (SAFE_URL.test(text(x)) ? text(x) : home);
-  const title = (raw: string, fallback: string) => cleanTitle(raw, blocklist) ?? fallback;
+  const title = (raw: string, fallback: string) => cleanTitle(raw) ?? fallback;
   const changes: GithubChange[] = [];
   switch (event) {
     case "workflow_run": {
       const run = obj(body.workflow_run);
       const id = int(run?.id);
       const branch = text(run?.head_branch);
-      if (!run || id === null || !sameName(text(obj(run.head_repository)?.full_name), repo) || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
+      if (!run || id === null || !sameName(text(obj(run.head_repository)?.full_name), repo) || !BRANCH.test(branch)) break;
       const attempt = int(run.run_attempt);
       changes.push({ type: "run", id, attempt: attempt !== null && attempt > 0 ? attempt : 1, branch, title: title(`${text(run.name)} · ${branch}`, "Workflow run"), url: url(run.html_url), status: runStatus(text(run.status), text(run.conclusion)) });
       break;
@@ -132,7 +124,7 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const action = text(body.action);
       const sender = text(obj(body.sender)?.login);
       const trusted = (sender !== "" && actors.some((a) => sameName(a, sender))) || TRUSTED_ASSOCIATIONS.includes(text(pr?.author_association));
-      if (!pr || number === null || !sameName(text(obj(head?.repo)?.full_name), repo) || !trusted || !BRANCH.test(branch) || branchBlocked(branch, blocklist)) break;
+      if (!pr || number === null || !sameName(text(obj(head?.repo)?.full_name), repo) || !trusted || !BRANCH.test(branch)) break;
       const kind = action === "opened" || action === "reopened" || action === "ready_for_review" ? "opened" : action === "closed" && pr.merged === true ? "merged" : null;
       if (kind) changes.push({ type: "pr", number, branch, title: title(text(pr.title), `Pull request #${number}`), url: url(pr.html_url), action: kind });
       break;
@@ -141,7 +133,7 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const main = text(repository.default_branch);
       const head = obj(body.head_commit);
       const sha = text(head?.id);
-      if (!head || !BRANCH.test(main) || branchBlocked(main, blocklist) || text(body.ref) !== `refs/heads/${main}` || !SHA.test(sha)) break;
+      if (!head || !BRANCH.test(main) || text(body.ref) !== `refs/heads/${main}` || !SHA.test(sha)) break;
       const firstLine = text(head.message).split("\n")[0] ?? "";
       changes.push({ type: "push", sha, title: title(`${main} · ${firstLine}`, `Commit to ${main}`), url: url(head.url) });
       break;

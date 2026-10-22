@@ -203,18 +203,18 @@ export function historyDay(log: DayLog, doc: OfficeDoc): OfficeHistoryV1 {
   };
 }
 
-/** The Worker's read-time pass: the allowlist on every repository and `cleanTitle` (the current blocklist) on every title. */
-export function cleanHistory(h: OfficeHistoryV1, allow: readonly string[], blocklist: readonly string[]): OfficeHistoryV1 {
+/** The Worker's read-time pass: the allowlist on every repository and `cleanTitle` on every title. */
+export function cleanHistory(h: OfficeHistoryV1, allow: readonly string[]): OfficeHistoryV1 {
   const ok = (repo: string) => repo !== "" && repoAllowed(repo, allow);
   const tasks = Object.fromEntries(
     Object.entries(h.tasks).flatMap(([n, v]): [string, Task][] => {
       if (!ok(v.repo)) return [];
-      const title = v.title ? cleanTitle(v.title, blocklist) : null;
+      const title = v.title ? cleanTitle(v.title) : null;
       return [[n, title ? { repo: v.repo, title } : { repo: v.repo }]];
     }),
   );
   const prs = h.prs.map((p): OfficeHistoryPr => {
-    const title = ok(p[2]) ? cleanTitle(p[4], blocklist) : null;
+    const title = ok(p[2]) ? cleanTitle(p[4]) : null;
     return title ? [p[0], p[1], p[2], p[3], title] : [p[0], p[1], "", p[3], ""];
   });
   return { ...h, tasks, prs };

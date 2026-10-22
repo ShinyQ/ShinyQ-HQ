@@ -5,7 +5,7 @@ import { PERSPECTIVE_TOPICS, perspectiveFingerprints, perspectiveIssues, perspec
 import { PERSPECTIVE_REFERENCE_HOSTS } from "@/content/schema";
 import { privateTopic, routedTopic } from "../../functions/_lib/scope";
 import { getContent, getPerspectives, getPerspectivesFile } from "@/content/load";
-import { findBlockedTerms } from "@/content/safety";
+import { findTerms } from "@/content/safety";
 
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
@@ -63,6 +63,6 @@ describe("content/perspectives.json", () => {
     ].join("\n");
     const prints = perspectiveFingerprints(file.entries);
     expect(prints.every((p) => p.split(" ").length >= 4), prints.join(" | ")).toBe(true);
-    expect(findBlockedTerms(published, prints)).toEqual([]);
+    expect(findTerms(published, prints)).toEqual([]);
   });
 });

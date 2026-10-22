@@ -1,6 +1,6 @@
 /**
  * Smart CI planner (owner decisions 2026-10-17 and 2026-10-18, docs/agents/ci-and-deploy.md): which heavy
- * CI work a pull request needs. Typecheck, lint, unit tests, the build (CSP hashes, public-safety scan,
+ * CI work a pull request needs. Typecheck, lint, unit tests, the build (CSP hashes, script policy check,
  * og:check) and the secret scan always run. A pull request runs only the affected e2e specs (plus a small
  * smoke set when 3D or page code changed) on as many shards as their measured time needs, only the 3D perf
  * gates its 3D files can move, and only the Lighthouse URLs its files can move. A push to main whose merged

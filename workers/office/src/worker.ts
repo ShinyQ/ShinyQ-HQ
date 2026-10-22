@@ -19,7 +19,7 @@ const HISTORY_DAY = /^\d{4}-\d{2}-\d{2}$/;
  * GET /history (the 8-day replay index), GET /history?day=YYYY-MM-DD (one WIB day, cleaned again),
  * POST /beat (relay, X-Office-Signature) and POST /github (webhooks, X-Hub-Signature-256).
  */
-export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: () => number }) {
+export function createOfficeWorker(deps: { now?: () => number } = {}) {
   const now = deps.now ?? Date.now;
   return {
     async fetch(request: Request, env: OfficeWorkerEnv): Promise<Response> {
@@ -43,9 +43,9 @@ export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: (
         if (names.length > 1 || (names.length === 1 && (names[0] !== "day" || day === null || !HISTORY_DAY.test(day)))) return status(404);
         const res = await office.fetch(`${DO_BASE}/history${day === null ? "" : `?day=${day}`}`);
         if (!res.ok) return status(res.status);
-        // The index carries counts only; a day's titles and repositories pass the allowlist and the current blocklist again.
+        // The index carries counts only; a day's titles and repositories pass the allowlist and `cleanTitle` again.
         if (day === null) return res;
-        const clean = cleanHistory((await res.json()) as OfficeHistoryV1, parseAllowlist(env.OFFICE_REPO_ALLOWLIST), deps.blocklist);
+        const clean = cleanHistory((await res.json()) as OfficeHistoryV1, parseAllowlist(env.OFFICE_REPO_ALLOWLIST));
         return new Response(JSON.stringify(clean), { headers: { "Content-Type": "application/json; charset=utf-8" } });
       }
       if (pathname === "/beat") {
@@ -62,7 +62,7 @@ export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: (
         }
         if (!beat) return status(400);
         if (Math.abs(now() - beat.ts) > REPLAY_WINDOW_MS) return status(401);
-        return post("/beat", sanitizeBeat(beat, parseAllowlist(env.OFFICE_REPO_ALLOWLIST), deps.blocklist));
+        return post("/beat", sanitizeBeat(beat, parseAllowlist(env.OFFICE_REPO_ALLOWLIST)));
       }
       if (pathname === "/github") {
         if (request.method !== "POST") return status(405);
@@ -77,7 +77,7 @@ export function createOfficeWorker(deps: { blocklist: readonly string[]; now?: (
           return status(400);
         }
         const event = request.headers.get("X-GitHub-Event") ?? "";
-        const update = parseGithubEvent(event, payload, parseAllowlist(env.OFFICE_REPO_ALLOWLIST), deps.blocklist, parseActors(env.OFFICE_GITHUB_ACTORS));
+        const update = parseGithubEvent(event, payload, parseAllowlist(env.OFFICE_REPO_ALLOWLIST), parseActors(env.OFFICE_GITHUB_ACTORS));
         if (!update) return status(204);
         return post("/github", { delivery: (request.headers.get("X-GitHub-Delivery") ?? "").slice(0, 64), update });
       }

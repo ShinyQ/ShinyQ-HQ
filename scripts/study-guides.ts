@@ -16,7 +16,6 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { findBlockedLabels, loadBlocklist } from "../src/content/safety";
 
 export const GUIDES_BUCKET = "hq-study-guides";
 const ROOT = path.join(import.meta.dir, "..");
@@ -25,8 +24,6 @@ const OUT_DIR = path.join(ROOT, ".study-guides");
 const COVER_DIR = path.join(ROOT, "public", "study-guides");
 const COVER_WIDTH = 480;
 const AUTHOR = "Kurniadi Ahmad Wijaya";
-/** Textbook examples that trip the safety blocklist but carry no owner data (reviewed 2026-10-19). */
-const BENIGN_PHRASES = ["such as a salary from work experience"];
 
 interface GuideEntry {
   slug: string;
@@ -70,7 +67,6 @@ export function infoPatch(infoId: number, title: string, subject: string): objec
 
 function prepare(pairs: string[]) {
   const data = readData();
-  const terms = loadBlocklist();
   mkdirSync(OUT_DIR, { recursive: true });
   mkdirSync(COVER_DIR, { recursive: true });
   const scratch = mkdtempSync(path.join(tmpdir(), "study-guides-"));
@@ -80,9 +76,7 @@ function prepare(pairs: string[]) {
       const entry = data.guides.find((g) => g.slug === slug);
       if (!entry || !source || !existsSync(source)) throw new Error(`Unknown slug or missing file: ${pair}`);
 
-      const text = BENIGN_PHRASES.reduce((all, phrase) => all.replaceAll(phrase, ""), run("pdftotext", ["-layout", source, "-"]));
-      const blocked = findBlockedLabels(text, terms);
-      if (blocked.length) throw new Error(`${slug}: blocklisted terms in the PDF text: ${blocked.join(", ")}`);
+      const text = run("pdftotext", ["-layout", source, "-"]);
       if (/(?:\+62|\b08\d{2})[\s-]?\d{3,4}[\s-]?\d{3,5}/.test(text)) throw new Error(`${slug}: a phone number in the PDF text`);
 
       const trailer = run("qpdf", ["--show-object=trailer", source]);

@@ -70,19 +70,19 @@ describe("hq-office deploy", () => {
 
   it("rolls the Worker back with Pages when it changed, from the target checkout, without re-putting secrets", () => {
     expect(rollback).toContain("Did the hq-office Worker change?");
-    expect(rollback).toContain("workers/office src/lib/office src/content/safety-match.ts functions/_lib/security.ts");
+    expect(rollback).toContain("workers/office src/lib/office functions/_lib/security.ts");
     expect(rollback).toContain("vars.OFFICE_WORKER_DEPLOY == 'false'");
     const step = rollback.slice(rollback.indexOf("- name: Redeploy hq-office from the rollback target"));
     expect(step).toContain("working-directory: target/workers/office");
     expect(step).toContain("bunx wrangler deploy");
     expect(rollback).not.toContain("wrangler secret put");
-    expect(rollback).toContain("SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}");
+    expect(rollback).not.toContain("SAFETY_BLOCKLIST");
+    expect(rollback).toContain("- name: Build the rollback target's generated files");
   });
 
   it("checks the bundle on pull requests without any secret, also when its bundled imports change", () => {
     expect(check).toContain('"workers/office/**"');
     expect(check).toContain('"functions/_lib/security.ts"');
-    expect(check).toContain('"scripts/build-knowledge.ts"');
     expect(check).toContain("bunx wrangler deploy --dry-run");
     expect(check).not.toContain("secrets.");
   });

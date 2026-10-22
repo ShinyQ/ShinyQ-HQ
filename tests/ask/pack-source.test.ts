@@ -39,12 +39,12 @@ let version2: string;
 beforeAll(() => {
   const built = buildRepoPack("2026-10-11");
   pack = built.pack;
-  const artifacts = buildPackArtifacts(pack, built.safety.blocklist);
+  const artifacts = buildPackArtifacts(pack);
   json = artifacts.json;
   pin = artifacts.meta;
   fallback = buildFallbackPack(pack);
   const other = buildRepoPack("2026-12-01");
-  json2 = buildPackArtifacts(other.pack, other.safety.blocklist).json;
+  json2 = buildPackArtifacts(other.pack).json;
   version2 = other.pack.packVersion;
 });
 

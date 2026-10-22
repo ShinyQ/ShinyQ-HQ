@@ -45,7 +45,6 @@ function fakeApi() {
   return { api, store, ttl, requests, setDeny: (v: boolean) => (deny = v), setFail: (f: typeof fail) => (fail = f) };
 }
 
-let blocklist: string[];
 let json: string;
 let meta: PackMeta;
 let json2: string;
@@ -53,16 +52,15 @@ let meta2: PackMeta;
 
 beforeAll(() => {
   const a = buildRepoPack("2026-10-11");
-  blocklist = a.safety.blocklist;
-  ({ json, meta } = buildPackArtifacts(a.pack, blocklist));
+  ({ json, meta } = buildPackArtifacts(a.pack));
   const b = buildRepoPack("2026-12-01");
-  ({ json: json2, meta: meta2 } = buildPackArtifacts(b.pack, blocklist));
+  ({ json: json2, meta: meta2 } = buildPackArtifacts(b.pack));
 });
 
 function setup() {
   const fake = fakeApi();
   const lines: string[] = [];
-  const deps: Deps = { kv: kvClient(fake.api, ACCOUNT, NAMESPACE, "token"), blocklist, now: () => new Date("2026-10-19T00:00:00Z"), log: (l) => void lines.push(l) };
+  const deps: Deps = { kv: kvClient(fake.api, ACCOUNT, NAMESPACE, "token"), now: () => new Date("2026-10-19T00:00:00Z"), log: (l) => void lines.push(l) };
   return { ...fake, deps, lines };
 }
 

@@ -165,10 +165,10 @@ describe("day log", () => {
     expect(parseOfficeHistoryIndex(idx)).not.toBeNull();
   });
   it("drops a repository no longer public and cleans titles at read time", () => {
-    const { log, doc } = play([[0, beat(id("a"), { repo: "ShinyQ/ShinyQ-HQ", title: "Ship the secretword fix" })]]);
+    const { log, doc } = play([[0, beat(id("a"), { repo: "ShinyQ/ShinyQ-HQ", title: "Ship <the> fix" })]]);
     expect(historyDay(log, { ...doc, publicRepos: [] }).tasks).toEqual({});
-    const h = cleanHistory(historyDay(log, doc), ["ShinyQ/*"], ["secretword"]);
-    expect(h.tasks["0"]).toEqual({ repo: "ShinyQ/ShinyQ-HQ" });
-    expect(cleanHistory(historyDay(log, doc), ["Other/*"], []).tasks).toEqual({});
+    const h = cleanHistory(historyDay(log, doc), ["ShinyQ/*"]);
+    expect(h.tasks["0"]).toEqual({ repo: "ShinyQ/ShinyQ-HQ", title: "Ship the fix" });
+    expect(cleanHistory(historyDay(log, doc), ["Other/*"]).tasks).toEqual({});
   });
 });

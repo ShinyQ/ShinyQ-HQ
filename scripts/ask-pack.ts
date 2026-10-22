@@ -18,10 +18,9 @@
  * `flip` only moves the pointer to a version `publish` already validated and listed.
  */
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { packMeta, validateStoredPack, type PackMeta } from "@/ask/pack";
-import { loadBlocklist } from "@/content/safety";
 import { PACK_SCHEMA } from "../functions/_lib/pack-index";
 import { packKey, parsePointer, POINTER_KEY, type PackPointer } from "../functions/_lib/pack-source";
 import { readKvId } from "./provision-ask";
@@ -121,7 +120,6 @@ export function planPrune(index: readonly IndexEntry[], protect: readonly string
 
 export interface Deps {
   kv: KvClient;
-  blocklist: readonly string[];
   now?: () => Date;
   log?: (line: string) => void;
 }
@@ -133,9 +131,9 @@ export interface PublishInput {
 }
 
 /** Uploads this build's pack (not flipped). Fails before any write when the value or its pin do not validate. */
-export async function publish({ kv, blocklist, now = () => new Date(), log = console.log }: Deps, { json, meta, commit }: PublishInput, options: { dryRun?: boolean } = {}): Promise<{ previous: string; version: string; uploaded: boolean; pruned: string[] }> {
+export async function publish({ kv, now = () => new Date(), log = console.log }: Deps, { json, meta, commit }: PublishInput, options: { dryRun?: boolean } = {}): Promise<{ previous: string; version: string; uploaded: boolean; pruned: string[] }> {
   if (!/^[0-9a-f]{7,40}$/.test(commit)) throw new Error(`publish needs --commit <sha>, got "${commit}"`);
-  const errors = validateStoredPack(json, blocklist);
+  const errors = validateStoredPack(json);
   if (errors.length) throw new Error(`the built pack does not validate:\n- ${errors.join("\n- ")}`);
   const actual = packMeta(json);
   if (JSON.stringify(actual) !== JSON.stringify(meta)) throw new Error(`pack-meta.json does not match pack.json (${JSON.stringify(meta)} vs ${JSON.stringify(actual)})`);
@@ -166,13 +164,13 @@ export async function publish({ kv, blocklist, now = () => new Date(), log = con
 }
 
 /** Points `pack:current` at a version from `pack:index` after reading its value back and re-validating it. */
-export async function flip({ kv, blocklist, log = console.log }: Deps, version: string): Promise<{ previous: string; version: string }> {
+export async function flip({ kv, log = console.log }: Deps, version: string): Promise<{ previous: string; version: string }> {
   const entry = parseIndex(await kv.get(INDEX_KEY)).find((e) => e.version === version);
   if (!entry) throw new Error(`${version} is not in ${INDEX_KEY}; only published versions can be served`);
   const value = await kv.get(packKey(version));
   if (value === null) throw new Error(`${packKey(version)} is missing`);
   if (sha256(value) !== entry.sha256) throw new Error(`${packKey(version)} does not match its SHA-256 in ${INDEX_KEY}`);
-  const errors = validateStoredPack(value, blocklist);
+  const errors = validateStoredPack(value);
   if (errors.length) throw new Error(`${packKey(version)} no longer validates:\n- ${errors.join("\n- ")}`);
   const previous = parsePointer(await kv.get(POINTER_KEY))?.version ?? "";
   if (previous === version) {
@@ -226,12 +224,6 @@ export async function status({ kv, log = console.log }: Deps): Promise<void> {
   if (orphans.length) log(`Stored but not indexed: ${orphans.join(", ")}`);
 }
 
-/** The deploy job's blocklist (with the private terms, functions/_generated/safety.json), else the repo's lists. */
-function blocklist(root: string, env: Record<string, string | undefined>): string[] {
-  const file = path.join(root, "functions", "_generated", "safety.json");
-  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as { blocklist: string[] }).blocklist : loadBlocklist(env);
-}
-
 const USAGE = "usage: bun scripts/ask-pack.ts publish --commit <sha> [--dry-run true] | flip <version> | pin <version> | rollback --commit <sha> [--dry-run true] | status | verify";
 
 /** The CLI. Returns the exit code: 0, or 1 on any failed KV call, check or argument (printed as a GitHub error annotation). */
@@ -251,7 +243,7 @@ export async function run(argv: readonly string[], options: { env?: Record<strin
     if (!["publish", "flip", "pin", "rollback", "status", "verify"].includes(command ?? "")) throw new Error(USAGE);
     if (!token || !account) throw new Error("CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required");
     if (!namespace) throw new Error("wrangler.toml has no ASK_KV namespace id");
-    const deps: Deps = { kv: kvClient(options.fetch ?? fetch, account, namespace, token), blocklist: blocklist(root, env), log };
+    const deps: Deps = { kv: kvClient(options.fetch ?? fetch, account, namespace, token), log };
     const output = (values: Record<string, string>) => {
       if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, Object.entries(values).map(([k, v]) => `${k}=${v}\n`).join(""));
     };

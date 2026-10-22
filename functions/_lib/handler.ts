@@ -1,7 +1,5 @@
 import { ASK_MAX_QUESTION, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
-import { markdownToPlain } from "../../src/ask/markdown";
 import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
-import { findBlocked } from "./checks";
 import { backupTiers } from "./groq";
 import { parseHistory, signTurn, verifyHistory } from "./history";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, modelBreaker, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
@@ -16,7 +14,7 @@ import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
 import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./text";
-import type { AskEnv, PagesContext, SafetyData } from "./types";
+import type { AskEnv, PagesContext } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
@@ -33,7 +31,6 @@ const STREAM_DELAY_MS = 15;
 export interface HandlerDeps {
   /** Resolves the knowledge pack per request (functions/_lib/pack-source.ts: memory, KV, pin, fallback). */
   source: Pick<PackSource, "load" | "packDate">;
-  safety: SafetyData;
   /** Overrides (tests): clock, Turnstile fetch, model client. */
   now?: () => number;
   fetcher?: Fetcher;
@@ -186,7 +183,7 @@ function logEvent(env: AskEnv, loaded: LoadedPack, e: EventData) {
 }
 
 export function createAskHandler(deps: HandlerDeps) {
-  const { source, safety } = deps;
+  const { source } = deps;
   const now = deps.now ?? (() => Date.now());
   const delay = deps.streamDelayMs ?? STREAM_DELAY_MS;
 
@@ -250,14 +247,12 @@ export function createAskHandler(deps: HandlerDeps) {
     // Signs a model answer so the client can send it back as history.
     const sign = async (text: string) => (env.ASK_COOKIE_KEY ? { sig: await signTurn(env.ASK_COOKIE_KEY, turnScope, { q: question, a: text }) } : {});
 
-    // 6. Cache (answers that passed every check only; re-checked against the blocklist on read). First turns only: a follow-up depends on its history.
+    // 6. Cache (answers that passed every check only). First turns only: a follow-up depends on its history.
     const key = await cacheKey(pack.packVersion, locale, question);
     try {
       const hit = history.length === 0 ? await env.ASK_KV?.get(key) : null;
       const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
-      // Cached text is markdown: scan it and its plain text, which joins words that marks split ("SM**BC**").
-      const blocked = (text: string) => [text, markdownToPlain(text)].some((s) => findBlocked(s, safety.blocklist).length > 0);
-      if (cached && typeof cached.text === "string" && !blocked(cached.text)) {
+      if (cached && typeof cached.text === "string") {
         const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
@@ -285,7 +280,6 @@ export function createAskHandler(deps: HandlerDeps) {
       locale,
       pack,
       vocabulary,
-      safety,
       client,
       models: { primary: env.ASK_PRIMARY || DEFAULT_PRIMARY, fallback: env.ASK_FALLBACK || DEFAULT_FALLBACK },
       history,

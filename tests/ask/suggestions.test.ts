@@ -4,18 +4,17 @@ import { hardCodedFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { ASK_TOPICS, matchSuggestion, pickFollowUps, SUGGESTIONS, TOPIC_SIZE, topicQuestions, type Suggestion } from "@/ask/suggestions";
 import { getContent } from "@/content/load";
-import { findBlockedLabels, FORBIDDEN_PATTERNS } from "@/content/safety";
+import { FORBIDDEN_PATTERNS } from "@/content/safety";
 import { orderPods } from "@/content/selectors";
 import { retrieve } from "../../functions/_lib/retrieve";
 import { isSiteQuestion, resolveNickname, routedTopic } from "../../functions/_lib/scope";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import { scoreSuggestion, suggestionItems } from "../../scripts/ask-eval";
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-11"));
+  ({ pack } = buildRepoPack("2026-10-11"));
 });
 
 const ids = new Set(SUGGESTIONS.map((s) => s.id));
@@ -86,9 +85,8 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
     }
   });
 
-  it("passes the public-safety lint (no client names, em dashes, money or personal data)", () => {
+  it("has no forbidden pattern (em dashes, money or personal data)", () => {
     const text = SUGGESTIONS.flatMap((s) => [s.q.en, s.q.id]).join("\n");
-    expect(findBlockedLabels(text, safety.blocklist)).toEqual([]);
     for (const { name, pattern } of FORBIDDEN_PATTERNS) expect(text, name).not.toMatch(pattern);
   });
 

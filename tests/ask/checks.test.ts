@@ -25,21 +25,20 @@ import { isHarmful } from "../../functions/_lib/harmful";
 import { packVocabulary } from "../../functions/_lib/pipeline";
 import { scrubPII } from "../../functions/_lib/pii";
 import { retrieve } from "../../functions/_lib/retrieve";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 let vocabulary: ReadonlySet<string>;
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-11"));
+  ({ pack } = buildRepoPack("2026-10-11"));
   vocabulary = packVocabulary(pack);
 });
 
 const check = (answer: string, question = "What does he do?") =>
-  checkAnswer({ answer, question, context: retrieve(pack, question, "en").context, packDate: pack.packDate, pack, vocabulary, safety });
+  checkAnswer({ answer, question, context: retrieve(pack, question, "en").context, packDate: pack.packDate, pack, vocabulary });
 
 describe("fixed freelance guidance", () => {
   it("uses ordinary Indonesian while retaining full-time work constraints", () => {
@@ -171,11 +170,10 @@ describe("markdown answers (owner request 2026-10-16)", () => {
   it("runs the content checks on the plain text", () => {
     const q = "Tell me about the voice AI contact center project";
     const r = retrieve(pack, q, "en");
-    const input = { question: q, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks };
+    const input = { question: q, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks };
     const result = checkAnswer({ ...input, answer: "Projects:\n- **Voice AI Contact Center** [case study](/en/labs/voice-ai-contact-center)\n- [Fake](/labs/made-up)" });
     expect(result).toMatchObject({ ok: true, outcome: "answer", text: "Projects:\n- **Voice AI Contact Center** [case study](/labs/voice-ai-contact-center)\n- Fake" });
     // Marks that split a word or a number never hide it from the checks.
-    expect(checkAnswer({ ...input, answer: "The bank client was SM**BC**." })).toMatchObject({ ok: false, reason: "blocklist" });
     expect(checkAnswer({ ...input, answer: "Call +62 8**12** 3456 7890." })).toMatchObject({ ok: false, reason: "forbidden" });
     expect(checkAnswer({ ...input, answer: "- **I think** testing matters." })).toMatchObject({ ok: false, reason: "roleplay" });
     // A numbered list shows its start number; later items count from it, as the browser draws them.
@@ -213,8 +211,8 @@ describe("output checks", () => {
     }
   });
 
-  it("blocks client names but allows the employer label (T4)", () => {
-    expect(check("The bank client was SMBC.")).toMatchObject({ ok: false, reason: "blocklist", replacement: "restricted" });
+  it("blocks an unknown organisation name but allows the employer label (T4)", () => {
+    expect(check("Kurniadi built the fraud system for Zentrovia Bank.", "What did he build?")).toMatchObject({ ok: false, reason: "entity" });
     expect(check("He worked at Jenius (SMBC Indonesia) as a backend engineer.", "Where did he work?")).toMatchObject({ ok: true });
   });
 
@@ -273,7 +271,7 @@ describe("output checks", () => {
 
 const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" = "en") => {
   const r = retrieve(pack, question, locale);
-  return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks, perspective: isPerspectiveQuestion(question), locale });
+  return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks, perspective: isPerspectiveQuestion(question), locale });
 };
 
 describe("prompt (spec section 13)", () => {
@@ -320,7 +318,7 @@ describe("citation paths (done frame)", () => {
   it("cites the build page for an answer about how this site was built, and nothing for other factual answers", () => {
     const siteCheck = (answer: string, question: string, locale: "en" | "id" = "en") => {
       const r = retrieve(pack, question, locale);
-      return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks, site: isSiteQuestion(question), locale });
+      return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks, site: isSiteQuestion(question), locale });
     };
     expect(siteCheck("Kurniadi built ShinyQ HQ as a Next.js 16 static export on Cloudflare Pages, with the 3D tower in three.js through React Three Fiber.", "How was this site built?")).toEqual({
       ok: true,

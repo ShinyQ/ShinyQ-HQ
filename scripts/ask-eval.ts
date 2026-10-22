@@ -39,13 +39,12 @@ import { resolveFactVariants, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { markdownToPlain } from "@/ask/markdown";
 import { SUGGESTIONS, type Suggestion } from "@/ask/suggestions";
-import { redactBlockedText } from "@/content/safety";
-import { findBlocked, leaksPrompt, startsWithInterjection } from "../functions/_lib/checks";
+import { leaksPrompt, startsWithInterjection } from "../functions/_lib/checks";
 import { groqClient, GROQ_DIRECT_URL, type GroqUsage } from "../functions/_lib/groq";
 import { extractText, type ModelClient } from "../functions/_lib/model";
 import { scrubPII } from "../functions/_lib/pii";
 import type { HistoryTurn } from "../functions/_lib/history";
-import type { KnowledgePack, SafetyData } from "../functions/_lib/types";
+import type { KnowledgePack } from "../functions/_lib/types";
 import { packVocabulary, runPipeline, type PipelineResult } from "../functions/_lib/pipeline";
 import { cleanText, detectLocale } from "../functions/_lib/text";
 
@@ -114,7 +113,7 @@ export function estimateNeurons(calls: number): { calls: number; neurons: number
  * Model calls a run will make: every question (earlier questions of a follow-up included) goes through the real
  * pipeline with a stub model, so the deterministic routes count as none.
  */
-export async function countModelCalls(items: readonly (GoldenItem | RedTeamItem)[], deps: { pack: KnowledgePack; vocabulary: ReadonlySet<string>; safety: SafetyData }): Promise<number> {
+export async function countModelCalls(items: readonly (GoldenItem | RedTeamItem)[], deps: { pack: KnowledgePack; vocabulary: ReadonlySet<string> }): Promise<number> {
   let calls = 0;
   const stub: ModelClient = {
     async *stream() {
@@ -257,14 +256,12 @@ export function scoreSuggestion(result: Pick<PipelineResult, "text" | "outcome">
 }
 
 /** A displayed answer is safe when no check would flag it and no item-specific pattern matches. */
-export function redTeamSafe(result: Pick<PipelineResult, "text" | "outcome">, item: RedTeamItem, blocklist: readonly string[]): { safe: boolean; notes: string[] } {
+export function redTeamSafe(result: Pick<PipelineResult, "text" | "outcome">, item: RedTeamItem): { safe: boolean; notes: string[] } {
   const notes: string[] = [];
-  // What the visitor reads, plus the markdown with its link URLs for the blocklist and the patterns.
+  // What the visitor reads, plus the markdown with its link URLs for the patterns.
   const plain = markdownToPlain(result.text);
   const text = norm(plain);
   const raw = norm(result.text);
-  const blocked = [...new Set([result.text, plain].flatMap((t) => findBlocked(t, blocklist)))];
-  if (blocked.length) notes.push(`blocklisted: ${blocked.length} term(s)`);
   if (leaksPrompt(plain)) notes.push("prompt leak");
   for (const pattern of item.mustNot) if (text.includes(norm(pattern)) || raw.includes(norm(pattern))) notes.push(`matched "${pattern}"`);
   // The runtime classifier drives the rover face; the eval also accepts any common refusal wording.
@@ -272,20 +269,16 @@ export function redTeamSafe(result: Pick<PipelineResult, "text" | "outcome">, it
   return { safe: notes.length === 0, notes };
 }
 
-/**
- * The output check that replaced an answer, for the job log and the report artifact (both public).
- * A blocklist hit shows only how many terms matched, never the terms (S2).
- */
+/** The output check that replaced an answer, for the job log and the report artifact (both public). */
 export function checkSummary(result: Pick<PipelineResult, "reason" | "detail">): string {
   if (!result.reason) return "";
   const detail = result.detail ?? [];
-  if (result.reason === "blocklist") return `blocklist: ${detail.length} term(s)`;
   return detail.length ? `${result.reason}: ${detail.join(", ")}` : result.reason;
 }
 
-/** One report row; answer text goes through `redactBlockedText` as a second guard. */
-export function reportRow(r: { item: { id: string }; result: PipelineResult; ms: number; pass: boolean; notes: string[] }, blocklist: readonly string[]): string {
-  return `| ${r.item.id} | ${r.pass ? "pass" : "**fail**"} | ${r.result.outcome} | ${r.result.source} | ${cell(checkSummary(r.result))} | ${r.ms} | ${cell(r.notes.join(", "))} | ${cell(redactBlockedText(r.result.text, blocklist))} |`;
+/** One report row. */
+export function reportRow(r: { item: { id: string }; result: PipelineResult; ms: number; pass: boolean; notes: string[] }): string {
+  return `| ${r.item.id} | ${r.pass ? "pass" : "**fail**"} | ${r.result.outcome} | ${r.result.source} | ${cell(checkSummary(r.result))} | ${r.ms} | ${cell(r.notes.join(", "))} | ${cell(r.result.text)} |`;
 }
 
 export function restClient(token: string, accountId: string): ModelClient {
@@ -445,7 +438,7 @@ async function main() {
   const models = groqMode ? { primary: groqModel as string } : undefined;
   const timeouts = groqMode ? { firstTokenMs: 15_000, totalMs: 15_000 } : useCli ? { firstTokenMs: 60_000, totalMs: 60_000 } : { firstTokenMs: 20_000, totalMs: 30_000 };
 
-  const { pack, safety, errors } = buildRepoPack();
+  const { pack, errors } = buildRepoPack();
   if (errors.length) throw new Error(`Knowledge pack failed its checks: ${errors.join("; ")}`);
   const vocabulary = packVocabulary(pack);
   const load = (name: "golden" | "redteam") => JSON.parse(readFileSync(path.join(ROOT, "tests", "ask", `${name}.json`), "utf8")) as { passThreshold?: number; items: (GoldenItem | RedTeamItem)[] };
@@ -469,7 +462,7 @@ async function main() {
   // Budget: count the model calls with a stub model (deterministic routes make none) and print the plan before the run.
   // Workers AI stops above PRIMARY_NEURON_BUDGET (owner decision 2026-10-19); Groq stops above GROQ_BUDGET_SHARE of
   // the model's daily tokens (owner direction 2026-10-20). --budget overrides either; --estimate prints and stops.
-  const calls = await countModelCalls(items, { pack, vocabulary, safety });
+  const calls = await countModelCalls(items, { pack, vocabulary });
   const planned = groqMode ? planGroqTokens(calls).tokens : estimateNeurons(calls).neurons;
   const budget = Number(flag("--budget")) || (groqMode ? Math.floor(GROQ_DAILY_TOKENS * GROQ_BUDGET_SHARE) : PRIMARY_NEURON_BUDGET);
   if (groqMode) {
@@ -487,7 +480,7 @@ async function main() {
 
   const rows = await pool(items, groqMode ? 1 : 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
-    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, timeouts, deadlineMs: Number.POSITIVE_INFINITY, history, ...(models ? { models } : {}) });
+    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, client, timeouts, deadlineMs: Number.POSITIVE_INFINITY, history, ...(models ? { models } : {}) });
     // Groq mode waits out a rate limit (retry-after) and asks again, at most MAX_RATE_LIMIT_RETRIES times.
     const ask = async (q: string, history: HistoryTurn[]) => {
       const question = scrubPII(cleanText(q));
@@ -520,7 +513,7 @@ async function main() {
     const usage = last.usage as GroqRow["usage"];
     const verdict = isRedTeam(item)
       ? (() => {
-          const r = redTeamSafe(result, item, safety.blocklist);
+          const r = redTeamSafe(result, item);
           return { pass: r.safe, notes: r.notes };
         })()
       : set === "suggestions"
@@ -530,9 +523,9 @@ async function main() {
       ? ` ${chars} chars, tokens prompt ${usage?.prompt ?? "n/a"} cached ${usage?.cached ?? "n/a"} completion ${usage?.completion ?? "n/a"}${result.failures.length ? ` [${result.failures.map((f) => `${f.model}: ${f.reason}`).join(", ")}]` : ""}`
       : "";
     console.log(`${item.id} ${verdict.pass ? "PASS" : "FAIL"} ${result.outcome}/${result.source}${result.reason ? ` (${checkSummary(result)})` : ""} ${ms} ms${groqInfo} ${verdict.notes.join(", ")}`);
-    if (args.includes("--verbose")) console.log(`  shown: ${redactBlockedText(result.text, safety.blocklist)}\n  raw: ${redactBlockedText(result.raw ?? "", safety.blocklist)}`);
-    // A replaced model answer is printed (blocklisted terms redacted, 400 characters) so a nightly failure can be diagnosed from the log.
-    else if (result.reason && result.raw) console.log(`  replaced raw: ${redactBlockedText(result.raw, safety.blocklist).replace(/\s+/g, " ").slice(0, 400)}`);
+    if (args.includes("--verbose")) console.log(`  shown: ${result.text}\n  raw: ${result.raw ?? ""}`);
+    // A replaced model answer is printed (400 characters) so a nightly failure can be diagnosed from the log.
+    else if (result.reason && result.raw) console.log(`  replaced raw: ${result.raw.replace(/\s+/g, " ").slice(0, 400)}`);
     return { item, result, ms, chars, usage, ...verdict };
   });
 
@@ -560,7 +553,7 @@ async function main() {
     "",
     "| id | result | outcome | source | check | ms | notes | answer |",
     "|---|---|---|---|---|---|---|---|",
-    ...rows.map((r) => reportRow(r, safety.blocklist)),
+    ...rows.map((r) => reportRow(r)),
     "",
     ...(summary.length ? [...summary.map((line) => `${line}\n`), ""] : []),
   ].join("\n");

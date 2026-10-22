@@ -1,12 +1,11 @@
-import { loadDefaultBlocklist } from "@/content/safety";
 import type { OfficeAgent } from "@/lib/office/protocol";
 
 export const PROMPT = "Fix the login bug for the client portal, password is hunter2";
 export const SECRET_CMD = "bun test tests/client-portal/login.test.ts --token=abc123";
 export const CWD = "/Users/someone/Work/client-portal";
 export const OUTPUT = "FAIL tests/client-portal/login.test.ts: expected 200";
-/** A client name from the committed safety blocklist (the first plain term), read at run time so no test names one. */
-export const CLIENT = loadDefaultBlocklist().find((t) => !t.startsWith("/")) ?? "Blocked Client";
+/** A made-up client name planted in helper payloads; it must never reach a beat or the relay log. */
+export const CLIENT = "Nusantara Fictional Bank";
 /** Sub-agent (helper) payload text: the task prompt, its description, private transcripts, the helper's id and type. */
 export const HELPER_PROMPT = "Audit the payment webhook, the key is sk-live-secret";
 export const HELPER_DESC = `Review the ${CLIENT} onboarding flow`;

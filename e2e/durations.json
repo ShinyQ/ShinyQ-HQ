@@ -159,7 +159,6 @@
     "deploy.spec.ts › old CV path /en/cv.pdf redirects to the one CV PDF": 1,
     "deploy.spec.ts › old CV path /id/cv.pdf redirects to the one CV PDF": 6,
     "deploy.spec.ts › the CV PDF is served as a PDF": 0.8,
-    "deploy.spec.ts › the export names no client company or other blocklisted term (C3)": 7.9,
     "drawer-solid.spec.ts › HUD pills over the world are near-opaque": 9.9,
     "drawer-solid.spec.ts › desktop: the drawer is near-opaque, clears the HUD top bar and passes contrast": 13.4,
     "drawer-solid.spec.ts › phone: the drawer is near-opaque, clears the HUD top bar and passes contrast": 10.1,

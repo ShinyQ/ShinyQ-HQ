@@ -60,8 +60,8 @@ describe("eval neuron budget", () => {
     const { resolveGoldenItem } = await import("@/ask/golden-facts");
     const { packVocabulary } = await import("../../functions/_lib/pipeline");
     const { countModelCalls, suggestionItems, planGroqTokens, GROQ_BUDGET_SHARE, FIDELITY_GOLDEN } = await import("../../scripts/ask-eval");
-    const { pack, safety } = buildRepoPack();
-    const deps = { pack, vocabulary: packVocabulary(pack), safety };
+    const { pack } = buildRepoPack();
+    const deps = { pack, vocabulary: packVocabulary(pack) };
     const facts = loadDynamicFacts();
     const g = golden.items.map((i) => resolveGoldenItem(i as Parameters<typeof resolveGoldenItem>[0], facts));
     const pills = suggestionItems().map((i) => resolveGoldenItem(i, facts));
