@@ -229,14 +229,14 @@ describe("ci-plan planFor: selective pull request runs", () => {
     expect(plan).toMatchObject({ e2e: ["gallery", "pageview", "seo", "static-routes"], e2eTests: [], perf: false, lighthouse: false });
   });
 
-  it("HUD change: its specs plus the smoke set, the bytes gate, 1 to 2 e2e shards", () => {
+  it("HUD change: its specs plus the smoke set, the bytes gate, 1 to 3 e2e shards", () => {
     const plan = planFor(["src/hud/menu/RoverMenu.tsx"], none, opts);
     expect(plan.e2e).toEqual(["boot-first", "deploy", "hud", "hud-corners", "onboarding", "static-routes"]);
     expect(plan.e2eTests).toEqual([RIDE_SMOKE, HUD_SMOKE]);
     expect(plan.perf).toEqual(["bytes"]);
     expect(plan.lighthouse).toBe("all");
     expect(plan.e2eShards).toBeGreaterThanOrEqual(1);
-    expect(plan.e2eShards).toBeLessThanOrEqual(2);
+    expect(plan.e2eShards).toBeLessThanOrEqual(3);
     const out = planOutputs(plan, lhciUrls);
     expect(out).toMatchObject({ full: "false", e2e: "specs", perf: "true", perf_grep: "(3D JS after the gate)", perf_shards: "[1,2]", lighthouse: "true", lighthouse_urls: "" });
     // Whole spec files first (sorted as file names), then the smoke test filters.

@@ -9,6 +9,7 @@ import {
   listTestIds,
   locateTest,
   medianDurations,
+  missingTests,
   normalizeRunnerSpeed,
   parseListReporter,
   parseRunnerLine,
@@ -23,6 +24,7 @@ import {
   specsForChanges,
   UNKNOWN_SPEC_SECONDS,
   UNKNOWN_TEST_SECONDS,
+  unknownSeconds,
   type DurationsFile,
   type ListSuite,
 } from "../../scripts/e2e-plan";
@@ -575,6 +577,36 @@ describe("planShards", () => {
     expect(shardWallSeconds(ids, durations, 1)).toBe(190);
     expect(shardWallSeconds(ids, null, 2)).toBe(0);
   });
+
+  it("counts an unknown test as the longest known one with unknown: max (the perf lane)", () => {
+    // f is unknown: the median 30 by default, the max 60 for the perf lane.
+    expect(unknownSeconds(ids, durations)).toBe(30);
+    expect(unknownSeconds(ids, durations, "max")).toBe(60);
+    expect(unknownSeconds(ids, {}, "max")).toBe(0);
+    expect(shardSeconds(ids, durations, "max")).toBe(220);
+    expect(shardWallSeconds(ids, durations, 2, "max")).toBe(110);
+    // LPT with f at 60: b 60 -> 1, f 60 -> 2, e 40 -> 2... f and b no longer share a shard.
+    const shards = planShards(ids, 2, durations, 1, "max");
+    expect(shards.flat().sort()).toEqual([...ids].sort());
+    expect(shards.find((s) => s.includes(ids[5]))).not.toContain(ids[1]);
+    expect(planShards(ids, 2, durations, 1, "median")).toEqual(planShards(ids, 2, durations));
+  });
+
+  it("lists the tests missing from the durations", () => {
+    expect(missingTests(ids, durations)).toEqual([ids[5]]);
+    expect(missingTests(ids, null)).toEqual([]);
+    expect(missingTests(ids, {})).toEqual([]);
+  });
+
+  it("a new perf long pole: unknown tests get a shard each instead of piling up as short ones", () => {
+    const tests = ["memory", "new1", "new2", "new3", ...Array.from({ length: 8 }, (_, i) => `s${i}`)].map((t) => `[chromium] › p.spec.ts › ${t}`);
+    const secs = { "p.spec.ts › memory": 900, ...Object.fromEntries(tests.slice(4).map((t) => [durationKey(t), 60])) };
+    const longs = (plan: string[][]) => plan.map((s) => s.filter((t) => /memory|new/.test(t)).length);
+    // At the median (60 s) the three new tests look short and all land on the shard without memory; at the max each is a 900 s test.
+    expect(longs(planShards(tests, 2, secs, 1))).toEqual([1, 3]);
+    expect(longs(planShards(tests, 2, secs, 1, "max"))).toEqual([2, 2]);
+    expect(longs(planShards(tests, 4, secs, 1, "max"))).toEqual([1, 1, 1, 1]);
+  });
 });
 
 describe("CI timings", () => {
@@ -671,13 +703,13 @@ describe("shard plan against the real Playwright list", () => {
   it.each([
     { lane: "e2e" as const, perf: false, args: [], totals: [4, 5, 6] },
     { lane: "e2e" as const, perf: false, args: ["--grep-invert", "@nightly"], totals: [4, 8] },
-    { lane: "perf" as const, perf: true, args: ["--grep-invert", "@nightly|@look"], totals: [2, 3] },
+    { lane: "perf" as const, perf: true, args: ["--grep-invert", "@nightly|@look"], totals: [1, 2, 3, 4] },
   ])("$lane: every listed test lands in exactly one shard", ({ lane, perf, args, totals }) => {
     const all = list(perf, args);
     expect(all.length).toBeGreaterThan(perf ? 10 : 100);
     expect(new Set(all).size).toBe(all.length);
     for (const total of totals) {
-      const planned = planShards(all, total, durations[lane], CI_WORKERS_PER_SHARD).flat();
+      const planned = planShards(all, total, durations[lane], CI_WORKERS_PER_SHARD, perf ? "max" : "median").flat();
       expect(planned).toHaveLength(all.length);
       expect([...planned].sort()).toEqual([...all].sort());
     }
