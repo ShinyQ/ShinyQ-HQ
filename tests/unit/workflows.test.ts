@@ -43,7 +43,7 @@ describe("smart CI (ci.yml)", () => {
   const ci = read(path.join(dir, "ci.yml"));
   const job = (id: string) => ci.split(/\n  (?=[a-z][\w-]*:\n)/).find((block) => block.startsWith(`${id}:`)) ?? "";
 
-  it("keeps the required check names and never skips a heavy job at the job level", () => {
+  it("keeps the check names and never skips a heavy job at the job level", () => {
     for (const name of ["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}", "E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}"]) expect(ci).toContain(`name: ${name}`);
     for (const id of ["e2e", "perf", "lighthouse"]) {
       expect(job(id)).toContain("needs: [site, changes]");
@@ -96,6 +96,38 @@ describe("smart CI (ci.yml)", () => {
     expect(job("build")).not.toContain("outputs.perf == 'true'");
   });
 
+  it("requires every job in the aggregate check, so no shard needs to be a required check", () => {
+    expect(job("build")).toContain("needs: [changes, check, secrets, site, e2e, lighthouse, perf]");
+    expect(job("build")).toContain("name: Require every job");
+    expect(job("build")).toContain("RESULTS: ${{ join(needs.*.result, ' ') }}");
+  });
+
+  it("merges the blob reports without the full setup, with the Playwright version of bun.lock", () => {
+    expect(job("build")).not.toContain("uses: ./.github/actions/setup");
+    expect(job("build")).toContain("grep -oE '\"@playwright/test@[0-9][^\"]*\"' bun.lock");
+    expect(job("build")).toContain('bunx "playwright@$version" merge-reports --reporter html,json ./all-blob-reports');
+    // The aggregate's scripts must stay dependency-free (node builtins and repo files only).
+    for (const script of ["scripts/flaky-report.ts", "scripts/perf-summary.ts", "scripts/perf-report.ts", "e2e/budgets.ts"]) {
+      const imports = [...read(path.join(root, script)).matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]);
+      expect(imports.filter((m) => !m.startsWith("node:") && !m.startsWith(".")), script).toEqual([]);
+    }
+  });
+
+  it("saves the Next build cache only on main and restores it on pull requests", () => {
+    const site = job("site");
+    expect(site).toMatch(/uses: actions\/cache\/restore@\S+ # v[\d.]+\n\s+if: github\.ref != 'refs\/heads\/main'\n\s+with:\n\s+path: \.next\/cache/);
+    expect(site).toMatch(/uses: actions\/cache@\S+ # v[\d.]+\n\s+if: github\.ref == 'refs\/heads\/main'\n\s+with:\n\s+path: \.next\/cache/);
+  });
+
+  it("runs the Lighthouse warm-up URL once and the measured URLs with the config's runs and assertions", () => {
+    const lh = job("lighthouse");
+    expect(lh).toContain(".ci.collect.url = [$warmup] | .ci.collect.numberOfRuns = 1");
+    expect(lh).toContain("bunx @lhci/cli@0.15.1 collect --config=lighthouserc.warmup.json");
+    expect(lh).toContain("bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.ci.json");
+    expect(lh).toContain(".ci.collect.url = ($urls - [$warmup])");
+    expect(lh).toContain("bun scripts/serve-static.ts --port 4320 --dir out &");
+  });
+
   it("runs the ci-nightly report only on the nightly schedule or the nightly input, with no visual gate in CI", () => {
     expect(ci).toContain('- cron: "15 20 * * *"');
     expect(job("visual")).toBe("");
@@ -112,6 +144,30 @@ describe("smart CI (ci.yml)", () => {
     expect(job("e2e")).toContain("skip=(--grep-invert @nightly)");
     expect(job("e2e")).toContain('if [ "$NIGHTLY" = "true" ]; then skip=(); fi');
     expect(job("e2e")).toContain('bun run e2e:shard "$SHARD" $E2E_FILES "${skip[@]}"');
+  });
+});
+
+describe("setup action caches", () => {
+  const setup = read(path.join(root, ".github", "actions", "setup", "action.yml"));
+
+  it("keys the bun cache on bun.lock alone, with no restore-keys that grow the archive", () => {
+    expect(setup).toContain("key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}");
+    expect(setup).not.toMatch(/^\s*restore-keys:/m);
+  });
+
+  it("bounds apt and installs the Playwright system packages from cached .deb files", () => {
+    for (const line of ['Acquire::http::Timeout "15";', 'Acquire::https::Timeout "15";', 'Acquire::Retries "3";', 'Binary::apt::APT::Keep-Downloaded-Packages "true";']) expect(setup).toContain(line);
+    expect(setup).toContain("sudo tee /etc/apt/apt.conf.d/99ci");
+    const key = "key: apt-debs-${{ runner.os }}-${{ steps.pw.outputs.image }}-playwright-${{ steps.pw.outputs.version }}";
+    expect(setup.split(key)).toHaveLength(3);
+    expect(setup).toContain('echo "image=${ImageOS:-unknown}-${ImageVersion:-unknown}"');
+    // The apt config and the restored files come before both install steps.
+    const at = (s: string) => setup.indexOf(s);
+    expect(at("sudo cp")).toBeGreaterThan(0);
+    expect(at("sudo cp")).toBeLessThan(at("bunx playwright install --with-deps chromium"));
+    expect(at("sudo cp")).toBeLessThan(at("bunx playwright install-deps chromium"));
+    expect(at("cp /var/cache/apt/archives/*.deb")).toBeGreaterThan(at("bunx playwright install-deps chromium"));
+    expect(setup).toContain("github.ref == 'refs/heads/main'");
   });
 });
 

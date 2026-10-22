@@ -109,10 +109,10 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
   in logical steps. Prefer the `rtk` git wrapper.
 - One PR per change. Do not merge without the owner; PRs land as squash merges.
 - At most 2 CI runs in flight, both pull request runs and at most one of them a full run; a `main` run stays alone
-  (Free plan cap 20 jobs: full PR 12, selective PR 5 to 7, `main` 14 plus Deploy). Before pushing, check
+  (Free plan cap 20 jobs: full PR 12 with 6 e2e and 4 perf shards, selective PR 5 to 7, `main` 14 plus Deploy). Before pushing, check
   `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued` ([ci-and-deploy.md](docs/agents/ci-and-deploy.md#before-pushing-and-committing)).
 - `main` is protected by a ruleset: changes land only through a PR whose head has the required checks
-  (`Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`, `3D perf gates 1/2` and `2/2`). Force
+  (`Typecheck, lint, unit tests`, `Build, CV and e2e`, `Lighthouse CI`; no shard: the aggregate requires every job). Force
   pushes, deletion and direct pushes are rejected. In-progress runs on `main` are never cancelled; check main's CI after a merge.
 - Production deploys only through `.github/workflows/deploy.yml`: on a merge to `main` (fast path when the merged PR
   was green on the same tree, else after the complete `main` CI), by hand, or from the weekly live-facts PR. A red

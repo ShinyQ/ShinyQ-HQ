@@ -3,7 +3,7 @@ description: Node (pinned in .nvmrc) and Bun with a cached install, optionally P
 
 inputs:
   playwright:
-    description: Install Playwright Chromium (browser cached per Playwright version, OS deps installed every run).
+    description: Install Playwright Chromium (browser cached per Playwright version; OS deps installed every run from cached .deb files, apt fetches bounded).
     required: false
     default: "false"
 
@@ -17,11 +17,12 @@ runs:
     - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       with:
         bun-version-file: package.json
+    # No restore-keys: an older entry carried every past package version into each new key, so the archive only grew
+    # (729 MB for a 0.6 s install). A new bun.lock starts clean; bun install fetches what it needs.
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.bun/install/cache
         key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-        restore-keys: bun-${{ runner.os }}-
     - name: Install dependencies
       shell: bash
       run: bun install --frozen-lockfile
@@ -29,13 +30,40 @@ runs:
       id: pw
       if: inputs.playwright == 'true'
       shell: bash
-      run: echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
+      # ImageOS and ImageVersion are runner variables, not in the `env` context: the .deb cache key needs them.
+      run: |
+        echo "version=$(bun -e 'console.log(require("@playwright/test/package.json").version)')" >> "$GITHUB_OUTPUT"
+        echo "image=${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: pw-cache
       if: inputs.playwright == 'true'
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
+    # The system packages Playwright installs (fonts, libnss3 and others, about 25 MB) from cached .deb files: a stalled
+    # Ubuntu mirror held setups for up to 21 minutes. apt still runs update and verifies every package; a cached .deb
+    # whose version is no longer current is ignored and fetched again.
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      id: apt-cache
+      if: inputs.playwright == 'true'
+      with:
+        path: ~/.cache/apt-debs
+        key: apt-debs-${{ runner.os }}-${{ steps.pw.outputs.image }}-playwright-${{ steps.pw.outputs.version }}
+    - name: Bounded apt fetches and the cached packages
+      if: inputs.playwright == 'true'
+      shell: bash
+      env:
+        HIT: ${{ steps.apt-cache.outputs.cache-hit }}
+      run: |
+        # Each fetch gives up after 15 s and retries 3 times instead of trickling for minutes; keep the downloaded
+        # .deb files (the apt binary and a docker-clean hook would delete them) so a miss can save them below.
+        printf '%s\n' 'Acquire::http::Timeout "15";' 'Acquire::https::Timeout "15";' 'Acquire::Retries "3";' \
+          'APT::Keep-Downloaded-Packages "true";' 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99ci > /dev/null
+        if [ -f /etc/apt/apt.conf.d/docker-clean ]; then sudo rm /etc/apt/apt.conf.d/docker-clean; fi
+        if [ "$HIT" = "true" ] && compgen -G "$HOME/.cache/apt-debs/*.deb" > /dev/null; then
+          sudo cp "$HOME"/.cache/apt-debs/*.deb /var/cache/apt/archives/
+          echo "Restored $(find "$HOME/.cache/apt-debs" -name '*.deb' | wc -l) cached .deb files."
+        fi
     - name: Install Playwright Chromium
       if: inputs.playwright == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
       shell: bash
@@ -44,3 +72,19 @@ runs:
       if: inputs.playwright == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
       shell: bash
       run: bunx playwright install-deps chromium
+    - name: Keep the downloaded packages for the cache
+      id: apt-debs
+      if: inputs.playwright == 'true' && steps.apt-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p "$HOME/.cache/apt-debs"
+        if compgen -G "/var/cache/apt/archives/*.deb" > /dev/null; then cp /var/cache/apt/archives/*.deb "$HOME/.cache/apt-debs/"; fi
+        count=$(find "$HOME/.cache/apt-debs" -name '*.deb' | wc -l)
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+        echo "$count .deb files to cache."
+    # Saved by main runs only (pull requests restore main's entry), as the Next build cache in ci.yml.
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      if: inputs.playwright == 'true' && steps.apt-cache.outputs.cache-hit != 'true' && steps.apt-debs.outputs.count != '0' && github.ref == 'refs/heads/main'
+      with:
+        path: ~/.cache/apt-debs
+        key: apt-debs-${{ runner.os }}-${{ steps.pw.outputs.image }}-playwright-${{ steps.pw.outputs.version }}

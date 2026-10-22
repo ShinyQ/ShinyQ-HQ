@@ -15,10 +15,12 @@ name: CI
 # reports, so main still covers everything and keeps a full baseline. Manual dispatches (unless
 # `complement_pr` is set, a measurement), the nightly schedule, the `full-ci` label, CI or dependency
 # changes, unmapped paths, a push without such a PR run and any planner failure run everything: 8 e2e
-# and 4 perf shards (2 perf shards on pull requests, so the required checks keep the names `3D perf gates
-# 1/2` and `2/2`). A heavy job never skips at the job level (a skipped matrix job would report an
-# unexpanded check name and block the required checks): its steps skip and one "Not needed" step
-# passes. Complete runs (complement runs included) upload the `ci-full` artifact for the deploy gate
+# and 4 perf shards, or 6 e2e and 4 perf shards on a pull request (at most 10 e2e plus perf shards per PR
+# run, so with Lighthouse and the unit test job a PR run peaks at 12 jobs). A selective pull request sizes
+# its perf shards (1 to 4) from e2e/durations.json like its e2e shards. The required checks name no shard
+# (owner decision 2026-10-23): `Build, CV and e2e` requires every job. A heavy job never skips at the job
+# level (a skipped matrix job would report an unexpanded check name): its steps skip and one "Not needed"
+# step passes. Complete runs (complement runs included) upload the `ci-full` artifact for the deploy gate
 # (scripts/ci-status.ts).
 # The nightly schedule runs the full pipeline on main every night, the nightly-only e2e tests (`@nightly`,
 # skipped by pull requests and pushes) included, plus the nightly-only `nightly` job
@@ -202,7 +204,17 @@ jobs:
           if [ -n "$SITE_URL" ]; then
             echo "NEXT_PUBLIC_SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
           fi
+      # The Next build cache: saved only by main runs, restored everywhere. A save per pull request ref (about
+      # 120 MB each) pushed the repository past the 10 GB Actions cache quota, so GitHub evicted the bun and
+      # Playwright caches; a pull request restores main's newest entry through the restore key.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: github.ref != 'refs/heads/main'
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
+          restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: github.ref == 'refs/heads/main'
         with:
           path: .next/cache
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
@@ -228,7 +240,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Sized by the plan: 8 for a full run, 1 to 8 for the affected specs of a pull request.
+        # Sized by the plan: 8 for a full run (6 on a pull request), 1 to 8 for the affected specs of a pull
+        # request, at most 10 minus its perf shards.
         shard: ${{ fromJSON(needs.changes.outputs.e2e_shards) }}
     steps:
       - name: Not needed
@@ -281,8 +294,9 @@ jobs:
     # gated here.
     name: 3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}
     runs-on: ubuntu-latest
-    # No job-level `if:` (smart CI), as in the e2e job: the required checks "3D perf gates 1/2" and
-    # "2/2" need the expanded matrix names, so pull requests always plan 2 perf shards (4 elsewhere).
+    # No job-level `if:` (smart CI), as in the e2e job: a skipped matrix job reports an unexpanded name.
+    # Shards from the plan: the whole lane on 4, a pull request's part on 1 to 4 (ceil(seconds / 960) from
+    # e2e/durations.json), 1 running only "Not needed" when no perf gate can move.
     needs: [site, changes]
     strategy:
       fail-fast: false
@@ -349,7 +363,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      # No ./.github/actions/setup (bun cache restore and install): the scripts below import only node
+      # builtins and dependency-free files, and the merge fetches only the locked Playwright (on the pinned Node).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: blob-report-*
@@ -362,7 +383,10 @@ jobs:
           E2E_PLAN: ${{ needs.changes.outputs.e2e }}
         run: |
           if compgen -G "all-blob-reports/*.zip" > /dev/null; then
-            bunx playwright merge-reports --reporter html,json ./all-blob-reports
+            # The shards' Playwright from bun.lock: blob reports merge only with the version that wrote them.
+            version=$(grep -oE '"@playwright/test@[0-9][^"]*"' bun.lock | head -n1 | tr -d '"' | sed 's/.*@//')
+            if [ -z "$version" ]; then echo "::error::No @playwright/test version in bun.lock."; exit 1; fi
+            bunx "playwright@$version" merge-reports --reporter html,json ./all-blob-reports
           elif [ "$E2E_PLAN" = "none" ]; then
             echo "Smart CI: no e2e shard ran, nothing to merge."
           else
@@ -482,16 +506,28 @@ jobs:
       - name: Run Lighthouse CI
         # Uses the preinstalled Google Chrome and lighthouserc.json. LHCI_URLS: the affected URLs of a pull
         # request (warm-up first, scripts/ci-plan.ts); empty runs every URL in lighthouserc.json.
+        # The warm-up URL (never asserted) runs once instead of numberOfRuns times: one server serves a
+        # 1-run `collect` of the warm-up, then `autorun` of the measured URLs (its collect clears the
+        # warm-up result; the medians of 3 runs and the assertions are unchanged). Local runs keep
+        # lighthouserc.json as is.
         if: needs.changes.outputs.lighthouse != 'false'
         env:
           LHCI_URLS: ${{ needs.changes.outputs.lighthouse_urls }}
         run: |
-          if [ -n "$LHCI_URLS" ]; then
-            jq --argjson urls "$LHCI_URLS" '.ci.collect.url = $urls' lighthouserc.json > lighthouserc.pr.json
-            bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.pr.json
-          else
-            bunx @lhci/cli@0.15.1 autorun
+          urls=${LHCI_URLS:-$(jq -c '.ci.collect.url' lighthouserc.json)}
+          warmup=$(jq -r '[.ci.collect.url[] | select(contains("lhci-warmup"))][0] // empty' lighthouserc.json)
+          jq --argjson urls "$urls" --arg warmup "$warmup" \
+            '.ci.collect.url = ($urls - [$warmup]) | del(.ci.collect.startServerCommand, .ci.collect.startServerReadyPattern, .ci.collect.startServerReadyTimeout)' \
+            lighthouserc.json > lighthouserc.ci.json
+          bun scripts/serve-static.ts --port 4320 --dir out &
+          server=$!
+          trap 'kill "$server" 2> /dev/null || true' EXIT
+          for _ in $(seq 60); do curl -fsS -o /dev/null http://127.0.0.1:4320/en && break; sleep 0.5; done
+          if [ -n "$warmup" ]; then
+            jq --arg warmup "$warmup" '.ci.collect.url = [$warmup] | .ci.collect.numberOfRuns = 1' lighthouserc.ci.json > lighthouserc.warmup.json
+            bunx @lhci/cli@0.15.1 collect --config=lighthouserc.warmup.json
           fi
+          bunx @lhci/cli@0.15.1 autorun --config=lighthouserc.ci.json
       - name: The PR run's reports (complement run)
         # A complement run measured only the URLs the PR run did not: add the PR run's reports, so main's
         # lighthouse-reports stay a full baseline for the next pull request (cp -n keeps this run's files).

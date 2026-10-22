@@ -21,7 +21,11 @@
 import { appendFileSync } from "node:fs";
 import { gh } from "./ci-status";
 
-export const REQUIRED_CHECKS = ["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI", "3D perf gates 1/2", "3D perf gates 2/2"] as const;
+/**
+ * The fallback when the ruleset is unreadable. No `3D perf gates n/N` name: the perf shard count follows the plan
+ * (1 to 4), and the aggregate `Build, CV and e2e` already fails unless every e2e and perf shard passed.
+ */
+export const REQUIRED_CHECKS = ["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI"] as const;
 export const ROLLBACK_LABEL = "deploy-rollback";
 const ACTIONS_APP = "github-actions";
 

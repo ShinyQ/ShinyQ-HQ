@@ -3,7 +3,8 @@
  * CI work a pull request needs. Typecheck, lint, unit tests, the build (CSP hashes, script policy check,
  * og:check) and the secret scan always run. A pull request runs only the affected e2e specs (plus a small
  * smoke set when 3D or page code changed) on as many shards as their measured time needs, only the 3D perf
- * gates its 3D files can move, and only the Lighthouse URLs its files can move. A push to main whose merged
+ * gates its 3D files can move (also sized from their measured time), and only the Lighthouse URLs its files can
+ * move. A pull request runs at most 10 e2e plus perf shards (PR_HEAVY_SHARDS), so a full one is 6 e2e and 4 perf. A push to main whose merged
  * pull request passed CI on the same tree runs only the complement of that run (scripts/ci-complement.ts).
  * Other pushes, dispatches, the nightly schedule, the `full-ci` label and any failure here run everything.
  *
@@ -18,7 +19,7 @@
 import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { complementPlan, findSource, parseRecord, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
+import { complementPlan, findSource, MAX_PERF_SHARDS, parseRecord, perfSeconds, perfShardsFor, PLAN_ARTIFACT, PLAN_FILE, recordFor, type GreenRun, type Source, type SourceDeps, type SourceResult } from "./ci-complement";
 import { e2eShardsFor, locateTest, MAX_E2E_SHARDS, PR_SMOKE, specSeconds, specsForChanges, type Durations, type DurationsFile, type Spec } from "./e2e-plan";
 import type { MergedPr } from "./merge-gate";
 import { ALL_BUT_MEMORY, ALL_PERF_KEYS, PAYLOAD_BUILDER, pagePerfKeys, perfGrep, perfKeysFor, sharedRuleKeys, type PerfKey } from "./perf-plan";
@@ -140,6 +141,8 @@ export interface PlanOptions {
   event?: "pull_request" | "other";
   /** The e2e lane of e2e/durations.json, for the shard count. */
   durations?: Durations | null;
+  /** The perf lane of e2e/durations.json, for the perf shard count of a selective pull request. */
+  perfDurations?: Durations | null;
   /** Line of a smoke test in e2e/<spec>.spec.ts (default: read the file from the working directory). */
   locate?: (spec: Spec, title: string) => number | null;
   /** Lighthouse URL paths a file can move ([] = none). Default: page and 3D code "all", content none. */
@@ -154,11 +157,11 @@ export interface CiPlan {
   e2e: "all" | Spec[];
   /** Extra `e2e/<spec>.spec.ts:<line>` filters (smoke tests), only with a spec list. */
   e2eTests: string[];
-  /** 1 to 8; 8 for "all". */
+  /** 1 to 8; "all" is 8, or 6 on a pull request (PR_HEAVY_SHARDS minus the 4 perf shards). */
   e2eShards: number;
   /** false: no perf; ALL_PERF_KEYS: the whole lane. */
   perf: false | PerfKey[];
-  /** 2 on pull requests, 4 otherwise. */
+  /** 1 to 4: the whole lane 4, a pull request's part sized from its durations (perfShardsFor), 1 without perf. */
   perfShards: number;
   /** URL paths such as "/en/quick". */
   lighthouse: false | "all" | string[];
@@ -183,6 +186,13 @@ export const LIGHTHOUSE_PAGES: Readonly<Record<string, string>> = {
 
 const SPEC_FILE = /^e2e\/[^/]+\.spec\.ts$/;
 
+/**
+ * e2e plus perf shards of one pull request run. With Lighthouse and the unit test job beside them a pull request
+ * peaks at 12 jobs (docs/agents/ci-and-deploy.md: two PR runs in flight under the 20-job cap), so a full pull
+ * request runs 6 e2e shards next to the 4 perf shards; pushes, dispatches and the nightly keep 8 and 4.
+ */
+export const PR_HEAVY_SHARDS = 10;
+
 const defaultPages = (file: string): readonly string[] | "all" => (["ui", "code3d"].includes(classify(file)) ? "all" : []);
 
 /** Reads e2e/<spec>.spec.ts under `root` and finds the test by its title. */
@@ -205,14 +215,13 @@ function classesOf(files: readonly string[]): Partial<Record<ChangeClass, string
  */
 export function planFor(files: readonly string[] | null, perf3d: (file: string) => readonly PerfKey[], opts: PlanOptions = {}): CiPlan {
   const event = opts.event ?? (files === null ? "other" : "pull_request");
-  const perfShards = event === "pull_request" ? 2 : 4;
   const full = (classes: CiPlan["classes"], reasons: string[]): CiPlan => ({
     full: true,
     e2e: "all",
     e2eTests: [],
-    e2eShards: MAX_E2E_SHARDS,
+    e2eShards: event === "pull_request" ? PR_HEAVY_SHARDS - MAX_PERF_SHARDS : MAX_E2E_SHARDS,
     perf: [...ALL_PERF_KEYS],
-    perfShards,
+    perfShards: MAX_PERF_SHARDS,
     lighthouse: "all",
     classes,
     reasons,
@@ -284,7 +293,13 @@ export function planFor(files: readonly string[] | null, perf3d: (file: string) 
   }
   const keys = ALL_PERF_KEYS.filter((k) => keySet.has(k));
   const perf = keys.length ? keys : false;
-  if (perf) reasons.push(perf.length === ALL_PERF_KEYS.length ? "3D perf gates: the whole lane" : `3D perf gates: ${perf.join(", ")}`);
+  // As a complement run: the whole lane on 4 shards, a part on ceil(seconds / 960), 1 to 4; without perf 1 shard ("Not needed").
+  const perfShards = !perf ? 1 : perf.length === ALL_PERF_KEYS.length ? MAX_PERF_SHARDS : perfShardsFor(perfSeconds(opts.perfDurations, perf));
+  if (perf) reasons.push(`${perf.length === ALL_PERF_KEYS.length ? "3D perf gates: the whole lane" : `3D perf gates: ${perf.join(", ")}`} on ${perfShards} shard${perfShards > 1 ? "s" : ""}`);
+  if (e2eShards > PR_HEAVY_SHARDS - perfShards) {
+    e2eShards = PR_HEAVY_SHARDS - perfShards;
+    reasons.push(`e2e on ${e2eShards} shards beside ${perfShards} perf shards (at most ${PR_HEAVY_SHARDS} per pull request run)`);
+  }
 
   // Lighthouse: the URLs that page, 3D and content files can move.
   const pages = opts.pages ?? defaultPages;
@@ -545,6 +560,7 @@ async function main() {
       event,
       fullLabel,
       durations: durations?.e2e ?? null,
+      perfDurations: durations?.perf ?? null,
       locate: locateFromDisk(root),
       pages: files ? pagesFromRepo(read) : undefined,
     });

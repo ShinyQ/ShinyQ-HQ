@@ -502,9 +502,27 @@ function median(values: readonly number[]): number {
 /** Playwright workers per CI shard: `workers` is unset in CI, so Playwright uses half the runner's 4 vCPUs. */
 export const CI_WORKERS_PER_SHARD = 2;
 
-function testSeconds(tests: readonly string[], durations: Durations): number[] {
-  const known = tests.map((t) => durations[durationKey(t)]).filter((d): d is number => typeof d === "number");
-  const fallback = median(known);
+/**
+ * How a test missing from e2e/durations.json is estimated: `median`, the median of the known tests (the e2e lane),
+ * or `max`, the longest known test of the lane (the perf lane, where a new test is more likely a long pole than a
+ * short one: the Agent Office tests were planned at the median, 84 s, and ran 4 to 16 minutes).
+ */
+export type UnknownEstimate = "median" | "max";
+
+/** The estimate for every listed test missing from `durations`. */
+export function unknownSeconds(tests: readonly string[], durations: Durations, unknown: UnknownEstimate = "median"): number {
+  if (unknown === "max") return Math.max(0, ...Object.values(durations));
+  return median(tests.map((t) => durations[durationKey(t)]).filter((d): d is number => typeof d === "number"));
+}
+
+/** The listed tests without a measured duration (an empty list without durations: the plan is round-robin then). */
+export function missingTests<T extends string>(tests: readonly T[], durations: Durations | null | undefined): T[] {
+  if (!durations || Object.keys(durations).length === 0) return [];
+  return tests.filter((t) => durations[durationKey(t)] === undefined);
+}
+
+function testSeconds(tests: readonly string[], durations: Durations, unknown: UnknownEstimate): number[] {
+  const fallback = unknownSeconds(tests, durations, unknown);
   return tests.map((t) => durations[durationKey(t)] ?? fallback);
 }
 
@@ -512,18 +530,19 @@ function testSeconds(tests: readonly string[], durations: Durations): number[] {
  * Splits an ordered test list into `total` shards, balanced by duration: longest first onto the least
  * loaded worker (LPT), where each shard has `workers` Playwright workers, so a long test fills one worker
  * of its shard while the shard's other workers take the shorter tests (with 1 worker per shard this is
- * LPT on the shard sums). Tests missing from `durations` count as the median of the known ones; without
- * durations it falls back to round-robin (`assignShard`). Deterministic for the same inputs (every shard
- * must compute the same plan, so `workers` is a constant, not the runner's core count), and every test
- * lands in exactly one shard, in its original order within the shard.
+ * LPT on the shard sums). Tests missing from `durations` count as the median of the known ones, or as the
+ * longest known test with `unknown: "max"` (the perf lane); without durations it falls back to round-robin
+ * (`assignShard`). Deterministic for the same inputs (every shard must compute the same plan, so `workers` is
+ * a constant, not the runner's core count), and every test lands in exactly one shard, in its original order
+ * within the shard.
  */
-export function planShards<T extends string>(tests: readonly T[], total: number, durations?: Durations | null, workers = 1): T[][] {
+export function planShards<T extends string>(tests: readonly T[], total: number, durations?: Durations | null, workers = 1, unknown: UnknownEstimate = "median"): T[][] {
   assignShard([], 1, total);
   if (!Number.isInteger(workers) || workers < 1) throw new Error(`invalid workers per shard ${workers}`);
   if (!durations || Object.keys(durations).length === 0) {
     return Array.from({ length: total }, (_, i) => assignShard(tests, i + 1, total));
   }
-  const seconds = testSeconds(tests, durations);
+  const seconds = testSeconds(tests, durations, unknown);
   const order = tests.map((_, i) => i).sort((a, b) => seconds[b] - seconds[a] || a - b);
   // Worker k * workers + w is worker w of shard k.
   const loads = new Array<number>(total * workers).fill(0);
@@ -543,18 +562,23 @@ export function planShards<T extends string>(tests: readonly T[], total: number,
   return picked.map((idx) => idx.sort((a, b) => a - b).map((i) => tests[i]));
 }
 
-/** Estimated seconds of a shard (the sum of its tests' durations, unknown ones at the median). */
-export function shardSeconds(tests: readonly string[], durations?: Durations | null): number {
-  if (!durations) return 0;
+/** The estimate of an unknown test in a shard's sums: the median of the whole lane, or its longest test. */
+function laneFallback(durations: Durations, unknown: UnknownEstimate): number {
   const known = Object.values(durations);
-  const fallback = median(known);
+  return unknown === "max" ? Math.max(0, ...known) : median(known);
+}
+
+/** Estimated seconds of a shard (the sum of its tests' durations, unknown ones at the lane's median or max). */
+export function shardSeconds(tests: readonly string[], durations?: Durations | null, unknown: UnknownEstimate = "median"): number {
+  if (!durations) return 0;
+  const fallback = laneFallback(durations, unknown);
   return tests.reduce((sum, t) => sum + (durations[durationKey(t)] ?? fallback), 0);
 }
 
 /** Estimated wall seconds of a shard on `workers` workers: its tests longest first onto the least loaded worker. */
-export function shardWallSeconds(tests: readonly string[], durations: Durations | null | undefined, workers: number): number {
+export function shardWallSeconds(tests: readonly string[], durations: Durations | null | undefined, workers: number, unknown: UnknownEstimate = "median"): number {
   if (!durations) return 0;
-  const fallback = median(Object.values(durations));
+  const fallback = laneFallback(durations, unknown);
   const loads = new Array<number>(Math.max(1, workers)).fill(0);
   const seconds = tests.map((t) => durations[durationKey(t)] ?? fallback).sort((a, b) => b - a);
   for (const s of seconds) loads[loads.indexOf(Math.min(...loads))] += s;

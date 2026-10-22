@@ -47,13 +47,20 @@ describe("required checks on the PR head", () => {
   });
 
   it("reports missing, unfinished and red checks", () => {
-    const runs = allGreen().filter((r) => r.name !== "3D perf gates 2/2");
-    runs.push(check("3D perf gates 2/2", null, 60, "github-actions", "in_progress"));
+    const runs = allGreen().filter((r) => r.name !== "Lighthouse CI");
+    runs.push(check("Lighthouse CI", null, 60, "github-actions", "in_progress"));
     runs.push(check("Typecheck, lint, unit tests", "cancelled", 61));
-    expect(checksVerdict([...REQUIRED_CHECKS, "New check"], runs)).toEqual({ ok: false, missing: ["New check"], failed: ["Typecheck, lint, unit tests", "3D perf gates 2/2"] });
+    expect(checksVerdict([...REQUIRED_CHECKS, "New check"], runs)).toEqual({ ok: false, missing: ["New check"], failed: ["Typecheck, lint, unit tests", "Lighthouse CI"] });
   });
 
-  it("reads the required checks from the branch rules, else the known five", () => {
+  it("requires no perf shard by name: the aggregate check covers every shard (owner decision 2026-10-23)", () => {
+    expect([...REQUIRED_CHECKS]).toEqual(["Typecheck, lint, unit tests", "Build, CV and e2e", "Lighthouse CI"]);
+    // A PR run on 4 perf shards passes the fallback list without a `3D perf gates 1/2` check.
+    const runs = [...allGreen(), ...[1, 2, 3, 4].map((n) => check(`3D perf gates ${n}/4`, "success", 10 + n))];
+    expect(checksVerdict(REQUIRED_CHECKS, runs)).toEqual({ ok: true });
+  });
+
+  it("reads the required checks from the branch rules, else the known three", () => {
     const rules = [{ type: "deletion" }, { type: "required_status_checks", parameters: { required_status_checks: [{ context: "A" }, { context: "B" }] } }];
     expect(requiredFromRules(rules)).toEqual(["A", "B"]);
     expect(requiredFromRules([{ type: "deletion" }])).toEqual([...REQUIRED_CHECKS]);
@@ -76,6 +83,6 @@ describe("fast-path verdict", () => {
   it("waits for main CI without a merged PR, on another tree, or with red checks", () => {
     expect(decideFastPath({ ...base, pr: undefined }).fast).toBe(false);
     expect(decideFastPath({ ...base, prTree: "t2" })).toEqual({ fast: false, note: expect.stringContaining("tree") });
-    expect(decideFastPath({ ...base, checks: { ok: false, missing: ["Lighthouse CI"], failed: ["3D perf gates 1/2"] } })).toEqual({ fast: false, note: expect.stringContaining("Lighthouse CI") });
+    expect(decideFastPath({ ...base, checks: { ok: false, missing: ["Lighthouse CI"], failed: ["Build, CV and e2e"] } })).toEqual({ fast: false, note: expect.stringContaining("Lighthouse CI") });
   });
 });
