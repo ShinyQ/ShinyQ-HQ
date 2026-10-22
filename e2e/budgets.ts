@@ -66,8 +66,8 @@ export const BYTES_3D_BUDGET = {
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
   /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 28,217 B, cap 28,831 B; was 26,586 B before the day replay, owner decision 2026-10-22). */
   office: 28_217 + 614,
-  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,018 B, cap 7,097 B). */
-  officeBody: Math.round(6.931 * 1024),
+  /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,171 B, cap 7,785 B; 7,018 B and 7,097 B before the replay footer line and the hidden replay button, owner decision 2026-10-22). */
+  officeBody: 7_171 + 614,
   /** L1 day replay chunk (the engine, the feed, the label formatting and the replay view; loaded by the idle loop on a quiet L1 visit or the drawer's press, in the session total): measured 5,240 B, cap 5,854 B. */
   officeReplay: 5_240 + 614,
   /** L1 day replay controls (a lazy chunk of the replay chunk, loaded with the drawer's "Show day replay" press), outside the session total and the office total (it loads only on that explicit press, like the beacon): measured 826 B, cap 1,440 B. */

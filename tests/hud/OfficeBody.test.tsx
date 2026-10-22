@@ -584,6 +584,69 @@ describe("Agent Office day replay in the drawers", () => {
     expect(screen.getByTestId("office-body")).toHaveFocus();
   });
 
+  it.each<[string, string, typeof en, string]>([
+    ["en", "Mon 19 Oct", en, "Replay of Mon 19 Oct. Live updates return when an agent starts working."],
+    ["id", "Sen 19 Okt", ids as unknown as typeof en, "Putar ulang Sen 19 Okt. Pembaruan live kembali saat agen mulai bekerja."],
+  ])("swaps the hooks footer for the replay line while a replay runs (%s) and restores it live", (locale, label, msgs, line) => {
+    const m = msgs.office["3d"];
+    expect(m.replay.footer).toBe(line.replace(label, "{day}"));
+    for (const status of ["loading", "playing", "resting", "paused"]) {
+      replay.store = { state: { status, label }, snapshot: {}, mounted: true };
+      render(tree({ panel: "summary" }, "L1:office", locale as "en" | "id"));
+      expect(screen.getByTestId("office-body")).toHaveTextContent(line);
+      expect(screen.getByTestId("office-body")).not.toHaveTextContent(m.hooks);
+      cleanup();
+    }
+    replay.store = { state: { status: "playing", label }, snapshot: {}, mounted: true };
+    render(tree({ panel: "desk", slot: 0 }, "L1:office-desk-1", locale as "en" | "id"));
+    expect(screen.getByTestId("office-body")).toHaveTextContent(line);
+    cleanup();
+    // The GitHub and CI notes are about the data's source, not the live cadence: they stay.
+    render(tree({ panel: "github" }, "L1:office-github", locale as "en" | "id"));
+    expect(screen.getByTestId("office-body")).toHaveTextContent(m.githubNote);
+    cleanup();
+    replay.store = { state: { status: "off", label: null }, snapshot: null, mounted: true };
+    render(tree({ panel: "summary" }, "L1:office", locale as "en" | "id"));
+    expect(screen.getByTestId("office-body")).toHaveTextContent(m.hooks);
+    expect(screen.getByTestId("office-body")).not.toHaveTextContent(line);
+  });
+
+  it("hides Show day replay while a replay is active, shows it live, and moves its focus to the pressed day button", () => {
+    replay.store.mounted = true;
+    const { rerender } = body({ panel: "summary" });
+    const open = screen.getByRole("button", { name: o.replay.open });
+    expect(open).toBeVisible();
+    open.focus();
+    expect(open).toHaveFocus();
+    const pressed = document.createElement("button");
+    pressed.setAttribute("aria-pressed", "true");
+    const host = document.createElement("div");
+    host.dataset.testid = "office-replay";
+    host.append(pressed);
+    document.body.append(host);
+    for (const status of ["loading", "playing", "resting", "paused"]) {
+      replay.store = { state: { status, label: "Mon 19 Oct" }, snapshot: {}, mounted: true };
+      rerender(tree({ panel: "summary" }));
+      expect(screen.getByText(o.replay.open)).not.toBeVisible();
+      expect(document.activeElement).not.toBe(document.body);
+      replay.store = { state: { status: "off", label: null }, snapshot: null, mounted: true };
+      rerender(tree({ panel: "summary" }));
+      expect(screen.getByText(o.replay.open)).toBeVisible();
+      screen.getByText(o.replay.open).focus();
+    }
+    expect(document.activeElement).toBe(screen.getByText(o.replay.open));
+    replay.store = { state: { status: "playing", label: "Mon 19 Oct" }, snapshot: {}, mounted: true };
+    rerender(tree({ panel: "summary" }));
+    expect(pressed).toHaveFocus();
+    host.remove();
+    replay.store = { state: { status: "off", label: null }, snapshot: null, mounted: true };
+    rerender(tree({ panel: "summary" }));
+    screen.getByText(o.replay.open).focus();
+    replay.store = { state: { status: "playing", label: "Mon 19 Oct" }, snapshot: {}, mounted: true };
+    rerender(tree({ panel: "summary" }));
+    expect(screen.getByTestId("office-body")).toHaveFocus();
+  });
+
   it("reads the day in Indonesian", () => {
     replay.store = { state: { status: "playing", label: "Sen 19 Okt" }, snapshot: {}, mounted: true };
     render(tree({ panel: "summary" }, "L1:office", "id"));

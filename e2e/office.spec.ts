@@ -961,6 +961,16 @@ test.describe("Agent Office (L1) day replay", () => {
     await expect(dayButtons(page).nth(0)).toHaveAttribute("aria-pressed", "false");
     await expect.poll(() => replayState(page), { timeout: 30_000 }).toMatchObject({ status: "playing", day: history.days[1], auto: false });
     await expect(timeRange(page)).toHaveAttribute("aria-valuetext", /^\d\d:\d\d WIB$/);
+    // The open button hides while a replay is active and the footer swaps the hooks note for the replay line; Back to live restores both.
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.open })).toBeHidden();
+    await expect(page.getByTestId("office-body")).toContainText("Replay of ");
+    await expect(page.getByTestId("office-body")).not.toContainText(en.office["3d"].hooks);
+    await page.getByRole("button", { name: REPLAY_TEXT.live }).click();
+    await expect(page.getByRole("button", { name: REPLAY_TEXT.open })).toBeVisible();
+    await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
+    await dayButtons(page).nth(1).click();
+    await expect.poll(() => replayState(page), { timeout: 30_000 }).toMatchObject({ status: "playing", day: history.days[1], auto: false });
+    await expect(timeRange(page)).toHaveAttribute("aria-valuetext", /^\d\d:\d\d WIB$/);
     await page.getByRole("button", { name: REPLAY_TEXT.pause }).click();
     await expect.poll(() => replayStatus(page)).toBe("paused");
     await expect(page.getByRole("button", { name: REPLAY_TEXT.play })).toBeVisible();

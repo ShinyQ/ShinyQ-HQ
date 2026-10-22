@@ -1298,6 +1298,7 @@
         "timeValue": "{time} WIB",
         "live": "Back to live",
         "playing": "Replaying {day}",
+        "footer": "Replay of {day}. Live updates return when an agent starts working.",
         "unavailable": "Replay unavailable",
         "partial": "Partial day",
         "empty": "No activity"

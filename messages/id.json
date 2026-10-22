@@ -1298,6 +1298,7 @@
         "timeValue": "{time} WIB",
         "live": "Kembali ke live",
         "playing": "Memutar ulang {day}",
+        "footer": "Putar ulang {day}. Pembaruan live kembali saat agen mulai bekerja.",
         "unavailable": "Putar ulang tidak tersedia",
         "partial": "Sebagian hari",
         "empty": "Tidak ada aktivitas"
