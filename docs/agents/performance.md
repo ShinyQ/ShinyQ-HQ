@@ -68,7 +68,7 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
 ### Perf lane (`e2e/perf/`)
 
 - Runs only with `PERF=1`: `bun run e2e:perf`.
-  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards: the whole lane on 4 shards on `main`, dispatches and the nightly; on a PR, 2 shards running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
+  - CI job `3D perf gates`: `bun run e2e:perf:shard i/N`, duration-balanced shards with 2 Playwright workers each: the whole lane on 4 shards (`main`, dispatches, the nightly and a full PR); on a selective PR, 1 to 4 shards (`ceil(seconds / 960)` from the perf lane of `e2e/durations.json`) running only the perf tests the changed paths affect (`scripts/perf-plan.ts`: a floor's gate and its rides for a floor change, the bytes gate for the HUD, a shared `src/` module the gates of the 3D files that import it (the Ask client `boot` and `bytes`, the certifications the Lobby), `memory-full` only for memory-sensitive paths such as the renderer, `Effects`, the floor chunk loader and shared geometry or materials; [ci-and-deploy.md](ci-and-deploy.md#what-a-pull-request-runs)).
   - Run one perf key locally with the same grep, for example `PERF=1 bunx playwright test --grep "L3 (full|lite): settled"`.
   - Run it when you touch the render path, materials, floor mounting or the 3D chunk's imports.
   - One spec: `E2E_PORT=<port> bun run e2e:perf e2e/perf/<file>` (with `PERF=1` the test dir is `e2e/perf`).
@@ -301,9 +301,9 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 - CI shards with `scripts/e2e-shard.ts` (both lanes):
   - `playwright test --list`, then the longest test first onto the least-loaded worker by the CI medians in `e2e/durations.json`, counting `CI_WORKERS_PER_SHARD` (2) Playwright workers per shard, so a long test fills one worker while its shard's other worker takes shorter tests. The worker count is a constant: every shard computes the same plan.
   - Each shard logs its estimate (`about N worker-s, M s on 2 workers`) and a runner fingerprint (`runner: <vCPUs> x <CPU model>, sha256 <n> MB/s`).
-  - Unknown tests count as the median; without the file it falls back to round-robin.
+  - Unknown tests count as the median in the e2e lane and as the lane's longest known test in the perf lane (a new 3D test is more likely a long pole: the Agent Office tests were planned at 84 s and ran 4 to 16 minutes); each shard lists the tests missing from the file. Without the file it falls back to round-robin.
   - Playwright's own `--shard` cuts contiguous blocks.
-- Refresh the timings with `bun run e2e:durations` (the last 5 green nightly runs) when the `E2E shard n/8` job times drift apart; PR shard counts are sized from the same file, without the nightly-only tests.
+- Refresh the timings with `bun run e2e:durations` (the last 5 green nightly runs, or explicit run ids such as recent full `main` and PR runs after new perf tests land) when the `E2E shard n/8` job times drift apart or a shard lists missing tests; PR shard counts (e2e and perf) are sized from the same file, without the nightly-only tests.
   - It skips runs without test results, divides each job's samples by its runner speed factor (the job's median ratio to the tests' medians; `normalizeRunnerSpeed`) before the medians, and prints each job's factor and runner.
   - GitHub runners differ in CPU speed and SwiftShader is CPU-bound: every test of a shard runs at about its runner's factor, 0.65 to 1.21 across 7 runs on 2026-10-18. A static plan cannot see that, so equal estimates still finish about 3 min apart on 9 to 10 min shards.
 - `bun run e2e:shard 1/8 --dry` prints the plan.

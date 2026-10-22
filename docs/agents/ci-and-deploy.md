@@ -32,7 +32,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - Before pushing: see [Fast verification](performance.md#fast-verification) (`verify:quick` plus `e2e:changed`); PR CI runs only the heavy jobs the change needs, `main` and the nightly run everything ([CI](#ci)).
 - CI runs in flight (GitHub Free plan: 20 concurrent jobs for the account; each job is its own hosted VM, so overlapping runs only queue jobs past the cap). Before pushing, check `gh run list -R ShinyQ/ShinyQ-HQ -s in_progress` and `-s queued`:
-  - at most 2 runs in flight, both `pull_request` runs, at most one of them a full run: peaks of 12 jobs for a full PR run (8 e2e shards) and 5 to 7 for a selective one, so 19 at worst;
+  - at most 2 runs in flight, both `pull_request` runs, at most one of them a full run: peaks of 12 jobs for a full PR run (6 e2e and 4 perf shards, `Lighthouse CI` and the unit test job; at most 10 e2e plus perf shards per PR run, `PR_HEAVY_SHARDS` in `scripts/ci-plan.ts`) and 5 to 7 for a typical selective one, so 19 at worst;
   - a `main` run (push complement or full run, dispatch, nightly) stays the only run in flight: it peaks at 14 jobs (8 e2e and 4 perf shards) plus about 1 for `Deploy`, and 14 + 1 + 7 is over 20.
   - Measured 2026-10-18 (job `startedAt` to `completedAt` overlap): full `main` runs 39114729615, 39116733269 and 39119431246 peak at 14; complement dispatch 39128755562 at 14, `main` complement 39129760520 at 4; full PR runs 39122107380 and 39126462529 at 12; selective PR runs 39111135400 and 39108331771 at 7, 39127959018 at 5.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`).
@@ -57,7 +57,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `Typecheck, lint, unit tests`
   - `Build, CV and e2e`
   - `Lighthouse CI`
-  - `3D perf gates 1/2` and `2/2`
+- No shard is a required check (owner decision [2026-10-23](../decisions/2026-10-23-ci-speed.md)): the shard counts follow the plan, and `Build, CV and e2e` fails unless every e2e and perf shard passed.
 - The checks report on selective smart CI runs too ([How the required checks stay green](#how-the-required-checks-stay-green)).
 - Force pushes, deletion and direct pushes are rejected.
 - Admins can bypass only through a PR, for emergencies.
@@ -67,7 +67,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 `.github/workflows/ci.yml` runs smart CI (owner decisions 2026-10-17 and 2026-10-18, [decisions.md](../decisions.md)): a
 pull request runs the fast checks always and only the tests its changed paths affect; a push to `main` runs only what
 its merged pull request's green CI run on the same tree did not (the complement, a full run otherwise); dispatches and
-the nightly run everything on 8 e2e and 4 perf shards.
+the nightly run everything on 8 e2e and 4 perf shards (a full pull request on 6 e2e and 4 perf shards).
 
 ### Jobs
 
@@ -80,16 +80,17 @@ the nightly run everything on 8 e2e and 4 perf shards.
     - The `site` job of `deploy.yml` (full-history checkout) runs the same step before its builds, so the shipped build page carries fresh numbers.
     - Local builds use the committed snapshot; refresh it with `bun scripts/build-facts.ts --write`. `--no-runners` skips the `playwright test --list` count and cannot be combined with `--write` (it would drop it from the file). No unit test count is measured (`vitest list` counts each `it.each` template once); only unit test files are. A shallow clone keeps the committed file. A failing runner prints a warning and omits only its number.
 - Heavy jobs, against that one build:
-  - e2e in duration-balanced shards (`E2E shard n/N`, worker-aware packing from `e2e/durations.json`, [performance.md](performance.md#ci-shards); functional specs run rides, drives, camera eases and the intro 4x faster, [performance.md](performance.md#animation-speed)): 8 on a full run; a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8).
-  - The 3D perf gates (`perf` job, `3D perf gates n/N`: `bun run e2e:perf:shard`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)): 4 shards on full pushes, dispatches and the nightly, 1 to 4 on a complement run; always 2 on a pull request (the required names `1/2` and `2/2`), running only the planned perf tests (`PERF_GREP`).
+  - e2e in duration-balanced shards (`E2E shard n/N`, worker-aware packing from `e2e/durations.json`, [performance.md](performance.md#ci-shards); functional specs run rides, drives, camera eases and the intro 4x faster, [performance.md](performance.md#animation-speed)): 8 on a full run, 6 on a full pull request run; a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8; on a pull request at most 10 minus its perf shards).
+  - The 3D perf gates (`perf` job, `3D perf gates n/N`: `bun run e2e:perf:shard`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)): the whole lane on 4 shards (full runs, pull requests included), a part on `ceil(seconds / 960)` shards, 1 to 4, from the perf lane of `e2e/durations.json` (a selective pull request and a complement run), running only the planned perf tests (`PERF_GREP`); 1 shard with only the "Not needed" step when no perf gate can move.
   - A blocking `Lighthouse CI` job (`lighthouserc.json`):
     - LCP 2 s, CLS 0.01, TBT 200 ms and transfer budgets for fonts, HTML, CSS and JS fail the aggregate check.
-    - The first URL is a warm-up that is never asserted.
-    - A selective run checks only the affected URLs (`LHCI_URLS`, written into `lighthouserc.pr.json` with `jq`), warm-up first.
+    - The first URL is a warm-up that is never asserted. CI runs it once: the step serves `out/` itself, runs a 1-run `lhci collect` of the warm-up, then `lhci autorun` of the measured URLs with the config's 3 runs and assertions (its collect clears the warm-up result). Local runs of `lighthouserc.json` keep the warm-up in the URL list.
+    - A selective run checks only the affected URLs (`LHCI_URLS`, written into `lighthouserc.ci.json` with `jq`), warm-up first.
     - Its job summary has the Page View JS per chunk against main.
     - See `docs/deploy.md` section 8 ([deploy.md](../deploy.md)) for what keeps LCP low.
 - The aggregate required check `Build, CV and e2e`:
-  - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, Lighthouse);
+  - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, Lighthouse), every e2e and perf shard included;
+  - runs without the setup action's bun cache and install: its scripts import only node builtins and dependency-free repo files (`tests/unit/workflows.test.ts`), and the blob report merge runs `bunx playwright@<version>` with the `@playwright/test` version of `bun.lock`;
   - merged HTML report, the tests that passed only on retry, and the 3D perf summary against the last green main run (when the perf gates ran);
   - uploads the `ci-full` artifact when the plan ran every e2e test, every perf test and every Lighthouse URL, or is a complement run (second line `complement of CI run <id>`), even if the run then turns red; the marker the deploy gate needs, which still treats a red run as red.
 - A Cloudflare Pages preview (`preview` job, project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only on a same-repository PR with `CF_PREVIEWS=true` and both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` readable without an environment. The deploy token lives only in the `production` environment, so previews need their own preview-only repository token; today the job skips with a notice.
@@ -118,7 +119,8 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
 
 - Mapped specs: `specsForChanges` in `scripts/e2e-plan.ts` (the `e2e:changed` map) over every changed file outside `docs` and `tests`. A changed e2e helper (a non-spec `e2e/` file) runs the whole e2e suite on 8 shards; a path no rule maps plans a full run.
 - PR smoke set (`PR_SMOKE` in `scripts/e2e-plan.ts`), added whenever `code3d` or `ui` files change: `static-routes`, `boot-first` and `deploy`, one elevator ride and the 3D HUD axe check (single tests run as `e2e/<spec>.spec.ts:<line>` filters; a unit test keeps their titles real).
-- Shard count of a selective run: the planned tests' worker-seconds from `e2e/durations.json` (an unknown spec counts 150 s, an unknown test 30 s) divided by 2 workers times 240 s, rounded up, 1 to 8.
+- Shard count of a selective run: the planned tests' worker-seconds from `e2e/durations.json` (an unknown spec counts 150 s, an unknown test 30 s) divided by 2 workers times 240 s, rounded up, 1 to 8, then at most 10 minus the perf shards (`PR_HEAVY_SHARDS`).
+- Perf shard count of a selective run: the whole lane 4; a part `ceil(seconds / 960)`, 1 to 4, from the perf lane of `e2e/durations.json` (`perfShardsFor`, as a complement run); no perf 1 ("Not needed").
 - 3D perf tests (`scripts/perf-plan.ts`): a `code3d` file maps to perf keys (`PERF_RULES`): a floor folder to its floor gate (both tiers) and the rides to and from it, the HUD to the 3D bytes gate, rover and boost code to the boost and boot peaks, point-and-go to the hover peak, memory-sensitive paths (renderer, `Effects`, the floor chunk loader, the tower mount, `useDispose`, shared geometry and materials) to the whole lane including `memory-full`, anything else in the 3D code to the whole lane except `memory-full`. The keys become one Playwright `--grep`.
 - Shared `src/` modules (`sharedPerfKeys` in `scripts/ci-plan.ts`): a `ui` file reachable from the 3D roots (`src/experience`, `src/hud`, `src/store`) through value, re-export, side-effect or dynamic imports (type-only imports do not count) gets the keys of the 3D files that import it, directly or through a chain of non-3D files (the walk stops at the first 3D file), so a module only the Lobby imports selects the Lobby gates, one only the HUD imports the bytes gate, one `Experience.tsx` imports every gate.
   - The payload builder `src/experience/gate-data.ts` (server-only, `experienceDataFor`) is not a 3D importer: a module it reaches moves the floors through the serialized payload, so it gets its module to gate rule (`SHARED_PERF_RULES` in `scripts/perf-plan.ts`: `src/ask/` to `boot` and `bytes`, `src/content/{certs,cert-views,highlights}.ts` to the Lobby gates), else the whole lane except `memory-full`. Rule keys add to the keys of the client 3D files that import the module.
@@ -130,7 +132,7 @@ perf tests and which Lighthouse URLs run, and on how many shards. The classes li
   - a page's URLs (`LIGHTHOUSE_PAGES`): a file only in that page's closure; a post: the measured post;
   - `/en` too for the Classic office card (`src/components/office/`, `HOME_LAZY`): its panel is a lazy chunk the home page loads near the viewport, with its classes in the shared stylesheet;
   - every selective run adds `/en` to its list; the `main` complement run checks the URLs the PR skipped.
-- Full run (every e2e test, every perf test, every Lighthouse URL): `ci` or `other` files, a path the e2e rules cannot map, the `full-ci` label (add it, then re-run the workflow: the planner reads the labels from the API), a PR at the 3000-file cap of the GitHub API, a file list that cannot be read, or any planner error (the planner fails safe). A full PR run uses 8 e2e shards and the 2 required perf shards.
+- Full run (every e2e test, every perf test, every Lighthouse URL): `ci` or `other` files, a path the e2e rules cannot map, the `full-ci` label (add it, then re-run the workflow: the planner reads the labels from the API), a PR at the 3000-file cap of the GitHub API, a file list that cannot be read, or any planner error (the planner fails safe). A full PR run uses 6 e2e and 4 perf shards (12 jobs at its peak).
 - Docs-only and tests-only PRs run no heavy job; content-only PRs run only Lighthouse on the affected URLs. Known trade-off: content data (for example `content/site-content.json`) feeds the 3D floors, and a selective PR skips tests the map does not tie to its paths, so such a break is caught by the complement run on `main` after the merge (it runs every test the PR run skipped; a red `main` rolls production back) or by the nightly.
 - The local workflow does not change: `verify:quick` plus `e2e:changed` before pushing, plus the perf lane for 3D work ([Fast verification](performance.md#fast-verification)).
 
@@ -151,10 +153,17 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
 
 ### How the required checks stay green
 
-- The heavy jobs always start. When the plan does not need one, its "Not needed" step passes and every other step skips, so the job reports success and the unchanged `main` ruleset is satisfied.
-- Their matrices come from the plan (`fromJSON(needs.changes.outputs.e2e_shards)` and `perf_shards`), and so do the shard totals in their names. Pull requests always plan 2 perf shards, so `3D perf gates 1/2` and `2/2` always report; pushes, dispatches and the nightly (no required checks) use 4 (1 to 4 on a complement run).
-- No job-level `if:` on them: a skipped matrix job reports an unexpanded name (`3D perf gates ${{ matrix.shard }}/...`), so the required checks would never report.
-- `Build, CV and e2e` still requires every job before it.
+- The heavy jobs always start. When the plan does not need one, its "Not needed" step passes and every other step skips, so the job reports success and `Lighthouse CI` and the aggregate check report on every run.
+- Their matrices come from the plan (`fromJSON(needs.changes.outputs.e2e_shards)` and `perf_shards`), and so do the shard totals in their names (`E2E shard 3/6`, `3D perf gates 2/4`, `3D perf gates 1/1` with only "Not needed"). No shard name is a required check, so the plan sizes the perf shards like the e2e shards.
+- No job-level `if:` on them: a skipped matrix job reports an unexpanded name (`3D perf gates ${{ matrix.shard }}/...`) and the aggregate job would read it as skipped.
+- `Build, CV and e2e` requires every job before it (the "Require every job" step reads every `needs` result), so a red shard fails the required check.
+
+### Caches
+
+- Bun: `~/.bun/install/cache` keyed on the `bun.lock` hash, no restore keys (an older entry carried every past package version into each new key, 729 MB for a 0.6 s install); a new lockfile starts clean.
+- Playwright Chromium: `~/.cache/ms-playwright` per Playwright version.
+- Playwright's system packages (the setup action, every Playwright job): `/etc/apt/apt.conf.d/99ci` bounds each apt fetch (15 s timeouts, 3 retries) and keeps the downloaded `.deb` files; `~/.cache/apt-debs` is restored into `/var/cache/apt/archives` before `playwright install-deps` (key: OS, `ImageOS`, `ImageVersion`, Playwright version). A miss saves the files after the install on `main` only. A stalled Ubuntu mirror once held setups for up to 21 minutes (2026-10-22).
+- Next `.next/cache` (`site` job): restored everywhere, saved only by runs on `main` (`actions/cache/restore` elsewhere); a pull request restores main's newest entry through the restore key. Per-PR saves (about 120 MB each) had pushed the repository past the 10 GB Actions cache quota, so GitHub evicted the bun and Playwright caches. `deploy.yml` runs only on `main` and keeps the plain `actions/cache`.
 
 ### Full runs and the nightly
 
