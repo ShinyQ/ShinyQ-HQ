@@ -135,6 +135,7 @@ describe("EngineBody (B1 station drawers)", () => {
         "Ask questions, last 30 days": "64",
       });
       expect(root.textContent).not.toContain("offline right now");
+      expect(root.textContent).toContain("Live now");
       expect(screen.getByRole("heading", { name: "How it reads" })).toBeInTheDocument();
       expect(root.querySelector("a[href*='/build']")).toBeNull();
     });
@@ -151,6 +152,7 @@ describe("EngineBody (B1 station drawers)", () => {
       expect(root.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
       expect(tiles(root)).toEqual({ "Visits, last 30 days": "340", "Ask questions, last 30 days": "64" });
       expect(root.textContent).toContain("The live feed is offline right now");
+      expect(root.textContent).not.toContain("Live now");
       cleanup();
       feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW - 10 * 60_000 } satisfies OfficeFeed;
       __setStatsForTests(null);
@@ -158,6 +160,7 @@ describe("EngineBody (B1 station drawers)", () => {
       expect(stale.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
       expect(tiles(stale)).toEqual({});
       expect(stale.textContent).toContain("Feed langsung sedang offline");
+      expect(stale.textContent).not.toContain("Data langsung");
     });
   });
 });

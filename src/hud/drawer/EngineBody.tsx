@@ -68,8 +68,7 @@ function ReactorPanel({ labels: l, locale }: { labels: NonNullable<RoomEngine["r
   if (s.asks !== null) tiles.push({ value: n.format(s.asks), label: l.asks });
   return (
     <div className="space-y-3" data-reactor-live={s.live}>
-      <p className="label text-ink-2">{l.live}</p>
-      {!s.live && <p className="text-sm text-ink-2">{l.offline}</p>}
+      {s.live ? <p className="label text-ink-2">{l.live}</p> : <p className="text-sm text-ink-2">{l.offline}</p>}
       {tiles.length > 0 && <MetricTiles metrics={tiles} fluid />}
     </div>
   );

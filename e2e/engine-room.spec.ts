@@ -252,7 +252,7 @@ test("an unlocked floor picker lists B1 last", async ({ page }) => {
 });
 
 test.describe("the floor", () => {
-  test("rides from the Lobby to B1: the rover glides out facing the workbench, underground, with the hum, on the Lobby URL", async ({ page }) => {
+  test("rides from the Lobby to B1: the rover glides out looking down the aisle at the reactor, underground, with the hum, on the Lobby URL", async ({ page }) => {
     const errors = collectErrors(page);
     await enterB1Route(page);
     await expect(elevator(page).locator("[data-floor]").last()).toHaveAttribute("data-floor", "B1");

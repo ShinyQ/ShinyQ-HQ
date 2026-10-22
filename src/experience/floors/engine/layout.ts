@@ -43,7 +43,7 @@ export const ENGINE = {
   reactor: { x: 57, z: 0, r: 5, h: 6.6 },
   /** The reactor's door pad, at the end of a short spur from the aisle's end, facing the core. */
   reactorDoor: { x: 50, z: 0 },
-  /** The hall's north-west, flush with the north wall, out of the core's shadow: 6 u from the last bay and the core. */
+  /** The hall's north-west, flush with the north wall, out of the core's shadow: 6 u from the last bay, about 6.3 u from the core. */
   workbench: { minX: 42, maxX: 50, minZ: -14, maxZ: -11 },
   returnPad: { x: 40, z: 9 },
   /** Elevator arrivals roll on here and deep links spawn here (Round 8 J), looking east down the aisle. */

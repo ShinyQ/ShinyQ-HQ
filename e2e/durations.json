@@ -171,7 +171,7 @@
     "engine-room.spec.ts › an unlocked floor picker lists B1 last": 9.6,
     "engine-room.spec.ts › the floor › browser Back closes an open station drawer on B1, as it does on a public floor": 26.7,
     "engine-room.spec.ts › the floor › every station opens its drawer with its body and a Classic link to its /build section; a click on a station drives there": 33.2,
-    "engine-room.spec.ts › the floor › rides from the Lobby to B1: the rover glides out facing the workbench, underground, with the hum, on the Lobby URL": 30.4,
+    "engine-room.spec.ts › the floor › rides from the Lobby to B1: the rover glides out looking down the aisle at the reactor, underground, with the hum, on the Lobby URL": 30.4,
     "engine-room.spec.ts › the floor › rides from the roof down to B1 and back up to the Lobby": 54.6,
     "engine-room.spec.ts › the floor › settled on B1 the frame stays under its scene cap": 34.1,
     "engine-room.spec.ts › the unlock flag › ?unlock=b1 without debug is ignored in a production build": 11,

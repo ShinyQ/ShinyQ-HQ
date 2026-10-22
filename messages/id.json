@@ -176,7 +176,7 @@
       "pulse": "Kecepatan denyut mengikuti jumlah kunjungan dan pertanyaan Ask dalam 30 hari terakhir.",
       "idle": "Cahaya tenang tanpa denyut berarti offline, belum ada data, atau gerakan dikurangi.",
       "polls": "Data baru hanya diambil selama Anda berada di B1.",
-      "live": "Langsung",
+      "live": "Data langsung",
       "running": "Job berjalan",
       "done": "Job selesai",
       "failed": "Job gagal",
