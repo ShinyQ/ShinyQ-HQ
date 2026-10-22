@@ -8,10 +8,10 @@ import {
   citedSource,
   claimsOpinion,
   classifyOutcome,
-  closestSource,
   defamatoryWords,
   firstPersonVoice,
   leaksPrompt,
+  relevantClosest,
   sanitizeAnswer,
   sourceTitles,
   ungroundedNumbers,
@@ -416,12 +416,17 @@ describe("perspective checks", () => {
   it("never names a perspective as the closest source: it has no page of its own", () => {
     const chunk = (id: string) => pack.chunks.find((c) => c.id === id)!;
     expect(chunk("perspective-rag-trust").url).toBe("/labs/ai-solutions-assistant");
-    expect(closestSource([chunk("perspective-rag-trust"), chunk("principles")], "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
-    expect(closestSource([chunk("perspective-rag-trust")], "en")).toBeUndefined();
+    // Its own question, so only the type rule keeps the perspective out.
+    const rag = "What makes a RAG assistant trustworthy?";
+    expect(relevantClosest(pack, rag, [chunk("perspective-rag-trust")], "en")).toBeUndefined();
+    expect(relevantClosest(pack, rag, [chunk("perspective-rag-trust")], "en", { adjacent: true })).toBeUndefined();
+    const principles = "What are his engineering principles?";
+    expect(relevantClosest(pack, principles, [chunk("perspective-learning-advice"), chunk("principles")], "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
   });
 
   it("points the no-view answer to the closest written source, in both languages", () => {
-    expect(closestSource(retrieve(pack, "What does Kurniadi think about microservices?", "en").chunks, "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
+    const q = "What are his engineering principles?";
+    expect(relevantClosest(pack, q, retrieve(pack, q, "en").chunks, "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
     expect(noViewMessage("en", { title: en.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.en} The closest written source is "${en.home.howTitle}", on the About page.`);
     expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Tulisan yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
     expect(noViewMessage("en", { title: "Spec-Driven Development with AI Coding Agents", url: "/blog/spec-driven-development-with-ai-coding-agents" })).toContain(

@@ -133,11 +133,6 @@ export function hallTexts(input: HallInput, labels: HallLabels, fonts: HallFonts
   return { labels: out, tile };
 }
 
-/** The hall texts alone (see `hallTexts`). */
-export function hallLabels(input: HallInput, labels: HallLabels, fonts: HallFonts): BatchedLabel[] {
-  return hallTexts(input, labels, fonts).labels;
-}
-
 export interface ShotQuad {
   /** Atlas cell (project order). */
   index: number;
@@ -180,28 +175,6 @@ export function hallAtlas(thumbs: readonly string[], cell: { w: number; h: numbe
   const cells: AtlasCell[] = thumbs.map((src, i) => ({ src, x: i * cell.w, w: cell.w, h: cell.h, brightness: 1 }));
   cells.push({ src: PHOTO_SRC, x: thumbs.length * cell.w, w: cell.h, h: cell.h, brightness: PHOTO_BRIGHTNESS });
   return { cells, width: thumbs.length * cell.w + cell.h, height: cell.h };
-}
-
-/** Positions, uvs and indices for the screenshot and portrait quads over a one-row atlas (one draw call). */
-export function shotQuadBuffers(quads: readonly ShotQuad[], cells: readonly AtlasCell[]) {
-  const width = Math.max(1, ...cells.map((c) => c.x + c.w));
-  const positions = new Float32Array(quads.length * 12);
-  const uvs = new Float32Array(quads.length * 8);
-  const indices = new Uint16Array(quads.length * 6);
-  quads.forEach((q, i) => {
-    const hx = (q.right.x * q.w) / 2;
-    const hz = (q.right.z * q.w) / 2;
-    const hy = q.h / 2;
-    const [x, y, z] = q.center;
-    positions.set([x - hx, y - hy, z - hz, x + hx, y - hy, z + hz, x + hx, y + hy, z + hz, x - hx, y + hy, z - hz], i * 12);
-    const cell = cells[q.index];
-    const u0 = cell.x / width;
-    const u1 = (cell.x + cell.w) / width;
-    uvs.set([u0, 0, u1, 0, u1, 1, u0, 1], i * 8);
-    const b = i * 4;
-    indices.set([b, b + 1, b + 2, b, b + 2, b + 3], i * 6);
-  });
-  return { positions, uvs, indices };
 }
 
 /** Source rectangle that covers a `cw` x `ch` cell with an `iw` x `ih` image (centered crop). */

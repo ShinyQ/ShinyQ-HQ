@@ -8,14 +8,12 @@ import {
   coreDetail,
   coreSolids,
   coolantRisers,
-  IDLE_TONE,
   LANE_GAIN,
   LANE_TONES,
   nextFlash,
   pulseLevel,
   ringAngle,
   RUN_CHASE,
-  segmentColors,
   segmentGain,
   segmentLanes,
   segmentPose,
@@ -38,8 +36,7 @@ describe("B1 reactor core instances", () => {
   it("colors segments by lane status in the office tower's colors: running violet, failed red, done green, queued slate", () => {
     expect(LANE_TONES).toEqual({ running: "#a78bfa", failed: "#f87171", done: "#34d399", queued: "#64748b" });
     const lanes: ReactorLane[] = ["running", "failed", "done", "queued"];
-    const colors = segmentColors(lanes, 8);
-    expect(colors).toEqual(["#a78bfa", "#a78bfa", "#f87171", "#f87171", "#34d399", "#34d399", "#64748b", "#64748b"]);
+    expect(segmentLanes(lanes, 8)).toEqual(["running", "running", "failed", "failed", "done", "done", "queued", "queued"]);
     expect(segmentLanes(lanes, 4)).toEqual(lanes);
     expect(segmentLanes([], 3)).toEqual([null, null, null]);
   });
@@ -76,15 +73,11 @@ describe("B1 reactor core instances", () => {
 
   it("spreads each lane over a contiguous run and covers every segment", () => {
     const lanes: ReactorLane[] = ["done", "running", "failed"];
-    const colors = segmentColors(lanes, 48);
-    expect(colors).toHaveLength(48);
-    expect(new Set(colors)).toEqual(new Set([LANE_TONES.done, LANE_TONES.running, LANE_TONES.failed]));
-    expect(colors.slice(0, 16).every((c) => c === LANE_TONES.done)).toBe(true);
-    expect(colors.slice(32).every((c) => c === LANE_TONES.failed)).toBe(true);
-  });
-
-  it("burns dim amber idle on every segment without lanes", () => {
-    expect(segmentColors([], 24)).toEqual(Array.from({ length: 24 }, () => IDLE_TONE));
+    const segments = segmentLanes(lanes, 48);
+    expect(segments).toHaveLength(48);
+    expect(new Set(segments)).toEqual(new Set(lanes));
+    expect(segments.slice(0, 16).every((l) => l === "done")).toBe(true);
+    expect(segments.slice(32).every((l) => l === "failed")).toBe(true);
   });
 
   it("puts every segment on its ring around the core, slots evenly spaced", () => {

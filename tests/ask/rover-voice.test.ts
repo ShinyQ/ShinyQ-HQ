@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { SUGGESTIONS } from "@/ask/suggestions";
-import { ADJACENT_SOURCE_TYPES, checkAnswer, closestSource, firstPersonVoice, leaksPrompt } from "../../functions/_lib/checks";
+import { ADJACENT_SOURCE_TYPES, checkAnswer, firstPersonVoice, leaksPrompt, relevantClosest } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
 import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
@@ -241,11 +241,11 @@ describe("adjacent grounded questions: output check", () => {
     expect(check("From AI Fraud Document Review, Kurniadi believes every bank should replace reviewers with models.", "How should teams decide an AI change is ready to release?")).toMatchObject({ ok: false, reason: "unsourced" });
   });
 
-  it("names a case study, post or paper as the closest source before his principles", () => {
-    const { chunks } = retrieve(pack, "When is RAG a bad idea?", "en");
-    const closest = closestSource(chunks, "en", { adjacent: true });
-    expect(closest?.url).not.toBe("/contact#how");
-    expect(closest?.url).toMatch(/^\/(?:labs|blog)\//);
+  it("names a case study as the closest source only for an adjacent question", () => {
+    const q = "What does Kurniadi think about specs?";
+    const { chunks } = retrieve(pack, q, "en");
+    expect(relevantClosest(pack, q, chunks, "en", { adjacent: true })?.url).toMatch(/^\/labs\//);
+    expect(relevantClosest(pack, q, chunks, "en")).toBeUndefined();
   });
 });
 
@@ -328,8 +328,7 @@ describe("opening interjections (owner decision 2026-10-19)", () => {
 });
 
 describe("closest-source golden branches", () => {
-  it("routes q90 to an on-topic title and q86 and q91 to the no-title reply", async () => {
-    const { relevantClosest } = await import("../../functions/_lib/checks");
+  it("routes q90 to an on-topic title and q86 and q91 to the no-title reply", () => {
     const closest = (id: string) => {
       const item = golden.items.find((i) => i.id === id)!;
       const locale = item.lang as "en" | "id";

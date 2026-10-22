@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
-import { useAudio, useAudioSettings, type AmbienceFloor, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
+import { useAudio, type AmbienceFloor, type AudioEngine, type AudioEngineDeps } from "@/lib/audio";
 import { createAudioEngine } from "@/lib/audio/engine";
 import { AMBIENCE_CROSSFADE, type AmbienceVoice } from "@/lib/audio/ambience";
 import { ONE_SHOTS, rumbleTargets } from "@/lib/audio/synth";
@@ -652,13 +652,7 @@ describe("audio settings", () => {
     expect(bus.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.2, expect.any(Number), 0.05);
   });
 
-  it("the master mute still wins and useAudioSettings reports the defaults on the server", () => {
-    const s = setup(undefined, { "hq:sfx": "off", "hq:music": "off", "hq:music-volume": "0.1" });
-    function Probe() {
-      const { effects, music, musicVolume } = useAudioSettings(s.engine);
-      return createElement("span", null, `${effects}-${music}-${musicVolume}`);
-    }
-    expect(renderToString(createElement(Probe))).toContain("true-true-1");
+  it("the master mute still wins over the effects and music settings", () => {
     const m = setup("off");
     m.engine.setMusic(true);
     m.engine.setEffects(true);

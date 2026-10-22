@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AskTurn } from "@/ask/protocol";
-import { followUpText, isFollowUp, parseHistory, signTurn, verifyHistory } from "../../functions/_lib/history";
+import { followUpAnchor, isFollowUp, parseHistory, signTurn, verifyHistory } from "../../functions/_lib/history";
 
 const KEY = "test-cookie-key";
 const SCOPE = { locale: "en" as const, packVersion: "pack-1" };
@@ -66,11 +66,11 @@ describe("follow-up questions", () => {
     }
   });
 
-  it("appends the previous question to a follow-up only", () => {
+  it("anchors a follow-up to the previous question, and only a follow-up", () => {
     const history = [{ q: "Tell me about Clearbox", a: A }];
-    expect(followUpText("What stack did it use?", history)).toBe("What stack did it use? Tell me about Clearbox");
-    expect(followUpText("Where did Kurniadi study computer science?", history)).toBe("Where did Kurniadi study computer science?");
-    expect(followUpText("What stack did it use?", [])).toBe("What stack did it use?");
+    expect(followUpAnchor("What stack did it use?", history)).toBe("Tell me about Clearbox");
+    expect(followUpAnchor("Where did Kurniadi study computer science?", history)).toBeUndefined();
+    expect(followUpAnchor("What stack did it use?", [])).toBeUndefined();
   });
 
   it("walks back through a chain of follow-ups to the last standalone question", () => {
@@ -79,6 +79,6 @@ describe("follow-up questions", () => {
       { q: "Where did Kurniadi study computer science?", a: "x" },
       { q: "What did he study there?", a: "y" },
     ];
-    expect(followUpText("And after that?", history)).toBe("And after that? What did he study there? Where did Kurniadi study computer science?");
+    expect(followUpAnchor("And after that?", history)).toBe("What did he study there? Where did Kurniadi study computer science?");
   });
 });

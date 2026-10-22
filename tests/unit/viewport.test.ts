@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFloorLayouts, corridorEnd, floorAt, floorIndex, floorY, LOBBY } from "@/experience/config";
+import { buildFloorLayouts, corridorEnd, floorIndex, floorY, LOBBY } from "@/experience/config";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 
 describe("viewport classes", () => {
@@ -27,8 +27,6 @@ describe("tower config", () => {
     expect(floorIndex("L1")).toBe(1);
     expect(floorY("L1")).toBe(0);
     expect(floorY("RF")).toBe(56);
-    expect(floorAt(3)).toBe("L3");
-    expect(floorAt(6)).toBeUndefined();
   });
 
   it("parks the rover 3 u in front of each elevator door", () => {

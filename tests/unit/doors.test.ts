@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DOOR_DWELL, DOOR_SLOW, DOOR_SIZE, doorAlong, doorAt, openEndsPath, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
+import { DOOR_DWELL, DOOR_SLOW, DOOR_SIZE, doorAt, openEndsPath, stepDoorLatch, type DoorLatch } from "@/experience/nav/doors";
 import { RoverController } from "@/experience/rover/controller";
 import type { DoorTrigger } from "@/experience/types";
 
@@ -79,18 +79,6 @@ describe("intentional door triggers", () => {
     const latch: DoorLatch = { room: null };
     expect(stepDoorLatch(latch, "L3:a", { explore: true, following: true, now: 0, speed: 8 })).toBeNull();
     expect(stepDoorLatch(latch, "L3:a", { explore: true, following: false, now: 0.05, speed: 0 })).toBe("L3:a");
-  });
-});
-
-describe("swept door checks", () => {
-  it("finds a zone crossed between two frames", () => {
-    expect(doorAlong(doors, { x: -3, z: 2 }, { x: 3, z: 2 }, null)?.room).toBe("L3:a");
-    expect(doorAlong(doors, { x: -3, z: 5 }, { x: 3, z: 5 }, null)).toBeNull();
-  });
-
-  it("skips the zone the rover is leaving", () => {
-    expect(doorAlong(doors, { x: 0, z: 2 }, { x: 4, z: 2 }, "L3:a")).toBeNull();
-    expect(doorAlong(doors, { x: 0, z: 2 }, { x: 9, z: 2 }, "L3:a")?.room).toBe("L3:b");
   });
 });
 

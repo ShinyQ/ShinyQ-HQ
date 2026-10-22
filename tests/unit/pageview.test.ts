@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isKeyProject, matchesPod, moreKeyProjects, pickFeaturedPods, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, podFilterQuery, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
+import { isKeyProject, matchesPod, moreKeyProjects, pickFeaturedPods, podAttrs, withParams, navMatch, parsePodFilter, parseTypeFilter, stackOptions, typeCounts, wingCounts } from "@/content/pageview";
 import { getPods } from "@/content/load";
 import type { Pod } from "@/content/schema";
 
@@ -10,11 +10,9 @@ const pods = [
 ];
 
 describe("pod filters", () => {
-  it("parses and serializes the query", () => {
+  it("parses the query", () => {
     expect(parsePodFilter("?wing=ai&stack=FastAPI")).toEqual({ wing: "ai", stack: "FastAPI" });
     expect(parsePodFilter("?wing=nope")).toEqual({ wing: "all", stack: null });
-    expect(podFilterQuery({ wing: "all", stack: null })).toBe("");
-    expect(podFilterQuery({ wing: "software", stack: "Next.js" })).toBe("?wing=software&stack=Next.js");
   });
 
   it("matches wing and stack together", () => {

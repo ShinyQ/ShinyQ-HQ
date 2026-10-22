@@ -93,10 +93,6 @@ export function shaftSpan(floors: readonly FloorId[]): { bottom: number; height:
   return { bottom, height: floorY("RF") + 8 - bottom };
 }
 
-export function floorAt(index: number): FloorId | undefined {
-  return FLOOR_IDS[index];
-}
-
 const rect = (cx: number, cz: number, w: number, d: number): Rect => ({
   minX: cx - w / 2,
   maxX: cx + w / 2,

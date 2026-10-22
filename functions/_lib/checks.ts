@@ -421,19 +421,6 @@ export function groundedShare(answer: string, context: string, question = ""): n
   return words.filter((t) => ctx.has(t) || (t.length >= 5 && stems.has(t.slice(0, 5)))).length / words.length;
 }
 
-/**
- * The first retrieved written source with a citable path, for the no-view answer. Perspectives are
- * skipped: they have no page of their own, so their question is not a title a visitor can find.
- */
-export function closestSource(chunks: readonly KnowledgeChunk[], locale: AskLocale, options: { adjacent?: boolean } = {}): { title: string; url: string } | undefined {
-  // An adjacent question always retrieves his principles: name a case study, post, talk or paper first.
-  const chunk = options.adjacent
-    ? (chunks.find((c) => isSource(c, ADJACENT_SOURCE_TYPES) && ["post", "talk", "project", "publication"].includes(c.type) && isAskCite(c.url)) ?? chunks.find((c) => c.type === "principle" && isAskCite(c.url)))
-    : chunks.find((c) => isSource(c) && c.type !== "perspective" && isAskCite(c.url));
-  if (!chunk?.url) return undefined;
-  return { title: chunk.type === "project" || chunk.type === "publication" ? chunk.title : sourceTitles(chunk, locale)[0], url: chunk.url };
-}
-
 /** Question words that frame a question rather than name its topic (EN/ID), on top of words in more than a fifth of the chunks. */
 const FRAME_TERMS = new Set(
   (
