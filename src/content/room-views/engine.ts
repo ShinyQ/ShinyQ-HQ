@@ -1,12 +1,11 @@
 import { createTranslator } from "next-intl";
 import { DIAGRAM_PRESETS, drawnDiagram, layoutArchitecture } from "@/components/diagram/layout";
 import { diagramSummary, diagramTexts, resolveArchitecture } from "@/components/diagram/text";
-import { ENGINE_STATIONS, engineRoom, type EngineStationId } from "@/experience/floors/engine/layout";
 import { dashboardTiles, prUrl, repoFileUrl, roundDates, timelineRows } from "@/lib/build-page";
 import { PUBLIC_FLOORS } from "@/lib/floors";
 import { formatDate, intlLocale } from "@/lib/format";
-import { getBuildFacts, getBuildStory } from "../build-story";
-import type { Locale, LocalizedText } from "../schema";
+import { STATION_IDS, type StationId, getBuildFacts, getBuildStory } from "../build-story";
+import type { Architecture, Locale, LocalizedText } from "../schema";
 import { chain, messages, single } from "./shared";
 import type { RoomEngine, RoomSection, RoomView } from "./types";
 
@@ -41,21 +40,25 @@ export function buildEngineViews(locale: Locale): RoomView[] {
     uptime: t("tiles.uptime"),
     visits: t("tiles.visits"),
     newTab: tCommon("external"),
+    tried: t("tried"),
+    whyDropped: t("whyDropped"),
   };
   const shot = (s: { src: string; width: number; height: number; alt: LocalizedText }) => ({ src: s.src, width: s.width, height: s.height, alt: s.alt[locale] });
-  const { blueprint, agents, gates } = story.stations;
+  const { blueprint, agents, gates, brain, rejected } = story.stations;
+  const hidden = new Set(story.stations.timeline.unlinkedPrs ?? []);
   const nodeTexts = diagramTexts(locale, (kind) => tLabs(`nodeKind.${kind}`));
-  const architecture = resolveArchitecture(blueprint.architecture, locale);
+  const diagram = (raw: Architecture): NonNullable<RoomEngine["diagram"]> => {
+    const architecture = resolveArchitecture(raw, locale);
+    return {
+      layout: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
+      wide: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
+      label: diagramSummary(architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
+    };
+  };
 
-  const content: Record<EngineStationId, StationContent> = {
+  const content: Record<StationId, StationContent> = {
     blueprint: {
-      engine: {
-        diagram: {
-          layout: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
-          wide: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
-          label: diagramSummary(architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
-        },
-      },
+      engine: { diagram: diagram(blueprint.architecture) },
       sections: [{ title: t("howItRuns"), bullets: blueprint.steps.map((s) => s[locale]) }],
     },
     timeline: {
@@ -96,12 +99,29 @@ export function buildEngineViews(locale: Locale): RoomView[] {
       },
       sections: [],
     },
+    brain: {
+      engine: { diagram: diagram(brain.architecture) },
+      sections: [{ title: t("steps"), bullets: brain.steps.map((s) => `${s.title[locale]}: ${s.text[locale]}`) }],
+    },
+    rejected: {
+      engine: {
+        // A pull request whose diff shows text the site hides (`unlinkedPrs`) stays plain text, as on the timeline.
+        ideas: rejected.ideas.map(({ id, title, tried, reason, pr }) => ({
+          id,
+          title: title[locale],
+          tried: tried[locale],
+          reason: reason[locale],
+          ...(pr === undefined ? {} : { pr: hidden.has(pr) ? { n: pr } : { n: pr, href: prUrl(pr) } }),
+        })),
+      },
+      sections: [],
+    },
   };
 
   return chain(
-    ENGINE_STATIONS.map((id) =>
+    STATION_IDS.map((id) =>
       single({
-        id: engineRoom(id),
+        id: `B1:${id}`,
         kind: "engine",
         title: story.stations[id].title[locale],
         subtitle: story.stations[id].summary[locale],

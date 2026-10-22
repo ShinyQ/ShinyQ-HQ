@@ -162,9 +162,10 @@
     },
     "kb": "{value} KB",
     "hourly": "Per jam",
-    "comingSoon": "Segera hadir",
-    "comingSoonTitle": "Segera Hadir",
-    "comingSoonIntro": "Bagian lain dari kisah pembangunan ini sedang disiapkan."
+    "steps": "Cara menjawab",
+    "tried": "Dicoba",
+    "whyDropped": "Alasan dibatalkan",
+    "prLink": "Pull request #{n}"
   },
   "journey": {
     "title": "Perjalanan karier: 2019 hingga 2026",

@@ -39,7 +39,7 @@ function Blueprint({ diagram }: { diagram: NonNullable<RoomEngine["diagram"]> })
 }
 
 /**
- * B1 Engine Room station drawer (ships in the B1 chunk): the station's own block (diagram, rounds, gates,
+ * B1 Engine Room station drawer (ships in the B1 chunk): the station's own block (diagram, rounds, gates, ideas,
  * numbers or the plan excerpt) around the generic sections. Uses only utility classes the site already
  * ships (CSS budget).
  */
@@ -79,6 +79,30 @@ export function EngineBody({ view, locale }: RoomBodyProps) {
             </li>
           ))}
         </ul>
+      )}
+      {e.ideas && (
+        <ol className="space-y-4">
+          {e.ideas.map((idea) => (
+            <li key={idea.id} data-idea={idea.id}>
+              <h3 className="font-semibold text-ink">{idea.title}</h3>
+              <p className="mt-1 text-sm text-ink-2">
+                <span className="label text-ink-3">{l.tried}</span> {idea.tried}
+              </p>
+              <p className="mt-1 text-sm text-ink">
+                <span className="label text-ink-3">{l.whyDropped}</span> {idea.reason}
+              </p>
+              {idea.pr &&
+                (idea.pr.href ? (
+                  <a href={idea.pr.href} target="_blank" rel="noopener noreferrer" className={`${PR} hover:text-cyan`}>
+                    {`#${idea.pr.n}`}
+                    <span className="sr-only"> ({l.newTab})</span>
+                  </a>
+                ) : (
+                  <span className={PR}>{`#${idea.pr.n}`}</span>
+                ))}
+            </li>
+          ))}
+        </ol>
       )}
       {e.rounds && (
         <ol className="space-y-6">

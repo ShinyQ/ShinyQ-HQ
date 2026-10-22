@@ -4,9 +4,9 @@ import { AccentDot } from "@/components/AccentDot";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ExternalLink } from "@/components/ExternalLink";
 import { SectionSplit } from "@/components/page/Layout";
-import { COMING_SOON_IDS, type StationId, getBuildStory } from "@/content/build-story";
+import { type StationId, getBuildStory } from "@/content/build-story";
 import type { Locale } from "@/content/schema";
-import { repoFileUrl } from "@/lib/build-page";
+import { prUrl, repoFileUrl } from "@/lib/build-page";
 import { DashboardBody } from "./BuildDashboard";
 import { TimelineBody } from "./BuildTimeline";
 
@@ -15,7 +15,7 @@ export { DashboardBody, TimelineBody };
 /**
  * The build story stations (/[locale]/build). Each `*Section` is a `SectionSplit` with the station id as its
  * anchor; the `*Body` components are the bare content. They are async server components, so the client-side
- * B1 Engine Room drawers (PR 2) cannot render them: the drawers reuse the pure helpers in `src/lib/build-page.ts`
+ * B1 Engine Room drawers cannot render them: the drawers reuse the pure helpers in `src/lib/build-page.ts`
  * and the story data through a serializable room view instead.
  */
 type Props = { locale: Locale };
@@ -131,6 +131,61 @@ export async function GatesBody({ locale }: Props) {
   );
 }
 
+export async function BrainBody({ locale }: Props) {
+  const t = await getTranslations({ locale, namespace: "build" });
+  const { architecture, steps } = getBuildStory().stations.brain;
+  return (
+    <>
+      <ArchitectureDiagram architecture={architecture} locale={locale} />
+      <h3 className="pv-h3 mt-14 mb-4">{t("steps")}</h3>
+      <ol className="pv-rows pv-rows-closed">
+        {steps.map((step, i) => (
+          <li key={step.title.en} className="flex gap-3 py-4">
+            <span className="pv-num min-w-[4ch] shrink-0 text-[22px]">{i + 1}</span>
+            <div>
+              <p className="font-semibold text-ink">{step.title[locale]}</p>
+              <p className="pv-body mt-1">{step.text[locale]}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
+/** Each idea: what was tried, why it was dropped and its pull request (plain text when `unlinkedPrs` hides its diff). */
+export async function RejectedBody({ locale }: Props) {
+  const t = await getTranslations({ locale, namespace: "build" });
+  const tc = await getTranslations({ locale, namespace: "common" });
+  const { stations } = getBuildStory();
+  const hidden = new Set(stations.timeline.unlinkedPrs ?? []);
+  return (
+    <ol className="pv-rows pv-rows-closed">
+      {stations.rejected.ideas.map((idea) => (
+        <li key={idea.id} id={`rejected-${idea.id}`} className="py-4">
+          <p className="font-semibold text-ink">{idea.title[locale]}</p>
+          <p className="pv-body mt-1">
+            <span className="pv-data">{t("tried")}</span> {idea.tried[locale]}
+          </p>
+          <p className="mt-2 text-ink">
+            <span className="pv-data">{t("whyDropped")}</span> {idea.reason[locale]}
+          </p>
+          {idea.pr !== undefined &&
+            (hidden.has(idea.pr) ? (
+              <p className="pv-small mt-2">{t("prLink", { n: idea.pr })}</p>
+            ) : (
+              <p className="mt-2">
+                <ExternalLink href={prUrl(idea.pr)} className="pv-uline inline-flex min-h-11 items-center text-sm text-ink-2 hover:text-ink" srHint={tc("external")}>
+                  {t("prLink", { n: idea.pr })}
+                </ExternalLink>
+              </p>
+            ))}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function BlueprintSection({ locale }: Props) {
   return (
     <Station id="blueprint" locale={locale}>
@@ -171,24 +226,18 @@ export function DashboardSection({ locale }: Props) {
   );
 }
 
-/** Two dimmed plates for the stations still being written (dashed outline, muted text, a "Coming soon" chip). */
-export async function ComingSoonSection({ locale }: Props) {
-  const t = await getTranslations({ locale, namespace: "build" });
-  const soon = getBuildStory().comingSoon;
+export function BrainSection({ locale }: Props) {
   return (
-    <SectionSplit id="coming-soon" title={t("comingSoonTitle")} intro={t("comingSoonIntro")}>
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {COMING_SOON_IDS.map((id) => (
-          <li key={id} id={id} className="rounded-xl border border-line p-5 sm:p-6">
-            <span className="chip text-ink-3">
-              <AccentDot tone="muted" />
-              {t("comingSoon")}
-            </span>
-            <h3 className="pv-h3 mt-4 text-ink-2">{soon[id].title[locale]}</h3>
-            <p className="pv-small mt-2 text-ink-3">{soon[id].summary[locale]}</p>
-          </li>
-        ))}
-      </ul>
-    </SectionSplit>
+    <Station id="brain" locale={locale}>
+      <BrainBody locale={locale} />
+    </Station>
+  );
+}
+
+export function RejectedSection({ locale }: Props) {
+  return (
+    <Station id="rejected" locale={locale}>
+      <RejectedBody locale={locale} />
+    </Station>
   );
 }

@@ -52,6 +52,45 @@ describe("B1 Engine Room drawers", () => {
       expect(Object.keys(views).filter((k) => k.startsWith("B1:")).sort()).toEqual(STATION_IDS.map((id) => `B1:${id}`).sort());
     });
 
+    it(`opens all seven stations in bay order, Rover's Brain and Rejected Designs included (${locale})`, () => {
+      expect(STATION_IDS).toEqual(["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"]);
+      const chained: string[] = [];
+      for (let id: string | undefined = "B1:blueprint"; id; id = views[id as keyof typeof views]?.next) chained.push(id);
+      expect(chained).toEqual(STATION_IDS.map((id) => `B1:${id}`));
+    });
+
+    it(`draws Rover's Brain for the phone and the wide drawer and lists how it answers (${locale})`, () => {
+      const { brain } = story.stations;
+      const diagram = view("brain").engine?.diagram;
+      expect(diagram?.layout.nodes).toHaveLength(brain.architecture.nodes.length);
+      expect(diagram?.wide.nodes).toHaveLength(brain.architecture.nodes.length);
+      expect(diagram?.layout.width).toBeLessThanOrEqual(DIAGRAM_PRESETS.phone.maxWidth);
+      expect(diagram?.wide.width).toBeLessThanOrEqual(DIAGRAM_PRESETS.drawer.maxWidth);
+      expect(diagram?.label.length).toBeGreaterThan(20);
+      const steps = view("brain").sections.find((s) => s.bullets);
+      expect(steps?.title).toBe(locale === "en" ? "How it answers" : "Cara menjawab");
+      expect(steps?.bullets).toEqual(brain.steps.map((s) => `${s.title[locale]}: ${s.text[locale]}`));
+    });
+
+    it(`lists every rejected design with why it was dropped, linking those with a pull request (${locale})`, () => {
+      const { ideas } = story.stations.rejected;
+      const unlinked = story.stations.timeline.unlinkedPrs ?? [];
+      const shown = view("rejected").engine?.ideas ?? [];
+      expect(shown.length).toBeGreaterThanOrEqual(8);
+      expect(shown.length).toBeLessThanOrEqual(12);
+      expect(shown.map((i) => i.id)).toEqual(ideas.map((i) => i.id));
+      shown.forEach((idea, i) => {
+        expect(idea).toMatchObject({ title: ideas[i].title[locale], tried: ideas[i].tried[locale], reason: ideas[i].reason[locale] });
+        const n = ideas[i].pr;
+        // A pull request whose diff shows text the site hides (`unlinkedPrs`, C3) stays plain text here too.
+        expect(idea.pr).toEqual(n === undefined ? undefined : unlinked.includes(n) ? { n } : { n, href: prUrl(n) });
+      });
+      expect(shown.some((i) => i.pr?.href)).toBe(true);
+      expect(shown.find((i) => i.pr?.n === 288)?.pr).toEqual({ n: 288 });
+      const l = view("rejected").engine!.labels;
+      expect([l.tried, l.whyDropped]).toEqual(locale === "en" ? ["Tried", "Why it was dropped"] : ["Dicoba", "Alasan dibatalkan"]);
+    });
+
     it(`lays the site diagram out for the drawer width and names it (${locale})`, () => {
       const diagram = view("blueprint").engine?.diagram;
       expect(diagram?.layout.nodes).toHaveLength(story.stations.blueprint.architecture.nodes.length);
