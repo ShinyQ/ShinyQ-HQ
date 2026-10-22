@@ -1,6 +1,6 @@
 # Agent Office on L1: design
 
-Date: 2026-10-18. Status: approved by the owner on 2026-10-18; assumptions verified against current docs and the
+Date: 2026-10-18. Status: implemented in #233, #236, #239 (backend), #242 (relay), #261 (3D wing) and #264 (Classic card), 2026-10-19 to 2026-10-20; revamped by the 2026-10-20 revamp design. Approved by the owner on 2026-10-18; assumptions verified against current docs and the
 code on 2026-10-19 (corrections are marked **Correction** inline and listed in section 12).
 
 Owner request (verbatim): "im thinking of making something like virtual office animation for the L1 where it shows my

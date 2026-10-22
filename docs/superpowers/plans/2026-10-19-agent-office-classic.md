@@ -1,6 +1,6 @@
 # Agent Office, part 4: Classic Card and Ask Note Implementation Plan
 
-Status: in review
+Status: shipped in #264 (f0a7880), 2026-10-20. Later changed in #270: the card shows no privacy note.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
