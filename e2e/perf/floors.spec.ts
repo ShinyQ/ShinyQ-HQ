@@ -132,7 +132,7 @@ async function fps(page: Page, ms = 3_000) {
  * (`settled-<floor>-<pose>`), so the program baseline keeps one entry per floor. `before` runs after the programs
  * settled, right before the draw calls are read (the office's pipeline effects).
  */
-async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string, before?: () => Promise<void>): Promise<{ programs: number; base: number }> {
+async function measureFloor(page: Page, tier: "lite" | "full", floor: string, pose?: string, before?: () => Promise<void>): Promise<{ programs: number }> {
   await waitForCameraSettle(page);
   const programs = await waitForStablePrograms(page);
   await before?.();
@@ -152,7 +152,7 @@ async function measureFloor(page: Page, tier: "lite" | "full", floor: string, po
   const base = PROGRAMS[tier]?.[floor];
   expect(base, `no shader program baseline for ${tier} ${floor}: run "bun scripts/perf-summary.ts baseline --head perf-report --write e2e/perf/baseline.json"`).toBeDefined();
   expect(programs, `${programs} programs vs baseline ${base} + ${PROGRAM_HEADROOM}`).toBeLessThanOrEqual(base! + PROGRAM_HEADROOM);
-  return { programs, base: base! };
+  return { programs };
 }
 
 const replayOf = (page: Page) => page.evaluate(() => (window as unknown as OfficeWindow).__hq.probes.office?.replay ?? null);
@@ -300,10 +300,12 @@ for (const tier of ["lite", "full"] as const) {
     await waitForCameraSettle(page);
     await pollOffice(page);
     const still = await fps(page);
+    // The programs the still office settled at: the replay adds none (the count of a full-tier page is fixed by when its precompile resolved).
+    const programs = await waitForStablePrograms(page);
     await startReplay(page);
     await playedTo(page, 4);
     const stop = await measureFloor(page, tier, "L1", "replay", () => playedTo(page, 4));
-    expect(stop.programs, "the replay adds no program").toBeLessThanOrEqual(stop.base);
+    expect(stop.programs, `the replay adds no program (${programs} before it)`).toBeLessThanOrEqual(programs);
     // Later in the day (runs, the deploy, the second merge) under the same cap.
     await playedTo(page, 17);
     expect((await expectRenderBudget(page)).sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
@@ -317,7 +319,7 @@ for (const tier of ["lite", "full"] as const) {
     await page.waitForFunction(() => (window as unknown as OfficeWindow).__hq.probes.office?.inView === true, null, { timeout: 60_000 });
     await startReplay(page);
     const ring = await measureFloor(page, tier, "L1", "ring-south-replay", () => playedTo(page, 4));
-    expect(ring.programs, "the replay adds no program").toBeLessThanOrEqual(ring.base);
+    expect(ring.programs, `the replay adds no program (${programs} before it)`).toBeLessThanOrEqual(programs);
     // Three replay loops (the range's End ends one, the loop restarts) and a seek into the middle of the day, GPU objects flat.
     await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { openRoom: (r: string) => void } } } }).__hq.store.getState().openRoom("L1:office"));
     await expect(page.getByTestId("office-body")).toHaveAttribute("data-panel", "summary", { timeout: 60_000 });
