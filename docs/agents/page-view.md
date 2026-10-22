@@ -154,6 +154,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - on `/labs`, Quick view and the filmstrip
   - in `WorkFeature` and `WorkRow` as the cover
 
+### Live Agent Office card
+
+- `OfficeSection` (`src/components/office/OfficeSection.tsx`, server) renders `#office` with its labels resolved on the server (`officeCardLabels`: `office.classic` never reaches the client messages).
+- `OfficeLazy` loads the `OfficePanel` chunk once the section is within a screen of the viewport (an `IntersectionObserver` with a `100%` root margin, like the Visits section), so neither the panel nor its polling runs on first load or under the 3D tower. Until then a static loading line and note hold the card's height (`OFFICE_RESERVE`); a failed chunk shows the offline line.
+- `OfficeShell` hides the whole section when the office is switched off (the disabled body).
+- Data, polling and privacy: [office.md](office.md#classic-card-and-ask); `e2e/office-classic.spec.ts`.
+
 ### Landing styles
 
 - Styles live in `src/app/landing.css` (`hx-` classes).

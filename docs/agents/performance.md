@@ -38,12 +38,12 @@ Index: [AGENTS.md](../../AGENTS.md).
 | Page View LCP | 2 s | `lighthouserc.json` |
 | Page View CLS | 0.01 | `lighthouserc.json` |
 | Page View TBT | 200 ms | `lighthouserc.json` |
-| Page View transfer budgets for fonts, HTML, CSS and JS | see the file (HTML 83,968 B, 82 KB since 2026-10-18; keep at least 4 KB of headroom on every page: the layout sends only `LAYOUT_NAMESPACES`, see [styling-and-i18n.md](styling-and-i18n.md#client-messages)) | `lighthouserc.json` |
+| Page View transfer budgets for fonts, HTML, CSS and JS | see the file (HTML 83,968 B, 82 KB; keep at least 4 KB of headroom on every page: the layout sends only `LAYOUT_NAMESPACES`, see [styling-and-i18n.md](styling-and-i18n.md#client-messages)) | `lighthouserc.json` |
 | RUM sampling (`RUM_RATE`) | 25% of 3D sessions | `src/experience/perf/rumDecision.ts` |
 
 Lighthouse CI is described in [ci-and-deploy.md](ci-and-deploy.md#ci).
 
-Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction (was 11, plus 4 route chunks). See [page-view.md](page-view.md#navigation).
+Classic links in the header, nav, crumbs, hero and section heads prefetch on intent (hover, focus, touchstart), never in the viewport: `/en` makes no RSC (`_rsc=`, `.txt`) request without interaction. See [page-view.md](page-view.md#navigation).
 
 Layout islands load their heavy parts on first use ([hud-and-drawer.md](hud-and-drawer.md#opening-overlays-and-modals)): the command palette with its search and the Rover menu are lazy chunks (about 5.4 KB and 2.4 KB gzip), and the audio engine (`engine.ts`, `synth.ts`, `music.ts`, about 3.8 KB gzip) loads only when the 3D view needs sound (`src/lib/audio/singleton.ts`, see `src/lib/audio/README.md`), so the Page View never downloads it and the 3D gate's no-interaction session does not either. The HUD index loads on open or at idle, and `GET /api/ask` once per tab session at most for the entry points ([ask.md](ask.md#availability)).
 
@@ -242,7 +242,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` (`idle.ts` adds `idle-cadence`) |
 | The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` |
-| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch,idle}`, `CanvasBoundary`, `recovery` and `tower/rideClock` | `lifecycle`, `experience` and `pads` (the scene files add `idle-cadence`) |
+| `src/experience/scene/{FrameLoop,framePacer,cover,coverWatch,idle}`, `CanvasBoundary` and `recovery` | `lifecycle`, `experience`, `pads` and `idle-cadence` |
+| `src/experience/tower/rideClock.ts` | `lifecycle`, `experience`, `pads`, `ride` and `gpu` |
 | `fx/useDispose`, `scene/memoryProbe`, `scene/sharedResources` and floor mounting (`tower/{Tower,near,FloorLevel}`) | `memory` and `experience` |
 | `src/experience/sky/**` and `src/lib/day-night.ts` | `daynight` and `experience` |
 | `src/experience/floors/{engine/**,EngineRoom.tsx,chunks/engine.ts}`, `hud/drawer/EngineBody.tsx`, `content/room-views/engine.ts`, `experience/b1.ts`, `hud/floorRows.ts`, `e2e/b1.ts` | `engine-room`, `b1-unlock`, `floor-chunks`, `memory` and more (`floors/engine/layout.ts` adds `arrivals` and `memory`) |
@@ -292,7 +293,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - Do not run two e2e suites at once on one machine.
 - Turbopack can serve stale CSS after large style or dependency changes: `rm -rf .next` before `verify:quick` if the export looks wrong.
 - Tailwind scans every file in the repo, docs included: a utility class written in a plan or a doc snippet ships in the stylesheet (budget 20,480 B). Use utilities the stylesheet already has.
-- B1 UI strings live in the 3D-only `engine` message namespace (`CLIENT_NAMESPACES`, not `LAYOUT_NAMESPACES`), so they never ride in the Classic pages' HTML (budget 80 KB). Read floor labels through `useFloorLabel`.
+- B1 UI strings live in the 3D-only `engine` message namespace (`CLIENT_NAMESPACES`, not `LAYOUT_NAMESPACES`), so they never ride in the Classic pages' HTML (budget 82 KB). Read floor labels through `useFloorLabel`.
 - `e2e:*` serves `out/` from the last build, so rebuild after code changes (`verify:quick` does).
 
 ### CI shards

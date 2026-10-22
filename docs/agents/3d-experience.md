@@ -103,7 +103,7 @@ The same script sets these on every page before first paint:
 - The intro: Rover wakes up, then a reveal orbit (owner design). The timeline is pure (`camera/intro.ts`, `INTRO`); the shared frame state is `introRuntime` (`intro/runtime.ts`), written by `CameraDirector` and read by the floor shaders and the Lobby parts.
   - The boot holds the wake pose under every motion setting: a still, dark close-up of Rover (`introPose(plan, 0)`, per camera class `WAKE`), its face screen off (`introRuntime.face`), turned to the orbit's start, nothing revealed.
   - Boot rover starts `INTRO.duration` (6.6 s): the face boots (`introFace`: off until 0.35 s, a boot screen until 0.8 s) during a slow push-in over `INTRO.wake` (1.1 s), and Rover turns to its spawn heading between 1.3 and 2.6 s (`introHeading`).
-  - Reveal ring: from `INTRO.revealStart` (0.55 s) a ring spreads from Rover (`revealRadius`, out to `INTRO.revealReach` 80 u) until `INTRO.revealEnd` (3.0 s), when the reveal turns off (Infinity). The grid and the lanes mask themselves with the shared `revealUniforms`, the Lobby landmarks switch on as the ring reaches them ([Intro reveal and beacons](floor-l1-lobby.md#intro-reveal-and-beacons)), and the fog rides the ring (`introFog`) so everything past it fades into the night, reaching the follow range before the ring turns off.
+  - Reveal ring: from `INTRO.revealStart` (0.55 s) a ring spreads from Rover (`revealRadius`, out to `INTRO.revealReach` 90 u, past the far corner of the Highlights Hall) until `INTRO.revealEnd` (3.0 s), when the reveal turns off (Infinity). The grid and the lanes mask themselves with the shared `revealUniforms`, the Lobby landmarks switch on as the ring reaches them ([Intro reveal and beacons](floor-l1-lobby.md#intro-reveal-and-beacons)), and the fog rides the ring (`introFog`) so everything past it fades into the night, reaching the follow range before the ring turns off.
   - Orbit: after the wake the camera pulls back to a high point (`PULL`, `PEAK` per camera class) and sweeps 270 degrees (`INTRO.sweep`) while it descends, around Rover on desktop and around the plaza (the hologram, `plan.focus`) on tablets and phones, so the stats ring stays centred in a portrait frame and the skills wall is only seen from the front; the angular speed ramps up, holds and eases to rest (`orbitProgress`). The radius waits (`plan.hold`) until the path clears the elevator shaft. The plan (`introPlan`) is rebuilt every boot frame (the end pose follows a resize) and frozen from the first intro frame.
   - Beacons: as the orbit passes the middle of the view, the landmarks `stats`, `skills`, `hall`, `observatory` and `elevator` pulse once and their ids go into `introRuntime.lit`.
   - Handoff: the orbit's end pose is the primed follow pose (yaw, zoom, look-ahead, offset scale), and the path's end error is blended in with the orbit, so the intro lands exactly on it with no jump; `phase` becomes `explore` and the runtime resets (`active` false, `reveal` Infinity, `lit` emptied). The phase leaving the intro any other way (the static tier, `recover`) resets it too.
@@ -406,7 +406,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - Monitor rules:
   - 2 s windows.
   - Steps down after 2 slow windows whose median and mean frame time are above 20 ms on full or 36 ms on lite.
-  - Steps back up after 10 smooth windows (mean within a 60 fps frame).
+  - Steps back up after 10 smooth windows (mean at most 17.5 ms on full or 20 ms on lite, 90th percentile under two 60 fps frames).
   - 60 fps is the ceiling, so a high-refresh display paced to 60 fps never reads as slow.
   - A long gap (paused loop, hidden tab) restarts the windows.
   - At most 2 changes per 60 s; a relapse within 30 s locks the level.
@@ -573,6 +573,8 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
   | `hq:resume` | language switch resumes the floor; after the boot and intro when this session has not seen them |
   | `hq:intro` | boot and intro played this session |
   | `hq:gfx` | the quality safety net's level for this session (`scene/qualityStore.ts`) |
+  | `hq:probe` | this session already probed static (`PROBE_KEY` in `src/lib/boot-first.ts`, written by the gate and the head script's probe), so the head script skips the boot cover |
+  | `hq:sky` | test-only sky opt-in under automation (the perf lane; see "Day and night") |
 
 ### Sounds from the Director
 
@@ -589,17 +591,21 @@ Appendix 06: [06-data-contracts.md](../superpowers/specs/agent-hq/06-data-contra
 ## Testing hooks
 
 - Playwright sets `navigator.webdriver`, so e2e tests that need the 3D tier pass `?tier=lite|full`; tests of real auto-detection call `asHumanBrowser(page)` (`e2e/hq.ts`). More on writing 3D tests: [performance.md](performance.md).
-- `window.__hq` exposes `{ store, rover, intro, camera, layouts, interact, memory, floorChunks, ridePrep, probes, rideCull, render, quality, frames, motion, perf, sky }` for Playwright:
+- `window.__hq` (set in `Experience.tsx`) exposes `{ store, rover, intro, camera, layouts, interact, memory, floorChunks, office, ridePrep, probes, rideCull, render, sky, quality, frames, clock, cadence, idle, audio, motion, perf }` for Playwright:
 
   | Member | Contents |
   |---|---|
   | `intro` | `introRuntime`: the intro's timeline `t`, `reveal` radius, Rover `heading` and `face`, `veil`, `lit` landmark ids and `skipped` (see [Boot and intro](#boot-and-intro)) |
   | `floorChunks` | `floorChunksHandle`: `state(floor)`, `snapshot()`, `requestedAt(floor)`, `load(floor)` |
+  | `office` | the L1 Agent Office chunks: `load()`, `loadBody()`, `loadReplay()`, `loadControls()`, `loadWatch()`, `loadBeacon()`, `watchNow()`, `state()`, `asks()`, `test()` ([floor-l1-lobby.md](floor-l1-lobby.md#probes-and-tests)) |
   | `layouts` | carries the floor pads |
   | `interact` | `interactRuntime`: the current floor's `items`, `project`, `screenOf(id)`, `screenAt(id, fx, fz, lift)`, `hitAt(x, y)` (the click raycast) and `highlight` |
   | `memory()` | the live `renderer.info` geometries, textures and program count (null without a canvas) |
   | `motion()` | the live ride and beam (`{ ride, beam }`, the store only holds their stage starts) |
-  | `sky` | `{ phase, day, stars, source, fog, azimuth, applied, underground }` of the day and night cycle (see "Day and night") |
+  | `frames()`, `clock()` | rendered frames and the R3F clock (see [Frame loop](#frame-loop)) |
+  | `cadence()`, `idle` | the frame cadence (60, 30 or 0) and `idleRuntime` (see [Idle cadence](#idle-cadence)) |
+  | `audio()` | read-only audio state (`floor`, `ambience`, `muted`, `played`) |
+  | `sky` | `skyRuntime`: `{ phase, day, stars, still, source, fog, azimuth, applied, underground }` of the day and night cycle (see "Day and night") |
   | `probe` | only with `?gfx=probe`: `{ checked, black }`, frames checked and the black frames found (see [Shader math](#shader-math)) |
 
 - E2E helpers in `e2e/hq.ts`: drive with `driveTo`, read pads with `padsOf`, point with `visibleTarget`, `targetPoint`, `hoverTarget` and `emptyFloorPoint`.

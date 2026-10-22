@@ -126,7 +126,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 - Never import `Labs`, `Library`, `Roof`, `EngineRoom` or those HUD pieces statically anywhere in the closure of `Experience.tsx`.
   - `tests/unit/floor-chunks-graph.test.ts` (`tests/helpers/import-graph.ts`) fails otherwise.
 - New floor-only HUD code goes into that floor's chunk entry and is reached through `lazyFloors.tsx` or the entry's exports.
-- Not floor chunks: the L1 Agent Office loads its own two lazy chunks (the scene `floors/lobby/office/scene.ts` and the drawer body `floors/lobby/office/body.ts`, both through `floors/lobby/office/chunk.ts`), with their own trigger and caps; see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office). Never import their modules statically from the `Experience.tsx` closure (`tests/unit/office-chunk-graph.test.ts`).
+- Not floor chunks: the L1 Agent Office loads its own lazy chunks (the scene `floors/lobby/office/scene.ts` and the drawer body `floors/lobby/office/body.ts` through `floors/lobby/office/chunk.ts`, the replay `replayChunk.ts` with its controls, the watch `watchChunk.ts` through `watchLoader.ts`, and the beacon `beaconChunk.ts`), with their own triggers and caps; see [floor-l1-lobby.md](floor-l1-lobby.md#agent-office). Never import their modules statically from the `Experience.tsx` closure (`tests/unit/office-chunk-graph.test.ts`).
 
 ### Mounting
 
@@ -171,7 +171,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 450.0 KB and full 465.8 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 513.4 KB and full 529.1 KB (the office watch, scene and replay chunks included: the scene chunk 28,217 B loads at idle on every L1 visit, the replay chunk 5,240 B on a quiet one), under their caps of 513.9 and 529.7 KB; the office drawer body 6.85 KB stays outside the session total (40,475 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 450.0 KB and full 465.8 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 513.4 KB and full 529.1 KB (the office watch, scene and replay chunks included: the scene chunk 28,217 B loads at idle on every L1 visit, the replay chunk 5,240 B on a quiet one), under their caps of 513.9 and 529.7 KB; the office drawer body 7,171 B stays outside the session total (40,475 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 
@@ -325,18 +325,20 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
   |---|---|
   | `id` | unique id (formats below) |
   | `floor` | floor id |
-  | `kind` | `door`, `elevator-pad`, `teleporter`, `station`, `kiosk`, `board` |
+  | `kind` | `door`, `elevator-pad`, `return-pad`, `teleporter`, `station`, `kiosk`, `board` |
   | `label` | resolved for the tower's locale |
   | `at` | approach point |
   | `bounds`, `height` | pick volume |
-  | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `command` |
+  | `box` | optional oriented footprint (`center`, `w`, `d`, `yaw`) for turned targets; the pick volume and the hover outline use it |
+  | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `return-beam`, `console-picker` (the L2 time console), `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
   | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
   - pads from `FloorLayout.pads`;
-  - plus the L1 profile hologram, skills wall and Rover menu kiosk, the L3 wing boards and the L4 archive board.
+  - plus the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory, the L3 wing boards and reactor rings, the L4 end plaza (Topic Constellation, research monument), Study Vault books and archive board;
+  - features register the rest through `registerExtraInteractables` (the Highlights Hall stations, the L1 Agent Office desks).
 - Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
 
 ### Adding targets

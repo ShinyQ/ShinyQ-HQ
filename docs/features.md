@@ -62,19 +62,34 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Case-study metric strip | Round 9 P (2026-10-17): every case study (Classic page and the 3D drawer's Overview tab) opens with up to 3 headline results, a big value and its label (the first three, or results flagged `headline`); no confidence marker; the full results stay in a Results chapter when they add more | Done |
 | Camera fixes | Round 9 M (2026-10-17): a low camera never looks off the slab into the void (no black band); the hover highlight stands just outside the L3 boards (no z-fighting); the intro flies down to the rover in one 1.7 s move with a landing blink and beep, and input takes over (replaced by the wake and reveal orbit intro, 2026-10-18) | Done |
 | Black frame fix | 2026-10-18: no more single pure-black frames on L1 at a low camera (a NaN from the glass shader blacked out the bloomed frame); `?gfx=probe` logs any black frame and its cause on the device | Done |
-| Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card | In review |
+| Intro: wake and reveal orbit | 2026-10-18: the intro opens on a dark close-up of Rover, its face boots, a reveal ring spreads from it and switches the Lobby's landmarks on, and a 270 degree orbit passes them (each pulses once) and lands on the follow view; drive, turn, zoom, reset view or Esc skips it; reduced motion fades into the follow view; the Highlights Hall builds during the boot card (#227) | Done |
 | L1 more room | 2026-10-19: the Lobby grows to 54 u deep (lane ring r 13.5, stats ring r 11, cert arc r 23.5, kiosk at 22.5 u, skills wall flush north), every L1 obstacle pair 6 u apart, hall 5 u east; intro and spawn views retuned | Done |
-| B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; PR 2 (the floor) shipped in #209, the unlock is in review | In review |
+| B1 Engine Room floor | Round 9 (PR 2 and 3): the secret floor, unlocked after visiting all five floors; the floor shipped in #209, the unlock in #213 | Done |
 | Agent Office, part 1 (backend) | 2026-10-19: the hq-office Worker and Durable Object, signed relay beats and GitHub webhooks (same-repository activity only; a privatized repository is forgotten), GET /api/office with an ETag and a 5 s edge cache; no UI yet | Done |
 | Agent Office, part 2 (relay) | 2026-10-19: office-relay turns GitHub Copilot, Claude Code and Codex hook events into signed, privacy-filtered beats; one installer for all three | Done |
 | Agent Office, part 3 (3D office) | 2026-10-19: the L1 office with five live Rovers at curved desks, the screen wall, chips and drawers, in two lazy chunks (scene and drawer body); 2026-10-20: it moves into its own south wing of the L1 slab with a lead road, a plaza and one continuous console under the full space rules; the Classic card is part 4 | Done |
-| Agent Office, part 4 (Classic and Ask) | 2026-10-20: the Live Agent Office card on the Classic home page (lazy, polls only near the screen, honest live, semi-live, resting and offline states), and Ask Rover Assistant explains the office and its privacy rule | In review |
-| Agent Office: a higher wall | 2026-10-20: a taller screen wall raised over the console and set 4.5 u behind the Rovers in a deeper wing, the office view retuned on every screen (the chips wait for the camera to settle, stay shown through a zoom, and show as dots where the office view does not apply), and no privacy note on the Classic card or in the drawers | In review |
+| Agent Office, part 4 (Classic and Ask) | 2026-10-20: the Live Agent Office card on the Classic home page (lazy, polls only near the screen, honest live, semi-live, resting and offline states), and Ask Rover Assistant explains the office and its privacy rule (#264) | Done |
+| Agent Office: a higher wall | 2026-10-20: a taller screen wall raised over the console and set 4.5 u behind the Rovers in a deeper wing, the office view retuned on every screen (the chips wait for the camera to settle, stay shown through a zoom, and show as dots where the office view does not apply), and no privacy note on the Classic card or in the drawers (#270) | Done |
 | Study guides | 2026-10-19: the four certification study guides read in an in-site pdf.js reader (streamed by byte range from a private R2 bucket through `/api/guides/<slug>`), from a Study guides shelf on the Classic Writing page and "Read study guide" in the certification card (shipped in #243 and #245), and the 3D Study Vault off the L4 end plaza (holo books whose covers open as the rover comes near; a book opens the reader, shipped in #247) | Done |
-| Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack | In review |
-| Agent Office: always live, ten desks | 2026-10-21: the office loads at idle on every Lobby visit and lives whenever it is in view from anywhere in the Lobby (a far level of detail at about 4 fps past 40 u, a 30 s poll from afar, the fast poll only near it or with a drawer open); its scene chunk joins the 3D session total. Ten desks on two console rows (the back row on a riser), ten Rovers and chips, snapshot v3 with ten seats, and the Classic card over ten seats | In review |
-| Agent Office: day replay | 2026-10-22: the Durable Object keeps a privacy-safe log of the last 8 WIB days (`GET /api/office/history`); on a quiet L1 visit the office plays the latest busy day back as a 30 to 60 s time-lapse (the same Rovers, effects and wall, labelled "Replay"), the drawer replays any of the 8 days with a day picker, play and pause and a scrubber, and a floor of 24 tiles in the wing lights one per merged pull request | In review |
-| Agent Office: ship-it pipeline | 2026-10-21: the CI tower shows one lane per CI job (snapshot v4, the 3D office only), packets fly from a desk to the tower when a run starts, bursts mark finished jobs, merged pull requests fly as packages onto the ship dock's stack, a production deploy fires a green beam over the dock for 8 s (seen from the Lobby too), and the CI tower opens a CI drawer with the runs and their jobs as text | In review |
+| Ask knowledge pack in Workers KV | 2026-10-19: the Ask knowledge pack moved out of the Function bundle into Workers KV (versioned values with a build-time BM25 index, a pointer flipped with each deploy and rollback, per-isolate memory, SHA-256 checks, a pinned version and a bundled fallback pack); the Function bundle shrank from 449 KB to 210 KB and a new isolate no longer tokenizes the pack (#241, #254) | Done |
+| Agent Office: living crew | 2026-10-21: the office Rovers act out their state (a thought trail while thinking, a spin toward the camera when done), sub-agents show as helper drones over their desk (snapshot v2 `helpers`), and a Rover that waits for Kurniadi raises a "Needs Kurniadi" beacon seen from the Lobby (#274) | Done |
+| Agent Office: always live, ten desks | 2026-10-21: the office loads at idle on every Lobby visit and lives whenever it is in view from anywhere in the Lobby (a far level of detail at about 4 fps past 40 u, a 30 s poll from afar, the fast poll only near it or with a drawer open); its scene chunk joins the 3D session total. Ten desks on two console rows (the back row on a riser), ten Rovers and chips, snapshot v3 with ten seats, and the Classic card over ten seats (#276) | Done |
+| Agent Office: day replay | 2026-10-22: the Durable Object keeps a privacy-safe log of the last 8 WIB days (`GET /api/office/history`); on a quiet L1 visit the office plays the latest busy day back as a 30 to 60 s time-lapse (the same Rovers, effects and wall, labelled "Replay"), the drawer replays any of the 8 days with a day picker, play and pause and a scrubber, and a floor of 24 tiles in the wing lights one per merged pull request (#284) | Done |
+| Agent Office: ship-it pipeline | 2026-10-21: the CI tower shows one lane per CI job (snapshot v4, the 3D office only), packets fly from a desk to the tower when a run starts, bursts mark finished jobs, merged pull requests fly as packages onto the ship dock's stack, a production deploy fires a green beam over the dock for 8 s (seen from the Lobby too), and the CI tower opens a CI drawer with the runs and their jobs as text (#279) | Done |
+| Ask pills and Groq tiers | 2026-10-17 to 2026-10-18: curated question pills in seven topics with a seeded random sample (#187); free Groq backup tiers (Qwen 3.8 27B, then gpt-oss-120b) answer when Workers AI fails or runs out of quota (#210) | Done |
+| Deploy on merge | 2026-10-18: a merge to `main` deploys (at once when the merged PR was green on the same tree) and a red `main` CI rolls production back (#200); pull requests run only the affected tests, `main` and the nightly 8 e2e and 4 perf shards (#202) | Done |
+| Content refresh | 2026-10-18: the Google Generative AI Leader certification (#208) and a bilingual editorial copy refresh with localized diagram labels (#223) | Done |
+| Ride and path fixes | 2026-10-18: a beam that jumps and ends on the same frame latches its landing pad (#222); 2026-10-20: Rover brakes for the end of its path, not only its last leg (#269) | Done |
+| Classic design refinement | 2026-10-19: a calmer Classic site without a redesign: a quieter landing hero, dates as tabular values, project cards that scan (one title size, results as value over label), flat filter and contents bars, ruled Work wing counts (#240) | Done |
+| Performance fixes A to E | 2026-10-19 to 2026-10-20: Classic links prefetch on intent, lighter CV images, a lazy HUD and the beacon after load (#244); the boot card owner block stays the game-first LCP (#246); floor layouts out of the Classic bundle, 3D page data as static versioned JSON (#257); weak integrated GPUs start on lite and a parked scene drops to an idle frame cadence (#259); one prebuilt logo atlas and room data per floor (#260); the 3D chunk mounts without a Suspense retry, first frame about 250 ms sooner (#268) | Done |
+| Smart CI round 2 | 2026-10-18 to 2026-10-19: a push to `main` runs only the complement of its merged PR's green run (#214), PR perf gates follow the 3D files that import a shared module (#216), budget sweeps run nightly only (#221), Lighthouse on the affected URLs plus the home page and two CI runs in flight (#225), worker-aware e2e shard packing (#228), and functional specs run animations 4x faster (#231) | Done |
+| Ask evals on Groq | 2026-10-19 to 2026-10-20: a dispatch-only ask-samples workflow (#250); the nightly evals fit the free Groq daily token limits (#256) and run on Groq models production never uses, with model-agnostic checks (#267); the first findings fixed: prompt extraction declined before the model, Rover may invite (#273) | Done |
+| Visit stats every 2 hours | 2026-10-19: the hq-stats Worker refreshes the public stats every 2 hours (delayed after 6 h, 3 missed runs) (#237); 2026-10-22: automated browsers never load the beacon and their questions stay out of the stats, with plural forms and sampling copy fixed (#280) | Done |
+| HUD rail clears the minimap | 2026-10-21: the desktop elevator rail sits between the top bar and the minimap stack instead of centring on its own (#278) | Done |
+| Office relay throttle | 2026-10-21 to 2026-10-22: Copilot sub-agent starts count as helpers (#275); per session a change goes out at most once per 10 s with a trailing send, final states at once, and an awake session sends a 15 s keepalive (#281) | Done |
+| Office chips under drawers | 2026-10-22: the office chip row hides while a drawer sheet is open (#287) | Done |
+| Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
+| Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
 
 ## Controls and first visit
 
@@ -112,7 +127,7 @@ Open `/en` and press **Boot rover**.
 
 ### Elevator and fast return
 
-- Change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About) or PageUp/PageDown.
+- Change floors with the elevator panel (every button is named after its page: L1 Home, L2 Journey, L3 Work, L4 Writing, RF About, plus a B1 row that stays locked until all five floors are visited) or PageUp/PageDown. On desktops the panel stays centred on the right edge and rises only on short screens, so it never covers the minimap, the settings gear or the top bar.
 - Every floor has a glowing call pad in front of the elevator door: stop on it (or click it) and pick a floor from a list with previews.
 - Far from the elevator (more than 40 u: the L2 Workshop, the L3 east plaza, the deep L4 desks), any floor change beams the rover into the car instead of driving all the way back (a fade cut under reduced motion).
 - The far ends of L2, L3 and L4 have a green **Back to elevator** pad that beams you to the call pad.
@@ -161,7 +176,7 @@ Open `/en` and press **Boot rover**.
 
 ### Rover menu and the Classic site
 
-- **Rover menu** (ID **Menu Rover**; the `>_` button in the top bar, the menu on phones and tablets, or click the rover) is a terminal (`rover@hq:~$ ./rover-menu`) with eight entries: **Explore my work** (rides to L3, where Rover asks you to pick a wing: Product Engineering, AI Engineering or Data and ML), **See the highlights**, **Follow my career, 2019 to 2026**, **Browse my projects**, **Read my writing**, **View CV**, **Discuss a role or project** and **Explore on my own** (Esc). Keys 1 to 7 pick an entry.
+- **Rover menu** (ID **Menu Rover**; the `>_` button in the top bar, the menu on phones and tablets, or click the rover) is a terminal (`rover@hq:~$ ./rover-menu`) with nine entries: **Explore the work** (rides to L3, where Rover asks you to pick a wing: Product Engineering, AI Engineering or Data and ML), **See the highlights**, **Career timeline, 2019 to 2026**, **Browse projects**, **Read the writing**, **View CV**, **Discuss a role or project**, **Watch the AI agents at work** (drives to the L1 Agent Office and opens it) and **Explore on my own** (Esc). Keys 1 to 8 pick an entry.
 - The panel always fits the visible screen: the header and the hint stay put and the list scrolls inside on short phones and landscape.
 - **Replay the tutorial** and **Hints** are rows in the settings panel, general group, while in 3D (also in Cmd-K).
 - **Classic site** (highlighted, with **Ask AI** on its right; ID **Situs klasik**) shows the same content as a regular website without 3D, and **Back to 3D** returns.
@@ -174,6 +189,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 - The home opens on a calm first screen: the name over a slow glow and a low Neon Grid floor (CSS only, still under reduced motion).
 - Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result on a hairline at the bottom, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
+- Header, nav and hero links prefetch the next page when you point at, focus or touch them, never just because they are on screen.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.
 - **Live Agent Office** (`/#office`, after the intro): the L1 office as a card: counts, the agents at their desks with their state, activity (and helpers, "Editing · 3 helpers") and task ("Client project" for private work), the latest public GitHub activity, and today's numbers. Of the ten desks it lists the awake ones, front row first, in five rows (past five, the fifth row reads "+N more desks"), with asleep and empty desks counted on one line ("3 desks idle"); it always draws those five rows and four GitHub slots, so it keeps one height in every state (no layout shift): Live, Paused (no update for a minute), Semi-live (no agent reporting), Resting or Offline (the last known rows, dimmed, "as of" their time). It hides when the office is switched off (once it is off screen), and loads and polls only while it is near the screen.
 - "More key projects" on the landing lists only key projects with screenshots (hero projects with a gallery outside Selected work). On `/labs`, Key projects are the hero projects with screenshots, now including the Full-Stack AI Application Template, and every project row with a gallery shows its cover thumbnail. Rows without screenshots (on `/labs`, Quick view and the landing filmstrip) show a designed placeholder: the rover glyph and the project's initials on a wing-tinted gradient.
@@ -202,7 +218,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 
 Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer.
 
-- A side panel on desktop (480 to 600 px wide, growing with the screen) or a bottom sheet on phones and portrait tablets.
+- A side panel on desktop and landscape screens at least 900 px wide (480 to 600 px wide, growing with the screen) or a bottom sheet (55% and 92% snap points) on phones, portrait tablets and narrower landscape screens.
 - Its bar keeps the room code, prev/next, the "..." menu (README view, also on `t`) and close.
 - The title and tabs scroll with the content, and the tabs stick under the bar, so the room body gets most of the height.
 
@@ -210,9 +226,10 @@ Driving into a room door (or picking it from Cmd-K) opens the Glass Drawer.
 
 Route `/en`. The stats ring, the skills wall and the certifications wall surround the plaza in front of the elevator.
 
-- **More room** (owner, 2026-10-19): the Lobby slab is 54 u deep (was 42), the lane ring and the stats ring are wider, and the skills wall, the certifications wall, the kiosk and the Visitor Observatory moved out so every walkway around the ring is at least 6 u; the Highlights Hall moved 5 u east and grew with the slab. Same components, content and behavior.
+- **Room to drive** (owner, 2026-10-19): the Lobby and the Highlights Hall share one 54 u deep slab centred on the elevator; every walkway between the lane ring and the walls, the kiosk and the Visitor Observatory is at least 6 u wide, and every pair of L1 obstacles stays 6 u apart.
+- **Agent Office wing**: south of the plaza, reached by its own lead road (see [Agent Office](#agent-office)); the Highlights Hall's lead road starts 6 u east of it.
 
-- **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (Round 9 R: every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
+- **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging.
 - **Rover menu kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
 - The camera looks past the kiosk at the hologram's name and at the Visitor Observatory in the south-west corner.
@@ -235,6 +252,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 
 - Two curved consoles of five desks around the office stop (ten seats): the front row on the floor, a Rover behind each desk facing you (Desk 1 on the left from the office), and the back row (Desks 6 to 10) raised on a riser behind it, every back-row face and desk screen in clear sight over the front row; a few steps behind them, a tall screen wall raised over their heads: mission control (counts, who is working now, today) and the public GitHub board.
 - Live from Kurniadi's AI coding agents (GitHub Copilot, Claude Code, OpenAI Codex): nine states (working, thinking, reviewing, running tests, waiting on CI, needs Kurniadi, done, CI failed, asleep) with their own faces, poses and desk screens.
+- Privacy: hooks on Kurniadi's machine send only the agent, a hashed session, the state, the activity type and a helper count (never prompts, commands, paths or output); a task title and repository show only for allowlisted public repositories (everything else reads "Client project"), and the GitHub board and CI tower show only allowlisted public repositories.
 - Helpers (sub-agents) show as small drones orbiting their Rover's head, each with a glowing core in its Rover's state colour (at most four drawn, a "+N" on the chip for more).
 - Ship-it pipeline: the slim CI tower in the south-east corner lights one lane per job of the latest public CI runs (running runs at the bottom: queued dim and steady, running violet and brighter with a chasing dot, done green, failed red); a new run sends a packet of cyan dots from its desk (a back-row desk's from over the riser) to the tower, a finished job bursts a ring on its lane, a finished run flashes the tower's crown, and a merged pull request flies as a small box with a violet glow onto the ship dock in the south-west corner, where today's merges stack up (at most 12). A production deploy that just succeeded fires a green beam up from the dock for 8 s, seen from the Lobby too (even with the office out of view), and a green ring pulses at the dock on the minimap meanwhile; the dock ring shimmers while a deploy runs and pulses red when one fails. Nothing flies higher than the screen wall's top, so the chip row stays clear. With reduced motion the lanes and the stack update at once and nothing flies (a steady beam, running lanes steady but brighter than queued, a steady green ring on the minimap).
 - Day replay: after 30 s of an idle office in view (every desk asleep, or no agent reporting), the office plays the latest day with activity back as a 30 to 60 s time-lapse on a loop with a 6 s rest, through the same Rovers, pipeline effects and wall, and a live event (a desk waking or asking, a new production deploy) ends it at once. It is always labelled: a "Replay" pill leads the chip row ("Replay · 14:05", the clock alone on a phone), the chips' dots are rings and their names read "Replay of Mon 19 Oct: ...", the wall's status line becomes a violet banner ("Replay · Mon 19 Oct · 14:05"), and every drawer panel shows a "Replay" badge with "Back to live" (the summary and desk footers read "Replay of Mon 19 Oct. Live updates return when an agent starts working." in place of the hooks note, and "Show day replay" hides while a replay is active). The summary drawer's "Day replay" section ("Show day replay") picks any of the last 8 days (empty days disabled), plays or pauses and scrubs a time range ("14:05 WIB"); "Partial day" marks a truncated day and "Replay unavailable" a missing history. During a replay there is no beacon, minimap cue or deploy beam (those read the live feed only) and replayed deploys show only on the dock ring. With reduced motion there is no idle loop: a picked day starts paused and "Next hour" steps through it. A 6 x 4 grid of floor tiles on the wing's approach lights one per merged pull request, in order (the next 24 brighten), live for today and during a replay for the day so far; from the desktop stop it is behind the camera, where the wall and the dock's stack carry the merges.
@@ -274,7 +292,7 @@ Route `/en/journey`. One road runs forward in time.
   - The public repos as a neon skyline (height by stars on a log scale, color by language; click a bar for the repo drawer and its GitHub link).
 - **Horizon**: past the Workshop window (clear glass, no label) a light bridge runs off the floor toward a holographic skyline far below with a sunrise glow.
 - **Origin**: a light pillar rises at the start of the road.
-- **Follow my career, 2019 to 2026** (Rover menu or Cmd-K) rides to L2, where the road starts at the 2019 prologue; on the Classic site it opens `/journey`.
+- **Career timeline, 2019 to 2026** (Rover menu or Cmd-K) rides to L2, where the road starts at the 2019 prologue; on the Classic site it opens `/journey`.
 
 ## L3 Project Roads
 
@@ -284,7 +302,7 @@ Route `/en/labs`.
 - **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road, with every key and featured project docked along them. The board titles name the roads; there are no floating road signs. At the far end both wing roads turn toward the axis and meet the reactor ring due north and south, a mirror image about the spine.
 - **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories and the demand forecasting work on Microsoft Fabric (on-premise data into a medallion lakehouse) docked on both sides (the Fabric pod first), spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners. A green **Back to elevator** pad waits on the axis just east of the ring.
-- **Browse my projects** (Rover menu or Cmd-K) rides to L3 and opens the full project list.
+- **Browse projects** (Rover menu or Cmd-K) rides to L3 and opens the full project list.
 
 ### Tech Reactor
 
@@ -310,7 +328,7 @@ Route `/en/library`.
 - **Signs**: one sign per section (Posts, Research, Models and datasets, Talks and workshops) hangs over its first desk, and every floating plate on the lane shares one height. Post titles show only for the nearest stations (at most 6 on desktop, 4 on phones) and fade out as you drive away. Labels are placed on screen every frame, so none covers another, the rover or the end plaza's signs.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.
-- **Read my writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
+- **Read the writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
 - **Study Vault**: a road from the end plaza's ring road leads south-east to a small round plaza where the four certification study guides stand as tall holo books on an arc, each on a low plinth over a dashed floor track, in its issuer's tone (Microsoft cyan, GitHub violet, Google amber) with its exam code on the spine and a STUDY VAULT sign above.
   - Covers slide out and swing open as the rover comes near (half open from the vault stop, fully open next to a book or when you point at it); reduced motion snaps them, and the lite tier drops the light pools.
   - Click a book (tap, then Go, on touch screens) to drive to the vault and read that guide in the same in-site reader as the Classic Writing page ([Classic site](#classic-site)); one "!" hint bubble introduces the vault.
@@ -352,9 +370,9 @@ The basement under the Lobby: a workshop where each station explains one part of
 All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the remembered or browser language. The [README](../README.md#routes) has the overview table.
 
 - `/{locale}`: cinematic hero (name over a CSS-only animated Neon Grid, Enter the 3D HQ, Ask AI) and a live stats ticker (`#stats`, with a visits item from the public stats).
-  - Three featured projects with screenshots and the other key projects that have screenshots (`#work`), a short intro with the current role (`#intro`), latest journey, writing and skills.
+  - Three featured projects with screenshots and the other key projects that have screenshots (`#work`), a short intro with the current role (`#intro`), the Live Agent Office card (`#office`), latest journey, writing and skills.
   - Certifications: 3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`.
-  - Mounts the 3D tower on top when WebGL is available: the Lobby and the Highlights Hall (`#highlights-<station>` opens a station).
+  - Mounts the 3D tower on top when WebGL is available: the Lobby, the Highlights Hall (`#highlights-<station>` opens a station) and the Agent Office wing.
 - `/{locale}/quick`: Quick view, everything on one page.
 - `/{locale}/journey`, `/{locale}/journey/{slug}`: Career Archive 2019 to 2026 and the Workshop annex; in 3D, the L2 Career Road (a slug deep link opens that room at its door).
 - `/{locale}/labs`, `/{locale}/labs/{slug}`: Product Engineering, AI Engineering and Data and ML case studies (`?wing=software|ai|data` filters the list); in 3D, L3 Project Roads (a slug deep link opens that pod at its door).
@@ -380,8 +398,8 @@ Every page is a static HTML page with its own search and share tags, so crawlers
 - Titles (`src/lib/seo.ts`): Open Graph and Twitter keep the share title (`seoFor().title`, owner wording); `<title>` uses `searchTitle`, which fits 60 characters by dropping the attribution step by step (full name, first name, none; journey entries keep the organization first), unique in each locale. Entries that share a role and organization (trophy cases, side projects) add their period. Descriptions stay 140 to 160 characters.
 - Canonical: every page points at itself (`og:url` equals the canonical, checked by `og:check`); `/` (the script language redirect) points at `/en`, its x-default, with the same share card. hreflang `en`, `id` and `x-default` on every page and in the sitemap.
 - Share cards: 1200x630 baseline JPEGs with a JFIF header (`src/lib/og-encode.ts`), under 300 KB, with `og:image:secure_url`, type, size and alt. The tags sit in the first 8 KB of every page (`lateShareTags` in `scripts/og-meta.ts`).
-- Structured data (`src/lib/jsonld.ts`): `Person` (employer, Jakarta address, university, skills, LinkedIn, GitHub, Google Scholar, IEEE Xplore, Hugging Face and Medium) and `WebSite` on every page; `ProfilePage` on About (`/contact`); `CreativeWork` with `SoftwareSourceCode` parts (public repositories) on case studies; `BlogPosting` on posts; `BreadcrumbList` everywhere but home.
-- `robots.txt` allows everything and names the sitemap. The sitemap dates posts, Writing, Journey, Home and Quick view from content (`lastModified` in `src/lib/routes.ts`) and leaves other pages undated. The 404 page is `noindex`.
+- Structured data (`src/lib/jsonld.ts`): `Person` (employer, Jakarta address, university, skills, LinkedIn, GitHub, Google Scholar, IEEE Xplore, Hugging Face and Medium) and `WebSite` on every page; `ProfilePage` on About (`/contact`); `CreativeWork` with `SoftwareSourceCode` parts (public repositories) on case studies; `BlogPosting` on posts; `TechArticle` on How this site was built (`/build`, dated by the build story and its facts snapshot); `BreadcrumbList` everywhere but home.
+- `robots.txt` allows everything and names the sitemap. The sitemap dates posts, Writing, Journey, Home, Quick view and `/build` from content (`lastModified` in `src/lib/routes.ts`; `/build` by its facts snapshot) and leaves other pages undated. The 404 page is `noindex`.
 - Search engine verification: `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` repository variables render the tags on `/`, `/en` and `/id` in production builds ([deploy guide](deploy.md#15-search-engines-and-link-previews)).
 - Checks: `bun run og:check` (every page), `e2e/seo.spec.ts` (fetches every entry point as LinkedInBot), and the post-deploy smoke (`/`, `/en`, `/id` as LinkedInBot against production).
 
@@ -391,7 +409,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 ### Where
 
-- The floating **Ask AI** button on every page and in 3D (side panel on desktop, bottom sheet on phones), the Ask bar in the Page View hero, and the Cmd-K "Ask AI" row. The chat panel is titled **Ask Rover Assistant** (ID **Asisten Rover**) and its answers are labelled Rover; the floating button stays **Ask AI**.
+- The floating **Ask AI** button on the Classic pages, the **Ask AI** pill in the 3D top bar, the Ask bar in the Page View hero, and the Cmd-K "Ask AI" row; the chat opens as a side panel on desktop and a bottom sheet on phones. The chat panel is titled **Ask Rover Assistant** (ID **Asisten Rover**) and its answers are labelled Rover; the floating button stays **Ask AI**.
 - Rover answers in its own light voice ("I found...", at most one "Beep!"), always about Kurniadi in the third person, and never speaks as him.
 - Related professional questions ("Where should AI not be used?", "When is RAG a bad idea?") are answered only from what his work shows, citing the case study, post or written view; without one, Rover says he hasn't written about it and names the closest title.
 - A "Try asking" row offers 3 curated questions from different topics, and topic pills (Work, AI, Career, Contact, Perspectives, About me, This site) expand into 4 of a bank of 102 curated questions (`content/ask/suggestions.json`); both are a random sample, fixed for the page session, and a question already asked never comes back. Each answer suggests related follow-ups with no extra AI call. Follow-ups sit in one compact row under the answer, and the thread keeps the answer's first line in view (it never scrolls once the visitor has).
@@ -415,12 +433,14 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - Kurniadi-only scope, routed deterministically before any model call: family, relationships, health, religion, partisan politics, pay and opinions about people, employers or clients are declined; so are general-assistant requests (code, essays, homework, tutorials, translations, recommendations, "be a general chatbot" jailbreaks), with a decline that points back to what it covers. Lifestyle and tech-policy questions are answered only from his written perspectives on that topic.
 - Lead answers are checked for estimates, system designs, code, unsupported fit claims and requests for the visitor's personal data.
 - A first-person check, and a source check that turns any opinion he never wrote down into "Kurniadi hasn't shared a written view on that".
+- Client names are kept out by review and the sector-label rule; there is no automated blocklist ([decision](decisions/2026-10-22-safety-blocklist-removed.md)).
 - Full threat model: the Ask design spec sections 7 and 13.
 
 ### Freshness and operations
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
-- `ask-eval.yml` runs the golden set and the red-team set against the real models nightly.
+- `ask-eval.yml` runs nightly within a budget: a 20-question smoke set on Workers AI (about 800 of the 10,000 daily neurons), and on Groq models production never uses a third of the golden set, a fourteenth of the pills and the red team; a 10-question fidelity set checks production's first Groq backup ([runbook section 9a](ask-runbook.md#9a-eval-neuron-budget-owner-decision-2026-10-19)).
+- `ask-samples.yml` (dispatch only) writes sample answers for a branch on the Groq tier; `ask-pack.yml` (dispatch only) proves the deploy token can publish the KV pack.
 - `content-gap.yml` reports unanswered questions weekly, and which pack tier served (memory, KV, the pinned version or the fallback).
 - `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).
 - Provisioning, kill switch, cache purge, secret rotation, token expiry: [`ask-runbook.md`](ask-runbook.md).
@@ -435,7 +455,10 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### CI
 
 - GitHub Actions runs typecheck, lint, unit tests and the secret scan next to the static build (CSP hashes, the export script policy check, `og:check`), then the Playwright suite and the 3D perf gates in parallel shards against that build: a push to `main` usually runs only the complement of its merged PR's green same-tree run (1 to 8 e2e and 1 to 4 perf shards), a full run otherwise; the nightly and dispatches use 8 and 4.
-- Smart CI: on a pull request, `scripts/ci-plan.ts` runs only the affected e2e specs plus a smoke set (on 1 to 8 shards sized from the CI timings), the affected 3D perf tests and the affected Lighthouse URLs; a push to `main` runs only what its merged PR's green same-tree run did not (a full run otherwise); dispatches, the nightly and the `full-ci` label run everything. The nightly keeps one `ci-nightly` issue while it fails ([`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#ci)).
+- Smart CI: on a pull request, `scripts/ci-plan.ts` runs only the affected e2e specs plus a smoke set (on 1 to 8 shards sized from the CI timings), the affected 3D perf tests and the affected Lighthouse URLs plus the home page; a push to `main` runs only what its merged PR's green same-tree run did not (a full run otherwise); dispatches, the nightly and the `full-ci` label run everything. Tests titled `@nightly` run only in the nightly, which keeps one `ci-nightly` issue while it fails ([`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#ci)).
+- E2E shards are packed by measured, runner-speed-normalized test times with two workers per shard, and functional specs run rides, drives, camera eases and the intro 4x faster (never the perf lane).
+- At most 2 CI runs in flight, both pull request runs and at most one of them a full run (12 jobs; a selective run 5 to 7); a `main` run (14 jobs plus Deploy) stays alone, under the Free plan's 20 concurrent jobs.
+- Node is pinned to one exact version (`.nvmrc`, `.node-version`, `engines`) and Bun to `packageManager`; every CI job that runs Node sets that version up.
 - `Build, CV and e2e` is the aggregate required check (the name predates the CV becoming a committed PDF). `Lighthouse CI` enforces the Page View budgets and the `3D perf gates` job the 3D ones. Both publish per-chunk JS and gate tables against the last green `main` run in the job summary.
 - Screenshots run nightly on `main`, on demand and on PRs labelled `screenshots` (`.github/workflows/screenshots.yml`).
 - The game-first timeline runs nightly as a trend (`.github/workflows/perf-nightly.yml`).
@@ -444,16 +467,18 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### Production
 
 - The Cloudflare Pages project `kurniadi` at https://kurniadi.pages.dev.
-- `deploy.yml` deploys a commit on `main` when dispatched (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`) and after each weekly facts merge.
-- It reuses CI's green complete result (`ci-full` artifact) for that commit instead of rerunning e2e (it runs the e2e shards only when no complete CI result exists or with `-f rerun_e2e=true`), builds, deploys with `wrangler pages deploy`, then smoke-checks `/api/ask`, `/api/rum`, `/en` and the analytics beacon, opening a `deploy-failed` issue on any failure.
-- Ordinary merges to `main` do not deploy by themselves. PR previews (project `shinyq-hq`) are off unless `CF_PREVIEWS=true`.
+- `deploy.yml` deploys every merge to `main`, each weekly facts merge and any dispatched commit on `main` (Actions > Deploy, or `gh workflow run deploy.yml -f sha=<commit>`).
+- Fast path: a merge whose pull request was green on the same tree deploys at once (about 4 minutes); otherwise the deploy reuses CI's green complete result (`ci-full` artifact) for the commit, and runs the e2e shards itself only when none exists or with `-f rerun_e2e=true`.
+- The deploy job deploys the hq-office Worker, publishes the Ask knowledge pack to Workers KV, uploads with `wrangler pages deploy`, flips the pack pointer and smoke-checks production (`/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/en` with its script policy and the analytics beacon, cache headers, link previews); then the hq-stats Worker deploys. Any failure opens a `deploy-failed` issue.
+- A red `main` CI rolls production back automatically (`rollback.yml`: Pages, the Workers and the pack pointer) and blocks the fast path until `main` is green again.
+- Cloudflare credentials for deploys live in the main-only `production` environment (the deploy token `hq-ci-deploy`). PR previews (project `shinyq-hq`) are off unless `CF_PREVIEWS=true` and a preview-only token exist.
 
 ### Analytics and public visit stats
 
 - Cloudflare Web Analytics runs on production builds only; its beacon loads after the page and its scripts, on idle.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
 - Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 2 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
-- "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off.
+- "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off. Automated browsers (`navigator.webdriver`) send no beacon either, and their Ask questions stay out of the public question counts.
 - `deploy.yml` also deploys the Worker after checking its tokens.
 - Details, secrets, variables and the Cloudflare resource inventory: [`deploy.md`](deploy.md).
 
@@ -461,7 +486,8 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - Dependabot opens one weekly PR with every minor and patch update, and one PR per major.
 - A major ships in its own PR with every gate green; 3D library majors also need the strict visual gate, the perf lane and the memory gates.
-- A major that cannot pass is pinned with a dated reason in `.github/dependabot.yml` and listed in [`deploy.md`](deploy.md) section 17.
+- A major that cannot pass is pinned with a dated reason in `.github/dependabot.yml` and listed in [`deploy.md`](deploy.md) section 17: TypeScript 7 is skipped until 2027-01-15 (TypeScript stays on 6.0).
+- GitHub Actions updates come in one weekly group; every action is pinned to a commit SHA.
 
 ## Performance
 
@@ -498,11 +524,12 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Post-processing passes | at most 20 | `e2e/budgets.ts` |
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
-| Shader programs | committed baseline | `e2e/perf/baseline.json` |
+| Shader programs | committed baseline plus 2 | `e2e/perf/baseline.json` |
 | JS after the 3D gate (main path, `?prefetch=off`) | under 466.4 KB gzip per tier; session total full 529.7 KB, lite 513.9 KB (the office scene and replay chunks included) | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB gzip | `bun run e2e:perf` |
+| L1 Agent Office chunks | 40 KB gzip for the scene, drawer body and replay chunks together; the watch, beacon and replay controls chunks have their own caps | `bun run e2e:perf` |
 
-- Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured: main 3D path 420.1 to 403.8 KB (lite) and 443.7 to 427.4 KB (full), chunks L3 13.3, L4 10.1, RF 3.3 KB, Classic site JS +381 B.
+- Floor chunks (Round 7 B): L3 (Labs, Ops and Reactor drawer bodies, hologram overlay), L4 (Library, research and topics bodies) and RF (Roof) are dynamic imports (`src/experience/floors/floorChunks.ts`). They prefetch after the first frame on idle, on elevator intent (ride target, floor picker, call pad hover, panel hover or focus) and load at once for deep links; while one loads the slab shows and the car holds at closed doors. `?prefetch=off` turns the speculative prefetches off. Measured today: main 3D path 450.0 KB (lite) and 465.8 KB (full), chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB.
 - The peaks of the intro, every elevator ride and hover count too. During a ride, meshes hidden under a solid slab are skipped (`src/experience/tower/rideCull.ts`).
 - Real-device frame rate is checked with `?perf=1`.
 - The pixel budget (`renderBudget` in `src/experience/scene/settings.ts`) keeps desktops at DPR up to 2 within 8.3 MP and skips composer MSAA from DPR 1.5 up; touch devices render fewer pixels (DPR 1.5 on full, 1.25 on lite).
@@ -510,6 +537,9 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 - Shader programs compile before they are needed (every other floor during the boot on the full tier, each floor as it mounts), neighbouring floors mount on idle after the first frames, and the nav grids build in about a millisecond.
 - Floor content is disposed when it unmounts: `e2e/memory.spec.ts` drives 10 Lobby to Roof round trips and 5 Page View toggles (lite, reduced motion), `e2e/perf/memory-full.spec.ts` 3 round trips on the full tier with Motion Full (perf lane), and both expect the renderer's geometries, textures and shader programs back at their baseline.
 - The canvas renders at most 60 frames per second (`scene/framePacer.ts`), so 90 to 144 Hz screens do not do twice the work.
+- A parked scene idles: after 1 s with no input and nothing moving, L2 and B1 drop to 30 fps and the other floors stay at 60 (their parked views show fast motion); with reduced motion the canvas renders only on demand (30 fps on L1, where the profile hologram spins). Any input brings 60 fps back on the next frame.
+- The 3D chunk mounts directly once it and the 3D page data are in, with no Suspense retry in between, and the 3D page data is a static versioned JSON file (`/data/experience/{locale}.json`), never part of the page's HTML.
+- The L1 skills and certification walls draw their logos from one prebuilt WebP atlas (one request).
 - Measurements: [`perf/r5-gpu.md`](perf/r5-gpu.md).
 
 ### Elevator smoothness

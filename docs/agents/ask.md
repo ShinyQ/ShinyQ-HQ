@@ -48,7 +48,7 @@ Owner decision 2026-10-19 ([decision](../decisions/2026-10-19-ask-rover-voice.md
   - Links allowlisted by `src/ask/links.ts`.
 - Server side (`sanitizeAnswer`, `answerLinkPaths` in `functions/_lib/checks.ts`):
   - keeps only links to the retrieved chunks' pages (context lines carry `[link: <url>]`), the top pages (`ASK_LINK_PAGES`) and, for older cached answers, the public repository;
-  - scans the markdown (URLs included) and its plain text for blocked terms, forbidden patterns and secrets;
+  - scans the markdown (URLs included) and its plain text for forbidden patterns and secrets;
   - runs every other check on `markdownToPlain`.
 - Prompt guidance preserves each metric's population, sample size and evaluation conditions. Deployment alone is not evidence of a production measurement, and results from different evaluations are not a single trend.
 - The concise reply limit is five list items across the whole answer. Refusals do not repeat requests for personal details; project inquiries use the contact card. These are prompt instructions, not new runtime filters.
@@ -78,7 +78,7 @@ All bindings and vars live in `wrangler.toml`.
 
 - Deploy from the repo root so `functions/` is bundled: `bun run build`, then `bunx wrangler pages deploy out --project-name=kurniadi --branch=main`.
 - `deploy.yml` publishes the pack (`ask-pack.ts publish --commit`) before `wrangler pages deploy`, flips `pack:current` right after it and flips back when the smoke check fails; `rollback.yml` flips to the rolled-back commit's pack (`pack:commit:<sha>`). A deploy by hand runs `bun scripts/ask-pack.ts publish --commit "$(git rev-parse HEAD)"` before the upload and `flip <version>` after it (runbook section 17).
-- The deploy token `CLOUDFLARE_API_TOKEN` needs Workers KV Storage: Edit (account) on top of its Pages and Workers permissions; without it the publish step fails with that hint.
+- The deploy token `CLOUDFLARE_API_TOKEN` (account-owned token `hq-ci-deploy`, a `production` environment secret) needs Workers KV Storage: Edit (account) on top of its Pages and Workers permissions; without it the publish step fails with that hint.
 
 ## Content release checklist
 
@@ -87,7 +87,7 @@ All bindings and vars live in `wrangler.toml`.
   - `content/ask/site-build.json` when the site's own stack, hosting or gates change.
 - Keep `content/ask/suggestions.json` true too (its retrieval test fails when a pill no longer finds its chunks).
 - Live facts in the golden or red-team sets are `{{facts.<path>}}` placeholders (`src/ask/golden-facts.ts`), never literals.
-- A new client of an employer is named only by its sector (C3, prompt rule 6); there is no client name list to update.
+- A new client of an employer is named only by its sector (C3, prompt rule 6). Review keeps client names out; there is no automated blocklist and no client name list to update ([decision](../decisions/2026-10-22-safety-blocklist-removed.md)).
 
 ## Live facts
 
@@ -220,7 +220,8 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
 ### Site-build chunk
 
 - `content/ask/site-build.json` (`SiteBuildSchema`, read through `getSiteBuild()`; never import it into a client component).
-  - A bilingual, third-person note on how this site was built: stack, 3D engine, hosting, this assistant, testing, process, and how visitors use it (Rover's controls and tour, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the secret B1 Engine Room, the Agent Office and its privacy rule, never its live data), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language.
+  - A bilingual, third-person note on how this site was built: stack (with the pinned Bun and Node versions), 3D engine, hosting (Pages, Functions, KV, R2, Analytics Engine, the hq-stats and hq-office Workers), this assistant (Rover's voice, the KV pack, the model chain), testing and CI, process, and how visitors use it (Rover's controls and the first-visit tutorial, the five floors and the elevator, the minimap, the settings panel, per-page URLs and `?view=classic`, the L4 Study Vault, the secret B1 Engine Room, the Agent Office and its privacy rule, never its live data), at most `SITE_BUILD_TEXT_MAX` (2800) characters per language (both are within 10 of it: trim before adding).
+  - `tests/ask/pack.test.ts` pins phrases in it: the Next.js and React majors, the model names, "Rover is a small robot guide", both boost inputs, `?view=classic`, no "tour", "B1 Engine Room", "Agent Office", "Client project" and "up to ten desks (two rows of five)" (and their Indonesian forms).
   - Becomes the `site-build` chunk (type `site`, tags `work` and `agents`, url `SITE_BUILD_PAGE`, the `/build` page). The note points to that page, whose long form lives in `content/build-story.json`.
 - `isSiteQuestion` (`functions/_lib/scope.ts`, EN/ID) always retrieves it (`SITE_INCLUDE`).
   - It also routes "engine room", "b1 engine room", "ruang mesin", "secret floor", "hidden floor", "lantai rahasia" and "lantai tersembunyi" to the site, and two "This site" pills ask about the B1 Engine Room (`site-secret-floor`, `site-engine-room`; golden q76).
@@ -338,7 +339,7 @@ Owner decision 2026-10-19. Related professional questions that are not strictly 
 
 Security S3, H1 (owner decision).
 
-- Cloudflare secrets live in the `production` environment (deployment branch policy `main` only).
+- The deploy token `CLOUDFLARE_API_TOKEN` and `GROQ_API_KEY` are secrets of the `production` environment (deployment branch policy `main` only); the read-only `CF_EVAL_TOKEN`, the log purge `CF_LOGS_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are repository secrets, read only by jobs that run in that environment (and `CLOUDFLARE_ACCOUNT_ID` by the PR preview job in `ci.yml`, off unless `CF_PREVIEWS=true`).
 - Jobs that read them declare it (`deployment: false` when nothing is deployed).
 - Pull request runs never receive a Cloudflare secret: `stats-worker.yml` only bundles the Worker on PRs, its token checks run on a dispatch from `main`.
 - Pass secrets in step-level `env`, never at workflow or job level, so dependency installs and third-party tools never see them.
@@ -348,7 +349,7 @@ Security S3, H1 (owner decision).
 - Check job: staleness warning (45 days).
 - gitleaks ("Secret scan", allowlist `.github/gitleaks.toml`), `bun audit` (non-blocking), Dependabot, CODEOWNERS.
 - Scheduled workflows:
-  - nightly `ask-eval.yml`: the 20-question smoke set on Workers AI; on Groq models production never uses, a third of the golden set, a fourteenth of the pills and the red team; the 10-item fidelity set on production's first backup. Every run prints its planned neurons or tokens and stops above its budget (2,000 neurons; 80% of a Groq model's 200,000 daily tokens) unless `--budget` allows more (owner decisions 2026-10-19 and 2026-10-20, runbook section 9a);
+  - nightly `ask-eval.yml`: the 20-question smoke set on Workers AI; on Groq models production never uses, a third of the golden set, a fourteenth of the pills and a fourth of the red team (`openai/gpt-oss-20b`), and the whole red team (`allam-2-7b`, a stress test of the guards); the 10-item fidelity set on production's first backup. Every run prints its planned neurons or tokens and stops above its budget (2,000 neurons; 80% of a Groq model's 200,000 daily tokens) unless `--budget` allows more (owner decisions 2026-10-19 and 2026-10-20, runbook section 9a);
   - weekly `refresh-facts.yml` and `content-gap.yml`;
   - hourly `uptime.yml` ([`docs/deploy.md`](../deploy.md) section 16).
 - `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).

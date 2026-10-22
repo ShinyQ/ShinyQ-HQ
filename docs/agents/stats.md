@@ -27,7 +27,8 @@ Index: [AGENTS.md](../../AGENTS.md).
     - Ledger days without `perf` inside the 90-day Analytics Engine retention are filled once, nothing else on them changes.
     - Read it through `perfView` in `@/lib/visits/model` (appendix 06 section 4.1).
 - Clients validate with `parseStatsSnapshot` (hand-written, no zod) and hide on null.
-- `GET /api/stats` (no parameters) answers 200 with the snapshot or 204.
+- `GET /api/stats` (no parameters; `functions/_lib/stats.ts`) validates the KV value again and answers 200 with the snapshot (ETag, 304 on a match, `max-age=600, stale-while-revalidate=3600`; KV read cached 300 s) or 204 (`max-age=300`) when the kill switch is off or nothing valid is stored. `HEAD` works the same; other methods get 405.
+- `POST /api/visit` writes one `visit_events` point per page lifetime (`functions/_lib/visit.ts`; 204 and no point when the kill switch is off); other methods get 405.
 - Change the contract only with a new version (`v: 2`) and both sides in one PR.
 
 ### Cron Worker

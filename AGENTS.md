@@ -174,10 +174,10 @@ Path by path: [folder-layout.md](docs/agents/folder-layout.md).
 
 | Folder | Contents |
 |---|---|
-| `content/` | Public dataset `site-content.json`, blog MDX, Ask knowledge files, safety lists, generated facts |
+| `content/` | Public dataset `site-content.json`, blog MDX, Ask knowledge files, study guides, the product allowlist, generated facts |
 | `docs/` | Feature and content guides, deploy and Ask runbooks, `agents/` rules, `decisions/` (one file per owner decision), `superpowers/` plans and specs, design mockups, README media |
 | `e2e/` | Playwright specs, helpers (`hq.ts`), budgets, the perf lane (`e2e/perf/`) |
-| `functions/` | Cloudflare Pages Functions: `/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/api/guides` |
+| `functions/` | Cloudflare Pages Functions: `/api/ask`, `/api/rum`, `/api/visit`, `/api/stats`, `/api/guides`, `/api/office` |
 | `messages/` | UI strings, `en.json` and `id.json` |
 | `public/` | Static assets: brand, fonts, tech and company logos, media, CV, papers, floor thumbnails, OG inputs, `_headers`, `_redirects` |
 | `scripts/` | Build steps, content and media tools, e2e planning, CI and deploy helpers |

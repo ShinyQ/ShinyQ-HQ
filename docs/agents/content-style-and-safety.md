@@ -112,7 +112,11 @@ The hard rules in full, the editorial voice and title rules for content, and the
 ### Copy compatibility
 
 - Preserve dictionary keys, interpolation variables and ICU semantics.
-- Preserve the existing limits: 40-character mission, 110-character dialog, 120/640-character perspective (question/answer, `PerspectivesFileSchema`) and 140 to 160-character SEO.
+- Preserve the existing limits:
+  - 40 characters per line of Rover's mission and terminal lines (`tests/unit/ui-copy.test.ts`);
+  - 110 characters per Rover dialog line (`tests/unit/dialog-copy.test.ts`);
+  - 120/640-character perspective question/answer (`PerspectivesFileSchema`);
+  - 140 to 160-character SEO descriptions (`src/lib/seo.ts`).
 - Edit authoritative sources, and align hosted-post frontmatter with the registry.
 - Keep sample limits in the registry excerpt plus first paragraph used by Ask.
 - Put essential measurement boundaries in compact result labels too: strips and share cards omit the longer result context.
@@ -157,8 +161,17 @@ The hard rules in full, the editorial voice and title rules for content, and the
 
 ### Forbidden patterns
 
-- `tests/content/safety.test.ts` scans `site-content.json`, MDX and messages for the forbidden patterns (`FORBIDDEN_PATTERNS` in `src/content/safety.ts`): em dash, money amounts, phone numbers, Azure resource hostnames, Master's degree.
-- Validate content edits quickly with `bun run validate:content` (schema, forbidden patterns, Title Case).
+- `FORBIDDEN_PATTERNS` in `src/content/safety.ts`: em dash, money amounts, phone numbers, Azure resource hostnames, Master's degree.
+- `tests/content/safety.test.ts` scans every string of `site-content.json`, `perspectives.json` (drafts included), `ask/site-build.json`, `blog/diagrams.json`, `build-story.json`, `study-guides.json` and both message files for them; the MDX posts for em dashes only. It also checks that the dataset carries no photo.
+- `tests/content/production.test.ts` adds GUIDs, resource paths and URLs for the `production` block.
+- Validate content edits quickly with `bun run validate:content` (`scripts/validate-fragment.ts full`): the schemas of the dataset, perspectives, the Ask site-build note and the study guides (each `certId` a known certification), Title Case, and the forbidden patterns across all four.
+- The unit test `tests/unit/safety.test.ts` covers the patterns, the live-link exemption, the allowlist and the build scan helpers.
+
+### PDFs
+
+- The CV PDF and its page images are exempt (committed as the owner gave them).
+- `bun run paper:pages` refuses a paper PDF whose text matches `PERSONAL_DATA_PATTERNS` (`scripts/paper-pages.ts`: NIM, NIP, NIK/NPWP, RT/RW address, phone); `tests/content/papers.test.ts` repeats it where `pdftotext` exists.
+- `bun scripts/study-guides.ts prepare` refuses a study guide whose text holds an Indonesian phone number; anything else in a guide is checked by reading it ([study guides runbook](../study-guides-runbook.md#safety-scan)).
 
 ### Live links
 

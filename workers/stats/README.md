@@ -73,9 +73,10 @@ Limits checked 2026-10-19 (2-hour cadence):
 | `WA_TOKEN` | secret | read-only Account Analytics token (GitHub environment secret `CF_STATS_TOKEN`, analytics only, 90 days; `CF_EVAL_TOKEN` until it exists) |
 | `WA_ACCOUNT_ID` | secret | Cloudflare account id (GitHub secret `CLOUDFLARE_ACCOUNT_ID`) |
 
-`deploy.yml` (job "hq-stats Worker") first proves the token can read Web Analytics and query Analytics
-Engine (`bun scripts/stats-token-check.ts analytics`, fails loudly otherwise), then deploys this folder with
-`cloudflare/wrangler-action` and sets both secrets. The deploy token (`CLOUDFLARE_API_TOKEN`) needs
+`deploy.yml` (job "hq-stats Worker", after the Pages deploy, in the `production` environment) first proves the
+analytics token can read Web Analytics and query Analytics Engine (`bun scripts/stats-token-check.ts analytics`) and
+that the deploy token can deploy Workers (`stats-token-check.ts deploy`), failing loudly otherwise, then deploys
+this folder with `cloudflare/wrangler-action` and sets both secrets. The deploy token (`CLOUDFLARE_API_TOKEN`) needs
 Workers Scripts Edit on the account.
 
 ## Operations
@@ -83,8 +84,9 @@ Workers Scripts Edit on the account.
 - Dry run against production data (in-memory KV, prints the snapshot, writes nothing):
   `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
   The token stays in the environment; the script never prints it.
-- Deploys run in CI: `deploy.yml` (and `rollback.yml`) deploy this Worker on every production deploy
-  (the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit; `STATS_WORKER_DEPLOY` is unset). Check the
+- Deploys run in CI: `deploy.yml` deploys this Worker on every production deploy, and `rollback.yml` redeploys it
+  from the rollback target when `workers/stats/` differs (the production `CLOUDFLARE_API_TOKEN` has Workers Scripts
+  Edit). The optional repository variable `STATS_WORKER_DEPLOY` (unset) skips both when set to `"false"`. Check the
   run's "hq-stats Worker" job, and the cron in the dashboard (Workers > hq-stats > Settings > Triggers).
 - Manual deploy (fallback only, with the owner's wrangler login and `STATS_WORKER_DEPLOY=false` set so CI
   does not fight it): from this folder, `bunx wrangler deploy` (this also
@@ -93,9 +95,8 @@ Workers Scripts Edit on the account.
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
 - Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 6 h old
-  (3 missed 2-hour runs). Moving from 4 to 2 hours was safe in either order (a 4-hour Worker leaves the
-  snapshot at most about 4 h old); the merge's deploy redeploys this Worker;
-  confirm its "hq-stats Worker" job ran and the Worker's cron trigger shows `17 */2 * * *`. A slower cadence needs the
+  (3 missed 2-hour runs). A faster cadence is safe in either order; the merge's deploy redeploys this Worker;
+  confirm its "hq-stats Worker" job ran and the Worker's cron trigger shows the new schedule. A slower cadence needs the
   Worker first or a larger threshold.
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.
   The `perf` block needs no new secret or binding: `perf_events` is read over the same Analytics Engine
