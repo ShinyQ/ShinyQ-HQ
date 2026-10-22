@@ -10,6 +10,7 @@ import {
   createAmbience,
   type AmbienceFloor,
 } from "@/lib/audio/ambience";
+import { engineHum } from "@/lib/audio/engineHum";
 
 // The ambience graph needs delay, analyser and periodic wave nodes that the shared fake does not model, so this
 // file keeps its own context. It also records every frequency an oscillator is given.
@@ -194,6 +195,49 @@ describe("floor ambience: single layers", () => {
     expect(gains).toContain(B1_HUM_LEVEL);
     for (const v of gains) expect(v).toBeLessThanOrEqual(B1_HUM_LEVEL);
     layer.stop();
+  });
+
+  it("registers the B1 hum gain while its layer plays and clears it on stop (B1-2)", () => {
+    expect(engineHum.node).toBeNull();
+    const layer = AMBIENCE_LAYERS.B1(ctx, destination, seeded(3));
+    const node = engineHum.node as unknown as FakeNode;
+    expect(node).not.toBeNull();
+    expect(node.gain.history).toEqual([B1_HUM_LEVEL]);
+    expect(engineHum.level).toBe(B1_HUM_LEVEL);
+    layer.stop();
+    expect(engineHum.node).toBeNull();
+    // Other floors never touch it.
+    const other = AMBIENCE_LAYERS.L3(ctx, destination, seeded(3));
+    expect(engineHum.node).toBeNull();
+    other.stop();
+  });
+
+  it("never lets a stopped older B1 layer clear a newer layer's hum", () => {
+    const older = AMBIENCE_LAYERS.B1(ctx, destination, seeded(3));
+    const olderNode = engineHum.node;
+    const newer = AMBIENCE_LAYERS.B1(ctx, destination, seeded(4));
+    const newerNode = engineHum.node;
+    expect(newerNode).not.toBe(olderNode);
+    older.stop();
+    expect(engineHum.node).toBe(newerNode);
+    newer.stop();
+    expect(engineHum.node).toBeNull();
+  });
+
+  it("keeps the hum registered across a B1 to L3 and back crossfade until its own layer stops", () => {
+    const voice = createAmbience(ctx, destination, seeded(5));
+    voice.setFloor("B1");
+    const first = engineHum.node;
+    expect(first).not.toBeNull();
+    voice.setFloor("L3");
+    expect(engineHum.node).toBe(first);
+    voice.setFloor("B1");
+    const second = engineHum.node;
+    expect(second).not.toBe(first);
+    advance((AMBIENCE_CROSSFADE + 1) * 1000);
+    expect(engineHum.node).toBe(second);
+    voice.stop();
+    expect(engineHum.node).toBeNull();
   });
 
   it("keeps every pitched oscillator in C major pentatonic", () => {

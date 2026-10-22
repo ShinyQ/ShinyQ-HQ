@@ -9,10 +9,12 @@ import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
 import { neonColor } from "../../fx/materials";
 import { useDispose } from "../../fx/useDispose";
 import { useUniformTime } from "../../fx/useUniformTime";
+import { roverRuntime } from "../../rover/runtime";
 import type { GpuTier } from "../../types";
 import { ENGINE } from "./layout";
 import { flashLevel, reactorState, type ReactorState } from "./reactor";
 import { CORE_FX, COOLANT_TONE, coolantRisers, coreDetail, type FlashMark, nextFlash, pulseLevel, ringAngle, segmentColors, segmentPose, SPARK_TONE, sparkPos } from "./reactorFx";
+import { humNear, REACTOR_HUM } from "./reactorHum";
 import { reactorLive, useReactorFeed } from "./reactorLive";
 
 const NO_RAYCAST = () => null;
@@ -79,7 +81,8 @@ function placeInstances(out: Float32Array, o: Object3D, perRing: number, sparks:
  * instanced mesh on the `core` mode, the coolant shell around the column and four risers, pulsing at the model's
  * `pulseHz` and flashing white on a production deploy. The solids are in the floor's merged mesh (`coreSolids`), the
  * title and counter plate in its sign set. Polls the office feed only while the visitor is on B1 (`reactorLive`).
- * Lite: half the segments, no sparks. Reduced motion: no turn, no orbit, a steady coolant level.
+ * Lite: half the segments, no sparks. Reduced motion: no turn, no orbit, a steady coolant level. The B1 hum rises as
+ * the rover nears the core (`reactorHum.ts`, `REACTOR_HUM.hz` updates a second) and rests again off B1 or on unmount.
  */
 export function ReactorCore({ tier, stats }: { tier: GpuTier; stats: StatsState }) {
   const reducedMotion = useHQStore((s) => s.reducedMotion);
@@ -93,6 +96,7 @@ export function ReactorCore({ tier, stats }: { tier: GpuTier; stats: StatsState 
     reactorLive.start();
     return () => reactorLive.stop();
   }, [onB1]);
+  useEffect(() => () => humNear(Infinity), []);
 
   const arc = useMemo(() => {
     const slot = TAU / perRing;
@@ -137,7 +141,7 @@ export function ReactorCore({ tier, stats }: { tier: GpuTier; stats: StatsState 
   }, [o]);
 
   const rings = useRef<InstancedMesh>(null);
-  const run = useRef({ t: 0, phase: 0, write: 0, model: 0, lanes: "", flash: { seen: null, at: null } as FlashMark, state: null as ReactorState | null });
+  const run = useRef({ t: 0, phase: 0, write: 0, model: 0, hum: 0, lanes: "", flash: { seen: null, at: null } as FlashMark, state: null as ReactorState | null });
 
   // The model: on every feed or stats change, and once a second from the frame loop (the stale window, the flash).
   const refresh = useCallback(() => {
@@ -178,6 +182,11 @@ export function ReactorCore({ tier, stats }: { tier: GpuTier; stats: StatsState 
     if (r.model >= MODEL_EVERY) {
       r.model = 0;
       refresh();
+    }
+    r.hum += dt;
+    if (r.hum >= 1 / REACTOR_HUM.hz) {
+      r.hum = 0;
+      humNear(onB1 ? Math.hypot(roverRuntime.x - ENGINE.reactor.x, roverRuntime.z - ENGINE.reactor.z) : Infinity);
     }
     const state = r.state;
     const flash = r.flash.at === null ? 0 : flashLevel(r.flash.at, reactorLive.now());
