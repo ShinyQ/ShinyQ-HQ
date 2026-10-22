@@ -334,7 +334,7 @@ test.describe("the floor", () => {
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
   });
 
-  test("the reactor core lights a segment run per job of the newest CI run and polls only while on B1", async ({ page }) => {
+  test("the reactor core lights a segment run per job of the CI runs and polls only while on B1", async ({ page }) => {
     await page.route(OFFICE_API_V4, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(shipStep(Date.now(), "base")) }));
     await enterB1Route(page);
     expect((await reactor(page))?.started ?? false).toBe(false);

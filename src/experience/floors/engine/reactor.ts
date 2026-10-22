@@ -2,7 +2,7 @@ import type { OfficeFeed } from "@/lib/office/poll";
 import type { StatsState } from "@/lib/visits/store";
 
 /**
- * B1's reactor core, driven by live data: the Agent Office feed (lanes from the newest CI run, sparks from awake
+ * B1's reactor core, driven by live data: the Agent Office feed (lanes from the CI runs' jobs, sparks from awake
  * desks, a flash on the newest production deploy) and the public stats (the 30-day visits and asks set the pulse).
  * Pure of React and three, and type-only imports, so the B1 chunk stays small.
  */
@@ -11,7 +11,7 @@ export type ReactorLane = "running" | "failed" | "done" | "queued";
 export interface ReactorState {
   /** A ready, fresh office feed and motion allowed. */
   live: boolean;
-  /** The newest run's jobs, at most REACTOR.lanes. */
+  /** The jobs of the CI runs as the Agent Office tower lists them (running runs first, newest first), at most REACTOR.lanes. */
   lanes: ReactorLane[];
   /** Awake desks, 0 to REACTOR.sparks. */
   sparks: number;
@@ -40,8 +40,9 @@ export function reactorState(office: OfficeFeed | null, stats: StatsState | null
   const live = snap !== null && !opts.reducedMotion;
   if (!live) return { live: false, lanes: [], sparks: 0, deployAt: null, visits, asks, pulseHz: REACTOR.pulse.idle };
 
-  const run = snap.pipeline?.runs[0];
-  const lanes = run ? run.jobs.slice(0, REACTOR.lanes).map((j) => j.status) : [];
+  // The office tower's order (`lanesOf` in floors/lobby/office/pipeline.ts, repeated so this chunk never imports it).
+  const runs = [...(snap.pipeline?.runs ?? [])].sort((a, b) => Number(b.status === "running") - Number(a.status === "running") || b.at - a.at);
+  const lanes = runs.flatMap((r) => r.jobs.map((j) => j.status)).slice(0, REACTOR.lanes);
   const sparks = Math.min(REACTOR.sparks, snap.desks.filter((d) => d.state !== "asleep").length);
   let deployAt: number | null = null;
   for (const s of snap.pipeline?.ships ?? []) {

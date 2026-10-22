@@ -77,8 +77,8 @@ describe("B1 Engine Room scenery", () => {
       for (const solid of core) expect(inside(box(solid), layout.reactor), JSON.stringify(solid)).toBe(true);
       expect(Math.max(...core.map((x) => x.y + x.h))).toBeCloseTo(ENGINE.reactor.h);
       expect(ENGINE.reactor.h).toBeLessThan(ENGINE.ceiling);
-      // The column stands at the center, from the plinth up to the collar.
-      expect(core.some((x) => x.x === ENGINE.reactor.x && x.z === ENGINE.reactor.z && x.y === CORE_FX.plinth && x.y + x.h === CORE_FX.capY)).toBe(true);
+      // The energy column is light, open to the top: no solid stands on the plinth's center.
+      expect(core.some((x) => x.x === ENGINE.reactor.x && x.z === ENGINE.reactor.z && x.y >= CORE_FX.plinth)).toBe(false);
     }
   });
 

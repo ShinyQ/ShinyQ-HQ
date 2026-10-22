@@ -84,8 +84,11 @@ describe("reactorState: idle", () => {
 });
 
 describe("reactorState: live", () => {
-  it("maps the newest run's jobs to lanes", () => {
-    expect(reactorState(busy, null, motion).lanes).toEqual(["done", "running", "queued", "failed"]);
+  it("maps the runs' jobs to lanes in the office tower's order: running runs first, newest first", () => {
+    expect(reactorState(busy, null, motion).lanes).toEqual(["done", "running", "queued", "failed", "done", "done"]);
+    const at = (r: ReturnType<typeof run>, ago: number, status: "running" | "success" | "failure") => ({ ...r, at: NOW - ago, status });
+    const runs = [at(run(3, ["done"]), 1_000, "success"), at(run(2, ["running", "queued"]), 9_000, "running"), at(run(1, ["failed", "running"]), 5_000, "running")];
+    expect(reactorState(feed(snapshot([], { runs, ships: [] })), null, motion).lanes).toEqual(["failed", "running", "running", "queued", "done"]);
   });
 
   it("caps lanes at REACTOR.lanes", () => {
