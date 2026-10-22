@@ -45,14 +45,26 @@
  * lanes) and back-row desk 6 starts a run (a packet from the riser); `ship` at the stop a merge from desk 1 flying its
  * package to the dock stack while the production deploy beam fires.
  *
+ * The day replay (stage C; `/api/office/history` answered from `serveHistory` in e2e/office-fixtures.ts, a ten-seat day of this
+ * site's own work, three merges, two runs and a deploy): `replay` at the office stop, an all-asleep live office whose poller
+ * clock advances 31 s past the quiet rule, so the idle loop plays the newest day: the wall banner, the "Replay" pill leading
+ * the chip row, the ringed chips, the lit tiles and the second replayed merge's package flying to the dock (held frame);
+ * `replay-wing` the rover on the Lobby plaza edge, the view turned south (as `approach`), the replay still playing: the tiles lit
+ * by the day's merges so far (the tiles lie behind the follow camera at the stop; the chips and the banner need the stop);
+ * `replay-drawer` the summary drawer with "Show day replay" pressed: the 8 day buttons, play or pause and the range;
+ * `tiles` the spawn turned toward the wing (as `spawn-wing`), live, with today's 4 merged pull requests lit.
+ *
  * `--video <dir>` records 1440x900 full-tier takes (Playwright `recordVideo`) into `<dir>/<take>.webm` (and `<take>.mp4`
  * when `ffmpeg` is on the PATH, both trimmed to start at the take's first held view); `--take crew-states,ship-it`
- * picks them (default both). `crew-states`: the beacon from the Lobby, the drive to the office stop, then `CREW_A`,
+ * picks them (default `crew-states` and `ship-it`; `replay-day` only by name). `crew-states`: the beacon from the Lobby, the drive to the office stop, then `CREW_A`,
  * `CREW_B` and every desk asleep, each held about 6 s of recording once the crew probe shows its poses, and `CREW_A`
  * again one zoom step in (near chips and drones). `ship-it` (about 40 s, at the office stop): a quiet tower, a run
  * starting at desk 5 (a packet, its 12 lanes), the jobs finishing (bursts), "3D perf gates 1/2" failing (a red burst,
  * then the run's red crown), a run from back-row desk 6, a merge from desk 1 flying its package to the dock, a
- * production deploy running (the dock shimmers), then succeeding (the deploy beam). Alone `--video` records only the
+ * production deploy running (the dock shimmers), then succeeding (the deploy beam). `replay-day` (about 50 s, at the office stop): the quiet office, the idle loop starting
+ * (31 s past the quiet rule), one replayed day (desks waking, drones, packets, a package to the dock, the tiles lighting),
+ * the end rest, then a live snapshot with awake desks ending the replay (the chips lose their mark, the tiles go back to
+ * today's count). Alone `--video` records only the
  * takes; with `--only` or `--shots` the shots run first.
  *
  *   bun scripts/office-shots.ts --base http://127.0.0.1:4481 --video screenshots/office --take ship-it
@@ -61,8 +73,10 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { type Browser, chromium, type Page } from "@playwright/test";
+import en from "../messages/en.json";
 import { asReturningVisitor, chooseMotion, driveTo, skipFloorLines, turnCameraTo, waitForCameraSettle, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive } from "../e2e/hq";
 import {
+  asleepAll,
   asV1,
   asV3,
   CREW_A_STATES,
@@ -76,7 +90,9 @@ import {
   OFFICE_API_V4,
   OFFICE_REPO,
   officeDesk,
+  HISTORY_API,
   officeSnapshot,
+  serveHistory,
   STATES_A,
   STATES_B,
   statesA,
@@ -113,6 +129,8 @@ type OfficeProbe = {
   lanes: number;
   pipe: PipeProbe;
   beam: boolean;
+  tiles: number;
+  replay?: { status: string; day: string | null; playS: number; dayS: number; auto: boolean; seq: number };
 };
 type OfficeWindow = Window & {
   __hq: {
@@ -121,7 +139,7 @@ type OfficeWindow = Window & {
     clock: () => number;
     rover: { cameraYaw: number; heading: number; cameraView: string | null; cameraHeld: boolean };
     probes: { office: OfficeProbe };
-    office: { load(): Promise<void>; test(): { poll(): void } | null; watchNow(): Promise<void>; loadBeacon(): Promise<unknown> };
+    office: { load(): Promise<void>; test(): { poll(): void; advance(ms: number): void } | null; watchNow(): Promise<void>; loadBeacon(): Promise<unknown> };
   };
 };
 
@@ -130,8 +148,8 @@ let out = "screenshots/office";
 let only: string[] | null = null;
 let shots: string[] | null = null;
 let video: string | null = null;
-const TAKES = ["crew-states", "ship-it"] as const;
-let takes: readonly string[] = TAKES;
+const TAKES = ["crew-states", "ship-it", "replay-day"] as const;
+let takes: readonly string[] = ["crew-states", "ship-it"];
 const argv = process.argv.slice(2);
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--base") base = argv[++i];
@@ -496,12 +514,36 @@ async function pinOverview(page: Page, rect: { minX: number; maxX: number; minZ:
 }
 
 const asleep = ["asleep", "asleep", "asleep", "asleep", "asleep"];
+
+const REPLAY_TEXT = en.office["3d"].replay;
+const replayStatus = async (page: Page) => (await probe(page)).replay?.status ?? null;
+
+/** Every desk asleep and nothing in the pipeline, served and shown: the quiet live office the idle loop waits for. */
+const showQuiet = (page: Page, reply: { body: unknown }, frames = 30) => show(page, reply, asleepAll(Date.now()), "live", asleep, frames);
+
+/**
+ * Advances the poller's clock 31 s past the quiet rule (`test().advance`, as e2e/office.spec.ts does): the idle loop loads
+ * the replay chunk and plays the newest day. Waits for the replay to play and its back row to wake.
+ */
+async function startIdleLoop(page: Page) {
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.test()!.advance(31_000));
+  await waitFor("the idle replay playing", async () => (await replayStatus(page)) === "playing");
+  await waitFor("the replayed back row awake", async () => (await probe(page)).states.slice(5).filter((s) => s !== "asleep").length >= 3);
+}
+
+/** Ends the replay (a live awake snapshot, or Back to live when the visitor started it) and waits for the live office again. */
+async function endReplay(page: Page, reply: { body: unknown }) {
+  await show(page, reply, statesA(Date.now()), "live", STATES_A, 10);
+  if ((await replayStatus(page)) !== "off") await page.getByRole("button", { name: REPLAY_TEXT.live }).click();
+  await waitFor("the replay off", async () => (await replayStatus(page)) === "off");
+}
 const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 try {
   if (runShots) await captureShots(browser);
   if (video) {
     if (takes.includes("crew-states")) await recordStates(browser, video);
     if (takes.includes("ship-it")) await recordShipIt(browser, video);
+    if (takes.includes("replay-day")) await recordReplayDay(browser, video);
   }
 } finally {
   await browser.close();
@@ -573,6 +615,20 @@ async function captureShots(browser: Browser) {
         });
         await show(page, reply, statesA(Date.now()), "live", STATES_A);
         await page.screenshot({ path: name("spawn-wing") });
+        await turnTo(page, 0);
+      }
+      if (wants("tiles")) {
+        // Today's 4 merged pull requests as lit floor tiles in the wing, live, seen from the spawn turned toward it.
+        await turnTo(page, yawLooking({ x: 0, z: 1 }));
+        await waitFor("the office in view, far and polling", async () => {
+          const o = await probe(page);
+          return o.inView && o.far && o.polling;
+        });
+        const live = statesA(Date.now());
+        await show(page, reply, { ...live, v: 4, pipeline: { runs: [], ships: [] }, today: { ...live.today, prsMerged: 4 } }, "live", STATES_A);
+        await waitFor("4 tiles lit", async () => (await probe(page)).tiles === 4);
+        await waitForFrames(page, 30);
+        await page.screenshot({ path: name("tiles") });
         await turnTo(page, 0);
       }
       if (wants("ring-south")) {
@@ -755,6 +811,52 @@ async function captureShots(browser: Browser) {
         await show(page, reply, OFFICE_FIXTURES.off, "off", asleep);
         await page.screenshot({ path: name("off") });
       }
+      if (wants("replay") || wants("replay-wing") || wants("replay-drawer")) {
+        const history = await serveHistory(page);
+        const { stop } = LOBBY.officeWing;
+        await officeHeld(page);
+        await showQuiet(page, reply);
+        // Held on the second replayed merge's package flying to the dock (1 s in): two tiles lit, the day's chips ringed.
+        const packages = (await pipe(page)).packages;
+        const held = freezeOn(page, "the replayed merge's package", { pipe: { packages: packages + 2 } }, 1);
+        await startIdleLoop(page);
+        await held;
+        await page.evaluate(() => document.fonts.ready);
+        if (wants("replay")) await page.screenshot({ path: name("replay") });
+        await unfreeze(page);
+        if (wants("replay-wing")) {
+          // The merge tiles lie north of the stop, behind the follow camera: from the Lobby plaza edge, the view turned
+          // south into the wing (as the approach shot), the day's merges so far light the tiles in front of the desks.
+          await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.bounds.maxZ - 6 }, SLOW);
+          await settle(page);
+          await turnTo(page, yawLooking({ x: 0, z: 1 }));
+          await waitFor("2 replayed tiles lit", async () => (await probe(page)).tiles >= 2);
+          await waitForFrames(page, 20);
+          await page.screenshot({ path: name("replay-wing") });
+          await turnTo(page, 0);
+          await driveTo(page, stop, SLOW);
+          await settle(page);
+        }
+        if (wants("replay-drawer")) {
+          await page.evaluate(() => (window as unknown as OfficeWindow).__hq.store.getState().openRoom("L1:office"));
+          await waitForRoom(page, "L1:office");
+          await page.getByTestId("office-body").and(page.locator('[data-panel="summary"]')).waitFor({ timeout: SLOW });
+          const open = page.getByRole("button", { name: REPLAY_TEXT.open });
+          if (await open.count()) await open.click();
+          await page.getByTestId("office-replay").waitFor({ state: "visible", timeout: SLOW });
+          // The controls sit at the end of the summary: scroll them into view, the range included.
+          await page.getByTestId("office-replay").evaluate((el) => el.scrollIntoView({ block: "end" }));
+          await waitFor(`${history.days.length} day buttons`, async () => (await page.getByTestId("office-replay").locator("button[aria-pressed]").count()) === history.days.length);
+          await page.evaluate(() => document.fonts.ready);
+          await viewShiftSettled(page);
+          await page.screenshot({ path: name("replay-drawer") });
+          await page.evaluate(() => (window as unknown as OfficeWindow).__hq.store.getState().closeRoom());
+          await waitForPhase(page, "explore", SLOW);
+          await settle(page);
+        }
+        await endReplay(page, reply);
+        await page.unroute(HISTORY_API);
+      }
       if (wants("overview") && tier === "full" && vp.width === 1440 && vp.height === 900) {
         await show(page, reply, statesA(Date.now()), "live", STATES_A);
         const { bounds, officeWing } = LOBBY;
@@ -905,4 +1007,48 @@ async function recordShipIt(browser: Browser, dir: string) {
   await waitFor("the deploy beam off", async () => !(await probe(page)).beam);
   await hold(1000);
   await saveTake(page, dir, "ship-it", from);
+}
+
+/**
+ * The replay-day video: one 1440x900 full-tier take at the office stop, trimmed to start there. The quiet office, the idle
+ * loop starting (31 s past the quiet rule), one replayed loop (the day, then its rest), then a live awake snapshot ending it.
+ */
+async function recordReplayDay(browser: Browser, dir: string) {
+  mkdirSync(dir, { recursive: true });
+  const size = { width: 1440, height: 900 };
+  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 1, recordVideo: { dir: join(dir, "replay-day.raw"), size } });
+  const started = Date.now();
+  const page = await context.newPage();
+  const hold = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  await asReturningVisitor(page);
+  await skipFloorLines(page);
+  await chooseMotion(page, "full");
+  const reply: { body: unknown } = { body: asleepAll(Date.now()) };
+  await serveOffice(page, reply);
+  await serveHistory(page);
+  await page.goto(`${base}/en?tier=full`);
+  await waitForHQ(page);
+  await waitForPhase(page, "explore", SLOW);
+  await waitForSceneLive(page, SLOW);
+  await settle(page);
+  await page.evaluate(() => (window as unknown as OfficeWindow).__hq.office.load());
+  await waitFor("the office chunk", async () => (await probe(page)).loaded);
+  const { lead, stop } = LOBBY.officeWing;
+  await driveTo(page, { x: lead.x, z: lead.from - 4 }, SLOW);
+  await driveTo(page, stop, SLOW);
+  await settle(page);
+  await waitFor("office polling", async () => (await probe(page)).polling);
+  await showQuiet(page, reply, 0);
+  await officeHeld(page);
+  const from = (Date.now() - started) / 1000;
+  await hold(4000);
+  await startIdleLoop(page);
+  // The day plays (30 s of playback at the minimum), then the loop rests before it would start again.
+  await waitFor("the end rest", async () => (await replayStatus(page)) === "resting");
+  await hold(4000);
+  // A live awake snapshot ends the replay; the take keeps the return to the live office.
+  await show(page, reply, statesA(Date.now()), "live", STATES_A, 0);
+  await waitFor("the replay off", async () => (await replayStatus(page)) === "off");
+  await hold(5000);
+  await saveTake(page, dir, "replay-day", from);
 }
