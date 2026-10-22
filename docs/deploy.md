@@ -1,6 +1,6 @@
 # Deploying ShinyQ HQ
 
-The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function (`functions/`), hosted on Cloudflare Pages and uploaded with `wrangler pages deploy` (Direct Upload). Production deploys run from GitHub Actions (`deploy.yml`): on every merge to `main` (since 2026-10-18; the fast path deploys at once when the merged PR was green on the same tree, otherwise it waits for the complete `main` CI), after the weekly live-facts PR merges (`refresh-facts.yml` dispatches it), and when someone runs the workflow by hand. A red `main` CI rolls production back automatically (`rollback.yml`, section 6). The manual local deploy below still works.
+The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function (`functions/`), hosted on Cloudflare Pages and uploaded with `wrangler pages deploy` (Direct Upload). Production deploys run from GitHub Actions (`deploy.yml`): on every merge to `main` (the fast path deploys at once when the merged PR was green on the same tree, otherwise it waits for the complete `main` CI), after the weekly live-facts PR merges (`refresh-facts.yml` dispatches it), and when someone runs the workflow by hand. A red `main` CI rolls production back automatically (`rollback.yml`, section 6). The manual local deploy below still works.
 
 ## Current state (production cutover, 2026-10-09)
 
@@ -10,8 +10,9 @@ The site is a Next.js static export (`out/`) plus the Ask the HQ Pages Function 
 | Production URL | https://kurniadi.pages.dev |
 | Preview project | `shinyq-hq`, Direct Upload, production branch `production-cutover-phase-6` (never pushed, so every deploy is a preview) |
 | Repository variable | `CF_PAGES_PROJECT=kurniadi` (set) |
-| Repository secrets | `CLOUDFLARE_API_TOKEN` (account-owned token "shinyq-hq Pages deploy", Cloudflare Pages Edit plus Workers KV Storage Edit for the Ask knowledge pack, expires 2027-01-09) and `CLOUDFLARE_ACCOUNT_ID`, set on 2026-10-11 |
-| Repository variables | `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); `AUTO_DEPLOY_FACTS` unset (on); `CF_PREVIEWS` unset (PR previews off) |
+| `production` environment secrets | `CLOUDFLARE_API_TOKEN` (the account-owned Cloudflare API token `hq-ci-deploy`: Cloudflare Pages Edit, Workers KV Storage Edit for the Ask knowledge pack, Workers Scripts Edit for the hq-office and hq-stats Workers, R2 access for the `GUIDES` binding), `GROQ_API_KEY`, `OFFICE_INGEST_KEY`, `OFFICE_GITHUB_WEBHOOK_SECRET` |
+| Repository secrets | `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN` (section 3) |
+| Repository variables | `CF_PAGES_PROJECT`, `CF_ACCOUNT_ID`, `CF_BEACON_TOKEN` (Web Analytics site `kurniadi.pages.dev`, manual snippet, site tag `4134db56168b4eb58d19fc1ead78b131`); unset: `AUTO_DEPLOY_FACTS` (auto-deploy on), `CF_PREVIEWS` (PR previews off), `STATS_WORKER_DEPLOY` and `OFFICE_WORKER_DEPLOY` (both Workers deploy from CI), `SITE_URL` (default origin) |
 
 The old Git-connected `kurniadi` project (old site repository, `npm run build` to `dist`) was deleted and recreated as a Direct Upload project with the same name (Option A below). Its source is still in the old site repository if it is ever needed again.
 
@@ -28,15 +29,15 @@ gh workflow run deploy.yml --ref main -f sha=<commit on main> -f reason="why"
 gh run watch
 ```
 
-Or Actions > Deploy > Run workflow. A merge to `main` starts the same workflow by itself: when the merged pull request came from this repository, its head had the same tree as the merge commit (merge an up-to-date branch) and every required check was green there, and no `deploy-rollback` issue is open, it skips the wait below and deploys in about 4 minutes (`scripts/merge-gate.ts`); otherwise it waits for the complete `main` CI as described here. `deploy.yml` checks that the commit is on `main`, then `Reuse the CI result` (`scripts/ci-status.ts`) looks for CI's `Build, CV and e2e` check on that commit: green in a complete run (one that carries the `ci-full` artifact; dispatches and the nightly always do, and a push to `main` does when it ran everything or the complement of its merged PR's green run, which together cover everything) means no e2e rerun; still running means it waits (up to 40 minutes, for as long as a CI run on the commit is unfinished); red fails the deploy. A commit without its own CI run may reuse a green complete CI run on a commit with the same tree, but only from a push to `main` or a pull request from this repository. The weekly facts merge (made with `GITHUB_TOKEN`, so it gets no push CI) finds no such run: the facts PR was tested by a `workflow_dispatch` run, which the deploy never reuses, so the facts deploy runs the 8 e2e shards itself (`refresh-facts.yml` already gated the merge on that full CI run). Selective smart CI runs of pull requests and older runs without the marker are never reused. With no complete CI result (none on the commit or its tree after a 3-minute grace), or with `-f rerun_e2e=true`, it builds without the beacon and runs the 8 e2e shards first, as before. It builds with `CF_BEACON_TOKEN` for production, rebuilds the Ask knowledge pack in the deploy job, runs `wrangler pages deploy out --branch=main`, then `scripts/deploy-smoke.ts`: `GET /api/ask` must be enabled with the pack date of that commit, `GET /api/rum` must answer 405 (the beacon Function only accepts POST), and `/en` must return 200 with the commit's live contributions number and the beacon. It retries for up to 5 minutes while the production alias switches. Any failure opens (or comments on) the `deploy-failed` issue; production keeps serving the previous deployment.
+Or Actions > Deploy > Run workflow. A merge to `main` starts the same workflow by itself: when the merged pull request came from this repository, its head had the same tree as the merge commit (merge an up-to-date branch) and every required check was green there, and no `deploy-rollback` issue is open, it skips the wait below and deploys in about 4 minutes (`scripts/merge-gate.ts`); otherwise it waits for the complete `main` CI as described here. `deploy.yml` checks that the commit is on `main`, then `Reuse the CI result` (`scripts/ci-status.ts`) looks for CI's `Build, CV and e2e` check on that commit: green in a complete run (one that carries the `ci-full` artifact; dispatches and the nightly always do, and a push to `main` does when it ran everything or the complement of its merged PR's green run, which together cover everything) means no e2e rerun; still running means it waits (up to 40 minutes, for as long as a CI run on the commit is unfinished); red fails the deploy. A commit without its own CI run may reuse a green complete CI run on a commit with the same tree, but only from a push to `main` or a pull request from this repository. The weekly facts merge (made with `GITHUB_TOKEN`, so it gets no push CI) finds no such run: the facts PR was tested by a `workflow_dispatch` run, which the deploy never reuses, so the facts deploy runs the 8 e2e shards itself (`refresh-facts.yml` already gated the merge on that full CI run). Selective smart CI runs of pull requests and older runs without the marker are never reused. With no complete CI result (none on the commit or its tree after a 3-minute grace), or with `-f rerun_e2e=true`, it builds without the beacon and runs the 8 e2e shards first. It builds with `CF_BEACON_TOKEN` for production and runs the script policy check on that `out/`; the deploy job rebuilds the Ask knowledge pack, deploys the hq-office Worker (section 18), publishes the pack to Workers KV, runs `wrangler pages deploy out --branch=main`, flips the pack pointer, then runs `scripts/deploy-smoke.ts`: `GET /api/ask` must be enabled with the pack date of that commit, `GET /api/rum` and `GET /api/visit` must answer 405 (the beacon Functions only accept POST), `GET /api/stats` 204 or a valid snapshot, `/en` 200 with its script policy, the commit's live contributions number and the beacon (and no injected Pages analytics), one file per cached prefix with its `Cache-Control`, and the LinkedInBot cards (section 15). It retries for up to 5 minutes while the production alias switches. Then the job "hq-stats Worker" deploys `workers/stats` (section 13). Any failure opens (or comments on) the `deploy-failed` issue; production keeps serving the previous deployment.
 
 ## Automatic deploy after the weekly facts refresh
 
 `refresh-facts.yml` (Mondays 02:00 WIB) merges the live-facts PR only after CI passed on it, then dispatches `deploy.yml` for the merge commit, so the stats ring, Page View and Ask show the new numbers without anyone deploying by hand. Merges to `main` deploy through `deploy.yml` too (fast path or after `main` CI, section "Deploy from GitHub Actions"); PR previews stay off unless the variable `CF_PREVIEWS=true` is set.
 
 - Turn the automatic deploy off: `gh variable set AUTO_DEPLOY_FACTS --body false` (the facts PR still merges; deploy by hand later). Turn it back on: `gh variable delete AUTO_DEPLOY_FACTS`.
-- Turn every Actions deploy off: `gh secret delete CLOUDFLARE_API_TOKEN` (the deploy job then skips with a notice; the manual local deploy keeps working).
-- Token rotation: "shinyq-hq Pages deploy" expires on 2027-01-09. Before then, create a new account-owned token with Cloudflare Pages Edit and Workers KV Storage Edit (section 2, or the `cf accounts tokens create` command in `docs/ask-runbook.md` section 8 with the Pages Write permission group `8d28297797f24fb8a0c332fe0866ec89`), pipe it into `gh secret set CLOUDFLARE_API_TOKEN`, run `gh workflow run ask-pack.yml --ref main -f mode=verify` and one deploy, then delete the old token.
+- Turn every Actions deploy off: `gh secret delete CLOUDFLARE_API_TOKEN --env production` (the deploy job then skips with a notice; the manual local deploy keeps working).
+- Token rotation: before `hq-ci-deploy` expires (My Profile > API Tokens shows the date), create a new account-owned token with the permissions of section 2 (or the `cf accounts tokens create` command in `docs/ask-runbook.md` section 8 with the Pages Write permission group `8d28297797f24fb8a0c332fe0866ec89`), pipe it into `gh secret set CLOUDFLARE_API_TOKEN --env production`, run `gh workflow run ask-pack.yml --ref main -f mode=verify` and one deploy, then delete the old token.
 
 ## Manual local deploy
 
@@ -59,27 +60,32 @@ Run `bun run e2e` on a build without the beacon if you want the e2e suite: its c
 
 | Trigger | Workflow | Cloudflare project | Result |
 | --- | --- | --- | --- |
-| Pull request from this repo, only with `CF_PREVIEWS=true` | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
-| Weekly facts PR merged (`refresh-facts.yml`), or manual run | `deploy.yml` (`workflow_dispatch` only) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`), smoke-checked |
-| Push to `main` | `ci.yml` only | none | Checks; no deploy |
-| Every CI run | `ci.yml` job `lighthouse` (`Lighthouse CI`) | none | Lighthouse budgets (blocking) and reports as an artifact |
+| Pull request from this repo, only with `CF_PREVIEWS=true` and a preview-only repository token | `ci.yml` job `preview` | `CF_PREVIEW_PROJECT` (default `shinyq-hq`) | Preview URL `pr-<n>.<project>.pages.dev` |
+| Push to `main` (a merge) | `deploy.yml` (fast path, or after the complete `main` CI) and `ci.yml` (the complement of the PR run, or a full run) | `CF_PAGES_PROJECT` (`kurniadi`) | Production at `SITE_URL` (default `https://kurniadi.pages.dev`), smoke-checked |
+| Weekly facts PR merged (`refresh-facts.yml`), or manual run | `deploy.yml` (`workflow_dispatch`) | `CF_PAGES_PROJECT` (`kurniadi`) | Production, smoke-checked |
+| Red CI on a push to `main` | `rollback.yml` | `CF_PAGES_PROJECT` | Production rolled back when it serves the failing commit; `deploy-rollback` issue |
+| Every CI run | `ci.yml` job `lighthouse` (`Lighthouse CI`) | none | Lighthouse budgets (blocking) on the planned URLs and reports as an artifact |
 
 ```mermaid
 flowchart LR
-  PR[Pull request] --> CI[ci.yml: check, build, e2e]
-  CI --> LH[lighthouse job, blocking]
+  PR[Pull request] --> CI[ci.yml: check, build, affected e2e, perf, Lighthouse]
   CI --> PV[preview job, only if CF_PREVIEWS=true]
   PV --> PP[(Preview project: shinyq-hq)]
-  M[Push to main] --> CI2[ci.yml: check, build, e2e]
-  W[refresh-facts.yml merges the facts PR] --> D[deploy.yml: build, e2e, deploy, smoke check]
+  M[Push to main] --> CI2[ci.yml: complement of the PR run]
+  M --> F{Fast path: PR green on the same tree?}
+  F -- yes --> D[deploy.yml: build, hq-office, KV pack, upload, smoke check, hq-stats]
+  F -- no --> C[Wait for the complete main CI] --> D
+  CI2 -- red --> R[rollback.yml]
+  W[refresh-facts.yml merges the facts PR] --> D
   H[Manual run] --> D
   D --> G{Secrets and CF_PAGES_PROJECT set?}
   G -- no --> S[Notice, skip]
   G -- yes --> P[(Production project, branch main)]
+  R --> P
   P --> U[kurniadi.pages.dev, later kurniadi.dev]
 ```
 
-`ci.yml` still runs typecheck, lint and unit tests on every push to `main`. `deploy.yml` runs its own build, the e2e suite and a post-deploy smoke check, and opens a `deploy-failed` issue when anything fails.
+`ci.yml` runs typecheck, lint, unit tests, the secret scan and the build on every push to `main`, plus the heavy tests the merged PR's run skipped. `deploy.yml` runs its own production build, the e2e suite only without a reusable complete CI result, and a post-deploy smoke check, and opens a `deploy-failed` issue when anything fails.
 
 ## 1. Choose the Pages project
 
@@ -116,14 +122,16 @@ The site is then served at `https://<name>.pages.dev`. Set `SITE_URL` to that UR
 ## 2. Create an API token and find the Account ID
 
 1. Cloudflare dashboard > My Profile > API Tokens > Create Token > Create Custom Token.
-2. Permissions: **Account**, **Cloudflare Pages**, **Edit**.
+2. Permissions (all **Account** scope): **Cloudflare Pages: Edit** (the upload), **Workers KV Storage: Edit** (the Ask knowledge pack, `docs/ask-runbook.md` section 17), **Workers Scripts: Edit** (the hq-office and hq-stats Workers) and **Workers R2 Storage: Read** (the `GUIDES` binding, section 19). The production token is named `hq-ci-deploy`.
 3. Account Resources: Include, your account (account scope, no zone needed).
 4. Create the token and copy it once.
 5. Account ID: Workers & Pages overview page, right sidebar ("Account ID"), or the dashboard URL `dash.cloudflare.com/<account-id>/...`.
 
 ## 3. GitHub secrets
 
-The Cloudflare secrets belong to the `production` environment (Settings > Environments > production), whose deployment branch policy allows `main` only (security S3, owner decision 4). Jobs that read them declare `environment: production` (`deploy.yml`, the eval, content-gap and token-check jobs; with `deployment: false` where nothing is deployed), so no pull request or other branch can read the deploy token. Secrets are passed only to the steps that read them (H1). No workflow reads a `SAFETY_BLOCKLIST` secret any more (owner decision 2026-10-22); if one is still set, delete it with `gh secret delete SAFETY_BLOCKLIST -R ShinyQ/ShinyQ-HQ`.
+The Cloudflare secrets belong to the `production` environment (Settings > Environments > production), whose deployment branch policy allows `main` only (security S3, owner decision 4). Jobs that read them declare `environment: production` (`deploy.yml`, the eval, content-gap and token-check jobs; with `deployment: false` where nothing is deployed), so no pull request or other branch can read the deploy token. Secrets are passed only to the steps that read them (H1).
+
+Where they live today: the `production` environment holds `CLOUDFLARE_API_TOKEN` (`hq-ci-deploy`), `GROQ_API_KEY` (Ask evals and samples, `docs/ask-runbook.md`), `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET` (section 18). `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN` and `CF_LOGS_TOKEN` are still repository secrets (jobs in the environment read them too); `CF_STATS_TOKEN` is not set, so the hq-stats Worker uses `CF_EVAL_TOKEN`.
 
 ```sh
 # Environment secrets (main only)
@@ -132,15 +140,21 @@ gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo ShinyQ/ShinyQ-HQ   #
 gh secret set CF_EVAL_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # docs/ask-runbook.md section 8
 gh secret set CF_STATS_TOKEN        --env production --repo ShinyQ/ShinyQ-HQ   # section 13, Account Analytics Read only
 gh secret set CF_LOGS_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # optional, log purge
+gh secret set GROQ_API_KEY          --env production --repo ShinyQ/ShinyQ-HQ   # Ask evals on Groq, docs/ask-runbook.md
+gh secret set OFFICE_INGEST_KEY     --env production --repo ShinyQ/ShinyQ-HQ   # workers/office/README.md
+gh secret set OFFICE_GITHUB_WEBHOOK_SECRET --env production --repo ShinyQ/ShinyQ-HQ
 ```
 
-Moving from repository secrets: set each one in the environment first (an environment secret wins over a repository secret of the same name for jobs in that environment), run `gh workflow run deploy.yml --ref main` and `gh workflow run stats-worker.yml --ref main`, then delete the repository copies (`gh secret delete CLOUDFLARE_API_TOKEN --repo ShinyQ/ShinyQ-HQ`, and the same for `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN`). Secret values cannot be read back, so paste them from the password manager or create new tokens.
+Moving from repository secrets: set each one in the environment first (an environment secret wins over a repository secret of the same name for jobs in that environment), run `gh workflow run deploy.yml --ref main` and `gh workflow run stats-worker.yml --ref main`, then delete the repository copies (`gh secret delete CLOUDFLARE_ACCOUNT_ID --repo ShinyQ/ShinyQ-HQ`, and the same for `CF_EVAL_TOKEN` and `CF_LOGS_TOKEN`; `CLOUDFLARE_API_TOKEN` has moved already). Secret values cannot be read back, so paste them from the password manager or create new tokens.
 
 | Secret | Required | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | Pages Edit token used by wrangler; also needs Workers KV Storage Edit for the Ask knowledge pack (`scripts/ask-pack.ts`, `docs/ask-runbook.md` section 17) and Workers Scripts Edit for the hq-stats Worker job (section 13; Workers KV Storage Read is checked as advisory only) and R2 access for the `GUIDES` binding (section 19) |
+| `CLOUDFLARE_API_TOKEN` | Yes, for any deploy | The token `hq-ci-deploy` (`production` environment): Pages Edit for wrangler; Workers KV Storage Edit for the Ask knowledge pack (`scripts/ask-pack.ts`, `docs/ask-runbook.md` section 17); Workers Scripts Edit for the hq-office and hq-stats Workers (sections 13 and 18; Workers KV Storage Read is checked as advisory only); R2 access for the `GUIDES` binding (section 19) |
 | `CF_EVAL_TOKEN` | Yes, for evals | Workers AI Read, AI Gateway Read, Account Analytics Read: Ask evals and the content-gap report; also the hq-stats Worker's `WA_TOKEN` until `CF_STATS_TOKEN` exists |
-| `CF_STATS_TOKEN` | Recommended | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
+| `CF_STATS_TOKEN` | Recommended (not set) | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
+| `CF_LOGS_TOKEN` | Optional | AI Gateway log purge (`docs/ask-runbook.md`) |
+| `GROQ_API_KEY` | For the Groq evals | Ask golden, pill, red-team and fidelity evals and `ask-samples.yml` (`docs/ask-runbook.md`); a missing key skips them with a notice |
+| `OFFICE_INGEST_KEY`, `OFFICE_GITHUB_WEBHOOK_SECRET` | For the Agent Office | hq-office Worker secrets set by `deploy.yml` (section 18); a missing one leaves its route at 503 |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
 
 ## 4. GitHub repository variables
@@ -166,9 +180,9 @@ gh variable set CF_PREVIEWS --body true                        # optional: turn 
 | `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
 | `GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console HTML tag token (the `content` value of `google-site-verification`), rendered on `/`, `/en` and `/id` by production builds. Section 15. |
 | `BING_SITE_VERIFICATION` | Optional | Bing Webmaster Tools `msvalidate.01` token, rendered the same way. Section 15. |
-| `STATS_WORKER_DEPLOY` | Optional | `false` skips the hq-stats Worker job in `deploy.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
-
-No workflow reads a `SAFETY_BLOCKLIST_GRACE_UNTIL` variable any more; if it is still set, delete it with `gh variable delete SAFETY_BLOCKLIST_GRACE_UNTIL -R ShinyQ/ShinyQ-HQ`.
+| `STATS_WORKER_DEPLOY` | Optional (unset) | `false` skips the hq-stats Worker job in `deploy.yml` and its redeploy in `rollback.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
+| `OFFICE_WORKER_DEPLOY` | Optional (unset) | `false` skips the hq-office Worker steps in `deploy.yml` and its redeploy in `rollback.yml` (section 18). |
+| `CF_ACCOUNT_ID` | Optional | Account id for the Ask eval and content-gap jobs; they fall back to the `CLOUDFLARE_ACCOUNT_ID` secret. |
 
 Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
 
@@ -176,7 +190,7 @@ The Content-Security-Policy in `public/_headers` already allows `static.cloudfla
 
 ## 5. First deploy
 
-1. Run the workflow: Actions > Deploy > Run workflow (or `gh workflow run deploy.yml --ref main`). Merging to `main` does not deploy.
+1. Run the workflow: Actions > Deploy > Run workflow (or `gh workflow run deploy.yml --ref main`). Every later merge to `main` deploys by itself.
 2. Follow the run: `gh run watch`. The `deploy` job shows the deployment URL in its summary and the `production` environment links to `SITE_URL`.
 3. Verify (replace the host if you use another project):
 
@@ -197,7 +211,7 @@ Then open `/` in a browser (it redirects to `/en` or `/id`), switch languages, a
 
 ## 6. Rollback
 
-Automatic: `rollback.yml` runs after every CI run from a push to `main`. When it is red, it first opens or updates the `deploy-rollback` issue with the failing run (closing the fast path), and when production serves the failing commit (or a later, not green, commit built on it), it rolls Cloudflare Pages back to the newest earlier production deployment that does not contain the failure and whose own CI was green (or that never had CI, like the facts merge), and redeploys the hq-stats Worker from that commit when `workers/stats/` changed (unless `STATS_WORKER_DEPLOY=false`). While the issue is open every merge waits for a green `main` CI before it deploys; a green `main` CI on the failing commit or a later one closes it and dispatches a deploy of the tip of `main`. Details: [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#production-deploy).
+Automatic: `rollback.yml` runs after every CI run from a push to `main`. When it is red, it first opens or updates the `deploy-rollback` issue with the failing run (closing the fast path), and when production serves the failing commit (or a later, not green, commit built on it), it rolls Cloudflare Pages back to the newest earlier production deployment that does not contain the failure and whose own CI was green (or that never had CI, like the facts merge), redeploys the hq-stats Worker from that commit when `workers/stats/` changed (unless `STATS_WORKER_DEPLOY=false`) and the hq-office Worker when its sources changed (unless `OFFICE_WORKER_DEPLOY=false`, section 18), and flips the Ask knowledge pack pointer to that commit's pack. While the issue is open every merge waits for a green `main` CI before it deploys; a green `main` CI on the failing commit or a later one closes it and dispatches a deploy of the tip of `main`. Details: [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#production-deploy).
 
 By hand:
 
@@ -222,12 +236,12 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 
 ## 8. Lighthouse CI
 
-- Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every push to `main`, dispatch and nightly, and on pull requests whose smart CI plan needs it (page code, strings, assets, 3D code, or a full run; [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#what-a-pull-request-runs)); otherwise its steps skip and the check passes. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
-- Pages: a warm-up run of `/en?lhci-warmup=1` (never asserted; it absorbs the cold first Chrome and server run that used to spike `/en` TBT), then `/en`, `/id`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, `/en/contact` and `/en/cv`, 3 runs each, Lighthouse default mobile profile (simulated 4G, mid-range device). Assertions live in two `assertMatrix` entries for URLs without a query string: the budgets below at error level for every page except `/en/cv`, and the same budgets at warn level for `/en/cv` (owner decision 15, 2026-10-14: warn-only until the CV image patch proves its LCP gain; its image-driven LCP is about 2.5 s in the lab).
+- Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every dispatch and nightly, on pull requests on the URLs their smart CI plan needs (page code, strings, assets, 3D code, content, or a full run; [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#what-a-pull-request-runs)), and on a push to `main` on the URLs the merged PR's run skipped (merging that run's reports); otherwise its steps skip and the check passes. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
+- Pages: a warm-up run of `/en?lhci-warmup=1` (never asserted; it absorbs the cold first Chrome and server run that used to spike `/en` TBT), then `/en`, `/id`, `/en/quick`, `/en/journey`, `/en/labs/voice-ai-contact-center`, `/en/blog/making-a-voice-agent-interruptible`, `/en/contact`, `/en/cv` and `/en/build`, 3 runs each (a selective run: its affected URLs plus `/en`, warm-up first), Lighthouse default mobile profile (simulated 4G, mid-range device). Assertions live in two `assertMatrix` entries for URLs without a query string: the budgets below at error level for every page except `/en/cv`, and the same budgets at warn level for `/en/cv` (owner decision 15, 2026-10-14: warn-only until the CV image patch proves its LCP gain; its image-driven LCP is about 2.5 s in the lab).
 - Budgets (tighter than appendix 08 since the October 2026 performance pass): LCP under 2000 ms, CLS under 0.01, TBT under 200 ms (error level, median run); transfer bytes per page at most 60 KB of fonts, 82 KB of HTML (raised from 80 KB on 2026-10-18 as an owner-approved stopgap), 20 KB of CSS and 240 KB of JavaScript (error level); performance score at least 0.9, accessibility at least 0.9 and SEO at least 0.9 (warn level).
 - Reports: the run summary lists the assertion results, and the HTML and JSON reports are in the `lighthouse-reports` artifact (Actions run > Artifacts). Reports are written to the filesystem only and are never uploaded to public temporary storage.
 - Per-chunk diff: after the run, `scripts/perf-base.sh` downloads `lighthouse-reports` of the last green `main` push run and `bun scripts/perf-summary.ts lhci` writes "Page View JavaScript per chunk" to the job summary: total per page, share of the 240 KB budget (a warning at 90%), and the chunks added or removed against main (names are content hashes, so a changed chunk shows as one removed and one added row). The 3D side (3D JS after the gate, the per-floor chunk sizes, floors, peaks, memory) is in the `Build, CV and e2e` job summary, from the `3D perf gates` job (appendix 08 section 2).
-- 3D bytes (`e2e/perf/bytes-3d.spec.ts`, budgets in `e2e/budgets.ts` `BYTES_3D_BUDGET`): the main path before the first frame (measured with `?prefetch=off`) fails at 466.4 KB gzip per tier; each on-demand floor chunk has its own cap (L3 20 KB, L4 16 KB, RF 8 KB); the session total, main path plus every floor chunk that the idle prefetch downloads, is capped at 529.7 KB on full and 513.9 KB on lite (owner decisions 2026-10-19: each cap is the measured value plus about 0.6 KB, so creep is caught early; the office's watch, scene and replay chunks are in it); the Agent Office's drawer body and its beacon and replay controls chunks have their own caps outside it, and the scene, drawer body and replay chunks share a 40 KB office total. Raise a cap only with an owner note in the PR.
+- 3D bytes (`e2e/perf/bytes-3d.spec.ts`, budgets in `e2e/budgets.ts` `BYTES_3D_BUDGET`): the main path before the first frame (measured with `?prefetch=off`) fails at 466.4 KB gzip per tier; each on-demand floor chunk has its own cap (L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB); the session total, main path plus every floor chunk that the idle prefetch downloads, is capped at 529.7 KB on full and 513.9 KB on lite (owner decisions 2026-10-19: each cap is the measured value plus about 0.6 KB, so creep is caught early; the office's watch, scene and replay chunks are in it); the Agent Office's drawer body and its beacon and replay controls chunks have their own caps outside it, and the scene, drawer body and replay chunks share a 40 KB office total. Raise a cap only with an owner note in the PR.
 - Local run after `bun run build:web`: `bunx @lhci/cli@0.15.1 autorun` (needs a local Chrome), then open `.lighthouseci/*.report.html`.
 - Blocking: a failed error-level budget fails `Lighthouse CI`, and the aggregate `Build, CV and e2e` job (the required check) needs it, so a PR cannot merge over budget. Branch rules may also list `Lighthouse CI` directly.
 - LCP is simulated (Lantern): the slow-4G model counts every request that finished before the observed paint, so the bytes of the HTML, the CSS and the preloaded fonts decide it (the text paints before any JavaScript runs). Keep these measures when changing fonts, the layout or the build:
@@ -289,7 +303,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | R2 | `hq-study-guides` | Study guide PDFs (private, no `r2.dev` URL, no custom domain), binding `GUIDES`, served by `/api/guides/<slug>` (section 19) |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
-| API tokens | `shinyq-hq Pages deploy` (`CLOUDFLARE_API_TOKEN`), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | All expire 2027-01-09; rotate before then (`docs/ask-runbook.md`) |
+| API tokens | `hq-ci-deploy` (`CLOUDFLARE_API_TOKEN`, `production` environment), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | Rotate each before it expires (the two `shinyq-hq` tokens on 2027-01-09; `docs/ask-runbook.md`) |
 
 ## 12. Performance beacon (RUM)
 
@@ -319,11 +333,11 @@ Deploy: `deploy.yml` job "hq-stats Worker" (environment `production`, main only)
 
 `CF_STATS_TOKEN`: Cloudflare dashboard > My Profile > API Tokens > Create Custom Token, permission Account / Account Analytics / Read only, your account, TTL 90 days; then `gh secret set CF_STATS_TOKEN --env production --repo ShinyQ/ShinyQ-HQ` and run a deploy (it rewrites `WA_TOKEN`).
 
-If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `shinyq-hq Pages deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
+If the deploy token lacks Workers permissions: add **Account > Workers Scripts > Edit** to `hq-ci-deploy`, or deploy by hand once from `workers/stats/` with `bunx wrangler deploy` and set both secrets with `bunx wrangler secret put WA_TOKEN` and `bunx wrangler secret put WA_ACCOUNT_ID` (hidden prompts), then set `STATS_WORKER_DEPLOY=false` until the token is fixed.
 
 Cadence: the Worker runs every 2 hours and uptime allows a snapshot at most 6 h old (3 missed runs, the same as the site's "delayed" threshold). A slower cadence must deploy the Worker first or raise the threshold first; a faster one is safe in either order. `GET /api/stats` is cached `public, max-age=600, stale-while-revalidate=3600`, so a returning visitor never sees a snapshot much older than the Worker's cadence (the stale window must stay well under the 6 h "delayed" threshold).
 
-Deploys run in CI: the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit and `STATS_WORKER_DEPLOY` is unset (since 2026-10-19), so `deploy.yml` job "hq-stats Worker" deploys the Worker and `rollback.yml` rolls it back. Manual deploy (fallback only, with `STATS_WORKER_DEPLOY=false`): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next 2-hour slot `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
+Deploys run in CI: the production `CLOUDFLARE_API_TOKEN` has Workers Scripts Edit and `STATS_WORKER_DEPLOY` is unset, so `deploy.yml` job "hq-stats Worker" deploys the Worker and `rollback.yml` rolls it back. Manual deploy (fallback only, with `STATS_WORKER_DEPLOY=false`): after a merge that touches `workers/stats/`, `src/lib/stats/` or `content/ask/suggestions.json`, run `cd workers/stats && bunx wrangler deploy` with the owner's wrangler login (it also registers the cron schedule), check `bunx wrangler deployments list` shows the new version, then after the next 2-hour slot `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` must show that slot's time. Always `bunx wrangler` (the exact devDependency), never `bunx wrangler@<range>`.
 
 Check a deploy: `curl -sI https://kurniadi.pages.dev/api/stats` (200 with an ETag once the Worker ran, 204 before), `curl -s -o /dev/null -w "%{http_code}" https://kurniadi.pages.dev/api/visit` (405). Preview the snapshot from production data without writing anything: `WA_TOKEN="$(bunx wrangler auth token)" WA_ACCOUNT_ID=<account id> bun scripts/stats-dry-run.ts`.
 
@@ -414,7 +428,7 @@ Pause it: Actions > Uptime > Disable workflow (or `gh workflow disable uptime.ym
 
 ## 17. Dependency upgrades and pinned majors
 
-Policy (Round 7, owner decision 2026-10-15: tiered). Minor and patch updates land together (Dependabot group `minor-and-patch`, or one PR with `bun update` plus widened ranges). Each major gets its own PR and ships only with every gate green; 3D library majors (three, @types/three, @react-three/drei, @react-three/fiber, postprocessing) also need the strict visual gate (`bun scripts/visual-gate.ts --base main --profile strict`), the perf lane (`bun run e2e:perf`) and the memory gates. `next`, `eslint-config-next`, `react`, `react-dom`, `sharp` and `wrangler` stay exact pins; bump `wranglerVersion` in `deploy.yml` with `wrangler`.
+Policy (Round 7, owner decision 2026-10-15: tiered). Minor and patch updates land together (Dependabot group `minor-and-patch`, or one PR with `bun update` plus widened ranges). Each major gets its own PR and ships only with every gate green; 3D library majors (three, @types/three, @react-three/drei, @react-three/fiber, postprocessing) also need the strict visual gate (`bun scripts/visual-gate.ts --base main --profile strict`), the perf lane (`bun run e2e:perf`) and the memory gates. `next`, `eslint-config-next`, `react`, `react-dom`, `sharp` and `wrangler` stay exact pins; `pdfjs-dist` is exact too. Bump `wranglerVersion` in `deploy.yml` and `rollback.yml` with `wrangler` (`tests/unit/workflows.test.ts`) and move the `compatibility_date` of `wrangler.toml`, `workers/office/wrangler.toml` and `workers/stats/wrangler.toml` together. Node is one exact version in `.nvmrc` and `.node-version` (24.22.1) with `engines.node` at least that; Bun is `packageManager` (`bun@1.4.3`); bump them together ([`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#scripts)).
 
 A major that cannot pass is pinned: its Dependabot PR is closed with the reason, `.github/dependabot.yml` gets an `ignore` entry for `version-update:semver-major` with a `# revisit YYYY-MM-DD: reason` comment on the line above, and the table below gets a row (`tests/unit/dependabot.test.ts` keeps both in sync). On the revisit date, try the major again; extend the date with a new reason or remove the pin.
 
@@ -435,8 +449,8 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
   `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps with a notice.
 - `rollback.yml` rolls it back with Pages: when the Worker's sources (`workers/office`, `src/lib/office`,
   `functions/_lib/security.ts`) differ between the rollback target and the live commit, it runs
-  `bun scripts/build-knowledge.ts` in the target (a target from before 2026-10-22 bundles
-  `functions/_generated/safety.json`) and redeploys the Worker from the target (its secrets persist). A target
+  `bun scripts/build-knowledge.ts` in the target (an older target may import generated files that only the build
+  writes) and redeploys the Worker from the target (its secrets persist). A target
   without `workers/office` leaves the Worker at the live version; `OFFICE_WORKER_DEPLOY = "false"` skips it. A Worker
   rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2`; one rolled back to before
   v3 answers v1 to `?v=3` (read as v3) and keeps reading the stored document: back-row seats are stored apart from
@@ -453,6 +467,6 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
 The study guide reader reads PDFs from the private R2 bucket `hq-study-guides` through the Pages Function `functions/api/guides/[slug].ts`, bound as `GUIDES` in `wrangler.toml` beside the other bindings. Uploads, replacements and checks: [`study-guides-runbook.md`](study-guides-runbook.md).
 
 - The bucket must exist before any deploy that carries the binding: Pages validates the bindings in `wrangler.toml` when `wrangler pages deploy` uploads, and a missing bucket fails the deploy. It exists (created 2026-10-19, with the four guides uploaded), so this matters only for a new account or project.
-- The deploy token (`CLOUDFLARE_API_TOKEN`) needs R2 access in this account (Account, Workers R2 Storage; Read should be enough, since CI only binds the bucket and never writes to it: uploads are done by the owner's `wrangler login`). Owner action: none if the token already has it; otherwise add the permission in My Profile > API Tokens > edit "shinyq-hq Pages deploy" (the token value stays the same) and rerun `gh workflow run deploy.yml --ref main`.
+- The deploy token (`CLOUDFLARE_API_TOKEN`) needs R2 access in this account (Account, Workers R2 Storage; Read should be enough, since CI only binds the bucket and never writes to it: uploads are done by the owner's `wrangler login`). Owner action: none if the token already has it; otherwise add the permission in My Profile > API Tokens > edit `hq-ci-deploy` (the token value stays the same) and rerun `gh workflow run deploy.yml --ref main`.
 - Keep the bucket private: never turn on its `r2.dev` URL or attach a custom domain. The Function is the only way in.
 - Check after a deploy: `curl -sI "https://kurniadi.pages.dev/api/guides/gh-600?v=<version>"` answers 200 with `application/pdf` and `accept-ranges: bytes` (the version is in `content/study-guides.json`). A 404 for every guide with "GUIDES binding missing" in the Function log means the binding did not apply.

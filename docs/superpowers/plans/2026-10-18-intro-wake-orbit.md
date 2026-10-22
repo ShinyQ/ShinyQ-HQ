@@ -1,6 +1,6 @@
 # Intro: Rover Wakes Up, Then a Reveal Orbit Implementation Plan
 
-Status: in review
+Status: shipped in #227 (a4fc4c6), 2026-10-19
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

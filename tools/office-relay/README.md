@@ -142,6 +142,7 @@ set them.
 
 - `ingest key: missing` or `send no-key`: the Keychain item is missing or named differently (step 1).
 - `send 401`: the key differs from the Worker's `OFFICE_INGEST_KEY`, or the Mac's clock is off by more than 60 s.
-- `send 0`: no network or a timeout (2 s); the office shows the agent asleep after 3 minutes.
+- `send 0`: no network or a timeout (2 s); the office shows the agent asleep after 3 minutes without a beat (15 minutes
+  while testing, on CI or waiting for input).
 - No lines for an agent: its hook config is missing (`office-relay status`), or Codex hooks are not trusted yet.
-- The relay never blocks an agent: `hook` and `send` exit 0 with no output even when they fail.
+- The relay never blocks an agent: `hook`, `send` and `flush` exit 0 with no output even when they fail.

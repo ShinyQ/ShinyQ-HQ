@@ -56,7 +56,7 @@ Highlights Hall gallery (spectacle round, `docs/superpowers/specs/2026-10-13-spe
 
 | Layer | Tool | What |
 |---|---|---|
-| Content | Vitest | Schema validation, all `id` translations present, public-safety lint (blocklist of client names, codenames, private repo names from a private list kept outside the repo and injected in CI as the required `SAFETY_BLOCKLIST` secret: `scripts/scan-export.ts` fails `main` and production deploy runs without it and warns on pull requests; failure output names private terms only as `private term #n`), no em dashes in any text, asset existence |
+| Content | Vitest | Schema validation, all `id` translations present, public-safety lint (the forbidden patterns: money amounts, phone numbers, Azure resource hostnames, the Master's degree; client names are kept out by review, with no automated blocklist, owner decision 2026-10-22), no em dashes in any text, asset existence |
 | Logic | Vitest | Mission runner (each mission's step sequence, cancel), navgrid A* (reachability, snapping), URL parse/serialize round-trip, input intent mapping, store actions |
 | Components | Vitest + Testing Library | HUD: Rover Terminal keyboard flow, palette search and grouping, drawer tabs and focus trap, language toggle |
 | E2E | Playwright | Boot and intro skip, each mission end to end, ⌘K to a pod, elevator via wheel and panel, deep link to a pod, hologram view, README toggle, language switch, Quick view, static tier fallback (`?tier=static`) |

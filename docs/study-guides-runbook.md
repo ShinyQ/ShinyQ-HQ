@@ -1,14 +1,16 @@
 # Study guides runbook
 
 How to prepare, upload, replace, add and verify the certification study guide PDFs that the site reads in its
-in-app pdf.js reader (the Study guides shelf on the Writing page and "Read study guide" in the certification card).
+in-app pdf.js reader (the Study guides shelf on the Writing page, "Read study guide" in the certification card and the
+books of the L4 Study Vault).
 Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/content.md`](agents/content.md#study-guides).
 
 ## How it fits together
 
 - `content/study-guides.json` lists the guides. The human fields (slug, `certId`, code, spine, issuer, title,
   summary, edition, file name, exam domains) are written by hand; `pages`, `bytes`, `version` and `cover` are
-  written by `bun scripts/study-guides.ts prepare`.
+  written by `bun scripts/study-guides.ts prepare`. `bun run validate:content` and `tests/content/study-guides.test.ts`
+  check the schema and that each `certId` is a certification in `site-content.json`.
 - The PDFs live only in the private R2 bucket `hq-study-guides`, under `<slug>/<version>.pdf`. `version` is the
   first 12 hex characters of the prepared file's sha256, so a new PDF always gets a new key and never overwrites an
   object a browser may have cached.
@@ -79,12 +81,14 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
    `certifications[].id`; that is how the certification card gets "Read study guide").
 2. Add the entry to `content/study-guides.json` with the human fields: `slug` (lowercase, 2 to 40 characters),
    `certId`, `code` (the exam code, or `null`), `spine` (at most 14 characters, the label on the book's spine in the
-   planned 3D vault), `issuer`, `title` and `summary` (`{ en, id }`, titles in Title Case with no first person),
+   L4 Study Vault), `issuer`, `title` and `summary` (`{ en, id }`, titles in Title Case with no first person),
    `edition` (`YYYY-MM`), `file` (the download file name, `Name_Like_This.pdf`) and 1 to 8 `domains` (`weight` as
    `[min, max]` percent and a `{ en, id }` label). Fill the machine fields with placeholders that pass the schema
    (`"pages": 1`, `"bytes": 1`, `"version": "000000000000"`, `"cover": "/study-guides/<slug>.webp"`).
-3. Run `prepare`, review, `upload`, then commit as above. `tests/content/study-guides.test.ts` counts the guides:
-   update its expected count in the same PR.
+3. Run `prepare`, review, `upload`, then commit as above. `tests/content/study-guides.test.ts` pins the slugs in
+   file order (`SLUGS`) and the four `CertView.guide` links: update both in the same PR. The L4 Study Vault adds a
+   book per guide from the real content, so `tests/unit/library-vault.test.ts` (space rules, every book framed) and
+   `tests/unit/library-label-sweep.test.ts` must pass with the new book.
 
 ## Verify
 

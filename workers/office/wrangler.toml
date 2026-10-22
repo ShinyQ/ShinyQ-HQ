@@ -1,6 +1,6 @@
 # hq-office: the Agent Office Worker and its Durable Object (runbook: workers/office/README.md).
 #
-# Deployed by .github/workflows/deploy.yml (job "hq-office Worker", after the Pages upload) from this folder, and
+# Deployed by .github/workflows/deploy.yml (inside the Pages job, before the upload) from this folder, and
 # redeployed by rollback.yml with Pages; it has its own config, separate from the Pages project in the repo root. No route, no workers.dev or preview URL: the
 # Pages Functions /api/office, /api/office/beat and /api/office/github reach it through the service binding OFFICE.
 #

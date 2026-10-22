@@ -104,21 +104,23 @@ A paper or thesis with `document` in `site-content.json` gets "Read the paper" (
 
 ## Study guides
 
-The owner's certification study guides (today AI-103, AI-901, GH-600 and Google Generative AI Leader) are read in the site's own pdf.js reader: from the Study guides shelf on the Writing page (`/library#guides`) and from "Read study guide" in a certification's preview card. Step by step: [`study-guides-runbook.md`](study-guides-runbook.md).
+The owner's certification study guides (today AI-103, AI-901, GH-600 and Google Generative AI Leader) are read in the site's own pdf.js reader: from the Study guides shelf on the Writing page (`/library#guides`), from "Read study guide" in a certification's preview card and from the books of the L4 Study Vault in the 3D tower. Step by step: [`study-guides-runbook.md`](study-guides-runbook.md).
 
-- **Dataset**: `content/study-guides.json`, a separate file (zod `StudyGuidesFileSchema`), one entry per guide in shelf order.
+- **Dataset**: `content/study-guides.json`, a separate file (zod `StudyGuidesFileSchema`), one entry per guide in shelf order (also the Study Vault's book order).
   - Written by hand: `slug`, `certId` (a `certifications[].id`; it links the guide to its certification card), `code` (or `null`), `spine` (at most 14 characters, for the L4 Study Vault's book spines), `issuer`, `title` and `summary` (`{ en, id }`; titles in Title Case with no first person), `edition` (`YYYY-MM`), `file` (the download file name) and 1 to 8 exam `domains` (`weight` `[min, max]` percent and a `{ en, id }` label).
   - Written by the script: `pages`, `bytes`, `version` (12 hex characters of the prepared file's sha256) and `cover`.
 - **Prepare and upload**: `bun scripts/study-guides.ts prepare <slug>=<file.pdf> ...` checks the text for phone numbers, rewrites the PDF metadata, packs it into object streams (range friendly for pdf.js), records the machine fields and renders the cover; `bun scripts/study-guides.ts upload [<slug> ...]` puts the prepared files into the private R2 bucket `hq-study-guides` as `<slug>/<version>.pdf`; `check` compares the prepared files with the JSON. Needs `qpdf`, poppler and `cwebp` (`brew install qpdf poppler webp`) and `bunx wrangler login`.
 - **Covers**: page 1 of each prepared PDF, 480 px wide webp in `public/study-guides/<slug>.webp`, committed.
 - **Never commit a PDF.** The source and prepared PDFs stay out of the repository (prepared copies go to the gitignored `.study-guides/`); the site serves them only through `/api/guides/<slug>`.
-- **Replacing a guide** gives it a new version and key; delete the old object only after the new deploy is live (runbook).
+- **Replacing a guide** gives it a new version and key; keep the old object in the bucket at least a day after the new deploy, then delete it (runbook).
 - **Safety**: `prepare` refuses text with an Indonesian phone number; review the guide yourself for client names (C3) before preparing it.
 
 ## Public safety
 
 - Private evidence never enters the repo.
-- The content lint (`tests/content/safety.test.ts`, `bun run validate:content`) blocks the forbidden patterns in the dataset, MDX and messages: em dashes, money amounts, phone numbers, Azure resource hostnames and the Master's degree. A pod's `liveUrl` on a public live host (`PUBLIC_LIVE_HOSTS`) is exempt from the hostname rule.
+- The content lint (`tests/content/safety.test.ts`, `bun run validate:content`) blocks the forbidden patterns (em dashes, money amounts, phone numbers, Azure resource hostnames and the Master's degree) in the dataset, the perspectives, the Ask site-build note, the post diagrams, the build story, the study guides and the messages; MDX posts are checked for em dashes. A pod's `liveUrl` on a public live host (`PUBLIC_LIVE_HOSTS`) is exempt from the hostname rule.
+- 2026 hackathon entries stay out unless the owner approves one (today Sewise Fashion Labs, allowlisted in `tests/content/dataset.test.ts`).
+- PDFs: `paper:pages` refuses personal data patterns ([Paper PDFs](#paper-pdfs)) and the study guide `prepare` step refuses phone numbers ([Study guides](#study-guides)); the CV is exempt.
 - Client company names (C3) and private repository or cloud resource names have no automated list (owner decision 2026-10-22): review keeps them out, and Ask prompt rule 6 names clients only by sector.
 - Product names in `content/safety-allowlist.txt` feed the Ask entity allowlist; never add a client name there.
 - `scripts/scan-export.ts` checks the built `out/` after the CI and production builds for the per-page script policy only (one `data-hq-csp` meta, a sha256 for every inline script, no `'unsafe-inline'`).

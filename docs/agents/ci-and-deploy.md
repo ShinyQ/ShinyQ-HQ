@@ -7,15 +7,15 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Scripts
 
-- Package manager: Bun, the version in `packageManager` (`package.json`; CI reads it through `bun-version-file`).
+- Package manager: Bun, the exact version in `packageManager` (`bun@1.4.3` in `package.json`; every CI job reads it through `bun-version-file`).
 - Node: one exact version in `.nvmrc` and `.node-version` (24.22.1, the 2026-10-21 security release), with `engines.node` at `>=` that version. `next build`, Playwright, wrangler and `@lhci/cli` run on Node (their bins have a node shebang), so every CI job that runs them sets it up with `actions/setup-node` (`node-version-file: .nvmrc`): the shared `.github/actions/setup` does, and a job without it (Lighthouse CI, the rollback) adds the step itself. Never rely on the runner's preinstalled Node. `tests/unit/workflows.test.ts` checks it. Bump all three files together on a Node security release.
 
 | Script | Notes |
 |---|---|
 | `dev` | |
-| `build` | static export; `build:web` is an alias |
-| `typecheck` | `next typegen && tsc` |
-| `lint`, `test` | |
+| `build` | knowledge pack, logo atlas check, `next build`, then `defer-scripts`, `root-redirect`, `check-client-chunks` and `csp-hashes`; `build:web` is an alias |
+| `typecheck` | knowledge pack, `next typegen`, `tsc --noEmit` |
+| `lint`, `test`, `test:watch` | |
 | `verify:quick` | see [Fast verification](performance.md#fast-verification) |
 | `e2e` | plain `playwright test` |
 | `e2e:full`, `e2e:changed`, `e2e:smoke`, `e2e:shard` | |
@@ -24,7 +24,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 | `e2e:durations` | refresh the shard timings |
 | `e2e:timeline` | nightly timeline |
 | `e2e:look` | local look check |
-| `screenshots`, `screenshots:pages`, `serve`, `validate:content`, `floor:thumbs` | |
+| `screenshots`, `screenshots:pages`, `serve`, `validate:content`, `floor:thumbs`, `og:check`, `og:stills` | |
+| `build:knowledge`, `logo:atlas`, `cv:pages`, `paper:pages`, `ask:eval` | content and media tools |
 | `bench` | Vitest benches in `tests/bench/` (see [Fast verification](performance.md#fast-verification)) |
 
 ### Before pushing and committing
@@ -36,7 +37,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - Measured 2026-10-18 (job `startedAt` to `completedAt` overlap): full `main` runs 39114729615, 39116733269 and 39119431246 peak at 14; complement dispatch 39128755562 at 14, `main` complement 39129760520 at 4; full PR runs 39122107380 and 39126462529 at 12; selective PR runs 39111135400 and 39108331771 at 7, 39127959018 at 5.
 - Commit in logical steps with conventional messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`).
 - Prefer the `rtk` git wrapper.
-- One PR per phase; do not merge without the owner.
+- One PR per change; do not merge without the owner. PRs land as squash merges.
 
 ### Dependencies
 
@@ -44,7 +45,9 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Each major lands in its own PR with every gate green.
   - 3D library majors also need the strict visual gate, the perf lane and the memory gates ([performance.md](performance.md)).
 - A major that cannot pass is pinned with a `# revisit YYYY-MM-DD: reason` ignore in `.github/dependabot.yml` and a row in `docs/deploy.md` section 17 ([deploy.md](../deploy.md)); `tests/unit/dependabot.test.ts` checks it.
-- TypeScript stays on `~6.0` until typescript-eslint supports 7.
+- TypeScript stays on `~6.0`: the TypeScript 7 major is skipped until 2027-01-15 (the `typescript` ignore in `.github/dependabot.yml` and its row in `docs/deploy.md` section 17), because typescript-eslint 8 supports TypeScript below 6.1 and TypeScript 7 drops the compiler API a unit test uses.
+- Exact pins: `next`, `eslint-config-next`, `react`, `react-dom`, `sharp`, `pdfjs-dist` and `wrangler`. Bump `wranglerVersion` in `deploy.yml` and `rollback.yml` with `wrangler` (`tests/unit/workflows.test.ts`), and keep the `compatibility_date` of `wrangler.toml` and both Workers on the same date.
+- Dependabot (`.github/dependabot.yml`): weekly on Monday (Asia/Jakarta), one `minor-and-patch` group for Bun packages (at most 5 open PRs) and one group for GitHub Actions (the workflows and `.github/actions/setup`). Every action is pinned to a full commit SHA with a version comment (`tests/unit/workflows.test.ts`).
 - TypeScript 6 does not load every `@types/*` package: `tsconfig.json` lists the global ones in `types` (`["bun"]`, which brings the Node types). Add a package there when its globals are needed.
 
 ### `main` ruleset
@@ -70,14 +73,14 @@ the nightly run everything on 8 e2e and 4 perf shards.
 
 - Always, on every event:
   - `Plan CI` (`changes` job, `scripts/ci-plan.ts`): plans the heavy jobs (see [What a pull request runs](#what-a-pull-request-runs) and [Complement runs on `main`](#complement-runs-on-main)) and uploads the run's record, the `ci-plan` artifact (`ci-plan.json`, 30 days): what the run covers (e2e "all" or the specs plus the single smoke tests, perf "all" or the perf keys, Lighthouse "all" or the URL paths).
-  - `Typecheck, lint, unit tests` (`check` job).
+  - `Typecheck, lint, unit tests` (`check` job), plus a non-blocking `bun audit --audit-level=high` and the non-blocking Ask staleness check (`scripts/ask-staleness.ts`, one refreshed PR comment when the Ask data is stale).
   - `Secret scan` (gitleaks).
   - `Build static export` (`site` job): the build with its CSP hashes, the script policy check of `out/` (`scripts/scan-export.ts`) and `og:check`.
     - It checks out the full history (`fetch-depth: 0`) and first runs `bun scripts/build-facts.ts --write` (right after the setup action), which rewrites `content/generated/build-facts.json` (commits, PRs per round, unit test files, the end-to-end test count, spec and plan documents, CI jobs, the 3D budgets) for the build page.
     - The `site` job of `deploy.yml` (full-history checkout) runs the same step before its builds, so the shipped build page carries fresh numbers.
     - Local builds use the committed snapshot; refresh it with `bun scripts/build-facts.ts --write`. `--no-runners` skips the `playwright test --list` count and cannot be combined with `--write` (it would drop it from the file). No unit test count is measured (`vitest list` counts each `it.each` template once); only unit test files are. A shallow clone keeps the committed file. A failing runner prints a warning and omits only its number.
 - Heavy jobs, against that one build:
-  - e2e in duration-balanced shards (`E2E shard n/N`): 8 on a full run; a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8).
+  - e2e in duration-balanced shards (`E2E shard n/N`, worker-aware packing from `e2e/durations.json`, [performance.md](performance.md#ci-shards); functional specs run rides, drives, camera eases and the intro 4x faster, [performance.md](performance.md#animation-speed)): 8 on a full run; a selective or complement run passes only the planned spec files and smoke tests (`E2E_FILES`) on the shard count the plan sizes (`e2e_shards`, 1 to 8).
   - The 3D perf gates (`perf` job, `3D perf gates n/N`: `bun run e2e:perf:shard`, see [Performance gates and measurement](performance.md#performance-gates-and-measurement)): 4 shards on full pushes, dispatches and the nightly, 1 to 4 on a complement run; always 2 on a pull request (the required names `1/2` and `2/2`), running only the planned perf tests (`PERF_GREP`).
   - A blocking `Lighthouse CI` job (`lighthouserc.json`):
     - LCP 2 s, CLS 0.01, TBT 200 ms and transfer budgets for fonts, HTML, CSS and JS fail the aggregate check.
@@ -89,7 +92,7 @@ the nightly run everything on 8 e2e and 4 perf shards.
   - requires every job before it to succeed (`Plan CI`, check, secret scan, build, e2e, perf, Lighthouse);
   - merged HTML report, the tests that passed only on retry, and the 3D perf summary against the last green main run (when the perf gates ran);
   - uploads the `ci-full` artifact when the plan ran every e2e test, every perf test and every Lighthouse URL, or is a complement run (second line `complement of CI run <id>`), even if the run then turns red; the marker the deploy gate needs, which still treats a red run as red.
-- A Cloudflare Pages preview (project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist.
+- A Cloudflare Pages preview (`preview` job, project `vars.CF_PREVIEW_PROJECT`, default `shinyq-hq`) only on a same-repository PR with `CF_PREVIEWS=true` and both `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` readable without an environment. The deploy token lives only in the `production` environment, so previews need their own preview-only repository token; today the job skips with a notice.
 - PR runs replace each other; in-progress runs on `main` are never cancelled (a newer push can replace a queued one; the deploy reuses them).
 
 ### What a pull request runs
@@ -171,30 +174,29 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
 - Fast path (push only, `scripts/merge-gate.ts`): deploys at once, without waiting for the push CI on `main`, when all hold:
   - no open issue labelled `deploy-rollback`;
   - the commit is the merge commit of a pull request from this repository (`GET /repos/{repo}/commits/{sha}/pulls`);
-  - the PR head's tree equals the merged tree (a squash of an up-to-date PR). The ruleset stays non-strict on purpose: "require up to date" would force a PR CI rerun after every merge. 13 of the 15 merges before the change matched; a mismatch falls back;
+  - the PR head's tree equals the merged tree (a squash of an up-to-date PR). The ruleset stays non-strict on purpose: "require up to date" would force a PR CI rerun after every merge; a mismatch falls back;
   - every required check of the `main` ruleset (read from `GET /repos/{repo}/rules/branches/main`) has a green newest GitHub Actions attempt on the PR head. Selective PR runs count: the owner accepted that weaker guarantee, backed by the `main` CI (the complement of the PR run, or a full run) and the rollback.
-  - The deploy job re-checks the `deploy-rollback` label right before the upload; when it opened meanwhile, the job waits for the complete green `main` CI on its commit (`scripts/ci-status.ts`) before uploading, and fails without one.
-  - Merge to live: about 4 minutes on the fast path, about 25 minutes plus a manual dispatch before.
-- Otherwise (fallback, every dispatch):
-  1. Reuses CI's green `Build, CV and e2e` for the commit (or for a commit with the same tree, from a push to `main` or a same-repository PR run only).
-     - Only a complete run counts: one that carries the `ci-full` artifact (dispatches and the nightly always do; a push to `main` does when it ran everything or the complement of its PR run, since the two runs together cover everything). Selective PR runs and runs without the marker are never reused.
-     - `scripts/ci-status.ts` waits up to 40 minutes while CI runs.
-     - It keeps waiting past its 3-minute grace while a CI run for the commit is still unfinished.
-     - It fails the deploy on a red CI, marker or not.
-     - Without a complete CI result, or with the `rerun_e2e` input, it runs the 8 e2e shards itself first.
-     - The weekly facts merge always lands here: it gets no push CI, and its PR was tested by a `workflow_dispatch` run, never reused by tree (`refresh-facts.yml` already gated the merge on that full run).
-  2. Builds, deploys the hq-office Worker (after the gates, before the upload: Pages rejects a binding to a missing Worker), publishes the Ask knowledge pack to Workers KV (`scripts/ask-pack.ts publish`, no flip), deploys `out/` plus `functions/`, then flips `pack:current` to the new pack ([ask.md](ask.md), runbook section 17). A failed KV call exits 1 before the upload, so production is unchanged.
-  3. Smoke-checks production (`scripts/deploy-smoke.ts`, including `GET /api/rum` and `GET /api/visit` = 405 and `GET /api/stats` = 204 or a valid snapshot).
-  4. Deploys the hq-stats Worker ([stats.md](stats.md)): job "hq-stats Worker", token probes, then `cloudflare/wrangler-action`; `STATS_WORKER_DEPLOY=false` skips it.
-  5. Opens a `deploy-failed` issue on failure. A smoke failure after the flip flips the pack pointer back first.
-- The deploy job (Cloudflare Pages production) deploys the hq-office Worker after the gates (fast path still open, complete green main CI) and the knowledge pack, and before the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
-  It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment, in step env;
-  a commit without `workers/office/` skips it with a notice. The Worker step has `continue-on-error`, so a failure
-  does not stop the upload while the Worker exists; a check after the smoke check then fails the job (and opens the
-  `deploy-failed` issue). The rollback redeploys it from the rollback target when its sources differ. `office-worker.yml` bundles it on pull requests that touch `workers/office/`,
-  `src/lib/office/` or `functions/_lib/security.ts`
-  (not a required check). `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps in the deploy job and the rollback redeploy.
-  Runbook: `workers/office/README.md`; rules: [office.md](office.md).
+  - Merge to live: about 4 minutes.
+- Otherwise (fallback, every dispatch), `Reuse the CI result` (`scripts/ci-status.ts`) reuses CI's green `Build, CV and e2e` for the commit (or for a commit with the same tree, from a push to `main` or a same-repository PR run only):
+  - Only a complete run counts: one that carries the `ci-full` artifact (dispatches and the nightly always do; a push to `main` does when it ran everything or the complement of its PR run, since the two runs together cover everything). Selective PR runs and runs without the marker are never reused.
+  - It waits up to 40 minutes while CI runs, and keeps waiting past its 3-minute grace while a CI run for the commit is still unfinished.
+  - It fails the deploy on a red CI, marker or not.
+  - Without a complete CI result, or with the `rerun_e2e` input, the workflow builds without the beacon and runs the 8 e2e shards itself first.
+  - The weekly facts merge always lands here: it gets no push CI, and its PR was tested by a `workflow_dispatch` run, never reused by tree (`refresh-facts.yml` already gated the merge on that full run).
+- `Build static export` (both paths): refreshes the build facts, builds for production with `vars.CF_BEACON_TOKEN` and the search engine verification variables, and runs the script policy check (`scripts/scan-export.ts`) on the `out/` that ships.
+- `Cloudflare Pages production` (both paths, environment `production`), in order:
+  1. Skips with a notice while `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` or `vars.CF_PAGES_PROJECT` is missing.
+  2. Builds the Ask knowledge pack. On the fast path it re-checks the `deploy-rollback` label; when the issue opened meanwhile, it waits for the complete green `main` CI on its commit (`scripts/ci-status.ts`) and fails without one.
+  3. Deploys the hq-office Worker (below).
+  4. Publishes the Ask knowledge pack to Workers KV (`scripts/ask-pack.ts publish`, no flip), deploys `out/` plus `functions/` (`wrangler pages deploy out --branch=main`), then flips `pack:current` to the new pack ([ask.md](ask.md), runbook section 17). A failed KV call exits 1 before the upload, so production is unchanged.
+  5. Smoke-checks production (`scripts/deploy-smoke.ts`, up to 5 minutes): `GET /api/ask` enabled with this commit's pack date, `GET /api/rum` and `GET /api/visit` = 405, `GET /api/stats` = 204 or a valid snapshot, `/en` with its script policy, the live contributions number and the beacon and no injected Pages analytics, one file per cached prefix, and the LinkedInBot cards of `/`, `/en` and `/id`. A smoke failure after the flip flips the pack pointer back.
+- hq-office Worker, inside the Pages job: after the gates (fast path still open, complete green main CI) and before the pack publish and the Pages upload, because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker.
+  - It sets `OFFICE_INGEST_KEY` and `GITHUB_WEBHOOK_SECRET` (from the secret `OFFICE_GITHUB_WEBHOOK_SECRET`: GitHub rejects names starting with `GITHUB_`) from the `production` environment, in step env; a missing secret leaves its route at 503.
+  - A commit without `workers/office/` skips it with a notice, and so does the variable `OFFICE_WORKER_DEPLOY = "false"` (unset).
+  - The Worker step has `continue-on-error`, so a failure does not stop the upload while the Worker exists; the step "hq-office Worker deploy failed" after the smoke check then fails the job (and opens the `deploy-failed` issue).
+  - `office-worker.yml` bundles it with a dry run on pull requests that touch `workers/office/`, `src/lib/office/` or `functions/_lib/security.ts` (not a required check). Runbook: `workers/office/README.md`; rules: [office.md](office.md).
+- hq-stats Worker (job "hq-stats Worker", environment `production` without a deployment record), after a successful Pages job ([stats.md](stats.md)): token probes (`scripts/stats-token-check.ts analytics` and `deploy`), then `cloudflare/wrangler-action` with `WA_TOKEN` and `WA_ACCOUNT_ID`. The variable `STATS_WORKER_DEPLOY = "false"` skips it; it is unset, so every deploy runs it. `stats-worker.yml` bundles it with `--dry-run` on pull requests that touch it.
+- Any failed job opens or comments on the one `deploy-failed` issue (job "Report a failed deploy"); production keeps serving the previous deployment.
 - Rollback (`.github/workflows/rollback.yml`, `scripts/rollback.ts`), on every completed CI run from a push to `main`:
   - Red (failure or timed out):
     - first opens or updates the one `deploy-rollback` issue (failing run link; the last failing commit in a hidden marker), which closes the fast path, so no new fast-path upload can race the rollback;
@@ -203,6 +205,7 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
     - target: the newest earlier successful production deployment whose commit is a strict ancestor of the failing commit and is proven good: a green complete CI, or no CI run at all (the weekly facts merge, which the deploy shipped after its own e2e shards). A cancelled or unfinished CI (a `main` push whose pending run a newer push replaced) proves nothing, so that deployment is skipped. No stored state: the Cloudflare and GitHub APIs are the record;
     - calls `POST /accounts/{id}/pages/projects/{project}/deployments/{target}/rollback`, then waits until the target is live and `/en` answers 200;
     - redeploys the hq-stats Worker from the target commit when `workers/stats/` differs and `STATS_WORKER_DEPLOY` is not `false`;
+    - redeploys the hq-office Worker from the target commit (after `bun install` and `bun scripts/build-knowledge.ts` there) when `workers/office`, `src/lib/office` or `functions/_lib/security.ts` differ and `OFFICE_WORKER_DEPLOY` is not `false`; a target without `workers/office` leaves the live Worker;
     - flips the Ask knowledge pack pointer to the target commit's pack (`ask-pack.ts rollback`, production project only; a commit before the KV pack leaves it);
     - comments the outcome on the issue (from and to deployment ids, or why nothing was rolled back).
   - Green: closes the issue once the green commit equals or follows the last failing commit, then dispatches `deploy.yml` for the tip of `main` (a rollback may have left production behind `main`).
@@ -210,7 +213,8 @@ everything once per merge without repeating the PR's tests (`scripts/ci-compleme
   - Drill: `gh workflow run rollback.yml --ref main -f sha=<commit>` (a dry run by default: decides and reports, no rollback call, no Worker deploy, no issue); `-f dry_run=false -f project=<throwaway project>` for a real rollback on a drill project.
   - Manual rollback: [deploy.md section 6](../deploy.md#6-rollback).
 - Ask pack check (`.github/workflows/ask-pack.yml`, dispatch from `main` only, `production` environment): `-f mode=verify` (the deploy token can read, list, write and delete `pack:` keys, with a probe key), `dry-run` (build and validate the pack and plan the publish, writing only the probe) or `status`. Run it after adding or rotating the token's Workers KV Storage: Edit permission.
-- PR previews are off unless `CF_PREVIEWS=true`.
+- PR previews are off unless `CF_PREVIEWS=true` and a preview-only repository token exist ([Jobs](#jobs)).
+- Credentials: the deploy token `CLOUDFLARE_API_TOKEN` (the account-owned Cloudflare API token `hq-ci-deploy`) is a secret of the main-only `production` environment, next to `GROQ_API_KEY`, `OFFICE_INGEST_KEY` and `OFFICE_GITHUB_WEBHOOK_SECRET`; `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN` and `CF_LOGS_TOKEN` are repository secrets. The deploy, rollback, Worker, Ask pack, eval and content-gap jobs declare `environment: production` (with `deployment: false` where nothing deploys) and passes secrets only in step-level `env` (`tests/unit/workflows.test.ts`). Permissions and setup: [deploy.md](../deploy.md) sections 2 and 3.
 - Owner setup: `docs/deploy.md` ([deploy.md](../deploy.md)).
 
 ## Build-time env

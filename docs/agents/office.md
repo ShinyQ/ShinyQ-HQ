@@ -32,7 +32,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   `OFFICE_PIPELINE` stay in `protocol.ts`. `parseOfficeResponseV4` is strict on a v4 body (every key, the caps, job
   names and ship keys free of control characters and `<` `>`, seats 0 to 9, URLs `https`) and reads a v3, v2 or v1 body
   (a rolled-back Worker or Function) as v4 with an empty pipeline (`{ runs: [], ships: [] }`), so the scene reads one
-  type and shows part A's anonymous tower progress from the GitHub feed; the disabled body passes as is.
+  type and shows the tower's anonymous progress from the GitHub feed; the disabled body passes as is.
 - `src/lib/office/protocolHistory.ts`: the day replay's contract (`GET /api/office/history`, `OFFICE_HISTORY_PATH`),
   imported only by the Pages Function, the hq-office Worker and the replay chunk, never re-exported from `protocol.ts`,
   so the Classic card, the watch, the scene chunk and the drawer body never carry it (`tests/unit/office-chunk-graph.test.ts`).
@@ -49,11 +49,10 @@ Index: [AGENTS.md](../../AGENTS.md).
   return null on any mismatch; the disabled answer `{v:1, enabled:false}` passes.
 - Seats ([decision](../decisions/2026-10-21-office-ten-desks.md)): ten, in two rows of five; slots 0 to 4 are the
   front row (`OFFICE_DESKS`, 5), 5 to 9 the back row. v1 and v2 keep five desks (slots 0 to 4) and count sessions on
-  seats 5 to 9 in `extra`: never a slot above 4, never more than five desks, byte for byte as before for documents
-  with at most five sessions (part A clients, already deployed and polling v2, see no change for at most five
-  sessions). With more than five sessions the eviction rule changed: an awake newcomer takes the longest-asleep seat
-  only when all ten are taken, so v1 and v2 clients may show a sleeping front desk while an awake session is in
-  `extra`.
+  seats 5 to 9 in `extra`: never a slot above 4, never more than five desks (with at most five sessions every
+  session sits in the front row, so v1 and v2 show them all). An awake newcomer takes the longest-asleep seat only
+  when all ten are taken, so with more than five sessions v1 and v2 clients may show a sleeping front desk while an
+  awake session is in `extra`.
 - v1 never changes, byte for byte (old clients never see a new field; a golden in `tests/office/state.test.ts`):
   `parseOfficeResponse` rejects any body carrying `helpers`. Only exactly `?v=2` gets v2 and only exactly `?v=3` gets
   v3, and only exactly `?v=4` gets v4; no query, `?v=5` or junk get v1.
@@ -62,10 +61,11 @@ Index: [AGENTS.md](../../AGENTS.md).
   rolled-back Worker or Function; only on this path a v1 or v2 body may carry up to ten desks with slots 0 to 9) or
   `parseOfficeResponseV4` (above) and hide on null; the Worker validates beats with `parseOfficeBeat`.
 - Who polls what: the 3D office's poller asks `?v=4` (`OFFICE_V4_PATH` with `parseOfficeResponseV4`;
-  `createOfficePoller({ path, parse, interval })` in `office/live.ts`: the fast cadence near the office or with a drawer
+  `createOfficePoller({ path, parse, interval })` from `src/lib/office/poll.ts`, run by `office/live.ts`: the fast cadence
+  (`POLL.activeMs`, 10 s, while a desk of a live snapshot is awake, else 30 s) near the office or with a drawer
   open, 30 s from afar, nothing out of view); the Classic card and the L1 beacon's watch ask `?v=3` (`OFFICE_V3_PATH`),
-  the watch every 30 s while the scene's poller is not running (so a back-row asker lights the beacon; the same one
-  request per 30 s as before). `signalFromBody` reads v1 to v4 bodies with up to ten desks and slots 0 to 9, and the
+  the watch every 30 s while the scene's poller is not running (v3, so a back-row asker lights the beacon too).
+  `signalFromBody` reads v1 to v4 bodies with up to ten desks and slots 0 to 9, and the
   newest production deploy success at most 30 s old (v4: `pipeline.ships`; older: the feed item titled
   `Deploy · production`). The 3D scene's `officeView` (with `OfficeView.pipeline`, null when off, offline or disabled)
   and the Classic card both read all ten (slots 0 to 9, `extra` past ten); there `withSeats(snap, OFFICE_SEATS)`
@@ -81,11 +81,12 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 - A beat carries only `{v, agent, session, state, activity, repo?, branch?, title?, helpers?, ts}`; `session` is a
   salted hash and `helpers` a count of active sub-agents (0 to `OFFICE_HELPERS_MAX`, 9), never their names, types or
-  ids. `sanitizeBeat` keeps it for every repository; the session stores it, and only snapshot v2 shows it.
+  ids. `sanitizeBeat` keeps it for every repository; the session stores it, and snapshots v2 to v4 show it (v1 never).
 - `repo`, `branch` and `title` survive only for repositories in `OFFICE_REPO_ALLOWLIST` that a webhook reported public.
 - Titles (beats and GitHub items) go through `cleanTitle`: one clean line (an em dash becomes a comma, control
   characters and angle brackets are removed, whitespace collapses, cut to the length cap); an empty title is dropped
-  or replaced by a generic one. There is no term blocklist: the repository allowlist is the privacy boundary.
+  or replaced by a generic one. The repository allowlist is the privacy boundary: client names are kept out by review,
+  with no automated blocklist ([decision](../decisions/2026-10-22-safety-blocklist-removed.md)).
 - Only same-repository GitHub activity shows: pull requests from forks and workflow runs whose `head_repository` is
   another repository are ignored, and a pull request also needs a sender in `OFFICE_GITHUB_ACTORS` (Worker var,
   default `ShinyQ,Copilot`) or an OWNER, MEMBER or COLLABORATOR author association.
@@ -99,7 +100,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   beats and parses webhooks; `state.ts` is the pure reducer; `office.ts` is the Durable Object.
 - `[vars]` in `workers/office/wrangler.toml`: `OFFICE_REPO_ALLOWLIST` (`ShinyQ/*`) and `OFFICE_GITHUB_ACTORS`
   (`ShinyQ,Copilot`).
-- One JSON document in the Durable Object's storage API (SQLite backend): one row written per accepted beat or webhook.
+- One JSON document in the Durable Object's storage API (SQLite backend): one row written per accepted beat or webhook,
+  plus the replay log rows (below).
 - Time rules run at read time (`effective`): thinking after 20 s quiet while working or reviewing, asleep after 3 min
   (15 min while testing, on CI or waiting for input), done for 20 s, failed until the next beat, removed after 30 min.
   No alarms.
@@ -172,8 +174,8 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### Pages Functions
 
-- `functions/_lib/office.ts`: `GET /api/office` (v1), `GET /api/office?v=2` (v2), `GET /api/office?v=3` (v3) and
-  `GET /api/office?v=4` (v4) (always 200 JSON: the snapshot, `mode: "off"` on failure (v4 with an empty pipeline), or
+- `functions/_lib/office.ts` (`createOfficeSnapshotHandler`): `GET /api/office` (v1), `GET /api/office?v=2` (v2), `GET /api/office?v=3` (v3) and
+  `GET /api/office?v=4` (v4) (GET and HEAD, 405 otherwise; always 200 JSON: the snapshot, `mode: "off"` on failure or without the binding (v4 with an empty pipeline), or
   `{v:1, enabled:false}`) with an ETag (304 on a matching `If-None-Match`) and
   `Cache-Control: public, max-age=5, stale-while-revalidate=30` (the disabled answer `public, max-age=60`), stored in
   `caches.default` for 5 s per data center under one key per version (`VERSIONS`: `/api/office`, `/api/office?v=2`,
@@ -182,8 +184,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   validate with `parseOfficeResponseV2`, `parseOfficeResponseV3` or `parseOfficeResponseV4`, so a rolled-back Worker's
   older body is served in the asked version; `POST /api/office/beat` and `/github` forward the raw body and signature
   headers through the service binding `OFFICE`.
-- `GET /api/office/history` and `GET /api/office/history?day=YYYY-MM-DD` (`functions/api/office/history.ts`,
-  `createOfficeHistoryHandler`, `historyRoute`): GET and HEAD only (405 with `Allow` otherwise). No query is the index; exactly one
+- `GET /api/office/history` and `GET /api/office/history?day=YYYY-MM-DD` (`functions/api/office/history.ts` over
+  `createOfficeHistoryHandler` and `historyRoute` in `functions/_lib/office.ts`): GET and HEAD only (405 with `Allow` otherwise). No query is the index; exactly one
   `day` query inside the 8-day WIB window (`historyWindow`) is that day; any other query, a malformed or out-of-window day is the
   fixed 404 `{"v":1,"error":"day"}` (`no-store`, no echo of the input), never reaching the Worker. The edge cache key is built
   from the validated values (`/api/office/history` or `/api/office/history?day=<day>`), so junk queries cannot fill the cache. Both
@@ -204,8 +206,8 @@ Index: [AGENTS.md](../../AGENTS.md).
   `office-worker.yml` bundles it on pull requests (no secrets).
 - `rollback.yml` redeploys it from the rollback target when `workers/office`, `src/lib/office` or
   `functions/_lib/security.ts` differ (secrets persist; a target without `workers/office` leaves it at the live
-  version; it runs `bun scripts/build-knowledge.ts` in the target first, because a target from before 2026-10-22
-  bundles `functions/_generated/safety.json`). A Worker rolled back to before snapshot v2 rejects beats that carry
+  version; it runs `bun scripts/build-knowledge.ts` in the target first, so an older target's generated files exist).
+  A Worker rolled back to before snapshot v2 rejects beats that carry
   `helpers` (sessions with helpers go missing until the roll forward) and answers v1 to `?v=2` (read as v2). A Worker
   rolled back to before snapshot v3 answers v1 to `?v=3` (read as v3, without helpers) and seats only five: it reads
   only the stored `slot`, so back-row sessions count in `extra` and take a free front desk at the next beat, and its
@@ -213,7 +215,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   `tests/office/legacy-five-desks.ts`). A Pages rollback to before v3 serves clients that poll v2 or v1, and a cached v3 client asking that
   Function gets v1 (read as v3). A Worker or Function rolled back to before v4 answers `?v=4` as v1 (the Worker
   forwards no `?v=4`, the Function shares the v1 entry); the v4 Function and the scene read that body as v4 with an
-  empty pipeline (part A's anonymous lanes, no effects).
+  empty pipeline (anonymous lanes from the GitHub feed, no effects).
   A Worker rolled back to before the replay has no `/history` (a 404): the index answers 503 (a day request, the fixed 404) and the drawer
   says "Replay unavailable"; the stored `log:` rows wait untouched in the Durable Object (that Worker never reads or writes them, and the
   served window only ever names the 8 current days), and the first write of a new WIB day after the roll forward prunes
@@ -321,7 +323,7 @@ Index: [AGENTS.md](../../AGENTS.md).
     screen of the viewport (the `VisitsLazy` pattern); until then a static loading line and a short note (what the card
     shows, so a reader without JavaScript gets something) hold the card's height. A chunk that fails to load leaves the
     offline line, reports `offline` and releases the height.
-- The panel reuses part 3's `createOfficePoller` and `src/lib/office/model.ts` (`officeCounts`, `deskTitle`,
+- The panel reuses `createOfficePoller` (`src/lib/office/poll.ts`) and `src/lib/office/model.ts` (`officeCounts`, `deskTitle`,
   `STATE_TONE`, `sinceLabel`, `safeGithubUrl`): it polls only while the section is within a screen of the viewport, and
   the poller skips hidden tabs and stops after 10 min without input (pointer moves, presses, keys and scrolling count;
   the tab turning visible while the card is near restarts it and fetches at once, as the 3D office does; scrolling the

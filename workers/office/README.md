@@ -25,8 +25,9 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
     authors with the OWNER, MEMBER or COLLABORATOR association.
 - Deploy: `deploy.yml`, inside the Pages job ("Cloudflare Pages production"), after the gates and before the upload,
   because Pages rejects a deploy whose service binding `OFFICE` names a missing Worker; a commit without
-  `workers/office/` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
-  failed" then turns the job red.
+  `workers/office/` or the repository variable `OFFICE_WORKER_DEPLOY = "false"` skips it. A failed Worker step does not stop the upload; the step "hq-office Worker deploy
+  failed" then turns the job red. `office-worker.yml` bundles it (`wrangler deploy --dry-run`, no secrets) on pull
+  requests that touch `workers/office/`, `src/lib/office/` or `functions/_lib/security.ts` (not a required check).
   `rollback.yml` redeploys it from the rollback target when its sources differ (the secrets persist).
 - Snapshot versions: v1 (`GET /snapshot`) never changes; v2 is only exactly `?v=2`, v3 only exactly `?v=3` and v4 only
   exactly `?v=4` (the Worker forwards no other query, and the Function, the Worker and the Durable Object answer v1
@@ -56,8 +57,8 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Pull requests only when the head branch is in the same repository (forks are ignored) and the sender is in
   `OFFICE_GITHUB_ACTORS` or the author association is OWNER, MEMBER or COLLABORATOR.
 - Workflow runs only when `head_repository` is the same repository (runs from forks are ignored).
-- Titles go through `cleanTitle` (one clean line, cut to the cap); there is no term blocklist, so the repository
-  allowlist is the privacy boundary.
+- Titles go through `cleanTitle` (one clean line, cut to the cap); the repository allowlist is the privacy boundary
+  (client names are kept out by review, with no automated blocklist).
 - A `repository` event with action `privatized` removes the repository from the known-public set and strips its
   runs, pull requests, feed items and the repository data of its sessions.
 

@@ -2,7 +2,7 @@
 
 Date: 2026-10-19.
 
-Status: in review
+Status: implemented in #240 (4498e4f), 2026-10-19
 
 Owner request (summary): a design refinement of the existing Classic site, not a redesign. Keep the editorial Neon
 Grid identity, its colors and its three fonts; remove generic decoration, improve typography, proportions, rhythm and

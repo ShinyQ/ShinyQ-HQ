@@ -18,7 +18,7 @@ Pilot a small Screen Rover through five floors of projects, career, writing and 
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Pages_%2B_Workers_AI-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com)
-[![Bun](https://img.shields.io/badge/Bun-1.4.1-000000?logo=bun&logoColor=white)](https://bun.sh)
+[![Bun](https://img.shields.io/badge/Bun-1.4.3-000000?logo=bun&logoColor=white)](https://bun.sh)
 
 **[Live site](https://kurniadi.pages.dev)** · **[Classic site](https://kurniadi.pages.dev/en?view=classic)** · **[Ask the HQ](docs/features.md#ask-the-hq-ai-qa)** · **[Features](docs/features.md)** · **[Docs](#docs)**
 
@@ -48,11 +48,13 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 
 ## Highlights
 
-- **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator and five themed floors.
+- **Walkable 3D tower** in React Three Fiber: roads, plazas, teleporters, a glass elevator, five themed floors and a secret B1 Engine Room that opens once all five are visited.
 - **Point-and-go**: hover or tap any glowing object to see its name and drive there; WASD, joystick and Shift boost too.
 - **Day and night**: a 4 minute twilight and neon night cycle from clock time, with a sun and moon that rise and set.
 - **Rover's onboarding**: a handheld-RPG text box introduction and "!" hint bubbles, plus the Rover menu (`>_`) with shortcuts to the best rooms.
-- **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and how this site was built, on Workers AI (Gemma 4, with Mistral and Groq fallbacks) and Turnstile, rate limits and output checks; safe markdown answers and a contact card for project inquiries.
+- **Ask the HQ** (shown as Ask Rover Assistant): grounded AI Q&A about the work, the career and this site, in Rover's own voice, on Workers AI (Gemma 4, then Mistral) with Groq as the backup and a knowledge pack in Workers KV, Turnstile, rate limits and output checks.
+- **Live Agent Office**: an L1 wing where ten Rovers mirror the owner's AI coding agents (Copilot, Claude Code, Codex) live, with helper drones, a ship-it pipeline tower and a day replay; also a card on the Classic home.
+- **Study guides**: certification study guides read in the site (a pdf.js reader over byte ranges from a private R2 bucket), from the Writing shelf, the certification dialogs and the L4 Study Vault.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
 - **Public visit stats**: a rollup every 2 hours by a Cron Worker, shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
@@ -65,7 +67,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 | <img src="docs/readme/floor-L1.jpg" width="300" alt="L1 Lobby"> | **L1 Lobby** | [`/en`](https://kurniadi.pages.dev/en) | Profile hologram, stats ring, skills and certification walls, the Rover menu kiosk, the Visitor Observatory and the Agent Office. Behind it, the Highlights Hall. |
 | <img src="docs/readme/floor-L2.jpg" width="300" alt="L2 Career Road"> | **L2 Career Road** | [`/en/journey`](https://kurniadi.pages.dev/en/journey) | One road forward in time: a plaza per year, rooms on both edges, teleporters, and the Workshop with a repo skyline. |
 | <img src="docs/readme/floor-L3.jpg" width="300" alt="L3 Project Roads"> | **L3 Project Roads** | [`/en/labs`](https://kurniadi.pages.dev/en/labs) | Three roads leave the hub past three directory boards: Product Engineering north, AI Engineering south and the Data and ML spine straight to the Tech Reactor, where the wing roads meet it mirrored. Plus the Ops Control Room. |
-| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts with year posts and one sign per section, research, models and talks desks, and the Topic Constellation. |
+| <img src="docs/readme/floor-L4.jpg" width="300" alt="L4 Newsroom"> | **L4 Newsroom** | [`/en/library`](https://kurniadi.pages.dev/en/library) | Headline wall, a timeline lane of posts with year posts and one sign per section, research, models and talks desks, the Topic Constellation and the Study Vault of certification study guides. |
 | <img src="docs/readme/floor-RF.jpg" width="300" alt="RF Roof deck"> | **RF Roof deck** | [`/en/contact`](https://kurniadi.pages.dev/en/contact) | Comms mast with the availability sign, contact station, CV kiosk and a courier drone. |
 
 Controls, floor-by-floor details and the full status log: **[docs/features.md](docs/features.md)**.
@@ -78,23 +80,26 @@ flowchart TB
 
   subgraph pagesbox["Cloudflare Pages"]
     pages["Static export<br/>HTML, 3D chunk, room data"]
-    fn["Pages Functions<br/>/api/ask, /api/rum<br/>/api/visit, /api/stats<br/>/api/guides/{slug}"]
+    fn["Pages Functions<br/>/api/ask, /api/rum<br/>/api/visit, /api/stats<br/>/api/guides/{slug}, /api/office"]
   end
 
   subgraph aibox["AI"]
-    gateway["AI Gateway"] --> wai["Workers AI<br/>Gemma 4, Mistral and Groq fallbacks"]
+    gateway["AI Gateway"] --> wai["Workers AI<br/>Gemma 4, Mistral fallback"]
+    gateway --> groq["Groq backup"]
   end
 
   subgraph databox["Storage and analytics"]
-    kv[("KV<br/>answer cache, stats snapshot")]
-    ae[("Analytics Engine<br/>ask, perf, visit events")]
+    kv[("KV<br/>knowledge pack, answer cache,<br/>stats snapshot")]
+      ae[("Analytics Engine<br/>ask, perf, visit events")]
     wa["Web Analytics"]
   end
 
   cron["hq-stats Cron Worker<br/>2-hour rollup"]
+  office["hq-office Worker<br/>Durable Object, 8-day log"]
+  relay(["office-relay<br/>agent hooks on the owner's Mac"])
 
   subgraph ghbox["GitHub Actions"]
-    ci["CI: unit, e2e x4,<br/>3D perf x2, Lighthouse"] -->|green build| deploy["Deploy<br/>dispatch only"]
+    ci["CI: unit, e2e shards,<br/>3D perf gates, Lighthouse"] -->|green| deploy["Deploy<br/>on merge, auto-rollback"]
   end
 
   visitor --> pages
@@ -103,17 +108,22 @@ flowchart TB
   fn --> gateway
   fn --> kv
   fn --> ae
+  fn --> r2[("R2<br/>study guide PDFs")]
+  fn --> office
+  relay --> fn
   cron --> wa
   cron --> ae
   cron --> kv
   deploy --> pagesbox
   deploy --> cron
+  deploy --> office
 ```
 
 - **Content is data**: `content/site-content.json` (zod-validated, every string `{ en, id }`) generates pages, rooms, pods and missions.
 - **Static first**: `output: "export"`, no server runtime. The 3D tower is a lazy client chunk portaled over the HTML page, which stays the SEO and no-WebGL tier.
 - **One store, one intent bus**: input sources emit intents, a Director drives the elevator, rover and store each frame; the HUD talks to the scene only through the store.
-- **AI behind a pipeline**: kill switch, Turnstile, rate limits, PII scrub, retrieval from a build-time knowledge pack, model call, output checks, KV cache.
+- **AI behind a pipeline**: kill switch, Turnstile, rate limits, PII scrub, retrieval from a knowledge pack in Workers KV (versioned pointer, bundled fallback), model call, output checks, KV cache.
+- **Agent Office**: `office-relay` hooks post signed beats, GitHub webhooks add runs and merges; the `hq-office` Durable Object keeps the live snapshot and an 8-day log, reached only through the Pages service binding.
 - **Anonymous stats**: beacons write to Analytics Engine; a Cron Worker rolls up finalized UTC days into one KV snapshot.
 
 ## Tech stack
@@ -124,7 +134,7 @@ flowchart TB
 | 3D | three.js, React Three Fiber, drei, postprocessing, troika text |
 | State and i18n | zustand, next-intl, zod, MDX (next-mdx-remote) |
 | Styling | Tailwind CSS 4, Neon Grid design tokens, self-hosted subset fonts |
-| Edge and AI | Cloudflare Pages, Pages Functions, Workers AI, AI Gateway, KV, Analytics Engine, Turnstile, Cron Worker |
+| Edge and AI | Cloudflare Pages, Pages Functions, Workers AI, AI Gateway, Groq, KV, R2, Durable Objects, Analytics Engine, Turnstile, Cron Worker |
 | Testing | Vitest, Testing Library, Playwright (WebGL on SwiftShader), Lighthouse CI |
 | Tooling | Bun 1.4.3, Node 24.22.1 (pinned), ESLint, wrangler, GitHub Actions, gitleaks, Dependabot |
 
@@ -176,14 +186,14 @@ bun run serve                      # http://127.0.0.1:4173/en
 | `bun run e2e:look` | Local look check of the canvas against a main build |
 | `bun run screenshots` | HTML pages and 3D captures at 1440x900, 1024x1366 and 390x844 into `screenshots/` |
 | `bun run screenshots:pages` | Page View captures plus the landing at 1440x900, 834x1112 and 390x844 |
-| `bun run validate:content` | Schema and safety check for `content/site-content.json` |
+| `bun run validate:content` | Schema, safety and Title Case check of the dataset, perspectives, the Ask site-build note and the study guides |
 | `bun run build:knowledge` | Build the Ask knowledge pack only |
 | `bun run cv:pages` | Render the CV PDF to page images (needs poppler and webp) |
 | `bun run paper:pages` | Check and render the paper PDFs to page images (see [docs/content.md](docs/content.md#paper-pdfs)) |
 | `bun run floor:thumbs` | Elevator picker thumbnails `public/floors/*.webp` from every floor's start spot (after a build, needs `cwebp`) |
 | `bun run og:stills` | Share card backgrounds `public/og-assets/floor-*.jpg` at 1200x630; `--photo <png>` refreshes the owner's photo |
 | `bun run og:check` | Social-card check over `out/`: titles, 140 to 160 character descriptions, canonical, hreflang, Open Graph, Twitter, share images |
-| `bun run ask:eval` | Golden and red-team runs against the real models |
+| `bun run ask:eval` | Smoke, golden, pills, red-team and fidelity sets against the real models, within neuron and token budgets |
 | `bun scripts/readme-hero.ts` | Re-capture this README's hero GIF and floor stills from `out/` (needs ffmpeg and gifsicle) |
 
 </details>
@@ -205,16 +215,19 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
 | `/api/stats` | Public visit stats snapshot, refreshed every 2 hours (200 or 204) | |
 | `/api/guides/{slug}` | Study guide PDF from a private R2 bucket, by byte range (`GET`, `HEAD`) | |
+| `/api/office`, `/api/office/history` | Agent Office snapshot (`?v=`) and the 8-day replay log (`?day=`) | |
 
 Section anchors, filters and deep links per route: [docs/features.md](docs/features.md#routes).
 
 ## Project structure
 
 ```text
-content/         dataset, blog MDX, Ask suggestions, perspectives, product allowlist, generated facts
+content/         dataset, blog MDX, Ask knowledge and suggestions, perspectives, study guides, product allowlist, generated facts
 messages/        UI strings (en, id)
-functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}
+functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}, /api/office
 workers/stats/   hq-stats Cron Worker: public visit stats rollup every 2 hours into KV
+workers/office/  hq-office Worker and Durable Object: the Agent Office state and 8-day log
+tools/           office-relay: the local agent hooks and installer for the Agent Office
 src/
   app/           routes ([locale] pages, "/" redirect, OG cards, 404)
   components/    Classic site UI, modals, CV and paper viewers
@@ -240,10 +253,10 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 
 | Gate | Budget |
 |---|---|
-| Scene draw calls per floor | under 150 (L1 at most 125) |
+| Scene draw calls per floor | under 150 (L1 125, RF 79, B1 100) |
 | Post-processing passes | at most 20 |
 | Triangles per floor | under 30k |
-| JS after the 3D gate | under 466.4 KB gzip per tier; floor chunks L3 20 KB, L4 16 KB, RF 8 KB |
+| JS after the 3D gate | under 466.4 KB gzip per tier; floor chunks L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB |
 | Shader programs | committed baseline + 2 |
 | GPU memory | round trips return to baseline |
 | Lighthouse (Classic site) | LCP under 2 s, CLS under 0.01, TBT under 200 ms |
@@ -254,7 +267,7 @@ Details: [docs/features.md](docs/features.md#performance) and [`docs/agents/perf
 ## Deploy
 
 Production is the Cloudflare Pages project `kurniadi` at [kurniadi.pages.dev](https://kurniadi.pages.dev).
-`deploy.yml` runs on every merge to `main` (at once when the merged PR was green on the same tree, else after `main` CI), on dispatch and after the weekly live-facts merge; it deploys `out/` plus `functions/`, smoke-checks production and deploys the `hq-stats` Worker. A red `main` CI rolls production back (`rollback.yml`).
+`deploy.yml` runs on every merge to `main` (at once if the PR was green on the same tree, else after `main` CI), on dispatch and on the weekly facts merge: the `hq-office` Worker, `out/` plus `functions/`, a smoke check, then the `hq-stats` Worker. A red `main` CI rolls production back (`rollback.yml`).
 
 Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/deploy.md).
 
@@ -263,16 +276,18 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 | Doc | What it covers |
 |---|---|
 | [`docs/features.md`](docs/features.md) | Every feature floor by floor, controls, Ask the HQ, CI, performance, status log |
-| [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, build story, public safety |
+| [`docs/content.md`](docs/content.md) | Dataset, posts, perspectives, galleries, certifications, CV and paper PDFs, study guides, build story, public safety |
 | [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, workflow, key commands, budgets, index of the detail docs |
-| [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, performance, CI |
+| [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, Agent Office, performance, CI |
 | [`docs/decisions.md`](docs/decisions.md) | Dated log of owner decisions |
 | [Design spec](docs/superpowers/specs/2026-10-09-agent-hq-design.md) | Agent HQ design and appendices `agent-hq/01..08` |
 | [Ask the HQ design](docs/superpowers/specs/2026-10-11-ask-hq-design.md) | Models, security threat model, data freshness |
 | [`docs/superpowers/`](docs/superpowers/README.md) | Implementation plans and design specs with their status and PRs |
 | [`docs/deploy.md`](docs/deploy.md) | Deploys, secrets and variables, analytics, Cloudflare resources, Lighthouse budgets, headers |
 | [`docs/ask-runbook.md`](docs/ask-runbook.md) | Ask the HQ operations: provisioning, kill switch, cache purge, secret rotation, evals |
+| [`docs/study-guides-runbook.md`](docs/study-guides-runbook.md) | Study guides: preparing PDFs, the R2 bucket, the reader |
 | [`workers/stats/README.md`](workers/stats/README.md) | hq-stats Cron Worker runbook |
+| [`workers/office/README.md`](workers/office/README.md), [`tools/office-relay/README.md`](tools/office-relay/README.md) | Agent Office runbooks: the hq-office Worker, and the office-relay agent hooks |
 | [`docs/perf/r5-gpu.md`](docs/perf/r5-gpu.md) | GPU timing measurements on real hardware |
 
 ---

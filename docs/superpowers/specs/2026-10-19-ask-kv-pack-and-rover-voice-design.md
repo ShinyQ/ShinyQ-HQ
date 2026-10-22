@@ -1,6 +1,6 @@
 # Ask the HQ: Rover voice, adjacent grounded questions and the knowledge pack in Workers KV (design)
 
-Date: 2026-10-19. Status: approved by the owner on 2026-10-19 (decisions in section 2); two PRs (section 6).
+Date: 2026-10-19. Status: implemented in #238, #241, #254 and #256, 2026-10-19 to 2026-10-20. Approved by the owner on 2026-10-19 (decisions in section 2); two PRs (section 6).
 
 Owner requests (verbatim):
 
