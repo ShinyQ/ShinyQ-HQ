@@ -24,10 +24,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
 /**
  * gzip JS the 3D path downloads after the gate, lite and full each. Spec ceiling 600 KB. `failAt` gates the critical
  * path before the first frame (`?prefetch=off`), one cap for both tiers set by the larger, full: 466.4 KB (measured
- * 477,542 B full, 461,408 B lite; cap 477,594 B). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
+ * 476,967 B full, 460,833 B lite; cap 477,594 B). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks + the office
- * watch, scene and replay chunks) has its own cap per tier: full 530.3 KB (measured 529.7 KB), lite 514.5 KB (measured 513.9 KB). Owner decisions 2026-10-16
+ * watch, scene and replay chunks) has its own cap per tier: full 529.7 KB (measured 529.1 KB), lite 513.9 KB (measured 513.4 KB). Owner decisions 2026-10-16
  * and 2026-10-19 (the Study Vault; the floor layouts moved out of the Classic bundle, option A; the inline idle frame
  * cadence, option A), relayed for the L1 Agent Office 2026-10-19/20: each cap, `failAt` included, is the measured value
  * plus about 0.6 KB, re-set whenever the office merges main, for the office's look offset and ghost outline rule on the
@@ -64,15 +64,15 @@ export const BYTES_3D_BUDGET = {
   spec: 600 * 1024,
   minExpected: 100 * 1024,
   floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
-  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 28,238 B, cap 28,852 B; was 26,586 B before the day replay, owner decision 2026-10-22). */
-  office: 28_238 + 614,
+  /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 28,217 B, cap 28,831 B; was 26,586 B before the day replay, owner decision 2026-10-22). */
+  office: 28_217 + 614,
   /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,018 B, cap 7,097 B). */
   officeBody: Math.round(6.931 * 1024),
-  /** L1 day replay chunk (the engine, the feed, the label formatting and the replay view; loaded by the idle loop on a quiet L1 visit or the drawer's press, in the session total): measured 5,237 B, cap 5,851 B. */
-  officeReplay: 5_237 + 614,
+  /** L1 day replay chunk (the engine, the feed, the label formatting and the replay view; loaded by the idle loop on a quiet L1 visit or the drawer's press, in the session total): measured 5,240 B, cap 5,854 B. */
+  officeReplay: 5_240 + 614,
   /** L1 day replay controls (a lazy chunk of the replay chunk, loaded with the drawer's "Show day replay" press), outside the session total and the office total (it loads only on that explicit press, like the beacon): measured 826 B, cap 1,440 B. */
   officeControls: 826 + 614,
-  /** L1 Agent Office total: the scene chunk plus the drawer body and the replay chunk (the chunks that load with the office), the office chunks' own cap (measured 40,493 B, cap 40,960 B). The watch, beacon and controls chunks keep their own caps outside it. */
+  /** L1 Agent Office total: the scene chunk plus the drawer body and the replay chunk (the chunks that load with the office), the office chunks' own cap (measured 40,475 B, cap 40,960 B). The watch, beacon and controls chunks keep their own caps outside it. */
   officeTotal: 40 * 1024,
   /** L1 office watch chunk (the signal, the watch and the minimap cue; idle on every L1 session), inside the session total (measured 1,555 B, cap 2,075 B). */
   officeWatch: Math.round(2.026 * 1024),
@@ -80,8 +80,8 @@ export const BYTES_3D_BUDGET = {
   officeBeacon: Math.round(2.595 * 1024),
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
-  /** Main path + the session floors + the office watch, scene and replay chunks (measured 526,245 B lite, 542,379 B full; caps 526,859 B and 542,993 B). */
-  session: { lite: 526_245 + 614, full: 542_379 + 614 },
+  /** Main path + the session floors + the office watch, scene and replay chunks (measured 525,652 B lite, 541,786 B full; caps 526,266 B and 542,400 B). */
+  session: { lite: 525_652 + 614, full: 541_786 + 614 },
 } as const;
 
 /**
