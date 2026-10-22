@@ -5,6 +5,7 @@ import { ARRIVAL_HEADING } from "../src/experience/camera/arrival";
 import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
 import { FLOOR_SCENE_CAPS } from "./budgets";
+import { OFFICE_API_V4, shipStep } from "./office-fixtures";
 import {
   asReturningVisitor,
   collectErrors,
@@ -57,6 +58,14 @@ const probe = (page: Page) =>
       underground: h.sky.underground,
       ambience: h.audio().floor,
     };
+  });
+/** `__hq.reactor()` (null until the B1 chunk loaded): whether the reactor polls and what its core shows. */
+const reactor = (page: Page) =>
+  page.evaluate(() => {
+    const hook = (window as unknown as { __hq: { reactor: () => { started: () => boolean; state: () => { state: { lanes: string[]; live: boolean } | null; segments: number; sparks: number } } | null } }).__hq.reactor();
+    if (!hook) return null;
+    const s = hook.state();
+    return { started: hook.started(), lanes: s.state?.lanes ?? null, live: s.state?.live ?? null, segments: s.segments, sparks: s.sparks };
   });
 /** Idle prefetch has run once every public floor is ready (prefetchAll and the idle apply share one callback). */
 const publicFloorsReady = (page: Page) =>
@@ -322,6 +331,17 @@ test.describe("the floor", () => {
     expect((await snapshot(page)).floor).toBe("B1");
     expect(new URL(page.url()).pathname).toBe("/en");
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
+  });
+
+  test("the reactor core lights a segment run per job of the newest CI run and polls only while on B1", async ({ page }) => {
+    await page.route(OFFICE_API_V4, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(shipStep(Date.now(), "base")) }));
+    await enterB1Route(page);
+    expect((await reactor(page))?.started ?? false).toBe(false);
+    await rideTo(page, "B1");
+    // Lite: 4 rings of 6 segments, no sparks; the lanes are run 4101's jobs in order.
+    await expect.poll(() => reactor(page), { timeout: 30_000 }).toEqual({ started: true, lanes: ["done", "running", "queued", "queued"], live: true, segments: 24, sparks: 0 });
+    await rideTo(page, "L1");
+    await expect.poll(async () => (await reactor(page))?.started ?? false).toBe(false);
   });
 
   test("rides from the roof down to B1 and back up to the Lobby", async ({ page }) => {

@@ -685,7 +685,12 @@
     "go": "Antar saya ke sana",
     "later": "Nanti",
     "lockedLine": "B1 masih terkunci: kunjungi semua {total} lantai dulu ({seen}/{total}).",
-    "goTo": "Ke Ruang Mesin B1"
+    "goTo": "Ke Ruang Mesin B1",
+    "reactor": {
+      "title": "Reaktor",
+      "visits": "{n} kunjungan dalam 30 hari",
+      "asks": "{n} pertanyaan untuk Rover"
+    }
   },
   "drawer": {
     "label": "Detail ruang",

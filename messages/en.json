@@ -685,7 +685,12 @@
     "go": "Take me there",
     "later": "Later",
     "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total}).",
-    "goTo": "Go to B1 Engine Room"
+    "goTo": "Go to B1 Engine Room",
+    "reactor": {
+      "title": "Reactor",
+      "visits": "{n} visits in 30 days",
+      "asks": "{n} questions to Rover"
+    }
   },
   "drawer": {
     "label": "Room details",

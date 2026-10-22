@@ -47,6 +47,8 @@ const REPLAY_ONLY = [REPLAY, `${DIR}/replay.ts`, `${DIR}/replayFeed.ts`, "src/li
 const CONTROLS = `${DIR}/ReplayControls.tsx`;
 /** The main-path part of the office: the loaders, the mount with the furniture shell and the layout. */
 const MAIN = [`${DIR}/chunk.ts`, `${DIR}/watchLoader.ts`, `${DIR}/OfficeMount.tsx`, "src/experience/floors/lobby/officeLayout.ts", "src/experience/floors/lobby/officeShell.ts", "src/hud/OfficeLayer.tsx"];
+/** The lazy floor chunk entries (imported dynamically by floors/floorChunks.ts): B1's reactor polls with the office poller. */
+const FLOOR_CHUNKS = ["labs", "library", "roof", "engine"].map((name) => `src/experience/floors/chunks/${name}.ts`);
 /** Main-path entries: the 3D chunk, the gate and the HUD (the minimap draws the cue from the watch chunk). */
 const MAIN_ENTRIES = ["src/experience/Experience.tsx", "src/experience/ExperienceGate.tsx", "src/hud/Hud.tsx", "src/hud/minimap/Minimap.tsx", "src/hud/minimap/MapLayers.tsx"];
 
@@ -146,7 +148,8 @@ describe("Agent Office chunk boundary", { timeout: 30_000 }, () => {
   });
 
   it("lets no main-path file under src/experience or src/hud import a value from the office chunks", () => {
-    const chunks = new Set([...staticClosure(ENTRY), ...staticClosure(BODY), ...staticClosure(WATCH), ...staticClosure(BEACON), ...staticClosure(REPLAY), ...staticClosure(CONTROLS)]);
+    const lazy = [ENTRY, BODY, WATCH, BEACON, REPLAY, CONTROLS, ...FLOOR_CHUNKS];
+    const chunks = new Set(lazy.flatMap((entry) => [...staticClosure(entry)]));
     const offenders = [...files(join(ROOT, "src/experience")), ...files(join(ROOT, "src/hud"))]
       .filter((f) => !chunks.has(f))
       .filter((f) => [...OFFICE_ONLY, ...BODY_ONLY, ...WATCH_ONLY, ...BEACON_ONLY, ...REPLAY_ONLY].some((only) => staticClosure(f).has(only)));
