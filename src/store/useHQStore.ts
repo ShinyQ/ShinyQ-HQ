@@ -144,7 +144,6 @@ export interface HQState {
   /** Hologram view of the active room (hero pods). Phase "hologram"; closing returns to "room". */
   openHologram: () => void;
   closeHologram: () => void;
-  startMission: (id: string) => void;
   /** Mirrors the mission runner state without changing the phase (the rover keeps driving in explore). */
   setMission: (mission: MissionState | null) => void;
   cancelMission: () => void;
@@ -290,7 +289,6 @@ export function createHQStore(storage?: StateStorage) {
         closeHologram: () => {
           if (get().phase === "hologram") set({ phase: get().activeRoom ? "room" : "explore" });
         },
-        startMission: (id) => set({ mission: { id, step: 0, status: "running" }, phase: "autopilot" }),
         setMission: (mission) => set({ mission }),
         cancelMission: () => {
           const { mission } = get();
