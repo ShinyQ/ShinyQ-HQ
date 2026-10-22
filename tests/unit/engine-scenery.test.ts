@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { buildEngineLayout, ENGINE } from "@/experience/floors/engine/layout";
 import { CORE_FX, coreSolids } from "@/experience/floors/engine/reactorFx";
-import { ENGINE_TONES, engineScenery, engineSigns, stationProps, type PanelInstance } from "@/experience/floors/engine/scenery";
+import { END_MASK_H, endMask, ENGINE_TONES, engineScenery, engineSigns, stationProps, type PanelInstance } from "@/experience/floors/engine/scenery";
 import type { Rect } from "@/experience/types";
 
 const layout = buildEngineLayout();
@@ -19,7 +19,7 @@ describe("B1 Engine Room scenery", () => {
   for (const tier of ["full", "lite"] as const) {
     const s = engineScenery(layout, tier);
     it(`keeps every solid, pipe, LED and screen on the slab (${tier})`, () => {
-      for (const solid of s.solids) expect(within(box(solid)), JSON.stringify(solid)).toBe(true);
+      for (const solid of [...s.solids, ...s.masks]) expect(within(box(solid)), JSON.stringify(solid)).toBe(true);
       for (const f of s.flows) expect(within(box(f)), JSON.stringify(f)).toBe(true);
       for (const p of s.panels) expect(within(panelRect(p)), JSON.stringify(p)).toBe(true);
     });
@@ -33,8 +33,8 @@ describe("B1 Engine Room scenery", () => {
       }
     });
 
-    it(`keeps the same draws: merged solids, one flow and one panel instancing, no other kind (${tier})`, () => {
-      expect(Object.keys(s).sort()).toEqual(["flows", "panels", "solids"]);
+    it(`keeps the same draws: merged solids, one flow and one panel instancing, the depth mask, no other kind (${tier})`, () => {
+      expect(Object.keys(s).sort()).toEqual(["flows", "masks", "panels", "solids"]);
     });
   }
 
@@ -160,5 +160,21 @@ describe("B1 station props", () => {
     for (const p of dim) expect(Math.abs(p.roll ?? 0), JSON.stringify(p)).toBeGreaterThan(0.05);
     expect(props.panels.filter((p) => p.color === ENGINE_TONES.amber)).toHaveLength(1);
     for (const p of props.panels) expect(p.y - p.h / 2, JSON.stringify(p)).toBeGreaterThan(props.solids[0].h - 0.3);
+  });
+
+  it("hides the slab outline's far east edge behind a low depth-only mask at the floor's end, clear of every road and the core", () => {
+    const mask = endMask(layout);
+    expect(engineScenery(layout, "full").masks).toEqual([mask]);
+    const r = box(mask);
+    // The outline's top edge runs along x = bounds.maxX at y 0, the full width: the curb covers it from the west.
+    expect(r.maxX).toBeCloseTo(b.maxX);
+    expect(r.minX).toBeLessThan(b.maxX);
+    expect(r.minZ).toBeCloseTo(b.minZ);
+    expect(r.maxZ).toBeCloseTo(b.maxZ);
+    expect(mask.y).toBe(0);
+    expect(mask.h).toBe(END_MASK_H);
+    expect(END_MASK_H).toBeLessThan(ENGINE.reactor.h);
+    expect(r.minX).toBeGreaterThan(layout.reactor.maxX + 4);
+    for (const o of layout.floor.obstacles) expect(r.minX >= o.maxX, JSON.stringify(o)).toBe(true);
   });
 });

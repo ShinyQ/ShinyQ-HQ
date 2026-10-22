@@ -7,6 +7,7 @@ import { useHQStore } from "@/store/useHQStore";
 import { FloatingSigns } from "../fx/FloatingSign";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
+import { DepthMask } from "./engine/DepthMask";
 import { FlowMesh, PanelMesh } from "./engine/EngineFx";
 import { buildEngineLayout, ENGINE } from "./engine/layout";
 import { ReactorCore } from "./engine/ReactorCore";
@@ -18,7 +19,7 @@ export type { EngineLabels };
 /**
  * B1 Engine Room (spec 2026-10-17): the aisle (road kit), seven bays with their stations, rack rows, pipes and
  * the workbench, and the reactor hall's living core (`ReactorCore`). Scene draws: the road kit, one merged solid mesh
- * and its edges, two instanced holo draws, the core's two and the floating sign pair (with the reactor's title and its
+ * and its edges, two instanced holo draws, the core's three, the depth-only end mask (`endMask`) and the floating sign pair (with the reactor's title and its
  * counter plate of 30-day visits and questions, rebuilt only when a formatted number changes). Stations are
  * point-and-go targets (interact/registry.ts); their drawers are `EngineBody` in this chunk.
  */
@@ -39,6 +40,7 @@ export function EngineRoom({ data, labels, tier }: { data: ExperienceData; label
       <FlowMesh items={scene.flows} tier={tier} />
       <PanelMesh items={scene.panels} tier={tier} />
       <ReactorCore tier={tier} stats={stats} />
+      <DepthMask boxes={scene.masks} />
       {/* Text loads fonts asynchronously; keep it from holding back the geometry. */}
       <Suspense fallback={null}>
         <FloatingSigns signs={signs} name="engine-signs" tier={tier} />

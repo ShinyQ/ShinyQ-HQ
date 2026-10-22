@@ -36,8 +36,24 @@ export interface PanelInstance {
 
 export interface EngineScenery {
   solids: Box[];
+  /** Depth-only boxes (no color, no edges): the end mask (`endMask`). */
+  masks: Box[];
   flows: FlowInstance[];
   panels: PanelInstance[];
+}
+
+/** Height of the end mask (`endMask`). */
+export const END_MASK_H = 1;
+
+/**
+ * A low depth-only box along the floor's east end (`DepthMask`: writes depth, never color, no edges): it hides the slab
+ * outline's far top edge (the floor's own accent outline at x `bounds.maxX`), which drew a thin line across the reactor
+ * view above the core, from every view looking east, without showing itself. Inside the bounds, behind the reactor
+ * and out of every road.
+ */
+export function endMask(layout: EngineLayout): Box {
+  const { maxX, minZ, maxZ } = layout.floor.bounds;
+  return { x: maxX - 0.3, y: 0, z: (minZ + maxZ) / 2, w: 0.6, h: END_MASK_H, d: maxZ - minZ };
 }
 
 /** Floor words (engine.*): the workbench title and subtitle, and the reactor's title and counter lines (`n` comes formatted). */
@@ -243,7 +259,7 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
   const bench = workbenchProps(layout.workbench);
   solids.push(...bench.solids, ...coreSolids());
   panels.push(...bench.panels);
-  return { solids, flows, panels };
+  return { solids, masks: [endMask(layout)], flows, panels };
 }
 
 /**
