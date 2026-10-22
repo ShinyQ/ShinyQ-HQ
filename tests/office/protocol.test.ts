@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OFFICE_FIXTURE_NOW, OFFICE_FIXTURES, OFFICE_FIXTURES_V2, OFFICE_FIXTURES_V3, OFFICE_FIXTURES_V4 } from "@/lib/office/fixtures";
-import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_SEATS, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay, type OfficeSnapshotV4 } from "@/lib/office/protocol";
+import { OFFICE_DESKS, OFFICE_HELPERS_MAX, OFFICE_PIPELINE, OFFICE_SEATS, OFFICE_TITLE_MAX, parseOfficeBeat, parseOfficeResponse, parseOfficeResponseV2, parseOfficeResponseV3, wibDay, type OfficeSnapshotV4 } from "@/lib/office/protocol";
 import { parseOfficeResponseV4 } from "@/lib/office/protocolV4";
 
 const SESSION = "a".repeat(64);
@@ -172,7 +172,8 @@ describe("parseOfficeBeat", () => {
     expect(parseOfficeBeat(beat({ state: "idle" }))).toBeNull();
     expect(parseOfficeBeat(beat({ session: "session-123" }))).toBeNull();
     expect(parseOfficeBeat(beat({ repo: "ShinyQ/ShinyQ-HQ", title: "<b>x</b>" }))).toBeNull();
-    expect(parseOfficeBeat(beat({ repo: "ShinyQ/ShinyQ-HQ", title: "x".repeat(81) }))).toBeNull();
+    expect(parseOfficeBeat(beat({ repo: "ShinyQ/ShinyQ-HQ", title: "x".repeat(OFFICE_TITLE_MAX) }))).not.toBeNull();
+    expect(parseOfficeBeat(beat({ repo: "ShinyQ/ShinyQ-HQ", title: "x".repeat(OFFICE_TITLE_MAX + 1) }))).toBeNull();
     expect(parseOfficeBeat(beat({ title: "Orphan title" }))).toBeNull();
     expect(parseOfficeBeat(beat({ ts: 1.5 }))).toBeNull();
   });

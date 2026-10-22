@@ -204,6 +204,7 @@ export type Obj = Record<string, unknown>;
 export const REPO = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
 const BRANCH = /^[A-Za-z0-9._/-]{1,120}$/;
 const SESSION = /^[0-9a-f]{64}$/;
+// The 80 is OFFICE_TITLE_MAX, kept a literal: a RegExp built at module scope would stay in every client chunk that imports this file.
 const BEAT_TITLE = /^[\p{L}\p{N} .,:;'()#&+/!?-]{1,80}$/u;
 export const URL_RE = /^https:\/\/[^\s"'<>\\]{1,300}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
