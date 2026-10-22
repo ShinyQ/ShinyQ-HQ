@@ -1,12 +1,24 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildEngineRoomViews } from "@/content/room-views";
 import { EngineBody } from "@/hud/drawer/EngineBody";
+import type { OfficeFeed } from "@/lib/office/poll";
+import { REACTOR_DRAWER_TICK_MS, REACTOR_STALE_MS } from "@/experience/floors/engine/reactor";
+import { STATS_FIXTURE } from "@/lib/stats/fixtures";
+import { __setStatsForTests } from "@/lib/visits/store";
+import { shipStep } from "../../e2e/office-fixtures";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...rest }: { href: string } & Record<string, unknown>) => <a href={`/en${href}`} {...rest} />,
+}));
+
+const NOW = Date.UTC(2026, 9, 22, 12);
+const feedBox = vi.hoisted(() => ({ feed: { status: "idle", snapshot: null, fetchedAt: 0 } as unknown, now: Date.UTC(2026, 9, 22, 12) }));
+vi.mock("@/experience/floors/engine/reactorLive", () => ({
+  reactorLive: { now: () => feedBox.now, start: vi.fn(), stop: vi.fn() },
+  useReactorFeed: () => feedBox.feed,
 }));
 
 const views = buildEngineRoomViews("en");
@@ -16,6 +28,9 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("of
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  feedBox.feed = { status: "idle", snapshot: null, fetchedAt: 0 };
+  feedBox.now = NOW;
+  __setStatsForTests(null);
 });
 
 describe("EngineBody (B1 station drawers)", () => {
@@ -99,6 +114,80 @@ describe("EngineBody (B1 station drawers)", () => {
       expect(link?.getAttribute("href") ?? undefined).toBe(ideas[i].pr?.href);
       if (link) expect([link.target, link.rel]).toEqual(["_blank", "noopener noreferrer"]);
       if (ideas[i].pr) expect(li.textContent).toContain(`#${ideas[i].pr!.n}`);
+    });
+  });
+
+  describe("the reactor", () => {
+    const reactor = (locale: "en" | "id" = "en") => render(<EngineBody view={buildEngineRoomViews(locale)["B1:reactor"]!} locale={locale} />).container;
+    /** The live tiles as label to value. */
+    const tiles = (root: HTMLElement) => Object.fromEntries([...root.querySelectorAll("[data-reactor-live] [data-testid='metric']")].map((li) => [li.children[1]?.textContent, li.children[0]?.textContent]));
+
+    it("shows the live numbers of the feed and the stats, with the deploy as a time since", () => {
+      feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base", NOW - 3 * 60_000), fetchedAt: NOW - 5_000 } satisfies OfficeFeed;
+      __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
+      const root = reactor();
+      expect(root.querySelector("[data-engine-station='reactor'] [data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("true");
+      expect(tiles(root)).toEqual({
+        "Jobs running": "1",
+        "Jobs done": "1",
+        "Jobs failed": "0",
+        "Agents awake": "6",
+        "Since the last production deploy": "3 min",
+        "Visits, last 30 days": "340",
+        "Ask questions, last 30 days": "64",
+      });
+      expect(root.textContent).not.toContain("offline right now");
+      expect(root.textContent).toContain("Live now");
+      expect(screen.getByRole("heading", { name: "How it reads" })).toBeInTheDocument();
+      expect(root.querySelector("a[href*='/build']")).toBeNull();
+    });
+
+    it("says none recent without a deploy in the feed", () => {
+      feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW } satisfies OfficeFeed;
+      expect(tiles(reactor())["Since the last production deploy"]).toBe("None recent");
+    });
+
+    it("shows the offline line and only the stats when the feed is offline or stale, in both languages", () => {
+      __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
+      feedBox.feed = { status: "offline", snapshot: null, fetchedAt: 0 } satisfies OfficeFeed;
+      const root = reactor();
+      expect(root.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
+      expect(tiles(root)).toEqual({ "Visits, last 30 days": "340", "Ask questions, last 30 days": "64" });
+      expect(root.textContent).toContain("The live feed is offline right now");
+      expect(root.textContent).not.toContain("Live now");
+      cleanup();
+      feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW - 10 * 60_000 } satisfies OfficeFeed;
+      __setStatsForTests(null);
+      const stale = reactor("id");
+      expect(stale.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
+      expect(tiles(stale)).toEqual({});
+      expect(stale.textContent).toContain("Feed langsung sedang offline");
+      expect(stale.textContent).not.toContain("Data langsung");
+    });
+
+    it("goes offline while open once the feed goes stale, ticking on an interval it clears on unmount", () => {
+      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+      try {
+        feedBox.feed = { status: "ready", snapshot: shipStep(NOW, "base"), fetchedAt: NOW } satisfies OfficeFeed;
+        const view = render(<EngineBody view={buildEngineRoomViews("en")["B1:reactor"]!} locale="en" />);
+        const live = () => view.container.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live");
+        expect(live()).toBe("true");
+        expect(REACTOR_DRAWER_TICK_MS).toBeGreaterThanOrEqual(15_000);
+        expect(REACTOR_DRAWER_TICK_MS).toBeLessThanOrEqual(30_000);
+        // The feed stops updating (no new render from it); the clock runs past the stale window.
+        feedBox.now = NOW + REACTOR_STALE_MS + 1;
+        act(() => vi.advanceTimersByTime(REACTOR_DRAWER_TICK_MS - 1));
+        expect(live()).toBe("true");
+        act(() => vi.advanceTimersByTime(1));
+        expect(live()).toBe("false");
+        expect(view.container.textContent).toContain("The live feed is offline right now");
+        expect(view.container.textContent).not.toContain("Live now");
+        expect(vi.getTimerCount()).toBe(1);
+        view.unmount();
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

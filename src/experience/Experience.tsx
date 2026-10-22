@@ -193,6 +193,8 @@ function startSession(data: ExperienceData, tier: GpuTier, layouts: Record<Floor
     // the office watch and beacon chunks: `watchNow` loads the watch chunk and runs one tick of its watch, `loadWatch` and
     // `loadBeacon` load a chunk and resolve with its module (the bytes gate).
     office: { ...officeHandle, watchNow: officeWatchNow, loadWatch: loadOfficeWatch, loadBeacon: loadOfficeBeacon },
+    // B1's reactor test hook once its chunk loaded (the feed, a poll, a clock skew and `state()`).
+    reactor: () => floorChunks.module("B1")?.reactorTest ?? null,
     ridePrep,
     probes: sceneProbes,
     // Meshes the ride cull hid in its last culling render (tower/rideCull.ts).
@@ -587,7 +589,11 @@ function ExperienceView({
         about: t("world.about"),
         availability: t("world.availability"),
       },
-      engine: { title: tEngine("title"), subtitle: tEngine("subtitle") },
+      engine: {
+        title: tEngine("title"),
+        subtitle: tEngine("subtitle"),
+        reactor: { title: tEngine("reactor.title"), visits: (n: string) => tEngine("reactor.visits", { n }), asks: (n: string) => tEngine("reactor.asks", { n }) },
+      },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
       interact: {

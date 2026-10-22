@@ -5,6 +5,8 @@ import { ARRIVAL_HEADING } from "../src/experience/camera/arrival";
 import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
 import { FLOOR_SCENE_CAPS } from "./budgets";
+import { STATS_FIXTURE } from "../src/lib/visits/contract";
+import { OFFICE_API_V4, shipStep } from "./office-fixtures";
 import {
   asReturningVisitor,
   collectErrors,
@@ -57,6 +59,14 @@ const probe = (page: Page) =>
       underground: h.sky.underground,
       ambience: h.audio().floor,
     };
+  });
+/** `__hq.reactor()` (null until the B1 chunk loaded): whether the reactor polls and what its core shows. */
+const reactor = (page: Page) =>
+  page.evaluate(() => {
+    const hook = (window as unknown as { __hq: { reactor: () => { started: () => boolean; state: () => { state: { lanes: string[]; live: boolean } | null; segments: number; sparks: number } } | null } }).__hq.reactor();
+    if (!hook) return null;
+    const s = hook.state();
+    return { started: hook.started(), lanes: s.state?.lanes ?? null, live: s.state?.live ?? null, segments: s.segments, sparks: s.sparks };
   });
 /** Idle prefetch has run once every public floor is ready (prefetchAll and the idle apply share one callback). */
 const publicFloorsReady = (page: Page) =>
@@ -242,7 +252,7 @@ test("an unlocked floor picker lists B1 last", async ({ page }) => {
 });
 
 test.describe("the floor", () => {
-  test("rides from the Lobby to B1: the rover glides out facing the workbench, underground, with the hum, on the Lobby URL", async ({ page }) => {
+  test("rides from the Lobby to B1: the rover glides out looking down the aisle at the reactor, underground, with the hum, on the Lobby URL", async ({ page }) => {
     const errors = collectErrors(page);
     await enterB1Route(page);
     await expect(elevator(page).locator("[data-floor]").last()).toHaveAttribute("data-floor", "B1");
@@ -322,6 +332,41 @@ test.describe("the floor", () => {
     expect((await snapshot(page)).floor).toBe("B1");
     expect(new URL(page.url()).pathname).toBe("/en");
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
+  });
+
+  test("the reactor core lights a segment run per job of the CI runs and polls only while on B1", async ({ page }) => {
+    await page.route(OFFICE_API_V4, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(shipStep(Date.now(), "base")) }));
+    await enterB1Route(page);
+    expect((await reactor(page))?.started ?? false).toBe(false);
+    await rideTo(page, "B1");
+    // Lite: 4 rings of 6 segments, no sparks; the lanes are run 4101's jobs in order.
+    await expect.poll(() => reactor(page), { timeout: 30_000 }).toEqual({ started: true, lanes: ["done", "running", "queued", "queued"], live: true, segments: 24, sparks: 0 });
+    await rideTo(page, "L1");
+    await expect.poll(async () => (await reactor(page))?.started ?? false, { timeout: 30_000 }).toBe(false);
+  });
+
+  test("the reactor drawer explains the core and shows its live numbers, with no Classic link", async ({ page }) => {
+    const now = Date.now();
+    await page.route(OFFICE_API_V4, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(shipStep(Date.now(), "base", now - 3 * 60_000)) }));
+    await page.route("**/api/stats", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...STATS_FIXTURE, updatedAt: new Date(now - 3_600_000).toISOString() }) }));
+    await enterB1Route(page);
+    await rideTo(page, "B1");
+    await expect.poll(async () => (await reactor(page))?.live ?? false, { timeout: 30_000 }).toBe(true);
+    await page.evaluate(() => (window as unknown as Probe).__hq.store.getState().openRoom("B1:reactor"));
+    await waitForRoom(page, "B1:reactor");
+    const drawer = page.getByTestId("room-drawer");
+    await expect(drawer.getByRole("heading", { name: "The Reactor" }).first()).toBeVisible();
+    const live = drawer.locator('[data-engine-station="reactor"] [data-reactor-live="true"]');
+    await expect(live).toBeVisible();
+    const tile = (label: string) => live.getByTestId("metric").filter({ hasText: label }).locator("p").first();
+    await expect(tile("Jobs running")).toHaveText("1");
+    await expect(tile("Jobs done")).toHaveText("1");
+    await expect(tile("Agents awake")).toHaveText("6");
+    await expect(tile("Since the last production deploy")).toHaveText(/^\d+ min$/);
+    await expect(tile("Visits, last 30 days")).toHaveText("340");
+    await expect(tile("Ask questions, last 30 days")).toHaveText("64");
+    await expect(drawer.getByRole("heading", { name: "How it reads" })).toBeVisible();
+    await expect(drawer.locator('a[href*="/build"]')).toHaveCount(0);
   });
 
   test("rides from the roof down to B1 and back up to the Lobby", async ({ page }) => {

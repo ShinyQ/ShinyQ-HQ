@@ -2,6 +2,7 @@ import type { SignSpec } from "../../fx/signLayout";
 import type { EngineData, GpuTier, Rect } from "../../types";
 import type { Box } from "../roof/solids";
 import { ENGINE, type EngineBay, type EngineLayout } from "./layout";
+import { CORE_FX, coreSolids } from "./reactorFx";
 
 /**
  * Pure scenery of the B1 Engine Room (no React or three): the solid boxes (one merged mesh plus its edges), the
@@ -35,14 +36,37 @@ export interface PanelInstance {
 
 export interface EngineScenery {
   solids: Box[];
+  /** Depth-only boxes (no color, no edges): the end mask (`endMask`). */
+  masks: Box[];
   flows: FlowInstance[];
   panels: PanelInstance[];
 }
 
-/** Floor words (engine.*): the workbench title and subtitle. */
+/** Height of the end mask (`endMask`). */
+export const END_MASK_H = 1;
+
+/**
+ * A low depth-only box along the floor's east end (`DepthMask`: writes depth, never color, no edges): it hides the slab
+ * outline's far top edge (the floor's own accent outline at x `bounds.maxX`), which drew a thin line across the reactor
+ * view above the core, from every view looking east, without showing itself. Inside the bounds, behind the reactor
+ * and out of every road.
+ */
+export function endMask(layout: EngineLayout): Box {
+  const { maxX, minZ, maxZ } = layout.floor.bounds;
+  return { x: maxX - 0.3, y: 0, z: (minZ + maxZ) / 2, w: 0.6, h: END_MASK_H, d: maxZ - minZ };
+}
+
+/** Floor words (engine.*): the workbench title and subtitle, and the reactor's title and counter lines (`n` comes formatted). */
 export interface EngineLabels {
   title: string;
   subtitle: string;
+  reactor?: { title: string; visits: (n: string) => string; asks: (n: string) => string };
+}
+
+/** The reactor counter plate's numbers, formatted with the locale; null hides that line. */
+export interface ReactorCounts {
+  visits: string | null;
+  asks: string | null;
 }
 
 export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
@@ -181,15 +205,37 @@ function pipes(layout: EngineLayout): FlowInstance[] {
   const to = ENGINE.bounds.maxX - 2;
   const x = (from + to) / 2;
   const w = to - from;
+  // Trays run over the aisle edges and stop short of the reactor core.
+  const trayTo = layout.reactor.minX - 1;
+  const trayX = (from + trayTo) / 2;
+  const trayW = trayTo - from;
   const drops = layout.bays.map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: backFace(bay) - out(bay) * (WALL / 2), w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
   return [
     ...[-PIPE_Z, PIPE_Z].map((z) => ({ x, y: ENGINE.ceiling, z, w, h: PIPE.run, d: PIPE.run, color: ENGINE_TONES.pipe })),
     ...[-TRAY_Z, TRAY_Z].flatMap((z) => [
-      { x, y: ENGINE.ceiling - 0.5, z, w, h: TRAY.h, d: TRAY.d, color: ENGINE_TONES.tray },
-      { x, y: ENGINE.ceiling - 0.55, z, w, h: 0.04, d: TRAY.line, color: ENGINE_TONES.data },
+      { x: trayX, y: ENGINE.ceiling - 0.5, z, w: trayW, h: TRAY.h, d: TRAY.d, color: ENGINE_TONES.tray },
+      { x: trayX, y: ENGINE.ceiling - 0.55, z, w: trayW, h: 0.04, d: TRAY.line, color: ENGINE_TONES.data },
     ]),
     ...drops,
   ];
+}
+
+/** The workbench against a long wall: a back board on the wall, a table in front of it and a wall screen facing the room. */
+function workbenchProps(w: Rect): { solids: Box[]; panels: PanelInstance[] } {
+  const south = w.maxZ === ENGINE.bounds.maxZ;
+  /** +1 when the room lies toward +z of the bench (a bench on the north wall), -1 on the south wall. */
+  const o = south ? -1 : 1;
+  const wall = south ? w.maxZ : w.minZ;
+  const x = (w.minX + w.maxX) / 2;
+  const span = w.maxX - w.minX;
+  const depth = w.maxZ - w.minZ;
+  return {
+    solids: [
+      { x, y: 0, z: wall + o * 0.4, w: span, h: 5, d: 0.8 },
+      { x, y: 0, z: wall + o * (depth - 0.9), w: span - 1, h: 1.1, d: 1.8 },
+    ],
+    panels: [{ x, y: 3.2, z: wall + o * 0.85, w: span - 1, h: 2.6, yaw: south ? Math.PI : 0, color: ENGINE_TONES.amber }],
+  };
 }
 
 const frontStrip = (bay: EngineBay): FlowInstance => ({ x: bay.center.x, y: 0.03, z: bay.front - out(bay) * 0.15, w: ENGINE.bay.w - 0.6, h: 0.04, d: 0.25, color: ENGINE_TONES.amber });
@@ -210,14 +256,18 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
     solids.push(...row.solids);
     flows.push(...row.flows);
   });
-  const w = layout.workbench;
-  solids.push({ x: w.minX + 1.4, y: 0, z: 0, w: 2.6, h: 1.1, d: 7 }, { x: w.maxX - 0.4, y: 0, z: 0, w: 0.8, h: 5, d: w.maxZ - w.minZ });
-  panels.push({ x: w.maxX - 0.85, y: 3.2, z: 0, w: 7, h: 2.6, yaw: -Math.PI / 2, color: ENGINE_TONES.amber });
-  return { solids, flows, panels };
+  const bench = workbenchProps(layout.workbench);
+  solids.push(...bench.solids, ...coreSolids());
+  panels.push(...bench.panels);
+  return { solids, masks: [endMask(layout)], flows, panels };
 }
 
-/** Station names over every bay (amber) and the title over the workbench. */
-export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels): SignSpec[] {
+/**
+ * Station names over every bay (amber), the title over the workbench, and on the reactor platform's front edge (its
+ * aisle side, west of the energy column, so a deploy flash never washes it out) the reactor's title (amber) right above
+ * its counter plate (visits and questions, cyan), both below the rings. Every sign turns to the camera.
+ */
+export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels, counts?: ReactorCounts): SignSpec[] {
   const titles = new Map(data.bays.map((bay) => [bay.id, bay.title]));
   const signs: SignSpec[] = [];
   for (const bay of layout.bays) {
@@ -225,7 +275,16 @@ export function engineSigns(layout: EngineLayout, data: EngineData, labels: Engi
     signs.push({ text: titles.get(bay.id) ?? bay.id, x: bay.center.x, y: SIGN_Y, z, color: ENGINE_TONES.amber, fontSize: 0.42 });
   }
   const x = (layout.workbench.minX + layout.workbench.maxX) / 2;
-  signs.push({ text: labels.title.toLocaleUpperCase(), x, y: 6.6, z: 0, color: ENGINE_TONES.amber, fontSize: 0.7 });
-  signs.push({ text: labels.subtitle, x, y: 5.7, z: 0, color: ENGINE_TONES.warm, fontSize: 0.36 });
+  const z = (layout.workbench.minZ + layout.workbench.maxZ) / 2;
+  signs.push({ text: labels.title.toLocaleUpperCase(), x, y: 6.6, z, color: ENGINE_TONES.amber, fontSize: 0.7 });
+  signs.push({ text: labels.subtitle, x, y: 5.7, z, color: ENGINE_TONES.warm, fontSize: 0.36 });
+  const reactor = labels.reactor;
+  if (!reactor) return signs;
+  const R = ENGINE.reactor;
+  const front = layout.reactor.minX + 0.6;
+  const plateY = CORE_FX.rings[0].y - 0.65;
+  signs.push({ text: reactor.title.toLocaleUpperCase(), x: front, y: plateY + 1, z: R.z, color: ENGINE_TONES.amber, fontSize: 0.36 });
+  const lines = [counts?.visits != null ? reactor.visits(counts.visits) : null, counts?.asks != null ? reactor.asks(counts.asks) : null].filter((l) => l !== null);
+  if (lines.length > 0) signs.push({ text: lines.join("\n"), x: front, y: plateY, z: R.z, color: ENGINE_TONES.cyan, fontSize: 0.28 });
   return signs;
 }

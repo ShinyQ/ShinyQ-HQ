@@ -59,7 +59,7 @@ The engine (`engine.ts` with `synth.ts` and `music.ts`) is a lazy chunk behind t
 | L3 Labs | Light electronic arpeggio | Short square plucks under a snapping lowpass, 0.3 s steps over four chords in 16 step phrases, about 30 percent rests and some quiet half phrases, with an echo |
 | L4 Writing | Typewriter and paper | Band-passed noise ticks in word-like bursts, a soft E7 sine carriage bell and a return swish at line ends, and slow paper rustle swells from a looped noise bed |
 | RF Roof | Wind and a distant beacon | Gusting band-passed noise (with a low body) as wind, and a high sine radio beacon (G6, A6, C7) sending short morse-like patterns, the last one spelling HQ |
-| B1 Engine Room | Machine hum | Two detuned sawtooth pairs on C2 and G2 under a 180 Hz lowpass, a band-passed noise bed as air handling, and a soft G5 relay tick every 3 to 6 s. About 6 dB under the other layers (owner, 2026-10-18): `B1_HUM_LEVEL` is `FLOOR_TONE_PEAK` (L3's pluck peak, 0.05) times `B1_UNDER_FLOORS` (0.5), and the air bed and tick scale with it |
+| B1 Engine Room | Machine hum | Two detuned sawtooth pairs on C2 and G2 under a 180 Hz lowpass, a band-passed noise bed as air handling, and a soft G5 relay tick every 3 to 6 s. About 6 dB under the other layers (owner, 2026-10-18): `B1_HUM_LEVEL` is `FLOOR_TONE_PEAK` (L3's pluck peak, 0.05) times `B1_UNDER_FLOORS` (0.5), and the air bed and tick scale with it. The hum rises up to about 6 dB near the reactor core (`engineHum.ts` holder, driven from the B1 chunk) |
 
 ## Behavior
 

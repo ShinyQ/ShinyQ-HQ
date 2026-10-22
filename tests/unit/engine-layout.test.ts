@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { STATION_IDS } from "@/content/build-story";
+import { RoomIdSchema } from "@/content/schema";
 import { yawLooking } from "@/experience/camera/look";
-import { buildEngineLayout, ENGINE, ENGINE_BAYS, ENGINE_STATIONS, engineRoom } from "@/experience/floors/engine/layout";
+import { buildEngineLayout, ENGINE, ENGINE_BAYS, ENGINE_REACTOR_ROOM, ENGINE_STATIONS, engineRoom } from "@/experience/floors/engine/layout";
+import { rectGap } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";
 import { realLayouts } from "../helpers/real-layouts";
 import { expectSpaceRules } from "../helpers/space";
@@ -9,6 +11,7 @@ import { expectSpaceRules } from "../helpers/space";
 const layout = buildEngineLayout();
 const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && b.minX < a.maxX && a.minZ < b.maxZ && b.minZ < a.maxZ;
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX && r.maxX <= b.maxX && r.minZ >= b.minZ && r.maxZ <= b.maxZ;
+const contains = (r: Rect, p: { x: number; z: number }) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
 
 describe("B1 Engine Room layout", () => {
   it("keeps the bays in the build story's order: all seven are stations", () => {
@@ -20,8 +23,8 @@ describe("B1 Engine Room layout", () => {
     expect(layout.bays.map((b) => b.side)).toEqual(["north", "south", "north", "south", "north", "south", "north"]);
     const rooms = ENGINE_STATIONS.map(engineRoom);
     expect(layout.bays.map((b) => b.room)).toEqual(rooms);
-    expect(layout.floor.doors?.map((d) => d.room)).toEqual(rooms);
-    expect(layout.network.spurs.map((s) => s.room)).toEqual(rooms);
+    expect(layout.floor.doors?.map((d) => d.room)).toEqual([...rooms, ENGINE_REACTOR_ROOM]);
+    expect(layout.network.spurs.map((s) => s.room)).toEqual([...rooms, ENGINE_REACTOR_ROOM]);
     for (const bay of layout.bays) {
       expect(inside(bay.rect, layout.floor.bounds), bay.id).toBe(true);
       expect(bay.pad, bay.id).toEqual({ x: bay.center.x, z: bay.front - bay.facing.z * ENGINE.padInset });
@@ -40,21 +43,65 @@ describe("B1 Engine Room layout", () => {
     expectSpaceRules({ bounds: b1.bounds, obstacles: b1.obstacles, doors: b1.doors ?? [], network: layout.network, start: b1.approach, pads: b1.pads });
   });
 
-  it("keeps the elevator call pad area free and the workbench flush with the east edge, across the aisle's end", () => {
+  it("keeps the elevator call pad area free", () => {
     for (const o of layout.floor.obstacles) expect(overlaps(o, layout.callPad)).toBe(false);
-    expect(layout.workbench.maxX).toBe(ENGINE.bounds.maxX);
-    expect(layout.workbench.minX).toBeGreaterThanOrEqual(ENGINE.aisle.endX + 6);
-    expect(layout.workbench.minZ).toBeLessThan(0);
-    expect(layout.workbench.maxZ).toBeGreaterThan(0);
   });
 
-  it("rolls the rover on east along the aisle and looks east at the workbench; every station has a view into its bay", () => {
+  it("ends the aisle in a reactor hall: the core on the aisle axis, east of every bay, an obstacle 6 u past the aisle's end", () => {
+    const { reactor } = layout;
+    expect(ENGINE.reactor.z).toBe(0);
+    expect(reactor).toEqual({ minX: ENGINE.reactor.x - ENGINE.reactor.r, maxX: ENGINE.reactor.x + ENGINE.reactor.r, minZ: -ENGINE.reactor.r, maxZ: ENGINE.reactor.r });
+    for (const bay of layout.bays) expect(reactor.minX, bay.id).toBeGreaterThan(bay.rect.maxX);
+    expect(layout.floor.obstacles).toContainEqual(reactor);
+    expect(inside(reactor, layout.floor.bounds)).toBe(true);
+    expect(reactor.minX - ENGINE.aisle.endX).toBe(6);
+    // The arrival looks east: its sight line runs through the core.
+    expect(ENGINE.reactor.x).toBeGreaterThan(ENGINE.arrival.x);
+    expect(Math.abs(ENGINE.arrival.z - ENGINE.reactor.z)).toBeLessThan(ENGINE.reactor.r);
+    expect(ENGINE.reactor.h).toBeLessThanOrEqual(ENGINE.ceiling);
+  });
+
+  it("gives the reactor a room (not a station bay) with a door pad facing the core at the end of a spur from the aisle", () => {
+    expect(RoomIdSchema.safeParse(ENGINE_REACTOR_ROOM).success).toBe(true);
+    expect(ENGINE_REACTOR_ROOM).toBe("B1:reactor");
+    expect(ENGINE_STATIONS.map(engineRoom)).not.toContain(ENGINE_REACTOR_ROOM);
+    const door = layout.floor.doors?.find((d) => d.room === ENGINE_REACTOR_ROOM);
+    expect(door).toEqual({ room: ENGINE_REACTOR_ROOM, at: { ...ENGINE.reactorDoor }, facing: { x: 1, z: 0 } });
+    expect(door!.at.z).toBe(0);
+    expect(door!.at.x).toBeGreaterThan(ENGINE.aisle.endX);
+    expect(door!.at.x).toBeLessThan(layout.reactor.minX);
+    const spur = layout.network.spurs.find((s) => s.room === ENGINE_REACTOR_ROOM);
+    expect(spur?.from).toEqual({ x: ENGINE.aisle.endX, z: 0 });
+    expect(spur?.to).toEqual(door!.at);
+  });
+
+  it("moves the workbench to the hall's north-west, flush with the north wall, out of the core's shadow and 6 u from every obstacle", () => {
+    const { workbench, reactor } = layout;
+    expect(layout.floor.obstacles).toContainEqual(workbench);
+    expect(inside(workbench, layout.floor.bounds)).toBe(true);
+    expect(workbench.minZ).toBe(ENGINE.bounds.minZ);
+    expect(workbench.maxX).toBeLessThanOrEqual(reactor.minX);
+    expect(workbench.minX).toBeGreaterThan(Math.max(...layout.bays.map((b) => b.rect.maxX)));
+    for (const o of layout.floor.obstacles) if (o !== workbench) expect(rectGap(o, workbench), JSON.stringify(o)).toBeGreaterThanOrEqual(6);
+  });
+
+  it("rolls the rover on east along the aisle, looks east at the core and north at the workbench; every station has a view into its bay", () => {
     const { floor } = layout;
     expect(floor.arrival).toEqual(ENGINE.arrival);
     expect(floor.spawn).toEqual(ENGINE.arrival);
     const zones = new Map(floor.viewZones?.map((z) => [z.id, z]));
-    expect(zones.get("B1:arrival")).toMatchObject({ yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 }, arrivalOnly: true });
-    expect(zones.get("B1:workbench")?.yaw).toBe(yawLooking({ x: 1, z: 0 }));
+    expect(zones.get("B1:arrival")).toMatchObject({ area: { minX: -10, maxX: -6, minZ: -2, maxZ: 2 }, yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 }, arrivalOnly: true });
+    const reactor = zones.get(ENGINE_REACTOR_ROOM)!;
+    expect(reactor).toMatchObject({ yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 } });
+    expect(contains(reactor.area, ENGINE.reactorDoor)).toBe(true);
+    expect(reactor.area.minX).toBe(ENGINE.aisle.endX);
+    expect(reactor.area.maxX).toBe(layout.reactor.minX);
+    // Between the aisle and the bench, looking north: the follow camera stands over the open aisle, never behind the core.
+    const bench = zones.get("B1:workbench")!;
+    expect(bench.yaw).toBe(yawLooking({ x: 0, z: -1 }));
+    expect(bench.area).toEqual({ minX: layout.workbench.minX, maxX: layout.workbench.maxX, minZ: layout.workbench.maxZ, maxZ: -4.5 });
+    expect(bench.area.maxZ).toBeLessThan(0);
+    for (const o of floor.obstacles) expect(overlaps(o, bench.area), JSON.stringify(o)).toBe(false);
     for (const bay of layout.bays) expect(zones.get(`B1:${bay.id}`)?.yaw, bay.id).toBe(yawLooking(bay.facing));
     expect(floor.viewZones?.filter((z) => ENGINE_STATIONS.some((id) => z.id === `B1:${id}`))).toHaveLength(7);
   });

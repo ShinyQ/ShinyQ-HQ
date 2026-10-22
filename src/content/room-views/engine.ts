@@ -14,7 +14,8 @@ type StationContent = { engine: Omit<RoomEngine, "station" | "labels">; sections
 /**
  * B1 Engine Room: one drawer per station from the build story (`content/build-story.json`) and the build-time
  * snapshot (`content/generated/build-facts.json`), through the same helpers as the Classic page
- * (`src/lib/build-page.ts`), so a number is shown only when the snapshot carries it.
+ * (`src/lib/build-page.ts`), so a number is shown only when the snapshot carries it. The eighth view, the Reactor
+ * (`B1:reactor`), explains the live core; its numbers come from the B1 feed in the drawer (no Classic page).
  */
 /** Laid-out station diagrams per locale and diagram: the layout search is the costly part, and the content is static per build. */
 const DIAGRAMS = new Map<string, NonNullable<RoomEngine["diagram"]>>();
@@ -126,8 +127,25 @@ export function buildEngineViews(locale: Locale): RoomView[] {
     },
   };
 
-  return chain(
-    STATION_IDS.map((id) =>
+  // Plain strings (no placeholders), read as they are.
+  const r = m.build.reactor;
+  const reactor = single({
+    id: "B1:reactor",
+    kind: "engine",
+    title: r.title,
+    subtitle: r.subtitle,
+    badges: [{ label: "B1", accent: "amber" }],
+    accent: "amber",
+    sections: [{ title: r.howItReads, bullets: [r.segments, r.flash, r.sparks, r.pulse, r.idle] }, { body: r.polls }],
+    engine: {
+      station: "reactor",
+      labels,
+      reactor: { labels: { live: r.live, running: r.running, done: r.done, failed: r.failed, agents: r.agents, deploy: r.deploy, noDeploy: r.noDeploy, visits: r.visits, asks: r.asks, offline: r.offline } },
+    },
+  });
+
+  return chain([
+    ...STATION_IDS.map((id) =>
       single({
         id: `B1:${id}`,
         kind: "engine",
@@ -141,5 +159,6 @@ export function buildEngineViews(locale: Locale): RoomView[] {
         engine: { station: id, labels, ...content[id].engine },
       }),
     ),
-  );
+    reactor,
+  ]);
 }

@@ -1,4 +1,5 @@
 import { midiToHz } from "./music";
+import { engineHum } from "./engineHum";
 import { envelope, getNoiseBuffer } from "./synth";
 
 /**
@@ -670,7 +671,16 @@ function createEngineLayer(ctx: BaseAudioContext, destination: AudioNode, random
     },
   };
 
-  return kit.run([relay]);
+  const layer = kit.run([relay]);
+  engineHum.node = hum;
+  engineHum.level = B1_HUM_LEVEL;
+  const stop = layer.stop;
+  // A fading older layer never clears a newer layer's hum.
+  layer.stop = () => {
+    if (engineHum.node === hum) engineHum.node = null;
+    stop();
+  };
+  return layer;
 }
 
 export const AMBIENCE_LAYERS: Record<AmbienceFloor, AmbienceLayerFactory> = {

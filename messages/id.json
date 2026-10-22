@@ -165,7 +165,28 @@
     "steps": "Cara menjawab",
     "tried": "Dicoba",
     "whyDropped": "Alasan dibatalkan",
-    "prLink": "Pull request #{n}"
+    "prLink": "Pull request #{n}",
+    "reactor": {
+      "title": "Reaktor",
+      "subtitle": "Jantung build yang hidup: CI, deploy, agent, dan kunjungan dalam satu mesin.",
+      "howItReads": "Cara membacanya",
+      "segments": "Segmen cincin adalah job dari CI run terbaru, dengan warna menara Agent Office: ungu sedang berjalan (cahaya berkejaran mengitari cincin), hijau selesai, merah gagal, abu-abu redup mengantre.",
+      "flash": "Kilatan putih menandakan deploy ke production.",
+      "sparks": "Percikan yang mengorbit adalah sesi AI agent yang sedang aktif di Agent Office.",
+      "pulse": "Kecepatan denyut mengikuti jumlah kunjungan dan pertanyaan Ask dalam 30 hari terakhir.",
+      "idle": "Cahaya tenang dengan denyut pelan berarti offline, belum ada data, atau gerakan dikurangi.",
+      "polls": "Data baru hanya diambil selama Anda berada di B1.",
+      "live": "Data langsung",
+      "running": "Job berjalan",
+      "done": "Job selesai",
+      "failed": "Job gagal",
+      "agents": "Agent aktif",
+      "deploy": "Sejak deploy production terakhir",
+      "noDeploy": "Belum ada",
+      "visits": "Kunjungan, 30 hari terakhir",
+      "asks": "Pertanyaan Ask, 30 hari terakhir",
+      "offline": "Feed langsung sedang offline, jadi inti reaktor menampilkan cahaya tenangnya."
+    }
   },
   "journey": {
     "title": "Perjalanan karier: 2019 hingga 2026",
@@ -685,7 +706,12 @@
     "go": "Antar saya ke sana",
     "later": "Nanti",
     "lockedLine": "B1 masih terkunci: kunjungi semua {total} lantai dulu ({seen}/{total}).",
-    "goTo": "Ke Ruang Mesin B1"
+    "goTo": "Ke Ruang Mesin B1",
+    "reactor": {
+      "title": "Reaktor",
+      "visits": "{n} kunjungan dalam 30 hari",
+      "asks": "{n} pertanyaan untuk Rover"
+    }
   },
   "drawer": {
     "label": "Detail ruang",

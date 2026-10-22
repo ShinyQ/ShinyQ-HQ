@@ -165,7 +165,28 @@
     "steps": "How it answers",
     "tried": "Tried",
     "whyDropped": "Why it was dropped",
-    "prLink": "Pull request #{n}"
+    "prLink": "Pull request #{n}",
+    "reactor": {
+      "title": "The Reactor",
+      "subtitle": "The live heart of the build: CI, deploys, agents and visits in one machine.",
+      "howItReads": "How it reads",
+      "segments": "Ring segments are the jobs of the latest CI runs, in the Agent Office tower's colors: violet running (a light chases around the ring), green done, red failed, dim grey queued.",
+      "flash": "A white flash is a production deploy.",
+      "sparks": "Orbiting sparks are AI agent sessions awake in the Agent Office.",
+      "pulse": "The pulse speed follows the visits and Ask questions of the last 30 days.",
+      "idle": "A calm idle glow means offline, no data yet or reduced motion.",
+      "polls": "It checks for new data only while you are on B1.",
+      "live": "Live now",
+      "running": "Jobs running",
+      "done": "Jobs done",
+      "failed": "Jobs failed",
+      "agents": "Agents awake",
+      "deploy": "Since the last production deploy",
+      "noDeploy": "None recent",
+      "visits": "Visits, last 30 days",
+      "asks": "Ask questions, last 30 days",
+      "offline": "The live feed is offline right now, so the core shows its calm idle glow."
+    }
   },
   "journey": {
     "title": "Career journey: 2019 to 2026",
@@ -685,7 +706,12 @@
     "go": "Take me there",
     "later": "Later",
     "lockedLine": "B1 is still locked: visit all {total} floors first ({seen}/{total}).",
-    "goTo": "Go to B1 Engine Room"
+    "goTo": "Go to B1 Engine Room",
+    "reactor": {
+      "title": "Reactor",
+      "visits": "{n} visits in 30 days",
+      "asks": "{n} questions to Rover"
+    }
   },
   "drawer": {
     "label": "Room details",

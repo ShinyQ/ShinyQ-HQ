@@ -201,7 +201,8 @@ export interface EngineShot {
 
 /** B1 Engine Room station drawer (`EngineBody`): the build story's station, laid out and labelled on the server. */
 export interface RoomEngine {
-  station: StationId;
+  /** A build story station, or the reactor hall (`B1:reactor`, live numbers from the B1 feed). */
+  station: StationId | "reactor";
   /**
    * Blueprint and Rover's Brain: the station diagram laid out for a phone (`layout`, `DIAGRAM_PRESETS.phone`) and for
    * a wide side drawer (`wide`, `DIAGRAM_PRESETS.drawer`, shown once the figure is as wide as it), and its text alternative.
@@ -217,6 +218,8 @@ export interface RoomEngine {
   tiles?: { id: string; value: string; label: string }[];
   /** Rejected Designs: what was tried and why it was dropped, with its pull request (`href` absent for an unlinked one). */
   ideas?: { id: string; title: string; tried: string; reason: string; pr?: { n: number; href?: string } }[];
+  /** The Reactor: words for its live block (`ReactorPanel` reads the B1 office feed and the stats on the client). */
+  reactor?: { labels: { live: string; running: string; done: string; failed: string; agents: string; deploy: string; noDeploy: string; visits: string; asks: string; offline: string } };
   /** Resolved words (the drawer loads no `build` messages on the client). */
   labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string; tried: string; whyDropped: string };
 }
