@@ -5,6 +5,7 @@ import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts, FLOOR_IDS, LOBBY, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
+import { buildEngineLayout, ENGINE, ENGINE_REACTOR_ROOM } from "@/experience/floors/engine/layout";
 import { OPS } from "@/experience/floors/labs/ops";
 import { buildLabsLayout, LABS } from "@/experience/floors/labs/layout";
 import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
@@ -144,6 +145,17 @@ describe("interactablesFor on the real content", () => {
     expect(ops.at).toEqual(labs.ops.door);
     expect(ops.bounds.minX).toBe(labs.ops.rect.minX);
     expect(ops.bounds.minZ).toBe(labs.ops.rect.minZ);
+  });
+
+  it("makes the B1 reactor a point-and-go station over the core's whole footprint", () => {
+    const { reactor } = buildEngineLayout();
+    const item = find("B1", "B1:station:reactor")!;
+    expect(item).toMatchObject({ kind: "station", action: { type: "open-room", room: ENGINE_REACTOR_ROOM }, height: ENGINE.reactor.h });
+    expect(item.at).toEqual(ENGINE.reactorDoor);
+    expect(item.bounds.minX).toBeLessThanOrEqual(reactor.minX);
+    expect(item.bounds.maxX).toBe(reactor.maxX);
+    expect(item.bounds.minZ).toBe(reactor.minZ);
+    expect(item.bounds.maxZ).toBe(reactor.maxZ);
   });
 
   it("names rooms after their content", () => {

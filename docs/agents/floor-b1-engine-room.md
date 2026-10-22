@@ -6,24 +6,26 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Layout
 
-- `buildEngineLayout()` in `floors/engine/layout.ts` (pure, no React or three) returns the `FloorLayout`, the road network, `bays`, `racks`, `workbench` and `callPad`. `ENGINE` holds the numbers.
-  - Bounds x -24 to 48, z -14 to 14. The door and the call pad stand in front of the elevator (`callPad` x -24 to -16, z -4 to 4, kept free).
-  - One aisle (`aisle`, 8 u wide) runs east from the approach (-21, 0) to x 38 and carries the seven bays.
+- `buildEngineLayout()` in `floors/engine/layout.ts` (pure, no React or three) returns the `FloorLayout`, the road network, `bays`, `racks`, `reactor`, `workbench` and `callPad`. `ENGINE` holds the numbers.
+  - Bounds x -24 to 70, z -14 to 14. The door and the call pad stand in front of the elevator (`callPad` x -24 to -16, z -4 to 4, kept free).
+  - One aisle (`aisle`, 8 u wide) runs east from the approach (-21, 0) to x 46 and carries the seven bays.
   - Seven bays (`ENGINE_BAYS`, 8 u wide, 6 u deep, 4.6 u high) alternate north and south, starting at x -10 in 7 u steps (north for even indices).
   - All seven bays are stations (`ENGINE_STATIONS` equals `ENGINE_BAYS`): blueprint, timeline, agents, gates, dashboard, brain (Rover's Brain) and rejected (Rejected Designs), each with a room, a door and a pad.
   - The bay order equals `STATION_IDS` of `src/content/build-story.ts` (a unit test checks it; the ids are repeated because that module is server-only).
 - Each station has a door pad 1.1 u inside its front and a 4 u spur from the aisle. Doors are `station`s (`DoorTrigger.facing` looks into the bay), rooms `B1:<station>`.
-- Server rack rows (`engineRacks`) fill the wall gaps between neighbouring bays on the same side; the workbench (x 44 to 48, z -5 to 5) is flush with the east edge.
+- Server rack rows (`engineRacks`) fill the wall gaps between neighbouring bays on the same side.
+- The reactor hall ends the aisle: the reactor core (`ENGINE.reactor`, center (57, 0) on the aisle axis, obstacle x 52 to 62, z -5 to 5, 6 u past the aisle's end) is room `B1:reactor` (`ENGINE_REACTOR_ROOM`), not a bay and not a build-story station. Its door pad is at (50, 0) facing east (`ENGINE.reactorDoor`), at the end of a 4 u spur from the aisle's end; its point-and-go target `B1:station:reactor` covers the core's footprint.
+- The workbench (x 54 to 62, z 11 to 14) stands beside the core, flush with the south wall, 6 u from the core; its wall screen faces north into the hall.
 - The Express Return pad is at (40, 9) (`ENGINE.returnPad`, see [Fast return](floors.md#fast-return)).
 - Arrival is (-8, 0) (`ENGINE.arrival`, also `spawn`): east of the shaft-clear line, as on RF. Zone `B1:arrival` is the shared arrival zone ([Arrival](floors.md#arrival)): eastbound only, `arrivalOnly`, zoom 0.95.
   - Phones (camera class mobile, owner review 2026-10-18) use `ENGINE.arrivalPhone`: the camera turns 75 degrees to the north side of the rover, zoom 0.85, pitch -0.2 below the rig's elevation. It looks across the aisle at the Blueprint and Build Timeline signs, both whole (a portrait view straight down the aisle cut every sign at the edges; no pose down the aisle shows two signs readable). Driving out of the zone eases the camera back to east with a level pitch.
-- Zones: one per station (`B1:<station>`, on the door pad, the camera on the aisle side looking into the bay) and `B1:workbench` (the aisle end, eastbound only, looking east).
-- Obstacles are the bay rects, the racks and the workbench; the navgrid, door triggers, camera collision and the scenery all read the same layout.
+- Zones: one per station (`B1:<station>`, on the door pad, the camera on the aisle side looking into the bay), `B1:reactor` (aisle end to the core, x 46 to 52, eastbound only, looking east at the core) and `B1:workbench` (the gap between the core and the workbench, looking south at the bench).
+- Obstacles are the bay rects, the racks, the reactor and the workbench; the navgrid, door triggers, camera collision and the scenery all read the same layout.
 
 ## Scenery
 
 - `EngineRoom` (`floors/EngineRoom.tsx`, root group `engine-room`) reads `buildEngineLayout()` and the pure `engineScenery` / `engineSigns` (`floors/engine/scenery.ts`):
-  - the aisle through the shared road kit (`RoadMarkings`);
+  - the aisle through the shared road kit (`RoadMarkings`); cable trays over the aisle edges stop 1 u short of the reactor;
   - one merged solid mesh and its edges (`MergedBoxes`, `MergedEdges` from the roof kit): bay shells, station props, racks, the workbench;
   - `FlowMesh` (`engine/EngineFx.tsx`, holo `strip`, one instanced draw) for ceiling pipes and their drops, cable trays, bay front strips and rack LEDs, with a slow pulse along x and a random phase per instance;
   - the pipe runs hang over the back walls (`PIPE_Z`), held by brackets on each bay's back corners, and their drops meet the back walls, so from the aisle no bracket or drop stands in front of a station sign (a front bracket used to cut the Agents sign on arrival);

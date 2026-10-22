@@ -7,7 +7,8 @@ import type { DoorTrigger, FloorLayout, Rect, Vec2 } from "../../types";
 /**
  * B1 Engine Room (spec 2026-10-17, section 3): a central aisle east from the elevator with seven bays,
  * alternating north and south, each holding one of the build story's stations. Server rack rows fill the wall
- * gaps between bays, a workbench closes the aisle at the east edge. Pure (no React or three): the floor layout,
+ * gaps between bays. The aisle ends in the reactor hall (B1-2, spec 2026-10-22 section 3): the reactor core on the
+ * aisle axis, with the workbench beside it against the south wall. Pure (no React or three): the floor layout,
  * the registry, the minimap and the scenery read it.
  * The bay order must equal `STATION_IDS` of `src/content/build-story.ts` (a test checks it; that module is
  * server-only, so the ids are repeated here).
@@ -19,16 +20,18 @@ export const ENGINE_STATIONS = ENGINE_BAYS;
 export type EngineStationId = EngineBayId;
 
 export const engineRoom = (id: EngineStationId): RoomId => `B1:${id}`;
+/** The reactor hall's room: not a bay and not a build-story station. */
+export const ENGINE_REACTOR_ROOM: RoomId = "B1:reactor";
 
 export const ENGINE = {
-  bounds: { minX: -24, maxX: 48, minZ: -14, maxZ: 14 },
+  bounds: { minX: -24, maxX: 70, minZ: -14, maxZ: 14 },
   door: { x: -24, z: 0 },
   approach: { x: -21, z: 0 },
   /** In front of the elevator: kept free for the elevator call pad. */
   callPad: { minX: -24, maxX: -16, minZ: -4, maxZ: 4 },
   /** The Engine Room's warmer amber (the Data and ML wing is #fbbf24). */
   accent: "#f59e0b",
-  aisle: { width: 8, endX: 38 },
+  aisle: { width: 8, endX: 46 },
   /** Bay k stands at x = x0 + k * pitch, north for even k; w along x, d from the wall, h its wall height. */
   bay: { x0: -10, pitch: 7, w: 8, d: 6, h: 4.6 },
   /** Bay front to door pad center. */
@@ -36,7 +39,12 @@ export const ENGINE = {
   spurWidth: 4,
   /** Rack rows stand this deep against the wall, between the bays. */
   rackDepth: 3,
-  workbench: { minX: 44, maxX: 48, minZ: -5, maxZ: 5 },
+  /** The reactor core: center on the aisle axis, `r` the half size of its square obstacle, `h` its height. */
+  reactor: { x: 57, z: 0, r: 5, h: 6.6 },
+  /** The reactor's door pad, at the end of a short spur from the aisle's end, facing the core. */
+  reactorDoor: { x: 50, z: 0 },
+  /** Beside the core, flush with the south wall, 6 u from the core. */
+  workbench: { minX: 54, maxX: 62, minZ: 11, maxZ: 14 },
   returnPad: { x: 40, z: 9 },
   /** Elevator arrivals roll on here and deep links spawn here (Round 8 J), looking east down the aisle. */
   // x -8 as on RF: far enough east of the shaft that the arrival camera clears the glass (`shaftClearZoom`).
@@ -75,12 +83,15 @@ export interface EngineLayout {
   bays: EngineBay[];
   /** Rack rows (obstacles) in the wall gaps between same-side bays. */
   racks: Rect[];
+  /** The reactor core's footprint (an obstacle). */
+  reactor: Rect;
   workbench: Rect;
   callPad: Rect;
 }
 
 const plain = (r: Rect): Rect => ({ minX: r.minX, maxX: r.maxX, minZ: r.minZ, maxZ: r.maxZ });
 const LOOK_EAST = yawLooking({ x: 1, z: 0 });
+const LOOK_SOUTH = yawLooking({ x: 0, z: 1 });
 
 export function engineBays(): EngineBay[] {
   const { bounds, bay: B, padInset } = ENGINE;
@@ -119,19 +130,26 @@ export function engineRacks(bays: readonly EngineBay[]): Rect[] {
   return racks;
 }
 
-/** The Engine Room: floor layout (aisle, spurs, doors, view zones, arrival, Return pad), bays, racks and the workbench. */
+/** The Engine Room: floor layout (aisle, spurs, doors, view zones, arrival, Return pad), bays, racks, the reactor and the workbench. */
 export function buildEngineLayout(): EngineLayout {
   const E = ENGINE;
   const bays = engineBays();
   const racks = engineRacks(bays);
+  const R = E.reactor;
+  const reactor: Rect = { minX: R.x - R.r, maxX: R.x + R.r, minZ: R.z - R.r, maxZ: R.z + R.r };
   const workbench = plain(E.workbench);
-  const aisle: Road = { id: "aisle", points: [{ ...E.approach }, { x: E.aisle.endX, z: 0 }], width: E.aisle.width };
-  const spurs: Spur[] = bays.map((b) => ({ room: b.room, from: { x: b.center.x, z: 0 }, to: b.pad, width: E.spurWidth, color: E.accent }));
+  const aisleEnd: Vec2 = { x: E.aisle.endX, z: 0 };
+  const aisle: Road = { id: "aisle", points: [{ ...E.approach }, aisleEnd], width: E.aisle.width };
+  const reactorDoor: Vec2 = { ...E.reactorDoor };
+  const spurs: Spur[] = [
+    ...bays.map((b) => ({ room: b.room, from: { x: b.center.x, z: 0 }, to: b.pad, width: E.spurWidth, color: E.accent })),
+    { room: ENGINE_REACTOR_ROOM, from: { ...aisleEnd }, to: reactorDoor, width: E.spurWidth, color: E.accent },
+  ];
   const network: RoadNetwork = { roads: [aisle], plazas: [], spurs };
-  const doors: DoorTrigger[] = bays.map((b) => ({ room: b.room, at: b.pad, facing: b.facing }));
+  const doors: DoorTrigger[] = [...bays.map((b) => ({ room: b.room, at: b.pad, facing: b.facing })), { room: ENGINE_REACTOR_ROOM, at: { ...reactorDoor }, facing: { x: 1, z: 0 } }];
   const arrival: Vec2 = { ...E.arrival };
   const viewZones: ViewZone[] = [
-    // Arrival (eastbound only, primed by an arrival or a deep link): behind the rover, down the aisle to the workbench.
+    // Arrival (eastbound only, primed by an arrival or a deep link): behind the rover, down the aisle to the reactor.
     {
       id: "B1:arrival",
       area: { minX: arrival.x - 2, maxX: arrival.x + 2, minZ: arrival.z - 2, maxZ: arrival.z + 2 },
@@ -143,8 +161,10 @@ export function buildEngineLayout(): EngineLayout {
     },
     // Each station: on its door pad the camera stands on the aisle side and looks into the bay.
     ...bays.map((b): ViewZone => ({ id: `B1:${b.id}`, area: { minX: b.rect.minX, maxX: b.rect.maxX, minZ: b.pad.z - 2, maxZ: b.pad.z + 2 }, yaw: yawLooking(b.facing) })),
-    // The aisle's end: looking east at the workbench (eastbound only, so driving back never turns the camera).
-    { id: "B1:workbench", area: { minX: E.aisle.endX - 4, maxX: workbench.minX, minZ: -E.aisle.width / 2, maxZ: E.aisle.width / 2 }, yaw: LOOK_EAST, travel: { x: 1, z: 0 } },
+    // The aisle's end to the core: looking east at the reactor (eastbound only, so driving back never turns the camera).
+    { id: ENGINE_REACTOR_ROOM, area: { minX: E.aisle.endX, maxX: reactor.minX, minZ: -E.aisle.width / 2, maxZ: E.aisle.width / 2 }, yaw: LOOK_EAST, travel: { x: 1, z: 0 } },
+    // The gap between the core and the workbench: looking south at the bench.
+    { id: "B1:workbench", area: { minX: workbench.minX, maxX: workbench.maxX, minZ: reactor.maxZ, maxZ: workbench.minZ }, yaw: LOOK_SOUTH },
   ];
   return {
     floor: {
@@ -152,7 +172,7 @@ export function buildEngineLayout(): EngineLayout {
       bounds: plain(E.bounds),
       door: { ...E.door },
       approach: { ...E.approach },
-      obstacles: [...bays.map((b) => b.rect), ...racks, workbench],
+      obstacles: [...bays.map((b) => b.rect), ...racks, reactor, workbench],
       spawn: arrival,
       arrival,
       accent: E.accent,
@@ -164,6 +184,7 @@ export function buildEngineLayout(): EngineLayout {
     network,
     bays,
     racks,
+    reactor,
     workbench,
     callPad: plain(E.callPad),
   };

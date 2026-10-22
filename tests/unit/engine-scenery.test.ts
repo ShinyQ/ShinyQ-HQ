@@ -12,6 +12,7 @@ const within = (r: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 &
 const box = (p: { x: number; z: number; w: number; d: number }): Rect => ({ minX: p.x - p.w / 2, maxX: p.x + p.w / 2, minZ: p.z - p.d / 2, maxZ: p.z + p.d / 2 });
 const panelRect = (p: PanelInstance): Rect => (p.flat ? box({ x: p.x, z: p.z, w: p.w, d: p.h }) : Math.abs(Math.sin(p.yaw)) > 0.5 ? box({ x: p.x, z: p.z, w: 0, d: p.w }) : box({ x: p.x, z: p.z, w: p.w, d: 0 }));
 const inRect = (p: { x: number; z: number }, r: Rect) => p.x > r.minX && p.x < r.maxX && p.z > r.minZ && p.z < r.maxZ;
+const inside = (r: Rect, o: Rect) => r.minX >= o.minX - 1e-9 && r.maxX <= o.maxX + 1e-9 && r.minZ >= o.minZ - 1e-9 && r.maxZ <= o.maxZ + 1e-9;
 
 describe("B1 Engine Room scenery", () => {
   for (const tier of ["full", "lite"] as const) {
@@ -46,6 +47,27 @@ describe("B1 Engine Room scenery", () => {
     expect(full.panels.length).toBeLessThan(40);
   });
 
+  it("stands the workbench props inside the moved workbench, its wall screen facing the room (north)", () => {
+    const w = layout.workbench;
+    const s = engineScenery(layout, "full");
+    const bench = s.solids.filter((x) => inRect(x, w));
+    expect(bench.length).toBeGreaterThanOrEqual(2);
+    for (const solid of bench) expect(inside(box(solid), w), JSON.stringify(solid)).toBe(true);
+    const screens = s.panels.filter((p) => inRect(p, w));
+    expect(screens).toHaveLength(1);
+    // Forward is (sin yaw, cos yaw): the screen on the south wall looks north (-z), into the hall.
+    expect(Math.sin(screens[0].yaw)).toBeCloseTo(0);
+    expect(Math.cos(screens[0].yaw)).toBeCloseTo(-1);
+    expect(inside(panelRect(screens[0]), w)).toBe(true);
+  });
+
+  it("keeps the reactor footprint free of pipes, trays and screens until the core draws there", () => {
+    const s = engineScenery(layout, "full");
+    const hit = (r: Rect) => r.minX < layout.reactor.maxX && layout.reactor.minX < r.maxX && r.minZ < layout.reactor.maxZ && layout.reactor.minZ < r.maxZ;
+    for (const f of s.flows) expect(hit(box(f)), JSON.stringify(f)).toBe(false);
+    for (const p of s.panels) expect(hit(panelRect(p)), JSON.stringify(p)).toBe(false);
+  });
+
   it("names every bay on an upright amber floating sign and titles the workbench; no Coming soon plate", () => {
     const signs = engineSigns(layout, data, labels);
     expect(signs).toHaveLength(layout.bays.length + 2);
@@ -56,6 +78,7 @@ describe("B1 Engine Room scenery", () => {
     expect(signs.some((sg) => /coming soon|segera hadir/i.test(sg.text))).toBe(false);
     expect(signs.some((sg) => sg.text === "ENGINE ROOM")).toBe(true);
     for (const sg of signs) expect(sg.tilt, sg.text).toBeUndefined();
+    for (const sg of signs.slice(-2)) expect(inRect(sg, layout.workbench), sg.text).toBe(true);
   });
 });
 
@@ -69,7 +92,6 @@ describe("B1 station props", () => {
     const north = bay.side === "north";
     return { minX: bay.rect.minX + SIDE, maxX: bay.rect.maxX - SIDE, minZ: north ? bay.rect.minZ + WALL : bay.front + 0.3, maxZ: north ? bay.front - 0.3 : bay.rect.maxZ - WALL };
   };
-  const inside = (r: Rect, b: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
 
   for (const bay of layout.bays) {
     it(`keeps the ${bay.id} props inside the bay's walls and clear of its front`, () => {

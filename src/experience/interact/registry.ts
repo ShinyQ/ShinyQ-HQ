@@ -2,7 +2,7 @@ import type { FloorId, RoomId, Wing } from "@/content/schema";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { LOBBY } from "../config";
 import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
-import { buildEngineLayout, ENGINE } from "../floors/engine/layout";
+import { buildEngineLayout, ENGINE, ENGINE_REACTOR_ROOM } from "../floors/engine/layout";
 import { buildCareerRoad, careerLayoutInput, type CareerRoadLayout } from "../floors/career/layout";
 import { SKYLINE } from "../floors/career/skyline";
 import { WORKSHOP } from "../floors/career/workshopLayout";
@@ -440,7 +440,10 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
   switch (floor) {
     case "B1": {
       const engine = buildEngineLayout();
-      const rooms = new Map<RoomId, Footprint>(engine.bays.map((b) => [b.room, { rect: bare(b.rect), height: ENGINE.bay.h }]));
+      const rooms = new Map<RoomId, Footprint>([
+        ...engine.bays.map((b): [RoomId, Footprint] => [b.room, { rect: bare(b.rect), height: ENGINE.bay.h }]),
+        [ENGINE_REACTOR_ROOM, { rect: bare(engine.reactor), height: ENGINE.reactor.h }],
+      ]);
       return [...pads, ...doorItems(floor, layouts, data, rooms)];
     }
     case "L1":
