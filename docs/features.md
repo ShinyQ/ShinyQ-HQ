@@ -370,7 +370,7 @@ The basement under the Lobby: a workshop where each station explains one part of
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers.
 - A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
 - The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
-- Budgets: its own 4.8 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
+- Budgets: its own 5.3 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
 
 ## Routes
 
