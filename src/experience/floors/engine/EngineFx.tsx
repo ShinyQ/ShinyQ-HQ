@@ -56,7 +56,7 @@ export function FlowMesh({ items, tier }: { items: readonly FlowInstance[]; tier
   );
 }
 
-/** Data screens (timeline wall, monitors, the dashboard wall, the blueprint table, the workbench): one instanced draw on the holo `fall` mode. */
+/** Data screens (timeline wall, monitors, the dashboard wall, the blueprint table, the brain grid, the scrap rack, the workbench): one instanced draw on the holo `fall` mode. */
 export function PanelMesh({ items, tier }: { items: readonly PanelInstance[]; tier: GpuTier }) {
   const geometry = useMemo(() => new PlaneGeometry(1, 1), []);
   useDispose(geometry);
@@ -69,7 +69,8 @@ export function PanelMesh({ items, tier }: { items: readonly PanelInstance[]; ti
         items,
         (o, p) => {
           o.position.set(p.x, p.y, p.z);
-          o.rotation.set(p.flat ? -Math.PI / 2 : 0, p.flat ? 0 : p.yaw, 0);
+          // YXZ: turn to `yaw`, then roll about the screen's own normal (identical to XYZ when roll is 0).
+          o.rotation.set(p.flat ? -Math.PI / 2 : 0, p.flat ? 0 : p.yaw, p.roll ?? 0, "YXZ");
           o.scale.set(p.w, p.h, 1);
         },
         tier,

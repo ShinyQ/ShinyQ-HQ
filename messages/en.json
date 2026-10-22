@@ -162,9 +162,10 @@
     },
     "kb": "{value} KB",
     "hourly": "Hourly",
-    "comingSoon": "Coming soon",
-    "comingSoonTitle": "Coming Soon",
-    "comingSoonIntro": "More of the build story is on its way."
+    "steps": "How it answers",
+    "tried": "Tried",
+    "whyDropped": "Why it was dropped",
+    "prLink": "Pull request #{n}"
   },
   "journey": {
     "title": "Career journey: 2019 to 2026",
@@ -674,10 +675,9 @@
   "engine": {
     "floor": "Engine Room",
     "label": "Build",
-    "desc": "How this site was built: five stations",
+    "desc": "How this site was built: seven stations",
     "title": "Engine Room",
     "subtitle": "How this site was built",
-    "soon": "Coming soon",
     "locked": "Visit all {total} floors ({seen}/{total})",
     "lockedName": "{floor} Visit all {total} floors ({seen}/{total})",
     "lockedTitle": "Locked",

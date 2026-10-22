@@ -115,13 +115,18 @@ test("the build story page: stations by id, a working table of contents, the dia
     await openPage(page, staticTier(`/${locale}/build`));
     await expect(page.locator("h1")).toHaveCount(1);
     const toc = page.getByRole("navigation", { name: locale === "en" ? "On this page" : "Isi halaman" });
-    for (const id of ["blueprint", "timeline", "agents", "gates", "dashboard", "coming-soon"]) {
+    const stations = ["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"];
+    for (const id of stations) {
       await expect(page.locator(`section#${id}`), `${locale} #${id}`).toBeAttached();
       await expect(toc.locator(`a[href="#${id}"]`), `${locale} ToC #${id}`).toHaveCount(1);
     }
-    for (const id of ["brain", "rejected"]) await expect(page.locator(`#coming-soon #${id}`)).toBeAttached();
-    await expect(page.locator("#blueprint [role=img]")).toHaveCount(1);
-    await expect(page.locator("#blueprint [role=img]")).toHaveAttribute("aria-label", /\d/);
+    await expect(toc.locator("a")).toHaveCount(stations.length);
+    await expect(page.locator("#coming-soon")).toHaveCount(0);
+    for (const id of ["blueprint", "brain"]) {
+      await expect(page.locator(`#${id} [role=img]`)).toHaveCount(1);
+      await expect(page.locator(`#${id} [role=img]`)).toHaveAttribute("aria-label", /\d/);
+    }
+    expect(await page.locator("#rejected ol > li").count()).toBeGreaterThanOrEqual(8);
     const shots = page.locator("#timeline figure img");
     expect(await shots.count()).toBeGreaterThan(0);
     for (const img of await shots.all()) {

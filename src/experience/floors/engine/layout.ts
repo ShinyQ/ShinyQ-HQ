@@ -6,20 +6,17 @@ import type { DoorTrigger, FloorLayout, Rect, Vec2 } from "../../types";
 
 /**
  * B1 Engine Room (spec 2026-10-17, section 3): a central aisle east from the elevator with seven bays,
- * alternating north and south; bays 1 to 5 hold the build story's stations, bays 6 and 7 stay dark until their
- * stations ship. Server rack rows fill the wall gaps between bays, a workbench closes the aisle at the east
- * edge. Pure (no React or three): the floor layout, the registry, the minimap and the scenery read it.
- * The bay order must equal `[...STATION_IDS, ...COMING_SOON_IDS]` of `src/content/build-story.ts` (a test
- * checks it; that module is server-only, so the ids are repeated here).
+ * alternating north and south, each holding one of the build story's stations. Server rack rows fill the wall
+ * gaps between bays, a workbench closes the aisle at the east edge. Pure (no React or three): the floor layout,
+ * the registry, the minimap and the scenery read it.
+ * The bay order must equal `STATION_IDS` of `src/content/build-story.ts` (a test checks it; that module is
+ * server-only, so the ids are repeated here).
  */
 export const ENGINE_BAYS = ["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"] as const;
 export type EngineBayId = (typeof ENGINE_BAYS)[number];
-export const ENGINE_STATIONS = ["blueprint", "timeline", "agents", "gates", "dashboard"] as const satisfies readonly EngineBayId[];
-export type EngineStationId = (typeof ENGINE_STATIONS)[number];
-
-export function isEngineStation(id: EngineBayId): id is EngineStationId {
-  return (ENGINE_STATIONS as readonly EngineBayId[]).includes(id);
-}
+/** Every bay is a station. */
+export const ENGINE_STATIONS = ENGINE_BAYS;
+export type EngineStationId = EngineBayId;
 
 export const engineRoom = (id: EngineStationId): RoomId => `B1:${id}`;
 
@@ -67,10 +64,9 @@ export interface EngineBay {
   front: number;
   /** Unit direction from the aisle into the bay (the door facing). */
   facing: Vec2;
-  lit: boolean;
-  room: RoomId | null;
-  /** Door pad center for lit bays; null for the dark bays. */
-  pad: Vec2 | null;
+  room: RoomId;
+  /** Door pad center, on the aisle side of the bay front. */
+  pad: Vec2;
 }
 
 export interface EngineLayout {
@@ -95,7 +91,6 @@ export function engineBays(): EngineBay[] {
       side === "north" ? { minX: x - B.w / 2, maxX: x + B.w / 2, minZ: bounds.minZ, maxZ: bounds.minZ + B.d } : { minX: x - B.w / 2, maxX: x + B.w / 2, minZ: bounds.maxZ - B.d, maxZ: bounds.maxZ };
     const front = side === "north" ? rect.maxZ : rect.minZ;
     const facing: Vec2 = { x: 0, z: side === "north" ? -1 : 1 };
-    const lit = isEngineStation(id);
     return {
       id,
       index,
@@ -104,9 +99,8 @@ export function engineBays(): EngineBay[] {
       center: { x, z: (rect.minZ + rect.maxZ) / 2 },
       front,
       facing,
-      lit,
-      room: lit ? engineRoom(id) : null,
-      pad: lit ? { x, z: front - facing.z * padInset } : null,
+      room: engineRoom(id),
+      pad: { x, z: front - facing.z * padInset },
     };
   });
 }
@@ -132,10 +126,9 @@ export function buildEngineLayout(): EngineLayout {
   const racks = engineRacks(bays);
   const workbench = plain(E.workbench);
   const aisle: Road = { id: "aisle", points: [{ ...E.approach }, { x: E.aisle.endX, z: 0 }], width: E.aisle.width };
-  const stations = bays.flatMap((b) => (b.room && b.pad ? [{ ...b, room: b.room, pad: b.pad }] : []));
-  const spurs: Spur[] = stations.map((b) => ({ room: b.room, from: { x: b.center.x, z: 0 }, to: b.pad, width: E.spurWidth, color: E.accent }));
+  const spurs: Spur[] = bays.map((b) => ({ room: b.room, from: { x: b.center.x, z: 0 }, to: b.pad, width: E.spurWidth, color: E.accent }));
   const network: RoadNetwork = { roads: [aisle], plazas: [], spurs };
-  const doors: DoorTrigger[] = stations.map((b) => ({ room: b.room, at: b.pad, facing: b.facing }));
+  const doors: DoorTrigger[] = bays.map((b) => ({ room: b.room, at: b.pad, facing: b.facing }));
   const arrival: Vec2 = { ...E.arrival };
   const viewZones: ViewZone[] = [
     // Arrival (eastbound only, primed by an arrival or a deep link): behind the rover, down the aisle to the workbench.
@@ -149,7 +142,7 @@ export function buildEngineLayout(): EngineLayout {
       arrivalOnly: true,
     },
     // Each station: on its door pad the camera stands on the aisle side and looks into the bay.
-    ...stations.map((b): ViewZone => ({ id: `B1:${b.id}`, area: { minX: b.rect.minX, maxX: b.rect.maxX, minZ: b.pad.z - 2, maxZ: b.pad.z + 2 }, yaw: yawLooking(b.facing) })),
+    ...bays.map((b): ViewZone => ({ id: `B1:${b.id}`, area: { minX: b.rect.minX, maxX: b.rect.maxX, minZ: b.pad.z - 2, maxZ: b.pad.z + 2 }, yaw: yawLooking(b.facing) })),
     // The aisle's end: looking east at the workbench (eastbound only, so driving back never turns the camera).
     { id: "B1:workbench", area: { minX: E.aisle.endX - 4, maxX: workbench.minX, minZ: -E.aisle.width / 2, maxZ: E.aisle.width / 2 }, yaw: LOOK_EAST, travel: { x: 1, z: 0 } },
   ];

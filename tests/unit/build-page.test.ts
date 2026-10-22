@@ -99,12 +99,18 @@ describe("timelineRows", () => {
     expect(id.build.dateTo).toBe("hingga");
   });
 
-  it("counts a pull request that is shown without a link, and only that one", () => {
+  it("labels Rover's Brain and Rejected Designs and has no coming-soon copy left", () => {
+    expect([en.build.steps, en.build.tried, en.build.whyDropped, en.build.prLink]).toEqual(["How it answers", "Tried", "Why it was dropped", "Pull request #{n}"]);
+    expect([id.build.steps, id.build.tried, id.build.whyDropped, id.build.prLink]).toEqual(["Cara menjawab", "Dicoba", "Alasan dibatalkan", "Pull request #{n}"]);
+    for (const m of [en, id]) for (const key of ["comingSoon", "comingSoonTitle", "comingSoonIntro"]) expect(m.build).not.toHaveProperty(key);
+  });
+
+  it("counts the pull requests that are shown without a link, and only those", () => {
     const rows = timelineRows(story, facts);
     const r2 = rows.find((r) => r.round.id === "r2")!;
     expect(r2.prs).toContain(26);
     expect(r2.unlinked).toEqual([26]);
-    expect(rows.flatMap((r) => r.unlinked)).toEqual([26]);
+    expect(rows.flatMap((r) => r.unlinked)).toEqual([26, 288]);
     expect(facts.git?.mergedPrs).toBeGreaterThanOrEqual(rows.reduce((n, r) => n + r.prs.length, 0));
   });
 

@@ -20,7 +20,7 @@ export interface FlowInstance {
   color: string;
 }
 
-/** An upright screen facing `yaw` (forward (sin, cos)), or `flat` on a table top; `y` is its center. */
+/** An upright screen facing `yaw` (forward (sin, cos)), or `flat` on a table top; `y` is its center. `roll` turns it about its own normal (a crooked screen). */
 export interface PanelInstance {
   x: number;
   y: number;
@@ -29,6 +29,7 @@ export interface PanelInstance {
   h: number;
   yaw: number;
   flat?: boolean;
+  roll?: number;
   color: string;
 }
 
@@ -38,11 +39,10 @@ export interface EngineScenery {
   panels: PanelInstance[];
 }
 
-/** Floor words (engine.*): the workbench title and subtitle, and the dark bays' plate. */
+/** Floor words (engine.*): the workbench title and subtitle. */
 export interface EngineLabels {
   title: string;
   subtitle: string;
-  soon: string;
 }
 
 export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
@@ -116,7 +116,8 @@ function rackRow(rack: Rect, leds: number, seed: number): { solids: Box[]; flows
   return { solids, flows };
 }
 
-function stationProps(bay: EngineBay, leds: number): { solids: Box[]; flows: FlowInstance[]; panels: PanelInstance[] } {
+/** The props inside one station bay (no shell, no front strip); exported for the bay-fit tests. */
+export function stationProps(bay: EngineBay, leds: number): { solids: Box[]; flows: FlowInstance[]; panels: PanelInstance[] } {
   const { x, z: cz } = bay.center;
   const o = out(bay);
   const back = backFace(bay);
@@ -147,9 +148,31 @@ function stationProps(bay: EngineBay, leds: number): { solids: Box[]; flows: Flo
     case "dashboard":
       // A wall of numbers over a console.
       return { solids: [{ x, y: 0, z: cz + o * 0.8, w: 4, h: 0.9, d: 1 }], flows: [], panels: [{ x, y: 2.6, z: onBack, w: 6.4, h: 2.8, yaw, color: ENGINE_TONES.cyan }] };
-    default:
-      // Bays 6 and 7: empty until their stations ship.
-      return { solids: [], flows: [], panels: [] };
+    case "brain": {
+      // Rover's Brain: a server column of two cabinets beside a back-wall grid of six retrieved "chunk" screens feeding one answer screen.
+      const column = back + o * 0.65;
+      return {
+        solids: [-3, -1.7].map((dx): Box => ({ x: x + dx, y: 0, z: column, w: 1.2, h: 4, d: 1.2 })),
+        flows: [],
+        panels: [
+          ...[2, 2.9].flatMap((y) => [-0.6, 0.4, 1.4].map((dx) => ({ x: x + dx, y, z: onBack, w: 0.8, h: 0.6, yaw, color: ENGINE_TONES.cyan }))),
+          { x: x + 2.85, y: 2.45, z: onBack, w: 1.4, h: 1.6, yaw, color: ENGINE_TONES.violet },
+        ],
+      };
+    }
+    case "rejected": {
+      // Rejected Designs: a low scrap rack holding four crooked dim screens (the ideas set aside) and one upright amber one.
+      const rack = { x, y: 0, z: back + o * 1, w: 5.6, h: 0.6, d: 1.4 };
+      const rolls = [0.22, -0.16, 0.3, -0.25];
+      return {
+        solids: [rack],
+        flows: [],
+        panels: [
+          ...rolls.map((roll, i) => ({ x: x - 2.1 + i * 1.05, y: 1.35, z: back + o * (0.6 + 0.2 * i), w: 0.9, h: 1.3, yaw, roll, color: ENGINE_TONES.dim })),
+          { x: x + 2.1, y: 1.45, z: back + o * 1.4, w: 0.9, h: 1.5, yaw, color: ENGINE_TONES.amber },
+        ],
+      };
+    }
   }
 }
 
@@ -158,9 +181,7 @@ function pipes(layout: EngineLayout): FlowInstance[] {
   const to = ENGINE.bounds.maxX - 2;
   const x = (from + to) / 2;
   const w = to - from;
-  const drops = layout.bays
-    .filter((bay) => bay.lit)
-    .map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: backFace(bay) - out(bay) * (WALL / 2), w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
+  const drops = layout.bays.map((bay) => ({ x: bay.center.x + 3, y: (ENGINE.bay.h + ENGINE.ceiling) / 2, z: backFace(bay) - out(bay) * (WALL / 2), w: PIPE.drop, h: ENGINE.ceiling - ENGINE.bay.h, d: PIPE.drop, color: ENGINE_TONES.pipe }));
   return [
     ...[-PIPE_Z, PIPE_Z].map((z) => ({ x, y: ENGINE.ceiling, z, w, h: PIPE.run, d: PIPE.run, color: ENGINE_TONES.pipe })),
     ...[-TRAY_Z, TRAY_Z].flatMap((z) => [
@@ -181,7 +202,7 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
   for (const bay of layout.bays) {
     const props = stationProps(bay, leds);
     solids.push(...bayShell(bay), ...props.solids);
-    flows.push(...props.flows, ...(bay.lit ? [frontStrip(bay)] : []));
+    flows.push(...props.flows, frontStrip(bay));
     panels.push(...props.panels);
   }
   layout.racks.forEach((rack, i) => {
@@ -195,14 +216,13 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
   return { solids, flows, panels };
 }
 
-/** Station names over every bay (lit amber, dark dim with a Coming soon plate) and the title over the workbench. */
+/** Station names over every bay (amber) and the title over the workbench. */
 export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels): SignSpec[] {
   const titles = new Map(data.bays.map((bay) => [bay.id, bay.title]));
   const signs: SignSpec[] = [];
   for (const bay of layout.bays) {
     const z = bay.front - out(bay) * 0.6;
-    signs.push({ text: titles.get(bay.id) ?? bay.id, x: bay.center.x, y: SIGN_Y, z, color: bay.lit ? ENGINE_TONES.amber : ENGINE_TONES.dim, fontSize: 0.42 });
-    if (!bay.lit) signs.push({ text: labels.soon, x: bay.center.x, y: SIGN_Y - 0.8, z, color: ENGINE_TONES.dim, fontSize: 0.3, opacity: 0.8 });
+    signs.push({ text: titles.get(bay.id) ?? bay.id, x: bay.center.x, y: SIGN_Y, z, color: ENGINE_TONES.amber, fontSize: 0.42 });
   }
   const x = (layout.workbench.minX + layout.workbench.maxX) / 2;
   signs.push({ text: labels.title.toLocaleUpperCase(), x, y: 6.6, z: 0, color: ENGINE_TONES.amber, fontSize: 0.7 });

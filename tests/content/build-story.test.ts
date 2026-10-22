@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { BuildFactsSchema, BuildStorySchema, COMING_SOON_IDS, STATION_IDS, getBuildFacts, getBuildStory, type BuildStory } from "@/content/build-story";
+import { BuildFactsSchema, BuildStorySchema, STATION_IDS, getBuildFacts, getBuildStory, type BuildStory } from "@/content/build-story";
+import { DIAGRAM_PRESETS, layoutArchitecture } from "@/components/diagram/layout";
+import { diagramTexts, resolveArchitecture } from "@/components/diagram/text";
 import { parseCiJobs } from "../../scripts/build-facts";
 import { BYTES_3D_BUDGET, GPU_MEMORY_BUDGET, RENDER_BUDGET } from "../../e2e/budgets";
 import { hasFirstPerson } from "@/lib/first-person";
@@ -21,10 +23,11 @@ const ciJobNames = () => {
 const titles = (s: BuildStory) => [
   { at: "title", value: s.title },
   ...STATION_IDS.map((id) => ({ at: `stations.${id}.title`, value: s.stations[id].title })),
-  ...COMING_SOON_IDS.map((id) => ({ at: `comingSoon.${id}.title`, value: s.comingSoon[id].title })),
   ...s.stations.timeline.rounds.map((r) => ({ at: `rounds.${r.id}.title`, value: r.title })),
   ...s.stations.gates.gates.map((g) => ({ at: `gates.${g.id}.title`, value: g.title })),
   ...s.stations.agents.steps.map((st, i) => ({ at: `agents.steps[${i}].title`, value: st.title })),
+  ...s.stations.brain.steps.map((st, i) => ({ at: `brain.steps[${i}].title`, value: st.title })),
+  ...s.stations.rejected.ideas.map((idea) => ({ at: `rejected.${idea.id}.title`, value: idea.title })),
 ];
 
 describe("build story content", () => {
@@ -80,7 +83,7 @@ describe("build story content", () => {
 
   it("numbers rounds in order with contiguous pull request ranges and an open last round", () => {
     const rounds = story.stations.timeline.rounds;
-    expect(rounds).toHaveLength(9);
+    expect(rounds).toHaveLength(13);
     expect(rounds.at(-1)!.prs.to).toBeNull();
     expect(rounds[0].prs.from).toBe(1);
   });
@@ -110,6 +113,39 @@ describe("build story content", () => {
       for (const job of gate.jobs) expect(names, `${gate.id}: ${job}`).toContain(job);
   });
 
+  it("names jobs for CI and nightly gates only, and never requires a local gate", () => {
+    for (const gate of story.stations.gates.gates) {
+      if (gate.where === "local") expect([gate.jobs, gate.required], gate.id).toEqual([[], false]);
+      else expect(gate.jobs.length, gate.id).toBeGreaterThan(0);
+    }
+    const bad = structuredClone(raw);
+    const local = bad.stations.gates.gates.find((g: { where: string }) => g.where === "local");
+    local.jobs = ["Plan CI"];
+    expect(BuildStorySchema.safeParse(bad).success).toBe(false);
+    expect(story.stations.gates.gates.map((g) => g.id)).not.toContain("public-safety");
+  });
+
+  it("opens Rover's Brain and Rejected Designs as stations (no coming-soon bays)", () => {
+    expect([...STATION_IDS]).toEqual(["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"]);
+    expect(raw).not.toHaveProperty("comingSoon");
+    const ideas = story.stations.rejected.ideas;
+    expect(ideas.length).toBeGreaterThanOrEqual(8);
+    expect(ideas.length).toBeLessThanOrEqual(14);
+    const dup = structuredClone(raw);
+    dup.stations.rejected.ideas[1].id = dup.stations.rejected.ideas[0].id;
+    expect(BuildStorySchema.safeParse(dup).success).toBe(false);
+    expect(story.stations.brain.steps.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("lays out the Brain pipeline within the phone and drawer widths", () => {
+    for (const locale of LOCALES) {
+      const arch = resolveArchitecture(story.stations.brain.architecture, locale);
+      const texts = diagramTexts(locale, (kind) => kind);
+      for (const preset of [DIAGRAM_PRESETS.phone, DIAGRAM_PRESETS.drawer]) expect(layoutArchitecture(arch, texts, preset).width, `${locale}`).toBeLessThanOrEqual(preset.maxWidth!);
+    }
+  });
+
+
   it("marks a gate required exactly when it blocks a merge through the aggregate job", () => {
     const ci = readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
     const aggregate = "Build, CV and e2e";
@@ -134,7 +170,7 @@ describe("build story content", () => {
   });
 
   it("keeps the diagram free of resource ids and hostnames", () => {
-    const text = JSON.stringify(story.stations.blueprint.architecture);
+    const text = JSON.stringify([story.stations.blueprint.architecture, story.stations.brain.architecture]);
     expect(text).not.toMatch(/https?:\/\/|\.dev\b|\.com\b|[0-9a-f]{32}/i);
   });
 
@@ -175,7 +211,7 @@ describe("build story content", () => {
     const round2 = story.stations.timeline.rounds[1];
     expect(round2.summary.en).not.toMatch(/names?\b/i);
     expect(round2.summary.id).not.toMatch(/nama/i);
-    expect(story.stations.timeline.unlinkedPrs).toEqual([26]);
+    expect(story.stations.timeline.unlinkedPrs).toEqual([26, 288]);
     expect(round2.prs.from).toBeLessThanOrEqual(26);
     expect(round2.prs.to).toBeGreaterThanOrEqual(26);
     const bad = structuredClone(raw);

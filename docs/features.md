@@ -90,6 +90,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Office chips under drawers | 2026-10-22: the office chip row hides while a drawer sheet is open (#287) | Done |
 | Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
+| B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 3): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs | In review |
 
 ## Controls and first visit
 
@@ -199,8 +200,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
   - If clipboard access fails, a localized status and read-only field expose the exact attempted link for manual copying, without taking focus. About's email-copy action exposes the raw address on failure too.
   - The choice is remembered across tabs, and an explicit `?view=` in a link always wins.
 - **How this site was built** (`/{locale}/build`, linked from the footer and About):
-  - A page of five sections: the blueprint (an architecture diagram with a numbered walkthrough), the build rounds (a timeline with before and after captures), the AI agent workflow, the quality gates (what each CI job enforces and which ones block a merge) and a dashboard of measured numbers (commits, pull requests, tests, budgets, the live visit count).
-  - A short "coming soon" section follows the five.
+  - A page of seven sections: the blueprint (an architecture diagram with a numbered walkthrough), the build rounds (a timeline with before and after captures), the AI agent workflow, the quality gates (what each gate enforces, where it runs and which ones block a merge), a dashboard of measured numbers (commits, pull requests, tests, budgets, the live visit count), Rover's Brain (the Ask pipeline diagram and its steps) and Rejected Designs (ideas that were dropped, with the reasons).
   - Text lives in `content/build-story.json`; every number comes from a snapshot taken at build time (`content/generated/build-facts.json`), shown with its date and commit, and the page links the public repository.
   - Ask the HQ answers about the site with a "Read on this site" link to it.
 - The Rover menu never opens on its own; the **Rover menu** button opens it anywhere, and first-time visitors in 3D get Rover's tour instead.
@@ -359,11 +359,18 @@ The basement under the Lobby: a workshop where each station explains one part of
   - `/{locale}#B1` (and Cmd-K "Go to B1 Engine Room", in the 3D tower only) goes straight to the floor once unlocked; locked, the link stays in the Lobby (and the action stays put) and Rover says how many floors are left.
   - `?unlock=b1` (in production `?unlock=b1&debug=1`) unlocks a session for development and tests only: it is never remembered and does not start the moment.
 - **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
-- **Stations 1 to 5** (blueprint, build timeline, agent workbench, CI and gates, live dashboard) each open the Glass Drawer with the diagram, rounds, gate list, plan excerpt or numbers from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section. Bays 6 and 7 stay dark with a "Coming soon" plate.
+- **Seven stations** each open the Glass Drawer with content from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section:
+  - **The Blueprint**: the whole system on one diagram (the agents and the office relay on the owner's Mac, GitHub and its webhook, Cloudflare Pages and Functions, Workers AI with the Groq backup tiers, KV with the Ask knowledge pack, the hq-office Worker and its Durable Object, R2 study guides, the stats Cron Worker) and how each part runs.
+  - **The Build Timeline**: thirteen rounds of merged pull requests, from the foundation to the office revamp, with dates and links (pull requests whose diff shows a client name are counted but not linked).
+  - **Working with AI Agents**: the multi-agent loop (a coordinator chat, one session per feature in its own worktree, spec, plan, sub-agent tasks, review, owner gates, CI, deploy), the agents used (GitHub Copilot, Claude Code, Codex) and a real plan excerpt.
+  - **The Gates**: the current CI (selective pull request runs, complement runs on main, shard packing, the 3D size, render and memory gates with the measured plus 0.6 KB cap rule, Lighthouse on affected pages, the local visual gate, the nightly full run).
+  - **The Dashboard**: the repository numbers and the enforced budgets.
+  - **Rover's Brain**: how Ask Rover Assistant answers, as a pipeline diagram (gatekeeper, answer cache, scope router, BM25 retrieval over the knowledge pack, the model chain, output checks, the streamed answer) and eight steps, including the nightly evals.
+  - **Rejected Designs**: thirteen ideas that were tried or proposed and dropped, each with the reason and, where it is linkable, the pull request.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers.
 - A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
-- The Blueprint drawer draws the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
-- Budgets: its own 4.8 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
+- The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
+- Budgets: its own 5.3 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
 
 ## Routes
 
@@ -383,7 +390,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
   - "Visits" (`#visits`): counters, a dot map, the 3D vs Classic split, topic shares and curated question counts, with the Topic and Period filters and "View as table"; lazy loaded.
   - The full certifications list.
   - In 3D, the RF roof deck (comms station, CV kiosk, availability sign, about board).
-- `/{locale}/build`: How this site was built (its 3D counterpart is the secret B1 Engine Room, unlocked after visiting all five floors): the blueprint, build rounds, AI agent workflow, quality gates and dashboard, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#coming-soon`).
+- `/{locale}/build`: How this site was built (its 3D counterpart is the secret B1 Engine Room, unlocked after visiting all five floors): the blueprint, build rounds, AI agent workflow, quality gates, dashboard, Rover's Brain and Rejected Designs, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#brain`, `#rejected`).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
 - `/api/stats`: the public visit stats snapshot, refreshed every 2 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).

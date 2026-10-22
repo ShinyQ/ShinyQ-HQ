@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ExternalLink } from "@/components/ExternalLink";
 import { JsonLd } from "@/components/JsonLd";
-import { AgentsSection, BlueprintSection, ComingSoonSection, DashboardSection, GatesSection, TimelineSection } from "@/components/build/BuildSections";
+import { AgentsSection, BlueprintSection, BrainSection, DashboardSection, GatesSection, RejectedSection, TimelineSection } from "@/components/build/BuildSections";
 import { PageIntro } from "@/components/page/Layout";
 import { STATION_IDS, getBuildFacts, getBuildStory } from "@/content/build-story";
 import { assertLocale } from "@/i18n/locale";
@@ -24,7 +24,7 @@ export default async function BuildPage({ params }: PageProps<"/[locale]/build">
   const story = getBuildStory();
   const facts = getBuildFacts();
   const date = formatDate(facts.generatedAt, locale);
-  const toc = [...STATION_IDS.map((id) => ({ id, label: story.stations[id].title[locale] })), { id: "coming-soon", label: t("comingSoonTitle") }];
+  const toc = STATION_IDS.map((id) => ({ id, label: story.stations[id].title[locale] }));
 
   return (
     <>
@@ -59,7 +59,8 @@ export default async function BuildPage({ params }: PageProps<"/[locale]/build">
       <AgentsSection locale={locale} />
       <GatesSection locale={locale} />
       <DashboardSection locale={locale} />
-      <ComingSoonSection locale={locale} />
+      <BrainSection locale={locale} />
+      <RejectedSection locale={locale} />
     </>
   );
 }

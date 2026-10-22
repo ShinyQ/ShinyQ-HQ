@@ -1,7 +1,8 @@
 /**
- * Pure helpers for the build story page (/[locale]/build) and, in PR 2, the B1 Engine Room drawers:
- * they join the story text (`content/build-story.json`) with the measured snapshot
- * (`content/generated/build-facts.json`) and drop every number the snapshot does not carry.
+ * Pure helpers for the build story page (/[locale]/build) and the B1 Engine Room drawers
+ * (`src/content/room-views/engine.ts`): they join the story text (`content/build-story.json`) with the measured
+ * snapshot (`content/generated/build-facts.json`) and drop every number the snapshot does not carry. A pull request
+ * in `unlinkedPrs` is shown without a link everywhere: on the timeline and on a Rejected Designs idea.
  */
 import type { BuildFacts, BuildRound, BuildStory } from "@/content/build-story";
 import type { Locale } from "@/content/schema";

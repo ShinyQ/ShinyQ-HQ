@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-17",
-  "commit": "365706d",
+  "generatedAt": "2026-10-22",
+  "commit": "645d01b",
   "git": {
-    "commits": 184,
+    "commits": 256,
     "firstCommit": "2026-10-09",
-    "mergedPrs": 154,
-    "latestPr": 186
+    "mergedPrs": 235,
+    "latestPr": 289
   },
   "rounds": [
     {
@@ -220,17 +220,129 @@
     },
     {
       "id": "r9",
-      "prs": []
+      "prs": [
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        199,
+        200,
+        201,
+        202,
+        203,
+        208,
+        209,
+        210,
+        211,
+        213
+      ],
+      "first": "2026-10-17",
+      "last": "2026-10-18"
+    },
+    {
+      "id": "r10",
+      "prs": [
+        214,
+        216,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        227,
+        228,
+        230,
+        231
+      ],
+      "first": "2026-10-18",
+      "last": "2026-10-19"
+    },
+    {
+      "id": "r11",
+      "prs": [
+        233,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        249,
+        250,
+        251
+      ],
+      "first": "2026-10-18",
+      "last": "2026-10-19"
+    },
+    {
+      "id": "r12",
+      "prs": [
+        252,
+        254,
+        256,
+        257,
+        259,
+        260,
+        261,
+        263,
+        264,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        273
+      ],
+      "first": "2026-10-19",
+      "last": "2026-10-20"
+    },
+    {
+      "id": "r13",
+      "prs": [
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        287,
+        288,
+        289
+      ],
+      "first": "2026-10-21",
+      "last": "2026-10-22"
     }
   ],
   "tests": {
-    "unitFiles": 318,
-    "e2e": 587,
-    "e2eFiles": 46
+    "unitFiles": 453,
+    "e2e": 684,
+    "e2eFiles": 55
   },
   "docs": {
-    "specs": 13,
-    "plans": 72
+    "specs": 19,
+    "plans": 109
   },
   "ci": {
     "jobs": [
@@ -238,24 +350,25 @@
       "Typecheck, lint, unit tests",
       "Secret scan",
       "Build static export",
-      "E2E shard ${{ matrix.shard }}/4",
-      "3D perf gates ${{ matrix.shard }}/2",
+      "E2E shard ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}",
+      "3D perf gates ${{ matrix.shard }}/${{ needs.changes.outputs.perf_total }}",
       "Build, CV and e2e",
       "Lighthouse CI",
       "Nightly report",
       "Cloudflare Pages preview"
     ],
-    "workflows": 9
+    "workflows": 13
   },
   "budgets": {
-    "js3dKb": 450,
-    "sessionFullKb": 473,
+    "js3dKb": 466.4,
+    "sessionFullKb": 529.7,
     "sceneCalls": 150,
     "triangles": 30000,
     "floorChunkKb": {
       "L3": 20,
       "L4": 16,
-      "RF": 8
+      "RF": 8,
+      "B1": 16
     }
   }
 }

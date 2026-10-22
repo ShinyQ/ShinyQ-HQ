@@ -1,6 +1,6 @@
 import type { DrawnDiagram } from "@/components/diagram/layout";
-import type { EngineStationId } from "@/experience/floors/engine/layout";
 import type { VisitsLabels } from "@/lib/visits/labels";
+import type { StationId } from "@/content/build-story";
 import type { Accent, DrawerTab, FloorId, RoomId } from "@/content/schema";
 import type { RoomKind } from "@/experience/missions/rooms";
 import type { CareerType } from "@/experience/types";
@@ -201,10 +201,10 @@ export interface EngineShot {
 
 /** B1 Engine Room station drawer (`EngineBody`): the build story's station, laid out and labelled on the server. */
 export interface RoomEngine {
-  station: EngineStationId;
+  station: StationId;
   /**
-   * Blueprint: the site diagram laid out for a phone (`layout`, `DIAGRAM_PRESETS.phone`) and for a wide side drawer
-   * (`wide`, `DIAGRAM_PRESETS.drawer`, shown once the figure is as wide as it), and its text alternative.
+   * Blueprint and Rover's Brain: the station diagram laid out for a phone (`layout`, `DIAGRAM_PRESETS.phone`) and for
+   * a wide side drawer (`wide`, `DIAGRAM_PRESETS.drawer`, shown once the figure is as wide as it), and its text alternative.
    */
   diagram?: { layout: DrawnDiagram; wide: DrawnDiagram; label: string };
   /** Timeline: rounds oldest first with the measured pull requests (`href` absent for unlinked ones). */
@@ -215,8 +215,10 @@ export interface RoomEngine {
   excerpt?: { text: string; href: string };
   /** Dashboard: only the numbers the snapshot carries, formatted. */
   tiles?: { id: string; value: string; label: string }[];
+  /** Rejected Designs: what was tried and why it was dropped, with its pull request (`href` absent for an unlinked one). */
+  ideas?: { id: string; title: string; tried: string; reason: string; pr?: { n: number; href?: string } }[];
   /** Resolved words (the drawer loads no `build` messages on the client). */
-  labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string };
+  labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string; tried: string; whyDropped: string };
 }
 
 /** L3:ops, the Ops Control Room (`OpsBody`): "How I run AI in production"; tiles ride in `metrics`, case studies in `cards`. */

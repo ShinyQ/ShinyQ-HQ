@@ -16,6 +16,7 @@ const diagrams: [string, Architecture][] = [
     Object.entries(list).map(([id, a]) => [`post:${post}/${id}`, a] as [string, Architecture]),
   ),
   ["build-story:blueprint", getBuildStory().stations.blueprint.architecture],
+  ["build-story:brain", getBuildStory().stations.brain.architecture],
 ];
 const dictionaries = { en, id };
 const localizedDiagrams = diagrams.flatMap(([id, raw]) => (["en", "id"] as const).map((locale) => ({

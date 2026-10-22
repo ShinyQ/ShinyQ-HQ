@@ -78,4 +78,27 @@ describe("EngineBody (B1 station drawers)", () => {
     for (const tile of views["B1:dashboard"]!.engine!.tiles!) expect(root.textContent).toContain(tile.value);
     expect(root.querySelector("[data-tile='uptime']")).not.toBeNull();
   });
+
+  it("draws Rover's Brain as one named image above how it answers", () => {
+    const root = body("brain");
+    expect(root.querySelector("[data-engine-station='brain'] [data-diagram] svg")).not.toBeNull();
+    expect(screen.getByRole("img", { name: views["B1:brain"]!.engine!.diagram!.label })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "How it answers" })).toBeInTheDocument();
+  });
+
+  it("lists every rejected design with why it was dropped, linking only the linked pull requests in a new tab", () => {
+    const ideas = views["B1:rejected"]!.engine!.ideas!;
+    const root = body("rejected");
+    const items = [...root.querySelectorAll<HTMLElement>("[data-idea]")];
+    expect(items.map((li) => li.dataset.idea)).toEqual(ideas.map((i) => i.id));
+    items.forEach((li, i) => {
+      expect(li.querySelector("h3")?.textContent).toBe(ideas[i].title);
+      expect(li.textContent).toContain("Why it was dropped");
+      expect(li.textContent).toContain(ideas[i].reason);
+      const link = li.querySelector<HTMLAnchorElement>("a");
+      expect(link?.getAttribute("href") ?? undefined).toBe(ideas[i].pr?.href);
+      if (link) expect([link.target, link.rel]).toEqual(["_blank", "noopener noreferrer"]);
+      if (ideas[i].pr) expect(li.textContent).toContain(`#${ideas[i].pr!.n}`);
+    });
+  });
 });

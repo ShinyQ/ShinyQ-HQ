@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { buildEngineLayout, ENGINE } from "@/experience/floors/engine/layout";
-import { ENGINE_TONES, engineScenery, engineSigns, type PanelInstance } from "@/experience/floors/engine/scenery";
+import { ENGINE_TONES, engineScenery, engineSigns, stationProps, type PanelInstance } from "@/experience/floors/engine/scenery";
 import type { Rect } from "@/experience/types";
 
 const layout = buildEngineLayout();
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" }).engine;
-const labels = { title: "Engine Room", subtitle: "How this site was built", soon: "Coming soon" };
+const labels = { title: "Engine Room", subtitle: "How this site was built" };
 const b = ENGINE.bounds;
 const within = (r: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
 const box = (p: { x: number; z: number; w: number; d: number }): Rect => ({ minX: p.x - p.w / 2, maxX: p.x + p.w / 2, minZ: p.z - p.d / 2, maxZ: p.z + p.d / 2 });
@@ -22,14 +22,17 @@ describe("B1 Engine Room scenery", () => {
       for (const p of s.panels) expect(within(panelRect(p)), JSON.stringify(p)).toBe(true);
     });
 
-    it(`lights the five station bays and leaves bays 6 and 7 dark (${tier})`, () => {
+    it(`lights all seven station bays: a front strip each and screens in every bay but the gates (${tier})`, () => {
       for (const bay of layout.bays) {
         const screens = s.panels.filter((p) => inRect(p, bay.rect));
         const strips = s.flows.filter((f) => f.y < 0.1 && inRect(f, bay.rect));
-        expect(strips.length, bay.id).toBe(bay.lit ? 1 : 0);
-        if (!bay.lit) expect(screens, bay.id).toEqual([]);
-        if (bay.lit && bay.id !== "gates") expect(screens.length, bay.id).toBeGreaterThan(0);
+        expect(strips.length, bay.id).toBe(1);
+        if (bay.id !== "gates") expect(screens.length, bay.id).toBeGreaterThan(0);
       }
+    });
+
+    it(`keeps the same draws: merged solids, one flow and one panel instancing, no other kind (${tier})`, () => {
+      expect(Object.keys(s).sort()).toEqual(["flows", "panels", "solids"]);
     });
   }
 
@@ -43,15 +46,62 @@ describe("B1 Engine Room scenery", () => {
     expect(full.panels.length).toBeLessThan(40);
   });
 
-  it("names every bay on an upright floating sign, adds Coming soon to the dark bays and titles the workbench", () => {
+  it("names every bay on an upright amber floating sign and titles the workbench; no Coming soon plate", () => {
     const signs = engineSigns(layout, data, labels);
-    expect(signs).toHaveLength(layout.bays.length + 2 + 2);
+    expect(signs).toHaveLength(layout.bays.length + 2);
     for (const bay of layout.bays) {
       const title = data.bays.find((x) => x.id === bay.id)!.title;
-      expect(signs.find((sg) => sg.text === title)?.color, bay.id).toBe(bay.lit ? ENGINE_TONES.amber : ENGINE_TONES.dim);
+      expect(signs.find((sg) => sg.text === title)?.color, bay.id).toBe(ENGINE_TONES.amber);
     }
-    expect(signs.filter((sg) => sg.text === labels.soon)).toHaveLength(2);
+    expect(signs.some((sg) => /coming soon|segera hadir/i.test(sg.text))).toBe(false);
     expect(signs.some((sg) => sg.text === "ENGINE ROOM")).toBe(true);
     for (const sg of signs) expect(sg.tilt, sg.text).toBeUndefined();
+  });
+});
+
+describe("B1 station props", () => {
+  const WALL = 0.8;
+  const SIDE = 0.3;
+  const bayOf = (id: string) => layout.bays.find((x) => x.id === id)!;
+  /** Inside the bay's walls: between its side walls, between its back wall and 0.3 u behind its open front (the strip and the door pad stay clear). */
+  const interior = (id: string): Rect => {
+    const bay = bayOf(id);
+    const north = bay.side === "north";
+    return { minX: bay.rect.minX + SIDE, maxX: bay.rect.maxX - SIDE, minZ: north ? bay.rect.minZ + WALL : bay.front + 0.3, maxZ: north ? bay.front - 0.3 : bay.rect.maxZ - WALL };
+  };
+  const inside = (r: Rect, b: Rect) => r.minX >= b.minX - 1e-9 && r.maxX <= b.maxX + 1e-9 && r.minZ >= b.minZ - 1e-9 && r.maxZ <= b.maxZ + 1e-9;
+
+  for (const bay of layout.bays) {
+    it(`keeps the ${bay.id} props inside the bay's walls and clear of its front`, () => {
+      const props = stationProps(bay, 8);
+      const room = interior(bay.id);
+      for (const solid of props.solids) {
+        expect(inside(box(solid), room), JSON.stringify(solid)).toBe(true);
+        expect(solid.y + solid.h, JSON.stringify(solid)).toBeLessThanOrEqual(ENGINE.bay.h);
+      }
+      for (const f of props.flows) expect(inside(box(f), room), JSON.stringify(f)).toBe(true);
+      for (const p of props.panels) expect(inside(panelRect(p), room), JSON.stringify(p)).toBe(true);
+      expect(inRect(bay.pad, bay.rect), bay.id).toBe(false);
+    });
+  }
+
+  it("gives Rover's Brain a server column of two boxes beside six cyan chunk screens and one violet answer screen", () => {
+    const props = stationProps(bayOf("brain"), 8);
+    expect(props.solids.filter((x) => x.w === 1.2 && x.h === 4 && x.d === 1.2)).toHaveLength(2);
+    expect(props.panels.filter((p) => p.color === ENGINE_TONES.cyan)).toHaveLength(6);
+    expect(props.panels.filter((p) => p.color === ENGINE_TONES.violet)).toHaveLength(1);
+    const columns = props.solids.map(box);
+    for (const p of props.panels) for (const c of columns) expect(p.x - p.w / 2 >= c.maxX || p.x + p.w / 2 <= c.minX, JSON.stringify(p)).toBe(true);
+  });
+
+  it("gives Rejected Designs a low scrap rack with four tilted dim panels and one amber panel", () => {
+    const props = stationProps(bayOf("rejected"), 8);
+    expect(props.solids).toHaveLength(1);
+    expect(props.solids[0].h).toBeLessThan(1);
+    const dim = props.panels.filter((p) => p.color === ENGINE_TONES.dim);
+    expect(dim).toHaveLength(4);
+    for (const p of dim) expect(Math.abs(p.roll ?? 0), JSON.stringify(p)).toBeGreaterThan(0.05);
+    expect(props.panels.filter((p) => p.color === ENGINE_TONES.amber)).toHaveLength(1);
+    for (const p of props.panels) expect(p.y - p.h / 2, JSON.stringify(p)).toBeGreaterThan(props.solids[0].h - 0.3);
   });
 });

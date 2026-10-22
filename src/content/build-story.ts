@@ -9,10 +9,10 @@ import { z } from "zod";
  * (it pulls zod and the schema into the bundle). Counts come from `content/generated/build-facts.json`
  * (`scripts/build-facts.ts`), never from the story text.
  */
-export const STATION_IDS = ["blueprint", "timeline", "agents", "gates", "dashboard"] as const;
-export const COMING_SOON_IDS = ["brain", "rejected"] as const;
+export const STATION_IDS = ["blueprint", "timeline", "agents", "gates", "dashboard", "brain", "rejected"] as const;
 export type StationId = (typeof STATION_IDS)[number];
-export type ComingSoonId = (typeof COMING_SOON_IDS)[number];
+/** Where a gate runs: a CI job on every pull request, the nightly full run, or a local check before pushing. */
+export const GATE_WHERE = ["ci", "nightly", "local"] as const;
 
 const shot = z.strictObject({
   src: z.string().regex(/^\/build-story\/[a-z0-9-]+\.webp$/),
@@ -37,10 +37,26 @@ export const BuildGateSchema = z.strictObject({
   text: LocalizedTextSchema,
   /** The number it enforces, for example "Under 450 KB gzip on the first-frame path". */
   budget: LocalizedTextSchema,
-  /** Display names of the ci.yml jobs that run it (checked against the facts' ci.jobs). */
-  jobs: z.array(z.string().min(1)).min(1),
+  where: z.enum(GATE_WHERE),
+  /** Display names of the ci.yml jobs that run it (checked against the facts' ci.jobs); none for a local gate. */
+  jobs: z.array(z.string().min(1)),
   /** A required check on main's ruleset. */
   required: z.boolean(),
+}).superRefine((gate, ctx) => {
+  if (gate.where === "local" && (gate.jobs.length > 0 || gate.required)) ctx.addIssue({ code: "custom", path: ["jobs"], message: "A local gate names no CI job and is not required" });
+  if (gate.where !== "local" && gate.jobs.length === 0) ctx.addIssue({ code: "custom", path: ["jobs"], message: "A CI or nightly gate names its jobs" });
+});
+
+const step = z.strictObject({ title: LocalizedTextSchema, text: LocalizedTextSchema });
+
+/** One Rejected Designs entry: what was tried or proposed, and the one-line reason it was dropped. */
+export const RejectedIdeaSchema = z.strictObject({
+  id: SlugSchema,
+  title: LocalizedTextSchema,
+  tried: LocalizedTextSchema,
+  reason: LocalizedTextSchema,
+  /** The merged pull request that dropped or replaced it, when there is one. */
+  pr: z.number().int().min(1).optional(),
 });
 
 const station = <T extends z.ZodRawShape>(extra: T) =>
@@ -61,7 +77,7 @@ export const BuildStorySchema = z
         unlinkedPrs: z.array(z.number().int().min(1)).optional(),
       }),
       agents: station({
-        steps: z.array(z.strictObject({ title: LocalizedTextSchema, text: LocalizedTextSchema })).min(4).max(8),
+        steps: z.array(step).min(4).max(10),
         tools: z.array(z.string().min(1)).min(1),
         excerpt: z.strictObject({
           path: z.string().regex(/^docs\/superpowers\/plans\/[a-z0-9-]+\.md$/),
@@ -70,8 +86,16 @@ export const BuildStorySchema = z
       }),
       gates: station({ gates: z.array(BuildGateSchema).min(4) }),
       dashboard: station({}),
+      /** Rover's Brain: how Ask answers, as a pipeline diagram and its steps. */
+      brain: station({ architecture: ArchitectureSchema, steps: z.array(step).min(5).max(10) }),
+      rejected: station({
+        ideas: z
+          .array(RejectedIdeaSchema)
+          .min(8)
+          .max(14)
+          .refine((ideas) => new Set(ideas.map((i) => i.id)).size === ideas.length, "Idea ids must be unique"),
+      }),
     }),
-    comingSoon: z.strictObject({ brain: station({}), rejected: station({}) }),
   })
   .superRefine((story, ctx) => {
     const rounds = story.stations.timeline.rounds;
@@ -91,6 +115,7 @@ export const BuildStorySchema = z
 export type BuildStory = z.infer<typeof BuildStorySchema>;
 export type BuildRound = z.infer<typeof BuildRoundSchema>;
 export type BuildGate = z.infer<typeof BuildGateSchema>;
+export type RejectedIdea = z.infer<typeof RejectedIdeaSchema>;
 
 const count = z.number().int().nonnegative();
 
