@@ -1,4 +1,4 @@
-import { findBlocked } from "./checks";
+import { findTerms } from "./checks";
 
 /**
  * Scope heuristics for questions about Kurniadi's views (spec section 13). Questions about his
@@ -223,14 +223,12 @@ export function orgAliases(orgs: readonly string[]): string[] {
 
 /**
  * An opinion question about a specific person, employer, school or client (his manager, "Jenius",
- * "the bank client"). Kurniadi publishes no such opinions. The safety blocklist is never consulted
- * here (S6): a decline that fired only for blocklisted names would tell a visitor which guessed
- * names are on the list. Other names go to the model, and the output checks replace any answer
- * that names a blocklisted term.
+ * "the bank client"). Kurniadi publishes no such opinions. Other names go to the model, which names
+ * clients only by sector (prompt rule 6), and the output checks (the entity check among them) still apply.
  */
 export function opinionAboutOthers(question: string, orgs: readonly string[]): boolean {
   if (!OPINION.test(question)) return false;
-  return PEOPLE.test(question) || findBlocked(question, orgAliases(orgs)).length > 0;
+  return PEOPLE.test(question) || findTerms(question, orgAliases(orgs)).length > 0;
 }
 
 /**

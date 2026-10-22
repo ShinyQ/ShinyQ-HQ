@@ -4,7 +4,11 @@
  * must never get a link, so adding a host here is an owner decision made in review, never a content
  * edit. Pure and dependency-free: the schema, the safety lint, the selectors and the 3D chunk share it.
  */
-export const PUBLIC_LIVE_HOSTS: readonly string[] = ["mii-microsoft.azurewebsites.net", "mii-microsoft-ai.azurewebsites.net"];
+/**
+ * Frozen so the allowlist cannot change at runtime. The top-level call also keeps this module in one shared chunk:
+ * without it Turbopack copies the module into every consumer chunk (about 0.4 KB gzip on the 3D session budget).
+ */
+export const PUBLIC_LIVE_HOSTS: readonly string[] = Object.freeze(["mii-microsoft.azurewebsites.net", "mii-microsoft-ai.azurewebsites.net"]);
 
 /** Why `url` cannot be a pod's live link, or null when it can: https, an allowlisted host, the site root only. */
 export function liveUrlProblem(url: string): string | null {
@@ -22,14 +26,6 @@ export function liveUrlProblem(url: string): string | null {
   if (parsed.pathname !== "/" || parsed.search || parsed.hash) return "Live link must point to the site root (no path, query or hash)";
   return null;
 }
-
-/**
- * The public hosts and their App Service names ("mii-microsoft"). `loadBlocklist` drops a private term
- * equal to one of them, so the public links pass the lint while every other resource name stays blocked.
- * Kept out of `content/safety-allowlist.txt` on purpose: that file also feeds the Ask entity allowlist,
- * where "mii-microsoft" would make "worked at Microsoft" look like a known employer.
- */
-export const PUBLIC_LIVE_NAMES: readonly string[] = PUBLIC_LIVE_HOSTS.flatMap((host) => [host, host.split(".")[0]]);
 
 export function isPublicLiveUrl(url: string): boolean {
   return liveUrlProblem(url) === null;

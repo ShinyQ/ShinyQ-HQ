@@ -10,18 +10,17 @@ import { ADJACENT_LINE, PROMPT_VERSION, RULES, routingLines, systemPrompt } from
 import { ADJACENT_INCLUDE, PERSPECTIVE_CAP, retrieve } from "../../functions/_lib/retrieve";
 import { isAdjacentQuestion, isCapabilityQuestion, isPersonaRequest, isRuleOverride } from "../../functions/_lib/scope";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import type { GoldenItem } from "../../scripts/ask-eval";
 import golden from "./golden.json";
 
 /** Rover's voice and adjacent grounded questions (owner decision 2026-10-19, spec 2026-10-19 section 3). */
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 let vocabulary: ReadonlySet<string>;
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-11"));
+  ({ pack } = buildRepoPack("2026-10-11"));
   vocabulary = packVocabulary(pack);
 });
 
@@ -38,13 +37,13 @@ const ask = async (q: string, answer: string, locale: "en" | "id" = "en") => {
     },
   };
   const question = scrubPII(cleanText(q));
-  const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
+  const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
   return { ...result, calls };
 };
 
 const check = (answer: string, question: string, locale: "en" | "id" = "en") => {
   const r = retrieve(pack, question, locale, { adjacent: true });
-  return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, safety, chunks: r.chunks, adjacent: true, locale });
+  return checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks, adjacent: true, locale });
 };
 
 describe("persona requests and rule overrides", () => {

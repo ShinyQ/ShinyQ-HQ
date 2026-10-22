@@ -5,21 +5,19 @@ import { SUGGESTIONS } from "@/ask/suggestions";
 import { createPackSource, staticPackSource, type PackSource } from "../../functions/_lib/pack-source";
 import { buildFallbackPack, buildPackArtifacts } from "@/ask/pack";
 import { cacheKey, createAskHandler, frame, pieces } from "../../functions/_lib/handler";
-import { findBlocked } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
 import { BREAKER_MIN_SAMPLES, resetBreaker, resetMinuteWindow, resetModelBreakers } from "../../functions/_lib/limits";
 import type { ModelClient } from "../../functions/_lib/model";
 import { answerTags, chunkTags } from "../../functions/_lib/tags";
 import { hasValidSession, issueSession, originAllowed, visitorHash } from "../../functions/_lib/security";
-import type { AskEnv, KnowledgePack, KvNamespace, PagesContext, SafetyData } from "../../functions/_lib/types";
+import type { AskEnv, KnowledgePack, KvNamespace, PagesContext } from "../../functions/_lib/types";
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 const ORIGIN = "https://kurniadi.pages.dev";
 const NOW = Date.UTC(2026, 9, 11, 3, 0, 0);
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-11"));
+  ({ pack } = buildRepoPack("2026-10-11"));
 });
 
 beforeEach(() => {
@@ -96,7 +94,6 @@ function setup({ env = {}, answer = "Kurniadi works at Metrodata.", turnstile, q
   };
   const handler = createAskHandler({
     source: source ? source(kv) : staticPackSource(pack),
-    safety,
     now: () => NOW,
     streamDelayMs: 0,
     client: () => client,
@@ -310,30 +307,11 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
   });
 
   it("never caches declines, unknowns, blocked or fallback answers", async () => {
-    for (const answer of ["I don't have that information on this site.", "I can only answer questions about Kurniadi.", "The client was SMBC.", ""]) {
+    for (const answer of ["I don't have that information on this site.", "I can only answer questions about Kurniadi.", "Call him at +62 812 3456 7890.", ""]) {
       const { call, kv } = setup({ answer });
       await frames(await call());
       expect([...kv.store.keys()].filter((k) => k.startsWith("ans:")), answer).toEqual([]);
     }
-  });
-
-  it("ignores a cached answer that now hits the blocklist", async () => {
-    const { call, kv, modelCalls } = setup();
-    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text: "He worked for Mitsubishi." }));
-    const list = await frames(await call());
-    expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
-    expect(modelCalls).toHaveLength(1);
-  });
-
-  it("ignores a cached markdown answer whose blocklisted phrase is split by marks", async () => {
-    const text = "He built a dashboard for Sari **Roti**.";
-    expect(findBlocked(text, safety.blocklist)).toEqual([]);
-    const { call, kv, modelCalls } = setup();
-    kv.store.set(await cacheKey(pack.packVersion, "en", "Where does he work?"), JSON.stringify({ text }));
-    const list = await frames(await call());
-    expect(answerOf(list)).toBe("Kurniadi works at Metrodata.");
-    expect(doneOf(list).source).not.toBe("cache");
-    expect(modelCalls).toHaveLength(1);
   });
 
   it("keeps hostile model tokens inside JSON frames", async () => {
@@ -345,9 +323,9 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
     expect(pieces("one two three four five six seven", 10).join("")).toBe("one two three four five six seven");
   });
 
-  it("replaces a client name with the restricted message (T4)", async () => {
-    const { call } = setup({ answer: "The bank client was SMBC." });
-    const list = await frames(await call({ body: { q: "Who was the bank client?", locale: "en" } }));
+  it("replaces private details with the restricted message (T4)", async () => {
+    const { call } = setup({ answer: "You can reach him at +62 812 3456 7890." });
+    const list = await frames(await call({ body: { q: "What is his phone number?", locale: "en" } }));
     expect(answerOf(list)).toMatch(/can't share client names/);
     expect(doneOf(list)).toMatchObject({ outcome: "decline", source: "none" });
   });
@@ -457,11 +435,9 @@ describe("Groq backup tiers", () => {
   });
 
   it("replaces a leaking Groq answer like any tier and does not cache it", async () => {
-    const term = safety.blocklist.find((t) => /^[a-z]{5,}$/i.test(t))!;
-    expect(term).toBeTruthy();
-    const { call, kv } = setup({ quota: true, groq: `The client was ${term}.`, env: { GROQ_API_KEY: "gsk_test" } });
+    const { call, kv } = setup({ quota: true, groq: "Call him at +62 812 3456 7890.", env: { GROQ_API_KEY: "gsk_test" } });
     const list = await frames(await call());
-    expect(answerOf(list)).not.toContain(term);
+    expect(answerOf(list)).not.toContain("3456");
     expect(doneOf(list).source).toBe("none");
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
@@ -678,7 +654,7 @@ describe("knowledge pack source", () => {
 
   it("logs the serving tier as blob12 and answers from the fallback pack when KV holds no pack", async () => {
     const fallback = buildFallbackPack(pack);
-    const { meta } = buildPackArtifacts(pack, safety.blocklist);
+    const { meta } = buildPackArtifacts(pack);
     const { call, events, kv } = setup({ source: () => createPackSource({ fallback, pin: meta, now: () => NOW }) });
     const response = await call({ body: { q: "Where does he work now?", locale: "en" } });
     const done = doneOf(await frames(response));
@@ -690,7 +666,7 @@ describe("knowledge pack source", () => {
   });
 
   it("serves the KV pack when the pointer and value are published", async () => {
-    const artifacts = buildPackArtifacts(pack, safety.blocklist);
+    const artifacts = buildPackArtifacts(pack);
     const { call, events } = setup({
       source: (kv) => {
         kv.store.set("pack:current", JSON.stringify(artifacts.meta));

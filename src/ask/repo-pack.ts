@@ -3,13 +3,13 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { listBlogFiles } from "@/content/blog";
 import { DynamicFactsSchema } from "@/content/dynamic-facts";
-import { loadAllowlist, loadBlocklist } from "@/content/safety";
+import { loadAllowlist } from "@/content/safety";
 import { getContent, getPerspectives, getSiteBuild } from "@/content/load";
 import type { Locale, Perspective } from "@/content/schema";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import { buildKnowledgePack, validatePack } from "./pack";
 
-/** Node-only: reads the repo (content, blog, live facts, safety lists) and builds the pack. */
+/** Node-only: reads the repo (content, blog, live facts, the product allowlist) and builds the pack. */
 
 export const DYNAMIC_FACTS_FILE = path.join(process.cwd(), "content", "generated", "dynamic-facts.json");
 
@@ -28,10 +28,9 @@ export function loadDynamicFacts() {
   return DynamicFactsSchema.parse(JSON.parse(readFileSync(DYNAMIC_FACTS_FILE, "utf8")));
 }
 
-export function buildRepoPack(date = contentDate(), options: { perspectives?: readonly Perspective[] } = {}): { pack: KnowledgePack; safety: SafetyData; errors: string[] } {
+export function buildRepoPack(date = contentDate(), options: { perspectives?: readonly Perspective[] } = {}): { pack: KnowledgePack; errors: string[] } {
   const posts: Record<string, Partial<Record<Locale, string>>> = {};
   for (const { slug, locale, file } of listBlogFiles()) (posts[slug] ??= {})[locale] = readFileSync(file, "utf8");
-  const blocklist = loadBlocklist();
   const pack = buildKnowledgePack({
     content: getContent(),
     facts: loadDynamicFacts(),
@@ -41,5 +40,5 @@ export function buildRepoPack(date = contentDate(), options: { perspectives?: re
     perspectives: options.perspectives ?? getPerspectives(),
     siteBuild: getSiteBuild(),
   });
-  return { pack, safety: { blocklist }, errors: validatePack(pack, blocklist) };
+  return { pack, errors: validatePack(pack) };
 }

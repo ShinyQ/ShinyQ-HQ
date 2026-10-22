@@ -13,23 +13,21 @@ import { draftPerspectives } from "@/content/perspectives";
 import { chunkTags } from "../../functions/_lib/tags";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
-import { findBlockedLabels, findBlockedTerms, formatBlockedTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
-import { FORBIDDEN_OUTPUT, findBlocked } from "../../functions/_lib/checks";
+import { findTerms as findSiteTerms, FORBIDDEN_PATTERNS } from "@/content/safety";
+import { FORBIDDEN_OUTPUT, findTerms } from "../../functions/_lib/checks";
 import { indexPack } from "../../functions/_lib/pack-index";
 import { followUpAnchor } from "../../functions/_lib/history";
 import { retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { cleanText, detectLocale, normalizeQuestion, tokenize } from "../../functions/_lib/text";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 
 beforeAll(() => {
   const built = buildRepoPack("2026-10-11");
   expect(built.errors).toEqual([]);
   pack = built.pack;
-  safety = built.safety;
 });
 
 const fold = (text: string) => text.toLowerCase().replace(/(\d),(\d)/g, "$1.$2");
@@ -65,8 +63,8 @@ describe("knowledge pack", () => {
     expect(buildRepoPack("2026-12-01").pack.packVersion).not.toBe(pack.packVersion);
   });
 
-  it("never contains a blocklisted client name, the CV or an em dash", () => {
-    expect(validatePack(pack, safety.blocklist)).toEqual([]);
+  it("never contains the CV or an em dash", () => {
+    expect(validatePack(pack)).toEqual([]);
     const all = JSON.stringify(pack);
     expect(all).not.toMatch(/\u2014/);
     expect(all).not.toMatch(/\.pdf\b/i);
@@ -77,11 +75,10 @@ describe("knowledge pack", () => {
     expect(text).not.toMatch(/self-reported|strongly-inferred|; verified\)|Self-reported in my CV/i);
   });
 
-  it("fails validation when a client name sneaks in", () => {
-    const content = structuredClone(getContent());
-    content.profile.bio.en = `${content.profile.bio.en} He built dashboards for Mitsubishi.`;
-    const bad = buildKnowledgePack({ content, contentDate: "2026-10-11", products: [] });
-    expect(validatePack(bad, safety.blocklist).join(" ")).toMatch(/blocklisted/);
+  it("fails validation when an em dash sneaks into a chunk", () => {
+    const bad = structuredClone(pack);
+    bad.chunks[0].text_en = `${bad.chunks[0].text_en} One \u2014 two.`;
+    expect(validatePack(bad).join(" ")).toMatch(/em dash/);
   });
 
   it("strips markup, invisible characters and instruction-like sentences (T2)", () => {
@@ -93,7 +90,6 @@ describe("knowledge pack", () => {
   it("lists employers, freelance clients and products as allowed entities, never sector-labelled clients", () => {
     expect(pack.entities).toContain("Metrodata (PT Mitra Integrasi Informatika)");
     expect(pack.entities).toContain("Jenius (SMBC Indonesia)");
-    expect(findBlockedLabels(pack.entities.join("\n"), safety.blocklist)).toEqual([]);
   });
 
   it("says the MII Microsoft sites are live without shipping their hostnames (R4-J, rt39)", () => {
@@ -188,10 +184,10 @@ describe("retrieval", () => {
 });
 
 describe("safety parity", () => {
-  it("matches the site lint's blocklist semantics", () => {
-    const samples = ["Jenius (SMBC Indonesia)", "SMBC", "smbc bank", "Mitsubishi Motors", "a salary band", "Inalum", "TTA", "tta"];
-    const shown = (found: string[]) => formatBlockedTerms(found, safety.blocklist);
-    for (const s of samples) expect(shown(findBlocked(s, safety.blocklist)), s).toEqual(shown(findBlockedTerms(s, safety.blocklist)));
+  it("matches the site's term matching semantics", () => {
+    const terms = ["Acme Foods", "Zentrovia", "/\\bQZX\\b/", "/(?<!Jenius \\()\\b[Ss][Mm][Bb][Cc]/"];
+    const samples = ["Jenius (SMBC Indonesia)", "SMBC", "smbc bank", "acme foods ltd", "Zentrovias", "QZX", "qzx"];
+    for (const s of samples) expect(findTerms(s, terms), s).toEqual(findSiteTerms(s, terms));
   });
 
   it("keeps the forbidden output patterns in sync with the site lint (minus the em dash)", () => {
@@ -272,7 +268,7 @@ describe("perspectives and principles in the pack", () => {
     const built = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries });
     expect(built.errors).toEqual([]);
     expect(Buffer.byteLength(JSON.stringify(built.pack))).toBeLessThan(PACK_MAX_BYTES);
-    const artifacts = buildPackArtifacts(built.pack, built.safety.blocklist);
+    const artifacts = buildPackArtifacts(built.pack);
     expect(artifacts.errors).toEqual([]);
     expect(artifacts.meta.bytes).toBeLessThan(PACK_VALUE_MAX_BYTES);
   });
@@ -294,7 +290,6 @@ describe("perspectives and principles in the pack", () => {
     expect(pack.orgs).toContain("Jenius (SMBC Indonesia)");
     expect(pack.orgs).toContain("Telkom University");
     expect(pack.orgs).not.toContain("ARIA");
-    expect(findBlockedLabels(pack.orgs.join("\n"), safety.blocklist)).toEqual([]);
   });
 
   it("lists only starred public repositories (pack budget, runbook deviation 8)", () => {

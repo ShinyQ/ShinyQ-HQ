@@ -4,14 +4,13 @@ import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, nicknameForModel, orgAliases, privateTopic, resolveNickname } from "../../functions/_lib/scope";
-import type { KnowledgePack, SafetyData } from "../../functions/_lib/types";
+import type { KnowledgePack } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-11"));
+  ({ pack } = buildRepoPack("2026-10-11"));
 });
 
 const originalGolden = golden.items.filter((i) => Number(i.id.slice(1)) <= 32);
@@ -144,13 +143,6 @@ describe("opinionAboutOthers", () => {
     "What did he do at Jenius?",
     "Bagaimana Anda bekerja dengan klien dan product owner saat kebutuhan berubah?",
   ])("leaves %s to the model", (q) => expect(opinionAboutOthers(q, pack.orgs)).toBe(false));
-
-  it("treats a blocklisted client name like any other unknown name (S6: no blocklist oracle)", () => {
-    // A committed (public) client name; never print the list itself, it can hold private terms.
-    const listed = "Sari Roti";
-    expect(safety.blocklist.includes(listed)).toBe(true);
-    for (const name of [listed, "Acme Foods"]) expect(opinionAboutOthers(`What does he think of ${name}?`, pack.orgs), name).toBe(false);
-  });
 
   it("never fires on a curated question", () => {
     for (const s of SUGGESTIONS) for (const q of [s.q.en, s.q.id]) expect(opinionAboutOthers(q, pack.orgs), q).toBe(false);

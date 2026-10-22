@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import type { DynamicFacts } from "@/content/dynamic-facts";
 import type { Locale, LocalizedText, Perspective, Pod, SiteBuild, SiteContent } from "@/content/schema";
 import { perspectiveSourcePath } from "@/content/perspectives";
-import { findBlockedLabels } from "@/content/safety";
 import { overlayStats } from "@/content/load";
 import { clientLabel, podLiveLink } from "@/content/selectors";
 import { topicTagsOf } from "../../functions/_lib/tags";
@@ -574,20 +573,16 @@ export function buildFallbackPack(pack: KnowledgePack): KnowledgePack {
   return versioned({ packDate: pack.packDate, chunks, entities: pack.entities, orgs: pack.orgs, contact: pack.contact });
 }
 
-/** Build-time gates (spec section 4): no blocklisted term, size cap, required chunks present. */
-export function validatePack(pack: KnowledgePack, blocklist: readonly string[]): string[] {
+/** Build-time gates (spec section 4): size cap, required chunks present, no em dash, a valid contact card. */
+export function validatePack(pack: KnowledgePack): string[] {
   const errors: string[] = [];
   for (const id of REQUIRED_CHUNKS) if (!pack.chunks.some((c) => c.id === id)) errors.push(`missing required chunk "${id}"`);
   const bytes = Buffer.byteLength(JSON.stringify(pack), "utf8");
   if (bytes > PACK_MAX_BYTES) errors.push(`pack is ${bytes} bytes, over the ${PACK_MAX_BYTES} byte cap`);
   for (const chunk of pack.chunks) {
-    const hits = findBlockedLabels([chunk.title, chunk.text_en, chunk.text_id, chunk.keywords.join(" ")].join("\n"), blocklist);
-    if (hits.length) errors.push(`chunk "${chunk.id}" contains blocklisted terms: ${hits.join(", ")}`);
     if (/\u2014/.test(chunk.text_en + chunk.text_id)) errors.push(`chunk "${chunk.id}" contains an em dash`);
   }
   if (!isAskContact(pack.contact)) errors.push("contact card (roof.contact email and LinkedIn) is not a valid AskContact");
-  const entityHits = findBlockedLabels(pack.entities.join("\n"), blocklist);
-  if (entityHits.length) errors.push(`entity allowlist contains blocklisted terms: ${entityHits.join(", ")}`);
   return errors;
 }
 
@@ -610,7 +605,7 @@ export function packMeta(json: string): PackMeta {
  * Gates of a stored pack value (build and `scripts/ask-pack.ts publish` / `flip`): JSON, byte cap, schema, the text pack
  * checks of `validatePack`, a content-addressed `packVersion`, and an index identical to the one rebuilt from the text.
  */
-export function validateStoredPack(json: string, blocklist: readonly string[], options: { maxBytes?: number } = {}): string[] {
+export function validateStoredPack(json: string, options: { maxBytes?: number } = {}): string[] {
   const maxBytes = options.maxBytes ?? PACK_VALUE_MAX_BYTES;
   const errors: string[] = [];
   const bytes = Buffer.byteLength(json, "utf8");
@@ -624,7 +619,7 @@ export function validateStoredPack(json: string, blocklist: readonly string[], o
   if (!stored || typeof stored !== "object" || !stored.pack || !stored.index || !Array.isArray(stored.pack.chunks)) return [...errors, "stored pack is not a StoredPack"];
   if (stored.schema !== PACK_SCHEMA) errors.push(`stored pack schema ${String(stored.schema)} is not ${PACK_SCHEMA}`);
   const { pack, index } = stored;
-  errors.push(...validatePack(pack, blocklist));
+  errors.push(...validatePack(pack));
   const { packVersion, packDate, chunks, entities, orgs, contact } = pack;
   if (versioned({ packDate, chunks, entities, orgs, contact }).packVersion !== packVersion) errors.push(`packVersion ${packVersion} does not match the pack content`);
   if (!Array.isArray(index.terms) || !Array.isArray(index.postings) || index.terms.length !== index.postings.length) errors.push("index terms and postings differ in length");
@@ -645,14 +640,14 @@ export interface PackArtifacts {
 }
 
 /** The build outputs of a text pack: the stored value, the fallback pack and the pin, with every gate applied. */
-export function buildPackArtifacts(pack: KnowledgePack, blocklist: readonly string[]): PackArtifacts {
+export function buildPackArtifacts(pack: KnowledgePack): PackArtifacts {
   const json = JSON.stringify(storePack(pack));
   const fallback = buildFallbackPack(pack);
   const fallbackJson = JSON.stringify(fallback);
   const fallbackBytes = Buffer.byteLength(fallbackJson, "utf8");
   const errors = [
-    ...validateStoredPack(json, blocklist),
-    ...validatePack(fallback, blocklist).map((e) => `fallback: ${e}`),
+    ...validateStoredPack(json),
+    ...validatePack(fallback).map((e) => `fallback: ${e}`),
     ...(fallbackBytes > FALLBACK_MAX_BYTES ? [`fallback: pack is ${fallbackBytes} bytes, over the ${FALLBACK_MAX_BYTES} byte cap`] : []),
     ...FALLBACK_CHUNKS.filter((id) => !fallback.chunks.some((c) => c.id === id)).map((id) => `fallback: missing chunk "${id}"`),
   ];

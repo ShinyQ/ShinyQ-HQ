@@ -15,7 +15,7 @@ import { RULES, routingLines, systemPrompt } from "../../functions/_lib/prompt";
 import { leadMatches, retrieve } from "../../functions/_lib/retrieve";
 import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, privateTopic, routedTopic } from "../../functions/_lib/scope";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
-import type { AskEnv, KnowledgePack, KvNamespace, PagesContext, SafetyData } from "../../functions/_lib/types";
+import type { AskEnv, KnowledgePack, KvNamespace, PagesContext } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
 /**
@@ -25,10 +25,9 @@ import golden from "./golden.json";
  */
 
 let pack: KnowledgePack;
-let safety: SafetyData;
 
 beforeAll(() => {
-  ({ pack, safety } = buildRepoPack("2026-10-15"));
+  ({ pack } = buildRepoPack("2026-10-15"));
 });
 
 const fast = { firstTokenMs: 60, totalMs: 150 };
@@ -49,7 +48,7 @@ function mockClient(answer: string) {
 const ask = async (q: string, answer = "unused", locale: "en" | "id" = "en") => {
   const question = scrubPII(cleanText(q));
   const { client, calls } = mockClient(answer);
-  const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary: packVocabulary(pack), safety, client, models: { primary: "p", fallback: "f" }, timeouts: fast });
+  const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary: packVocabulary(pack), client, models: { primary: "p", fallback: "f" }, timeouts: fast });
   return { ...result, calls };
 };
 
@@ -170,11 +169,11 @@ describe("lead intent", () => {
     }
   });
 
-  it("shows the invitation when any other check replaces a lead answer, but keeps the restricted message for client names", async () => {
+  it("shows the invitation when any other check replaces a lead answer, but keeps the restricted message for forbidden patterns", async () => {
     const entity = await ask("Kami butuh sistem deteksi fraud dokumen", "Kurniadi bisa membantu Anda dengan Zorblax Engine.", "id");
     expect(entity).toMatchObject({ reason: "entity", lead: true, text: MESSAGES.lead.id });
-    const client = await ask("We need a voice bot for our call center", "Kurniadi built this for Sari Roti.");
-    expect(client).toMatchObject({ reason: "blocklist", text: MESSAGES.restricted.en });
+    const phone = await ask("We need a voice bot for our call center", "Kurniadi can help, call +62 812 3456 7890.");
+    expect(phone).toMatchObject({ reason: "forbidden", text: MESSAGES.restricted.en });
   });
 
   it("turns a model refusal or a no-information reply to a lead into the invitation", async () => {
@@ -362,7 +361,7 @@ describe("contact card through the Function", () => {
       },
     };
     const env: AskEnv = { ASK_ENABLED: "true", ASK_ALLOWED_ORIGINS: "https://kurniadi.pages.dev", ASK_IP_SALT_SEED: "seed", AI: { run: async () => ({}) }, ASK_KV: kv };
-    const handler = createAskHandler({ source: staticPackSource(pack), safety, now: () => Date.UTC(2026, 9, 15, 3), streamDelayMs: 0, client: () => client });
+    const handler = createAskHandler({ source: staticPackSource(pack), now: () => Date.UTC(2026, 9, 15, 3), streamDelayMs: 0, client: () => client });
     const call = async (q: string, locale = "en") => {
       const pending: Promise<unknown>[] = [];
       const request = new Request("https://kurniadi.pages.dev/api/ask", { method: "POST", headers: { Origin: "https://kurniadi.pages.dev", "Content-Type": "application/json", "CF-Connecting-IP": "203.0.113.9" }, body: JSON.stringify({ q, locale }) });

@@ -10,7 +10,7 @@ import { buildMessages } from "./prompt";
 import { leadMatches, retrieve } from "./retrieve";
 import { isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, opinionAboutOthers, privateTopic, nicknameForModel, resolveNickname, routedTopic } from "./scope";
 import { answerTags } from "./tags";
-import type { KnowledgePack, SafetyData } from "./types";
+import type { KnowledgePack } from "./types";
 
 /**
  * Retrieval, generation and output checks (spec 7.4 steps 7 and 8) for one cleaned, PII-scrubbed
@@ -23,7 +23,6 @@ export interface PipelineInput {
   locale: AskLocale;
   pack: KnowledgePack;
   vocabulary: ReadonlySet<string>;
-  safety: SafetyData;
   client: ModelClient;
   models?: { primary: string; fallback?: string };
   timeouts?: Timeouts;
@@ -97,7 +96,7 @@ export function usableHistory(history: readonly HistoryTurn[], pack: KnowledgePa
 }
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
-  const { locale, pack, vocabulary, safety, client } = input;
+  const { locale, pack, vocabulary, client } = input;
   // "ShinyQ" is Kurniadi's nickname (owner 2026-10-16): routing, retrieval and the checks see his name; the model also sees the visitor's word.
   const question = resolveNickname(input.question);
   const modelQuestion = nicknameForModel(input.question);
@@ -163,7 +162,6 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     packDate: pack.packDate,
     pack,
     vocabulary,
-    safety,
     chunks,
     perspective: !lead && isPerspectiveQuestion(routed),
     site: !lead && isSiteQuestion(routed),

@@ -1,19 +1,13 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { isPublicLiveUrl, PUBLIC_LIVE_NAMES } from "./live-links";
-import { escapeRegExp, findBlockedTerms } from "./safety-match";
-
-export { findBlockedTerms };
+import { isPublicLiveUrl } from "./live-links";
 
 export const EM_DASH = "\u2014";
 
-const ROOT = process.cwd();
-export const DEFAULT_BLOCKLIST_FILE = path.join(ROOT, "content", "safety-blocklist.default.txt");
-export const LOCAL_BLOCKLIST_FILE = path.join(ROOT, "content", ".safety-blocklist.local.txt");
-export const ALLOWLIST_FILE = path.join(ROOT, "content", "safety-allowlist.txt");
+export const ALLOWLIST_FILE = path.join(process.cwd(), "content", "safety-allowlist.txt");
 
-/** Parses a blocklist: one term per line or comma separated, `#` starts a comment. */
-export function parseBlocklist(raw: string): string[] {
+/** Parses a term list: one term per line or comma separated, `#` starts a comment. */
+export function parseTermList(raw: string): string[] {
   return raw
     .split(/\r?\n/)
     .map((line) => line.replace(/#.*$/, ""))
@@ -22,77 +16,24 @@ export function parseBlocklist(raw: string): string[] {
     .filter((term) => term.length > 0);
 }
 
-/** Product names the owner allowed (C3, revised 2026-10-10), from `content/safety-allowlist.txt`. */
+/** Product names the owner allowed (C3, revised 2026-10-10), from `content/safety-allowlist.txt`: the Ask entity allowlist. */
 export function loadAllowlist(): string[] {
-  return existsSync(ALLOWLIST_FILE) ? parseBlocklist(readFileSync(ALLOWLIST_FILE, "utf8")) : [];
+  return existsSync(ALLOWLIST_FILE) ? parseTermList(readFileSync(ALLOWLIST_FILE, "utf8")) : [];
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
- * True when `term` targets an allowed name: a plain term equal to it
- * (case-insensitive), or a /regex/ term whose source names it and matches it.
- * Broad regexes (personal data, Azure resource names) are never dropped.
+ * The terms found in `text`: plain terms match case-insensitively on word boundaries; terms wrapped in
+ * slashes (`/regex/`) are case-sensitive regular expressions.
  */
-export function isAllowedTerm(term: string, allow: readonly string[]): boolean {
-  const isRegex = term.length > 2 && term.startsWith("/") && term.endsWith("/");
-  return allow.some((name) => {
-    if (!isRegex) return term.toLowerCase() === name.toLowerCase();
-    const source = term.slice(1, -1);
-    return source.toLowerCase().includes(name.toLowerCase()) && new RegExp(source).test(name);
+export function findTerms(text: string, terms: readonly string[]): string[] {
+  return terms.filter((term) => {
+    if (term.length > 2 && term.startsWith("/") && term.endsWith("/")) return new RegExp(term.slice(1, -1)).test(text);
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}($|[^\\p{L}\\p{N}])`, "iu").test(text);
   });
-}
-
-/**
- * Merges the committed default list, the gitignored local list and the
- * SAFETY_BLOCKLIST env var (used as a CI secret) so private terms are never
- * published in the repo, minus the allowed product names and the public live
- * site names (`PUBLIC_LIVE_NAMES`, R4-J).
- */
-export function loadBlocklist(
-  env: Record<string, string | undefined> = process.env,
-  allow: readonly string[] = loadAllowlist(),
-): string[] {
-  const terms = new Set<string>();
-  for (const file of [DEFAULT_BLOCKLIST_FILE, LOCAL_BLOCKLIST_FILE]) {
-    if (existsSync(file)) parseBlocklist(readFileSync(file, "utf8")).forEach((t) => terms.add(t));
-  }
-  if (env.SAFETY_BLOCKLIST) parseBlocklist(env.SAFETY_BLOCKLIST).forEach((t) => terms.add(t));
-  return [...terms].filter((t) => !isAllowedTerm(t, allow) && !isAllowedTerm(t, PUBLIC_LIVE_NAMES));
-}
-
-/** The committed default list (client names, personal data, Azure resource names): public, so safe to print. */
-export function loadDefaultBlocklist(): string[] {
-  return existsSync(DEFAULT_BLOCKLIST_FILE) ? parseBlocklist(readFileSync(DEFAULT_BLOCKLIST_FILE, "utf8")) : [];
-}
-
-/**
- * Display form of matched blocklist terms for test output, logs, reports and artifacts (S2).
- * Terms from the committed default list stay readable; every other term (the local list or the
- * SAFETY_BLOCKLIST secret) becomes `private term #n`, its 1-based position among the private
- * terms of `terms` (default file order, then `.safety-blocklist.local.txt`, then the secret), so
- * a caught leak never publishes the term it caught. GitHub masks only whole secret values.
- */
-export function formatBlockedTerms(found: readonly string[], terms: readonly string[], publicTerms: readonly string[] = loadDefaultBlocklist()): string[] {
-  const visible = new Set(publicTerms);
-  const hidden = terms.filter((t) => !visible.has(t));
-  return found.map((t) => (visible.has(t) ? t : `private term #${hidden.indexOf(t) + 1 || "?"}`));
-}
-
-/** `findBlockedTerms` in display form (`formatBlockedTerms`): use it wherever matches can be printed. */
-export function findBlockedLabels(text: string, terms: readonly string[]): string[] {
-  return formatBlockedTerms(findBlockedTerms(text, terms), terms);
-}
-
-/** Replaces every blocklisted term in `text` with "[redacted]", keeping line breaks (logs, reports, public issues). */
-export function redactBlockedText(text: string, terms: readonly string[]): string {
-  let out = text;
-  for (const term of findBlockedTerms(out, terms)) {
-    const regex =
-      term.length > 2 && term.startsWith("/") && term.endsWith("/")
-        ? new RegExp(term.slice(1, -1), "g")
-        : new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}(?=$|[^\\p{L}\\p{N}])`, "giu");
-    out = out.replace(regex, (_match, lead) => `${typeof lead === "string" ? lead : ""}[redacted]`);
-  }
-  return out;
 }
 
 export interface StringLeaf {
@@ -110,7 +51,7 @@ export function collectStrings(value: unknown, at = "$"): StringLeaf[] {
   return [];
 }
 
-/** Patterns that must never appear in public copy regardless of the blocklist. */
+/** Patterns that must never appear in public copy. */
 export const FORBIDDEN_PATTERNS: { name: string; pattern: RegExp }[] = [
   { name: "em dash", pattern: /\u2014/ },
   { name: "money amount", pattern: /(?:\bRp\.?\s?\d|\bIDR\s?\d|\bUSD\s?\d|\$\s?\d|\d\s?(?:juta|miliar|million|billion)\s?(?:rupiah|IDR|USD))/i },
@@ -144,7 +85,7 @@ export const BUILD_TEXT_FILE = /\.(?:html|txt|json|xml|webmanifest|js|mjs|css|sv
  * (`sha256-<base64>`), base64 data URIs, the Next.js build id (the exact `_next/static/<id>/` directory name,
  * also in the RSC payload) and the base36 content hashes of chunk and media file names
  * (`chunks/3srfjz42u14tx.js`, `media/inter-s.p.2vgebnnw3bn23.woff2`). A random token can spell a short
- * blocklist term after a `+`, `/`, `-` or `.` (a CSP hash failed `/\b[Ss][Mm][Bb][Cc]/` once in CI, PR #228).
+ * term after a `+`, `/`, `-` or `.` (a CSP hash did once in CI, PR #228).
  */
 const BUILD_TOKENS: RegExp[] = [
   /\bsha(?:256|384|512)-[A-Za-z0-9+/]{20,}={0,2}/g,
@@ -156,8 +97,8 @@ const BUILD_TOKENS: RegExp[] = [
 
 /**
  * `text` with every machine-made build token (`BUILD_TOKENS`, plus each exact `buildIds` value) replaced by
- * `_`, so only readable text can match the blocklist: page copy, payload strings and the readable part of an
- * asset name stay scanned; a client name inside a hash is not a leak, it is chance.
+ * `_`, so only readable text can match a term: page copy, payload strings and the readable part of an
+ * asset name stay scanned; a term inside a hash is not a leak, it is chance.
  */
 export function maskBuildTokens(text: string, buildIds: readonly string[] = []): string {
   let out = text;
@@ -177,22 +118,17 @@ export function exportBuildIds(dir: string): string[] {
 
 export interface BuildHit {
   file: string;
-  /** Matched terms in display form (`formatBlockedTerms` unless `label` says otherwise). */
+  /** Matched terms, as `label` shows them. */
   terms: string[];
 }
 
 /**
- * Scans every text file of a static export (`out/`, `BUILD_TEXT_FILE`) for blocklisted terms, so
- * a client company name cannot reach a page, payload, script, sitemap or room data file. Skips
- * binaries. Blocklist terms only: forbidden patterns would flag RSC references such as `"$1c"`.
- * Machine-made tokens (hashes, the build id, data URIs) are masked first (`maskBuildTokens`).
- * Hits are redacted with `formatBlockedTerms`; pass `label` only for terms that are public.
+ * Scans every text file of a static export (`out/`, `BUILD_TEXT_FILE`) for `terms` (`findTerms`), so a
+ * string that must stay out of the site (the perspectives fingerprints, for example) cannot reach a page,
+ * payload, script, sitemap or room data file. Skips binaries. Machine-made tokens (hashes, the build id,
+ * data URIs) are masked first (`maskBuildTokens`). `label` turns the matched terms into their display form.
  */
-export function scanBuildOutput(
-  dir: string,
-  terms: readonly string[],
-  label: (found: string[]) => string[] = (found) => formatBlockedTerms(found, terms),
-): BuildHit[] {
+export function scanBuildOutput(dir: string, terms: readonly string[], label: (found: string[]) => string[] = (found) => found): BuildHit[] {
   const walk = (at: string): string[] =>
     readdirSync(at, { withFileTypes: true }).flatMap((d) =>
       d.isDirectory() ? walk(path.join(at, d.name)) : [path.join(at, d.name)],
@@ -201,7 +137,7 @@ export function scanBuildOutput(
   return walk(dir)
     .filter((file) => BUILD_TEXT_FILE.test(file))
     .flatMap((file) => {
-      const found = findBlockedTerms(maskBuildTokens(readFileSync(file, "utf8"), buildIds), terms);
+      const found = findTerms(maskBuildTokens(readFileSync(file, "utf8"), buildIds), terms);
       return found.length ? [{ file: path.relative(dir, file), terms: label(found) }] : [];
     });
 }

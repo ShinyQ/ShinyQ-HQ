@@ -69,12 +69,6 @@ export interface StoredPack {
   };
 }
 
-/** Output safety data compiled at build time from the public-safety blocklist (includes private terms; never public). */
-export interface SafetyData {
-  /** Plain terms (case-insensitive, word boundaries) and /regex/ terms (case-sensitive), as in content/safety-blocklist*.txt. */
-  blocklist: string[];
-}
-
 export interface AiBinding {
   run(model: string, inputs: Record<string, unknown>, options?: Record<string, unknown>): Promise<unknown>;
   /** AI Gateway handle; `getUrl("groq")` is the gateway base URL of a third-party provider. */

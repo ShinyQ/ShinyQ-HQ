@@ -10,7 +10,7 @@ import path from "node:path";
 import { z } from "zod";
 import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, StudyGuidesFileSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
-import { collectStrings, findBlockedLabels, leafForbiddenPatterns, loadBlocklist, redactBlockedText } from "../src/content/safety";
+import { collectStrings, leafForbiddenPatterns } from "../src/content/safety";
 import { titleCaseChanges } from "../src/content/titles";
 
 const [kind, file] = process.argv.slice(2);
@@ -27,7 +27,6 @@ const schema = kind === "pods" ? z.array(PodSchema) : kind === "rest" ? RestSche
 const data: unknown = JSON.parse(readFileSync(file, "utf8"));
 const parsed = schema.safeParse(data);
 let failed = false;
-const terms = loadBlocklist();
 
 if (!parsed.success) {
   failed = true;
@@ -35,7 +34,7 @@ if (!parsed.success) {
 } else if (kind === "full") {
   for (const change of titleCaseChanges(parsed.data as SiteContent)) {
     failed = true;
-    console.error(`${change.path}: not in Title Case, expected "${redactBlockedText(change.after, terms)}" (bun scripts/title-case.ts --write)\n  ${redactBlockedText(change.before, terms)}`);
+    console.error(`${change.path}: not in Title Case, expected "${change.after}" (bun scripts/title-case.ts --write)\n  ${change.before}`);
   }
 }
 
@@ -91,12 +90,12 @@ for (const leaf of [
   ...(siteBuildData === undefined ? [] : collectStrings(siteBuildData, "site-build")),
   ...(guidesData === undefined ? [] : collectStrings(guidesData, "study-guides")),
 ]) {
-  const hits = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+  const hits = leafForbiddenPatterns(leaf);
   if (hits.length > 0) {
     failed = true;
-    console.error(`${leaf.path}: ${hits.join(", ")}\n  ${redactBlockedText(leaf.value, terms)}`);
+    console.error(`${leaf.path}: ${hits.join(", ")}\n  ${leaf.value}`);
   }
 }
 
 if (failed) process.exit(1);
-console.log(`OK: ${file} is a valid ${kind} fragment (${terms.length} blocklist terms checked)`);
+console.log(`OK: ${file} is a valid ${kind} fragment`);

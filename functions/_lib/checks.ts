@@ -6,7 +6,7 @@ import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
 import { indexPack } from "./pack-index";
 import { expandTokens, tokenize } from "./text";
-import type { ChunkType, KnowledgeChunk, KnowledgePack, SafetyData } from "./types";
+import type { ChunkType, KnowledgeChunk, KnowledgePack } from "./types";
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
 export const MAX_ANSWER_CHARS = 1000;
@@ -113,8 +113,8 @@ const COMMON_CAPS = new Set(
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Same matching rules as `findBlockedTerms` in src/content/safety.ts (that module needs node:fs). */
-export function findBlocked(text: string, terms: readonly string[]): string[] {
+/** Same matching rules as `findTerms` in src/content/safety.ts (that module needs node:fs). */
+export function findTerms(text: string, terms: readonly string[]): string[] {
   return terms.filter((term) => {
     if (term.length > 2 && term.startsWith("/") && term.endsWith("/")) return new RegExp(term.slice(1, -1)).test(text);
     return new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(term)}($|[^\\p{L}\\p{N}])`, "iu").test(text);
@@ -507,7 +507,7 @@ export function claimsFit(text: string): boolean {
   return FIT_CLAIM.test(text);
 }
 
-export type CheckFailure = "blocklist" | "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
+export type CheckFailure = "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
 
 export type CheckResult =
   | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline">; cite?: string }
@@ -520,7 +520,6 @@ export interface CheckInput {
   packDate: string;
   pack: Pick<KnowledgePack, "entities">;
   vocabulary: ReadonlySet<string>;
-  safety: SafetyData;
   /** Retrieved chunks (the perspective source check); empty means no written source is available. */
   chunks?: readonly KnowledgeChunk[];
   /** The question asks for Kurniadi's views (`isPerspectiveQuestion`). */
@@ -540,14 +539,12 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, safety, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
-  // Both forms: the markdown carries the link URLs, the plain text joins words that marks split ("SM**BC**").
+  // Both forms: the markdown carries the link URLs, the plain text joins words that marks split.
   const scanned = [markdown, text];
-  const blocked = [...new Set(scanned.flatMap((s) => findBlocked(s, safety.blocklist)))];
-  if (blocked.length) return { ok: false, reason: "blocklist", detail: blocked, replacement: "restricted" };
   if (scanned.some((s) => FORBIDDEN_OUTPUT.some((re) => re.test(s)))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
   if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };

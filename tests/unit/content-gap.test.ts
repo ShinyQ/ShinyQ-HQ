@@ -24,15 +24,14 @@ describe("groupQuestions", () => {
 });
 
 describe("sanitizeForIssue", () => {
-  it("scrubs PII, links, backticks and blocklisted names", () => {
-    const out = sanitizeForIssue("mail me at a.b@example.com or +62 812 3456 7890, see https://x.y/z `code` about Acme Bank", ["Acme Bank", "/Sec[a-z]+/"]);
-    expect(out).toBe("mail me at [redacted] or [redacted], see [redacted] 'code' about [redacted]");
-    expect(sanitizeForIssue("Secret plans", ["/Sec[a-z]+/"])).toBe("[redacted] plans");
+  it("scrubs PII, links and backticks", () => {
+    const out = sanitizeForIssue("mail me at a.b@example.com or +62 812 3456 7890, see https://x.y/z `code` about Acme Bank");
+    expect(out).toBe("mail me at [redacted] or [redacted], see [redacted] 'code' about Acme Bank");
   });
 
   it("strips invisible characters and caps length", () => {
-    expect(sanitizeForIssue("a\u200Bb\u202Ec", [])).toBe("a b c");
-    expect(sanitizeForIssue("x".repeat(500), []).length).toBe(200);
+    expect(sanitizeForIssue("a\u200Bb\u202Ec")).toBe("a b c");
+    expect(sanitizeForIssue("x".repeat(500)).length).toBe(200);
   });
 });
 
@@ -125,9 +124,9 @@ describe("report", () => {
   });
 
   it("formats the owner-only question table with the second scrub", () => {
-    const md = formatPrivateQuestions([{ question: "who is @someone | ok", normalized: "x", count: 4 }], []);
+    const md = formatPrivateQuestions([{ question: "who is @someone | ok", normalized: "x", count: 4 }]);
     expect(md).toContain("| 1 | 4 | `who is @someone / ok` |");
-    expect(formatPrivateQuestions([], [])).toContain("No unanswered questions");
+    expect(formatPrivateQuestions([])).toContain("No unanswered questions");
   });
 
   it("finds the Monday of the week", () => {

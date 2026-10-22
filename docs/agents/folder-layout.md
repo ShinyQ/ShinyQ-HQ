@@ -2,7 +2,7 @@
 
 Where things live in the repository: one entry per path with a short description. Index: [AGENTS.md](../../AGENTS.md).
 
-Paths are relative to the repository root. Three paths are not in a fresh checkout on purpose (all gitignored): `content/.safety-blocklist.local.txt` (private, kept by the owner), `functions/_generated/` (written by the build) and `.study-guides/` (prepared study guide PDFs, written by `scripts/study-guides.ts`; never committed).
+Paths are relative to the repository root. Two paths are not in a fresh checkout on purpose (both gitignored): `functions/_generated/` (written by the build) and `.study-guides/` (prepared study guide PDFs, written by `scripts/study-guides.ts`; never committed).
 
 ## content/
 
@@ -14,9 +14,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `content/study-guides.json`: the certification study guides (EN/ID; human fields by hand, `pages`, `bytes`, `version` and `cover` by `scripts/study-guides.ts`); the PDFs live in the private R2 bucket `hq-study-guides`. See "Study guides" in [content.md](content.md#study-guides).
 - `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
 - `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
-- `content/safety-blocklist.default.txt`: committed blocklist: client company names (C3), personal data, Azure resource names.
-- `content/safety-allowlist.txt`: product names the lint must never flag (removed from the merged blocklist).
-- `content/.safety-blocklist.local.txt`: PRIVATE, gitignored; private repo and cloud resource names.
+- `content/safety-allowlist.txt`: allowed product names; they feed the Ask knowledge pack's `products` (the entity allowlist of the Ask output entity check).
 - `content/generated/dynamic-facts.json`: weekly live facts (numbers, dates, booleans, IDs only), written by `scripts/refresh-facts.ts`.
 - `content/generated/build-facts.json`: the build page's measured numbers (git, tests, CI jobs, budgets), written by `scripts/build-facts.ts` (CI and deploy builds refresh it).
 - `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
@@ -33,7 +31,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   webhooks) forwarding to the hq-office Worker through the service binding OFFICE (`functions/_lib/office.ts`).
 - `functions/api/guides/[slug].ts`: GET and HEAD /api/guides/<slug>, a study guide PDF from R2 `GUIDES` with byte ranges, ETag and versioned caching (`functions/_lib/guides.ts`).
 - `functions/_lib/`: its pure modules: pipeline, checks, limits, security, prompt (PROMPT_VERSION), retrieval, the stored pack index (`pack-index.ts`) and the pack source (`pack-source.ts`: memory, KV, pin, fallback).
-- `functions/_generated/`: gitignored, from `scripts/build-knowledge.ts`: `pack.json` (the stored knowledge pack, uploaded to KV, never bundled), `fallback.json` (bundled fallback pack), `pack-meta.json` (the bundle's pin) and `safety.json`.
+- `functions/_generated/`: gitignored, from `scripts/build-knowledge.ts`: `pack.json` (the stored knowledge pack, uploaded to KV, never bundled), `fallback.json` (bundled fallback pack) and `pack-meta.json` (the bundle's pin).
 - `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit, /api/stats and /api/guides (source of truth once deployed; no secrets).
 - `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only): daily public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
 - `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
@@ -93,14 +91,14 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `scripts/subset-fonts.sh`: subsets the axis-narrowed page fonts to the used characters and OpenType features (fonttools); `tests/content/fonts.test.ts` checks coverage.
 - `scripts/troika-fonts.ts`, `scripts/troika-glyphs.ts`: subset the in-world fonts (fonttools) to the characters 3D text uses; `tests/content/troika-fonts.test.ts` checks coverage.
 - `scripts/logo-atlas.ts`: draws every L1 wall logo into one quantized, lossless WebP atlas with headless Chromium (`bun run logo:atlas`); `--check` (part of `build`) and `tests/unit/logo-atlas.test.ts` fail when it is stale.
-- `scripts/validate-fragment.ts`: schema + safety check for content files.
+- `scripts/validate-fragment.ts`: schema, forbidden patterns and Title Case check for content files.
 - `scripts/docs-index.ts`: prints the owner decisions log (`docs/decisions/`) and the plans table (each plan's `Status:` line) at read time; nothing it prints is committed.
 - `scripts/brand-marks.ts`: writes the rover brand mark files (public/brand/, src/app/icon.svg, apple-icon.png, favicon.ico) from `src/lib/brand-mark.ts`; the lockup wordmark is outlined by brand-wordmark.py (fonttools).
 - `scripts/title-case.ts`: lists content titles not in Title Case; `--write` fixes site-content.json and the MDX frontmatter.
 - `scripts/pdf-pages.ts`: shared pdftoppm/cwebp helpers for cv-pages.ts and paper-pages.ts.
 - `scripts/cv-pages.ts`: `cv:pages`: renders the CV PDF to page webps + content/generated/cv-pages.json (needs poppler and webp locally).
-- `scripts/paper-pages.ts`: `paper:pages`: checks each paper PDF's text for personal data (PERSONAL_DATA_PATTERNS) and blocklisted names, then renders page webps + content/generated/paper-pages.json.
-- `scripts/study-guides.ts`: `prepare` (safety scan, PDF metadata, object streams, version, cover), `upload` (wrangler R2 put into `hq-study-guides`) and `check` for the study guide PDFs; runbook [../study-guides-runbook.md](../study-guides-runbook.md).
+- `scripts/paper-pages.ts`: `paper:pages`: checks each paper PDF's text for personal data (PERSONAL_DATA_PATTERNS), then renders page webps + content/generated/paper-pages.json.
+- `scripts/study-guides.ts`: `prepare` (phone number check, PDF metadata, object streams, version, cover), `upload` (wrangler R2 put into `hq-study-guides`) and `check` for the study guide PDFs; runbook [../study-guides-runbook.md](../study-guides-runbook.md).
 - `scripts/floor-thumbs.ts`: `floor:thumbs` step 2: converts the "floor thumbnail" captures (e2e/screenshots.spec.ts) into public/floors/*.webp (needs webp).
 
 ### E2E planning and perf reports
@@ -180,7 +178,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `src/content/schema.ts`: zod schemas, types via z.infer (appendix 06 + additions, see [content.md](content.md)).
 - `src/content/locales.ts`: LOCALES, DEFAULT_LOCALE, Locale with no imports: the only place client code reads locale values from.
-- `src/content/live-links.ts`: PUBLIC_LIVE_HOSTS, PUBLIC_LIVE_NAMES, liveUrlProblem, isPublicLiveUrl: the public live link allowlist for Pod.liveUrl (pure).
+- `src/content/live-links.ts`: PUBLIC_LIVE_HOSTS, liveUrlProblem, isPublicLiveUrl: the public live link allowlist for Pod.liveUrl (pure).
 - `src/content/load.ts`: getContent() and typed accessors (getStats() overlays live facts).
 - `src/content/dynamic-facts.ts`: DynamicFactsSchema for content/generated/dynamic-facts.json.
 - `src/content/selectors.ts`: pure sorting and grouping helpers (`orderPods`: site order for projects, gallery first).
@@ -198,7 +196,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/content/guide-views.ts`: guideViews(locale) and guideForCert(certId), server only (reads `getStudyGuides()`).
 - `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
 - `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.
-- `src/content/safety.ts`: blocklist loading and forbidden patterns.
+- `src/content/safety.ts`: forbidden patterns (`FORBIDDEN_PATTERNS`, `leafForbiddenPatterns`), the product allowlist loader (`loadAllowlist`) and the generic export term scanner (`scanBuildOutput`).
 
 ### src/ask/ and src/i18n/
 
@@ -420,7 +418,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ## docs/
 
 - `docs/features.md`: feature reference by floor (controls, floors, Ask, CI, performance, status log); the README links here.
-- `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, study guides, safety lint).
+- `docs/content.md`: content guide (dataset, posts, galleries, certifications, CV, paper PDFs and their redaction steps, study guides, forbidden patterns).
 - `docs/deploy.md`, `docs/ask-runbook.md`, `docs/study-guides-runbook.md`: deploy, Ask the HQ and study guide (R2 upload) runbooks.
 - `docs/decisions.md`: how to add and read owner decisions (static, no table); `docs/decisions/`: one file per decision, `YYYY-MM-DD-slug.md`.
 - `docs/superpowers/`: specs (with a status table) and plans (status only in each plan's `Status:` line).

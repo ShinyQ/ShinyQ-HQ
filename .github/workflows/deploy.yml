@@ -157,8 +157,6 @@ jobs:
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build for the e2e shards (no analytics beacon)
         if: needs.verify.outputs.reuse != 'true'
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run build
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.verify.outputs.reuse != 'true'
@@ -172,16 +170,11 @@ jobs:
           # Public ownership tokens (they ship in the HTML), so repository variables, not secrets (docs/deploy.md section 15).
           GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
           BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: |
           rm -rf out
           bun run build
-      - name: Public-safety scan of the production out/ and private blocklist gate
-        # The artifact that ships (tests P4): fails without the SAFETY_BLOCKLIST secret (S1) unless the
-        # SAFETY_BLOCKLIST_GRACE_UNTIL date has not passed, and on any blocklisted term (S9).
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-          SAFETY_BLOCKLIST_GRACE_UNTIL: ${{ vars.SAFETY_BLOCKLIST_GRACE_UNTIL }}
+      - name: Script policy check of the production out/
+        # The artifact that ships (tests P4).
         run: bun scripts/scan-export.ts out
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -213,8 +206,6 @@ jobs:
           name: site-test
           path: out
       - name: Playwright e2e (shard ${{ matrix.shard }}/8)
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run e2e:shard ${{ matrix.shard }}/8
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -270,9 +261,6 @@ jobs:
           path: out
       - name: Build the Ask the HQ knowledge pack
         if: steps.gate.outputs.enabled == 'true'
-        # functions/_generated/safety.json: the Function's output check needs the private terms too.
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/build-knowledge.ts
       - name: Fast path still open (no deploy-rollback issue)
         id: still
@@ -316,7 +304,7 @@ jobs:
         id: office_deploy
         if: steps.office.outputs.enabled == 'true'
         # A failed Worker deploy must not stop the site upload while the Worker already exists; the check after the
-        # smoke check turns the job red. Uses functions/_generated/safety.json from the knowledge pack step.
+        # smoke check turns the job red.
         continue-on-error: true
         working-directory: workers/office
         # The deploy token and the Worker secrets only in this step (S4, H1); a missing secret is skipped, so the

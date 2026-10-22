@@ -42,7 +42,6 @@ jobs:
         env:
           CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/content-gap.ts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}

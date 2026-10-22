@@ -112,14 +112,9 @@ curl -s -D - -o /dev/null -H 'Accept-Encoding: br, gzip' "$SITE/api/guides/<slug
 
 ## Safety scan
 
-`prepare` refuses a PDF whose text (`pdftotext -layout`) contains a term from the public-safety blocklist (the
-committed default list plus `content/.safety-blocklist.local.txt` or `SAFETY_BLOCKLIST`, minus the allowlist; the
-same `loadBlocklist` the content tests use) or an Indonesian phone number. Run it with the private list present.
-
-Textbook examples that trip the blocklist but carry no owner data are listed in `BENIGN_PHRASES` in
-`scripts/study-guides.ts` and are removed from the text before the scan. Add a phrase there only after reading it
-in context, quote it exactly (as short as it can be and still unique) and note the review date in the comment;
-never add a bare blocklist term.
+`prepare` refuses a PDF whose text (`pdftotext -layout`) contains an Indonesian phone number. There is no term
+blocklist (owner decision 2026-10-22), so read the guide yourself before preparing it: no client company names (C3),
+private repository or cloud resource names, or other private data.
 
 ## Why object streams, not linearization
 

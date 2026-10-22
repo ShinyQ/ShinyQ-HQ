@@ -388,17 +388,6 @@
           "required": true
         },
         {
-          "id": "public-safety",
-          "title": { "en": "Public-Safety Scan", "id": "Pemindaian Keamanan Publik" },
-          "text": {
-            "en": "Scans every text file of the built export against the private blocklist.",
-            "id": "Memindai setiap file teks hasil build terhadap blocklist privat."
-          },
-          "budget": { "en": "Zero blocklisted terms in the export", "id": "Nol istilah dalam blocklist pada hasil export" },
-          "jobs": ["Build static export"],
-          "required": true
-        },
-        {
           "id": "csp",
           "title": { "en": "Per-Page CSP Hashes", "id": "Hash CSP untuk Setiap Halaman" },
           "text": {

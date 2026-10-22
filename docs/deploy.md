@@ -123,7 +123,7 @@ The site is then served at `https://<name>.pages.dev`. Set `SITE_URL` to that UR
 
 ## 3. GitHub secrets
 
-The Cloudflare secrets belong to the `production` environment (Settings > Environments > production), whose deployment branch policy allows `main` only (security S3, owner decision 4). Jobs that read them declare `environment: production` (`deploy.yml`, the eval, content-gap and token-check jobs; with `deployment: false` where nothing is deployed), so no pull request or other branch can read the deploy token. `SAFETY_BLOCKLIST` stays a repository secret because pull request and `main` CI runs read it. Secrets are passed only to the steps that read them (H1).
+The Cloudflare secrets belong to the `production` environment (Settings > Environments > production), whose deployment branch policy allows `main` only (security S3, owner decision 4). Jobs that read them declare `environment: production` (`deploy.yml`, the eval, content-gap and token-check jobs; with `deployment: false` where nothing is deployed), so no pull request or other branch can read the deploy token. Secrets are passed only to the steps that read them (H1). No workflow reads a `SAFETY_BLOCKLIST` secret any more (owner decision 2026-10-22); if one is still set, delete it with `gh secret delete SAFETY_BLOCKLIST -R ShinyQ/ShinyQ-HQ`.
 
 ```sh
 # Environment secrets (main only)
@@ -132,8 +132,6 @@ gh secret set CLOUDFLARE_ACCOUNT_ID --env production --repo ShinyQ/ShinyQ-HQ   #
 gh secret set CF_EVAL_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # docs/ask-runbook.md section 8
 gh secret set CF_STATS_TOKEN        --env production --repo ShinyQ/ShinyQ-HQ   # section 13, Account Analytics Read only
 gh secret set CF_LOGS_TOKEN         --env production --repo ShinyQ/ShinyQ-HQ   # optional, log purge
-# Repository secret
-gh secret set SAFETY_BLOCKLIST --repo ShinyQ/ShinyQ-HQ < content/.safety-blocklist.local.txt   # required on main and for deploys
 ```
 
 Moving from repository secrets: set each one in the environment first (an environment secret wins over a repository secret of the same name for jobs in that environment), run `gh workflow run deploy.yml --ref main` and `gh workflow run stats-worker.yml --ref main`, then delete the repository copies (`gh secret delete CLOUDFLARE_API_TOKEN --repo ShinyQ/ShinyQ-HQ`, and the same for `CLOUDFLARE_ACCOUNT_ID`, `CF_EVAL_TOKEN`, `CF_LOGS_TOKEN`). Secret values cannot be read back, so paste them from the password manager or create new tokens.
@@ -144,7 +142,6 @@ Moving from repository secrets: set each one in the environment first (an enviro
 | `CF_EVAL_TOKEN` | Yes, for evals | Workers AI Read, AI Gateway Read, Account Analytics Read: Ask evals and the content-gap report; also the hq-stats Worker's `WA_TOKEN` until `CF_STATS_TOKEN` exists |
 | `CF_STATS_TOKEN` | Recommended | Account Analytics Read only, 90-day expiry (owner decision 4): the hq-stats Worker's runtime secret `WA_TOKEN` and the analytics token check (section 13) |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes, for any deploy | Cloudflare account that owns the projects |
-| `SAFETY_BLOCKLIST` | Yes, on main and for deploys | Private public-safety blocklist terms (private repo and cloud resource names) used by the content tests, `scripts/scan-export.ts` (CI build and production build) and the e2e scan of `out/`; product names in `content/safety-allowlist.txt` are dropped from it. Without it, the scan step fails on `main` and in `deploy.yml` (after `SAFETY_BLOCKLIST_GRACE_UNTIL`) and warns on pull requests. Output never prints a private term (`private term #n`). |
 
 ## 4. GitHub repository variables
 
@@ -167,10 +164,11 @@ gh variable set CF_PREVIEWS --body true                        # optional: turn 
 | `CF_BEACON_TOKEN` | Optional | Cloudflare Web Analytics site token (`NEXT_PUBLIC_CF_BEACON_TOKEN`), read only by `deploy.yml` production builds. When empty, no beacon is rendered. |
 | `AUTO_DEPLOY_FACTS` | Optional | `false` stops `refresh-facts.yml` from dispatching `deploy.yml` after it merges a facts PR. |
 | `CF_PREVIEWS` | Optional | `true` turns on the PR preview job in `ci.yml` (off by default). |
-| `SAFETY_BLOCKLIST_GRACE_UNTIL` | Temporary | `YYYY-MM-DD`: until this day (UTC) a missing `SAFETY_BLOCKLIST` only warns on `main` and in `deploy.yml`; afterwards it fails. Set on 2026-10-14 to `2026-10-21` while the owner adds the secret; delete it once the secret is set (`gh variable delete SAFETY_BLOCKLIST_GRACE_UNTIL`). |
 | `GOOGLE_SITE_VERIFICATION` | Optional | Google Search Console HTML tag token (the `content` value of `google-site-verification`), rendered on `/`, `/en` and `/id` by production builds. Section 15. |
 | `BING_SITE_VERIFICATION` | Optional | Bing Webmaster Tools `msvalidate.01` token, rendered the same way. Section 15. |
 | `STATS_WORKER_DEPLOY` | Optional | `false` skips the hq-stats Worker job in `deploy.yml` (for example while the deploy token lacks Workers permissions and the Worker was deployed by hand). |
+
+No workflow reads a `SAFETY_BLOCKLIST_GRACE_UNTIL` variable any more; if it is still set, delete it with `gh variable delete SAFETY_BLOCKLIST_GRACE_UNTIL -R ShinyQ/ShinyQ-HQ`.
 
 Web Analytics token: `cf rum site-info create --host <host> --auto-install=false` (how the `kurniadi.pages.dev` site was created; the token is public, it ships in every page), or Cloudflare dashboard > Analytics & Logs > Web Analytics > Add a site, choose the manual JS snippet, and copy the `token` value from the snippet. Alternatively enable automatic Web Analytics on the Pages project (Pages project > Metrics) and leave `CF_BEACON_TOKEN` unset. Use one or the other, not both, or every visit is counted twice.
 
@@ -436,8 +434,9 @@ A major that cannot pass is pinned: its Dependabot PR is closed with the reason,
   `deploy-failed` issue). A commit without `workers/office/` (a manual redeploy of an older one) or
   `OFFICE_WORKER_DEPLOY = "false"` skips the Worker steps with a notice.
 - `rollback.yml` rolls it back with Pages: when the Worker's sources (`workers/office`, `src/lib/office`,
-  `src/content/safety-match.ts`, `functions/_lib/security.ts`) differ between the rollback target and the live
-  commit, it rebuilds the safety list and redeploys the Worker from the target (its secrets persist). A target
+  `functions/_lib/security.ts`) differ between the rollback target and the live commit, it runs
+  `bun scripts/build-knowledge.ts` in the target (a target from before 2026-10-22 bundles
+  `functions/_generated/safety.json`) and redeploys the Worker from the target (its secrets persist). A target
   without `workers/office` leaves the Worker at the live version; `OFFICE_WORKER_DEPLOY = "false"` skips it. A Worker
   rolled back to before snapshot v2 rejects beats with `helpers` and answers v1 to `?v=2`; one rolled back to before
   v3 answers v1 to `?v=3` (read as v3) and keeps reading the stored document: back-row seats are stored apart from

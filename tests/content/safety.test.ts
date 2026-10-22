@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { EM_DASH, collectStrings, findBlockedLabels, findForbiddenPatterns, leafForbiddenPatterns, loadBlocklist } from "@/content/safety";
+import { EM_DASH, collectStrings, findForbiddenPatterns, leafForbiddenPatterns } from "@/content/safety";
 
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(path.join(root, ...p), "utf8");
@@ -15,71 +15,63 @@ const blogFiles = readdirSync(path.join(root, "content", "blog")).filter((f) => 
 const messageFiles = readdirSync(path.join(root, "messages")).filter((f) => f.endsWith(".json"));
 
 describe("public-safety lint", () => {
-  const terms = loadBlocklist();
-
-  it("loads a blocklist", () => {
-    expect(terms.length).toBeGreaterThan(0);
-  });
-
-  it("finds no blocklisted term or forbidden pattern in site-content.json", () => {
+  it("finds no forbidden pattern in site-content.json", () => {
     const hits = collectStrings(content).flatMap((leaf) => {
-      const found = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+      const found = leafForbiddenPatterns(leaf);
       return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
 
-  it("finds no blocklisted term or forbidden pattern in content/perspectives.json (drafts included: the repo is public)", () => {
+  it("finds no forbidden pattern in content/perspectives.json (drafts included: the repo is public)", () => {
     const hits = collectStrings(perspectives).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      const found = findForbiddenPatterns(value);
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
 
-  it("finds no blocklisted term or forbidden pattern in content/ask/site-build.json (Ask knowledge only)", () => {
+  it("finds no forbidden pattern in content/ask/site-build.json (Ask knowledge only)", () => {
     const hits = collectStrings(siteBuild).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      const found = findForbiddenPatterns(value);
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
 
-  it("finds no blocklisted term or forbidden pattern in content/blog/diagrams.json (post architecture diagrams)", () => {
+  it("finds no forbidden pattern in content/blog/diagrams.json (post architecture diagrams)", () => {
     const hits = collectStrings(postDiagrams).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      const found = findForbiddenPatterns(value);
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
 
-  it("finds no blocklisted term or forbidden pattern in content/build-story.json (the public build story)", () => {
+  it("finds no forbidden pattern in content/build-story.json (the public build story)", () => {
     const hits = collectStrings(buildStory).flatMap(({ path: at, value }) => {
-      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      const found = findForbiddenPatterns(value);
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);
   });
 
-  it("finds no blocklisted term or forbidden pattern in content/study-guides.json (the study guide shelf and reader)", () => {
+  it("finds no forbidden pattern in content/study-guides.json (the study guide shelf and reader)", () => {
     const hits = collectStrings(studyGuides, "study-guides").flatMap((leaf) => {
-      const found = [...findBlockedLabels(leaf.value, terms), ...leafForbiddenPatterns(leaf)];
+      const found = leafForbiddenPatterns(leaf);
       return found.length ? [`${leaf.path}: ${found.join(", ")}`] : [];
     });
     expect(collectStrings(studyGuides).length).toBeGreaterThan(20);
     expect(hits).toEqual([]);
   });
 
-  it.each(blogFiles)("finds no blocklisted term or em dash in content/blog/%s", (file) => {
-    const text = read("content", "blog", file);
-    expect(findBlockedLabels(text, terms)).toEqual([]);
-    expect(text.includes(EM_DASH)).toBe(false);
+  it.each(blogFiles)("finds no em dash in content/blog/%s", (file) => {
+    expect(read("content", "blog", file).includes(EM_DASH)).toBe(false);
   });
 
-  it.each(messageFiles)("finds no blocklisted term or forbidden pattern in messages/%s", (file) => {
+  it.each(messageFiles)("finds no forbidden pattern in messages/%s", (file) => {
     const strings = collectStrings(JSON.parse(read("messages", file)));
     const hits = strings.flatMap(({ path: at, value }) => {
-      const found = [...findBlockedLabels(value, terms), ...findForbiddenPatterns(value)];
+      const found = findForbiddenPatterns(value);
       return found.length ? [`${at}: ${found.join(", ")}`] : [];
     });
     expect(hits).toEqual([]);

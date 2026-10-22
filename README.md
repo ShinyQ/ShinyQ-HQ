@@ -211,14 +211,14 @@ Section anchors, filters and deep links per route: [docs/features.md](docs/featu
 ## Project structure
 
 ```text
-content/         dataset, blog MDX, Ask suggestions, perspectives, blocklists, generated facts
+content/         dataset, blog MDX, Ask suggestions, perspectives, product allowlist, generated facts
 messages/        UI strings (en, id)
 functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}
 workers/stats/   hq-stats Cron Worker: public visit stats rollup every 2 hours into KV
 src/
   app/           routes ([locale] pages, "/" redirect, OG cards, 404)
   components/    Classic site UI, modals, CV and paper viewers
-  content/       schema, accessors, selectors, room views, safety lint
+  content/       schema, accessors, selectors, room views, forbidden patterns lint
   experience/    3D tower: scene, floors, rover, camera, input, nav, missions
   hud/           HTML HUD over the canvas: drawer, dialog, Ask dock, pickers
   ask/           Ask client, protocol, knowledge pack
@@ -236,7 +236,7 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 - **Locally**: `bun run verify:quick` then `bun run e2e:changed` before every push (about 5 minutes). Add `bun run e2e:perf` when touching the render path.
 - **CI** (`ci.yml`): check and build in parallel; on a PR, smart CI runs only the Playwright specs, 3D perf tests and Lighthouse URLs the changed paths affect; `main` runs the complement of the merged PR's green run, the nightly everything (8 e2e and 4 perf shards). `main` accepts changes only through PRs with green checks.
 - **Scheduled**: a full CI run, Ask evals against the real models, the game-first timeline trend and screenshots nightly; live facts and content-gap reports weekly; an hourly uptime check that keeps one `uptime` issue open while production fails.
-- **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export scan, the deploy smoke check and e2e; gitleaks, a public-safety lint over the export and SHA-pinned actions.
+- **Security**: every HTML page carries its own script policy with the sha256 of each inline script (no `'unsafe-inline'`), checked by the build, the export script policy check, the deploy smoke check and e2e; gitleaks, a forbidden patterns lint over the content and SHA-pinned actions.
 
 | Gate | Budget |
 |---|---|
@@ -263,7 +263,7 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 | Doc | What it covers |
 |---|---|
 | [`docs/features.md`](docs/features.md) | Every feature floor by floor, controls, Ask the HQ, CI, performance, status log |
-| [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, build story, public-safety lint |
+| [`docs/content.md`](docs/content.md) | Dataset, posts, galleries, certifications, CV and paper PDFs, build story, public safety |
 | [`AGENTS.md`](AGENTS.md) | Repo conventions for contributors and agents: hard rules, workflow, key commands, budgets, index of the detail docs |
 | [`docs/agents/`](docs/agents/) | Detail rules by area: 3D experience, floors, HUD and drawer, content, styling, Ask, stats, performance, CI |
 | [`docs/decisions.md`](docs/decisions.md) | Dated log of owner decisions |

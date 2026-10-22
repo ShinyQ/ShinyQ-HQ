@@ -49,7 +49,7 @@ function setup(now = () => T0) {
     GITHUB_WEBHOOK_SECRET: HOOK,
     OFFICE_REPO_ALLOWLIST: "ShinyQ/*",
   };
-  const worker = createOfficeWorker({ blocklist: ["acme bank"], now });
+  const worker = createOfficeWorker({ now });
   const call = (path: string, init?: RequestInit) => worker.fetch(new Request(`https://hq-office${path}`, init), env);
   return { map, writes, env, call };
 }
@@ -112,14 +112,14 @@ describe("hq-office Worker", () => {
     expect((await snapshot(call)).desks[0]).toMatchObject({ repo: "ShinyQ/ShinyQ-HQ", title: "X" });
   });
 
-  it("drops private repositories and redacts blocked titles", async () => {
+  it("drops private repositories and replaces empty titles", async () => {
     const { call } = setup();
     expect((await call("/github", await signedHook("ping", { repository: { ...repository, private: true } }))).status).toBe(204);
     const pr = {
       action: "opened",
       repository,
       sender: { login: "ShinyQ" },
-      pull_request: { number: 3, merged: false, title: "Acme Bank login", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/3", head: { ref: "fix/z", repo: { full_name: "ShinyQ/ShinyQ-HQ" } } },
+      pull_request: { number: 3, merged: false, title: " <> ", html_url: "https://github.com/ShinyQ/ShinyQ-HQ/pull/3", head: { ref: "fix/z", repo: { full_name: "ShinyQ/ShinyQ-HQ" } } },
     };
     await call("/github", await signedHook("pull_request", pr, "d-2"));
     expect((await snapshot(call)).github).toMatchObject([{ kind: "pr", title: "#3 Pull request #3" }]);
@@ -185,7 +185,7 @@ describe("hq-office Worker", () => {
     const env: OfficeWorkerEnv = {
       OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json({})) }) },
     };
-    const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
+    const worker = createOfficeWorker({ now: () => T0 });
     for (const query of ["", "?v=2", "?v=3", "?v=4", "?v=5", "?v=4x", "?v=3x", "?v=2&x=<script>", "?v=3&x=<script>", "?v=4&x=<script>", "?junk=1"]) await worker.fetch(new Request(`https://hq-office/snapshot${query}`), env);
     expect(seen).toEqual([
       "https://office/snapshot",
@@ -419,7 +419,7 @@ describe("hq-office Worker history route", () => {
     const env: OfficeWorkerEnv = {
       OFFICE_DO: { idFromName: () => "office", get: () => ({ fetch: async (input: string) => (seen.push(input), Response.json(input.includes("?day=") ? { ...historyDay(emptyLog(DAY), emptyDoc(T0)) } : { v: 1, days: [] })) }) },
     };
-    const worker = createOfficeWorker({ blocklist: [], now: () => T0 });
+    const worker = createOfficeWorker({ now: () => T0 });
     const get = (q: string, init?: RequestInit) => worker.fetch(new Request(`https://hq-office/history${q}`, init), env);
     expect((await get("")).status).toBe(200);
     expect((await get(`?day=${DAY}`)).status).toBe(200);
@@ -436,16 +436,16 @@ describe("hq-office Worker history route", () => {
     expect(seen).toEqual(["https://office/history", `https://office/history?day=${DAY}`]);
   });
 
-  it("cleans a day again (blocklist, allowlist) and passes a Durable Object 404 through with no-store", async () => {
+  it("cleans a day again (allowlist, titles) and passes a Durable Object 404 through with no-store", async () => {
     const { map, call } = setup();
     map.set("doc", { ...emptyDoc(T0), publicRepos: ["ShinyQ/ShinyQ-HQ", "Other/repo"] });
     map.set(logKey(DAY), {
       ...emptyLog(DAY),
       keys: ["a".repeat(64), "b".repeat(64), "c".repeat(64)],
       agents: ["copilot", "codex", "claude"],
-      tasks: { 0: { repo: "ShinyQ/ShinyQ-HQ", title: "Fix Acme Bank Login" }, 1: { repo: "Other/repo", title: "Hidden Work" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } },
+      tasks: { 0: { repo: "ShinyQ/ShinyQ-HQ", title: " <> " }, 1: { repo: "Other/repo", title: "Hidden Work" }, 2: { repo: "ShinyQ/ShinyQ-HQ", title: "Ship The Lobby" } },
       events: [[0, 0, 0, 0, 0, 60, 0], [0, 1, 1, 0, 0, 60, 0], [0, 2, 2, 0, 0, 60, 0]],
-      prs: [[30, 0, "ShinyQ/ShinyQ-HQ", 3, "Acme Bank Report"], [31, 1, "Other/repo", 4, "Hidden Merge"], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]],
+      prs: [[30, 0, "ShinyQ/ShinyQ-HQ", 3, "<>"], [31, 1, "Other/repo", 4, "Hidden Merge"], [32, 2, "ShinyQ/ShinyQ-HQ", 5, "Lobby Tiles"]],
     } satisfies DayLog);
     const res = await call(`/history?day=${DAY}`);
     expect(res.status).toBe(200);

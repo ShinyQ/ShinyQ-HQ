@@ -8,7 +8,6 @@ import { buildPaperPreview } from "@/content/papers";
 import { PAPER_FILES, paperPages, paperPdfPath } from "@/lib/papers";
 import manifest from "../../content/generated/paper-pages.json";
 import { paperTextProblems, pdfToText } from "../../scripts/paper-pages";
-import { loadBlocklist } from "@/content/safety";
 
 const root = process.cwd();
 const dir = path.join(root, "public", "papers");
@@ -17,11 +16,11 @@ const files = withDocs.map((p) => p.document!.file);
 
 describe("paperTextProblems", () => {
   it("flags personal data labels and numbers, never the paper text", () => {
-    expect(paperTextProblems("NIM : 1234567890", [])).toEqual(["student ID (NIM)"]);
-    expect(paperTextProblems("NIP: 12345678", [])).toEqual(["staff ID (NIP)"]);
-    expect(paperTextProblems("Jl. Contoh No. 1 RT/RW 001/002", [])).toEqual(["home address (RT/RW, Kel/Des)"]);
-    expect(paperTextProblems("call 0812-3456-7890", [])).toEqual(["phone number"]);
-    expect(paperTextProblems("Sentiment analysis with IndoBERT, 7500 tweets, doi 10.1109/x.2021.9689712", [])).toEqual([]);
+    expect(paperTextProblems("NIM : 1234567890")).toEqual(["student ID (NIM)"]);
+    expect(paperTextProblems("NIP: 12345678")).toEqual(["staff ID (NIP)"]);
+    expect(paperTextProblems("Jl. Contoh No. 1 RT/RW 001/002")).toEqual(["home address (RT/RW, Kel/Des)"]);
+    expect(paperTextProblems("call 0812-3456-7890")).toEqual(["phone number"]);
+    expect(paperTextProblems("Sentiment analysis with IndoBERT, 7500 tweets, doi 10.1109/x.2021.9689712")).toEqual([]);
   });
 });
 
@@ -71,8 +70,8 @@ describe("paper PDFs (public/papers, read in the paper reader)", () => {
 
   // CI has no poppler; `bun run paper:pages` runs the same check locally before it renders a PDF.
   const hasPdftotext = !spawnSync("pdftotext", ["-v"]).error;
-  it.skipIf(!hasPdftotext)("carry no extractable personal data or blocklisted names (redacted pages are images)", () => {
-    for (const file of files) expect(paperTextProblems(pdfToText(path.join(dir, `${file}.pdf`)), loadBlocklist()), file).toEqual([]);
+  it.skipIf(!hasPdftotext)("carry no extractable personal data (redacted pages are images)", () => {
+    for (const file of files) expect(paperTextProblems(pdfToText(path.join(dir, `${file}.pdf`))), file).toEqual([]);
   });
 
   it("reach the paper preview with the page count, version and notice", () => {

@@ -69,8 +69,8 @@ file before writing anything: a file they cannot parse aborts the command with e
   and time per session live in `~/.office-relay/sessions/<hash>.tool.json`. Claude Code and Codex fire their
   `PermissionRequest` only when they are about to ask, so it stays "Needs Kurniadi".
 - Repository and branch from the `.git` files of the working directory (worktrees included; git is never run). A
-  branch that does not match `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title; the server also drops
-  branch names that hold a blocklisted term.
+  branch that does not match `^[A-Za-z0-9._/-]{1,120}$` is sent without branch and title; the server keeps
+  repository, branch and title only for repositories in `OFFICE_REPO_ALLOWLIST`.
 - The session id is an HMAC with a local salt (`~/.office-relay/salt`).
 - Helpers: the count of active sub-agents of a session, 0 to 9 (`helpers`; see below). Nothing else about a helper
   leaves the machine.

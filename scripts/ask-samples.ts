@@ -11,7 +11,6 @@
  */
 import { writeFileSync } from "node:fs";
 import { buildRepoPack } from "@/ask/repo-pack";
-import { redactBlockedText } from "@/content/safety";
 import { groqClient, GROQ_DIRECT_URL } from "../functions/_lib/groq";
 import { packVocabulary, runPipeline } from "../functions/_lib/pipeline";
 import { scrubPII } from "../functions/_lib/pii";
@@ -63,7 +62,7 @@ async function main() {
   const models = groqModel ? { primary: groqModel } : undefined;
   const label = groqModel ? `Groq ${groqModel}` : "Workers AI (primary Gemma 4, Mistral fallback)";
 
-  const { pack, safety, errors } = buildRepoPack();
+  const { pack, errors } = buildRepoPack();
   if (errors.length) throw new Error(`Knowledge pack failed its checks: ${errors.join("; ")}`);
   const vocabulary = packVocabulary(pack);
   const rows: string[] = [];
@@ -75,7 +74,6 @@ async function main() {
       locale: detectLocale(question, sample.lang),
       pack,
       vocabulary,
-      safety,
       client,
       timeouts: groqModel ? { firstTokenMs: 15_000, totalMs: 15_000 } : { firstTokenMs: 60_000, totalMs: 60_000 },
       deadlineMs: Number.POSITIVE_INFINITY,
@@ -94,12 +92,12 @@ async function main() {
     if (result.reason === "model_failed") failed++;
     const answeredBy = result.calledModel ? (result.model ?? result.source) : "no model call (fixed reply)";
     const meta = [`${result.outcome}`, result.reason ? `reason ${result.reason}` : "", result.cite ? `cite ${result.cite}` : ""].filter(Boolean).join(", ");
-    rows.push(`| ${i + 1} | ${sample.kind} | ${sample.lang.toUpperCase()} | ${cell(sample.q)} | ${cell(redactBlockedText(result.text, safety.blocklist))} | ${cell(answeredBy)} | ${cell(meta)} |`);
+    rows.push(`| ${i + 1} | ${sample.kind} | ${sample.lang.toUpperCase()} | ${cell(sample.q)} | ${cell(result.text)} | ${cell(answeredBy)} | ${cell(meta)} |`);
     // The failure trail names the model and the reason only (never a key or a response body).
     const trail = result.failures.map((f) => `${f.model}: ${f.reason}`).join(" > ");
     console.log(`${i + 1}. [${sample.lang}] ${sample.kind}: ${result.outcome}${result.reason ? ` (${result.reason})` : ""} by ${answeredBy}${trail ? ` [${trail}]` : ""}`);
-    // When a check replaced the model's text, show what it was (blocklisted terms redacted) for the review.
-    if (result.reason && result.raw) console.log(`   replaced raw: ${redactBlockedText(result.raw, safety.blocklist).replace(/\s+/g, " ").slice(0, 400)}`);
+    // When a check replaced the model's text, show what it was for the review.
+    if (result.reason && result.raw) console.log(`   replaced raw: ${result.raw.replace(/\s+/g, " ").slice(0, 400)}`);
   }
   const report = [
     `# Ask the HQ samples: ${label}`,

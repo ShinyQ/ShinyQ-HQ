@@ -9,8 +9,8 @@ import type { StoredPack } from "../../functions/_lib/types";
  * hydrating its index, against tokenizing the text pack as every isolate did before the KV move. Each iteration
  * parses a fresh copy, so the WeakMap cache in `hydratePack` never short-circuits.
  */
-const { pack, safety } = buildRepoPack();
-const { json } = buildPackArtifacts(pack, safety.blocklist);
+const { pack } = buildRepoPack();
+const { json } = buildPackArtifacts(pack);
 const text = JSON.stringify(pack);
 
 test(`ask pack: cold load of the ${(json.length / 1024).toFixed(0)} KB stored value`, async ({ bench }) => {

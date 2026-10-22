@@ -15,7 +15,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { findBlockedLabels, loadBlocklist } from "../src/content/safety";
 import { WEBP_LOSSLESS, WEBP_LOSSY, pngSize, renderPng, run, sha256, toWebp } from "./pdf-pages";
 
 export const PAPER_PAGE_WIDTH = 1400;
@@ -32,9 +31,9 @@ export const PERSONAL_DATA_PATTERNS: { name: string; pattern: RegExp }[] = [
   { name: "phone number", pattern: /(?:\+62|\b0)8\d{2}[\s-]?\d{3,4}[\s-]?\d{3,5}\b/ },
 ];
 
-/** Problems in the extractable text of a paper PDF: personal data patterns and blocklisted names. */
-export function paperTextProblems(text: string, terms: readonly string[]): string[] {
-  return [...PERSONAL_DATA_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ name }) => name), ...findBlockedLabels(text, terms)];
+/** Problems in the extractable text of a paper PDF: the personal data patterns it matches. */
+export function paperTextProblems(text: string): string[] {
+  return PERSONAL_DATA_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ name }) => name);
 }
 
 /** Text layer of a PDF via poppler's `pdftotext`. */
@@ -68,7 +67,7 @@ function main() {
 
   for (const file of files) {
     const pdf = path.join(dir, `${file}.pdf`);
-    const problems = paperTextProblems(pdfToText(pdf), loadBlocklist());
+    const problems = paperTextProblems(pdfToText(pdf));
     if (problems.length) throw new Error(`${file}.pdf: ${problems.join(", ")}. Redact these pages (docs/content.md "Paper PDFs") before hosting the PDF.`);
     const outDir = path.join(dir, file);
     rmSync(outDir, { recursive: true, force: true });

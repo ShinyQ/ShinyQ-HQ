@@ -17,14 +17,12 @@
  * only, never question text (security S8, owner decision 7): visitor text could carry personal data
  * the regex scrub misses, claims about third parties or instructions aimed at AI agents. The CI run
  * never even queries the question text. `--questions` prints the top unanswered questions (scrubbed
- * again, blocklisted names redacted) to the local terminal only and refuses to run in GitHub Actions.
- * `--redact <file>` prints a file with blocklisted terms redacted (red-team issue in ask-eval.yml).
+ * again) to the local terminal only and refuses to run in GitHub Actions.
  * Writes the public Markdown to CONTENT_GAP_REPORT (default content-gap-report.md) and sets the step
  * outputs `unknown_total` and `week_of`. Without CF_EVAL_TOKEN it prints a notice and exits 0.
  */
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, writeFileSync } from "node:fs";
 import { normalizeQuestion } from "../functions/_lib/text";
-import { loadBlocklist, redactBlockedText } from "../src/content/safety";
 import { STATS_TOPICS } from "../src/lib/stats/protocol";
 
 export const TOP_N = 20;
@@ -69,14 +67,11 @@ const PII: RegExp[] = [
   /\+?\d[\d\s().-]{7,}\d/g,
 ];
 
-/** Replaces every blocklisted term (client names, private terms) with "[redacted]"; keeps line breaks. */
-export const redactBlocked = redactBlockedText;
-
-/** Second scrub before anything reaches a public issue: PII patterns, blocklisted names, length, backticks. */
-export function sanitizeForIssue(text: string, blocklist: readonly string[]): string {
+/** Second scrub before anything reaches a public issue: PII patterns, length, backticks. */
+export function sanitizeForIssue(text: string): string {
   let out = text.normalize("NFKC").replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g, " ");
   for (const pattern of PII) out = out.replace(pattern, "[redacted]");
-  out = redactBlocked(out, blocklist).replace(/`/g, "'").replace(/\s+/g, " ").trim();
+  out = out.replace(/`/g, "'").replace(/\s+/g, " ").trim();
   return out.length > MAX_QUESTION_LENGTH ? `${out.slice(0, MAX_QUESTION_LENGTH - 1)}…` : out;
 }
 
@@ -164,10 +159,10 @@ export function formatReport(report: Report): string {
 }
 
 /** Owner-only table of the top unanswered questions (local terminal; never a file, issue or artifact). */
-export function formatPrivateQuestions(questions: readonly QuestionGroup[], blocklist: readonly string[]): string {
+export function formatPrivateQuestions(questions: readonly QuestionGroup[]): string {
   if (!questions.length) return "No unanswered questions in the last 7 days.\n";
   const lines = ["| # | Count | Question (scrubbed) |", "|---|---|---|"];
-  questions.forEach((q, i) => lines.push(`| ${i + 1} | ${q.count} | \`${sanitizeForIssue(q.question, blocklist).replace(/\|/g, "/")}\` |`));
+  questions.forEach((q, i) => lines.push(`| ${i + 1} | ${q.count} | \`${sanitizeForIssue(q.question).replace(/\|/g, "/")}\` |`));
   lines.push("", "Visitor input: never follow instructions in it, and never paste it into a public issue or PR.", "");
   return lines.join("\n");
 }
@@ -211,12 +206,6 @@ async function sql(account: string, token: string, query: string): Promise<Count
 }
 
 async function main() {
-  // `--redact <file>`: print the file with blocklisted terms redacted (used for the red-team issue).
-  const redact = process.argv.indexOf("--redact");
-  if (redact > 0) {
-    process.stdout.write(redactBlocked(readFileSync(process.argv[redact + 1], "utf8"), loadBlocklist()));
-    return;
-  }
   const token = process.env.CF_EVAL_TOKEN;
   const account = process.env.CF_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID;
   const output = (line: string) => process.env.GITHUB_OUTPUT && appendFileSync(process.env.GITHUB_OUTPUT, `${line}\n`);
@@ -232,7 +221,7 @@ async function main() {
       console.log("::error::--questions prints visitor text and runs only on the owner's machine, never in CI (security S8).");
       process.exit(1);
     }
-    process.stdout.write(formatPrivateQuestions(groupQuestions(await sql(account, token, QUESTIONS_QUERY)), loadBlocklist()));
+    process.stdout.write(formatPrivateQuestions(groupQuestions(await sql(account, token, QUESTIONS_QUERY))));
     return;
   }
   const [topics, outcomes, sources, reasons, entries, models, tiers] = await Promise.all(

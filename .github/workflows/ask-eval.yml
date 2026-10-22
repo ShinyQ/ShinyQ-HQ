@@ -77,7 +77,6 @@ jobs:
         env:
           CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID || secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts smoke
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
@@ -117,7 +116,6 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts golden --groq "$EVAL_GROQ_EVAL" --slice day/3
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
@@ -160,7 +158,6 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts suggestions --groq "$EVAL_GROQ_EVAL" --slice day/14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
@@ -207,14 +204,12 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts redteam --groq "$EVAL_GROQ_STRESS"
       - name: Red-team set, one fourth (eval model)
         id: redteam_eval
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           ASK_EVAL_REPORT: ask-eval-redteam-eval.md
         run: bun scripts/ask-eval.ts redteam --groq "$EVAL_GROQ_EVAL" --slice day/4
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -227,12 +222,10 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
       - name: Open or update the red-team issue
-        # The issue is public: blocklisted terms (client names) are redacted from the report first.
         if: failure() && (steps.redteam.outcome == 'failure' || steps.redteam_eval.outcome == 'failure')
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           gh label create ask-redteam --repo "$REPO" --color B60205 --description "Ask the HQ nightly red-team failure" 2>/dev/null || true
@@ -243,7 +236,7 @@ jobs:
             echo ""
             for report in ask-eval-redteam.md ask-eval-redteam-eval.md; do
               if [ -f "$report" ]; then
-                bun scripts/content-gap.ts --redact "$report" | head -c 30000
+                head -c 30000 "$report"
                 echo ""
               fi
             done
@@ -285,7 +278,6 @@ jobs:
         if: steps.gate.outputs.enabled == 'true'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/ask-eval.ts fidelity --groq "$EVAL_GROQ_BACKUP"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.gate.outputs.enabled == 'true' }}
