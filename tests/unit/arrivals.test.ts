@@ -91,7 +91,7 @@ const rigOf = (floor: FloorId): "follow" | "rail" => (floor === "L2" ? "rail" : 
  * The B1 phone arrival's sight (owner 2026-10-18: whole station signs on a portrait screen): the four corners of the
  * first two station signs (the Blueprint and the Build Timeline), each turned square to the camera like `FloatingSigns`.
  */
-const engineSignsShown = engineSigns(buildEngineLayout(), data.engine, { title: "", subtitle: "", soon: "" }).slice(0, 2);
+const engineSignsShown = engineSigns(buildEngineLayout(), data.engine, { title: "", subtitle: "" }).slice(0, 2);
 function signCornersFrom(camera: Vec3): { label: string; at: Vec3 }[] {
   return engineSignsShown.flatMap((sign) => {
     const { w, h } = signPlate(sign);

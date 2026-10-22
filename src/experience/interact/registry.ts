@@ -440,7 +440,7 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
   switch (floor) {
     case "B1": {
       const engine = buildEngineLayout();
-      const rooms = new Map<RoomId, Footprint>(engine.bays.flatMap((b): [RoomId, Footprint][] => (b.room ? [[b.room, { rect: bare(b.rect), height: ENGINE.bay.h }]] : [])));
+      const rooms = new Map<RoomId, Footprint>(engine.bays.map((b) => [b.room, { rect: bare(b.rect), height: ENGINE.bay.h }]));
       return [...pads, ...doorItems(floor, layouts, data, rooms)];
     }
     case "L1":

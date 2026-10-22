@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMING_SOON_IDS, STATION_IDS } from "@/content/build-story";
+import { STATION_IDS } from "@/content/build-story";
 import { yawLooking } from "@/experience/camera/look";
 import { buildEngineLayout, ENGINE, ENGINE_BAYS, ENGINE_STATIONS, engineRoom } from "@/experience/floors/engine/layout";
 import type { Rect } from "@/experience/types";
@@ -11,17 +11,22 @@ const overlaps = (a: Rect, b: Rect) => a.minX < b.maxX && b.minX < a.maxX && a.m
 const inside = (r: Rect, b: Rect) => r.minX >= b.minX && r.maxX <= b.maxX && r.minZ >= b.minZ && r.maxZ <= b.maxZ;
 
 describe("B1 Engine Room layout", () => {
-  it("keeps the bays in the build story's order: stations 1 to 5, then the two coming-soon bays", () => {
-    expect([...ENGINE_BAYS]).toEqual([...STATION_IDS, ...COMING_SOON_IDS]);
+  it("keeps the bays in the build story's order: all seven are stations", () => {
+    expect([...ENGINE_BAYS]).toEqual([...STATION_IDS]);
     expect([...ENGINE_STATIONS]).toEqual([...STATION_IDS]);
   });
 
-  it("lines seven bays along the aisle, alternating north and south; stations have doors, bays 6 and 7 are dark", () => {
+  it("lines seven station bays along the aisle, alternating north and south, each with a room, a door pad, a door and a spur", () => {
     expect(layout.bays.map((b) => b.side)).toEqual(["north", "south", "north", "south", "north", "south", "north"]);
-    expect(layout.bays.filter((b) => b.lit).map((b) => b.room)).toEqual(ENGINE_STATIONS.map(engineRoom));
-    for (const bay of layout.bays.filter((b) => !b.lit)) expect([bay.room, bay.pad]).toEqual([null, null]);
-    expect(layout.floor.doors?.map((d) => d.room)).toEqual(ENGINE_STATIONS.map(engineRoom));
-    for (const bay of layout.bays) expect(inside(bay.rect, layout.floor.bounds), bay.id).toBe(true);
+    const rooms = ENGINE_STATIONS.map(engineRoom);
+    expect(layout.bays.map((b) => b.room)).toEqual(rooms);
+    expect(layout.floor.doors?.map((d) => d.room)).toEqual(rooms);
+    expect(layout.network.spurs.map((s) => s.room)).toEqual(rooms);
+    for (const bay of layout.bays) {
+      expect(inside(bay.rect, layout.floor.bounds), bay.id).toBe(true);
+      expect(bay.pad, bay.id).toEqual({ x: bay.center.x, z: bay.front - bay.facing.z * ENGINE.padInset });
+      expect(layout.floor.doors?.find((d) => d.room === bay.room)?.at, bay.id).toEqual(bay.pad);
+    }
   });
 
   it("puts a rack row in every wall gap between two bays on the same side", () => {
@@ -50,6 +55,7 @@ describe("B1 Engine Room layout", () => {
     const zones = new Map(floor.viewZones?.map((z) => [z.id, z]));
     expect(zones.get("B1:arrival")).toMatchObject({ yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 }, arrivalOnly: true });
     expect(zones.get("B1:workbench")?.yaw).toBe(yawLooking({ x: 1, z: 0 }));
-    for (const bay of layout.bays.filter((b) => b.lit)) expect(zones.get(`B1:${bay.id}`)?.yaw, bay.id).toBe(yawLooking(bay.facing));
+    for (const bay of layout.bays) expect(zones.get(`B1:${bay.id}`)?.yaw, bay.id).toBe(yawLooking(bay.facing));
+    expect(floor.viewZones?.filter((z) => ENGINE_STATIONS.some((id) => z.id === `B1:${id}`))).toHaveLength(7);
   });
 });

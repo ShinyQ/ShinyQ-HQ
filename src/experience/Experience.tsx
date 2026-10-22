@@ -587,7 +587,7 @@ function ExperienceView({
         about: t("world.about"),
         availability: t("world.availability"),
       },
-      engine: { title: tEngine("title"), subtitle: tEngine("subtitle"), soon: tEngine("soon") },
+      engine: { title: tEngine("title"), subtitle: tEngine("subtitle") },
       rover: { hello: t("statusHello") },
       returnPad: t("interact.returnPad"),
       interact: {

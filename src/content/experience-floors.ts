@@ -1,4 +1,4 @@
-import { ENGINE_BAYS, engineRoom, isEngineStation } from "@/experience/floors/engine/layout";
+import { ENGINE_BAYS, engineRoom } from "@/experience/floors/engine/layout";
 import type { EngineData, LibraryData, RoofData } from "@/experience/types";
 import { getBuildStory } from "./build-story";
 import { guideViews } from "./guide-views";
@@ -63,12 +63,8 @@ export function buildRoofData(locale: Locale): RoofData {
   };
 }
 
-/** B1 Engine Room bay titles from the build story (stations, then the coming-soon bays). */
+/** B1 Engine Room bay titles from the build story, one per station. */
 export function buildEngineData(locale: Locale): EngineData {
   const story = getBuildStory();
-  return {
-    bays: ENGINE_BAYS.map((id) =>
-      isEngineStation(id) ? { id, room: engineRoom(id), title: story.stations[id].title[locale] } : { id, room: null, title: story.comingSoon[id].title[locale] },
-    ),
-  };
+  return { bays: ENGINE_BAYS.map((id) => ({ id, room: engineRoom(id), title: story.stations[id].title[locale] })) };
 }

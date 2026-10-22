@@ -235,9 +235,9 @@ export interface RoofData {
   subheadline: string;
 }
 
-/** B1 Engine Room payload (locale-resolved): one entry per bay in `ENGINE_BAYS` order; `room` is null for the dark bays. */
+/** B1 Engine Room payload (locale-resolved): one entry per station bay in `ENGINE_BAYS` order. */
 export interface EngineData {
-  bays: { id: EngineBayId; room: RoomId | null; title: string }[];
+  bays: { id: EngineBayId; room: RoomId; title: string }[];
 }
 
 /** L1 Highlights Hall payload (locale-resolved; drawer content comes from `room-views/highlights.ts`). */
