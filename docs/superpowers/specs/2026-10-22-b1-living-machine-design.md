@@ -62,7 +62,7 @@ Seven stations, in bay order: blueprint, timeline, agents, gates, dashboard, bra
   over the KV pack (bundled fallback), Gemma on Workers AI through AI Gateway, Mistral then the Groq tiers as
   fallbacks, output checks, the Rover voice, multi-turn memory, the nightly evals. Every fact is verified in
   `functions/_lib` and `docs/agents/ask.md`.
-- Rejected Designs (new): 8 to 12 ideas tried or proposed and dropped, each with a title, what was tried, a one-line
+- Rejected Designs (new): 8 to 14 ideas (13 approved by the owner's reviewer on 2026-10-22) tried or proposed and dropped, each with a title, what was tried, a one-line
   reason and an optional PR or decision link. No client company names (checked by hand: the blocklist is gone).
   The final list goes to the owner before the merge.
 
@@ -85,7 +85,7 @@ Seven stations, in bay order: blueprint, timeline, agents, gates, dashboard, bra
 
 ### 2.4 Tests
 
-Unit: `build-story.test.ts` (seven stations, gate `where`, ideas count 8 to 12, round ranges), `engine-layout`,
+Unit: `build-story.test.ts` (seven stations, gate `where`, ideas count 8 to 14, round ranges), `engine-layout`,
 `engine-scenery`, `engine-views`, `build-page`, `diagram-layout` (the Brain diagram fits the phone and drawer
 presets), Ask `pack.test.ts` (site-build wording). E2E: `engine-room.spec.ts` opens all seven drawers; the Classic
 build page test sees seven sections. B1 stays hidden for locked visitors (existing tests unchanged).

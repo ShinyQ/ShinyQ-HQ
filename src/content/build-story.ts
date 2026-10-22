@@ -92,7 +92,7 @@ export const BuildStorySchema = z
         ideas: z
           .array(RejectedIdeaSchema)
           .min(8)
-          .max(12)
+          .max(14)
           .refine((ideas) => new Set(ideas.map((i) => i.id)).size === ideas.length, "Idea ids must be unique"),
       }),
     }),

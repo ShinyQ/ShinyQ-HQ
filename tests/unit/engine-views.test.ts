@@ -77,7 +77,7 @@ describe("B1 Engine Room drawers", () => {
       const unlinked = story.stations.timeline.unlinkedPrs ?? [];
       const shown = view("rejected").engine?.ideas ?? [];
       expect(shown.length).toBeGreaterThanOrEqual(8);
-      expect(shown.length).toBeLessThanOrEqual(12);
+      expect(shown.length).toBeLessThanOrEqual(14);
       expect(shown.map((i) => i.id)).toEqual(ideas.map((i) => i.id));
       shown.forEach((idea, i) => {
         expect(idea).toMatchObject({ title: ideas[i].title[locale], tried: ideas[i].tried[locale], reason: ideas[i].reason[locale] });

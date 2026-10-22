@@ -49,10 +49,10 @@ that read it: the B1 drawers (`content/room-views/engine.ts` to `RoomEngine` to 
 - `STATION_IDS = ["blueprint","timeline","agents","gates","dashboard","brain","rejected"] as const`; `StationId`.
 - `BuildGate.where: "ci" | "nightly" | "local"`; `local` gates have `jobs: []` and `required: false`.
 - `story.stations.brain: { title, summary, architecture: Architecture, steps: { title, text }[] (5 to 10) }`.
-- `story.stations.rejected: { title, summary, ideas: { id, title, tried, reason, pr?: number }[] (8 to 12, unique ids) }`.
+- `story.stations.rejected: { title, summary, ideas: { id, title, tried, reason, pr?: number }[] (8 to 14, unique ids) }`.
 
 - [ ] Write the failing tests: 13 rounds; every gate's `where` agrees with its jobs (local: none, else at least one
-  real `ci.yml` job); the brain diagram lays out on the phone and drawer presets within `maxWidth`; 8 to 12 ideas with
+  real `ci.yml` job); the brain diagram lays out on the phone and drawer presets within `maxWidth`; 8 to 14 ideas with
   unique ids and Title Case titles; titles list covers brain steps and ideas.
 - [ ] Run `bunx vitest run tests/content/build-story.test.ts`: fails.
 - [ ] Update the schema, write the content (spec 2.1 and 2.2), `bun scripts/build-facts.ts --write`.
@@ -73,7 +73,7 @@ that read it: the B1 drawers (`content/room-views/engine.ts` to `RoomEngine` to 
   `RoomEngine.labels` gains `tried`, `whyDropped`.
 
 - [ ] Tests first: `engine-views` expects seven views in bay order, brain has `engine.diagram` (both layouts) and a
-  `steps` section, rejected has `engine.ideas` with 8 to 12 items and links for those with a PR; `diagram-layout`
+  `steps` section, rejected has `engine.ideas` with 8 to 14 items and links for those with a PR; `diagram-layout`
   adds `["build-story:brain", story.stations.brain.architecture]`.
 - [ ] `engine.ts`: `content.brain = { engine: { diagram: ... same three-part build as blueprint ... }, sections: [{ title: t("steps"), bullets: steps.map(s => `${s.title}: ${s.text}`) }] }`;
   `content.rejected = { engine: { ideas }, sections: [] }`.

@@ -829,6 +829,18 @@
           "pr": 228
         },
         {
+          "id": "perspectives-pack",
+          "title": { "en": "A Second, English-Only Perspectives Pack", "id": "Pack Perspektif Kedua Berbahasa Inggris" },
+          "tried": {
+            "en": "Keeping the Ask pack small by moving Kurniadi's written perspectives into a second pack loaded on demand, or storing them in English only.",
+            "id": "Menjaga pack Ask tetap kecil dengan memindahkan perspektif tertulis Kurniadi ke pack kedua yang dimuat saat dibutuhkan, atau menyimpannya hanya dalam bahasa Inggris."
+          },
+          "reason": {
+            "en": "Pages Functions bundle every imported JSON into one Worker script, so a second pack saved nothing; English only would break Indonesian retrieval, since BM25 matches the question's words, and the written-source check.",
+            "id": "Pages Functions menggabungkan setiap JSON yang diimpor ke satu script Worker, jadi pack kedua tidak menghemat apa pun; versi bahasa Inggris saja akan merusak retrieval bahasa Indonesia, karena BM25 mencocokkan kata dalam pertanyaan, serta pemeriksaan sumber tertulis."
+          }
+        },
+        {
           "id": "oxlint-knip",
           "title": { "en": "Oxlint and Knip", "id": "Oxlint dan Knip" },
           "tried": {
@@ -836,8 +848,8 @@
             "id": "Memindahkan sebagian besar aturan lint ke oxlint dan menambah knip untuk mencari file, dependensi, dan export yang tidak terpakai."
           },
           "reason": {
-            "en": "Skipped: with ESLint cut to 7 rules a run still took about 11 s, so the time a swap could save was small.",
-            "id": "Dilewati: dengan ESLint tinggal 7 aturan, satu run masih sekitar 11 detik, jadi waktu yang bisa dihemat kecil."
+            "en": "Skipped by owner decision; the existing ESLint setup stays.",
+            "id": "Dilewati atas keputusan pemilik; setup ESLint yang ada tetap dipakai."
           }
         },
         {

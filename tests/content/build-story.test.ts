@@ -130,7 +130,7 @@ describe("build story content", () => {
     expect(raw).not.toHaveProperty("comingSoon");
     const ideas = story.stations.rejected.ideas;
     expect(ideas.length).toBeGreaterThanOrEqual(8);
-    expect(ideas.length).toBeLessThanOrEqual(12);
+    expect(ideas.length).toBeLessThanOrEqual(14);
     const dup = structuredClone(raw);
     dup.stations.rejected.ideas[1].id = dup.stations.rejected.ideas[0].id;
     expect(BuildStorySchema.safeParse(dup).success).toBe(false);
