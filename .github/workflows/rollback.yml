@@ -163,7 +163,7 @@ jobs:
           elif ! git cat-file -e "$TARGET:workers/office/wrangler.toml" 2>/dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "- hq-office Worker: \`${TARGET:0:7}\` has no workers/office, not touched; the Worker stays at its live version." >> "$GITHUB_STEP_SUMMARY"
-          elif git diff --quiet "$TARGET" "$LIVE" -- workers/office src/lib/office src/content/safety-match.ts functions/_lib/security.ts; then
+          elif git diff --quiet "$TARGET" "$LIVE" -- workers/office src/lib/office functions/_lib/security.ts; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "- hq-office Worker: unchanged between \`${TARGET:0:7}\` and \`${LIVE:0:7}\`, not touched." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -181,11 +181,10 @@ jobs:
         if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
         working-directory: target
         run: bun install --frozen-lockfile
-      - name: Build the safety list from the rollback target
+      - name: Build the rollback target's generated files
+        # A target from before 2026-10-22 bundles functions/_generated/safety.json into hq-office.
         if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
         working-directory: target
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/build-knowledge.ts
       - name: Redeploy hq-office from the rollback target
         if: steps.office.outputs.changed == 'true' && env.DRY_RUN != 'true'
@@ -202,12 +201,11 @@ jobs:
       - name: Flip the Ask knowledge pack to the rollback target's
         # The pointer follows the code (pack:commit:<target>); a target older than the KV pack, or a pruned pack, leaves
         # it. Never for a drill project: the namespace is production's. After the Worker redeploys, so a failure here
-        # cannot skip them. SAFETY_BLOCKLIST: flip re-validates the value with the private terms too.
+        # cannot skip them.
         if: (steps.pages.outputs.action == 'rollback' || steps.pages.outputs.action == 'dry-run') && env.CF_PAGES_PROJECT == vars.CF_PAGES_PROJECT
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           TARGET: ${{ steps.pages.outputs.target_sha }}
         run: |
           set -o pipefail

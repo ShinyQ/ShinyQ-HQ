@@ -9,7 +9,7 @@ name: CI
 # Smart CI (docs/agents/ci-and-deploy.md): the `changes` job (scripts/ci-plan.ts) plans which tests a
 # pull request needs from its changed paths: the affected e2e specs plus a PR smoke set on a shard count
 # sized from e2e/durations.json, the affected 3D perf tests (a --grep; memory-full only for memory paths)
-# and the affected Lighthouse URLs. Typecheck, lint, unit tests, the build, the safety scan and og:check
+# and the affected Lighthouse URLs. Typecheck, lint, unit tests, the build, the script policy check and og:check
 # always run. A push to main whose merged pull request passed CI on the same tree runs only the complement
 # of that PR run (its `ci-plan` record, scripts/ci-complement.ts) and merges the PR run's Lighthouse and perf
 # reports, so main still covers everything and keeps a full baseline. Manual dispatches (unless
@@ -54,11 +54,6 @@ concurrency:
 permissions:
   contents: read
 
-# The private public-safety blocklist (secret SAFETY_BLOCKLIST: internal codenames, private repo
-# names) is required on main: scripts/scan-export.ts fails main runs without it and warns on pull
-# requests (forks and Dependabot get no secrets), so a skipped check is never silent. It is passed
-# only to the steps that build the knowledge pack, run the content tests or scan out/ (H1), never
-# to dependency installs, Lighthouse or gitleaks.
 env:
   NEXT_TELEMETRY_DISABLED: "1"
   # No NEXT_PUBLIC_CF_BEACON_TOKEN here: test builds never render the Web Analytics beacon, so the
@@ -140,12 +135,8 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup
       - run: bun run typecheck
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
       - run: bun run lint
       - run: bun run test
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
       - name: Dependency audit (non-blocking)
         continue-on-error: true
         run: bun audit --audit-level=high
@@ -217,15 +208,8 @@ jobs:
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build static export
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run build
-      - name: Public-safety scan of out/ and private blocklist gate
-        # Every text file of the export, JS, CSS, SVG and MD included (S9); fails on main without the
-        # SAFETY_BLOCKLIST secret (S1) unless the SAFETY_BLOCKLIST_GRACE_UNTIL date has not passed.
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
-          SAFETY_BLOCKLIST_GRACE_UNTIL: ${{ vars.SAFETY_BLOCKLIST_GRACE_UNTIL }}
+      - name: Script policy check of out/
         run: bun scripts/scan-export.ts out
       - name: Social cards (og:check)
         run: bun run og:check
@@ -272,7 +256,6 @@ jobs:
         # nightly schedule and on a dispatch with the `nightly` input; pull requests and pushes to main skip them.
         if: needs.changes.outputs.e2e != 'none'
         env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
           E2E_FILES: ${{ needs.changes.outputs.e2e_files }}
           SHARD: ${{ matrix.shard }}/${{ needs.changes.outputs.e2e_total }}
           NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly == true }}

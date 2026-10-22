@@ -3,7 +3,7 @@ name: Ask pack check
 # Proves that the deploy token can do what deploy.yml does with the Ask knowledge pack in Workers KV
 # (docs/ask-runbook.md section 17), without changing what production serves:
 #   - verify:  read pack:current and pack:index, list pack: keys, write and delete the pack:probe key;
-#   - dry-run: build the pack from main, validate it (private blocklist included), plan the publish against
+#   - dry-run: build the pack from main, validate it, plan the publish against
 #              the live index and write only the probe key;
 #   - status:  print the pointer, the index and the stored versions.
 # Run it after adding or rotating the CLOUDFLARE_API_TOKEN permission (Workers KV Storage: Edit):
@@ -46,8 +46,6 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Build the Ask the HQ knowledge pack
         if: inputs.mode == 'dry-run'
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun scripts/build-knowledge.ts
       - name: Run ask-pack
         env:

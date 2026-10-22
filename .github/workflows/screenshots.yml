@@ -77,9 +77,6 @@ jobs:
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'content/**', 'messages/**', 'public/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
       - name: Build
-        # The private blocklist only where the knowledge pack is built (H1).
-        env:
-          SAFETY_BLOCKLIST: ${{ secrets.SAFETY_BLOCKLIST }}
         run: bun run build:web
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
