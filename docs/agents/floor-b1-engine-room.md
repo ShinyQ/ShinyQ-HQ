@@ -10,8 +10,8 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
   - Bounds x -24 to 48, z -14 to 14. The door and the call pad stand in front of the elevator (`callPad` x -24 to -16, z -4 to 4, kept free).
   - One aisle (`aisle`, 8 u wide) runs east from the approach (-21, 0) to x 38 and carries the seven bays.
   - Seven bays (`ENGINE_BAYS`, 8 u wide, 6 u deep, 4.6 u high) alternate north and south, starting at x -10 in 7 u steps (north for even indices).
-  - Bays 1 to 5 are the stations (`ENGINE_STATIONS`: blueprint, timeline, agents, gates, dashboard); bays 6 and 7 (brain, rejected) are dark: no room, no door, no pad.
-  - The bay order equals `[...STATION_IDS, ...COMING_SOON_IDS]` of `src/content/build-story.ts` (a unit test checks it; the ids are repeated because that module is server-only).
+  - All seven bays are stations (`ENGINE_STATIONS` equals `ENGINE_BAYS`): blueprint, timeline, agents, gates, dashboard, brain (Rover's Brain) and rejected (Rejected Designs), each with a room, a door and a pad.
+  - The bay order equals `STATION_IDS` of `src/content/build-story.ts` (a unit test checks it; the ids are repeated because that module is server-only).
 - Each station has a door pad 1.1 u inside its front and a 4 u spur from the aisle. Doors are `station`s (`DoorTrigger.facing` looks into the bay), rooms `B1:<station>`.
 - Server rack rows (`engineRacks`) fill the wall gaps between neighbouring bays on the same side; the workbench (x 44 to 48, z -5 to 5) is flush with the east edge.
 - The Express Return pad is at (40, 9) (`ENGINE.returnPad`, see [Fast return](floors.md#fast-return)).
@@ -27,8 +27,9 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
   - one merged solid mesh and its edges (`MergedBoxes`, `MergedEdges` from the roof kit): bay shells, station props, racks, the workbench;
   - `FlowMesh` (`engine/EngineFx.tsx`, holo `strip`, one instanced draw) for ceiling pipes and their drops, cable trays, bay front strips and rack LEDs, with a slow pulse along x and a random phase per instance;
   - the pipe runs hang over the back walls (`PIPE_Z`), held by brackets on each bay's back corners, and their drops meet the back walls, so from the aisle no bracket or drop stands in front of a station sign (a front bracket used to cut the Agents sign on arrival);
-  - `PanelMesh` (holo `fall`, one instanced draw) for the screens: the blueprint table top, the timeline wall, the agent monitors, the dashboard wall and the workbench wall;
-  - `FloatingSigns` for the bay names (lit amber, the dark bays dim with a "Coming soon" plate) and the workbench title and subtitle; no word is painted on the floor.
+  - `PanelMesh` (holo `fall`, one instanced draw) for the screens: the blueprint table top, the timeline wall, the agent monitors, the dashboard wall, the Brain's chunk grid, the Rejected scrap panels (tilted by `PanelInstance.roll`, a roll about the screen's normal) and the workbench wall;
+  - station props in the same merged and instanced draws: the blueprint table, the timeline screens, the agents desk, the gate cabinets, the dashboard wall, Rover's Brain (a server column beside a back-wall grid of cyan retrieval chunk screens and one violet answer screen) and Rejected Designs (a scrap rack of dim tilted panels and one amber panel);
+  - `FloatingSigns` for the bay names (all amber) and the workbench title and subtitle; no word is painted on the floor.
 - Pipes and trays stay calm so the station signs lead: the ceiling is 7.4 u (`ENGINE.ceiling`), runs are thin dim warm lines (pipe tone `#7c2d12`), trays a dim warm strip with a faint cyan data line.
 - The lite tier draws half the LEDs (`engineDetail`). Reduced motion freezes `uTime`, so nothing pulses.
 - Floor-only code: `useDispose` after every memoized geometry and material; no new light, material or shader program (reuses the holo program).
@@ -38,8 +39,9 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 - Clicking a station (point-and-go `B1:station:<station>`) opens the Glass Drawer for room `B1:<station>`.
 - Views come from `buildEngineViews` (`content/room-views/engine.ts`): the build story and the build-time snapshot through the Classic page helpers (`src/lib/build-page.ts`), so a number shows only when the snapshot carries it.
 - They live in their own static file, `/data/rooms/b1-<locale>.json` (with its `?v=` content hash), never in a public floor's file. `DrawerHost` fetches it (`loadFloorViews(locale, "B1")`) only once B1 is unlocked (on idle after the rover's floor, or at once when a `B1:` room opens) ([hud-and-drawer.md](hud-and-drawer.md#builders-and-data)).
-- `EngineBody` (`hud/drawer/EngineBody.tsx`, in the B1 chunk) renders `RoomView.engine`: the blueprint diagram, the rounds timeline, the gate list, the plan excerpt or the dashboard tiles, around the generic sections. Each drawer links its Classic section `/{locale}/build#<station>`.
-- The blueprint diagram ships laid out twice: `layout` (`DIAGRAM_PRESETS.phone`, 318 px) and `wide` (`DIAGRAM_PRESETS.drawer`: top to bottom, three nodes per band, every text at least 12 px, at most 492 px). `Blueprint` in `EngineBody` measures its figure before paint and on resize (a `ResizeObserver`, no new CSS) and draws `wide` once the figure is as wide as it: the 560 and 600 px side drawers; phones, the 480 px drawer and the drawer next to the Ask panel keep the phone layout.
+- `EngineBody` (`hud/drawer/EngineBody.tsx`, in the B1 chunk) renders `RoomView.engine`: a diagram (the Blueprint's site map or the Brain's Ask pipeline), the rounds timeline, the gate list, the plan excerpt, the dashboard tiles or the rejected ideas (title, what was tried, why it was dropped, the pull request when it is linkable), around the generic sections. Each drawer links its Classic section `/{locale}/build#<station>`.
+- Story rules (`content/build-story.json`, `BuildStorySchema`): rounds are contiguous pull request ranges, only the last one open; a gate has `where` (`ci`, `nightly` or `local`; a local gate names no job and is never required); Rejected Designs hold 8 to 14 ideas; pull requests whose diff shows a client name (26, 288) are counted but never linked (`unlinkedPrs`), in the timeline and in the ideas. The blocklist is gone, so new story text is checked for client names by hand.
+- Each diagram (Blueprint, Brain) ships laid out twice: `layout` (`DIAGRAM_PRESETS.phone`, 318 px) and `wide` (`DIAGRAM_PRESETS.drawer`: top to bottom, three nodes per band, every text at least 12 px, at most 492 px). `Blueprint` in `EngineBody` (used for both) measures its figure before paint and on resize (a `ResizeObserver`, no new CSS) and draws `wide` once the figure is as wide as it: the 560 and 600 px side drawers; phones, the 480 px drawer and the drawer next to the Ask panel keep the phone layout.
 
 ## Access
 

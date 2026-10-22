@@ -39,7 +39,7 @@ that read it: the B1 drawers (`content/room-views/engine.ts` to `RoomEngine` to 
 | `src/experience/floors/engine/{layout,scenery}.ts`, `src/content/experience-floors.ts`, `src/experience/Experience.tsx` | all seven bays are stations; Brain and Rejected props |
 | `content/ask/site-build.json` | seven stations, Codex |
 | tests: `engine-layout`, `engine-scenery`, `engine-views`, `build-page`, `diagram-layout`, `tests/ask/pack.test.ts`; e2e `engine-room.spec.ts`; `scripts/b1-shots.ts` | seven stations |
-| docs: `docs/agents/floor-b1-engine-room.md`, `docs/features.md`, `docs/decisions/2026-10-22-b1-living-machine.md` | current state |
+| docs: `docs/agents/floor-b1-engine-room.md`, `docs/features.md`, `docs/decisions/2026-10-22-b1-living-machine-story.md` | current state |
 
 ### Task 1: Content and schema (controller)
 
@@ -116,7 +116,7 @@ that read it: the B1 drawers (`content/room-views/engine.ts` to `RoomEngine` to 
   rounds, AI-agent workflow, quality gates, figures, how Rover answers, rejected designs)"; agents "GitHub Copilot,
   Claude Code and Codex". `tests/ask/pack.test.ts` passes; `tests/ask/golden.json` unchanged unless a golden cites it.
 - [ ] Docs: `docs/agents/floor-b1-engine-room.md` (seven stations, no dark bays), `docs/features.md` B1 section,
-  decision file `docs/decisions/2026-10-22-b1-living-machine.md`.
+  decision file `docs/decisions/2026-10-22-b1-living-machine-story.md`.
 - [ ] `bun run verify:quick`, `bun run e2e:changed`, B1 chunk bytes (`E2E_PORT=<port> bunx playwright test e2e/perf/bytes-3d.spec.ts` with `PERF=1`) under 16 KB.
 - [ ] Hand check: no client name in the diff (`git diff main | grep -E -f <list>`), no em dash.
 - [ ] Send the Rejected list to the owner's coordinator; push; open a ready-for-review PR; merge after approval and green CI.
