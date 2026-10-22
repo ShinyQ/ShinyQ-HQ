@@ -87,7 +87,7 @@
             "label": "Workers AI",
             "sublabel": { "en": "Gemma 4, then Mistral Small 3.1, through AI Gateway", "id": "Gemma 4, lalu Mistral Small 3.1, lewat AI Gateway" },
             "layer": 3,
-            "row": 1,
+            "row": 0,
             "kind": "ai",
             "group": "Cloudflare"
           },
@@ -96,7 +96,7 @@
             "label": { "en": "KV and Analytics Engine", "id": "KV dan Analytics Engine" },
             "sublabel": { "en": "Ask knowledge pack, visit counts, beacons", "id": "Knowledge pack Ask, hitungan kunjungan, beacon" },
             "layer": 3,
-            "row": 4,
+            "row": 2,
             "kind": "data",
             "group": "Cloudflare"
           },
@@ -105,15 +105,15 @@
             "label": "Groq",
             "sublabel": { "en": "Backup tiers: Qwen 3.8 27B, then gpt-oss-120b", "id": "Tier cadangan: Qwen 3.8 27B, lalu gpt-oss-120b" },
             "layer": 3,
-            "row": 2,
+            "row": 1,
             "kind": "ai"
           },
           {
             "id": "office",
             "label": "hq-office Worker",
             "sublabel": { "en": "Durable Object: live desks, CI lanes, replay", "id": "Durable Object: meja live, jalur CI, replay" },
-            "layer": 3,
-            "row": 3,
+            "layer": 4,
+            "row": 0,
             "kind": "service",
             "group": "Cloudflare"
           },
@@ -121,8 +121,8 @@
             "id": "r2",
             "label": "R2",
             "sublabel": { "en": "Certification study guides", "id": "Panduan belajar sertifikasi" },
-            "layer": 3,
-            "row": 5,
+            "layer": 4,
+            "row": 1,
             "kind": "data",
             "group": "Cloudflare"
           }
@@ -368,7 +368,7 @@
           "title": { "en": "Agent Office, Study Guides and the Rover Voice", "id": "Agent Office, Panduan Belajar, dan Suara Rover" },
           "summary": {
             "en": "The Agent Office backend arrived: a Worker with a Durable Object, and a relay with hooks for Copilot, Claude Code and Codex. Certification study guides moved to R2 with an in-site reader and the L4 Study Vault. The Classic site got quick performance wins and a design refinement, public stats refresh every two hours, Rover answers in its own voice and the Ask knowledge pack moved to Workers KV.",
-            "id": "Backend Agent Office hadir: Worker dengan Durable Object, serta relay dengan hook untuk Copilot, Claude Code, dan Codex. Panduan belajar sertifikasi pindah ke R2 dengan pembaca di dalam situs dan Study Vault di L4. Situs klasik mendapat percepatan cepat dan penyempurnaan desain, statistik publik diperbarui setiap dua jam, Rover menjawab dengan suaranya sendiri, dan knowledge pack Ask pindah ke Workers KV."
+            "id": "Backend Agent Office hadir: Worker dengan Durable Object, serta relay dengan hook untuk Copilot, Claude Code, dan Codex. Panduan belajar sertifikasi pindah ke R2 dengan pembaca di dalam situs dan Study Vault di L4. Situs klasik mendapat perbaikan performa cepat dan penyempurnaan desain, statistik publik diperbarui setiap dua jam, Rover menjawab dengan suaranya sendiri, dan knowledge pack Ask pindah ke Workers KV."
           },
           "prs": { "from": 233, "to": 251 }
         },
@@ -736,8 +736,8 @@
         {
           "title": { "en": "Model Chain", "id": "Rantai Model" },
           "text": {
-            "en": "Gemma 4 on Workers AI answers first, through AI Gateway. After an error, a timeout or an empty answer the next tier takes over: Mistral Small 3.1, then Qwen 3.8 27B and gpt-oss-120b on Groq. Every tier gets the same prompt and the same checks.",
-            "id": "Gemma 4 di Workers AI menjawab lebih dulu, lewat AI Gateway. Jika terjadi error, timeout, atau jawaban kosong, tier berikutnya mengambil alih: Mistral Small 3.1, lalu Qwen 3.8 27B dan gpt-oss-120b di Groq. Setiap tier mendapat prompt dan pemeriksaan yang sama."
+            "en": "Gemma 4 on Workers AI answers first, through AI Gateway. After an error, a timeout or an empty answer the next tier takes over: Mistral Small 3.1, then Qwen 3.8 27B and gpt-oss-120b on Groq. Every tier gets the same context, rules and checks.",
+            "id": "Gemma 4 di Workers AI menjawab lebih dulu, lewat AI Gateway. Jika terjadi error, timeout, atau jawaban kosong, tier berikutnya mengambil alih: Mistral Small 3.1, lalu Qwen 3.8 27B dan gpt-oss-120b di Groq. Setiap tier mendapat konteks, aturan, dan pemeriksaan yang sama."
           }
         },
         {
@@ -797,8 +797,8 @@
             "id": "Memberi Worker hq-office rute publik workers.dev sendiri."
           },
           "reason": {
-            "en": "Every public request already passes the Pages Functions' checks, so the Worker has no route at all and only a service binding reaches it.",
-            "id": "Setiap permintaan publik sudah melewati pemeriksaan Pages Functions, jadi Worker itu tidak punya rute sama sekali dan hanya bisa dijangkau lewat service binding."
+            "en": "A workers.dev address contains the account's subdomain, which stays out of the public repository, so every route is a Pages Function that reaches the Worker through a service binding.",
+            "id": "Alamat workers.dev memuat subdomain akun, yang tidak boleh ada di repositori publik, jadi setiap rute dibuat sebagai Pages Function yang menjangkau Worker lewat service binding."
           },
           "pr": 233
         },
@@ -806,12 +806,12 @@
           "id": "safety-blocklist",
           "title": { "en": "The Safety Blocklist", "id": "Blocklist Keamanan" },
           "tried": {
-            "en": "A list of client names to block, first private in a CI secret, then committed in the public repository, scanning the content, the built site and Ask answers.",
-            "id": "Daftar nama klien yang diblokir, awalnya privat di secret CI, lalu disimpan di repositori publik, untuk memindai konten, hasil build, dan jawaban Ask."
+            "en": "A build-time list of names to block in the content, the built site and Ask answers.",
+            "id": "Daftar nama yang diblokir saat build, untuk memindai konten, hasil build, dan jawaban Ask."
           },
           "reason": {
-            "en": "A public list of names to hide shows the very names it hides; the owner removed it, and client names stay out by review.",
-            "id": "Daftar publik berisi nama yang harus disembunyikan justru menampilkan nama-nama itu; pemilik menghapusnya, dan nama klien dijaga lewat review."
+            "en": "It had to carry the very names it guarded; the owner removed it, and client names stay out by review.",
+            "id": "Daftar itu harus memuat nama-nama yang justru dijaganya; pemilik menghapusnya, dan nama klien dijaga lewat review."
           },
           "pr": 288
         },
@@ -823,8 +823,8 @@
             "id": "Membagi tes memori tier full menjadi tiga bagian CI paralel untuk mempersingkat waktu run main."
           },
           "reason": {
-            "en": "On hold: uneven e2e shards set the wall time, not the memory test, and the split cost 11 more worker-minutes; packing shards by measured time fixed it.",
-            "id": "Ditunda: waktu run ditentukan shard e2e yang tidak seimbang, bukan tes memori, dan pembagian itu menambah 11 menit worker; membagi shard menurut waktu terukur menyelesaikannya."
+            "en": "On hold: uneven e2e shards set main's wall time, not the memory test, and the split cost 11 more worker-minutes; worker-aware shard packing went in instead.",
+            "id": "Ditunda: waktu run main ditentukan shard e2e yang tidak seimbang, bukan tes memori, dan pembagian itu menambah 11 menit worker; pembagian shard menurut waktu worker dipakai sebagai gantinya."
           },
           "pr": 228
         },

@@ -16,6 +16,9 @@ type StationContent = { engine: Omit<RoomEngine, "station" | "labels">; sections
  * snapshot (`content/generated/build-facts.json`), through the same helpers as the Classic page
  * (`src/lib/build-page.ts`), so a number is shown only when the snapshot carries it.
  */
+/** Laid-out station diagrams per locale and diagram: the layout search is the costly part, and the content is static per build. */
+const DIAGRAMS = new Map<string, NonNullable<RoomEngine["diagram"]>>();
+
 export function buildEngineViews(locale: Locale): RoomView[] {
   const m = messages(locale);
   const t = createTranslator({ locale, messages: m, namespace: "build" });
@@ -48,12 +51,17 @@ export function buildEngineViews(locale: Locale): RoomView[] {
   const hidden = new Set(story.stations.timeline.unlinkedPrs ?? []);
   const nodeTexts = diagramTexts(locale, (kind) => tLabs(`nodeKind.${kind}`));
   const diagram = (raw: Architecture): NonNullable<RoomEngine["diagram"]> => {
+    const key = `${locale}:${JSON.stringify(raw)}`;
+    const cached = DIAGRAMS.get(key);
+    if (cached) return cached;
     const architecture = resolveArchitecture(raw, locale);
-    return {
+    const drawn = {
       layout: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.phone)),
       wide: drawnDiagram(layoutArchitecture(architecture, nodeTexts, DIAGRAM_PRESETS.drawer)),
       label: diagramSummary(architecture, { flow: (from, to) => tDiagram("flow", { from, to }), async: tDiagram("async"), summary: (count, flows) => tDiagram("summary", { count, flows }) }),
     };
+    DIAGRAMS.set(key, drawn);
+    return drawn;
   };
 
   const content: Record<StationId, StationContent> = {
