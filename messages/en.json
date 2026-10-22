@@ -904,39 +904,6 @@
       "topicsLabel": "Or start with"
     }
   },
-  "proto": {
-    "title": "Walkable floors prototype",
-    "floor": "Floor",
-    "L2": "L2 Career Road",
-    "L3": "L3 Project Roads",
-    "road": "Road",
-    "straight": "Straight",
-    "meander": "Meander",
-    "view": "View",
-    "rover": "Rover",
-    "top": "Top-down",
-    "rules": "Space rules",
-    "pass": "pass",
-    "violations": "{count} violations",
-    "size": "{w} x {d} u, {rooms} rooms, {plazas} plazas",
-    "rooms": "{count} rooms",
-    "loop": "Loop",
-    "hint": "Drive with WASD or click the floor.",
-    "close": "Close",
-    "sheet": "2D chips",
-    "sheetTitle": "Type icons as classic site chips",
-    "more": "More projects here",
-    "library": {
-      "title": "Writing floor concepts",
-      "concept": "Concept",
-      "atrium": "A: Reading Room",
-      "newsroom": "B: Newsroom",
-      "constellation": "C: Constellation",
-      "budget": "{calls} draw calls, {triangles} triangles",
-      "pad": "Elevator call pad (kept free)",
-      "posts": "{count} posts on the floor, {archive} on the archive board"
-    }
-  },
   "hall": {
     "hall": "Highlights Hall",
     "about": "Profile",

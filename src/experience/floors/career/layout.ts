@@ -22,8 +22,6 @@ export { WORKSHOP_ROOM };
  * its benches, repo skyline and the Horizon deck at the window) closes the road.
  */
 
-export type RoadStyle = "straight" | "meander";
-
 export const CAREER_ROAD = {
   approach: { x: -21, z: 0 } as Vec2,
   /** Elevator door on the shaft face (same as every floor). */
@@ -102,7 +100,6 @@ export interface CareerYear {
 }
 
 export interface CareerRoadLayout {
-  style: RoadStyle;
   bounds: Rect;
   network: RoadNetwork;
   years: CareerYear[];
@@ -178,7 +175,7 @@ function archAt(x0: number, z0: number, x1: number, z1: number): CareerYear["arc
 }
 
 /** Lays out the Career Road: plazas per year (ascending), docked rooms, arches, the annex and the window. */
-export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "meander"): CareerRoadLayout {
+export function buildCareerRoad(input: CareerLayoutInput): CareerRoadLayout {
   const C = CAREER_ROAD;
   const half = C.plazaDepth / 2;
   const points: Vec2[] = [C.approach];
@@ -187,7 +184,7 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
   let x = C.approach.x + C.lead;
 
   input.years.forEach(({ year, entries }, i) => {
-    const zc = style === "meander" ? [0, C.meander, 0, -C.meander][i % 4] : 0;
+    const zc = [0, C.meander, 0, -C.meander][i % 4];
     const length = plazaLength(entries.length);
     const last = points[points.length - 1];
     const arch = archAt(last.x, last.z, x, zc);
@@ -261,7 +258,6 @@ export function buildCareerRoad(input: CareerLayoutInput, style: RoadStyle = "me
   });
 
   return {
-    style,
     bounds,
     network: { roads: [road], plazas: [...years.map((y) => y.plaza), workshop.forecourt, workshop.plaza], spurs },
     years,

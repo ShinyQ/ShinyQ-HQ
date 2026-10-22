@@ -904,39 +904,6 @@
       "topicsLabel": "Atau mulai dari"
     }
   },
-  "proto": {
-    "title": "Prototipe lantai yang bisa dijelajahi",
-    "floor": "Lantai",
-    "L2": "L2 Career Road",
-    "L3": "L3 Project Roads",
-    "road": "Jalan",
-    "straight": "Lurus",
-    "meander": "Berkelok",
-    "view": "Tampilan",
-    "rover": "Rover",
-    "top": "Dari atas",
-    "rules": "Aturan ruang",
-    "pass": "lolos",
-    "violations": "{count} pelanggaran",
-    "size": "{w} x {d} u, {rooms} ruang, {plazas} plaza",
-    "rooms": "{count} ruang",
-    "loop": "Putaran",
-    "hint": "Setir dengan WASD atau klik lantai.",
-    "close": "Tutup",
-    "sheet": "Chip 2D",
-    "sheetTitle": "Ikon tipe sebagai chip situs klasik",
-    "more": "Proyek lainnya di sini",
-    "library": {
-      "title": "Konsep lantai tulisan",
-      "concept": "Konsep",
-      "atrium": "A: Ruang Baca",
-      "newsroom": "B: Ruang Redaksi",
-      "constellation": "C: Konstelasi",
-      "budget": "{calls} draw call, {triangles} segitiga",
-      "pad": "Pad panggil lift (dibiarkan kosong)",
-      "posts": "{count} tulisan di lantai, {archive} di papan arsip"
-    }
-  },
   "hall": {
     "hall": "Aula Sorotan",
     "about": "Profil",

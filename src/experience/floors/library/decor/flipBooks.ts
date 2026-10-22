@@ -1,5 +1,5 @@
 /**
- * Geometry data for open-book holograms (Atrium concept): every book is three pages around a vertical
+ * Geometry data for open-book holograms (the newsroom featured stage): every book is three pages around a vertical
  * spine, a left and a right page held open and one page that turns. All books share one geometry, so
  * the whole floor's books cost one draw call. Pure (plain arrays): Vitest runs it in node.
  */

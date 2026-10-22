@@ -4,13 +4,13 @@ import type { ViewZone } from "../../camera/orbit";
 import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
 
 /**
- * Shared contract of the L4 Writing floor (walkable floors plan, part 3). Every concept builder
- * (`concepts/*.ts`) returns a `LibraryLayout`, so the floor, the camera zones and the decor
- * read the same stations whatever concept ships. Pure: no React or three.
+ * Shared contract of the L4 Writing floor (walkable floors plan, part 3). The concept builder
+ * (`concepts/newsroom.ts`) returns a `LibraryLayout`, so the floor, the camera zones and the decor
+ * read the same stations. Pure: no React or three.
  */
 
-export type LibraryConcept = "atrium" | "newsroom" | "constellation";
-export const LIBRARY_CONCEPTS: readonly LibraryConcept[] = ["atrium", "newsroom", "constellation"];
+/** The shipped L4 concept (owner pick: newsroom). */
+export type LibraryConcept = "newsroom";
 
 /** Category of a station; display names come from messages (`library.posts`, `library.research`, ...). */
 export type LibraryZone = "blog" | "research" | "models" | "talks";
@@ -109,12 +109,12 @@ export interface LibraryLayout {
   board: { rect: Rect; center: Vec2; stop: Vec2 } | null;
   /** Zone sign anchors (floor text and icon) with the direction the zone's road runs. */
   signs: Record<LibraryZone, { at: Vec2; heading: Vec2 }>;
-  /** Concept centerpiece (atrium book, press stage screen, star core). */
+  /** Concept centerpiece (the newsroom headline wall). */
   centerpiece: Vec2;
-  /** Docked posts that share a tag (constellation lines; other concepts may ignore them). */
+  /** Docked posts that share a tag (no decor draws them today). */
   links: [RoomId, RoomId][];
-  /** Concept extras the decor reads (headline wall, year marks, nebulae). */
-  extras: { wall?: Rect; years?: { year: string; at: Vec2 }[]; nebulae?: Record<LibraryZone, Vec2> };
+  /** Concept extras the decor reads (headline wall, year marks). */
+  extras: { wall?: Rect; years?: { year: string; at: Vec2 }[] };
   /** The end plaza (newsroom): Topic Constellation, research-metrics monument and Express Return pad. */
   end?: LibraryEnd | null;
 }
@@ -307,7 +307,7 @@ export function floorBounds(rects: readonly Rect[], points: readonly Vec2[], pad
   };
 }
 
-/** The `FloorLayout` every concept shares: doors from stations, obstacles, road, camera zones. */
+/** The `FloorLayout` of the concept: doors from stations, obstacles, road, camera zones. */
 export function libraryFloor(args: {
   bounds: Rect;
   stations: readonly LibraryStation[];
