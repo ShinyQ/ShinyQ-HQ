@@ -3,6 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { buildEngineLayout, ENGINE } from "@/experience/floors/engine/layout";
 import { CORE_FX, coreSolids } from "@/experience/floors/engine/reactorFx";
 import { END_MASK_H, endMask, ENGINE_TONES, engineScenery, engineSigns, stationProps, type PanelInstance } from "@/experience/floors/engine/scenery";
+import { signPlate } from "@/experience/fx/signLayout";
 import type { Rect } from "@/experience/types";
 
 const layout = buildEngineLayout();
@@ -88,17 +89,24 @@ describe("B1 Engine Room scenery", () => {
     const titled = engineSigns(layout, data, { ...labels, reactor });
     expect(titled).toHaveLength(base.length + 1);
     const title = titled.find((sg) => sg.text === "REACTOR")!;
-    expect(title.x).toBe(ENGINE.reactor.x);
-    expect(title.y).toBeGreaterThan(ENGINE.reactor.h);
-    expect(title.y).toBeLessThan(ENGINE.ceiling);
+    // On the platform's front (west, aisle) edge: its plane stands west of the energy column, outside its footprint
+    // (the crown is the column's widest part), so the column never runs through the word, not even in a flash.
+    const titlePlate = signPlate(title);
+    expect(title.x).toBeLessThan(ENGINE.reactor.x - CORE_FX.crown.r - 2);
+    expect(title.x).toBeLessThan(layout.reactor.minX + 1);
+    expect(title.x).toBeGreaterThan(ENGINE.reactorDoor.x);
+    expect(Math.abs(title.z - ENGINE.reactor.z) + titlePlate.w / 2).toBeLessThan(ENGINE.reactor.r);
+    expect(title.y - titlePlate.h / 2).toBeGreaterThan(CORE_FX.plinth);
     const both = engineSigns(layout, data, { ...labels, reactor }, { visits: "1,234", asks: "56" });
     expect(both).toHaveLength(base.length + 2);
     const plate = both.at(-1)!;
     expect(plate.text).toBe("1,234 visits in 30 days\n56 questions to Rover");
-    // In front of the core's west face (toward the aisle), below the lowest ring.
+    // In front of the core's west face (toward the aisle), below the lowest ring, right under the title.
     expect(plate.x).toBeLessThan(layout.reactor.minX + 1);
     expect(plate.x).toBeGreaterThan(ENGINE.reactorDoor.x);
     expect(plate.y).toBeLessThan(CORE_FX.rings[0].y);
+    expect(plate.x).toBe(title.x);
+    expect(plate.y + signPlate(plate).h / 2).toBeLessThan(title.y - titlePlate.h / 2);
     expect(engineSigns(layout, data, { ...labels, reactor }, { visits: null, asks: "56" }).at(-1)!.text).toBe("56 questions to Rover");
     expect(engineSigns(layout, data, { ...labels, reactor }, { visits: null, asks: null })).toHaveLength(base.length + 1);
   });

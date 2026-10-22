@@ -263,8 +263,9 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
 }
 
 /**
- * Station names over every bay (amber), the title over the workbench, the reactor's title over its cap and its counter
- * plate (visits and questions, cyan) low on the core's aisle side, below the rings. Every sign turns to the camera.
+ * Station names over every bay (amber), the title over the workbench, and on the reactor platform's front edge (its
+ * aisle side, west of the energy column, so a deploy flash never washes it out) the reactor's title (amber) right above
+ * its counter plate (visits and questions, cyan), both below the rings. Every sign turns to the camera.
  */
 export function engineSigns(layout: EngineLayout, data: EngineData, labels: EngineLabels, counts?: ReactorCounts): SignSpec[] {
   const titles = new Map(data.bays.map((bay) => [bay.id, bay.title]));
@@ -280,8 +281,10 @@ export function engineSigns(layout: EngineLayout, data: EngineData, labels: Engi
   const reactor = labels.reactor;
   if (!reactor) return signs;
   const R = ENGINE.reactor;
-  signs.push({ text: reactor.title.toLocaleUpperCase(), x: R.x, y: (R.h + ENGINE.ceiling) / 2, z: R.z, color: ENGINE_TONES.amber, fontSize: 0.36 });
+  const front = layout.reactor.minX + 0.6;
+  const plateY = CORE_FX.rings[0].y - 0.65;
+  signs.push({ text: reactor.title.toLocaleUpperCase(), x: front, y: plateY + 1, z: R.z, color: ENGINE_TONES.amber, fontSize: 0.36 });
   const lines = [counts?.visits != null ? reactor.visits(counts.visits) : null, counts?.asks != null ? reactor.asks(counts.asks) : null].filter((l) => l !== null);
-  if (lines.length > 0) signs.push({ text: lines.join("\n"), x: layout.reactor.minX + 0.6, y: CORE_FX.rings[0].y - 0.65, z: R.z, color: ENGINE_TONES.cyan, fontSize: 0.28 });
+  if (lines.length > 0) signs.push({ text: lines.join("\n"), x: front, y: plateY, z: R.z, color: ENGINE_TONES.cyan, fontSize: 0.28 });
   return signs;
 }
