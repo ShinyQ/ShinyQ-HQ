@@ -31,10 +31,29 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
   - the pipe runs hang over the back walls (`PIPE_Z`), held by brackets on each bay's back corners, and their drops meet the back walls, so from the aisle no bracket or drop stands in front of a station sign (a front bracket used to cut the Agents sign on arrival);
   - `PanelMesh` (holo `fall`, one instanced draw) for the screens: the blueprint table top, the timeline wall, the agent monitors, the dashboard wall, the Brain's chunk grid, the Rejected scrap panels (tilted by `PanelInstance.roll`, a roll about the screen's normal) and the workbench wall;
   - station props in the same merged and instanced draws: the blueprint table, the timeline screens, the agents desk, the gate cabinets, the dashboard wall, Rover's Brain (a server column beside a back-wall grid of cyan retrieval chunk screens and one violet answer screen) and Rejected Designs (a scrap rack of dim tilted panels and one amber panel);
-  - `FloatingSigns` for the bay names (all amber) and the workbench title and subtitle; no word is painted on the floor.
+  - the reactor core: its solids join the merged mesh (`coreSolids` in `engine/reactorFx.ts`: a two-step plinth to y 0.8, the column, a collar at y 5.9 and the cap topping out at `ENGINE.reactor.h` 6.6, the four risers' feet and clamps), and `ReactorCore` (`engine/ReactorCore.tsx`) adds two instanced draws on the same holo program (`uMode` is a uniform, so no new program):
+    - `engine-reactor-rings` on `strip`: four lane rings (y 2.1 to 5.25, r 2.2, 2.8, 2.8, 2.2) of arc segments, 12 a ring on full and 6 on lite (`coreDetail`), with the sparks (up to `REACTOR.sparks`, 10, full only) as spare instances after them (`mesh.count` is segments plus live sparks). The rings turn 0.12 rad/s, alternating per ring; instance matrices are written at most 30 times a second (`CORE_FX.writeHz`) and only while the rover is on B1;
+    - `engine-reactor-coolant` on `core`: the coolant shell (r 1) around the column and four risers at the plinth's corners. The pulse (`pulseLevel`, at the model's `pulseHz`) and the deploy flash (toward white) go through the `uOpacity` and `uColor` uniforms, never a buffer upload;
+  - `FloatingSigns` for the bay names (all amber), the workbench title and subtitle, a `REACTOR` title over the core's cap (y 7.0) and a cyan two-line counter plate low on the core's aisle side ("340 visits in 30 days", "64 questions to Rover", `engine.reactor.*` strings, numbers through `formatCount`; a missing number drops its line, both missing drop the plate); no word is painted on the floor.
 - Pipes and trays stay calm so the station signs lead: the ceiling is 7.4 u (`ENGINE.ceiling`), runs are thin dim warm lines (pipe tone `#7c2d12`), trays a dim warm strip with a faint cyan data line.
-- The lite tier draws half the LEDs (`engineDetail`). Reduced motion freezes `uTime`, so nothing pulses.
+- The lite tier draws half the LEDs (`engineDetail`) and half the core's ring segments with no sparks (`coreDetail`). Reduced motion freezes `uTime`, so nothing pulses; the core's rings stop turning, the sparks stop and the coolant holds a steady level (the model is idle under reduced motion, so no lanes and no flash).
 - Floor-only code: `useDispose` after every memoized geometry and material; no new light, material or shader program (reuses the holo program).
+
+## Live data
+
+- `reactorLive` (`engine/reactorLive.ts`, B1 chunk only; nothing on the main 3D path imports it) wraps `createOfficePoller` on `/api/office?v=4` (`parseOfficeResponseV4`). `ReactorCore` starts it when the store's floor becomes B1 and stops it on leaving: B1 also mounts as the Lobby's neighbour, so mounting alone never polls.
+  - Cadence (`pollInterval`, `POLL` in `lib/office/poll.ts`): 10 s while a desk of a live snapshot is awake, 30 s when resting (semi-live, off, every desk asleep or no snapshot).
+  - A failed or hung request keeps the last snapshot for 60 s (`keepLastMs`), then the feed is offline; the core treats a feed older than `REACTOR_STALE_MS` (120 s, twice `keepLastMs`, a unit test pins it) as not live.
+  - The poller stops after 10 minutes without input (`idleStopMs`). Pointer, key, wheel and touch input (passive listeners attached on `start`, detached on `stop`) resets the idle clock and restarts it after a stop; the tab turning visible counts as input and fetches at once.
+  - Stats: the first start calls `requestStats()`; the stats store fetches `/api/stats` once per page load and B1 reuses it, so B1 adds no stats request.
+- The model is `reactorState(office, stats, { reducedMotion, now })` (`engine/reactor.ts`, pure):
+  - live when the feed is ready, has a snapshot, is at most 120 s old and motion is not reduced; otherwise idle (no lanes, no sparks, no deploy, the idle pulse) while the numbers still show;
+  - lanes: the job statuses of the newest run (`pipeline.runs[0].jobs`, first 24), each a contiguous run of segments in `LANE_TONES` (running cyan, done green, failed red, queued grey; all dim amber `IDLE_TONE` without lanes);
+  - sparks: desks not asleep, at most 10;
+  - pulse: `pulseHz` from 0.3 to 1.2 by `log10(1 + visits + asks) / 4` on the 30-day `visits.d30` and `asks.d30.total` (the stats have no "today" window), 0.25 when idle;
+  - deploy flash (`nextFlash`, `flashLevel`, 1.5 s): a deploy already in the feed on arrival flashes only while it is fresh; a newly seen successful production deploy brought by a later poll flashes from the moment it shows.
+- The model is recomputed on every feed or stats change and once a second from the frame loop (staleness, the flash clock), never per frame.
+- `__hq.reactor()` (null until the B1 chunk loads) is the reactor feed's test hook (`poll`, `advance`, `started`, `settled`) plus `state()`, what the core shows (model, segments, sparks, ring angle, coolant level, flash).
 
 ## Drawers
 
@@ -59,10 +78,10 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Draw calls
 
-- Scene calls: the road kit, one merged mesh and its edges, two instanced holo draws and the floating sign pair.
-- Settled on B1: 45 scene calls and 8,420 triangles on lite, 48 and 9,335 on full (with seven stations), with 43 and 81 shader programs on CI (`e2e/perf/baseline.json`; B1 is measured after riding down from the Lobby, so its count includes the Lobby's programs, like L1 full at 81).
-- `FLOOR_SCENE_CAPS.B1` caps it at 100; the worst ride to B1 draws up to 119 scene calls and 136 whole-frame calls (budget 150) and about 26k triangles at most.
-- The B1 chunk (EngineRoom, EngineBody) is 5.3 KB gzip (cap 16 KB). The cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
+- Scene calls: the road kit, one merged mesh and its edges, four instanced holo draws (the flows, the panels, the reactor rings and the coolant) and the floating sign pair. The rings mesh is always drawn (`frustumCulled` off, the sparks orbit inside it); the coolant mesh is frustum-culled from the arrival.
+- Settled on B1: 46 scene calls and 8,920 triangles on lite, 49 and 10,027 on full, with 43 and 81 shader programs on CI (`e2e/perf/baseline.json`, unchanged by the reactor; B1 is measured after riding down from the Lobby, so its count includes the Lobby's programs, like L1 full at 81).
+- `FLOOR_SCENE_CAPS.B1` caps it at 100; the worst ride to B1 (from the Lobby, full) draws up to 119 scene calls and 136 to 137 whole-frame calls (budget 150) and about 26k triangles at most (lite 116; from the roof 130 full, 100 lite).
+- The B1 chunk (EngineRoom, ReactorCore, the reactor poller and model, EngineBody) is 11.8 KB gzip (cap 16 KB); most of the growth from 5.4 KB is the office poller and the v4 parser, first reached by the chunk. The cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count. The main 3D path does not change: the reactor costs it only the room label line in the point-and-go registry.
 
 ## Sky and sound
 
@@ -72,6 +91,6 @@ Index: [AGENTS.md](../../AGENTS.md). Shared floor rules: [Floors](floors.md). Th
 
 ## Tests and captures
 
-- Unit: `tests/unit/engine-layout.test.ts`, `engine-scenery.test.ts`, `engine-views.test.ts`, `b1-unlock-flag.test.ts`, `floor-chunks-graph.test.ts`, `arrivals.test.ts`; the unlock (PR 3): `tests/unit/b1-visits.test.ts`, `b1-deep-link.test.ts`, `tests/hud/EngineUnlockLayer.test.tsx`.
-- E2E: `e2e/engine-room.spec.ts` (the flag, a locked session, rides from the Lobby and the roof, every station's drawer), `e2e/memory.spec.ts` (Lobby to B1 round trips), `e2e/b1-unlock.spec.ts` (the locked row, the unlock moment, deep links, Cmd-K); the helpers are in `e2e/b1.ts` (`B1_QUERY`, `enterB1Route`, `rideTo`).
-- Captures for review: `bun scripts/b1-shots.ts --base <url> --out <dir>` (arrival, aisle and each station's drawer, desktop full and phone lite).
+- Unit: `tests/unit/engine-layout.test.ts`, `engine-scenery.test.ts`, `engine-views.test.ts`, `b1-unlock-flag.test.ts`, `floor-chunks-graph.test.ts`, `arrivals.test.ts`; the reactor: `engine-reactor.test.ts` (the model), `engine-reactor-fx.test.ts` (the look), `engine-reactor-live.test.ts` (the poller), `engine-reactor-hum.test.ts`, `office-chunk-graph.test.ts` (office-only modules stay off the main path), `tests/hud/EngineBody.test.tsx` (the reactor drawer); the unlock (PR 3): `tests/unit/b1-visits.test.ts`, `b1-deep-link.test.ts`, `tests/hud/EngineUnlockLayer.test.tsx`.
+- E2E: `e2e/engine-room.spec.ts` (the flag, a locked session, rides from the Lobby and the roof, every station's drawer, the reactor's lanes and polling only on B1, the reactor drawer with a mocked feed and stats), `e2e/memory.spec.ts` (Lobby to B1 round trips), `e2e/b1-unlock.spec.ts` (the locked row, the unlock moment, deep links, Cmd-K); the helpers are in `e2e/b1.ts` (`B1_QUERY`, `enterB1Route`, `rideTo`).
+- Captures for review: `bun scripts/b1-shots.ts --base <url> --out <dir>` (arrival, aisle and each station's drawer, desktop full and phone lite) and `bun scripts/b1-reactor-shots.ts --base <url> --out <dir>` (the arrival, the aisle, each bay from its door pad, the reactor with live data, a deploy flash and the reactor drawer, at 1440x900, 820x1180 and 390x844 on full and lite, with `/api/office?v=4` and `/api/stats` mocked; `--only <size>-<tier>,...` and `--bays <size>-<tier>,...` narrow it).

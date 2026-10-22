@@ -90,7 +90,8 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Office chips under drawers | 2026-10-22: the office chip row hides while a drawer sheet is open (#287) | Done |
 | Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
-| B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 3): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs | In review |
+| B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 3): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
+| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 3): the aisle ends in a reactor hall with a live core (rings from the newest CI run, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core | In review |
 
 ## Controls and first visit
 
@@ -358,7 +359,7 @@ The basement under the Lobby: a workshop where each station explains one part of
   - The moment the fifth floor is reached a short chime plays, the B1 row lights up and pulses (no pulse under reduced motion), and Rover offers "Take me there" or "Later". The offer is shown once; a reload before answering drops it, and the row stays open.
   - `/{locale}#B1` (and Cmd-K "Go to B1 Engine Room", in the 3D tower only) goes straight to the floor once unlocked; locked, the link stays in the Lobby (and the action stays put) and Rover says how many floors are left.
   - `?unlock=b1` (in production `?unlock=b1&debug=1`) unlocks a session for development and tests only: it is never remembered and does not start the moment.
-- **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, and a workbench at the end. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
+- **The floor**: an aisle runs east from the elevator past seven bays, alternating north and south, with server racks between them, ceiling pipes and cable trays, into a reactor hall with the reactor core and a workbench by the north wall. Light pulses travel along the pipes and the rack LEDs blink; reduced motion freezes them.
 - **Seven stations** each open the Glass Drawer with content from the build story (`content/build-story.json`, numbers from the build-time snapshot) and a link to its `/build` section:
   - **The Blueprint**: the whole system on one diagram (the agents and the office relay on the owner's Mac, GitHub and its webhook, Cloudflare Pages and Functions, Workers AI with the Groq backup tiers, KV with the Ask knowledge pack, the hq-office Worker and its Durable Object, R2 study guides, the stats Cron Worker) and how each part runs.
   - **The Build Timeline**: thirteen rounds of merged pull requests, from the foundation to the office revamp, with dates and links (pull requests whose diff shows a client name are counted but not linked).
@@ -367,11 +368,18 @@ The basement under the Lobby: a workshop where each station explains one part of
   - **The Dashboard**: the repository numbers and the enforced budgets.
   - **Rover's Brain**: how Ask Rover Assistant answers, as a pipeline diagram (gatekeeper, answer cache, scope router, BM25 retrieval over the knowledge pack, the model chain, output checks, the streamed answer) and eight steps, including the nightly evals.
   - **Rejected Designs**: thirteen ideas that were tried or proposed and dropped, each with the reason and, where it is linkable, the pull request.
+- **The reactor hall**: the aisle ends at a live reactor core, the site's heartbeat:
+  - four rings of segments colored by the jobs of the newest CI run (cyan running, green done, red failed, grey queued), turning slowly in alternating directions;
+  - a white flash when a new successful production deploy shows up;
+  - sparks orbiting inside the rings, one per AI agent awake in the Agent Office (full quality);
+  - a coolant pulse whose speed follows the visits and Ask questions of the last 30 days, and a counter plate with both numbers;
+  - offline, stale or under reduced motion it rests in a calm amber glow (no turn, no orbit, no flash). Lite quality draws half the segments and no sparks.
+  - It checks for new data only while the rover is on B1 (every 10 s while agents are awake, 30 s otherwise), stops after 10 minutes without input and picks up again on the next input; the visit numbers come from the page's one stats fetch.
 - **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the newest CI run, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions in the last 30 days) and how to read it, in plain words; offline it says so and shows the idle glow. It has no `/build` section and checks for new data only while the rover is on B1.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers, that rises (up to about 6 dB) as the rover nears the reactor core.
-- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car facing the workbench. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
+- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car looking down the aisle at the reactor. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
 - The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
-- Budgets: its own 5.3 KB floor chunk (loaded only when unlocked), 45 scene calls on lite and 48 on full when settled.
+- Budgets: its own 11.8 KB floor chunk (cap 16 KB, loaded only when unlocked), 46 scene calls on lite and 49 on full when settled.
 
 ## Routes
 
