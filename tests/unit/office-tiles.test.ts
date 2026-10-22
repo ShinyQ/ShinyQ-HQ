@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LOBBY } from "@/experience/config";
 import { officeObstacles, officeRoad, officeSlots, officeZone } from "@/experience/floors/lobby/officeLayout";
-import { stepTileAlpha, TILE_COUNT, TILES, tileCenters } from "@/experience/floors/lobby/office/tiles";
+import { STAGE_KIND } from "@/experience/floors/lobby/hallStage";
+import { stepTileAlpha, TILE_COUNT, TILE_KIND, TILES, tileCenters } from "@/experience/floors/lobby/office/tiles";
 import type { Rect } from "@/experience/types";
 
 const W = LOBBY.officeWing;
@@ -9,6 +10,12 @@ const f32 = (n: number, v = 0) => new Float32Array(n).fill(v);
 const half = TILES.size / 2;
 const tileRect = (c: { x: number; z: number }): Rect => ({ minX: c.x - half, maxX: c.x + half, minZ: c.z - half, maxZ: c.z + half });
 const overlap = (a: Rect, b: Rect) => a.minX < b.maxX && a.maxX > b.minX && a.minZ < b.maxZ && a.maxZ > b.minZ;
+
+describe("tile kind", () => {
+  it("is the hall stage tile kind, kept as a literal off the hall modules", () => {
+    expect(TILE_KIND).toBe(STAGE_KIND.tile);
+  });
+});
 
 describe("tile grid", () => {
   const centers = tileCenters(W);

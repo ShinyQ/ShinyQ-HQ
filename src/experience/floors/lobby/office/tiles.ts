@@ -4,6 +4,8 @@ import type { OfficeWing } from "../officeLayout";
 /** Merged-PR floor tiles (design 7.4): a 6 x 4 grid of 1.6 u tiles with 0.4 u gaps on the wing plaza, `z0` u past the slab edge S, on the wing's axis. */
 export const TILES = { cols: 6, rows: 4, size: 1.6, gap: 0.4, z0: 3, y: 0.02, lit: 0.7, full: 1, dim: 0.08, fadeS: 0.6, gapS: 0.4 } as const;
 export const TILE_COUNT = 24;
+/** `STAGE_KIND.tile` (`hallStage.ts`), a literal so the office chunk does not import the hall modules. */
+export const TILE_KIND = 5;
 
 export function tileCenters(w: OfficeWing): Vec2[] {
   const pitch = TILES.size + TILES.gap;

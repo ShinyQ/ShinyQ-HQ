@@ -45,8 +45,6 @@ import { roverRuntime } from "../../../rover/runtime";
 import { RIDE_CULL_BOUNDS } from "../../../tower/rideCull";
 import type { GpuTier, Rect } from "../../../types";
 import { LOBBY } from "../../../config";
-import { createStageMaterial } from "../HallFx";
-import { STAGE_KIND } from "../hallStage";
 import { OFFICE, officeTowerColumn, type OfficeSlot, type OfficeTranslate } from "../officeLayout";
 import { canvasTexture, OFFICE_SLOTS, officeBounds, officeChipMode, useCanvasFonts } from "../officeShell";
 import { CHIP_ROW, chipMaxWidth, chipRowBounds, chipsDotsOnly, chipsOneLine, layoutChipRows, nextChipFar, OFFICE_CHIP_ANCHORS, OFFICE_CHIP_TOP, officeHudBoxes, placeAt, segmentHitsBox } from "./chipRows";
@@ -64,7 +62,7 @@ import { officeInstances, PARTS_PER_ROVER, roverFrame, writeDeskScreen, writeFac
 import { OFFICE_STATE_STYLE, slotPhase, STATUS_COLOR, STILL_T } from "./officeVisual";
 import { deployRunning, PipeQueue, runningDeployAt } from "./pipeline";
 import { PipelineFx, restPipeline } from "./pipelineFx";
-import { stepTileAlpha, TILE_COUNT, TILES, tileCenters } from "./tiles";
+import { stepTileAlpha, TILE_COUNT, TILE_KIND, TILES, tileCenters } from "./tiles";
 import { drawWall, WALL_CANVAS, wallModel, type WallModel } from "./officeWall";
 import { idleLoop, officeReplay, publishReplay, subscribeReplay, useOfficeSource } from "./replayLink";
 import { OFFICE_CHIP_COUNT, officeRuntime, setChipFar, setChipsCompact } from "./runtime";
@@ -507,8 +505,9 @@ function OfficeRovers({ view, slots, tier, t }: { view: OfficeView; slots: reado
 }
 
 /**
- * The merged-PR floor tiles (design 7.4): one instanced `STAGE_KIND.tile` draw on the hall's stage program (no new
- * program), the grid's fixed bounds so it is frustum culled out of view. The frame fades the tiles toward today's
+ * The merged-PR floor tiles (design 7.4): one instanced `STAGE_KIND.tile` draw on the stage mode of the holo program
+ * (the hall's stage shader, no new program), taken through `holoFx` and a literal tile kind (`TILE_KIND`) rather than
+ * `HallFx`, which keeps the hall modules out of the office chunk's graph and off the first-frame path. The grid's fixed bounds let it be frustum culled out of view. The frame fades the tiles toward today's
  * merge count (`tiles.ts`) and writes `aStage2.w` only on change; the instance data itself is written once.
  */
 function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
@@ -524,7 +523,7 @@ function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
     centers.forEach((p, i) => {
       FRAME.makeRotationX(-Math.PI / 2).setPosition(p.x, TILES.y, p.z).toArray(at, i * 16);
       color.set(rgb, i * 3);
-      stage.set([STAGE_KIND.tile, TILES.size, TILES.size, 0], i * 4);
+      stage.set([TILE_KIND, TILES.size, TILES.size, 0], i * 4);
       stage2[i * 4 + 3] = TILES.dim;
     });
     const { lead, rect } = LOBBY.officeWing;
@@ -533,8 +532,8 @@ function OfficeTiles({ view, tier }: { view: OfficeView; tier: GpuTier }) {
     return { at, color, bounds, geometry };
   }, [tier]);
   useDispose(built.geometry);
-  const material = useMemo(() => createStageMaterial({ additive: true }), []);
-    useDispose(material);
+  const material = useMemo(() => createHoloMaterial({ mode: HOLO_MODE.stage, additive: true, depthWrite: false }), []);
+  useDispose(material);
   const fadeRef = useRef({ alpha: new Float32Array(TILE_COUNT).fill(TILES.dim), clock: { next: 0, lit: 0 } });
   // A waiting upload must not outlive the mesh.
   useEffect(() => {
