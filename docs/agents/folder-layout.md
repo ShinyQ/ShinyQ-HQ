@@ -142,13 +142,12 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 ### Captures
 
-- `scripts/dev-shots.ts`: captures the dev-only L4 concepts prototype at 1440x900, 834x1112 and 390x844 (needs bun run dev; CONCEPTS, SHOTS, WIDTHS, BASE_URL).
 - `scripts/capture-dev.ts`: owner review captures (dev routes or the served export) at 1440x900, 834x1112 and 390x844 with draw call metrics.
 - `scripts/readme-hero.ts`: README media from the served export on the virtual frame clock (`e2e/vclock.ts`): the hero GIF (ffmpeg plus gifsicle, under 6 MB), its still and the floor stills in docs/readme/.
 - `scripts/office-shots.ts`: Agent Office owner captures (the nine states, the summary, GitHub and desk drawers, semi-live and off) on a served export with `/api/office` answered from fixtures, at 1440x900, 820x1180 and 390x844 on both tiers; never committed.
 - `scripts/intro-shots.ts`, `scripts/sky-shots.ts`, `scripts/arrival-shots.ts`, `scripts/b1-shots.ts`: owner review captures of the intro (frames, strip, video), the four sky phases, the elevator arrivals and the B1 Engine Room; never committed.
 - `scripts/visual-gate.ts`: the look-preserving gate (e2e/visual-gate.spec.ts baselines from a base ref against the working tree; local only); `scripts/shot-diff.ts` compares two capture folders pixel by pixel.
-- `scripts/measure-delivery.ts`, `scripts/perf-gpu.ts`: local-only delivery numbers and real-GPU measurements (never in CI).
+- `scripts/perf-gpu.ts`: local-only real-GPU measurements (never in CI).
 
 ## src/
 
@@ -312,8 +311,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/experience/floors/library/`: L4 Writing.
   - Pure model.ts (LibraryLayout contract, dockAlong, signsFor, paperSlots, tagLinks, `YEAR_POST`).
   - signPlacement.ts (`placeLibraryLabels`: which timeline signs show).
-  - concepts/ (atrium, newsroom, constellation builders), layout.ts (buildLibraryLayout: the owner's pick).
-  - decor/ (R3F decor per concept, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement; StudyVault.tsx with pure vault.ts: the Study Vault books whose covers open as the rover nears and whose click opens the study guide reader).
+  - concepts/newsroom.ts (the picked concept's builder), layout.ts (buildLibraryLayout: the owner's pick).
+  - decor/ (R3F newsroom decor, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement; StudyVault.tsx with pure vault.ts: the Study Vault books whose covers open as the rover nears and whose click opens the study guide reader).
 - `src/experience/floors/roof/`: RF roof deck.
   - Pure layout.ts (buildRoofLayout, ROOF_DECK, roofActive), solids.ts (merged boxes, lattice, scatter).
   - kit.tsx (MergedBoxes, MergedEdges, PulseRings, HitBox, aboutCard).
@@ -371,9 +370,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 #### Dev prototypes
 
-- `src/experience/prototype/`: dev-only walkable floors prototype (L2 and L3 use the real Career Road and Project Roads layouts; type icons); route src/app/[locale]/dev/floors/page.dev.tsx.
 - `src/experience/prototype/certs/`: dev-only certification harness: CERT_FIXTURE (the live 7 plus 23 FICTIONAL entries, tests and dev only) and the real Page View and 3D wall at /{locale}/dev/certs?view=3d&n=7|30&tier=lite|full.
-- `src/experience/prototype/library/`: dev-only L4 concepts prototype (all three concepts on the real content, Glass Drawer and paper modal); route src/app/[locale]/dev/library/page.dev.tsx?concept=atrium|newsroom|constellation&view=rover|top&tier=full|lite&motion=reduce&posts=N.
 
 ### src/hud/
 

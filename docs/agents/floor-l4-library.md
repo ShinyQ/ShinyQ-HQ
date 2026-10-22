@@ -16,8 +16,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 
 ## Layout builder
 
-- `buildLibraryLayout(input)` (`floors/library/layout.ts`, `LIBRARY_CONCEPT`) wraps the picked builder from `concepts/`.
-  - The other two concepts stay for the dev prototype only, so the 3D chunk bundles just the pick.
+- `buildLibraryLayout(input)` (`floors/library/layout.ts`, `LIBRARY_CONCEPT`) wraps the picked builder, `concepts/newsroom.ts` (the only concept left).
 - It returns a `LibraryLayout` (`model.ts`):
 
   | Field | Contents |
@@ -49,7 +48,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 ## Timeline signs
 
 - The timeline words are one `FloatingSigns` group `library-signs` (`LibrarySigns.tsx`, 2 draw calls instead of one troika `Text` per station).
-  - Pure specs in `decor/signs.ts`; the other two concepts keep `ZoneSigns`.
+  - Pure specs in `decor/signs.ts`.
 - One height rule for every plate on the timeline: `L4_SIGN.bottom`, 5.6 u.
 - Kinds of sign:
   - Section signs: one per zone (Posts, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first desk (`stationBackEdge`).

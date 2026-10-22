@@ -166,7 +166,7 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
   - The fetch starts with the 3D chunk: during hydration on a boot-first visit (the gate's first render, next to the module-level `loadExperience()`), else when the tier is decided and the view is 3D (the gate loads both with `Promise.all`). `Experience` mounts only once both are in.
   - A failed fetch is a crash ([Crash recovery](#crash-recovery)): one automatic retry on the next mount, then the static page with "Retry 3D" (which fetches again). The boot cover is released with the static tier (or by its 8 s timeout), never left up.
   - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
-  - Dev routes (`/{locale}/dev/*`) still pass `experienceDataFor(locale)` to their prototype loaders directly.
+  - The dev route `/{locale}/dev/certs` passes `experienceDataFor(locale)` to its harness directly.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
 - `roomData` carries the content hash of each floor's Glass Drawer file (its `?v=`, [hud-and-drawer.md](hud-and-drawer.md#builders-and-data)); like the rest of `ExperienceData` it rides in the experience JSON, never in the HTML, and the drawer content itself is never in either.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.

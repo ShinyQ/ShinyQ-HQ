@@ -256,7 +256,7 @@ Spec section 13.
 ### Sources and citations
 
 - Opinions need a written source (`citedSource`: a quoted title or two shared three-word runs with a retrieved perspective, principles, post or talk chunk).
-  - Otherwise the answer becomes the no-view message with the closest source (`noViewMessage`; `closestSource` never names a perspective, which has no page).
+  - Otherwise the answer becomes the no-view message with the closest source (`noViewMessage`; `relevantClosest` never names a perspective, which has no page).
 - The pack's "Kurniadi's written view" label counts as an opinion claim (`claimsOpinion`).
 - `privateTopic` and `opinionAboutOthers` decline before the model; `firstPersonVoice` replaces first-person answers.
 - The `done` frame may carry `cite`: an allowlisted path (`isAskCite` in `src/ask/protocol.ts`: `/contact#how`, `/blog/<slug>`, `/labs/<slug>`, `/library`, `/build`; never a `#perspectives-*` anchor).
