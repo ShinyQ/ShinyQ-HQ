@@ -64,7 +64,7 @@ describe("smart CI (ci.yml)", () => {
     expect(job("changes")).toMatch(/sparse-checkout: \|\n\s+src\n\s+content\n\s+scripts\n\s+e2e\n/);
   });
 
-  it("always runs the build, the safety scan and og:check", () => {
+  it("always runs the build, the export script policy scan and og:check", () => {
     expect(job("site")).toContain("bun scripts/scan-export.ts out");
     expect(job("site")).toContain("bun run og:check");
     expect(job("site")).not.toMatch(/^\s{4}if:/m);
