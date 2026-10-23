@@ -1,5 +1,5 @@
 import type { RoomId } from "@/content/schema";
-import { yawLooking } from "../../camera/look";
+import { ARRIVAL_YAW, yawLooking } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
 import type { Road, RoadNetwork, Spur } from "../../nav/road";
 import type { DoorTrigger, FloorLayout, Rect, Vec2 } from "../../types";
@@ -52,11 +52,12 @@ export const ENGINE = {
   /** Desktop arrival zoom: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`), as on RF. */
   arrivalZoom: 0.95,
   /**
-   * Phone arrival (owner 2026-10-18): a portrait view straight down the aisle cuts every station sign at the edges,
-   * so the phone camera swings `turn` radians to the north side of the rover and pitches down less (`pitch`, an
-   * offset from the rig's elevation): it looks across the aisle at the first two stations, their signs whole.
+   * Phone arrival (owner 2026-10-18, on the shared diagonal since 2026-10-23): the camera stands behind and to the right of
+   * the rover like every arrival and pitches down less (`pitch`, an offset from the rig's elevation), so the station the
+   * diagonal looks at (Working with AI Agents, across the aisle ahead) shows its sign whole. At 35 degrees no portrait
+   * pose inside `shaftClearZoom` holds two signs whole.
    */
-  arrivalPhone: { zoom: 0.85, turn: (-75 * Math.PI) / 180, pitch: -0.2 },
+  arrivalPhone: { zoom: 0.8, pitch: -0.2 },
   /** Height of the ceiling pipe runs (u above the slab), well above the station signs. */
   ceiling: 7.4,
 } as const;
@@ -149,13 +150,13 @@ export function buildEngineLayout(): EngineLayout {
   const doors: DoorTrigger[] = [...bays.map((b) => ({ room: b.room, at: b.pad, facing: b.facing })), { room: ENGINE_REACTOR_ROOM, at: { ...reactorDoor }, facing: { x: 1, z: 0 } }];
   const arrival: Vec2 = { ...E.arrival };
   const viewZones: ViewZone[] = [
-    // Arrival (eastbound only, primed by an arrival or a deep link): behind the rover, down the aisle to the reactor.
+    // Arrival (eastbound only, primed by an arrival or a deep link): behind and to the right of the rover, down the aisle to the reactor.
     {
       id: "B1:arrival",
       area: { minX: arrival.x - 2, maxX: arrival.x + 2, minZ: arrival.z - 2, maxZ: arrival.z + 2 },
-      yaw: LOOK_EAST,
+      yaw: ARRIVAL_YAW,
       zoom: E.arrivalZoom,
-      classView: { mobile: { yaw: LOOK_EAST + E.arrivalPhone.turn, zoom: E.arrivalPhone.zoom, pitch: E.arrivalPhone.pitch } },
+      classView: { mobile: { zoom: E.arrivalPhone.zoom, pitch: E.arrivalPhone.pitch } },
       travel: { x: 1, z: 0 },
       arrivalOnly: true,
     },

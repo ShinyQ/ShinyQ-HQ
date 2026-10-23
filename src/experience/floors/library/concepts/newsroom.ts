@@ -1,6 +1,7 @@
 import type { RoomId } from "@/content/schema";
 import type { Plaza, Road, RoadNetwork } from "../../../nav/road";
 import { coreRect, ringRoadEntry, ringRoadPoints } from "../../../nav/ringRoad";
+import { ARRIVAL_YAW } from "../../../camera/look";
 import { TOPICS_ROOM } from "../topicHash";
 import type { Rect, Vec2 } from "../../../types";
 import {
@@ -208,7 +209,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
       {
         id: "L4:arrival",
         area: around(spawn, 2),
-        yaw: E.lookEast,
+        yaw: ARRIVAL_YAW,
         zoom: N.arrivalZoom,
         classView: { mobile: { zoom: N.arrivalZoomPhone } },
         travel: { x: 1, z: 0 },

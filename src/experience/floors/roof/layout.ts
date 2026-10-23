@@ -1,3 +1,4 @@
+import { ARRIVAL_YAW } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
 import type { DoorTrigger, FloorLayout, Rect, Vec2 } from "../../types";
@@ -39,12 +40,17 @@ export const ROOF_DECK = {
   availability: { x: -4, z: 0 },
   /**
    * Deep links spawn here and elevator arrivals roll on here (Round 8 J, like L3): the end of the lead road at
-   * the plaza rim. The camera stands behind the rover and looks east over the plaza at the centerpiece mast.
+   * the plaza rim. The camera stands behind the rover and `ELEVATOR_DIAGONAL` to its right (owner 2026-10-23) and looks
+   * over the plaza at the centerpiece mast.
    */
   spawn: { x: -8, z: 0 },
-  /** Arrival zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`). */
+  /**
+   * Arrival zooms, inside `shaftClearZoom` (the camera east of the glass shaft); a portrait phone also aims
+   * `arrivalAimPhone` u to the right, so the mast and its availability sign stay whole beside the rover.
+   */
   arrivalZoom: 0.95,
-  arrivalZoomPhone: 0.8,
+  arrivalZoomPhone: 0.88,
+  arrivalAimPhone: 4.25,
   /** View yaw at the availability stop (offset from the default angle): looks east at the sign and the mast, like the arrival. */
   availabilityYaw: (-3 * Math.PI) / 4,
   /**
@@ -129,13 +135,13 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
   const spawn: Vec2 = { x: D.spawn.x, z: D.spawn.z };
   const box = (p: Vec2, r = 2): Rect => ({ minX: p.x - r, maxX: p.x + r, minZ: p.z - r, maxZ: p.z + r });
   const viewZones: ViewZone[] = [
-    // Spawn and arrival: behind a rover heading east, looking over the plaza at the mast and its availability sign (eastbound rovers only).
+    // Spawn and arrival: behind and to the right of a rover heading east, looking over the plaza at the mast and its availability sign (eastbound rovers only).
     {
       id: "RF:arrival",
       area: box(spawn),
-      yaw: (-3 * Math.PI) / 4,
+      yaw: ARRIVAL_YAW,
       zoom: D.arrivalZoom,
-      classView: { mobile: { zoom: D.arrivalZoomPhone } },
+      classView: { mobile: { zoom: D.arrivalZoomPhone, lookOffset: { right: D.arrivalAimPhone } } },
       travel: { x: 1, z: 0 },
       arrivalOnly: true,
     },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { STATION_IDS } from "@/content/build-story";
 import { RoomIdSchema } from "@/content/schema";
-import { yawLooking } from "@/experience/camera/look";
+import { ARRIVAL_YAW, yawLooking } from "@/experience/camera/look";
 import { buildEngineLayout, ENGINE, ENGINE_BAYS, ENGINE_REACTOR_ROOM, ENGINE_STATIONS, engineRoom } from "@/experience/floors/engine/layout";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect } from "@/experience/types";
@@ -90,7 +90,7 @@ describe("B1 Engine Room layout", () => {
     expect(floor.arrival).toEqual(ENGINE.arrival);
     expect(floor.spawn).toEqual(ENGINE.arrival);
     const zones = new Map(floor.viewZones?.map((z) => [z.id, z]));
-    expect(zones.get("B1:arrival")).toMatchObject({ area: { minX: -10, maxX: -6, minZ: -2, maxZ: 2 }, yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 }, arrivalOnly: true });
+    expect(zones.get("B1:arrival")).toMatchObject({ area: { minX: -10, maxX: -6, minZ: -2, maxZ: 2 }, yaw: ARRIVAL_YAW, travel: { x: 1, z: 0 }, arrivalOnly: true });
     const reactor = zones.get(ENGINE_REACTOR_ROOM)!;
     expect(reactor).toMatchObject({ yaw: yawLooking({ x: 1, z: 0 }), travel: { x: 1, z: 0 } });
     expect(contains(reactor.area, ENGINE.reactorDoor)).toBe(true);

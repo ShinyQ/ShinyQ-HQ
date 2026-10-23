@@ -1,6 +1,7 @@
 import type { RoomId, Wing } from "@/content/schema";
 import { comparePods } from "@/content/selectors";
 import { ROAD, type Plaza, type Road, type RoadNetwork, type Spur } from "../../nav/road";
+import { ARRIVAL_YAW } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
 import type { DoorTrigger, FloorLayout, LabPod, Rect, Vec2 } from "../../types";
 import { reactorRect, REACTOR, ringEntry, ringPoints } from "./reactor";
@@ -86,10 +87,17 @@ export const LABS = {
   boardEntries: 5,
   /** Deep links (and the roll after an elevator ride) park here: on the hub's east rim facing the boards, beyond the hint radius of every board stop. */
   overview: { x: 8.5, z: 0 } as Vec2,
-  /** Overview camera zoom: the three boards in the middle of the frame, the camera still east of the shaft. */
-  overviewZoom: 1.3,
-  /** The farthest phone view that keeps the follow camera east of the elevator shaft with a 1.5 u gap; the shaft then lies wholly behind the camera, which looks east. */
+  /**
+   * Overview camera zoom: the three boards in the middle of the frame, the camera still east of the shaft. The camera
+   * stands `ELEVATOR_DIAGONAL` to the rover's right (owner 2026-10-23), so it aims `overviewAim` u to the right, back
+   * onto the boards, and stands far enough back that the left board clears the profile card and the right one the
+   * elevator rail.
+   */
+  overviewZoom: 1.4,
+  overviewAim: 5.75,
+  /** The phone view: the Data and ML board whole, the camera east of the elevator shaft with a 1.5 u gap, aimed `overviewAimPhone` u right. */
   overviewZoomPhone: 1.45,
+  overviewAimPhone: 2.75,
   margin: 6,
   /** Hologram stage disc inside hero pods (6 u diameter). */
   stageRadius: 3,
@@ -399,15 +407,16 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
     // The side stops lie on dead-end spurs, so they take any heading; only the data stop sits on the spine, where a
     // westbound rover must not get the zone.
     ...LABS_WINGS.map(boardZone),
-    // The arrival spot on the hub's east rim, on the spine: the camera sits west of the rover and looks east at
-    // the three boards with all three road mouths in front of them (phones zoom out further). Only rovers heading east
-    // get it (`travel`), so driving the spine back to the hub never turns the camera around.
+    // The arrival spot on the hub's east rim, on the spine: the camera sits behind and to the right of the rover (the
+    // elevator diagonal) and looks at the three boards with all three road mouths in front of them (phones zoom out
+    // further). Only rovers heading east get it (`travel`), so driving the spine back to the hub never turns the camera around.
     {
       id: "L3:overview",
       area: { minX: L.overview.x - 4, maxX: boards.data.stop.x - 1, minZ: -2, maxZ: 2 },
-      yaw: LOOK_EAST,
+      yaw: ARRIVAL_YAW,
       zoom: L.overviewZoom,
-      classView: { mobile: { zoom: L.overviewZoomPhone } },
+      lookOffset: { right: L.overviewAim },
+      classView: { mobile: { zoom: L.overviewZoomPhone, lookOffset: { right: L.overviewAimPhone } } },
       travel: EAST,
     },
     // Tech Reactor stop on the ring road's east point: the camera stands east of the rover and looks west

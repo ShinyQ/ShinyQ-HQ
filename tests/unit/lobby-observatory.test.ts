@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildFloorLayouts, LOBBY, ROVER } from "@/experience/config";
+import { ELEVATOR_DIAGONAL } from "@/experience/camera/look";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { followPose } from "@/experience/camera/rigs";
 import { kioskBounds, kioskFacing } from "@/experience/floors/lobby/kiosk";
@@ -148,12 +149,15 @@ describe("Lobby views around the observatory", () => {
     return { angle: Math.abs(Math.atan2(Math.sin(to - look), Math.cos(to - look))), camera: { x: cx, z: cz } };
   };
 
-  it("looks east at the profile hologram after the elevator (Round 8 J, owner 2026-10-17)", () => {
-    // The settled camera with its look-ahead and shaft clearance: tests/unit/arrivals.test.ts.
+  it("looks at the profile hologram after the elevator from behind and to the right of the rover (Round 8 J, owner 2026-10-17 and 2026-10-23)", () => {
+    // The settled camera with its look-ahead, look offset, shaft clearance and framing: tests/unit/arrivals.test.ts.
     for (const cls of ["desktop", "mobile"] as const) {
       const { angle, camera } = offAxis(cls, l1.arrival!, LOBBY.hologram);
-      expect(angle, cls).toBeLessThan(0.05);
+      // The hologram lies between the line through the rover and the floor's east axis (the elevator diagonal).
+      expect(angle, cls).toBeGreaterThan(0);
+      expect(angle, cls).toBeLessThan(ELEVATOR_DIAGONAL);
       expect(camera.x, cls).toBeLessThan(l1.arrival!.x);
+      expect(camera.z, cls).toBeGreaterThan(l1.arrival!.z);
     }
   });
 

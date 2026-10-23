@@ -2,7 +2,7 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
-import { ARRIVAL_HEADING, cameraBehindHeading, LOOK_EAST_YAW, railYawBehind, SHAFT_CLEAR_X, shaftClearZoom } from "@/experience/camera/arrival";
+import { ARRIVAL_HEADING, ARRIVAL_RAIL_YAW, ARRIVAL_YAW, cameraBehindHeading, ELEVATOR_DIAGONAL, SHAFT_CLEAR_X, shaftClearZoom } from "@/experience/camera/arrival";
 import { followOffsetScale } from "@/experience/camera/offset";
 import { ZOOM_RANGE, zoneAt, zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type CameraPose, type Vec3 } from "@/experience/camera/rigs";
@@ -23,8 +23,9 @@ import { cameraClass } from "@/lib/viewport";
 
 /**
  * Round 8 J, L3-style arrivals (owner 2026-10-17: "the proper one is the third floor"): after a ride the rover
- * rolls on east to the floor's arrival point, and the settled camera stands behind it, looking east down the
- * floor's main axis at its main sight, clear of the elevator shaft and of the HUD.
+ * rolls on east to the floor's arrival point, and the settled camera stands behind it and `ELEVATOR_DIAGONAL` to its
+ * right (owner 2026-10-23, "serong kanan"), looking along the floor's main axis at its main sight, clear of the
+ * elevator shaft and of the HUD.
  */
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const career = careerLayoutInput(data.career);
@@ -88,10 +89,11 @@ const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
 const rigOf = (floor: FloorId): "follow" | "rail" => (floor === "L2" ? "rail" : "follow");
 
 /**
- * The B1 phone arrival's sight (owner 2026-10-18: whole station signs on a portrait screen): the four corners of the
- * first two station signs (the Blueprint and the Build Timeline), each turned square to the camera like `FloatingSigns`.
+ * The B1 phone arrival's sight (owner 2026-10-18: a whole station sign on a portrait screen; on the shared diagonal since
+ * 2026-10-23): the four corners of the sign of the station the diagonal looks at across the aisle (Working with AI
+ * Agents, the third station), turned square to the camera like `FloatingSigns`.
  */
-const engineSignsShown = engineSigns(buildEngineLayout(), data.engine, { title: "", subtitle: "" }).slice(0, 2);
+const engineSignsShown = engineSigns(buildEngineLayout(), data.engine, { title: "", subtitle: "" }).slice(2, 3);
 function signCornersFrom(camera: Vec3): { label: string; at: Vec3 }[] {
   return engineSignsShown.flatMap((sign) => {
     const { w, h } = signPlate(sign);
@@ -101,11 +103,10 @@ function signCornersFrom(camera: Vec3): { label: string; at: Vec3 }[] {
   });
 }
 
-/** Only the B1 phone arrival turns its camera off the east view (owner 2026-10-18: whole station signs on a portrait screen). */
-const turned = (floor: FloorId, cls: ViewportClass) => {
-  const { zone } = arrivalOf(floor);
-  return Math.abs(zoneView(zone, cls).yaw - zone.yaw) > 1e-9;
-};
+/** The B1 phone arrival frames whole station signs (owner 2026-10-18), on the same diagonal as every arrival. */
+const signsView = (floor: FloorId, cls: ViewportClass) => floor === "B1" && cls === "mobile";
+/** Heading from the settled camera to the rover: behind the rover and `ELEVATOR_DIAGONAL` to its right. */
+const DIAGONAL_HEADING = ARRIVAL_HEADING + ELEVATOR_DIAGONAL;
 
 function arrivalOf(floor: FloorId): { layout: FloorLayout; arrival: Vec2; zone: ViewZone } {
   const layout = layouts[floor];
@@ -123,13 +124,15 @@ function settledPose(floor: FloorId, w: number, h: number): { pose: CameraPose; 
   const zoom = zoneView(zone, cls).zoom ?? 1;
   if (rigOf(floor) === "rail") {
     const axis = layout.road?.roads[0]?.points ?? [];
-    return { pose: railPose(cls, arrival.x, 0, zoom, arrival.z, zone.railYaw, roadZAt(axis, arrival.x), 0, true), cls, zoom };
+    const right = zoneView(zone, cls).lookOffset?.right ?? 0;
+    return { pose: railPose(cls, arrival.x, 0, zoom, arrival.z, zone.railYaw, roadZAt(axis, arrival.x), 0, true, right), cls, zoom };
   }
   const view = zoneView(zone, cls);
   const forward = followForward(cls, view.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   const target: Vec3 = [arrival.x + forward.x * ahead, 1, arrival.z + forward.z * ahead];
-  return { pose: followPose(cls, target, view.yaw, zoom * followOffsetScale(cls, w / h), view.pitch ?? 0), cls, zoom };
+  const look = view.lookOffset;
+  return { pose: followPose(cls, target, view.yaw, zoom * followOffsetScale(cls, w / h), view.pitch ?? 0, look?.forward ?? 0, look?.up ?? 0, look?.right ?? 0), cls, zoom };
 }
 
 function cameraOf(pose: CameraPose, w: number, h: number): PerspectiveCamera {
@@ -156,12 +159,14 @@ function expectInside(p: { x: number; y: number; front: boolean }, w: number, h:
 
 describe("L3-style arrivals on every floor (owner 2026-10-17)", () => {
   for (const floor of FLOOR_IDS) {
-    it(`${floor}: the arrival point sits on the main axis east of the approach, in its own east-facing view zone`, () => {
+    it(`${floor}: the arrival point sits on the main axis east of the approach, in its own eastbound diagonal view zone`, () => {
       const { layout, arrival, zone } = arrivalOf(floor);
       expect(zone.id).toBe(ZONE_ID[floor]);
       expect(zone.travel).toEqual({ x: 1, z: 0 });
-      expect(zone.yaw).toBeCloseTo(LOOK_EAST_YAW, 9);
-      if (floor === "L2") expect(zone.railYaw).toBeCloseTo(railYawBehind(), 9);
+      expect(zone.yaw).toBeCloseTo(ARRIVAL_YAW, 9);
+      // One diagonal on every camera class: no class view turns the yaw.
+      for (const cls of ["desktop", "tablet", "mobile"] as const) expect(zoneView(zone, cls).yaw, cls).toBeCloseTo(ARRIVAL_YAW, 9);
+      if (floor === "L2") expect(zone.railYaw).toBeCloseTo(ARRIVAL_RAIL_YAW, 9);
       // Arrival views apply only when primed (an arrival or a deep link); the L3 overview is an ordinary zone.
       expect(zone.arrivalOnly).toBe(floor === "L3" ? undefined : true);
       expect(arrival.z).toBe(layout.approach.z);
@@ -181,24 +186,21 @@ describe("L3-style arrivals on every floor (owner 2026-10-17)", () => {
     });
 
     for (const [w, h] of SIZES) {
-      it(`${floor}: the settled camera stands behind the rover, clear of the shaft, framing the rover and the main sight at ${w}x${h}`, () => {
+      it(`${floor}: the settled camera stands behind and to the right of the rover, clear of the shaft, framing the rover and the main sight at ${w}x${h}`, () => {
         const { arrival } = arrivalOf(floor);
         const { pose, cls, zoom } = settledPose(floor, w, h);
         const rover: Vec3 = [arrival.x, 1, arrival.z];
         expect(zoom).toBeGreaterThanOrEqual(ZOOM_RANGE[0]);
         expect(zoom).toBeLessThanOrEqual(ZOOM_RANGE[1]);
-        // A turned class view (the B1 phone arrival looks across the aisle) is checked against the shaft by its camera x below.
-        if (!turned(floor, cls)) {
-          expect(zoom).toBeLessThanOrEqual(shaftClearZoom(cls, w / h, rigOf(floor), arrival.x) + 1e-9);
-          expect(Math.abs(cameraBehindHeading(pose.position, rover) - ARRIVAL_HEADING)).toBeLessThan(0.1);
-        }
+        expect(zoom).toBeLessThanOrEqual(shaftClearZoom(cls, w / h, rigOf(floor), arrival.x) + 1e-9);
+        expect(Math.abs(cameraBehindHeading(pose.position, rover) - DIAGONAL_HEADING)).toBeLessThan(0.1);
         expect(pose.position[0]).toBeGreaterThanOrEqual(SHAFT_CLEAR_X - 1e-9);
         const camera = cameraOf(pose, w, h);
         const safe = cls === "mobile" ? PHONE_SAFE : DESKTOP_SAFE;
         expectInside(screen(camera, w, h, rover), w, h, safe, `rover ${floor} ${w}x${h}`);
-        const sights = turned(floor, cls) ? signCornersFrom(pose.position) : SIGHTS[floor];
+        const sights = signsView(floor, cls) ? signCornersFrom(pose.position) : SIGHTS[floor];
         // Readable: each shown sign's font at least 10 px tall on screen.
-        if (turned(floor, cls))
+        if (signsView(floor, cls))
           for (const sign of engineSignsShown) {
             const em = screen(camera, w, h, [sign.x, sign.y - sign.fontSize / 2, sign.z]).y - screen(camera, w, h, [sign.x, sign.y + sign.fontSize / 2, sign.z]).y;
             expect(em, `${sign.text} font at ${w}x${h}`).toBeGreaterThanOrEqual(10);
@@ -211,7 +213,7 @@ describe("L3-style arrivals on every floor (owner 2026-10-17)", () => {
       const { arrival } = arrivalOf(floor);
       const { pose } = settledPose(floor, 1000, 750);
       expect(pose.position[0]).toBeGreaterThanOrEqual(SHAFT_CLEAR_X - 1e-9);
-      expect(Math.abs(cameraBehindHeading(pose.position, [arrival.x, 1, arrival.z]) - ARRIVAL_HEADING)).toBeLessThan(0.1);
+      expect(Math.abs(cameraBehindHeading(pose.position, [arrival.x, 1, arrival.z]) - DIAGONAL_HEADING)).toBeLessThan(0.1);
     });
   }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose } from "@/experience/camera/rigs";
+import { ARRIVAL_HEADING, cameraBehindHeading, ELEVATOR_DIAGONAL } from "@/experience/camera/arrival";
 import { buildFloorLayouts, ROVER, ROVER_HEIGHT, SHAFT, SHAFT_EAST_FACE } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
@@ -485,11 +486,14 @@ describe("L3 Project Roads layout", () => {
     expect(zone?.id).toBe("L3:overview");
     expect(zone?.classView?.mobile?.zoom).toBe(LABS.overviewZoomPhone);
     for (const cls of ["desktop", "tablet", "mobile"] as const) {
-      // The Director aims FOLLOW_LOOK_AHEAD ahead of the rover along the camera's forward (+x here).
-      const [cx, , cz] = followPose(cls, [LABS.overview.x + FOLLOW_LOOK_AHEAD[cls], 0, LABS.overview.z], zone!.yaw, zoneView(zone!, cls).zoom ?? 1).position;
-      // The camera looks east along the floor from west of the rover, and stays clear of the shaft column.
+      // The Director aims FOLLOW_LOOK_AHEAD ahead of the rover along the camera's forward.
+      const f = followForward(cls, zone!.yaw);
+      const ahead = FOLLOW_LOOK_AHEAD[cls];
+      const [cx, , cz] = followPose(cls, [LABS.overview.x + f.x * ahead, 0, LABS.overview.z + f.z * ahead], zone!.yaw, zoneView(zone!, cls).zoom ?? 1).position;
+      // The camera stands west of the rover and to its right (+z, the elevator diagonal), and clear of the shaft column.
       expect(cx).toBeLessThan(LABS.overview.x);
-      expect(Math.abs(cz - LABS.overview.z)).toBeLessThan(0.01);
+      expect(cz).toBeGreaterThan(LABS.overview.z);
+      expect(cameraBehindHeading([cx, 0, cz], [LABS.overview.x, 0, LABS.overview.z])).toBeCloseTo(ARRIVAL_HEADING + ELEVATOR_DIAGONAL, 9);
       expect(cx, cls).toBeGreaterThan(SHAFT_EAST_FACE + (cls === "mobile" ? 1.5 : 3));
     }
     // Driving the roads never swings the camera to the overview or a board: the wing roads, the lead road

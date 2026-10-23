@@ -1,6 +1,6 @@
 import type { RoomId } from "@/content/schema";
 import { repoRoom, sideProjectRoom, WORKSHOP_ROOM } from "@/content/workshop";
-import { yawLooking } from "../../camera/look";
+import { ARRIVAL_RAIL_YAW, ARRIVAL_YAW } from "../../camera/look";
 import type { ViewZone } from "../../camera/orbit";
 import { CAREER_TONE } from "../../fx/holoIcons";
 import { DOOR_SIZE } from "../../nav/doors";
@@ -58,15 +58,15 @@ export const CAREER_ROAD = {
   /**
    * Elevator arrivals (Round 8 J, like L3) roll on east along the road to this x, inside the first year
    * plaza and short of its scrub stop (the plaza center), so a swipe never parks in the arrival view. The rail
-   * turns behind the rover (`railYaw`, west of it) and looks east down the road at the next year's arch.
-   * Zooms per camera class: the widest rail view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   * turns behind the rover and `ELEVATOR_DIAGONAL` to its right (`railYaw`, owner 2026-10-23) and looks down the road
+   * at the next year's arch. Zooms per camera class stay inside `shaftClearZoom` (the camera east of the glass shaft);
+   * a portrait phone also aims `arrivalAimPhone` u to the right, between the rover and the arch.
    */
   arrivalX: 6,
-  arrivalZoom: { desktop: 0.98, tablet: 0.86, mobile: 0.77 },
+  arrivalZoom: { desktop: 0.98, tablet: 0.86, mobile: 0.8 },
+  arrivalAimPhone: 7,
 } as const;
 
-/** Rail yaw that puts the camera due west of the rover, behind it as it heads east (`railYawBehind` in camera/arrival.ts). */
-const RAIL_YAW_BEHIND = -Math.PI / 2;
 
 export const ROOM_W: Record<CareerType, number> = { job: 9, freelance: 9, education: 9, milestone: 9, award: 6 };
 
@@ -234,10 +234,10 @@ export function buildCareerRoad(input: CareerLayoutInput): CareerRoadLayout {
   const arrivalZone: ViewZone = {
     id: "L2:arrival",
     area: { minX: arrival.x - 2, maxX: arrival.x + 2, minZ: arrival.z - 2, maxZ: arrival.z + 2 },
-    yaw: yawLooking({ x: 1, z: 0 }),
-    railYaw: RAIL_YAW_BEHIND,
+    yaw: ARRIVAL_YAW,
+    railYaw: ARRIVAL_RAIL_YAW,
     zoom: C.arrivalZoom.desktop,
-    classView: { tablet: { zoom: C.arrivalZoom.tablet }, mobile: { zoom: C.arrivalZoom.mobile } },
+    classView: { tablet: { zoom: C.arrivalZoom.tablet }, mobile: { zoom: C.arrivalZoom.mobile, lookOffset: { right: C.arrivalAimPhone } } },
     travel: { x: 1, z: 0 },
     arrivalOnly: true,
   };
