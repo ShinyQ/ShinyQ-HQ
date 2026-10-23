@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import { buildFloorRoomViews } from "@/content/room-views";
 import { markFirstFrame, resetFirstFrame } from "@/experience/boot-signals";
-import { primeFloorViews, setRoomDataVersions } from "@/hud/drawer/data";
+import { setRoomDataVersions } from "@/hud/drawer/data";
+import { primeFloorViews } from "../helpers/room-data";
 import { DrawerHost } from "@/hud/drawer/DrawerHost";
 import { getHQStore } from "@/store/useHQStore";
 

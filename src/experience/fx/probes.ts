@@ -33,8 +33,6 @@ export const sceneProbes = {
   /** Texts drawn flat on a floor right now (spectacle round: there should be none, `flatTexts`). */
   flatText: (): string[] => (renderProbe.scene ? flatTexts(renderProbe.scene) : []),
   hallGate: { sweeps: 0, active: false },
-  /** Unique floating hologram shapes per floor (`fx/shapes.ts`): fetch state and the items drawn with their own shape once shown. */
-  shapes: {} as Partial<Record<"L2" | "L3" | "L4", { state: "loading" | "shown" | "failed"; unique: number }>>,
   /** L3 Ops Control Room: mounted, and the live panel (this site's telemetry) with its rows when shown. */
   ops: { mounted: false, live: false, rows: [] as string[] },
   /** L1 Agent Office (lazy chunk): compiled and shown, Rovers, their states in slot order, the view mode, wall redraws, chips on screen, the largest body offset from the held pose (0 under reduced motion), in view, in the far level of detail, crew steps since mount, polling, per desk the crew actor's state, turn, flag and dock offset (every 0.5 s), whether the Needs Kurniadi beacon is lit (main path, every frame), the tower lanes not idle, the pipeline effects played since mount and the dock stack, whether the deploy beam shows, and the day replay while the scene is mounted (its status, day, playback and day seconds, idle loop or not, and `seq`; no default on the main path). */

@@ -79,6 +79,21 @@ export const ROOF_ICONS: Record<RoofIcon, Stroke[]> = {
   ],
 };
 
+/**
+ * One unique icon placed at build (`src/content/shapes.ts`): a `HoloIcon` instance with its own strokes, color and
+ * size, plus the item key it belongs to, so the client draws the shapes file's icons as they are.
+ */
+export interface PlacedIcon {
+  key: string;
+  x: number;
+  y: number;
+  z: number;
+  face: number;
+  size?: number;
+  color: string;
+  strokes: Stroke[];
+}
+
 /** SVG path data for strokes (`<path d>` with stroke, no fill). */
 export function iconPath(strokes: readonly Stroke[]): string {
   const f = (v: number) => Number(v.toFixed(2));

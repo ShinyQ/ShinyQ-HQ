@@ -1,4 +1,4 @@
-import type { HologramPart } from "@/experience/floors/labs/hologramParts";
+import { MAX_PARTS, type HologramPart } from "@/experience/floors/labs/hologramParts";
 
 /**
  * Build-time expander of the L3 pod sculpture recipes (`content/sculptures.json`): boxes and the `ring` and `bars`
@@ -7,7 +7,7 @@ import type { HologramPart } from "@/experience/floors/labs/hologramParts";
  */
 
 /** Most boxes one sculpture may use (39 pods x 16 boxes x 12 triangles stays far under the 30k frame budget). */
-export const SCULPTURE_MAX_BOXES = 16;
+export const SCULPTURE_MAX_BOXES = MAX_PARTS;
 /** Sculpture bounds in pod-local units before the hero scale (the old kinds span about the same). */
 export const SCULPTURE_BOUNDS = { xz: 1.25, yMin: -0.8, yMax: 0.9 } as const;
 

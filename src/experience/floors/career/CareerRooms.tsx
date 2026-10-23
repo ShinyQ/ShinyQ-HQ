@@ -7,7 +7,7 @@ import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttr
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
-import { HoloIcon } from "../../fx/HoloIcon";
+import { HoloSwap } from "../../fx/HoloIcon";
 import { Readable } from "../../fx/Readable";
 import { CAREER_ICONS, CAREER_TONE, type Stroke } from "../../fx/holoIcons";
 import { sceneProbes } from "../../fx/probes";
@@ -16,13 +16,11 @@ import { readableFlip } from "../../fx/readableFlip";
 import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
-import type { CareerEntryView, CareerType, GpuTier } from "../../types";
+import type { CareerEntryView, GpuTier } from "../../types";
+import { ICON_SIZE, iconY } from "./icons";
 import { roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
-/** Neon icon height above the floor (award icons float a little higher, above the placings count). */
-const iconY = (type: CareerType) => (type === "award" ? 2.9 : 2.7);
-const ICON_SIZE = 2.6;
 const FRAME_H = 2.2;
 
 const dummy = new Object3D();
@@ -231,10 +229,9 @@ export function CareerRooms({
   reducedMotion: boolean;
 }) {
   const group = useRef<Group>(null);
-  const own = useShapes<Stroke[]>("L2", shapes, group);
+  const own = useShapes<Stroke[]>("L2", shapes, group, reducedMotion);
   // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
   const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: iconY(r.type), z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
-  const unique = useMemo(() => own.items && icons.map((icon, i) => ({ ...icon, strokes: own.items![rooms[i].slug] ?? icon.strokes })), [icons, own.items, rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
   const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
@@ -244,8 +241,7 @@ export function CareerRooms({
     <group ref={group} name="career-rooms">
       <Pads rooms={rooms} tier={tier} />
       <Frames rooms={rooms} />
-      {!own.done && <HoloIcon instances={icons} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={own.fadeOut} />}
-      {unique && <HoloIcon instances={unique} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={own.fadeIn} />}
+      <HoloSwap base={icons} next={own.data?.icons} shapes={own} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} />
       <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
       <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped exactColors />

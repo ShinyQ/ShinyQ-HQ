@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildFloorRoomViews } from "@/content/room-views";
-import { primeFloorViews } from "@/hud/drawer/data";
+import { primeFloorViews } from "../helpers/room-data";
 import { openPaperFor } from "@/hud/drawer/paper";
 import { onHudCommand, type HudCommand } from "@/hud/events";
 

@@ -1,5 +1,6 @@
+import { LIBRARY_ICONS, type PlacedIcon, type Stroke } from "../../fx/holoIcons";
 import type { LibraryData } from "../../types";
-import type { LibraryLayout, LibraryStation, LibraryZone } from "./model";
+import { ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "./model";
 
 /**
  * Where the L4 floating icons stand (pure; no React or three). The client draws the zone icons from these heights
@@ -16,9 +17,6 @@ export const DESK = { lift: 1.3, gap: 2.4, size: 2 } as const;
 
 /** Yaw (HoloIcon `face`) that turns an icon from its station toward the road. */
 export const faceRoad = (s: Pick<LibraryStation, "facing">) => Math.atan2(-s.facing.x, -s.facing.z);
-
-/** One placed icon: item key, floor-local center, yaw, size and zone (its tone). */
-export type PlacedIcon = [key: string, x: number, y: number, z: number, face: number, size: number, zone: LibraryZone];
 
 /**
  * Where a desk's item icons float, low over the desk so they stay clear of the zone sign on its back edge: one row
@@ -41,17 +39,27 @@ export const featuredStation = (layout: LibraryLayout) => (layout.stations[0]?.z
 const round = (v: number) => Math.round(v * 1000) / 1000 + 0;
 
 /**
- * Every item icon on L4: one per docked post station (the featured one excepted) at the zone icon's place, and one
- * per paper, model and talk over its desk (`deskSlots`, in the desk's item order).
+ * Every item icon on L4, in its zone tone: one per docked post station (the featured one excepted) at the zone icon's
+ * place, and one per paper, model and talk over its desk (`deskSlots`, in the desk's item order); an item without an
+ * icon in `items` keeps its zone icon.
  */
-export function libraryIcons(layout: LibraryLayout, library: Pick<LibraryData, "research" | "models" | "talks">): PlacedIcon[] {
+export function libraryIcons(layout: LibraryLayout, library: Pick<LibraryData, "research" | "models" | "talks">, items: Record<string, Stroke[]>): PlacedIcon[] {
   const featured = featuredStation(layout);
+  const place = (key: string, s: LibraryStation, p: { x: number; y: number; z: number }, size: number): PlacedIcon => ({
+    key,
+    x: round(p.x),
+    y: round(p.y),
+    z: round(p.z),
+    face: round(faceRoad(s)),
+    size,
+    color: ZONE_TONE[s.zone],
+    strokes: items[key] ?? LIBRARY_ICONS[s.zone],
+  });
   return layout.stations
     .filter((s) => s !== featured)
-    .flatMap((s): PlacedIcon[] => {
-      const face = round(faceRoad(s));
-      if (s.zone === "blog") return [[s.room.slice(3), s.center.x, STATION_HEIGHT.blog + ZONE_ICON.lift, s.center.z, face, ZONE_ICON.size, "blog"]];
-      const items = library[s.zone];
-      return deskSlots(s, items.length).map((p, i) => [items[i].id, round(p.x), round(p.y), round(p.z), face, DESK.size, s.zone]);
+    .flatMap((s) => {
+      if (s.zone === "blog") return [place(s.room.slice(3), s, { x: s.center.x, y: STATION_HEIGHT.blog + ZONE_ICON.lift, z: s.center.z }, ZONE_ICON.size)];
+      const list = library[s.zone];
+      return deskSlots(s, list.length).map((p, i) => place(list[i].id, s, p, DESK.size));
     });
 }

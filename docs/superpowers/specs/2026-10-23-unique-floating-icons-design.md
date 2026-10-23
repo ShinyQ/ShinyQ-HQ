@@ -51,7 +51,7 @@ buildExperienceData      ->  career.shapes, labs.shapes, library.shapes = "/shap
         |
         v   client (3D only)
 fx/shapes.ts: loadShapes(url) cached fetch; useShapes(floor, url, group): whenDrawn(group) starts the fetch,
-             returns the items and the crossfade weights; __hq.probes.shapes[floor]
+             returns the file and the crossfade weights (fetch through src/lib/json-cache.ts)
 fx/HoloIcon.tsx: batched instances (per-instance strokes and color), aColor attribute always present
 floors/career/CareerRooms.tsx, floors/library/decor/common.tsx (ZoneIcons), floors/labs/Pods.tsx
 ```
@@ -96,8 +96,7 @@ floors/career/CareerRooms.tsx, floors/library/decor/common.tsx (ZoneIcons), floo
   the HoloIcon shader multiplies into its opacity, so no per-frame JS in HoloIcon); once done the fallback unmounts.
   Reduced motion: weight 1 at once. On L3 the sculptures replace the kind holograms in the one instanced mesh and grow
   in over the same 0.6 s to 1.2 times the kind scale (so their detail reads from the follow camera).
-- Probe `__hq.probes.shapes[floor]`: `{ state: "loading" | "shown" | "failed", unique }` (unique = items in the
-  floor's shapes file).
+- No probe: the e2e spec reads the scene (vertex and box counts against the file).
 
 ### 3.5 HoloIcon batched mode
 
@@ -151,9 +150,18 @@ Posts carry their `icon` on `library.posts` in the dataset rather than in the MD
 - Unit: the converter (each command and element, packed flags, dots, bounds, segment counts), the recipe expander
   (bounds, box cap, uniqueness), the payload builder and `shapeIssues` (ids exist, uniqueness, the real content names an
   id on every item), the batched geometry builder (vertex colors, per-instance strokes) and the desk slots. The
-  `useShapes` crossfade runs in the frame loop and is covered by the e2e spec (the probe reaches `shown` and the
-  fallback batch unmounts).
-- E2E `e2e/shapes.spec.ts`: on L2, L3 and L4 the probe reaches `shown` with every item unique; with `/shapes/*` aborted
-  the probe reads `failed` and the fallback stays drawn. Waits on state only.
+  `useShapes` crossfade runs in the frame loop and is covered by the e2e spec (the remaining batch draws exactly the
+  file's icons).
+- E2E `e2e/shapes.spec.ts`: on L2 and L4 the one remaining batch draws exactly the file's placed icons, on L3 the pod
+  mesh draws the docked pods' sculpture boxes; with `/shapes/*` aborted the L2 fallback batch stays. Waits on state only.
 - Perf: `floors` (L2, L3, L4 both tiers) and `bytes-3d`, before and after.
 - The strict visual gate changes on L2, L3 and L4 by design (decision file).
+
+## 7. Byte trims after #308 (2026-10-23)
+
+#308 used most of the session headroom, so this branch cut its own session bytes by about 300 B gzip on both tiers
+without changing the look: the L2 room icons are placed at build like the L4 ones (the client maps nothing),
+`HoloSwap` shares the crossfade markup, the shapes loader and the Glass Drawer room files share one JSON cache
+(`src/lib/json-cache.ts`; the drawer's test hook moved to `tests/helpers/room-data.ts`), the probe gave way to scene
+checks in e2e, L3 swaps sculptures in place (a fixed-capacity mesh; the 1.2 scale is baked into the file), and
+HoloIcon lost two unused prop defaults.

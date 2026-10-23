@@ -322,6 +322,8 @@ export const RULES: Rule[] = [
   { test: /^src\/assets\//, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Pages bindings: the Ask and visit Functions read them.
   { test: /^wrangler\.toml$/, specs: ["ask", "visit"] },
+  // The client JSON cache behind the Glass Drawer room files and the hologram shapes.
+  { test: /^src\/lib\/json-cache\.ts$/, specs: ["shapes", "drawer-solid", "hud", "labs", "library-roof", "career"] },
   { test: /^src\/lib\/audio\//, specs: ["ambience", "experience", "pageview"] },
   { test: /^src\/lib\/(url-sync|viewport|reduced-motion)/, specs: ["experience"] },
   { test: /^src\/lib\//, specs: ["static-routes", "pageview"] },
@@ -395,7 +397,7 @@ export function e2eShardsFor(seconds: number): number {
 const ALSO_RULES: Rule[] = [
   // The hosts of the unique floating holograms (e2e/shapes.spec.ts) and HoloIcon, which every pad and the Roof draw.
   {
-    test: /^src\/experience\/floors\/(career\/CareerRooms|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/(decor\/(common|NewsroomDecor)|icons))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,
+    test: /^src\/experience\/floors\/(career\/(CareerRooms|icons)|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/(decor\/(common|NewsroomDecor)|icons))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,
     specs: ["shapes"],
   },
   { test: /^src\/experience\/fx\/HoloIcon\.tsx$/, specs: ["pads", "roof"] },

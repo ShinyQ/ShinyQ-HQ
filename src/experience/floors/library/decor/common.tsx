@@ -4,7 +4,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Quaternion, Vector3, type Group, type InstancedMesh } from "three";
 import type { RoomId } from "@/content/schema";
-import { HoloIcon } from "../../../fx/HoloIcon";
+import { HoloSwap } from "../../../fx/HoloIcon";
 import { LIBRARY_ICONS, type Stroke } from "../../../fx/holoIcons";
 import { useShapes } from "../../../fx/shapes";
 import { createInstancedGlassMaterial, neonColor } from "../../../fx/materials";
@@ -12,7 +12,7 @@ import { useUniformTime } from "../../../fx/useUniformTime";
 import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
-import { faceRoad, STATION_HEIGHT, ZONE_ICON, type PlacedIcon } from "../icons";
+import { faceRoad, STATION_HEIGHT, ZONE_ICON } from "../icons";
 import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
 
 export { faceRoad, STATION_HEIGHT };
@@ -109,19 +109,14 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
  */
 export function ZoneIcons({ stations, shapes, tier, reducedMotion }: { stations: readonly LibraryStation[]; shapes: string; tier: GpuTier; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
-  const own = useShapes<Stroke[]>("L4", shapes, group);
+  const own = useShapes<Stroke[]>("L4", shapes, group, reducedMotion);
   const icons = useMemo(
     () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + ZONE_ICON.lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone], color: ZONE_TONE[s.zone] })),
     [stations],
   );
-  const unique = useMemo(
-    () => own.items && (own.icons as PlacedIcon[]).map(([key, x, y, z, face, size, zone]) => ({ x, y, z, face, size, strokes: own.items![key], color: ZONE_TONE[zone] })),
-    [own.items, own.icons],
-  );
   return (
     <group ref={group} name="library-icons">
-      {!own.done && <HoloIcon instances={icons} size={ZONE_ICON.size} tier={tier} reducedMotion={reducedMotion} fade={own.fadeOut} />}
-      {unique && <HoloIcon instances={unique} tier={tier} reducedMotion={reducedMotion} fade={own.fadeIn} />}
+      <HoloSwap base={icons} next={own.data?.icons} shapes={own} size={ZONE_ICON.size} tier={tier} reducedMotion={reducedMotion} />
     </group>
   );
 }

@@ -23,7 +23,7 @@ Code: `floors/career/layout.ts`. Design: walkable floors plan Part 2. Meander ro
 - Each room has a spur in its `CAREER_TONE`.
 - Rooms are open bays: only the 2 x 2 pedestal blocks the rover.
 - Each room floats a Neon line icon in its `CAREER_TONE`, facing the rail camera: all rooms are one `HoloIcon` batch (one draw call, two on full).
-  - The type icon first; after the floor's first frame its own Lucide icon (`TimelineEntry.icon`, `public/shapes/L2.<hash>.json`) crossfades in. Jobs, education and freelance each have a unique icon; milestones cycle 4 (flag, flask, badge, rocket) and awards 3 (medal, award, trophy).
+  - The type icon first; after the floor's first frame its own Lucide icon (`TimelineEntry.icon`, placed at build in `public/shapes/L2.<hash>.json` by `careerIcons`) crossfades in. Jobs, education and freelance each have a unique icon; milestones cycle 4 (flag, flask, badge, rocket) and awards 3 (medal, award, trophy).
 - Award plinths show the year's placings ("×10") under the trophy icon.
 
 ### Year markers and labels

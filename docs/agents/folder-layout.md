@@ -223,7 +223,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/content/build-story.ts`: the build story loader (`content/build-story.json`), server only; read by the `/build` page and the B1 room view.
 - `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
 - `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.
-- `src/content/shapes.ts`: the hologram shapes per floor (`shapePayloads`, `shapeFile` with its content hash, `shapeUrl` for the experience data, `shapeIssues` for validation, `placedLibraryIcons` for the L4 placements), server and build only.
+- `src/content/shapes.ts`: the hologram shapes per floor (`shapePayloads`, `shapeFile` with its content hash, `shapeUrl` for the experience data, `shapeIssues` for validation, `placedCareerIcons` and `placedLibraryIcons` for the L2 and L4 placements, `SCULPTURE_SCALE`), server and build only.
 - `src/content/sculptures.ts`: the sculpture recipe expander and checks (box cap, bounds, signature), build only.
 - `src/content/safety.ts`: forbidden patterns (`FORBIDDEN_PATTERNS`, `leafForbiddenPatterns`), the product allowlist loader (`loadAllowlist`) and the generic export term scanner (`scanBuildOutput`).
 
@@ -235,6 +235,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### src/lib/
 
 - `src/lib/`: format (Intl dates), accent class maps, gpu-tier, url-sync, viewport.
+- `src/lib/json-cache.ts`: one cached JSON fetch per key (`loadJson`, `peekJson`) for the Glass Drawer room files and the hologram shapes; `tests/helpers/room-data.ts` seeds it in tests.
 - `src/lib/svg-strokes.ts`: build-time SVG to 24 x 24 stroke converter for the vendored icons (paths, basic shapes, flattened curves).
 - `src/lib/boot-first.ts`: game-first load: inline head script, shouldBootFirst, releaseBootCover.
 - `src/lib/content-hash.ts`: `shortHash`, the 12-character `?v=` content hash of the build-time `/data/*` files (HUD index, 3D page data, room data per floor); server only.
@@ -371,7 +372,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
 - `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
 - `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots and `libraryIcons`, run at build for the shapes JSON.
-- `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame, the crossfade weights and the `shapes` probe.
+- `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame and the crossfade weights (`HoloSwap` in `HoloIcon.tsx` draws the swap).
+- `src/experience/floors/career/icons.ts`: where the L2 room icons stand (pure): `ICON_SIZE`, `iconY` and `careerIcons`, run at build for the shapes JSON.
 - `src/experience/fx/BatchedLabels.tsx`: all labels of a floor in one draw call (troika BatchedText; labelProps.ts holds the pure label type).
 - `src/experience/fx/FloatingSign.tsx`: floating signs (every word that would lie on a floor).
   - `FloatingSigns`; pure placement in signLayout.ts (`SignSpec`, `signPlate`, `signFacing`, `wrapSign`).

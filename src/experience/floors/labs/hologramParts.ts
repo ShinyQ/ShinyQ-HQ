@@ -16,6 +16,9 @@ export interface HologramPart {
   k?: number;
 }
 
+/** Most boxes one pod hologram may use (the L3 sculptures' cap; the kinds use at most 9): the instanced mesh's room per pod. */
+export const MAX_PARTS = 16;
+
 const box = (x: number, y: number, z: number, w: number, h: number, d: number, pulse?: number): HologramPart => ({ x, y, z, w, h, d, pulse });
 
 /**

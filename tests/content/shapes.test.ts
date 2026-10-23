@@ -3,12 +3,15 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { buildLibraryData } from "@/content/experience-floors";
+import { careerIcons } from "@/experience/floors/career/icons";
+import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
 import { DESK, libraryIcons } from "@/experience/floors/library/icons";
+import { CAREER_ICONS, LIBRARY_ICONS } from "@/experience/fx/holoIcons";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { getContent } from "@/content/load";
 import { hologramIdClashes, type SiteContent } from "@/content/schema";
-import { iconStrokes, SHAPE_FLOORS, shapeFile, shapeFiles, shapeIssues, shapePayloads, shapeUrl } from "@/content/shapes";
+import { getSculptures, iconStrokes, SCULPTURE_SCALE, SHAPE_FLOORS, shapeFile, shapeFiles, shapeIssues, shapePayloads, shapeUrl } from "@/content/shapes";
 import { writeShapes } from "../../scripts/build-shapes";
 
 const clone = (): SiteContent => structuredClone(getContent());
@@ -63,24 +66,30 @@ describe("hologram ids in the content", () => {
 });
 
 describe("shape payloads", () => {
-  it("keys L2 by entry slug, L3 by pod slug and L4 by post slug, publication id and talk id", () => {
+  it("places an icon for every L2 entry, keys L3 by pod slug and places every docked L4 item", () => {
     const content = getContent();
     const payloads = shapePayloads(content);
-    const { careerArchive, labs, library } = content.floors;
-    expect(Object.keys(payloads.L2.items).sort()).toEqual(careerArchive.entries.map((e) => e.slug).sort());
-    expect(Object.keys(payloads.L3.items).sort()).toEqual(labs.pods.map((p) => p.slug).sort());
-    expect(Object.keys(payloads.L4.items).sort()).toEqual([...library.posts.map((p) => p.slug), ...library.publications.map((p) => p.id), ...library.talks.map((t) => t.id)].sort());
-    expect(payloads.L2.items["graduation-2023"]).toEqual(iconStrokes("graduation-cap"));
-    for (const parts of Object.values(payloads.L3.items)) expect(parts.length).toBeGreaterThan(0);
+    const { careerArchive, labs } = content.floors;
+    expect(payloads.L2.icons!.map((i) => i.key).sort()).toEqual(careerArchive.entries.map((e) => e.slug).sort());
+    expect(Object.keys(payloads.L3.items!).sort()).toEqual(labs.pods.map((p) => p.slug).sort());
+    const graduation = payloads.L2.icons!.find(({ key }) => key.startsWith("graduation-") && key.endsWith("2023"));
+    expect(graduation!.strokes).toEqual(iconStrokes("graduation-cap"));
+    for (const parts of Object.values(payloads.L3.items!)) expect(parts.length).toBeGreaterThan(0);
+    // Sculptures ship scaled to the floor (a fifth above the kind holograms).
+    const first = content.floors.labs.pods[0];
+    expect(payloads.L3.items![first.slug][0].w).toBeCloseTo(getSculptures()[first.sculpture!][0].w * SCULPTURE_SCALE, 3);
   });
 
-  it("leaves items without an id out (they keep the fallback)", () => {
+  it("keeps the fallback shape for items without an id", () => {
     const content = clone();
     delete content.floors.library.talks[0].icon;
     delete content.floors.labs.pods[0].sculpture;
+    const job = content.floors.careerArchive.entries.find((e) => e.type === "job")!;
+    delete job.icon;
     const payloads = shapePayloads(content);
-    expect(payloads.L4.items[content.floors.library.talks[0].id]).toBeUndefined();
-    expect(payloads.L3.items[content.floors.labs.pods[0].slug]).toBeUndefined();
+    expect(payloads.L4.icons!.find((i) => i.key === content.floors.library.talks[0].id)!.strokes).toEqual(LIBRARY_ICONS.talks);
+    expect(payloads.L2.icons!.find((i) => i.key === job.slug)!.strokes).toEqual(CAREER_ICONS.job);
+    expect(payloads.L3.items![content.floors.labs.pods[0].slug]).toBeUndefined();
   });
 
   it("names each file by a hash of its JSON and hands the same URL to the experience data", () => {
@@ -92,7 +101,7 @@ describe("shape payloads", () => {
     }
     const payload = shapePayloads().L2;
     expect(shapeFile(payload).name).toBe(files.L2.name);
-    expect(shapeFile({ ...payload, items: {} }).name).not.toBe(files.L2.name);
+    expect(shapeFile({ ...payload, icons: [] }).name).not.toBe(files.L2.name);
     const data = buildExperienceData("en", { L1: "L1", L2: "L2", L3: "L3", L4: "L4", RF: "RF" });
     expect([data.career.shapes, data.labs.shapes, data.library.shapes]).toEqual([shapeUrl("L2"), shapeUrl("L3"), shapeUrl("L4")]);
   });
@@ -120,11 +129,11 @@ describe("build-shapes", () => {
 describe("L4 icon placement", () => {
   it("places one icon per docked post (the featured one excepted) and one per paper, model and talk", () => {
     const content = getContent();
-    const { icons, items } = shapePayloads(content).L4;
+    const { icons } = shapePayloads(content).L4;
     const lib = content.floors.library;
-    const keys = icons!.map(([key]) => key);
+    const keys = icons!.map((i) => i.key);
     expect(new Set(keys).size).toBe(keys.length);
-    for (const key of keys) expect(items[key], key).toBeTruthy();
+    for (const i of icons!) expect(i.strokes.length, i.key).toBeGreaterThan(0);
     for (const id of [...lib.publications.map((p) => p.id), ...lib.talks.map((t) => t.id)]) expect(keys).toContain(id);
     // The newsroom features the newest post on its stage (a turning book, no icon).
     expect(keys.filter((k) => lib.posts.some((p) => p.slug === k))).toHaveLength(Math.min(lib.posts.length, 12) - 1);
@@ -133,16 +142,24 @@ describe("L4 icon placement", () => {
   it("matches the floor the client builds, in either locale", () => {
     const placed = (locale: "en" | "id") => {
       const library = buildLibraryData(locale);
-      return libraryIcons(buildLibraryLayout(libraryLayoutInput(library)), library).map((i) => i.join(","));
+      return libraryIcons(buildLibraryLayout(libraryLayoutInput(library)), library, {}).map((i) => [i.key, i.x, i.y, i.z, i.face].join(","));
     };
     expect(placed("id")).toEqual(placed("en"));
-    expect(shapePayloads().L4.icons!.map((i) => i.join(","))).toEqual(placed("en"));
+    expect(shapePayloads().L4.icons!.map((i) => [i.key, i.x, i.y, i.z, i.face].join(","))).toEqual(placed("en"));
   });
 
   it("keeps desk icons apart and over their desk", () => {
     const { icons } = shapePayloads().L4;
-    const desk = icons!.filter((i) => i[6] !== "blog");
+    const desk = icons!.filter((i) => i.size === DESK.size);
     for (const a of desk)
-      for (const b of desk) if (a !== b && a[6] === b[6]) expect(Math.hypot(a[1] - b[1], a[3] - b[3])).toBeGreaterThanOrEqual(DESK.size);
+      for (const b of desk) if (a !== b && a.color === b.color) expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(DESK.size);
+  });
+});
+
+describe("L2 icon placement", () => {
+  it("matches the road the client builds, in either locale", () => {
+    const placed = (locale: "en" | "id") => careerIcons(buildCareerRoad(careerLayoutInput(buildExperienceData(locale, { L1: "", L2: "", L3: "", L4: "", RF: "" }).career)).rooms, {}).map((i) => [i.key, i.x, i.y, i.z].join(","));
+    expect(placed("id")).toEqual(placed("en"));
+    expect(shapePayloads().L2.icons!.map((i) => [i.key, i.x, i.y, i.z].join(","))).toEqual(placed("en"));
   });
 });

@@ -156,19 +156,19 @@ Unique across posts, publications and talks; zones keep their color.
 
 ## Numbers
 
-Perf lane on one machine, `main` (b6f47801, after #300 to #304) export against this branch rebased on it, same flags.
+Perf lane on one machine, `main` (7643e516, after #305, #307 and #308) export against this branch rebased on it, same
+flags, after the byte trims (design section 7).
 
 | Gate | Before | After |
 |---|---|---|
-| 3D main path, lite / full | 460,411 / 476,545 B | 460,399 / 476,533 B |
-| Session total, lite / full (caps 526,234 / 542,413 B) | 525,409 / 541,543 B | 525,563 / 541,697 B |
-| Floor chunk L3 / L4 / RF (caps 20 / 16 / 8 KB) | 14,259 / 11,910 / 3,369 B | 14,385 / 11,968 / 3,351 B |
-| Shapes JSON (not JS), L2 / L3 / L4 gzip | none | 3.2 / 4.2 / 3.1 KB |
-| Scene draw calls L2, L3, L4, RF lite | 73, 66, 59, 57 | 67, 65, 55, 55 |
-| Scene draw calls L2, L3, L4, RF full | 84, 69, 66, 62 | 72, 67, 58, 58 |
-| Triangles L2, L3, L4 full (cap 30k) | 25,141, 18,213, 9,395 | 27,093, 19,461, 11,035 |
-| Shader programs L2, L3, L4, RF lite / full | 46, 38, 43, 35 / 79, 72, 73, 68 | 46, 38, 43, 35 / 79, 71, 73, 68 |
+| 3D main path, lite / full | 461,016 / 477,150 B | 460,960 / 477,094 B |
+| Session total, lite / full (caps 526,266 / 542,413 B) | 526,014 / 542,148 B | 526,032 / 542,166 B |
+| Floor chunk L3 / L4 / RF (caps 20 / 16 / 8 KB) | 14,259 / 11,910 / 3,369 B | 14,367 / 11,894 / 3,351 B |
+| Scene draw calls L2, L3, L4, RF lite | 73, 71, 58, 56 | 67, 70, 54, 54 |
+| Scene draw calls L2, L3, L4, RF full | 84, 74, 65, 61 | 72, 72, 57, 57 |
+| Triangles L2, L3, L4 full (cap 30k) | 25,141, 18,589, 9,319 | 27,093, 19,837, 10,959 |
+| Shader programs L2, L3, L4, RF lite / full | 45, 38, 43, 35 / 63, 72, 73, 68 | 46, 38, 43, 35 / 65, 71, 73, 68 |
 
-The 3D main path is 12 B smaller; L3 and L4 carry about 0.1 KB more each (the shapes loader wiring and the sculpture
-roll and brightness), offset in part by the main path and RF: the session totals grow 154 B and stay 671 B (lite) and
-716 B (full) under their caps, which do not change. In the same flow the program names and counts equal `main`'s.
+Before the trims this branch added 322 B to the session total (526,336 B lite, over the 526,266 B cap after #308);
+after them it adds 18 B (234 B under the lite cap, 247 B under the full cap). The caps did not change. The L2
+program counts move between runs on both builds (the name sets match in the same flow).
