@@ -56,6 +56,8 @@ const PERF_RULES: [RegExp, readonly PerfKey[]][] = [
   // The office scene, its drawer body and its main path layout and shell: the Lobby keys plus B1.
   [/^src\/experience\/floors\/lobby\/(office\/|office(Layout|Shell)\.ts$)/, ["boot", "bytes", "floor:L1", "floor:B1", "hover"]],
   [/^src\/experience\/floors\/(lobby\/|Lobby\.tsx$)|^public\/atlas\/|^src\/experience\/logo-atlas\.ts$/, ["bytes", "floor:L1", "boot", "hover"]],
+  // The unique hologram loader (L2, L3 and L4 fetch their shapes after the first frame).
+  [/^src\/experience\/fx\/shapes\.ts$/, ["bytes", "floor:L2", "floor:L3", "floor:L4"]],
   [/^src\/experience\/floors\/(career\/|CareerArchive\.tsx$)/, ["bytes", "floor:L2", "ride:L2"]],
   [/^src\/experience\/floors\/(labs\/|Labs\.tsx$)/, ["bytes", "floor:L3", "ride:L3"]],
   [/^src\/experience\/floors\/(library\/|Library\.tsx$)/, ["bytes", "floor:L4", "ride:L4"]],
@@ -98,6 +100,8 @@ const SHARED_PERF_RULES: [RegExp, readonly PerfKey[]][] = [
   [/^src\/content\/(certs|cert-views)\.ts$/, LOBBY],
   // `highlights`: the Lobby Highlights Hall and the HUD onboarding.
   [/^src\/content\/highlights\.ts$/, LOBBY],
+  // Hologram shapes: build-time only; they reach the payload as the three shapes URLs, read by L2, L3 and L4.
+  [/^src\/content\/(shapes|sculptures)\.ts$|^src\/lib\/svg-strokes\.ts$/, ["floor:L2", "floor:L3", "floor:L4"]],
 ];
 
 /** The keys of the first SHARED_PERF_RULES or PERF_RULES rule that names a shared module, or null when none does. */

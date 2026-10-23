@@ -59,6 +59,7 @@ export const ALL_SPECS = [
   "rover-idle",
   "roof",
   "seo",
+  "shapes",
   "spectacle",
   "static-routes",
   "topics",
@@ -248,6 +249,11 @@ export const RULES: Rule[] = [
     specs: ["boost", "experience", "hud", "gpu"],
   },
   // Signs that turn around when the camera is behind them (L2), the scene probes and the ghost floors above (none in first person).
+  // Unique floating holograms: the build step, the converter, the recipes, the vendored icons and the client loader.
+  {
+    test: /^src\/experience\/fx\/shapes\.ts$|^src\/content\/(shapes|sculptures)\.ts$|^src\/lib\/svg-strokes\.ts$|^scripts\/build-shapes\.ts$|^content\/sculptures\.json$|^assets\/icons\//,
+    specs: ["shapes", "career", "labs", "library-roof"],
+  },
   { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu", "spectacle"] },
   { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
@@ -387,6 +393,12 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // The hosts of the unique floating holograms (e2e/shapes.spec.ts) and HoloIcon, which every pad and the Roof draw.
+  {
+    test: /^src\/experience\/floors\/(career\/CareerRooms|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/decor\/(common|NewsroomDecor))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,
+    specs: ["shapes"],
+  },
+  { test: /^src\/experience\/fx\/HoloIcon\.tsx$/, specs: ["pads", "roof"] },
   // Study guides: the shelf, the reader, its data and views, and the dialogs that open it (e2e/guides.spec.ts).
   {
     test: /^src\/components\/guides\/|^src\/content\/guide[\w-]*\.ts$|^content\/study-guides\.json$|^src\/components\/(certs\/CertDialog|DialogHost)\.tsx$|^src\/components\/dialog-loaders\.ts$|^src\/app\/\[locale\]\/library\/page\.tsx$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,

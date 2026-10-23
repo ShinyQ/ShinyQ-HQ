@@ -227,7 +227,11 @@ describe("specsForChanges", () => {
   });
 
   it("maps floor code to its spec", () => {
-    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "spectacle"]);
+    expect(specsForChanges(["src/experience/floors/labs/Pods.tsx"]).specs).toEqual(["fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "shapes", "spectacle"]);
+    // The unique floating holograms: their pipeline and every floor that draws them.
+    expect(specsForChanges(["scripts/build-shapes.ts"]).specs).toEqual(["career", "labs", "library-roof", "shapes"]);
+    expect(specsForChanges(["assets/icons/lucide/mic.svg"]).specs).toEqual(["career", "labs", "library-roof", "shapes"]);
+    expect(specsForChanges(["src/experience/fx/HoloIcon.tsx"]).specs).toEqual(["camera", "career", "experience", "gpu", "pads", "ride", "roof", "shapes", "spectacle"]);
     expect(specsForChanges(["src/hud/drawer/ReactorBody.tsx"]).specs).toEqual(["labs", "labs-data", "production", "reactor"]);
     expect(specsForChanges(["src/experience/floors/labs/OpsRoom.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
     expect(specsForChanges(["src/components/page/Production.tsx"]).specs).toEqual(["labs", "pageview", "production"]);
