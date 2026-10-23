@@ -42,7 +42,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - `rum.ts`, `visit.ts`, `stats.ts`, `office.ts`, `guides.ts`: the other routes' handlers.
 - `functions/_generated/`: gitignored, from `scripts/build-knowledge.ts`: `pack.json` (the stored knowledge pack, uploaded to KV, never bundled), `fallback.json` (bundled fallback pack) and `pack-meta.json` (the bundle's pin).
 - `wrangler.toml`: Pages bindings and vars for /api/ask, /api/rum, /api/visit, /api/stats, /api/guides (R2 `GUIDES`) and /api/office (service binding OFFICE) (source of truth once deployed; no secrets).
-- `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, scheduled only, every 2 hours at `17 */2 * * *` UTC): public visit stats rollup into KV STATS_KV. See "Public visit stats" in [stats.md](stats.md).
+- `workers/stats/`: hq-stats Cron Worker (own wrangler.toml, every hour at `17 * * * *` UTC, no route): public visit stats rollup into KV STATS_KV, and `GET /live` (the live visit count) for the Pages `STATS` service binding. See "Public visit stats" in [stats.md](stats.md).
 - `workers/office/`: hq-office Worker (own wrangler.toml, no route) and its Durable Object `Office`: the Agent Office
   state (`src/`: worker, office, ingest, state, history, crypto, types; runbook `README.md`). See [office.md](office.md).
 
@@ -247,7 +247,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - geo.ts + generated geo-data.ts (Natural Earth land grid and country points, `bun scripts/visits-geo.ts`).
   - labels.ts (server: chip and floor labels).
 - `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
-- `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon, clears the retired opt-out key), floors.ts (floorOfPath).
+- `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract: visit and mode pings), visitClient.ts (beacon, clears the retired opt-out key), live.ts (the live tail `stats:live:v1` and the Worker's `GET /live`, server only), floors.ts (floorOfPath).
 - `src/lib/office/`: the Agent Office client contract (`protocol.ts`; the v4 validators in `protocolV4.ts`, for the 3D scene and the Function only; the history validators in `protocolHistory.ts`, for the Function, the Worker and the replay chunk only), fixtures (`fixtures.ts`), poller (`poll.ts`, `POLL`) and shared model (`model.ts`: `STATE_TONE`, counts, desk titles), shared by the 3D office and the Classic card; no React, no three.
 - `src/lib/floors.ts`: the five public floors bottom up and the secret `B1` id (import-free; the store, `floorOrder.ts`, the tower, the build dashboard and the B1 room view read it).
 - `src/lib/build-page.ts`: pure `/build` helpers that join the story text with the build facts (shared with the B1 drawers).
