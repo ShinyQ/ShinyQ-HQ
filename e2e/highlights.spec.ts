@@ -8,6 +8,7 @@ import type { Pod } from "../src/content/schema";
 import { orderPods, podLiveLink } from "../src/content/selectors";
 import { gateOpening } from "../src/experience/floors/lobby/hallGallery";
 import { stationOf } from "../src/experience/floors/lobby/hallLayout";
+import { onPad } from "../src/experience/nav/doors";
 import { HIGHLIGHT_STAT_COUNT, HIGHLIGHT_STATIONS, highlightRoom, type HighlightStation } from "../src/experience/floors/lobby/stations";
 import {
   chooseMotion,
@@ -128,16 +129,17 @@ async function faceStation(page: Page, station: HighlightStation) {
 async function openStation(page: Page, station: HighlightStation) {
   await faceStation(page, station);
   const start = (await snapshot(page)).rover;
-  const pad = stationOf(station).pad;
-  // Off the door pad (it is 1.6 u deep): only the click can open the room. The road can end the setup
-  // drive closer than asked (the experience spur), so the click's drive may be short.
-  expect(Math.hypot(start.x - pad.x, start.z - pad.z)).toBeGreaterThan(0.85);
+  const s = stationOf(station);
+  // Off the door pad (the hall's door trigger, `onPad`): only the click can open the room. The road can end the setup
+  // drive closer than asked (the experience spur) and the rover may still roll a little, so the check is the pad itself,
+  // not a distance margin around it.
+  expect(onPad({ room: s.room, at: s.pad, facing: s.facing }, start), `the setup drive ended on the ${station} pad at ${JSON.stringify(start)}`).toBe(false);
   await expect(page.getByTestId("room-drawer")).toHaveCount(0);
   const point = await clickablePoint(page, target(station));
   await page.mouse.click(point.x, point.y);
   await waitForRoverMove(page, start, 0.3);
   await roomOpen(page, highlightRoom(station));
-  await expectRoverNear(page, stationOf(station).pad);
+  await expectRoverNear(page, s.pad);
   return page.getByTestId("room-drawer");
 }
 

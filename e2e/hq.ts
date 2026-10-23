@@ -187,6 +187,17 @@ export async function collectCspViolations(page: Page): Promise<string[]> {
 }
 
 /**
+ * The page's effective script policy (scripts/csp-hashes.ts, Round 7 D): exactly one `data-hq-csp` meta tag whose
+ * script-src lists the sha256 of each inline script, with no 'unsafe-inline'.
+ */
+export async function expectStrictPolicy(page: Page) {
+  const policies = await page.locator('meta[http-equiv="Content-Security-Policy"]').evaluateAll((els) => els.map((el) => el.getAttribute("content") ?? ""));
+  expect(policies).toHaveLength(1);
+  expect(policies[0]).toMatch(/^script-src 'self' /);
+  expect(policies[0]).not.toContain("'unsafe-inline'");
+}
+
+/**
  * Collects page errors, CSP violations reported on the console and any request to another origin.
  * The local server does not send the production headers from public/_headers, so a runtime CDN fetch
  * only fails on Cloudflare; the per-page script policy meta tag (scripts/csp-hashes.ts) does apply.
@@ -354,6 +365,26 @@ export async function readJsHeapAfterGc(page: Page): Promise<number> {
   const { usedSize } = await cdp.send("Runtime.getHeapUsage");
   await cdp.detach();
   return usedSize;
+}
+
+/**
+ * JS heap in use once garbage has settled, in bytes: the lowest of `reads` reads, each after two forced collections
+ * and two rendered frames. V8 frees objects held through weak references and FinalizationRegistry (three.js caches,
+ * troika) only on a later full collection, and their finalizers run as tasks after it, so one read after one collection
+ * can still count a few hundred KB that is already garbage; the lowest settled read does not.
+ */
+export async function readJsHeapSettled(page: Page, reads = 3): Promise<number> {
+  const cdp = await page.context().newCDPSession(page);
+  let least = Infinity;
+  for (let i = 0; i < reads; i++) {
+    await cdp.send("HeapProfiler.collectGarbage");
+    await waitForFrames(page, 2);
+    await cdp.send("HeapProfiler.collectGarbage");
+    const { usedSize } = await cdp.send("Runtime.getHeapUsage");
+    least = Math.min(least, usedSize);
+  }
+  await cdp.detach();
+  return least;
 }
 
 export async function waitForHQ(page: Page) {

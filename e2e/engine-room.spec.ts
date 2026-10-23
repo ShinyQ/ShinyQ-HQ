@@ -4,14 +4,12 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { ARRIVAL_HEADING } from "../src/experience/camera/arrival";
 import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
-import { FLOOR_SCENE_CAPS } from "./budgets";
 import { STATS_FIXTURE } from "../src/lib/visits/contract";
 import { OFFICE_API_V4, shipStep } from "./office-fixtures";
 import {
   asReturningVisitor,
   collectErrors,
   enterHQ,
-  expectRenderBudget,
   snapshot,
   targetPoint,
   visibleTarget,
@@ -29,7 +27,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * B1 Engine Room, PR 2: the floor exists only for sessions unlocked with the dev and test flag; rides from the
- * Lobby and the roof, the arrival, the drawers, the minimap and the render budget. A locked session never
+ * Lobby and the roof, the arrival, the drawers and the minimap (the B1 render budget is gated in e2e/perf/floors.spec.ts). A locked session never
  * requests anything of B1 and never lists it. Waits are on state.
  */
 test.describe.configure({ timeout: 240_000 });
@@ -277,14 +275,6 @@ test.describe("the floor", () => {
     await expect(page).toHaveURL(new RegExp(`/en\\?tier=lite&${B1_QUERY}$`));
     await expect(page.getByTestId("minimap")).toHaveAttribute("data-floor", "B1");
     expect(errors).toEqual([]);
-  });
-
-  test("settled on B1 the frame stays under its scene cap", async ({ page }) => {
-    await enterB1Route(page);
-    await rideTo(page, "B1");
-    await waitForCameraSettle(page);
-    const peaks = await expectRenderBudget(page);
-    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.B1);
   });
 
   test("every station opens its drawer with its body and a Classic link to its /build section; a click on a station drives there", async ({ page }) => {

@@ -45,34 +45,33 @@ async function expectNoFlatText(page: Page) {
   expect(flat).toEqual([]);
 }
 
-for (const [floor, path, group, min, at] of [
-  ["L2", "/en/journey", "career-year-markers", 1, null],
-  ["L3", "/en/labs", "labs-reactor-signs", 2, null],
-  // L4 signs are placed on screen (Round 7 F): only signs in the frame draw. The arrival frames none since the
-  // section signs hang over the back of each zone's first desk (the posts sign sits at the camera's foot), so
-  // the check runs mid-timeline, where the year plates and the nearest titles are in view.
-  ["L4", "/en/library", "library-signs", 1, { x: 24, z: 0 }],
-] as const) {
-  test(`${floor}: floor words float as signs that face the camera from the default and a rotated view`, async ({ page }) => {
-    const errors = collectErrors(page);
-    await enterFloorRoute(page, path);
-    if (at) await driveTo(page, at);
-    await waitForCameraSettle(page);
-    await expectNoFlatText(page);
-    await expectSignsFaceCamera(page, group, min);
-    await rotateCamera(page, "e", 1600);
-    await expectSignsFaceCamera(page, group, min);
-    await rotateCamera(page, "q", 3200);
-    await expectSignsFaceCamera(page, group, min);
-    expect(errors).toEqual([]);
-  });
-}
-
-test("RF: no words lie flat on the roof deck", async ({ page }) => {
-  await enterFloorRoute(page, "/en/contact");
+// The renderer check of the facing on one floor (the L3 reactor signs); `tests/unit/floor-sign-facing.test.ts` checks the
+// L2 year markers and the L4 timeline signs from the same poses without a renderer.
+test("L3: floor words float as signs that face the camera from the default and a rotated view", async ({ page }) => {
+  const errors = collectErrors(page);
+  await enterFloorRoute(page, "/en/labs");
   await waitForCameraSettle(page);
   await expectNoFlatText(page);
+  await expectSignsFaceCamera(page, "labs-reactor-signs", 2);
+  await rotateCamera(page, "e", 1600);
+  await expectSignsFaceCamera(page, "labs-reactor-signs", 2);
+  await rotateCamera(page, "q", 3200);
+  await expectSignsFaceCamera(page, "labs-reactor-signs", 2);
+  expect(errors).toEqual([]);
 });
+
+// The live scene of every other floor with words: no troika text lies flat (the source scan is tests/unit/floor-text.test.ts).
+for (const [floor, path, where] of [
+  ["L2", "/en/journey", "the Career Road"],
+  ["L4", "/en/library", "the Writing floor"],
+  ["RF", "/en/contact", "the roof deck"],
+] as const) {
+  test(`${floor}: no words lie flat on ${where}`, async ({ page }) => {
+    await enterFloorRoute(page, path);
+    await waitForCameraSettle(page);
+    await expectNoFlatText(page);
+  });
+}
 
 /** The reactor core's footprint (the L3 tall column east of the pods). */
 async function coreRect(page: Page): Promise<Rect> {

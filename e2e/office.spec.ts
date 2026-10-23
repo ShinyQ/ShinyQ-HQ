@@ -6,7 +6,6 @@ import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE, officeSlots } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V4 } from "../src/lib/office/fixtures";
-import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
   asReturningVisitor,
   chooseMotion,
@@ -14,7 +13,7 @@ import {
   collectErrors,
   driveTo,
   enterHQ,
-  expectRenderBudget,
+  hoveredTarget,
   turnCameraTo,
   waitForCameraSettle,
   waitForFrames,
@@ -30,7 +29,7 @@ import { asleepAll, asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CRE
  * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, ten
  * Rovers on two console rows with their states and the front row's chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
- * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
+ * Indonesian (the L1 budget at the office is gated in e2e/perf/floors.spec.ts); the living crew's states, the Needs Kurniadi beacon and minimap cue
  * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones; the ship-it pipeline (snapshot
  * v4: the tower's lanes per job, packets, bursts and packages, the production deploy beam, the CI drawer); the day replay
  * (the idle loop, the merge tiles, the drawer's controls, reduced motion, an unavailable history, the lazy chunk).
@@ -244,6 +243,20 @@ async function nearChips(page: Page) {
   for (let i = 0; i < 2; i++) await page.keyboard.press("=");
   await waitForCameraSettle(page);
   for (const slot of [0, 1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
+}
+
+/**
+ * Clicks a point-and-go target on the canvas once the click is sure to land: the camera settled (closing a drawer eases
+ * it back, so a point read while it moves can miss and leave `waitForRoom` waiting out its timeout), the pointer over the
+ * target and the store reporting that target hovered.
+ */
+async function clickStation(page: Page, id: string) {
+  await waitForCameraSettle(page);
+  const point = await clickablePoint(page, id);
+  expect(point, `${id} shows on the canvas`).not.toBeNull();
+  await page.mouse.move(point!.x, point!.y, { steps: 4 });
+  await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "pointer" });
+  await page.mouse.click(point!.x, point!.y);
 }
 
 async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, body: unknown, states: readonly string[]) {
@@ -461,9 +474,7 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    const summary = await clickablePoint(page, "L1:station:office");
-    expect(summary).not.toBeNull();
-    await page.mouse.click(summary!.x, summary!.y);
+    await clickStation(page, "L1:station:office");
     await waitForRoom(page, "L1:office");
     await expect(page.getByTestId("office-agent")).toHaveCount(SEATS);
     await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
@@ -471,9 +482,7 @@ test.describe("Agent Office (L1)", () => {
     await waitForRoom(page, "L1:office-desk-3");
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
-    const github = await clickablePoint(page, "L1:station:office-github");
-    expect(github).not.toBeNull();
-    await page.mouse.click(github!.x, github!.y);
+    await clickStation(page, "L1:station:office-github");
     await waitForRoom(page, "L1:office-github");
     await expect(page.getByTestId("office-feed-row")).toHaveCount(2);
     await expect(page.getByTestId("office-feed-row").first()).toHaveAttribute("data-status", "running");
@@ -667,17 +676,6 @@ test.describe("Agent Office (L1)", () => {
     await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
     await waitForCameraSettle(page);
     await expect.poll(() => lookOut(page)).toEqual({ sign: 1, frame: true, outlines: ["L2", "L3", "L4", "RF"] });
-  });
-
-  test("L1 stays under its scene-call cap at the office (lite)", async ({ page }) => {
-    const office = await serveOffice(page);
-    await enterHQ(page);
-    await atOffice(page);
-    await show(page, office, statesA(Date.now()), STATES_A);
-    await driveTo(page, LOBBY.officeWing.stop);
-    await waitForCameraSettle(page);
-    const peaks = await expectRenderBudget(page);
-    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 });
 

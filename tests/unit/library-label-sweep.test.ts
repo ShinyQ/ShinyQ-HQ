@@ -1,29 +1,15 @@
-import { PerspectiveCamera, Vector3 } from "three";
+import { Vector3, type PerspectiveCamera } from "three";
 import { describe, expect, it } from "vitest";
-import { buildExperienceData } from "@/content/experience";
-import { ARRIVAL_HEADING } from "@/experience/camera/arrival";
-import { cameraWorld, clampCamera } from "@/experience/camera/collision";
-import { CAMERA_FAR, CAMERA_NEAR } from "@/experience/camera/firstPerson";
-import { followOffsetScale } from "@/experience/camera/offset";
-import { activeZone, createOrbitState, primeZone, setPitchRange, stepOrbit, updateZone, zoneAt, type OrbitState } from "@/experience/camera/orbit";
-import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange } from "@/experience/camera/rigs";
-import { buildFloorLayouts, floorY, ROVER } from "@/experience/config";
 import { stationTitles } from "@/experience/floors/library/decor/common";
-import { endPlazaSigns, PEDESTAL_OBSTACLE, type EndPlazaLabels } from "@/experience/floors/library/decor/EndPlaza";
+import { endPlazaSigns, PEDESTAL_OBSTACLE } from "@/experience/floors/library/decor/EndPlaza";
 import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
-import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { libraryLayoutInput, type LibraryZone } from "@/experience/floors/library/model";
+import { type LibraryZone } from "@/experience/floors/library/model";
 import { orbSlots } from "@/experience/floors/library/topics";
 import { polygonArea, polygonOverlap, type Quad } from "@/experience/fx/labelPlacement";
 import { signPlate } from "@/experience/fx/signLayout";
-import { buildNavGrid } from "@/experience/nav/navgrid";
-import { buildRoadGraph } from "@/experience/nav/road";
-import { roadRoute } from "@/experience/nav/roadRoute";
-import type { Vec2, ViewportClass } from "@/experience/types";
-import { formatYearMonth } from "@/lib/format";
-import { cameraClass } from "@/lib/viewport";
 import en from "../../messages/en.json";
+import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l4Floor as floor, l4Layout as layout, l4Net as net } from "../helpers/l4-drive";
 
 /**
  * The L4 timeline label sweep without a renderer (owner request 2026-10-18; the rendered version is
@@ -35,17 +21,6 @@ import en from "../../messages/en.json";
  * zone's sign shows on the approach, road or door pose of its zone.
  */
 
-const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
-const data = buildExperienceData("en", FLOOR_NAMES);
-const input = libraryLayoutInput(data.library);
-const layout = buildLibraryLayout(input);
-const floor = buildFloorLayouts(data.years.length, { library: input }).L4;
-const net = floor.road!;
-const grid = buildNavGrid(floor, ROVER.radius);
-const graph = buildRoadGraph(net);
-const world = cameraWorld(floor, floorY("L4"));
-const FLOOR_Y = floorY("L4");
-
 // The timeline signs as `NewsroomDecor` builds them: the featured stage carries its title on the headline wall.
 const zones: Record<LibraryZone, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
 const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
@@ -54,23 +29,7 @@ const half = libraryPlateHalves(timeline.signs);
 const texts = timeline.signs.map((s) => s.text.replace(/\s+/g, " "));
 
 // The end plaza signs as `Experience.tsx` labels them (no topic picked).
-const metrics = data.library.researchMetrics;
-const M = en.library.topics.monument;
-const endLabels: EndPlazaLabels = {
-  pieces: (count, topic) => `${count} pieces on ${topic}`,
-  monument: metrics
-    ? {
-        citations: String(metrics.citations),
-        citationsLabel: M.citations,
-        hIndex: String(metrics.hIndex),
-        hIndexLabel: M.hIndex,
-        source: M.asOf.replace("{source}", metrics.source).replace("{date}", formatYearMonth(metrics.asOf, "en")),
-      }
-    : null,
-  archive: en.hud.interact.archive,
-  vault: en.hud.interact.studyVault,
-};
-const plaza = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), endLabels, null);
+const plaza = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), l4EndLabels, null);
 const plazaSizes = plaza.signs.map(signPlate);
 const plazaTexts = plaza.signs.map((s) => s.text.replace(/\s+/g, " "));
 const plazaOrigin = { x: layout.end!.center.x, y: FLOOR_Y, z: layout.end!.center.z };
@@ -107,57 +66,6 @@ function audit(plates: readonly Plate[], titleCap: number, rover: Quad | null) {
   const seen = new Set<string>();
   const twice = plates.filter((p) => (seen.has(p.text) ? true : (seen.add(p.text), false))).map((p) => p.text);
   return { hits, onRover, overCap: Math.max(0, titles - titleCap), twice };
-}
-
-/** The rover and the follow camera, driven like the rendered sweep (`driveTo`) and settled like `CameraDirector`. */
-class Drive {
-  readonly orbit: OrbitState = createOrbitState();
-  readonly cls: ViewportClass;
-  pos: Vec2 & { heading: number };
-
-  constructor(readonly size: { width: number; height: number }) {
-    this.cls = cameraClass(size.width, size.height);
-    setPitchRange(this.orbit, pitchRange(this.cls, "follow"));
-    // A deep link spawns on the arrival point heading east and opens on the arrival view.
-    this.pos = { ...floor.spawn, heading: ARRIVAL_HEADING };
-    primeZone(this.orbit, zoneAt("L4", this.pos, floor.viewZones), this.cls);
-  }
-
-  /** Drives the autopilot route to `to` in small steps, tracking the view zones on the way, then lets the camera settle. */
-  to(to: Vec2) {
-    const route = roadRoute(net, grid, this.pos, to, graph) ?? [to];
-    for (const p of route) {
-      const dx = p.x - this.pos.x;
-      const dz = p.z - this.pos.z;
-      const len = Math.hypot(dx, dz);
-      if (len < 1e-6) continue;
-      const heading = Math.atan2(dx, dz);
-      const from = { ...this.pos };
-      const steps = Math.ceil(len / 0.25);
-      for (let k = 1; k <= steps; k++) {
-        this.pos = { x: from.x + (dx * k) / steps, z: from.z + (dz * k) / steps, heading };
-        updateZone(this.orbit, activeZone(zoneAt("L4", this.pos, floor.viewZones), this.orbit), false, this.cls);
-        stepOrbit(this.orbit, 0.25 / ROVER.autopilotSpeed, false);
-      }
-    }
-    stepOrbit(this.orbit, 1, true);
-  }
-
-  /** The settled follow camera (look-ahead along the view, offset scale, camera collision). */
-  camera(): PerspectiveCamera {
-    const { width, height } = this.size;
-    const roverTarget: [number, number, number] = [this.pos.x, FLOOR_Y + 1, this.pos.z];
-    const f = followForward(this.cls, this.orbit.yaw);
-    const ahead = FOLLOW_LOOK_AHEAD[this.cls];
-    const pose = followPose(this.cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], this.orbit.yaw, this.orbit.zoom * followOffsetScale(this.cls, width / height), this.orbit.pitch);
-    const position = clampCamera(pose.target, pose.position, world, roverTarget, pose.fov);
-    const camera = new PerspectiveCamera(pose.fov, width / height, CAMERA_NEAR, CAMERA_FAR);
-    camera.position.set(...position);
-    camera.lookAt(...pose.target);
-    camera.updateMatrixWorld();
-    camera.updateProjectionMatrix();
-    return camera;
-  }
 }
 
 /** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`. */

@@ -223,7 +223,8 @@ Design: [spectacle floor ends and hall](../superpowers/specs/2026-10-13-spectacl
   - a dark plate with a neon rim in the sign color;
   - all signs of a floor in one group (two draw calls).
 - Never lay a `Text` or `BatchedLabel` flat (`rotation` -90 degrees about x, `tilt: Math.PI / 2`).
-  - `tests/unit/floor-text.test.ts` and `__hq.probes.flatText()` (`e2e/spectacle.spec.ts`) fail.
+  - `tests/unit/floor-text.test.ts` and `__hq.probes.flatText()` (`e2e/spectacle.spec.ts`, on L2, L3, L4 and RF) fail.
+  - The facing: `tests/unit/floor-sign-facing.test.ts` (the L2 year markers and the L4 timeline signs, without a renderer) and `e2e/spectacle.spec.ts` (the L3 reactor signs, rendered).
 - Road chevrons and other non-text glyphs stay on the floor.
 - `FloatingSigns` takes an optional `dropHidden` (frames, off by default).
   - A sign hidden that long leaves the text batch and the plate draw until it shows again (L4 passes 30), so hidden glyphs cost no triangles.

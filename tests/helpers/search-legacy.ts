@@ -1,4 +1,4 @@
-// Frozen copy of src/hud/search.ts before round 5 P3: the oracle for tests/unit/search-equivalence.test.ts and tests/bench/search.bench.ts. Do not edit.
+// Frozen copy of src/hud/search.ts before round 5 P3: the oracle for tests/unit/search.test.ts (a seeded sample) and tests/bench/search.bench.ts (the full corpus and the speed). Do not edit.
 import type { LocalizedText, RoomId } from "@/content/schema";
 import type { HudIndex } from "@/hud/index-data";
 import type { PaletteActionId, PaletteEntry, PaletteGroup, PaletteSearchOptions } from "@/hud/palette-types";

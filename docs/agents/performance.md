@@ -120,6 +120,9 @@ CV page images (`/{locale}/cv`, the LCP there) are near-lossless WebP, about 27%
   - Its warm-up tour rides with Motion Full as well: a Motion Reduced warm-up left 2 geometries and a program for the first measured trips to build (a false failure in PR #201's CI).
 - The lite, reduced-motion memory gate is `e2e/memory.spec.ts` in the regular suite.
 - B1 memory: `e2e/memory.spec.ts` rides Lobby to B1 round trips in an unlocked session (`e2e/b1.ts`). The perf lane covers B1 in `floors.spec.ts` (settled, after a ride from the Lobby) and `peaks.spec.ts` (rides L1 to B1 and RF to B1, both tiers).
+- Page View toggles: the baseline is the steady state after 3 warm-up toggles and the one-off idle loads of an L1 visit (every public floor chunk `ready` in `__hq.floorChunks.snapshot()`, the office scene loaded: `__hq.office.load()`, then `__hq.probes.office.loaded`); then 4 measured toggles (`GPU_MEMORY_BUDGET.pageViewToggles` 5 counts the first toggle, the only warm-up before), the same idle loads again, and the final read. A leak still grows with every measured toggle; the first toggles' one-off loads no longer land in the window.
+  - The heap grows most over a page's first toggles (about 1.2, 0.8 and 0.5 MB locally), then 0.1 to 0.5 MB a toggle (10 toggles: about 4.4 MB): inside the slack, but not flat.
+  - Every toggle remounts the canvas, and about 1 mount in 7 holds one shader program more: the boot precompile (`ProgramWarmup`, frame 3) pins a stale variant of an L2 material when the hidden L2 commits before it. The gate compares mounts that pin as many programs (`pinOnlyPrograms` in `e2e/memory.spec.ts`, programs no scene material uses): it toggles again, at most 3 times, for a baseline that pins as few as the warm-up mounts and an after mount that pins as many as the baseline.
 - Both use the `e2e/hq.ts` memory helpers and the one budget. The baseline and the final read are settled (`readSettledGpuCounters`); the per-trip numbers are for the failure message only and read unsettled (`readGpuCounters`), so each trip still calls the elevator the moment the rover arrives.
 
 #### Program baseline and known peaks
@@ -331,7 +334,8 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
   - `load()` and `loadBody()` load the scene and drawer body chunks; `state()` is the scene chunk's state; `asks()` counts the speculative trigger's asks after the first frame went idle (a `?prefetch=off` test proves the trigger ran yet `state()` stayed `idle`).
   - `test()` (once loaded): `poll()` fetches now (and lets its one fetch land while nothing wants the poller), `settled()` counts settled fetches (wait for it to grow: a 204 keeps the feed unchanged), `advance(ms)` skews the poller's clock to cross the 60 s keep-last window, `feed()` and `wanted()` read the state.
   - Answer `/api/office` with a route from `e2e/office-fixtures.ts` or `OFFICE_FIXTURES`.
-- Memory gates read `readSettledGpuCounters` and `readJsHeapAfterGc` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
+- Memory gates read `readSettledGpuCounters` and assert with `expectNoGpuGrowth` against `GPU_MEMORY_BUDGET` (`e2e/budgets.ts` is the one definition of the counts, trips, toggles and heap slack).
+  - The heap: `readJsHeapSettled` (the lowest of 3 reads, each after two forced collections and two frames; weakly held garbage goes only on a later full collection) in the B1 round trips and the Page View toggles; `readJsHeapAfterGc` (one read after one collection) in the nightly Lobby to Roof trips and `memory-full`.
 
 ### Animation speed
 
@@ -357,6 +361,9 @@ Each check lives in one place, at the cheapest level that can see the regression
 - A check with no quality-tier input runs on lite (label placement, routes, HUD, drawers). Run the full tier only for what it adds (bloom, motes, programs, its own budget numbers).
 - Do not sample a pose sweep in CI when every pose sits far under budget: keep the highest pose and put the rest behind a capture switch (`LABS_SHOTS`, `L4_SHOTS`) or the local visual gate.
 - Layout facts (positions, distances, mirror symmetry, reachable stops, counts) go into Vitest against the pure layout modules; the e2e keeps one case that proves the wiring.
+  - Label overlap and sign placement on screen too: the sweeps run the real layout, the follow camera as `CameraDirector` settles it and the scene's own per-frame placement (`tests/helpers/l4-drive.ts`): `library-label-sweep`, `end-plaza-label-sweep`, `floor-sign-facing` (L2 and L4; `e2e/spectacle.spec.ts` keeps L3 rendered and the flat-text scan of every floor).
+  - A budget or a policy that a gate already asserts on the same tier and pose is not asserted again: the B1 and L1 office settled caps live in `e2e/perf/floors.spec.ts`, the export's script policy in the build (`scripts/csp-hashes.ts`) and the CI scan (`scripts/scan-export.ts`), and the per-route CSP check in `e2e/static-routes.spec.ts`.
+  - A slow equivalence oracle runs a seeded sample in Vitest and in full on demand (`tests/bench/`: the palette search, `bun run bench tests/bench/search.bench.ts`).
 - One ride tour covers the elevator panel, arrivals and routes on every floor (`e2e/arrivals.spec.ts`); add per-floor ride checks there rather than in a new tour.
 - Before adding an e2e, search the suite for the same flow (`grep -rn "<the probe or test id>" e2e/`); fold a new assertion into the test that already reaches that state.
 - A slow budget sweep, or a second viewport or tier of the same behavior, ends its title with ` @nightly` (see [Nightly-only e2e tests](#nightly-only-e2e-tests)).
@@ -378,7 +385,6 @@ Owner decision 2026-10-18 ([decisions.md](../decisions.md)): no test is dropped;
 | `daynight`: day costs the same programs and calls as night on L1 | 120 | The day and night behavior tests in `daynight.spec.ts`; the L1 perf gate. |
 | `highlights`: L1 headroom under the floor budget (full) | 132 | The L1 perf gate on both tiers; the reduced-motion station and gate checks in `highlights.spec.ts`. |
 | `memory`: 10 Lobby to Roof round trips (lite) | 162 | `e2e/perf/memory-full.spec.ts` (the same round trips on the full tier); the B1 round trips and Page View toggles stay. |
-| `topics`: end plaza labels (desktop) | 50.8 | The phone variant (narrower caps, the most crowded screen). |
 | `labs-paths`: arrival (1440x900 full) | 54.7 | The phone arrival; the desktop full tier through the reactor drive. |
 
 - Not moved: the remaining viewport or tier pairs cost under 25 s per variant (HUD corners, drawer, Page View landing) or test tier-specific behavior (the first boost's programs, the Labs arrival calls per tier).

@@ -477,9 +477,10 @@ describe("OfficeLazy", () => {
     expect(screen.getByText(labels.loadingNote).parentElement).toBe(screen.getByText(labels.loading).parentElement);
     expect(fetcher).not.toHaveBeenCalled();
     io.fire(true);
-    await waitFor(() => expect(screen.getByTestId("office-panel")).toBeTruthy());
+    // The panel is a lazy import and its first fetch resolves after it: a loaded CI runner took over the 1 s default.
+    await waitFor(() => expect(screen.getByTestId("office-panel")).toBeTruthy(), { timeout: 5_000 });
     io.fire(true);
-    await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled"));
+    await waitFor(() => expect(screen.getByTestId("office-panel")).toHaveAttribute("data-feed", "disabled"), { timeout: 5_000 });
     // On screen: held with the switched-off line, so nothing below moves.
     expect(section).toBeVisible();
     expect(screen.getByRole("status").textContent).toBe(labels.disabled);

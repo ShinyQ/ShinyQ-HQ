@@ -1,32 +1,13 @@
-import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, collectCspViolations, enterHQ, openPage, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
-import { LOCALES, staticRoutes } from "./routes";
+import { expect, test } from "@playwright/test";
+import { asReturningVisitor, collectCspViolations, enterHQ, expectStrictPolicy, openPage, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
  * The per-page script policy (scripts/csp-hashes.ts, Round 7 D): every page carries one
  * `data-hq-csp` meta tag whose script-src lists the sha256 of each inline script and no
- * 'unsafe-inline', and nothing the site runs (Classic pages, client navigation, the root redirect,
- * the CV viewer, the 3D boot, intro and an elevator ride) trips a violation.
+ * 'unsafe-inline', and nothing the site runs (the 404 page, client navigation, the root redirect,
+ * the CV viewer, the 3D boot, intro and an elevator ride) trips a violation. Every Classic route is
+ * checked the same way in `e2e/static-routes.spec.ts` (`renders <route>`).
  */
-
-/** The page's effective script policy: exactly one data-hq-csp meta, no 'unsafe-inline'. */
-async function expectStrictPolicy(page: Page) {
-  const policies = await page.locator('meta[http-equiv="Content-Security-Policy"]').evaluateAll((els) => els.map((el) => el.getAttribute("content") ?? ""));
-  expect(policies).toHaveLength(1);
-  expect(policies[0]).toMatch(/^script-src 'self' /);
-  expect(policies[0]).not.toContain("'unsafe-inline'");
-}
-
-for (const locale of LOCALES) {
-  for (const route of staticRoutes(locale)) {
-    test(`Classic ${route} runs with no CSP violation`, async ({ page }) => {
-      const violations = await collectCspViolations(page);
-      await openPage(page, `${route}?tier=static`);
-      await expectStrictPolicy(page);
-      expect(violations).toEqual([]);
-    });
-  }
-}
 
 test("the 404 page runs with no CSP violation", async ({ page }) => {
   const violations = await collectCspViolations(page);
