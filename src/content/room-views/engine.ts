@@ -65,14 +65,24 @@ export function buildEngineViews(locale: Locale): RoomView[] {
     return drawn;
   };
 
+  const ones = (items: readonly unknown[]) => items.map(() => 1);
+  const rows = timelineRows(story, facts);
+  const busiest = Math.max(1, ...rows.map((r) => r.prs.length));
+  const open = rows.findIndex((r) => r.open);
+  const tileValues = dashboardTiles(facts, PUBLIC_FLOORS.length);
+  const top = Math.log10(1 + Math.max(1, ...tileValues.map((tile) => tile.value)));
+  const gateLevel = { ci: 1, nightly: 0.66, local: 0.33 } as const;
+  const round2 = (x: number) => Math.round(x * 100) / 100;
+
   const content: Record<StationId, StationContent> = {
     blueprint: {
-      engine: { diagram: diagram(blueprint.architecture) },
+      engine: { diagram: diagram(blueprint.architecture), holo: { levels: ones(PUBLIC_FLOORS) } },
       sections: [{ title: t("howItRuns"), bullets: blueprint.steps.map((s) => s[locale]) }],
     },
     timeline: {
       engine: {
-        rounds: timelineRows(story, facts).map(({ round, prs, unlinked, first, last, open }) => ({
+        holo: { levels: rows.map((r) => round2(r.prs.length / busiest)), ...(open >= 0 ? { mark: open } : {}) },
+        rounds: rows.map(({ round, prs, unlinked, first, last, open }) => ({
           id: round.id,
           heading: t("round", { n: round.number }),
           dates: roundDates({ first, last }, locale, t("dateTo")),
@@ -88,20 +98,24 @@ export function buildEngineViews(locale: Locale): RoomView[] {
       sections: [{ body: t("prHint") }],
     },
     agents: {
-      engine: { excerpt: { text: agents.excerpt.text, href: repoFileUrl(agents.excerpt.path) } },
+      engine: { excerpt: { text: agents.excerpt.text, href: repoFileUrl(agents.excerpt.path) }, holo: { levels: ones(agents.tools) } },
       sections: [
         { title: t("loop"), bullets: agents.steps.map((s) => `${s.title[locale]}: ${s.text[locale]}`) },
         { title: t("tools"), chips: [...agents.tools] },
       ],
     },
     gates: {
-      engine: { gates: gates.gates.map((g) => ({ id: g.id, title: g.title[locale], text: g.text[locale], budget: g.budget[locale], required: g.required })) },
+      engine: {
+        gates: gates.gates.map((g) => ({ id: g.id, title: g.title[locale], text: g.text[locale], budget: g.budget[locale], required: g.required })),
+        holo: { levels: gates.gates.map((g) => gateLevel[g.where]) },
+      },
       sections: [],
     },
     dashboard: {
       engine: {
         // The tower's public floor count (B1 stays a secret here too).
-        tiles: dashboardTiles(facts, PUBLIC_FLOORS.length).map((tile) => {
+        holo: { levels: tileValues.map((tile) => round2(Math.log10(1 + tile.value) / top)) },
+        tiles: tileValues.map((tile) => {
           const value = number.format(tile.value);
           return { id: tile.id, value: tile.unit === "kb" ? t("kb", { value }) : value, label: t(`tiles.${tile.id}`, { date: tile.since ? formatDate(tile.since, locale) : "" }) };
         }),
@@ -109,11 +123,12 @@ export function buildEngineViews(locale: Locale): RoomView[] {
       sections: [],
     },
     brain: {
-      engine: { diagram: diagram(brain.architecture) },
+      engine: { diagram: diagram(brain.architecture), holo: { levels: ones(brain.steps) } },
       sections: [{ title: t("steps"), bullets: brain.steps.map((s) => `${s.title[locale]}: ${s.text[locale]}`) }],
     },
     rejected: {
       engine: {
+        holo: { levels: ones(rejected.ideas) },
         // A pull request whose diff shows text the site hides (`unlinkedPrs`) stays plain text, as on the timeline.
         ideas: rejected.ideas.map(({ id, title, tried, reason, pr }) => ({
           id,

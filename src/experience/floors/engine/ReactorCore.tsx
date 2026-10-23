@@ -34,6 +34,8 @@ export interface ReactorProbe {
 }
 
 const probe: ReactorProbe = { state: null, segments: 0, sparks: 0, angle: 0, level: 0, flash: 0 };
+/** Read-only for the B1 holograms (`EngineHolo`): the halo turns with `state.pulseHz` and flares with `flash`. */
+export const reactorProbe: Readonly<ReactorProbe> = probe;
 
 /** `__hq.reactor().state()` (Playwright): what the core shows. */
 export function reactorCoreProbe(): ReactorProbe {

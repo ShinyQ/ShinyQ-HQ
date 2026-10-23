@@ -220,6 +220,13 @@ export interface RoomEngine {
   ideas?: { id: string; title: string; tried: string; reason: string; pr?: { n: number; href?: string } }[];
   /** The Reactor: words for its live block (`ReactorPanel` reads the B1 office feed and the stats on the client). */
   reactor?: { labels: { live: string; running: string; done: string; failed: string; agents: string; deploy: string; noDeploy: string; visits: string; asks: string; offline: string } };
+  /**
+   * The bay's hologram over its projector (`floors/engine/holo.ts`): one level per drawn item, 0 to 1, computed here so
+   * the client parses no formatted text (Blueprint: floors; Timeline: pull requests per round over the busiest; Agents:
+   * tools; Gates: 1 CI, 0.66 nightly, 0.33 local; Dashboard: snapshot numbers, log scaled; Brain: steps;
+   * Rejected: ideas). `mark` is the Timeline's open round.
+   */
+  holo?: { levels: number[]; mark?: number };
   /** Resolved words (the drawer loads no `build` messages on the client). */
   labels: { before: string; after: string; budget: string; blocksMerge: string; reportsOnly: string; inProgress: string; excerpt: string; source: string; hourly: string; uptime: string; visits: string; newTab: string; tried: string; whyDropped: string };
 }
