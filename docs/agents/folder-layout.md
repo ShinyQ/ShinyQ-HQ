@@ -401,7 +401,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `tests/helpers/space.ts`: expectSpaceRules(...) for walkable floor layouts.
 - `tests/helpers/edge-accents.ts`: static scanner for colored left/top edge stripes (`tests/unit/edge-accents.test.ts`).
 - `tests/helpers/office-cameras.ts`: settled L1 follow cameras and the six office sizes, shared by `office-chip-placement` and `office-beacon-view`.
-- `tests/helpers/` (more): `office-endpoint.ts` (a fake hq-office service binding and edge cache), `office-history.ts` (generated office days), `office-frame.ts` and `office-rows.ts` (office projection checks), `office-t.ts` (an `office` translator), `fake-canvas.ts` (a recording 2D context), `shader-pow.ts` (unsafe GLSL `pow()` bases), `import-graph.ts` (static import walk for the chunk graph tests), `fake-renderer.ts`, `fake-audio.ts`, `real-layouts.ts`, `webp.ts`, `woff.ts`, and the frozen oracles `navgrid-legacy.ts` and `search-legacy.ts`.
+- `tests/helpers/` (more): `office-endpoint.ts` (a fake hq-office service binding and edge cache), `office-history.ts` (generated office days), `office-frame.ts` and `office-rows.ts` (office projection checks), `office-t.ts` (an `office` translator), `fake-canvas.ts` (a recording 2D context), `shader-pow.ts` (unsafe GLSL `pow()` bases), `import-graph.ts` (static import walk for the chunk graph tests), `fake-renderer.ts`, `fake-audio.ts`, `real-layouts.ts`, `l4-drive.ts` (the real L4 floor and its settled follow camera for the label and sign sweeps), `webp.ts`, `woff.ts`, the frozen oracles `navgrid-legacy.ts` and `search-legacy.ts`, and `search-corpus.ts` (the search equivalence corpus and its seeded sample).
 - `tests/unit/`: Vitest.
   - Schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors.
   - Career layout, labs layout, arrival framing and directory boards, sign facing, library concepts and layout.
@@ -421,7 +421,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 
 | Area | Spec and what it covers |
 |---|---|
-| Static routes | `static-routes.spec.ts` |
+| Static routes | `static-routes.spec.ts`: every route renders, with the strict script policy and zero CSP violations |
 | Page View | `pageview.spec.ts`: axe per template, filters, anchors, phone overflow |
 | 3D experience | `experience.spec.ts` |
 | Career Archive | `career.spec.ts` |
@@ -430,12 +430,12 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | L3 three paths | `labs-paths.spec.ts`: arrival and the mirrored end on both tiers, the reactor drive on full; every pose with `LABS_SHOTS` |
 | Library + Roof | `library-roof.spec.ts` |
 | L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
-| Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` |
+| Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` (the L2 and L4 sign facing: `tests/unit/floor-sign-facing.test.ts`) |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
-| Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no text, zoomed in), the L1 budget at the office (lite); the living crew and helper drones, the Needs Kurniadi beacon and minimap cue, the production deploy beam, the day replay (idle loop, drawer controls, merge tiles, `?prefetch=off`); snapshots from `e2e/office-fixtures.ts` |
+| Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no text, zoomed in); the living crew and helper drones, the Needs Kurniadi beacon and minimap cue, the production deploy beam, the day replay (idle loop, drawer controls, merge tiles, `?prefetch=off`); snapshots from `e2e/office-fixtures.ts` |
 | Classic office card | `office-classic.spec.ts`: the lazy `#office` card on the home page, its states (busy, offline, kept snapshot), snapshot v3 helpers, the hidden section when the office is off, no request before the card nears the viewport |
 | RF roof deck | `roof.spec.ts` |
-| B1 Engine Room | `engine-room.spec.ts`: the `?unlock=b1` flag, a locked session never loads B1, the floor and its drawers; `b1-unlock.spec.ts`: the locked row and progress, the unlock moment, Later, persistence, the `#B1` deep link, Cmd-K (helpers in `e2e/b1.ts`) |
+| B1 Engine Room | `engine-room.spec.ts`: the `?unlock=b1` flag, a locked session never loads B1, the floor and its drawers (its budget: `e2e/perf/floors.spec.ts`); `b1-unlock.spec.ts`: the locked row and progress, the unlock moment, Later, persistence, the `#B1` deep link, Cmd-K (helpers in `e2e/b1.ts`) |
 | Missions + axe | `missions.spec.ts` |
 | Floor pads and pickers | `pads.spec.ts` |
 | Point-and-go | `interact.spec.ts`: hover, click, empty floor, touch, reduced motion |
@@ -444,7 +444,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | Study Vault | `guides-vault.spec.ts`: the L4 Study Vault books on desktop and phone (full and reduced motion) open the reader, point-and-go from the constellation stop |
 | Floor ambience | `ambience.spec.ts`: the switch in the sound group, persistence, the engine follows the rover's floor |
 | Idle cadence and rover idle | `idle-cadence.spec.ts`: a parked scene drops to its floor's idle cadence and input brings 60 fps back; `rover-idle.spec.ts`: the rover's idle behaviour and what stops it |
-| Zero CSP violations | `csp.spec.ts`: Classic routes, 404, the `/` redirect, the CV viewer, 3D boot, intro, a ride and a deep link |
+| Zero CSP violations | `csp.spec.ts`: 404, client navigation, the `/` redirect, the CV viewer, 3D boot, intro, a ride and a deep link (the Classic routes: `static-routes.spec.ts`) |
 | Opt-in screenshots | `screenshots.spec.ts`, `pageview-visual.spec.ts` |
 
 ### e2e/ support and perf lane

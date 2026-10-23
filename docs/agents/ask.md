@@ -333,7 +333,7 @@ Owner decision 2026-10-19. Related professional questions that are not strictly 
 - So the effective script policy has no `'unsafe-inline'` (the header keeps it only because it cannot list per-page hashes).
 - Never add an inline event handler or a `javascript:` URL, and never inject an inline script at runtime.
 - A test that edits an inline script must rebuild the policy with `addScriptPolicy` (`scripts/csp-policy.ts`).
-- Enforced by `csp-hashes`, `scan-export.ts`, `e2e/deploy.spec.ts`, `deploy-smoke.ts` and `e2e/csp.spec.ts`.
+- Enforced by `csp-hashes`, `scan-export.ts`, `deploy-smoke.ts`, `e2e/static-routes.spec.ts` (every Classic route) and `e2e/csp.spec.ts`.
 
 ## Credentials
 
