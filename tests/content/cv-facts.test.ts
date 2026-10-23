@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { getContent, getPod, getProfile, getSkills, getTimelineEntry } from "@/content/load";
 
 /**
- * Round 5 CV refresh (owner request 2026-10-13): the CV PDF in public/cv is the source of truth for
- * the CV-derived facts on the site. Each row pairs a marker from the CV text with what the site must
- * say. The site side always runs; the PDF side needs `pdftotext` (poppler, not installed on CI) and
- * proves each marker is in the committed PDF. Markers never name an employer's client (C3).
+ * Round 5 CV refresh (owner request 2026-10-13, updated CV 2026-10-23): the CV PDF in public/cv is
+ * the source of truth for the CV-derived facts on the site. Each row pairs a marker from the CV text
+ * with what the site must say. The site side always runs; the PDF side needs `pdftotext` (poppler,
+ * not installed on CI) and proves each marker is in the committed PDF. Markers never name an employer's client (C3).
  * New CV: replace the PDF, run `bun run cv:pages`, then update these rows and the content together.
  */
 
@@ -99,6 +99,8 @@ const FACTS: FactRow[] = [
   { cv: "Evaluating 21 teams", site: ["21 teams"] },
   { cv: "It has reviewed 540+ PRs organization-wide", site: ["541 PRs"] },
   { cv: "TOEFL ITP - 547 (2024)", site: ["TOEFL ITP (score 547)"] },
+  { cv: "Agentic AI Systems GH-600 (2026)", site: ["GH-600", "GitHub Certified: Agentic AI Developer"] },
+  { cv: "Google Generative AI Leader (2026)", site: ["Google Certified: Generative AI Leader"] },
 ];
 
 describe("CV-derived facts on the site", () => {
@@ -114,12 +116,15 @@ describe("CV-derived facts on the site", () => {
     for (const marker of site) expect(siteText, marker).toContain(marker);
   });
 
-  it("leads with the CV's role order, AI and Software Engineer (owner decision, round 5)", () => {
-    const { headline, bio } = getProfile();
-    expect(headline).toEqual({ en: "AI and Software Engineer", id: "AI dan Software Engineer" });
-    expect(bio.en.startsWith("I am an AI and Software Engineer")).toBe(true);
-    expect(bio.id.startsWith("Saya AI dan Software Engineer")).toBe(true);
-    expect(siteText).not.toMatch(/Software Engineer (and|dan) AI Engineer/);
+  it("leads with the CV's title, Forward Deployed AI Engineer, in both locales (owner decision 2026-10-23)", () => {
+    const { headline, bio, currentRole } = getProfile();
+    expect(headline).toEqual({ en: "Forward Deployed AI Engineer", id: "Forward Deployed AI Engineer" });
+    expect(bio.en.startsWith("I am a Forward Deployed AI Engineer based in Jakarta")).toBe(true);
+    expect(bio.id.startsWith("Saya Forward Deployed AI Engineer di Jakarta")).toBe(true);
+    // One title, never stacked with an older one.
+    expect(siteText).not.toMatch(/Software Engineer (and|dan) AI Engineer|AI (and|dan) Software Engineer|Software & AI Engineer/);
+    // The job title stays the real one.
+    expect(currentRole.title.en).toBe("Technical Consultant, Software & AI");
   });
 
   it("lists the TOEFL ITP score with the year the CV gives", () => {
@@ -175,6 +180,10 @@ describe.skipIf(!hasPdftotext)("CV markers in the committed PDF", () => {
     const markers = [...PERIODS, ...ROLES, ...FACTS].map((row) => row.cv);
     const missing = [...markers, "AI and Software Engineer with 4+ years"].filter((marker) => !text.includes(marker));
     expect(missing).toEqual([]);
+  });
+
+  it("carries the site headline as its header title", () => {
+    expect(cvText()).toContain(`${getProfile().headline.en} - Jakarta, Indonesia`);
   });
 
   it("no longer lists the Master's degree", () => {

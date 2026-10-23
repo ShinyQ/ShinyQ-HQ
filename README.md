@@ -4,7 +4,7 @@
 
 # ShinyQ HQ
 
-**The portfolio of Kurniadi Ahmad Wijaya, AI and Software Engineer, built as an explorable 3D neon tower.**
+**The portfolio of Kurniadi Ahmad Wijaya, Forward Deployed AI Engineer, built as an explorable 3D neon tower.**
 
 Pilot a small Screen Rover through five floors of projects, career, writing and contact details, or read it all as a fast, accessible website.
 
@@ -294,7 +294,7 @@ Secrets, variables, Cloudflare resources and budgets: [docs/deploy.md](docs/depl
 
 <div align="center">
 
-**Kurniadi Ahmad Wijaya** · AI and Software Engineer
+**Kurniadi Ahmad Wijaya** · Forward Deployed AI Engineer
 
 [Website](https://kurniadi.pages.dev) · [LinkedIn](https://www.linkedin.com/in/kurniadiwijaya) · [GitHub](https://github.com/ShinyQ) · [Hugging Face](https://huggingface.co/ShinyQ)
 · [Medium](https://kurniadiahmadwijaya.medium.com/) · [Google Scholar](https://scholar.google.com/citations?user=u8OY1foAAAAJ)

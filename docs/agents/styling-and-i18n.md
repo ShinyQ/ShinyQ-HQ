@@ -48,7 +48,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - Pages render `<JsonLd data={pageJsonLd(locale, path)} />` for their BreadcrumbList (and the pod or post item).
 - `seoFor` returns two titles:
   - `title`: share copy (Open Graph, Twitter, card alt, JSON-LD).
-  - `searchTitle`: the `<title>`, at most `SEARCH_TITLE_MAX` 60 characters via `fitTitle` (full name, then first name, then the bare content title).
+  - `searchTitle`: the `<title>`, at most `SEARCH_TITLE_MAX` 60 characters via `fitTitle` (full name, then first name, then the bare content title). Home's is `{name}: {role}` (the headline; the city stays in the description, since with it the title passes 60).
   - Search titles are unique per locale, and so are share titles.
 - `og:url` always equals the canonical, and `/` declares `/en` as both (`src/app/(root)/layout.tsx`).
 - Search engine verification comes only from the `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` build variables (`searchVerification`, on `/`, `/en`, `/id`); never commit a token in code.

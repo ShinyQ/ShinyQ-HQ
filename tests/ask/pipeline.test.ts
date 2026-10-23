@@ -296,7 +296,7 @@ describe("perspectives in the pipeline (spec section 13)", () => {
       ["Who is ShinyQ?", "en"],
       ["Apa itu ShinyQ?", "id"],
     ] as const) {
-      const r = await ask(q, "Kurniadi is an AI and Software Engineer.", locale);
+      const r = await ask(q, "Kurniadi is a Forward Deployed AI Engineer.", locale);
       expect(r).toMatchObject({ outcome: "answer", calledModel: true });
       expect(r.chunkIds).toContain("profile");
       const { messages } = r.calls[0].input as { messages: { role: string; content: string }[] };
@@ -305,8 +305,8 @@ describe("perspectives in the pipeline (spec section 13)", () => {
   });
 
   it("retrieves on the plain name: the nickname questions get the chunks of the same question about him", async () => {
-    const nick = await ask("Who is ShinyQ?", "Kurniadi is an AI and Software Engineer.");
-    const name = await ask("Who is Kurniadi?", "Kurniadi is an AI and Software Engineer.");
+    const nick = await ask("Who is ShinyQ?", "Kurniadi is a Forward Deployed AI Engineer.");
+    const name = await ask("Who is Kurniadi?", "Kurniadi is a Forward Deployed AI Engineer.");
     expect(nick.chunkIds).toEqual(name.chunkIds);
   });
 
