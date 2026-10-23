@@ -65,18 +65,22 @@ export function orbitOffset(offset: Vec3, yaw: number, pitch: number): Vec3 {
 /**
  * Follow camera orbiting `target` (see `orbitOffset`). A view zone's look offset (`ViewZone.lookOffset`, eased by the
  * orbit) then moves only the look target, the camera stays: `lookForward` along the camera's horizontal forward,
- * `lookUp` along y, both scaled by `zoom` like the camera offset, so the view tilts by the same angle at any distance.
- * Without one (both 0) the pose is exactly the plain orbit, the `target` array itself included.
+ * `lookUp` along y, `lookRight` along the camera's horizontal right, all scaled by `zoom` like the camera offset, so the
+ * view turns by the same angle at any distance. Without one (all 0) the pose is exactly the plain orbit, the `target`
+ * array itself included.
  */
-export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0, lookForward = 0, lookUp = 0): CameraPose {
+export function followPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitch = 0, lookForward = 0, lookUp = 0, lookRight = 0): CameraPose {
   const { fov, offset } = FOLLOW[cls];
   const [rx, ry, rz] = orbitOffset(offset, yaw, pitch);
   const position: Vec3 = [target[0] + rx * zoom, target[1] + ry * zoom, target[2] + rz * zoom];
-  if (lookForward === 0 && lookUp === 0) return { position, target, fov };
+  if (lookForward === 0 && lookUp === 0 && lookRight === 0) return { position, target, fov };
   const f = followForward(cls, yaw);
+  // The camera's horizontal right of forward (x, z) is (-z, x).
+  const x = f.x * lookForward - f.z * lookRight;
+  const z = f.z * lookForward + f.x * lookRight;
   return {
     position,
-    target: [target[0] + f.x * lookForward * zoom, target[1] + lookUp * zoom, target[2] + f.z * lookForward * zoom],
+    target: [target[0] + x * zoom, target[1] + lookUp * zoom, target[2] + z * zoom],
     fov,
   };
 }
@@ -120,7 +124,8 @@ export function railShift(roverZ: number): number {
  * `pitch` tilts it within PITCH_LIMITS. `axisZ` is the road's z at the rover (the Career Road
  * meanders), so the camera follows the road's curves. The look-ahead runs to the screen's right;
  * `aheadAlongView` runs it into the screen instead (`railForward`), which centers the rover when the rail
- * looks down the road (the arrival view behind the rover).
+ * looks down the road (the arrival view behind the rover). `lookRight` (u, scaled by `zoom`) then moves only the look
+ * target along the camera's horizontal right, like a follow zone's `LookOffset.right`.
  */
 export function railPose(
   cls: ViewportClass,
@@ -132,14 +137,17 @@ export function railPose(
   axisZ = 0,
   pitch = 0,
   aheadAlongView = false,
+  lookRight = 0,
 ): CameraPose {
   const { fov, y, z } = RAIL[cls];
   const shift = axisZ + railShift(roverZ - axisZ);
   const [ox, oy, oz] = orbitOffset([0, y, z], yaw, pitch);
   const ahead = aheadAlongView ? railForward(yaw) : { x: Math.cos(yaw), z: -Math.sin(yaw) };
+  const f = railForward(yaw);
+  const side = lookRight * zoom;
   return {
     position: [roverX + ox * zoom, floorY + oy * zoom, shift + oz * zoom],
-    target: [roverX + RAIL_LOOK_AHEAD * ahead.x, floorY, shift + RAIL_LOOK_AHEAD * ahead.z],
+    target: [roverX + RAIL_LOOK_AHEAD * ahead.x - f.z * side, floorY, shift + RAIL_LOOK_AHEAD * ahead.z + f.x * side],
     fov,
   };
 }

@@ -21,7 +21,7 @@ import { cameraWorld, clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { activeZone, createOrbitState, createZoneHold, holdZone, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { activeZone, aimDeparture, createOrbitState, createZoneHold, holdZone, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import { introRuntime, resetIntroRuntime, setReveal } from "../intro/runtime";
 import { introModule } from "../intro/chunk";
 import type { IntroPlan } from "./intro";
@@ -194,6 +194,8 @@ export function CameraDirector({
       rollingOn,
     });
     if (step.started && destZone && s.ride) primeArrival(orbit, destZone, s.ride.to, cls);
+    // The way in (owner 2026-10-23): when a ride starts, ease to behind and to the right of the rover heading into the shaft.
+    if (stage === "toDoor" && l.prevStage === null) aimDeparture(orbit, s.reducedMotion, rail);
     // This sees the ride end on the frame the Director ends it (rover on the arrival point, `cameraSnap` set): both
     // `useFrame`s use the default priority 0 and R3F runs equal priorities in subscription order, which is mount
     // order here (Scene.tsx mounts the Director just before the CameraDirector).
@@ -235,15 +237,16 @@ export function CameraDirector({
     const focus = s.phase === "hologram" ? cameraFocus.pose : null;
     // The settled rail or follow pose: one helper for the glide's end and the normal branches, so the handover never pops.
     const rigPose = (onRail: boolean, forward: Vec2): CameraPose => {
-      // In an arrival zone the rail looks down the road behind the rover: the look-ahead runs into the screen, so the rover sits centered.
+      // In an arrival zone the rail looks down the road behind the rover: the look-ahead runs into the screen, so the rover sits
+      // centered (a zone's sideways look offset, `LookOffset.right`, aims a portrait view between the rover and the road ahead).
       if (onRail) {
         const axisZ = roadZAt(railAxis, roverRuntime.x);
-        return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null);
+        return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null, orbit.lookRight);
       }
       // Look slightly ahead of the rover so more of the floor in front is visible; a zone's eased look offset moves the target only.
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      return followPose(cls, [roverTarget[0] + forward.x * ahead, roverTarget[1], roverTarget[2] + forward.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch, orbit.lookForward, orbit.lookUp);
+      return followPose(cls, [roverTarget[0] + forward.x * ahead, roverTarget[1], roverTarget[2] + forward.z * ahead], orbit.yaw, orbit.zoom * scale * l.boost.pull, orbit.pitch, orbit.lookForward, orbit.lookUp, orbit.lookRight);
     };
     // Boost: widen and pull back a little (third person), a smaller FOV kick in first person; never under reduced motion.
     boostView(roverRuntime.boost, orbit.blend, !s.reducedMotion && !focus && rig !== "intro", l.boost);
@@ -257,7 +260,7 @@ export function CameraDirector({
       const ahead = FOLLOW_LOOK_AHEAD[cls];
       const f = followForward(cls, orbit.yaw);
       const scale = followOffsetScale(cls, three.size.width / Math.max(1, three.size.height));
-      const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch, orbit.lookForward, orbit.lookUp);
+      const end = followPose(cls, [roverTarget[0] + f.x * ahead, roverTarget[1], roverTarget[2] + f.z * ahead], orbit.yaw, orbit.zoom * scale, orbit.pitch, orbit.lookForward, orbit.lookUp, orbit.lookRight);
       const rover: Vec3 = [roverRuntime.x, roverRuntime.y, roverRuntime.z];
       snap = true;
       if (!intro) {
@@ -378,7 +381,10 @@ export function CameraDirector({
     // First person: mix the smoothed third-person camera toward the rover's eyes by the eased blend.
     const fp = orbit.blend > 0 && rig !== "intro";
     let fov = desired.fov;
-    let forward: Vec2 = drawRail ? railForward(orbit.railYaw) : forwardOf(desired);
+    // A zone's sideways look offset turns the view a little but not the steering or the look-ahead: they keep the orbit's
+    // forward, so the glide's end pose (built on it) and the follow pose after it are the same.
+    const aimedAside = !drawRail && orbit.lookRight !== 0 && !focus && rig !== "intro";
+    let forward: Vec2 = drawRail ? railForward(orbit.railYaw) : aimedAside ? followForward(cls, orbit.yaw) : forwardOf(desired);
     l.outPos.copy(l.pos);
     l.outTarget.copy(l.target);
     if (fp) {
