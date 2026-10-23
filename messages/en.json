@@ -1175,12 +1175,12 @@
       "title": "3D tower or Classic site",
       "threeD": "3D tower",
       "classic": "Classic site",
-      "note": "Share of the visits the site's own beacon saw (it skips opt-outs, Do Not Track and automated browsers), so it covers fewer visits than the total. A visit that used both views counts on both sides."
+      "note": "Share of the visits the site's own beacon saw (it skips Do Not Track and automated browsers), so it covers fewer visits than the total. A visit that used both views counts on both sides."
     },
     "topicsTitle": "Questions by topic",
     "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
     "chipsTitle": "Suggested questions",
-    "chipsNote": "How often each suggested question was picked. Visitor-entered text is not shown in these stats.",
+    "chipsNote": "The most picked suggested questions (up to five) and how often each was picked. Visitor-entered text is not shown in these stats.",
     "chipCount": "{count, plural, one {{n} pick} other {{n} picks}}",
     "noChips": "No suggested question picked for this topic yet.",
     "map": {
@@ -1193,8 +1193,6 @@
       "country": "Country",
       "code": "Code"
     },
-    "optOut": "Don't count my visits",
-    "optOutHint": "Saved in this browser when storage is available. With this choice saved, a page load blocks visit and performance beacons and Cloudflare Web Analytics. Turning it on also cancels the active visit beacon. Already-loaded performance and analytics scripts may continue until reload. Do Not Track and Global Privacy Control block first-party visit and performance beacons, not the Web Analytics loader. This does not clear logs or affect chat.",
     "tile": "visits in the last 30 days (estimate)",
     "openObservatory": "Visitor Observatory in the Lobby",
     "panel": {

@@ -1175,12 +1175,12 @@
       "title": "Menara 3D atau situs klasik",
       "threeD": "Menara 3D",
       "classic": "Situs klasik",
-      "note": "Porsi kunjungan yang tercatat oleh beacon milik situs ini (beacon ini melewati opt-out, Do Not Track, dan browser otomatis), sehingga mencakup lebih sedikit kunjungan daripada total. Kunjungan yang memakai keduanya dihitung di kedua sisi."
+      "note": "Porsi kunjungan yang tercatat oleh beacon milik situs ini (beacon ini melewati Do Not Track dan browser otomatis), sehingga mencakup lebih sedikit kunjungan daripada total. Kunjungan yang memakai keduanya dihitung di kedua sisi."
     },
     "topicsTitle": "Pertanyaan per topik",
     "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
     "chipsTitle": "Pertanyaan yang disarankan",
-    "chipsNote": "Seberapa sering pertanyaan yang disarankan dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
+    "chipsNote": "Pertanyaan yang disarankan yang paling sering dipilih (paling banyak lima) dan seberapa sering masing-masing dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
     "chipCount": "{count, plural, other {{n} kali dipilih}}",
     "noChips": "Pertanyaan yang disarankan untuk topik ini belum pernah dipilih.",
     "map": {
@@ -1193,8 +1193,6 @@
       "country": "Negara",
       "code": "Kode"
     },
-    "optOut": "Jangan hitung kunjungan saya",
-    "optOutHint": "Disimpan di browser ini jika penyimpanan tersedia. Saat halaman dimuat, pilihan yang tersimpan memblokir beacon kunjungan dan performa serta Cloudflare Web Analytics. Mengaktifkannya juga membatalkan beacon kunjungan aktif. Skrip performa dan analitik yang sudah dimuat dapat tetap berjalan hingga halaman dimuat ulang. Do Not Track dan Global Privacy Control memblokir beacon kunjungan dan performa milik situs, bukan pemuat Web Analytics. Pilihan ini tidak menghapus log atau memengaruhi obrolan.",
     "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
     "openObservatory": "Observatorium Pengunjung di Lobi",
     "panel": {

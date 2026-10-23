@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseStatsSnapshot, STATS_FIXTURE, STATS_FIXTURE_EMPTY } from "@/lib/visits/contract";
 import { STATS_FIXTURE_PERF } from "@/lib/stats/fixtures";
-import { DELAYED_AFTER_MS, formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, perfView, visitsView } from "@/lib/visits/model";
+import { DELAYED_AFTER_MS, formatCount, formatCountLong, freshness, largestRemainder, lastUpdatedDay, perfView, TOP_CHIPS, visitsView } from "@/lib/visits/model";
 
 const HOUR = 3_600_000;
 const at = (iso: string, hours: number) => Date.parse(iso) + hours * HOUR;
@@ -93,6 +93,23 @@ describe("visitsView", () => {
     expect(v.asks.topics.map((t) => t.topic)).toEqual(["work", "ai", "career", "contact", "perspectives"]);
     expect(v.asks.topics.reduce((a, t) => a + t.share, 0)).toBe(100);
     expect(v.asks.chips.map((c) => c.id)).toEqual(["work-best", "ai-agents", "career-now", "contact-reach"]);
+  });
+
+  it("lists only the top 5 suggested questions, most picked first, ties by id (owner decision 2026-10-23)", () => {
+    expect(TOP_CHIPS).toBe(5);
+    const chips = [
+      { id: "g", topic: "work" as const, n: 1 },
+      { id: "c", topic: "ai" as const, n: 7 },
+      { id: "b", topic: "work" as const, n: 7 },
+      { id: "a", topic: "career" as const, n: 3 },
+      { id: "f", topic: "work" as const, n: 9 },
+      { id: "e", topic: "work" as const, n: 2 },
+      { id: "d", topic: "work" as const, n: 3 },
+    ];
+    const s = { ...STATS_FIXTURE, asks: { ...STATS_FIXTURE.asks, d30: { ...STATS_FIXTURE.asks.d30, chips } } };
+    expect(visitsView(s, "d30", "all").asks.chips.map((c) => c.id)).toEqual(["f", "b", "c", "a", "d"]);
+    expect(visitsView(s, "d30", "work").asks.chips.map((c) => c.id)).toEqual(["f", "b", "d", "e", "g"]);
+    expect(visitsView(s, "d30", "ai").asks.chips.map((c) => c.id)).toEqual(["c"]);
   });
 
   it("narrows questions to one topic; visits ignore the topic", () => {
