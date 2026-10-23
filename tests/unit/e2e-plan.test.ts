@@ -454,7 +454,7 @@ describe("offline tooling and the remaining unmapped paths", () => {
     expect(specsForChanges(["scripts/injected-analytics.ts"]).specs).toEqual(["csp", "deploy"]);
     expect(specsForChanges(["src/types/troika-three-text.d.ts"]).specs).toEqual(["static-routes"]);
     expect(specsForChanges(["src/assets/fonts/inter-latin1-wght400-800.woff2"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
-    expect(specsForChanges(["wrangler.toml"]).specs).toEqual(["ask", "visit"]);
+    expect(specsForChanges(["wrangler.toml"]).specs).toEqual(["ask", "visit", "visit-live"]);
   });
 
   it("leaves no tracked file outside the ci, docs and tests classes and the e2e helpers unmatched", () => {

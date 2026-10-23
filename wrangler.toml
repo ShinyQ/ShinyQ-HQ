@@ -47,15 +47,16 @@ binding = "PERF_EVENTS"
 dataset = "perf_events"
 
 # Workers Analytics Engine dataset of the public visit stats beacon (functions/api/visit.ts, appendix 06
-# section 4): one point per page lifetime, no IP, no user agent, no URL. blobs [version, mode (3d, classic,
-# both)], doubles [1], index the constant "visit". Created on the first write; read by the hq-stats Worker.
+# section 4): a visit ping per tab session (the public visit count) and a mode ping per page lifetime, no IP,
+# no user agent, no URL. blobs [version, "visit" or the mode (3d, classic, both)], doubles [1], index the
+# constant "visit". Created on the first write; read by the hq-stats Worker.
 [[analytics_engine_datasets]]
 binding = "VISIT_EVENTS"
 dataset = "visit_events"
 
-# KV namespace "STATS_KV": the public visit stats snapshot (`stats:v1`) and the ledger of finalized days
-# (`stats:days:v1`), written by the hq-stats Cron Worker every 2 hours (workers/stats/wrangler.toml binds
-# the same id) and read by GET /api/stats. KV namespace IDs are not secret.
+# KV namespace "STATS_KV": the public visit stats snapshot (`stats:v1`), its live tail (`stats:live:v1`) and the
+# ledger of finalized days (`stats:days:v1`), written by the hq-stats Cron Worker every hour
+# (workers/stats/wrangler.toml binds the same id) and read by GET /api/stats. KV namespace IDs are not secret.
 [[kv_namespaces]]
 binding = "STATS_KV"
 id = "88fb27f910f44e6393b8fd495d6a2c4f"
@@ -82,6 +83,14 @@ bucket_name = "hq-study-guides"
 [[services]]
 binding = "OFFICE"
 service = "hq-office"
+
+# Public visit stats (docs/agents/stats.md, runbook workers/stats/README.md): GET /api/stats adds today's live visit
+# pings through the hq-stats Worker's GET /live (the analytics token stays in the Worker). hq-stats is deployed by
+# deploy.yml after the site; it already exists, so the upload passes, and until its new version is live (or when it
+# fails) /api/stats serves the hourly snapshot as it is.
+[[services]]
+binding = "STATS"
+service = "hq-stats"
 
 [vars]
 # Kill switch. Anything but "true" hides the UI and makes /api/ask return 503 (docs/ask-runbook.md).
