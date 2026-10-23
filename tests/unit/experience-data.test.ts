@@ -14,7 +14,8 @@ describe("buildExperienceData", () => {
     const id = buildExperienceData("id", names);
     expect(en.locale).toBe("en");
     expect(en.profile.name).toBe(getProfile().name);
-    expect(en.profile.headline).not.toBe(id.profile.headline);
+    expect(en.profile.headline).toBe(getProfile().headline.en);
+    expect(id.profile.headline).toBe(getProfile().headline.id);
     expect(id.stats[0].label).toBe(getStats()[0].label.id);
   });
 

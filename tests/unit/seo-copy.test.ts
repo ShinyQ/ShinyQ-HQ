@@ -113,8 +113,9 @@ describe("every page's title and description", () => {
       expect(new Set(shareTitles).size, `${locale} share titles`).toBe(shareTitles.length);
       expect(titles.filter((t) => t.includes(first)).length / titles.length, locale).toBeGreaterThan(0.6);
     }
-    expect(seoFor("en", "/").searchTitle).toBe(`${name}: ${getProfile().headline.en} in Jakarta`);
-    expect(seoFor("id", "/").searchTitle).toBe(`${name}: ${getProfile().headline.id} di Jakarta`);
+    // The city stays in the home description: with the headline it would pass SEARCH_TITLE_MAX.
+    expect(seoFor("en", "/").searchTitle).toBe(`${name}: ${getProfile().headline.en}`);
+    expect(seoFor("id", "/").searchTitle).toBe(`${name}: ${getProfile().headline.id}`);
     expect(fitTitle(["a".repeat(70), "b".repeat(50)])).toBe("b".repeat(50));
     expect(fitTitle(["a".repeat(70), "b".repeat(65)])).toBe("b".repeat(65));
   });
