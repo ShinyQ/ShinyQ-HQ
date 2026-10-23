@@ -68,10 +68,10 @@ Code: `workshopLayout.ts` (`buildWorkshop`), scene `WorkshopAnnex.tsx`. The Work
 ### Arrival
 
 - Elevator arrivals roll the rover on to `CAREER_ROAD.arrivalX` (x = 6) inside the 2019 plaza, short of its scrub stop (`FloorLayout.arrival`); deep links keep the approach spawn.
-- Zone `L2:arrival` (`arrivalOnly`, `travel` east) carries `railYaw`: the rail camera stands due west of the rover and looks east down the Career Road at the next year's arch (`railYawBehind`).
+- Zone `L2:arrival` (`arrivalOnly`, `travel` east) carries `railYaw` `ARRIVAL_RAIL_YAW`: the rail camera stands west of the rover and 35 degrees to its right (the elevator diagonal, owner decision 2026-10-23) and looks down the Career Road at the next year's arch.
   - While a zone rail yaw holds (`orbit.zoneRailYaw`), `railPose(..., aheadAlongView)` runs the look-ahead down the view instead of to the screen's right, so the rover sits centered; the target spring smooths the switch back.
   - Leaving the zone eases the rail back to the side view, unless the visitor turned it by hand.
-  - Zooms (`CAREER_ROAD.arrivalZoom`): desktop 0.98, tablet 0.86, phones 0.77, the widest rail views that keep the camera east of the glass shaft.
+  - Zooms (`CAREER_ROAD.arrivalZoom`): desktop 0.98, tablet 0.86, phones 0.8, rail views that keep the camera east of the glass shaft; phones aim 7 u right (`arrivalAimPhone`, `LookOffset.right`) so the arch stays in frame.
 - The glide runs on the rail rig ([Elevator arrival](3d-experience.md#elevator-arrival)).
 
 ### Point-and-go targets

@@ -96,6 +96,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Stats: no opt-out, top 5 questions | 2026-10-23: owner decision: the "Don't count my visits" switch and the opt-out are gone (a stale key is cleared so those visitors count again; Do Not Track, GPC and automation still skip), and the suggested questions list shows the top 5 in the drawer and the Contact section | Done |
 | Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 | Forward Deployed AI Engineer | 2026-10-23: owner decision: the headline is "Forward Deployed AI Engineer" in both languages, the title on the updated CV (which also adds GH-600 and Google Generative AI Leader); the bio opens with it, the current-role line keeps "Technical Consultant, Software & AI", and the home `<title>` drops the city to stay within 60 characters | Done |
+| Elevator camera diagonal | 2026-10-23: going into the elevator and coming out of it, the camera stands behind the rover and 35 degrees to its right ("serong kanan"); every floor's arrival view, the L3 overview and the B1 phone view included; phone views aim sideways so each floor's main sight stays in frame | In review |
 
 ## Controls and first visit
 
@@ -137,7 +138,8 @@ Open `/en` and press **Boot rover**.
 - Every floor has a glowing call pad in front of the elevator door: stop on it (or click it) and pick a floor from a list with previews.
 - Far from the elevator (more than 40 u: the L2 Workshop, the L3 east plaza, the deep L4 desks), any floor change beams the rover into the car instead of driving all the way back (a fade cut under reduced motion).
 - The far ends of L2, L3 and L4 have a green **Back to elevator** pad that beams you to the call pad.
-- Every floor arrives like L3: the rover rolls out of the car heading east and the camera ends behind it, looking east down the floor's main axis at its main sight (the Lobby hologram, the Career Road, the Labs hub, the Writing timeline lane, the roof plaza mast). The camera starts over the rover's shoulder in the car and glides out in 1.5 s, then stays locked behind the rover until it parks; any turn, zoom, key or drive input takes over, and reduced motion cuts straight to the view.
+- Every floor arrives like L3: the rover rolls out of the car heading east and the camera ends behind it and 35 degrees to its right ("serong kanan"), so the floor's main axis runs off to the upper right toward its main sight (the Lobby hologram, the Career Road, the Labs hub, the Writing timeline lane, the roof plaza mast). The camera starts over the rover's right shoulder in the car and glides out in 1.5 s, then stays locked on the rover until it parks; any turn, zoom, key or drive input takes over, and reduced motion cuts straight to the view.
+- On the way in the camera turns to the same diagonal behind the rover as it drives to the door and holds it through the ride; any turn takes over, and reduced motion keeps the view as it is.
 
 ### Rover's tour, hints and floor lines
 
@@ -388,7 +390,7 @@ The basement under the Lobby: a workshop where each station explains one part of
   - Over the reactor crown the logos of the tools the site is built with (Next.js, React, Three.js, TypeScript, Tailwind CSS, Bun, Cloudflare Pages and Workers, GitHub Actions, Vitest, Playwright) and the coding agents orbit, always upright and facing the camera; they turn faster as the reactor pulses faster and flare white with its deploy flash.
 - **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the latest CI runs, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions in the last 30 days) and how to read it, in plain words; offline it says so and shows the idle glow, and an open drawer turns offline by itself once the feed goes stale. It has no `/build` section and checks for new data only while the rover is on B1.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers, that rises (up to about 6 dB) as the rover nears the reactor core.
-- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car looking down the aisle at the reactor. On phones the arrival camera looks across the aisle so the first two station signs read whole, then turns back down the aisle once the rover drives on.
+- A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car looking down the aisle at the reactor. On phones the arrival camera, on the same diagonal as every floor, frames the Working with AI Agents station across the aisle with its sign whole, then levels out once the rover drives on.
 - The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
 - Budgets: its own 12.7 KB floor chunk (cap 16 KB, loaded only when unlocked), 47 scene calls on lite and 50 on full when settled.
 

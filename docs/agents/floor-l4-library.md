@@ -33,7 +33,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 - Every post has its own door.
 - `LIBRARY_FLOOR.padZone` stays free for the elevator call pad.
 - Spawn and arrival are one point (`NEWSROOM.arrival`, (-4, 0)) on the plaza axis, west of its center: deep links spawn there and elevator arrivals roll on to it.
-  - Zone `L4:arrival` (`arrivalOnly`, `travel` east) puts the camera behind the rover, looking east down the timeline lane at its first stations; zoom 1.12, phones 0.96 (the widest views that keep the camera east of the glass shaft).
+  - Zone `L4:arrival` (`arrivalOnly`, `travel` east) puts the camera behind the rover and 35 degrees to its right (the elevator diagonal, owner decision 2026-10-23), looking down the timeline lane at its first stations; zoom 1.12, phones 0.96 (the camera east of the glass shaft).
 - The layout test passes `expectSpaceRules` with the real content.
 
 ## Scene (`Library.tsx`)
