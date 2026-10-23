@@ -15,8 +15,9 @@ follow the diagonal too, retuned so a station sign reads whole.
 - `camera/look.ts` (import-free): `ELEVATOR_DIAGONAL`, `ARRIVAL_YAW`, `DEPARTURE_YAW`, `ARRIVAL_RAIL_YAW`,
   `DEPARTURE_RAIL_YAW`; `camera/arrival.ts` re-exports them, uses them in `shaftClearZoom` and turns `shoulderPose` by
   the diagonal (still inside the car).
-- Way in: pure `aimDeparture` in `orbit.ts` (pseudo zone `DEPARTURE_VIEW`), called by `CameraDirector` on the frame a
-  ride enters `toDoor`; never under reduced motion.
+- Way in: a static view zone `DEPARTURE_VIEW` in `orbit.ts` (empty area), entered with `updateZone` by `CameraDirector`
+  on the frame a ride enters `toDoor`; like any zone never under reduced motion or in first person. (A dedicated
+  `aimDeparture` was dropped to keep the 3D session total inside its cap.)
 - Way out: every arrival zone's yaw (and the L2 rail yaw) is the diagonal; `L3:overview` too.
 - `LookOffset.right` (follow and rail rigs): portrait arrivals on L1, L2 and RF and the L3 overview aim sideways so the
   main sight stays in frame; steering and the look-ahead keep the orbit's forward, so the glide hands over without a jump.
