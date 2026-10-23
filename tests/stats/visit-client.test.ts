@@ -1,17 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CLASSIC_DWELL_MS, clearLegacyOptOut, LEGACY_OPTOUT_KEY, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf } from "@/lib/stats/visitClient";
+import { CLASSIC_DWELL_MS, clearLegacyOptOut, LEGACY_OPTOUT_KEY, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf, VISIT_SESSION_KEY } from "@/lib/stats/visitClient";
 
-const base = { privacySignal: false, webdriver: false, crawler: false, search: "" };
+const base = { webdriver: false, crawler: false, search: "" };
+const VISIT = { url: "/api/visit", body: '{"v":1,"kind":"visit"}' };
 
 describe("visitAllowed", () => {
   it("counts a normal visit", () => {
     expect(visitAllowed(base)).toBe(true);
   });
 
-  it("never counts with Do Not Track or Global Privacy Control, even when forced", () => {
-    expect(visitAllowed({ ...base, privacySignal: true, search: "?visit=1" })).toBe(false);
-  });
 
   it("skips automation and crawlers unless ?visit=1 forces it, and ?visit=0 opts out", () => {
     expect(visitAllowed({ ...base, webdriver: true })).toBe(false);
@@ -39,18 +37,27 @@ describe("visitMode and viewOf", () => {
 });
 
 describe("startVisitBeacon", () => {
-  const beacons: { url: string; body: string }[] = [];
+  const sent: { url: string; body: string }[] = [];
+  /** Mode pings only (the visit ping is checked on its own). */
+  const modes = () => sent.filter((b) => !b.body.includes('"kind"'));
+  const visits = () => sent.filter((b) => b.body.includes('"kind"'));
   let visibility: DocumentVisibilityState = "visible";
   let t = 0;
   const clock = () => t;
-  const start = () => startVisitBeacon(clock);
+  const cleanups: (() => void)[] = [];
+  const start = () => {
+    const stop = startVisitBeacon(clock);
+    cleanups.push(stop);
+    return stop;
+  };
 
   beforeEach(() => {
-    beacons.length = 0;
+    sent.length = 0;
     visibility = "visible";
     t = 0;
     resetVisitBeacon();
     localStorage.clear();
+    sessionStorage.clear();
     document.documentElement.removeAttribute("data-hq");
     document.documentElement.removeAttribute("data-hq-boot");
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => visibility });
@@ -59,13 +66,16 @@ describe("startVisitBeacon", () => {
     Object.defineProperty(navigator, "sendBeacon", {
       configurable: true,
       value: (url: string, body: string) => {
-        beacons.push({ url, body });
+        sent.push({ url, body });
         return true;
       },
     });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    cleanups.splice(0).forEach((stop) => stop());
+    vi.restoreAllMocks();
+  });
 
   const hide = () => {
     visibility = "hidden";
@@ -79,7 +89,7 @@ describe("startVisitBeacon", () => {
     hide();
     hide();
     window.dispatchEvent(new Event("pagehide"));
-    expect(beacons).toEqual([{ url: "/api/visit", body: '{"v":1,"mode":"classic"}' }]);
+    expect(modes()).toEqual([{ url: "/api/visit", body: '{"v":1,"mode":"classic"}' }]);
   });
 
   it("reports both views when the 3D tower opened after the Classic site", async () => {
@@ -88,7 +98,7 @@ describe("startVisitBeacon", () => {
     document.documentElement.setAttribute("data-hq", "3d");
     await flush();
     hide();
-    expect(JSON.parse(beacons[0].body)).toEqual({ v: 1, mode: "both" });
+    expect(JSON.parse(modes()[0].body)).toEqual({ v: 1, mode: "both" });
   });
 
   it("reports 3D when the boot cover handed over to the tower", async () => {
@@ -98,7 +108,7 @@ describe("startVisitBeacon", () => {
     document.documentElement.removeAttribute("data-hq-boot");
     await flush();
     hide();
-    expect(JSON.parse(beacons[0].body)).toEqual({ v: 1, mode: "3d" });
+    expect(JSON.parse(modes()[0].body)).toEqual({ v: 1, mode: "3d" });
   });
 
   it("does not count a short Classic moment before the tower (released boot cover)", async () => {
@@ -108,32 +118,32 @@ describe("startVisitBeacon", () => {
     await flush();
     t += 60_000;
     hide();
-    expect(JSON.parse(beacons[0].body)).toEqual({ v: 1, mode: "3d" });
+    expect(JSON.parse(modes()[0].body)).toEqual({ v: 1, mode: "3d" });
   });
 
   it("does not count time while the tab was hidden", async () => {
     start();
     t += 1000;
     hide();
-    expect(beacons).toEqual([]);
+    expect(modes()).toEqual([]);
     t += 60_000;
     visibility = "visible";
     document.dispatchEvent(new Event("visibilitychange"));
     t += 1000;
     hide();
-    expect(beacons).toEqual([]);
+    expect(modes()).toEqual([]);
     visibility = "visible";
     document.dispatchEvent(new Event("visibilitychange"));
     t += CLASSIC_DWELL_MS;
     window.dispatchEvent(new Event("pagehide"));
-    expect(JSON.parse(beacons[0].body)).toEqual({ v: 1, mode: "classic" });
+    expect(JSON.parse(modes()[0].body)).toEqual({ v: 1, mode: "classic" });
   });
 
   it("sends nothing for a page that was never seen", () => {
     visibility = "hidden";
     start();
     window.dispatchEvent(new Event("pagehide"));
-    expect(beacons).toEqual([]);
+    expect(modes()).toEqual([]);
   });
 
   it("clears a stale opt-out key from the retired switch and counts the visit (owner decision 2026-10-23)", () => {
@@ -143,15 +153,15 @@ describe("startVisitBeacon", () => {
     expect(localStorage.getItem(LEGACY_OPTOUT_KEY)).toBeNull();
     t += CLASSIC_DWELL_MS;
     hide();
-    expect(beacons).toEqual([{ url: "/api/visit", body: '{"v":1,"mode":"classic"}' }]);
+    expect(modes()).toEqual([{ url: "/api/visit", body: '{"v":1,"mode":"classic"}' }]);
   });
 
   it("clears the stale key even when the visit is not counted, and ignores blocked storage", () => {
     localStorage.setItem(LEGACY_OPTOUT_KEY, "1");
-    Object.defineProperty(navigator, "doNotTrack", { configurable: true, get: () => "1" });
+    Object.defineProperty(navigator, "webdriver", { configurable: true, get: () => true });
     start();
     hide();
-    expect(beacons).toEqual([]);
+    expect(sent).toEqual([]);
     expect(localStorage.getItem(LEGACY_OPTOUT_KEY)).toBeNull();
     vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
       throw new Error("blocked");
@@ -159,14 +169,92 @@ describe("startVisitBeacon", () => {
     expect(() => clearLegacyOptOut()).not.toThrow();
   });
 
-  it("starts once per page lifetime and stores nothing", () => {
+  it("counts Do Not Track and Global Privacy Control visitors (owner decision 2026-10-24)", () => {
+    Object.defineProperty(navigator, "doNotTrack", { configurable: true, get: () => "1" });
+    Object.defineProperty(navigator, "globalPrivacyControl", { configurable: true, get: () => true });
+    start();
+    expect(visits()).toEqual([VISIT]);
+    t += CLASSIC_DWELL_MS;
+    hide();
+    expect(modes()).toHaveLength(1);
+    Object.defineProperty(navigator, "doNotTrack", { configurable: true, get: () => null });
+    Object.defineProperty(navigator, "globalPrivacyControl", { configurable: true, get: () => undefined });
+  });
+
+  it("sends the visit ping as soon as the page is shown, before any hide", () => {
+    start();
+    expect(sent).toEqual([VISIT]);
+    expect(sessionStorage.getItem(VISIT_SESSION_KEY)).toBe("1");
+  });
+
+  it("sends one visit ping per tab session: a reload in the same tab does not count again", () => {
+    start();
+    resetVisitBeacon();
+    start();
+    expect(visits()).toHaveLength(1);
+    sessionStorage.clear();
+    resetVisitBeacon();
+    start();
+    expect(visits()).toHaveLength(2);
+  });
+
+  it("waits for a hidden (background or prerendered) page to be shown before the visit ping", () => {
+    visibility = "hidden";
+    start();
+    expect(visits()).toEqual([]);
+    visibility = "visible";
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(visits()).toEqual([VISIT]);
+  });
+
+  it("keeps the visit in memory when sessionStorage is blocked, and retries a refused beacon", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    start();
+    hide();
+    visibility = "visible";
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(visits()).toHaveLength(1);
+    vi.restoreAllMocks();
+    resetVisitBeacon();
+    sent.length = 0;
+    let accept = false;
+    Object.defineProperty(navigator, "sendBeacon", {
+      configurable: true,
+      value: (url: string, body: string) => {
+        if (accept) sent.push({ url, body });
+        return accept;
+      },
+    });
+    start();
+    expect(sessionStorage.getItem(VISIT_SESSION_KEY)).toBeNull();
+    accept = true;
+    hide();
+    visibility = "visible";
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(visits()).toEqual([VISIT]);
+  });
+
+  it("never sends a visit ping under automation unless ?visit=1 forces it", () => {
+    Object.defineProperty(navigator, "webdriver", { configurable: true, get: () => true });
+    start();
+    expect(sent).toEqual([]);
+  });
+
+  it("starts once per page lifetime, stores only the tab session flag and sets no cookie", () => {
     const setItem = vi.spyOn(Storage.prototype, "setItem");
     start();
     start();
     t += CLASSIC_DWELL_MS;
     hide();
-    expect(beacons).toHaveLength(1);
-    expect(setItem).not.toHaveBeenCalled();
+    expect(modes()).toHaveLength(1);
+    expect(visits()).toHaveLength(1);
+    expect(setItem.mock.calls).toEqual([[VISIT_SESSION_KEY, "1"]]);
+    expect(localStorage.length).toBe(0);
     expect(document.cookie).toBe("");
   });
 
@@ -176,6 +264,6 @@ describe("startVisitBeacon", () => {
     start();
     t += CLASSIC_DWELL_MS;
     hide();
-    expect(beacons).toHaveLength(1);
+    expect(modes()).toHaveLength(1);
   });
 });
