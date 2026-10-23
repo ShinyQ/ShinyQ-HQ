@@ -181,7 +181,8 @@
           "en": "The certification study guides live as PDFs in a private R2 bucket. A Pages Function serves them in byte ranges, so the in-site reader opens a guide without downloading all of it.",
           "id": "Panduan belajar sertifikasi disimpan sebagai PDF di bucket R2 privat. Pages Function menyajikannya per rentang byte, sehingga pembaca di situs membuka panduan tanpa mengunduh seluruh file."
         }
-      ]
+      ],
+      "stack": ["Next.js", "React", "Three.js", "TypeScript", "Tailwind CSS", "Bun", "Cloudflare Pages", "Cloudflare Workers", "GitHub Actions", "Vitest", "Playwright"]
     },
     "timeline": {
       "title": { "en": "The Build Timeline", "id": "Lini Masa Pembangunan" },

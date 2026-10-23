@@ -20,16 +20,16 @@ const closeBitmap = (image: unknown) => (image as { close?: () => void } | null)
  * before 17, Firefox before 98: `canDecodeAtlasBitmap`) use the <img> and flipY. Straight alpha is the
  * Texture default (premultiplyAlpha false). Runs in an effect, so `navigator` exists.
  */
-async function loadAtlasImage(texture: Texture): Promise<void> {
+async function loadAtlasImage(texture: Texture, file: string): Promise<void> {
   const bitmap = canDecodeAtlasBitmap(navigator.userAgent, typeof createImageBitmap === "function");
   texture.flipY = atlasFlipY(bitmap);
   if (bitmap) {
     // An error response is no image, so createImageBitmap rejects it like a failed fetch.
-    texture.image = await createImageBitmap(await (await fetch(LOGO_ATLAS_FILE)).blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
+    texture.image = await createImageBitmap(await (await fetch(file)).blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none", imageOrientation: "flipY" });
     return;
   }
   const img = new Image();
-  img.src = LOGO_ATLAS_FILE;
+  img.src = file;
   await img.decode();
   texture.image = img;
 }
@@ -38,16 +38,16 @@ async function loadAtlasImage(texture: Texture): Promise<void> {
  * The logo atlas texture both walls share (the Lobby calls this once and passes it down), decoded before
  * upload; null until it has loaded (or when it failed to load). Same texels and settings as the runtime
  * canvas atlas it replaces (sRGB, anisotropy 4, flipped rows, straight alpha, mipmaps). Unmounting
- * disposes it (the next mount loads it again, from the HTTP cache).
+ * disposes it (the next mount loads it again, from the HTTP cache). B1 passes its own atlas `file` (the Stack Halo).
  */
-export function useLogoAtlas(): Texture | null {
+export function useLogoAtlas(file: string = LOGO_ATLAS_FILE): Texture | null {
   const [texture, setTexture] = useState<Texture | null>(null);
   useEffect(() => {
     let live = true;
     const t = new Texture();
     t.colorSpace = SRGBColorSpace;
     t.anisotropy = 4;
-    loadAtlasImage(t).then(
+    loadAtlasImage(t, file).then(
       () => {
         if (!live) return closeBitmap(t.image);
         t.needsUpdate = true;
@@ -60,7 +60,7 @@ export function useLogoAtlas(): Texture | null {
       t.dispose();
       closeBitmap(t.image);
     };
-  }, []);
+  }, [file]);
   return texture;
 }
 

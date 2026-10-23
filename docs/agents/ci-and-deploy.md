@@ -25,7 +25,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | `e2e:timeline` | nightly timeline |
 | `e2e:look` | local look check |
 | `screenshots`, `screenshots:pages`, `serve`, `validate:content`, `floor:thumbs`, `og:check`, `og:stills` | |
-| `build:knowledge`, `logo:atlas`, `cv:pages`, `paper:pages`, `ask:eval` | content and media tools |
+| `build:knowledge`, `logo:atlas`, `engine:atlas`, `cv:pages`, `paper:pages`, `ask:eval` | content and media tools |
 | `bench` | Vitest benches in `tests/bench/` (see [Fast verification](performance.md#fast-verification)) |
 
 ### Before pushing and committing

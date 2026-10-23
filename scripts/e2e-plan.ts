@@ -200,6 +200,8 @@ export const RULES: Rule[] = [
   // B1 Engine Room (PR 2): the floor, its layout, chunk, drawers, unlock flag and rows.
   { test: /^src\/experience\/floors\/engine\/layout\.ts$/, specs: ["engine-room", "arrivals", "memory"] },
   { test: /^src\/experience\/floors\/(engine\/|EngineRoom\.tsx$|chunks\/engine\.ts$)|^src\/hud\/drawer\/EngineBody\.tsx$|^src\/content\/room-views\/engine\.ts$|^src\/experience\/b1\.ts$|^src\/hud\/floorRows\.ts$|^e2e\/b1\.ts$/, specs: ["engine-room", "b1-unlock", "floor-chunks", "memory"] },
+  // The B1 Stack Halo's atlas (scripts/engine-atlas.ts writes public/atlas/engine.*.webp and engine/engine-atlas.ts).
+  { test: /^scripts\/engine-atlas\.(ts|lock\.json)$/, specs: ["engine-room"] },
   // On-demand floor chunks (Round 7 B): loader, lazy wrappers, prefetch and the chunk entries.
   { test: /^src\/experience\/floors\/(floorChunks|floorPrefetch|lazyFloors|FloorChunkPrefetch)\.tsx?$|^src\/experience\/floors\/chunks\//, specs: ["floor-chunks", "ride", "experience", "labs", "library-roof"] },
   // Arrival points and zones (Round 8 J): each floor's layout and the shared config select the arrivals spec too.

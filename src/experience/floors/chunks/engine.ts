@@ -1,3 +1,4 @@
+import { holoProbe } from "../engine/EngineHolo";
 import { reactorCoreProbe } from "../engine/ReactorCore";
 import { reactorTest as liveTest } from "../engine/reactorLive";
 
@@ -5,5 +6,5 @@ import { reactorTest as liveTest } from "../engine/reactorLive";
 export { EngineRoom } from "../EngineRoom";
 export { EngineBody } from "@/hud/drawer/EngineBody";
 
-/** `__hq.reactor()` once B1 loaded (Playwright): the reactor feed's test hook plus `state()`, what the core shows. */
-export const reactorTest = { ...liveTest, state: reactorCoreProbe };
+/** `__hq.reactor()` once B1 loaded (Playwright): the reactor feed's test hook plus `state()`, what the core shows, and `holo()`, the bay holograms and the Stack Halo. */
+export const reactorTest = { ...liveTest, state: reactorCoreProbe, holo: () => ({ ...holoProbe }) };
