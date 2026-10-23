@@ -70,7 +70,8 @@ const PRIVATE: [PrivateTopic, RegExp][] = [
   ["family", /\b(?:married|marriage|wife|husband|girlfriend|boyfriend|spouse|dating|divorced?|pacar(?:nya)?|istri(?:nya)?|suami(?:nya)?|menikah|nikah|cerai|keluarga(?:nya)?|anak(?:-anak)?nya|orang ?tua(?:nya)?)\b/i],
   ["family", /\b(?:his|kurniadi'?s) (?:kids|children|son|daughter|parents|mother|father|mom|dad|family|siblings?|brother|sister)\b/i],
   ["health", /\b(?:illness|sick|disease|diagnos\w*|disabilit\w*|mental health|depress\w*|anxiety|penyakit|kesehatan mental|disabilitas)\b|(?<!rumah )\bsakit\b/i],
-  ["health", /\b(?:his|kurniadi'?s|dia|kurniadi)\b.{0,25}\b(?:health|kesehatan)\b/i],
+  // "consumer health" is a client sector label (a project), never his own health.
+  ["health", /\b(?:his|kurniadi'?s|dia|kurniadi)\b.{0,25}\b(?<!consumer )(?:health|kesehatan)\b/i],
   ["religion", /\b(?:religion|religious|pray(?:s|ing)?|church|mosque|muslim|christian|catholic|hindu|buddhist|atheist|islam|agama(?:nya)?|ibadah|sholat|shalat|salat|gereja|masjid|kristen|katolik|buddha|ateis|tuhan)\b/i],
   // Partisan politics: parties, candidates, elections, specific politicians and how he votes.
   ["politics", /\b(?:politics|political|politicians?|elections?|vot(?:e|ed|es|ing) for|who (?:did|does|will|would) (?:he|kurniadi) vote|ballot|president|vice president|prime minister|minister|parliament|senator|governor|mayor|left-wing|right-wing|politik|pemilu|pilpres|pilkada|presiden|wakil presiden|menteri|partai|capres|cawapres|caleg|coblos|nyoblos|golput|gubernur|bupati|wali ?kota|dpr|mpr|kabinet|oposisi|koalisi|jokowi|prabowo|gibran|anies|ganjar|megawati|sby)\b/i],
