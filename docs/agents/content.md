@@ -222,7 +222,7 @@ Workflow: [../content.md](../content.md#study-guides) and [../study-guides-runbo
   - no page, drawer view, OG card, JSON-LD or Ask chunk renders or ships them;
   - result `context` only says how a number was measured (never "Self-reported in my CV");
   - `tests/unit/room-views.test.ts` and `tests/ask/pack.test.ts` guard this.
-- Positioning: the headline is "AI and Software Engineer" (ID "AI dan Software Engineer"; the CV's order, owner decision) with no cloud vendor. Azure, AWS and VPS hosting belong in stacks, project details and certifications.
+- Positioning: the headline is "Forward Deployed AI Engineer" in both locales (the CV's header title; owner decision 2026-10-23), one title with no second one stacked beside it and no cloud vendor. The current-role line keeps the real job title ("Technical Consultant, Software & AI"). Azure, AWS and VPS hosting belong in stacks, project details and certifications.
 
 ## L3 wings
 
