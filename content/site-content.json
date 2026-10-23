@@ -6121,48 +6121,48 @@
             {
               "src": "/media/fraud-review-platform/01-home.webp",
               "alt": {
-                "en": "MII Fraud Detection home: cases that need review, verdict mix and a review queue with risk scores; vendor names blurred",
-                "id": "Beranda MII Fraud Detection: kasus yang perlu ditinjau, komposisi verdict, dan antrean review dengan skor risiko; nama vendor diburamkan"
+                "en": "MII Fraud Detection home: the October 2026 Calm UI with analyses over 14 days by verdict, risk counts, cases that need attention and the verdict mix; people renamed",
+                "id": "Beranda MII Fraud Detection: Calm UI Oktober 2026 dengan analisis 14 hari terakhir per verdict, jumlah per tingkat risiko, kasus yang perlu perhatian, dan komposisi verdict; nama orang diganti"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/02-high-risk-result.webp",
+              "src": "/media/fraud-review-platform/02-new-analysis.webp",
               "alt": {
-                "en": "High-risk result with a score of 88 out of 100, top findings across 14 documents and an AI summary; identifiers blurred",
-                "id": "Hasil high risk dengan skor 88 dari 100, temuan utama dari 14 dokumen, dan ringkasan AI; identitas diburamkan"
+                "en": "New analysis wizard at the documents step: case details done, main and supporting documents, and a live summary with the safety checks still to confirm",
+                "id": "Wizard analisis baru di langkah dokumen: detail kasus selesai, dokumen utama dan pendukung, serta ringkasan live dengan safety check yang masih perlu dikonfirmasi"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/03-history.webp",
+              "src": "/media/fraud-review-platform/03-result.webp",
               "alt": {
-                "en": "Analysis history with verdict filters, risk scores, document counts and report links",
-                "id": "Riwayat analisis dengan filter verdict, skor risiko, jumlah dokumen, dan tautan laporan"
+                "en": "High-risk result with a score of 88 out of 100, document coverage, top findings with their points and an AI summary that cites its documents; amounts and accounts removed",
+                "id": "Hasil high risk dengan skor 88 dari 100, cakupan dokumen, temuan utama beserta poinnya, dan ringkasan AI yang mengutip dokumennya; nominal dan rekening dihapus"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/04-new-analysis.webp",
+              "src": "/media/fraud-review-platform/04-history.webp",
               "alt": {
-                "en": "New analysis form for case details and main or supporting documents, from upload or a blob folder",
-                "id": "Form analisis baru untuk detail kasus dan dokumen utama atau pendukung, dari upload atau folder blob"
+                "en": "Analysis history with title search, verdict filters, request IDs, partial-analysis badges, risk scores and dates",
+                "id": "Riwayat analisis dengan pencarian judul, filter verdict, request ID, badge analisis parsial, skor risiko, dan tanggal"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/fraud-review-platform/05-about.webp",
+              "src": "/media/fraud-review-platform/05-ai-transparency.webp",
               "alt": {
-                "en": "About page explaining the decision-support scope and the four-step document pipeline",
-                "id": "Halaman About yang menjelaskan cakupan decision support dan pipeline dokumen empat langkah"
+                "en": "AI transparency card: decision support rather than a decision, intended and out-of-scope use, and an on-this-page index",
+                "id": "Kartu AI transparency: pendukung keputusan, bukan keputusan, penggunaan yang dimaksudkan dan di luar cakupan, serta indeks halaman"
               },
               "width": 1600,
               "height": 1000,
@@ -6393,58 +6393,48 @@
             {
               "src": "/media/ai-cv-screening-platform/01-home.webp",
               "alt": {
-                "en": "Recruiter home: candidates waiting for a decision, pipeline by stage, weekly screening volume and fit band distribution",
-                "id": "Beranda recruiter: kandidat yang menunggu keputusan, pipeline per tahap, volume screening mingguan, dan distribusi fit band"
+                "en": "Recruiter home after the October 2026 redesign: candidates waiting for a decision, CVs screened in the last 7 days with a trend line, jobs that need attention and the fit band mix; organization and people renamed",
+                "id": "Beranda recruiter setelah redesign Oktober 2026: kandidat yang menunggu keputusan, CV yang di-screening dalam 7 hari terakhir dengan garis tren, lowongan yang perlu perhatian, dan komposisi fit band; organisasi dan nama orang diganti"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/02-candidate-ranking.webp",
+              "src": "/media/ai-cv-screening-platform/02-job-candidates.webp",
               "alt": {
-                "en": "Job pipeline ranked by AI fit band with must-haves met per candidate and a decision-support notice; candidate names blurred",
-                "id": "Pipeline lowongan yang diurutkan berdasarkan fit band AI dengan jumlah must-have yang terpenuhi per kandidat dan catatan decision support; nama kandidat diburamkan"
+                "en": "Job pipeline with stage tiles, an integrity review notice and candidates listed with their fit band and must-haves met; candidate names replaced",
+                "id": "Pipeline lowongan dengan tile per tahap, pemberitahuan integrity review, dan daftar kandidat dengan fit band serta must-have yang terpenuhi; nama kandidat diganti"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/03-jobs.webp",
+              "src": "/media/ai-cv-screening-platform/03-candidate-result.webp",
               "alt": {
-                "en": "Jobs list with status filters, candidates screened per job and quick status changes",
-                "id": "Daftar lowongan dengan filter status, jumlah kandidat yang di-screening per lowongan, dan perubahan status cepat"
+                "en": "Candidate result: must-haves and requirements met, an AI decision-support notice, the fit band, requirement coverage and a decision panel where the recruiter decides",
+                "id": "Hasil kandidat: must-have dan requirement yang terpenuhi, pemberitahuan AI sebagai pendukung keputusan, fit band, cakupan requirement, dan panel keputusan tempat recruiter memutuskan"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/04-job-details.webp",
+              "src": "/media/ai-cv-screening-platform/04-screening-run.webp",
               "alt": {
-                "en": "Job details with the description, status history and a warning that requirements are not confirmed yet",
-                "id": "Detail lowongan dengan deskripsi, riwayat status, dan peringatan bahwa requirement belum dikonfirmasi"
+                "en": "Completed screening run: 24 of 24 candidates screened, none failed, a candidate table and the activity feed",
+                "id": "Screening run yang selesai: 24 dari 24 kandidat di-screening, tidak ada yang gagal, tabel kandidat, dan feed aktivitas"
               },
               "width": 1600,
               "height": 1000,
               "redacted": true
             },
             {
-              "src": "/media/ai-cv-screening-platform/05-ai-input-redaction.webp",
+              "src": "/media/ai-cv-screening-platform/05-ai-transparency.webp",
               "alt": {
-                "en": "AI input redaction settings that hide contact, identity and personal details from the model before it reads a CV",
-                "id": "Pengaturan AI input redaction yang menyembunyikan kontak, identitas, dan data pribadi dari model sebelum membaca CV"
-              },
-              "width": 1600,
-              "height": 1000,
-              "redacted": true
-            },
-            {
-              "src": "/media/ai-cv-screening-platform/06-usage.webp",
-              "alt": {
-                "en": "Usage page with plan features and monthly limits for members, storage and AI requests",
-                "id": "Halaman usage dengan fitur paket dan batas bulanan untuk anggota, storage, dan request AI"
+                "en": "AI transparency settings: the Responsible AI and security contacts shown in the AI system card, with the settings navigation; addresses replaced",
+                "id": "Pengaturan AI transparency: kontak Responsible AI dan keamanan yang tampil di AI system card, dengan navigasi pengaturan; alamat diganti"
               },
               "width": 1600,
               "height": 1000,
@@ -9190,7 +9180,58 @@
           ],
           "hologram": "chart",
           "sculpture": "broadcast-megaphone",
-          "assets": []
+          "assets": [
+            {
+              "src": "/media/healthcare-outreach-dashboard/01-overview.webp",
+              "alt": {
+                "en": "Overview of the last 30 days in the original green and black theme: chats answered by the bot, a needs-your-attention panel for rejected, paused and pending broadcasts, and chatbot numbers for chats, active healthcare professionals, reply time and satisfaction; names, brands and topics masked, cost card hidden",
+                "id": "Overview 30 hari terakhir dengan tema asli hijau dan hitam: chat yang dijawab bot, panel perlu perhatian untuk broadcast yang ditolak, dijeda, dan menunggu, serta angka chatbot untuk chat, tenaga kesehatan aktif, waktu balas, dan kepuasan; nama, merek, dan topik disamarkan, kartu biaya disembunyikan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/healthcare-outreach-dashboard/02-engagement-report.webp",
+              "alt": {
+                "en": "Engagement report for template sends over 90 days: messages, delivered, read and failed counts, unique healthcare professionals, a delivery funnel and a daily trend",
+                "id": "Laporan engagement untuk pengiriman template selama 90 hari: jumlah pesan, terkirim, dibaca, dan gagal, tenaga kesehatan unik, funnel pengiriman, dan tren harian"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/healthcare-outreach-dashboard/03-broadcast-approval.webp",
+              "alt": {
+                "en": "Broadcast in preview mode waiting for a second approver: a five-step flow, the first approval, an audience frozen at 1,206 recipients, a message preview, safety checks and the activity log; operators, phone numbers and topics masked",
+                "id": "Broadcast dalam mode preview yang menunggu persetujuan kedua: alur lima langkah, persetujuan pertama, audiens yang dibekukan pada 1.206 penerima, pratinjau pesan, safety check, dan log aktivitas; operator, nomor telepon, dan topik disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/healthcare-outreach-dashboard/04-user-directory.webp",
+              "alt": {
+                "en": "Directory of 300 synthetic healthcare professionals with breakdowns by role and specialty, filters and a table of masked names and WhatsApp numbers",
+                "id": "Direktori 300 tenaga kesehatan sintetis dengan rincian per peran dan spesialisasi, filter, serta tabel nama dan nomor WhatsApp yang disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            },
+            {
+              "src": "/media/healthcare-outreach-dashboard/05-bot-knowledge.webp",
+              "alt": {
+                "en": "Bot knowledge page in preview mode: documents with type, passages, version and status, including one processing and one failed with a retry; brands and topics masked",
+                "id": "Halaman knowledge bot dalam mode preview: dokumen dengan tipe, passage, versi, dan status, termasuk satu yang sedang diproses dan satu yang gagal dengan opsi coba lagi; merek dan topik disamarkan"
+              },
+              "width": 1600,
+              "height": 1000,
+              "redacted": true
+            }
+          ]
         },
         {
           "id": "solutions-marketing-site",
