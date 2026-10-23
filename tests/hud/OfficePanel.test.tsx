@@ -488,5 +488,6 @@ describe("OfficeLazy", () => {
     await waitFor(() => expect(section).toHaveAttribute("data-status", "disabled"));
     expect(fetcher).toHaveBeenCalledWith("/api/office?v=3", expect.objectContaining({ credentials: "omit" }));
     expect(section).not.toBeVisible();
-  });
+    // Above the 5 s waits for the lazy panel: a loaded CI runner hit the 5 s default test timeout.
+  }, 15_000);
 });
