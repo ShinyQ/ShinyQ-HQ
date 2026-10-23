@@ -166,14 +166,22 @@
 
 .pageInput {
   width: 4.5ch;
+  min-width: 44px;
   min-height: 44px;
   padding: 0 4px;
   border: 1px solid var(--color-line-2);
-  border-radius: 8px;
+  border-radius: 9999px;
   background: rgb(0 0 0 / 0.3);
   color: var(--color-ink);
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+@media (pointer: fine) {
+  .pageInput {
+    min-width: 36px;
+    min-height: 36px;
+  }
 }
 
 .pageInput:focus-visible {
@@ -213,7 +221,48 @@
   background: var(--color-surface-2);
 }
 
-/* Pages column: centered sheets that can grow wider than the view when zoomed (horizontal scroll). */
+/*
+ * Floating page and zoom pill, bottom center of the pages column (never over the thumbnail rail). Its height is
+ * the 44 px targets plus 4 px padding and the 1 px border on each side (36 px targets with a fine pointer).
+ */
+.column {
+  position: relative;
+  --controls-bottom: calc(env(safe-area-inset-bottom) + 12px);
+  --controls-height: 54px;
+}
+
+@media (pointer: fine) {
+  .column {
+    --controls-height: 46px;
+  }
+}
+
+.controls {
+  position: absolute;
+  bottom: var(--controls-bottom);
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 16px);
+  padding: 4px 6px;
+  border-radius: 9999px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.5);
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.controlsDivider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin-inline: 4px;
+  background: var(--color-line-2);
+}
+
+/* Pages column: centered sheets that can grow wider than the view when zoomed (horizontal scroll). The bottom
+   padding keeps the last page clear of the pill. */
 .stack {
   display: flex;
   flex-direction: column;
@@ -221,5 +270,5 @@
   gap: 16px;
   width: max-content;
   min-width: 100%;
-  padding: 16px 12px;
+  padding: 16px 12px calc(var(--controls-bottom) + var(--controls-height) + 16px);
 }
