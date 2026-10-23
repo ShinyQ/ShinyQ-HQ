@@ -48,7 +48,7 @@ function relativeLinks(markdown: string): string[] {
 
 const REPO_ROOTS = /^(src|scripts|functions|workers|tools|tests|e2e|content|public|messages|docs|\.github)\//;
 // Build output that is gitignored, so it exists only after a build.
-const GENERATED = [/^functions\/_generated\/$/];
+const GENERATED = [/^functions\/_generated\/$/, /^public\/shapes\/$/];
 
 // Repository paths in backticks (`src/lib/x.ts`), without placeholders such as {locale}, <name>, * or YYYY.
 function repoPaths(markdown: string): string[] {
