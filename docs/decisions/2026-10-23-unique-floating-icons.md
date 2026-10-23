@@ -1,0 +1,5 @@
+# 3D experience: unique floating icons
+
+- Date: 2026-10-23
+
+Owner decision: the floating holograms on L2, L3 and L4 become varied and unique ([spec](../superpowers/specs/2026-10-23-unique-floating-icons-design.md)). L2: each job, education and freelance entry floats its own Lucide line icon, milestones cycle 4 variants and awards 3; L4: each post, publication and talk its own icon (the Research, Models and Talks desks show one per item), zones keep their color; L3: each of the 39 pods its own semantic box sculpture (at most 16 boxes, one instanced mesh). Icons come from a vendored Lucide subset (ISC, `assets/icons/lucide/`) converted at build; ids live in the content (`icon`, `sculpture`); the shapes ship as hashed static JSON per floor (`public/shapes/`, immutable cache), fetched after the floor's first frame and crossfaded in, with today's type icons and kind holograms as the fallback. JS byte caps, draw calls and shader programs do not grow; the room icons drop from one draw call per type to one batch per floor. The strict visual gate changes on L2, L3 and L4 by design (new icons and sculptures in every pose that shows them).
