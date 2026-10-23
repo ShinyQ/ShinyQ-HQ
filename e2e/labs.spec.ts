@@ -243,9 +243,11 @@ test("mobile: the drawer is a bottom sheet with snap points", async ({ browser }
  * L3 arrival draw calls before the round 5 consolidation (P8 Task 1 baseline on SwiftShader, default
  * 1280x720 viewport, deep link to /en/labs: lite 66, full 85): the directory wall in the arrival view must
  * not raise them. Round 7 G three paths: the Data and ML spine pods and its road now sit in the arrival
- * view, +2 calls on both tiers (main measured 65 and 85, the branch 67 and 87; owner note in the PR).
+ * view, +2 calls on both tiers (main measured 65 and 85, the branch 67 and 87; owner note in the PR). The elevator
+ * diagonal (owner 2026-10-23): the camera behind and to the right of the rover, farther back so the boards clear the
+ * HUD, takes in 2 more calls on both tiers (69 and 89; the floor budget stays 150; owner note in the PR).
  */
-const L3_ARRIVAL_CALLS = { lite: 67, full: 87 } as const;
+const L3_ARRIVAL_CALLS = { lite: 69, full: 89 } as const;
 
 for (const tier of ["lite", "full"] as const) {
   test(`the Labs arrival view stays at or under its pre-consolidation draw calls (${tier})`, async ({ page }) => {

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { ARRIVAL_HEADING } from "../src/experience/camera/arrival";
+import { ARRIVAL_HEADING, ELEVATOR_DIAGONAL } from "../src/experience/camera/arrival";
 import { ENGINE_ATLAS } from "../src/experience/floors/engine/engine-atlas";
 import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
@@ -269,7 +269,8 @@ test.describe("the floor", () => {
     await waitForCameraSettle(page);
     const p = await probe(page);
     expect(angleGap(p.rover.heading, ARRIVAL_HEADING)).toBeLessThan(0.1);
-    expect(angleGap(p.rover.behind, ARRIVAL_HEADING)).toBeLessThan(0.1);
+    // The camera stands behind and to the right of the rover (the elevator diagonal, owner 2026-10-23).
+    expect(angleGap(p.rover.behind, ARRIVAL_HEADING + ELEVATOR_DIAGONAL)).toBeLessThan(0.1);
     expect(p.underground).toBe(true);
     expect(p.ambience).toBe("B1");
     expect(p.chunks.B1).toBe("ready");

@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import en from "../messages/en.json";
+import { ARRIVAL_YAW } from "../src/experience/camera/look";
 import { LABS } from "../src/experience/floors/labs/layout";
 import { asReturningVisitor, skipFloorLines, driveTo, expectRenderBudget, snapshot, waitForCameraSettle, waitForHQ, waitForPhase, waitForSceneLive, type RenderPeaks, fastAnimations } from "./hq";
 
@@ -30,8 +31,8 @@ test.describe.configure({ timeout: SHOTS ? 600_000 : 300_000 });
 
 const check = SHOTS ? expect.soft : expect;
 
-/** The `L3:overview` zone looks east at the wall: the camera stands west of the rover. */
-const LOOK_EAST = (-3 * Math.PI) / 4;
+/** The `L3:overview` zone looks at the wall from behind the rover and to its right (the elevator diagonal, owner 2026-10-23). */
+const LOOK = ARRIVAL_YAW;
 const ROADS = ["software", "data", "ai"] as const;
 /** East face of the glass elevator shaft (`SHAFT_EAST_FACE` in src/experience/config.ts): the arrival camera stays east of it. */
 const SHAFT_EAST_FACE = -25;
@@ -69,9 +70,9 @@ type LW = Window & {
  * covered there by the reactor drive), the desktop arrival runs nightly (`@nightly`).
  */
 const SIZES = [
-  { name: "1440x900", width: 1440, height: 900, tier: "full", phone: false, zoom: 1.3, arrival: " @nightly" },
+  { name: "1440x900", width: 1440, height: 900, tier: "full", phone: false, zoom: LABS.overviewZoom, arrival: " @nightly" },
   // Phones zoom out further, but only so far that the follow camera stays east of the elevator shaft (LABS.overviewZoomPhone).
-  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: 1.45, arrival: "" },
+  { name: "390x844", width: 390, height: 844, tier: "lite", phone: true, zoom: LABS.overviewZoomPhone, arrival: "" },
 ] as const;
 
 /** The point `distance` along road `id` from its first point (walks the polyline), or null without that road. */
@@ -151,7 +152,7 @@ async function lookFromAbove(page: Page) {
 
 for (const size of SIZES) {
   test.describe(`L3 three paths @ ${size.name} ${size.tier}`, () => {
-    test(`arrival: the overview zone looks east at three separate boards, no sign repeats a wing name, the end mirrors, within the budget${size.arrival}`, async ({ browser }) => {
+    test(`arrival: the overview zone looks along the elevator diagonal at three separate boards, no sign repeats a wing name, the end mirrors, within the budget${size.arrival}`, async ({ browser }) => {
       const { context, page } = await openArrival(browser, size);
       const arrival = await page.evaluate(() => (window as unknown as LW).__hq.layouts.L3.arrival!);
       const { rover } = await snapshot(page);
@@ -161,7 +162,7 @@ for (const size of SIZES) {
         const w = window as unknown as LW;
         return { yaw: w.__hq.rover.cameraYaw, zoom: w.__hq.rover.cameraZoom, camera: w.__hq.camera?.() ?? null };
       });
-      check(Math.abs(Math.sin((view.yaw - LOOK_EAST) / 2)), `camera yaw ${view.yaw} looks east (L3:overview)`).toBeLessThan(0.02);
+      check(Math.abs(Math.sin((view.yaw - LOOK) / 2)), `camera yaw ${view.yaw} on the elevator diagonal (L3:overview)`).toBeLessThan(0.02);
       check(view.zoom, "L3:overview zoom").toBeCloseTo(size.zoom, 2);
       // The follow camera stands west of the rover, but never behind the glass shaft, which would fill the frame.
       check(view.camera, "camera position probe").not.toBeNull();
