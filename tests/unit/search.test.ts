@@ -5,6 +5,8 @@ import { directoryStop } from "@/experience/floors/labs/layout";
 import { buildHudIndex } from "@/hud/index-data";
 import type { PaletteGroup } from "@/hud/palette-types";
 import { buildPaletteEntries, fuzzyScore, normalize, scoreEntry, searchPalette } from "@/hud/search";
+import { sampleQueries, searchCorpus } from "../helpers/search-corpus";
+import * as legacy from "../helpers/search-legacy";
 
 const index = buildHudIndex(getContent());
 const entries = buildPaletteEntries(index, ["view-cv", "copy-email", "toggle-language", "quick-view"]);
@@ -194,5 +196,29 @@ describe("wing rows (Data and ML, owner request 2026-10-14)", () => {
       expect(searchPalette(entries, q).flatMap((g) => g.entries.map((e) => e.key)), q).toContain("wing:data");
     }
     expect(searchPalette(entries, "")).not.toContainEqual(expect.objectContaining({ id: "actions" }));
+  });
+});
+
+describe("palette search returns what the pre-round-5 implementation returned (seeded sample)", () => {
+  // 150 queries of the equivalence corpus, the same on every run; `bun run bench tests/bench/search.bench.ts` checks all of it.
+  const queries = sampleQueries(searchCorpus(entries), 150);
+
+  it(`for ${queries.length} queries with Ask enabled`, () => {
+    expect(queries).toHaveLength(150);
+    for (const q of queries) expect(searchPalette(entries, q, { ask: true }), q).toEqual(legacy.searchPalette(entries, q, { ask: true }));
+  });
+
+  it("with the pods and posts filters and recent rooms", () => {
+    const recent = entries.filter((e) => e.target.type === "room").slice(0, 4).map((e) => (e.target as { id: RoomId }).id);
+    for (const q of queries) {
+      for (const filter of ["pods", "posts", null] as const) {
+        expect(searchPalette(entries, q, { filter, recent }), `${filter} ${q}`).toEqual(legacy.searchPalette(entries, q, { filter, recent }));
+      }
+    }
+  });
+
+  it("scores single texts the same", () => {
+    const texts = entries.flatMap((e) => [e.title.en, e.title.id, ...e.keywords]).slice(0, 80);
+    for (const q of queries) for (const t of texts) expect(fuzzyScore(q, t), `${q} / ${t}`).toBe(legacy.fuzzyScore(q, t));
   });
 });
