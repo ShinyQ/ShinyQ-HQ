@@ -120,11 +120,14 @@ function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", pa
     appendLog(paths, `${agent} ${event} ignored`);
     return "ignored";
   }
-  // Read, apply, write and offer under one lock: two helpers stopping at once both count.
+  // Read, apply, write and offer under one lock: two helpers stopping at once both count. The time is read again under
+  // the lock, so beats leave in lock order: a hook that read the clock first but waited for the lock would otherwise
+  // date its beat before the one just sent, and the throttle would queue it instead of sending it.
   return withHelpersLock(paths, session, () => {
-    const state = applyHelper(readHelpers(paths, session), kind, id ? hashHelper(id, salt) : null, now);
+    const at = Math.max(now, deps.now());
+    const state = applyHelper(readHelpers(paths, session), kind, id ? hashHelper(id, salt) : null, at);
     writeHelpers(paths, session, state);
-    const helpers = helperCount(state, now);
+    const helpers = helperCount(state, at);
     // The session's newest state: a change that waits for its trailing send, else the last sent beat.
     const sent = readSent(paths, session);
     const latest = sent?.next ?? sent;
@@ -134,7 +137,7 @@ function runHelper(agent: OfficeAgent, event: string, kind: "start" | "stop", pa
     }
     const cwd = payloadCwd(payload);
     const mapped = latest ? { state: latest.state, activity: latest.activity } : BUSY;
-    const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now, helpers });
+    const beat = buildBeat({ agent, session, mapped, git: cwd ? deps.readGit(cwd) : null, allow: loadConfig(paths).allow, now: at, helpers });
     if (!parseOfficeBeat(beat)) {
       appendLog(paths, `${agent} ${event} invalid`);
       return "ignored";

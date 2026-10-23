@@ -260,6 +260,21 @@ describe("runHook: sub-agent helpers (count only)", () => {
     });
   }
 
+  it("a helper stop that read the clock before another hook took the lock still sends at once (lock order, not read order)", () => {
+    const { d, sent, tick } = deps();
+    const cp = HOOK_FIXTURES.copilot;
+    expect(runHook("copilot", "subagentStart", json(cp.subagentStart), d)).toBe("sent");
+    tick(10);
+    expect(runHook("copilot", "subagentStart", json({ ...cp.subagentStart, agentId: "helper-b" }), d)).toBe("sent");
+    tick(10);
+    expect(runHook("copilot", "subagentStop", json(cp.subagentStop), d)).toBe("sent");
+    // The second stop read the clock 5 ms before the first stop's beat went out, then got the lock.
+    let reads = 0;
+    const late: HookDeps = { ...d, now: () => (reads++ === 0 ? T0 + 15 : T0 + 25) };
+    expect(runHook("copilot", "subagentStop", json({ ...cp.subagentStop, agentId: "helper-b" }), late)).toBe("sent");
+    expect(beats(sent).map((b) => b.helpers)).toEqual([1, 2, 1, 0]);
+  });
+
   it("copilot: the start and stop name the helper by agentId; a start without one counts anonymously", () => {
     const { d, sent, tick } = deps();
     const cp = HOOK_FIXTURES.copilot;
