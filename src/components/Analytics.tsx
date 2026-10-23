@@ -1,5 +1,4 @@
 import { CF_BEACON_TOKEN } from "@/lib/site";
-import { STATS_OPTOUT_KEY, STATS_OPTOUT_VALUE } from "@/lib/stats/optout";
 
 const BEACON_SRC = "https://static.cloudflareinsights.com/beacon.min.js";
 
@@ -9,10 +8,9 @@ export const CHUNK_WAIT_MS = 1000;
 export const IDLE_TIMEOUT_MS = 500;
 
 /**
- * Inline guard that loads the Cloudflare beacon after the page's own requests, unless the visitor chose
- * "Don't count my visits" (`localStorage["hq:stats-optout"] === "1"`, src/lib/stats/optout.ts, read at inject
- * time) or the browser is automated (`navigator.webdriver`: Playwright, Lighthouse, headless checks), so
- * automation never counts as a visit. The beacon used to start during parse, before the app chunks. Order now:
+ * Inline guard that loads the Cloudflare beacon after the page's own requests, unless the browser is automated
+ * (`navigator.webdriver`: Playwright, Lighthouse, headless checks, read at inject time), so automation never
+ * counts as a visit. The beacon used to start during parse, before the app chunks. Order now:
  * 1. the `load` event;
  * 2. the app chunk requests: the paint-gated loader of scripts/defer-scripts.ts inserts every chunk script in
  *    one loop after the first paint, often after `load`, so one `/_next/static/chunks/` script in the DOM
@@ -28,7 +26,7 @@ export const IDLE_TIMEOUT_MS = 500;
  */
 export function cfBeaconScript(token: string): string {
   const config = JSON.stringify(JSON.stringify({ token, spa: true }));
-  const inject = `if(d)return;d=1;if(navigator.webdriver)return;try{if(localStorage.getItem(${JSON.stringify(STATS_OPTOUT_KEY)})===${JSON.stringify(STATS_OPTOUT_VALUE)})return}catch(e){}var s=document.createElement("script");s.defer=true;s.src=${JSON.stringify(BEACON_SRC)};s.setAttribute("data-cf-beacon",${config});document.body.appendChild(s)`;
+  const inject = `if(d)return;d=1;if(navigator.webdriver)return;var s=document.createElement("script");s.defer=true;s.src=${JSON.stringify(BEACON_SRC)};s.setAttribute("data-cf-beacon",${config});document.body.appendChild(s)`;
   const wait =
     `function wait(){var o,f=0,t=setTimeout(fin,${CHUNK_WAIT_MS});` +
     `function fin(){if(f)return;f=1;clearTimeout(t);if(o)o.disconnect();idle()}` +
@@ -43,7 +41,7 @@ export function cfBeaconScript(token: string): string {
 }
 
 /**
- * Cloudflare Web Analytics beacon (cookieless, no consent banner needed), behind the opt-out and automation guard.
+ * Cloudflare Web Analytics beacon (cookieless, no consent banner needed), behind the automation guard.
  * Rendered only when NEXT_PUBLIC_CF_BEACON_TOKEN is set at build time.
  * `spa: true` records History API navigations, so room URLs count as views.
  */

@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Analytics, CHUNK_WAIT_MS, IDLE_TIMEOUT_MS, cfBeaconScript } from "@/components/Analytics";
 import { LOADER_MARKER } from "../../scripts/defer-scripts";
-import { STATS_OPTOUT_KEY } from "@/lib/stats/optout";
 
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
@@ -120,9 +119,9 @@ describe("Cloudflare Web Analytics beacon guard", () => {
     expect(JSON.parse(script?.getAttribute("data-cf-beacon") ?? "")).toEqual({ token: TOKEN, spa: true });
   });
 
-  it("loads nothing when the visitor chose not to be counted", () => {
-    localStorage.setItem(STATS_OPTOUT_KEY, "1");
-    expect(run()).toBeNull();
+  it("loads even with a stale opt-out key from the retired \"Don't count my visits\" switch", () => {
+    localStorage.setItem("hq:stats-optout", "1");
+    expect(run()).not.toBeNull();
   });
 
   it("loads nothing in an automated browser (navigator.webdriver)", () => {
@@ -160,7 +159,8 @@ describe("Cloudflare Web Analytics beacon guard", () => {
 
   it("keeps the inline code free of anything but the token and fixed text", () => {
     const code = cfBeaconScript(TOKEN);
-    expect(code).toContain(STATS_OPTOUT_KEY);
+    expect(code).not.toContain("hq:stats-optout");
+    expect(code).not.toContain("localStorage");
     expect(code).toContain('addEventListener("load"');
     expect(code).toContain('document.readyState==="complete"');
     expect(code).toContain('\\"spa\\":true');

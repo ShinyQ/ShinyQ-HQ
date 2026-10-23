@@ -1,13 +1,11 @@
 import { isBotLike } from "../boot-first";
-import { isStatsOptedOut, STATS_OPTOUT_EVENT } from "./optout";
 import { VISIT_ENDPOINT, VISIT_VERSION, type VisitMode } from "./visit";
 
 /**
  * First-party visit beacon (public visit stats): one point per page lifetime saying whether the
  * visitor used the 3D view, the Classic site or both. De-duplicated in memory only (no storage, no
- * cookie, no identifier). Never sent under Do Not Track, Global Privacy Control, the "Don't count my
- * visits" opt-out, automation or a crawler (`?visit=1` forces it in tests and previews, `?visit=0`
- * turns it off). The Classic site counts only after it stayed on screen for CLASSIC_DWELL_MS, so the
+ * cookie, no identifier). Never sent under Do Not Track, Global Privacy Control, automation or a
+ * crawler (`?visit=1` forces it in tests and previews, `?visit=0` turns it off). The Classic site counts only after it stayed on screen for CLASSIC_DWELL_MS, so the
  * moment between a released boot cover and the 3D tower mounting never reads as a Classic visit.
  */
 
@@ -22,11 +20,10 @@ export interface VisitSignals {
   /** Crawler, preview or audit user agent. */
   crawler: boolean;
   search: string;
-  optedOut: boolean;
 }
 
 export function visitAllowed(s: VisitSignals): boolean {
-  if (s.privacySignal || s.optedOut) return false;
+  if (s.privacySignal) return false;
   const forced = /[?&]visit=([01])(&|$)/.exec(s.search)?.[1];
   if (forced) return forced === "1";
   return !s.webdriver && !s.crawler;
@@ -45,13 +42,17 @@ export function viewOf(html: Pick<Element, "hasAttribute">, visible: boolean): "
   return visible ? "classic" : null;
 }
 
-const storage = (): Storage | null => {
+/** The retired "Don't count my visits" key (owner decision 2026-10-23: the opt-out is gone). */
+export const LEGACY_OPTOUT_KEY = "hq:stats-optout";
+
+/** Removes a stale opt-out key, so a visitor who once opted out is counted again. Storage errors are ignored. */
+export function clearLegacyOptOut(): void {
   try {
-    return window.localStorage;
+    window.localStorage.removeItem(LEGACY_OPTOUT_KEY);
   } catch {
-    return null;
+    // Storage blocked: nothing stored to clear.
   }
-};
+}
 
 function signals(): VisitSignals {
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
@@ -61,7 +62,6 @@ function signals(): VisitSignals {
     webdriver: nav.webdriver === true,
     crawler: isBotLike({ userAgent: nav.userAgent, webdriver: false }, search),
     search,
-    optedOut: isStatsOptedOut(storage()),
   };
 }
 
@@ -75,6 +75,7 @@ export function resetVisitBeacon(): void {
 /** Starts watching once per page lifetime; returns a cleanup (which allows a restart only if nothing was sent). */
 export function startVisitBeacon(now: () => number = () => performance.now()): () => void {
   if (active || typeof window === "undefined") return () => {};
+  clearLegacyOptOut();
   if (!visitAllowed(signals())) return () => {};
   active = true;
   const doc = document;
@@ -97,7 +98,6 @@ export function startVisitBeacon(now: () => number = () => performance.now()): (
     observer.disconnect();
     doc.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("pagehide", send);
-    window.removeEventListener(STATS_OPTOUT_EVENT, onOptOut);
   };
   function send() {
     if (done) return;
@@ -106,7 +106,6 @@ export function startVisitBeacon(now: () => number = () => performance.now()): (
     if (!mode) return;
     done = true;
     stop();
-    if (isStatsOptedOut(storage())) return;
     try {
       navigator.sendBeacon?.(VISIT_ENDPOINT, JSON.stringify({ v: VISIT_VERSION, mode }));
     } catch {
@@ -118,17 +117,11 @@ export function startVisitBeacon(now: () => number = () => performance.now()): (
     look();
     if (doc.visibilityState === "hidden") send();
   }
-  function onOptOut() {
-    if (!isStatsOptedOut(storage())) return;
-    done = true;
-    stop();
-  }
 
   look();
   observer.observe(html, { attributes: true, attributeFilter: ["data-hq", "data-hq-boot"] });
   doc.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("pagehide", send);
-  window.addEventListener(STATS_OPTOUT_EVENT, onOptOut);
   return () => {
     stop();
     if (!done) active = false;

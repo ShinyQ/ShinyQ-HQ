@@ -17,7 +17,7 @@ export interface VisitsPanelProps {
   floorLabels: Readonly<Record<StatsFloor, string>>;
   /** Narrow layout (the room drawer): one column. */
   compact?: boolean;
-  /** Rendered under the panel (the drawer's "Don't count my visits" switch). */
+  /** Rendered under the panel. */
   footer?: ReactNode;
 }
 

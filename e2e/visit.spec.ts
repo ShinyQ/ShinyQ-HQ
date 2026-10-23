@@ -6,7 +6,7 @@ import { asHumanBrowser, asReturningVisitor, openPage, waitForFrames, waitForHQ,
 
 /**
  * Public visit stats: the first-party visit beacon sends one point per page lifetime (3D, Classic or
- * both) and nothing under the opt-out, Do Not Track or automation. Playwright is automation, so the
+ * both) and nothing under Do Not Track or automation. Playwright is automation, so the
  * tests force it with `?visit=1`. The local static server has no Functions: beacons are captured.
  */
 
@@ -75,13 +75,12 @@ test("switching from the 3D tower to the Classic site sends both", async ({ page
   expect(await sentMode(page)).toBe("both");
 });
 
-test("nothing is sent after \"Don't count my visits\"", async ({ page }) => {
+test("a stale \"Don't count my visits\" key is cleared and the visit counts (owner decision 2026-10-23)", async ({ page }) => {
   await stubBeacon(page);
   await page.addInitScript(() => localStorage.setItem("hq:stats-optout", "1"));
   await openPage(page, "/en/quick?tier=static&visit=1");
-  await leave(page);
-  await page.waitForTimeout(300);
-  expect(await beacons(page)).toEqual([]);
+  expect(await sentMode(page)).toBe("classic");
+  expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBeNull();
 });
 
 test("Do Not Track and plain automation send nothing", async ({ page }) => {
