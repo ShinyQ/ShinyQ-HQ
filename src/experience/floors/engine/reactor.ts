@@ -3,7 +3,7 @@ import type { StatsState } from "@/lib/visits/store";
 
 /**
  * B1's reactor core, driven by live data: the Agent Office feed (lanes from the CI runs' jobs, sparks from awake
- * desks, a flash on the newest production deploy) and the public stats (the 30-day visits and asks set the pulse).
+ * desks, a flash on the newest production deploy) and the public stats (the visits and asks since launch set the pulse).
  * Pure of React and three, and type-only imports, so the B1 chunk stays small.
  */
 export type ReactorLane = "running" | "failed" | "done" | "queued";
@@ -17,9 +17,9 @@ export interface ReactorState {
   sparks: number;
   /** The newest successful production deploy's `at`. */
   deployAt: number | null;
-  /** Stats `visits.d30`. */
+  /** Stats `visits.all`. */
   visits: number | null;
-  /** Stats `asks.d30.total`. */
+  /** Stats `asks.all.total`. */
   asks: number | null;
   /** REACTOR.pulse.idle when not live, else scaled by visits plus asks within min to max. */
   pulseHz: number;
@@ -36,8 +36,8 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 export function reactorState(office: OfficeFeed | null, stats: StatsState | null, opts: { reducedMotion: boolean; now: number }): ReactorState {
   const numbers = stats?.status === "ready" ? stats.snapshot : null;
-  const visits = numbers ? numbers.visits.d30 : null;
-  const asks = numbers ? numbers.asks.d30.total : null;
+  const visits = numbers ? numbers.visits.all : null;
+  const asks = numbers ? numbers.asks.all.total : null;
   const snap = office?.status === "ready" && opts.now - office.fetchedAt <= REACTOR_STALE_MS ? office.snapshot : null;
   const live = snap !== null && !opts.reducedMotion;
   if (!live) return { live: false, lanes: [], sparks: 0, deployAt: null, visits, asks, pulseHz: REACTOR.pulse.idle };

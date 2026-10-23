@@ -37,15 +37,25 @@ describe("VisitsPanel", () => {
     expect(screen.getByTestId("visits-loading")).toHaveTextContent(en.stats.loading);
   });
 
+  it("opens on Since launch, listed first, with Last 30 days still on offer", () => {
+    __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
+    renderPanel();
+    expect(screen.getByTestId("visits-panel")).toHaveAttribute("data-period", "all");
+    const radios = within(screen.getByRole("group", { name: en.stats.periodLegend })).getAllByRole("radio");
+    expect(radios.map((r) => r.getAttribute("value"))).toEqual(["all", "d30"]);
+    expect(within(screen.getByRole("group", { name: en.stats.periodLegend })).getByRole("radio", { name: en.stats.periods.all })).toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent("Since launch, topic All: 520 visits from 10 countries, 97 questions.");
+  });
+
   it("shows the window, the source and the update cadence with the numbers", () => {
     __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
     renderPanel();
     const scope = screen.getByTestId("visits-scope");
-    expect(scope).toHaveTextContent(en.stats.window.d30);
+    expect(scope).toHaveTextContent("Since Oct 11, 2026");
     expect(scope).toHaveTextContent(en.stats.source);
     expect(scope).toHaveTextContent(en.stats.updated);
     expect(screen.queryByTestId("visits-delayed")).toBeNull();
-    expect(screen.getByText("340")).toBeInTheDocument();
+    expect(screen.getByText("520")).toBeInTheDocument();
     expect(screen.getByText("Work · L3")).toBeInTheDocument();
   });
 
@@ -57,18 +67,19 @@ describe("VisitsPanel", () => {
     expect(within(topic).getAllByRole("radio")).toHaveLength(4);
     expect(within(period).getAllByRole("radio")).toHaveLength(2);
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Last 30 days, topic All: 340 visits from 9 countries, 64 questions.");
+    expect(status).toHaveTextContent("Since launch, topic All: 520 visits from 10 countries, 97 questions.");
 
     await userEvent.click(within(topic).getByRole("radio", { name: "All" }));
     await userEvent.keyboard("{ArrowRight}");
     expect(within(topic).getByRole("radio", { name: "Work" })).toBeChecked();
-    expect(status).toHaveTextContent("topic Work: 340 visits from 9 countries, 21 questions.");
-    const list = screen.getByTestId("visits-chips");
-    expect(within(list).getAllByRole("listitem").map((li) => li.getAttribute("data-chip"))).toEqual(["work-best"]);
-
-    await userEvent.click(within(period).getByRole("radio", { name: "Since launch" }));
-    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Since Oct 11, 2026");
     expect(status).toHaveTextContent("Since launch, topic Work: 520 visits from 10 countries, 33 questions.");
+    const list = screen.getByTestId("visits-chips");
+    expect(within(list).getAllByRole("listitem").map((li) => li.getAttribute("data-chip"))).toEqual(["work-best", "work-security"]);
+
+    await userEvent.click(within(period).getByRole("radio", { name: "Last 30 days" }));
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent(en.stats.window.d30);
+    expect(status).toHaveTextContent("Last 30 days, topic Work: 340 visits from 9 countries, 21 questions.");
+    expect(within(list).getAllByRole("listitem").map((li) => li.getAttribute("data-chip"))).toEqual(["work-best"]);
   });
 
   it("lists country names in the table, never a number per country", async () => {
@@ -76,18 +87,18 @@ describe("VisitsPanel", () => {
     renderPanel();
     await userEvent.click(screen.getByText(en.stats.table.open));
     const rows = within(screen.getByTestId("visits-table")).getAllByRole("row").slice(1);
-    expect(rows).toHaveLength(9);
+    expect(rows).toHaveLength(10);
     expect(rows.map((r) => r.textContent)).toContain("IndonesiaID");
     expect(rows.every((r) => !/\d/.test(r.textContent ?? ""))).toBe(true);
-    expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(9);
+    expect(screen.getByTestId("visits-map").querySelectorAll("[data-country]")).toHaveLength(10);
   });
 
   it("notes a delayed snapshot and speaks Indonesian", () => {
     __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "delayed" });
     renderPanel("id");
     expect(screen.getByTestId("visits-delayed")).toHaveTextContent("Tertunda: terakhir diperbarui 14 Nov 2026");
-    expect(screen.getByTestId("visits-scope")).toHaveTextContent(id.stats.window.d30);
-    expect(screen.getByText("340")).toBeInTheDocument();
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Sejak 11 Okt 2026");
+    expect(screen.getByText("520")).toBeInTheDocument();
   });
 });
 
@@ -108,16 +119,16 @@ describe("VisitsPanel with an early snapshot", () => {
       ...STATS_FIXTURE_EMPTY,
       visits: { d30: 1, all: 1 },
       countries: { d30: ["ID"], all: ["ID"] },
-      asks: { ...STATS_FIXTURE_EMPTY.asks, d30: { total: 1, topics: { work: 1, ai: 0, career: 0, contact: 0, perspectives: 0 }, chips: [{ id: "work-best", topic: "work" as const, n: 1 }] } },
+      asks: { all: { total: 1, topics: { work: 1, ai: 0, career: 0, contact: 0, perspectives: 0 }, chips: [{ id: "work-best", topic: "work" as const, n: 1 }] }, d30: STATS_FIXTURE_EMPTY.asks.d30 },
     };
     __setStatsForTests({ status: "ready", snapshot: one, freshness: "fresh" });
     renderPanel();
-    expect(screen.getByRole("status")).toHaveTextContent("Last 30 days, topic All: 1 visit from 1 country, 1 question.");
+    expect(screen.getByRole("status")).toHaveTextContent("Since launch, topic All: 1 visit from 1 country, 1 question.");
     expect(within(screen.getByTestId("visits-chips")).getByText("1 pick")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "World map with 1 highlighted country" })).toBeInTheDocument();
     cleanup();
     renderPanel("id");
-    expect(screen.getByRole("status")).toHaveTextContent("30 hari terakhir, topik Semua: 1 kunjungan dari 1 negara, 1 pertanyaan.");
+    expect(screen.getByRole("status")).toHaveTextContent("Sejak peluncuran, topik Semua: 1 kunjungan dari 1 negara, 1 pertanyaan.");
     expect(within(screen.getByTestId("visits-chips")).getByText("1 kali dipilih")).toBeInTheDocument();
   });
 
@@ -132,6 +143,6 @@ describe("VisitsPanel with an early snapshot", () => {
     renderPanel();
     expect(screen.getByTestId("visits-scope")).toHaveTextContent("Cloudflare Web Analytics, sampled, rounded to tens");
     expect(screen.getByText(/countries with at least one page view/)).toBeInTheDocument();
-    expect(screen.getByText("Last 30 days, including today: countries with page views")).toBeInTheDocument();
+    expect(screen.getByText("Since Oct 11, 2026: countries with page views")).toBeInTheDocument();
   });
 });

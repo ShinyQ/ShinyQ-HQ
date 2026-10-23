@@ -13,12 +13,12 @@ export function useStatsAfterFirstFrame(): void {
 }
 
 /**
- * The L1 stats ring with the live visits tile appended once the snapshot is ready (visits in the last 30
- * days, today included; the ring's L1:stats room links to the Visitor Observatory on the roof). The tile is
+ * The L1 stats ring with the live visits tile appended once the snapshot is ready (visits since launch,
+ * today included; the ring's L1:stats room links to the Visitor Observatory on the roof). The tile is
  * absent while loading or when the stats are hidden.
  */
 export function useRingStats(stats: ExperienceData["stats"], locale: Locale, label: string): ExperienceData["stats"] {
   const { status, snapshot } = useStats();
-  const visits = status === "ready" && snapshot ? snapshot.visits.d30 : null;
+  const visits = status === "ready" && snapshot ? snapshot.visits.all : null;
   return useMemo(() => (visits === null ? stats : [...stats, { id: "visits", value: formatCount(visits, locale), label }]), [stats, visits, locale, label]);
 }

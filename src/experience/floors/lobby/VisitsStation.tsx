@@ -44,7 +44,7 @@ function Dots({ data, geometry, material, name }: { data: DotInstances; geometry
  * L1 Visitor Observatory (public visit stats; owner decision 2026-10-14: the Lobby's south-west corner,
  * between the elevator and the Rover menu kiosk): a hologram globe whose land is one instanced dot layer
  * and whose visited countries glow as a second (dots only, never numbers), plus a floating panel with the
- * last 30 days, the since-launch total, countries, questions, the most explored floor and the 3D vs
+ * visits since launch, the last 30 days, countries, questions, the most explored floor and the 3D vs
  * Classic split, the source and the cadence. Seven draw calls: the plinth and its outline, then five on
  * the one holo-fx program plus the label batch. The globe turns slowly (faster while L1:visits is open),
  * and holds Indonesia toward the viewer under reduced motion. Without data it shows the land and "Stats
@@ -54,9 +54,9 @@ export function VisitsStation({ labels, locale, tier, reducedMotion, active }: {
   const stats = useStats();
   const parts = useMemo(() => observatoryParts(), []);
   const snapshot = stats.status === "ready" ? stats.snapshot : null;
-  const view = useMemo(() => (snapshot ? visitsView(snapshot, "d30", "all") : null), [snapshot]);
+  const view = useMemo(() => (snapshot ? visitsView(snapshot, "all", "all") : null), [snapshot]);
   const state = useMemo(
-    () => (snapshot && view ? { view, allVisits: snapshot.visits.all, freshness: stats.freshness, lastDay: formatDate(lastUpdatedDay(snapshot), locale) } : null),
+    () => (snapshot && view ? { view, d30Visits: snapshot.visits.d30, freshness: stats.freshness, lastDay: formatDate(lastUpdatedDay(snapshot), locale) } : null),
     [snapshot, view, stats.freshness, locale],
   );
   const countries = view?.countries ?? NONE;

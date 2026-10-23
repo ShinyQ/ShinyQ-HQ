@@ -39,7 +39,7 @@ function snapshot(desks: OfficeDesk[] = [], pipeline?: OfficePipeline): OfficeFe
 const feed = (snap: OfficeFeedSnapshot | null, over: Partial<OfficeFeed> = {}): OfficeFeed => ({ status: "ready", snapshot: snap, fetchedAt: NOW - 1_000, ...over });
 
 function stats(visits: number, asks: number): StatsState {
-  const snap = { v: 1, visits: { d30: visits, all: visits * 3 }, asks: { d30: { total: asks, topics: {}, chips: [] }, all: { total: asks * 3, topics: {}, chips: [] } } } as unknown as StatsSnapshotV1;
+  const snap = { v: 1, visits: { d30: Math.floor(visits / 3), all: visits }, asks: { d30: { total: Math.floor(asks / 3), topics: {}, chips: [] }, all: { total: asks, topics: {}, chips: [] } } } as unknown as StatsSnapshotV1;
   return { status: "ready", snapshot: snap, freshness: "fresh" };
 }
 

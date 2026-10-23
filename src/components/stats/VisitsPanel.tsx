@@ -48,16 +48,16 @@ function Bar({ share, tone }: { share: number; tone: "cyan" | "violet" }) {
 }
 
 /**
- * The public visit stats with the owner's two filters (Topic: All, Work, AI, Career; Period: Last 30
- * days, Since launch) as native radio groups and one polite status line. Shared by the Classic Contact
- * section and the L1:visits drawer. Renders nothing when the stats are hidden (invalid, 204 or older
- * than 7 days) and a "delayed" note after 6 hours.
+ * The public visit stats with the owner's two filters (Topic: All, Work, AI, Career; Period: Since
+ * launch, the default, and Last 30 days) as native radio groups and one polite status line. Shared by
+ * the Classic Contact section and the L1:visits drawer. Renders nothing when the stats are hidden
+ * (invalid, 204 or older than 7 days) and a "delayed" note after 6 hours.
  */
 export function VisitsPanel({ locale, chipLabels, floorLabels, compact = false, footer }: VisitsPanelProps) {
   const t = useTranslations("stats");
   const stats = useStats();
   const [topic, setTopic] = useState<TopicFilter>("all");
-  const [period, setPeriod] = useState<StatsPeriod>("d30");
+  const [period, setPeriod] = useState<StatsPeriod>("all");
   const id = useId();
   const names = useMemo(() => new Intl.DisplayNames([intlLocale(locale)], { type: "region" }), [locale]);
   if (stats.status === "hidden") return null;

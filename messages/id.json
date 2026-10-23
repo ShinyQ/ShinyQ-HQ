@@ -155,7 +155,7 @@
       "sceneCalls": "Batas draw call per frame",
       "triangles": "Batas segitiga per frame",
       "uptime": "Pemeriksaan uptime situs aktif",
-      "visits": "Kunjungan dalam 30 hari terakhir"
+      "visits": "Kunjungan sejak peluncuran"
     },
     "kb": "{value} KB",
     "hourly": "Per jam",
@@ -170,7 +170,7 @@
       "segments": "Segmen cincin adalah job dari CI run terbaru, dengan warna menara Agent Office: ungu sedang berjalan (cahaya berkejaran mengitari cincin), hijau selesai, merah gagal, abu-abu redup mengantre.",
       "flash": "Kilatan putih menandakan deploy ke production.",
       "sparks": "Percikan yang mengorbit adalah sesi AI agent yang sedang aktif di Agent Office.",
-      "pulse": "Kecepatan denyut mengikuti jumlah kunjungan dan pertanyaan Ask dalam 30 hari terakhir.",
+      "pulse": "Kecepatan denyut mengikuti jumlah kunjungan dan pertanyaan Ask sejak peluncuran.",
       "idle": "Cahaya tenang dengan denyut pelan berarti offline, belum ada data, atau gerakan dikurangi.",
       "polls": "Data baru hanya diambil selama Anda berada di B1.",
       "live": "Data langsung",
@@ -180,8 +180,8 @@
       "agents": "Agent aktif",
       "deploy": "Sejak deploy production terakhir",
       "noDeploy": "Belum ada",
-      "visits": "Kunjungan, 30 hari terakhir",
-      "asks": "Pertanyaan Ask, 30 hari terakhir",
+      "visits": "Kunjungan sejak peluncuran",
+      "asks": "Pertanyaan Ask sejak peluncuran",
       "offline": "Feed langsung sedang offline, jadi inti reaktor menampilkan cahaya tenangnya."
     }
   },
@@ -700,7 +700,7 @@
     "goTo": "Ke Ruang Mesin B1",
     "reactor": {
       "title": "Reaktor",
-      "visits": "{n} kunjungan dalam 30 hari",
+      "visits": "{n} kunjungan sejak peluncuran",
       "asks": "{n} pertanyaan untuk Rover"
     }
   },
@@ -1193,11 +1193,11 @@
       "country": "Negara",
       "code": "Kode"
     },
-    "tile": "kunjungan dalam 30 hari terakhir (estimasi)",
+    "tile": "kunjungan sejak peluncuran (estimasi)",
     "openObservatory": "Observatorium Pengunjung di Lobi",
     "panel": {
-      "visits30": "kunjungan, 30 hari terakhir",
-      "visitsAll": "sejak peluncuran",
+      "visits30": "dalam 30 hari terakhir",
+      "visitsAll": "kunjungan sejak peluncuran",
       "countries": "negara",
       "questions": "pertanyaan diajukan",
       "topFloor": "paling dijelajahi: {floor}",
@@ -1307,11 +1307,11 @@
     },
     "live": {
       "title": "Telemetri situs ini",
-      "visits": "Kunjungan, 30 hari terakhir",
+      "visits": "Kunjungan sejak peluncuran",
       "fps": "Sesi 3D: median 55+ FPS",
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
-      "sessions": "{count} sesi 3D dalam sampel, 30 hari terakhir",
+      "sessions": "{count} sesi 3D dalam sampel sejak peluncuran",
       "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap 2 jam.",
       "offline": "Angka terkini belum tersedia."
     },

@@ -84,7 +84,7 @@ describe("B1 Engine Room scenery", () => {
   });
 
   it("titles the reactor and shows its counter plate only with numbers, in the same sign set", () => {
-    const reactor = { title: "Reactor", visits: (n: string) => `${n} visits in 30 days`, asks: (n: string) => `${n} questions to Rover` };
+    const reactor = { title: "Reactor", visits: (n: string) => `${n} visits since launch`, asks: (n: string) => `${n} questions to Rover` };
     const base = engineSigns(layout, data, labels);
     const titled = engineSigns(layout, data, { ...labels, reactor });
     expect(titled).toHaveLength(base.length + 1);
@@ -100,7 +100,7 @@ describe("B1 Engine Room scenery", () => {
     const both = engineSigns(layout, data, { ...labels, reactor }, { visits: "1,234", asks: "56" });
     expect(both).toHaveLength(base.length + 2);
     const plate = both.at(-1)!;
-    expect(plate.text).toBe("1,234 visits in 30 days\n56 questions to Rover");
+    expect(plate.text).toBe("1,234 visits since launch\n56 questions to Rover");
     // In front of the core's west face (toward the aisle), below the lowest ring, right under the title.
     expect(plate.x).toBeLessThan(layout.reactor.minX + 1);
     expect(plate.x).toBeGreaterThan(ENGINE.reactorDoor.x);

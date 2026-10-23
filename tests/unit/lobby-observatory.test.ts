@@ -19,8 +19,8 @@ const labels: ObservatoryLabels = {
   title: "Visitor Observatory",
   offline: "Stats offline",
   approx: (n) => `about ${n}`,
-  visits30: "visits, last 30 days",
-  visitsAll: "since launch",
+  visits30: "in the last 30 days",
+  visitsAll: "visits since launch",
   countries: "countries",
   questions: "questions asked",
   topFloor: (f) => `most explored: ${f}`,
@@ -70,16 +70,16 @@ describe("Visitor Observatory parts", () => {
   });
 
   it("writes the numbers with the window, the source and the cadence", () => {
-    const rows = observatoryText(observatoryParts(), { view: visitsView(STATS_FIXTURE, "d30", "all"), allVisits: STATS_FIXTURE.visits.all, freshness: "fresh", lastDay: "13 Oct 2026" }, labels, "en");
+    const rows = observatoryText(observatoryParts(), { view: visitsView(STATS_FIXTURE, "all", "all"), d30Visits: STATS_FIXTURE.visits.d30, freshness: "fresh", lastDay: "13 Oct 2026" }, labels, "en");
     const text = rows.map((r) => r.text);
     expect(text).toEqual([
       "VISITOR OBSERVATORY",
-      "about 340",
-      "visits, last 30 days",
-      "about 520 since launch",
-      "9 countries · 64 questions asked",
+      "about 520",
+      "visits since launch",
+      "about 340 in the last 30 days",
+      "10 countries · 97 questions asked",
       "most explored: Work",
-      "3D 68% · Classic 32%",
+      "3D 64% · Classic 36%",
       "Cloudflare Web Analytics, sampled estimates",
       "Updated every 2 hours",
     ]);
@@ -88,7 +88,7 @@ describe("Visitor Observatory parts", () => {
 
   it("notes a delayed snapshot and shows the offline state without data", () => {
     const parts = observatoryParts();
-    const delayed = observatoryText(parts, { view: visitsView(STATS_FIXTURE, "d30", "all"), allVisits: STATS_FIXTURE.visits.all, freshness: "delayed", lastDay: "13 Oct 2026" }, labels, "en");
+    const delayed = observatoryText(parts, { view: visitsView(STATS_FIXTURE, "all", "all"), d30Visits: STATS_FIXTURE.visits.d30, freshness: "delayed", lastDay: "13 Oct 2026" }, labels, "en");
     expect(delayed.at(-1)?.text).toBe("Delayed: last updated 13 Oct 2026");
     expect(delayed.at(-2)?.text).toBe(labels.source);
     const offline = observatoryText(parts, null, labels, "en").map((r) => r.text);

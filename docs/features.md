@@ -91,9 +91,10 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Toolchain | 2026-10-22: Node 24.22.1 and Bun 1.4.3 pinned (#282); next 16.4.2, eslint 10.13 and wrangler 4.151.3, TypeScript 7 skipped until 2027-01-15 (#283) | Done |
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
 | B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 2): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
-| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 2): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core (#291) | Done |
+| B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 2): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from the visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core (#291) | Done |
 | B1 WOW pass | 2026-10-23: a data-driven hologram in every B1 bay (the nearest wakes) and the Stack Halo, the build stack and the coding agents orbiting the reactor; B1-only logo atlas, no cap change | Done |
 | Stats: no opt-out, top 5 questions | 2026-10-23: owner decision: the "Don't count my visits" switch and the opt-out are gone (a stale key is cleared so those visitors count again; Do Not Track, GPC and automation still skip), and the suggested questions list shows the top 5 in the drawer and the Contact section | Done |
+| Stats: since launch by default | 2026-10-23: owner decision: every visits number shows the all-time total since launch by default (the Visits panel opens on Since launch, listed first, with Last 30 days one click away; the home ticker, the `/build` tile, the L1 ring tile and observatory panel, the L3 Ops live panel and the B1 counter plate, reactor pulse and drawer), with "since launch" copy in both languages | In review |
 | Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 | Forward Deployed AI Engineer | 2026-10-23: owner decision: the headline is "Forward Deployed AI Engineer" in both languages, the title on the updated CV (which also adds GH-600 and Google Generative AI Leader); the bio opens with it, the current-role line keeps "Technical Consultant, Software & AI", and the home `<title>` drops the city to stay within 60 characters | Done |
 | Elevator camera diagonal | 2026-10-23: going into the elevator and coming out of it, the camera stands behind the rover and 35 degrees to its right ("serong kanan"); every floor's arrival view, the L3 overview and the B1 phone view included; phone views aim sideways so each floor's main sight stays in frame | In review |
@@ -248,8 +249,8 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 `L1:visits`, `/en#visits` or the old `/en/contact#visits`, also in Cmd-K. It is also the first thing in view when you step out of the elevator.
 
 - A hologram globe with a dot for every country with at least one page view (dots only, never a number per country).
-- A panel with visits in the last 30 days (today included) and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
-- Its drawer filters by Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch).
+- A panel with visits since launch (today included) and in the last 30 days, then (since launch) the countries, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
+- Its drawer filters by Topic (All, Work, AI, Career) and Period (Since launch, the default, and Last 30 days).
 - The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates rounded to tens, so small numbers move in steps of 10; refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
 - The suggested questions list shows the top 5, most picked first, in the drawer and the Contact section.
 - There is no opt-out switch: Do Not Track and Global Privacy Control still stop the site's own beacons.
@@ -327,7 +328,7 @@ Route `/en/labs`.
 `L3:ops`, also in Cmd-K. It stands in the AI wing's inner pocket beside the reactor.
 
 - Three screens styled like Grafana and Application Insights panels (Metrics, Traces, Alerts) built from the proof tiles of "How I run AI in production".
-- A live panel of this site's own telemetry from the stats snapshot (refreshed every 2 hours): visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
+- A live panel of this site's own telemetry from the stats snapshot (refreshed every 2 hours), all since launch: visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
 - Its drawer shows the section with the case studies that prove it.
 
 ## L4 Newsroom
@@ -384,14 +385,14 @@ The basement under the Lobby: a workshop where each station explains one part of
   - a bright energy column open to the top (a coolant shell, a brighter inner beam rising past the ceiling pipes, a thin crown ring and two thin rails instead of a cap) with bands flowing up it, and a soft glow pool on the platform under it;
   - a white flash when a new successful production deploy shows up;
   - sparks orbiting inside the rings, one per AI agent awake in the Agent Office (full quality);
-  - a coolant pulse whose speed follows the visits and Ask questions of the last 30 days, and a counter plate with both numbers;
+  - a coolant pulse whose speed follows the visits and Ask questions since launch, and a counter plate with both numbers;
   - offline or stale it shows amber segments, no sparks and no flash, with a slow idle pulse; reduced motion also stops the turn (and holds the glow steady). Lite quality draws half the segments and no sparks.
   - It checks for new data only while the rover is on B1 (every 10 s while agents are awake, 30 s otherwise), stops after 10 minutes without input and picks up again on the next input; the visit numbers come from the page's one stats fetch.
 - **Holograms and the Stack Halo**: every bay has a projector (a glowing disc and a light cone) and a hologram of its story, drawn from the build story's numbers:
   - The Blueprint: the tower itself turning, one slab per floor over an amber B1, with a scan ring; The Build Timeline: one bar per round sized by its pull requests, the open round amber with a pulsing "now"; Working with AI Agents: a violet core beaming to the GitHub Copilot, Claude Code and Codex tiles; The Gates: one arch per gate (CI green, nightly violet, local grey) lighting as a build packet passes; The Dashboard: a turning skyline of the snapshot numbers under a gauge ring; Rover's Brain: a gyroscope with one node per step and chunks streaming into the answer core; Rejected Designs: crossed red panels tumbling up a vortex, the last one amber.
   - The bays idle dim; the one the rover drives up to wakes in about half a second and plays its motion. Reduced motion shows every hologram lit and still.
   - Over the reactor crown the logos of the tools the site is built with (Next.js, React, Three.js, TypeScript, Tailwind CSS, Bun, Cloudflare Pages and Workers, GitHub Actions, Vitest, Playwright) and the coding agents orbit, always upright and facing the camera; they turn faster as the reactor pulses faster and flare white with its deploy flash.
-- **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the latest CI runs, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions in the last 30 days) and how to read it, in plain words; offline it says so and shows the idle glow, and an open drawer turns offline by itself once the feed goes stale. It has no `/build` section and checks for new data only while the rover is on B1.
+- **The Reactor**: the core at the aisle's end opens its own drawer with the live numbers it shows (jobs running, done and failed in the latest CI runs, AI agents awake in the Agent Office, the time since the last production deploy, visits and Ask questions since launch) and how to read it, in plain words; offline it says so and shows the idle glow, and an open drawer turns offline by itself once the feed goes stale. It has no `/build` section and checks for new data only while the rover is on B1.
 - **Look and sound**: a warmer amber accent, no sky underground (night holds), and a low machine hum as its floor layer, about 6 dB under the other floor layers, that rises (up to about 6 dB) as the rover nears the reactor core.
 - A **Return pad** at the aisle end beams the rover back to the elevator; the arrival rolls the rover out of the car looking down the aisle at the reactor. On phones the arrival camera, on the same diagonal as every floor, frames the Working with AI Agents station across the aisle with its sign whole, then levels out once the rover drives on.
 - The Blueprint and Rover's Brain drawers draw the wide three-column diagram in a wide desktop drawer and the narrow one on phones.
@@ -401,7 +402,7 @@ The basement under the Lobby: a workshop where each station explains one part of
 
 All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the remembered or browser language. The [README](../README.md#routes) has the overview table.
 
-- `/{locale}`: cinematic hero (name over a CSS-only animated Neon Grid, Enter the 3D HQ, Ask AI) and a live stats ticker (`#stats`, with a visits item from the public stats).
+- `/{locale}`: cinematic hero (name over a CSS-only animated Neon Grid, Enter the 3D HQ, Ask AI) and a live stats ticker (`#stats`, with a visits item from the public stats: visits since launch).
   - Three featured projects with screenshots and the other key projects that have screenshots (`#work`), a short intro with the current role (`#intro`), the Live Agent Office card (`#office`), latest journey, writing and skills.
   - Certifications: 3 featured cards and the newest rows; the full, filterable list is on `/{locale}/contact`.
   - Mounts the 3D tower on top when WebGL is available: the Lobby, the Highlights Hall (`#highlights-<station>` opens a station) and the Agent Office wing.

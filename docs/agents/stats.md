@@ -119,7 +119,8 @@ Owner plan "Public visit stats, Layer 1", S2.
 - Numbers show now (no thresholds).
 - Countries are dots only (never a number per country, the table lists names). A country counts with at least one sampled page view (the Worker keeps a country with page views or visits), so the captions say "page view", not "visit".
 - The label is "visits" / "kunjungan".
-- Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled, rounded to tens": Web Analytics samples page loads, so small counts move in steps of 10 and a quiet day can read 0) and "Updated every 2 hours" (`stats.updated`).
+- The default window is since launch (`all`, owner decision 2026-10-23): every visits number on the site reads `visits.all` (and `asks.all`, `perf.all` where shown); only the Period radio's "Last 30 days" and the observatory panel's 30-day row show `d30`.
+- Every stat block shows the window ("Since <date>", "since launch" or "Last 30 days, including today"), the source ("Cloudflare Web Analytics, sampled, rounded to tens": Web Analytics samples page loads, so small counts move in steps of 10 and a quiet day can read 0) and "Updated every 2 hours" (`stats.updated`).
 - Copy lives in `messages/*.json` `stats`.
 - Counts in sentences use ICU plurals with the number as the selector and the formatted text as a separate argument (`{count, plural, one {{n} pick} other {{n} picks}}`); Indonesian has no plural forms.
 - The 3D vs Classic split's note says it is the share of visits the site's own beacon saw (it skips Do Not Track and automation), so its base is smaller than the Web Analytics visit total.
@@ -127,13 +128,20 @@ Owner plan "Public visit stats, Layer 1", S2.
 
 ### Filters
 
-- Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch) are native radio groups in fieldsets, never tabs.
+- Topic (All, Work, AI, Career) and Period (Since launch, then Last 30 days: `PERIODS` lists the default first) are native radio groups in fieldsets, never tabs. `VisitsPanel` opens on Since launch in both placements.
 - One polite `role="status"` line (`VisitsPanel`).
 - Every combination is answered from the one snapshot (`visitsView`).
 - Suggested questions: `visitsView` sorts the chips by count (desc, ties by id) after the Topic filter and keeps the top `TOP_CHIPS` = 5 (owner decision 2026-10-23), in both placements (the L1:visits drawer and the Contact section share `VisitsPanel`); `stats.chipsNote` says "up to five".
 
 ### Placements
 
+- Every placement shows the since-launch total by default (owner decision 2026-10-23), with its window in the copy:
+  - `VisitsPanel` (the L1:visits drawer and the Contact section): opens on Since launch, window "Since <date>";
+  - the L1 observatory panel: visits since launch in large type ("visits since launch", `stats.panel.visitsAll`), then the 30-day total ("in the last 30 days", `stats.panel.visits30`); countries, questions, top floor and split since launch;
+  - the L1 ring tile and the home ticker: `stats.tile` ("visits since launch (estimate)"); the ticker's title starts with `stats.periods.all`;
+  - the `/build` tile and the B1 drawer tile: `build.tiles.visits` ("Visits since launch");
+  - the L3 Ops live panel: `production.live.visits`, with the perf block since launch;
+  - B1: the counter plate (`engine.reactor.visits`), the reactor pulse and its drawer (`build.reactor.visits`, `build.reactor.asks`).
 - L1 Visitor Observatory (owner decision), see [floor-l1-lobby.md](floor-l1-lobby.md):
   - the Lobby's south-west corner, `LOBBY.observatory` x -24 to -18, z 20 to 27;
   - station `L1:station:visits` in `lobbyItems`, door pad on its north side;

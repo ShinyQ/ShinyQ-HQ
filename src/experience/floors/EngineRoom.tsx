@@ -23,7 +23,7 @@ export type { EngineLabels };
  * B1 Engine Room (spec 2026-10-17): the aisle (road kit), seven bays with their stations, rack rows, pipes and
  * the workbench, and the reactor hall's living core (`ReactorCore`). Scene draws: the road kit, one merged solid mesh
  * and its edges, two instanced holo draws, the core's three, the depth-only end mask (`endMask`) and the floating sign pair (with the reactor's title and its
- * counter plate of 30-day visits and questions, rebuilt only when a formatted number changes), plus the WOW layer
+ * counter plate of the visits and questions since launch, rebuilt only when a formatted number changes), plus the WOW layer
  * (`EngineHolo`: a hologram in every bay and the Stack Halo over the core; the bay holograms read the B1 drawer file).
  * Stations are point-and-go targets (interact/registry.ts); their drawers are `EngineBody` in this chunk.
  */
@@ -33,8 +33,8 @@ export function EngineRoom({ data, labels, tier }: { data: ExperienceData; label
   const scene = useMemo(() => engineScenery(layout, tier), [layout, tier]);
   const stats = useStats();
   const numbers = stats.status === "ready" ? stats.snapshot : null;
-  const visits = numbers ? formatCount(numbers.visits.d30, data.locale) : null;
-  const asks = numbers ? formatCount(numbers.asks.d30.total, data.locale) : null;
+  const visits = numbers ? formatCount(numbers.visits.all, data.locale) : null;
+  const asks = numbers ? formatCount(numbers.asks.all.total, data.locale) : null;
   // The bay holograms' numbers ride in the B1 drawer file (`RoomEngine.holo`), shared with the drawers' cache.
   // A late answer after unmount is a no-op; a failed load leaves the bays without holograms.
   const [views, setViews] = useState<RoomViews | null>(null);
