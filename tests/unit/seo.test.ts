@@ -256,11 +256,12 @@ describe("Analytics beacon", () => {
     expect(Analytics({ token: "" })).toBeNull();
   });
 
-  it("renders the cookieless Cloudflare beacon with SPA tracking behind the opt-out guard", () => {
+  it("renders the cookieless Cloudflare beacon with SPA tracking behind the automation guard", () => {
     const element = Analytics({ token: "0123456789abcdef0123456789abcdef" });
     const code: string = element?.props.dangerouslySetInnerHTML.__html;
     expect(code).toContain('"https://static.cloudflareinsights.com/beacon.min.js"');
     expect(code).toContain(JSON.stringify(JSON.stringify({ token: "0123456789abcdef0123456789abcdef", spa: true })));
-    expect(code).toContain("hq:stats-optout");
+    expect(code).toContain("navigator.webdriver");
+    expect(code).not.toContain("hq:stats-optout");
   });
 });

@@ -1,18 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { STATS_OPTOUT_EVENT, STATS_OPTOUT_KEY } from "@/lib/stats/optout";
-import { CLASSIC_DWELL_MS, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf } from "@/lib/stats/visitClient";
+import { CLASSIC_DWELL_MS, clearLegacyOptOut, LEGACY_OPTOUT_KEY, resetVisitBeacon, startVisitBeacon, visitAllowed, visitMode, viewOf } from "@/lib/stats/visitClient";
 
-const base = { privacySignal: false, webdriver: false, crawler: false, search: "", optedOut: false };
+const base = { privacySignal: false, webdriver: false, crawler: false, search: "" };
 
 describe("visitAllowed", () => {
   it("counts a normal visit", () => {
     expect(visitAllowed(base)).toBe(true);
   });
 
-  it("never counts with Do Not Track, Global Privacy Control or the opt-out, even when forced", () => {
+  it("never counts with Do Not Track or Global Privacy Control, even when forced", () => {
     expect(visitAllowed({ ...base, privacySignal: true, search: "?visit=1" })).toBe(false);
-    expect(visitAllowed({ ...base, optedOut: true, search: "?visit=1" })).toBe(false);
   });
 
   it("skips automation and crawlers unless ?visit=1 forces it, and ?visit=0 opts out", () => {
@@ -138,36 +136,27 @@ describe("startVisitBeacon", () => {
     expect(beacons).toEqual([]);
   });
 
-  it("sends nothing after an opt-out, even one made after load", async () => {
+  it("clears a stale opt-out key from the retired switch and counts the visit (owner decision 2026-10-23)", () => {
+    expect(LEGACY_OPTOUT_KEY).toBe("hq:stats-optout");
+    localStorage.setItem(LEGACY_OPTOUT_KEY, "1");
     start();
+    expect(localStorage.getItem(LEGACY_OPTOUT_KEY)).toBeNull();
     t += CLASSIC_DWELL_MS;
-    localStorage.setItem(STATS_OPTOUT_KEY, "1");
-    window.dispatchEvent(new Event(STATS_OPTOUT_EVENT));
-    localStorage.removeItem(STATS_OPTOUT_KEY);
     hide();
-    expect(beacons).toEqual([]);
+    expect(beacons).toEqual([{ url: "/api/visit", body: '{"v":1,"mode":"classic"}' }]);
   });
 
-  it("sends nothing when opted out before load or under Do Not Track", () => {
-    localStorage.setItem(STATS_OPTOUT_KEY, "1");
-    start();
-    hide();
-    expect(beacons).toEqual([]);
-    resetVisitBeacon();
-    localStorage.clear();
-    visibility = "visible";
+  it("clears the stale key even when the visit is not counted, and ignores blocked storage", () => {
+    localStorage.setItem(LEGACY_OPTOUT_KEY, "1");
     Object.defineProperty(navigator, "doNotTrack", { configurable: true, get: () => "1" });
     start();
     hide();
     expect(beacons).toEqual([]);
-  });
-
-  it("re-checks the opt-out when it sends", () => {
-    start();
-    t += CLASSIC_DWELL_MS;
-    localStorage.setItem(STATS_OPTOUT_KEY, "1");
-    hide();
-    expect(beacons).toEqual([]);
+    expect(localStorage.getItem(LEGACY_OPTOUT_KEY)).toBeNull();
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    expect(() => clearLegacyOptOut()).not.toThrow();
   });
 
   it("starts once per page lifetime and stores nothing", () => {

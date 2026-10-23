@@ -13,6 +13,8 @@ import { STATS_TOPICS, type StatsFloor, type StatsPeriod, type StatsSnapshotV1, 
 export type TopicFilter = "all" | "work" | "ai" | "career";
 export const TOPIC_FILTERS: readonly TopicFilter[] = ["all", "work", "ai", "career"];
 export const PERIODS: readonly StatsPeriod[] = ["d30", "all"];
+/** Suggested questions listed per view (owner decision 2026-10-23): the most picked ones, in both placements. */
+export const TOP_CHIPS = 5;
 
 const HOUR = 3_600_000;
 /** After this the stats show a "delayed" note (the snapshot refreshes every 2 hours, so 3 missed runs). */
@@ -85,7 +87,7 @@ export interface VisitsView {
     total: number;
     /** Topic counts with their share of all questions that have a topic (one entry under a single topic). */
     topics: { topic: StatsTopic; n: number; share: number }[];
-    /** Curated chip counts, most asked first, narrowed to the picked topic. */
+    /** Curated chip counts, most asked first (ties by id), narrowed to the picked topic, at most TOP_CHIPS. */
     chips: { id: string; topic: StatsTopic; n: number }[];
   };
 }
@@ -98,7 +100,10 @@ export function visitsView(s: StatsSnapshotV1, period: StatsPeriod, topic: Topic
   const counts = STATS_TOPICS.map((t) => asks.topics[t]);
   const shares = largestRemainder(counts);
   const all = STATS_TOPICS.map((t, i) => ({ topic: t, n: counts[i], share: shares[i] }));
-  const chips = asks.chips.filter((c) => topic === "all" || c.topic === topic).sort((a, b) => b.n - a.n || a.id.localeCompare(b.id));
+  const chips = asks.chips
+    .filter((c) => topic === "all" || c.topic === topic)
+    .sort((a, b) => b.n - a.n || a.id.localeCompare(b.id))
+    .slice(0, TOP_CHIPS);
   return {
     period,
     topic,

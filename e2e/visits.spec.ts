@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
 import id from "../messages/id.json";
 import { STATS_FIXTURE, type StatsSnapshotV1 } from "../src/lib/visits/contract";
+import { TOP_CHIPS } from "../src/lib/visits/model";
 import { FLOOR_SCENE_CAPS } from "./budgets";
 import { chooseMotion, asReturningVisitor, skipFloorLines, clickablePoint, collectErrors, enterFloorRoute, enterHQ, expectRenderBudget, openPage, snapshot, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForRoom, waitForSceneLive, fastAnimations } from "./hq";
 
@@ -21,6 +22,17 @@ test.describe.configure({ timeout: 150_000 });
 
 const HOUR = 3_600_000;
 const aged = (hours: number): StatsSnapshotV1 => ({ ...STATS_FIXTURE, updatedAt: new Date(Date.now() - hours * HOUR).toISOString() });
+
+/** The fixture with seven suggested questions in the last 30 days, so the drawer shows its top 5 cap. */
+const manyChips = (): StatsSnapshotV1 => {
+  const base = aged(2);
+  const extra = [
+    { id: "work-vendor", topic: "work" as const, n: 4 },
+    { id: "ai-voice", topic: "ai" as const, n: 3 },
+    { id: "career-certs", topic: "career" as const, n: 1 },
+  ];
+  return { ...base, asks: { ...base.asks, d30: { ...base.asks.d30, chips: [...base.asks.d30.chips, ...extra] } } };
+};
 
 async function mockStats(page: Page, body: StatsSnapshotV1 | 204 = aged(2)) {
   await page.route("**/api/stats", (route) =>
@@ -111,9 +123,9 @@ test.describe("Visits on the Classic site", () => {
 });
 
 test.describe("Visitor Observatory in the Lobby", () => {
-  test("reached right after the elevator: point-and-go opens L1:visits; the drawer filters, keeps the opt-out and the globe shows the countries", async ({ page }) => {
+  test("reached right after the elevator: point-and-go opens L1:visits; the drawer filters, lists the top 5 suggested questions without an opt-out switch and the globe shows the countries", async ({ page }) => {
     const errors = collectErrors(page);
-    await mockStats(page);
+    await mockStats(page, manyChips());
     await enterFloorRoute(page, "/en/journey");
     await page.getByRole("navigation", { name: "Elevator" }).locator('[data-floor="L1"]').click();
     await waitForFloor(page, "L1");
@@ -138,16 +150,17 @@ test.describe("Visitor Observatory in the Lobby", () => {
     await expect(drawer).toContainText(en.hud.rooms.visits);
     const status = drawer.getByTestId("visits-status");
     await expect(status).toContainText("Last 30 days, topic All");
+    // Seven suggested questions picked, the top 5 listed, most picked first (owner decision 2026-10-23).
+    const chips = drawer.getByTestId("visits-chips").locator("[data-chip]");
+    await expect(chips).toHaveCount(TOP_CHIPS);
+    await expect(chips.first()).toHaveAttribute("data-chip", "work-best");
+    await expect(chips.last()).toHaveAttribute("data-chip", "ai-voice");
     await drawer.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.all).click();
     await expect(status).toContainText("Since launch, topic All");
     await drawer.getByRole("group", { name: en.stats.topicLegend }).getByText("Career", { exact: true }).click();
     await expect(drawer.getByTestId("visits-chips").locator("[data-chip]")).toHaveCount(1);
-    const optOut = drawer.getByRole("switch", { name: en.stats.optOut });
-    await expect(optOut).toBeVisible();
-    await optOut.check();
-    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBe("1");
-    await optOut.uncheck();
-    expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBeNull();
+    // The "Don't count my visits" switch is gone (owner decision 2026-10-23).
+    await expect(drawer.getByRole("switch")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 

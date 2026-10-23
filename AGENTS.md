@@ -207,7 +207,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 | [floor-rf-roof.md](docs/agents/floor-rf-roof.md) | RF roof deck |
 | [floor-b1-engine-room.md](docs/agents/floor-b1-engine-room.md) | B1 Engine Room: layout, scenery, station drawers, access, budget |
 | [ask.md](docs/agents/ask.md) | Ask the HQ: pipeline, scope routing, UI, pack, CSP, credentials, CI around it |
-| [stats.md](docs/agents/stats.md) | Public visit stats: pipeline, beacon, opt-out, display |
+| [stats.md](docs/agents/stats.md) | Public visit stats: pipeline, beacons, skips, display |
 | [office.md](docs/agents/office.md) | Agent Office: contract, privacy, hq-office Worker and Durable Object, relay, 3D office, Classic card |
 | [performance.md](docs/agents/performance.md) | Perf gates, measurement, RUM, fast verification, writing 3D tests |
 | [ci-and-deploy.md](docs/agents/ci-and-deploy.md) | Scripts, dependencies, CI, deploy, build env, audio, Next.js notes |

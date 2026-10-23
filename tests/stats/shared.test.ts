@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { floorOfPath } from "@/lib/stats/floors";
-import { isStatsOptedOut, STATS_OPTOUT_KEY } from "@/lib/stats/optout";
 import { parseVisitPayload, visitDataPoint, VISIT_MAX_BYTES } from "@/lib/stats/visit";
 
 describe("floorOfPath", () => {
@@ -20,26 +19,6 @@ describe("floorOfPath", () => {
 
   it.each(["/", "/en/quick", "/en/cv", "/fr/labs", "/en/labs/a/b", "/en/data/rooms/en.json", "", "/en/labs/Bad_Slug"])("has no floor for %s", (path) => {
     expect(floorOfPath(path)).toBeNull();
-  });
-});
-
-describe("stats opt-out", () => {
-  const storage = (value: string | null) => ({ getItem: (key: string) => (key === STATS_OPTOUT_KEY ? value : null) });
-
-  it("is opted out only for the value 1", () => {
-    expect(isStatsOptedOut(storage("1"))).toBe(true);
-    for (const value of [null, "0", "true", "", " 1"]) expect(isStatsOptedOut(storage(value))).toBe(false);
-  });
-
-  it("counts when storage is missing or throws", () => {
-    expect(isStatsOptedOut(null)).toBe(false);
-    expect(
-      isStatsOptedOut({
-        getItem: () => {
-          throw new Error("blocked");
-        },
-      }),
-    ).toBe(false);
   });
 });
 

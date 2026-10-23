@@ -14,7 +14,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - updated every 2 hours (cron `17 */2 * * *` UTC): finalized complete UTC days plus today so far;
   - countries as dots only (ISO alpha-2, never `XX` or `T1`);
   - the label "visits" / "kunjungan" (never visitors);
-  - a "Don't count my visits" switch.
+  - no "Don't count my visits" switch (removed 2026-10-23): Do Not Track, GPC, automation and crawlers are the only skips.
 
 ### Contract
 
@@ -44,7 +44,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 ### One beacon only
 
-- Pages Web Analytics (project Metrics tab) must stay off: its injected beacon wins over the site's and ignores the opt-out.
+- Pages Web Analytics (project Metrics tab) must stay off: its injected beacon wins over the site's and ignores the automation guard.
 - Checked by `scripts/injected-analytics.ts` in deploy-smoke and uptime ([`docs/deploy.md`](../deploy.md) section 13).
 
 ### Abuse caps
@@ -66,7 +66,7 @@ Security S7.
 
 - `src/components/Analytics.tsx` renders an inline loader (only when `NEXT_PUBLIC_CF_BEACON_TOKEN` is set at build) that injects `beacon.min.js` with `defer`, `data-cf-beacon` and `spa: true`.
 - It waits for the `load` event, then for the app chunk requests (the defer-scripts loader inserts every chunk script in one loop after first paint, often after `load`; a MutationObserver waits for one `/_next/static/chunks/` script, `nomodule` polyfills excluded, at most `CHUNK_WAIT_MS` = 1 s), then for idle (`requestIdleCallback`, `IDLE_TIMEOUT_MS` = 500 ms deadline).
-- Never in an automated browser (`navigator.webdriver`: Playwright, Lighthouse, headless checks), checked at inject time like the opt-out; Cloudflare's own `bot: 0` filter does not catch every headless browser.
+- Never in an automated browser (`navigator.webdriver`: Playwright, Lighthouse, headless checks), checked at inject time; Cloudflare's own `bot: 0` filter does not catch every headless browser.
 - Page views are kept: the beacon sends the page load at once when the document is already complete (from the Navigation Timing entry), and `spa: true` records later History navigations. Only a visit that leaves before the beacon loads is not counted.
 - The loader must never contain the text `data-hq-defer`: `scripts/defer-scripts.ts` skips a page that carries it (`tests/stats/analytics-guard.test.ts`).
 - Its sha256 is added to the page's script policy at build (`scripts/csp-hashes.ts`); the beacon host is in script-src.
@@ -76,16 +76,13 @@ Security S7.
 - `src/lib/stats/visitClient.ts` (mounted by `VisitBeacon` in the locale layout) sends one `{ v: 1, mode }` per page lifetime on the first hide or `pagehide`.
   - `3d` when `html[data-hq]` was set, `classic` after 3 s on screen, `both`.
 - Memory only.
-- Never under Do Not Track, GPC, the opt-out, automation or crawlers (`?visit=1` forces it in tests, `?visit=0` opts out).
+- Never under Do Not Track, GPC, automation or crawlers (`?visit=1` forces it in tests, `?visit=0` turns it off).
 
-### Opt-out
+### Skips
 
-- `localStorage["hq:stats-optout"] === "1"` (`src/lib/stats/optout.ts`; the display writes it and dispatches `hq:stats-optout`).
-- It stops:
-  - the visit beacon;
-  - the RUM beacon (`decideRum`);
-  - the Cloudflare Web Analytics beacon, which `Analytics.tsx` injects from an inline guard after the page loads (read at inject time; CSP unchanged).
-- Automation (`navigator.webdriver`) stops all three the same way, plus counts Ask questions out (blob13 `auto`): only `?visit=1` and `?rum=1` force the first-party beacons in tests; nothing forces the Cloudflare beacon.
+- There is no visitor opt-out (owner decision 2026-10-23). On start the visit client (`startVisitBeacon`) removes a stale `localStorage["hq:stats-optout"]` left by the retired switch (`clearLegacyOptOut`, errors ignored), so a visitor who once opted out is counted again; no beacon reads that key.
+- Do Not Track and GPC stop the visit beacon and the RUM beacon (`decideRum`), even when forced; not the Cloudflare loader.
+- Automation (`navigator.webdriver`) stops the visit beacon, the RUM beacon and the Cloudflare Web Analytics beacon (`Analytics.tsx` checks it at inject time), plus counts Ask questions out (blob13 `auto`): only `?visit=1` and `?rum=1` force the first-party beacons in tests; nothing forces the Cloudflare beacon.
 - Keep it that way: never render the beacon tag directly.
 
 ### Kill switch and tokens
@@ -125,7 +122,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 - Every stat block shows the window ("Last 30 complete days" or "Since <date>"), the source ("Cloudflare Web Analytics, sampled, rounded to tens": Web Analytics samples page loads, so small counts move in steps of 10 and a quiet day can read 0) and "Updated every 2 hours" (`stats.updated`).
 - Copy lives in `messages/*.json` `stats`.
 - Counts in sentences use ICU plurals with the number as the selector and the formatted text as a separate argument (`{count, plural, one {{n} pick} other {{n} picks}}`); Indonesian has no plural forms.
-- The 3D vs Classic split's note says it is the share of visits the site's own beacon saw (it skips opt-outs, Do Not Track and automation), so its base is smaller than the Web Analytics visit total.
+- The 3D vs Classic split's note says it is the share of visits the site's own beacon saw (it skips Do Not Track and automation), so its base is smaller than the Web Analytics visit total.
 - Numbers go through `formatCount` (exact below 10,000, CLDR compact above: "12.3K", "12,3 rb"; ID uses a no-break space) and `formatCountLong` for screen readers.
 
 ### Filters
@@ -133,6 +130,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 - Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch) are native radio groups in fieldsets, never tabs.
 - One polite `role="status"` line (`VisitsPanel`).
 - Every combination is answered from the one snapshot (`visitsView`).
+- Suggested questions: `visitsView` sorts the chips by count (desc, ties by id) after the Topic filter and keeps the top `TOP_CHIPS` = 5 (owner decision 2026-10-23), in both placements (the L1:visits drawer and the Contact section share `VisitsPanel`); `stats.chipsNote` says "up to five".
 
 ### Placements
 
@@ -147,15 +145,8 @@ Owner plan "Public visit stats, Layer 1", S2.
 - The home ticker (`StatTicker` `extra`, `TickerVisits` with the live marker).
 - The Contact "Visits" section (`VisitsSection`, lazy `VisitsPanel` chunk).
 
-### Opt-out toggle
-
-- `OptOutToggle` lives in the L1:visits drawer, labelled `stats.optOut`.
-- The Classic site footer shows neither it nor a privacy line (owner decision).
-- It writes S1's key through `optOutStore` (`STATS_OPTOUT_KEY`, `STATS_OPTOUT_VALUE`, `STATS_OPTOUT_EVENT` from `@/lib/stats/optout`): `"1"` or removed, then the `hq:stats-optout` window event.
-- The key stops the visit beacon, the Cloudflare beacon and the RUM beacon (see [Opt-out](#opt-out)).
-
 ### Display tests
 
 - `tests/unit/visits-{model,store,geo}.test.ts`, `tests/unit/lobby-observatory.test.ts`.
-- `tests/hud/{VisitsPanel,OptOutToggle}.test.tsx`.
+- `tests/hud/VisitsPanel.test.tsx`.
 - `e2e/visits.spec.ts` (mocks `/api/stats`).

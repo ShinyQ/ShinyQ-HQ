@@ -8,7 +8,7 @@ const expected: Expected = { asOf: "2026-10-18", contributions: "7,600", beacon:
 const SITE = sitePolicy(readFileSync(path.join(process.cwd(), "public", "_headers"), "utf8"));
 /** A production /en page around `body`, with the script policy the build adds (scripts/csp-hashes.ts). */
 const enPage = (body: string) => addScriptPolicy(`<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/></head><body>${body}</body></html>`, SITE);
-/** The site's beacon comes from its inline opt-out guard (src/components/Analytics.tsx), never a parser-inserted tag. */
+/** The site's beacon comes from its inline guard (src/components/Analytics.tsx), never a parser-inserted tag. */
 const GUARD = '<script id="hq-cf-beacon">(function(){var s=document.createElement("script");s.defer=true;s.src="https://static.cloudflareinsights.com/beacon.min.js";s.setAttribute("data-cf-beacon","{}");document.body.appendChild(s)})()</script>';
 const html = enPage(`<p>7,600</p>${GUARD}`);
 const card = (path: string) =>
@@ -49,7 +49,7 @@ describe("post-deploy smoke check", () => {
     expect(smokeProblems(expected, { ...healthy, rum: { code: 404 } })).toEqual(["GET /api/rum returned HTTP 404, expected 405 (the performance beacon Function is missing)"]);
   });
 
-  it("finds the inline opt-out guard that loads the beacon", () => {
+  it("finds the inline guard that loads the beacon", () => {
     const guard = enPage('<script id="hq-cf-beacon">(function(){var s=document.createElement("script");s.src="https://static.cloudflareinsights.com/beacon.min.js"})()</script><p>7,600</p>');
     expect(smokeProblems(expected, { ...healthy, page: { code: 200, html: guard } })).toEqual([]);
   });

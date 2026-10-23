@@ -1,5 +1,4 @@
 import type { RumPath } from "@/lib/rum/protocol";
-import { isStatsOptedOut } from "@/lib/stats/optout";
 
 /** Share of 3D sessions that send the performance beacon (appendix 06 section 4). */
 export const RUM_RATE = 0.25;
@@ -41,14 +40,6 @@ export function rumPath({ startFloor, startRoom, coverUsed }: { startFloor?: str
   return coverUsed ? "cover" : "enter";
 }
 
-const optOutStorage = (): Storage | null => {
-  try {
-    return localStorage;
-  } catch {
-    return null;
-  }
-};
-
 /** Reads and stores this session's decision; true when this 3D view should run the RUM probe. */
 export function decideRum(): boolean {
   let stored: string | null = null;
@@ -62,8 +53,7 @@ export function decideRum(): boolean {
     stored,
     search: window.location.search,
     webdriver: nav.webdriver === true,
-    // "Don't count my visits" (public visit stats) also stops the performance beacon.
-    privacySignal: nav.doNotTrack === "1" || nav.globalPrivacyControl === true || isStatsOptedOut(optOutStorage()),
+    privacySignal: nav.doNotTrack === "1" || nav.globalPrivacyControl === true,
     random: Math.random(),
   });
   if (decision !== "sent") {

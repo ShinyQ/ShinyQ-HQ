@@ -23,15 +23,13 @@ describe("bilingual UI copy", () => {
     expect(id.ask.privacy).toMatch(/Obrolan baru mengosongkan.*bukan.*log layanan/i);
   });
 
-  it("discloses opt-out timing and the narrower browser-signal coverage without claiming guard enforcement", () => {
-    expect(en.stats.optOutHint).toMatch(/page load/i);
-    expect(en.stats.optOutHint).toMatch(/cancels the active visit beacon/i);
-    expect(en.stats.optOutHint).toMatch(/already-loaded.*may continue/i);
-    expect(en.stats.optOutHint).toMatch(/not the Web Analytics loader/i);
-    expect(id.stats.optOutHint).toMatch(/saat halaman dimuat/i);
-    expect(id.stats.optOutHint).toMatch(/membatalkan beacon kunjungan aktif/i);
-    expect(id.stats.optOutHint).toMatch(/sudah dimuat.*dapat tetap berjalan/i);
-    expect(id.stats.optOutHint).toMatch(/bukan pemuat Web Analytics/i);
+  it("has no visit opt-out copy and says the suggested questions list stops at five (owner decision 2026-10-23)", () => {
+    for (const messages of [en, id]) {
+      expect(Object.keys(messages.stats).filter((key) => /opt/i.test(key))).toEqual([]);
+      expect(JSON.stringify(messages.stats)).not.toMatch(/opt-out|don't count my visits|jangan hitung/i);
+    }
+    expect(en.stats.chipsNote).toMatch(/up to five/i);
+    expect(id.stats.chipsNote).toMatch(/paling banyak lima/i);
   });
 
   it("names Kurniadi as the assistant's About subject and distinguishes remainder projects from the full list", () => {
@@ -103,11 +101,6 @@ describe("bilingual UI copy", () => {
       expect(text).toContain("cookie anti-bot selama 30 menit");
       expect(text).toContain("terpisah");
       expect(text).toMatch(/kunjungan.*anonim/);
-    }
-    // The L1:visits drawer, the one remaining opt-out surface, names both browser signals.
-    for (const messages of [en, id]) {
-      expect(messages.stats.optOutHint).toContain("Do Not Track");
-      expect(messages.stats.optOutHint).toContain("Global Privacy Control");
     }
   });
 

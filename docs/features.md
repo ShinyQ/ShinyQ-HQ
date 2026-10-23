@@ -92,6 +92,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
 | B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 2): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
 | B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 2): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core (#291) | Done |
+| Stats: no opt-out, top 5 questions | 2026-10-23: owner decision: the "Don't count my visits" switch and the opt-out are gone (a stale key is cleared so those visitors count again; Do Not Track, GPC and automation still skip), and the suggested questions list shows the top 5 in the drawer and the Contact section | Done |
 | Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 
 ## Controls and first visit
@@ -245,9 +246,10 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - A panel with visits in the last 30 days (today included) and since launch, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
 - Its drawer filters by Topic (All, Work, AI, Career) and Period (Last 30 days, Since launch).
 - The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates rounded to tens, so small numbers move in steps of 10; refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
-- The observatory drawer carries a **Don't count my visits** switch, stored only in this browser.
+- The suggested questions list shows the top 5, most picked first, in the drawer and the Contact section.
+- There is no opt-out switch: Do Not Track and Global Privacy Control still stop the site's own beacons.
 - Automated browsers (Playwright, Lighthouse, headless checks; `navigator.webdriver`) are never counted: no visit, performance or Cloudflare beacon, and their Ask questions stay out of the question totals (still answered).
-- The 3D vs Classic split comes from the site's own visit beacon (it skips opt-outs, Do Not Track and automation), so its base is smaller than the visit total; its note says so.
+- The 3D vs Classic split comes from the site's own visit beacon (it skips Do Not Track and automation), so its base is smaller than the visit total; its note says so.
 
 ### Agent Office
 
@@ -498,7 +500,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 - Cloudflare Web Analytics runs on production builds only; its beacon loads after the page and its scripts, on idle.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
 - Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 2 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
-- "Don't count my visits" (`localStorage["hq:stats-optout"]`) turns every beacon off. Automated browsers (`navigator.webdriver`) send no beacon either, and their Ask questions stay out of the public question counts.
+- No visitor opt-out (owner decision 2026-10-23): Do Not Track and Global Privacy Control turn the visit and performance beacons off, and a stale `hq:stats-optout` key from the retired switch is removed once. Automated browsers (`navigator.webdriver`) send no beacon either, and their Ask questions stay out of the public question counts.
 - `deploy.yml` also deploys the Worker after checking its tokens.
 - Details, secrets, variables and the Cloudflare resource inventory: [`deploy.md`](deploy.md).
 
