@@ -1,7 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import guides from "../content/study-guides.json";
 import en from "../messages/en.json";
-import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
 import {
   asReturningVisitor,
   chooseMotion,
@@ -29,7 +27,8 @@ test.beforeEach(({ context }) => fastAnimations(context));
  * L4 Topic Constellation (owner request 2026-10-14): the end plaza of the Writing floor. Picking a topic
  * (drawer or orb) lights its stations and desks, glows the road to them and floats "N pieces on X"; the
  * `#library-topic=<slug>` deep link, Cmd-K (3D and the Classic site filter), the research monument, the
- * Express Return pad and reduced motion.
+ * Express Return pad and reduced motion. The end plaza labels never overlapping is checked without a renderer in
+ * `tests/unit/end-plaza-label-sweep.test.ts` (the nightly `e2e/library-labels.spec.ts` reads the rendered plates).
  */
 test.describe.configure({ timeout: 180_000 });
 
@@ -221,69 +220,3 @@ test("reduced motion holds the orbit still, a pick included", async ({ page }) =
   await waitForFrames(page, 30);
   expect((await probe(page)).orbit).toBe(before);
 });
-
-/** Pairs of shown end-plaza signs whose projected plates (screen quads) overlap by more than 2% of the smaller one. */
-async function labelCollisions(page: Page) {
-  const boxes = await page.evaluate(() => (window as unknown as TW).__hq.probes.topics.labels);
-  const hits: string[] = [];
-  for (let i = 0; i < boxes.length; i++)
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i];
-      const b = boxes[j];
-      if (polygonOverlap(a.quad, b.quad) > 0.02 * Math.min(polygonArea(a.quad), polygonArea(b.quad))) hits.push(`${a.text} x ${b.text}`);
-    }
-  return { boxes, hits };
-}
-
-for (const device of [
-  // The phone is the representative on PRs and main (narrower caps, the most crowded screen); the desktop runs nightly.
-  { id: "desktop", tag: " @nightly", use: { viewport: { width: 1440, height: 900 } } },
-  { id: "phone", tag: "", use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
-]) {
-  test.describe(`end plaza labels (${device.id})`, () => {
-    test.use(device.use);
-    test(`never overlap on screen from the approach, the camera zones and while orbiting, a pick included${device.tag}`, async ({ page }) => {
-      test.setTimeout(300_000);
-      await enterFloorRoute(page, "/en/library");
-      const { stop, end } = await page.evaluate(() => {
-        const hq = (window as unknown as TW).__hq;
-        return { stop: hq.layouts.L4.stops!["L4:topics"], end: { x: hq.layouts.L4.stops!["L4:topics"].x + 6.5, z: 0 } };
-      });
-      const monument = await page.evaluate(() => (window as unknown as { __hq: { interact: { items: { id: string; at: { x: number; z: number } }[] } } }).__hq.interact.items.find((i) => i.id === "L4:station:metrics")!.at);
-      const voice = await topicOf(page, "case-study");
-      const check = async (pose: string) => {
-        await waitForCameraSettle(page);
-        await waitForFrames(page, 30);
-        const { boxes, hits } = await labelCollisions(page);
-        expect(hits, `${device.id} ${pose}: ${boxes.length} shown`).toEqual([]);
-        return boxes;
-      };
-      // The plaza approach: the default follow camera heading east.
-      await driveTo(page, { x: end.x - 20, z: 0 });
-      await driveTo(page, { x: end.x - 12, z: 0 });
-      await check("approach");
-      // The constellation stop (camera zone looking east), then a pick.
-      await driveTo(page, stop);
-      const idle = await check("constellation");
-      expect(idle.filter((b) => b.kind === "topic").length).toBeGreaterThanOrEqual(device.id === "phone" ? 3 : 4);
-      await page.evaluate((t) => (window as unknown as TW).__hq.store.getState().selectTopic({ slug: t.slug, name: t.label, count: t.items.length, rooms: t.rooms }), voice);
-      const picked = await check("constellation, picked");
-      expect(picked.some((b) => b.kind === "topic" && b.text === "Case studies")).toBe(true);
-      expect(picked.some((b) => b.kind === "count")).toBe(true);
-      // Orbiting the camera around the rover.
-      for (let i = 0; i < 3; i++) await page.keyboard.press("q");
-      await check("orbit");
-      // The monument stop (camera zone looking north): every plate shows, nothing covers them.
-      await driveTo(page, monument);
-      const atMonument = await check("monument");
-      expect(atMonument.filter((b) => b.kind === "monument")).toHaveLength(5);
-      // The Study Vault stop (camera zone looking east at the books): every spine and the vault sign show, over the
-      // topic labels still on screen, and nothing covers them.
-      const vault = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:vault"]);
-      await driveTo(page, vault);
-      const atVault = await check("vault");
-      expect(atVault.filter((b) => b.kind === "guide").map((b) => b.text.replace(/\s+/g, " ")).sort()).toEqual(guides.guides.map((g) => g.spine).sort());
-      expect(atVault.some((b) => b.kind === "vault" && b.text === en.hud.interact.studyVault.toUpperCase())).toBe(true);
-    });
-  });
-}

@@ -721,7 +721,7 @@ describe("shard plan against the real Playwright list", () => {
   it("pull requests and main skip exactly the tagged nightly-only tests, each with a measured duration", () => {
     const nightly = list(false, ["--grep", "@nightly"]);
     // The moved tests and why: docs/agents/performance.md (Nightly-only e2e tests). Update both together.
-    expect(nightly).toHaveLength(8);
+    expect(nightly).toHaveLength(7);
     expect(nightly.every(isNightlyTest)).toBe(true);
     for (const t of nightly) expect(durations.e2e?.[durationKey(t)], t).toBeGreaterThan(0);
     const skipped = new Set(list(false, ["--grep-invert", "@nightly"]));
