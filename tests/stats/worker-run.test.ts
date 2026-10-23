@@ -97,8 +97,8 @@ function fakeApi(
     const lines = sql.includes("FROM ask_events")
       ? Object.entries(data.asks ?? {}).map(([day, n]) => JSON.stringify({ day, topic: "work", chip: "work-best", n: String(n) }))
       : [
-          ...Object.entries(data.visits ?? {}).map(([day, n]) => JSON.stringify({ day, mode: "3d", n: String(n), first: `${day} 00:00:00` })),
-          ...Object.entries(data.pings ?? {}).map(([day, p]) => JSON.stringify({ day, mode: "visit", n: String(p.n), first: p.first })),
+          ...Object.entries(data.visits ?? {}).map(([day, n]) => JSON.stringify({ day, mode: "3d", n: String(n), first_at: `${day} 00:00:00` })),
+          ...Object.entries(data.pings ?? {}).map(([day, p]) => JSON.stringify({ day, mode: "visit", n: String(p.n), first_at: p.first })),
         ];
     return new Response(lines.join("\n"));
   };

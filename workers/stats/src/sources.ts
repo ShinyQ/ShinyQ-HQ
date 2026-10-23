@@ -141,7 +141,7 @@ export const asksSql = (start: string, end: string) =>
  * never written answers with no rows.
  */
 export const visitsSql = (start: string, end: string) =>
-  `SELECT toDate(timestamp) AS day, blob2 AS mode, SUM(_sample_interval) AS n, min(timestamp) AS first FROM visit_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, mode FORMAT JSONEachRow`;
+  `SELECT toDate(timestamp) AS day, blob2 AS mode, SUM(_sample_interval) AS n, min(timestamp) AS first_at FROM visit_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, mode FORMAT JSONEachRow`;
 
 /** ISO time to the seconds, UTC (`2026-10-24T01:02:03Z`): the cutover and the live tail start. */
 export const ISO_SECOND = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})Z$/;
@@ -186,7 +186,7 @@ export async function fetchAnalyticsEngine(cfg: SourceConfig, start: string, end
   const [asks, visits, perf] = await Promise.all([sql(cfg, asksSql(start, end), fetcher), sql(cfg, visitsSql(start, end), fetcher), sql(cfg, perfSql(start, end), fetcher)]);
   return {
     asks: asks.map((r) => ({ day: str(r.day), topic: str(r.topic), chip: str(r.chip), n: num(r.n) })),
-    visits: visits.map((r) => ({ day: str(r.day), mode: str(r.mode), n: num(r.n), ...(aeTimeToIso(r.first) ? { first: aeTimeToIso(r.first) } : {}) })),
+    visits: visits.map((r) => ({ day: str(r.day), mode: str(r.mode), n: num(r.n), ...(aeTimeToIso(r.first_at) ? { first: aeTimeToIso(r.first_at) } : {}) })),
     perf: perfRows(perf),
   };
 }
