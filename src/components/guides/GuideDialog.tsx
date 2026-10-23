@@ -7,7 +7,7 @@ import { Modal } from "../Modal";
 import { guidesDataUrl, type GuidesData } from "./data-path";
 import type { GuideReaderProps } from "./GuideReader";
 import { loadPdfjs } from "./pdf";
-import { BUTTON, GuideSkeleton, useKeepFocus } from "./ui";
+import { COMPACT_BUTTON, GuideSkeleton, HEADER_ROW, useKeepFocus } from "./ui";
 
 /**
  * Study guide dialog (lazy chunk, opened by `DialogHost` on the `hq:hud` "guide" command). The Modal mounts at
@@ -75,13 +75,13 @@ export default function GuideDialog({ slug, onClose }: { slug: string; onClose: 
 function Header({ title, titleId, closeLabel, onClose }: { title: string; titleId: string; closeLabel: string; onClose: () => void }) {
   const close = useKeepFocus();
   return (
-    <div className="flex items-center gap-3 border-b border-line px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-5">
-      <button ref={close} type="button" onClick={onClose} data-autofocus aria-label={closeLabel} className={BUTTON} data-testid="guide-close">
+    <div className={HEADER_ROW}>
+      <button ref={close} type="button" onClick={onClose} data-autofocus aria-label={closeLabel} className={COMPACT_BUTTON} data-testid="guide-close">
         <span aria-hidden="true" className="text-xl leading-none">
           ×
         </span>
       </button>
-      <h2 id={titleId} className="min-w-0 truncate text-base font-semibold text-ink sm:text-lg">
+      <h2 id={titleId} className="min-w-0 truncate text-base font-semibold text-ink">
         {title}
       </h2>
     </div>

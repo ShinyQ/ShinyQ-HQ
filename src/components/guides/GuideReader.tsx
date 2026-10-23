@@ -5,6 +5,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { GuideView } from "@/content/guides";
 import styles from "./GuideReader.module.css";
+import { GuideControls } from "./GuideControls";
 import { GuidePage } from "./GuidePage";
 import { GuideThumbs } from "./GuideThumbs";
 import { GuideToolbar, type Chapter } from "./GuideToolbar";
@@ -35,7 +36,7 @@ interface Loaded {
   chapters: Chapter[];
 }
 
-/** Must match `.stack` in the CSS module (padding and gap). */
+/** Must match `.stack` in the CSS module (top and side padding, gap). */
 const PAD_Y = 16;
 const PAD_X = 12;
 const GAP = 16;
@@ -269,16 +270,10 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
       <GuideToolbar
         title={view.title}
         titleId={titleId}
-        count={loaded ? loaded.count : null}
-        current={current}
-        zoom={zoom}
         chapters={loaded?.chapters ?? []}
         downloadUrl={view.downloadUrl}
         file={view.file}
         onClose={onClose}
-        onGo={go}
-        onZoom={zoomBy}
-        onFit={() => setZoom(1)}
         onChapter={onChapter}
       />
       <div className="flex min-h-0 flex-1">
@@ -293,42 +288,46 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
             onGo={go}
           />
         )}
-        <div
-          ref={scroller}
-          tabIndex={0}
-          role="region"
-          aria-labelledby={titleId}
-          aria-busy={!loaded}
-          className={`${styles.pages} min-h-0 flex-1 overflow-auto overscroll-contain outline-none focus-visible:ring-1 focus-visible:ring-cyan/60`}
-          data-testid="guide-pages"
-        >
-          {loaded && slotW > 0 ? (
-            <div className={styles.stack}>
-              {pages.map((n) => (
-                <GuidePage
-                  key={n}
-                  lib={loaded.lib}
-                  doc={loaded.doc}
-                  n={n}
-                  width={slotW}
-                  height={slotH}
-                  scale={scale}
-                  ratio={ratio}
-                  active={drawnSet.has(n)}
-                  label={t("pageOf", { page: n, count: loaded.count })}
-                  failedLabel={t("pageFailed")}
-                  retryLabel={t("retry")}
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <p className="sr-only" role="status">
-                {t("loading")}
-              </p>
-              <GuideSkeleton cover={view.cover} />
-            </>
-          )}
+        {/* The pill comes before the pages in the DOM: Tab reaches the header, then the pill, then the pages. */}
+        <div className={`${styles.column} flex min-h-0 min-w-0 flex-1 flex-col`}>
+          <GuideControls count={loaded ? loaded.count : null} current={current} zoom={zoom} onGo={go} onZoom={zoomBy} onFit={() => setZoom(1)} />
+          <div
+            ref={scroller}
+            tabIndex={0}
+            role="region"
+            aria-labelledby={titleId}
+            aria-busy={!loaded}
+            className={`${styles.pages} min-h-0 flex-1 overflow-auto overscroll-contain outline-none focus-visible:ring-1 focus-visible:ring-cyan/60`}
+            data-testid="guide-pages"
+          >
+            {loaded && slotW > 0 ? (
+              <div className={styles.stack}>
+                {pages.map((n) => (
+                  <GuidePage
+                    key={n}
+                    lib={loaded.lib}
+                    doc={loaded.doc}
+                    n={n}
+                    width={slotW}
+                    height={slotH}
+                    scale={scale}
+                    ratio={ratio}
+                    active={drawnSet.has(n)}
+                    label={t("pageOf", { page: n, count: loaded.count })}
+                    failedLabel={t("pageFailed")}
+                    retryLabel={t("retry")}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <p className="sr-only" role="status">
+                  {t("loading")}
+                </p>
+                <GuideSkeleton cover={view.cover} />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

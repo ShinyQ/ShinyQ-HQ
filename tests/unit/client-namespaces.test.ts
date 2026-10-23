@@ -77,7 +77,7 @@ function clientGraphOf(entry: string): Set<string> {
  * layout or `ClientMessages` sending it; the same read anywhere else still has to be covered.
  */
 const FETCHING_FILES: Record<(typeof FETCHED_NAMESPACES)[number], readonly string[]> = {
-  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx", "src/components/guides/GuideToolbar.tsx"],
+  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx", "src/components/guides/GuideToolbar.tsx", "src/components/guides/GuideControls.tsx"],
 };
 const isFetchedRead = (rel: string, path: string) =>
   (FETCHING_FILES as Record<string, readonly string[] | undefined>)[path.split(".")[0]]?.includes(rel) ?? false;

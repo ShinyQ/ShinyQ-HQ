@@ -3,8 +3,19 @@
 import { useLayoutEffect, useRef } from "react";
 
 /** Shared bits of the study guide dialog and reader (no strings, so no `guides` reads here). */
-export const BUTTON =
-  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line-2 px-2 text-sm font-semibold text-ink transition hover:border-ink-2 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:opacity-40";
+
+/** 44 px targets on touch screens, 36 px with a mouse or trackpad (`pointer-fine`), so the header stays one compact row. */
+const TARGET =
+  "inline-flex min-h-11 min-w-11 pointer-fine:min-h-9 pointer-fine:min-w-9 items-center justify-center text-sm font-semibold text-ink transition disabled:cursor-not-allowed disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:opacity-40";
+
+/** Header buttons (Close, Chapters, Download). */
+export const COMPACT_BUTTON = `${TARGET} rounded-lg border border-line-2 px-2 hover:border-ink-2 hover:bg-surface-2`;
+
+/** Borderless round buttons inside the floating page and zoom pill. */
+export const PILL_BUTTON = `${TARGET} rounded-full px-1 hover:bg-surface-2 aria-disabled:hover:bg-transparent`;
+
+/** The dialog's single header row (loading, error and reader states share it, so the swap does not jump). */
+export const HEADER_ROW = "flex items-center gap-2 border-b border-line px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-1.5 sm:px-3";
 
 /** Loading skeleton: the guide's cover when the view is known, else a blank sheet. */
 export function GuideSkeleton({ cover }: { cover?: string }) {
