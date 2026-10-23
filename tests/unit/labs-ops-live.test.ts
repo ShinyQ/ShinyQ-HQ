@@ -19,13 +19,14 @@ describe("Ops Control Room live panel", () => {
   it("shows visits and the nightly runs line when the snapshot has no perf block", () => {
     const rows = opsLiveRows("ready", STATS_FIXTURE, live, "en")!;
     expect(rows.map((r) => r.label)).toEqual([en.production.live.visits, en.production.live.nightly]);
+    expect(rows[0].value).toBe("520");
     expect(rows[1].value).toBe("");
   });
 
-  it("adds the 55+ FPS share and the median explore bucket from the perf block", () => {
+  it("adds the 55+ FPS share and the median explore bucket from the perf block, since launch like the visits", () => {
     const rows = opsLiveRows("ready", STATS_FIXTURE_PERF, live, "en")!;
     expect(rows.map((r) => r.label)).toEqual([en.production.live.visits, en.production.live.fps, en.production.live.explore, en.production.live.nightly]);
-    expect(rows[1].value).toMatch(/^\d{1,3}%$/);
+    expect(rows[1].value).toBe("62%");
     expect(Object.values(en.production.explore)).toContain(rows[2].value);
   });
 });

@@ -370,8 +370,8 @@ test.describe("the floor", () => {
     await expect(tile("Jobs done")).toHaveText("1");
     await expect(tile("Agents awake")).toHaveText("6");
     await expect(tile("Since the last production deploy")).toHaveText(/^\d+ min$/);
-    await expect(tile("Visits, last 30 days")).toHaveText("340");
-    await expect(tile("Ask questions, last 30 days")).toHaveText("64");
+    await expect(tile("Visits since launch")).toHaveText("520");
+    await expect(tile("Ask questions since launch")).toHaveText("97");
     await expect(drawer.getByRole("heading", { name: "How it reads" })).toBeVisible();
     await expect(drawer.locator('a[href*="/build"]')).toHaveCount(0);
   });

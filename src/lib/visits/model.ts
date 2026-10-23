@@ -12,7 +12,8 @@ import { STATS_TOPICS, type StatsFloor, type StatsPeriod, type StatsSnapshotV1, 
 /** The Topic filter: All plus the three topics the owner picked (contact and perspectives count under All). */
 export type TopicFilter = "all" | "work" | "ai" | "career";
 export const TOPIC_FILTERS: readonly TopicFilter[] = ["all", "work", "ai", "career"];
-export const PERIODS: readonly StatsPeriod[] = ["d30", "all"];
+/** The Period radio order: the default window (since launch, owner decision 2026-10-23) first. */
+export const PERIODS: readonly StatsPeriod[] = ["all", "d30"];
 /** Suggested questions listed per view (owner decision 2026-10-23): the most picked ones, in both placements. */
 export const TOP_CHIPS = 5;
 

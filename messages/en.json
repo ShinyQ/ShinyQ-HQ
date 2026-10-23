@@ -155,7 +155,7 @@
       "sceneCalls": "Draw call ceiling per frame",
       "triangles": "Triangle ceiling per frame",
       "uptime": "Uptime check on the live site",
-      "visits": "Visits in the last 30 days"
+      "visits": "Visits since launch"
     },
     "kb": "{value} KB",
     "hourly": "Hourly",
@@ -170,7 +170,7 @@
       "segments": "Ring segments are the jobs of the latest CI runs, in the Agent Office tower's colors: violet running (a light chases around the ring), green done, red failed, dim grey queued.",
       "flash": "A white flash is a production deploy.",
       "sparks": "Orbiting sparks are AI agent sessions awake in the Agent Office.",
-      "pulse": "The pulse speed follows the visits and Ask questions of the last 30 days.",
+      "pulse": "The pulse speed follows the visits and Ask questions since launch.",
       "idle": "A calm idle glow means offline, no data yet or reduced motion.",
       "polls": "It checks for new data only while you are on B1.",
       "live": "Live now",
@@ -180,8 +180,8 @@
       "agents": "Agents awake",
       "deploy": "Since the last production deploy",
       "noDeploy": "None recent",
-      "visits": "Visits, last 30 days",
-      "asks": "Ask questions, last 30 days",
+      "visits": "Visits since launch",
+      "asks": "Ask questions since launch",
       "offline": "The live feed is offline right now, so the core shows its calm idle glow."
     }
   },
@@ -700,7 +700,7 @@
     "goTo": "Go to B1 Engine Room",
     "reactor": {
       "title": "Reactor",
-      "visits": "{n} visits in 30 days",
+      "visits": "{n} visits since launch",
       "asks": "{n} questions to Rover"
     }
   },
@@ -1193,11 +1193,11 @@
       "country": "Country",
       "code": "Code"
     },
-    "tile": "visits in the last 30 days (estimate)",
+    "tile": "visits since launch (estimate)",
     "openObservatory": "Visitor Observatory in the Lobby",
     "panel": {
-      "visits30": "visits, last 30 days",
-      "visitsAll": "since launch",
+      "visits30": "in the last 30 days",
+      "visitsAll": "visits since launch",
       "countries": "countries",
       "questions": "questions asked",
       "topFloor": "most explored: {floor}",
@@ -1307,11 +1307,11 @@
     },
     "live": {
       "title": "This site's telemetry",
-      "visits": "Visits, last 30 days",
+      "visits": "Visits since launch",
       "fps": "3D sessions: median 55+ FPS",
       "explore": "Median time until ready to explore",
       "nightly": "Nightly performance runs",
-      "sessions": "{count} sampled 3D sessions, last 30 days",
+      "sessions": "{count} sampled 3D sessions since launch",
       "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated every 2 hours.",
       "offline": "Current numbers are unavailable."
     },

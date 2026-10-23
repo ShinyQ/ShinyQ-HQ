@@ -9,7 +9,7 @@ import { TILE, TILE_LABEL, TILE_VALUE } from "./tile";
 
 /**
  * Numbers measured from the repository (`content/generated/build-facts.json`): a tile only for a value the
- * snapshot carries, the hourly uptime check and the 30-day visits once the stats store has them.
+ * snapshot carries, the hourly uptime check and the visits since launch once the stats store has them.
  */
 export async function DashboardBody({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "build" });

@@ -23,7 +23,7 @@ test.describe.configure({ timeout: 150_000 });
 const HOUR = 3_600_000;
 const aged = (hours: number): StatsSnapshotV1 => ({ ...STATS_FIXTURE, updatedAt: new Date(Date.now() - hours * HOUR).toISOString() });
 
-/** The fixture with seven suggested questions in the last 30 days, so the drawer shows its top 5 cap. */
+/** The fixture with eight suggested questions since launch (the default period), so the drawer shows its top 5 cap. */
 const manyChips = (): StatsSnapshotV1 => {
   const base = aged(2);
   const extra = [
@@ -31,7 +31,7 @@ const manyChips = (): StatsSnapshotV1 => {
     { id: "ai-voice", topic: "ai" as const, n: 3 },
     { id: "career-certs", topic: "career" as const, n: 1 },
   ];
-  return { ...base, asks: { ...base.asks, d30: { ...base.asks.d30, chips: [...base.asks.d30.chips, ...extra] } } };
+  return { ...base, asks: { ...base.asks, all: { ...base.asks.all, chips: [...base.asks.all.chips, ...extra] } } };
 };
 
 async function mockStats(page: Page, body: StatsSnapshotV1 | 204 = aged(2)) {
@@ -72,19 +72,22 @@ test.describe("Visits on the Classic site", () => {
     const section = page.locator("#visits");
     const panel = section.getByTestId("visits-panel");
     await expect(panel).toBeVisible();
-    await expect(section.getByTestId("visits-scope")).toContainText(`${en.stats.window.d30}`);
+    await expect(panel).toHaveAttribute("data-period", "all");
+    await expect(section.getByTestId("visits-scope")).toContainText("Since Oct 11, 2026");
     await expect(section.getByTestId("visits-scope")).toContainText(en.stats.source);
     await expect(section.getByTestId("visits-scope")).toContainText(en.stats.updated);
     const status = section.getByTestId("visits-status");
-    await expect(status).toContainText("topic All: 340 visits from 9 countries");
-    await section.getByRole("group", { name: en.stats.topicLegend }).getByText("AI", { exact: true }).click();
-    await expect(status).toContainText("topic AI:");
-    await expect(panel).toHaveAttribute("data-topic", "ai");
-    await section.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.all).click();
-    await expect(status).toContainText("Since launch, topic AI: 520 visits from 10 countries");
+    await expect(status).toContainText("Since launch, topic All: 520 visits from 10 countries");
     await expect(section.getByTestId("visits-map").locator("[data-country]")).toHaveCount(10);
+    await section.getByRole("group", { name: en.stats.topicLegend }).getByText("AI", { exact: true }).click();
+    await expect(status).toContainText("Since launch, topic AI:");
+    await expect(panel).toHaveAttribute("data-topic", "ai");
+    await section.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.d30).click();
+    await expect(status).toContainText("Last 30 days, topic AI: 340 visits from 9 countries");
+    await expect(section.getByTestId("visits-scope")).toContainText(en.stats.window.d30);
+    await expect(section.getByTestId("visits-map").locator("[data-country]")).toHaveCount(9);
     await section.getByText(en.stats.table.open).click();
-    await expect(section.getByTestId("visits-table").locator("tbody tr")).toHaveCount(10);
+    await expect(section.getByTestId("visits-table").locator("tbody tr")).toHaveCount(9);
     const axe = await new AxeBuilder({ page }).include("#visits").analyze();
     expect(axe.violations).toEqual([]);
     expect(errors).toEqual([]);
@@ -108,8 +111,9 @@ test.describe("Visits on the Classic site", () => {
     await mockStats(page);
     await openPage(page, "/id?tier=static");
     const item = page.locator('#stats .hx-tick-track:not([aria-hidden]) [data-stat="visits"]');
-    await expect(item).toContainText("340");
+    await expect(item).toContainText("520");
     await expect(item).toContainText(id.stats.tile);
+    await expect(item).toHaveAttribute("title", new RegExp(`^${id.stats.periods.all} · `));
     await expect(item.getByRole("link")).toHaveAttribute("href", "/id/contact#visits");
   });
 
@@ -132,7 +136,7 @@ test.describe("Visitor Observatory in the Lobby", () => {
     // The 2026-10-17 arrival (owner, L3-style arrivals) supersedes the 2026-10-14 view toward the observatory: it
     // looks east at the hologram with the south-west corner behind the camera, so turn the view in 45 degree steps (the HUD's Rotate right) until the station is on screen.
     await waitForCameraSettle(page);
-    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
+    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(10);
     let point = await clickablePoint(page, "L1:station:visits");
     for (let turn = 0; !point && turn < 8; turn++) {
       await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
@@ -149,14 +153,14 @@ test.describe("Visitor Observatory in the Lobby", () => {
     const drawer = page.getByTestId("room-drawer");
     await expect(drawer).toContainText(en.hud.rooms.visits);
     const status = drawer.getByTestId("visits-status");
-    await expect(status).toContainText("Last 30 days, topic All");
-    // Seven suggested questions picked, the top 5 listed, most picked first (owner decision 2026-10-23).
+    await expect(status).toContainText("Since launch, topic All");
+    // Eight suggested questions picked, the top 5 listed, most picked first (owner decision 2026-10-23).
     const chips = drawer.getByTestId("visits-chips").locator("[data-chip]");
     await expect(chips).toHaveCount(TOP_CHIPS);
     await expect(chips.first()).toHaveAttribute("data-chip", "work-best");
     await expect(chips.last()).toHaveAttribute("data-chip", "ai-voice");
-    await drawer.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.all).click();
-    await expect(status).toContainText("Since launch, topic All");
+    await drawer.getByRole("group", { name: en.stats.periodLegend }).getByText(en.stats.periods.d30).click();
+    await expect(status).toContainText("Last 30 days, topic All");
     await drawer.getByRole("group", { name: en.stats.topicLegend }).getByText("Career", { exact: true }).click();
     await expect(drawer.getByTestId("visits-chips").locator("[data-chip]")).toHaveCount(1);
     // The "Don't count my visits" switch is gone (owner decision 2026-10-23).
@@ -213,7 +217,7 @@ test.describe("Visitor Observatory in the Lobby", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await mockStats(page);
     await open3D(page, "/en");
-    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(9);
+    await expect.poll(() => spectacle(page, "observatoryCountries"), { timeout: 20_000 }).toBe(10);
     const before = await spectacle(page, "observatory");
     await waitForFrames(page, 30, 500);
     expect(await spectacle(page, "observatory")).toBe(before);

@@ -36,7 +36,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const tj = await getTranslations({ locale, namespace: "journey" });
   const tl = await getTranslations({ locale, namespace: "library" });
   const ts = await getTranslations({ locale, namespace: "stats" });
-  const visitsScope = `${ts("window.d30")} · ${ts("source")} · ${ts("updated")}`;
+  const visitsScope = `${ts("periods.all")} · ${ts("source")} · ${ts("updated")}`;
   const profile = getProfile();
   const roof = getRoof();
   const pods = getPods();

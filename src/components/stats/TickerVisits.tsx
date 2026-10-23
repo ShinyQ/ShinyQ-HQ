@@ -8,7 +8,7 @@ import { formatCount, formatCountLong } from "@/lib/visits/model";
 import { requestStats, useStats } from "@/lib/visits/store";
 
 /**
- * The home ticker's visits item (a `StatTicker` live item): visits in the last 30 days, today included, once
+ * The home ticker's visits item (a `StatTicker` live item): visits since launch, today included, once
  * the snapshot arrives after hydration. It links to the Contact page's "Visits" section, which shows
  * the window, the source and the update cadence in full (the item carries them as its title).
  * Nothing renders while the stats are loading or hidden. `copy` is the ticker's aria-hidden duplicate.
@@ -19,7 +19,7 @@ export function TickerVisits({ locale, label, live, scope, copy = false }: { loc
     if (!copy) return whenIdle(() => void requestStats());
   }, [copy]);
   if (stats.status !== "ready" || !stats.snapshot) return null;
-  const n = stats.snapshot.visits.d30;
+  const n = stats.snapshot.visits.all;
   return (
     <li className="hx-tick-item" data-stat="visits" title={scope}>
       <Link href="/contact#visits" prefetch={false} tabIndex={copy ? -1 : undefined} className="contents">

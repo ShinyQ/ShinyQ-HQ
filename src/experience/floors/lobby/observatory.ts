@@ -137,8 +137,10 @@ export interface ObservatoryLabels {
   title: string;
   offline: string;
   approx: (n: string) => string;
-  visits30: string;
+  /** The big number's window ("visits since launch"). */
   visitsAll: string;
+  /** Suffix of the 30-day row ("in the last 30 days"). */
+  visits30: string;
   countries: string;
   questions: string;
   topFloor: (floor: string) => string;
@@ -150,18 +152,18 @@ export interface ObservatoryLabels {
 }
 
 export interface ObservatoryState {
-  /** The last 30 days, every topic (the panel is not filtered; the drawer is). */
+  /** Since launch, every topic (the panel is not filtered; the drawer is). */
   view: VisitsView;
-  /** Visits since launch. */
-  allVisits: number;
+  /** Visits in the last 30 days. */
+  d30Visits: number;
   freshness: Freshness;
   /** The UTC day of the snapshot's last data, formatted for the locale ("13 Oct 2026"). */
   lastDay: string;
 }
 
 /**
- * The panel's nine text rows (always nine, so the label batch keeps its members): title, the 30-day
- * visits in large type, its window, the since-launch total, countries and questions, the most explored
+ * The panel's nine text rows (always nine, so the label batch keeps its members): title, the visits
+ * since launch in large type, its window, the 30-day total, countries and questions, the most explored
  * floor, the 3D vs Classic split, then the source and the cadence (or the "delayed" note). Without
  * data: the title and "Stats offline".
  */
@@ -175,8 +177,8 @@ export function observatoryText(parts: ObservatoryParts, state: ObservatoryState
     ? [
         labels.title.toUpperCase(),
         labels.approx(n(v.visits)),
-        labels.visits30,
-        `${labels.approx(n(state.allVisits))} ${labels.visitsAll}`,
+        labels.visitsAll,
+        `${labels.approx(n(state.d30Visits))} ${labels.visits30}`,
         `${n(v.countries.length)} ${labels.countries} · ${n(v.asks.total)} ${labels.questions}`,
         v.topFloor ? labels.topFloor(labels.floors[v.topFloor]) : "",
         v.mode.threeD + v.mode.classic > 0 ? labels.split(v.mode.threeDShare, v.mode.classicShare) : "",

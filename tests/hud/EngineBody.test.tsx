@@ -133,8 +133,8 @@ describe("EngineBody (B1 station drawers)", () => {
         "Jobs failed": "0",
         "Agents awake": "6",
         "Since the last production deploy": "3 min",
-        "Visits, last 30 days": "340",
-        "Ask questions, last 30 days": "64",
+        "Visits since launch": "520",
+        "Ask questions since launch": "97",
       });
       expect(root.textContent).not.toContain("offline right now");
       expect(root.textContent).toContain("Live now");
@@ -152,7 +152,7 @@ describe("EngineBody (B1 station drawers)", () => {
       feedBox.feed = { status: "offline", snapshot: null, fetchedAt: 0 } satisfies OfficeFeed;
       const root = reactor();
       expect(root.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
-      expect(tiles(root)).toEqual({ "Visits, last 30 days": "340", "Ask questions, last 30 days": "64" });
+      expect(tiles(root)).toEqual({ "Visits since launch": "520", "Ask questions since launch": "97" });
       expect(root.textContent).toContain("The live feed is offline right now");
       expect(root.textContent).not.toContain("Live now");
       cleanup();
