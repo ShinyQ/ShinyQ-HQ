@@ -31,25 +31,17 @@ export const SHAFT_CLEAR_X = SHAFT_EAST_FACE + 1.5;
  */
 export function shoulderPose(rover: Vec3, heading: number, fov: number): CameraPose {
   const { back, up, side, look, belowHorizon } = ARRIVAL_GLIDE.start;
-  const fx = Math.sin(heading);
-  const fz = Math.cos(heading);
+  // Turning the whole pose around the rover by the diagonal is the same pose for the heading turned by it.
+  const h = heading + ELEVATOR_DIAGONAL;
+  const fx = Math.sin(h);
+  const fz = Math.cos(h);
   const rx = -fz;
   const rz = fx;
-  const c = Math.cos(ELEVATOR_DIAGONAL);
-  const s = Math.sin(ELEVATOR_DIAGONAL);
-  // An offset `a` along the heading and `b` to the right, turned by the diagonal: behind swings to the right, ahead to the left.
-  const at = (a: number, b: number): [number, number] => {
-    const a2 = a * c + b * s;
-    const b2 = b * c - a * s;
-    return [fx * a2 + rx * b2, fz * a2 + rz * b2];
-  };
   const pitch = ((fov / 2 + belowHorizon) * Math.PI) / 180;
   const y = rover[1] + up;
-  const [px, pz] = at(-back, side);
-  const [tx, tz] = at(look, 0);
   return {
-    position: [rover[0] + px, y, rover[2] + pz],
-    target: [rover[0] + tx, y - Math.hypot(back + look, side) * Math.tan(pitch), rover[2] + tz],
+    position: [rover[0] - fx * back + rx * side, y, rover[2] - fz * back + rz * side],
+    target: [rover[0] + fx * look, y - Math.hypot(back + look, side) * Math.tan(pitch), rover[2] + fz * look],
     fov,
   };
 }

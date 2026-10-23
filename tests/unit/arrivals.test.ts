@@ -88,6 +88,17 @@ const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
 
 const rigOf = (floor: FloorId): "follow" | "rail" => (floor === "L2" ? "rail" : "follow");
 
+/** Half the width of the owner's name over the L1 hologram (a billboard; the bold name measures about 6.7 u in the 1440x900 arrival). */
+const NAME_HALF = 3.5;
+/** Both ends of the L1 name, along the camera's horizontal right (the name is a billboard), so the whole name is in frame. */
+function nameEnds(pose: CameraPose): { label: string; at: Vec3 }[] {
+  const fx = pose.target[0] - pose.position[0];
+  const fz = pose.target[2] - pose.position[2];
+  const len = Math.hypot(fx, fz);
+  const r = { x: -fz / len, z: fx / len };
+  return [-1, 1].map((k) => ({ label: `name ${k < 0 ? "left" : "right"} end`, at: [LOBBY.hologram.x + k * NAME_HALF * r.x, LOBBY.titleY, LOBBY.hologram.z + k * NAME_HALF * r.z] as Vec3 }));
+}
+
 /**
  * The B1 phone arrival's sight (owner 2026-10-18: a whole station sign on a portrait screen; on the shared diagonal since
  * 2026-10-23): the four corners of the sign of the station the diagonal looks at across the aisle (Working with AI
@@ -198,7 +209,7 @@ describe("L3-style arrivals on every floor (owner 2026-10-17)", () => {
         const camera = cameraOf(pose, w, h);
         const safe = cls === "mobile" ? PHONE_SAFE : DESKTOP_SAFE;
         expectInside(screen(camera, w, h, rover), w, h, safe, `rover ${floor} ${w}x${h}`);
-        const sights = signsView(floor, cls) ? signCornersFrom(pose.position) : SIGHTS[floor];
+        const sights = signsView(floor, cls) ? signCornersFrom(pose.position) : floor === "L1" ? [...SIGHTS.L1, ...nameEnds(pose)] : SIGHTS[floor];
         // Readable: each shown sign's font at least 10 px tall on screen.
         if (signsView(floor, cls))
           for (const sign of engineSignsShown) {

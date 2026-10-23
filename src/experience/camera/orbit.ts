@@ -376,34 +376,15 @@ export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportCl
   s.easing = false;
 }
 
-/** `OrbitState.zone` while the departure view (`aimDeparture`) holds: no floor zone has this id. */
-export const DEPARTURE_VIEW = "elevator:departure";
-
 /**
- * The way into the elevator (owner 2026-10-23, "serong kanan"): when a ride starts, the camera eases to stand behind the
- * rover and `ELEVATOR_DIAGONAL` to its right as it heads west into the shaft (`DEPARTURE_YAW`; on the L2 rail
- * `DEPARTURE_RAIL_YAW`, looking along the view), with a level pitch, zoom 1 and no look offset. Zones do not update during a
- * ride, so it holds through boarding and the dolly until the arrival primes the destination's view. A hand turn takes over
- * as anywhere; a cancelled ride hands back to the zones (`updateZone` leaves `DEPARTURE_VIEW` like any zone, easing the
- * rail back to the side view). Nothing under reduced motion (a ride is a cut there).
+ * The way into the elevator (owner 2026-10-23, "serong kanan"): `CameraDirector` enters this zone (`updateZone`) when a ride
+ * starts, so the camera eases to stand behind the rover and `ELEVATOR_DIAGONAL` to its right as it heads west into the shaft
+ * (`DEPARTURE_YAW`; on the L2 rail `DEPARTURE_RAIL_YAW`, looking along the view), level, at zoom 1, with no look offset. Zones
+ * do not update during a ride, so it holds through boarding and the dolly until the arrival primes the destination's view.
+ * Like any zone it never applies under reduced motion (a ride is a cut there), in first person or after a hand turn, and a
+ * cancelled ride leaves it for the zone the rover is in. Its area is empty: no rover position ever matches it.
  */
-export function aimDeparture(s: OrbitState, reduced: boolean, rail = false): void {
-  if (reduced) return;
-  s.zone = DEPARTURE_VIEW;
-  s.suppressedZone = null;
-  if (rail) {
-    s.railYawTarget = nearestAngle(DEPARTURE_RAIL_YAW, s.railYaw);
-    s.zoneRailYaw = DEPARTURE_RAIL_YAW;
-  } else {
-    s.yawTarget = nearestAngle(DEPARTURE_YAW, s.yaw);
-  }
-  s.pitchTarget = clamp(0, s.pitchMin, s.pitchMax);
-  s.zoomTarget = 1;
-  s.zoneZoom = null;
-  s.zoneTurn = null;
-  aimAt(s, undefined);
-  s.easing = true;
-}
+export const DEPARTURE_VIEW: ViewZone = { id: "elevator:departure", area: { minX: 0, maxX: -1, minZ: 0, maxZ: -1 }, yaw: DEPARTURE_YAW, zoom: 1, railYaw: DEPARTURE_RAIL_YAW };
 
 /**
  * Cosine slack past perpendicular for `ViewZone.travel`: a rover arriving square to the travel direction

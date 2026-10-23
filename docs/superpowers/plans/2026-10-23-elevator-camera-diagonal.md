@@ -21,7 +21,7 @@ follow the diagonal too, retuned so a station sign reads whole.
 - `LookOffset.right` (follow and rail rigs): portrait arrivals on L1, L2 and RF and the L3 overview aim sideways so the
   main sight stays in frame; steering and the look-ahead keep the orbit's forward, so the glide hands over without a jump.
 - Zooms and aims tuned numerically against the framing tests (`arrivals.test.ts`, `labs-arrival.test.ts`): desktop
-  zooms unchanged except L3 (1.3 to 1.4, the boards clear of the profile card and the elevator rail); phones L1 0.9 (aim 1.75), L2 0.8 (aim 7), RF 0.88 (aim 4.25), B1 0.8
+  zooms unchanged except L3 (1.3 to 1.4, the boards clear of the profile card and the elevator rail); phones L1 1.03 (aim 4.75, the whole name in frame), L2 0.8 (aim 7), RF 0.88 (aim 4.25), B1 0.8
   (pitch -0.2, one whole sign), L3 aims 5.75 (desktop) and 2.75 (phones).
 
 **Verification:** `bun run verify:quick`; `bun run e2e:changed` (`e2e/arrivals.spec.ts` checks the diagonal on every

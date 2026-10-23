@@ -21,7 +21,7 @@ import { cameraWorld, clampCamera, type CameraWorld } from "./collision";
 import { blendPoses, CAMERA_FAR, CAMERA_NEAR, easeBlend, FIRST_PERSON, firstPersonPose, viewSuspended } from "./firstPerson";
 import { cameraFocus } from "./focus";
 import { followEase, followOffsetScale } from "./offset";
-import { activeZone, aimDeparture, createOrbitState, createZoneHold, holdZone, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
+import { activeZone, createOrbitState, DEPARTURE_VIEW, createZoneHold, holdZone, KEY_PITCH_SPEED, KEY_ROTATE_SPEED, primeZone, resetView, rotate, rotateStep, setPitchRange, stepOrbit, updateZone, wrapPi, zoneAt, zoomBy, type OrbitState, type ViewZone } from "./orbit";
 import { introRuntime, resetIntroRuntime, setReveal } from "../intro/runtime";
 import { introModule } from "../intro/chunk";
 import type { IntroPlan } from "./intro";
@@ -195,7 +195,7 @@ export function CameraDirector({
     });
     if (step.started && destZone && s.ride) primeArrival(orbit, destZone, s.ride.to, cls);
     // The way in (owner 2026-10-23): when a ride starts, ease to behind and to the right of the rover heading into the shaft.
-    if (stage === "toDoor" && l.prevStage === null) aimDeparture(orbit, s.reducedMotion, rail);
+    if (stage === "toDoor" && l.prevStage === null) updateZone(orbit, DEPARTURE_VIEW, s.reducedMotion, cls, rail);
     // This sees the ride end on the frame the Director ends it (rover on the arrival point, `cameraSnap` set): both
     // `useFrame`s use the default priority 0 and R3F runs equal priorities in subscription order, which is mount
     // order here (Scene.tsx mounts the Director just before the CameraDirector).
@@ -383,7 +383,7 @@ export function CameraDirector({
     let fov = desired.fov;
     // A zone's sideways look offset turns the view a little but not the steering or the look-ahead: they keep the orbit's
     // forward, so the glide's end pose (built on it) and the follow pose after it are the same.
-    const aimedAside = !drawRail && orbit.lookRight !== 0 && !focus && rig !== "intro";
+    const aimedAside = orbit.lookRight && !focus && rig !== "intro";
     let forward: Vec2 = drawRail ? railForward(orbit.railYaw) : aimedAside ? followForward(cls, orbit.yaw) : forwardOf(desired);
     l.outPos.copy(l.pos);
     l.outTarget.copy(l.target);

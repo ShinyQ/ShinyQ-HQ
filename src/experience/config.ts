@@ -128,12 +128,12 @@ export const LOBBY = {
    * hologram, just inside the lane ring's west point (more room 2026-10-19 widened the ring, not this view); the
    * camera stands behind the rover and `ELEVATOR_DIAGONAL` to its right (owner 2026-10-23) and looks at the profile
    * hologram, the name above it and the stats ring around it. Zooms stay inside `shaftClearZoom` (the camera east of
-   * the glass shaft); a portrait phone also aims `arrivalAimPhone` u to the right, between the rover and the name.
+   * the glass shaft); a portrait phone also aims `arrivalAimPhone` u to the right, so the whole name stays in frame beside the rover.
    */
   arrival: { x: -6, z: 0 } as Vec2,
   arrivalZoom: 1.03,
-  arrivalZoomPhone: 0.9,
-  arrivalAimPhone: 1.75,
+  arrivalZoomPhone: 1.03,
+  arrivalAimPhone: 4.75,
   hologram: LOBBY_HOLOGRAM,
   /**
    * Name and headline float above the stats tiles and the rover mark (both top out below 5.85), low and

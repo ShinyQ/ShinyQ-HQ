@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cameraBehindHeading, DEPARTURE_RAIL_YAW, DEPARTURE_YAW, ELEVATOR_DIAGONAL } from "@/experience/camera/arrival";
 import { yawLooking } from "@/experience/camera/look";
-import { aimDeparture, createOrbitState, DEPARTURE_VIEW, primeZone, rotate, stepOrbit, updateZone, wrapPi, type OrbitState, type ViewZone } from "@/experience/camera/orbit";
+import { createOrbitState, DEPARTURE_VIEW, primeZone, rotate, stepOrbit, updateZone, wrapPi, type OrbitState, type ViewZone } from "@/experience/camera/orbit";
 import { followForward, followPose, railPose } from "@/experience/camera/rigs";
 
 /**
@@ -9,11 +9,13 @@ import { followForward, followPose, railPose } from "@/experience/camera/rigs";
  * rover and `ELEVATOR_DIAGONAL` to its right as it heads west into the shaft; the arrival view takes over from there.
  */
 const WEST = -Math.PI / 2;
+/** What `CameraDirector` does on the frame a ride starts. */
+const aimDeparture = (s: OrbitState, reduced: boolean, rail = false) => updateZone(s, DEPARTURE_VIEW, reduced, "desktop", rail);
 const settle = (s: OrbitState) => {
   for (let i = 0; i < 240; i++) stepOrbit(s, 1 / 60, false);
 };
 
-describe("aimDeparture", () => {
+describe("the departure view", () => {
   it("eases the follow camera to behind and to the right of a west-heading rover, level, at zoom 1, with no look offset", () => {
     const s = createOrbitState();
     s.yaw = s.yawTarget = 0.3;
@@ -22,7 +24,7 @@ describe("aimDeparture", () => {
     s.lookUp = s.lookUpTarget = 2;
     s.lookRight = s.lookRightTarget = 1;
     aimDeparture(s, false);
-    expect(s.zone).toBe(DEPARTURE_VIEW);
+    expect(s.zone).toBe(DEPARTURE_VIEW.id);
     expect(s.easing).toBe(true);
     // It eases, it does not cut.
     stepOrbit(s, 1 / 60, false);
@@ -53,25 +55,34 @@ describe("aimDeparture", () => {
 
   it("turns the L2 rail instead, looking along the view", () => {
     const s = createOrbitState();
-    s.yaw = s.yawTarget = 0.5;
     aimDeparture(s, false, true);
     settle(s);
     expect(s.railYaw).toBeCloseTo(DEPARTURE_RAIL_YAW, 9);
     expect(s.zoneRailYaw).toBe(DEPARTURE_RAIL_YAW);
-    expect(s.yaw).toBe(0.5);
     const pose = railPose("desktop", 10, 0, 1, 0, s.railYaw, 0, 0, true);
     expect(pose.position[0]).toBeGreaterThan(10);
     expect(pose.position[2]).toBeLessThan(0);
     expect(wrapPi(cameraBehindHeading(pose.position, [10, 0, 0]) - (WEST + ELEVATOR_DIAGONAL))).toBeCloseTo(0, 9);
   });
 
-  it("does nothing under reduced motion", () => {
+  it("does nothing under reduced motion or in first person", () => {
     const s = createOrbitState();
     s.yaw = s.yawTarget = 0.3;
     aimDeparture(s, true);
     expect(s.yawTarget).toBe(0.3);
-    expect(s.zone).toBeNull();
     expect(s.easing).toBe(false);
+    const f = createOrbitState();
+    f.yaw = f.yawTarget = 0.3;
+    f.firstPerson = true;
+    aimDeparture(f, false);
+    expect(f.yawTarget).toBe(0.3);
+    expect(f.easing).toBe(false);
+  });
+
+  it("matches no rover position (its area is empty)", () => {
+    const { area } = DEPARTURE_VIEW;
+    expect(area.maxX).toBeLessThan(area.minX);
+    expect(area.maxZ).toBeLessThan(area.minZ);
   });
 
   it("hands over to a hand turn at once", () => {
@@ -82,7 +93,7 @@ describe("aimDeparture", () => {
     const yaw = s.yaw;
     settle(s);
     expect(s.yaw).toBe(yaw);
-    expect(s.suppressedZone).toBe(DEPARTURE_VIEW);
+    expect(s.suppressedZone).toBe(DEPARTURE_VIEW.id);
   });
 
   it("hands back to the floor's zones when the ride is cancelled", () => {

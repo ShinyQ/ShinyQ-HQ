@@ -143,11 +143,11 @@ export function railPose(
   const shift = axisZ + railShift(roverZ - axisZ);
   const [ox, oy, oz] = orbitOffset([0, y, z], yaw, pitch);
   const ahead = aheadAlongView ? railForward(yaw) : { x: Math.cos(yaw), z: -Math.sin(yaw) };
-  const f = railForward(yaw);
+  // The camera's horizontal right is (-forward z, forward x) = (cos yaw, -sin yaw).
   const side = lookRight * zoom;
   return {
     position: [roverX + ox * zoom, floorY + oy * zoom, shift + oz * zoom],
-    target: [roverX + RAIL_LOOK_AHEAD * ahead.x - f.z * side, floorY, shift + RAIL_LOOK_AHEAD * ahead.z + f.x * side],
+    target: [roverX + RAIL_LOOK_AHEAD * ahead.x + Math.cos(yaw) * side, floorY, shift + RAIL_LOOK_AHEAD * ahead.z - Math.sin(yaw) * side],
     fov,
   };
 }
