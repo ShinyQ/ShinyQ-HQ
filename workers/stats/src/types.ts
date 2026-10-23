@@ -8,8 +8,17 @@ import type { StatsExplore, StatsFloor, StatsTopic } from "../../../src/lib/stat
 /** One finalized UTC day. Written once, never recomputed (estimates can shift later). */
 export interface DayRollup {
   date: string;
-  /** Web Analytics (sampled estimates), production hosts only, bots excluded. */
+  /**
+   * The headline visit count. Web Analytics visits (sampled estimates, production hosts only, bots excluded)
+   * before the first-party cutover; the site's own visit pings from it on (`visitSource`).
+   */
   visits: number;
+  /** Set from the cutover day on: "mixed" (Web Analytics before the cutover time, pings after) or "first-party". Missing: Web Analytics. */
+  visitSource?: "mixed" | "first-party";
+  /** Visit pings counted that day (from the cutover on), kept for audits even when the day is frozen. */
+  firstParty?: number;
+  /** The day's visit pings outran Web Analytics (`VISIT_FREEZE`): `visits` fell back to the Web Analytics visits. */
+  visitsFrozen?: true;
   pageViews: number;
   /** ISO alpha-2 codes seen that day, alphabetical, no counts. */
   countries: string[];
@@ -40,6 +49,11 @@ export interface DayPerf {
 export interface Ledger {
   v: 1;
   days: DayRollup[];
+  /**
+   * ISO time (seconds, UTC) of the first visit ping seen (owner decision 2026-10-24): visits come from Web
+   * Analytics before it and from the site's own pings from it on. Written once, when first seen.
+   */
+  cutover?: string;
 }
 
 /** `sampleInterval`: the adaptive API's average sample interval of the row (1 is unsampled; missing counts as 1 in pure tests). */
@@ -62,7 +76,8 @@ export interface WaExtra {
 
 export interface AeRows {
   asks: { day: string; topic: string; chip: string; n: number }[];
-  visits: { day: string; mode: string; n: number }[];
+  /** Per day and blob2 (a mode, or "visit" for visit pings); `first`: the group's earliest point (ISO, seconds). */
+  visits: { day: string; mode: string; n: number; first?: string }[];
   perf: PerfRow[];
 }
 

@@ -13,6 +13,7 @@ import {
   type StatsSnapshotV1,
   type StatsTopic,
 } from "../../../src/lib/stats/protocol";
+import { VISIT_KIND } from "../../../src/lib/stats/visit";
 import type { AeRows, DayPerf, DayRollup, PerfRow, WaRows } from "./types";
 
 /** Pure rollup and snapshot math of the hq-stats Worker (no I/O, unit tested in node). */
@@ -43,6 +44,29 @@ export const MODE_FREEZE = { factor: 3, floor: 30 };
  * beacons and keeps zero perf (`frozen`), never attacker-chosen FPS or explore numbers.
  */
 export const PERF_FREEZE = MODE_FREEZE;
+
+/**
+ * The same cross-check for the headline visit count (owner decision 2026-10-24): a day whose visit pings
+ * exceed `max(floor, factor x Web Analytics page views)` keeps its Web Analytics visits (`visitsFrozen`), so
+ * forged pings cannot set the public number. Wider than MODE_FREEZE: ad blockers stop the Web Analytics
+ * beacon but not the same-origin ping, so a real day can have more pings than measured page views.
+ */
+export const VISIT_FREEZE = { factor: 5, floor: 50 };
+
+/**
+ * Where a day's headline visits come from: `cutover` (ISO time of the first visit ping, null before it) and
+ * `waBefore` (Web Analytics visits on the cutover day before the cutover time). Days before the cutover
+ * day read Web Analytics, the cutover day reads `waBefore` plus its pings, later days read their pings.
+ */
+export interface VisitSource {
+  cutover: string | null;
+  waBefore: number;
+}
+
+const NO_CUTOVER: VisitSource = { cutover: null, waBefore: 0 };
+
+/** Whether `day`'s visits would be frozen for `pings` visit pings and `pageViews` Web Analytics page views. */
+export const visitsFrozen = (pings: number, pageViews: number) => pings > Math.max(VISIT_FREEZE.floor, VISIT_FREEZE.factor * pageViews);
 
 const FROZEN_PERF: DayPerf = { sessions: 0, measured: 0, fps55: 0, explore: {}, frozen: true };
 
@@ -83,7 +107,8 @@ export function waExact(date: string, wa: WaRows): boolean {
   return Number.isFinite(days) && total(wa.countries) === days && total(wa.paths) === days;
 }
 
-export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, chipTopics: ReadonlyMap<string, StatsTopic>): DayRollup[] {
+export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, chipTopics: ReadonlyMap<string, StatsTopic>, source: VisitSource = NO_CUTOVER): DayRollup[] {
+  const cutDay = source.cutover?.slice(0, 10) ?? null;
   return dates.map((date) => {
     let visits = 0;
     let pageViews = 0;
@@ -106,9 +131,14 @@ export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, c
     let threeD = 0;
     let classic = 0;
     let points = 0;
+    let pings = 0;
     for (const r of ae.visits) {
       if (r.day !== date) continue;
       const n = clean(r.n);
+      if (r.mode === VISIT_KIND) {
+        pings += n;
+        continue;
+      }
       if (r.mode === "3d") threeD += n;
       else if (r.mode === "classic") classic += n;
       else if (r.mode === "both") {
@@ -130,9 +160,18 @@ export function buildRollups(dates: readonly string[], wa: WaRows, ae: AeRows, c
       if (chipTopics.has(r.chip) && n > 0) asks.chips[r.chip] = (asks.chips[r.chip] ?? 0) + n;
     }
 
+    let headline: Pick<DayRollup, "visits" | "visitSource" | "firstParty" | "visitsFrozen"> = { visits };
+    if (cutDay !== null && date >= cutDay) {
+      const mixed = date === cutDay;
+      const counted = (mixed ? clean(source.waBefore) : 0) + pings;
+      headline = visitsFrozen(pings, pageViews)
+        ? { visits, visitSource: mixed ? "mixed" : "first-party", firstParty: pings, visitsFrozen: true }
+        : { visits: counted, visitSource: mixed ? "mixed" : "first-party", firstParty: pings };
+    }
+
     return {
       date,
-      visits,
+      ...headline,
       pageViews,
       countries: [...countries].sort(),
       floors,

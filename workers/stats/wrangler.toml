@@ -1,8 +1,9 @@
 # hq-stats: the public visit stats Cron Worker (runbook: workers/stats/README.md).
 #
 # Deployed by .github/workflows/deploy.yml (cloudflare/wrangler-action) from this folder; it has its own
-# config, separate from the Pages project in the repo root. Scheduled handler only: no fetch handler, no
-# route, no workers.dev or preview URL, so nothing on it is reachable from the internet.
+# config, separate from the Pages project in the repo root. No route, no workers.dev or preview URL, so nothing on
+# it is reachable from the internet: its fetch handler (GET /live, the live visit count) answers only the Pages
+# project's STATS service binding (wrangler.toml in the repo root).
 #
 # Secrets never live here. deploy.yml sets them from GitHub secrets on every deploy:
 #   WA_TOKEN       read-only Account Analytics token (GitHub secret CF_EVAL_TOKEN)
@@ -14,14 +15,14 @@ compatibility_date = "2026-10-19"
 workers_dev = false
 preview_urls = false
 
-# Every 2 hours (UTC), 17 minutes past the hour: finalizes days an hour after they end and refreshes the snapshot
-# with today so far. Off the top of the hour on purpose: the 04:00 and 12:00 runs of 2026-10-16 got a coarsely
+# Every hour (UTC), 17 minutes past the hour (owner decision 2026-10-24; was every 2 hours): finalizes days an
+# hour after they end and refreshes the snapshot with today so far. Off the top of the hour on purpose: the 04:00 and 12:00 runs of 2026-10-16 got a coarsely
 # sampled Web Analytics answer while a run at 12:15 got the exact one (README, "Finalized and provisional days").
 [triggers]
-crons = ["17 */2 * * *"]
+crons = ["17 * * * *"]
 
 # Same namespace as the Pages project's STATS_KV binding (wrangler.toml in the repo root): the ledger
-# `stats:days:v1` and the public snapshot `stats:v1`. KV namespace IDs are not secret.
+# `stats:days:v1`, the public snapshot `stats:v1` and its live tail `stats:live:v1`. KV namespace IDs are not secret.
 [[kv_namespaces]]
 binding = "STATS_KV"
 id = "88fb27f910f44e6393b8fd495d6a2c4f"
