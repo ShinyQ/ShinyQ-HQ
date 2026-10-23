@@ -129,3 +129,12 @@ Workers Scripts Edit on the account.
   are not in `WA_SITE_TAG`; both sites saw disjoint page loads, so nothing is counted twice; they include
   visitors who had opted out, because that beacon ignored the switch). A malformed value stops the run
   before anything is written.
+- Days before the ledger's first day: the Worker only appends, so older days are prepended by hand to
+  `stats:days:v1` (never rebuild the whole ledger: a fresh long-window Web Analytics answer does not
+  reproduce stored days, for example 2026-10-18 came back with 0 visits instead of 65). Build them with
+  `buildRollups` from `src/rollup.ts` (Analytics Engine rows empty, `perf` zeros), keep the days
+  contiguous with the stored first day, check `buildSnapshot` and a dry run of `runStats` on an
+  in-memory copy, then put the ledger and the snapshot. Query a retired site day by day: a long window
+  is sampled more coarsely and drops countries. Used once (owner, 2026-10-23): the previous portfolio
+  site's Web Analytics rows (site `21d90569...`, 2026-04-25 to 2026-10-09; 40 visits, 340 page views,
+  ID, FR, US, DE), so `since` reads 2026-04-25.
