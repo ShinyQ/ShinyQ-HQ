@@ -2,7 +2,7 @@
 
 Where things live in the repository: one entry per path with a short description. Index: [AGENTS.md](../../AGENTS.md).
 
-Paths are relative to the repository root. Two paths are not in a fresh checkout on purpose (both gitignored): `functions/_generated/` (written by the build) and `.study-guides/` (prepared study guide PDFs, written by `scripts/study-guides.ts`; never committed).
+Paths are relative to the repository root. Three paths are not in a fresh checkout on purpose (all gitignored): `functions/_generated/` and `public/shapes/` (written by the build) and `.study-guides/` (prepared study guide PDFs, written by `scripts/study-guides.ts`; never committed).
 
 ## content/
 
@@ -12,6 +12,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `content/ask/site-build.json`: how ShinyQ HQ itself was built (EN/ID), Ask knowledge only; it points to the `/build` page. See "Ask the HQ" in [ask.md](ask.md).
 - `content/perspectives.json`: Kurniadi's professional Q&A (EN/ID), Ask knowledge only once approved (no page). See "Content access" in [content.md](content.md).
 - `content/study-guides.json`: the certification study guides (EN/ID; human fields by hand, `pages`, `bytes`, `version` and `cover` by `scripts/study-guides.ts`); the PDFs live in the private R2 bucket `hq-study-guides`. See "Study guides" in [content.md](content.md#study-guides).
+- `content/sculptures.json`: the L3 pod sculpture recipes (boxes, rings, bars), build time only; `Pod.sculpture` names one. See [floors.md](floors.md#floating-hologram-icons).
 - `content/blog/<slug>.<locale>.mdx`: blog posts, one file per language.
 - `content/blog/diagrams.json`: post-local architecture diagrams for `<Architecture diagram=... />` (post slug, then diagram id, then the pod `architecture` shape).
 - `content/safety-allowlist.txt`: allowed product names; they feed the Ask knowledge pack's `products` (the entity allowlist of the Ask output entity check).
@@ -19,6 +20,10 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `content/generated/build-facts.json`: the build page's measured numbers (git, tests, CI jobs, budgets), written by `scripts/build-facts.ts` (CI and deploy builds refresh it).
 - `content/generated/cv-pages.json`: CV page image manifest (sizes, PDF sha256), written by `scripts/cv-pages.ts`.
 - `content/generated/paper-pages.json`: paper PDF page image manifest (sizes, PDF sha256), written by `scripts/paper-pages.ts`.
+
+## assets/
+
+- `assets/icons/lucide/`: the vendored Lucide subset (only the icon ids the content names), its ISC `LICENSE` and a `README.md` with the attribution and version; converted at build by `scripts/build-shapes.ts`, never shipped as SVG.
 
 ## functions/, wrangler.toml and workers/
 
@@ -56,6 +61,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - LICENSE files stay in `public/fonts/`.
 - `public/tech/`: tech logos (svg/webp, see its README for sources), resolved by `src/content/tech.ts`.
 - `public/atlas/`: the L1 wall logo atlas, `logos.<hash>.webp` (quantized, lossless WebP, content-hashed), written with its client manifest `src/experience/logo-atlas.ts` (the hashed file name) and the build-side `scripts/logo-atlas.lock.json` by `bun run logo:atlas`, committed; and the B1 Stack Halo atlas `engine.<hash>.webp` (`bun run engine:atlas`, manifest `src/experience/floors/engine/engine-atlas.ts`, lock `scripts/engine-atlas.lock.json`).
+- `public/shapes/`: the L2, L3 and L4 floating hologram shapes, `<floor>.<hash>.json`, written by `scripts/build-shapes.ts` at every build and dev start, gitignored (immutable cache in `_headers`).
 - `public/logos/`: company and school logos (TimelineEntry.logo), 128 px webp.
 - `public/media/<pod-slug>/`: pod gallery images: NN-name.webp (max 1600 wide) + NN-name.thumb.webp (480 wide) + NN-name.w1200.webp (1200 wide, `scripts/media-sizes.ts`).
 - `public/media/production/`: the masked Grafana probe dashboard of "How I run AI in production" (same three sizes as the pod galleries; `scripts/media-sizes.ts` covers it).
@@ -88,6 +94,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `scripts/csp-hashes.ts`: post-build (last step of `build`): adds a per-page script policy meta tag (sha256 of every inline script, no `'unsafe-inline'`) to out/**/*.html and fails on any problem.
 - `scripts/csp-policy.ts`: its pure rules (`inlineScripts`, `pagePolicy`, `addScriptPolicy`, `exportPolicyProblems`), shared with scan-export.ts, deploy-smoke.ts, the unit tests and Playwright.
 - `scripts/build-knowledge.ts`: Ask the HQ knowledge pack (part of `build`).
+- `scripts/build-shapes.ts`: the floating hologram shapes (part of `build` and `dev`): converts the vendored Lucide icons and expands the sculpture recipes into `public/shapes/<floor>.<hash>.json`, removing stale files; fails on an unknown or duplicate id.
 - `scripts/ask-pack.ts`: publishes the knowledge pack to Workers KV and flips, pins or rolls back its pointer (deploy.yml, rollback.yml; runbook section 17).
 - `scripts/build-facts.ts`: `--write` refreshes `content/generated/build-facts.json` (needs full git history).
 
@@ -216,6 +223,8 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/content/build-story.ts`: the build story loader (`content/build-story.json`), server only; read by the `/build` page and the B1 room view.
 - `src/content/media.ts`: GalleryImage, toGalleryImages, coverImage, thumbSrc (client-safe).
 - `src/content/room-views/`: RoomView contract (types.ts) and one drawer-content builder per floor.
+- `src/content/shapes.ts`: the hologram shapes per floor (`shapePayloads`, `shapeFile` with its content hash, `shapeUrl` for the experience data, `shapeIssues` for validation, `placedLibraryIcons` for the L4 placements), server and build only.
+- `src/content/sculptures.ts`: the sculpture recipe expander and checks (box cap, bounds, signature), build only.
 - `src/content/safety.ts`: forbidden patterns (`FORBIDDEN_PATTERNS`, `leafForbiddenPatterns`), the product allowlist loader (`loadAllowlist`) and the generic export term scanner (`scanBuildOutput`).
 
 ### src/ask/ and src/i18n/
@@ -226,6 +235,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 ### src/lib/
 
 - `src/lib/`: format (Intl dates), accent class maps, gpu-tier, url-sync, viewport.
+- `src/lib/svg-strokes.ts`: build-time SVG to 24 x 24 stroke converter for the vendored icons (paths, basic shapes, flattened curves).
 - `src/lib/boot-first.ts`: game-first load: inline head script, shouldBootFirst, releaseBootCover.
 - `src/lib/content-hash.ts`: `shortHash`, the 12-character `?v=` content hash of the build-time `/data/*` files (HUD index, 3D page data, room data per floor); server only.
 - `src/lib/perf-marks.ts`: User Timing marks of the game-first timeline (hq:boot-release, hq:first-frame, hq:intro-start, hq:intro-end, hq:explore, hq:first-drawer).
@@ -359,14 +369,16 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 #### Effects (fx)
 
 - `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
-- `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx).
+- `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
+- `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots and `libraryIcons`, run at build for the shapes JSON.
+- `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame, the crossfade weights and the `shapes` probe.
 - `src/experience/fx/BatchedLabels.tsx`: all labels of a floor in one draw call (troika BatchedText; labelProps.ts holds the pure label type).
 - `src/experience/fx/FloatingSign.tsx`: floating signs (every word that would lie on a floor).
   - `FloatingSigns`; pure placement in signLayout.ts (`SignSpec`, `signPlate`, `signFacing`, `wrapSign`).
   - plateProjection.ts (`projectPlate`: a sign's plate in CSS pixels, shared by the L4 and end plaza placement hooks).
 - `src/experience/fx/holoFx.ts`: the one spectacle shader (`createHoloMaterial`, `HOLO_MODE`: plate, skyline, glow, flow, pillar, fall, core, ring, strip); HoloMesh.tsx draws a single one as a one-instance mesh.
 - `src/experience/fx/BoostFx.tsx`: boost effects: twin path-following trails, speed streaks, wheel sparks (pure parts: boostConfig.ts, boostTrail.ts, streaks.ts, sparks.ts).
-- `src/experience/fx/PadGlow.tsx`: floor pads: one instanced glow per floor plus a neon icon per kind (PAD_ICONS); clicks go through point-and-go (the rover drives onto the pad, then the picker opens). TeleportBeam.tsx draws the beam.
+- `src/experience/fx/PadGlow.tsx`: floor pads: one instanced glow per floor plus one batch of neon icons (PAD_ICONS, each in its kind tone); clicks go through point-and-go (the rover drives onto the pad, then the picker opens). TeleportBeam.tsx draws the beam.
 
 #### Dev prototypes
 
@@ -431,6 +443,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 | Library + Roof | `library-roof.spec.ts` |
 | L4 label overlap and caps | `library-labels.spec.ts` (rendered); `tests/unit/library-label-sweep.test.ts` runs the same sweep without a renderer |
 | Floating signs, the reactor routes and spectacle motion gating | `spectacle.spec.ts` (the L2 and L4 sign facing: `tests/unit/floor-sign-facing.test.ts`) |
+| Unique floating holograms on L2, L3 and L4 | `shapes.spec.ts`: each floor's shapes load and show; with `/shapes/*` blocked the type icons stay |
 | Highlights Hall | `highlights.spec.ts`: point-and-go stations, cards, live links, the highlights mission, deep link, the gateway arch and its one-shot curtain, L1 budget (full tier walk) |
 | Agent Office | `office.spec.ts`: the lazy chunk and its trigger (declines at the spawn, loads on the lead road), `?prefetch=off` (no load on its own; an office drawer loads the body and starts the scene), partial atlas uploads without GL errors, states and chips, Rover, chip, summary and GitHub drawers, the mission, semi-live, off and disabled modes, offline after the keep-last window, reduced motion, Motion Full, Indonesian, a 390 x 844 phone (chips stay compact dots, no text, zoomed in); the living crew and helper drones, the Needs Kurniadi beacon and minimap cue, the production deploy beam, the day replay (idle loop, drawer controls, merge tiles, `?prefetch=off`); snapshots from `e2e/office-fixtures.ts` |
 | Classic office card | `office-classic.spec.ts`: the lazy `#office` card on the home page, its states (busy, offline, kept snapshot), snapshot v3 helpers, the hidden section when the office is off, no request before the card nears the viewport |

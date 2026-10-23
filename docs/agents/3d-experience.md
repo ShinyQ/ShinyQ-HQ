@@ -168,6 +168,7 @@ Trails, squat and lean, camera kick, streaks and sparks (owner decision):
   - The EN/ID switch reloads the page (`src/hud/switchLocale.ts`), so the other locale's page fetches its own file.
   - The dev route `/{locale}/dev/certs` passes `experienceDataFor(locale)` to its harness directly.
 - Add floor data there (L4 and RF: `library` and `roof` from `src/content/experience-floors.ts`), not by importing `@/content/load` in client code.
+- `career.shapes`, `labs.shapes` and `library.shapes` carry the hashed URL of each floor's hologram shapes (`/shapes/<floor>.<hash>.json`, `shapeUrl` in `src/content/shapes.ts`); the floor fetches the file after its first frame ([floors.md](floors.md#floating-hologram-icons)), so no shape data rides in the experience JSON or a JS chunk.
 - `roomData` carries the content hash of each floor's Glass Drawer file (its `?v=`, [hud-and-drawer.md](hud-and-drawer.md#builders-and-data)); like the rest of `ExperienceData` it rides in the experience JSON, never in the HTML, and the drawer content itself is never in either.
 - `skills` carries every skill group in the wall order (`wallSkillGroups`, `SKILLS_WALL_ORDER` in `@/content/selectors`); the skills drawer, Page View and Ask list the same eight in dataset order.
   - `skills[].logos` holds the tech logo per item.

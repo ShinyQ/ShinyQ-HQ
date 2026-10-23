@@ -11,23 +11,23 @@ holograms as the fallback, at no JS byte, draw call or program cost.
 
 ## Tasks
 
-- [ ] Spec, plan and mapping (this file).
-- [ ] Vendor the Lucide subset (`assets/icons/lucide/*.svg`, `LICENSE`, `README.md` with the attribution and the
+- [x] Spec, plan and mapping (this file).
+- [x] Vendor the Lucide subset (`assets/icons/lucide/*.svg`, `LICENSE`, `README.md` with the attribution and the
   version) and write the converter `src/lib/svg-strokes.ts` with unit tests.
-- [ ] Recipes `content/sculptures.json`, expander `src/content/sculptures.ts` (box cap 16, bounds, uniqueness), `r` on
+- [x] Recipes `content/sculptures.json`, expander `src/content/sculptures.ts` (box cap 16, bounds, uniqueness), `r` on
   `HologramPart`, unit tests.
-- [ ] Schema: `icon` on `TimelineEntry`, `PostRef`, `Publication`, `Talk`; `sculpture` on `Pod`; uniqueness in
+- [x] Schema: `icon` on `TimelineEntry`, `PostRef`, `Publication`, `Talk`; `sculpture` on `Pod`; uniqueness in
   `SiteContentSchema`; `shapeIssues` in `src/content/shapes.ts` wired into `validate:content`; ids in the dataset.
-- [ ] `src/content/shapes.ts` payloads and hashed names, `scripts/build-shapes.ts` in `build`, `build:web` and `dev`,
+- [x] `src/content/shapes.ts` payloads and hashed names, `scripts/build-shapes.ts` in `build`, `build:web` and `dev`,
   `/public/shapes/` gitignored, `_headers` immutable for `/shapes/*`, `check-client-chunks` guard, unit tests.
-- [ ] Experience data: `career.shapes`, `labs.shapes`, `library.shapes` (URLs).
-- [ ] Client: `fx/shapes.ts` (`loadShapes`, `useShapes`, probe), batched `HoloIcon` (aColor everywhere), L2
+- [x] Experience data: `career.shapes`, `labs.shapes`, `library.shapes` (URLs).
+- [x] Client: `fx/shapes.ts` (`loadShapes`, `useShapes`, probe), batched `HoloIcon` (aColor everywhere), L2
   `CareerRooms`, L4 `ZoneIcons` with desk rows, L3 `PodHolograms` with per-pod parts and the scale morph.
-- [ ] E2E `e2e/shapes.spec.ts` (shapes shown on L2, L3, L4; fallback when `/shapes/*` is blocked), `scripts/e2e-plan.ts`
+- [x] E2E `e2e/shapes.spec.ts` (shapes shown on L2, L3, L4; fallback when `/shapes/*` is blocked), `scripts/e2e-plan.ts`
   and perf-plan mappings.
-- [ ] Verify: `verify:quick`, `validate:content`, `e2e:changed`, perf `floors` L2/L3/L4 and `bytes-3d` before and
+- [x] Verify: `verify:quick`, `validate:content`, `e2e:changed`, perf `floors` L2/L3/L4 and `bytes-3d` before and
   after, screenshots of L2, L3, L4 before and after.
-- [ ] Docs: `floors.md` (icon system), floor L2/L3/L4 docs, `content.md`, `folder-layout.md`, `features.md`,
+- [x] Docs: `floors.md` (icon system), floor L2/L3/L4 docs, `content.md`, `folder-layout.md`, `features.md`,
   `performance.md` if a gate moves; decision file.
 
 ## Mapping
@@ -156,4 +156,18 @@ Unique across posts, publications and talks; zones keep their color.
 
 ## Numbers
 
-Filled in from the perf lane before and after (both on this machine, same build flags).
+Perf lane on one machine, `main` (7f5bac23) export against this branch's export, same flags.
+
+| Gate | Before | After |
+|---|---|---|
+| 3D main path, lite / full | 460,937 B / 465.9 KB | 460,926 B / 465.9 KB |
+| Session total, lite / full (caps 513.9 / 529.7 KB) | 513.6 / 529.4 KB | 513.8 / 529.5 KB |
+| Floor chunk L3 / L4 / RF (caps 20 / 16 / 8 KB) | 14,259 / 11,910 / 3,369 B | 14,385 / 11,968 / 3,351 B |
+| Shapes JSON (not JS), L2 / L3 / L4 gzip | none | 3.2 / 4.2 / 3.1 KB |
+| Scene draw calls L1, L2, L3, L4, RF lite | 101, 75, 66, 59, 57 | 101, 69, 65, 55, 55 |
+| Scene draw calls L1, L2, L3, L4, RF full | 103, 86, 69, 66, 62 | 103, 74, 67, 58, 58 |
+| Triangles L2, L3, L4 full (cap 30k) | 25,221, 18,213, 9,395 | 27,173, 19,461, 11,035 |
+| Shader programs | same names and count as `main` in the same flow (L1 63, L2 62 full); every floor within `baseline.json` + 2 | |
+
+The 3D main path is 11 B smaller; L3 and L4 carry about 0.1 KB more each (the shapes loader wiring and the sculpture
+roll and brightness), offset in part by the main path and RF, and every cap holds without a change.

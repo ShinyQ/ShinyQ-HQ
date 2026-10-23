@@ -3,7 +3,7 @@
 The L2 Career floor: the Career Road with its year plazas, the Workshop annex, the Horizon and Origin floor ends, and the rail camera.
 Index: [AGENTS.md](../../AGENTS.md).
 
-Related: road kit, floor pads, Express Return pad, floating signs and point-and-go live in [floors.md](floors.md); the career type icons (`HoloIcon`, `CAREER_TONE`) too.
+Related: road kit, floor pads, Express Return pad, floating signs and point-and-go live in [floors.md](floors.md); the floating hologram icons (`HoloIcon`, `CAREER_TONE`, unique shapes) too ([floors.md](floors.md#floating-hologram-icons)).
 
 ## Career Road
 
@@ -22,7 +22,8 @@ Code: `floors/career/layout.ts`. Design: walkable floors plan Part 2. Meander ro
 - Sizes: award rooms 6 x 8, others 9 x 8.
 - Each room has a spur in its `CAREER_TONE`.
 - Rooms are open bays: only the 2 x 2 pedestal blocks the rover.
-- Rooms show one Neon line `HoloIcon` per type, facing the rail camera.
+- Each room floats a Neon line icon in its `CAREER_TONE`, facing the rail camera: all rooms are one `HoloIcon` batch (one draw call, two on full).
+  - The type icon first; after the floor's first frame its own Lucide icon (`TimelineEntry.icon`, `public/shapes/L2.<hash>.json`) crossfades in. Jobs, education and freelance each have a unique icon; milestones cycle 4 (flag, flask, badge, rocket) and awards 3 (medal, award, trophy).
 - Award plinths show the year's placings ("×10") under the trophy icon.
 
 ### Year markers and labels

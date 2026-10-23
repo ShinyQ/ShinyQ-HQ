@@ -40,7 +40,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 
 - Draws `RoadMarkings` and the picked decor (`decor/`, `DecorProps`):
   - station glass and outlines, batched;
-  - Neon line zone icons (`LIBRARY_ICONS`, `ZONE_TONE`).
+  - Neon line icons in their zone tone (`ZONE_TONE`), one `HoloIcon` batch (one draw call, two on full): the zone icons (`LIBRARY_ICONS`) first; after the floor's first frame each post station shows its post's own icon and the Research, Models and Talks desks one icon per item (`deskSlots` in `floors/library/icons.ts`: one row of up to 4 low over the desk, 2.4 u apart, two rows from 5 items), placed at build into `public/shapes/L4.<hash>.json` (`libraryIcons`; [floors.md](floors.md#floating-hologram-icons)).
 - The turning open book over the featured stage: `FlipBooks` in `decor/BookHolograms.tsx` (shared with the Reading Room concept), placed by `stageBook` / `STAGE_BOOK` in `decor/flipBooks.ts`.
 - Paper plates in front of the Research station call `openPaperFor(locale, id)` (`hud/drawer/paper.ts`, the paper preview from the drawer data).
 - Reduced motion holds every animation; lite drops halos and additive glow.

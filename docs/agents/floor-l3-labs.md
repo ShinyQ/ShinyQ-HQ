@@ -85,6 +85,7 @@ Three free-standing boards stand at the fork (`LABS.board`; owner decision: a ne
 - Pods alternate the outer side (from x = 14) and the inner side (from x = 24, half a pitch later and 6 u clear of the boards), 7 u apart.
 - Each pod has a 3 u forecourt and a spur to its door.
 - Pod labels are billboards.
+- Pod holograms: one instanced box mesh for every pod (`PodHolograms` in `Pods.tsx`), spinning above the pod (faster and brighter near the rover). Each pod first shows its kind hologram (`Pod.hologram`, `hologramParts`); after the floor's first frame its own sculpture (`Pod.sculpture`, `content/sculptures.json`, `public/shapes/L3.<hash>.json`) replaces it and grows in over 0.6 s to 1.2 times the kind's scale (at most 16 boxes each, no two alike; [floors.md](floors.md#floating-hologram-icons)).
 
 ### Arrival and camera views
 

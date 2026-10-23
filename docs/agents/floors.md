@@ -292,16 +292,25 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
 - 6 u wide floor connects the start to within 4 u of every pad.
 - Layouts with floor pads pass them as `pads` (see [pad rules](#pad-rules)).
 
-### Career type icons
+### Floating hologram icons
 
-- Style: "Neon line" (owner decision).
-- `CAREER_ICONS` (24 x 24 line art: briefcase, laptop with code, graduation cap, trophy, flag) and `CAREER_TONE` (sky, pink, violet, amber, emerald) in `src/experience/fx/holoIcons.ts` feed:
-  - `<HoloIcon strokes instances color tier reducedMotion />`: all instances of a type in one geometry, one draw call plus a halo on the full tier, sway toward the road, still under reduced motion;
+Owner decisions: "Neon line" style; unique holograms per item on L2, L3 and L4 ([2026-10-23](../decisions/2026-10-23-unique-floating-icons.md), [design](../superpowers/specs/2026-10-23-unique-floating-icons-design.md)).
+
+- Type icons (the fallback and the Classic site): `CAREER_ICONS` (24 x 24 line art: briefcase, laptop with code, graduation cap, trophy, flag) and `CAREER_TONE` (sky, pink, violet, amber, emerald) in `src/experience/fx/holoIcons.ts` feed:
+  - `<HoloIcon instances tier reducedMotion />` (3D);
   - the SVG `<TypeIcon type />` (`src/components/TypeIcon.tsx`):
     - the `/journey` filter chips;
     - `TypeMarker` on timeline rows (`src/components/page/Layout.tsx`; /journey, the home timeline, /quick, entry pages);
     - the career badge in the [Glass Drawer](hud-and-drawer.md) (`RoomView` badge `type`).
 - Use `CAREER_TONE` wherever a career type has a color.
+- `HoloIcon` (`fx/HoloIcon.tsx`) draws any mix of icons in one geometry: each `HoloIconInstance` may carry its own `strokes`, `color` and `size` (the component's are the defaults), baked into per-vertex attributes (`instanced`, over the unit ribbons of `iconMesh`), so a batch is one draw call plus a halo on the full tier. Every user shares one shader source (the `aColor` attribute is always there; `uColor` carries the tier boost, the optional shared `fade` uniform the crossfade), so batching adds no shader program. One batch per user: the floor pads (`PadGlow`, every kind), the RF station icons, the Workshop benches, the L2 rooms and the L4 stations. It sways toward the road, turns around when the camera is behind it and holds still under reduced motion.
+- Unique shapes (3D only):
+  - Each item names its hologram in the content ([content.md](content.md#hologram-ids)): `icon` (a vendored Lucide icon id) on career entries, posts, publications and talks, `sculpture` on pods.
+  - Icons are a curated Lucide subset vendored in `assets/icons/lucide/` (ISC `LICENSE` and attribution in its `README.md`; only the ids the content names). `src/lib/svg-strokes.ts` converts them at build into the 24 x 24 `Stroke` format (paths with M, L, H, V, C, S, Q, T, A, Z, and line, polyline, polygon, circle, ellipse and rect; curves flattened coarsely, dots become small diamonds).
+  - L3 sculptures are box recipes in `content/sculptures.json` (`src/content/sculptures.ts`): at most `SCULPTURE_MAX_BOXES` (16) boxes within the bounds, parts may roll (`r`), pulse (`p`) and dim (`k`), no two alike.
+  - `scripts/build-shapes.ts` (in `build`, `build:web` and `dev`) writes `public/shapes/<floor>.<hash>.json` for L2, L3 and L4 (`src/content/shapes.ts`; gitignored, immutable cache in `_headers`); the URLs reach the floors as `career.shapes`, `labs.shapes` and `library.shapes`. Items are keyed by entry slug (L2), pod slug (L3) and post slug, publication or talk id (L4). The L4 file also carries `icons`: every item icon already placed on the floor's layout (`libraryIcons` in `floors/library/icons.ts`, run at build over the same `buildLibraryLayout` input as the client), so the client draws them as is. The converter and the recipes never reach a client chunk (`check-client-chunks`).
+  - `useShapes` (`fx/shapes.ts`) starts the fetch right before the first render that shows the floor (`whenDrawn`). L2 and L4 then crossfade over 0.6 s (the fallback batch fades out as the unique one fades in, through the shared `fade` uniforms, then unmounts); L3's sculptures replace the kind holograms in the one instanced mesh and grow in over the same 0.6 s. Reduced motion swaps at once. Until then, or on a failed fetch, the type icons and kind holograms stay. A revisit in the session mounts with the unique shapes (parsed per URL once).
+  - Probe: `__hq.probes.shapes[floor]` (`state`: loading, shown or failed; `unique`: items in the floor's shapes file). E2E: `e2e/shapes.spec.ts`.
 
 ### Dev routes
 

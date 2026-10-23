@@ -92,11 +92,12 @@ floors/career/CareerRooms.tsx, floors/library/decor/common.tsx (ZoneIcons), floo
   floor's content (a floor warmed during boot or hidden as a neighbour never fetches). The parsed JSON is cached per URL
   for the session, so a later visit mounts with the unique shapes at once (no crossfade). A failed fetch leaves the
   fallback and is retried on the next mount.
-- Crossfade 0.6 s: the fallback batch fades out while the unique batch fades in (`fade` weights on `uOpacity`); once
-  done the fallback unmounts. Reduced motion: weight 1 at once. L3 crossfades by scale (fallback parts shrink, unique
-  parts grow) inside the one instanced mesh, then remounts it with the unique parts only.
-- Probe `__hq.probes.shapes[floor]`: `{ state: "loading" | "shown" | "failed", unique }` (unique = items drawn with
-  their own shape).
+- Crossfade 0.6 s: the fallback batch fades out while the unique batch fades in (shared `fade` uniform objects that
+  the HoloIcon shader multiplies into its opacity, so no per-frame JS in HoloIcon); once done the fallback unmounts.
+  Reduced motion: weight 1 at once. On L3 the sculptures replace the kind holograms in the one instanced mesh and grow
+  in over the same 0.6 s to 1.2 times the kind scale (so their detail reads from the follow camera).
+- Probe `__hq.probes.shapes[floor]`: `{ state: "loading" | "shown" | "failed", unique }` (unique = items in the
+  floor's shapes file).
 
 ### 3.5 HoloIcon batched mode
 
@@ -106,13 +107,22 @@ floors/career/CareerRooms.tsx, floors/library/decor/common.tsx (ZoneIcons), floo
   `uColor` carries the tier boost (`neonColor("#ffffff", 1.6)` on full, white on lite), `aColor` the item's hue, so
   the product equals today's `neonColor(color, k)`.
 - L2: one batch (the 36 rooms) plus a halo on full: 2 draw calls instead of 10. L4: one batch (posts and desk items)
-  plus a halo: 2 instead of 8.
+  plus a halo: 2 instead of 8. The floor pads (`PadGlow`) and the RF station icons batch the same way (one per kind
+  before).
+- Byte offsets: `iconMesh` keeps only the flat ribbons `HoloIcon` draws (the unused extrusion is gone) and the
+  HoloIcon GLSL is written compactly, since shader strings ship verbatim.
 
 ### 3.6 L4 desk items
 
-The Research, Models and Talks desks each show one icon per item instead of the zone icon: one row of up to 4 (Research
-4, Models 3), two rows of 3 for Talks, left to right as seen from the road, smaller (size from the spacing, at most
-2.4). The featured post keeps its turning book (its icon id is in the data for when it is no longer featured).
+The Research, Models and Talks desks each show one icon per item instead of the zone icon, low over the desk (1.3 u
+above its top, under the zone sign on its back edge): one row of up to 4 across the desk (Research 4, Models 3), two
+rows of 3 for Talks (the first nearer the road), left to right as seen from the road, 2 u wide and 2.4 u apart. The
+featured post keeps its turning book (its icon id is in the data for when it is no longer featured). The build places
+every L4 item icon on the floor's layout (`libraryIcons` over `buildLibraryLayout`, the same pure builder and input as
+the client) and ships the placements in the L4 JSON (`icons`), so the client carries no desk layout code.
+
+Posts carry their `icon` on `library.posts` in the dataset rather than in the MDX frontmatter: two posts are external
+(Medium) and have no MDX file, and the 3D payload reads the dataset.
 
 ## 4. Data flow and fallback
 
@@ -129,7 +139,7 @@ The Research, Models and Talks desks each show one icon per item instead of the 
 - JS: the converter, the recipes and the payload builder are build-time only (`check-client-chunks` forbids
   `svg-strokes` and `shapes` content modules in client chunks). Client additions are the fetch hook and the batched
   builder; HoloIcon's per-type loops go away. Main path, session total and floor chunk caps unchanged.
-- JSON: reported by `bytes-3d` (`other.json`), not capped; about 25 KB raw for L2, 10 KB for L3 and 20 KB for L4.
+- JSON: reported by `bytes-3d` (`other.json`), not capped; 12.9, 23.4 and 9.4 KB raw (3.2, 4.2 and 3.1 KB gzip) for L2, L3 and L4.
 - Draw calls: L2 full 10 to 2 for the room icons, L4 8 to 2; L3 unchanged (one instanced mesh). During the 0.6 s
   crossfade both batches draw (still fewer than before).
 - Programs: unchanged (one HoloIcon program, one instanced basic material).
@@ -140,7 +150,9 @@ The Research, Models and Talks desks each show one icon per item instead of the 
 
 - Unit: the converter (each command and element, packed flags, dots, bounds, segment counts), the recipe expander
   (bounds, box cap, uniqueness), the payload builder and `shapeIssues` (ids exist, uniqueness, the real content names an
-  id on every item), the batched geometry builder (vertex colors, per-instance strokes), `useShapes` crossfade math.
+  id on every item), the batched geometry builder (vertex colors, per-instance strokes) and the desk slots. The
+  `useShapes` crossfade runs in the frame loop and is covered by the e2e spec (the probe reaches `shown` and the
+  fallback batch unmounts).
 - E2E `e2e/shapes.spec.ts`: on L2, L3 and L4 the probe reaches `shown` with every item unique; with `/shapes/*` aborted
   the probe reads `failed` and the fallback stays drawn. Waits on state only.
 - Perf: `floors` (L2, L3, L4 both tiers) and `bytes-3d`, before and after.
