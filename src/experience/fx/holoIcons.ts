@@ -104,56 +104,39 @@ export interface IconMesh {
 }
 
 /**
- * Turns strokes into flat ribbons of `width` (grid units) scaled to `size` world units across,
- * mitered at joins. `depth` > 0 extrudes them (front, back and side walls) for solid variants.
+ * Turns strokes into flat ribbons of `width` (grid units) one world unit across (`HoloIcon` scales each instance to
+ * its size), mitered at joins (the miter is capped at twice the half width).
  */
-export function iconMesh(strokes: readonly Stroke[], { size = 2, width = 1.6, depth = 0 }: { size?: number; width?: number; depth?: number } = {}): IconMesh {
-  const k = size / 24;
+export function iconMesh(strokes: readonly Stroke[], width = 1.6): IconMesh {
   const out: IconMesh = { positions: [], indices: [] };
-  const layers = depth > 0 ? [depth / 2, -depth / 2] : [0];
-  for (const stroke of strokes) {
-    const pts = stroke.points.map(([x, y]) => ({ x: (x - 12) * k, y: (12 - y) * k }));
-    const n = pts.length;
-    const ring = stroke.closed ? [...pts, pts[0]] : pts;
-    const normals = ring.map((p, i) => {
-      const prev = i > 0 ? ring[i - 1] : stroke.closed ? pts[n - 1] : null;
-      const next = i < ring.length - 1 ? ring[i + 1] : stroke.closed ? pts[1] : null;
-      const dir = (a: { x: number; y: number }, b: { x: number; y: number }) => {
-        const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-        return { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
-      };
-      const d0 = prev ? dir(prev, p) : null;
-      const d1 = next ? dir(p, next) : null;
-      const n0 = d0 ? { x: -d0.y, y: d0.x } : null;
-      const n1 = d1 ? { x: -d1.y, y: d1.x } : null;
-      if (!n0) return n1!;
-      if (!n1) return n0;
-      const m = { x: n0.x + n1.x, y: n0.y + n1.y };
-      const len = Math.hypot(m.x, m.y);
-      if (len < 1e-6) return n0;
-      const cos = (m.x * n0.x + m.y * n0.y) / len;
-      const scale = Math.min(2, 1 / Math.max(0.2, cos));
-      return { x: (m.x / len) * scale, y: (m.y / len) * scale };
-    });
-    const half = (width * k) / 2;
-    // Vertex layout per layer: for each ring point, left then right.
+  const half = width / 48;
+  // Left unit normal of the segment from a to b.
+  const normal = (a: number[], b: number[]) => {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [(a[1] - b[1]) / len, (b[0] - a[0]) / len];
+  };
+  for (const { points, closed } of strokes) {
+    const ring = points.map(([x, y]) => [(x - 12) / 24, (12 - y) / 24]);
+    if (closed) ring.push(ring[0]);
+    const last = ring.length - 1;
     const base = out.positions.length / 3;
-    for (const z of layers) {
-      ring.forEach((p, i) => {
-        const nn = normals[i];
-        out.positions.push(p.x + nn.x * half, p.y + nn.y * half, z, p.x - nn.x * half, p.y - nn.y * half, z);
-      });
-    }
-    const per = ring.length * 2;
-    const at = (layer: number, i: number, side: 0 | 1) => base + layer * per + i * 2 + side;
-    for (let layer = 0; layer < layers.length; layer++) {
-      for (let i = 0; i < ring.length - 1; i++) out.indices.push(at(layer, i, 0), at(layer, i, 1), at(layer, i + 1, 0), at(layer, i, 1), at(layer, i + 1, 1), at(layer, i + 1, 0));
-    }
-    if (layers.length === 2) {
-      for (let i = 0; i < ring.length - 1; i++) {
-        for (const side of [0, 1] as const) out.indices.push(at(0, i, side), at(1, i, side), at(0, i + 1, side), at(1, i, side), at(1, i + 1, side), at(0, i + 1, side));
+    ring.forEach((p, i) => {
+      const prev = i ? ring[i - 1] : closed ? ring[last - 1] : null;
+      const next = i < last ? ring[i + 1] : closed ? ring[1] : null;
+      const n0 = prev && normal(prev, p);
+      const n1 = next && normal(p, next);
+      let [mx, my] = (n0 ?? n1)!;
+      if (n0 && n1) {
+        const len = Math.hypot(n0[0] + n1[0], n0[1] + n1[1]);
+        if (len > 1e-6) {
+          const k = Math.min(2, len / Math.max(0.2 * len, (n0[0] + n1[0]) * n0[0] + (n0[1] + n1[1]) * n0[1])) / len;
+          mx = (n0[0] + n1[0]) * k;
+          my = (n0[1] + n1[1]) * k;
+        }
       }
-    }
+      out.positions.push(p[0] + mx * half, p[1] + my * half, 0, p[0] - mx * half, p[1] - my * half, 0);
+      if (i < last) out.indices.push(base + i * 2, base + i * 2 + 1, base + i * 2 + 2, base + i * 2 + 1, base + i * 2 + 3, base + i * 2 + 2);
+    });
   }
   return out;
 }

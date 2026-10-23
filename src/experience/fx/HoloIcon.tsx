@@ -1,6 +1,5 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import { AdditiveBlending, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, NormalBlending, ShaderMaterial } from "three";
 import type { GpuTier } from "../types";
@@ -22,20 +21,15 @@ export interface HoloIconInstance {
   size?: number;
 }
 
-const VS = `attribute vec3 aCenter; attribute float aFace; attribute float aPhase; attribute vec3 aColor;
-uniform float uTime; uniform float uSway; varying vec3 vC;
-void main(){
-  vC = aColor;
-  // Seen from behind (the camera turns all the way around), the icon turns half a turn so it never reads mirrored.
-  vec3 wc = (modelMatrix*vec4(aCenter, 1.)).xyz;
-  float face = aFace + (dot(vec2(sin(aFace), cos(aFace)), cameraPosition.xz - wc.xz) < 0. ? 3.14159265 : 0.);
-  float a = face + uSway*.45*sin(uTime*.8 + aPhase);
-  float c = cos(a), s = sin(a);
-  vec3 p = position;
-  vec3 r = vec3(p.x*c + p.z*s, p.y + uSway*.12*sin(uTime*1.3 + aPhase), -p.x*s + p.z*c);
-  gl_Position = projectionMatrix*modelViewMatrix*vec4(aCenter + r, 1.);
-}`;
-const FS = `uniform vec3 uColor; uniform float uOpacity; varying vec3 vC; void main(){ gl_FragColor = vec4(uColor*vC, uOpacity);
+// Compact GLSL (it ships as a string). Seen from behind (the camera turns all the way around), the icon turns half a
+// turn so it never reads mirrored; it sways by `uSway` and takes its hue from `aColor` times the `uColor` boost.
+const VS = `attribute vec3 aCenter;attribute float aFace;attribute float aPhase;attribute vec3 aColor;uniform float uTime;uniform float uSway;varying vec3 vC;
+void main(){vC=aColor;
+vec3 wc=(modelMatrix*vec4(aCenter,1.)).xyz;
+float a=aFace+(dot(vec2(sin(aFace),cos(aFace)),cameraPosition.xz-wc.xz)<0.?3.14159265:0.)+uSway*.45*sin(uTime*.8+aPhase);
+float c=cos(a),s=sin(a);vec3 p=position;
+gl_Position=projectionMatrix*modelViewMatrix*vec4(aCenter+vec3(p.x*c+p.z*s,p.y+uSway*.12*sin(uTime*1.3+aPhase),-p.x*s+p.z*c),1.);}`;
+const FS = `uniform vec3 uColor;uniform float uOpacity;uniform float uFade;varying vec3 vC;void main(){gl_FragColor=vec4(uColor*vC,uOpacity*uFade);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`;
@@ -56,7 +50,7 @@ export function instanced(instances: readonly HoloIconInstance[], strokes: reado
   instances.forEach((inst, n) => {
     const own = inst.strokes ?? strokes;
     let mesh = meshes.get(own);
-    if (!mesh) meshes.set(own, (mesh = iconMesh(own, { size: 1, width })));
+    if (!mesh) meshes.set(own, (mesh = iconMesh(own, width)));
     const k = inst.size ?? size;
     const base = positions.length / 3;
     c.set(inst.color ?? color);
@@ -80,9 +74,12 @@ export function instanced(instances: readonly HoloIconInstance[], strokes: reado
   return g;
 }
 
-function material(color: Color, opacity: number, additive: boolean, sway: number): ShaderMaterial {
+/** Full opacity for icons that never fade. */
+const SOLID = { value: 1 };
+
+function material(color: Color, opacity: number, additive: boolean, sway: number, fade: { value: number }): ShaderMaterial {
   return new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uSway: { value: sway }, uColor: { value: color }, uOpacity: { value: opacity } },
+    uniforms: { uTime: { value: 0 }, uSway: { value: sway }, uColor: { value: color }, uOpacity: { value: opacity }, uFade: fade },
     vertexShader: VS,
     fragmentShader: FS,
     transparent: true,
@@ -102,8 +99,8 @@ export interface HoloIconProps {
   size?: number;
   tier: GpuTier;
   reducedMotion: boolean;
-  /** Crossfade weight (0 to 1), read every frame: the unique shapes fade in while the fallback fades out (`fx/shapes.ts`). */
-  fade?: () => number;
+  /** Crossfade weight (0 to 1) as a shared uniform, read at every draw: the unique shapes fade in while the fallback fades out (`fx/shapes.ts`). */
+  fade?: { value: number };
 }
 
 /**
@@ -114,24 +111,21 @@ export interface HoloIconProps {
  * attribute is always there), so batching adds no program. Reduced motion holds every icon still; the lite tier
  * drops the halo and the additive glow.
  */
-export function HoloIcon({ strokes = [], instances, color = "#ffffff", size = 3.4, tier, reducedMotion, fade }: HoloIconProps) {
+export function HoloIcon({ strokes = [], instances, color = "#ffffff", size = 3.4, tier, reducedMotion, fade = SOLID }: HoloIconProps) {
   const full = tier === "full";
   const sway = reducedMotion ? 0 : 1;
 
   const layers = useMemo(() => {
     const out: { geometry: BufferGeometry; material: ShaderMaterial }[] = [];
     if (!instances.length) return out;
-    out.push({ geometry: instanced(instances, strokes, color, size, 1.5), material: material(neonColor("#ffffff", 1.6, tier), 0.95, full, sway) });
+    out.push({ geometry: instanced(instances, strokes, color, size, 1.5), material: material(neonColor("#ffffff", 1.6, tier), 0.95, full, sway, fade) });
     // Soft halo: the same strokes, wider and faint, just behind the icon.
-    if (full) out.push({ geometry: instanced(instances, strokes, color, size, 4, -0.02), material: material(new Color(1, 1, 1), 0.16, true, sway) });
+    if (full) out.push({ geometry: instanced(instances, strokes, color, size, 4, -0.02), material: material(new Color(1, 1, 1), 0.16, true, sway, fade) });
     return out;
-  }, [strokes, instances, color, size, tier, full, sway]);
+  }, [strokes, instances, color, size, tier, full, sway, fade]);
 
   const materials = useMemo(() => layers.map((l) => l.material), [layers]);
   useUniformTime(materials);
-  useFrame(() => {
-    if (fade) layers.forEach((l, i) => (l.material.uniforms.uOpacity.value = (i ? 0.16 : 0.95) * fade()));
-  });
   useEffect(
     () => () => {
       for (const l of layers) {

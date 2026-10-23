@@ -7,13 +7,12 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { useHQStore } from "@/store/useHQStore";
 import { PAD, padRadius } from "../nav/pads";
 import { roverRuntime } from "../rover/runtime";
-import type { PadKind, PadTrigger } from "../types";
-import { HoloIcon, type HoloIconInstance } from "./HoloIcon";
+import type { PadTrigger } from "../types";
+import { HoloIcon } from "./HoloIcon";
 import { PAD_ICONS, PAD_TONE } from "./holoIcons";
 import { neonColor } from "./materials";
 import { proximityLevel } from "./proximity";
 
-const KINDS: readonly PadKind[] = ["elevator", "teleport", "return"];
 const IDLE = 0.25;
 
 /** Unit pad (radius 1, scaled per instance): a dim fill disc, a bright rim and an inner ring, with per-vertex brightness. */
@@ -85,11 +84,8 @@ export function PadGlow({ pads, floorY }: { pads: PadTrigger[]; floorY: number }
     if (dirty && m.instanceColor) m.instanceColor.needsUpdate = true;
   });
 
-  const icons = useMemo(() => {
-    const out = {} as Record<PadKind, HoloIconInstance[]>;
-    for (const kind of KINDS) out[kind] = pads.filter((p) => p.kind === kind).map((p) => ({ x: p.at.x, y: PAD.iconY, z: p.at.z, face: p.face }));
-    return out;
-  }, [pads]);
+  // Every pad icon on the floor in one batch, each in its kind's tone.
+  const icons = useMemo(() => pads.map((p) => ({ x: p.at.x, y: PAD.iconY, z: p.at.z, face: p.face, strokes: PAD_ICONS[p.kind], color: PAD_TONE[p.kind] })), [pads]);
 
   if (pads.length === 0) return null;
   return (
@@ -97,11 +93,7 @@ export function PadGlow({ pads, floorY }: { pads: PadTrigger[]; floorY: number }
       <instancedMesh ref={mesh} args={[geometry, undefined, pads.length]} frustumCulled={false} raycast={() => null}>
         <meshBasicMaterial vertexColors transparent blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
       </instancedMesh>
-      {KINDS.map((kind) =>
-        icons[kind].length > 0 ? (
-          <HoloIcon key={kind} strokes={PAD_ICONS[kind]} instances={icons[kind]} color={PAD_TONE[kind]} size={PAD.iconSize} tier={tier} reducedMotion={reducedMotion} />
-        ) : null,
-      )}
+      <HoloIcon instances={icons} size={PAD.iconSize} tier={tier} reducedMotion={reducedMotion} />
     </group>
   );
 }
