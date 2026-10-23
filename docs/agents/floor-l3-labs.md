@@ -185,8 +185,8 @@ Source: `buildLabsLayout`, `LABS.data`.
 
 - Three screens styled like Grafana and Application Insights (`OPS_SCREENS`: Metrics, Traces, Alerts) show the proof tiles by `panel` and the alert rule families (`ExperienceData.labs.ops`, `buildOpsData`).
 - The live panel above them shows this site's own telemetry (`opsLiveRows`):
-  - visits in the last 30 days;
-  - the 55+ FPS share and the median explore bucket from the snapshot's `perf` block;
+  - visits since launch (`visits.all`);
+  - the 55+ FPS share and the median explore bucket from the snapshot's `perf` block, also since launch (`perfView(snapshot, "all")`; their labels name no window);
   - then "Nightly performance runs" as text, because their results stay in CI artifacts the Worker cannot read.
 - The live panel mounts only while the stats store is `ready` (hidden when missing, invalid or older than 7 days). See [stats.md](stats.md).
 
