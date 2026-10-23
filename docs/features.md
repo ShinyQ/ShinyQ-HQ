@@ -126,7 +126,7 @@ Open `/en` and press **Boot rover**.
 - Drag, Q/E or the rotate buttons turn the view all the way around on every floor; R/F tilt it (from just above the floor to almost straight down).
 - Scroll, pinch or +/- zoom. Zooming all the way in switches to a first-person view through Rover's eyes (WASD drives where you look; zoom out, 0 or the reset button return).
 - Autopilot drives and elevator rides show the rover from behind meanwhile.
-- Signs on L2 turn to face you from either side. No words are painted on any floor: wing, zone and year names float as signs that always face the camera.
+- Signs on L2 turn to face you from either side. No words are painted on any floor: wing, zone and year names float as signs that always face the camera (on L2 the year sits on top of each year gate).
 
 ### Elevator and fast return
 
@@ -284,7 +284,7 @@ Behind the certifications wall, a road past its south end leads under a gateway 
 
 Route `/en/journey`. One road runs forward in time.
 
-- **Year plazas**: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door. Each year floats as a big sign behind its plaza's north rooms.
+- **Year plazas**: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door. The year gate in front of each plaza carries its year on the top beam (no separate floating year board).
 - **Teleporters**: every year plaza has a teleporter pad beside the road. Stop on it (or click it) and pick a year to beam straight to that plaza.
 - **Career types**: one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages.
 - **Workshop** at the end of the road:

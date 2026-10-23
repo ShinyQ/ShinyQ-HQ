@@ -28,8 +28,8 @@ Code: `floors/career/layout.ts`. Design: walkable floors plan Part 2. Meander ro
 ### Year markers and labels
 
 - A neon arch with the year digits and a signpost ("2021 · 8 rooms") stands on the link before each plaza; posts are obstacles.
-- The year floats as a big sign behind the plaza's north room row (`yearMarkerSigns` in `labels.ts`, on `FloatingSigns`), never between the rail camera and the road.
-- Labels, signposts and year markers fade with distance along x (`labelFade`, 20 to 30 u).
+- The arch digits are the only year marker: no floating year board stands behind the plaza (owner decision).
+- Labels and signposts fade with distance along x (`labelFade`, 20 to 30 u).
 - `placeAt(layout, x)` drives the HUD "You are here" chip (`src/hud/YearChip.tsx`).
 
 ### Data and mounting
