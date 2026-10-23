@@ -156,18 +156,19 @@ Unique across posts, publications and talks; zones keep their color.
 
 ## Numbers
 
-Perf lane on one machine, `main` (7f5bac23) export against this branch's export, same flags.
+Perf lane on one machine, `main` (b6f47801, after #300 to #304) export against this branch rebased on it, same flags.
 
 | Gate | Before | After |
 |---|---|---|
-| 3D main path, lite / full | 460,937 B / 465.9 KB | 460,926 B / 465.9 KB |
-| Session total, lite / full (caps 513.9 / 529.7 KB) | 513.6 / 529.4 KB | 513.8 / 529.5 KB |
+| 3D main path, lite / full | 460,411 / 476,545 B | 460,399 / 476,533 B |
+| Session total, lite / full (caps 526,234 / 542,413 B) | 525,409 / 541,543 B | 525,563 / 541,697 B |
 | Floor chunk L3 / L4 / RF (caps 20 / 16 / 8 KB) | 14,259 / 11,910 / 3,369 B | 14,385 / 11,968 / 3,351 B |
 | Shapes JSON (not JS), L2 / L3 / L4 gzip | none | 3.2 / 4.2 / 3.1 KB |
-| Scene draw calls L1, L2, L3, L4, RF lite | 101, 75, 66, 59, 57 | 101, 69, 65, 55, 55 |
-| Scene draw calls L1, L2, L3, L4, RF full | 103, 86, 69, 66, 62 | 103, 74, 67, 58, 58 |
-| Triangles L2, L3, L4 full (cap 30k) | 25,221, 18,213, 9,395 | 27,173, 19,461, 11,035 |
-| Shader programs | same names and count as `main` in the same flow (L1 63, L2 62 full); every floor within `baseline.json` + 2 | |
+| Scene draw calls L2, L3, L4, RF lite | 73, 66, 59, 57 | 67, 65, 55, 55 |
+| Scene draw calls L2, L3, L4, RF full | 84, 69, 66, 62 | 72, 67, 58, 58 |
+| Triangles L2, L3, L4 full (cap 30k) | 25,141, 18,213, 9,395 | 27,093, 19,461, 11,035 |
+| Shader programs L2, L3, L4, RF lite / full | 46, 38, 43, 35 / 79, 72, 73, 68 | 46, 38, 43, 35 / 79, 71, 73, 68 |
 
-The 3D main path is 11 B smaller; L3 and L4 carry about 0.1 KB more each (the shapes loader wiring and the sculpture
-roll and brightness), offset in part by the main path and RF, and every cap holds without a change.
+The 3D main path is 12 B smaller; L3 and L4 carry about 0.1 KB more each (the shapes loader wiring and the sculpture
+roll and brightness), offset in part by the main path and RF: the session totals grow 154 B and stay 671 B (lite) and
+716 B (full) under their caps, which do not change. In the same flow the program names and counts equal `main`'s.
