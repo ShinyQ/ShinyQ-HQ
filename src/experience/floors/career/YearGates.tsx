@@ -7,7 +7,6 @@ import { BufferGeometry, Float32BufferAttribute, type Mesh } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
-import { FloatingSigns } from "../../fx/FloatingSign";
 import { neonColor } from "../../fx/materials";
 import { Readable } from "../../fx/Readable";
 import { RoadMarkings } from "../../fx/RoadMarkings";
@@ -17,7 +16,7 @@ import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { CAREER_ROAD, type CareerRoadLayout } from "./layout";
 import { useMemberFade } from "./CareerRooms";
-import { signpostSet, yearMarkerSigns } from "./labels";
+import { signpostSet } from "./labels";
 
 const BAR = 0.5;
 
@@ -40,9 +39,9 @@ function boxEdges(pts: number[], a: Vec2, b: Vec2, y0: number, y1: number, half:
 
 /**
  * The Career Road itself: road, plaza and spur markings (RoadMarkings), a neon arch over the road
- * before every year plaza with the year in large digits and a signpost ("2021 · 8 rooms"), and the
- * year floating over the plaza's south edge (spectacle round: no words on the floor). All arches share one line geometry; crossing an arch pulses its
- * year once (not under reduced motion). Texts turn around when the camera is behind them (`Readable`).
+ * before every year plaza with the year in large digits and a signpost ("2021 · 8 rooms"); the arch
+ * digits are the only year marker (no floating year board, owner decision). All arches share one line
+ * geometry; crossing an arch pulses its year once (not under reduced motion). Texts turn around when the camera is behind them (`Readable`).
  */
 export function YearGates({
   layout,
@@ -93,12 +92,10 @@ export function YearGates({
     p.lastX = x;
   });
 
-  // Signposts and year markers fade with distance like the room labels (the floor runs about 390 u).
+  // Signposts fade with distance like the room labels (the floor runs about 390 u).
   const signposts = useMemo(() => signpostSet(years, roomsLabel), [years, roomsLabel]);
   const signpostBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(signpostBatch, signposts);
-  // The year over each plaza's south edge (it used to be painted on the plaza floor): floating, turned to the camera.
-  const markers = useMemo(() => yearMarkerSigns(years, accent), [years, accent]);
 
   return (
     <group name="year-gates">
@@ -127,7 +124,6 @@ export function YearGates({
         </Readable>
       ))}
       <BatchedLabels ref={signpostBatch} labels={signposts.labels} name="career-signposts" toneMapped exactColors />
-      <FloatingSigns signs={markers} name="career-year-markers" tier={tier} />
       {prologue && years[0] && (
         <Readable position={[years[0].arch.center.x, H - 1, years[0].arch.center.z + CAREER_ROAD.width / 2 + 1.4]} pivot={[years[0].arch.center.x, years[0].arch.center.z]}>
           <Text font={FONTS.mono} fontSize={0.4} letterSpacing={0.08} color={COLORS.white} anchorX="center" anchorY="top" maxWidth={14} textAlign="center">

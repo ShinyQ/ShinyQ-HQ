@@ -1,5 +1,5 @@
 import { COLORS } from "../../config";
-import { signPlate, type SignSpec } from "../../fx/signLayout";
+import type { SignSpec } from "../../fx/signLayout";
 import type { BatchedLabel } from "../../fx/labelProps";
 import { FONTS } from "../../tower/primitives";
 import type { CareerEntryView } from "../../types";
@@ -72,37 +72,6 @@ export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count
   };
 }
 
-/**
- * The floating year marker over each plaza (it used to be painted on the plaza floor): bottom edge
- * height, type size, lean, and how far behind the back of the north room row it stands.
- */
-export const YEAR_MARKER = { bottom: 2.6, fontSize: 2.2, tilt: 0.3, letterSpacing: 0.06, behind: 1.5 } as const;
-
-/**
- * One floating year per plaza, standing behind its north room row like a backdrop (the far side from
- * the rail camera, which looks north from 30 u south and 22 u up): big and bright in the floor accent,
- * it never stands between that camera and the road, the rover or a room. Leans back a little toward
- * the camera; fades with distance along the road like the room labels.
- */
-export function yearMarkerSigns(years: CareerRoadLayout["years"], color: string): SignSpec[] {
-  return years.map((y) => {
-    const text = String(y.year);
-    const { h } = signPlate({ text, fontSize: YEAR_MARKER.fontSize, letterSpacing: YEAR_MARKER.letterSpacing });
-    return {
-      text,
-      x: y.plaza.center.x,
-      y: YEAR_MARKER.bottom + h / 2,
-      z: y.plaza.center.z - y.plaza.d / 2 - CAREER_ROAD.apron - CAREER_ROAD.roomDepth - YEAR_MARKER.behind,
-      color,
-      fontSize: YEAR_MARKER.fontSize,
-      letterSpacing: YEAR_MARKER.letterSpacing,
-      font: FONTS.monoBold,
-      tilt: YEAR_MARKER.tilt,
-      fadeX: y.plaza.center.x,
-    };
-  });
-}
-
 /** Workshop scenery heights (u), shared by the scene, the labels and the pick volumes (`interact/registry.ts`). */
 export const WORKSHOP_SCENE = {
   /** Bench hologram card: center height, size (vertical, facing the rail camera). */
@@ -131,7 +100,7 @@ export interface WorkshopSignLabels {
   repos: string;
 }
 
-/** Floating signs over the gateway (the Workshop), the time console and the repo skyline; they fade with the rover's distance like the year markers. */
+/** Floating signs over the gateway (the Workshop), the time console and the repo skyline; they fade with the rover's distance like the room labels. */
 export function workshopSigns(w: WorkshopLayout, labels: WorkshopSignLabels, color: string): SignSpec[] {
   const gatewayTop = WORKSHOP.gateway.height + WORKSHOP.gateway.beam;
   const signs: SignSpec[] = [
