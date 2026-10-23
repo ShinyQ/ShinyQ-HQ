@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import guides from "../content/study-guides.json";
+import { GUIDE_PAGE_KEY } from "../src/content/guides";
 import { guidePdf, routeGuides, serveGuides } from "./fixtures/guide-pdf";
 import { openPage } from "./hq";
 
@@ -190,6 +191,9 @@ test.describe("desktop", () => {
     await page.getByTestId("guide-page-input").fill("4");
     await page.getByTestId("guide-page-input").press("Enter");
     await expect(readerOf(page)).toHaveAttribute("data-current-page", "4");
+    // The reader saves the page once scrolling settles (and again on close): wait for the stored page, so the close
+    // cannot race the jump's last scroll frames.
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), GUIDE_PAGE_KEY(FIRST.slug))).toBe("4");
     await page.getByTestId("guide-close").click();
     await expect(page.getByTestId("guide-dialog")).toHaveCount(0);
 

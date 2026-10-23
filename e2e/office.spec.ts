@@ -15,6 +15,7 @@ import {
   driveTo,
   enterHQ,
   expectRenderBudget,
+  hoveredTarget,
   turnCameraTo,
   waitForCameraSettle,
   waitForFrames,
@@ -246,6 +247,20 @@ async function nearChips(page: Page) {
   for (const slot of [0, 1, 2, 3]) await expect(chip(page, slot)).toHaveAttribute("data-far", "false");
 }
 
+/**
+ * Clicks a point-and-go target on the canvas once the click is sure to land: the camera settled (closing a drawer eases
+ * it back, so a point read while it moves can miss and leave `waitForRoom` waiting out its timeout), the pointer over the
+ * target and the store reporting that target hovered.
+ */
+async function clickStation(page: Page, id: string) {
+  await waitForCameraSettle(page);
+  const point = await clickablePoint(page, id);
+  expect(point, `${id} shows on the canvas`).not.toBeNull();
+  await page.mouse.move(point!.x, point!.y, { steps: 4 });
+  await expect.poll(() => hoveredTarget(page)).toEqual({ id, via: "pointer" });
+  await page.mouse.click(point!.x, point!.y);
+}
+
 async function show(page: Page, office: Awaited<ReturnType<typeof serveOffice>>, body: unknown, states: readonly string[]) {
   office.set(body);
   await pollNow(page);
@@ -461,9 +476,7 @@ test.describe("Agent Office (L1)", () => {
     await enterHQ(page);
     await atOffice(page);
     await show(page, office, statesA(Date.now()), STATES_A);
-    const summary = await clickablePoint(page, "L1:station:office");
-    expect(summary).not.toBeNull();
-    await page.mouse.click(summary!.x, summary!.y);
+    await clickStation(page, "L1:station:office");
     await waitForRoom(page, "L1:office");
     await expect(page.getByTestId("office-agent")).toHaveCount(SEATS);
     await expect(page.getByTestId("office-body")).toContainText(en.office["3d"].hooks);
@@ -471,9 +484,7 @@ test.describe("Agent Office (L1)", () => {
     await waitForRoom(page, "L1:office-desk-3");
     await page.keyboard.press("Escape");
     await waitForPhase(page, "explore");
-    const github = await clickablePoint(page, "L1:station:office-github");
-    expect(github).not.toBeNull();
-    await page.mouse.click(github!.x, github!.y);
+    await clickStation(page, "L1:station:office-github");
     await waitForRoom(page, "L1:office-github");
     await expect(page.getByTestId("office-feed-row")).toHaveCount(2);
     await expect(page.getByTestId("office-feed-row").first()).toHaveAttribute("data-status", "running");
