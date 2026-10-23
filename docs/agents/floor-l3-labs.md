@@ -94,7 +94,7 @@ Three free-standing boards stand at the fork (`LABS.board`; owner decision: a ne
 
 | Zone | View |
 |---|---|
-| Overview | Looks east (camera west of the rover), zoom 1.3, phones 1.45 (`LABS.overviewZoomPhone`, the farthest phone view that keeps the camera east of the elevator shaft) |
+| Overview | Behind the rover and 35 degrees to its right (`ARRIVAL_YAW`, the elevator diagonal, owner decision 2026-10-23), zoom 1.4 aimed 5.75 u right (`LABS.overviewAim`, the left board clear of the profile card and the right one of the elevator rail), phones 1.45 aimed 2.75 u right (`LABS.overviewZoomPhone`, `overviewAimPhone`; the camera stays east of the elevator shaft) |
 | Board stop | Looks at the board head on, zoom 1.05, phones 1 |
 | Door | Turns the follow camera so the pod is in front of the rover |
 

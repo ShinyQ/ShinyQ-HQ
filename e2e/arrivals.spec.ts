@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json";
+import { DEPARTURE_YAW, ELEVATOR_DIAGONAL } from "../src/experience/camera/arrival";
 import { chooseMotion, collectErrors, enterHQ, skipFloorLines, waitForCameraSettle, waitForFloor, waitForFrames, fastAnimations } from "./hq";
 
 // Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
@@ -7,8 +8,9 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L3-style arrivals on every floor (Round 8 J, owner 2026-10-17): after an elevator ride the rover rolls on east
- * to `FloorLayout.arrival` and the camera glides out of the car to stand behind it, looking east. Reduced motion
- * cuts to the same view with the rover already on the arrival point. Reads the probes on `window.__hq.rover`
+ * to `FloorLayout.arrival` and the camera glides out of the car to stand behind it and `ELEVATOR_DIAGONAL` to its right
+ * (owner 2026-10-23, "serong kanan"); on the way in it eases to the same diagonal behind a rover heading west into the
+ * shaft. Reduced motion cuts to the arrival view with the rover already on the arrival point. Reads the probes on `window.__hq.rover`
  * (`arrivalGlide`, `cameraBehind`, `heading`); every wait is on state, never on time. The desktop tour rides through
  * the elevator panel, so it also covers the panel reaching every floor and each built floor writing its route.
  * There is no phone tour: the arrival point, heading and glide have no viewport input (`camera/arrival.ts`), the
@@ -17,6 +19,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 test.describe.configure({ timeout: 600_000 });
 
 const EAST = Math.PI / 2;
+const WEST = -Math.PI / 2;
 const RIDE_TIMEOUT = 180_000;
 const TOUR = ["L2", "L3", "L4", "RF", "L1"] as const;
 
@@ -39,6 +42,7 @@ type ArrivalWindow = Window & {
   __glides?: number[];
   __glidesStop?: boolean;
   __glideCancel?: { fired: boolean; yaw0: number; after: { glide: number; yaw: number }[]; done: boolean };
+  __departure?: { stage: string; yaw: number; behind: number; heading: number }[];
 };
 
 /** Absolute difference of two angles, wrapped to [0, PI]. */
@@ -75,11 +79,11 @@ async function arrivalPose(page: Page, floor: string) {
   }, floor);
 }
 
-/** The camera stands behind the rover (the camera-to-rover heading is east) and the rover heads east. */
-async function expectBehindLookingEast(page: Page, floor: string) {
+/** The rover heads east and the camera stands behind it and to its right (the camera-to-rover heading is east turned by the diagonal). */
+async function expectDiagonalArrival(page: Page, floor: string) {
   await waitForCameraSettle(page);
   const pose = await arrivalPose(page, floor);
-  expect(angleGap(pose.cameraBehind, EAST), `${floor} cameraBehind ${pose.cameraBehind}`).toBeLessThan(0.1);
+  expect(angleGap(pose.cameraBehind, EAST + ELEVATOR_DIAGONAL), `${floor} cameraBehind ${pose.cameraBehind}`).toBeLessThan(0.1);
   expect(angleGap(pose.heading, EAST), `${floor} heading ${pose.heading}`).toBeLessThan(0.1);
   return pose;
 }
@@ -119,7 +123,7 @@ const ROUTE = { L1: /\/en\?tier=lite$/, L2: /\/en\/journey\?tier=lite$/, L3: /\/
 test.describe("elevator arrivals on every floor (desktop 1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("each ride through the panel parks the rover on the arrival point heading east with the camera behind it, and writes the floor's route", async ({ page }) => {
+  test("each ride through the panel parks the rover on the arrival point heading east with the camera behind and to the right of it, and writes the floor's route", async ({ page }) => {
     const errors = collectErrors(page);
     await openLobby(page);
     const panel = page.getByRole("navigation", { name: "Elevator" });
@@ -133,7 +137,7 @@ test.describe("elevator arrivals on every floor (desktop 1440x900)", () => {
       await expect(page).toHaveURL(ROUTE[floor]);
       // Built floors link no "open the floor's page" notice.
       await expect(page.getByRole("link", { name: en.hud.openFloorPage.replace("{name}", en.floors[floor]) })).toHaveCount(0);
-      await expectBehindLookingEast(page, floor);
+      await expectDiagonalArrival(page, floor);
       // The camera glides out of the car on every floor: some drawn frame of this ride sits strictly inside the glide.
       const seen = await glides.read();
       expect(seen.some((p) => p > 0 && p < 1), `${floor} glide frames ${seen.filter((p) => p >= 0).length}`).toBe(true);
@@ -187,14 +191,46 @@ test.describe("arrival glide and reduced motion (1440x900)", () => {
     await waitForFloor(page, "L3", RIDE_TIMEOUT);
   });
 
-  test("reduced motion: no glide frame, the rover stands on the arrival point and the camera cuts behind it", async ({ page }) => {
+  test("on the way in the camera eases behind and to the right of the rover heading into the shaft, and holds it through the dolly", async ({ page }) => {
+    await openLobby(page);
+    // In the page, every drawn frame of the ride up to the doors opening on the far floor.
+    await page.evaluate(() => {
+      const w = window as unknown as ArrivalWindow;
+      const seen: { stage: string; yaw: number; behind: number; heading: number }[] = [];
+      w.__departure = seen;
+      const tick = () => {
+        const s = w.__hq.store.getState();
+        const r = w.__hq.rover;
+        if (s.ride) seen.push({ stage: s.ride.stage, yaw: r.cameraYaw, behind: r.cameraBehind, heading: r.heading });
+        if (s.ride?.stage === "opening" || seen.length > 20_000) return;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await goToFloor(page, "L3");
+    await page.waitForFunction(() => (window as unknown as ArrivalWindow).__departure?.some((f) => f.stage === "opening") === true, null, { timeout: RIDE_TIMEOUT });
+    const frames = await page.evaluate(() => (window as unknown as ArrivalWindow).__departure!);
+    // In the car, doors closed, riding: the orbit holds the departure yaw and the camera stands behind and to the right of
+    // the rover facing the car's back wall (west).
+    const dolly = frames.filter((f) => f.stage === "moving");
+    expect(dolly.length, JSON.stringify(frames.map((f) => f.stage).filter((s, i, a) => s !== a[i - 1]))).toBeGreaterThan(0);
+    for (const f of dolly) {
+      expect(angleGap(f.yaw, DEPARTURE_YAW), `yaw ${f.yaw}`).toBeLessThan(0.02);
+      expect(angleGap(f.heading, WEST), `heading ${f.heading}`).toBeLessThan(0.1);
+      expect(angleGap(f.behind, WEST + ELEVATOR_DIAGONAL), `behind ${f.behind}`).toBeLessThan(0.15);
+    }
+    await waitForArrival(page, "L3");
+    await expectDiagonalArrival(page, "L3");
+  });
+
+  test("reduced motion: no glide frame, the rover stands on the arrival point and the camera cuts behind and to the right of it", async ({ page }) => {
     await openLobby(page, "reduced");
     const glides = await sampleGlide(page);
     for (const floor of ["L3", "L2"] as const) {
       await goToFloor(page, floor);
       await waitForArrival(page, floor, 0.5);
       await waitForFrames(page, 3);
-      await expectBehindLookingEast(page, floor);
+      await expectDiagonalArrival(page, floor);
     }
     const seen = await glides.read();
     await glides.stop();
@@ -202,13 +238,13 @@ test.describe("arrival glide and reduced motion (1440x900)", () => {
     expect(seen.every((p) => p === -1)).toBe(true);
   });
 
-  test("a floor deep link (/en/library) opens on the L4 arrival view behind the rover, heading east", async ({ page }) => {
+  test("a floor deep link (/en/library) opens on the L4 arrival view behind and to the right of the rover, heading east", async ({ page }) => {
     await chooseMotion(page, "full");
     await skipFloorLines(page);
     await enterHQ(page, { path: "/en/library" });
     await waitForFloor(page, "L4");
     // The spawn on the arrival point faces east like an elevator arrival.
-    const pose = await expectBehindLookingEast(page, "L4");
+    const pose = await expectDiagonalArrival(page, "L4");
     expect(Math.hypot(pose.x - pose.arrival.x, pose.z - pose.arrival.z)).toBeLessThan(1);
   });
 });

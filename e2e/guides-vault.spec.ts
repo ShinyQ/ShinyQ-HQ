@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import guides from "../content/study-guides.json";
+import { yawLooking } from "../src/experience/camera/look";
 import { coverOpen } from "../src/experience/floors/library/decor/vault";
 import { routeGuides } from "./fixtures/guide-pdf";
 import {
@@ -14,6 +15,7 @@ import {
   interactablesOf,
   PHONE_SAFE,
   skipFloorLines,
+  turnCameraTo,
   waitForCameraSettle,
   waitForFrames,
   waitForPhase,
@@ -124,6 +126,9 @@ for (const device of [
 
       await driveTo(page, await stopOf(page, "L4:vault"));
       await waitForCameraSettle(page);
+      // Under reduced motion no view zone turns the camera, so it keeps the arrival's elevator diagonal (owner 2026-10-23):
+      // turn it east at the books by hand, as a visitor would (the vault zone's own view with motion on).
+      if (device.motion === "reduced") await turnCameraTo(page, yawLooking({ x: 1, z: 0 }));
       // Every cover stands where the rover's distance puts it: half open or more from the stop.
       await expect
         .poll(async () => {

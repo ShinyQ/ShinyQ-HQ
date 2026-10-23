@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ELEVATOR_DIAGONAL } from "@/experience/camera/look";
 import { followPose, forwardOf } from "@/experience/camera/rigs";
 import { ROVER } from "@/experience/config";
 import { buildRoofLayout, channelSlots, ROOF_DECK, roofActive, type RoofStop } from "@/experience/floors/roof/layout";
@@ -93,10 +94,11 @@ describe("RF roof deck layout", () => {
     const c = layout.centerpiece.center;
     const d = Math.hypot(s.x - c.x, s.z - c.z);
     expect(((s.x - c.x) / d) * normal.x + ((s.z - c.z) / d) * normal.z).toBeGreaterThan(0.999);
-    // The arrival (owner 2026-10-17): the camera behind a rover heading east reads the sign head on.
+    // The arrival (owner 2026-10-17, on the elevator diagonal since 2026-10-23): the camera behind and to the right of a
+    // rover heading east reads the sign at the diagonal's angle (whole in frame: tests/unit/arrivals.test.ts).
     const arrival = (floor.viewZones ?? []).find((z) => z.id === "RF:arrival")!;
     const ahead = forwardOf(followPose("desktop", [floor.spawn.x, 0, floor.spawn.z], arrival.yaw, arrival.zoom ?? 1));
-    expect(ahead.x * normal.x + ahead.z * normal.z).toBeCloseTo(-1, 3);
+    expect(ahead.x * normal.x + ahead.z * normal.z).toBeCloseTo(-Math.cos(ELEVATOR_DIAGONAL), 3);
     // Only eastbound rovers get the stop's view, so driving back to the elevator never turns the camera.
     expect(zone.travel).toEqual({ x: 1, z: 0 });
   });

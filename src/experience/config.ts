@@ -1,6 +1,6 @@
 import type { FloorId } from "@/content/schema";
 import { PUBLIC_FLOORS } from "@/lib/floors";
-import { yawLooking } from "./camera/look";
+import { ARRIVAL_YAW } from "./camera/look";
 import { FLOOR_IDS, floorIndex } from "./floorOrder";
 import type { ViewZone } from "./camera/orbit";
 import { buildCareerRoad } from "./floors/career/layout";
@@ -126,12 +126,14 @@ export const LOBBY = {
   /**
    * Elevator arrivals (Round 8 J, like L3) roll on east along the elevator axis to (-6, 0), 12 u west of the
    * hologram, just inside the lane ring's west point (more room 2026-10-19 widened the ring, not this view); the
-   * camera stands behind the rover and looks east at the profile hologram, the name above it and the stats ring
-   * around it. Zooms: the widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   * camera stands behind the rover and `ELEVATOR_DIAGONAL` to its right (owner 2026-10-23) and looks at the profile
+   * hologram, the name above it and the stats ring around it. Zooms stay inside `shaftClearZoom` (the camera east of
+   * the glass shaft); a portrait phone also aims `arrivalAimPhone` u to the right, so the whole name stays in frame beside the rover.
    */
   arrival: { x: -6, z: 0 } as Vec2,
   arrivalZoom: 1.03,
-  arrivalZoomPhone: 0.88,
+  arrivalZoomPhone: 1.03,
+  arrivalAimPhone: 4.75,
   hologram: LOBBY_HOLOGRAM,
   /**
    * Name and headline float above the stats tiles and the rover mark (both top out below 5.85), low and
@@ -229,15 +231,15 @@ function withFloorPads(layout: FloorLayout): FloorLayout {
   return { ...layout, pads: [elevatorPad(layout, ELEVATOR_PAD_FACE[layout.id]), ...(back ? [back] : []), ...(layout.pads ?? [])] };
 }
 
-/** The Lobby arrival view: behind a rover heading east, looking east at the hologram (`travel`: eastbound rovers only). */
+/** The Lobby arrival view: behind and to the right of a rover heading east, looking at the hologram (`travel`: eastbound rovers only). */
 function lobbyArrivalZone(): ViewZone {
   const { arrival: a } = LOBBY;
   return {
     id: "L1:arrival",
     area: { minX: a.x - 2, maxX: a.x + 2, minZ: a.z - 2, maxZ: a.z + 2 },
-    yaw: yawLooking({ x: 1, z: 0 }),
+    yaw: ARRIVAL_YAW,
     zoom: LOBBY.arrivalZoom,
-    classView: { mobile: { zoom: LOBBY.arrivalZoomPhone } },
+    classView: { mobile: { zoom: LOBBY.arrivalZoomPhone, lookOffset: { right: LOBBY.arrivalAimPhone } } },
     travel: { x: 1, z: 0 },
     arrivalOnly: true,
   };

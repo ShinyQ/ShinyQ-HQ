@@ -5,9 +5,10 @@ import {
   cameraBehindHeading,
   glidePose,
   glideProgress,
-  LOOK_EAST_YAW,
+  ARRIVAL_RAIL_YAW,
+  ARRIVAL_YAW,
+  ELEVATOR_DIAGONAL,
   type GlideInput,
-  railYawBehind,
   shaftClearZoom,
   SHAFT_CLEAR_X,
   shoulderPose,
@@ -44,22 +45,33 @@ function topBelowHorizon(pose: CameraPose): number {
 }
 const ASPECTS = [16 / 9, 4 / 3, 1, 9 / 19.5];
 
+/** Half the car (the shaft's inside) less a margin: the glide's start stays inside the car. */
+const CAR_HALF = 3 - 0.5;
+
 describe("shoulderPose", () => {
   const rover: Vec3 = [-18, 3, 4];
   const pose = shoulderPose(rover, ARRIVAL_HEADING, 40);
+  const c = Math.cos(ELEVATOR_DIAGONAL);
+  const sn = Math.sin(ELEVATOR_DIAGONAL);
 
-  it("sits behind, above and a little to the right of an east-heading rover", () => {
+  it("sits behind, above and to the right of an east-heading rover, turned by the elevator diagonal (+z is its right)", () => {
     const { back, up, side } = ARRIVAL_GLIDE.start;
-    expect(pose.position[0]).toBeCloseTo(rover[0] - back);
+    expect(pose.position[0]).toBeCloseTo(rover[0] - back * c + side * sn);
     expect(pose.position[1]).toBeCloseTo(rover[1] + up);
-    expect(pose.position[2]).toBeCloseTo(rover[2] + side);
+    expect(pose.position[2]).toBeCloseTo(rover[2] + back * sn + side * c);
+    expect(pose.position[2]).toBeGreaterThan(rover[2] + side);
     expect(pose.fov).toBe(40);
   });
 
-  it("looks along the heading, pitched down so the top of the view sits below the horizon", () => {
+  it("stays inside the car", () => {
+    expect(Math.abs(pose.position[0] - rover[0])).toBeLessThan(CAR_HALF);
+    expect(Math.abs(pose.position[2] - rover[2])).toBeLessThan(CAR_HALF);
+  });
+
+  it("looks ahead and to the left along the diagonal, pitched down so the top of the view sits below the horizon", () => {
     const { look, belowHorizon } = ARRIVAL_GLIDE.start;
-    expect(pose.target[0]).toBeCloseTo(rover[0] + look);
-    expect(pose.target[2]).toBeCloseTo(rover[2]);
+    expect(pose.target[0]).toBeCloseTo(rover[0] + look * c);
+    expect(pose.target[2]).toBeCloseTo(rover[2] - look * sn);
     expect(pose.target[1]).toBeLessThan(pose.position[1]);
     expect(topBelowHorizon(pose)).toBeCloseTo(belowHorizon);
   });
@@ -70,11 +82,13 @@ describe("shoulderPose", () => {
     expect(Math.abs(roverAngle - pitch)).toBeLessThan((pose.fov / 2) * DEG);
   });
 
-  it("follows any heading (north is +z)", () => {
+  it("follows any heading (forward is sin, cos; +z heading has its right at -x)", () => {
+    const { back, side, look } = ARRIVAL_GLIDE.start;
     const north = shoulderPose([0, 0, 0], 0, 40);
-    expect(north.position[2]).toBeCloseTo(-ARRIVAL_GLIDE.start.back);
-    expect(north.position[0]).toBeCloseTo(-ARRIVAL_GLIDE.start.side);
-    expect(north.target[2]).toBeCloseTo(ARRIVAL_GLIDE.start.look);
+    expect(north.position[2]).toBeCloseTo(-back * c + side * sn);
+    expect(north.position[0]).toBeCloseTo(-(back * sn + side * c));
+    expect(north.target[2]).toBeCloseTo(look * c);
+    expect(north.target[0]).toBeCloseTo(look * sn);
   });
 });
 
@@ -85,12 +99,12 @@ describe("the glide keeps the horizon out of frame", () => {
     for (const rig of ["follow", "rail"] as const) {
       it(`${cls} ${rig}: the top view edge stays below the horizon from the shoulder to the settled view`, () => {
         for (const zoom of [ZOOM_RANGE[0], 1, ZOOM_RANGE[1]]) {
-          const forward = followForward(cls, LOOK_EAST_YAW);
+          const forward = followForward(cls, ARRIVAL_YAW);
           const ahead = FOLLOW_LOOK_AHEAD[cls];
           const end =
             rig === "rail"
-              ? railPose(cls, rover[0], rover[1], zoom, rover[2], railYawBehind(), 0, 0, true)
-              : followPose(cls, [rover[0] + forward.x * ahead, rover[1] + 1, rover[2] + forward.z * ahead], LOOK_EAST_YAW, zoom);
+              ? railPose(cls, rover[0], rover[1], zoom, rover[2], ARRIVAL_RAIL_YAW, 0, 0, true)
+              : followPose(cls, [rover[0] + forward.x * ahead, rover[1] + 1, rover[2] + forward.z * ahead], ARRIVAL_YAW, zoom);
           const start = shoulderPose(rover, ARRIVAL_HEADING, end.fov);
           expect(topBelowHorizon(start)).toBeCloseTo(ARRIVAL_GLIDE.start.belowHorizon);
           for (let t = 0; t <= ARRIVAL_GLIDE.duration + 1e-9; t += 1 / 60) {
@@ -223,33 +237,41 @@ describe("cameraBehindHeading", () => {
     expect(cameraBehindHeading([3, 5, 0], [0, 0, 0])).toBeCloseTo(-Math.PI / 2);
   });
 
-  it("round trips a shoulder pose to the heading, off only by the shoulder's side offset", () => {
+  it("round trips a shoulder pose to the heading, off by the diagonal plus the shoulder's side offset (to the right)", () => {
     const { back, side } = ARRIVAL_GLIDE.start;
     for (const heading of [-2.5, 0, 1.1, ARRIVAL_HEADING, 3]) {
       const pose = shoulderPose([5, 0, 5], heading, 40);
       const deviation = wrapPi(cameraBehindHeading(pose.position, [5, 0, 5]) - heading);
-      expect(Math.abs(deviation)).toBeLessThanOrEqual(Math.atan2(side, back) + 1e-9);
-      expect(Math.abs(deviation)).toBeCloseTo(Math.atan2(side, back), 9);
+      expect(deviation).toBeCloseTo(ELEVATOR_DIAGONAL + Math.atan2(side, back), 9);
     }
   });
 });
 
-describe("railYawBehind", () => {
-  it("puts the rail camera due west of the rover", () => {
-    expect(railYawBehind()).toBeCloseTo(-Math.PI / 2);
-    const pose = railPose("desktop", -10, 0, 1, 0, railYawBehind(), 0);
+describe("the elevator diagonal (owner 2026-10-23)", () => {
+  it("puts the arrival follow camera behind and to the right of an east-heading rover", () => {
+    for (const cls of CLASSES) {
+      const pose = followPose(cls, [0, 1, 0], ARRIVAL_YAW);
+      expect(pose.position[0]).toBeLessThan(0);
+      expect(pose.position[2]).toBeGreaterThan(0);
+      expect(cameraBehindHeading(pose.position, [0, 1, 0])).toBeCloseTo(ARRIVAL_HEADING + ELEVATOR_DIAGONAL, 9);
+    }
+  });
+
+  it("puts the arrival rail camera behind and to the right of an east-heading rover", () => {
+    const pose = railPose("desktop", -10, 0, 1, 0, ARRIVAL_RAIL_YAW, 0);
     expect(pose.position[0]).toBeLessThan(-10);
-    expect(pose.position[2]).toBeCloseTo(0, 6);
+    expect(pose.position[2]).toBeGreaterThan(0);
+    expect(cameraBehindHeading(pose.position, [-10, 0, 0])).toBeCloseTo(ARRIVAL_HEADING + ELEVATOR_DIAGONAL, 9);
   });
 });
 
 describe("shaftClearZoom", () => {
   /** The settled arrival camera built the way CameraDirector does. */
   const cameraX = (cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number) => {
-    if (rig === "rail") return railPose(cls, x, 0, zoom, 0, railYawBehind(), 0).position[0];
-    const forward = followForward(cls, LOOK_EAST_YAW);
+    if (rig === "rail") return railPose(cls, x, 0, zoom, 0, ARRIVAL_RAIL_YAW, 0).position[0];
+    const forward = followForward(cls, ARRIVAL_YAW);
     const ahead = FOLLOW_LOOK_AHEAD[cls];
-    return followPose(cls, [x + forward.x * ahead, 1, forward.z * ahead], LOOK_EAST_YAW, zoom * followOffsetScale(cls, aspect)).position[0];
+    return followPose(cls, [x + forward.x * ahead, 1, forward.z * ahead], ARRIVAL_YAW, zoom * followOffsetScale(cls, aspect)).position[0];
   };
 
   it("keeps the limit 1.5 u east of the shaft", () => {

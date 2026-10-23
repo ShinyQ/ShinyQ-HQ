@@ -58,7 +58,7 @@ function oldFollowPose(cls: ViewportClass, target: Vec3, yaw = 0, zoom = 1, pitc
 }
 
 // ---- Frozen copy (b8fd8a88): camera/orbit.ts zone tracking and easing. ----
-type OldState = Omit<OrbitState, "lookForward" | "lookForwardTarget" | "lookUp" | "lookUpTarget">;
+type OldState = Omit<OrbitState, "lookForward" | "lookForwardTarget" | "lookUp" | "lookUpTarget" | "lookRight" | "lookRightTarget">;
 const OLD_KEYS = [
   "yaw",
   "yawTarget",
@@ -247,8 +247,18 @@ const zones: { floor: FloorId; zone: ViewZone }[] = FLOOR_IDS.flatMap((floor) =>
   ...(layouts[floor].viewZones ?? []).map((zone) => ({ floor, zone })),
 ]);
 const hasOffset = (zone: ViewZone) => zone.lookOffset !== undefined || Object.values(zone.classView ?? {}).some((v) => v?.lookOffset !== undefined);
-/** The (zone, class) pairs without a look offset: every zone but the office (it has one on every class). */
+/** The (zone, class) pairs without a look offset: every zone but the office and the elevator arrival views that aim sideways. */
 const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone, cls).lookOffset === undefined);
+/**
+ * The zones with a look offset on each class: the office (not on tablets), the L3 overview everywhere and, on portrait
+ * screens, the arrivals whose main sight sits right of the elevator diagonal's view (owner 2026-10-23).
+ */
+const OFFSET_ZONES: Record<ViewportClass, readonly string[]> = {
+  desktop: ["L1:office", "L3:overview"],
+  tablet: ["L3:overview"],
+  mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival"],
+};
+const ARRIVAL_AIMS = ["L1:arrival", "L2:arrival", "L3:overview", "RF:arrival"];
 
 /** The settled follow pose as CameraDirector builds it (look-ahead, offset scale, look offset, camera collision), new code path. */
 function newPose(floor: FloorId, s: OrbitState, cls: ViewportClass, aspect: number, at: { x: number; z: number }): CameraPose {
@@ -273,9 +283,15 @@ const FIRST_STEPS = 4;
 const centre = (zone: ViewZone) => ({ x: (zone.area.minX + zone.area.maxX) / 2, z: (zone.area.minZ + zone.area.maxZ) / 2 });
 
 describe("the follow rig's look offset", () => {
-  it("is opt-in data on the office zone only", () => {
+  it("is opt-in data on the office zone and the sideways-aimed elevator arrivals only", () => {
     expect(zones.length).toBeGreaterThan(20);
-    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id)).toEqual(["L1:office"]);
+    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id).sort()).toEqual(["L1:office", ...ARRIVAL_AIMS].sort());
+    // The arrivals only aim sideways: no forward or up offset, never held through a hand zoom.
+    for (const { zone } of zones.filter(({ zone }) => ARRIVAL_AIMS.includes(zone.id)))
+      for (const cls of CLASSES) {
+        const look = zoneView(zone, cls).lookOffset;
+        if (look) expect(Object.keys(look), `${zone.id} ${cls}`).toEqual(["right"]);
+      }
   });
 
   it("followPose without an offset (or a zero one) returns the frozen pose, the target array itself included", () => {
@@ -316,7 +332,7 @@ describe("the follow rig's look offset", () => {
       const plain = plainOn(cls);
       // The office stop's view has a look offset on desktops and portrait screens; the tablet camera's aims plain.
       expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(cls === "tablet");
-      expect(plain.length).toBe(zones.length - (cls === "tablet" ? 0 : 1));
+      expect(zones.filter((z) => !plain.includes(z)).map(({ zone }) => zone.id).sort()).toEqual([...OFFSET_ZONES[cls]].sort());
       for (const { floor, zone } of plain) {
         const rail = floor === "L2";
         const at = centre(zone);
@@ -371,8 +387,8 @@ describe("the follow rig's look offset", () => {
               const dt = frame % 3 === 0 ? 1 / 30 : 1 / 60;
               stepOrbit(s, dt, reduced, hold);
               oldStepOrbit(o, dt, reduced, hold);
-              got.push(pick(s), [s.lookForward, s.lookUp]);
-              want.push(pick(o), [0, 0]);
+              got.push(pick(s), [s.lookForward, s.lookUp, s.lookRight]);
+              want.push(pick(o), [0, 0, 0]);
               if (!rail) {
                 got.push(newPose(floor, s, cls, aspect, at));
                 want.push(oldPose(floor, o, cls, aspect, at));

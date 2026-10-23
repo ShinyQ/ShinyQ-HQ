@@ -1,6 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
+import { ARRIVAL_YAW } from "@/experience/camera/look";
 import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { followOffsetScale } from "@/experience/camera/offset";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose } from "@/experience/camera/rigs";
@@ -13,8 +14,8 @@ import { cameraClass } from "@/lib/viewport";
 const pods = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" }).labs.pods;
 const layout = buildLabsLayout(pods);
 const { floor } = layout;
-/** Camera west of the rover, looking east along the floor. */
-const LOOK_EAST = (-3 * Math.PI) / 4;
+/** Behind and to the right of the rover (the elevator diagonal, owner 2026-10-23). */
+const LOOK = ARRIVAL_YAW;
 /** Left to right on screen from the arrival camera. */
 const SCREEN_ORDER: readonly Wing[] = ["software", "data", "ai"];
 
@@ -28,7 +29,8 @@ const VIEWPORTS: readonly { w: number; h: number; safe: Safe }[] = [
 
 /**
  * The follow camera the Director settles on with the rover at `at` inside a view zone
- * (CameraDirector: it aims FOLLOW_LOOK_AHEAD ahead along its forward and scales the offset by aspect).
+ * (CameraDirector: it aims FOLLOW_LOOK_AHEAD ahead along its forward, scales the offset by aspect and moves the look
+ * target by the zone's look offset).
  */
 function settledCamera(w: number, h: number, at: Vec2) {
   const zone = zoneAt("L3", at, floor.viewZones);
@@ -36,7 +38,9 @@ function settledCamera(w: number, h: number, at: Vec2) {
   const cls = cameraClass(w, h);
   const forward = followForward(cls, zone.yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
-  const pose = followPose(cls, [at.x + forward.x * ahead, 1, at.z + forward.z * ahead], zone.yaw, (zoneView(zone, cls).zoom ?? 1) * followOffsetScale(cls, w / h));
+  const view = zoneView(zone, cls);
+  const look = view.lookOffset;
+  const pose = followPose(cls, [at.x + forward.x * ahead, 1, at.z + forward.z * ahead], zone.yaw, (view.zoom ?? 1) * followOffsetScale(cls, w / h), 0, look?.forward ?? 0, look?.up ?? 0, look?.right ?? 0);
   const camera = new PerspectiveCamera(pose.fov, w / h, 0.1, 500);
   camera.position.set(...pose.position);
   camera.lookAt(new Vector3(...pose.target));
@@ -84,6 +88,15 @@ function expectInside(face: ScreenBox, w: number, h: number, safe: Safe, label: 
   expect(face.maxY, label).toBeLessThanOrEqual(h - safe.bottom);
 }
 
+/**
+ * HUD panels a desktop arrival keeps the boards out of (CSS px): the profile card at the top left and the elevator rail on
+ * the right edge (the diagonal arrival, owner 2026-10-23, puts the side boards near both).
+ */
+const HUD_PANELS = (w: number) => [
+  { label: "profile card", minX: 0, maxX: 310, minY: 0, maxY: 165 },
+  { label: "elevator rail", minX: w - 155, maxX: w, minY: 300, maxY: 600 },
+];
+
 /** Smallest on-screen gap (px) a desktop arrival keeps between neighbouring boards. */
 const MIN_GAP: Record<number, number> = { 1440: 40, 2560: 60 };
 
@@ -93,11 +106,16 @@ describe("L3 arrival frames the three directory boards (owner request 2026-10-16
     it(phone ? `frames the Data and ML board whole and the inner part of each side board on arrival at ${w}x${h}` : `shows the three boards whole, apart and clear of the HUD on arrival at ${w}x${h}`, () => {
       const { camera, zone } = settledCamera(w, h, LABS.overview);
       expect(zone.id).toBe("L3:overview");
-      expect(zone.yaw).toBeCloseTo(LOOK_EAST);
+      expect(zone.yaw).toBeCloseTo(LOOK);
       if (!phone) {
         const faces = SCREEN_ORDER.map((wing) => frontFace(camera, w, h, wing));
         SCREEN_ORDER.forEach((wing, i) => expectInside(faces[i], w, h, safe, `${wing} arrival ${w}x${h}`));
         for (let i = 1; i < faces.length; i++) expect(faces[i].minX - faces[i - 1].maxX, `${SCREEN_ORDER[i - 1]} to ${SCREEN_ORDER[i]} at ${w}x${h}`).toBeGreaterThanOrEqual(MIN_GAP[w]);
+        for (const [i, f] of faces.entries())
+          for (const p of HUD_PANELS(w)) {
+            const apart = f.maxX <= p.minX || f.minX >= p.maxX || f.maxY <= p.minY || f.minY >= p.maxY;
+            expect(apart, `${SCREEN_ORDER[i]} board clear of the ${p.label} at ${w}x${h}`).toBe(true);
+          }
         return;
       }
       // Phones (plan decision 2026-10-16): the camera has to stay east of the elevator shaft, so three separate
