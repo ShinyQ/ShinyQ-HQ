@@ -37,7 +37,7 @@ export function Labs({ data, labels, tier }: { data: ExperienceData; labels: Lab
         <Hub layout={layout} pods={data.labs.pods} labels={hubLabels} />
       </Suspense>
       <PacketLanes lanes={layout.lanes} packets={t === "full" ? 36 : 16} />
-      <Pods placed={layout.placed} tier={t} />
+      <Pods placed={layout.placed} shapes={data.labs.shapes} tier={t} />
       <Reactor center={layout.reactor.center} labels={reactorLabels} />
       <ReactorHighlights layout={layout} />
       <Waterfalls bounds={layout.floor.bounds} />

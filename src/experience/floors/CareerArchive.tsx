@@ -42,7 +42,7 @@ export function CareerArchive({ career, labs, labels }: { career: CareerData; la
     // Warmed during boot: mounted for the compile only, never drawn (L2's shell shows in the intro).
     <group name="career-archive" visible={shown}>
       <YearGates layout={layout} prologue={prologue} roomsLabel={labels.rooms} tier={tier} reducedMotion={reducedMotion} />
-      <CareerRooms rooms={layout.rooms} entries={entries} trophies={trophies} tier={tier} reducedMotion={reducedMotion} />
+      <CareerRooms rooms={layout.rooms} entries={entries} trophies={trophies} shapes={career.shapes} tier={tier} reducedMotion={reducedMotion} />
       <WorkshopAnnex layout={layout} career={career} labs={labs} labels={labels} years={years} tier={tier} reducedMotion={reducedMotion} />
       <Horizon layout={layout} />
     </group>

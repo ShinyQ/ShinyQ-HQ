@@ -2,17 +2,18 @@
 
 import { Billboard, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { Color, Matrix4, Object3D, Quaternion, Vector3, type InstancedMesh } from "three";
+import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { Color, Matrix4, Object3D, Quaternion, Vector3, type Group, type InstancedMesh } from "three";
 import type { Accent } from "@/content/schema";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { floorY } from "../../config";
 import { createInstancedGlassMaterial, neonColor } from "../../fx/materials";
+import { useShapes } from "../../fx/shapes";
 import { useUniformTime } from "../../fx/useUniformTime";
 import { roverRuntime } from "../../rover/runtime";
 import { forgetDrawn, whenDrawn } from "../../scene/drawnWork";
 import { FONTS, tierFill } from "../../tower/primitives";
-import { hologramParts } from "./hologramParts";
+import { hologramParts, type HologramPart } from "./hologramParts";
 import { LABS, WING_TINT, type PlacedPod } from "./layout";
 import { LineBatch } from "./lines";
 
@@ -103,20 +104,28 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
   );
 }
 
-/** Every pod hologram on the floor as one instanced mesh of boxes, spinning slowly above its pod. */
-function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "lite" }) {
+/**
+ * Every pod hologram on the floor as one instanced mesh of boxes, spinning slowly above its pod: the kind
+ * hologram until the floor's shapes load (after its first frame), then each pod's own sculpture, morphing in
+ * (the kind parts shrink as the sculpture grows; a swap under reduced motion).
+ */
+function PodHolograms({ placed, shapes, group, tier }: { placed: PlacedPod[]; shapes: string; group: RefObject<Group | null>; tier: "full" | "lite" }) {
   const reduced = useHQStore((s) => s.reducedMotion);
   const mesh = useRef<InstancedMesh>(null);
-  const parts = useMemo(
-    () =>
+  const own = useShapes<HologramPart[]>("L3", shapes, group, (items) => placed.filter((p) => items[p.pod.slug]).length);
+  const parts = useMemo(() => {
+    // `set` 1: the sculpture, 0: the kind hologram (shown alone until the shapes load, morphing out after).
+    const list = (set: number, pick: (p: PlacedPod) => HologramPart[]) =>
       placed.flatMap((p, podIndex) => {
         const hero = p.pod.tier === "hero";
-        const scale = hero ? 1.5 : 1;
-        const lift = hero ? 1.6 : 1.3;
-        return hologramParts(p.pod.hologram).map((part) => ({ part, podIndex, scale, lift, color: ACCENT_HEX[p.pod.accent] }));
-      }),
-    [placed],
-  );
+        return pick(p).map((part) => ({ part, podIndex, set, scale: hero ? 1.5 : 1, lift: hero ? 1.6 : 1.3, color: ACCENT_HEX[p.pod.accent] }));
+      });
+    const kind = (p: PlacedPod) => hologramParts(p.pod.hologram);
+    const items = own.items;
+    if (!items) return list(0, kind);
+    const sculptures = list(1, (p) => items[p.pod.slug] ?? kind(p));
+    return own.done ? sculptures : [...sculptures, ...list(0, kind)];
+  }, [placed, own.items, own.done]);
   const dummy = useMemo(() => new Object3D(), []);
   const boost = tier === "full" ? 1.6 : 1;
   const local = useRef({ angles: placed.map((_, i) => i * 0.7), levels: placed.map(() => -1), color: new Color() });
@@ -125,21 +134,26 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     const m = mesh.current;
     if (!m) return;
     const color = new Color();
-    parts.forEach((p, i) => m.setColorAt(i, color.set(p.color).multiplyScalar(0.6 * boost)));
+    parts.forEach((p, i) => m.setColorAt(i, color.set(p.color).multiplyScalar(0.6 * boost * (p.part.k ?? 1))));
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    // New parts (the sculptures arrived): the next frame recolors every pod at its level.
+    local.current.levels.fill(-1);
   }, [parts, boost]);
 
   const writeParts = (m: InstancedMesh, t: number, hidden: string | null) => {
     const l = local.current;
-    parts.forEach(({ part, podIndex, scale, lift }, i) => {
+    const mix = own.fade.current;
+    parts.forEach(({ part, podIndex, set, scale: s0, lift }, i) => {
       const pod = placed[podIndex];
       const off = pod.room === hidden ? 0 : 1;
+      // Sculptures stand a fifth larger than the kind holograms: their detail needs it from the follow camera.
+      const scale = s0 * (set ? 1.2 * mix : 1 - mix) + 1e-4;
       const angle = l.angles[podIndex];
       const c = Math.cos(angle);
       const s = Math.sin(angle);
       const pulse = part.pulse !== undefined && !reduced ? 0.65 + 0.35 * Math.sin(t * 3 + part.pulse) : 1;
       dummy.position.set(pod.center.x + (part.x * c + part.z * s) * scale, lift + part.y * scale, pod.center.z + (-part.x * s + part.z * c) * scale);
-      dummy.rotation.set(0, angle, 0);
+      dummy.rotation.set(0, angle, part.r ?? 0);
       dummy.scale.set(part.w * scale * off + 1e-4, part.h * scale * pulse * off + 1e-4, part.d * scale * off + 1e-4);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
@@ -170,7 +184,7 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
       }
     });
     if (recolor) {
-      parts.forEach((p, i) => m.setColorAt(i, l.color.set(p.color).multiplyScalar(l.levels[p.podIndex] * boost)));
+      parts.forEach((p, i) => m.setColorAt(i, l.color.set(p.color).multiplyScalar(l.levels[p.podIndex] * boost * (p.part.k ?? 1))));
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     }
     // The pod whose hologram view is open shows the diagram instead.
@@ -186,10 +200,11 @@ function PodHolograms({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "l
     return () => {
       if (m) forgetDrawn(m);
     };
-  }, []);
+    // The mesh is rebuilt when the part count changes (the sculptures arriving).
+  }, [parts.length]);
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, parts.length]} frustumCulled={false}>
+    <instancedMesh key={parts.length} ref={mesh} args={[undefined, undefined, parts.length]} frustumCulled={false}>
       <boxGeometry args={[1, 1, 1]} />
       {/* Instance colors carry each pod's accent; unlit and not tone mapped so bloom picks them up on the full tier. */}
       <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={tier === "full" ? 0.95 : 0.85} />
@@ -227,11 +242,12 @@ function PodLabels({ placed }: { placed: PlacedPod[] }) {
   );
 }
 
-export function Pods({ placed, tier }: { placed: PlacedPod[]; tier: "full" | "lite" }) {
+export function Pods({ placed, shapes, tier }: { placed: PlacedPod[]; shapes: string; tier: "full" | "lite" }) {
+  const group = useRef<Group>(null);
   return (
-    <group name="labs-pods">
+    <group ref={group} name="labs-pods">
       <PodShells placed={placed} />
-      <PodHolograms placed={placed} tier={tier} />
+      <PodHolograms placed={placed} shapes={shapes} group={group} tier={tier} />
       <Suspense fallback={null}>
         <PodLabels placed={placed} />
       </Suspense>

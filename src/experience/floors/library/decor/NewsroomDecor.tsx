@@ -84,7 +84,7 @@ export function NewsroomDecor(props: DecorProps) {
   return (
     <group name="library-newsroom">
       <StationShells stations={layout.stations} tier={tier} />
-      <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
+      <ZoneIcons stations={others} library={library} shapes={library.shapes} tier={tier} reducedMotion={reducedMotion} />
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
       <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />

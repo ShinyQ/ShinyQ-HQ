@@ -3,14 +3,15 @@
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
-import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type InstancedMesh, type Mesh, Object3D } from "three";
+import { BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, type Group, type InstancedMesh, type Mesh, Object3D } from "three";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS } from "../../config";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
-import { HoloIcon, type HoloIconInstance } from "../../fx/HoloIcon";
+import { HoloIcon } from "../../fx/HoloIcon";
 import { Readable } from "../../fx/Readable";
-import { CAREER_ICONS, CAREER_TONE } from "../../fx/holoIcons";
+import { CAREER_ICONS, CAREER_TONE, type Stroke } from "../../fx/holoIcons";
 import { sceneProbes } from "../../fx/probes";
+import { useShapes } from "../../fx/shapes";
 import { readableFlip } from "../../fx/readableFlip";
 import { useDispose } from "../../fx/useDispose";
 import { roverRuntime } from "../../rover/runtime";
@@ -19,7 +20,6 @@ import type { CareerEntryView, CareerType, GpuTier } from "../../types";
 import { roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
-const TYPES: readonly CareerType[] = ["job", "freelance", "education", "award", "milestone"];
 /** Neon type icon height above the floor (award icons float above the placings count). */
 const ICON_Y: Record<CareerType, number> = { job: 2.7, freelance: 2.7, education: 2.7, milestone: 2.7, award: 2.9 };
 const ICON_SIZE = 2.6;
@@ -210,41 +210,42 @@ export function useMemberFade(handle: RefObject<BatchedLabelsHandle | null>, set
 }
 
 /**
- * Career rooms docked on the year plazas: tinted pads, neon frames, pedestals, one Neon line type
- * icon per room (one draw call per type, two on the full tier), the placings count on award plinths and a
- * label per room that fades with distance along the road.
+ * Career rooms docked on the year plazas: tinted pads, neon frames, pedestals, one Neon line icon per room in
+ * its type color (one batch: one draw call, two on the full tier), the placings count on award plinths and a
+ * label per room that fades with distance along the road. The type icons show until the room's own icon
+ * (`shapes`, fetched after the floor's first frame) crossfades in.
  */
 export function CareerRooms({
   rooms,
   entries,
   trophies,
+  shapes,
   tier,
   reducedMotion,
 }: {
   rooms: CareerRoom[];
   entries: Map<string, CareerEntryView>;
   trophies: Map<string, number>;
+  shapes: string;
   tier: GpuTier;
   reducedMotion: boolean;
 }) {
-  const icons = useMemo(() => {
-    const out = {} as Record<CareerType, HoloIconInstance[]>;
-    // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
-    for (const type of TYPES) out[type] = rooms.filter((r) => r.type === type).map((r) => ({ x: r.center.x, y: ICON_Y[type], z: r.center.z, face: 0 }));
-    return out;
-  }, [rooms]);
+  const group = useRef<Group>(null);
+  const own = useShapes<Stroke[]>("L2", shapes, group, (items) => rooms.filter((r) => items[r.slug]).length);
+  // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
+  const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: ICON_Y[r.type], z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
+  const unique = useMemo(() => own.items && icons.map((icon, i) => ({ ...icon, strokes: own.items![rooms[i].slug] ?? icon.strokes })), [icons, own.items, rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
   const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(labelBatch, roomLabels);
 
   return (
-    <group name="career-rooms">
+    <group ref={group} name="career-rooms">
       <Pads rooms={rooms} tier={tier} />
       <Frames rooms={rooms} />
-      {TYPES.map((type) => (
-        <HoloIcon key={type} strokes={CAREER_ICONS[type]} instances={icons[type]} color={CAREER_TONE[type]} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} />
-      ))}
+      {!own.done && <HoloIcon instances={icons} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={unique ? () => 1 - own.fade.current : undefined} />}
+      {unique && <HoloIcon instances={unique} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={() => own.fade.current} />}
       <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
       <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped exactColors />
