@@ -50,8 +50,12 @@ export function EngineHolo({ layout, tier, views }: { layout: EngineLayout; tier
   const data = useMemo(() => layout.bays.map((b) => views?.[b.room]?.engine?.holo ?? null), [layout, views]);
   const texture = useLogoAtlas(ENGINE_ATLAS.file);
 
-  const geo = useMemo(() => [new BoxGeometry(1, 1, 1), new PlaneGeometry(1, 1), new RingGeometry(0.93, 1, 48), new CylinderGeometry(1, 0.15, 1, 16, 1, true)], []);
-  useEffect(() => () => geo.forEach((g) => g.dispose()), [geo]);
+  // One geometry per kind (box, dot, ring, cone), disposed together.
+  const geo = useMemo(() => {
+    const list = [new BoxGeometry(1, 1, 1), new PlaneGeometry(1, 1), new RingGeometry(0.93, 1, 48), new CylinderGeometry(1, 0.15, 1, 16, 1, true)];
+    return Object.assign(list, { dispose: () => list.forEach((g) => g.dispose()) });
+  }, []);
+  useDispose(geo);
   const mats = useMemo(
     () => [
       createHoloMaterial({ mode: HOLO_MODE.strip, fade: [40, 110] }),

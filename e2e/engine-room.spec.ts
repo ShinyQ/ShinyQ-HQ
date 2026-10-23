@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { ARRIVAL_HEADING } from "../src/experience/camera/arrival";
+import { ENGINE_ATLAS } from "../src/experience/floors/engine/engine-atlas";
 import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
 import { STATS_FIXTURE } from "../src/lib/visits/contract";
@@ -322,6 +323,21 @@ test.describe("the floor", () => {
     expect((await snapshot(page)).floor).toBe("B1");
     expect(new URL(page.url()).pathname).toBe("/en");
     await expect(page.getByTestId("room-drawer")).toHaveCount(0);
+  });
+
+  test("every bay shows its hologram once the B1 data is in, the stack orbits the core, and the bay the rover stops at wakes", async ({ page }) => {
+    type Holo = { loaded: boolean; awake: number; spin: number; logos: number };
+    const holo = () => page.evaluate(() => (window as unknown as { __hq: { reactor: () => { holo: () => Holo } | null } }).__hq.reactor()?.holo() ?? null);
+    await enterB1Route(page);
+    await rideTo(page, "B1");
+    // Fourteen halo logos (the stack plus the coding agents) and the agents' three tiles in their bay.
+    await expect.poll(holo, { timeout: 30_000 }).toMatchObject({ loaded: true, logos: ENGINE_ATLAS.cells + ENGINE_ATLAS.agents.length });
+    const spin = (await holo())!.spin;
+    await expect.poll(async () => (await holo())!.spin, { timeout: 30_000 }).toBeGreaterThan(spin);
+    const gates = ENGINE_STATIONS.indexOf("gates");
+    const pad = await page.evaluate((room) => (window as unknown as { __hq: { layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }> } }).__hq.layouts.B1.doors!.find((d) => d.room === room)!.at, "B1:gates");
+    await page.evaluate((p) => ((window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point: p, state: "pending" }), pad);
+    await expect.poll(async () => (await holo())!.awake, { timeout: 60_000 }).toBe(gates);
   });
 
   test("the reactor core lights a segment run per job of the CI runs and polls only while on B1", async ({ page }) => {
