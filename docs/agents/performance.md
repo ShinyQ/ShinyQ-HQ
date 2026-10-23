@@ -30,7 +30,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L1 office beacon chunk (`BYTES_3D_BUDGET.officeBeacon`) | 2.59 KB gzip, outside the session total (measured 2,043 B of 2,657 B: measured plus 614 B) | `e2e/budgets.ts` |
 | Session total, full tier (`BYTES_3D_BUDGET.session`) | full 529.7 KB (measured 529.1 KB, 541,786 B of 542,400 B) | `e2e/budgets.ts` |
 | Session total, lite tier | lite 513.9 KB (measured 513.4 KB, 525,652 B of 526,266 B) | `e2e/budgets.ts` |
-| Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 140.8 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
+| Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 142.9 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
 | Look check (`e2e:look`) | at most 0.1% of pixels may differ | `e2e/perf/look.spec.ts` |

@@ -186,7 +186,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
 - `src/components/guides/`: study guides.
   - GuideShelf (server: the `/library#guides` cards with server-rendered Read, a `data-hq-guide` button `DialogHost` opens, and Download PDF).
   - GuideDialog (lazy modal in DialogHost: fetches /data/guides/{locale}.json, loading and error states, then imports the reader).
-  - GuideReader (lazy chunk, `GuideReader.module.css`), GuidePage, GuideThumbs, GuideToolbar, ui; `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules), `data-path.ts`.
+  - GuideReader (lazy chunk, `GuideReader.module.css`), GuidePage, GuideThumbs, GuideToolbar (the one-row header), GuideControls (the floating page and zoom pill), ui; `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules), `data-path.ts`.
 - `src/components/page/`: Page View building blocks.
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
