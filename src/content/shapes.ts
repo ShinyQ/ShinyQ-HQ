@@ -2,8 +2,12 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { HologramPart } from "@/experience/floors/labs/hologramParts";
+import { libraryIcons, type PlacedIcon } from "@/experience/floors/library/icons";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
 import type { Stroke } from "@/experience/fx/holoIcons";
 import { svgToStrokes } from "@/lib/svg-strokes";
+import { buildLibraryData } from "./experience-floors";
 import { getContent } from "./load";
 import type { SiteContent } from "./schema";
 import { expandSculptures, sculptureIssues, sculptureSignature, type SculptureFile } from "./sculptures";
@@ -26,11 +30,24 @@ export type ShapeFloor = (typeof SHAPE_FLOORS)[number];
 /** Milestones and awards cycle a few icons (owner decision): at most this many distinct ids each. */
 export const SHARED_ICON_MAX = { milestone: 4, award: 3 } as const;
 
-/** One floor's payload: item key (career slug, pod slug, post slug, publication or talk id) to its shape. */
+/**
+ * One floor's payload: item key (career slug, pod slug, post slug, publication or talk id) to its shape. L4 also
+ * carries `icons`, every item icon placed on the floor's layout (`libraryIcons`), so the client only draws them.
+ */
 export interface ShapePayload {
   v: 1;
   floor: ShapeFloor;
   items: Record<string, Stroke[] | HologramPart[]>;
+  icons?: PlacedIcon[];
+}
+
+/**
+ * The L4 item icons on the layout the floor builds (`buildLibraryLayout` over `buildLibraryData`, the same inputs as
+ * the client; the stations and the desk order do not depend on the locale), for the keys that have an icon.
+ */
+export function placedLibraryIcons(items: Record<string, unknown>): PlacedIcon[] {
+  const library = buildLibraryData("en");
+  return libraryIcons(buildLibraryLayout(libraryLayoutInput(library)), library).filter(([key]) => items[key]);
 }
 
 const strokeCache = new Map<string, Stroke[]>();
@@ -92,18 +109,15 @@ export function shapePayloads(content: SiteContent = getContent()): Record<Shape
   const { careerArchive, labs, library } = content.floors;
   const sculptures = getSculptures();
   const icons = (items: { key: string; icon?: string }[]) => Object.fromEntries(items.filter((i) => i.icon).map((i) => [i.key, iconStrokes(i.icon!)]));
+  const l4 = icons([
+    ...library.posts.map((p) => ({ key: p.slug, icon: p.icon })),
+    ...library.publications.map((p) => ({ key: p.id, icon: p.icon })),
+    ...library.talks.map((t) => ({ key: t.id, icon: t.icon })),
+  ]);
   return {
     L2: { v: 1, floor: "L2", items: icons(careerArchive.entries.map((e) => ({ key: e.slug, icon: e.icon }))) },
     L3: { v: 1, floor: "L3", items: Object.fromEntries(labs.pods.filter((p) => p.sculpture).map((p) => [p.slug, sculptures[p.sculpture!]])) },
-    L4: {
-      v: 1,
-      floor: "L4",
-      items: icons([
-        ...library.posts.map((p) => ({ key: p.slug, icon: p.icon })),
-        ...library.publications.map((p) => ({ key: p.id, icon: p.icon })),
-        ...library.talks.map((t) => ({ key: t.id, icon: t.icon })),
-      ]),
-    },
+    L4: { v: 1, floor: "L4", items: l4, icons: placedLibraryIcons(l4) },
   };
 }
 

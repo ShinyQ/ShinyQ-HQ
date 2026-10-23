@@ -20,8 +20,8 @@ import type { CareerEntryView, CareerType, GpuTier } from "../../types";
 import { roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
-/** Neon type icon height above the floor (award icons float above the placings count). */
-const ICON_Y: Record<CareerType, number> = { job: 2.7, freelance: 2.7, education: 2.7, milestone: 2.7, award: 2.9 };
+/** Neon icon height above the floor (award icons float a little higher, above the placings count). */
+const iconY = (type: CareerType) => (type === "award" ? 2.9 : 2.7);
 const ICON_SIZE = 2.6;
 const FRAME_H = 2.2;
 
@@ -231,9 +231,9 @@ export function CareerRooms({
   reducedMotion: boolean;
 }) {
   const group = useRef<Group>(null);
-  const own = useShapes<Stroke[]>("L2", shapes, group, (items) => rooms.filter((r) => items[r.slug]).length);
+  const own = useShapes<Stroke[]>("L2", shapes, group);
   // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
-  const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: ICON_Y[r.type], z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
+  const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: iconY(r.type), z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
   const unique = useMemo(() => own.items && icons.map((icon, i) => ({ ...icon, strokes: own.items![rooms[i].slug] ?? icon.strokes })), [icons, own.items, rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
   const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
@@ -244,8 +244,8 @@ export function CareerRooms({
     <group ref={group} name="career-rooms">
       <Pads rooms={rooms} tier={tier} />
       <Frames rooms={rooms} />
-      {!own.done && <HoloIcon instances={icons} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={unique ? () => 1 - own.fade.current : undefined} />}
-      {unique && <HoloIcon instances={unique} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={() => own.fade.current} />}
+      {!own.done && <HoloIcon instances={icons} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={own.fadeOut} />}
+      {unique && <HoloIcon instances={unique} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} fade={own.fadeIn} />}
       <Placings rooms={awards} counts={trophies} />
       <ActiveRing rooms={rooms} />
       <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped exactColors />

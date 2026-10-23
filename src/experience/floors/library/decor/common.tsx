@@ -4,7 +4,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Quaternion, Vector3, type Group, type InstancedMesh } from "three";
 import type { RoomId } from "@/content/schema";
-import { HoloIcon, type HoloIconInstance } from "../../../fx/HoloIcon";
+import { HoloIcon } from "../../../fx/HoloIcon";
 import { LIBRARY_ICONS, type Stroke } from "../../../fx/holoIcons";
 import { useShapes } from "../../../fx/shapes";
 import { createInstancedGlassMaterial, neonColor } from "../../../fx/materials";
@@ -12,7 +12,10 @@ import { useUniformTime } from "../../../fx/useUniformTime";
 import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
+import { faceRoad, STATION_HEIGHT, ZONE_ICON, type PlacedIcon } from "../icons";
 import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
+
+export { faceRoad, STATION_HEIGHT };
 
 /** Everything the L4 decor needs. Stations are clicked through point-and-go (interact/registry.ts). */
 export interface DecorProps {
@@ -25,14 +28,6 @@ export interface DecorProps {
   /** In-world click on a paper: open its preview modal (`openPaperFor`). */
   onPaper: (id: string) => void;
 }
-
-export const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 1.1, research: 3.2, models: 2.6, talks: 2.6 };
-/** Desk item icons (`deskSlots`): lift over the desk top and the largest size. */
-const DESK_LIFT = 1.3;
-const DESK_SIZE = 2;
-
-/** Yaw (HoloIcon `face`) that turns an icon from its station toward the road. */
-export const faceRoad = (s: Pick<LibraryStation, "facing">) => Math.atan2(-s.facing.x, -s.facing.z);
 
 /** Titles per room: posts from content (any casing the content uses), shelves from zone names. */
 export function stationTitles(library: LibraryData, zones: Record<LibraryZone, string>): Map<RoomId, string> {
@@ -108,50 +103,25 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
 }
 
 /**
- * Where a desk's item icons float, low over the desk so they stay clear of the zone sign above its back edge: one
- * row of at most 4 across the desk, left to right as seen from the road (5 or more items: two rows, the first
- * nearer the road), spaced along it, the size following the spacing (at most `size`).
+ * One Neon line icon per station in its zone tone, as one batch (one draw call, two on the full tier). Once the
+ * floor's shapes load (`shapes`, after its first frame) they crossfade into the items' own icons, placed at build
+ * (`libraryIcons`): one per post station and one per paper, model and talk over its desk.
  */
-export function deskSlots(s: LibraryStation, n: number, lift: number, size: number): HoloIconInstance[] {
-  const rows = n > 4 ? 2 : 1;
-  const cols = Math.ceil(n / rows);
-  const along = Math.abs(s.facing.x) > 0.5 ? s.rect.maxZ - s.rect.minZ : s.rect.maxX - s.rect.minX;
-  const gap = Math.min(3, along / cols);
-  const k = Math.min(size, gap * 0.85);
-  return Array.from({ length: n }, (_, i) => {
-    const o = ((i % cols) - (cols - 1) / 2) * gap;
-    const d = rows > 1 ? (Math.floor(i / cols) ? 1.2 : -1.2) : 0;
-    // Right as seen from the road, looking along `facing`, is (-facing.z, facing.x); `d` < 0 is toward the road.
-    return { x: s.center.x - s.facing.z * o + s.facing.x * d, y: STATION_HEIGHT[s.zone] + lift, z: s.center.z + s.facing.x * o + s.facing.z * d, face: faceRoad(s), size: k };
-  });
-}
-
-/**
- * One Neon line icon per station in its zone color, as one batch (one draw call, two on the full tier). Once the
- * floor's shapes load (`shapes`, after its first frame) they crossfade into the items' own icons: one per post
- * station, and one per item over the Research, Models and Talks desks (`deskSlots`).
- */
-export function ZoneIcons({ stations, library, shapes, tier, reducedMotion, lift = 2.2, size = 2.4 }: { stations: readonly LibraryStation[]; library: LibraryData; shapes: string; tier: GpuTier; reducedMotion: boolean; lift?: number; size?: number }) {
+export function ZoneIcons({ stations, shapes, tier, reducedMotion }: { stations: readonly LibraryStation[]; shapes: string; tier: GpuTier; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
-  const desks = useMemo(() => ({ research: library.research, models: library.models, talks: library.talks }), [library]);
-  const own = useShapes<Stroke[]>("L4", shapes, group, (items) => stations.reduce((n, s) => n + (s.zone === "blog" ? (items[s.room.slice(3)] ? 1 : 0) : desks[s.zone].filter((d) => items[d.id]).length), 0));
+  const own = useShapes<Stroke[]>("L4", shapes, group);
   const icons = useMemo(
-    () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone], color: ZONE_TONE[s.zone] })),
-    [stations, lift],
+    () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + ZONE_ICON.lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone], color: ZONE_TONE[s.zone] })),
+    [stations],
   );
-  const unique = useMemo(() => {
-    const items = own.items;
-    if (!items) return null;
-    return stations.flatMap((s, i): HoloIconInstance[] => {
-      if (s.zone === "blog") return [{ ...icons[i], strokes: items[s.room.slice(3)] ?? icons[i].strokes }];
-      const list = desks[s.zone];
-      return deskSlots(s, list.length, DESK_LIFT, DESK_SIZE).map((slot, j) => ({ ...slot, strokes: items[list[j].id] ?? icons[i].strokes, color: ZONE_TONE[s.zone] }));
-    });
-  }, [own.items, stations, icons, desks]);
+  const unique = useMemo(
+    () => own.items && (own.icons as PlacedIcon[]).map(([key, x, y, z, face, size, zone]) => ({ x, y, z, face, size, strokes: own.items![key], color: ZONE_TONE[zone] })),
+    [own.items, own.icons],
+  );
   return (
     <group ref={group} name="library-icons">
-      {!own.done && <HoloIcon instances={icons} size={size} tier={tier} reducedMotion={reducedMotion} fade={unique ? () => 1 - own.fade.current : undefined} />}
-      {unique && <HoloIcon instances={unique} size={size} tier={tier} reducedMotion={reducedMotion} fade={() => own.fade.current} />}
+      {!own.done && <HoloIcon instances={icons} size={ZONE_ICON.size} tier={tier} reducedMotion={reducedMotion} fade={own.fadeOut} />}
+      {unique && <HoloIcon instances={unique} tier={tier} reducedMotion={reducedMotion} fade={own.fadeIn} />}
     </group>
   );
 }

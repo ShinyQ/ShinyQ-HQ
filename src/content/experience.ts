@@ -123,7 +123,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
     roomData: roomDataVersions(locale),
     labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing, ops: buildOpsData(locale), shapes: shapeUrl("L3") },
     career: buildCareerData(locale),
-    library: buildLibraryData(locale),
+    library: { ...buildLibraryData(locale), shapes: shapeUrl("L4") },
     roof: buildRoofData(locale),
     highlights: buildHighlightsData(locale),
     engine: buildEngineData(locale),

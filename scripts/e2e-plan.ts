@@ -395,7 +395,7 @@ export function e2eShardsFor(seconds: number): number {
 const ALSO_RULES: Rule[] = [
   // The hosts of the unique floating holograms (e2e/shapes.spec.ts) and HoloIcon, which every pad and the Roof draw.
   {
-    test: /^src\/experience\/floors\/(career\/CareerRooms|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/decor\/(common|NewsroomDecor))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,
+    test: /^src\/experience\/floors\/(career\/CareerRooms|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/(decor\/(common|NewsroomDecor)|icons))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,
     specs: ["shapes"],
   },
   { test: /^src\/experience\/fx\/HoloIcon\.tsx$/, specs: ["pads", "roof"] },

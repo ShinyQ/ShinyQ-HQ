@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
+import { buildLibraryData } from "@/content/experience-floors";
+import { DESK, libraryIcons } from "@/experience/floors/library/icons";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
+import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { getContent } from "@/content/load";
 import { hologramIdClashes, type SiteContent } from "@/content/schema";
 import { iconStrokes, SHAPE_FLOORS, shapeFile, shapeFiles, shapeIssues, shapePayloads, shapeUrl } from "@/content/shapes";
@@ -110,5 +114,35 @@ describe("build-shapes", () => {
     for (const floor of SHAPE_FLOORS) expect(readFileSync(path.join(dir, shapeFiles()[floor].name), "utf8")).toBe(shapeFiles()[floor].json);
     rmSync(dir, { recursive: true, force: true });
     expect(existsSync(dir)).toBe(false);
+  });
+});
+
+describe("L4 icon placement", () => {
+  it("places one icon per docked post (the featured one excepted) and one per paper, model and talk", () => {
+    const content = getContent();
+    const { icons, items } = shapePayloads(content).L4;
+    const lib = content.floors.library;
+    const keys = icons!.map(([key]) => key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const key of keys) expect(items[key], key).toBeTruthy();
+    for (const id of [...lib.publications.map((p) => p.id), ...lib.talks.map((t) => t.id)]) expect(keys).toContain(id);
+    // The newsroom features the newest post on its stage (a turning book, no icon).
+    expect(keys.filter((k) => lib.posts.some((p) => p.slug === k))).toHaveLength(Math.min(lib.posts.length, 12) - 1);
+  });
+
+  it("matches the floor the client builds, in either locale", () => {
+    const placed = (locale: "en" | "id") => {
+      const library = buildLibraryData(locale);
+      return libraryIcons(buildLibraryLayout(libraryLayoutInput(library)), library).map((i) => i.join(","));
+    };
+    expect(placed("id")).toEqual(placed("en"));
+    expect(shapePayloads().L4.icons!.map((i) => i.join(","))).toEqual(placed("en"));
+  });
+
+  it("keeps desk icons apart and over their desk", () => {
+    const { icons } = shapePayloads().L4;
+    const desk = icons!.filter((i) => i[6] !== "blog");
+    for (const a of desk)
+      for (const b of desk) if (a !== b && a[6] === b[6]) expect(Math.hypot(a[1] - b[1], a[3] - b[3])).toBeGreaterThanOrEqual(DESK.size);
   });
 });

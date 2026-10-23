@@ -106,26 +106,21 @@ function PodShells({ placed }: { placed: PlacedPod[] }) {
 
 /**
  * Every pod hologram on the floor as one instanced mesh of boxes, spinning slowly above its pod: the kind
- * hologram until the floor's shapes load (after its first frame), then each pod's own sculpture, morphing in
- * (the kind parts shrink as the sculpture grows; a swap under reduced motion).
+ * hologram until the floor's shapes load (after its first frame), then each pod's own sculpture, growing in over
+ * 0.6 s to a fifth above the kind's scale, so its detail reads from the follow camera (at once under reduced motion).
  */
 function PodHolograms({ placed, shapes, group, tier }: { placed: PlacedPod[]; shapes: string; group: RefObject<Group | null>; tier: "full" | "lite" }) {
   const reduced = useHQStore((s) => s.reducedMotion);
   const mesh = useRef<InstancedMesh>(null);
-  const own = useShapes<HologramPart[]>("L3", shapes, group, (items) => placed.filter((p) => items[p.pod.slug]).length);
-  const parts = useMemo(() => {
-    // `set` 1: the sculpture, 0: the kind hologram (shown alone until the shapes load, morphing out after).
-    const list = (set: number, pick: (p: PlacedPod) => HologramPart[]) =>
+  const own = useShapes<HologramPart[]>("L3", shapes, group);
+  const parts = useMemo(
+    () =>
       placed.flatMap((p, podIndex) => {
         const hero = p.pod.tier === "hero";
-        return pick(p).map((part) => ({ part, podIndex, set, scale: hero ? 1.5 : 1, lift: hero ? 1.6 : 1.3, color: ACCENT_HEX[p.pod.accent] }));
-      });
-    const kind = (p: PlacedPod) => hologramParts(p.pod.hologram);
-    const items = own.items;
-    if (!items) return list(0, kind);
-    const sculptures = list(1, (p) => items[p.pod.slug] ?? kind(p));
-    return own.done ? sculptures : [...sculptures, ...list(0, kind)];
-  }, [placed, own.items, own.done]);
+        return (own.items?.[p.pod.slug] ?? hologramParts(p.pod.hologram)).map((part) => ({ part, podIndex, scale: hero ? 1.5 : 1, lift: hero ? 1.6 : 1.3, color: ACCENT_HEX[p.pod.accent] }));
+      }),
+    [placed, own.items],
+  );
   const dummy = useMemo(() => new Object3D(), []);
   const boost = tier === "full" ? 1.6 : 1;
   const local = useRef({ angles: placed.map((_, i) => i * 0.7), levels: placed.map(() => -1), color: new Color() });
@@ -142,12 +137,11 @@ function PodHolograms({ placed, shapes, group, tier }: { placed: PlacedPod[]; sh
 
   const writeParts = (m: InstancedMesh, t: number, hidden: string | null) => {
     const l = local.current;
-    const mix = own.fade.current;
-    parts.forEach(({ part, podIndex, set, scale: s0, lift }, i) => {
+    const grow = own.items ? 1.2 * own.fadeIn.value : 1;
+    parts.forEach(({ part, podIndex, scale: s0, lift }, i) => {
       const pod = placed[podIndex];
       const off = pod.room === hidden ? 0 : 1;
-      // Sculptures stand a fifth larger than the kind holograms: their detail needs it from the follow camera.
-      const scale = s0 * (set ? 1.2 * mix : 1 - mix) + 1e-4;
+      const scale = s0 * grow + 1e-4;
       const angle = l.angles[podIndex];
       const c = Math.cos(angle);
       const s = Math.sin(angle);

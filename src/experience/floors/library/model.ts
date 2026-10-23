@@ -36,7 +36,7 @@ export interface LibraryGuideInput {
   code: string | null;
 }
 
-export function libraryLayoutInput(library: LibraryData): LibraryLayoutInput {
+export function libraryLayoutInput(library: Omit<LibraryData, "shapes">): LibraryLayoutInput {
   return {
     posts: library.posts.map((p) => ({ slug: p.slug, date: p.date, tags: [...p.tags], external: Boolean(p.url) })),
     research: library.research.length,

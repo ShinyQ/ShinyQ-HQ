@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Color } from "three";
-import { deskSlots, faceRoad, STATION_HEIGHT } from "@/experience/floors/library/decor/common";
+import { DESK, deskSlots, faceRoad, STATION_HEIGHT } from "@/experience/floors/library/icons";
 import type { LibraryStation } from "@/experience/floors/library/model";
 import { instanced } from "@/experience/fx/HoloIcon";
 import { CAREER_ICONS, iconMesh, LIBRARY_ICONS } from "@/experience/fx/holoIcons";
@@ -17,8 +17,8 @@ describe("batched HoloIcon geometry", () => {
       2,
       1.5,
     );
-    const job = iconMesh(CAREER_ICONS.job, { size: 2, width: 1.5 });
-    const award = iconMesh(CAREER_ICONS.award, { size: 1, width: 1.5 });
+    const job = iconMesh(CAREER_ICONS.job, 1.5);
+    const award = iconMesh(CAREER_ICONS.award, 1.5);
     const n = (job.positions.length + award.positions.length) / 3;
     expect(g.getAttribute("position").count).toBe(n);
     for (const name of ["aCenter", "aFace", "aPhase", "aColor"]) expect(g.getAttribute(name).count, name).toBe(n);
@@ -26,8 +26,8 @@ describe("batched HoloIcon geometry", () => {
     expect(Math.max(...(g.index!.array as Uint32Array))).toBe(n - 1);
 
     const first = job.positions.length / 3;
-    // Per-instance size scales the unit mesh exactly like iconMesh at that size.
-    expect(g.getAttribute("position").getX(0)).toBeCloseTo(job.positions[0]);
+    // Each instance scales the unit mesh to its size (the default 2, its own 1).
+    expect(g.getAttribute("position").getX(0)).toBeCloseTo(job.positions[0] * 2);
     expect(g.getAttribute("position").getX(first)).toBeCloseTo(award.positions[0]);
     // Colors are linear (as `Color.set` gives them); the default for instances without their own.
     const green = new Color("#00ff00");
@@ -59,21 +59,18 @@ describe("L4 desk item icons", () => {
 
   it("puts up to 4 items in one row across the desk, facing the road", () => {
     const s = desk({ x: 0, z: 1 });
-    const slots = deskSlots(s, 4, 1.3, 2);
+    const slots = deskSlots(s, 4);
     expect(slots.map((p) => p.z)).toEqual([10, 10, 10, 10]);
     const xs = slots.map((p) => p.x);
     // Looking along +z (from the road into the desk) the right hand is -x: left to right as seen from the road.
     expect(xs[0] - xs[3]).toBeGreaterThan(5);
-    expect(new Set(slots.map((p) => p.y))).toEqual(new Set([STATION_HEIGHT.talks + 1.3]));
-    for (const p of slots) {
-      expect(p.face).toBe(faceRoad(s));
-      expect(p.size).toBeLessThanOrEqual(2);
-    }
+    expect(new Set(slots.map((p) => p.y))).toEqual(new Set([STATION_HEIGHT.talks + DESK.lift]));
+    expect(Math.abs(faceRoad(s))).toBeCloseTo(Math.PI);
   });
 
   it("splits 5 or more items into two rows, the first nearer the road, inside the desk", () => {
     const s = desk({ x: 0, z: 1 });
-    const slots = deskSlots(s, 6, 1.3, 2);
+    const slots = deskSlots(s, 6);
     expect(slots.slice(0, 3).every((p) => p.z < s.center.z)).toBe(true);
     expect(slots.slice(3).every((p) => p.z > s.center.z)).toBe(true);
     for (const p of slots) {
@@ -84,5 +81,8 @@ describe("L4 desk item icons", () => {
     }
     // Item positions are distinct.
     expect(new Set(slots.map((p) => `${p.x},${p.z}`)).size).toBe(6);
+    // Six items (the Talks desk today) fit the narrowest desk (8 u along), icons included.
+    const xs = slots.map((p) => p.x);
+    expect(Math.max(...xs) - Math.min(...xs) + DESK.size).toBeLessThanOrEqual(s.rect.maxX - s.rect.minX);
   });
 });
