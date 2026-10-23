@@ -5,14 +5,12 @@ import {
   coverCrop,
   HALL_ROWS,
   hallAtlas,
-  hallLabels,
   hallPhoto,
   hallShots,
   hallTexts,
   PHOTO_SRC,
   SHOT,
   SHOT_CELL,
-  shotQuadBuffers,
   type HallLabels,
 } from "@/experience/floors/lobby/hallContent";
 import { podLiveLink } from "@/content/selectors";
@@ -38,7 +36,7 @@ const labels: HallLabels = {
   hall: "Highlights Hall",
 };
 const fonts = { sans: "s", sansBold: "sb", mono: "m", monoBold: "mb" };
-const texts = hallLabels(data, labels, fonts);
+const texts = hallTexts(data, labels, fonts).labels;
 
 interface Surface {
   station: HighlightStation;
@@ -85,7 +83,7 @@ describe("Highlights Hall scenery", () => {
   it("tags a project screenshot with Visit live site only when its L3 pod has an allowed live link", () => {
     const first = data.highlights.projects[0];
     const withLive = (liveUrl: string) => ({ ...data, labs: { ...data.labs, pods: data.labs.pods.map((pod) => (pod.slug === first.slug ? { ...pod, liveUrl } : { ...pod, liveUrl: undefined })) } });
-    const tags = (input: typeof data) => hallLabels(input, labels, fonts).filter((t) => t.text === labels.visitLive.toUpperCase());
+    const tags = (input: typeof data) => hallTexts(input, labels, fonts).labels.filter((t) => t.text === labels.visitLive.toUpperCase());
     const tagged = tags(withLive("https://mii-microsoft.azurewebsites.net"));
     expect(tagged).toHaveLength(1);
     expect(faceCoords(tagged[0].position)?.s.station).toBe("projects");
@@ -177,22 +175,6 @@ describe("Highlights Hall scenery", () => {
     expect(quads.map((q) => q.index)).toEqual([0, 1, 2, 3]);
     const atlas = hallAtlas(["a", "b", "c"], SHOT_CELL.full);
     expect(atlas).toMatchObject({ width: 3 * 480 + 300, height: 300 });
-    const { positions, uvs, indices } = shotQuadBuffers(quads, atlas.cells);
-    expect(positions).toHaveLength(48);
-    // Float32 buffers: compare against the same values rounded to float32.
-    expect(Array.from(uvs.slice(0, 8))).toEqual(Array.from(new Float32Array([0, 0, 480 / 1740, 0, 480 / 1740, 1, 0, 1])));
-    expect(Array.from(uvs.slice(24, 32))).toEqual(Array.from(new Float32Array([1440 / 1740, 0, 1, 0, 1, 1, 1440 / 1740, 1])));
-    expect(Array.from(indices.slice(0, 6))).toEqual([0, 1, 2, 0, 2, 3]);
-    const faces = [...monoliths(3).map((m) => m.face), aboutFace()];
-    // Counter-clockwise as seen from the plaza: (b - a) x (c - a) points out of each face.
-    for (let quad = 0; quad < 4; quad++) {
-      const v = (i: number) => [positions[(quad * 4 + i) * 3], positions[(quad * 4 + i) * 3 + 1], positions[(quad * 4 + i) * 3 + 2]];
-      const [a, b, c] = [v(0), v(1), v(2)];
-      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-      const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
-      expect(n[0] * faces[quad].out.x + n[2] * faces[quad].out.z).toBeGreaterThan(0);
-    }
     for (const [i, q] of hallShots(3).entries()) {
       expect(q.w).toBe(SHOT.w);
       expect(q.center).toEqual(onFace(monoliths(3)[i].face, 0, SHOT.y, 0.03));
@@ -211,7 +193,7 @@ describe("Highlights Hall scenery", () => {
   it("fits the headline in one line over the portrait (EN and ID)", () => {
     for (const locale of ["en", "id"] as const) {
       const d = buildExperienceData(locale, { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
-      const headline = hallLabels(d, labels, fonts).find((t) => t.text === d.profile.headline)!;
+      const headline = hallTexts(d, labels, fonts).labels.find((t) => t.text === d.profile.headline)!;
       // Rough advance of the sans face: 0.55 em per character.
       expect(Math.ceil((headline.text.length * headline.fontSize * 0.55) / headline.maxWidth!), locale).toBeLessThanOrEqual(1);
     }

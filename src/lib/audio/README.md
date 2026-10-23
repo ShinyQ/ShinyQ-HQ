@@ -33,7 +33,6 @@ The engine (`engine.ts` with `synth.ts` and `music.ts`) is a lazy chunk behind t
 | `subscribe` | `(listener: () => void) => () => void` | Called on mute and setting changes. Shaped for `useSyncExternalStore`. |
 | `dispose` | `() => void` | Removes document listeners and closes the context. |
 | `useAudio` | `(engine?: AudioEngine) => { muted, setMuted, toggleMuted, play, setRumble }` | Client hook. Server render and hydration report `muted: true`. |
-| `useAudioSettings` | `(engine?: AudioEngine) => AudioSettings` | Client hook for the Settings panel. Server render reports `{ effects: true, music: true, musicVolume: 1, ambience: true }`. |
 
 ## Sounds
 

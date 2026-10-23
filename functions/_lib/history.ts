@@ -96,9 +96,3 @@ export function followUpAnchor(question: string, history: readonly HistoryTurn[]
   }
   return parts.join(" ");
 }
-
-/** Retrieval and routing text: a follow-up carries its anchor along. */
-export function followUpText(question: string, history: readonly HistoryTurn[]): string {
-  const anchor = followUpAnchor(question, history);
-  return anchor ? `${question} ${anchor}` : question;
-}

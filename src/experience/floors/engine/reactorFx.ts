@@ -66,11 +66,6 @@ export function segmentLanes(lanes: readonly ReactorLane[], count: number): (Rea
   return Array.from({ length: count }, (_, k) => (n === 0 ? null : lanes[Math.floor((k * n) / count)]));
 }
 
-/** One color per segment: each lane takes a contiguous run (the lanes' order), all idle amber without lanes. */
-export function segmentColors(lanes: readonly ReactorLane[], count: number): string[] {
-  return segmentLanes(lanes, count).map((lane) => (lane === null ? IDLE_TONE : LANE_TONES[lane]));
-}
-
 /** The chase wave at slot `k` of a ring of `perRing` after `t` seconds of motion: 1 at the head, 0 past `RUN_CHASE.width` behind it. */
 export function chaseLevel(k: number, perRing: number, t: number): number {
   const behind = (((t * RUN_CHASE.speed - k / perRing) % 1) + 1) % 1;

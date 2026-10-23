@@ -165,7 +165,7 @@ describe("build story content", () => {
     const quoted = text.split("\n").map((l) => l.trim());
     expect(quoted.length).toBeGreaterThanOrEqual(6);
     expect(quoted.length).toBeLessThanOrEqual(20);
-    const start = lines.findIndex((l, i) => quoted.every((q, k) => lines[i + k] === q));
+    const start = lines.findIndex((_l, i) => quoted.every((q, k) => lines[i + k] === q));
     expect(start, "excerpt lines are consecutive in the plan").toBeGreaterThanOrEqual(0);
   });
 

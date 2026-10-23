@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { ROVER } from "@/experience/config";
-import { CONCEPT_BUILDERS } from "@/experience/floors/library/concepts";
+import { buildNewsroomLayout as build } from "@/experience/floors/library/concepts/newsroom";
 import {
   dockAlong,
-  LIBRARY_CONCEPTS,
   LIBRARY_FLOOR,
   libraryLayoutInput,
   stationYaw,
@@ -81,9 +80,7 @@ describe("dockAlong", () => {
   });
 });
 
-describe.each(LIBRARY_CONCEPTS)("L4 concept %s", (concept) => {
-  const build = CONCEPT_BUILDERS[concept];
-
+describe("L4 concept newsroom", () => {
   it.each(INPUTS)("passes the space rules with %s", (_, input) => {
     const { floor, network } = build(input);
     expectSpaceRules({ bounds: floor.bounds, obstacles: floor.obstacles, doors: floor.doors ?? [], network, start: floor.approach });

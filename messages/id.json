@@ -73,11 +73,9 @@
       "en": "EN",
       "id": "ID"
     },
-    "inProgress": "dalam proses",
-    "verify": "Lihat kredensial"
+    "inProgress": "dalam proses"
   },
   "home": {
-    "eyebrow": "Agent HQ · Lobi",
     "currentRole": "Saat ini",
     "statsTitle": "Sekilas",
     "journeyTitle": "Pekerjaan terbaru",
@@ -94,7 +92,6 @@
     "openTo": "Terbuka untuk",
     "since": "sejak {date}",
     "location": "Lokasi",
-    "statusLabel": "Status saat ini",
     "introTitle": "Singkatnya",
     "moreWork": "Proyek utama lainnya",
     "featuredShots": "{count} tangkapan layar",
@@ -363,7 +360,6 @@
   "contact": {
     "title": "Atap · Komunikasi",
     "intro": "Hubungi saya untuk membahas software dan AI engineering.",
-    "beacon": "Beacon",
     "channels": "Tautan kontak",
     "cvTitle": "Kios CV",
     "cvIntro": "Baca CV saya di sini, atau unduh PDF-nya.",
@@ -439,9 +435,6 @@
     "pages": "Halaman",
     "elsewhere": "Tautan lain"
   },
-  "root": {
-    "choose": "Pilih bahasa"
-  },
   "hud": {
     "canvasLabel": "ShinyQ HQ, menara 3D yang bisa dijelajahi",
     "canvasDescription": "Jelajahi lima lantai bersama Screen Rover. Gunakan WASD atau tombol panah untuk menyetir (tahan Shift untuk turbo). Arahkan kursor ke objek yang menyala (pintu, pad lift, papan) untuk melihat namanya, lalu klik untuk menuju ke sana. Seret, gunakan Q dan E, atau tombol putar untuk memutar tampilan sepenuhnya, serta R dan F untuk memiringkannya; tekan 0 untuk mengatur ulang. Scroll, cubit, atau tekan + dan - untuk zoom; zoom sampai paling dekat untuk melihat lewat mata rover, dengan WASD menyetir ke arah pandangan, lalu zoom keluar untuk kembali. Tampilan otomatis menghadap panel saat rover mendekat. Putar sendiri untuk mengganti arahnya. Pindah lantai lewat lift, pad panggilnya, atau PageUp dan PageDown. Situs klasik menampilkan portofolio sebagai situs biasa.",
@@ -454,7 +447,6 @@
     "currentFloor": "Lantai saat ini: {floor}, {name}",
     "pageView": "Situs klasik",
     "pageViewHint": "Buka halaman ini sebagai situs klasik, tanpa menara 3D",
-    "explore3d": "Jelajahi dalam 3D",
     "back3d": "Kembali ke 3D",
     "back3dHint": "Kembali ke menara dalam 3D. Tekan 3.",
     "language": "Bahasa",
@@ -530,7 +522,6 @@
     "hintCoarse": "Kemudi: joystick · Turbo: ketuk dua kali joystick · Tuju: ketuk dua kali objek yang menyala · Putar: seret · Zoom: cubit · Lantai: geser ke atas atau bawah",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
-    "joystick": "Joystick rover",
     "bootEyebrow": "Agent HQ · memulai",
     "bootTitle": "rover@hq:~$ ./boot",
     "bootLine1": "[ ok ] daya aktif",
@@ -759,7 +750,6 @@
       "bio": "Profil",
       "story": "Latar belakang",
       "principles": "Cara kerja",
-      "verify": "Lihat kredensial",
       "earned": "Diraih",
       "inProgress": "Dalam proses",
       "sideProjects": "Proyek sampingan",
@@ -819,8 +809,7 @@
   },
   "case": {
     "onThisPage": "Di halaman ini",
-    "more": "Proyek {wing} lainnya",
-    "images": "{count, plural, other {# gambar}}"
+    "more": "Proyek {wing} lainnya"
   },
   "writing": {
     "title": "Tulisan",
@@ -902,39 +891,6 @@
       "placeholder": "Tanyakan apa saja tentang pekerjaan saya",
       "submit": "Tanya",
       "topicsLabel": "Atau mulai dari"
-    }
-  },
-  "proto": {
-    "title": "Prototipe lantai yang bisa dijelajahi",
-    "floor": "Lantai",
-    "L2": "L2 Career Road",
-    "L3": "L3 Project Roads",
-    "road": "Jalan",
-    "straight": "Lurus",
-    "meander": "Berkelok",
-    "view": "Tampilan",
-    "rover": "Rover",
-    "top": "Dari atas",
-    "rules": "Aturan ruang",
-    "pass": "lolos",
-    "violations": "{count} pelanggaran",
-    "size": "{w} x {d} u, {rooms} ruang, {plazas} plaza",
-    "rooms": "{count} ruang",
-    "loop": "Putaran",
-    "hint": "Setir dengan WASD atau klik lantai.",
-    "close": "Tutup",
-    "sheet": "Chip 2D",
-    "sheetTitle": "Ikon tipe sebagai chip situs klasik",
-    "more": "Proyek lainnya di sini",
-    "library": {
-      "title": "Konsep lantai tulisan",
-      "concept": "Konsep",
-      "atrium": "A: Ruang Baca",
-      "newsroom": "B: Ruang Redaksi",
-      "constellation": "C: Konstelasi",
-      "budget": "{calls} draw call, {triangles} segitiga",
-      "pad": "Pad panggil lift (dibiarkan kosong)",
-      "posts": "{count} tulisan di lantai, {archive} di papan arsip"
     }
   },
   "hall": {

@@ -26,7 +26,6 @@ export const CLIENT_NAMESPACES = [
   "office",
   "paper",
   "production",
-  "proto",
   "stats",
   "work",
 ] as const;

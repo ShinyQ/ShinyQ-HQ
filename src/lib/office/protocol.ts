@@ -27,8 +27,6 @@ export const OFFICE_SEATS = 10;
 export const OFFICE_RECENT = 5;
 export const OFFICE_FEED = 20;
 export const OFFICE_PATH = "/api/office";
-export const OFFICE_BEAT_PATH = "/api/office/beat";
-export const OFFICE_GITHUB_PATH = "/api/office/github";
 export const OFFICE_BEAT_MAX_BYTES = 2048;
 export const OFFICE_TITLE_MAX = 80;
 export const OFFICE_FEED_TITLE_MAX = 120;
@@ -174,7 +172,6 @@ export type OfficeResponseV4 = OfficeSnapshotV4 | OfficeDisabledV1;
 
 /** What the clients hold: the newest snapshot version. */
 export type OfficeSnapshot = OfficeSnapshotV3;
-export type OfficeResponse = OfficeResponseV3;
 
 /** What the relay sends: enums and allowlisted public names only, never prompts, commands, paths or output. */
 export interface OfficeBeatV1 {
@@ -207,6 +204,7 @@ export type Obj = Record<string, unknown>;
 export const REPO = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
 const BRANCH = /^[A-Za-z0-9._/-]{1,120}$/;
 const SESSION = /^[0-9a-f]{64}$/;
+// The 80 is OFFICE_TITLE_MAX, kept a literal: a RegExp built at module scope would stay in every client chunk that imports this file.
 const BEAT_TITLE = /^[\p{L}\p{N} .,:;'()#&+/!?-]{1,80}$/u;
 export const URL_RE = /^https:\/\/[^\s"'<>\\]{1,300}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;

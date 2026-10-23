@@ -1,23 +1,19 @@
 "use client";
 
-import { Billboard, Text } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Quaternion, Vector3, type InstancedMesh } from "three";
 import type { RoomId } from "@/content/schema";
-import { FloatingSigns } from "../../../fx/FloatingSign";
 import { HoloIcon, type HoloIconInstance } from "../../../fx/HoloIcon";
 import { LIBRARY_ICONS } from "../../../fx/holoIcons";
 import { createInstancedGlassMaterial, neonColor } from "../../../fx/materials";
-import type { SignSpec } from "../../../fx/signLayout";
-import { zoneSignSpecs } from "./signs";
 import { useUniformTime } from "../../../fx/useUniformTime";
-import { FONTS, tierFill } from "../../../tower/primitives";
+import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
 import { LIBRARY_ZONES, paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
 
-/** Everything a concept's decor needs; the same props in the dev prototype and on the real floor. */
+/** Everything the L4 decor needs. Stations are clicked through point-and-go (interact/registry.ts). */
 export interface DecorProps {
   layout: LibraryLayout;
   library: LibraryData;
@@ -25,8 +21,6 @@ export interface DecorProps {
   reducedMotion: boolean;
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
   zones: Record<LibraryZone, string>;
-  /** Dev prototypes only: a click on a station. The tower clicks stations through point-and-go (interact/registry.ts). */
-  onStation?: (room: RoomId) => void;
   /** In-world click on a paper: open its preview modal (`openPaperFor`). */
   onPaper: (id: string) => void;
 }
@@ -50,7 +44,7 @@ function setCursor(value: string) {
 }
 
 /** Station plinths and alcoves: glass boxes (one instanced mesh) and their edges and door markers (one line batch). */
-export function StationShells({ stations, tier, onStation }: { stations: readonly LibraryStation[]; tier: GpuTier; onStation?: (room: RoomId) => void }) {
+export function StationShells({ stations, tier }: { stations: readonly LibraryStation[]; tier: GpuTier }) {
   const mesh = useRef<InstancedMesh>(null);
   const glass = useMemo(() => createInstancedGlassMaterial(tierFill(0.06, tier)), [tier]);
   const list = useMemo(() => [glass], [glass]);
@@ -91,14 +85,6 @@ export function StationShells({ stations, tier, onStation }: { stations: readonl
     m.computeBoundingSphere();
   }, [stations]);
 
-  const onClick = (e: ThreeEvent<MouseEvent>) => {
-    if (!onStation || e.delta > 6 || e.instanceId === undefined) return;
-    e.stopPropagation();
-    const s = stations[e.instanceId];
-    if (s) onStation(s.room);
-  };
-  const handlers = onStation ? { onClick, onPointerOver: () => setCursor("pointer"), onPointerOut: () => setCursor("") } : {};
-
   return (
     <group name="library-stations">
       <instancedMesh
@@ -107,7 +93,6 @@ export function StationShells({ stations, tier, onStation }: { stations: readonl
         args={[undefined, undefined, Math.max(1, stations.length)]}
         material={glass}
         renderOrder={2}
-        {...handlers}
       >
         <boxGeometry args={[1, 1, 1]} />
       </instancedMesh>
@@ -134,42 +119,6 @@ export function ZoneIcons({ stations, tier, reducedMotion, lift = 2.2, size = 2.
       ))}
     </group>
   );
-}
-
-/** Station titles as billboards (troika text, one draw call each). */
-export function StationLabels({ stations, titles, y = 5.2 }: { stations: readonly LibraryStation[]; titles: Map<RoomId, string>; y?: number }) {
-  return (
-    <group name="library-labels">
-      {stations.map((s) => (
-        <Billboard key={s.room} position={[s.center.x, STATION_HEIGHT[s.zone] + y - 1, s.center.z]}>
-          <Text
-            font={FONTS.sansBold}
-            fontSize={s.zone === "blog" ? 0.42 : 0.55}
-            maxWidth={s.zone === "blog" ? 5.2 : 7}
-            textAlign="center"
-            anchorX="center"
-            anchorY="bottom"
-            lineHeight={1.15}
-            color={ZONE_TONE[s.zone]}
-            outlineWidth={0.03}
-            outlineColor="#05050c"
-            material-toneMapped={false}
-          >
-            {titles.get(s.room) ?? s.room}
-          </Text>
-        </Billboard>
-      ))}
-    </group>
-  );
-}
-
-/**
- * Zone names floating where each zone's road starts (spectacle round: no words on the floor), plus any
- * concept signs (`extra`, such as the newsroom's timeline years), all in one `FloatingSigns` group.
- */
-export function ZoneSigns({ layout, zones, tier, extra }: { layout: LibraryLayout; zones: Record<LibraryZone, string>; tier: GpuTier; extra?: readonly SignSpec[] }) {
-  const signs = useMemo(() => [...zoneSignSpecs(layout, zones), ...(extra ?? [])], [layout, zones, extra]);
-  return <FloatingSigns signs={signs} name="library-signs" tier={tier} />;
 }
 
 /** Paper plates inside the Research station (one instanced mesh): a click opens that paper's preview. */

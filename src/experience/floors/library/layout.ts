@@ -2,9 +2,8 @@ import { buildNewsroomLayout as buildPicked } from "./concepts/newsroom";
 import type { LibraryConcept, LibraryLayout, LibraryLayoutInput } from "./model";
 
 /**
- * L4 Writing (walkable floors plan, part 3). The owner picked this concept from the dev prototype
- * (/{locale}/dev/library); the other concepts stay in `concepts/` for that prototype only, so the 3D
- * chunk bundles just the picked builder. Pure.
+ * L4 Writing (walkable floors plan, part 3). The owner picked the newsroom concept from a dev
+ * prototype; the other concepts and the prototype are gone. Pure.
  */
 export const LIBRARY_CONCEPT: LibraryConcept = "newsroom";
 

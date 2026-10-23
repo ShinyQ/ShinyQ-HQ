@@ -92,6 +92,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Safety blocklist removed | 2026-10-22: owner decision: the public-safety blocklist and every check built on it are gone; client names are kept out by review, and the forbidden patterns lint, the export script policy check and the Ask entity allowlist stay (#288) | Done |
 | B1 detailed story | 2026-10-22 (B1 living machine, PR 1 of 2): the build story runs to round 13, the Blueprint shows the office, R2, the KV pack and Groq, the Agents and Gates stations describe today's workflow and CI, and the two dark bays open as Rover's Brain and Rejected Designs (#290) | Done |
 | B1 reactor hall | 2026-10-22 (B1 living machine, PR 2 of 2): the aisle ends in a reactor hall with a live core (rings from the CI runs, a deploy flash, sparks for awake agents, a pulse from 30-day visits and Ask questions, a counter plate), its station and drawer, a B1-only poller and a hum that rises near the core (#291) | Done |
+| Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 
 ## Controls and first visit
 

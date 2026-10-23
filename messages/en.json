@@ -73,11 +73,9 @@
       "en": "EN",
       "id": "ID"
     },
-    "inProgress": "in progress",
-    "verify": "View credential"
+    "inProgress": "in progress"
   },
   "home": {
-    "eyebrow": "Agent HQ · Lobby",
     "currentRole": "Current role",
     "statsTitle": "At a glance",
     "journeyTitle": "Recent work",
@@ -94,7 +92,6 @@
     "openTo": "Open to",
     "since": "since {date}",
     "location": "Location",
-    "statusLabel": "Current status",
     "introTitle": "In short",
     "moreWork": "More key projects",
     "featuredShots": "{count, plural, one {# screenshot} other {# screenshots}}",
@@ -363,7 +360,6 @@
   "contact": {
     "title": "Roof · Comms",
     "intro": "Get in touch about software and AI engineering.",
-    "beacon": "Beacon",
     "channels": "Contact links",
     "cvTitle": "CV kiosk",
     "cvIntro": "Read my CV here, or download the PDF.",
@@ -439,9 +435,6 @@
     "pages": "Pages",
     "elsewhere": "Elsewhere"
   },
-  "root": {
-    "choose": "Choose a language"
-  },
   "hud": {
     "canvasLabel": "ShinyQ HQ, an explorable 3D tower",
     "canvasDescription": "Explore five floors with the Screen Rover. Use WASD or arrow keys to drive (hold Shift to boost). Hover a glowing object (a door, the elevator pad, a board) to see its name and click it to drive there. Drag, use Q and E or the rotate buttons to turn the view all the way around, and R and F to tilt it; press 0 to reset it. Scroll, pinch or press + and - to zoom; zoom all the way in to see through the rover's eyes, where WASD drives where you look, and zoom out to return. The view turns toward displays as you approach. Rotate it yourself to override. Use the elevator, its call pads or PageUp and PageDown to change floors. Classic site shows the portfolio as a regular website.",
@@ -454,7 +447,6 @@
     "currentFloor": "Current floor: {floor}, {name}",
     "pageView": "Classic site",
     "pageViewHint": "Open this page as a classic website, without the 3D tower",
-    "explore3d": "Explore in 3D",
     "back3d": "Back to 3D",
     "back3dHint": "Return to the tower in 3D. Press 3.",
     "language": "Language",
@@ -530,7 +522,6 @@
     "hintCoarse": "Drive: joystick · Boost: double-tap the joystick · Go: tap a glowing object twice · Rotate: drag · Zoom: pinch · Floors: swipe up or down",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
-    "joystick": "Rover joystick",
     "bootEyebrow": "Agent HQ · booting",
     "bootTitle": "rover@hq:~$ ./boot",
     "bootLine1": "[ ok ] power on",
@@ -759,7 +750,6 @@
       "bio": "Profile",
       "story": "Background",
       "principles": "Working approach",
-      "verify": "View credential",
       "earned": "Earned",
       "inProgress": "In progress",
       "sideProjects": "Side projects",
@@ -819,8 +809,7 @@
   },
   "case": {
     "onThisPage": "On this page",
-    "more": "More {wing} projects",
-    "images": "{count, plural, one {# image} other {# images}}"
+    "more": "More {wing} projects"
   },
   "writing": {
     "title": "Writing",
@@ -902,39 +891,6 @@
       "placeholder": "Ask anything about my work",
       "submit": "Ask",
       "topicsLabel": "Or start with"
-    }
-  },
-  "proto": {
-    "title": "Walkable floors prototype",
-    "floor": "Floor",
-    "L2": "L2 Career Road",
-    "L3": "L3 Project Roads",
-    "road": "Road",
-    "straight": "Straight",
-    "meander": "Meander",
-    "view": "View",
-    "rover": "Rover",
-    "top": "Top-down",
-    "rules": "Space rules",
-    "pass": "pass",
-    "violations": "{count} violations",
-    "size": "{w} x {d} u, {rooms} rooms, {plazas} plazas",
-    "rooms": "{count} rooms",
-    "loop": "Loop",
-    "hint": "Drive with WASD or click the floor.",
-    "close": "Close",
-    "sheet": "2D chips",
-    "sheetTitle": "Type icons as classic site chips",
-    "more": "More projects here",
-    "library": {
-      "title": "Writing floor concepts",
-      "concept": "Concept",
-      "atrium": "A: Reading Room",
-      "newsroom": "B: Newsroom",
-      "constellation": "C: Constellation",
-      "budget": "{calls} draw calls, {triangles} triangles",
-      "pad": "Elevator call pad (kept free)",
-      "posts": "{count} posts on the floor, {archive} on the archive board"
     }
   },
   "hall": {

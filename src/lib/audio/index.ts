@@ -9,4 +9,4 @@ export {
   CLICK_RATE_LIMIT,
 } from "./settings";
 export { audio, createAudioFacade, type AudioFacadeOptions } from "./singleton";
-export { useAudio, useAudioSettings, type UseAudioResult } from "./useAudio";
+export { useAudio, type UseAudioResult } from "./useAudio";

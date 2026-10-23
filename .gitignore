@@ -17,7 +17,7 @@ next-env.d.ts
 .vercel
 content/_fragments/
 /screenshots/
-# Lighthouse CI reports (and the round 5 P1 baseline, scripts/measure-delivery.ts)
+# Lighthouse CI reports (and a local before-run baseline)
 .lighthouseci/
 /.lighthouseci-before/
 # Ask the HQ knowledge pack (bun scripts/build-knowledge.ts)

@@ -58,7 +58,7 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
  * lane, and the shelves as press desks.
  */
 export function NewsroomDecor(props: DecorProps) {
-  const { layout, library, tier, reducedMotion, zones, onStation } = props;
+  const { layout, library, tier, reducedMotion, zones } = props;
   const titles = useMemo(() => stationTitles(library, zones), [library, zones]);
   const wall = layout.extras.wall;
   const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
@@ -83,7 +83,7 @@ export function NewsroomDecor(props: DecorProps) {
 
   return (
     <group name="library-newsroom">
-      <StationShells stations={layout.stations} tier={tier} onStation={onStation} />
+      <StationShells stations={layout.stations} tier={tier} />
       <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
       <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
@@ -108,15 +108,6 @@ export function NewsroomDecor(props: DecorProps) {
               position={[wall.minX + 0.6, 6.4, wall.maxZ + 0.06]}
               color="#f4f4f5"
               material-toneMapped={false}
-              onClick={
-                onStation
-                  ? (e) => {
-                      if (e.delta > 6 || !featured) return;
-                      e.stopPropagation();
-                      onStation(featured.room);
-                    }
-                  : undefined
-              }
             >
               {featuredPost.title}
             </Text>

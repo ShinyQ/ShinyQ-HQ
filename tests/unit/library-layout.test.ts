@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { getContent } from "@/content/load";
 import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
-import { CONCEPT_BUILDERS } from "@/experience/floors/library/concepts";
+import { buildNewsroomLayout } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout, LIBRARY_CONCEPT } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, type LibraryLayoutInput } from "@/experience/floors/library/model";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
@@ -19,7 +19,7 @@ const layout = buildLibraryLayout(input);
 describe("L4 Writing floor (the picked concept)", () => {
   it("is the picked concept's layout, shipped as the L4 floor layout", () => {
     expect(layout.concept).toBe(LIBRARY_CONCEPT);
-    expect(layout.stations).toEqual(CONCEPT_BUILDERS[LIBRARY_CONCEPT](input).stations);
+    expect(layout.stations).toEqual(buildNewsroomLayout(input).stations);
     const floors = buildFloorLayouts(data.years.length, { library: input });
     // buildFloorLayouts adds the elevator call pad (inside the spot the concepts keep free) and the Express Return pad.
     const { pads, ...floor } = floors.L4;

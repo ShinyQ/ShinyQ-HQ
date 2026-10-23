@@ -1,3 +1,5 @@
+import { OFFICE_TITLE_MAX } from "../../../src/lib/office/protocol";
+
 const DEFAULT_BRANCHES = new Set(["main", "master", "develop", "trunk"]);
 
 /**
@@ -10,7 +12,7 @@ export function branchTitle(branch: string): string | null {
   const words = last
     .replace(/[^A-Za-z0-9]+/g, " ")
     .trim()
-    .slice(0, 80)
+    .slice(0, OFFICE_TITLE_MAX)
     .trim();
   if (!words) return null;
   return words[0].toUpperCase() + words.slice(1);

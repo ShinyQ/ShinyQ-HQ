@@ -27,14 +27,6 @@ export function parsePodFilter(search: string): PodFilter {
   };
 }
 
-export function podFilterQuery(filter: PodFilter): string {
-  const params = new URLSearchParams();
-  if (filter.wing !== "all") params.set("wing", filter.wing);
-  if (filter.stack) params.set("stack", filter.stack);
-  const query = params.toString();
-  return query ? `?${query}` : "";
-}
-
 export function matchesPod(pod: Pick<Pod, "wing" | "stack">, filter: PodFilter): boolean {
   if (filter.wing !== "all" && pod.wing !== filter.wing) return false;
   return !filter.stack || pod.stack.includes(filter.stack);

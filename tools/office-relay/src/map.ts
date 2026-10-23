@@ -99,7 +99,7 @@ function toolFailed(p: Record<string, unknown>): Mapped {
  * One hook event to an office state (spec section 5), or null when the event says nothing visible. The event name
  * comes from the command line, because Copilot's camelCase payloads carry no event name.
  */
-export function mapEvent(agent: OfficeAgent, event: string, p: Record<string, unknown>): Mapped | null {
+export function mapEvent(_agent: OfficeAgent, event: string, p: Record<string, unknown>): Mapped | null {
   const e = event.toLowerCase();
   switch (e) {
     case "userpromptsubmitted":

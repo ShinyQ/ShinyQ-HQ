@@ -300,11 +300,10 @@ Design: Part 2 of the walkable floors plan (L2 Career Road, L3 Project Roads). L
     - the career badge in the [Glass Drawer](hud-and-drawer.md) (`RoomView` badge `type`).
 - Use `CAREER_TONE` wherever a career type has a color.
 
-### Prototype
+### Dev routes
 
-- `/{locale}/dev/floors?floor=L2|L3&road=straight|meander&view=rover|top&sheet=1&at=x,z&tier=full|lite` under `bun run dev`. Picks: meander road, Neon line icons (owner decision).
 - `page.dev.tsx` files are routes only when `NODE_ENV` is not production or `HQ_DEV_PAGES=1` (`pageExtensions` in `next.config.ts`), so the static export never contains them.
-- The L4 concepts prototype is `/{locale}/dev/library` (pick: newsroom, owner decision); `bun scripts/dev-shots.ts` captures it.
+- The only one left is the certification wall harness, `/{locale}/dev/certs` ([folder-layout.md](folder-layout.md#dev-prototypes)).
 
 ## Point-and-go
 

@@ -132,7 +132,7 @@ Full text and the tests that enforce them: [content-style-and-safety.md](docs/ag
 
 | Command | What it does |
 |---|---|
-| `bun run dev` | Dev server (dev-only routes such as `/{locale}/dev/floors` exist only here) |
+| `bun run dev` | Dev server (dev-only routes such as `/{locale}/dev/certs` exist only here) |
 | `bun run verify:quick` | Typecheck, lint, unit tests, `next build`, `og:check` (about 1 to 2 minutes) |
 | `bun run e2e:changed` | Only the e2e specs that cover your changed paths (`--dry` prints the plan) |
 | `bun run e2e:smoke` / `e2e:full` | Smoke specs / the whole suite |
