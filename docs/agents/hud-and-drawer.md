@@ -144,7 +144,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | `hq:recent` | recent rooms on the static tier |
 | `hq:floor-intro` | JSON list of floors whose first-visit Rover line was spoken or skipped; a legacy `hq:walk-prompt` list still counts as seen and is never written, stale `hq:walk:<id>` keys are ignored |
 | `hq:view` | the remembered "Default HQ view" preference (`page` or `3d`), written by Classic site, Back to 3D and the settings entry; decides new tabs and visits, see [page-view.md](page-view.md#shareable-links) |
-| `hq:stats-optout` | `"1"`: "Don't count my visits", see [Public visit stats](stats.md) |
+| `hq:stats-optout` | retired: the visit client removes a stale key on start and nothing reads it, see [Public visit stats](stats.md#skips) |
 | `hq:sound` | master mute, `"off"` mutes (a missing key is on), see [Audio](ci-and-deploy.md#audio) |
 | `hq:sfx` | sound effects, `"off"` disables them (missing is on) |
 | `hq:music` | background music, `"off"` disables it (missing is on) |

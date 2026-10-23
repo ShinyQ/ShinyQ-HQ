@@ -191,7 +191,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
   - Client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state).
-- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home ticker item), OptOutToggle + optOutStore ("Don't count my visits").
+- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home ticker item).
 
 ### src/content/
 
@@ -236,7 +236,7 @@ Paths are relative to the repository root. Two paths are not in a fresh checkout
   - geo.ts + generated geo-data.ts (Natural Earth land grid and country points, `bun scripts/visits-geo.ts`).
   - labels.ts (server: chip and floor labels).
 - `src/lib/rum/protocol.ts`: RUM beacon wire contract (buckets, parseRumPayload, rumDataPoint), shared with functions/.
-- `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon), floors.ts (floorOfPath), optout.ts.
+- `src/lib/stats/`: public visit stats, shared by the Worker, the Functions and the clients: protocol.ts (StatsSnapshotV1, parseStatsSnapshot), fixtures.ts, visit.ts (beacon contract), visitClient.ts (beacon, clears the retired opt-out key), floors.ts (floorOfPath).
 - `src/lib/office/`: the Agent Office client contract (`protocol.ts`; the v4 validators in `protocolV4.ts`, for the 3D scene and the Function only; the history validators in `protocolHistory.ts`, for the Function, the Worker and the replay chunk only), fixtures (`fixtures.ts`), poller (`poll.ts`, `POLL`) and shared model (`model.ts`: `STATE_TONE`, counts, desk titles), shared by the 3D office and the Classic card; no React, no three.
 - `src/lib/floors.ts`: the five public floors bottom up and the secret `B1` id (import-free; the store, `floorOrder.ts`, the tower, the build dashboard and the B1 room view read it).
 - `src/lib/build-page.ts`: pure `/build` helpers that join the story text with the build facts (shared with the B1 drawers).
