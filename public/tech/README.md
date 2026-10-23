@@ -12,9 +12,11 @@ Icons used by `src/content/tech.ts` (`getTechLogo`). Files are named by registry
 | Google brand mark | `google.svg` | The four-color "G" (blue `#4285F4`, red `#EA4335`, yellow `#FBBC05`, green `#34A853`) from Google's Sign-In branding guidelines; identifies Google as a certification issuer and for Google OAuth. |
 | Simple Icons (16.35.0) | `vite.svg`, `cloudflare-workers.svg`, `cloudflare-d1.svg` | Same CC0 terms; D1 has no mark of its own, so `cloudflare-d1.svg` is the Cloudflare mark. |
 | Simple Icons (issuers) | `hackerrank.svg` | Same CC0 terms; identifies HackerRank as a certification issuer. |
+| Simple Icons (16.35.0) | `threejs.svg` | Same CC0 terms; the black mark is drawn white for the dark theme. |
+| [microsoft/playwright.dev](https://github.com/microsoft/playwright.dev) (`static/img/playwright-logo.svg`) | `playwright.svg` | The project logo from Playwright's public documentation repository (Apache-2.0), unmodified; it identifies the test tool the site uses. |
 | [microsoft/agent-framework](https://github.com/microsoft/agent-framework) | `agent-framework.webp` | Project artwork from the public repository. |
 | Owner's previous portfolio | remaining `*.webp` rasters | Trimmed and padded to 96 x 96. |
 
 Names without a usable logo render as text chips and are listed in `TEXT_ONLY_TECH`.
 
-The 3D Lobby walls draw these logos from one prebuilt atlas (`public/atlas/`): after adding, removing or replacing a logo the skills or certification wall shows, run `bun run logo:atlas` and commit its output.
+The 3D Lobby walls draw these logos from one prebuilt atlas (`public/atlas/`): after adding, removing or replacing a logo the skills or certification wall shows, run `bun run logo:atlas` and commit its output. The B1 Stack Halo has its own atlas (`public/atlas/engine.*.webp`, the build story's `stack` and the agents' `tools`; Codex is drawn as a text cell): after changing either list or one of its logos, run `bun run engine:atlas`.

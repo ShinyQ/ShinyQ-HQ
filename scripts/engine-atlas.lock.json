@@ -1,0 +1,20 @@
+{
+  "file": "/atlas/engine.d304e1a876.webp",
+  "srcs": [
+    "/tech/nextjs.svg",
+    "/tech/react.webp",
+    "/tech/threejs.svg",
+    "/tech/typescript.svg",
+    "/tech/tailwind.svg",
+    "/tech/bun.svg",
+    "/tech/cloudflare-pages.svg",
+    "/tech/cloudflare-workers.svg",
+    "/tech/github-actions.svg",
+    "/tech/vitest.svg",
+    "/tech/playwright.svg",
+    "/tech/github-copilot.svg",
+    "/tech/claude.svg",
+    "text:Codex"
+  ],
+  "sources": "1235ea0d900b"
+}

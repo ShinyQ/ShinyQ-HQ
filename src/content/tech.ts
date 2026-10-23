@@ -101,6 +101,8 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("cloudflare-pages", "Cloudflare Pages"),
   svg("cloudflare-workers", "Cloudflare Workers"),
   svg("cloudflare-d1", "Cloudflare D1"),
+  svg("threejs", "Three.js", ["three", "react three fiber"]),
+  svg("playwright", "Playwright"),
   svg("vite", "Vite"),
   svg("html", "HTML", ["html5"]),
   svg("javascript", "JavaScript"),

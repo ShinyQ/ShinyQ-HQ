@@ -87,6 +87,10 @@ export function sourcesHash(layout: AtlasLayout, publicDir = PUBLIC): string {
   const settings = JSON.stringify({ raster: RASTER_VERSION, quant: QUANT, webp: WEBP });
   const h = createHash("sha256").update(`${layout.cell}:${atlasPad(layout.cell)}:${layout.cols}x${layout.rows}:${settings}\n`);
   for (const src of layout.srcs) {
+    if (src.startsWith(TEXT_CELL)) {
+      h.update(`${src}\n`);
+      continue;
+    }
     const file = path.join(publicDir, src);
     if (!existsSync(file)) throw new Error(`logo ${src} is missing under public/`);
     h.update(`${src}\n`).update(readFileSync(file)).update("\n");
@@ -104,11 +108,12 @@ export function atlasProblems(manifest: LogoAtlasManifest, lock: LogoAtlasLock, 
   for (const locale of LOCALES) if (!same(expectedLayout(locale).srcs)) problems.push(`the wall logo order differs in ${locale}`);
   if (lock.file !== manifest.file) problems.push("scripts/logo-atlas.lock.json belongs to another atlas");
   if (problems.length === 0 && lock.sources !== sourcesHash(layout, publicDir)) problems.push("a logo file or an atlas setting changed (sources hash differs)");
-  const file = path.join(publicDir, manifest.file);
-  if (!existsSync(file)) problems.push(`${manifest.file} is missing`);
-  else if (!manifest.file.includes(`.${sha(readFileSync(file)).slice(0, 10)}.`)) problems.push(`${manifest.file} does not match its content hash`);
+  problems.push(...atlasFileProblems(manifest.file, publicDir));
   return problems;
 }
+
+/** A cell drawn as a word instead of a logo file (`text:Codex`): names without a usable mark (`TEXT_ONLY_TECH`). */
+export const TEXT_CELL = "text:";
 
 export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
   const { chromium } = await import("@playwright/test");
@@ -130,7 +135,7 @@ export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
     });
     await page.goto("http://atlas.local/");
     const result = await page.evaluate(
-      async ({ srcs, cols, rows, cell, pad }) => {
+      async ({ srcs, cols, rows, cell, pad, textCell }) => {
         // The runtime atlas code, unchanged (LogoQuads.tsx useAtlasTexture before the prebuilt atlas).
         const canvas = document.createElement("canvas");
         canvas.width = cols * cell;
@@ -141,6 +146,21 @@ export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
           srcs.map(
             (src, i) =>
               new Promise<void>((resolve) => {
+                if (src.startsWith(textCell)) {
+                  // A word in white on a transparent cell, as wide as the logo box allows.
+                  const word = src.slice(textCell.length);
+                  const box = cell - pad * 2;
+                  let size = Math.round(box * 0.42);
+                  ctx.font = `700 ${size}px ui-monospace, Menlo, Consolas, monospace`;
+                  size = Math.floor(size * Math.min(1, box / ctx.measureText(word).width));
+                  ctx.font = `700 ${size}px ui-monospace, Menlo, Consolas, monospace`;
+                  ctx.fillStyle = "#ffffff";
+                  ctx.textAlign = "center";
+                  ctx.textBaseline = "middle";
+                  ctx.fillText(word, (i % cols) * cell + cell / 2, Math.floor(i / cols) * cell + cell / 2);
+                  resolve();
+                  return;
+                }
                 const img = new Image();
                 img.decoding = "async";
                 img.onload = () => {
@@ -163,7 +183,7 @@ export async function rasterize(layout: AtlasLayout): Promise<Buffer> {
         );
         return { png: canvas.toDataURL("image/png"), failed };
       },
-      { srcs: layout.srcs, cols: layout.cols, rows: layout.rows, cell: layout.cell, pad: atlasPad(layout.cell) },
+      { srcs: layout.srcs, cols: layout.cols, rows: layout.rows, cell: layout.cell, pad: atlasPad(layout.cell), textCell: TEXT_CELL },
     );
     if (result.failed.length > 0) throw new Error(`logos failed to load: ${result.failed.join(", ")}`);
     return Buffer.from(result.png.replace(/^data:image\/png;base64,/, ""), "base64");
@@ -200,10 +220,9 @@ export function quantize(rgba: Buffer, width: number, layout: AtlasLayout): Buff
   return out;
 }
 
-async function generate() {
+/** Draws, quantizes and encodes `layout` (lossless WebP, round-trip checked), writes it as `public/atlas/<prefix>.<hash>.webp` and removes older files of that prefix; returns the public path and the bytes. */
+export async function writeAtlas(layout: AtlasLayout, prefix: string): Promise<{ file: string; bytes: number }> {
   const sharp = (await import("sharp")).default;
-  const layout = expectedLayout();
-  const sources = sourcesHash(layout);
   const png = await rasterize(layout);
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const pixels = quantize(data, info.width, layout);
@@ -211,15 +230,29 @@ async function generate() {
   const webp = await sharp(pixels, raw).webp(WEBP).toBuffer();
   if (!pixels.equals(await sharp(webp).ensureAlpha().raw().toBuffer())) throw new Error("the WebP atlas does not round-trip the quantized pixels");
   mkdirSync(OUT, { recursive: true });
-  const name = `logos.${sha(webp).slice(0, 10)}.webp`;
+  const name = `${prefix}.${sha(webp).slice(0, 10)}.webp`;
   writeFileSync(path.join(OUT, name), webp);
-  for (const f of readdirSync(OUT)) if (f !== name) rmSync(path.join(OUT, f));
-  const manifest: LogoAtlasManifest = { file: `/atlas/${name}` };
+  for (const f of readdirSync(OUT)) if (f !== name && f.startsWith(`${prefix}.`)) rmSync(path.join(OUT, f));
+  return { file: `/atlas/${name}`, bytes: webp.length };
+}
+
+/** Whether the committed atlas file exists and carries its content hash in its name. */
+export function atlasFileProblems(file: string, publicDir = PUBLIC): string[] {
+  const full = path.join(publicDir, file);
+  if (!existsSync(full)) return [`${file} is missing`];
+  return file.includes(`.${sha(readFileSync(full)).slice(0, 10)}.`) ? [] : [`${file} does not match its content hash`];
+}
+
+async function generate() {
+  const layout = expectedLayout();
+  const sources = sourcesHash(layout);
+  const { file, bytes } = await writeAtlas(layout, "logos");
+  const manifest: LogoAtlasManifest = { file };
   const lock: LogoAtlasLock = { file: manifest.file, srcs: layout.srcs, sources };
   writeFileSync(MANIFEST, manifestSource(manifest));
   writeFileSync(LOCK, `${JSON.stringify(lock, null, 2)}\n`);
   const sourceBytes = layout.srcs.reduce((n, src) => n + readFileSync(path.join(PUBLIC, src)).length, 0);
-  console.log(`${manifest.file}: ${layout.srcs.length} logos, ${layout.cols}x${layout.rows} cells of ${layout.cell} px, ${webp.length} bytes (sources ${sourceBytes} bytes)`);
+  console.log(`${manifest.file}: ${layout.srcs.length} logos, ${layout.cols}x${layout.rows} cells of ${layout.cell} px, ${bytes} bytes (sources ${sourceBytes} bytes)`);
 }
 
 if (import.meta.main) {

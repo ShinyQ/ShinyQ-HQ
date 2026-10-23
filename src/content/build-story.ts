@@ -70,7 +70,12 @@ export const BuildStorySchema = z
     published: IsoDateSchema,
     lead: LocalizedTextSchema,
     stations: z.strictObject({
-      blueprint: station({ architecture: ArchitectureSchema, steps: z.array(LocalizedTextSchema).min(3).max(10) }),
+      blueprint: station({
+        architecture: ArchitectureSchema,
+        steps: z.array(LocalizedTextSchema).min(3).max(10),
+        /** The tools the site is built with (tech registry names): the B1 Stack Halo orbits their logos with the agents' tools. */
+        stack: z.array(z.string().min(1)).min(4).max(14),
+      }),
       timeline: station({
         rounds: z.array(BuildRoundSchema).min(1),
         /** Pull requests that are counted but shown without a link: their diff exposes text the site hides (C3). */
