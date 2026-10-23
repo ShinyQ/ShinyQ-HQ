@@ -10,7 +10,14 @@ export interface HologramPart {
   d: number;
   /** Waveform bars pulse their height with this phase (radians); undefined parts are static. */
   pulse?: number;
+  /** Roll about the sculpture's z axis (radians), before the pod spin; sculptures only (`content/sculptures.json`). */
+  r?: number;
+  /** Brightness 0 to 1 (default 1): dim plates let brighter details read in front of them; sculptures only. */
+  k?: number;
 }
+
+/** Most boxes one pod hologram may use (the L3 sculptures' cap; the kinds use at most 9): the instanced mesh's room per pod. */
+export const MAX_PARTS = 16;
 
 const box = (x: number, y: number, z: number, w: number, h: number, d: number, pulse?: number): HologramPart => ({ x, y, z, w, h, d, pulse });
 

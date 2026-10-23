@@ -847,7 +847,8 @@
             "Bootstrap"
           ],
           "discipline": "software",
-          "confidence": "strongly-inferred"
+          "confidence": "strongly-inferred",
+          "icon": "flag"
         },
         {
           "id": "trophy-case-2019",
@@ -884,7 +885,8 @@
           ],
           "stack": [],
           "discipline": "other",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "medal"
         },
         {
           "id": "campus-and-community-2019",
@@ -922,7 +924,8 @@
             "REST APIs"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "flag"
         },
         {
           "id": "telkom-university-2019",
@@ -969,7 +972,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "book-open"
         },
         {
           "id": "shumi-2019",
@@ -1024,7 +1028,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "shopping-bag"
         },
         {
           "id": "campus-and-community-2020",
@@ -1076,7 +1081,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "flag"
         },
         {
           "id": "research-vaccination-sentiment-2020",
@@ -1106,7 +1112,8 @@
           ],
           "discipline": "ai",
           "url": "https://github.com/ShinyQ/Naive-Bayes_Sentiment-Analysis-of-Government-COVID-19-Vaccination-Policy",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "flask-conical"
         },
         {
           "id": "trophy-case-2020",
@@ -1143,7 +1150,8 @@
           ],
           "stack": [],
           "discipline": "other",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "award"
         },
         {
           "id": "campus-and-community-2021",
@@ -1189,7 +1197,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "flag"
         },
         {
           "id": "digitiket-2021",
@@ -1209,7 +1218,8 @@
           "highlights": [],
           "stack": [],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "ticket"
         },
         {
           "id": "techbros-2021",
@@ -1234,7 +1244,8 @@
             "Docker"
           ],
           "discipline": "ai",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "scan-face"
         },
         {
           "id": "research-ewallet-sentiment-2021",
@@ -1269,7 +1280,8 @@
           "discipline": "ai",
           "podRef": "ifest-2021-sentiment-analysis",
           "url": "https://github.com/ShinyQ/CNN-LSTM_Aspect-Based-Sentiment-Analysis-For-Indonesia-Digital-Wallet",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "flask-conical"
         },
         {
           "id": "research-covid-forecasting-2021",
@@ -1300,7 +1312,8 @@
           "discipline": "data",
           "podRef": "covid-herd-immunity-forecast",
           "url": "https://github.com/ShinyQ/Indonesia_COVID-19_N-BEATS_Time-Series-Forecast",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "flask-conical"
         },
         {
           "id": "kalbe-farma-2021",
@@ -1324,7 +1337,8 @@
             "REST APIs"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "stethoscope"
         },
         {
           "id": "certification-desk-2021",
@@ -1356,7 +1370,8 @@
             "Machine learning"
           ],
           "discipline": "data",
-          "confidence": "strongly-inferred"
+          "confidence": "strongly-inferred",
+          "icon": "badge-check"
         },
         {
           "id": "trophy-case-2021",
@@ -1393,7 +1408,8 @@
           ],
           "stack": [],
           "discipline": "other",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "trophy"
         },
         {
           "id": "campus-and-community-2022",
@@ -1430,7 +1446,8 @@
             "Express"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "flag"
         },
         {
           "id": "mnc-2022",
@@ -1486,7 +1503,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "plane"
         },
         {
           "id": "sentiboard-2022",
@@ -1537,7 +1555,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "flask-conical"
         },
         {
           "id": "bandung-techno-park-2022",
@@ -1572,7 +1591,8 @@
             "SSO"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "server"
         },
         {
           "id": "trophy-case-2022",
@@ -1605,7 +1625,8 @@
           ],
           "stack": [],
           "discipline": "other",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "medal"
         },
         {
           "id": "graduation-2023",
@@ -1635,7 +1656,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "graduation-cap"
         },
         {
           "id": "jatis-2023",
@@ -1692,7 +1714,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "layers"
         },
         {
           "id": "bssn-2023",
@@ -1743,7 +1766,8 @@
             "width": 127,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "shield-check"
         },
         {
           "id": "jublia-2023",
@@ -1798,7 +1822,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "handshake"
         },
         {
           "id": "crypto-tracker-2024",
@@ -1822,7 +1847,8 @@
           ],
           "discipline": "software",
           "url": "https://coin-tracker-five.vercel.app/porto",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "rocket"
         },
         {
           "id": "jenius-2024",
@@ -1879,7 +1905,8 @@
             "width": 128,
             "height": 128,
             "redacted": true
-          }
+          },
+          "icon": "landmark"
         },
         {
           "id": "sp500-optimizer-2024",
@@ -1904,7 +1931,8 @@
           ],
           "discipline": "data",
           "url": "https://stock-optimization-slsqp-group2.streamlit.app/",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "rocket"
         },
         {
           "id": "portfolio-v1-2025",
@@ -1927,7 +1955,8 @@
             "Cloudflare Pages"
           ],
           "discipline": "software",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "rocket"
         },
         {
           "id": "dariordal-2025",
@@ -1967,7 +1996,8 @@
           ],
           "discipline": "software",
           "podRef": "limited-quota-event-ticketing",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "ticket-check"
         },
         {
           "id": "serupa-2025",
@@ -2010,7 +2040,8 @@
           ],
           "discipline": "software",
           "podRef": "event-ticketing-platform",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "tickets"
         },
         {
           "id": "370-agency-2025",
@@ -2045,7 +2076,8 @@
             "PostgreSQL"
           ],
           "discipline": "software",
-          "confidence": "self-reported"
+          "confidence": "self-reported",
+          "icon": "code-xml"
         },
         {
           "id": "temmpat-2025",
@@ -2093,7 +2125,8 @@
           ],
           "discipline": "software",
           "podRef": "ticket-marketplace-backend",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "gavel"
         },
         {
           "id": "naremax-2025",
@@ -2134,7 +2167,8 @@
           ],
           "discipline": "software",
           "podRef": "digital-products-ecommerce",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "monitor-play"
         },
         {
           "id": "metrodata-2026",
@@ -2191,7 +2225,8 @@
           ],
           "discipline": "ai",
           "podRef": "voice-ai-contact-center",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "brain-circuit"
         },
         {
           "id": "certification-desk-2026",
@@ -2233,7 +2268,8 @@
             "Google"
           ],
           "discipline": "ai",
-          "confidence": "verified"
+          "confidence": "verified",
+          "icon": "badge-check"
         }
       ]
     },
@@ -2506,7 +2542,8 @@
             "AWS"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [],
+          "sculpture": "bank-api"
         },
         {
           "id": "ticket-marketplace-backend",
@@ -2783,7 +2820,8 @@
             "Jest"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [],
+          "sculpture": "ticket-gavel"
         },
         {
           "id": "vendor-management-portal",
@@ -3109,7 +3147,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "vendor-clipboard"
         },
         {
           "id": "multi-tenant-saas-platform",
@@ -3314,7 +3353,8 @@
             "SonarQube"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [],
+          "sculpture": "tenant-stack"
         },
         {
           "id": "payments-realtime-backend",
@@ -3521,7 +3561,8 @@
             "MySQL"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [],
+          "sculpture": "card-bolt"
         },
         {
           "id": "anime-figure-ecommerce",
@@ -3778,7 +3819,8 @@
               "height": 717,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "figure-bag"
         },
         {
           "id": "vulnerability-scanning-automation",
@@ -4019,7 +4061,8 @@
               "height": 1684,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "shield-scan"
         },
         {
           "id": "limited-quota-event-ticketing",
@@ -4295,7 +4338,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "ticket-gate"
         },
         {
           "id": "event-ticketing-platform",
@@ -4629,7 +4673,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "ticket-stack"
         },
         {
           "id": "event-tech-search-backend",
@@ -4850,7 +4895,8 @@
             "Locust"
           ],
           "hologram": "chart",
-          "assets": []
+          "assets": [],
+          "sculpture": "magnifier-match"
         },
         {
           "id": "digital-products-ecommerce",
@@ -4923,7 +4969,8 @@
             "GitHub Actions"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [],
+          "sculpture": "storefront"
         },
         {
           "id": "university-alumni-platforms",
@@ -5045,7 +5092,8 @@
               "height": 1117,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "grad-cap"
         },
         {
           "id": "voice-ai-contact-center",
@@ -5424,7 +5472,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "microphone"
         },
         {
           "id": "ai-code-security-platform",
@@ -5774,7 +5823,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "code-shield"
         },
         {
           "id": "fraud-review-platform",
@@ -6118,7 +6168,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "doc-magnifier"
         },
         {
           "id": "ai-cv-screening-platform",
@@ -6395,7 +6446,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "cv-card"
         },
         {
           "id": "bank-statement-analyzer",
@@ -6627,7 +6679,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "statement-chart"
         },
         {
           "id": "ai-app-accelerator",
@@ -6840,7 +6893,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "rocket"
         },
         {
           "id": "fabric-forecasting-dashboard",
@@ -7147,7 +7201,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "forecast-bars"
         },
         {
           "id": "ai-solutions-assistant",
@@ -7437,7 +7492,8 @@
               "redacted": true
             }
           ],
-          "liveUrl": "https://mii-microsoft-ai.azurewebsites.net"
+          "liveUrl": "https://mii-microsoft-ai.azurewebsites.net",
+          "sculpture": "chat-bubble"
         },
         {
           "id": "agent-orchestrated-delivery",
@@ -7610,7 +7666,8 @@
             "GitHub Actions"
           ],
           "hologram": "graph",
-          "assets": []
+          "assets": [],
+          "sculpture": "robot-head"
         },
         {
           "id": "marketplace-productization",
@@ -7675,7 +7732,8 @@
             "GitHub Actions"
           ],
           "hologram": "template",
-          "assets": []
+          "assets": [],
+          "sculpture": "package-box"
         },
         {
           "id": "azure-ai-operations",
@@ -7764,7 +7822,8 @@
             "Cosmos DB"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [],
+          "sculpture": "cloud-gear"
         },
         {
           "id": "automotive-fraud-dashboard",
@@ -7857,7 +7916,8 @@
             "Azure AI Content Safety"
           ],
           "hologram": "documents",
-          "assets": []
+          "assets": [],
+          "sculpture": "dashboard-alert"
         },
         {
           "id": "ticketing-assistant-replatform",
@@ -7972,7 +8032,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "migrate-arrows"
         },
         {
           "id": "mining-coa-assistant",
@@ -8038,7 +8099,8 @@
             "Managed Identity"
           ],
           "hologram": "pipeline",
-          "assets": []
+          "assets": [],
+          "sculpture": "ledger-book"
         },
         {
           "id": "credit-scoring-poc",
@@ -8154,7 +8216,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "score-gauge"
         },
         {
           "id": "bank-genai-governance",
@@ -8219,7 +8282,8 @@
             "Key Vault"
           ],
           "hologram": "shield",
-          "assets": []
+          "assets": [],
+          "sculpture": "padlock"
         },
         {
           "id": "agent-deck-platform",
@@ -8436,7 +8500,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "presentation"
         },
         {
           "id": "mii-cowork",
@@ -8612,7 +8677,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "window-cards"
         },
         {
           "id": "clearbox",
@@ -8788,7 +8854,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "inbox-tray"
         },
         {
           "id": "solutions-marketing-site",
@@ -8931,7 +8998,8 @@
               "redacted": true
             }
           ],
-          "liveUrl": "https://mii-microsoft.azurewebsites.net"
+          "liveUrl": "https://mii-microsoft.azurewebsites.net",
+          "sculpture": "web-globe"
         },
         {
           "id": "sewise-fashion-labs",
@@ -9116,7 +9184,8 @@
               "height": 1000,
               "redacted": true
             }
-          ]
+          ],
+          "sculpture": "dress-form"
         },
         {
           "id": "insurer-contact-center-architecture",
@@ -9181,7 +9250,8 @@
             "Cosmos DB"
           ],
           "hologram": "waveform",
-          "assets": []
+          "assets": [],
+          "sculpture": "headset"
         },
         {
           "id": "university-sentiment-indobert",
@@ -9293,7 +9363,8 @@
             "sentiboard-bsc-thesis",
             "sentiboard-paper",
             "indobert-university-reviews-model"
-          ]
+          ],
+          "sculpture": "smiley-bars"
         },
         {
           "id": "ifest-2021-sentiment-analysis",
@@ -9424,7 +9495,8 @@
           ],
           "publications": [
             "ewallet-sentiment-cnn-lstm"
-          ]
+          ],
+          "sculpture": "network-graph"
         },
         {
           "id": "covid-herd-immunity-forecast",
@@ -9570,7 +9642,8 @@
           ],
           "publications": [
             "covid-19-herd-immunity-study"
-          ]
+          ],
+          "sculpture": "virus-curve"
         },
         {
           "id": "stock-allocation-optimizer",
@@ -9664,7 +9737,8 @@
           "assets": [],
           "repos": [
             "https://github.com/ShinyQ/Streamlit_Stock-Allocation-Optimization-SLSQP"
-          ]
+          ],
+          "sculpture": "candlesticks"
         },
         {
           "id": "kampus-merdeka-reports-crawler",
@@ -9744,7 +9818,8 @@
           "assets": [],
           "repos": [
             "https://github.com/ShinyQ/Python_Kampus-Merdeka-Reports-Crawler"
-          ]
+          ],
+          "sculpture": "crawler-spider"
         }
       ]
     },
@@ -9771,7 +9846,8 @@
           "excerpt": {
             "en": "Clearbox pre-sorts Gmail and Outlook email for approval, using Microsoft-Decision-1 and guardrails. The evaluation covered 40 synthetic emails, not an inbox.",
             "id": "Clearbox memilah email Gmail dan Outlook untuk ditinjau sebelum dipindahkan. Pipeline Microsoft-Decision-1 diuji pada 40 email sintetis, bukan inbox nyata."
-          }
+          },
+          "icon": "inbox"
         },
         {
           "slug": "making-a-voice-agent-interruptible",
@@ -9794,7 +9870,8 @@
           "excerpt": {
             "en": "Voice-agent barge-in reached ~0.2 s in a controlled knowledge-search harness, n=4 calls per arm. Later live cut-off tests showed no improvement.",
             "id": "Latensi barge-in saat pencarian knowledge base ~0,2 s pada harness A/B terkontrol, n=4 panggilan per jalur. Uji cut-off live belum menunjukkan perbaikan."
-          }
+          },
+          "icon": "mic"
         },
         {
           "slug": "why-the-better-fraud-engine-shipped-in-shadow-mode",
@@ -9817,7 +9894,8 @@
           "excerpt": {
             "en": "In offline tests on the noisy-clean development slice, FPR fell 36.4% to 9.1%, but High-risk recall fell. The engine shipped only in shadow mode.",
             "id": "Uji offline di set development: FPR paket bersih yang noisy turun 36,4% ke 9,1%, tetapi recall High-risk turun. Dirilis hanya dalam shadow mode."
-          }
+          },
+          "icon": "shield-alert"
         },
         {
           "slug": "45-percent-of-our-llm-calls-failed",
@@ -9840,7 +9918,8 @@
           "excerpt": {
             "en": "About 45% of 22 CV/job pairs failed. Two parsing bugs were fixed with seven regression tests, but no rerun of the original batch was recorded.",
             "id": "Sekitar 45% dari 22 pasangan CV/lowongan gagal. Dua bug parsing diperbaiki dengan tujuh regression test, tetapi run ulang batch awal tidak tercatat."
-          }
+          },
+          "icon": "bug"
         },
         {
           "slug": "spec-driven-development-with-ai-coding-agents",
@@ -9863,7 +9942,8 @@
           "excerpt": {
             "en": "AI agents wrote most of a solo-built vendor portal. CI missed a skipped integration tier and two sign-in bugs. Productivity gains were not measured.",
             "id": "AI agent menulis mayoritas kode portal vendor. CI melewatkan integration tier yang di-skip dan dua bug login. Peningkatan produktivitas belum diukur."
-          }
+          },
+          "icon": "file-code"
         },
         {
           "slug": "the-sun-the-moon-and-the-dark-sea",
@@ -9882,7 +9962,8 @@
           "excerpt": {
             "en": "A personal essay on growing up, finding direction and staying steady, written in Bahasa Indonesia.",
             "id": "Esai personal tentang bertumbuh, mencari arah, dan tetap teguh di tengah gelombang."
-          }
+          },
+          "icon": "moon-star"
         },
         {
           "slug": "crud-nodejs-express-mysql",
@@ -9904,7 +9985,8 @@
             "en": "A beginner-friendly tutorial for building a CRUD REST API with Express and MySQL (in Bahasa Indonesia).",
             "id": "Tutorial ramah pemula untuk membangun REST API CRUD dengan Express dan MySQL."
           },
-          "url": "https://kurniadiahmadwijaya.medium.com/crud-nodejs-menggunakan-framework-expressjs-a82c0f69329d"
+          "url": "https://kurniadiahmadwijaya.medium.com/crud-nodejs-menggunakan-framework-expressjs-a82c0f69329d",
+          "icon": "database"
         },
         {
           "slug": "helby-ui-ux-case-study",
@@ -9925,7 +10007,8 @@
             "en": "How we designed Helby, an app that helps parents track their baby's development, from research to prototype (in Bahasa Indonesia).",
             "id": "Proses merancang Helby, aplikasi untuk membantu orang tua memantau perkembangan bayi, dari riset hingga prototipe."
           },
-          "url": "https://kurniadiahmadwijaya.medium.com/studi-kasus-rancangan-ui-ux-aplikasi-pemantau-perkembangan-bayi-369886df3652"
+          "url": "https://kurniadiahmadwijaya.medium.com/studi-kasus-rancangan-ui-ux-aplikasi-pemantau-perkembangan-bayi-369886df3652",
+          "icon": "baby"
         }
       ],
       "publications": [
@@ -9958,7 +10041,8 @@
             "file": "ewallet-sentiment-cnn-lstm",
             "version": "manuscript",
             "notice": "ieee"
-          }
+          },
+          "icon": "wallet"
         },
         {
           "id": "covid-19-herd-immunity-study",
@@ -9982,7 +10066,8 @@
             "en": "A historical 2021 study using COVID-19 case forecasts to examine Indonesia's path to herd immunity.",
             "id": "Studi historis pada 2021 yang memakai prediksi kasus COVID-19 untuk mengkaji kemungkinan tercapainya herd immunity di Indonesia."
           },
-          "abstract": "Herd immunity decides whether the COVID-19 outbreak is under control, and government policy on social restrictions and vaccination shapes how fast a country reaches it. This study analyzes the dynamics of COVID-19 cases in Indonesia against government policies, from large-scale social restrictions (PSBB) to emergency restrictions (PPKM Darurat), and the vaccination rate, and finds vaccination to be the key factor. Case and vaccination time series are forecast with an N-BEATS model to support the analysis, which estimated that positive cases would decline from October 2021 and that a mask removal policy could follow around February 2022. The study does not model vaccine-resistant variants, which could delay herd immunity."
+          "abstract": "Herd immunity decides whether the COVID-19 outbreak is under control, and government policy on social restrictions and vaccination shapes how fast a country reaches it. This study analyzes the dynamics of COVID-19 cases in Indonesia against government policies, from large-scale social restrictions (PSBB) to emergency restrictions (PPKM Darurat), and the vaccination rate, and finds vaccination to be the key factor. Case and vaccination time series are forecast with an N-BEATS model to support the analysis, which estimated that positive cases would decline from October 2021 and that a mask removal policy could follow around February 2022. The study does not model vaccine-resistant variants, which could delay herd immunity.",
+          "icon": "syringe"
         },
         {
           "id": "sentiboard-paper",
@@ -10003,7 +10088,8 @@
             "en": "Tracks social media sentiment about a university in an IndoBERT dashboard (BSc thesis publication).",
             "id": "Memantau sentimen media sosial tentang sebuah universitas melalui dashboard IndoBERT (publikasi skripsi S1)."
           },
-          "abstract": "This paper implements an IndoBERT model in a social media sentiment dashboard for a university (Universitas XYZ). Indonesian social media posts about the university are classified by sentiment with a fine-tuned IndoBERT model, and a web dashboard built with Django and Plotly presents the results as trends, so the university can monitor public opinion and respond to it."
+          "abstract": "This paper implements an IndoBERT model in a social media sentiment dashboard for a university (Universitas XYZ). Indonesian social media posts about the university are classified by sentiment with a fine-tuned IndoBERT model, and a web dashboard built with Django and Plotly presents the results as trends, so the university can monitor public opinion and respond to it.",
+          "icon": "layout-dashboard"
         },
         {
           "id": "sentiboard-bsc-thesis",
@@ -10024,7 +10110,8 @@
           "document": {
             "file": "sentiboard-bsc-thesis",
             "version": "redacted"
-          }
+          },
+          "icon": "book-marked"
         },
         {
           "id": "indobert-university-reviews-model",
@@ -10032,7 +10119,8 @@
           "venue": "Hugging Face",
           "year": 2022,
           "kind": "model",
-          "url": "https://huggingface.co/ShinyQ/indobert-sentiment-analysis-indonesian-university-reviews"
+          "url": "https://huggingface.co/ShinyQ/indobert-sentiment-analysis-indonesian-university-reviews",
+          "icon": "school"
         },
         {
           "id": "indobertweet-review-sentiment-model",
@@ -10040,7 +10128,8 @@
           "venue": "Hugging Face",
           "year": 2024,
           "kind": "model",
-          "url": "https://huggingface.co/ShinyQ/indobertweet_blu_review"
+          "url": "https://huggingface.co/ShinyQ/indobertweet_blu_review",
+          "icon": "message-circle"
         },
         {
           "id": "indobert-review-sentiment-model",
@@ -10048,7 +10137,8 @@
           "venue": "Hugging Face",
           "year": 2024,
           "kind": "model",
-          "url": "https://huggingface.co/ShinyQ/indobert_blu_review"
+          "url": "https://huggingface.co/ShinyQ/indobert_blu_review",
+          "icon": "star"
         }
       ],
       "talks": [
@@ -10060,7 +10150,8 @@
           },
           "event": "AI workshop for an industrial enterprise client (presentation author)",
           "date": "2026-09",
-          "role": "author"
+          "role": "author",
+          "icon": "workflow"
         },
         {
           "id": "agent-framework-walkthrough",
@@ -10070,7 +10161,8 @@
           },
           "event": "Developer workshop presentation: Microsoft Agent Framework in Python",
           "date": "2026-10",
-          "role": "author"
+          "role": "author",
+          "icon": "bot"
         },
         {
           "id": "basic-ai-study-groups",
@@ -10080,7 +10172,8 @@
           },
           "event": "Telkom University (Lecturer Assistant)",
           "date": "2022-03",
-          "role": "trainer"
+          "role": "trainer",
+          "icon": "users"
         },
         {
           "id": "go-programming-practicum",
@@ -10090,7 +10183,8 @@
           },
           "event": "Telkom University (Practicum Assistant)",
           "date": "2020-09",
-          "role": "trainer"
+          "role": "trainer",
+          "icon": "square-terminal"
         },
         {
           "id": "programming-club-workshops",
@@ -10100,7 +10194,8 @@
           },
           "event": "Proclub Telkom University",
           "date": "2020-01",
-          "role": "trainer"
+          "role": "trainer",
+          "icon": "code"
         },
         {
           "id": "hackathon-judge-2022",
@@ -10110,7 +10205,8 @@
           },
           "event": "Motion Laboratory hackathon, Telkom University",
           "date": "2022-01",
-          "role": "trainer"
+          "role": "trainer",
+          "icon": "scale"
         }
       ],
       "researchMetrics": {

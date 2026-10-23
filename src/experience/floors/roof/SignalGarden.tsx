@@ -198,11 +198,12 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
         Object.values(layout.stops).some((s) => Math.hypot(p.x - s.x, p.z - s.z) < 2.5) ||
         Math.hypot(p.x - layout.floor.spawn.x, p.z - layout.floor.spawn.z) < 2.5,
     );
-    const icons = {
-      email: [{ x: commsX, y: 2.4, z: comms.maxZ - 0.8, face: 0 }],
-      cv: [{ x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2 }],
-      about: [{ x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI }],
-    };
+    // The three station icons in one batch.
+    const icons = [
+      { x: commsX, y: 2.4, z: comms.maxZ - 0.8, face: 0, strokes: ROOF_ICONS.email, color: ROOF_BLUE },
+      { x: cv.minX + 3.4, y: 4.4, z: cvZ, face: -Math.PI / 2, strokes: ROOF_ICONS.cv, color: ROOF_CYAN },
+      { x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI, strokes: ROOF_ICONS.about, color: ROOF_VIOLET },
+    ];
     const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
     return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
@@ -219,9 +220,7 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       <Flowers spots={scene.spots} tier={tier} />
       <Drone mast={layout.centerpiece.center} targets={scene.droneTargets} active={active} tier={tier} reducedMotion={reducedMotion} />
       <BatchedLabels labels={scene.text} name="roof-labels" />
-      <HoloIcon strokes={ROOF_ICONS.email} instances={scene.icons.email} color={ROOF_BLUE} size={1.6} tier={tier} reducedMotion={reducedMotion} />
-      <HoloIcon strokes={ROOF_ICONS.cv} instances={scene.icons.cv} color={ROOF_CYAN} size={1.6} tier={tier} reducedMotion={reducedMotion} />
-      <HoloIcon strokes={ROOF_ICONS.about} instances={scene.icons.about} color={ROOF_VIOLET} size={1.6} tier={tier} reducedMotion={reducedMotion} />
+      <HoloIcon instances={scene.icons} size={1.6} tier={tier} reducedMotion={reducedMotion} />
     </group>
   );
 }

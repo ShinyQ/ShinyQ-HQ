@@ -2,16 +2,20 @@
 
 import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { Color, Matrix4, Quaternion, Vector3, type InstancedMesh } from "three";
+import { Color, Matrix4, Quaternion, Vector3, type Group, type InstancedMesh } from "three";
 import type { RoomId } from "@/content/schema";
-import { HoloIcon, type HoloIconInstance } from "../../../fx/HoloIcon";
-import { LIBRARY_ICONS } from "../../../fx/holoIcons";
+import { HoloSwap } from "../../../fx/HoloIcon";
+import { LIBRARY_ICONS, type Stroke } from "../../../fx/holoIcons";
+import { useShapes } from "../../../fx/shapes";
 import { createInstancedGlassMaterial, neonColor } from "../../../fx/materials";
 import { useUniformTime } from "../../../fx/useUniformTime";
 import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
-import { LIBRARY_ZONES, paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
+import { faceRoad, STATION_HEIGHT, ZONE_ICON } from "../icons";
+import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
+
+export { faceRoad, STATION_HEIGHT };
 
 /** Everything the L4 decor needs. Stations are clicked through point-and-go (interact/registry.ts). */
 export interface DecorProps {
@@ -24,11 +28,6 @@ export interface DecorProps {
   /** In-world click on a paper: open its preview modal (`openPaperFor`). */
   onPaper: (id: string) => void;
 }
-
-export const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 1.1, research: 3.2, models: 2.6, talks: 2.6 };
-
-/** Yaw (HoloIcon `face`) that turns an icon from its station toward the road. */
-export const faceRoad = (s: Pick<LibraryStation, "facing">) => Math.atan2(-s.facing.x, -s.facing.z);
 
 /** Titles per room: posts from content (any casing the content uses), shelves from zone names. */
 export function stationTitles(library: LibraryData, zones: Record<LibraryZone, string>): Map<RoomId, string> {
@@ -103,20 +102,21 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
   );
 }
 
-/** One Neon line icon per station, grouped by zone (one draw call per zone, two on the full tier). */
-export function ZoneIcons({ stations, tier, reducedMotion, lift = 2.2, size = 2.4 }: { stations: readonly LibraryStation[]; tier: GpuTier; reducedMotion: boolean; lift?: number; size?: number }) {
-  const instances = useMemo(() => {
-    const out = {} as Record<LibraryZone, HoloIconInstance[]>;
-    for (const zone of LIBRARY_ZONES) {
-      out[zone] = stations.filter((s) => s.zone === zone).map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + lift, z: s.center.z, face: faceRoad(s) }));
-    }
-    return out;
-  }, [stations, lift]);
+/**
+ * One Neon line icon per station in its zone tone, as one batch (one draw call, two on the full tier). Once the
+ * floor's shapes load (`shapes`, after its first frame) they crossfade into the items' own icons, placed at build
+ * (`libraryIcons`): one per post station and one per paper, model and talk over its desk.
+ */
+export function ZoneIcons({ stations, shapes, tier, reducedMotion }: { stations: readonly LibraryStation[]; shapes: string; tier: GpuTier; reducedMotion: boolean }) {
+  const group = useRef<Group>(null);
+  const own = useShapes<Stroke[]>("L4", shapes, group, reducedMotion);
+  const icons = useMemo(
+    () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + ZONE_ICON.lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone], color: ZONE_TONE[s.zone] })),
+    [stations],
+  );
   return (
-    <group name="library-icons">
-      {LIBRARY_ZONES.map((zone) => (
-        <HoloIcon key={zone} strokes={LIBRARY_ICONS[zone]} instances={instances[zone]} color={ZONE_TONE[zone]} size={size} tier={tier} reducedMotion={reducedMotion} />
-      ))}
+    <group ref={group} name="library-icons">
+      <HoloSwap base={icons} next={own.data?.icons} shapes={own} size={ZONE_ICON.size} tier={tier} reducedMotion={reducedMotion} />
     </group>
   );
 }

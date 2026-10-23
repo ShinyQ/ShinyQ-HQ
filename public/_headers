@@ -31,6 +31,10 @@
 /atlas/*
   Cache-Control: public, max-age=31536000, immutable
 
+# The L2, L3 and L4 floating hologram shapes: content-hashed names (scripts/build-shapes.ts), so they never change.
+/shapes/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Unhashed images. Tech logos rarely change; gallery images, floor thumbnails and company logos can be
 # replaced under the same name, so they revalidate after a day and are served stale while revalidating.
 /tech/*

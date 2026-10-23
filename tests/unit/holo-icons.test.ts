@@ -26,16 +26,17 @@ describe("career type icons", () => {
     expect(a[1][1]).toBeCloseTo(1);
   });
 
-  it("builds flat and extruded ribbons scaled to the icon size", () => {
-    const flat = iconMesh(CAREER_ICONS.job, { size: 2 });
-    const solid = iconMesh(CAREER_ICONS.job, { size: 2, depth: 0.2 });
+  it("builds flat ribbons one world unit across, two triangles a segment", () => {
+    const flat = iconMesh(CAREER_ICONS.job);
     expect(flat.indices.length % 3).toBe(0);
     expect(Math.max(...flat.indices)).toBe(flat.positions.length / 3 - 1);
-    expect(solid.positions.length).toBe(flat.positions.length * 2);
-    expect(solid.indices.length).toBe(flat.indices.length * 4);
+    const segments = CAREER_ICONS.job.reduce((n, s) => n + s.points.length - 1 + (s.closed ? 1 : 0), 0);
+    expect(flat.indices.length).toBe(segments * 6);
     const xs = flat.positions.filter((_, i) => i % 3 === 0);
-    expect(Math.max(...xs.map(Math.abs))).toBeLessThan(1.2);
+    expect(Math.max(...xs.map(Math.abs))).toBeLessThan(0.6);
     expect(new Set(flat.positions.filter((_, i) => i % 3 === 2))).toEqual(new Set([0]));
+    // A wider ribbon (the halo) has the same topology.
+    expect(iconMesh(CAREER_ICONS.job, 4).indices).toEqual(flat.indices);
   });
 
   it("has pad icons (elevator, teleporter, Return) inside the 24 x 24 grid, each with its own tone", () => {
@@ -52,7 +53,7 @@ describe("career type icons", () => {
     }
     expect(PAD_TONE).toEqual({ elevator: "#22d3ee", teleport: "#f472b6", return: "#34d399" });
     expect(new Set(Object.values(PAD_TONE)).size).toBe(Object.keys(PAD_TONE).length);
-    expect(iconMesh(PAD_ICONS.teleport, { size: 1.4 }).positions.length).toBeGreaterThan(0);
+    expect(iconMesh(PAD_ICONS.teleport).positions.length).toBeGreaterThan(0);
   });
 });
 
@@ -67,7 +68,7 @@ describe("library zone icons", () => {
         expect(y).toBeGreaterThanOrEqual(0);
         expect(y).toBeLessThanOrEqual(24);
       }
-      const mesh = iconMesh(strokes, { size: 2 });
+      const mesh = iconMesh(strokes);
       expect(mesh.indices.length % 3).toBe(0);
     }
   });

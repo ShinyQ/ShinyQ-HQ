@@ -278,6 +278,21 @@ Keep them documented here.
   - Adding a host is an owner decision, never a content-only edit.
 - `Result.headline`: optional `true` puts a result in the case study's metric strip; at most `HEADLINE_MAX` (3) per pod (schema check). Read the strip's results through `headlineResults(results)` from `@/content/selectors`: the flagged ones in dataset order, else the first three. `HEADLINE_MAX` lives in `selectors.ts` (client-safe) and is re-exported from `schema.ts`. The room-view builder marks those metrics `RoomMetric.headline`.
 
+### Hologram ids
+
+The floating holograms of L2, L3 and L4 (3D only; owner decision [2026-10-23](../decisions/2026-10-23-unique-floating-icons.md), rendering in [floors.md](floors.md#floating-hologram-icons)):
+
+| Field | Value | Rule |
+|---|---|---|
+| `TimelineEntry.icon` | Lucide icon id (`assets/icons/lucide/<id>.svg`) | unique across jobs, education and freelance; milestones at most 4 and awards at most 3 distinct ids |
+| `PostRef.icon` | Lucide icon id | on `library.posts` in the dataset, not the MDX frontmatter, so external posts (no MDX) have one too |
+| `Publication.icon`, `Talk.icon` | Lucide icon id | unique across posts, publications and talks |
+| `Pod.sculpture` | recipe id in `content/sculptures.json` | unique per pod; `Pod.hologram` stays the fallback kind |
+
+- All optional (an item without one keeps its type icon or kind hologram). Ids name a shape (`ticket`, `microphone`), never a client or employer (C3).
+- Uniqueness is a `SiteContentSchema` check (`hologramIdClashes`); that each id resolves and the variant caps are `shapeIssues` (`src/content/shapes.ts`), run by `bun run validate:content`, the build step and `tests/content/shapes.test.ts`.
+- New icon: copy `icons/<id>.svg` from the same `lucide-static` version into `assets/icons/lucide/` (see its `README.md`). New sculpture: a recipe in `content/sculptures.json` (format in its `$comment`; at most 16 boxes, `tests/unit/sculptures.test.ts`).
+
 ### Other types
 
 | Type | Field | Rule and where it renders |

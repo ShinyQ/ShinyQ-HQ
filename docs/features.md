@@ -97,6 +97,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 | Forward Deployed AI Engineer | 2026-10-23: owner decision: the headline is "Forward Deployed AI Engineer" in both languages, the title on the updated CV (which also adds GH-600 and Google Generative AI Leader); the bio opens with it, the current-role line keeps "Technical Consultant, Software & AI", and the home `<title>` drops the city to stay within 60 characters | Done |
 | Elevator camera diagonal | 2026-10-23: going into the elevator and coming out of it, the camera stands behind the rover and 35 degrees to its right ("serong kanan"); every floor's arrival view, the L3 overview and the B1 phone view included; phone views aim sideways so each floor's main sight stays in frame | In review |
+| Unique floating icons | 2026-10-23: every L2 job, education and freelance room floats its own line icon (milestones and awards cycle a few), every L4 post, paper, model and talk its own icon, and every L3 pod its own box sculpture; shapes load after the floor's first frame and crossfade in | In review |
 
 ## Controls and first visit
 
@@ -293,7 +294,7 @@ Route `/en/journey`. One road runs forward in time.
 
 - **Year plazas**: a plaza per year, rooms docked on both edges of each plaza with a road branch to every door. The year gate in front of each plaza carries its year on the top beam (no separate floating year board).
 - **Teleporters**: every year plaza has a teleporter pad beside the road. Stop on it (or click it) and pick a year to beam straight to that plaza.
-- **Career types**: one Neon line icon and hue each (employment, freelance, education, award, milestone) in 3D and on the HTML pages.
+- **Career types**: one Neon line icon and hue each (employment, freelance, education, award, milestone) on the HTML pages; in 3D the hue stays and each job, school and freelance room floats its own icon (a ticket for the ticketing intern role, a stethoscope for the medical records backend, a gavel for the auction marketplace...), milestones and awards cycle a few (flag, flask, badge, rocket; medal, award, trophy).
 - **Workshop** at the end of the road:
   - A forecourt with the **time console**: click it and pick any year to beam there, or Back to elevator.
   - Beside the time console a green **Back to elevator** pad beams you straight back to the elevator call pad.
@@ -310,6 +311,7 @@ Route `/en/labs`.
 - **Hub and directory boards**: a hub plaza in front of the elevator and, where the three roads fork, three free-standing raised boards. They are the first thing you see on arrival: each wing's name, project count and top projects, one line each (a long title uses its short board title), plus how many more wait in the full list; click a board to drive to it and open the full list. The Data and ML board is a gate that the rover drives under; the Product Engineering and AI Engineering boards stand on one pylon each beside their road, turned toward the arrival view.
 - **Three roads**: Product Engineering (north) and AI Engineering (south) leave the hub on either side of the Data and ML road, with every key and featured project docked along them. The board titles name the roads; there are no floating road signs. At the far end both wing roads turn toward the axis and meet the reactor ring due north and south, a mirror image about the spine.
 - **Data and ML spine**: the middle road runs straight from the hub to the Tech Reactor, with the data science, NLP, forecasting and data collection projects from the public GitHub repositories and the demand forecasting work on Microsoft Fabric (on-premise data into a medallion lakehouse) docked on both sides (the Fabric pod first), spread evenly up to the reactor plaza. The wing roads spread apart just enough to leave room for them.
+- **Pod sculptures**: every pod spins its own hologram sculpture hinting at the project (a microphone for the voice agent, a padlock for GenAI governance, candlesticks for the stock optimizer, a dress form for the sewing patterns...).
 - **Packet lanes and waterfalls**: the loop closes in the east plaza around the Tech Reactor, fed by the packet lanes (routes drive around it), and data waterfalls pour off the four slab corners. A green **Back to elevator** pad waits on the axis just east of the ring.
 - **Browse projects** (Rover menu or Cmd-K) rides to L3 and opens the full project list.
 
@@ -334,6 +336,7 @@ Route `/en/library`.
 
 - **Press plaza**: a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book.
 - **Timeline lane**: one lane east with the other posts newest first, year marks on small low posts at the road edge, then the Research desk (its paper plates open the paper preview), Models and datasets, and Talks and workshops.
+- **Item icons**: every post station floats its own icon (an inbox, a microphone, a bug...), and the Research, Models and Talks desks show one icon per paper, model and talk in the zone's color.
 - **Signs**: one sign per section (Posts, Research, Models and datasets, Talks and workshops) hangs over its first desk, and every floating plate on the lane shares one height. Post titles show only for the nearest stations (at most 6 on desktop, 4 on phones) and fade out as you drive away. Labels are placed on screen every frame, so none covers another, the rover or the end plaza's signs.
 - **Sign follow-ups (open)**: add hysteresis so two titles at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Archive board**: posts beyond the first 12 wait on it; it opens the posts palette.

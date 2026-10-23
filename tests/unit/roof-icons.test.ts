@@ -18,7 +18,7 @@ describe("roof station icons", () => {
 
   it("turns into ribbons and SVG paths like the career icons", () => {
     for (const strokes of Object.values(ROOF_ICONS)) {
-      expect(iconMesh(strokes, { size: 2 }).indices.length).toBeGreaterThan(0);
+      expect(iconMesh(strokes).indices.length).toBeGreaterThan(0);
       expect(iconPath(strokes)).toMatch(/^M/);
     }
   });

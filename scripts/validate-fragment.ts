@@ -11,6 +11,7 @@ import { z } from "zod";
 import { PerspectivesFileSchema, PodSchema, SiteBuildSchema, SiteContentObjectSchema, SiteContentSchema, StudyGuidesFileSchema, type SiteContent } from "../src/content/schema";
 import { perspectiveIssues, publishedPerspectives } from "../src/content/perspectives";
 import { collectStrings, leafForbiddenPatterns } from "../src/content/safety";
+import { shapeIssues } from "../src/content/shapes";
 import { titleCaseChanges } from "../src/content/titles";
 
 const [kind, file] = process.argv.slice(2);
@@ -94,6 +95,14 @@ for (const leaf of [
   if (hits.length > 0) {
     failed = true;
     console.error(`${leaf.path}: ${hits.join(", ")}\n  ${leaf.value}`);
+  }
+}
+
+// ... and the 3D hologram ids (icons vendored, sculptures in content/sculptures.json, few shared variants).
+if (kind === "full" && parsed.success) {
+  for (const issue of shapeIssues(parsed.data as SiteContent)) {
+    failed = true;
+    console.error(`hologram shapes: ${issue}`);
   }
 }
 

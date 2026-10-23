@@ -8,8 +8,8 @@ import { topicRooms } from "./topic-index";
 import type { Locale } from "./schema";
 import { isResearch } from "./selectors";
 
-/** L4 payload for the 3D chunk. Post order matches `buildRoomCatalog` (newest first). */
-export function buildLibraryData(locale: Locale): LibraryData {
+/** L4 payload for the 3D chunk (`buildExperienceData` adds the `shapes` URL). Post order matches `buildRoomCatalog` (newest first). */
+export function buildLibraryData(locale: Locale): Omit<LibraryData, "shapes"> {
   const library = getLibrary();
   return {
     posts: getPosts().map((p) => ({

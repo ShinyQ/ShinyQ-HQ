@@ -1,6 +1,6 @@
 /**
  * Post-build gate (part of `bun run build`): build-time code must never reach the browser.
- * Scans out/_next/static/chunks for zod, the content loader and the dataset (docs/agents/content.md, REPORT SP1),
+ * Scans out/_next/static/chunks for zod, the content loader, the dataset and the hologram shape converter (docs/agents/content.md, REPORT SP1),
  * and the chunks every exported page loads for the floor layouts, which belong to the 3D path only
  * (docs/agents/performance.md, floor order out of Classic).
  */
@@ -11,6 +11,8 @@ export const LEAK_PATTERNS: readonly { label: string; token: string; re: RegExp 
   { label: "zod", token: "_zod", re: /_zod\b/ },
   { label: "content loader", token: "readFileSync", re: /\breadFileSync\b/ },
   { label: "dataset", token: "site-content", re: /site-content/ },
+  // The hologram shape converter and recipes run at build only; the 3D floors fetch public/shapes/*.json.
+  { label: "shape converter", token: "Unsupported path command", re: /Unsupported path command/ },
 ];
 
 export function chunkLeaks(files: readonly { name: string; text: string }[]): string[] {

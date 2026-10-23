@@ -11,7 +11,9 @@ import { HEADLINE_MAX } from "./selectors";
  * Certification.code/credentialId/expires/featured and status "expired", TimelineEntry.url/confidence, Pod.client, Pod.liveUrl, Pod.selected, PostRef.url,
  * Contact.medium, SideProject.year, top-level awards[], mission steps
  * "palette" and "surprise", the separate perspectives file (PerspectivesFileSchema), top-level `production`
- * (ProductionSchema), the separate study guides file (StudyGuidesFileSchema).
+ * (ProductionSchema), the separate study guides file (StudyGuidesFileSchema), the 3D hologram ids TimelineEntry.icon,
+ * PostRef.icon, Publication.icon, Talk.icon and Pod.sculpture (IconIdSchema, checked against the vendored icons and
+ * the sculpture recipes by `shapeIssues` in `shapes.ts`).
  */
 
 export { DEFAULT_LOCALE, LOCALES } from "./locales";
@@ -39,6 +41,11 @@ export const AccentSchema = z.enum(["violet", "pink", "green", "amber", "cyan", 
 /** L3 wings: `software` (north), `ai` (south) and `data` (the Data and ML annex east of the Tech Reactor, owner request 2026-10-14). */
 export const WingSchema = z.enum(["software", "ai", "data"]);
 export const SlugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected kebab-case slug");
+/**
+ * A floating hologram id (3D only): a vendored Lucide icon name (`assets/icons/lucide/<id>.svg`) for `icon`, a recipe
+ * in `content/sculptures.json` for `sculpture`. Generic shapes only, never a client name (C3).
+ */
+export const IconIdSchema = SlugSchema;
 export const RoomIdSchema = z
   .string()
   .regex(/^(L1|L2|L3|L4|RF|B1):[a-z0-9]+(?:-[a-z0-9]+)*$/, "Expected FloorId:slug");
@@ -132,6 +139,8 @@ export const TimelineEntrySchema = z.strictObject({
   url: httpsUrl.optional(),
   confidence: ConfidenceSchema.optional(),
   logo: AssetSchema.optional(),
+  /** L2 room hologram (Lucide icon id): unique across jobs, education and freelance; milestones and awards share a few. */
+  icon: IconIdSchema.optional(),
 });
 
 /** Results a case study opens with (the metric strip): flagged ones, else the first ones. Defined client-safe in `selectors.ts`. */
@@ -225,6 +234,8 @@ export const PodSchema = z
     results: z.array(ResultSchema).min(1).max(4),
     stack: z.array(nonEmpty).min(1),
     hologram: z.enum(["waveform", "shield", "documents", "graph", "chart", "template", "pipeline"]),
+    /** L3 box sculpture (`content/sculptures.json` id), unique per pod; `hologram` is the fallback until it loads. */
+    sculpture: IconIdSchema.optional(),
     assets: z.array(AssetSchema),
     /** Public live site (R4-J): https, site root only, host in `PUBLIC_LIVE_HOSTS`. Read it through `podLiveLink`. */
     liveUrl: httpsUrl.optional(),
@@ -272,6 +283,8 @@ export const PostRefSchema = z.strictObject({
   languages: z.array(LocaleSchema).min(1),
   excerpt: LocalizedTextSchema,
   url: httpsUrl.optional(),
+  /** L4 station hologram (Lucide icon id), unique across posts, publications and talks. */
+  icon: IconIdSchema.optional(),
 });
 
 /**
@@ -311,6 +324,8 @@ export const PublicationSchema = z
     code: httpsUrl.optional(),
     /** Self-hosted PDF, read in the in-site paper reader (papers and the thesis only). */
     document: PaperDocumentSchema.optional(),
+    /** L4 desk hologram (Lucide icon id), unique across posts, publications and talks. */
+    icon: IconIdSchema.optional(),
   })
   .superRefine((pub, ctx) => {
     const doc = pub.document;
@@ -341,6 +356,8 @@ export const TalkSchema = z.strictObject({
   event: nonEmpty,
   date: YearMonthSchema,
   role: z.enum(["speaker", "author", "trainer"]),
+  /** L4 desk hologram (Lucide icon id), unique across posts, publications and talks. */
+  icon: IconIdSchema.optional(),
 });
 
 export const ContactSchema = z.strictObject({
@@ -598,6 +615,7 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     if (ranks.has(pod.selected)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "selected"], message: `Selected rank ${pod.selected} is used twice` });
     ranks.add(pod.selected);
   });
+  for (const issue of hologramIdClashes(content)) ctx.addIssue({ code: "custom", path: issue.path, message: issue.message });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));
   content.floors.labs.pods.forEach((pod, i) => {
     pod.publications?.forEach((id, j) => {
@@ -605,6 +623,38 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     });
   });
 });
+
+/**
+ * Hologram ids that must stay unique (owner decision 2026-10-23): career icons across jobs, education and freelance,
+ * pod sculptures, and L4 icons across posts, publications and talks. Whether an id exists is `shapeIssues` (`shapes.ts`).
+ */
+export function hologramIdClashes(content: z.infer<typeof SiteContentObjectSchema>): { path: (string | number)[]; message: string }[] {
+  const out: { path: (string | number)[]; message: string }[] = [];
+  const unique = (items: { id?: string; path: (string | number)[] }[], what: string) => {
+    const seen = new Map<string, string>();
+    for (const item of items) {
+      if (!item.id) continue;
+      const first = seen.get(item.id);
+      if (first) out.push({ path: item.path, message: `${what} "${item.id}" is already used by ${first}` });
+      else seen.set(item.id, item.path.join("."));
+    }
+  };
+  const { careerArchive, labs, library } = content.floors;
+  unique(
+    careerArchive.entries.map((e, i) => ({ id: ["job", "education", "freelance"].includes(e.type) ? e.icon : undefined, path: ["floors", "careerArchive", "entries", i, "icon"] })),
+    "Career icon",
+  );
+  unique(labs.pods.map((p, i) => ({ id: p.sculpture, path: ["floors", "labs", "pods", i, "sculpture"] })), "Sculpture");
+  unique(
+    [
+      ...library.posts.map((p, i) => ({ id: p.icon, path: ["floors", "library", "posts", i, "icon"] })),
+      ...library.publications.map((p, i) => ({ id: p.icon, path: ["floors", "library", "publications", i, "icon"] })),
+      ...library.talks.map((t, i) => ({ id: t.icon, path: ["floors", "library", "talks", i, "icon"] })),
+    ],
+    "L4 icon",
+  );
+  return out;
+}
 
 export type Locale = z.infer<typeof LocaleSchema>;
 export type LocalizedText = z.infer<typeof LocalizedTextSchema>;

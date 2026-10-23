@@ -127,6 +127,8 @@ export interface CareerData {
   years: { year: number; entries: CareerEntryView[]; awards: number }[];
   sideProjects: { id: string; title: string; year: number | null }[];
   repos: WorkshopRepo[];
+  /** URL of the floor's hologram shapes (`/shapes/L2.<hash>.json`, keyed by entry slug), fetched after the first frame. */
+  shapes: string;
 }
 
 export type HologramKind = "waveform" | "shield" | "documents" | "graph" | "chart" | "template" | "pipeline";
@@ -178,7 +180,7 @@ export interface ExperienceData {
   /** Content hash of each floor's Glass Drawer file (`roomDataVersions`): its `?v=` in `/data/rooms`. */
   roomData: Record<FloorId, string>;
   /** L3 Labs: pods in site order (`orderPods`: gallery first, then hero, featured, listed, then `order`) and wing labels. */
-  labs: { pods: LabPod[]; wings: Record<Wing, string>; ops: OpsData };
+  labs: { pods: LabPod[]; wings: Record<Wing, string>; ops: OpsData; /** Pod sculptures (`/shapes/L3.<hash>.json`, keyed by pod slug). */ shapes: string };
   /** L2 Career Archive: year rooms, trophy counts and the Workshop annex. */
   career: CareerData;
   library: LibraryData;
@@ -212,6 +214,8 @@ export interface LibraryData {
   topics: LibraryTopic[];
   /** Certification study guides (`content/study-guides.json`, file order): the books of the end plaza's Study Vault. */
   guides: { slug: string; spine: string; issuer: string; code: string | null }[];
+  /** Item icons (`/shapes/L4.<hash>.json`, keyed by post slug, publication id and talk id). */
+  shapes: string;
 }
 
 /** One topic of the L4 Topic Constellation. */

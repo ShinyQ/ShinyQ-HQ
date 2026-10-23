@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildFloorRoomViews } from "@/content/room-views";
-import { loadFloorViews, loadRoomView, peekFloorViews, primeFloorViews, setRoomDataVersions } from "@/hud/drawer/data";
+import { loadFloorViews, loadRoomView, peekFloorViews, setRoomDataVersions } from "@/hud/drawer/data";
+import { primeFloorViews } from "../helpers/room-data";
 
 const VERSIONS = { L1: "aaaaaaaaaaa1", L2: "aaaaaaaaaaa2", L3: "aaaaaaaaaaa3", L4: "aaaaaaaaaaa4", RF: "aaaaaaaaaaaf", B1: "aaaaaaaaaab1" };
 const requested: string[] = [];

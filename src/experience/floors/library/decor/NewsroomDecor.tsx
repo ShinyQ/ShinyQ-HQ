@@ -10,6 +10,7 @@ import { LineBatch } from "../../labs/lines";
 import { ZONE_TONE } from "../model";
 import { FlipBooks } from "./BookHolograms";
 import { ResearchPapers, STATION_HEIGHT, StationShells, stationTitles, ZoneIcons, type DecorProps } from "./common";
+import { featuredStation } from "../icons";
 import { stageBook } from "./flipBooks";
 import { LibrarySigns } from "./LibrarySigns";
 import { yearPostSegments } from "./signs";
@@ -61,7 +62,7 @@ export function NewsroomDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones } = props;
   const titles = useMemo(() => stationTitles(library, zones), [library, zones]);
   const wall = layout.extras.wall;
-  const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
+  const featured = featuredStation(layout);
   const featuredPost = featured ? library.posts.find((p) => `L4:${p.slug}` === featured.room) : undefined;
   const ticker = library.posts.map((p) => p.title).join(TICKER.separator);
   const others = useMemo(() => layout.stations.filter((s) => s !== featured), [layout.stations, featured]);
@@ -84,7 +85,7 @@ export function NewsroomDecor(props: DecorProps) {
   return (
     <group name="library-newsroom">
       <StationShells stations={layout.stations} tier={tier} />
-      <ZoneIcons stations={others} tier={tier} reducedMotion={reducedMotion} />
+      <ZoneIcons stations={others} shapes={library.shapes} tier={tier} reducedMotion={reducedMotion} />
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
       <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />

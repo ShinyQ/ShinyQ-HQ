@@ -40,3 +40,6 @@ e2e/perf/*-snapshots/
 
 # Prepared study guide PDFs (scripts/study-guides.ts); never committed, they live in R2.
 /.study-guides/
+
+# Floating hologram shapes (bun scripts/build-shapes.ts, run by build and dev): content-hashed, rebuilt every build.
+/public/shapes/
