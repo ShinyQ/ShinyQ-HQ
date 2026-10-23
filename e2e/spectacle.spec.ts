@@ -46,7 +46,7 @@ async function expectNoFlatText(page: Page) {
 }
 
 // The renderer check of the facing on one floor (the L3 reactor signs); `tests/unit/floor-sign-facing.test.ts` checks the
-// L2 year markers and the L4 timeline signs from the same poses without a renderer.
+// L2 Workshop signs and the L4 timeline signs from the same poses without a renderer.
 test("L3: floor words float as signs that face the camera from the default and a rotated view", async ({ page }) => {
   const errors = collectErrors(page);
   await enterFloorRoute(page, "/en/labs");
