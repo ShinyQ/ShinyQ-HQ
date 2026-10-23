@@ -97,7 +97,7 @@ const FACTS: FactRow[] = [
   { cv: "GPA: 3.88 / 4.00", site: ["GPA 3.88 / 4.00"] },
   { cv: "200+ software engineering students", site: ["200+ students"] },
   { cv: "Evaluating 21 teams", site: ["21 teams"] },
-  { cv: "It has reviewed 540+ PRs organization-wide", site: ["541 PRs"] },
+  { cv: "It has reviewed 540+ PRs organization-wide", site: ["628 PRs"] },
   { cv: "TOEFL ITP - 547 (2024)", site: ["TOEFL ITP (score 547)"] },
   { cv: "Agentic AI Systems GH-600 (2026)", site: ["GH-600", "GitHub Certified: Agentic AI Developer"] },
   { cv: "Google Generative AI Leader (2026)", site: ["Google Certified: Generative AI Leader"] },

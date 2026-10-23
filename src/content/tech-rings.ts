@@ -55,7 +55,6 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   xgboost: "ai",
   lightgbm: "ai",
   "onnx runtime web": "ai",
-  "microsoft 365 copilot": "ai",
   "github copilot": "ai",
   "claude code": "ai",
   codex: "ai",
@@ -134,6 +133,7 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
   chai: "devops",
   sinon: "devops",
   vitest: "devops",
+  playwright: "devops",
   locust: "devops",
   moonrepo: "devops",
   pnpm: "devops",
@@ -158,4 +158,4 @@ export const EXTRA_RING: Readonly<Record<string, ReactorRingId>> = {
 };
 
 /** Third-party integrations that fit no ring: left out of the reactor on purpose (explicit allowlist). */
-export const MISC_TECH: ReadonlySet<string> = new Set(["ipaymu", "rajaongkir", "brevo", "sap integration", "sftp"]);
+export const MISC_TECH: ReadonlySet<string> = new Set(["ipaymu", "rajaongkir", "brevo", "sap integration", "sftp", "whatsapp cloud api"]);

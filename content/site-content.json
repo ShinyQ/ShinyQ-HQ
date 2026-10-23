@@ -24,8 +24,8 @@
     },
     "timezone": "GMT+7",
     "bio": {
-      "en": "I am a Forward Deployed AI Engineer based in Jakarta, with 4+ years of experience building production systems for digital banking, fintech and enterprise SaaS. Since February 2026, I have led the delivery of Azure-native AI platforms at Metrodata for 12+ enterprise clients in sectors such as banking, automotive, mining and food manufacturing. The work includes multi-agent RAG assistants, realtime voice agents, document AI and AI code security. Before that, I built backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius. I make LLM systems reliable in production through evaluation, guardrails and observability.",
-      "id": "Saya Forward Deployed AI Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin pengembangan platform AI berbasis Azure hingga rilis di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, dan manufaktur makanan. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
+      "en": "I am a Forward Deployed AI Engineer based in Jakarta, with 4+ years of experience building production systems for digital banking, fintech and enterprise SaaS. Since February 2026, I have led the delivery of Azure-native AI platforms at Metrodata for 12+ enterprise clients in sectors such as banking, automotive, mining, food manufacturing and consumer health. The work includes multi-agent RAG assistants, realtime voice agents, document AI and AI code security. Before that, I built backends and full-stack products for e-commerce, travel, SaaS and digital banking, including roles at MNC, Jatis and Jenius. I make LLM systems reliable in production through evaluation, guardrails and observability.",
+      "id": "Saya Forward Deployed AI Engineer di Jakarta, dengan pengalaman 4+ tahun membangun sistem production untuk perbankan digital, fintech, dan SaaS enterprise. Sejak Februari 2026, saya memimpin pengembangan platform AI berbasis Azure hingga rilis di Metrodata untuk 12+ klien enterprise di berbagai sektor, antara lain perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health. Proyeknya mencakup asisten RAG multi-agent, voice agent realtime, document AI, dan keamanan kode berbasis AI. Sebelumnya, saya membangun backend dan produk full-stack untuk e-commerce, travel, SaaS, dan perbankan digital, termasuk di MNC, Jatis, dan Jenius. Saya membuat sistem LLM andal di production lewat evaluasi, guardrail, dan observability."
     },
     "story": {
       "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
@@ -99,8 +99,8 @@
       "id": "Cara saya menjalankan AI di production"
     },
     "intro": {
-      "en": "I treat observability as part of the feature, not an afterthought. Every AI service I ship on Azure is instrumented with OpenTelemetry through the Azure Monitor distro, on Python (FastAPI, Functions) and Node (Next.js), across App Service, Functions and Container Apps.",
-      "id": "Bagi saya, observability adalah bagian dari fitur, bukan tambahan di akhir. Setiap layanan AI yang saya rilis di Azure memakai instrumentasi OpenTelemetry lewat distro Azure Monitor. Ini mencakup Python (FastAPI, Functions) dan Node (Next.js) pada App Service, Functions, dan Container Apps."
+      "en": "I treat observability as part of the feature, not an afterthought. The AI services I run on Azure are instrumented with OpenTelemetry, mostly through the Azure Monitor distro, on Python (FastAPI, Functions) and Node (Next.js), across App Service, Functions and Container Apps.",
+      "id": "Bagi saya, observability adalah bagian dari fitur, bukan tambahan di akhir. Layanan AI yang saya jalankan di Azure memakai instrumentasi OpenTelemetry, sebagian besar lewat distro Azure Monitor. Ini mencakup Python (FastAPI, Functions) dan Node (Next.js) pada App Service, Functions, dan Container Apps."
     },
     "points": [
       {
@@ -298,12 +298,12 @@
     },
     {
       "id": "prs-merged-2026",
-      "value": "800+",
+      "value": "1,190+",
       "label": {
         "en": "Merged pull requests in 2026",
         "id": "Pull request yang di-merge selama 2026"
       },
-      "source": "GitHub search of authored, merged pull requests in the employer organization (Oct 2026)",
+      "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
       "confidence": "verified"
     },
     {
@@ -2192,8 +2192,8 @@
           "start": "2026-02",
           "end": "present",
           "summary": {
-            "en": "In the Microsoft AI practice, I lead Azure-native AI projects from architecture to production for 12+ enterprise clients in banking, automotive, mining and food manufacturing. I also build the practice's own products, including a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
-            "id": "Di praktik Microsoft AI, saya memimpin pengembangan platform AI berbasis Azure, dari arsitektur hingga production, untuk 12+ klien enterprise di sektor perbankan, otomotif, pertambangan, dan manufaktur makanan. Saya juga mengerjakan produk tim sendiri, termasuk template AI full-stack yang bisa digunakan ulang dan dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
+            "en": "In the Microsoft AI practice, I lead Azure-native AI projects from architecture to production for 12+ enterprise clients in banking, automotive, mining, food manufacturing and consumer health. I also build the practice's own products, including a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
+            "id": "Di praktik Microsoft AI, saya memimpin pengembangan platform AI berbasis Azure, dari arsitektur hingga production, untuk 12+ klien enterprise di sektor perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health. Saya juga mengerjakan produk tim sendiri, termasuk template AI full-stack yang bisa digunakan ulang dan dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
           },
           "highlights": [
             {
@@ -2205,12 +2205,12 @@
               "id": "Membangun platform keamanan kode berbasis AI dengan 8 engine pemindai dan agent fix-PR dengan guardrail"
             },
             {
-              "en": "Primary engineer on 10 repositories and significant contributor on 10 more, for banking and automotive clients",
-              "id": "Engineer utama di 10 repositori dan kontributor signifikan di 10 lainnya, untuk klien perbankan dan otomotif"
+              "en": "Led Azure Marketplace readiness for four AI products: Managed Application packages validated by real test installs after 36 install-blocking defects were fixed (Partner Center offers not yet created)",
+              "id": "Memimpin kesiapan Azure Marketplace untuk empat produk AI: paket Managed Application yang tervalidasi lewat test install sungguhan setelah 36 defect penghambat instalasi diperbaiki (offer di Partner Center belum dibuat)"
             },
             {
-              "en": "800+ merged pull requests in 2026, agent-assisted and human-reviewed",
-              "id": "800+ pull request di-merge pada 2026, dibantu AI agent dan di-review manusia"
+              "en": "1,190+ merged pull requests in 2026, agent-assisted and human-reviewed",
+              "id": "1.190+ pull request di-merge pada 2026, dibantu AI agent dan di-review manusia"
             }
           ],
           "stack": [
@@ -2870,8 +2870,8 @@
               "id": "Saya menerapkan single sign-on Entra ID dan akun lokal Argon2id, dengan pengecekan ulang peran di setiap request. Deployment menggunakan Bicep, integrasi VNet, dan Key Vault reference."
             },
             {
-              "en": "I diagnosed production failures: a build step that stopped the app from starting, a sign-in teardown race, and a session cookie that grew past the browser's 4 KB limit and silently broke staff sign-in.",
-              "id": "Saya menelusuri kegagalan produksi: langkah build yang membuat aplikasi gagal start, race condition saat teardown login, dan cookie sesi yang melewati batas 4 KB browser sehingga login staf gagal tanpa pesan."
+              "en": "I diagnosed failures on the deployed portal: a build step that stopped the app from starting, a sign-in teardown race, and a session cookie that grew past the browser's 4 KB limit and silently broke staff sign-in.",
+              "id": "Saya menelusuri kegagalan di portal yang sudah di-deploy: langkah build yang membuat aplikasi gagal start, race condition saat teardown login, dan cookie sesi yang melewati batas 4 KB browser sehingga login staf gagal tanpa pesan."
             }
           ],
           "architecture": {
@@ -3051,8 +3051,8 @@
             {
               "value": "4.5 KB → 2.1 KB",
               "label": {
-                "en": "Session cookie size after the fix that restored staff sign-in in production",
-                "id": "Ukuran cookie sesi setelah perbaikan yang memulihkan login staf di produksi"
+                "en": "Session cookie size after the fix that restored staff sign-in on the deployed portal",
+                "id": "Ukuran cookie sesi setelah perbaikan yang memulihkan login staf di portal yang sudah di-deploy"
               },
               "context": {
                 "en": "Measured against a live backend: 4,491 bytes, over the 4,096-byte browser limit, down to 2,083.",
@@ -5134,8 +5134,8 @@
               "id": "Saya membuat barge-in memperhitungkan audio yang sedang diputar dan memindahkan tool call knowledge base dari realtime loop ke task yang bisa dibatalkan dengan satu batas waktu bersama."
             },
             {
-              "en": "I prepared the system for production with atomic writes, crash recovery, a replayable dead-letter queue, drain-gated releases, managed identity and infrastructure as code for each environment.",
-              "id": "Saya menyiapkan sistem untuk produksi dengan atomic write, crash recovery, dead-letter queue yang bisa di-replay, rilis dengan drain gate, managed identity, dan infrastructure as code per environment."
+              "en": "I prepared the system for production with atomic writes, crash recovery, a replayable dead-letter queue, drain-gated releases, managed identity and infrastructure as code for each environment. As a Managed Application, its Marketplace test installs passed 25 of 25 (public) and 22 of 22 (private) post-install checks.",
+              "id": "Saya menyiapkan sistem untuk produksi dengan atomic write, crash recovery, dead-letter queue yang bisa di-replay, rilis dengan drain gate, managed identity, dan infrastructure as code per environment. Sebagai Managed Application, test install Marketplace-nya lolos 25 dari 25 (publik) dan 22 dari 22 (privat) pemeriksaan pasca-instalasi."
             },
             {
               "en": "I documented the decision to replace a retiring voice service with self-hosted WebRTC media on zonal VMs, then verified failover through hard VM-stop drills.",
@@ -5526,8 +5526,8 @@
               "id": "Setelah audit internal mereproduksi eksekusi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, saya memimpin hardening 14 item. Scan dipindahkan ke job terisolasi dengan autoscaling dan token yang dibatasi per job."
             },
             {
-              "en": "I added Prompt Shields, redacted secrets from prompts and built an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days).",
-              "id": "Saya menambahkan Prompt Shields, menyamarkan secret di dalam prompt, dan membangun suite prompt injection offline, lalu merilis lewat staging, canary revision, dan health gate (13 rilis dalam 7 hari)."
+              "en": "I added Prompt Shields, redacted secrets from prompts and built an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days). For Azure Marketplace readiness, I packaged it as a Managed Application with signed images; public and private test installs passed 16 of 16 and 24 of 24 post-install checks.",
+              "id": "Saya menambahkan Prompt Shields, menyamarkan secret di dalam prompt, dan membangun suite prompt injection offline, lalu merilis lewat staging, canary revision, dan health gate (13 rilis dalam 7 hari). Untuk kesiapan Azure Marketplace, saya mengemasnya sebagai Managed Application dengan image yang ditandatangani; test install paket publik dan privat lolos 16 dari 16 dan 24 dari 24 pemeriksaan pasca-instalasi."
             }
           ],
           "architecture": {
@@ -5704,14 +5704,14 @@
               "confidence": "verified"
             },
             {
-              "value": "541 PRs",
+              "value": "628 PRs",
               "label": {
-                "en": "Pull requests reviewed using scan results in 22 repositories",
-                "id": "Pull request yang di-review menggunakan hasil scan di 22 repository"
+                "en": "Pull requests reviewed using scan results in 24 repositories",
+                "id": "Pull request yang di-review menggunakan hasil scan di 24 repositori"
               },
               "context": {
-                "en": "Recorded production activity through late September 2026, with about 4.9k scans and 645k findings processed.",
-                "id": "Aktivitas produksi yang tercatat hingga akhir September 2026, dengan sekitar 4,9 ribu scan dan 645 ribu finding diproses."
+                "en": "Recorded by 24 Oct 2026; about 4.9k scans and 645k findings were processed by late September 2026.",
+                "id": "Tercatat hingga 24 Okt 2026; sekitar 4,9 ribu scan dan 645 ribu finding diproses hingga akhir September 2026."
               },
               "confidence": "verified"
             },
@@ -5860,8 +5860,8 @@
           },
           "approach": [
             {
-              "en": "I built a two-pass pipeline over OCR output: per-document findings followed by a cross-document verdict, with live progress streaming.",
-              "id": "Saya membangun pipeline dua tahap dari hasil OCR: temuan per dokumen, lalu verdict lintas dokumen, dengan progres yang di-stream secara live."
+              "en": "I built a two-pass pipeline over OCR output: per-document findings followed by a cross-document verdict, with live progress streaming. In Oct 2026 I rebuilt its UI in English and Indonesian: a Home that leads with cases needing attention, a three-step analysis wizard and a phone-to-desktop pass with 0 axe violations.",
+              "id": "Saya membangun pipeline dua tahap dari hasil OCR: temuan per dokumen, lalu verdict lintas dokumen, dengan progres yang di-stream secara live. Pada Okt 2026, saya membangun ulang UI-nya dalam bahasa Inggris dan Indonesia: Home yang mendahulukan kasus yang perlu perhatian, wizard analisis tiga langkah, dan pengecekan dari ponsel hingga desktop dengan 0 pelanggaran axe."
             },
             {
               "en": "I moved prompts into declarative YAML agents using Microsoft Agent Framework.",
@@ -6060,8 +6060,8 @@
                 "id": "False-positive rate paket bersih, gangguan administratif; development offline"
               },
               "context": {
-                "en": "Measured offline on a development gold set.",
-                "id": "Diukur secara offline pada gold set development."
+                "en": "Development gold set.",
+                "id": "Gold set development."
               },
               "confidence": "verified"
             },
@@ -6072,8 +6072,8 @@
                 "id": "Tingkat fail-open, set development offline"
               },
               "context": {
-                "en": "Measured offline on the same development gold set.",
-                "id": "Diukur secara offline pada gold set development yang sama."
+                "en": "Same development gold set.",
+                "id": "Gold set development yang sama."
               },
               "confidence": "verified"
             },
@@ -6209,12 +6209,16 @@
               "id": "Saya menambahkan test suite pertama dan evaluation harness dengan CI gate, menggunakan golden set 40 pasang (37,5% berbahasa Indonesia), pengecekan fairness counterfactual, dan 20+ kelas prompt injection."
             },
             {
-              "en": "I removed AI hire-or-reject verdicts and added AI disclosure, a system card and identity redaction before model calls.",
-              "id": "Saya menghapus keputusan terima atau tolak dari AI, serta menambahkan AI disclosure, system card, dan redaksi identitas sebelum pemanggilan model."
+              "en": "I removed AI hire-or-reject verdicts and added AI disclosure, a system card and identity redaction before model calls. In October 2026 I redesigned every page in English and Indonesian: the candidate result now leads with a fit band, requirement coverage and must-haves beside one merged AI summary, framed as decision support while the recruiter decides. Touch screens get 44 px targets, and every route was captured with accessibility (axe), overflow and touch-target checks.",
+              "id": "Saya menghapus keputusan terima atau tolak dari AI, serta menambahkan AI disclosure, system card, dan redaksi identitas sebelum pemanggilan model. Pada Oktober 2026, saya mendesain ulang setiap halaman dalam bahasa Inggris dan Indonesia: hasil kandidat kini diawali fit band, cakupan persyaratan, dan must-have di samping satu ringkasan AI gabungan, diposisikan sebagai pendukung keputusan sementara rekruter tetap yang memutuskan. Layar sentuh mendapat target 44 px, dan setiap route di-capture dengan pemeriksaan aksesibilitas (axe), overflow, dan target sentuh."
             },
             {
               "en": "I adopted passwordless managed identity and HMAC-signed calls between the web tier and backend.",
               "id": "Saya menerapkan managed identity tanpa password dan panggilan bertanda tangan HMAC antara web tier dan backend."
+            },
+            {
+              "en": "For Azure Marketplace readiness, I packaged it as a single-organization Managed Application with signed releases and a private-network option behind Front Door WAF, then fixed 12 install findings until test installs of public and private plans passed.",
+              "id": "Untuk kesiapan Azure Marketplace, saya mengemasnya sebagai Managed Application untuk satu organisasi dengan rilis yang ditandatangani dan opsi jaringan privat di belakang Front Door WAF, lalu memperbaiki 12 temuan instalasi hingga test install plan publik dan privat berhasil."
             }
           ],
           "architecture": {
@@ -6466,8 +6470,8 @@
             "id": "PoC Analisis Rekening Koran"
           },
           "tagline": {
-            "en": "Document AI for a national digital bank's evaluators, with strict access control, Indonesian data residency and faster document processing.",
-            "id": "Document AI untuk evaluator sebuah bank digital nasional, dengan kontrol akses ketat, penyimpanan data di Indonesia, dan pemrosesan dokumen lebih cepat."
+            "en": "Document AI for a national digital bank's evaluators, with strict access control, data at rest in an Indonesian Azure region and faster document processing.",
+            "id": "Document AI untuk evaluator sebuah bank digital nasional, dengan kontrol akses ketat, data at rest di region Azure Indonesia, dan pemrosesan dokumen yang lebih cepat."
           },
           "period": {
             "start": "2026-06",
@@ -6478,8 +6482,8 @@
             "id": "Lead engineer, bertanggung jawab atas pemeliharaan"
           },
           "problem": {
-            "en": "A national digital bank's evaluators needed auditable bank-statement analysis within a fixed PoC window. Uploads and results required strict access control, with data kept in Indonesia.",
-            "id": "Evaluator dari sebuah bank digital nasional membutuhkan analisis rekening koran yang bisa diaudit dalam periode PoC yang ditetapkan. Upload dan hasil analisis memerlukan kontrol akses ketat, dengan data tetap tersimpan di Indonesia."
+            "en": "A national digital bank's evaluators needed auditable bank-statement analysis within a fixed PoC window. Uploads and results required strict access control, with data at rest kept in Indonesia.",
+            "id": "Evaluator dari sebuah bank digital nasional membutuhkan analisis rekening koran yang bisa diaudit dalam periode PoC yang ditetapkan. Upload dan hasil analisis memerlukan kontrol akses ketat, dengan data at rest tetap tersimpan di Indonesia."
           },
           "approach": [
             {
@@ -6909,16 +6913,16 @@
           },
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Demand Forecasting on Microsoft Fabric",
-            "id": "Forecasting Permintaan di Microsoft Fabric"
+            "en": "OTF Forecasting for a Bakery Company",
+            "id": "Forecasting OTF untuk Perusahaan Roti"
           },
           "shortTitle": {
-            "en": "Fabric Demand Forecasting",
-            "id": "Forecasting Permintaan Fabric"
+            "en": "OTF Forecasting on Fabric",
+            "id": "Forecasting OTF di Fabric"
           },
           "tagline": {
-            "en": "Demand planning on Microsoft Fabric for a national bakery brand: a forecasting dashboard, a Microsoft 365 Copilot data agent and a medallion migration pipeline whose live cut-over is still in progress.",
-            "id": "Perencanaan permintaan di Microsoft Fabric untuk merek roti nasional: dashboard forecasting, data agent di Microsoft 365 Copilot, dan pipeline migrasi medallion yang cut-over live-nya masih berlangsung."
+            "en": "Order-to-fulfil (OTF) planning on Microsoft Fabric for a national bakery brand: a forecasting dashboard on the client's real sales data since October 2026, fed by a contract-first medallion pipeline from an on-premise database.",
+            "id": "Perencanaan order-to-fulfil (OTF) di Microsoft Fabric untuk merek roti nasional: dashboard forecasting yang memakai data penjualan riil klien sejak Oktober 2026, dipasok pipeline medallion berbasis data contract dari database on-premise."
           },
           "period": {
             "start": "2026-08",
@@ -6942,12 +6946,16 @@
               "id": "Saya menggunakan zero-row probe dan capacity probe untuk memastikan penyebabnya adalah capacity throttling, sekaligus mengoreksi diagnosis sebelumnya. Pembacaan 83.824 baris saya ganti dengan sekitar 3.000 agregat yang di-stream."
             },
             {
-              "en": "I added a private, Entra-protected backend for AI executive briefings. After measuring slow non-streaming responses, I moved chat to a Fabric data agent over the gold tables, published to Microsoft 365 Copilot so planners ask questions where they already work.",
-              "id": "Saya menambahkan backend privat dengan proteksi Entra untuk executive briefing berbasis AI. Setelah mengukur respons non-streaming yang lambat, saya memindahkan chat ke Fabric data agent yang membaca tabel gold. Agent ini dipublikasikan ke Microsoft 365 Copilot agar tim perencana bisa bertanya dari tempat mereka bekerja."
+              "en": "I added a private, Entra-protected backend for AI executive briefings; since the model deployment was retired in September 2026, it serves a rule-based briefing. An in-app chat on a Fabric data agent took 23 to 28 s per answer without streaming, so I removed it from the app.",
+              "id": "Saya menambahkan backend privat dengan proteksi Entra untuk executive briefing berbasis AI; sejak deployment model dihentikan pada September 2026, backend ini menyajikan briefing berbasis aturan. Chat di dalam aplikasi berbasis Fabric data agent butuh 23 hingga 28 detik per jawaban tanpa streaming, sehingga saya menghapusnya dari aplikasi."
             },
             {
-              "en": "I built a medallion pipeline to migrate the client's on-premise database into Fabric. It stops on failure and can resume from a completed stage: data contract, bronze ingestion, silver data-quality rules, forecast adapter, gold serving tables and reconciled app sync. Live cut-over remains in progress.",
-              "id": "Saya membangun pipeline medallion untuk memigrasikan database on-premise klien ke Fabric. Pipeline berhenti saat terjadi kegagalan dan bisa dilanjutkan dari tahap yang sudah selesai: data contract, ingestion bronze, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi dengan rekonsiliasi. Cut-over live masih berlangsung."
+              "en": "I built a contract-first medallion pipeline from the client's on-premise SQL Server into Fabric. It stops on failure and can resume from a completed stage: data contract, bronze ingestion with a load audit, silver data-quality rules, forecast adapter, gold serving tables and a staged, reconciled app sync. Since 8 Oct 2026 the dashboard runs on the client's real data; a local bootstrap loader feeds bronze because the client tenant has no on-premise data gateway yet.",
+              "id": "Saya membangun pipeline medallion berbasis data contract dari SQL Server on-premise klien ke Fabric. Pipeline berhenti saat terjadi kegagalan dan bisa dilanjutkan dari tahap yang sudah selesai: data contract, ingestion bronze dengan audit pemuatan, aturan data quality silver, forecast adapter, tabel serving gold, serta sinkronisasi aplikasi bertahap dengan rekonsiliasi. Sejak 8 Okt 2026, dashboard berjalan dengan data riil klien; loader bootstrap lokal mengisi bronze karena tenant klien belum memiliki on-premise data gateway."
+            },
+            {
+              "en": "On the real data, I simplified the dashboard to five pages for planners: a national figure with a deviation headline, a store-by-SKU OTF table in the planners' workbook column order with a drawer that explains each forecast and keeps forecaster adjustments, a deviation page with Ideal, Watch and Critical bands, planning inputs and settings. Promotion, payday and other-activity inputs now apply upstream as an explicit uplift layer, store names and cities reach every view, and the interface switches between Indonesian and English with technical terms kept.",
+              "id": "Dengan data riil, saya menyederhanakan dashboard menjadi lima halaman untuk tim perencana: national figure dengan ringkasan deviasi, tabel OTF per toko dan SKU dengan urutan kolom workbook tim perencana dan drawer yang menjelaskan setiap forecast serta menyimpan penyesuaian forecaster, halaman deviasi dengan band Ideal, Perlu perhatian, dan Kritis, planning input, serta pengaturan. Input promo, gajian, dan aktivitas lain kini diterapkan di hulu sebagai uplift layer eksplisit, nama toko dan kota tampil di setiap tampilan, dan antarmuka bisa beralih antara bahasa Indonesia dan Inggris dengan istilah teknis tetap dipertahankan."
             }
           ],
           "architecture": {
@@ -6972,27 +6980,16 @@
               {
                 "id": "briefing",
                 "label": {
-                  "en": "Azure AI Foundry briefing",
-                  "id": "Briefing Azure AI Foundry"
+                  "en": "Executive briefing",
+                  "id": "Briefing eksekutif"
                 },
                 "sublabel": {
-                  "en": "Private App Service backend",
-                  "id": "Backend App Service privat"
+                  "en": "Private App Service, rule-based fallback",
+                  "id": "App Service privat, fallback berbasis aturan"
                 },
                 "layer": 1,
                 "row": 1,
-                "kind": "ai"
-              },
-              {
-                "id": "agent",
-                "label": "Fabric data agent",
-                "sublabel": {
-                  "en": "Published to Microsoft 365 Copilot",
-                  "id": "Dipublikasikan ke Microsoft 365 Copilot"
-                },
-                "layer": 1,
-                "row": 2,
-                "kind": "ai"
+                "kind": "service"
               },
               {
                 "id": "lakehouse",
@@ -7013,7 +7010,11 @@
                 },
                 "layer": 3,
                 "row": 0,
-                "kind": "external"
+                "kind": "external",
+                "sublabel": {
+                  "en": "Real data since Oct 2026",
+                  "id": "Data riil sejak Okt 2026"
+                }
               }
             ],
             "edges": [
@@ -7041,18 +7042,10 @@
                 "from": "source",
                 "to": "lakehouse",
                 "label": {
-                  "en": "Data Pipelines migration",
-                  "id": "migrasi Data Pipelines"
+                  "en": "bronze ingestion",
+                  "id": "ingestion bronze"
                 },
                 "async": true
-              },
-              {
-                "from": "agent",
-                "to": "lakehouse",
-                "label": {
-                  "en": "gold tables",
-                  "id": "tabel gold"
-                }
               }
             ]
           },
@@ -7094,14 +7087,14 @@
               "confidence": "verified"
             },
             {
-              "value": "30 PRs",
+              "value": "11.7 MB → 156 KB",
               "label": {
-                "en": "Pull requests delivering the medallion pipeline in two days",
-                "id": "Pull request untuk implementasi medallion pipeline dalam dua hari"
+                "en": "Data per load of the national summary page on the client's real data, from 39 requests to 5",
+                "id": "Data per pemuatan halaman ringkasan nasional dengan data riil klien, dari 39 request menjadi 5"
               },
               "context": {
-                "en": "Pull requests are merged; live cut-over to the new pipeline remains in progress.",
-                "id": "Pull request sudah di-merge; cut-over live ke pipeline baru masih berlangsung."
+                "en": "Measured in pull-request records after moving aggregation into gold summary tables on the F2 capacity, Oct 2026. One row per store and SKU also cut the forecast table's load from 14.1 MB to 2.5 MB on a scale fixture.",
+                "id": "Diukur dalam catatan pull request setelah agregasi dipindahkan ke tabel ringkasan gold pada kapasitas F2, Okt 2026. Satu baris per toko dan SKU juga memangkas pemuatan tabel forecast dari 14,1 MB menjadi 2,5 MB pada fixture skala besar."
               },
               "confidence": "verified"
             }
@@ -7116,8 +7109,7 @@
             "App Service",
             "Bicep",
             "Key Vault",
-            "Azure AI Foundry",
-            "Microsoft 365 Copilot"
+            "Azure AI Foundry"
           ],
           "hologram": "chart",
           "assets": [
@@ -7172,30 +7164,10 @@
               "redacted": true
             },
             {
-              "src": "/media/fabric-forecasting-dashboard/06-ask-lumi.webp",
-              "alt": {
-                "en": "Ask dialog that hands the current dashboard scope to the forecasting agent in Microsoft 365 Copilot",
-                "id": "Dialog Ask yang meneruskan cakupan dashboard saat ini ke agent forecasting di Microsoft 365 Copilot"
-              },
-              "width": 1600,
-              "height": 1000,
-              "redacted": true
-            },
-            {
               "src": "/media/fabric-forecasting-dashboard/07-mobile.webp",
               "alt": {
                 "en": "Mobile layouts of the national summary, forecast output and deviation views",
                 "id": "Tampilan mobile untuk ringkasan nasional, forecast output, dan deviasi"
-              },
-              "width": 1600,
-              "height": 1000,
-              "redacted": true
-            },
-            {
-              "src": "/media/fabric-forecasting-dashboard/08-data-agent.webp",
-              "alt": {
-                "en": "Fabric data agent over the gold lakehouse tables answering a question about the largest plan versus sell-out gaps",
-                "id": "Fabric data agent di atas tabel lakehouse gold yang menjawab pertanyaan tentang selisih terbesar antara rencana dan sell-out"
               },
               "width": 1600,
               "height": 1000,
@@ -7646,7 +7618,7 @@
               "confidence": "verified"
             },
             {
-              "value": "800+ PRs",
+              "value": "1,190+ PRs",
               "label": {
                 "en": "Merged pull requests during 2026",
                 "id": "Pull request yang di-merge selama 2026"
@@ -7678,45 +7650,77 @@
           "wing": "ai",
           "timelineRef": "metrodata-2026",
           "title": {
-            "en": "Packaging AI Apps for Azure",
-            "id": "Pengemasan Aplikasi AI untuk Azure"
+            "en": "Azure Marketplace Readiness for Four AI Products",
+            "id": "Kesiapan Azure Marketplace untuk Empat Produk AI"
           },
           "tagline": {
-            "en": "Four AI apps packaged as Azure managed applications with installation and usage metering.",
-            "id": "Empat aplikasi AI dikemas sebagai Azure managed application dengan instalasi dan metering penggunaan."
+            "en": "Four MII AI products packaged as Azure Managed Application plans and validated by real test installs. Releases are signed, ARM-TTK runs in CI and metering is built but switched off. Partner Center offers are not yet created.",
+            "id": "Empat produk AI MII dikemas sebagai plan Azure Managed Application dan divalidasi lewat test install sungguhan. Rilis ditandatangani, ARM-TTK berjalan di CI, dan metering sudah dibangun tetapi dinonaktifkan. Offer di Partner Center belum dibuat."
           },
           "period": {
             "start": "2026-10",
             "end": "2026-10"
           },
           "role": {
-            "en": "Sole engineer, leading packaging for four products",
-            "id": "Engineer tunggal, memimpin pengemasan empat produk"
+            "en": "Engineering lead for the packages, releases and test installs of four products. The offer model was my manager's decision, and the package layout follows a colleague's reference implementation.",
+            "id": "Engineering lead untuk paket, rilis, dan test install empat produk. Model offer diputuskan oleh manajer saya, dan struktur paket mengikuti implementasi referensi milik rekan kerja."
           },
           "problem": {
-            "en": "The voice contact center, code security, CV screening and fraud review apps needed customer-installable packages for their own Azure subscriptions, with correct usage billing.",
-            "id": "Aplikasi voice contact center, code security, CV screening, dan fraud review membutuhkan paket yang dapat dipasang pelanggan di subscription Azure sendiri, dengan penagihan penggunaan yang benar."
+            "en": "Metrodata wanted to sell four AI apps it built (voice contact center, code security, CV screening and fraud review) through Microsoft Marketplace, installed in each customer's own Azure subscription and billed by product usage rather than AI tokens, which customers already pay for directly.",
+            "id": "Metrodata ingin menjual empat aplikasi AI buatannya (voice contact center, code security, CV screening, dan fraud review) melalui Microsoft Marketplace, diinstal di subscription Azure milik setiap pelanggan dan ditagih berdasarkan pemakaian produk, bukan token AI yang sudah dibayar langsung oleh pelanggan."
           },
           "approach": [
             {
-              "en": "I drafted and evaluated a multi-tenant SaaS model for each product before switching to an isolated installation per customer.",
-              "id": "Saya menyusun dan mengevaluasi model SaaS multi-tenant untuk setiap produk sebelum beralih ke instalasi terisolasi per pelanggan."
+              "en": "A multi-tenant SaaS track was built for all four products in one day. When my manager chose Azure Managed Application plans instead, I led the implementation of the pivot the same day: tenancy code deleted behind a fail-closed single-organization guard, with live data kept in place.",
+              "id": "Jalur SaaS multi-tenant sempat dibangun untuk keempat produk dalam satu hari. Ketika manajer saya memilih plan Azure Managed Application, saya memimpin implementasi pivot tersebut di hari yang sama: kode tenancy dihapus di balik guard satu organisasi yang fail-closed, dengan data live tetap di tempatnya."
             },
             {
-              "en": "For each product, I added plans, entitlements, a metering loop and usage ledger, plus onboarding and admin portals. I also delivered CI-validated ARM packages with customer documentation.",
-              "id": "Untuk setiap produk, saya menambahkan plan, entitlement, metering loop dan usage ledger, serta portal onboarding dan admin. Saya juga menyiapkan paket ARM yang divalidasi di CI beserta dokumentasi pelanggan."
+              "en": "I built per-plan packages on a shared layout from a colleague's reference: an install wizard with region and Azure OpenAI quota checks, ARM-TTK in CI, and releases signed with non-exportable Key Vault keys through a GitHub OIDC signer without client secrets.",
+              "id": "Saya membangun paket per plan di atas struktur bersama dari referensi rekan kerja: wizard instalasi dengan pengecekan region dan kuota Azure OpenAI, ARM-TTK di CI, serta rilis yang ditandatangani dengan key Key Vault yang tidak bisa diekspor melalui signer GitHub OIDC tanpa client secret."
+            },
+            {
+              "en": "I implemented idempotent hourly metering in all four products: one record per dimension and hour, managed identity, product units only. It stays switched off until an offer exists.",
+              "id": "Saya mengimplementasikan metering per jam yang idempotent di keempat produk: satu catatan per dimensi dan jam, managed identity, dan hanya unit produk yang dihitung. Metering tetap dinonaktifkan sampai offer tersedia."
+            },
+            {
+              "en": "I ran real Service Catalog test installs of public and private plans in a capped test subscription and fixed every install-blocking defect, including a managed resource group lock that stopped the apps' own identities from calling their AI services. For MII Fraud Detection, Starter public and Enterprise private test installs succeeded on Container Apps after five findings were fixed; its internal deployment still runs on App Service.",
+              "id": "Saya menjalankan test install Service Catalog sungguhan untuk plan publik dan privat di subscription uji yang anggarannya dibatasi, lalu memperbaiki setiap defect penghambat instalasi, termasuk lock managed resource group yang membuat identitas milik aplikasi sendiri tidak bisa memanggil layanan AI-nya. Untuk MII Fraud Detection, test install Starter publik dan Enterprise privat berhasil di Container Apps setelah lima temuan diperbaiki; deployment internalnya tetap berjalan di App Service."
             }
           ],
           "results": [
             {
-              "value": "4 products",
+              "value": "36 defects",
               "label": {
-                "en": "Azure managed application packages delivered through 12 stacked PRs merged in one day",
-                "id": "Paket Azure managed application dikerjakan melalui 12 stacked PR yang di-merge dalam satu hari"
+                "en": "Install-blocking defects fixed before post-install checks passed",
+                "id": "Defect penghambat instalasi yang diperbaiki sebelum pemeriksaan pasca-instalasi lolos"
               },
               "context": {
-                "en": "Packaging readiness only; the products are not yet listed on Azure Marketplace.",
-                "id": "Hanya kesiapan paket; produk belum terdaftar di Azure Marketplace."
+                "en": "Across four products (14, 12, 5 and 5). Public and private plans were installed in a test subscription and torn down afterwards.",
+                "id": "Di empat produk (14, 12, 5, dan 5). Plan publik dan privat diinstal di subscription uji, lalu dihapus setelahnya."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "4 products",
+              "label": {
+                "en": "Managed Application packages validated by real test installs",
+                "id": "Paket Managed Application yang tervalidasi lewat test install sungguhan"
+              },
+              "context": {
+                "en": "Readiness only: Partner Center offers are not yet created, and metering has never called the live Metering API.",
+                "id": "Baru tahap kesiapan: offer di Partner Center belum dibuat, dan metering belum pernah memanggil Metering API live."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "1 day",
+              "label": {
+                "en": "Pivot from multi-tenant SaaS to Managed Application plans across four repositories",
+                "id": "Pivot dari SaaS multi-tenant ke plan Managed Application di empat repositori"
+              },
+              "context": {
+                "en": "12 stacked pull requests merged on 7 Oct 2026, the day the decision was made.",
+                "id": "12 stacked pull request di-merge pada 7 Okt 2026, di hari keputusan diambil."
               },
               "confidence": "verified"
             }
@@ -7724,16 +7728,22 @@
           "stack": [
             "Azure Managed Applications",
             "ARM templates",
-            "arm-ttk",
+            "ARM-TTK",
             "Bicep",
-            "Marketplace Metering API",
-            "Managed Identity",
             "Key Vault",
+            "Managed Identity",
+            "Marketplace Metering API",
+            "Container Apps",
+            "App Service",
             "GitHub Actions"
           ],
           "hologram": "template",
           "assets": [],
-          "sculpture": "package-box"
+          "sculpture": "package-box",
+          "shortTitle": {
+            "en": "Marketplace Readiness",
+            "id": "Kesiapan Marketplace"
+          }
         },
         {
           "id": "azure-ai-operations",
@@ -7748,8 +7758,8 @@
             "id": "Operasional Azure AI Bersama"
           },
           "tagline": {
-            "en": "Model migration in one day, coordinated key rotation and alerts managed as code across AI apps.",
-            "id": "Migrasi model dalam satu hari, rotasi key terkoordinasi, dan alert yang dikelola sebagai kode untuk aplikasi AI."
+            "en": "Model migration in one day, coordinated key rotation, alerts managed as code and a Node.js security patch sweep across AI apps.",
+            "id": "Migrasi model dalam satu hari, rotasi key terkoordinasi, alert yang dikelola sebagai kode, dan patch keamanan Node.js di berbagai aplikasi AI."
           },
           "period": {
             "start": "2026-08",
@@ -7771,6 +7781,10 @@
             {
               "en": "I rotated keys as apps moved to Key Vault references, put alert rules into code and captured rollback snapshots before high-risk cut-overs.",
               "id": "Saya merotasi key saat aplikasi beralih ke Key Vault reference, memindahkan alert rule ke kode, dan mengambil snapshot rollback sebelum cut-over berisiko tinggi."
+            },
+            {
+              "en": "When the October 2026 Node.js security release landed before App Service images caught up, I merged dependency fixes in 9 repositories within two days and proposed signature-verified bundled runtimes as a reversible stopgap; most runtime PRs still await merge, and one runs in production after smoke checks.",
+              "id": "Saat rilis keamanan Node.js Oktober 2026 keluar sebelum image App Service diperbarui, saya me-merge perbaikan dependency di 9 repositori dalam dua hari dan mengusulkan runtime bawaan yang diverifikasi tanda tangannya sebagai solusi sementara yang bisa dibatalkan; sebagian besar PR runtime masih menunggu merge, dan satu sudah berjalan di production setelah smoke check."
             }
           ],
           "results": [
@@ -7807,6 +7821,18 @@
               "context": {
                 "en": "Counted from resource metadata, excluding personal R&D.",
                 "id": "Dihitung dari metadata resource, tidak termasuk R&D pribadi."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "9 repos",
+              "label": {
+                "en": "Repositories patched for the October 2026 Node.js security release within two days",
+                "id": "Repositori yang di-patch untuk rilis keamanan Node.js Oktober 2026 dalam dua hari"
+              },
+              "context": {
+                "en": "Dependency fixes merged; bundled-runtime PRs mostly open, one deployed to production with smoke checks.",
+                "id": "Perbaikan dependency sudah di-merge; PR runtime bawaan sebagian besar masih terbuka, satu sudah di-deploy ke production dengan smoke check."
               },
               "confidence": "verified"
             }
@@ -8136,8 +8162,8 @@
           },
           "approach": [
             {
-              "en": "I trained XGBoost and LightGBM models and exported them for ONNX Runtime Web.",
-              "id": "Saya melatih model XGBoost dan LightGBM, lalu mengekspornya untuk ONNX Runtime Web."
+              "en": "I trained an XGBoost model, compared it with LightGBM and random forest, and exported it for ONNX Runtime Web.",
+              "id": "Saya melatih model XGBoost, membandingkannya dengan LightGBM dan random forest, lalu mengekspornya untuk ONNX Runtime Web."
             },
             {
               "en": "I combined model output with deterministic policy rules and manual-review flags. Scoring remains advisory; the credit officer decides.",
@@ -8152,8 +8178,8 @@
                 "id": "Scoring sisi klien menggunakan ONNX Runtime Web"
               },
               "context": {
-                "en": "PoC models were trained on synthetic and public data. No accuracy metric is claimed.",
-                "id": "Model PoC dilatih menggunakan data sintetis dan publik. Tidak ada klaim metrik akurasi."
+                "en": "PoC models were trained on synthetic data. No accuracy metric is claimed.",
+                "id": "Model PoC dilatih dengan data sintetis. Tidak ada klaim metrik akurasi."
               },
               "confidence": "verified"
             }
@@ -8333,14 +8359,14 @@
           ],
           "results": [
             {
-              "value": "134 of 136",
+              "value": "21 PRs",
               "label": {
-                "en": "MII Deck commits by Kurniadi",
-                "id": "Commit MII Deck oleh Kurniadi"
+                "en": "Merged pull requests in MII Deck, Sep to Oct 2026",
+                "id": "Pull request yang di-merge di MII Deck, Sep hingga Okt 2026"
               },
               "context": {
-                "en": "Repository history, Sep to Oct 2026; the other two came from the publishing GitHub App and a coding agent.",
-                "id": "Riwayat repositori, Sep hingga Okt 2026; dua lainnya berasal dari GitHub App penerbit dan coding agent."
+                "en": "Repository history.",
+                "id": "Riwayat repositori."
               },
               "confidence": "verified"
             },
@@ -8856,6 +8882,315 @@
             }
           ],
           "sculpture": "inbox-tray"
+        },
+        {
+          "id": "healthcare-outreach-dashboard",
+          "slug": "healthcare-outreach-dashboard",
+          "order": 10,
+          "tier": "listed",
+          "accent": "cyan",
+          "wing": "software",
+          "client": {
+            "en": "Consumer health company",
+            "id": "Perusahaan consumer health"
+          },
+          "timelineRef": "metrodata-2026",
+          "title": {
+            "en": "Healthcare Outreach Dashboard Rebuild",
+            "id": "Pembaruan Dashboard Program Tenaga Kesehatan"
+          },
+          "shortTitle": {
+            "en": "Outreach Dashboard Rebuild",
+            "id": "Dashboard Tenaga Kesehatan"
+          },
+          "tagline": {
+            "en": "A consumer health company's WhatsApp program dashboard for healthcare professionals, rebuilt from Streamlit to Next.js and FastAPI with dual-control broadcasts, tuned on Azure until no request stalled over 2 s, and now live in production.",
+            "id": "Dashboard program WhatsApp untuk tenaga kesehatan milik perusahaan consumer health, dibangun ulang dari Streamlit ke Next.js dan FastAPI dengan broadcast dua persetujuan, dioptimalkan di Azure hingga tidak ada request yang tertahan lebih dari 2 detik, dan kini live di production."
+          },
+          "period": {
+            "start": "2026-10",
+            "end": "2026-10"
+          },
+          "role": {
+            "en": "Sole engineer of the dashboard rebuild: architecture, backend migration, Azure environment and performance work, directing parallel AI coding agents. The WhatsApp bot itself was built by colleagues.",
+            "id": "Engineer tunggal untuk pembaruan dashboard: arsitektur, migrasi backend, environment Azure, dan optimasi performa, sambil mengarahkan beberapa AI coding agent secara paralel. Bot WhatsApp-nya dibangun oleh rekan kerja."
+          },
+          "problem": {
+            "en": "The program's admin dashboard was a Streamlit app that queried the production database from the page, sent WhatsApp messages in-process, had no approvals or tests, and read its metrics from a separate function called with a key in the URL. Operators needed to run user management, reports, webinars, bot knowledge and template broadcasts on their own, safely. The rebuild replaced the legacy dashboard and is now live in production.",
+            "id": "Dashboard admin program ini berupa aplikasi Streamlit yang meng-query database production langsung dari halaman, mengirim pesan WhatsApp di dalam proses yang sama, tidak memiliki approval maupun test, dan mengambil metrik dari function terpisah yang dipanggil dengan key di URL. Operator perlu menjalankan manajemen pengguna, laporan, webinar, knowledge bot, dan broadcast template secara mandiri dan aman. Dashboard baru ini menggantikan dashboard lama dan kini sudah live di production."
+          },
+          "approach": [
+            {
+              "en": "I moved the legacy app aside with its history and ported every feature into typed FastAPI domains behind a Next.js BFF started from the team's AI application template. Each spec mapped the legacy logic it replaced, and legacy bugs were fixed on the way, such as an access token sent in a URL and a retry that could resend messages.",
+              "id": "Saya memisahkan aplikasi lama beserta riwayatnya, lalu memindahkan setiap fitur ke domain FastAPI bertipe di belakang BFF Next.js yang dimulai dari template aplikasi AI tim. Setiap spec memetakan logika lama yang digantikannya, dan bug lama ikut diperbaiki, misalnya access token yang dikirim lewat URL dan retry yang bisa mengirim ulang pesan."
+            },
+            {
+              "en": "I made broadcasts safe to run: a state machine with approval by two different people, checked in the API and again in the worker, a frozen audience, a resumable runner on Cosmos DB leases, a per-recipient claim ledger, a fail-closed send allowlist and an append-only audit log.",
+              "id": "Saya membuat broadcast aman dijalankan: state machine dengan persetujuan dari dua orang berbeda yang dicek di API dan sekali lagi di worker, audiens yang dibekukan, runner yang bisa dilanjutkan dengan lease Cosmos DB, ledger klaim per penerima, allowlist pengiriman yang fail-closed, dan audit log append-only."
+            },
+            {
+              "en": "Instead of developing on synthetic data or writing to production, I built a resumable, parity-checked, read-only copy of production data in the new database, and replaced the metrics function with a native endpoint checked by a parity script.",
+              "id": "Alih-alih mengembangkan dengan data sintetis atau menulis ke production, saya membuat salinan read-only data production di database baru yang bisa dilanjutkan dan dicek paritasnya, lalu mengganti function metrik dengan endpoint native yang dicek oleh skrip paritas."
+            },
+            {
+              "en": "I measured a baseline on Azure first: 60, 19 and 23 s stalls on a 0.2 s endpoint. A loop-lag watchdog traced them to one event loop shared by heavy aggregation and background sweeps, so I split API and worker into separate App Service apps and precomputed summaries with watermarks and a visible freshness indicator.",
+              "id": "Saya mengukur baseline di Azure terlebih dahulu: stall 60, 19, dan 23 detik pada endpoint 0,2 detik. Watchdog loop-lag menelusurinya ke satu event loop yang dipakai bersama oleh agregasi berat dan sweep latar belakang, sehingga saya memisahkan API dan worker ke aplikasi App Service terpisah dan menghitung ringkasan lebih awal dengan watermark serta indikator kesegaran data."
+            },
+            {
+              "en": "I kept the dashboard bilingual, Indonesian by default with English, and accessible: axe WCAG 2.2 violations went from 4 to 0, guarded by browser tests.",
+              "id": "Saya menjaga dashboard tetap dwibahasa, dengan bahasa Indonesia sebagai default dan bahasa Inggris, serta aksesibel: pelanggaran WCAG 2.2 menurut axe turun dari 4 menjadi 0 dan dijaga oleh browser test."
+            }
+          ],
+          "architecture": {
+            "nodes": [
+              {
+                "id": "operators",
+                "label": {
+                  "en": "Program operators",
+                  "id": "Operator program"
+                },
+                "sublabel": {
+                  "en": "Entra ID sign-in",
+                  "id": "Sign-in Entra ID"
+                },
+                "layer": 0,
+                "row": 0,
+                "kind": "human"
+              },
+              {
+                "id": "web",
+                "label": {
+                  "en": "Next.js dashboard",
+                  "id": "Dashboard Next.js"
+                },
+                "sublabel": {
+                  "en": "BFF, signed session, EN and ID",
+                  "id": "BFF, sesi bertanda tangan, EN dan ID"
+                },
+                "layer": 1,
+                "row": 0,
+                "kind": "client"
+              },
+              {
+                "id": "api",
+                "label": "FastAPI service",
+                "sublabel": {
+                  "en": "Typed domains ported from the legacy app",
+                  "id": "Domain bertipe hasil porting dari aplikasi lama"
+                },
+                "layer": 2,
+                "row": 0,
+                "kind": "service"
+              },
+              {
+                "id": "worker",
+                "label": {
+                  "en": "Worker app",
+                  "id": "Aplikasi worker"
+                },
+                "sublabel": {
+                  "en": "Broadcast runner and summaries",
+                  "id": "Runner broadcast dan ringkasan"
+                },
+                "layer": 2,
+                "row": 1,
+                "kind": "service"
+              },
+              {
+                "id": "cosmos",
+                "label": "Cosmos DB",
+                "sublabel": {
+                  "en": "Read-only production copy and dashboard data",
+                  "id": "Salinan read-only production dan data dashboard"
+                },
+                "layer": 3,
+                "row": 0,
+                "kind": "data"
+              },
+              {
+                "id": "search",
+                "label": "Azure AI Search",
+                "sublabel": {
+                  "en": "Bot knowledge index",
+                  "id": "Indeks knowledge bot"
+                },
+                "layer": 3,
+                "row": 1,
+                "kind": "data"
+              },
+              {
+                "id": "ai",
+                "label": "Azure OpenAI and Document Intelligence",
+                "sublabel": {
+                  "en": "Embeddings and document parsing",
+                  "id": "Embedding dan parsing dokumen"
+                },
+                "layer": 3,
+                "row": 2,
+                "kind": "ai"
+              },
+              {
+                "id": "whatsapp",
+                "label": "WhatsApp Cloud API",
+                "sublabel": {
+                  "en": "Allowlist-gated sends",
+                  "id": "Pengiriman lewat allowlist"
+                },
+                "layer": 3,
+                "row": 3,
+                "kind": "external"
+              },
+              {
+                "id": "prod",
+                "label": {
+                  "en": "Production database",
+                  "id": "Database production"
+                },
+                "sublabel": {
+                  "en": "Source of the read-only copy",
+                  "id": "Sumber salinan read-only"
+                },
+                "layer": 4,
+                "row": 0,
+                "kind": "external"
+              }
+            ],
+            "edges": [
+              {
+                "from": "operators",
+                "to": "web",
+                "label": "HTTPS"
+              },
+              {
+                "from": "web",
+                "to": "api",
+                "label": {
+                  "en": "internal auth header",
+                  "id": "header auth internal"
+                }
+              },
+              {
+                "from": "api",
+                "to": "cosmos",
+                "label": {
+                  "en": "queries, summaries",
+                  "id": "query, ringkasan"
+                }
+              },
+              {
+                "from": "worker",
+                "to": "cosmos",
+                "label": {
+                  "en": "leases, summaries",
+                  "id": "lease, ringkasan"
+                },
+                "async": true
+              },
+              {
+                "from": "worker",
+                "to": "whatsapp",
+                "label": {
+                  "en": "approved broadcasts",
+                  "id": "broadcast yang disetujui"
+                },
+                "async": true
+              },
+              {
+                "from": "api",
+                "to": "search",
+                "label": "knowledge"
+              },
+              {
+                "from": "api",
+                "to": "ai",
+                "label": {
+                  "en": "embed, parse",
+                  "id": "embed, parse"
+                }
+              },
+              {
+                "from": "prod",
+                "to": "cosmos",
+                "label": {
+                  "en": "read-only copy",
+                  "id": "salinan read-only"
+                },
+                "async": true
+              }
+            ]
+          },
+          "results": [
+            {
+              "value": "60 s → <2 s",
+              "label": {
+                "en": "Worst stall on a 0.2 s endpoint on Azure, before and after the API and worker split",
+                "id": "Stall terburuk pada endpoint 0,2 detik di Azure, sebelum dan sesudah pemisahan API dan worker"
+              },
+              "context": {
+                "en": "After the follow-up changes, Azure met every performance target except two first calls after a restart, which the next change fixed (verified locally).",
+                "id": "Setelah perubahan lanjutan, Azure memenuhi semua target performa kecuali dua panggilan pertama setelah restart, yang diperbaiki di perubahan berikutnya (diverifikasi secara lokal)."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "~45 hours",
+              "label": {
+                "en": "First commit to the complete replacement dashboard, across 53 pull requests",
+                "id": "Dari commit pertama hingga dashboard pengganti lengkap, lewat 53 pull request"
+              },
+              "context": {
+                "en": "Parallel AI coding agents implemented much of the code under written specs; I reviewed, tested on Azure and merged every pull request.",
+                "id": "Beberapa AI coding agent mengerjakan sebagian besar kode secara paralel berdasarkan spec tertulis; saya me-review, menguji di Azure, dan me-merge setiap pull request."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "61 of 61",
+              "label": {
+                "en": "Report responses identical to the live system after the backend migration",
+                "id": "Respons laporan yang identik dengan sistem live setelah migrasi backend"
+              },
+              "context": {
+                "en": "Compared against a read-only copy of production data; 6 bot conversation pages also matched.",
+                "id": "Dibandingkan dengan salinan read-only data production; 6 halaman percakapan bot juga identik."
+              },
+              "confidence": "verified"
+            },
+            {
+              "value": "~2,900 tests",
+              "label": {
+                "en": "Automated backend tests, plus 173 browser tests with accessibility checks",
+                "id": "Test backend otomatis, ditambah 173 browser test dengan pemeriksaan aksesibilitas"
+              },
+              "context": {
+                "en": "Up from 31 backend and 12 browser tests at the start of the rebuild.",
+                "id": "Naik dari 31 test backend dan 12 browser test di awal pembaruan."
+              },
+              "confidence": "verified"
+            }
+          ],
+          "stack": [
+            "Next.js",
+            "TypeScript",
+            "FastAPI",
+            "Python",
+            "Cosmos DB",
+            "Azure AI Search",
+            "Azure OpenAI",
+            "Document Intelligence",
+            "App Service",
+            "Key Vault",
+            "Microsoft Entra ID",
+            "Application Insights",
+            "Bicep",
+            "GitHub Actions",
+            "GitHub Spec Kit",
+            "Playwright",
+            "WhatsApp Cloud API"
+          ],
+          "hologram": "chart",
+          "sculpture": "broadcast-megaphone",
+          "assets": []
         },
         {
           "id": "solutions-marketing-site",
