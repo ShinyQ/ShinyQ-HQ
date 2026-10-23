@@ -356,6 +356,26 @@ export async function readJsHeapAfterGc(page: Page): Promise<number> {
   return usedSize;
 }
 
+/**
+ * JS heap in use once garbage has settled, in bytes: the lowest of `reads` reads, each after two forced collections
+ * and two rendered frames. V8 frees objects held through weak references and FinalizationRegistry (three.js caches,
+ * troika) only on a later full collection, and their finalizers run as tasks after it, so one read after one collection
+ * can still count a few hundred KB that is already garbage; the lowest settled read does not.
+ */
+export async function readJsHeapSettled(page: Page, reads = 3): Promise<number> {
+  const cdp = await page.context().newCDPSession(page);
+  let least = Infinity;
+  for (let i = 0; i < reads; i++) {
+    await cdp.send("HeapProfiler.collectGarbage");
+    await waitForFrames(page, 2);
+    await cdp.send("HeapProfiler.collectGarbage");
+    const { usedSize } = await cdp.send("Runtime.getHeapUsage");
+    least = Math.min(least, usedSize);
+  }
+  await cdp.detach();
+  return least;
+}
+
 export async function waitForHQ(page: Page) {
   await page.getByTestId("hq").waitFor();
   await page.waitForFunction(() => Boolean((window as unknown as Partial<HQWindow>).__hq));
