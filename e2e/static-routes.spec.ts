@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { collectCspViolations, expectStrictPolicy, openPage } from "./hq";
 import { LOCALES, content, heroPod, staticRoutes } from "./routes";
 
 for (const locale of LOCALES) {
@@ -8,12 +9,17 @@ for (const locale of LOCALES) {
     test(`renders ${route}`, async ({ page }) => {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
-      const response = await page.goto(route);
+      // The per-page script policy (scripts/csp-hashes.ts): one strict data-hq-csp meta, and nothing the page runs
+      // through hydration trips it (the other CSP cases are in e2e/csp.spec.ts).
+      const violations = await collectCspViolations(page);
+      const response = await openPage(page, route);
       expect(response?.status()).toBe(200);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
       await expect(page.locator("h1").first()).toBeVisible();
       // /cv is the CV viewer (page images); every other page carries real text.
       expect((await page.locator("main").innerText()).length).toBeGreaterThan(route.endsWith("/cv") ? 40 : 200);
+      await expectStrictPolicy(page);
+      expect(violations).toEqual([]);
       expect(errors).toEqual([]);
     });
   }

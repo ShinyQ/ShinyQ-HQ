@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { exportPolicyProblems } from "../scripts/csp-policy";
 import { content } from "./routes";
 
 const outDir = path.join(process.cwd(), "out");
@@ -30,9 +29,4 @@ test("Cloudflare Pages _headers and _redirects are exported", () => {
   expect(headers).toContain("immutable");
   expect(headers).toContain("Content-Security-Policy:");
   expect(existsSync(path.join(outDir, "_redirects"))).toBe(true);
-});
-
-test("every exported page carries its script policy: one data-hq-csp meta with each inline script hash, no 'unsafe-inline'", () => {
-  expect(existsSync(outDir)).toBe(true);
-  expect(exportPolicyProblems(outDir)).toEqual([]);
 });

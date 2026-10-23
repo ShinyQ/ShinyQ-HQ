@@ -6,7 +6,6 @@ import { yawLooking } from "../src/experience/camera/look";
 import { LOBBY } from "../src/experience/config";
 import { OFFICE, officeSlots } from "../src/experience/floors/lobby/officeLayout";
 import { OFFICE_FIXTURES, OFFICE_FIXTURES_V4 } from "../src/lib/office/fixtures";
-import { FLOOR_SCENE_CAPS } from "./budgets";
 import {
   asReturningVisitor,
   chooseMotion,
@@ -14,7 +13,6 @@ import {
   collectErrors,
   driveTo,
   enterHQ,
-  expectRenderBudget,
   hoveredTarget,
   turnCameraTo,
   waitForCameraSettle,
@@ -31,7 +29,7 @@ import { asleepAll, asV1, asV3, backRowAsker, CREW_A, CREW_A_STATES, CREW_B, CRE
  * (the always-live office, design 2026-10-20 section 5.9), its far level of detail from the lane ring, ten
  * Rovers on two console rows with their states and the front row's chips, the partial atlas uploads on a real GL context, the Rover, summary and
  * GitHub drawers, the Rover menu mission, the semi-live, off, disabled and offline modes, reduced motion,
- * Indonesian and the L1 budget at the office; the living crew's states, the Needs Kurniadi beacon and minimap cue
+ * Indonesian (the L1 budget at the office is gated in e2e/perf/floors.spec.ts); the living crew's states, the Needs Kurniadi beacon and minimap cue
  * (the lazy watch's v3 fetch from the spawn, a back-row asker included) and the helper drones; the ship-it pipeline (snapshot
  * v4: the tower's lanes per job, packets, bursts and packages, the production deploy beam, the CI drawer); the day replay
  * (the idle loop, the merge tiles, the drawer's controls, reduced motion, an unavailable history, the lazy chunk).
@@ -678,17 +676,6 @@ test.describe("Agent Office (L1)", () => {
     await driveTo(page, { x: LOBBY.officeWing.lead.x, z: LOBBY.officeWing.rect.minZ - 6 });
     await waitForCameraSettle(page);
     await expect.poll(() => lookOut(page)).toEqual({ sign: 1, frame: true, outlines: ["L2", "L3", "L4", "RF"] });
-  });
-
-  test("L1 stays under its scene-call cap at the office (lite)", async ({ page }) => {
-    const office = await serveOffice(page);
-    await enterHQ(page);
-    await atOffice(page);
-    await show(page, office, statesA(Date.now()), STATES_A);
-    await driveTo(page, LOBBY.officeWing.stop);
-    await waitForCameraSettle(page);
-    const peaks = await expectRenderBudget(page);
-    expect(peaks.sceneCalls).toBeLessThanOrEqual(FLOOR_SCENE_CAPS.L1);
   });
 });
 
