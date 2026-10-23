@@ -25,6 +25,7 @@ import {
 } from "./load";
 import type { FloorId, Locale } from "./schema";
 import { roomDataVersions } from "./room-views";
+import { shapeUrl } from "./shapes";
 import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
 import { getTechLogo } from "./tech";
 import { repoSlug } from "./workshop";
@@ -82,6 +83,7 @@ export function buildCareerData(locale: Locale): CareerData {
     })),
     sideProjects: getSideProjects().map((p) => ({ id: p.id, title: p.title, year: p.year ?? null })),
     repos: getPublicRepos().map((r) => ({ slug: repoSlug(r.name), name: r.name, language: r.language, stars: r.stars })),
+    shapes: shapeUrl("L2"),
   };
 }
 
@@ -119,7 +121,7 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
     years: getYears().map((y) => y.year),
     roomCount: countRooms(),
     roomData: roomDataVersions(locale),
-    labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing, ops: buildOpsData(locale) },
+    labs: { pods: labPods(locale), wings: (locale === "en" ? en : id).common.wing, ops: buildOpsData(locale), shapes: shapeUrl("L3") },
     career: buildCareerData(locale),
     library: buildLibraryData(locale),
     roof: buildRoofData(locale),

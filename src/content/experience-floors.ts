@@ -7,6 +7,7 @@ import { messages } from "./room-views/shared";
 import { topicRooms } from "./topic-index";
 import type { Locale } from "./schema";
 import { isResearch } from "./selectors";
+import { shapeUrl } from "./shapes";
 
 /** L4 payload for the 3D chunk. Post order matches `buildRoomCatalog` (newest first). */
 export function buildLibraryData(locale: Locale): LibraryData {
@@ -34,6 +35,7 @@ export function buildLibraryData(locale: Locale): LibraryData {
       .map((t) => ({ id: t.id, title: t.title[locale], event: t.event, date: t.date, role: t.role })),
     topics: getTopicIndex().topics.map((t) => ({ slug: t.slug, label: messages(locale).library.topics.names[t.slug], count: t.items.length, rooms: topicRooms(t) })),
     guides: guideViews(locale).map(({ slug, spine, issuer, code }) => ({ slug, spine, issuer, code })),
+    shapes: shapeUrl("L4"),
   };
 }
 
