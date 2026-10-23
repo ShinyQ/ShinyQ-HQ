@@ -1137,14 +1137,14 @@
   "stats": {
     "title": "Kunjungan",
     "observatory": "Observatorium Pengunjung",
-    "intro": "Estimasi kunjungan dan jumlah pertanyaan AI diperbarui setiap 2 jam, termasuk data hari ini hingga saat ini.",
+    "intro": "Kunjungan yang dihitung oleh situs ini sendiri dan jumlah pertanyaan AI: hari ini langsung, hari-hari sebelumnya diperbarui setiap jam.",
     "approx": "sekitar {n}",
     "window": {
       "d30": "30 hari terakhir, termasuk hari ini",
       "all": "Sejak {date}"
     },
-    "source": "Cloudflare Web Analytics, sampel, dibulatkan ke puluhan",
-    "updated": "Diperbarui setiap 2 jam",
+    "source": "Kunjungan: penghitung anonim milik situs ini, satu per tab browser, tanpa cookie (estimasi Cloudflare Web Analytics sebelum akhir Okt 2026). Negara dan tampilan halaman: Cloudflare Web Analytics, sampel",
+    "updated": "Hari ini langsung, hari sebelumnya setiap jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
     "offline": "Statistik belum tersedia",
@@ -1175,7 +1175,7 @@
       "title": "Menara 3D atau situs klasik",
       "threeD": "Menara 3D",
       "classic": "Situs klasik",
-      "note": "Porsi kunjungan yang tercatat oleh beacon milik situs ini (beacon ini melewati Do Not Track dan browser otomatis), sehingga mencakup lebih sedikit kunjungan daripada total. Kunjungan yang memakai keduanya dihitung di kedua sisi."
+      "note": "Porsi pemuatan halaman yang memakai menara 3D atau situs klasik, dari beacon milik situs ini (browser otomatis tidak dihitung). Pemuatan halaman yang memakai keduanya dihitung di kedua sisi."
     },
     "topicsTitle": "Pertanyaan per topik",
     "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
@@ -1201,7 +1201,8 @@
       "countries": "negara",
       "questions": "pertanyaan diajukan",
       "topFloor": "paling dijelajahi: {floor}",
-      "split": "3D {threeD}% · Klasik {classic}%"
+      "split": "3D {threeD}% · Klasik {classic}%",
+      "source": "Penghitung sendiri + Cloudflare Web Analytics"
     }
   },
   "office": {
@@ -1312,7 +1313,7 @@
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
       "sessions": "{count} sesi 3D dalam sampel sejak peluncuran",
-      "source": "Beacon performa anonim dan Cloudflare Web Analytics. Diperbarui setiap 2 jam.",
+      "source": "Beacon performa anonim dan penghitung kunjungan milik situs ini. Hari ini langsung, hari sebelumnya setiap jam.",
       "offline": "Angka terkini belum tersedia."
     },
     "explore": {

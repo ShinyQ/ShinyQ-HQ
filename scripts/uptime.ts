@@ -34,7 +34,7 @@ export const PAGE_PATHS = { home: "/", en: "/en" } as const;
 export const REQUIRED_OG = ["og:title", "og:image", "og:url"] as const;
 export const RETRY_DELAY_MS = 60_000;
 /** Same threshold as the site's "delayed" note (DELAYED_AFTER_MS in src/lib/visits/model.ts). */
-export const STATS_MAX_AGE_MS = 6 * 3_600_000;
+export const STATS_MAX_AGE_MS = 3 * 3_600_000;
 export const DEPLOY_WORKFLOW = "deploy.yml";
 const FETCH_TIMEOUT_MS = 20_000;
 /** The deploy check ignores cancelled, skipped, neutral and stale runs: they say nothing about production (as in scripts/ci-status.ts). */
@@ -86,7 +86,7 @@ export function statsCheck(obs: JsonObs, now: number): CheckResult {
   const snapshot = parseStatsSnapshot(obs.body);
   if (!snapshot) return result("stats", false, "HTTP 200 but the snapshot fails the contract");
   const ageMs = now - Date.parse(snapshot.updatedAt);
-  if (!(ageMs <= STATS_MAX_AGE_MS)) return result("stats", false, `snapshot is ${Math.round(ageMs / 3_600_000)} h old (updatedAt ${snapshot.updatedAt}), limit 6 h`);
+  if (!(ageMs <= STATS_MAX_AGE_MS)) return result("stats", false, `snapshot is ${Math.round(ageMs / 3_600_000)} h old (updatedAt ${snapshot.updatedAt}), limit ${STATS_MAX_AGE_MS / 3_600_000} h`);
   return result("stats", true, `updatedAt ${snapshot.updatedAt}`);
 }
 

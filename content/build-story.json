@@ -76,7 +76,7 @@
           {
             "id": "cron",
             "label": "hq-stats Cron Worker",
-            "sublabel": { "en": "Every 2 hours", "id": "Setiap 2 jam" },
+            "sublabel": { "en": "Every hour", "id": "Setiap jam" },
             "layer": 2,
             "row": 5,
             "kind": "service",

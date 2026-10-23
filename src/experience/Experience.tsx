@@ -518,7 +518,7 @@ function ExperienceView({
           questions: tStats("panel.questions"),
           topFloor: (floor: string) => tStats("panel.topFloor", { floor }),
           split: (threeD: number, classic: number) => tStats("panel.split", { threeD: String(threeD), classic: String(classic) }),
-          source: tStats("source"),
+          source: tStats("panel.source"),
           updated: tStats("updated"),
           delayed: (date: string) => tStats("delayed", { date }),
           floors: { L1: t("floorLabel.L1"), L2: t("floorLabel.L2"), L3: t("floorLabel.L3"), L4: t("floorLabel.L4"), RF: t("floorLabel.RF") },

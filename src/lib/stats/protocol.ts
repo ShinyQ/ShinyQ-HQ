@@ -1,11 +1,12 @@
 /**
- * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written every 2 hours by
+ * Public visit stats (Layer 1): the snapshot contract served by `GET /api/stats`, written every hour by
  * the `hq-stats` Cron Worker (workers/stats/) and read by the 3D HQ and the Classic site. Pure and
  * client-safe: no imports, a hand-written validator (no zod on the client).
  *
  * Every filter combination (period, topic) is answered by one object, so the endpoint takes no
- * parameters. Web Analytics numbers (visits, page views, countries, top floor) are sampled estimates;
- * `mode` and `asks` come from first-party Analytics Engine events. Countries are ISO alpha-2 codes
+ * parameters. Visits come from the site's own visit ping (one per browser tab session) from the first-party
+ * cutover on (owner decision 2026-10-24) and from Web Analytics before it; page views, countries and the top
+ * floor are Web Analytics sampled estimates; `mode` and `asks` come from first-party Analytics Engine events. Countries are ISO alpha-2 codes
  * without counts (dots only), sorted alphabetically so the order leaks no ranking.
  */
 export const STATS_PERIODS = ["d30", "all"] as const;
@@ -58,11 +59,11 @@ export interface StatsPerf {
 
 export interface StatsSnapshotV1 {
   v: 1;
-  /** ISO time of the Worker run that wrote this snapshot (every 2 hours); the data includes today so far. */
+  /** ISO time of the Worker run that wrote this snapshot (every hour); the data includes today so far (`/api/stats` adds the visit pings since). */
   updatedAt: string;
   /** First rollup day (YYYY-MM-DD), the "since launch" date. */
   since: string;
-  /** Web Analytics numbers are estimates. */
+  /** Web Analytics numbers (page views, countries, top floor, visits before the cutover) are estimates. */
   sampled: true;
   visits: Record<StatsPeriod, number>;
   pageViews: Record<StatsPeriod, number>;
