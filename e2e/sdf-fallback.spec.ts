@@ -38,7 +38,9 @@ test("the L1 Lobby renders on a GPU that fails the SDF trial run (tablet, lite)"
     .toBeGreaterThanOrEqual(3);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __hq: { ridePrep: { texts: Map<string, number> } } }).__hq.ridePrep.texts.get("L1") ?? 0), { timeout: 60_000 }).toBe(0);
   await waitForFrames(page, 10);
-  expect(logs.filter((line) => /blob:|init function failed to rehydrate|did not return a callable/.test(line))).toEqual([]);
+  // troika logs once that it runs the fallback on the main thread; nothing may try (and fail) a blob: worker.
+  expect(logs.some((line) => /web workers not allowed; falling back to main thread/.test(line))).toBe(true);
+  expect(logs.filter((line) => /Refused to load blob:|importScripts|init function failed to rehydrate|did not return a callable/.test(line))).toEqual([]);
   expect(errors).toEqual([]);
   await context.close();
 });

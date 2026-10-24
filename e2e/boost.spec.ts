@@ -5,7 +5,8 @@ import { doubleTapJoystick } from "./touch";
 /**
  * Realistic boost (owner pick: "Full package: path-following light trails, rover leans and squats,
  * camera widens and pulls back, speed streaks, wheel sparks") and the touch boost toggle (Round 8 I: a
- * double tap on the joystick turns it on, the next double tap off). Shift stays hold-to-boost on keyboards.
+ * double tap on the joystick turns it on, the next double tap off; 2026-10-24 adds the visible Boost button on the
+ * same state). Shift stays hold-to-boost on keyboards.
  */
 test.describe.configure({ timeout: 150_000 });
 
@@ -125,12 +126,14 @@ for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
   test.describe(`boost toggle on a ${vp.name}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-    test("a double tap on the joystick turns boost on and it stays on while driving; the next double tap turns it off; a floor change resets it", async ({ page }) => {
+    test("a double tap on the joystick or the Boost button turns boost on and it stays on while driving; the next double tap or tap turns it off; a floor change resets it", async ({ page }) => {
       const errors = collectErrors(page);
       await enterHQ(page);
       await waitForCameraSettle(page);
       const joystick = page.getByTestId("joystick");
-      await expect(page.getByTestId("boost")).toHaveCount(0);
+      const button = page.getByTestId("boost");
+      await expect(button).toBeVisible();
+      await expect(button).toHaveAttribute("aria-pressed", "false");
       await expect(joystick).toHaveAttribute("data-boost", "off");
       await doubleTapJoystick(page);
       await expect(joystick).toHaveAttribute("data-boost", "on");
@@ -153,12 +156,16 @@ for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
 
       await doubleTapJoystick(page);
       await expect(joystick).toHaveAttribute("data-boost", "off");
+      await expect(button).toHaveAttribute("aria-pressed", "false");
 
-      await doubleTapJoystick(page);
+      // The visible Boost button (owner decision 2026-10-24) toggles the same state.
+      await button.tap();
+      await expect(button).toHaveAttribute("aria-pressed", "true");
       await expect(joystick).toHaveAttribute("data-boost", "on");
       await page.keyboard.press("PageUp");
       await waitForFloor(page, "L2");
       await expect(joystick).toHaveAttribute("data-boost", "off");
+      await expect(button).toHaveAttribute("aria-pressed", "false");
       expect(errors).toEqual([]);
     });
   });

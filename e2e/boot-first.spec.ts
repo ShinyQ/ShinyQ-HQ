@@ -257,8 +257,9 @@ test("boot card: the overlay keeps the card in place, Boot rover stays required,
   expect(errors).toEqual([]);
 });
 
-test("game-first LCP: a returning phone visit keeps the boot card as the LCP after the HUD hint mounts under the cover", async ({ browser }) => {
-  const context = await browser.newContext({ ...devices["Pixel 7"] });
+test("game-first LCP: a returning tablet visit keeps the boot card as the LCP after the HUD hint mounts under the cover", async ({ browser }) => {
+  // Phones show no controls hint (owner decision 2026-10-24); tablets keep it in the bottom band.
+  const context = await browser.newContext({ ...devices["Galaxy Tab S4"] });
   await fastAnimations(context);
   const page = await context.newPage();
   await asReturningVisitor(page);
@@ -284,7 +285,7 @@ test("game-first LCP: a returning phone visit keeps the boot card as the LCP aft
   });
   await page.goto("/en?tier=lite", { waitUntil: "commit" });
   await waitForHQ(page);
-  // The hint mounts with the HUD under the cover (and leaves a phone after 6 s): wait until it was in the DOM, then for its paint to be reported.
+  // The hint mounts with the HUD under the cover: wait until it was in the DOM, then for its paint to be reported.
   await page.waitForFunction(() => (window as unknown as { __hint: boolean }).__hint, null, { timeout: 60_000 });
   await page.waitForFunction(() => !document.documentElement.hasAttribute("data-hq-boot"), null, { timeout: 60_000 });
   await waitForFrames(page, 10);
