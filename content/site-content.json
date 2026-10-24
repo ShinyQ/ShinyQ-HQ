@@ -6830,61 +6830,61 @@
             {
               "src": "/media/ai-app-accelerator/01-home.webp",
               "alt": {
-                "en": "Template dashboard home: conversations, active agents, estimated cost and error rate with a usage trend",
-                "id": "Beranda template dashboard: percakapan, agent aktif, estimasi biaya, dan error rate dengan tren penggunaan"
+                "en": "Template dashboard home: a needs-attention panel, conversations, error rate, response time and a daily conversations chart",
+                "id": "Beranda template dashboard: panel perlu perhatian, percakapan, error rate, waktu respons, dan grafik percakapan harian"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/ai-app-accelerator/02-chat.webp",
               "alt": {
-                "en": "Multi-agent chat with an agent picker, saved chats and suggested prompts",
-                "id": "Chat multi-agent dengan pemilih agent, riwayat chat, dan prompt yang disarankan"
+                "en": "Multi-agent chat with an agent picker, pinned and dated chat history and an answer with a planning table",
+                "id": "Chat multi-agent dengan pemilih agent, riwayat chat yang disematkan dan dikelompokkan per tanggal, serta jawaban berisi tabel rencana"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/ai-app-accelerator/03-agents.webp",
               "alt": {
-                "en": "Agent catalog with built-in and custom agents, their models and tool counts",
-                "id": "Katalog agent berisi agent bawaan dan kustom, beserta model dan jumlah tools-nya"
+                "en": "Agent catalog with built-in and custom agents, their models, tools and sources in a read-only demo session",
+                "id": "Katalog agent berisi agent bawaan dan kustom, beserta model, tools, dan sumbernya dalam sesi demo read-only"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/ai-app-accelerator/04-playground.webp",
               "alt": {
-                "en": "Prompt playground to test a live agent with a system message, presets and session token estimates",
-                "id": "Prompt playground untuk menguji agent live dengan system message, preset, dan estimasi token sesi"
+                "en": "Prompt playground to test a live agent with its tools, a system message, multi-turn context and prompt presets",
+                "id": "Prompt playground untuk menguji agent live dengan tools-nya, system message, konteks multi-turn, dan preset prompt"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/ai-app-accelerator/05-models.webp",
               "alt": {
-                "en": "Model deployments with state, requests, latency and a latency comparison chart",
-                "id": "Deployment model dengan status, jumlah request, latensi, dan grafik perbandingan latensi"
+                "en": "Model deployments with status, requests, share of requests, latency and success rate, plus a comparison chart",
+                "id": "Deployment model dengan status, jumlah request, porsi request, latensi, dan success rate, plus grafik perbandingan"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             },
             {
               "src": "/media/ai-app-accelerator/06-analytics.webp",
               "alt": {
-                "en": "Analytics for API calls, latency, error rate and usage by model",
-                "id": "Analitik untuk API call, latensi, error rate, dan penggunaan per model"
+                "en": "Analytics for API calls, response time, error rate, and requests and tokens by model",
+                "id": "Analitik untuk API call, waktu respons, error rate, serta request dan token per model"
               },
-              "width": 1600,
-              "height": 1000,
+              "width": 1440,
+              "height": 900,
               "redacted": true
             }
           ],
