@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { hydratePack, indexPack, PACK_SCHEMA, storePack, type PackIndex } from "../../functions/_lib/pack-index";
-import { leadMatches, retrieve, scoreChunks } from "../../functions/_lib/retrieve";
+import { cleanQuery, leadMatches, retrieve, scoreChunks } from "../../functions/_lib/retrieve";
 import { expandTokens, tokenize } from "../../functions/_lib/text";
 import type { KnowledgePack, StoredPack } from "../../functions/_lib/types";
 import golden from "./golden.json";
@@ -88,7 +88,7 @@ describe("stored pack index", () => {
   it("scores and retrieves the same chunks for every golden and curated question", () => {
     expect(questions.length).toBeGreaterThan(50);
     for (const q of questions) {
-      const ref = referenceBm25(pack, q);
+      const ref = referenceBm25(pack, cleanQuery(q));
       const fromText = scoreChunks(pack, q).map((r) => r.score);
       const fromStore = scoreChunks(hydrated.pack, q).map((r) => r.score);
       expect(fromStore, q).toEqual(fromText);
@@ -102,7 +102,7 @@ describe("stored pack index", () => {
     // No intent or title boost applies to a "repo" chunk with a neutral id.
     const boostless = { ...pack, chunks: pack.chunks.map((c, i) => ({ ...c, id: `x${i}`, type: "repo" as const })) };
     for (const q of questions) {
-      const ref = referenceBm25(boostless, q);
+      const ref = referenceBm25(boostless, cleanQuery(q));
       expect(scoreChunks(boostless, q).map((r) => r.score), q).toEqual(ref);
     }
   });

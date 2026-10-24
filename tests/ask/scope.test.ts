@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
-import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
+import { OPINION_PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { civicQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isOffTopic, isPerspectiveQuestion, isSiteQuestion, isTeamQuestion, maskPoliticians, namesPerson, opinionAboutOthers, nicknameForModel, orgAliases, partitionQuestion, privateTopic, resolveNickname, splitClauses } from "../../functions/_lib/scope";
 import { indexPack } from "../../functions/_lib/pack-index";
 import type { KnowledgePack } from "../../functions/_lib/types";
@@ -198,13 +198,13 @@ describe("perspective retrieval with every draft approved", () => {
     approved = buildRepoPack("2026-10-11", { perspectives: getPerspectivesFile().entries }).pack;
   });
 
-  it("keeps at most PERSPECTIVE_CAP perspective chunks so posts and projects still reach the context", () => {
+  it("keeps at most OPINION_PERSPECTIVE_CAP perspective chunks so posts and projects still reach the context", () => {
     for (const [q, locale] of [
       ["What is Kurniadi's view on AI coding agents?", "en"],
       ["Apa pandangannya tentang AI coding agent?", "id"],
     ] as const) {
       const ids = retrieve(approved, q, locale).chunks.map((c) => c.id);
-      expect(ids.filter((id) => id.startsWith("perspective-")).length, ids.join(", ")).toBeLessThanOrEqual(PERSPECTIVE_CAP);
+      expect(ids.filter((id) => id.startsWith("perspective-")).length, ids.join(", ")).toBeLessThanOrEqual(OPINION_PERSPECTIVE_CAP);
       expect(ids, q).toContain("perspective-ai-coding-agents");
       expect(ids, q).toContain("post-spec-driven-development-with-ai-coding-agents");
     }

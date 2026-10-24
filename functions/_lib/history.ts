@@ -62,7 +62,8 @@ export async function verifyHistory(turns: readonly AskTurn[], key: string | und
 
 /** Words that point back at the previous turn (EN and ID). "He" and "his" mean Kurniadi, so they do not count. */
 const REFERENT = /\b(?:it|its|that|this|those|these|they|them|their|there|one|ones|same|ini|itu|tersebut|mereka|sana|tadi|\p{L}{3,}nya)\b/iu;
-const LEAD_IN = /^(?:and|also|what about|how about|dan|lalu|terus|kalau|bagaimana dengan)\b/i;
+/** Lead-ins of a follow-up (EN/ID; owner decision 2026-10-24 added the spoken Indonesian ones: "trus", "gimana kalau", "yang tadi"). */
+const LEAD_IN = /^(?:and|also|what about|how about|then|so|dan|lalu|terus|trus|kalau|kalo|bagaimana dengan|bagaimana kalau|gimana dengan|gimana kalau|selain itu|yang tadi|soal yang tadi|nah)\b/i;
 /** A question this short with no name of its own reads as a follow-up ("Which year?", "Why?"). */
 export const FOLLOW_UP_WORDS = 3;
 /** A question this long stands alone even with a "that" or "there" in it. */

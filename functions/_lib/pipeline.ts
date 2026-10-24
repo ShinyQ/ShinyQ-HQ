@@ -4,6 +4,7 @@ import { isHarmful } from "./harmful";
 import { indexPack } from "./pack-index";
 import { canned, noViewMessage, PARTISAN_NOTE, partialDecline, type CannedKind } from "./messages";
 import { normalizeDashes, SYNONYMS, tokenize } from "./text";
+import { cosines, packVectors, ROUTER_LABELS, routerSignals, type Embedder, type RouterLabel } from "./vectors";
 import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
@@ -33,6 +34,8 @@ export interface PipelineInput {
   breaker?: ModelBreaker;
   /** Chain deadline override; absent keeps the production `CHAIN_MS`. The eval passes Infinity to keep its own timeouts. */
   deadlineMs?: number;
+  /** Question embedder (Workers AI bge-m3, `bindingEmbedder`): hybrid retrieval when the pack has vectors; absent or failing keeps BM25. */
+  embed?: Embedder;
 }
 
 export type PipelineReason = CheckFailure | "harmful" | "private" | "others" | "general" | "persona" | "injection" | "offtopic" | "model_failed" | "model_decline";
@@ -210,14 +213,34 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   // Weather, trivia, arithmetic and the like (owner decision 2026-10-24): a fixed redirect, no model call.
   if (!lead && !declined.length && isOffTopic(question)) return canned("offtopic", "offtopic", { match: true });
 
-  const topic = lead ? undefined : routedTopic(routed);
+  // A learning question wins over the AI-and-jobs policy heuristic ("Which certificates would help me land an AI job?").
+  const mentoring = !lead && !civicQuestion(routed) && isMentoringQuestion(routed);
+  const topic = lead || mentoring ? undefined : routedTopic(routed);
   const civic = !lead && topic === "policy" && (civicQuestion(routed) || declined.includes("politics"));
-  const mentoring = !lead && !topic && isMentoringQuestion(routed);
   const team = !lead && !topic && !mentoring && isTeamQuestion(routed);
   // A related professional question (owner decision 2026-10-19): answered only from his work, with a cited source.
   const adjacent = !lead && !topic && !mentoring && !team && isAdjacentQuestion(routed);
   const route: AskRoute = lead ? "lead" : civic ? "civic" : topic ? topic : mentoring ? "mentoring" : team ? "team" : adjacent ? "adjacent" : "default";
   return { kind: "model", route, routed, modelQuestion, ...(anchor ? { anchor } : {}), history, ...(topic ? { topic } : {}), lead, adjacent, civic, mentoring, team, declined };
+}
+
+/**
+ * Semantic router assist (owner decision 2026-10-24, thresholds from the 2026-10-24 probe): the question's similarity to
+ * the router exemplars only re-routes a question the rules left on the default route, to learning, civic or off-topic,
+ * when one label clearly leads. It never declines a private topic and never answers one: a strong private similarity
+ * blocks every re-route, and the HARD rules ran before.
+ */
+export const ASSIST = { mentoring: 0.8, civic: 0.85, offtopic: 0.6, margin: 0.1, offtopicMargin: 0.15, privateVeto: 0.85, offtopicChunkMax: 0.5 } as const;
+
+export function assistRoute(plan: Extract<RoutePlan, { kind: "model" }>, signals: Partial<Record<RouterLabel, number>>, bestChunk: number): AskRoute | "offtopic" | undefined {
+  if (plan.route !== "default" || plan.declined.length || plan.anchor) return undefined;
+  const s = (label: RouterLabel) => signals[label] ?? 0;
+  if (s("private") >= ASSIST.privateVeto) return undefined;
+  const others = (label: RouterLabel) => Math.max(...ROUTER_LABELS.filter((l) => l !== label).map(s));
+  if (s("mentoring") >= ASSIST.mentoring && s("mentoring") - others("mentoring") >= ASSIST.margin) return "mentoring";
+  if (s("civic") >= ASSIST.civic && s("civic") - others("civic") >= ASSIST.margin) return "civic";
+  if (s("offtopic") >= ASSIST.offtopic && s("offtopic") - others("offtopic") >= ASSIST.offtopicMargin && bestChunk < ASSIST.offtopicChunkMax) return "offtopic";
+  return undefined;
 }
 
 /** The partisan note of a civic answer, then the line for a mixed question's declined clauses (never both for politics). */
@@ -231,7 +254,17 @@ function withNotes(text: string, plan: Extract<RoutePlan, { kind: "model" }>, lo
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
   const { locale, pack, vocabulary, client } = input;
-  const plan = planRoute(input);
+  let plan = planRoute(input);
+  // One embedding call for a question that reaches retrieval (owner decision 2026-10-24); a failure keeps BM25.
+  const vectors = plan.kind === "model" && input.embed ? packVectors(pack) : null;
+  const semantic = vectors && plan.kind === "model" && input.embed ? await input.embed(plan.routed) : null;
+  if (semantic && vectors && plan.kind === "model") {
+    const best = Math.max(0, ...cosines(semantic, vectors.rows, vectors.norms, vectors.dims));
+    const assisted = assistRoute(plan, routerSignals(semantic, vectors), best);
+    if (assisted === "offtopic") plan = { kind: "canned", canned: "offtopic", reason: "offtopic", tags: REDIRECT_TAGS.offtopic ?? [] };
+    else if (assisted === "mentoring") plan = { ...plan, route: "mentoring" as const, mentoring: true };
+    else if (assisted === "civic") plan = { ...plan, route: "civic" as const, civic: true, topic: "policy" as const };
+  }
   // Deterministic routing first (T15, spec section 13, owner rules 2026-10-15): no retrieval, no model call, never cached.
   if (plan.kind === "canned") {
     return {
@@ -250,7 +283,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   }
   const { routed, topic, lead, adjacent, civic, mentoring, team, anchor, history } = plan;
   const routeLabel = `${plan.route}${plan.declined.length ? "+partial" : ""}`;
-  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(anchor ? { anchor: resolveNickname(anchor) } : {}) });
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
   const matches = lead ? leadMatches(pack, routed) : [];
@@ -261,7 +294,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const generation = await generate(client, models, messages, input.timeouts, { backups: input.backups, breaker: input.breaker, locale, ...(input.deadlineMs !== undefined ? { deadlineMs: input.deadlineMs } : {}) });
   const leadFlag = lead ? { lead: true } : {};
   const modelOf = generation.model ? { model: generation.model } : {};
-  const common = { route: routeLabel, retrieval: "bm25" as const };
+  const common = { route: routeLabel, retrieval: semantic ? ("hybrid" as const) : ("bm25" as const) };
   if (generation.source === "none") {
     if (lead) return { text: canned("lead", locale), outcome: "answer", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, lead: true, historyUsed, ...common };
     return { text: canned("fallback", locale), outcome: "fallback", source: "none", reason: "model_failed", failures: generation.failures, calledModel: true, chunkIds, tags, historyUsed, ...common };

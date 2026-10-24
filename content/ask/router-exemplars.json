@@ -1,0 +1,43 @@
+{
+  "$comment": "Semantic router exemplars (owner decision 2026-10-24): a question's embedding is compared with these, as a second signal next to the deterministic routes in functions/_lib/scope.ts. They only add civic, learning and off-topic routes to questions the rules sent to the default route; they never decline a private topic (the HARD rules stay authoritative) and never answer one. Vectors live in content/generated/ask-embeddings.json (bun scripts/ask-embed.ts).",
+  "civic": [
+    "What are his political views?",
+    "Where does he stand politically?",
+    "What does he think about the government's technology policy?",
+    "How should parliament regulate artificial intelligence?",
+    "What is his opinion on digital public services and e-government?",
+    "Bagaimana sikap politiknya?",
+    "Apa pendapatnya tentang kebijakan pemerintah soal teknologi?",
+    "Bagaimana pandangannya soal regulasi AI oleh DPR?"
+  ],
+  "mentoring": [
+    "How can I become an AI engineer?",
+    "What should I learn first to get into machine learning?",
+    "Any advice for a student starting a career in software engineering?",
+    "How did he learn AI, and how can I follow the same path?",
+    "Which certifications should a beginner take for Azure AI?",
+    "Bagaimana cara mulai belajar AI dari nol?",
+    "Saran untuk mahasiswa yang ingin jadi AI engineer?",
+    "Harus belajar apa dulu supaya bisa kerja di bidang machine learning?"
+  ],
+  "offtopic": [
+    "What is the weather like today?",
+    "Who won the football match last night?",
+    "What is the capital of Australia?",
+    "How many calories are in a banana?",
+    "Can you recommend a good movie to watch tonight?",
+    "What is the price of gold today?",
+    "Berapa harga emas hari ini?",
+    "Siapa pemenang pertandingan bola semalam?"
+  ],
+  "private": [
+    "Is he married or in a relationship?",
+    "What religion does he follow?",
+    "Who did he vote for in the election?",
+    "How much money does he earn?",
+    "Does he have any health problems?",
+    "Where exactly is his home address?",
+    "Apakah dia sudah punya pacar?",
+    "Berapa gajinya per bulan?"
+  ]
+}

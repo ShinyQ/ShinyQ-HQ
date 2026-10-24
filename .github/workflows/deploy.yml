@@ -259,6 +259,15 @@ jobs:
         with:
           name: site-production
           path: out
+      # Chunks whose text changed since the committed embeddings (the weekly live facts, a content PR) get their
+      # bge-m3 vector here, so the published pack is fully hybrid; a failure only leaves them on BM25.
+      - name: Embed new Ask knowledge chunks
+        if: steps.gate.outputs.enabled == 'true'
+        continue-on-error: true
+        env:
+          CF_EVAL_TOKEN: ${{ secrets.CF_EVAL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bun scripts/ask-embed.ts --deploy
       - name: Build the Ask the HQ knowledge pack
         if: steps.gate.outputs.enabled == 'true'
         run: bun scripts/build-knowledge.ts

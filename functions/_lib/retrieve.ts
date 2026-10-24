@@ -5,6 +5,7 @@ import { indexPack } from "./pack-index";
 import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgeChunk, KnowledgePack } from "./types";
+import { cosines, packVectors } from "./vectors";
 
 /** About 1,500 tokens of context at roughly 4 characters per token. */
 export const CONTEXT_CHAR_BUDGET = 6000;
@@ -17,6 +18,8 @@ export const PERSPECTIVE_INCLUDE = "principles";
 export const SITE_INCLUDE = "site-build";
 /** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
 export const PERSPECTIVE_CAP = 3;
+/** Perspective cap of an opinion question (owner decision 2026-10-24): more of his written views reach the context. */
+export const OPINION_PERSPECTIVE_CAP = 4;
 /** Perspective cap of a civic question (owner decision 2026-10-24): his policy views together make his stance. */
 export const CIVIC_PERSPECTIVE_CAP = 4;
 /** Chunks a learning or career question gets first (owner decision 2026-10-24): his own path and his written advice. */
@@ -95,9 +98,49 @@ export interface Retrieved {
   context: string;
 }
 
-export function scoreChunks(pack: KnowledgePack, question: string): { chunk: KnowledgeChunk; score: number }[] {
+/**
+ * Question templates that carry no topic ("what does he think about", "apa pendapatnya soal"): BM25 sees one "view"
+ * instead, so the perspective intent stays and the topic words decide (owner decision 2026-10-24).
+ */
+const TEMPLATES: RegExp[] = [
+  /\bwhat (?:does|do|did|would) (?:he|kurniadi|you) (?:really |honestly )?(?:think|feel|believe)(?: about| of| on)?\b/gi,
+  /\bhow (?:does|do|did|would) (?:he|kurniadi|you) (?:feel|think) (?:about|of|on)\b/gi,
+  /\bwhat(?:'s| is| are) (?:his|kurniadi'?s|your) (?:views?|opinions?|takes?|stance|thoughts?|perspective)(?: on| about| of)?\b/gi,
+  /\b(?:apa|bagaimana) (?:pendapat|pandangan)(?:nya| kurniadi| dia)?(?: (?:tentang|soal|mengenai|terhadap))?\b/gi,
+  /\b(?:pendapat|pandangan)nya (?:tentang|soal|mengenai|terhadap)\b/gi,
+];
+
+/** The question as BM25 reads it: templates folded to one "view". */
+export function cleanQuery(question: string): string {
+  return TEMPLATES.reduce((q, re) => q.replace(re, " view "), question);
+}
+
+/** Reciprocal-rank fusion constant (the usual 60) and the scale that makes a first place in one list score 10. */
+export const RRF_K = 60;
+const RRF_SCALE = 10 * (RRF_K + 1);
+/** Least cosine for a chunk to join the semantic ranking, and how many join it (calibrated on the 2026-10-24 probe). */
+export const SEMANTIC_FLOOR = 0.45;
+export const SEMANTIC_TOP = 8;
+
+export function scoreChunks(pack: KnowledgePack, question: string, semantic?: Float32Array): { chunk: KnowledgeChunk; score: number }[] {
+  const lexical = bm25Scores(pack, question);
+  const vectors = semantic ? packVectors(pack) : null;
+  if (!semantic || !vectors) return lexical;
+  // Hybrid (owner decision 2026-10-24): reciprocal-rank fusion of the BM25 ranking and the bge-m3 cosine ranking.
+  const cos = cosines(semantic, vectors.rows, vectors.norms, vectors.dims);
+  const rankOf = (order: number[]) => new Map(order.map((i, r) => [i, r + 1]));
+  const byBm25 = rankOf(lexical.map((r, i) => [r.score, i] as const).filter(([s]) => s > 0).sort((a, b) => b[0] - a[0] || a[1] - b[1]).map(([, i]) => i));
+  const bySemantic = rankOf([...cos].map((s, i) => [s, i] as const).filter(([s]) => s >= SEMANTIC_FLOOR).sort((a, b) => b[0] - a[0] || a[1] - b[1]).slice(0, SEMANTIC_TOP).map(([, i]) => i));
+  return lexical.map(({ chunk }, i) => {
+    const a = byBm25.get(i);
+    const b = bySemantic.get(i);
+    return { chunk, score: RRF_SCALE * ((a ? 1 / (RRF_K + a) : 0) + (b ? 1 / (RRF_K + b) : 0)) };
+  });
+}
+
+function bm25Scores(pack: KnowledgePack, question: string): { chunk: KnowledgeChunk; score: number }[] {
   const index = indexPack(pack);
-  const terms = [...new Set(expandTokens(tokenize(question)))];
+  const terms = [...new Set(expandTokens(tokenize(cleanQuery(question))))];
   const n = pack.chunks.length;
   // Term at a time over the postings: each chunk still sums its terms in question order, so scores match a per-chunk loop.
   const bm25 = new Float64Array(n);
@@ -176,6 +219,8 @@ export interface RetrieveOptions {
   mentoring?: boolean;
   /** A question about his manager, team or clients (`isTeamQuestion`): his teamwork views and sector-level case studies. */
   team?: boolean;
+  /** The question's bge-m3 embedding: hybrid ranking (`scoreChunks`); absent keeps BM25. */
+  semantic?: Float32Array;
 }
 
 /** Chunks the anchor itself retrieves first (multi-turn memory). */
@@ -183,8 +228,8 @@ export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
 export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
-  const { topic, lead, anchor, adjacent, civic, mentoring, team } = options;
-  const scored = scoreChunks(pack, question);
+  const { topic, lead, anchor, adjacent, civic, mentoring, team, semantic } = options;
+  const scored = scoreChunks(pack, question, semantic);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
   const add = (chunk: KnowledgeChunk | undefined) => {
@@ -249,7 +294,8 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
         picked.push(chunk);
       });
   } else {
-    const always: string[] = [...ALWAYS_INCLUDE, ...(isPerspectiveQuestion(question) ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
+    const opinion = isPerspectiveQuestion(question);
+    const always: string[] = [...ALWAYS_INCLUDE, ...(opinion ? [PERSPECTIVE_INCLUDE] : []), ...(isSiteQuestion(question) ? [SITE_INCLUDE] : [])];
     always.forEach((id) => add(byId(id)));
     if (anchor) {
       scoreChunks(pack, anchor)
@@ -262,7 +308,7 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     for (const { chunk } of ranked) {
       if (picked.length >= TOP_K + always.length) break;
       if (picked.includes(chunk)) continue;
-      if (chunk.type === "perspective" && perspectives++ >= PERSPECTIVE_CAP) continue;
+      if (chunk.type === "perspective" && perspectives++ >= (opinion ? OPINION_PERSPECTIVE_CAP : PERSPECTIVE_CAP)) continue;
       picked.push(chunk);
     }
   }
