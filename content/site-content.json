@@ -10205,7 +10205,7 @@
           "slug": "untrusted-code-next-to-production-secrets",
           "title": {
             "en": "Untrusted Code Next to Production Secrets",
-            "id": "Kode Tak Tepercaya di Samping Secret Production"
+            "id": "Kode Asing di Samping Secret Production"
           },
           "date": "2026-10-24",
           "tags": [
@@ -10252,8 +10252,8 @@
         {
           "slug": "the-lock-that-protected-the-install-also-blocked-the-app",
           "title": {
-            "en": "The Lock That Protected the Install Also Blocked the App",
-            "id": "Lock yang Melindungi Instalasi Justru Memblokir Aplikasinya"
+            "en": "The Install Lock That Also Blocked the App",
+            "id": "Lock Instalasi yang Memblokir Aplikasi"
           },
           "date": "2026-10-24",
           "tags": [
