@@ -10202,6 +10202,78 @@
     "library": {
       "posts": [
         {
+          "slug": "untrusted-code-next-to-production-secrets",
+          "title": {
+            "en": "Untrusted Code Next to Production Secrets",
+            "id": "Kode Tak Tepercaya di Samping Secret Production"
+          },
+          "date": "2026-10-24",
+          "tags": [
+            "application-security",
+            "supply-chain-security",
+            "azure-container-apps",
+            "keda",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "An audit showed a repository's code could run inside the API holding production secrets. Same-day stopgap, then isolated workers and a 9-minute outage.",
+            "id": "Audit menunjukkan kode repository bisa berjalan di API yang memegang secret production. Stopgap hari itu juga, lalu worker terisolasi dan outage 9 menit."
+          },
+          "icon": "container"
+        },
+        {
+          "slug": "the-stall-that-was-never-in-the-query",
+          "title": {
+            "en": "The Stall That Was Never in the Query",
+            "id": "Jeda 21 Detik yang Tidak Pernah Ada di Query"
+          },
+          "date": "2026-10-24",
+          "tags": [
+            "microsoft-fabric",
+            "performance",
+            "graphql",
+            "capacity-planning",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "A Fabric dashboard took ~21 s per request, static files included. A zero-row probe showed capacity throttling, not query cost. I had blamed indexes first.",
+            "id": "Dashboard Fabric butuh ~21 s per request, termasuk file statis. Probe tanpa baris menunjukkan throttling kapasitas. Awalnya saya menyalahkan index."
+          },
+          "icon": "hourglass"
+        },
+        {
+          "slug": "the-lock-that-protected-the-install-also-blocked-the-app",
+          "title": {
+            "en": "The Lock That Protected the Install Also Blocked the App",
+            "id": "Lock yang Melindungi Instalasi Justru Memblokir Aplikasinya"
+          },
+          "date": "2026-10-24",
+          "tags": [
+            "azure-managed-applications",
+            "azure-marketplace",
+            "cloud-security",
+            "deployment",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "In the first managed application test installs, every AI call failed with correct roles. The lock blocked the app's own identities. 36 defects followed.",
+            "id": "Di test install managed application pertama, semua panggilan AI gagal walau role sudah benar. Lock memblokir identity aplikasi sendiri. 36 defect menyusul."
+          },
+          "icon": "lock-keyhole"
+        },
+        {
           "slug": "clearbox-inbox-cleanup-with-microsoft-decision-1",
           "title": {
             "en": "Clearbox: Inbox Triage with Microsoft-Decision-1",

@@ -502,5 +502,170 @@
         }
       ]
     }
+  },
+  "the-lock-that-protected-the-install-also-blocked-the-app": {
+    "install": {
+      "nodes": [
+        {
+          "id": "customer",
+          "label": {
+            "en": "Customer admin",
+            "id": "Admin pelanggan"
+          },
+          "sublabel": {
+            "en": "Installs in their own subscription",
+            "id": "Memasang di subscription sendiri"
+          },
+          "layer": 0,
+          "row": 0,
+          "kind": "human"
+        },
+        {
+          "id": "release",
+          "label": {
+            "en": "Signed release",
+            "id": "Rilis bertanda tangan"
+          },
+          "sublabel": {
+            "en": "Publisher package and images",
+            "id": "Paket dan image dari publisher"
+          },
+          "layer": 0,
+          "row": 1,
+          "kind": "external"
+        },
+        {
+          "id": "wizard",
+          "label": {
+            "en": "Install wizard",
+            "id": "Wizard instalasi"
+          },
+          "sublabel": {
+            "en": "Plan, region and admin email",
+            "id": "Plan, region, dan email admin"
+          },
+          "layer": 1,
+          "row": 0,
+          "kind": "client"
+        },
+        {
+          "id": "scripts",
+          "label": "Deployment scripts",
+          "sublabel": {
+            "en": "Verify the release, create secrets in place",
+            "id": "Memverifikasi rilis, membuat secret di tempat"
+          },
+          "layer": 2,
+          "row": 0,
+          "kind": "service",
+          "group": "Managed resources"
+        },
+        {
+          "id": "app",
+          "label": {
+            "en": "App tier",
+            "id": "Tier aplikasi"
+          },
+          "sublabel": {
+            "en": "Runs as its own managed identities",
+            "id": "Berjalan dengan managed identity sendiri"
+          },
+          "layer": 3,
+          "row": 0,
+          "kind": "service",
+          "group": "Managed resources"
+        },
+        {
+          "id": "deny",
+          "label": "Deny assignment",
+          "sublabel": {
+            "en": "Checked before Azure RBAC: reads and listed actions only",
+            "id": "Diperiksa sebelum Azure RBAC: hanya read dan aksi yang terdaftar"
+          },
+          "layer": 4,
+          "row": 0,
+          "kind": "service",
+          "group": "Managed resources"
+        },
+        {
+          "id": "ai",
+          "label": "Azure AI services",
+          "sublabel": {
+            "en": "Azure OpenAI, Document Intelligence, Content Safety",
+            "id": "Azure OpenAI, Document Intelligence, Content Safety"
+          },
+          "layer": 5,
+          "row": 0,
+          "kind": "ai",
+          "group": "Managed resources"
+        },
+        {
+          "id": "data",
+          "label": {
+            "en": "Storage, queues, Key Vault",
+            "id": "Storage, queue, Key Vault"
+          },
+          "layer": 5,
+          "row": 1,
+          "kind": "data",
+          "group": "Managed resources"
+        }
+      ],
+      "edges": [
+        {
+          "from": "customer",
+          "to": "wizard",
+          "label": {
+            "en": "install",
+            "id": "instal"
+          }
+        },
+        {
+          "from": "wizard",
+          "to": "scripts",
+          "label": "deploy"
+        },
+        {
+          "from": "release",
+          "to": "scripts",
+          "label": {
+            "en": "verified copy",
+            "id": "salinan terverifikasi"
+          }
+        },
+        {
+          "from": "scripts",
+          "to": "app",
+          "label": {
+            "en": "configure",
+            "id": "konfigurasi"
+          }
+        },
+        {
+          "from": "app",
+          "to": "deny",
+          "label": {
+            "en": "writes, data calls",
+            "id": "write, panggilan data"
+          }
+        },
+        {
+          "from": "deny",
+          "to": "ai",
+          "label": {
+            "en": "allowed actions",
+            "id": "aksi yang diizinkan"
+          }
+        },
+        {
+          "from": "deny",
+          "to": "data",
+          "label": {
+            "en": "reads, allowed writes",
+            "id": "read, write yang diizinkan"
+          }
+        }
+      ]
+    }
   }
 }

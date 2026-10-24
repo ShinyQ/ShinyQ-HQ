@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hardCodedFacts, resolveFactVariants, resolveFacts, resolveGoldenItem } from "@/ask/golden-facts";
 import type { DynamicFacts } from "@/content/dynamic-facts";
+import { getContent } from "@/content/load";
 import { scoreGolden, type GoldenItem } from "../../scripts/ask-eval";
 import golden from "./golden.json";
 
@@ -13,8 +14,10 @@ const facts: DynamicFacts = {
 describe("live-fact placeholders in the golden and red-team sets", () => {
   it("scores the current latest technical post rather than older posts", () => {
     const latest = golden.items.find((item) => item.id === "q20") as GoldenItem;
-    expect(latest.facts).toContain("2026-10-16");
-    expect(scoreGolden("The latest post explains Clearbox and Microsoft-Decision-1, published on 2026-10-16.", latest).pass).toBe(true);
+    const newest = [...getContent().floors.library.posts].sort((a, b) => b.date.localeCompare(a.date))[0];
+    expect(latest.facts).toEqual([newest.title.en, newest.date]);
+    expect(scoreGolden(`The latest post, "${newest.title.en}" (${newest.date}), covers an audit and isolated workers.`, latest).pass).toBe(true);
+    expect(scoreGolden("The latest post explains Clearbox and Microsoft-Decision-1, published on 2026-10-16.", latest).pass).toBe(false);
     expect(scoreGolden("The latest post is about voice agents and interruption latency.", latest).pass).toBe(false);
   });
 
