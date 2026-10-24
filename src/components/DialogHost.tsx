@@ -15,12 +15,13 @@ type Open = Extract<HudCommand, { type: "cv" | "paper" | "cert" | "guide" }> | n
 const DIALOGS = /^(cv|paper|cert|guide)$/;
 
 /**
- * Site-wide modals (CV viewer, paper previews, certification previews, the study guide reader), mounted once in the
+ * Site-wide modals (CV reader, paper previews, certification previews, the study guide reader), mounted once in the
  * locale layout outside #site-shell so they also open over the 3D tower and the room drawer. Opened with `openCv()`,
  * `openPaper(paper, { read? })` and `openCert(cert)` (`hq:hud` commands); the study guide reader opens on the "guide"
- * command or a click on any `[data-hq-guide]` button. The chunks load on first use. Focus returns to the opener: a
- * dialog that replaces an open one (the cert card's "Read study guide") keeps the first dialog's opener, since the
- * button that sent it unmounts with its dialog.
+ * command or a click on any `[data-hq-guide]` button, the CV reader also on a plain click on a `[data-hq-cv]` link.
+ * Every PDF (CV, papers, guides) is read in the shared reader (`./pdf-reader`). The chunks load on first use. Focus
+ * returns to the opener: a dialog that replaces an open one (the cert card's "Read study guide") keeps the first
+ * dialog's opener, since the button that sent it unmounts with its dialog.
  */
 export function DialogHost() {
   const [open, setOpen] = useState<Open>(null);
@@ -37,10 +38,16 @@ export function DialogHost() {
       audio.play("click");
       setOpen(next as Open);
     };
-    // Server-rendered "Read" buttons (the `/library` shelf, the cert card) carry `data-hq-guide`; no island per button.
+    // Server-rendered "Read" buttons (the `/library` shelf, the cert card) carry `data-hq-guide`, and the `/cv` page's
+    // links to the CV PDF carry `data-hq-cv` (a plain click opens the reader, a modified one keeps the link); no island.
     const onClick = (event: MouseEvent) => {
-      const button = (event.target as Element).closest?.<HTMLElement>("[data-hq-guide]");
-      if (button) show({ type: "guide", slug: button.dataset.hqGuide! }, button);
+      const target = event.target as Element;
+      const button = target.closest?.<HTMLElement>("[data-hq-guide]");
+      if (button) return show({ type: "guide", slug: button.dataset.hqGuide! }, button);
+      const cv = target.closest?.<HTMLElement>("[data-hq-cv]");
+      if (!cv || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      show({ type: "cv" }, cv);
     };
     const off = onHudCommand((command) => show(command, document.activeElement));
     addEventListener("click", onClick);

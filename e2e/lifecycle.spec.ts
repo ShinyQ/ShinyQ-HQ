@@ -101,7 +101,7 @@ test.describe("rendering pauses while an opaque panel covers the canvas", () => 
     await context.close();
   });
 
-  test("phone: the full-screen CV viewer pauses the world", async ({ browser }) => {
+  test("phone: the full-screen CV reader pauses the world", async ({ browser }) => {
     const { context, page } = await phonePage(browser);
     await countDraws(page);
     await enterHQ(page);

@@ -51,9 +51,20 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("maps the shared PDF reader, the CV and the paper reader to every spec that opens one", () => {
+    for (const file of ["src/components/pdf-reader/PdfReader.tsx", "src/components/pdf-reader/ReaderDialog.tsx"]) {
+      expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["guides", "guides-vault", "pageview", "csp", "library-roof"]));
+    }
+    for (const file of ["src/components/cv/CvDialog.tsx", "src/components/cv/CvCover.tsx", "src/app/[locale]/cv/page.tsx", "src/components/paper/PaperDialog.tsx", "src/lib/page-images.ts"]) {
+      const plan = specsForChanges([file]);
+      expect(plan.unmatched, file).toEqual([]);
+      expect(plan.specs, file).toEqual(expect.arrayContaining(["pageview", "csp", "library-roof"]));
+    }
+  });
+
   it("maps the study guide shelf, reader, data and the dialogs that open it to the guides spec, on top of their own specs", () => {
     for (const file of [
-      "src/components/guides/GuideReader.tsx",
+      "src/components/pdf-reader/PdfReader.tsx",
       "src/components/guides/GuideShelf.tsx",
       "src/content/guides.ts",
       "src/content/guide-views.ts",
@@ -88,7 +99,7 @@ describe("specsForChanges", () => {
       "src/experience/interact/registry.ts",
       "src/experience/interact/pick.ts",
       "src/hud/events.ts",
-      "src/components/guides/GuideReader.tsx",
+      "src/components/pdf-reader/PdfReader.tsx",
       "src/components/guides/GuideDialog.tsx",
       "src/components/DialogHost.tsx",
       "e2e/fixtures/guide-pdf.ts",

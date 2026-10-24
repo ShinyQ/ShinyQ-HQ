@@ -2,11 +2,11 @@
 
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask, TextLayer } from "pdfjs-dist";
 import { memo, useEffect, useRef, useState } from "react";
-import styles from "./GuideReader.module.css";
+import styles from "./PdfReader.module.css";
 
 type Pdfjs = typeof import("pdfjs-dist");
 
-export interface GuidePageProps {
+export interface ReaderPageProps {
   lib: Pdfjs;
   doc: PDFDocumentProxy;
   n: number;
@@ -22,6 +22,8 @@ export interface GuidePageProps {
   failedLabel: string;
   /** The per-page retry button's label. */
   retryLabel: string;
+  /** Test id prefix of the surface (`guide`, `cv`, `paper`). */
+  testPrefix?: string;
 }
 
 /** Zeroes a canvas so iOS Safari frees its backing store at once, then removes it. */
@@ -37,7 +39,7 @@ export function releaseCanvas(canvas: HTMLCanvasElement) {
  * in-flight render on a new scale or unmount; releases the canvas when it leaves the render window. A failed draw
  * shows `failedLabel` with a retry button that draws the page again.
  */
-export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, scale, ratio, active, label, failedLabel, retryLabel }: GuidePageProps) {
+export const ReaderPage = memo(function ReaderPage({ lib, doc, n, width, height, scale, ratio, active, label, failedLabel, retryLabel, testPrefix = "guide" }: ReaderPageProps) {
   const slot = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const host = useRef<HTMLDivElement>(null);
@@ -112,7 +114,7 @@ export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, s
   }, [doc, n]);
 
   return (
-    <div ref={slot} className={styles.slot} style={{ width, height }} data-page={n} data-testid="guide-page">
+    <div ref={slot} className={styles.slot} style={{ width, height }} data-page={n} data-testid={`${testPrefix}-page`}>
       <span aria-hidden="true" className={styles.slotNumber}>
         {n}
       </span>
@@ -125,7 +127,7 @@ export const GuidePage = memo(function GuidePage({ lib, doc, n, width, height, s
             if (slot.current) delete slot.current.dataset.failed;
             setAttempt((a) => a + 1);
           }}
-          data-testid="guide-page-retry"
+          data-testid={`${testPrefix}-page-retry`}
         >
           {retryLabel}
         </button>

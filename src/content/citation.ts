@@ -11,7 +11,7 @@ export interface PaperCitations {
   bibtex: string;
 }
 
-/** A self-hosted PDF of the paper, read in the paper reader (page images from `paperPages(file)`). */
+/** A self-hosted PDF of the paper, read in the shared PDF reader (page 1 of `paperPages(file)` is its loading cover). */
 export interface PaperDocumentRef {
   file: string;
   /** `/papers/{file}.pdf`. */

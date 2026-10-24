@@ -1,57 +1,40 @@
 "use client";
 
 import { NextIntlClientProvider, useLocale, useTranslations, type AbstractIntlMessages } from "next-intl";
-import { useCallback, useEffect, useId, useState, type ComponentType } from "react";
-import type { GuideView } from "@/content/guides";
+import { useEffect, useId, useState } from "react";
+import { GUIDE_PAGE_KEY, type GuideView } from "@/content/guides";
 import { Modal } from "../Modal";
+import { ReaderState, useLazyReader } from "../pdf-reader/ReaderDialog";
 import { guidesDataUrl, type GuidesData } from "./data-path";
-import type { GuideReaderProps } from "./GuideReader";
-import { loadPdfjs } from "./pdf";
-import { COMPACT_BUTTON, GuideSkeleton, HEADER_ROW, useKeepFocus } from "./ui";
 
 /**
- * Study guide dialog (lazy chunk, opened by `DialogHost` on the `hq:hud` "guide" command). The Modal mounts at
- * once (Close focused, Esc live) while the guide data, the reader chunk and pdf.js load in parallel. The `guides`
- * strings come with the views from `/data/guides/{locale}.json`, never in a page's HTML, so the content sits in a
- * nested intl provider; until they arrive the header reads the layout's `certs.preview` strings. A failed data
- * fetch, chunk import or PDF load shows the error state with Retry (and Download once the view is known).
- * The reader is imported by hand rather than through `next/dynamic`, so a failed chunk lands in that error state.
+ * Study guide dialog (lazy chunk, opened by `DialogHost` on the `hq:hud` "guide" command), on the shared PDF reader
+ * (`../pdf-reader`). The Modal mounts at once (Close focused, Esc live) while the guide data, the reader chunk and
+ * pdf.js load in parallel. The `guides` strings come with the views (and the `reader` strings) from
+ * `/data/guides/{locale}.json`, never in a page's HTML, so the content sits in a nested intl provider; until they
+ * arrive the header reads the layout's `certs.preview` and `reader` strings. A failed data fetch, chunk import or
+ * PDF load shows the error state with Retry (and Download once the view is known).
  */
 export default function GuideDialog({ slug, onClose }: { slug: string; onClose: () => void }) {
   const locale = useLocale();
   const titleId = useId();
   const [data, setData] = useState<GuidesData | null>(null);
-  const [Reader, setReader] = useState<ComponentType<GuideReaderProps> | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const { Reader, failed, attempt, retry, fail } = useLazyReader();
 
   useEffect(() => {
     let live = true;
-    const fail = () => {
-      if (live) setFailed(true);
-    };
-    loadPdfjs().catch(() => {});
-    import("./GuideReader")
-      .then((mod) => {
-        if (live) setReader(() => mod.default);
-      })
-      .catch(fail);
     fetch(guidesDataUrl(locale))
       .then((response) => (response.ok ? (response.json() as Promise<GuidesData>) : Promise.reject(new Error(String(response.status)))))
       .then((next) => {
         if (live) setData(next);
       })
-      .catch(fail);
+      .catch(() => {
+        if (live) fail();
+      });
     return () => {
       live = false;
     };
-  }, [locale, attempt]);
-
-  const retry = useCallback(() => {
-    setFailed(false);
-    setAttempt((n) => n + 1);
-  }, []);
-  const onError = useCallback(() => setFailed(true), []);
+  }, [locale, attempt, fail]);
 
   const view = data?.guides.find((g) => g.slug === slug);
   const missing = data !== null && !view;
@@ -60,7 +43,7 @@ export default function GuideDialog({ slug, onClose }: { slug: string; onClose: 
       {data ? (
         <NextIntlClientProvider locale={locale} messages={data.messages as AbstractIntlMessages}>
           {view && Reader && !failed ? (
-            <Reader key={attempt} view={view} titleId={titleId} onClose={onClose} onError={onError} />
+            <GuideReader Reader={Reader} attempt={attempt} view={view} titleId={titleId} onClose={onClose} onError={fail} />
           ) : (
             <GuideState view={view} titleId={titleId} onClose={onClose} onRetry={missing ? undefined : retry} failed={failed || missing} />
           )}
@@ -72,78 +55,57 @@ export default function GuideDialog({ slug, onClose }: { slug: string; onClose: 
   );
 }
 
-function Header({ title, titleId, closeLabel, onClose }: { title: string; titleId: string; closeLabel: string; onClose: () => void }) {
-  const close = useKeepFocus();
+type Reader = NonNullable<ReturnType<typeof useLazyReader>["Reader"]>;
+
+function GuideReader({ Reader, attempt, view, titleId, onClose, onError }: { Reader: Reader; attempt: number; view: GuideView; titleId: string; onClose: () => void; onError: () => void }) {
+  const t = useTranslations("guides");
   return (
-    <div className={HEADER_ROW}>
-      <button ref={close} type="button" onClick={onClose} data-autofocus aria-label={closeLabel} className={COMPACT_BUTTON} data-testid="guide-close">
-        <span aria-hidden="true" className="text-xl leading-none">
-          ×
-        </span>
-      </button>
-      <h2 id={titleId} className="min-w-0 truncate text-base font-semibold text-ink">
-        {title}
-      </h2>
-    </div>
+    <Reader
+      key={attempt}
+      doc={{ url: view.url, downloadUrl: view.downloadUrl, file: view.file, title: view.title, cover: view.cover, pageKey: GUIDE_PAGE_KEY(view.slug) }}
+      titleId={titleId}
+      closeLabel={t("close")}
+      onClose={onClose}
+      onError={onError}
+      testPrefix="guide"
+    />
   );
 }
 
-/** Before the guide data arrives only the layout's `certs.preview` strings exist, so Retry reads "Read study guide". */
+/** Before the guide data arrives only the layout's strings exist, so Retry reads "Read study guide". */
 function Pending({ titleId, onClose, onRetry }: { titleId: string; onClose: () => void; onRetry?: () => void }) {
   const t = useTranslations("certs.preview");
+  const r = useTranslations("reader");
   return (
-    <>
-      <Header title={t("readGuide")} titleId={titleId} closeLabel={t("close")} onClose={onClose} />
-      <div className="min-h-0 flex-1 overflow-y-auto" aria-busy={!onRetry} data-testid={onRetry ? "guide-error" : "guide-loading"}>
-        {onRetry ? (
-          <div role="alert" className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-            <span aria-hidden="true" className="text-2xl text-amber">
-              !
-            </span>
-            <button type="button" onClick={onRetry} className="pv-btn pv-btn-primary" data-testid="guide-retry">
-              {t("readGuide")}
-            </button>
-          </div>
-        ) : (
-          <GuideSkeleton />
-        )}
-      </div>
-    </>
+    <ReaderState
+      title={t("readGuide")}
+      titleId={titleId}
+      closeLabel={t("close")}
+      onClose={onClose}
+      testPrefix="guide"
+      failed={Boolean(onRetry)}
+      onRetry={onRetry}
+      labels={{ loading: r("loading"), retry: t("readGuide"), download: r("download") }}
+    />
   );
 }
 
 /** Loading (data known, the reader chunk on its way) or the error state, with the `guides` strings. */
 function GuideState({ view, titleId, onClose, onRetry, failed }: { view?: GuideView; titleId: string; onClose: () => void; onRetry?: () => void; failed: boolean }) {
   const t = useTranslations("guides");
+  const r = useTranslations("reader");
   return (
-    <>
-      <Header title={view?.title ?? t("eyebrow")} titleId={titleId} closeLabel={t("close")} onClose={onClose} />
-      <div className="min-h-0 flex-1 overflow-y-auto" aria-busy={!failed} data-testid={failed ? "guide-error" : "guide-loading"}>
-        {failed ? (
-          <div role="alert" className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-            <p className="text-ink">{t("error")}</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              {onRetry && (
-                <button type="button" onClick={onRetry} className="pv-btn pv-btn-primary" data-testid="guide-retry">
-                  {t("retry")}
-                </button>
-              )}
-              {view && (
-                <a href={view.downloadUrl} download={view.file} className="pv-btn pv-btn-ghost" data-testid="guide-download">
-                  {t("download")}
-                </a>
-              )}
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="sr-only" role="status">
-              {t("loading")}
-            </p>
-            <GuideSkeleton cover={view?.cover} />
-          </>
-        )}
-      </div>
-    </>
+    <ReaderState
+      title={view?.title ?? t("eyebrow")}
+      titleId={titleId}
+      closeLabel={t("close")}
+      onClose={onClose}
+      testPrefix="guide"
+      failed={failed}
+      onRetry={onRetry}
+      download={view ? { url: view.downloadUrl, file: view.file } : undefined}
+      cover={view?.cover}
+      labels={{ loading: t("loading"), error: t("error"), retry: r("retry"), download: t("download") }}
+    />
   );
 }

@@ -4,16 +4,16 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
-import { GuideControls, type GuideControlsProps } from "@/components/guides/GuideControls";
-import { ZOOM_STEPS } from "@/components/guides/reader-model";
+import { ReaderControls, type ReaderControlsProps } from "@/components/pdf-reader/ReaderControls";
+import { ZOOM_STEPS } from "@/components/pdf-reader/reader-model";
 
 afterEach(() => cleanup());
 
 const MIN = ZOOM_STEPS[0];
 const MAX = ZOOM_STEPS[ZOOM_STEPS.length - 1];
 
-function setup(overrides: Partial<GuideControlsProps> = {}) {
-  const props: GuideControlsProps = {
+function setup(overrides: Partial<ReaderControlsProps> = {}) {
+  const props: ReaderControlsProps = {
     count: 10,
     current: 5,
     zoom: 1,
@@ -24,21 +24,21 @@ function setup(overrides: Partial<GuideControlsProps> = {}) {
   };
   const view = render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <GuideControls {...props} />
+      <ReaderControls {...props} />
     </NextIntlClientProvider>,
   );
-  const rerender = (next: Partial<GuideControlsProps>) => {
+  const rerender = (next: Partial<ReaderControlsProps>) => {
     Object.assign(props, next);
     view.rerender(
       <NextIntlClientProvider locale="en" messages={en}>
-        <GuideControls {...props} />
+        <ReaderControls {...props} />
       </NextIntlClientProvider>,
     );
   };
   return { props, rerender };
 }
 
-describe("GuideControls limits keep focus", () => {
+describe("ReaderControls limits keep focus", () => {
   it("Prev stays focused and does nothing once page 1 is reached", () => {
     const { props, rerender } = setup({ current: 2 });
     const prev = screen.getByTestId("guide-prev");
@@ -102,7 +102,7 @@ describe("GuideControls limits keep focus", () => {
   });
 });
 
-describe("GuideControls page box and zoom", () => {
+describe("ReaderControls page box and zoom", () => {
   it("shows the current page and the count, and jumps to a typed page on Enter", () => {
     const { props } = setup({ current: 3 });
     const input = screen.getByTestId("guide-page-input");
@@ -164,9 +164,9 @@ describe("GuideControls page box and zoom", () => {
 
   it("keeps the labels and disables the input and Fit before the PDF opens", () => {
     setup({ count: null, current: 1 });
-    expect(screen.getByLabelText(en.guides.pageInput)).toBeDisabled();
+    expect(screen.getByLabelText(en.reader.pageInput)).toBeDisabled();
     expect(screen.getByTestId("guide-page-count")).toHaveTextContent("/ -");
     expect(screen.getByTestId("guide-fit")).toBeDisabled();
-    for (const key of ["prev", "next", "zoomOut", "zoomIn", "fitWidth"] as const) expect(screen.getByRole("button", { name: en.guides[key] })).toBeInTheDocument();
+    for (const key of ["prev", "next", "zoomOut", "zoomIn", "fitWidth"] as const) expect(screen.getByRole("button", { name: en.reader[key] })).toBeInTheDocument();
   });
 });

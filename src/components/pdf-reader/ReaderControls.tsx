@@ -2,11 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
-import styles from "./GuideReader.module.css";
+import styles from "./PdfReader.module.css";
 import { clampPage, ZOOM_STEPS } from "./reader-model";
 import { PILL_BUTTON } from "./ui";
 
-export interface GuideControlsProps {
+export interface ReaderControlsProps {
   /** Null until the PDF opens (navigation stays disabled). */
   count: number | null;
   current: number;
@@ -14,6 +14,8 @@ export interface GuideControlsProps {
   onGo: (page: number) => void;
   onZoom: (dir: 1 | -1) => void;
   onFit: () => void;
+  /** Test id prefix of the surface (`guide`, `cv`, `paper`). */
+  testPrefix?: string;
 }
 
 /**
@@ -35,8 +37,8 @@ function limit(off: boolean, run: () => void) {
  * Zoom out, Zoom in and Fit width. One row down to a 360 px phone; 44 px targets on touch screens, 36 px with a
  * fine pointer.
  */
-export function GuideControls({ count, current, zoom, onGo, onZoom, onFit }: GuideControlsProps) {
-  const t = useTranslations("guides");
+export function ReaderControls({ count, current, zoom, onGo, onZoom, onFit, testPrefix = "guide" }: ReaderControlsProps) {
+  const t = useTranslations("reader");
   const inputId = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const ready = count !== null;
@@ -49,7 +51,7 @@ export function GuideControls({ count, current, zoom, onGo, onZoom, onFit }: Gui
   };
 
   return (
-    <div className={`${styles.controls} glass glass-solid`} data-testid="guide-controls">
+    <div className={`${styles.controls} glass glass-solid`} data-testid={`${testPrefix}-controls`}>
       <label htmlFor={inputId} className="sr-only">
         {t("pageInput")}
       </label>
@@ -73,19 +75,19 @@ export function GuideControls({ count, current, zoom, onGo, onZoom, onFit }: Gui
           jump();
         }}
         onBlur={() => setDraft(null)}
-        data-testid="guide-page-input"
+        data-testid={`${testPrefix}-page-input`}
       />
-      <span className="pv-data shrink-0 pe-1 text-ink-2" data-testid="guide-page-count">
+      <span className="pv-data shrink-0 pe-1 text-ink-2" data-testid={`${testPrefix}-page-count`}>
         / {count ?? "-"}
       </span>
-      <button type="button" className={PILL_BUTTON} {...limit(!ready || current <= 1, () => onGo(current - 1))} aria-label={t("prev")} data-testid="guide-prev">
+      <button type="button" className={PILL_BUTTON} {...limit(!ready || current <= 1, () => onGo(current - 1))} aria-label={t("prev")} data-testid={`${testPrefix}-prev`}>
         <span aria-hidden="true">&#8249;</span>
       </button>
-      <button type="button" className={PILL_BUTTON} {...limit(!ready || current >= total, () => onGo(current + 1))} aria-label={t("next")} data-testid="guide-next">
+      <button type="button" className={PILL_BUTTON} {...limit(!ready || current >= total, () => onGo(current + 1))} aria-label={t("next")} data-testid={`${testPrefix}-next`}>
         <span aria-hidden="true">&#8250;</span>
       </button>
       <span aria-hidden="true" className={styles.controlsDivider} />
-      <button type="button" className={PILL_BUTTON} {...limit(!ready || zoom <= ZOOM_STEPS[0], () => onZoom(-1))} aria-label={t("zoomOut")} data-testid="guide-zoom-out">
+      <button type="button" className={PILL_BUTTON} {...limit(!ready || zoom <= ZOOM_STEPS[0], () => onZoom(-1))} aria-label={t("zoomOut")} data-testid={`${testPrefix}-zoom-out`}>
         <span aria-hidden="true">&#8722;</span>
       </button>
       <button
@@ -93,11 +95,11 @@ export function GuideControls({ count, current, zoom, onGo, onZoom, onFit }: Gui
         className={PILL_BUTTON}
         {...limit(!ready || zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1], () => onZoom(1))}
         aria-label={t("zoomIn")}
-        data-testid="guide-zoom-in"
+        data-testid={`${testPrefix}-zoom-in`}
       >
         <span aria-hidden="true">+</span>
       </button>
-      <button type="button" className={PILL_BUTTON} onClick={onFit} disabled={!ready} aria-pressed={zoom === 1} aria-label={t("fitWidth")} data-testid="guide-fit">
+      <button type="button" className={PILL_BUTTON} onClick={onFit} disabled={!ready} aria-pressed={zoom === 1} aria-label={t("fitWidth")} data-testid={`${testPrefix}-fit`}>
         <span aria-hidden="true">&#8596;</span>
       </button>
     </div>

@@ -1,8 +1,7 @@
 /**
- * Pure helpers for the study guide reader (zoom steps, page windows, canvas sizing, keys, the saved page).
+ * Pure helpers for the shared PDF reader (zoom steps, page windows, canvas sizing, keys, the saved page).
  * No React or pdf.js imports, so Vitest covers them directly.
  */
-import { GUIDE_PAGE_KEY } from "@/content/guides";
 
 /** Zoom levels, as multiples of the fit-width scale (1 = fit width). */
 export const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3] as const;
@@ -86,10 +85,10 @@ export function readerKey(key: string, shift: boolean): ReaderAction | null {
   return Object.hasOwn(KEYS, key) ? KEYS[key] : null;
 }
 
-/** The last page read in a guide (1 when missing, invalid or storage is blocked). */
-export function savedPage(storage: Pick<Storage, "getItem"> | null, slug: string, count: number): number {
+/** The last page read in a document, stored under `key` (1 when missing, invalid or storage is blocked). */
+export function savedPage(storage: Pick<Storage, "getItem"> | null, key: string, count: number): number {
   try {
-    const raw = storage?.getItem(GUIDE_PAGE_KEY(slug));
+    const raw = storage?.getItem(key);
     return raw ? clampPage(Number.parseInt(raw, 10), count) : 1;
   } catch {
     return 1;
@@ -97,10 +96,14 @@ export function savedPage(storage: Pick<Storage, "getItem"> | null, slug: string
 }
 
 /** Remembers the page; private mode or a full quota is ignored. */
-export function savePage(storage: Pick<Storage, "setItem"> | null, slug: string, page: number): void {
+export function savePage(storage: Pick<Storage, "setItem"> | null, key: string, page: number): void {
   try {
-    storage?.setItem(GUIDE_PAGE_KEY(slug), String(page));
+    storage?.setItem(key, String(page));
   } catch {
     // Storage blocked: the reader still works, it just starts at page 1 next time.
   }
 }
+
+/** Last page read keys outside the study guides (`GUIDE_PAGE_KEY` in `@/content/guides` keeps `hq:guide:<slug>`). */
+export const CV_PAGE_KEY = "hq:reader:cv";
+export const PAPER_PAGE_KEY = (id: string) => `hq:reader:paper:${id}`;

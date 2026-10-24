@@ -3,8 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GuidePage } from "@/components/guides/GuidePage";
-import { GuideThumbs } from "@/components/guides/GuideThumbs";
+import { ReaderPage } from "@/components/pdf-reader/ReaderPage";
+import { ReaderThumbs } from "@/components/pdf-reader/ReaderThumbs";
 
 type Callback = (entries: { target: Element; isIntersecting: boolean }[]) => void;
 let observers: { callback: Callback; observed: Element[] }[] = [];
@@ -45,7 +45,7 @@ const flush = () => act(async () => {
 
 function thumbs(doc: { getPage: unknown }, current = 2, onGo = vi.fn()) {
   render(
-    <GuideThumbs
+    <ReaderThumbs
       doc={doc as unknown as PDFDocumentProxy}
       count={5}
       base={{ width: 595, height: 842 }}
@@ -58,7 +58,7 @@ function thumbs(doc: { getPage: unknown }, current = 2, onGo = vi.fn()) {
   return { onGo, buttons: screen.getAllByRole("button") };
 }
 
-describe("GuideThumbs", () => {
+describe("ReaderThumbs", () => {
   it("is one tab stop: only the current page's thumbnail is tabbable", () => {
     const { buttons } = thumbs({ getPage: vi.fn(() => new Promise(() => {})) });
     expect(buttons.map((b) => b.tabIndex)).toEqual([-1, 0, -1, -1, -1]);
@@ -90,9 +90,9 @@ describe("GuideThumbs", () => {
   it("follows the reader's current page", () => {
     const doc = { getPage: vi.fn(() => new Promise(() => {})) };
     const view = render(
-      <GuideThumbs doc={doc as never} count={5} base={{ width: 595, height: 842 }} current={2} label="t" pageLabel={(p) => `Page ${p}`} onGo={vi.fn()} />,
+      <ReaderThumbs doc={doc as never} count={5} base={{ width: 595, height: 842 }} current={2} label="t" pageLabel={(p) => `Page ${p}`} onGo={vi.fn()} />,
     );
-    view.rerender(<GuideThumbs doc={doc as never} count={5} base={{ width: 595, height: 842 }} current={4} label="t" pageLabel={(p) => `Page ${p}`} onGo={vi.fn()} />);
+    view.rerender(<ReaderThumbs doc={doc as never} count={5} base={{ width: 595, height: 842 }} current={4} label="t" pageLabel={(p) => `Page ${p}`} onGo={vi.fn()} />);
     expect(screen.getAllByRole("button").map((b) => b.tabIndex)).toEqual([-1, -1, -1, 0, -1]);
   });
 
@@ -127,7 +127,7 @@ describe("GuideThumbs", () => {
   });
 });
 
-describe("GuidePage", () => {
+describe("ReaderPage", () => {
   class FakeTextLayer {
     render = () => Promise.resolve();
     cancel = () => {};
@@ -143,7 +143,7 @@ describe("GuidePage", () => {
       })
       .mockImplementation(async () => page);
     render(
-      <GuidePage lib={lib} doc={{ getPage } as never} n={3} width={300} height={424} scale={0.5} ratio={1} active label="Page 3 of 5" failedLabel="This page could not be drawn." retryLabel="Try again" />,
+      <ReaderPage lib={lib} doc={{ getPage } as never} n={3} width={300} height={424} scale={0.5} ratio={1} active label="Page 3 of 5" failedLabel="This page could not be drawn." retryLabel="Try again" />,
     );
     await flush();
     const slot = screen.getByTestId("guide-page");

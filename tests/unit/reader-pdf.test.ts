@@ -25,7 +25,7 @@ class FakeWorker extends EventTarget {
 
 async function freshPdf() {
   vi.resetModules();
-  return import("@/components/guides/pdf");
+  return import("@/components/pdf-reader/pdf");
 }
 
 beforeEach(() => {

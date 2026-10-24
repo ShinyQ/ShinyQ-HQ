@@ -110,7 +110,7 @@ describe("perfKeysFor", () => {
 
 describe("pagePerfKeys", () => {
   it("selects the study guide reader gate for the reader, its loaders and the page that hosts the shelf", () => {
-    for (const file of ["src/components/guides/GuideReader.tsx", "src/components/guides/pdf.ts", "src/content/guides.ts", "src/components/DialogHost.tsx", "src/components/dialog-loaders.ts", "src/app/[locale]/library/page.tsx"]) {
+    for (const file of ["src/components/pdf-reader/PdfReader.tsx", "src/components/pdf-reader/pdf.ts", "src/components/guides/GuideDialog.tsx", "src/content/guides.ts", "src/components/DialogHost.tsx", "src/components/dialog-loaders.ts", "src/app/[locale]/library/page.tsx"]) {
       expect(pagePerfKeys(file), file).toEqual(["guides"]);
     }
     for (const file of ["src/components/page/Hero.tsx", "content/study-guides.json", "src/components/certs/CertDialog.tsx"]) expect(pagePerfKeys(file), file).toEqual([]);

@@ -83,7 +83,7 @@ export function ContactBody({ view }: { view: RoomView }) {
   );
 }
 
-/** CV kiosk: opens the CV viewer modal (page images of the owner's PDF), plus the PDF and the /cv page. */
+/** CV kiosk: opens the CV reader modal (the shared PDF reader; page 1's image is the cover), plus the PDF and the /cv page. */
 export function CvBody({ view }: { view: RoomView }) {
   const t = useTranslations("drawer.rooms");
   const tcv = useTranslations("cv");

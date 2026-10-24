@@ -437,7 +437,7 @@ test.describe("phone layout", () => {
 });
 
 test.describe("pauses behind modals", () => {
-  test("Rover's line hides while the CV viewer (DialogHost) is open and comes back where it was", async ({ page }) => {
+  test("Rover's line hides while the CV reader (DialogHost) is open and comes back where it was", async ({ page }) => {
     await enterHQ(page);
     await page.keyboard.press("Control+k");
     await page.getByRole("dialog", { name: "Command palette" }).getByRole("combobox").fill("tutorial");

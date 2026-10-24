@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { PageViewer, pageSrcSet, type PageViewerLabels } from "@/components/docs/PageViewer";
+import { CvCover } from "@/components/cv/CvCover";
 import { CV_PAGES } from "@/lib/cv";
+import { pageSrcSet } from "@/lib/page-images";
 
 describe("pageSrcSet", () => {
   it("lists every CV rendition, smallest first, so a DPR 3 phone can pick the 1200 px page", () => {
@@ -10,45 +11,31 @@ describe("pageSrcSet", () => {
   });
 
   it("keeps two candidates without a medium rendition (paper pages) and none without a small one", () => {
-    expect(pageSrcSet({ n: 1, src: "/a.webp", width: 1600, height: 2000, srcSmall: "/a-800.webp", widthSmall: 800 })).toBe("/a-800.webp 800w, /a.webp 1600w");
-    expect(pageSrcSet({ n: 1, src: "/a.webp", width: 1600, height: 2000 })).toBeUndefined();
+    expect(pageSrcSet({ src: "/a.webp", width: 1600, srcSmall: "/a-800.webp", widthSmall: 800 })).toBe("/a-800.webp 800w, /a.webp 1600w");
+    expect(pageSrcSet({ src: "/a.webp", width: 1600 })).toBeUndefined();
   });
 });
 
-describe("PageViewer page images", () => {
-  const text = () => "x";
-  const labels: PageViewerLabels = {
-    toolbar: "t",
-    zoom: "z",
-    zoomIn: "+",
-    zoomOut: "-",
-    fit: "f",
-    pageOf: text,
-    pageAlt: (n, total) => `CV page ${n} of ${total}`,
-    region: "r",
-    download: "d",
-    openTab: "o",
-    external: "e",
-    fallback: "fb",
-    hint: "h",
-  };
-  const imgs = (variant: "page" | "modal") =>
-    [...renderToStaticMarkup(<PageViewer variant={variant} pages={CV_PAGES} pdf="/cv/a.pdf" downloadName="a.pdf" labels={labels} testPrefix="cv" />).matchAll(/<img [^>]*>/g)].map((m) => m[0]);
+describe("the /cv page cover", () => {
+  const html = renderToStaticMarkup(<CvCover labels={{ view: "View CV", download: "Download PDF", pages: "2 pages", coverAlt: "CV page 1 of 2" }} />);
+  const imgs = [...html.matchAll(/<img [^>]*>/g)].map((m) => m[0]);
 
-  it("loads page 1 eagerly (high priority on the /cv page, it is the LCP) and every later page lazily", () => {
-    expect(CV_PAGES.length).toBeGreaterThan(1);
-    for (const variant of ["page", "modal"] as const) {
-      const [first, ...rest] = imgs(variant);
-      expect(first, variant).toContain('loading="eager"');
-      expect(first, variant).toContain('decoding="async"');
-      if (variant === "page") expect(first).toContain('fetchPriority="high"');
-      else expect(first).not.toContain("fetchPriority");
-      expect(rest).toHaveLength(CV_PAGES.length - 1);
-      for (const img of rest) {
-        expect(img, variant).toContain('loading="lazy"');
-        expect(img, variant).toContain('decoding="async"');
-        expect(img, variant).not.toContain("fetchPriority");
-      }
-    }
+  it("shows page 1 only, eagerly with high priority (it is the LCP), with every rendition and a CV page alt", () => {
+    expect(imgs).toHaveLength(1);
+    const [img] = imgs;
+    expect(img).toContain(`src="${CV_PAGES[0].src}"`);
+    expect(img).toContain(`srcSet="${pageSrcSet(CV_PAGES[0])}"`);
+    expect(img).toContain('loading="eager"');
+    expect(img).toContain('fetchPriority="high"');
+    expect(img).toContain('decoding="async"');
+    expect(img).toContain('alt="CV page 1 of 2"');
+  });
+
+  it("opens the reader through DialogHost from real PDF links (no island) and offers the download", () => {
+    const pdf = "/cv/kurniadi-ahmad-wijaya-cv.pdf";
+    expect(html).toMatch(new RegExp(`<a href="${pdf}" data-hq-cv="" aria-haspopup="dialog" class="pv-btn pv-btn-primary" data-testid="cv-read">View CV</a>`));
+    expect(html).toContain(`<a href="${pdf}" download="kurniadi-ahmad-wijaya-cv.pdf" type="application/pdf"`);
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("<iframe");
   });
 });

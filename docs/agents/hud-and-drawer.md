@@ -405,7 +405,7 @@ Content is a serializable, locale-resolved `RoomView` (`src/content/room-views/t
 
 | Kind | Body |
 |---|---|
-| `roof` | `RoofBody`: email mailto plus copy with `click`, channels, the CV kiosk (page-one cover and "View CV" open the CV viewer modal, plus the PDF download with `click`) |
+| `roof` | `RoofBody`: email mailto plus copy with `click`, channels, the CV kiosk (page-one cover and "View CV" open the CV reader modal, the shared PDF reader, plus the PDF download with `click`) |
 | `highlights` | `HighlightsBody`: cards from `RoomView.cards` ride to their room with `goToRoom`; the contact station reuses `ContactBody` and `CvBody` from `RoofBody` |
 | `research` | `ResearchBody`, fed by the optional `RoomView.research`: `items` with authors, venue, DOI, summary, dated citations and `preview` (the paper preview modal data); `self` (the owner's name to highlight); `profiles`; `metrics` |
 | `engine` | `EngineBody` (B1 chunk, fed by `RoomView.engine`): the station's own block (blueprint diagram, build rounds, gate list, plan excerpt, dashboard tiles or rejected ideas) around the generic sections, plus the link to its Classic `/build` section; the Reactor (`B1:reactor`) shows its live tiles instead (reactor feed and stats, never starting the poller) and has no Classic link ([B1 drawers](floor-b1-engine-room.md#drawers)) |

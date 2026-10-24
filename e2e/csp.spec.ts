@@ -5,7 +5,7 @@ import { asReturningVisitor, collectCspViolations, enterHQ, expectStrictPolicy, 
  * The per-page script policy (scripts/csp-hashes.ts, Round 7 D): every page carries one
  * `data-hq-csp` meta tag whose script-src lists the sha256 of each inline script and no
  * 'unsafe-inline', and nothing the site runs (the 404 page, client navigation, the root redirect,
- * the CV viewer, the 3D boot, intro and an elevator ride) trips a violation. Every Classic route is
+ * the CV in the shared PDF reader, the 3D boot, intro and an elevator ride) trips a violation. Every Classic route is
  * checked the same way in `e2e/static-routes.spec.ts` (`renders <route>`).
  */
 
@@ -37,11 +37,12 @@ test("the / language redirect still runs under the strict policy", async ({ page
   expect(violations).toEqual([]);
 });
 
-test("the CV viewer opens with no CSP violation", async ({ page }) => {
+test("the CV opens in the shared PDF reader (pdf.js and its worker) with no CSP violation", async ({ page }) => {
   const violations = await collectCspViolations(page);
   await openPage(page, "/en/contact?tier=static");
   await page.locator("main").getByTestId("cv-open").first().click();
-  await expect(page.getByRole("dialog").getByRole("img").first()).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+  await expect(dialog.locator('[data-testid="cv-page"][data-page="1"]')).toHaveAttribute("data-rendered", "true", { timeout: 30_000 });
   expect(violations).toEqual([]);
 });
 
