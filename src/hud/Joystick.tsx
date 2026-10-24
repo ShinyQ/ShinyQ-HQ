@@ -4,6 +4,7 @@ import { useRef, useState, type PointerEvent } from "react";
 import { applyDeadZone } from "@/experience/input/intents";
 import { setJoystick } from "@/experience/input/joystick";
 import { useBoostToggle } from "./boost";
+import { BoostButton } from "./BoostButton";
 
 const RADIUS = 60;
 /** After a short tap's release, a pointer down on the joystick within this window toggles boost. */
@@ -16,9 +17,9 @@ type Boost = ReturnType<typeof useBoostToggle>;
 
 /**
  * Virtual joystick for coarse pointers: left of the bottom band, 120 px, 12% dead zone (appendix 03 section 3).
- * With `boost` (the Corners HUD), a double tap toggles boost: a short, still
- * first tap, then a pointer down within `DOUBLE_TAP_MS` of its release; the first tap drives as usual.
- * Keyboard users hold Shift instead. Without `boost` it never touches the boost state. The gesture is timed with the input events' own times, not the time a
+ * With `boost` (the Corners HUD), a Boost button sits next to it (`BoostButton`, the same state) and a double
+ * tap toggles boost too: a short, still first tap, then a pointer down within `DOUBLE_TAP_MS` of its
+ * release; the first tap drives as usual. Keyboard users hold Shift instead. Without `boost` it never touches the boost state. The gesture is timed with the input events' own times, not the time a
  * handler runs, so a slow frame between the taps (a shader compile on a phone) never breaks it.
  */
 export function Joystick({ boost = false }: { boost?: boolean }) {
@@ -26,7 +27,13 @@ export function Joystick({ boost = false }: { boost?: boolean }) {
 }
 
 function BoostJoystick() {
-  return <Stick boost={useBoostToggle()} />;
+  const boost = useBoostToggle();
+  return (
+    <>
+      <Stick boost={boost} />
+      <BoostButton boost={boost} />
+    </>
+  );
 }
 
 function Stick({ boost }: { boost?: Boost }) {
