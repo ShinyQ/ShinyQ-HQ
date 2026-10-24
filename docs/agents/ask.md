@@ -254,7 +254,7 @@ Spec section 13.
 - The text pack must stay under `PACK_MAX_BYTES` (384 KiB) and the stored value under `PACK_VALUE_MAX_BYTES` (768 KiB) with every draft approved; the fallback text pack under `FALLBACK_MAX_BYTES` (24 KiB). Measured, owner-approved budgets (runbook section 15, decision 2026-10-19).
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
   - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
-- The bge-m3 vectors take about 230 KB of the stored value (one int8 row of 1024 bytes per chunk, base64): the stored value was 705.8 KB on 2026-10-24, so trim text before the cap, never drop the vectors.
+- The bge-m3 vectors take about 230 KB of the stored value (one int8 row of 1024 bytes per chunk, base64): the stored value was 730.6 KB on 2026-10-24, so trim text before the cap, never drop the vectors.
 - At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, `OPINION_PERSPECTIVE_CAP` (4) for an opinion question and `CIVIC_PERSPECTIVE_CAP` (4) for a civic one, so posts and projects still reach the context.
 - `tests/ask/scope.test.ts` checks retrieval with every draft approved.
 
