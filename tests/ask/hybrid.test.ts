@@ -90,6 +90,17 @@ describe("embedding cache", () => {
     const fresh = hydratePack(storePack(structuredClone(pack), vectors)).pack;
     expect(packVectors(fresh)?.rows.length).toBe(pack.chunks.length * EMBED_DIMS);
   });
+
+  it("gives new vectors over the same text their own pack version (a KV pack:v1 key is immutable)", () => {
+    const textOnly = buildPackArtifacts(pack).meta;
+    const withVectors = buildPackArtifacts(pack, vectors).meta;
+    expect(withVectors.version).toMatch(/^[0-9a-f]{16}$/);
+    expect(withVectors.version).not.toBe(textOnly.version);
+    expect(buildPackArtifacts(pack, vectors).meta.version).toBe(withVectors.version);
+    const reEmbedded = { ...vectors, chunks: encodeRows(new Int8Array(pack.chunks.length * EMBED_DIMS)) };
+    expect(buildPackArtifacts(pack, reEmbedded).meta.version).not.toBe(withVectors.version);
+    expect(pack.packVersion).toBe(textOnly.version);
+  });
 });
 
 describe("hybrid retrieval", () => {

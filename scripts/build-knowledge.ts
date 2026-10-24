@@ -32,5 +32,5 @@ writeFileSync(path.join(OUT_DIR, "fallback.json"), artifacts.fallbackJson);
 writeFileSync(path.join(OUT_DIR, "pack-meta.json"), `${JSON.stringify(artifacts.meta, null, 2)}\n`);
 const kb = (bytes: number) => (bytes / 1024).toFixed(1);
 console.log(
-  `Knowledge pack ${pack.packVersion}: ${pack.chunks.length} chunks, ${kb(Buffer.byteLength(JSON.stringify(pack)))} KB text, ${kb(artifacts.meta.bytes)} KB stored, fallback ${kb(Buffer.byteLength(artifacts.fallbackJson))} KB text, ${vectors ? `${pack.chunks.length - missing.length} vectors` : "no vectors"}, as of ${pack.packDate}.`,
+  `Knowledge pack ${artifacts.meta.version}: ${pack.chunks.length} chunks, ${kb(Buffer.byteLength(JSON.stringify(pack)))} KB text, ${kb(artifacts.meta.bytes)} KB stored, fallback ${kb(Buffer.byteLength(artifacts.fallbackJson))} KB text, ${vectors ? `${pack.chunks.length - missing.length} vectors` : "no vectors"}, as of ${pack.packDate}.`,
 );
