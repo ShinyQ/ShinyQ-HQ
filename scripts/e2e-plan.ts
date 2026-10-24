@@ -294,7 +294,7 @@ export const RULES: Rule[] = [
 
   // Corners HUD (Round 8 I): the menu and settings sheets, the minimap and overview, the floor chip and sheet, the
   // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
-  { test: /^src\/hud\/(Joystick\.tsx|BoostButton\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
+  { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
   { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|ChunkFailed)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
   // FloorButtons also renders the desktop elevator rail: e2e/experience.spec.ts checks its labels and keys, and the
   // e2e/arrivals.spec.ts tour rides it to every floor.

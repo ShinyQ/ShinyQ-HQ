@@ -9,16 +9,15 @@ import troikaFonts from "./troika-fonts.json";
  * syncs and L1 stays empty. Refusing blob: workers at construction makes the probe fail in every
  * browser, and troika runs that fallback on the main thread instead.
  */
-const BLOB_WORKER_GUARD = Symbol.for("hq.blobWorkerGuard");
-if (typeof window !== "undefined" && typeof window.Worker === "function" && !(BLOB_WORKER_GUARD in window.Worker)) {
-  const Native = window.Worker;
-  window.Worker = class extends Native {
-    static [BLOB_WORKER_GUARD] = true;
-    constructor(url: string | URL, options?: WorkerOptions) {
-      if (String(url).startsWith("blob:")) throw new DOMException("blob: workers are not allowed by the site CSP", "SecurityError");
-      super(url, options);
-    }
+if (typeof Worker === "function") {
+  const Native = Worker;
+  const Guarded = function (url: string | URL, options?: WorkerOptions) {
+    if (String(url).startsWith("blob:")) throw new Error("blob: worker");
+    return new Native(url, options);
   };
+  // `instanceof Worker` keeps working for same-origin workers (the pdf.js reader).
+  Guarded.prototype = Native.prototype;
+  window.Worker = Guarded as unknown as typeof Worker;
 }
 
 /**

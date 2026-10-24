@@ -38,51 +38,6 @@ function MapIcon() {
   );
 }
 
-function ControlsIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" />
-    </svg>
-  );
-}
-
-/** Splits a controls hint ("Drive: joystick · Zoom: pinch") into label and value rows. */
-export function controlRows(hint: string): { label: string; value: string }[] {
-  return hint
-    .split(" · ")
-    .map((part) => {
-      const at = part.indexOf(": ");
-      return at < 0 ? { label: "", value: part.trim() } : { label: part.slice(0, at).trim(), value: part.slice(at + 2).trim() };
-    })
-    .filter((row) => row.value);
-}
-
-/**
- * The controls help in the menu (owner decision 2026-10-24: phones show no controls bar, so the full list
- * lives here): the same text as the bar (`hud.hintCoarse`, `hud.hintFine` with a fine pointer), one row per
- * control, plus the L2 year scrub on touch.
- */
-function MenuControls({ id }: { id: string }) {
-  const t = useTranslations("hud");
-  const coarse = useHQStore((s) => s.device.coarse);
-  const rail = useHQStore((s) => s.floor === "L2");
-  const rows = controlRows(coarse ? t("hintCoarse") : t("hintFine"));
-  return (
-    <section id={id} aria-label={t("controls")} data-testid="menu-controls-card" className="mx-3 rounded-xl border border-line-2 px-3 py-2">
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px] leading-5">
-        {rows.map((row) => (
-          <div key={`${row.label}-${row.value}`} className="contents">
-            <dt className="text-ink">{row.label}</dt>
-            <dd className="text-ink-2">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
-      {coarse && rail && <p className="mt-2 text-[13px] leading-5 text-ink-2">{t("career.scrubHint")}</p>}
-    </section>
-  );
-}
-
 /** Who and where: the photo, name, headline and current floor (no buttons; the desktop shows the same in its profile card). */
 function MenuProfile({ data }: { data: ExperienceData }) {
   const t = useTranslations("hud");
@@ -114,7 +69,6 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
   const [open, setOpen] = useHudToggle("settings");
   const button = useRef<HTMLButtonElement>(null);
   const titleId = useId();
-  const controlsId = useId();
   const [controls, setControls] = useState(false);
 
   // Focus moves back before the sheet unmounts, so it never drops to the body.
@@ -141,7 +95,18 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
     { key: "rotate-left", label: t("view.rotateLeft"), icon: <RotateLeftIcon />, run: () => rotateView(-1), close: false },
     { key: "rotate-right", label: t("view.rotateRight"), icon: <RotateRightIcon />, run: () => rotateView(1), close: false },
     { key: "map", label: t("map.open"), icon: <MapIcon />, run: () => intents.emit({ type: "toggle", what: "map" }), close: true },
-    { key: "controls", label: t("controls"), icon: <ControlsIcon />, run: () => setControls((v) => !v), close: false, expanded: controls },
+    {
+      key: "controls",
+      label: t("controls"),
+      icon: (
+        <span aria-hidden="true" className="w-[18px] shrink-0 text-center font-mono text-cyan">
+          ?
+        </span>
+      ),
+      run: () => setControls((v) => !v),
+      close: false,
+      expanded: controls,
+    },
   ];
 
   return (
@@ -178,7 +143,6 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                   type="button"
                   data-testid={a.expanded === undefined ? undefined : `menu-${a.key}`}
                   aria-expanded={a.expanded}
-                  aria-controls={a.expanded ? controlsId : undefined}
                   onClick={() => {
                     if (a.close) close();
                     a.run();
@@ -190,8 +154,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 </button>
               ))}
             </div>
-            {controls && <MenuControls id={controlsId} />}
-            <LazySettingsPanel headingLevel={3} onClose={close} />
+            <LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />
           </div>
         </Modal>
       )}

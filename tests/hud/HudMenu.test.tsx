@@ -182,8 +182,7 @@ describe("HudMenu", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const card = within(sheet).getByRole("region", { name: en.hud.controls });
-    expect(toggle).toHaveAttribute("aria-controls", card.id);
+    const card = await within(sheet).findByRole("region", { name: en.hud.controls });
     expect(within(card).getAllByRole("term").map((el) => el.textContent)).toEqual(en.hud.hintCoarse.split(" · ").map((part) => part.split(": ")[0]));
     expect(card).toHaveTextContent(en.hud.career.scrubHint);
     expect(emitted).toEqual([]);

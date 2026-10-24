@@ -132,7 +132,7 @@ After 15 s without input (`IDLE.delay`) the rover plays a short scripted sequenc
 
 ## Boost
 
-- Input: hold Shift, or on coarse pointers tap the Boost button next to the joystick (`BoostButton`, `data-testid="boost"`, `aria-pressed`, glows while on) or double-tap the joystick; both share one state (`Joystick boost` holds `useBoostToggle` from `src/hud/boost.ts`; `setBoost` in `input/joystick.ts`). Owner decision 2026-10-24: the visible button replaces the double tap as the main touch control, which stays as a shortcut.
+- Input: hold Shift, or on coarse pointers tap the Boost button next to the joystick (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, `aria-pressed`, glows while on) or double-tap the joystick; both share one state (`Joystick boost` holds `useBoostToggle` from `src/hud/boost.ts`; `setBoost` in `input/joystick.ts`). Owner decision 2026-10-24: the visible button replaces the double tap as the main touch control, which stays as a shortcut.
   - A double tap is a short first tap (released within 250 ms, moved under 12 px), then a pointer down within 300 ms of its release (`DOUBLE_TAP_MS`); each double tap toggles, like one tap on the button. The joystick's double tap stays a shortcut.
   - A floor change, a ride start and unmount reset it; never persisted.
 - Effect: 2x top speed and acceleration (`BOOST`, `boostOn`, `boostTuning`, `stepBoostLevel` in `rover/boost.ts`, pure).

@@ -1,10 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, type PointerEvent } from "react";
 import { applyDeadZone } from "@/experience/input/intents";
 import { setJoystick } from "@/experience/input/joystick";
 import { useBoostToggle } from "./boost";
-import { BoostButton } from "./BoostButton";
 
 const RADIUS = 60;
 /** After a short tap's release, a pointer down on the joystick within this window toggles boost. */
@@ -14,6 +14,31 @@ export const TAP_MAX_MS = 250;
 export const TAP_SLOP_PX = 12;
 
 type Boost = ReturnType<typeof useBoostToggle>;
+
+/** Boost on: the joystick and the Boost button glow the same. */
+const GLOW = "border-cyan/60 shadow-[0_0_0_3px_var(--color-cyan),0_0_24px_-6px_var(--color-cyan)]";
+
+/**
+ * Visible touch boost toggle next to the joystick (owner decision 2026-10-24): one tap on, the next off, the
+ * same state as the joystick's double tap.
+ */
+export function BoostButton({ boost }: { boost: Boost }) {
+  const t = useTranslations("hud");
+  return (
+    <button
+      type="button"
+      data-testid="boost"
+      aria-pressed={boost.on}
+      aria-label={t("boost")}
+      onClick={boost.toggle}
+      className={`glass glass-solid grid size-12 place-items-center rounded-full text-ink-2 transition hover:text-ink focus-visible:text-ink pointer-events-auto ${boost.on ? GLOW : ""}`}
+    >
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13 2 4 14h7l-1 8 10-12h-7z" />
+      </svg>
+    </button>
+  );
+}
 
 /**
  * Virtual joystick for coarse pointers: left of the bottom band, 120 px, 12% dead zone (appendix 03 section 3).
@@ -111,7 +136,7 @@ function Stick({ boost }: { boost?: Boost }) {
       onPointerUp={(e) => release(e, true)}
       onPointerCancel={(e) => release(e, false)}
       className={`glass glass-solid pointer-events-auto relative size-[120px] shrink-0 touch-none rounded-full transition-shadow motion-reduce:transition-none ${
-        boost?.on ? "border-cyan/60 shadow-[0_0_0_3px_var(--color-cyan),0_0_24px_-6px_var(--color-cyan)]" : ""
+        boost?.on ? GLOW : ""
       }`}
     >
       <span

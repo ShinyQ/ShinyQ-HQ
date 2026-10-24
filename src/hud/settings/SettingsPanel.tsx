@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useReducer, useRef, useSyncExternalStore } from "react";
 import { AccentDot } from "@/components/AccentDot";
+import { MenuControls } from "../menu/MenuControls";
 import { SETTINGS } from "./defs";
 import { settingsByGroup, type SettingControl, type SettingDef } from "./registry";
 
@@ -165,7 +166,18 @@ function Row({ def, onClose }: { def: SettingDef; onClose?: () => void }) {
 }
 
 /** Renders every registered setting generically, grouped and ordered by the registry. Mounted by the menu sheet and the desktop settings sheet. */
-export function SettingsPanel({ defs = SETTINGS, headingLevel = 3, onClose }: { defs?: readonly SettingDef[]; headingLevel?: 2 | 3; onClose?: () => void }) {
+/** `controls`: the Corners menu's Controls action is expanded, so the controls card leads the panel. */
+export function SettingsPanel({
+  defs = SETTINGS,
+  headingLevel = 3,
+  onClose,
+  controls,
+}: {
+  defs?: readonly SettingDef[];
+  headingLevel?: 2 | 3;
+  onClose?: () => void;
+  controls?: boolean;
+}) {
   const t = useTranslations("hud.settings");
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   // Rows with `available` can appear or vanish while the sheet is open (the 3D HUD mounts late).
@@ -177,6 +189,7 @@ export function SettingsPanel({ defs = SETTINGS, headingLevel = 3, onClose }: { 
   const Heading = `h${headingLevel}` as "h2" | "h3";
   return (
     <div data-testid="settings-panel" className="flex flex-col gap-6 px-3">
+      {controls && <MenuControls />}
       {settingsByGroup(defs).map(({ group, items }) => {
         const headingId = `${prefix}-${group}`;
         return (
