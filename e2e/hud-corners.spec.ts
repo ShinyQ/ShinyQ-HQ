@@ -9,7 +9,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * Corners HUD (Round 8 I): phones and tablets show the floor chip top left, Ask AI and the menu top
- * right with the minimap under them, the joystick (double tap: boost) bottom left and one reset button
+ * right with the minimap under them, the joystick and the Boost button (a joystick double tap boosts too) bottom left and one reset button
  * bottom right. Everything else (Classic site, search, the Rover menu, rotation, the map and every setting)
  * is two taps away in the menu sheet, and floors in the floor sheet. Desktops keep the top bar and the
  * elevator rail, with the minimap above the settings gear and the view controls.
@@ -25,9 +25,9 @@ const TABLET = { name: "tablet", width: 834, height: 1194, touch: true } as cons
 const DESKTOP = { name: "desktop", width: 1440, height: 900, touch: false } as const;
 
 const VIEWPORTS = [
-  { ...PHONE, max: 5 },
-  { ...TABLET, max: 9 },
-  { name: "tablet-landscape", width: 1194, height: 834, touch: true, max: 9 },
+  { ...PHONE, max: 6 },
+  { ...TABLET, max: 10 },
+  { name: "tablet-landscape", width: 1194, height: 834, touch: true, max: 10 },
 ] as const;
 
 /** Ask the HQ enabled (the pill shows), the teaser already seen. */
@@ -86,9 +86,9 @@ test.describe("Corners control counts", () => {
     test(`${vp.name} ${vp.width}x${vp.height}: at most ${vp.max} controls, the Corners set and no desktop rail`, async ({ browser }) => {
       const { context, page } = await openHQ(browser, vp);
       await expect(page.locator("html")).toHaveAttribute("data-hq-hud", vp.name === "phone" ? "phone" : "tablet");
-      for (const id of ["floor-chip", "hud-menu", "minimap", "joystick", "view-reset"]) await expect(hudControl(page, id), id).toBeVisible();
+      for (const id of ["floor-chip", "hud-menu", "minimap", "joystick", "boost", "view-reset"]) await expect(hudControl(page, id), id).toBeVisible();
       await expect(hudControl(page, "ask-pill")).toBeVisible({ timeout: 15_000 });
-      for (const id of ["elevator-panel", "boost", "page-view"]) await expect(page.getByTestId("hud").getByTestId(id), id).toBeHidden();
+      for (const id of ["elevator-panel", "page-view"]) await expect(page.getByTestId("hud").getByTestId(id), id).toBeHidden();
 
       const controls = await visibleControls(page);
       const file = test.info().outputPath(`controls-${vp.name}.json`);
@@ -109,9 +109,20 @@ test.describe("Corners menu and floor sheet on a phone", () => {
     await expect(sheet).toBeVisible();
     await expect(sheet.getByTestId("menu-profile")).toBeVisible();
     const actions = sheet.getByTestId("menu-actions");
-    for (const name of [en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]) {
+    for (const name of [en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open, en.hud.controls]) {
       await expect(actions.getByRole("button", { name, exact: true }), name).toBeVisible();
     }
+    // The controls help lives here on phones (owner decision 2026-10-24): one row per touch control.
+    const controlsButton = sheet.getByTestId("menu-controls");
+    await expect(controlsButton).toHaveAttribute("aria-expanded", "false");
+    await controlsButton.tap();
+    await expect(controlsButton).toHaveAttribute("aria-expanded", "true");
+    const card = sheet.getByTestId("menu-controls-card");
+    await expect(card).toBeVisible();
+    await expect(card.locator("dt")).toHaveCount(en.hud.hintCoarse.split(" · ").length);
+    await expect(card).toContainText(en.hud.boost);
+    await controlsButton.tap();
+    await expect(card).toHaveCount(0);
     for (const id of ["language", "open-links", "replay-tutorial", "hints", "motion", "quality", "day-night", "minimap", "sound", "effects", "music", "ambience", "music-volume"]) {
       const row = sheet.getByTestId(`setting-${id}`);
       await row.scrollIntoViewIfNeeded();

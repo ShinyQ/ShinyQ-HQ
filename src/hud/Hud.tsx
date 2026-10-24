@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { createElement, Suspense, useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from "react";
+import { createElement, Suspense, useEffect, useLayoutEffect, useRef, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { READY_FLOORS } from "@/experience/floorOrder";
 import { floorChunks } from "@/experience/floors/floorChunks";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
@@ -58,17 +58,13 @@ function HologramView({ locale }: { locale: HologramOverlayProps["locale"] }) {
   );
 }
 
-/** Control hints, in the bottom band's center column under point-and-go's status. */
-function HintBar({ coarse, mobile }: { coarse: boolean; mobile: boolean }) {
+/**
+ * Control hints, in the bottom band's center column under point-and-go's status. Phones never show it
+ * (owner decision 2026-10-24: it crowded the screen); the menu's Controls card has the same list.
+ */
+function HintBar({ coarse }: { coarse: boolean }) {
   const t = useTranslations("hud");
   const rail = useHQStore((s) => s.floor === "L2");
-  const [hidden, setHidden] = useState(false);
-  useEffect(() => {
-    if (!mobile) return;
-    const id = window.setTimeout(() => setHidden(true), 6000);
-    return () => window.clearTimeout(id);
-  }, [mobile]);
-  if (hidden) return null;
   return (
     <p className="glass glass-solid pointer-events-none order-last max-w-full px-4 py-2 text-center text-[13px] leading-5 text-ink-2" data-testid="hint">
       {coarse ? (rail ? t("career.scrubHint") : t("hintCoarse")) : t("hintFine")}
@@ -117,7 +113,8 @@ function CutFade() {
 
 /**
  * Bottom HUD band: one flex row, so nothing in it can overlap (owner request: the hint sits at the
- * bottom on tablets and phones). Left: the joystick (coarse pointers; a double tap toggles boost).
+ * bottom on tablets). Left: the joystick and the Boost button (coarse pointers; a double tap on the
+ * joystick toggles boost too).
  * Center: point-and-go's status above the controls hint. Right: on desktops the settings gear above
  * the view controls, in Corners one reset button. It hugs the bottom edge above the iOS home
  * indicator (safe area).
@@ -265,12 +262,12 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
           <FloorNotice data={data} layout={layout} />
           {phase !== "intro" && <YearChip career={data.career} layout={layout} hidden={phone && phase === "room"} />}
           <BottomBand
-            // Coarse pointers always get the Corners HUD: a double tap on the joystick toggles boost.
+            // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost.
             left={drive ? <Joystick boost /> : null}
             right={desktop ? <DesktopCorner data={data} layouts={layouts} explorable={explorable} /> : explorable ? <ResetView /> : null}
           >
             <InteractStatus coarse={coarse} />
-            {explorable && !speaking && <HintBar coarse={coarse} mobile={phone} />}
+            {explorable && !speaking && !phone && <HintBar coarse={coarse} />}
           </BottomBand>
           <DrawerHost locale={data.locale} />
         </>

@@ -86,12 +86,13 @@ describe("Hud composition", () => {
     for (const name of ["elevator", "view", "rover-menu"]) expect(onboardTargets(name)).toHaveLength(1);
   });
 
-  it("phones get the Corners HUD: floor chip, compact Ask AI and the menu, the boost joystick and one reset button", () => {
+  it("phones get the Corners HUD: floor chip, compact Ask AI and the menu, the boost joystick, the Boost button, one reset button and no controls bar", () => {
     device("mobile", true);
     mount();
     expect(screen.queryByRole("region", { name: en.hud.profile })).toBeNull();
     expect(screen.queryByTestId("elevator-panel")).toBeNull();
-    expect(screen.queryByTestId("boost")).toBeNull();
+    expect(screen.getByTestId("boost")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByTestId("hint")).toBeNull();
     expect(screen.queryByTestId("settings-open")).toBeNull();
     expect(screen.queryByTestId("page-view")).toBeNull();
     expect(screen.getByTestId("floor-chip")).not.toHaveTextContent("Lobby");

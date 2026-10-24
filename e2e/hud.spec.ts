@@ -14,7 +14,6 @@ test.beforeEach(({ context }) => fastAnimations(context));
  */
 test.describe.configure({ timeout: 150_000 });
 
-type RoomWindow = { __hq: { store: { getState: () => { openRoom: (room: string) => void; closeRoom: () => void } } } };
 type Box = { x: number; y: number; width: number; height: number };
 const box = async (locator: Locator): Promise<Box> => (await locator.boundingBox())!;
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -166,7 +165,7 @@ test.describe("profile photo badge", () => {
 
 test.describe("bottom band", () => {
   for (const vp of CORNERS) {
-    test(`${vp.name}: the hint sits at the bottom, clear of the joystick, the reset button and Ask AI`, async ({ browser }) => {
+    test(`${vp.name}: the Boost button sits by the joystick; the hint ${vp.name === "phone" ? "is not shown" : "sits at the bottom, clear of the controls"}`, async ({ browser }) => {
       const { context, page } = await newPage(browser, vp);
       await asReturningVisitor(page);
       await skipFloorLines(page);
@@ -177,18 +176,21 @@ test.describe("bottom band", () => {
       const ask = page.locator("[data-testid='ask-pill']:visible");
       await expect(ask).toBeVisible({ timeout: 15_000 });
       await expect(page.getByTestId("view-reset")).toBeVisible();
-      await expect(page.getByTestId("boost")).toHaveCount(0);
+      await expect(page.getByTestId("boost")).toBeVisible();
 
       const controls = {
         joystick: await box(page.getByTestId("joystick")),
+        boost: await box(page.getByTestId("boost")),
         reset: await box(page.getByTestId("view-reset")),
         ask: await box(ask),
       };
-      // The hint auto-hides on phones 6 s after it mounts; a room opened and closed mounts it again.
-      await page.evaluate(() => (window as unknown as RoomWindow).__hq.store.getState().openRoom("L3:reactor"));
-      await waitForPhase(page, "room");
-      await page.evaluate(() => (window as unknown as RoomWindow).__hq.store.getState().closeRoom());
-      await waitForPhase(page, "explore");
+      for (const [a, b] of [["joystick", "boost"], ["joystick", "reset"], ["boost", "reset"]] as const) expect(overlaps(controls[a], controls[b]), `${a} x ${b}`).toBe(false);
+      // Owner decision 2026-10-24: phones show no controls bar (the menu's Controls card has the list).
+      if (vp.name === "phone") {
+        await expect(page.getByTestId("hint")).toHaveCount(0);
+        await context.close();
+        return;
+      }
       const hintLocator = page.getByTestId("hint");
       await expect(hintLocator).toBeVisible();
       const hint = await box(hintLocator);
@@ -198,7 +200,6 @@ test.describe("bottom band", () => {
       expect(hint.x).toBeGreaterThanOrEqual(0);
       expect(hint.x + hint.width).toBeLessThanOrEqual(vp.width);
       for (const [name, control] of Object.entries(controls)) expect(overlaps(hint, control), `overlaps ${name}`).toBe(false);
-      expect(overlaps(controls.joystick, controls.reset)).toBe(false);
       await context.close();
     });
   }
@@ -208,8 +209,8 @@ test.describe("bottom band", () => {
  * No two HUD boxes overlap at common desktop, tablet and landscape phone sizes (owner fix 2026-10-21):
  * the desktop minimap once sat on the elevator rail's locked B1 row ("Visit all 5 floors") on short
  * screens. Desktops check the profile card, the top bar, the elevator rail, the minimap, the settings
- * gear and the view controls; Corners checks the floor chip, the top bar, the minimap, the joystick and
- * the reset button. Indonesian has the widest rail labels.
+ * gear and the view controls; Corners checks the floor chip, the top bar, the minimap, the joystick, the
+ * Boost button and the reset button. Indonesian has the widest rail labels.
  */
 const NO_OVERLAP_SIZES = [
   { width: 1024, height: 640, touch: false },
@@ -222,7 +223,7 @@ const NO_OVERLAP_SIZES = [
   { width: 844, height: 390, touch: true },
 ] as const;
 const DESKTOP_BOXES = ["hud-topbar", "elevator-panel", "minimap", "settings-open", "view-controls"] as const;
-const CORNERS_BOXES = ["floor-chip", "hud-topbar", "minimap", "joystick", "view-controls"] as const;
+const CORNERS_BOXES = ["floor-chip", "hud-topbar", "minimap", "joystick", "boost", "view-controls"] as const;
 
 /** Every pair that overlaps, plus any box that leaves the viewport. */
 function clashes(all: Record<string, Box>, vp: { width: number; height: number }) {

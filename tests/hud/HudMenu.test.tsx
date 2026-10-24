@@ -125,7 +125,7 @@ describe("HudMenu", () => {
       return copy.textContent?.replace(/\s+/g, " ").trim();
     };
     const names = within(actions).getAllByRole("button").map(visibleText);
-    expect(names).toEqual([en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open]);
+    expect(names).toEqual([en.hud.pageView, en.hud.launcher.search, en.hud.launcher.roverMenu, en.hud.view.rotateLeft, en.hud.view.rotateRight, en.hud.map.open, en.hud.controls]);
     for (const name of ["Classic site", "Search", "Rover menu", /^Rotate left/, /^Rotate right/, "Map"]) {
       const action = within(actions).getByRole("button", { name });
       expect(action.className).toMatch(/min-h-11/);
@@ -172,6 +172,24 @@ describe("HudMenu", () => {
     await userEvent.click(within(sheet).getByRole("button", { name: "Map" }));
     expect(emitted).toEqual([{ type: "toggle", what: "map" }]);
     expect(screen.queryByTestId("menu-sheet")).toBeNull();
+  });
+
+  it("Controls expands the controls help in place (touch rows, the L2 year scrub) and keeps the menu open", async () => {
+    const device = getHQStore().getState().device;
+    getHQStore().setState({ device: { ...device, coarse: true }, floor: "L2" });
+    const { sheet } = await openMenu();
+    const toggle = within(sheet).getByRole("button", { name: en.hud.controls });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const card = within(sheet).getByRole("region", { name: en.hud.controls });
+    expect(toggle).toHaveAttribute("aria-controls", card.id);
+    expect(within(card).getAllByRole("term").map((el) => el.textContent)).toEqual(en.hud.hintCoarse.split(" · ").map((part) => part.split(": ")[0]));
+    expect(card).toHaveTextContent(en.hud.career.scrubHint);
+    expect(emitted).toEqual([]);
+    await userEvent.click(toggle);
+    expect(within(sheet).queryByRole("region", { name: en.hud.controls })).toBeNull();
+    getHQStore().setState({ device });
   });
 
   it("Esc closes and returns focus to the menu button; so does the close button", async () => {

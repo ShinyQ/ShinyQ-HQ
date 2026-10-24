@@ -76,19 +76,24 @@ describe("removed tours", () => {
 });
 
 describe("touch boost copy", () => {
-  it("no dialog or HUD line mentions a boost button (touch boost is a joystick double tap)", () => {
-    for (const { path, value } of collectStrings({ dialog: en.dialog, hud: en.hud })) expect(value, `en${path}`).not.toMatch(/boost button/i);
-    for (const { path, value } of collectStrings({ dialog: id.dialog, hud: id.hud })) expect(value, `id${path}`).not.toMatch(/tombol (boost|turbo)/i);
-  });
-
-  it("teaches the joystick double tap in the touch onboarding line", () => {
+  it("teaches the Boost button and the joystick double tap in the touch onboarding line and the controls hint", () => {
+    expect(en.dialog.onboarding.moveCoarse).toMatch(/Boost button/);
     expect(en.dialog.onboarding.moveCoarse).toMatch(/double-tap the joystick/i);
+    expect(id.dialog.onboarding.moveCoarse).toMatch(/tombol Turbo/);
     expect(id.dialog.onboarding.moveCoarse).toMatch(/ketuk dua kali joystick/i);
+    expect(en.hud.hintCoarse).toMatch(/Boost: the bolt button or double-tap the joystick/);
+    expect(id.hud.hintCoarse).toMatch(/Turbo: tombol petir atau ketuk dua kali joystick/);
   });
 
-  it("explains that the second double tap turns turbo off, not that it stops driving", () => {
-    expect(en.dialog.onboarding.moveCoarse).toMatch(/double-tap again to turn boost off/i);
-    expect(id.dialog.onboarding.moveCoarse).toMatch(/mengaktifkan atau mematikan turbo/i);
+  it("explains that the next tap turns turbo off, not that it stops driving", () => {
+    expect(en.dialog.onboarding.moveCoarse).toMatch(/tap again to turn boost off/i);
+    expect(id.dialog.onboarding.moveCoarse).toMatch(/turbo nyala atau mati/i);
+  });
+
+  it("never teaches a swipe to change floors (owner decision 2026-10-24)", () => {
+    for (const messages of [en, id]) {
+      for (const { path, value } of collectStrings({ dialog: messages.dialog, hud: messages.hud })) expect(value, path).not.toMatch(/swipe up or down|geser ke atas atau bawah/i);
+    }
   });
 });
 
