@@ -166,10 +166,10 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - phones and tablets (any coarse pointer counts as a tablet) get the "Corners" HUD:
     - top left the floor chip (`FloorChip`, opens the floor sheet; tablets also show the floor name);
     - top right `hud-topbar`: Ask AI (icon only on phones), search on tablets, then the menu button (`HudMenu`, `data-testid="hud-menu"`, it carries the `rover-menu` onboarding spotlight);
-    - the menu opens a side sheet (`menu-sheet`, a bottom sheet on phones): the profile, the actions (Classic site `page-view` as the primary, Search on phones, Rover menu, Rotate left and right, Map) and the settings panel;
+    - the menu opens a side sheet (`menu-sheet`, a bottom sheet on phones): the profile, the actions (Classic site `page-view` as the primary, Search on phones, Rover menu, Rotate left and right, Map, Controls) and the settings panel;
     - under the top right cluster the minimap (`hud-minimap`: phones `top-[64px] right-3`, tablets `top-[76px] right-4`), hidden on phones while a room is open;
     - `FloorNotice` and the L2 `YearChip` place by the HUD layout (never the viewport): under the floor chip on phones, clear of the minimap.
-    - no profile card, elevator rail or Boost button; the key `,` opens the menu sheet.
+    - no profile card or elevator rail; the key `,` opens the menu sheet.
 - Desktop settings: a round gear (`settings-open`) above the view controls in the bottom right opens the settings sheet (`settings-sheet`); the key `,` toggles it. The minimap sits above the gear in the same column (`hud-corner`).
 - Desktop elevator rail (`ElevatorPanel`): centred on the right edge between two equal flex spacers (`elevator-column`) whose minimum heights, `--hq-rail-top` and `--hq-rail-bottom`, `useRailRoom` in `Hud.tsx` measures from the top bar and the `hud-corner` stack (8 px gap, ResizeObserver). Where there is room it stays centred on the screen; on short screens it rises clear of the minimap instead of covering it. Never place the rail or the corner stack with fixed offsets.
 - Minimap (`src/hud/minimap/`): `model.ts` is pure (no React, no three; `tests/unit/minimap-model.test.ts` guards the import graph). `Minimap` is a round button (`minimap`, phone 72 px, tablet 112 px, desktop 96 px) with an aria-hidden SVG centred on the rover (`windowBox(rover, MINIMAP_RADIUS)`), north-up (SVG y is world z); it re-renders from the store's 10 Hz `rover` mirror, never its own loop, and reads `interactRuntime.items` through `useSyncExternalStore`. Hidden when `minimapPref` is off or in boot, intro and hologram.
@@ -183,9 +183,9 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
   - From 1024 to 1099 px the search button drops its "Ctrl K" chip on Windows and Linux (never "⌘K"), so the Indonesian row clears the profile card.
     - `compactShortcut` on `HudLaunchers`, checked by `e2e/hud.spec.ts` for both chips and both locales.
 - Bottom band: the screen bottom is one flex band (`BottomBand` in `Hud.tsx`):
-  - left: the joystick on coarse pointers (a double tap toggles boost)
-  - center: point-and-go's `InteractStatus` above the controls hint
+  - left: the joystick and the Boost button on coarse pointers (beside it on tablets, above it on phones; a joystick double tap toggles boost too)
+  - center: point-and-go's `InteractStatus` above the controls hint (no hint on phones)
   - right: desktops the minimap and the settings gear above the three view controls; Corners one reset button (`ResetView`)
   - Nothing in the band can overlap; it hugs the bottom edge above the safe area.
-  - `e2e/hud.spec.ts` checks the boxes at 834 x 1112 and 390 x 844, and that no HUD box overlaps another (the rail, the minimap, the gear, the view controls, the top bar, the profile card or floor chip, the joystick) at 1024 x 640, 1280 x 720, 1366 x 768, 1440 x 900, 1920 x 1080, 1180 x 820, 820 x 1180 and 844 x 390 in both locales.
+  - `e2e/hud.spec.ts` checks the boxes at 834 x 1112 and 390 x 844, and that no HUD box overlaps another (the rail, the minimap, the gear, the view controls, the top bar, the profile card or floor chip, the joystick, the Boost button) at 1024 x 640, 1280 x 720, 1366 x 768, 1440 x 900, 1920 x 1080, 1180 x 820, 820 x 1180 and 844 x 390 in both locales.
 - The profile card shows no rooms-visited counter; the store still records `visited`.

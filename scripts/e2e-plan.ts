@@ -58,6 +58,7 @@ export const ALL_SPECS = [
   "ride",
   "rover-idle",
   "roof",
+  "sdf-fallback",
   "seo",
   "shapes",
   "spectacle",
@@ -258,7 +259,7 @@ export const RULES: Rule[] = [
     specs: ["shapes", "career", "labs", "library-roof"],
   },
   { test: /^src\/experience\/fx\/(Readable\.tsx|readableFlip\.ts|probes\.ts|HoloIcon\.tsx)$|^src\/experience\/tower\/FloorLevel\.tsx$/, specs: ["camera", "career", "experience", "ride", "gpu", "spectacle"] },
-  { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride"] },
+  { test: /^public\/fonts\/|^src\/assets\/fonts\/troika\/|^src\/experience\/(troika-fonts\.json|text-config\.ts)$|^scripts\/troika-/, specs: ["experience", "highlights", "boot-first", "ride", "sdf-fallback"] },
   // Elevator ride smoothness (R5 P6) and the GPU work around it (R5 P2): the ride clock, floor preparation,
   // content visibility, precompile and troika sync tracking.
   { test: /^src\/experience\/(tower\/|scene\/(Director\.tsx|precompile\.ts|programPins\.ts|warmState\.ts|ProgramWarmup\.tsx)$)/, specs: ["ride", "experience", "gpu", "fast-return", "missions", "arrivals", "memory"] },
@@ -293,7 +294,7 @@ export const RULES: Rule[] = [
 
   // Corners HUD (Round 8 I): the menu and settings sheets, the minimap and overview, the floor chip and sheet, the
   // layout switch, the joystick's double-tap boost and the persisted preferences behind the settings.
-  { test: /^src\/hud\/(Joystick\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
+  { test: /^src\/hud\/(Joystick\.tsx|BoostButton\.tsx|boost\.ts)$/, specs: ["hud-corners", "hud", "onboarding", "boost"] },
   { test: /^src\/hud\/(menu|minimap|settings)\/|^src\/hud\/(FloorChip|ChunkFailed)\.tsx$|^src\/hud\/layout\.ts$|^src\/lib\/(local-pref|quality-pref)\.ts$/, specs: ["hud-corners", "hud", "onboarding"] },
   // FloorButtons also renders the desktop elevator rail: e2e/experience.spec.ts checks its labels and keys, and the
   // e2e/arrivals.spec.ts tour rides it to every floor.
@@ -310,8 +311,8 @@ export const RULES: Rule[] = [
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof", "boot-first", "experience"] },
-  { test: /^scripts\/(csp-hashes|csp-policy|defer-scripts)\.ts$/, specs: ["csp", "deploy", "static-routes", "boot-first"] },
-  { test: /^public\/_headers$|^scripts\/root-redirect\.ts$/, specs: ["csp", "deploy", "static-routes"] },
+  { test: /^scripts\/(csp-hashes|csp-policy|defer-scripts)\.ts$/, specs: ["csp", "deploy", "static-routes", "boot-first", "sdf-fallback"] },
+  { test: /^public\/_headers$|^scripts\/root-redirect\.ts$/, specs: ["csp", "deploy", "static-routes", "sdf-fallback"] },
   { test: /^public\/_redirects$|^scripts\/serve-static\.ts$/, specs: ["deploy", "static-routes"] },
   { test: /^public\/brand\/|^src\/lib\/brand-photo\.ts$|^src\/components\/page\/Portrait\.tsx$/, specs: ["pageview", "seo", "static-routes", "hud", "highlights"] },
   // Full-screen panels that pause the canvas (data-hq-cover).

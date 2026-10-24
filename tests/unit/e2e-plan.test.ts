@@ -46,7 +46,7 @@ describe("specsForChanges", () => {
   it("maps the elevator ride code to the ride spec", () => {
     expect(specsForChanges(["src/experience/tower/elevator.ts"]).specs).toEqual(["arrivals", "experience", "fast-return", "gpu", "memory", "missions", "ride"]);
     expect(specsForChanges(["src/experience/scene/Director.tsx"]).specs).toEqual(["arrivals", "experience", "fast-return", "gpu", "memory", "missions", "ride"]);
-    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["boot-first", "experience", "highlights", "ride"]);
+    expect(specsForChanges(["src/experience/text-config.ts"]).specs).toEqual(["boot-first", "experience", "highlights", "ride", "sdf-fallback"]);
     expect(specsForChanges(["src/experience/camera/CameraDirector.tsx"]).specs).toEqual(["arrivals", "camera", "career", "experience", "ride"]);
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
@@ -260,8 +260,8 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
     // The per-page script policy: its build step, the headers it derives from and every inline script source.
-    expect(specsForChanges(["scripts/csp-hashes.ts"]).specs).toEqual(["boot-first", "csp", "deploy", "static-routes"]);
-    expect(specsForChanges(["public/_headers"]).specs).toEqual(["csp", "deploy", "static-routes"]);
+    expect(specsForChanges(["scripts/csp-hashes.ts"]).specs).toEqual(["boot-first", "csp", "deploy", "sdf-fallback", "static-routes"]);
+    expect(specsForChanges(["public/_headers"]).specs).toEqual(["csp", "deploy", "sdf-fallback", "static-routes"]);
     expect(specsForChanges(["src/lib/boot-first.ts"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes", "view-links"]);
     expect(specsForChanges(["src/app/(root)/page.tsx"]).specs).toEqual(["boot-first", "csp", "experience", "onboarding", "static-routes", "view-links"]);
     // Shareable Classic and 3D links.

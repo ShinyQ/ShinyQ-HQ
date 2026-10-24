@@ -230,7 +230,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/floors/labs/**` | `labs`, `labs-data`, `labs-paths`, `gallery` and more |
 | `src/experience/interact/**` | `interact`, `experience`, `pads` and `career` |
 | `src/experience/floors/{floorChunks,floorPrefetch,lazyFloors,FloorChunkPrefetch}` and `floors/chunks/**` | `floor-chunks`, `ride`, `experience`, `labs` and `library-roof` |
-| `src/experience/tower/**`, `scene/Director.tsx`, `scene/precompile.ts` and `text-config.ts` | `ride` and `experience` |
+| `src/experience/tower/**`, `scene/Director.tsx`, `scene/precompile.ts` and `text-config.ts` | `ride` and `experience` (`text-config.ts` also `sdf-fallback`) |
 | `src/app/**` and `src/components/**` | `pageview`, `static-routes` and `gallery` |
 | `src/experience/data-client.ts` (with `ExperienceGate.tsx`) and `src/app/data/**` (the static client data, the 3D page data included) | `boot-first`, `experience` and more (`src/app/data/**` also `labs` and `library-roof`) |
 | `src/hud/drawer/**` | the drawer specs, `drawer-solid` included |
