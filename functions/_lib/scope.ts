@@ -1,4 +1,5 @@
 import { findTerms } from "./checks";
+import { tokenize } from "./text";
 
 /**
  * Scope heuristics for questions about Kurniadi's views (spec section 13). Questions about his
@@ -66,59 +67,173 @@ export function isSiteQuestion(question: string): boolean {
 
 export type PrivateTopic = "family" | "health" | "religion" | "politics" | "pay" | "life";
 
+/**
+ * HARD private topics (owner decision 2026-10-24): always declined, in any clause of a question. Family and
+ * relationships, his own health, religion, partisan politics (his vote, parties, candidates, named politicians, an
+ * opinion of an officeholder as a person, contested social policy), pay numbers and personal details. Topic words
+ * alone ("politics", "government", "regulation", "health" as a sector, "how old" of a project) are SOFT: they route
+ * to an answerable route (`civicQuestion`, `routedTopic`) instead of a decline.
+ */
 const PRIVATE: [PrivateTopic, RegExp][] = [
   ["family", /\b(?:married|marriage|wife|husband|girlfriend|boyfriend|spouse|dating|divorced?|pacar(?:nya)?|istri(?:nya)?|suami(?:nya)?|menikah|nikah|cerai|keluarga(?:nya)?|anak(?:-anak)?nya|orang ?tua(?:nya)?)\b/i],
   ["family", /\b(?:his|kurniadi'?s) (?:kids|children|son|daughter|parents|mother|father|mom|dad|family|siblings?|brother|sister)\b/i],
-  ["health", /\b(?:illness|sick|disease|diagnos\w*|disabilit\w*|mental health|depress\w*|anxiety|penyakit|kesehatan mental|disabilitas)\b|(?<!rumah )\bsakit\b/i],
-  // "consumer health" is a client sector label (a project), never his own health.
-  ["health", /\b(?:his|kurniadi'?s|dia|kurniadi)\b.{0,25}\b(?<!consumer )(?:health|kesehatan)\b/i],
-  ["religion", /\b(?:religion|religious|pray(?:s|ing)?|church|mosque|muslim|christian|catholic|hindu|buddhist|atheist|islam|agama(?:nya)?|ibadah|sholat|shalat|salat|gereja|masjid|kristen|katolik|buddha|ateis|tuhan)\b/i],
-  // Partisan politics: parties, candidates, elections, specific politicians and how he votes.
-  ["politics", /\b(?:politics|political|politicians?|elections?|vot(?:e|ed|es|ing) for|who (?:did|does|will|would) (?:he|kurniadi) vote|ballot|president|vice president|prime minister|minister|parliament|senator|governor|mayor|left-wing|right-wing|politik|pemilu|pilpres|pilkada|presiden|wakil presiden|menteri|partai|capres|cawapres|caleg|coblos|nyoblos|golput|gubernur|bupati|wali ?kota|dpr|mpr|kabinet|oposisi|koalisi|jokowi|prabowo|gibran|anies|ganjar|megawati|sby)\b/i],
-  // Contested social policy is not tech policy: declined like politics.
+  ["family", /\b(?:have|has|got) (?:any |a )?(?:kids|children|son|daughter|siblings?|brothers?|sisters?)\b|\bpunya anak\b/i],
+  // His own health only: a personal subject, never a sector ("consumer health", "healthcare", "health data", "the health of the ecosystem").
+  ["health", /\b(?:his|kurniadi'?s)\s+(?:own\s+)?(?:physical\s+|mental\s+)?(?:health|illness(?:es)?|disease|diagnosis|disability|medical (?:history|condition)|condition)\b/i],
+  ["health", /\b(?:is|was)\s+(?:he|kurniadi)\s+(?:\w+\s+)?(?:healthy|sick|ill|unwell|depressed|anxious|disabled)\b|\b(?:does|did|has|had)\s+(?:he|kurniadi)\s+(?:ever\s+)?(?:have|had|got|been|suffer(?:ed)?\s+from)\s+(?:an?\s+|any\s+)?(?:\w+\s+)?(?:illness(?:es)?|diseases?|disability|depression|anxiety|diagnosis|mental health (?:issues?|problems?|conditions?)|sick|ill|diagnosed)\b/i],
+  ["health", /\bkesehatan mental\b|\bkesehatan(?:nya| kurniadi| dia)\b|\b(?:dia|kurniadi) (?:sakit|punya penyakit|sehat)\b|\bpenyakit(?:nya)?\b|\bdisabilitas(?:nya)?\b|\bdepresi\b/i],
+  ["religion", /\b(?:religion|religious|religius|beragama|keagamaan|pray(?:s|ing)?|church|mosque|muslim|christian|catholic|hindu|buddhist|atheist|islam|agama(?:nya)?|ibadah|sholat|shalat|salat|gereja|masjid|kristen|katolik|buddha|ateis|tuhan)\b/i],
+  // Partisan politics: his vote, parties and candidates ("third-party APIs" and screening job candidates are not politics).
+  ["politics", /\bvot(?:e|ed|es|ing) for\b|\bwho (?:did|does|will|would) (?:he|kurniadi|you) vote\b|\b(?:his|kurniadi'?s) vote\b|\bballot\b|\bpolitical part(?:y|ies)\b|\b(?:which|what|favou?rite|preferred) (?:political )?(?:party|parties|candidate)\b|\bparty (?:does|did|will|would) (?:he|kurniadi|you)\b|\bpresidential candidates?\b|\b(?:support|supports|supported|back|backs|backed|prefer|prefers) (?:a |which |the |any )?(?:political )?(?:party|parties|candidate|candidates|politician|politicians)\b|\bpartai\b|\bcapres\b|\bcawapres\b|\bcaleg\b|\bkandidat (?:presiden|mana)\b|\bcoblos\b|\bnyoblos\b|\bmencoblos\b|\bgolput\b|\b(?:pilih|memilih) siapa\b|\bpilihan (?:politik|capres|presiden)(?:nya)?\b/i],
+  // Contested social policy is not tech policy: declined like partisan politics.
   ["politics", /\b(?:abortion|aborsi|death penalty|hukuman mati|lgbt\w*|same-sex|sesama jenis|immigration|imigran|gun control|capital punishment)\b/i],
   ["pay", /\b(?:salary|salaries|wages?|income|compensation|paycheck|net worth|hourly rate|day rate|rate card|gaji(?:nya)?|penghasilan(?:nya)?|pendapatan(?:nya)?|upah|bayaran|tarif(?:nya)?)\b/i],
   ["pay", /\bhow much (?:money )?(?:does|did|do|will|would) (?:he|kurniadi) (?:earn|make|charge|get paid)\b|\bberapa (?:dia |kurniadi )?dibayar\b/i],
-  // Hobbies, games, books, anime, coffee shops, the gym and burnout are answerable from his lifestyle
-  // perspectives since 2026-10-15 (`routedTopic`); everything else personal stays declined here.
-  ["life", /\b(?:favou?rite (?:food|foods|movie|film|music|song|band|colou?r|team|drink)|makanan favorit|home address|alamat rumah|alamat lengkap|how old|umur(?:nya)?|birthday|ulang tahun|tanggal lahir|date of birth|what car|mobil apa)\b/i],
+  // Personal details. "How old" only of him, never of a project; favourite food, music and the like go to the lifestyle route.
+  ["life", /\b(?:home address|alamat rumah|alamat lengkap|birthday|ulang tahun(?:nya)?|tanggal lahir|date of birth|what car|mobil apa|(?:his|her|their|kurniadi'?s) (?:phone|mobile|whatsapp)(?: number)?|nomor (?:hp|telepon|telp|wa|whatsapp)(?:nya| dia| kurniadi))\b/i],
+  ["life", /\bhow old (?:is|was) (?:he|kurniadi)\b|\b(?:his|kurniadi'?s) age\b|\bumur(?:nya| dia| kurniadi)\b|\busia(?:nya| dia| kurniadi)\b|\bberapa umur\b/i],
 ];
 
+/** Officeholders. An opinion of one as a person ("Rate the president's leadership") is partisan; one of a policy they own is civic. */
+const OFFICEHOLDER = /\b(?:president|vice president|prime minister|minister|governor|mayor|senator|politicians?|presiden|wakil presiden|menteri|gubernur|bupati|wali ?kota|politisi|politikus)\b/i;
+/** Named politicians: opinions of them are always declined, but a policy named with them is answered (`maskPoliticians`). */
+const POLITICIAN = /\b(?:jokowi|joko widodo|prabowo(?: subianto)?|gibran(?: rakabuming)?|anies(?: baswedan)?|ganjar(?: pranowo)?|megawati|sby|susilo bambang yudhoyono|ahok|ridwan kamil|puan maharani|mahfud(?: md)?|muhaimin|cak imin|trump|biden|obama|putin|kamala harris|xi jinping)(?:['\u2019]s)?(?=\W|$)/gi;
+/** Words that make an officeholder clause about a policy, plan or program rather than the person. */
+const POLICY_OBJECT = /\b(?:plans?|programs?|programmes?|initiatives?|agenda|strateg(?:y|ies)|roadmap|rencana|program(?:nya)?|inisiatif|strategi)\b/i;
+
+/** A HARD private topic of one clause, or null. */
+function hardTopic(clause: string): PrivateTopic | null {
+  const hit = PRIVATE.find(([, re]) => re.test(clause))?.[0];
+  if (hit) return hit;
+  POLITICIAN.lastIndex = 0;
+  if (POLITICIAN.test(clause)) return "politics";
+  if (OFFICEHOLDER.test(clause) && OPINION.test(clause) && !POLICY.test(clause) && !TECH.test(clause) && !POLICY_OBJECT.test(clause)) return "politics";
+  return null;
+}
+
 /** Policy words, and the tech words that make a policy question one his written views cover (AI, data, digital, jobs, developers). */
-const POLICY = /\b(?:polic(?:y|ies)|regulat(?:e|es|ion|ions|ing)|legislation|laws? (?:on|for|about)|government|governments|public sector|public services?|kebijakan|regulasi|mengatur|diatur|pengaturan|undang-undang|uu|peraturan|pemerintah|pemerintahan|sektor publik|layanan publik)\b/i;
+const POLICY = /\b(?:polic(?:y|ies)|regulat(?:e|es|ion|ions|ing)|legislation|laws? (?:on|for|about)|(?:privacy|data protection|data privacy|tech|ai|cyber|internet) laws?|government|governments|public sector|public services?|kebijakan|regulasi|mengatur|diatur|pengaturan|undang-undang|uu|peraturan|pemerintah|pemerintahan|sektor publik|layanan publik)\b/i;
 /** Work context: "regulation" in a question about his projects or clients is a work question, not policy. */
 const WORK_CONTEXT = /\b(?:projects?|proyek|built|build|clients?|klien|bank|banking|perbankan|compliance|kepatuhan|industr\w*|worked|bekerja|experience|pengalaman)\b/i;
-const TECH = /\b(?:ai|a\.i\.|artificial intelligence|kecerdasan buatan|data|digital|digitalisasi|tech\w*|teknologi|software|developers?|engineers?|programmers?|privacy|privasi|pdp|apis?|internet|cyber\w*|siber|startups?|jobs?|pekerjaan|lapangan kerja|tenaga kerja|automation|otomasi|llms?|models?|platforms?|interoperab\w*|sandbox(?:es)?|e-?government|spbe|open data)\b/i;
+const TECH = /\b(?:ai|a\.i\.|artificial intelligence|kecerdasan buatan|data|digital|digitalisasi|tech\w*|teknologi|software|developers?|engineers?|programmers?|privacy|privasi|pdp|apis?|internet|cyber\w*|siber|startups?|jobs?|pekerjaan|lapangan kerja|tenaga kerja|automation|otomasi|llms?|models?|platforms?|interoperab\w*|sandbox(?:es)?|e-?government|spbe|open data|social media|media sosial|algorithms?|algoritma|e-?voting|censorship|sensor internet)\b/i;
+/**
+ * Civic words (owner decision 2026-10-24): his political view, officeholders, parliament, democracy, elections or
+ * ideology. Answered from his written policy views with a short partisan note; plain "government" plus a tech word
+ * stays the policy route without the note.
+ */
+const CIVIC = /\b(?:politics|political(?:ly)?|politik(?:nya)?|president(?:'s)?|presiden|ministers?|ministry|ministries|menteri|kementerian|parliament|dpr|mpr|senators?|governors?|gubernur|mayors?|wali ?kota|bupati|kabinet|cabinet|democra(?:cy|tic)|demokrasi|elections?|pemilu|pilpres|pilkada|e-?voting|censorship|penyensoran|left or right|kiri atau kanan|(?:left|right)[- ]wing|leaning|ideolog\w*)\b/i;
 
-/** The personal topic a question asks about, or null. These are declined without a model call. */
+/** The personal topic a question asks about (any clause), or null. A partly private question is split by `partitionQuestion`. */
 export function privateTopic(question: string): PrivateTopic | null {
-  const hit = PRIVATE.find(([, re]) => re.test(question))?.[0];
-  if (hit) return hit;
-  // Policy questions are answerable only when they are tech-adjacent (his written policy views, 2026-10-15).
-  // In a question about this site, "Pengaturan" names its settings panel, not a regulation.
-  const policyText = isSiteQuestion(question) ? question.replace(/\bpengaturan\b/gi, " ") : question;
-  return POLICY.test(policyText) && !TECH.test(question) && !WORK_CONTEXT.test(question) ? "politics" : null;
+  return hardTopic(question);
+}
+
+/**
+ * A civic question (owner decision 2026-10-24): his political view, the government or an officeholder's policy,
+ * democracy, elections, or a policy question with no tech angle. Answered only from his written policy views, with a
+ * partisan note (`MESSAGES.partisanNote`). Call after `privateTopic` (his vote, parties and named people never get here).
+ * In a question about this site, "Pengaturan" names its settings panel; a question about his work stays a work question.
+ */
+export function civicQuestion(question: string): boolean {
+  if (isSiteQuestion(question)) return false;
+  if (/\bpolitical (?:views?|stance|position|opinions?|leaning|beliefs?|compass)\b|\bpandangan politik\b|\bsikap politik\b|\bpolitically\b/i.test(question)) return true;
+  if (CIVIC.test(question) && !(WORK_CONTEXT.test(question) && !OPINION.test(question))) return true;
+  return POLICY.test(question) && !TECH.test(question) && !WORK_CONTEXT.test(question);
 }
 
 /**
  * Perspective topics a question is routed to deterministically (owner decision 2026-10-15). Lifestyle
  * and tech-adjacent policy are answerable FROM HIS WRITTEN PERSPECTIVES ONLY: retrieval keeps only
  * the perspectives tagged with that topic, and an answer must follow one of them or it becomes the
- * no-view message (functions/_lib/checks.ts).
+ * no-view message (functions/_lib/checks.ts). A civic question (`civicQuestion`) also uses the policy topic.
  */
 export type RoutedTopic = "lifestyle" | "policy";
 
 const LIFESTYLE: RegExp[] = [
-  /\b(?:hobb(?:y|ies)|video ?games?|games? (?:does|do|did) (?:he|kurniadi|you) play|play(?:s|ing)? (?:games?|video ?games?|mobile ?games?)|gaming|gamer|anime|manga|(?:which|what|favou?rite) books?|books? (?:does|did|do|has) (?:he|kurniadi|you)|podcasts?|coffee|caf(?:e|\u00e9)s?|gym|work ?outs?|exercis\w*|sports?|take a walk|go(?:es)? for (?:a )?walks?|weekends?|outside (?:of )?work|after work|free time|spare time|days? off|burn ?out|relax\w*|fun fact|personality|typical day)\b/i,
-  /\b(?:hobi(?:nya)?|main game|bermain game|game apa|anime(?:nya)?|buku apa|buku favorit|podcast|kopi|kafe|coffee shop|ngopi|nongkrong|olahraga|gym|jalan kaki|akhir pekan|di luar (?:pekerjaan|kerja)|waktu luang|bersantai|istirahat|kelelahan|fakta unik|fakta menarik|kepribadian(?:nya)?)\b/i,
+  /\b(?:hobb(?:y|ies)|video ?games?|games? (?:does|do|did) (?:he|kurniadi|you) play|play(?:s|ing)? (?:games?|video ?games?|mobile ?games?)|gaming|gamer|anime|manga|(?:which|what|favou?rite) books?|books? (?:does|did|do|has) (?:he|kurniadi|you)|podcasts?|coffee|caf(?:e|\u00e9)s?|gym|work ?outs?|exercis\w*|sports?|take a walk|go(?:es)? for (?:a )?walks?|weekends?|outside (?:of )?work|after work|free time|spare time|days? off|burn ?out|relax\w*|fun fact|personality|typical day|introvert\w*|extrovert\w*|ambivert|mbti|pets?|music|songs?|bands?|favou?rite (?:food|foods|movies?|films?|music|songs?|bands?|colou?rs?|teams?|drinks?|games?)|work-life balance|recharg\w*)\b/i,
+  /\b(?:hobi(?:nya)?|main game|bermain game|game apa|anime(?:nya)?|buku apa|buku favorit|podcast|kopi|kafe|coffee shop|ngopi|nongkrong|olahraga|gym|jalan kaki|akhir pekan|di luar (?:pekerjaan|kerja)|waktu luang|bersantai|istirahat|kelelahan|fakta unik|fakta menarik|kepribadian(?:nya)?|introver|ekstrover|hewan peliharaan|peliharaan(?:nya)?|musik|lagu|makanan favorit|film favorit|minuman favorit)\b/i,
 ];
 
 /** Lifestyle or tech-adjacent policy question, or undefined. Call after `privateTopic` (partisan politics never gets here). */
 export function routedTopic(question: string): RoutedTopic | undefined {
+  if (civicQuestion(question)) return "policy";
   if (POLICY.test(question) && TECH.test(question)) return "policy";
   if (/\b(?:ai|artificial intelligence)\b.{0,40}\b(?:jobs?|pekerjaan|lapangan kerja|tenaga kerja|workers?|pekerja)\b|\b(?:jobs?|pekerjaan|lapangan kerja)\b.{0,40}\b(?:ai|artificial intelligence)\b/i.test(question)) return "policy";
   if (LIFESTYLE.some((re) => re.test(question))) return "lifestyle";
   return undefined;
+}
+
+/** Clause boundaries of a mixed question: sentence ends, ";" and conjunctions ("and", "dan", ", juga"). */
+const CLAUSE_BREAK = /\s*[?!;]+\s*|\.\s+|,?\s+(?:and also|and|also|plus|as well as|dan juga|dan|serta|juga)\s+|,\s*(?:juga|terus|lalu|then)\s+/giu;
+/** A clause that reads as its own question (else it belongs to the clause before it: "Give a number.", "AI and jobs"). */
+const QUESTION_START = /^\W*(?:what|what's|whats|who|whom|whose|where|when|why|how|which|is|are|was|were|does|do|did|can|could|would|will|has|have|should|tell|apa|apakah|siapa|di ?mana|kapan|kenapa|mengapa|bagaimana|gimana|berapa|bisakah|kalau|terus)\b/i;
+
+/** The clauses of a question; a fragment without a question word or a private topic joins the clause before it. */
+export function splitClauses(question: string): string[] {
+  const parts: string[] = [];
+  let last = 0;
+  for (const m of question.matchAll(CLAUSE_BREAK)) {
+    parts.push(question.slice(last, m.index));
+    last = (m.index ?? 0) + m[0].length;
+  }
+  parts.push(question.slice(last));
+  const clauses: string[] = [];
+  for (const raw of parts) {
+    const part = raw.trim();
+    if (!part) continue;
+    if (clauses.length && !QUESTION_START.test(part) && !hardTopic(part)) clauses[clauses.length - 1] += ` and ${part}`;
+    else clauses.push(part);
+  }
+  return clauses;
+}
+
+/** Named politicians become "the government", so a policy named with one is still answered ("Prabowo's AI policy"). */
+export function maskPoliticians(clause: string): string {
+  return clause.replace(POLITICIAN, "the government's").replace(/\bthe government's(\s+(?:and|or|dan|atau)\b|\s*[?.!]*\s*$)/gi, "the government$1");
+}
+
+/** Words that never make a clause answerable on their own. */
+const GENERIC = new Set(
+  "kurniadi think thinks thought view views opinion opinions perspective really honest honestly tell give number numbers know like much many also please just real actually question answer share personal private kind sort thing things yes no mean means".split(" "),
+);
+
+export interface Partition {
+  /** The answerable part of the question (its own clauses, named politicians masked), or undefined when nothing is left. */
+  answerable?: string;
+  /** HARD private topics of the declined clauses, in order, deduplicated. */
+  declined: PrivateTopic[];
+}
+
+/**
+ * Mixed questions (owner decision 2026-10-24): "What's his view on AI jobs and is he religious?" answers the
+ * answerable clauses and declines the private ones in one short line. A clause is answerable when it has no HARD
+ * private topic and at least one content word the pack knows (`known`). Nothing answerable: the whole question is
+ * declined. A question with no private clause comes back whole.
+ */
+export function partitionQuestion(question: string, known: (term: string) => boolean): Partition {
+  if (!hardTopic(question)) return { answerable: question, declined: [] };
+  const declined: PrivateTopic[] = [];
+  const kept: string[] = [];
+  for (const clause of splitClauses(question)) {
+    const topic = hardTopic(clause);
+    POLITICIAN.lastIndex = 0;
+    const masked = topic === "politics" && POLITICIAN.test(clause) ? maskPoliticians(clause) : undefined;
+    // The rest of the clause, the name removed, must name a policy itself ("Prabowo's AI policy", never just "Prabowo").
+    const rest = masked === undefined ? "" : clause.replace(POLITICIAN, " ");
+    if (masked !== undefined && !hardTopic(masked) && (POLICY.test(rest) || TECH.test(rest) || POLICY_OBJECT.test(rest))) {
+      // "Prabowo's AI policy": the policy is answered, the opinion of the person is declined.
+      kept.push(masked);
+      if (!declined.includes("politics")) declined.push("politics");
+      continue;
+    }
+    if (topic) {
+      if (!declined.includes(topic)) declined.push(topic);
+      continue;
+    }
+    if (tokenize(clause).some((t) => !GENERIC.has(t) && (known(t) || (t.endsWith("nya") && known(t.slice(0, -3)))))) kept.push(clause);
+  }
+  if (!declined.length) declined.push(hardTopic(question) as PrivateTopic);
+  return kept.length ? { answerable: kept.map((c) => c.replace(/[\s,.;]+$/, "")).join(", and ").concat("?"), declined } : { declined };
 }
 
 /**
@@ -180,7 +295,8 @@ const WRITING: RegExp[] = [
   new RegExp(String.raw`^\W*(?:(?:hey|hi|ok|okay)\W+)?(?:(?:kurniadi|rover|bot|assistant)\W+)?(?:please |pls |now |can you |could you |would you |you must )?(?:write|generate|give|create|draft|compose|make|code)\b(?: me| us)?(?: an?| the| some| my)? (?:[\w-]+ ){0,3}${WRITE_OBJECT}\b`, "i"),
   /\b(?:write|generate|create|draft|compose) (?:me |us )?(?:an?|some|the) (?:[\w-]+ ){0,3}(?:code|function|script|program|query|essay|poem|story|limerick|song|lyrics|cover letter|homework|joke)\b/i,
   /^\W*(?:tolong |coba |bisa |bisakah )?(?:buatkan|buatin|bikinin|tuliskan|tulisin|tulis|kerjakan)\b(?: saya| aku)?(?: sebuah| satu)? (?:[\w-]+ ){0,3}(?:kode|program|script|skrip|query|fungsi|puisi|pantun|cerita|esai|essay|lagu|surat|artikel|caption|lelucon|tugas|pr)\b/i,
-  /\b(?:do|solve|finish|answer|help (?:me )?with) (?:my|our|this) (?:homework|assignment|exam|quiz|essay|skripsi|tugas)\b|\b(?:homework|assignment|pr saya|tugas (?:saya|kuliah|sekolah)|skripsi saya|soal ujian|jawab soal)\b/i,
+  /\b(?:review|proofread|check|improve|rewrite|edit|fix|grade|rate) (?:my|our) (?:cv|resume|r\u00e9sum\u00e9|code|essay|cover letter|portfolio|linkedin|thesis|paper)\b|\b(?:review|cek|periksa|perbaiki|nilai) (?:cv|resume|kode|esai|skripsi) (?:saya|aku|ku)\b/i,
+  /\b(?:do|solve|finish|answer|help (?:me )?with) (?:my|our|this) (?:homework|assignment|exam|quiz|essay|skripsi|tugas)\b|\b(?:my|our) (?:homework|assignment|essay)\b|\b(?:pr saya|tugas saya|skripsi saya|soal ujian|jawab soal)\b/i,
 ];
 /** Translations, tutorials and recommendations for the visitor: declined unless the question is about Kurniadi. */
 const TUTORIAL: RegExp[] = [
@@ -202,12 +318,80 @@ const aboutHim = (question: string) => ABOUT_HIM.test(question.replace(NYA_ADVER
 /** A request for general-assistant work (code, essays, homework, tutorials, translations, recommendations for the visitor). */
 export function isGeneralAssistantRequest(question: string): boolean {
   if (WRITING.some((re) => re.test(question))) return true;
+  // Learning and career questions in his field are answered from his own path (`isMentoringQuestion`).
+  if (isMentoringQuestion(question)) return false;
   return TUTORIAL.some((re) => re.test(question)) && !aboutHim(question);
 }
 
+/** How a visitor can learn, start or grow in his field (EN/ID). */
+const MENTOR_FRAME: RegExp[] = [
+  /\bhow (?:do|can|should|could|would) (?:i|we|someone|one|a student|students|a beginner|beginners|juniors?)\b[^.?!]{0,30}\b(?:learn|start|get (?:started|into)|break into|become|grow|switch|transition|prepare)\b/i,
+  /^\W*how to (?:learn|start|get (?:started|into)|break into|become|switch to|transition to)\b/i,
+  /\bwhat should (?:i|we|students?|beginners?|juniors?|someone) (?:study|learn|read|focus on|master|know)\b/i,
+  /\b(?:advice|tips?|guidance|roadmap|saran|nasihat)\b[^.?!]{0,25}\b(?:for|to|untuk|bagi)\b[^.?!]{0,15}\b(?:students?|beginners?|juniors?|newcomers?|fresh graduates?|aspiring|career switchers?|mahasiswa|pemula|junior|lulusan baru)\b/i,
+  /\bshould (?:students?|beginners?|juniors?|i|developers?|programmers?|engineers?)\b[^.?!]{0,20}\b(?:use|learn|rely on|study)\b/i,
+  /\b(?:become|be|get)\b[^.?!]{0,30}\b(?:like (?:him|kurniadi)|seperti (?:dia|kurniadi|beliau))\b/i,
+  /\b(?:bagaimana|gimana) cara (?:saya |aku |untuk )?(?:belajar|mulai|memulai|menjadi|jadi|masuk ke)\b/i,
+  /\b(?:harus|sebaiknya|perlu) belajar apa\b|\bbelajar apa (?:dulu|saja|yang)\b/i,
+  /\b(?:apakah|haruskah|bolehkah) (?:mahasiswa|pelajar|pemula|programmer|developer)\b[^.?!]{0,20}\b(?:pakai|memakai|menggunakan|belajar)\b/i,
+];
+const MENTOR_DOMAIN =
+  /\b(?:ai|a\.i\.|artificial intelligence|machine learning|ml|deep learning|data science|data scien\w*|data engineer\w*|llms?|genai|generative ai|software|programming|coding|developers?|engineer\w*|tech|cloud|azure|backend|frontend|full[- ]?stack|python|typescript|career|karier|karir|chatgpt|copilot|kecerdasan buatan|pemrograman|ngoding|programmer)\b/i;
+/** Real tutorials, which stay declined even in his field. */
+const TUTORIAL_ASK = /\b(?:teach me|explain to me|explain how|give me a tutorial|tutorial|step[- ]by[- ]step|walk me through (?:how to|building)|ajari|ajarin|ajarkan|jelaskan cara)\b/i;
+
+/**
+ * A learning or career question in his field (owner decision 2026-10-24): "How do I become an AI engineer like him?",
+ * "Should students use ChatGPT?". Answered only from his own path and written advice (education, certifications,
+ * career, `keeping-up-with-ai`), never as a tutorial; code, essays, translations and tutorials stay declined.
+ */
+export function isMentoringQuestion(question: string): boolean {
+  if (WRITING.some((re) => re.test(question)) || TUTORIAL_ASK.test(question) || TUTORIAL[0].test(question)) return false;
+  return MENTOR_DOMAIN.test(question) && MENTOR_FRAME.some((re) => re.test(question));
+}
+
+/** His current manager, team, colleagues or clients in general (no name): answered from his written views on teamwork. */
+const TEAM =
+  /\b(?:his|your|kurniadi'?s)\s+(?:current\s+)?(?:boss|manager|managers|lead|leads|team ?lead|team|teams|teammates?|team ?mates|colleagues?|co-?workers?|clients?|customers?|stakeholders?)\b|\b(?:atasan|bos|manajer|rekan kerja|tim|klien|pelanggan)nya\b/i;
+
+/**
+ * A question about the people he works with (owner decision 2026-10-24): "What does he think about his manager?".
+ * Answered from his written views on teamwork and working style and the sector-level client work; a named person,
+ * employer or client stays with `opinionAboutOthers`.
+ */
+export function isTeamQuestion(question: string): boolean {
+  return TEAM.test(question);
+}
+
+/**
+ * Off-topic questions with no link to Kurniadi or this site (owner decision 2026-10-24): weather, time, sports
+ * results, trivia, arithmetic, restaurants, recipes, prices, news and jokes. A fixed Rover redirect with topic pills,
+ * no model call.
+ */
+const OFFTOPIC: RegExp[] = [
+  /\b(?:weather|forecast|temperature|cuaca|prakiraan|suhu udara)\b|\b(?:is it|will it) rain/i,
+  /^\W*(?:what(?:'s| is) the (?:time|date)|what time is it|what day is (?:it|today)|jam berapa|hari ini tanggal|tanggal berapa)\b/i,
+  /\b(?:world cup|piala dunia|premier league|champions league|la liga|serie a|nba|nfl|formula (?:1|one)|motogp|olympics?|olimpiade|super bowl|liga 1)\b|^\W*who won\b|\bsiapa (?:juara|pemenang)\b|\bskor (?:pertandingan|akhir)\b/i,
+  /^\W*(?:what(?:'s| is) the capital of|who (?:is|was) the (?:first|current) (?:president|prime minister|king|queen|ceo|founder) of|who (?:invented|discovered|wrote|painted)\b|how (?:tall|far|big|deep|long) is (?:the|mount|mt)|how many (?:people|countries|planets|continents)|apa ibu ?kota|ibu ?kota (?:dari |negara )?\w+ (?:apa|adalah)|siapa (?:penemu|presiden pertama))/i,
+  /\b\d+(?:[.,]\d+)?\s*(?:[+*\/\u00d7\u00f7^x-]|times|plus|minus|divided by|multiplied by|dikali|kali|ditambah|tambah|dikurangi|kurang|dibagi|bagi)\s*\d+\b/i,
+  /\b(?:restaurants?|restoran|rumah makan|tempat makan|where to eat|recipes?|resep|kuliner)\b/i,
+  /\b(?:stock price|share price|harga saham|bitcoin price|harga bitcoin|crypto price|exchange rate|kurs (?:dolar|rupiah)|latest news|breaking news|berita terbaru|berita hari ini)\b/i,
+  /^\W*(?:(?:tell|give|say|share) (?:me |us )?(?:a |another |some |one )?(?:funny )?jokes?|(?:know|got) any (?:good )?jokes|make me laugh|ceritakan (?:sebuah |satu )?(?:lelucon|lawakan|jokes?)|kasih (?:aku |saya )?(?:lelucon|jokes?))\b/i,
+];
+
+/** A general off-topic question (EN/ID) that is not about Kurniadi or this site. */
+export function isOffTopic(question: string): boolean {
+  if (aboutHim(question) || isSiteQuestion(question)) return false;
+  return OFFTOPIC.some((re) => re.test(question));
+}
+
 const OPINION = /\b(?:think|thinks|thought|opinions?|views?|feels?|honest(?:ly)?|rate|likes?|liked|hates?|pendapat(?:nya)?|pandangan(?:nya)?|menurut(?:nya)?|pikir|suka|nilai|kesan(?:nya)?)\b/i;
+/**
+ * Specific people and organizations: a former boss or colleague, an employer, a named client ("the bank client").
+ * His current manager, team and clients in general are answered from his written views on teamwork (`isTeamQuestion`).
+ */
 const PEOPLE =
-  /\b(?:his|your|kurniadi'?s) (?:(?:former|ex|old|current) )?(?:boss|manager|managers|colleagues?|co-?workers?|team ?mates?|lead|cto|ceo|clients?|customers?|employers?)\b|\bex-?(?:boss|employer|colleague)s?\b|\b(?:the|that|this) (?:\w+ )?(?:client|customer)\b|\b(?:atasan|bos|manajer|rekan kerja|klien|pelanggan|kantor lama)nya\b/i;
+  /\b(?:his|your|kurniadi'?s) (?:former|ex|old|previous) (?:boss|manager|managers|colleagues?|co-?workers?|team ?mates?|lead|cto|ceo|clients?|customers?|employers?)\b|\b(?:his|your|kurniadi'?s) (?:employers?|cto|ceo)\b|\bex-?(?:boss|employer|colleague)s?\b|\b(?:the|that|this) (?:\w+ )?(?:client|customer)\b|\b(?:kantor lama|mantan atasan|mantan bos|mantan rekan kerja)(?:nya)?\b/i;
 
 /** Names an org goes by in a question: the name before any parenthesis, plus a leading acronym ("MNC Group" also as "MNC"). */
 export function orgAliases(orgs: readonly string[]): string[] {
@@ -227,9 +411,26 @@ export function orgAliases(orgs: readonly string[]): string[] {
  * "the bank client"). Kurniadi publishes no such opinions. Other names go to the model, which names
  * clients only by sector (prompt rule 6), and the output checks (the entity check among them) still apply.
  */
-export function opinionAboutOthers(question: string, orgs: readonly string[]): boolean {
+export function opinionAboutOthers(question: string, orgs: readonly string[], vocabulary?: ReadonlySet<string>): boolean {
   if (!OPINION.test(question)) return false;
-  return PEOPLE.test(question) || findTerms(question, orgAliases(orgs)).length > 0;
+  return PEOPLE.test(question) || findTerms(question, orgAliases(orgs)).length > 0 || (vocabulary !== undefined && namesPerson(question, vocabulary));
+}
+
+/** Two or more capitalized words in a row, none of them in the pack ("Elon Musk", "Sam Altman's"): a person's name. */
+const NAME_RUN = /(?<![\p{L}\p{N}])(\p{Lu}[\p{Ll}]+(?:['\u2019]s)?)(?:\s+(\p{Lu}[\p{Ll}]+(?:['\u2019]s)?)){1,2}(?![\p{L}\p{N}])/gu;
+
+/**
+ * An opinion question about a named person (owner decision 2026-10-24: opinions on named people stay declined): a
+ * run of capitalized words mid-sentence that the knowledge pack never mentions. Products and companies he writes
+ * about are in the pack, so "What does he think of OpenAI?" stays a question for the model.
+ */
+export function namesPerson(question: string, vocabulary: ReadonlySet<string>): boolean {
+  for (const m of question.matchAll(NAME_RUN)) {
+    if ((m.index ?? 0) === 0 || /[.!?]\s*$/.test(question.slice(0, m.index))) continue;
+    const words = m[0].split(/\s+/).map((w) => w.replace(/['\u2019]s$/, "").toLowerCase());
+    if (words.every((w) => !vocabulary.has(w))) return true;
+  }
+  return false;
 }
 
 /**

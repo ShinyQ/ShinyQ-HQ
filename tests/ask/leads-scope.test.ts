@@ -287,7 +287,6 @@ describe("guardrails: still a Kurniadi-only assistant", () => {
     ["Who did Kurniadi vote for in 2024?", "politics"],
     ["What do you think about Prabowo's AI policy?", "politics"],
     ["Partai apa yang dia dukung?", "politics"],
-    ["What's his view on fuel subsidy policy?", "politics"],
     ["What is his stance on abortion?", "politics"],
     ["Apa agamanya?", "religion"],
     ["What is his hourly rate?", "pay"],
@@ -324,7 +323,7 @@ describe("guardrails: still a Kurniadi-only assistant", () => {
   });
 
   it("replaces any model refusal with the scoped decline that points back to what it covers", async () => {
-    const r = await ask("What is the capital of France?", "I'm sorry, I can only answer questions about Kurniadi and his work.");
+    const r = await ask("Who is Linus Torvalds?", "I'm sorry, I can only answer questions about Kurniadi and his work.");
     expect(r).toMatchObject({ outcome: "decline", reason: "model_decline", text: MESSAGES.decline.en });
     expect(MESSAGES.decline.en).toContain("projects, skills, career, writing, availability, this site and his written views");
   });

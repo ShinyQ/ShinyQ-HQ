@@ -5,7 +5,7 @@
  * Design: docs/superpowers/specs/2026-10-11-ask-hq-design.md (sections 3, 7.3 T6, T8, T13).
  */
 import { ASK_ENDPOINT, fetchAskStatus, isAskEnabled, resetAskStatus } from "./status";
-import { ASK_HISTORY_TURNS, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag, type AskTurn } from "./protocol";
+import { ASK_HISTORY_TURNS, cleanCites, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskRequest, type AskSource, type AskStatus, type AskTag, type AskTurn } from "./protocol";
 
 export const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
 export const TURNSTILE_SRC = `${TURNSTILE_ORIGIN}/turnstile/v0/api.js?render=explicit`;
@@ -21,7 +21,7 @@ export type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<
 export type AskClientError = AskErrorCode | "network" | "stream" | "aborted" | "unavailable";
 
 export type AskResult =
-  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact; sig?: string }
+  | { outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; cites?: string[]; contact?: AskContact; sig?: string }
   | { error: AskClientError; retryAfter?: number };
 
 export const isAskError = (result: AskResult): result is Extract<AskResult, { error: AskClientError }> => "error" in result;
@@ -107,6 +107,7 @@ export function parseFrame(data: string): AskFrame | null {
   if (typeof v.delta === "string") return { delta: v.delta };
   if (v.done === true && OUTCOMES.includes(v.outcome as AskOutcome)) {
     const tags = cleanTags(v.tags);
+    const cites = cleanCites(v.cites);
     return {
       done: true,
       outcome: v.outcome as AskOutcome,
@@ -114,6 +115,7 @@ export function parseFrame(data: string): AskFrame | null {
       asOf: typeof v.asOf === "string" ? v.asOf : "",
       ...(tags.length ? { tags } : {}),
       ...(isAskCite(v.cite) ? { cite: v.cite } : {}),
+      ...(cites.length > 1 ? { cites } : {}),
       ...(isAskContact(v.contact) ? { contact: { email: v.contact.email, linkedin: v.contact.linkedin } } : {}),
       ...(isAskSig(v.sig) ? { sig: v.sig } : {}),
     };
@@ -394,7 +396,7 @@ async function readStream(response: Response, onDelta: (text: string) => void, s
   if (signal?.aborted) return { error: "aborted" };
   const final = done as Extract<AskFrame, { done: true }> | null;
   return final
-    ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}), ...(final.cite ? { cite: final.cite } : {}), ...(final.contact ? { contact: final.contact } : {}), ...(final.sig ? { sig: final.sig } : {}) }
+    ? { outcome: final.outcome, source: final.source, asOf: final.asOf, ...(final.tags ? { tags: final.tags } : {}), ...(final.cite ? { cite: final.cite } : {}), ...(final.cites ? { cites: final.cites } : {}), ...(final.contact ? { contact: final.contact } : {}), ...(final.sig ? { sig: final.sig } : {}) }
     : { error: "stream" };
 }
 

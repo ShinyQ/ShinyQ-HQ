@@ -1,6 +1,6 @@
 import { ASK_LINK_PAGES, askLinkTarget } from "../../src/ask/links";
 import { markdownToPlain } from "../../src/ask/markdown";
-import { ASK_REPO_CITE, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
+import { ASK_MAX_CITES, ASK_REPO_CITE, citeKind, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
@@ -122,6 +122,8 @@ export function findTerms(text: string, terms: readonly string[]): string[] {
 }
 
 const DEFAULT_LINKS: ReadonlySet<string> = new Set(ASK_LINK_PAGES);
+/** Source tags the model adds after a sentence (owner decision 2026-10-24): "[S1]", "[S1, S3]", "[S1][S2]", "(S2)". */
+const SOURCE_TAGS = /[ \t]*(?:\[\s*S\d{1,2}(?:\s*[,;]\s*S?\d{1,2})*\s*\]|\(\s*S\d{1,2}(?:\s*[,;]\s*S?\d{1,2})*\s*\))/g;
 /** `[label](url)` with an url of no whitespace and at most one level of parentheses (a site path has none). */
 const MD_LINK = /\[([^[\]\n]+)\]\(([^\s()]*(?:\([^\s()]*\)[^\s()]*)*)\)/g;
 
@@ -148,8 +150,9 @@ export function sanitizeAnswer(raw: string, links: ReadonlySet<string> = DEFAULT
     .replace(/<(script|style)\b[^>]*>[\s\S]*?(<\/\1\s*>|$)/gi, " ")
     .replace(/<\/?[A-Za-z!][^>]*>?/g, " ")
     .replace(/!\[[^\]\n]*\]\([^)\n]*\)?/g, "")
-    // An echoed CONTEXT annotation is not part of the answer.
+    // An echoed CONTEXT annotation is not part of the answer, nor are source tags ([S1], [S2, S3]).
     .replace(/[ \t]*\[link:[^\]\n]*\]/gi, "")
+    .replace(SOURCE_TAGS, "")
     .replace(/^[ \t]*(?:```|~~~)[^\n]*(?:\n|$)/gm, "")
     .replace(/`{2,}/g, "")
     .replace(/^[ \t]*#{1,6}[ \t]+/gm, "")
@@ -396,6 +399,49 @@ export function citedSources(answer: string, chunks: readonly KnowledgeChunk[], 
     });
 }
 
+/** Least share of a tagged sentence's own words found in the chunk it tags: a tag on an invented claim cites nothing. */
+export const MARKER_MIN_GROUNDED = 0.5;
+/** Fewest own content words of a tagged sentence. */
+export const MARKER_MIN_WORDS = 3;
+
+/**
+ * Retrieved chunks the answer tags with source markers (owner decision 2026-10-24): CONTEXT line n is `[Sn]` and is
+ * `chunks[n - 1]`. A tag counts only when its sentence (markers, framing and the question's words aside) mostly uses
+ * words of that chunk (`MARKER_MIN_GROUNDED`), so a correct paraphrase is cited and an invented opinion is not.
+ */
+export function markedSources(answer: string, chunks: readonly KnowledgeChunk[], question = ""): KnowledgeChunk[] {
+  const out: KnowledgeChunk[] = [];
+  const asked = new Set(tokenize(question));
+  // Tags written after the full stop ("... oversight. [S2]") belong to the sentence before them.
+  const moved = answer.replace(/([.!?])((?:\s*[[(]\s*S\d{1,2}(?:\s*[,;]\s*S?\d{1,2})*\s*[\])])+)/g, "$2$1");
+  for (const sentence of moved.split(/(?<=[.!?])\s+|\n+/)) {
+    const tags = [...sentence.matchAll(/[[(]\s*(S\d{1,2}(?:\s*[,;]\s*S?\d{1,2})*)\s*[\])]/g)].flatMap((g) => [...g[1].matchAll(/\d{1,2}/g)].map((n) => Number(n[0])));
+    if (!tags.length) continue;
+    const plain = sentence.replace(SOURCE_TAGS, " ");
+    // A tag on a bare pointer ("His view is in [S3].") cites nothing: the sentence must say something itself.
+    if (tokenize(plain).filter((t) => !FRAMING.has(t) && !asked.has(t)).length < MARKER_MIN_WORDS) continue;
+    for (const n of tags) {
+      const chunk = chunks[n - 1];
+      if (!chunk || out.includes(chunk)) continue;
+      if (groundedShare(plain, `${chunk.title} ${chunk.text_en} ${chunk.text_id}`, question) >= MARKER_MIN_GROUNDED) out.push(chunk);
+    }
+  }
+  return out;
+}
+
+/** Most "Read on this site" links one answer shows (owner decision 2026-10-24). */
+export const MAX_CITES = ASK_MAX_CITES;
+
+/** Allowlisted pages of cited chunks, in order, one per kind (their links read "Read on this site: <kind>"), at most `MAX_CITES`. */
+export function citePages(cited: readonly KnowledgeChunk[]): string[] {
+  const out: string[] = [];
+  for (const url of cited.map((c) => c.url)) {
+    if (!isAskCite(url) || out.some((u) => citeKind(u) === citeKind(url))) continue;
+    out.push(url);
+  }
+  return out.slice(0, MAX_CITES);
+}
+
 /** Words an adjacent answer may add around CONTEXT: Rover's voice, framing ("his work shows") and common function words. */
 const FRAMING = new Set(
   (
@@ -497,7 +543,7 @@ export function claimsFit(text: string): boolean {
 export type CheckFailure = "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
 
 export type CheckResult =
-  | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline">; cite?: string }
+  | { ok: true; text: string; outcome: Extract<AskOutcome, "answer" | "unknown" | "decline">; cite?: string; cites?: string[] }
   | { ok: false; reason: CheckFailure; detail: string[]; replacement: CannedKind };
 
 export interface CheckInput {
@@ -519,6 +565,8 @@ export interface CheckInput {
   lead?: { fit: boolean };
   /** A related professional question (`isAdjacentQuestion`): the answer must cite his work from CONTEXT (rule 13). */
   adjacent?: boolean;
+  /** A learning or career question (`isMentoringQuestion`): his own path from CONTEXT, never general advice (rule 15). */
+  mentoring?: boolean;
   locale?: AskLocale;
 }
 
@@ -526,7 +574,7 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
@@ -558,21 +606,31 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
   // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
   if (lead) return { ok: true, text: markdown, outcome };
-  // A related professional question is answered only from his work (rule 13): it must cite a retrieved case study,
-  // post, talk, paper or written view, and a lesson told as his opinion must cite his written view (rule 8).
-  if (adjacent && outcome === "answer") {
+  // Source tags the model put after its sentences, kept only when the sentence really uses that line (rule 17).
+  const marked = markedSources(answer, chunks, question);
+  const withCites = (cited: readonly KnowledgeChunk[]): CheckResult => {
+    const pages = citePages(cited);
+    return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };
+  };
+  // A related professional question is answered only from his work (rule 13), and a learning question only from his
+  // own path (rule 15): mostly CONTEXT words, no general-knowledge wording. An adjacent answer must cite a retrieved
+  // case study, post, talk, paper or written view; a lesson told as his opinion must cite his written view (rule 8).
+  if ((adjacent || mentoring) && outcome === "answer") {
     if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "noView" };
-    const cited = citedSources(text, chunks, locale, ADJACENT_SOURCE_TYPES).filter((c) => !claimsOpinion(text) || SOURCE_TYPES.has(c.type));
-    if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
-    const linked = cited.find((c) => isAskCite(c.url));
-    return linked?.url ? { ok: true, text: markdown, outcome, cite: linked.url } : { ok: true, text: markdown, outcome };
+    const opinion = claimsOpinion(text);
+    const cited = [...citedSources(text, chunks, locale, ADJACENT_SOURCE_TYPES), ...marked.filter((c) => isSource(c, ADJACENT_SOURCE_TYPES))].filter((c, i, all) => all.indexOf(c) === i && (!opinion || SOURCE_TYPES.has(c.type)));
+    if (adjacent && !cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    if (mentoring && opinion && !cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    return withCites(cited);
   }
   // Opinions need a written source (spec section 13): a perspective question, or any answer that claims one.
-  // Lifestyle and policy (routed topics) must follow one of that topic's perspectives.
+  // Lifestyle and policy (routed topics) must follow one of that topic's perspectives: a quoted title, two shared
+  // three-word runs, or a source tag on a sentence that uses that view.
   if (outcome === "answer" && (perspective || topic || claimsOpinion(text))) {
-    const source = citedSource(text, topic ? chunks.filter((c) => c.type === "perspective" && c.keywords.includes(topic)) : chunks, locale);
-    if (!source) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
-    return isAskCite(source.url) ? { ok: true, text: markdown, outcome, cite: source.url } : { ok: true, text: markdown, outcome };
+    const pool = topic ? chunks.filter((c) => c.type === "perspective" && c.keywords.includes(topic)) : chunks;
+    const cited = [...citedSources(text, pool, locale), ...marked.filter((c) => pool.includes(c) && isSource(c))].filter((c, i, all) => all.indexOf(c) === i);
+    if (!cited.length) return { ok: false, reason: "unsourced", detail: [], replacement: "noView" };
+    return withCites(cited);
   }
   // How this site was built: the answer comes from the retrieved `site` chunk, so it cites its page (`/build`).
   const siteSource = site && outcome === "answer" ? chunks.find((c) => c.type === "site" && isAskCite(c.url)) : undefined;

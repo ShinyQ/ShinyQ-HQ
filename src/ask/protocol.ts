@@ -86,6 +86,15 @@ export const ASK_REPO_CITE = "https://github.com/ShinyQ/ShinyQ-HQ";
 
 export type AskCiteKind = "how" | "blog" | "project" | "library" | "build" | "repo";
 
+/** Most "Read on this site" links one answer carries (owner decision 2026-10-24); the first is also `cite`. */
+export const ASK_MAX_CITES = 2;
+
+/** Allowlisted, distinct cites, at most `ASK_MAX_CITES`; anything else is dropped. */
+export function cleanCites(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(isAskCite))].slice(0, ASK_MAX_CITES);
+}
+
 export const isAskCite = (value: unknown): value is string =>
   typeof value === "string" && value.length <= 120 && (value === ASK_REPO_CITE || ASK_CITE_PATTERN.test(value));
 
@@ -176,7 +185,7 @@ export type AskSource = "primary" | "fallback" | "backup" | "cache" | "none";
 /** One SSE `data:` frame of a 200 `text/event-stream` response. Frames are JSON, never raw text. */
 export type AskFrame =
   | { delta: string }
-  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; contact?: AskContact; sig?: string };
+  | { done: true; outcome: AskOutcome; source: AskSource; asOf: string; tags?: AskTag[]; cite?: string; cites?: string[]; contact?: AskContact; sig?: string };
 
 /** Error bodies (JSON) for non-200 responses. */
 export type AskErrorCode =

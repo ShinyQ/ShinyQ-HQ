@@ -6,7 +6,7 @@
  * which tolerate a missing or full store.
  */
 import { cleanQuestion, type AskClientError } from "./client";
-import { ASK_HISTORY_ANSWER_MAX, ASK_HISTORY_TURNS, ASK_MAX_QUESTION, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskLocale, type AskOutcome, type AskTag, type AskTurn } from "./protocol";
+import { ASK_HISTORY_ANSWER_MAX, ASK_HISTORY_TURNS, ASK_MAX_QUESTION, cleanCites, cleanTags, isAskCite, isAskContact, isAskSig, type AskContact, type AskLocale, type AskOutcome, type AskTag, type AskTurn } from "./protocol";
 
 export const THREAD_KEY = "hq:ask-thread";
 /** Messages kept (user, answer and system lines together). */
@@ -26,6 +26,8 @@ export interface ThreadMessage {
   tags?: AskTag[];
   /** Allowlisted Page View path of the cited written source (`isAskCite`); rendered as a link built by the client. */
   cite?: string;
+  /** Every cited path when the answer cites more than one (`cleanCites`, at most `ASK_MAX_CITES`; the first is `cite`). */
+  cites?: string[];
   /** Contact card of a lead-intent answer (`isAskContact`, dataset values from the `done` frame). */
   contact?: AskContact;
   error?: AskClientError;
@@ -55,6 +57,8 @@ export function parseThread(raw: unknown): ThreadMessage[] {
     const tags = cleanTags(v.tags);
     if (tags.length) message.tags = tags;
     if (isAskCite(v.cite)) message.cite = v.cite;
+    const cites = cleanCites(v.cites);
+    if (cites.length > 1) message.cites = cites;
     if (isAskContact(v.contact)) message.contact = { email: v.contact.email, linkedin: v.contact.linkedin };
     if (ERRORS.includes(v.error as AskClientError)) message.error = v.error as AskClientError;
     if (typeof v.retryAfter === "number" && Number.isFinite(v.retryAfter)) message.retryAfter = v.retryAfter;

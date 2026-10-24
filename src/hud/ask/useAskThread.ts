@@ -141,6 +141,7 @@ export function useAskThread(locale: Locale, { roverFace = false, ask = askQuest
         if (result.asOf) answer.asOf = result.asOf;
         if (result.tags?.length) answer.tags = result.tags;
         if (result.cite) answer.cite = result.cite;
+        if (result.cites) answer.cites = result.cites;
         if (result.contact) answer.contact = result.contact;
         if (curated) answer.qid = curated;
         if (result.sig) {
