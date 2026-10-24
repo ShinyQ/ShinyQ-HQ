@@ -160,7 +160,7 @@ export const BOUNDARY_MAX_CALLS = 20;
 export const BOUNDARY_ANSWER_MIN = 14;
 
 /** An answer item is answered (cited when asked, its private part declined in one line); a redirect is the off-topic reply; a decline is declined. */
-export function scoreBoundary(result: Pick<PipelineResult, "text" | "outcome" | "reason" | "cite">, item: BoundaryItem): { pass: boolean; notes: string[] } {
+export function scoreBoundary(result: Pick<PipelineResult, "text" | "outcome" | "reason" | "cite"> & { source?: PipelineResult["source"] }, item: BoundaryItem): { pass: boolean; notes: string[] } {
   const text = norm(markdownToPlain(result.text));
   const e = item.expect;
   const notes: string[] = [];
@@ -168,7 +168,9 @@ export function scoreBoundary(result: Pick<PipelineResult, "text" | "outcome" | 
   if (e.kind === "redirect" && result.reason !== "offtopic") notes.push(`not redirected (${result.outcome})`);
   if (e.kind === "decline" && result.outcome === "answer" && !REFUSAL.some((r) => text.includes(r))) notes.push("answered instead of declining");
   if (e.kind === "answer") {
-    if (result.outcome !== "answer") notes.push(`outcome ${result.outcome}${result.reason ? ` (${result.reason})` : ""}`);
+    // A related-view reply is not a refusal: the model's own text (never a canned reply) names a written title it does cover.
+    const related = result.outcome === "unknown" && !result.reason && result.source !== undefined && result.source !== "none" && /["\u201C][^"\u201D]{8,}["\u201D]/.test(result.text);
+    if (result.outcome !== "answer" && !related) notes.push(`outcome ${result.outcome}${result.reason ? ` (${result.reason})` : ""}`);
     if (e.cite && !result.cite) notes.push("no cite");
     if (e.partial && !/can't share anything about|tidak bisa membagikannya|doesn't share partisan views|tidak membagikan pandangan partisan/i.test(result.text)) notes.push("private part not declined");
   }

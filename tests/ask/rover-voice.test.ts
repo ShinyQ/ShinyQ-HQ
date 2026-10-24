@@ -154,7 +154,7 @@ describe("Rover's voice in the output checks", () => {
 
 describe("prompt", () => {
   it("makes Rover the answerer and adds rule 13 with its routing line", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-24.answerable.1");
+    expect(PROMPT_VERSION).toBe("2026-10-24.answerable.2");
     const prompt = systemPrompt("2026-10-19", "- ctx", { adjacent: true });
     expect(prompt.startsWith("You are Rover, the small guide robot of ShinyQ HQ")).toBe(true);
     expect(RULES).toHaveLength(18);

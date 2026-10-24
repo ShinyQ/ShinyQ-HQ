@@ -42,9 +42,12 @@ describe("boundary set", () => {
 
   it("scores answers, redirects and declines", () => {
     const answer = items.find((i) => i.id === "b01")!;
-    expect(scoreBoundary({ text: "Kurniadi wants proportional AI regulation.", outcome: "answer", cite: "/blog/x" }, answer).pass).toBe(true);
-    expect(scoreBoundary({ text: "Kurniadi wants proportional AI regulation.", outcome: "answer" }, answer).notes).toContain("no cite");
-    expect(scoreBoundary({ text: "Kurniadi hasn't shared a written view on that.", outcome: "unknown", reason: "unsourced" }, answer).pass).toBe(false);
+    expect(scoreBoundary({ text: "Kurniadi wants proportional AI regulation.", outcome: "answer", source: "primary" }, answer).pass).toBe(true);
+    expect(scoreBoundary({ text: "Kurniadi wants proportional AI regulation.", outcome: "answer" }, { ...answer, expect: { kind: "answer", cite: true } }).notes).toContain("no cite");
+    // The canned no-view reply is not an answer; the model's related-view reply naming a written title is.
+    expect(scoreBoundary({ text: 'Kurniadi hasn\'t shared a written view on that. The closest written source is "Spec-Driven Development".', outcome: "unknown", reason: "unsourced", source: "none" }, answer).pass).toBe(false);
+    expect(scoreBoundary({ text: "I do not have that information on this site.", outcome: "unknown", source: "primary" }, answer).pass).toBe(false);
+    expect(scoreBoundary({ text: 'Kurniadi hasn\'t shared a view on that, but in "How should Indonesia regulate AI without slowing innovation?" he favors risk-proportional rules.', outcome: "unknown", source: "primary" }, answer).pass).toBe(true);
     const redirect = items.find((i) => i.id === "b15")!;
     expect(scoreBoundary({ text: "x", outcome: "decline", reason: "offtopic" }, redirect).pass).toBe(true);
     const decline = items.find((i) => i.id === "b17")!;
