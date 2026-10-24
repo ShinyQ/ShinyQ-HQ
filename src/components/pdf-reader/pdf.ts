@@ -52,7 +52,7 @@ function startWorker(pdfjs: Pdfjs, legacy: boolean) {
 
 /**
  * Loads pdf.js on first use (only the study guide reader chunk imports this) and starts its worker once, as a
- * same-origin module worker bundled from the package, so the site CSP (`worker-src 'self' blob:`) allows it.
+ * same-origin module worker bundled from the package, so the site CSP (`worker-src 'self'`) allows it.
  * Browsers without the modern build's built-ins (`needsLegacyPdfjs`) get the legacy build and worker, two
  * separate lazy assets the modern path never downloads. A worker that fails to load rejects `workerFailure()`
  * and is forgotten, so the next load (Retry) starts a new one.
