@@ -1,4 +1,4 @@
-import { ASK_MAX_QUESTION, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
+import { ASK_MAX_QUESTION, cleanCites, isAskEntry, type AskTurn, type AskEntry, type AskError, type AskErrorCode, type AskFrame, type AskLocale, type AskOutcome, type AskSource, type AskStatus, type AskTag, isAskCite } from "../../src/ask/protocol";
 import { STATS_TOPIC_OF } from "../../src/ask/suggestions";
 import { backupTiers } from "./groq";
 import { parseHistory, signTurn, verifyHistory } from "./history";
@@ -18,7 +18,7 @@ import type { AskEnv, PagesContext } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
 /** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
-const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "persona", "injection", "unsourced", "model_decline", "fit", "consulting"]);
+const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "persona", "injection", "offtopic", "unsourced", "model_decline", "fit", "consulting"]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
@@ -161,19 +161,30 @@ interface EventData {
   latencyMs: number;
   /** Earlier turns that reached the model (multi-turn memory); 0 for a first turn. */
   historyUsed?: number;
+  /** Route label (blob14): civic, policy, lifestyle, mentoring, team, adjacent, lead or default, plus "+partial"; "" for a canned reply. */
+  route?: string;
+  /** Retrieval that built the context (blob15): bm25 or hybrid; "" when nothing was retrieved. */
+  retrieval?: string;
+  /** A declined question with a strong retrieval match (blob16 "match"): the over-refusal count of the content-gap report. */
+  strongMatch?: boolean;
 }
 
+/** Outcomes whose scrubbed question is logged (owner decision 2026-10-24: unanswered and declined, so over-refusals show). */
+const LOGGED_QUESTION: ReadonlySet<string> = new Set(["unknown", "decline"]);
+
 /**
- * Anonymized event (no IP, no raw question). Only unanswered questions keep their scrubbed text
- * (content gaps). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
+ * Anonymized event (no IP, no raw question). Only unanswered and declined questions keep their scrubbed text
+ * (content gaps and over-refusals, owner decision 2026-10-24). Blobs: outcome, locale, model source, gap question, pack version, reason, entry point,
  * topic, chip id (these two feed the public visit stats), answering model id (blob10), failure trail
  * `model:reason > model:reason` cut at 200 characters (blob11), pack tier that served (blob12: memory, kv, pin,
- * fallback), "auto" when the client reported an automated browser (blob13, counting only, else ""). Appended so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
+ * fallback), "auto" when the client reported an automated browser (blob13, counting only, else ""), the route (blob14), the
+ * retrieval (blob15: bm25 or hybrid) and "match" for a declined question retrieval would have answered (blob16). Appended
+ * so older queries keep working. Doubles: latency, count, earlier turns sent to the model.
  */
 function logEvent(env: AskEnv, loaded: LoadedPack, e: EventData) {
   try {
     env.ASK_EVENTS?.writeDataPoint({
-      blobs: [e.outcome, e.locale, e.source, e.outcome === "unknown" ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier, e.auto ? "auto" : ""],
+      blobs: [e.outcome, e.locale, e.source, LOGGED_QUESTION.has(e.outcome) ? (e.question ?? "").slice(0, 300) : "", loaded.pack.packVersion, e.reason ?? "", e.entry, e.topic ?? "", e.chip ?? "", e.model ?? "", (e.trail ?? "").slice(0, 200), loaded.tier, e.auto ? "auto" : "", e.route ?? "", e.retrieval ?? "", e.strongMatch ? "match" : ""],
       doubles: [e.latencyMs, 1, e.historyUsed ?? 0],
       indexes: [e.outcome],
     });
@@ -251,16 +262,17 @@ export function createAskHandler(deps: HandlerDeps) {
     const key = await cacheKey(pack.packVersion, locale, question);
     try {
       const hit = history.length === 0 ? await env.ASK_KV?.get(key) : null;
-      const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown }) : null;
+      const cached = hit ? (JSON.parse(hit) as { text?: unknown; cite?: unknown; cites?: unknown }) : null;
       if (cached && typeof cached.text === "string") {
         const cachedText = normalizeDashes(cached.text);
         const resolved = resolveNickname(question);
         const tags = answerTags(retrieve(pack, resolved, locale).chunks);
         logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, auto: body.auto, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
+        const cites = cleanCites(cached.cites);
         // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
         const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
-        return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
+        return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(cites.length > 1 ? { cites } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
       }
     } catch {
       // A broken cache entry is treated as a miss.
@@ -296,17 +308,19 @@ export function createAskHandler(deps: HandlerDeps) {
     }
     const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup");
     if (modelAnswer && result.historyUsed === 0 && env.ASK_KV) {
-      background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
+      background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}), ...(result.cites ? { cites: result.cites } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));
-    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed });
+    logEvent(env, loaded, { outcome: result.outcome, locale, source: result.source, question, reason: result.reason ?? "", entry: body.entry, auto: body.auto, ...stats(result.tags), model: result.model, trail: result.failures.map((f) => `${f.model}:${f.reason}`).join(" > "), latencyMs: now() - started, historyUsed: result.historyUsed, route: result.route, retrieval: result.retrieval, strongMatch: result.strongMatch });
     const shareable = result.outcome === "answer" || result.outcome === "unknown";
-    const tags = shareable ? result.tags : [];
+    // A decline carries the topics Rover can talk about instead (owner decision 2026-10-24: never a dead end).
+    const tags = shareable || result.outcome === "decline" ? result.tags : [];
     const cite = shareable ? result.cite : undefined;
+    const cites = shareable && result.cites ? result.cites : undefined;
     // Lead intent: the contact card values come from the dataset (the pack), never from the model.
     const contact = result.lead && shareable ? pack.contact : undefined;
     const signature = modelAnswer ? await sign(result.text) : {};
-    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...signature }, tags), delay, responseHeaders);
+    return streamResponse(result.text, withTags({ done: true, outcome: result.outcome, source: result.source, asOf: pack.packDate, ...(cite ? { cite } : {}), ...(cites ? { cites } : {}), ...(contact ? { contact } : {}), ...signature }, tags), delay, responseHeaders);
   }
 
   return async function onRequest(context: PagesContext): Promise<Response> {

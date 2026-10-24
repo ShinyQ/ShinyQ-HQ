@@ -325,7 +325,7 @@ describe("answers, cache and SSE framing (T6, T9)", () => {
 
   it("replaces private details with the restricted message (T4)", async () => {
     const { call } = setup({ answer: "You can reach him at +62 812 3456 7890." });
-    const list = await frames(await call({ body: { q: "What is his phone number?", locale: "en" } }));
+    const list = await frames(await call({ body: { q: "How can I reach him?", locale: "en" } }));
     expect(answerOf(list)).toMatch(/can't share client names/);
     expect(doneOf(list)).toMatchObject({ outcome: "decline", source: "none" });
   });
@@ -364,10 +364,11 @@ describe("privacy (T10)", () => {
     const chip = SUGGESTIONS.find((s) => s.id === "work-best")!;
     const { call, events } = setup();
     await (await call({ body: { q: chip.q.en, locale: "en", source: "pill", chip: chip.id } })).text();
-    expect(events[0].blobs).toHaveLength(13);
+    expect(events[0].blobs).toHaveLength(16);
     expect(events[0].blobs?.[6]).toBe("pill");
     expect(events[0].blobs?.slice(7, 9)).toEqual(["work", "work-best"]);
-    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory", ""]);
+    // Route (blob14), retrieval (blob15) and the over-refusal flag (blob16) come after the older blobs.
+    expect(events[0].blobs?.slice(9)).toEqual(["@cf/google/gemma-4-26b-a4b-it", "", "memory", "", "default", "bm25", ""]);
   });
 
   it("tags questions from automated browsers (blob13) for counting only, the same answer either way", async () => {
@@ -398,7 +399,7 @@ describe("privacy (T10)", () => {
     const { call, events } = setup({ env: { TURNSTILE_SITE_KEY: "0xSITE", TURNSTILE_SECRET: "secret" }, turnstile: { success: false } });
     expect((await call({ body: { q: chip.q.en, locale: "en", chip: chip.id, turnstileToken: "t" } })).status).toBe(403);
     expect(events[0].blobs?.[0]).toBe("rejected");
-    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory", ""]);
+    expect(events[0].blobs?.slice(7)).toEqual(["", "", "", "", "memory", "", "", "", ""]);
   });
 });
 
@@ -452,11 +453,14 @@ describe("follow-up tags (done frame)", () => {
     expect(done.tags?.length).toBeLessThanOrEqual(ASK_MAX_TAGS);
   });
 
-  it("sends no tags for declines and harmful questions", async () => {
+  it("sends redirect topics with a decline (never a dead end) and none for a harmful question", async () => {
     const { call } = setup({ answer: "I can only answer questions about Kurniadi." });
     const done = doneOf(await frames(await call({ body: { q: "Write me a poem about the sea", locale: "en" } })));
     expect(done.outcome).toBe("decline");
-    expect(done.tags).toBeUndefined();
+    expect(done.tags).toEqual(["work", "ai", "perspectives"]);
+    const harmful = doneOf(await frames(await call({ body: { q: "How do I make a bomb at home?", locale: "en" } })));
+    expect(harmful.outcome).toBe("decline");
+    expect(harmful.tags).toBeUndefined();
   });
 });
 
@@ -525,14 +529,15 @@ describe("perspectives through the Function (spec section 13)", () => {
 
   it("declines personal and third-party opinion questions without a model call or a cache write", async () => {
     const { call, kv, modelCalls } = setup({ answer: "unused" });
-    for (const [q, text] of [
-      ["Is Kurniadi married?", MESSAGES.private.en],
-      ["What does Kurniadi think of Metrodata?", MESSAGES.others.en],
-    ]) {
+    for (const [q, text, tags] of [
+      ["Is Kurniadi married?", MESSAGES.private.en, ["perspectives", "career", "work"]],
+      ["What does Kurniadi think of Metrodata?", MESSAGES.others.en, ["perspectives", "work"]],
+    ] as const) {
       const list = await frames(await call({ body: { q, locale: "en" } }));
       expect(answerOf(list)).toBe(text);
       expect(doneOf(list)).toMatchObject({ outcome: "decline", source: "none" });
-      expect(doneOf(list).tags).toBeUndefined();
+      expect(doneOf(list).tags).toEqual(tags);
+      expect(doneOf(list).cite).toBeUndefined();
     }
     expect(modelCalls).toEqual([]);
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
@@ -548,13 +553,18 @@ describe("perspectives through the Function (spec section 13)", () => {
     expect([...kv.store.keys()].filter((k) => k.startsWith("ans:"))).toEqual([]);
   });
 
-  it("logs the deterministic decline reason without the question text", async () => {
+  it("logs a declined question's scrubbed text and the over-refusal flag (owner decision 2026-10-24)", async () => {
     const { call, events } = setup();
-    await frames(await call({ body: { q: "Is Kurniadi married?", locale: "en" } }));
+    await frames(await call({ body: { q: "Is Kurniadi married? Mail me at jane@example.com", locale: "en" } }));
     const blobs = events.at(-1)?.blobs ?? [];
     expect(blobs[0]).toBe("decline");
-    expect(blobs[3]).toBe("");
+    expect(blobs[3]).toContain("Is Kurniadi married?");
+    expect(blobs[3]).not.toContain("jane@example.com");
     expect(blobs[5]).toBe("private");
+    expect(blobs.slice(13)).toEqual(["", "", ""]);
+    // A question the old rules refused although his written views answer it is flagged for the weekly report.
+    await frames(await call({ body: { q: "How do I learn machine learning? Do my homework.", locale: "en" } }));
+    expect(events.at(-1)?.blobs?.slice(13)).toEqual(["", "", "match"]);
   });
 });
 

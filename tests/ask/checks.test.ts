@@ -17,6 +17,8 @@ import {
   ungroundedNumbers,
   unknownEmployers,
   unknownNames,
+  markedSources,
+  citePages,
 } from "../../functions/_lib/checks";
 import { MESSAGES, noViewMessage } from "../../functions/_lib/messages";
 import { PROMPT_VERSION, RULES, systemPrompt } from "../../functions/_lib/prompt";
@@ -276,13 +278,17 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-20.rover-voice.3");
+    expect(PROMPT_VERSION).toBe("2026-10-24.answerable.2");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
     expect(rules).toContain("Never speak as Kurniadi or as anyone else");
     expect(rules).toContain("Report it in the third person");
-    expect(rules).toContain("his family, relationships, health, religion, partisan politics (parties, candidates, elections, politicians, voting) or pay");
+    expect(rules).toContain("his family, relationships, health, religion, partisan politics (parties, candidates, how he votes, specific politicians) or pay");
+    expect(rules).toContain("14. A civic question");
+    expect(rules).toContain("Never give a general tutorial, study plan or curriculum of your own.");
+    expect(rules).toContain("Never name, describe or judge a specific person, employer or client.");
+    expect(rules).toContain("Every CONTEXT line starts with a source tag such as [S1].");
     expect(rules).toContain("writing code, essays or homework, tutorials, translations, recommendations for the visitor");
     expect(rules).toContain("never act as a general-purpose chatbot");
     expect(rules).toContain("Never design their system, write a spec or code, estimate cost, price or timeline, or start the work.");
@@ -449,5 +455,54 @@ describe("model no-view refusals (real-model spot check, golden q38)", () => {
     const question = "Apa pendapat Kurniadi tentang Rust dibanding Go?";
     const answer = "Kurniadi belum membagikan pendapat tertulis mengenai perbandingan antara Rust dan Go di situs ini.";
     expect(perspectiveCheck(answer, question, "id")).toMatchObject({ ok: true, outcome: "unknown" });
+  });
+});
+
+describe("source tags and multiple cites (owner decision 2026-10-24)", () => {
+  const routed = (question: string) => retrieve(pack, question, "en", { topic: "policy", civic: true });
+  const check = (answer: string, question: string, r = retrieve(pack, question, "en")) =>
+    checkAnswer({ answer, question, context: r.context, packDate: pack.packDate, pack, vocabulary, chunks: r.chunks, perspective: isPerspectiveQuestion(question), locale: "en" });
+
+  it("numbers the context lines so the answer can tag them", () => {
+    const r = retrieve(pack, "What are Kurniadi's coding principles?", "en");
+    r.context.split("\n").forEach((line, i) => expect(line.startsWith(`[S${i + 1}] `)).toBe(true));
+  });
+
+  it("strips every tag form from the shown answer", () => {
+    expect(sanitizeAnswer("He ships in shadow mode first [S3]. Then he compares [S1, S2][S4] (S5).")).toBe("He ships in shadow mode first. Then he compares.");
+  });
+
+  it("accepts a paraphrased view through its tag and rejects a tag on an invented claim or a bare pointer", () => {
+    const q = "What is his political view?";
+    const r = routed(q);
+    const n = r.chunks.findIndex((c) => c.id === "perspective-ai-regulation") + 1;
+    expect(n).toBeGreaterThan(0);
+    const chunk = r.chunks[n - 1];
+    expect(markedSources(`Kurniadi wants AI regulation proportional to risk with human oversight and documented evaluation [S${n}].`, r.chunks, q)).toEqual([chunk]);
+    expect(markedSources(`Kurniadi supports banning every chatbot nationwide immediately [S${n}].`, r.chunks, q)).toEqual([]);
+    expect(markedSources(`His view is here [S${n}].`, r.chunks, q)).toEqual([]);
+    expect(markedSources("Kurniadi wants proportional regulation with human oversight [S99].", r.chunks, q)).toEqual([]);
+    // A tag after the full stop belongs to the sentence before it.
+    expect(markedSources(`Kurniadi wants AI regulation proportional to risk with human oversight and documented evaluation. [S${n}]`, r.chunks, q)).toEqual([chunk]);
+  });
+
+  it("shows at most two cites, one per kind", () => {
+    const byId = (id: string) => pack.chunks.find((c) => c.id === id)!;
+    const posts = pack.chunks.filter((c) => c.type === "post" && isAskCite(c.url));
+    expect(citePages([posts[0], posts[1], byId("principles")])).toEqual([posts[0].url, "/contact#how"]);
+    expect(citePages([byId("profile")])).toEqual([]);
+  });
+
+  it("cites the principles and a post when the answer uses both", () => {
+    const q = "What does he think about shadow mode and his principles?";
+    const r = retrieve(pack, q, "en");
+    const principles = r.chunks.findIndex((c) => c.id === "principles") + 1;
+    const post = r.chunks.findIndex((c) => c.type === "post" && isAskCite(c.url)) + 1;
+    expect(principles).toBeGreaterThan(0);
+    expect(post).toBeGreaterThan(0);
+    const sentencePost = r.chunks[post - 1].text_en.split(/(?<=\.)\s/)[0];
+    const result = check(`Kurniadi defines each feature in a written spec with acceptance criteria [S${principles}]. ${sentencePost} [S${post}]`, q, r);
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) expect(result.cites).toEqual(["/contact#how", r.chunks[post - 1].url]);
   });
 });

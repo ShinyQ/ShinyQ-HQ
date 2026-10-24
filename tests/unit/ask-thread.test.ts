@@ -67,6 +67,15 @@ describe("thread citations", () => {
     expect(ok.cite).toBe("/blog/spec-driven-development-with-ai-coding-agents");
     expect(bad).not.toHaveProperty("cite");
   });
+
+  it("keeps two allowlisted cites and drops forged ones", () => {
+    const [two, forged] = parseThread([
+      { id: "a", role: "assistant", text: "x", cite: "/contact#how", cites: ["/contact#how", "/labs/clearbox", "/library"] },
+      { id: "b", role: "assistant", text: "y", cites: ["//evil.example", "/contact#how"] },
+    ]);
+    expect(two.cites).toEqual(["/contact#how", "/labs/clearbox"]);
+    expect(forged).not.toHaveProperty("cites");
+  });
 });
 
 describe("thread contact cards", () => {

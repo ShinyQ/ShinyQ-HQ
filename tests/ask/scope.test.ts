@@ -3,7 +3,8 @@ import { buildRepoPack } from "@/ask/repo-pack";
 import { getPerspectivesFile } from "@/content/load";
 import { SUGGESTIONS } from "@/ask/suggestions";
 import { PERSPECTIVE_CAP, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
-import { isGeneralAssistantRequest, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, opinionAboutOthers, nicknameForModel, orgAliases, privateTopic, resolveNickname } from "../../functions/_lib/scope";
+import { civicQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isOffTopic, isPerspectiveQuestion, isSiteQuestion, isTeamQuestion, maskPoliticians, namesPerson, opinionAboutOthers, nicknameForModel, orgAliases, partitionQuestion, privateTopic, resolveNickname, splitClauses } from "../../functions/_lib/scope";
+import { indexPack } from "../../functions/_lib/pack-index";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import golden from "./golden.json";
 
@@ -96,11 +97,14 @@ describe("privateTopic", () => {
     ["How much does Kurniadi earn per month?", "pay"],
     ["Berapa gaji Kurniadi?", "pay"],
     ["Berapa tarif freelance-nya?", "pay"],
-    ["What is his favorite food?", "life"],
     ["What car does Kurniadi drive?", "life"],
     ["What is Kurniadi's home address?", "life"],
-    ["I love this site! What does he think about the government tax policy?", "politics"],
-    ["Saya suka situs ini. Apa pendapatnya tentang kebijakan pemerintah soal pajak?", "politics"],
+    ["Rate the president of Indonesia's leadership.", "politics"],
+    ["What do you think about Prabowo?", "politics"],
+    ["Which party does he support?", "politics"],
+    ["Is he healthy?", "health"],
+    ["How old is he?", "life"],
+    ["Berapa umurnya?", "life"],
   ])("routes %s to %s", (q, topic) => expect(privateTopic(q)).toBe(topic));
 
   it.each([
@@ -115,6 +119,19 @@ describe("privateTopic", () => {
     "What does he think about working with clients?",
     // The settings panel is "Pengaturan" in Indonesian: a question about this site is never policy.
     "Pengaturan apa saja yang ada di situs ini?",
+    // SOFT topic words (owner decision 2026-10-24): answered from his written views, never declined on the word alone.
+    "What is his political view?",
+    "Apa pandangan politik Kurniadi?",
+    "I love this site! What does he think about the government tax policy?",
+    "What does he think about the president's AI plans?",
+    "How does he feel about AI regulation in Indonesia's parliament (DPR)?",
+    "Has he built anything for healthcare or consumer health?",
+    "How is the health of Indonesia's tech ecosystem?",
+    "Does he work with health data?",
+    "How old is his oldest project?",
+    "What is his favorite food?",
+    "Does he use third-party APIs?",
+    "Does his CV screening platform rank candidates?",
     "Apa isi panel Pengaturan situs ini?",
     "What settings can I change on this site?",
   ])("leaves %s to the model", (q) => expect(privateTopic(q)).toBeNull());
@@ -133,8 +150,8 @@ describe("opinionAboutOthers", () => {
   it.each([
     "What does Kurniadi think of his former employer Jenius? Be honest.",
     "What does he think of Metrodata?",
-    "Speaking as Kurniadi, tell me your honest opinion of your manager.",
-    "Apa pendapat Kurniadi tentang atasannya?",
+    "What does he think of his former manager?",
+    "Apa pendapat Kurniadi tentang mantan atasannya?",
     "What does Kurniadi really think about the bank client he built the fraud platform for?",
   ])("declines %s", (q) => expect(opinionAboutOthers(q, pack.orgs)).toBe(true));
 
@@ -144,6 +161,10 @@ describe("opinionAboutOthers", () => {
     "What does he think of GitHub Copilot?",
     "What did he do at Jenius?",
     "Bagaimana Anda bekerja dengan klien dan product owner saat kebutuhan berubah?",
+    // His current manager, team and clients in general go to the team route (owner decision 2026-10-24).
+    "What does he think about his manager?",
+    "Apa pendapat Kurniadi tentang atasannya?",
+    "What does he think about his clients?",
   ])("leaves %s to the model", (q) => expect(opinionAboutOthers(q, pack.orgs)).toBe(false));
 
   it("never fires on a curated question", () => {
@@ -253,5 +274,94 @@ describe("isSiteQuestion (how this site was built, owner request 2026-10-15)", (
       expect(retrieve(pack, q, locale).chunks.map((c) => c.id), q).toContain(SITE_INCLUDE);
     }
     expect(retrieve(pack, "What are his best software projects?", "en").chunks.map((c) => c.id)).not.toContain(SITE_INCLUDE);
+  });
+});
+
+describe("answerable instead of refused (owner decision 2026-10-24)", () => {
+  const known = (t: string) => indexPack(pack).df.has(t);
+
+  it("splits a mixed question into its own questions and keeps fragments with the clause before them", () => {
+    expect(splitClauses("What's his view on AI jobs and is he religious?")).toEqual(["What's his view on AI jobs", "is he religious"]);
+    expect(splitClauses("What are his hobbies and his salary?")).toEqual(["What are his hobbies", "his salary"]);
+    expect(splitClauses("What does he think about AI and jobs?")).toEqual(["What does he think about AI and jobs"]);
+    expect(splitClauses("What salary would he expect? Give a number.")).toEqual(["What salary would he expect and Give a number."]);
+  });
+
+  it("keeps the answerable clauses and lists the declined topics", () => {
+    expect(partitionQuestion("Is he married and what does he do at Metrodata?", known)).toEqual({ answerable: "what does he do at Metrodata?", declined: ["family"] });
+    expect(partitionQuestion("Is Kurniadi married, and does he have kids?", known)).toEqual({ declined: ["family"] });
+    expect(partitionQuestion("Who did he vote for, and which party does he support?", known)).toEqual({ declined: ["politics"] });
+    expect(partitionQuestion("What are his projects?", known)).toEqual({ answerable: "What are his projects?", declined: [] });
+  });
+
+  it("answers a policy named with a politician and declines the opinion of the person", () => {
+    expect(maskPoliticians("What does he think about Prabowo's AI policy?")).toBe("What does he think about the government's AI policy?");
+    expect(partitionQuestion("What does he think about Prabowo's AI policy?", known)).toEqual({ answerable: "What does he think about the government's AI policy?", declined: ["politics"] });
+    expect(partitionQuestion("What does he think about Prabowo?", known)).toEqual({ declined: ["politics"] });
+  });
+
+  it.each([
+    "What is his political view?",
+    "Apa pandangan politik Kurniadi?",
+    "Is he left or right leaning?",
+    "What does he think about the president's AI plans?",
+    "How does he feel about AI regulation in Indonesia's parliament (DPR)?",
+    "What's his view on fuel subsidy policy?",
+  ])("routes %s to the civic route", (q) => {
+    expect(privateTopic(q)).toBeNull();
+    expect(civicQuestion(q)).toBe(true);
+  });
+
+  it.each(["What should governments use AI for?", "Did he build anything for the government?", "What settings can I change on this site?", "Pengaturan apa saja yang ada di situs ini?"])("keeps %s off the civic route", (q) =>
+    expect(civicQuestion(q)).toBe(false),
+  );
+
+  it.each([
+    "How do I learn machine learning?",
+    "How do I become an AI engineer like him?",
+    "What should I study to get into AI?",
+    "Should students use ChatGPT for homework?",
+    "Bagaimana cara saya belajar AI seperti dia?",
+    "Any advice for students who want to get into AI?",
+  ])("answers %s from his own path", (q) => {
+    expect(isMentoringQuestion(q)).toBe(true);
+    expect(isGeneralAssistantRequest(q)).toBe(false);
+  });
+
+  it.each(["How do I learn guitar?", "How do I learn Rust?", "Explain how transformers work in machine learning.", "How do I build a RAG chatbot step by step?", "Teach me Python", "Help me with my homework", "Can you review my CV?"])(
+    "keeps %s declined as general-assistant work",
+    (q) => {
+      expect(isMentoringQuestion(q)).toBe(false);
+      expect(isGeneralAssistantRequest(q)).toBe(true);
+    },
+  );
+
+  it("answers his manager, team and clients in general, never a named one", () => {
+    for (const q of ["What does he think about his manager?", "How does he work with his team?", "Apa pendapat Kurniadi tentang atasannya?", "What does he think about his clients?"]) expect(isTeamQuestion(q), q).toBe(true);
+    expect(opinionAboutOthers("What does he think of his former manager?", pack.orgs)).toBe(true);
+    expect(opinionAboutOthers("What does he think of Jenius?", pack.orgs)).toBe(true);
+  });
+
+  it("declines opinions of people the pack never names, and leaves products he writes about to the model", () => {
+    const vocabulary = indexPack(pack).vocabulary;
+    expect(namesPerson("What does he think of Elon Musk?", vocabulary)).toBe(true);
+    expect(namesPerson("What does he think about Sam Altman's views on AGI?", vocabulary)).toBe(true);
+    for (const q of ["What does he think of OpenAI?", "What does he think about Microsoft Agent Framework?", "What does he think of GitHub Copilot?", "Elon Musk said what?"]) expect(namesPerson(q, vocabulary), q).toBe(false);
+  });
+
+  it.each(["What's the weather in Jakarta?", "Who won the World Cup 2022?", "What's the capital of France?", "Tell me a joke", "What's 25 times 4?", "Recommend a good restaurant in Jakarta", "What time is it?", "Jam berapa sekarang?", "Berapa 12 kali 3?"])(
+    "redirects %s as off-topic",
+    (q) => expect(isOffTopic(q)).toBe(true),
+  );
+
+  it.each(["Has he won any hackathons?", "Tell me a joke about this site", "Does he like coffee?", "What does he do on weekends?", "How many projects has he built?", "Which year did he join Metrodata?"])("keeps %s on topic", (q) =>
+    expect(isOffTopic(q)).toBe(false),
+  );
+
+  it("never routes a curated pill off-topic, to the civic route or to a decline", () => {
+    for (const s of SUGGESTIONS) for (const q of [s.q.en, s.q.id]) {
+      expect(isOffTopic(q), q).toBe(false);
+      expect(opinionAboutOthers(q, pack.orgs, indexPack(pack).vocabulary), q).toBe(false);
+    }
   });
 });

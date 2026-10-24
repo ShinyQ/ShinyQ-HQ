@@ -232,6 +232,13 @@ describe("done frame citation", () => {
       expect(done(cite), String(cite)).not.toHaveProperty("cite");
     }
   });
+
+  it("keeps up to two allowlisted cites and drops forged ones (owner decision 2026-10-24)", () => {
+    const frame = (cites: unknown) => parseFrame(JSON.stringify({ done: true, outcome: "answer", source: "primary", asOf: "2026-10-24", cite: "/contact#how", cites }));
+    expect(frame(["/contact#how", "/blog/spec-driven-development-with-ai-coding-agents"])).toMatchObject({ cites: ["/contact#how", "/blog/spec-driven-development-with-ai-coding-agents"] });
+    expect(frame(["/contact#how", "//evil.example", "/labs/clearbox", "/library"])).toMatchObject({ cites: ["/contact#how", "/labs/clearbox"] });
+    for (const bad of [["//evil.example"], ["/contact#how"], "nope", 42]) expect(frame(bad), JSON.stringify(bad)).not.toHaveProperty("cites");
+  });
 });
 
 describe("done frame contact card (lead intent)", () => {

@@ -26,6 +26,8 @@ interface MockOptions {
   outcome?: string;
   tags?: string[];
   cite?: string;
+  /** Every cited page when the answer cites more than one (the `done` frame, owner decision 2026-10-24). */
+  cites?: string[];
   /** Contact card of a lead-intent answer (the `done` frame). */
   contact?: { email: string; linkedin: string };
   /** Server signature of the answer (the `done` frame), sent back as history with the next question. */
@@ -34,11 +36,11 @@ interface MockOptions {
   post?: number;
 }
 
-const sse = (deltas: string[], outcome: string, tags: string[], cite?: string, contact?: MockOptions["contact"], sig?: string) =>
-  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}), ...(contact ? { contact } : {}), ...(sig ? { sig } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
+const sse = (deltas: string[], outcome: string, tags: string[], cite?: string, contact?: MockOptions["contact"], sig?: string, cites?: string[]) =>
+  [...deltas.map((delta) => ({ delta })), { done: true, outcome, source: "primary", asOf: AS_OF, tags, ...(cite ? { cite } : {}), ...(cites ? { cites } : {}), ...(contact ? { contact } : {}), ...(sig ? { sig } : {}) }].map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("");
 
 /** Routes `/api/ask` and records every request to it. */
-async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, contact, sig, post = 200 }: MockOptions) {
+async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", "AI agents."], outcome = "answer", tags = ["ai", "voice"], cite, cites, contact, sig, post = 200 }: MockOptions) {
   const requests: Request[] = [];
   await page.route("**/api/ask", async (route) => {
     const request = route.request();
@@ -48,7 +50,7 @@ async function mockAsk(page: Page, { status, deltas = ["Kurniadi is building ", 
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(status) });
     }
     if (post !== 200) return route.fulfill({ status: post, contentType: "application/json", headers: { "retry-after": "90" }, body: JSON.stringify({ error: "rate_limited", retryAfter: 90 }) });
-    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite, contact, sig) });
+    return route.fulfill({ status: 200, contentType: "text/event-stream", body: sse(deltas, outcome, tags, cite, contact, sig, cites) });
   });
   return {
     all: requests,
@@ -534,6 +536,19 @@ test("Perspectives topic: a cited answer links to its written source on About", 
   await link.click();
   await expect(page).toHaveURL(/\/en\/contact#how$/);
   await expect(page.locator("#how")).toBeAttached();
+});
+
+test("an answer that cites two sources shows both links, one per kind", async ({ page }) => {
+  await mockAsk(page, { status: enabled(), deltas: ["Kurniadi defines each feature in a written spec and ships risky changes in shadow mode."], tags: ["perspectives"], cite: "/contact#how", cites: ["/contact#how", "/blog/why-the-better-fraud-engine-shipped-in-shadow-mode"] });
+  await openPage(page, "/en/labs?tier=static");
+  await page.getByTestId("ask-launcher").click();
+  await dock(page).getByRole("textbox", { name: en.ask.dock.inputLabel }).fill("How does he ship risky changes?");
+  await dock(page).getByRole("textbox", { name: en.ask.dock.inputLabel }).press("Enter");
+  const links = thread(page).getByTestId("ask-cite");
+  await expect(links).toHaveCount(2);
+  await expect(links.nth(0)).toHaveText(en.ask.dock.source.replace("{label}", en.ask.cite.how));
+  await expect(links.nth(1)).toHaveText(en.ask.dock.source.replace("{label}", en.ask.cite.blog));
+  await expect(links.nth(1)).toHaveAttribute("href", "/en/blog/why-the-better-fraud-engine-shipped-in-shadow-mode");
 });
 
 test("lead intent: the contact card shows email, LinkedIn and the Contact page under the answer, and passes axe", async ({ page }) => {

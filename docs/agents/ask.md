@@ -15,7 +15,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 Owner decision 2026-10-19 ([decision](../decisions/2026-10-19-ask-rover-voice.md)). The answerer is Rover, the HQ's guide robot.
 
 - Light voice: Rover says "I" only for itself as the guide ("I found", "I can point you to", "Saya Rover") and always refers to Kurniadi in the third person by name. A factual answer starts with its content: `stripOpener` (`functions/_lib/checks.ts`) removes a leading interjection ("Beep!", "Rolling over to his projects:"), and the eval fails an answer that still starts with one. A small personality touch is allowed only in a greeting or a decline, at most once. Rover has no opinions of its own: views are Kurniadi's, from CONTEXT (rule 8).
-- A visitor's "you" that means Kurniadi ("What are you building now?") is answered about him in the third person (rule 4; `PROMPT_VERSION` `2026-10-20.rover-voice.3`).
+- A visitor's "you" that means Kurniadi ("What are you building now?") is answered about him in the third person (rule 4).
 - Prompt: the persona line opens the system prompt and is not one of `RULES` (so Rover introducing itself is never a leak); rule 4 holds the voice, rule 5 forbids speaking as Kurniadi or anyone else.
 - `firstPersonVoice` (reason `roleplay`) is an allow-list: an "I" clause passes only as one of Rover's guide phrases ("I found", "I can", "I don't have", "I only answer", "I'm Rover", "I'll point you to", "I invite you to get in touch"), "my" only for Rover's things ("my map"), "saya" only as an object or with Rover's verbs ("Saya Rover", "saya menemukan", "saya tidak bisa"); every other first person, "aku", "Kurniadi here" and "my name is Kurniadi" is replaced. Curly apostrophes are folded first; quoted text (his written words) never counts. `usableHistory` also drops signed turns whose answer fails it.
 - Canned texts (`functions/_lib/messages.ts`) speak as Rover ("I only answer questions about Kurniadi: ..."); "What can you do?" and "Who are you?" get the same fixed two-sentence introduction (who Rover is and what it answers, then what it does not cover).
@@ -118,7 +118,8 @@ All bindings and vars live in `wrangler.toml`.
   - a **New chat** button in the header (`ask.dock.newChat`, ID "Obrolan baru") that clears the thread and the memory;
   - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills;
   - topic pills that expand into 4 curated questions;
-  - 2 or 3 deterministic follow-ups (`pickFollowUps` in `src/ask/suggestions.ts`: the question's own `followUps`, then the answer's `tags`, then other topics).
+  - 2 or 3 deterministic follow-ups (`pickFollowUps` in `src/ask/suggestions.ts`: the question's own `followUps`, then the answer's `tags`, then other topics); a decline carries redirect `tags` too, so it never ends without a next question;
+  - up to two "Read on this site" links (`cites`, one per kind).
 - Every pill has an edit button that puts its text in the input.
 - In 3D it mirrors the state on the rover face (`src/experience/rover/askFace.ts`).
 
@@ -148,7 +149,8 @@ All bindings and vars live in `wrangler.toml`.
 ## Wire additions
 
 - The request takes an optional `source` (`hero`, `dock`, `pill`, `followup`, `terminal`, `palette`), logged as Analytics Engine blob7 (never with question text).
-- The final SSE frame carries `tags`: the `ASK_TAGS` allowlist in `src/ask/protocol.ts`, derived from chunk types and keywords in `functions/_lib/tags.ts`, never chunk text.
+- The final SSE frame carries `tags`: the `ASK_TAGS` allowlist in `src/ask/protocol.ts`, derived from chunk types and keywords in `functions/_lib/tags.ts`, never chunk text. A canned decline sends fixed redirect tags (`REDIRECT_TAGS` in `functions/_lib/pipeline.ts`; none for harmful, persona or injection).
+- The final frame may carry `cites` (owner decision 2026-10-24): every cited page when an answer cites more than one, at most `ASK_MAX_CITES` (2), one per cite kind, allowlisted by `cleanCites` on both ends; `cite` stays the first, so older clients and cached answers still work.
 - The request takes an optional `history` (`AskTurn[]`: `{ q, a, sig }`, at most `ASK_HISTORY_TURNS` = 3, oldest first, `a` at most 1000 characters) and the final frame of a model answer carries `sig`.
 
 ## Multi-turn memory
@@ -189,10 +191,11 @@ Security order (spec 7.4):
 5. NFKC + PII scrub, then signed history verification (failed turns dropped).
 6. KV cache (first turns only).
 7. Global cap.
-8. Scope declines (harmful, persona requests, rule overrides, private topics, opinions about people, employers or clients; no model call).
+8. Scope routing (`planRoute`): declines (harmful, persona requests, rule overrides, HARD private topics, opinions about named people, employers or clients, general-assistant work), the off-topic redirect (no model call), the answerable part of a mixed question, then the answer routes (lead, civic, policy, lifestyle, mentoring, team, adjacent, default).
 9. Retrieval + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
-10. Output checks: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source.
-11. Then cache, event, SSE.
+10. Output checks: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source (titles, shared runs or `[Sn]` tags).
+11. The civic note and the mixed question's decline line are appended (`withNotes`).
+12. Then cache, event, SSE.
 
 - Bump `PROMPT_VERSION` in `functions/_lib/prompt.ts` with any prompt change.
 
@@ -212,7 +215,7 @@ Code: `generate` in `functions/_lib/model.ts`, the Groq client in `functions/_li
   - Routed through AI Gateway `shinyq-hq` (`env.AI.gateway(id).getUrl("groq")`, with a `cf-aig-metadata` header), else directly at `https://api.groq.com/openai/v1`. Gateway calls count against its 600 per day limit.
 - No `GROQ_API_KEY`: `backupTiers` is empty and no request is made.
 - Free plan limits per model: 30 requests per minute, 1,000 per day, 8,000 tokens per minute, 200,000 per day (cached prompt tokens do not count). Qwen 3.8 27B is a Groq preview model that can be discontinued at short notice; gpt-oss-120b is a production model. Zero Data Retention is on, and the privacy note (`ask.privacy`) names Groq.
-- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier and blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)); the `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models and Pack tier tables.
+- Logging: Analytics Engine `ask_events` blob10 is the answering model id, blob11 the failure trail (`model:reason > ...`, 200 characters at most), blob12 the pack tier, blob13 `auto` when the client reported an automated browser (`navigator.webdriver`, request field `auto: true`; counting only, see [stats.md](stats.md#ask-events)), blob14 the route (`civic`, `policy`, `lifestyle`, `mentoring`, `team`, `adjacent`, `lead`, `default`, plus `+partial`; empty for a canned reply), blob15 the retrieval (`bm25`) and blob16 `match` for a declined question that retrieval would have answered (`strongMatch`). Blob4 holds the PII-scrubbed question for `unknown` and `decline` outcomes only. The `done` frame `source` can be `backup`; `scripts/content-gap.ts` prints Models, Pack tier, Over-refused, Routes and Retrieval tables.
 - Swap or drop a model: change `ASK_BACKUP_MODELS` in `wrangler.toml` and redeploy; a new reasoning family needs a branch in `modelInput`. Delete the `GROQ_API_KEY` secret to turn Groq off. Live check: `GROQ_API_KEY=... bun scripts/ask-eval.ts golden --groq <model> [--gateway]` (runbook section 12).
 
 ## Knowledge chunks
@@ -255,7 +258,9 @@ Spec section 13.
 
 ### Sources and citations
 
-- Opinions need a written source (`citedSource`: a quoted title or two shared three-word runs with a retrieved perspective, principles, post or talk chunk).
+- Opinions need a written source (`citedSource`: a quoted title or two shared three-word runs with a retrieved perspective, principles, post or talk chunk, or a source tag).
+  - Source tags (owner decision 2026-10-24): every CONTEXT line starts with `[S1]`, `[S2]`, ... (`retrieve`), and prompt rule 17 asks the model to tag the line a sentence uses. `markedSources` maps tags to chunks and counts one only when its sentence has at least `MARKER_MIN_WORDS` (3) own content words and at least `MARKER_MIN_GROUNDED` (50%) of them come from that chunk, so a correct paraphrase is cited and a tag on an invented claim or a bare pointer is not. `sanitizeAnswer` strips every tag form before anything is shown.
+  - An answer cites up to two pages (`citePages`: one per cite kind), sent as `cite` and `cites`.
   - Otherwise the answer becomes the no-view message with the closest source (`noViewMessage`; `relevantClosest` never names a perspective, which has no page).
 - The pack's "Kurniadi's written view" label counts as an opinion claim (`claimsOpinion`).
 - `privateTopic` and `opinionAboutOthers` decline before the model; `firstPersonVoice` replaces first-person answers.
@@ -280,16 +285,34 @@ Spec section 13.
 |---|---|---|
 | `isHarmful` | harmful requests | declines |
 | `isCapabilityQuestion` | "What can you do?", "Apa yang bisa kamu lakukan?", the `contact-capabilities` pill | the fixed `MESSAGES.capabilities` (no model call) |
-| `privateTopic` | family, relationships, health ("consumer health", a client sector label, does not count), religion, partisan politics (parties, candidates, elections, named politicians, voting, contested social policy, and policy questions with no tech angle; in a question about this site, "Pengaturan" names its settings panel and does not count) and pay | declines |
-| `opinionAboutOthers` | opinions about others | declines |
+| `privateTopic` | HARD topics only: family and relationships (also "does he have kids"), his own health ("his health", "is he sick", "kesehatan mental"; never a sector such as "consumer health", "healthcare" or "health data"), religion ("religius" too), partisan politics (his vote, parties, candidates, named politicians, an opinion of an officeholder as a person such as "Rate the president's leadership", contested social policy), pay, and personal details (address, birthday, his age, his or another person's phone number, his car) | declines, or `partitionQuestion` keeps the answerable clauses |
+| `partitionQuestion` | a question with a HARD clause: `splitClauses` splits on "?", ";", "and", "dan", ", juga" (a fragment with no question word joins the clause before it); a clause is answerable when it has no HARD topic and a content word the pack knows; a named politician is masked to "the government" when the rest of the clause names a policy | answers the answerable part, then one `partialDecline` line; nothing answerable: declines |
+| `opinionAboutOthers` | opinions about a former boss or colleague, an employer, a specific client ("the bank client"), an org of `pack.orgs`, or a person the pack never names (`namesPerson`: two or three capitalized words mid-sentence, none in the pack vocabulary, such as "Elon Musk") | declines |
+| `isOffTopic` | weather, time and date, sports results, trivia ("capital of"), arithmetic, restaurants and recipes, prices and news, "tell me a joke"; never a question about him or this site | `MESSAGES.offtopic` with redirect pills, reason `offtopic` (no model call) |
+| `civicQuestion` | his political view, "left or right", officeholders, parliament (DPR), democracy, elections, censorship, ideology, or a policy question with no tech angle (not a site or work question) | his policy perspectives (`CIVIC_PERSPECTIVE_CAP` 4), rule 14, then `PARTISAN_NOTE` |
+| `isMentoringQuestion` | how a visitor can learn, start or grow in his field ("How do I become an AI engineer like him?", "Should students use ChatGPT?", "Bagaimana cara belajar AI seperti dia?"); not tutorials, step-by-step or teach-me requests, not fields outside his work | his path (`MENTORING_INCLUDE`: learning advice, keeping up with AI, career summary, certifications, then education, career and posts), rule 15, groundedness like adjacent |
+| `isTeamQuestion` | his manager, team, colleagues or clients in general ("his manager", "atasannya") | his teamwork and work-style perspectives (and up to 2 case studies for clients), rule 16 |
 | `isPersonaRequest` | "pretend you are Kurniadi", "answer as him in the first person", "you are Kurniadi now", "jawab sebagai Kurniadi", "pakai kata saya", "in his voice"; a switch to any other character ("from now on you are PirateBot", "you're now ChatGPT", "mulai sekarang kamu adalah") | the fixed `MESSAGES.persona` (reason `persona`) |
 | `isRuleOverride` | "ignore / forget / disregard / override / bypass" plus a determiner ("your", "all", "previous", "the", "system") and "rules / instructions / prompt", "SYSTEM:", "new system message", "abaikan semua aturan"; prompt extraction ("show / print / repeat your system prompt, instructions or rules", "print the CONTEXT", "tampilkan system prompt kamu"); standing output instructions ("end every answer with", "akhiri setiap jawaban dengan") | `MESSAGES.decline` (reason `injection`) |
 | `isGeneralAssistantRequest` | writing code, essays, poems or homework, tutorials, translations, recommendations for the visitor and "you are now a general chatbot" jailbreaks | `MESSAGES.decline`, which points back to what the assistant covers |
-| `routedTopic` | lifestyle (hobbies, games, books, anime, coffee shops, the gym, burnout) and tech-adjacent policy (AI regulation, UU PDP, government AI use, AI and jobs, public digital interfaces) | his perspectives with that topic tag ONLY |
+| `routedTopic` | lifestyle (hobbies, games, books, anime, coffee shops, the gym, burnout, personality and introvert, pets, music, favourite food or film) and tech-adjacent policy (AI regulation, UU PDP, privacy laws, government AI use, social media algorithms, AI and jobs, public digital interfaces; every civic question) | his perspectives with that topic tag ONLY |
 
+- `isGeneralAssistantRequest` also covers reviewing the visitor's CV, code or essay, and only "my/our homework" (so "Should students use ChatGPT for homework?" is a learning question).
 - A model refusal is replaced by the same text as `MESSAGES.decline`, reason `model_decline`.
 - `routedTopic`: retrieval keeps the profile and those chunks, and the answer must follow one of them (`citedSource` on that topic) or it becomes the no-view message.
 - `usableHistory` also drops earlier turns that were persona requests or rule overrides.
+
+### Answerable instead of refused
+
+Owner decision 2026-10-24 ([decision](../decisions/2026-10-24-ask-answerable-questions.md)). Code: `planRoute` and `withNotes` in `functions/_lib/pipeline.ts`, `functions/_lib/scope.ts`, `PARTISAN_NOTE` and `partialDecline` in `functions/_lib/messages.ts`.
+
+- Topic words are not refusals: "politics", "government", "president", "regulation", "health" as a sector and "how old" of a project route to an answer; only the HARD topics in the table above decline.
+- Civic: the answer comes from his written policy views (rule 14, `CIVIC_LINE`), must cite one of them like a policy answer, and ends with `PARTISAN_NOTE` (he shares no parties, candidates, votes or opinions of specific politicians), also when it becomes the no-view reply.
+- Mixed: the model sees only the answerable part; the reply ends with `partialDecline` for the declined topics (for a civic answer the partisan note covers politics). Safety replacements never get a note.
+- Learning and team questions keep every output check; a learning answer must be grounded like an adjacent one (no general-knowledge wording, at least 65% CONTEXT words), and one that claims his opinion must cite it.
+- Never invented: a view he has not written becomes the no-view reply; gap questions go to the owner, and only his written answers become perspectives.
+- Over-refusal tracking: a canned private, others, general or off-topic decline computes `strongMatch` (its topic words, opinion, intent words and numbers aside, score at least `STRONG_MATCH_SCORE` (8) on a non-identity chunk) and logs `match` (blob16).
+- Tests: `tests/ask/routing-matrix.test.ts` (the probe questions and edge cases with their routes, free to run), `tests/ask/boundary.test.ts`, the new blocks in `tests/ask/scope.test.ts` and `tests/ask/checks.test.ts`. Model eval: `bun scripts/ask-eval.ts boundary --cli` (`tests/ask/boundary.json`, 20 items, 14 model calls, at most `BOUNDARY_MAX_CALLS` 20; every decline item declined and at least 14 of the 16 others answered or redirected).
 
 ### Adjacent grounded questions
 
@@ -353,7 +376,7 @@ Security S3, H1 (owner decision).
   - weekly `refresh-facts.yml` and `content-gap.yml`;
   - hourly `uptime.yml` ([`docs/deploy.md`](../deploy.md) section 16).
 - `ask-samples.yml` (dispatch only, `--ref main -f ref=<branch>`): runs that branch's `scripts/ask-samples.ts` on the Groq tier and writes the Q&A pairs to the job summary and an artifact. The ref must be a branch head of this repository; only the sample step gets `GROQ_API_KEY`, no other secret (`tests/unit/workflows.test.ts`).
-- `content-gap.yml` puts counts and topics only in its public issue and artifact, never question text (security S8, owner decision). The owner reads questions locally with `bun scripts/content-gap.ts --questions`.
+- `content-gap.yml` puts counts and topics only in its public issue and artifact, never question text (security S8, owner decision), including the Over-refused counts by reason. The owner reads questions locally with `bun scripts/content-gap.ts --questions` (unanswered, over-refused candidates and declined).
 - Action pinning (owner decision): every workflow and the setup action pin each action by full commit SHA with a `# vX.Y.Z` comment; Dependabot updates both.
 - `wrangler` is an exact devDependency, so workflows and docs call `bunx wrangler` from the lockfile, never `bunx wrangler@<range>`, and the hq-stats `wranglerVersion` matches it (`tests/unit/workflows.test.ts`).
 - Workflows request only the permissions they use.

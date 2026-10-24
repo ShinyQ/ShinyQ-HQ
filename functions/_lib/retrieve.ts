@@ -17,6 +17,17 @@ export const PERSPECTIVE_INCLUDE = "principles";
 export const SITE_INCLUDE = "site-build";
 /** Most perspective chunks one answer gets: they all share opinion words, so without a cap they crowd out the posts and projects behind them. */
 export const PERSPECTIVE_CAP = 3;
+/** Perspective cap of a civic question (owner decision 2026-10-24): his policy views together make his stance. */
+export const CIVIC_PERSPECTIVE_CAP = 4;
+/** Chunks a learning or career question gets first (owner decision 2026-10-24): his own path and his written advice. */
+export const MENTORING_INCLUDE = ["profile", "perspective-learning-advice", "perspective-keeping-up-with-ai", "career-summary", "certifications"] as const;
+const MENTORING_TYPES: ReadonlySet<string> = new Set(["perspective", "post", "education", "career", "certifications", "talk"]);
+/** Most perspectives a learning or team answer gets (the included ones count). */
+export const ROUTE_PERSPECTIVE_CAP = 4;
+/** His written views on teamwork and working style: the sources of a question about his manager, team or clients. */
+const TEAM_TAGS = ["teamwork", "work-style"];
+/** At most this many case studies (sector-level clients) for a team question that asks about clients. */
+export const TEAM_PROJECT_CAP = 2;
 /** Added for lead-intent questions (`isLeadQuestion`): the answer ends with an invitation to get in touch. */
 export const LEAD_INCLUDE = "contact";
 /** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
@@ -59,6 +70,9 @@ const INTENTS: Record<string, (chunk: KnowledgeChunk) => boolean> = {
   skill: (c) => c.type === "skills",
   perspective: (c) => c.type === "perspective",
 };
+
+/** Canonical intent terms (`INTENTS` keys): they say what kind of chunk a question wants, not what it is about. */
+export const INTENT_TERMS: ReadonlySet<string> = new Set(Object.keys(INTENTS));
 
 /** Intents that boost less than INTENT_BOOST: every perspective chunk is an opinion, so the question's own words still decide. */
 const INTENT_WEIGHT: Partial<Record<string, number>> = { perspective: 3 };
@@ -156,6 +170,12 @@ export interface RetrieveOptions {
   anchor?: string;
   /** A related professional question (`isAdjacentQuestion`): his principles, then only his case studies, posts, talks, papers and written views. */
   adjacent?: boolean;
+  /** A civic question (`civicQuestion`, with `topic` "policy"): up to `CIVIC_PERSPECTIVE_CAP` policy views. */
+  civic?: boolean;
+  /** A learning or career question (`isMentoringQuestion`): his path, education, certifications and written advice. */
+  mentoring?: boolean;
+  /** A question about his manager, team or clients (`isTeamQuestion`): his teamwork views and sector-level case studies. */
+  team?: boolean;
 }
 
 /** Chunks the anchor itself retrieves first (multi-turn memory). */
@@ -163,7 +183,7 @@ export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
 export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
-  const { topic, lead, anchor, adjacent } = options;
+  const { topic, lead, anchor, adjacent, civic, mentoring, team } = options;
   const scored = scoreChunks(pack, question);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -178,8 +198,32 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     scored
       .filter((r) => hasTopic(r.chunk, topic))
       .sort((a, b) => b.score - a.score)
-      .slice(0, PERSPECTIVE_CAP)
+      .slice(0, civic ? CIVIC_PERSPECTIVE_CAP : PERSPECTIVE_CAP)
       .forEach((r) => add(r.chunk));
+  } else if (mentoring) {
+    // Learning and career questions: how he learned and grew, and what he wrote about it; never a tutorial.
+    MENTORING_INCLUDE.forEach((id) => add(byId(id)));
+    let perspectives = picked.filter((c) => c.type === "perspective").length;
+    for (const { chunk } of ranked) {
+      if (picked.length >= TOP_K + MENTORING_INCLUDE.length - 1) break;
+      if (picked.includes(chunk) || !MENTORING_TYPES.has(chunk.type)) continue;
+      if (chunk.type === "perspective" && perspectives++ >= ROUTE_PERSPECTIVE_CAP) continue;
+      picked.push(chunk);
+    }
+  } else if (team) {
+    // His manager, team and clients: his written views on teamwork, then sector-level case studies when clients come up.
+    add(byId("profile"));
+    scored
+      .filter((r) => r.chunk.type === "perspective" && TEAM_TAGS.some((t) => r.chunk.keywords.includes(t)))
+      .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+      .slice(0, ROUTE_PERSPECTIVE_CAP)
+      .forEach((r) => add(r.chunk));
+    if (/\b(?:clients?|customers?|klien|pelanggan)\w*/i.test(question)) {
+      ranked
+        .filter((r) => r.chunk.type === "project")
+        .slice(0, TEAM_PROJECT_CAP)
+        .forEach((r) => add(r.chunk));
+    }
   } else if (lead) {
     // Lead intent: who he is, his availability, how to reach him, then matching past work and skills.
     // The engagements view comes before the matches, so long case studies can never clip it out of the budget.
@@ -233,7 +277,8 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     // The chunk's page, for an answer's markdown link (the output check keeps only these and the top pages).
     const target = chunk.url ? askLinkTarget(chunk.url) : null;
     const link = target?.kind === "site" || (target?.kind === "external" && target.href === ASK_REPO_CITE) ? ` [link: ${chunk.url}]` : "";
-    const head = `- ${body}`;
+    // Numbered source tags (owner decision 2026-10-24): the answer cites a line as [S1], [S2], ... (functions/_lib/checks.ts).
+    const head = `[S${used.length + 1}] ${body}`;
     const line = `${head}${dated}`;
     // A clipped line keeps its date: the body is cut, never the annotation.
     const clipped = line.length > budget ? `${head.slice(0, Math.max(0, budget - dated.length - 4)).replace(/\s+\S*$/, "")}...${dated}` : line;

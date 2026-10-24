@@ -324,8 +324,14 @@ describe("perspectives in the pipeline (spec section 13)", () => {
     expect(messages[1].content).toBe("How was ShinyQ HQ built?");
   });
 
-  it("sends an opinion about an unknown company to the model (S6)", async () => {
-    const unknown = await ask("What does Kurniadi think of Acme Foods?", "Kurniadi has no information about that on this site.");
+  it("declines an opinion about any name the pack never mentions alike, so a guessed client name learns nothing (S6)", async () => {
+    // Owner decision 2026-10-24: opinions on named people stay declined. Client names are never in the pack (C3), so a
+    // guessed client and a made-up company take the same path.
+    for (const q of ["What does Kurniadi think of Acme Foods?", "What does he think of Elon Musk?"]) {
+      expect(await ask(q, "unused"), q).toMatchObject({ outcome: "decline", reason: "others", calledModel: false });
+    }
+    // A single unknown word still reaches the model, which answers only from CONTEXT.
+    const unknown = await ask("What does Kurniadi think of Acme?", "Kurniadi has no information about that on this site.");
     expect(unknown).toMatchObject({ outcome: "unknown", calledModel: true });
   });
 

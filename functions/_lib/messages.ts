@@ -1,4 +1,5 @@
 import { citeKind, isAskCite, type AskCiteKind, type AskLocale } from "../../src/ask/protocol";
+import type { PrivateTopic } from "./scope";
 
 /** Canned answers (EN/ID), in Rover's voice where they speak for the assistant (2026-10-19). These never repeat the visitor's text and are never cached. */
 export const MESSAGES = {
@@ -50,9 +51,43 @@ export const MESSAGES = {
     en: "Kurniadi hasn't shared a written view on that on this site.",
     id: "Kurniadi belum membagikan pandangan tertulis tentang hal itu di situs ini.",
   },
+  // General questions with no link to Kurniadi or this site (owner decision 2026-10-24): no model call, topic pills follow.
+  offtopic: {
+    en: "I can't help with that one: I only answer questions about Kurniadi and this site. Try one of the questions below about his projects, his views on AI or his career.",
+    id: "Saya tidak bisa membantu soal itu: saya hanya menjawab pertanyaan tentang Kurniadi dan situs ini. Coba salah satu pertanyaan di bawah tentang proyek, pandangannya soal AI, atau kariernya.",
+  },
 } as const satisfies Record<string, Record<AskLocale, string>>;
 
 export type CannedKind = keyof typeof MESSAGES;
+
+/**
+ * Added after an answer to a civic question (owner decision 2026-10-24): his written policy views are shared, partisan
+ * views are not.
+ */
+export const PARTISAN_NOTE: Record<AskLocale, string> = {
+  en: "Kurniadi doesn't share partisan views on this site: parties, candidates, how he votes or opinions of specific politicians.",
+  id: "Kurniadi tidak membagikan pandangan partisan di situs ini: partai, kandidat, pilihan politiknya, atau pendapat tentang politisi tertentu.",
+};
+
+const PRIVATE_LABEL: Record<PrivateTopic, Record<AskLocale, string>> = {
+  family: { en: "his family and relationships", id: "keluarga dan hubungan pribadinya" },
+  health: { en: "his health", id: "kesehatannya" },
+  religion: { en: "religion", id: "agama" },
+  politics: { en: "partisan politics", id: "politik partisan" },
+  pay: { en: "pay", id: "penghasilan" },
+  life: { en: "personal details", id: "detail pribadi" },
+};
+
+/**
+ * The line after the answered part of a mixed question (owner decision 2026-10-24): one sentence for the declined
+ * topics. Never repeats the visitor's words.
+ */
+export function partialDecline(topics: readonly PrivateTopic[], locale: AskLocale): string {
+  const labels = [...new Set(topics)].map((t) => PRIVATE_LABEL[t][locale]);
+  const and = locale === "id" ? "dan" : "and";
+  const list = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} ${and} ${labels[labels.length - 1]}` : (labels[0] ?? PRIVATE_LABEL.life[locale]);
+  return locale === "id" ? `Soal ${list}, saya tidak bisa membagikannya: itu hal pribadi dan tidak ada di situs ini.` : `I can't share anything about ${list}: that's personal and not on this site.`;
+}
 
 export function canned(kind: CannedKind, locale: AskLocale): string {
   return MESSAGES[kind][locale];
