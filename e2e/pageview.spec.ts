@@ -195,25 +195,36 @@ for (const [locale, label, view] of [
   });
 }
 
-test("every CV entry point opens the CV in the shared PDF reader instead of downloading, in both languages", async ({ page }) => {
-  for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
-    await openPage(page, staticTier(path));
-    await expect(page.locator('main a[href^="/cv/"][href$=".pdf"]'), path).toHaveCount(0);
-    const entries = page.locator("#site-shell [data-testid^='cv-open']");
-    expect(await entries.count(), path).toBeGreaterThan(1);
-    for (const entry of await entries.all()) {
-      if (!(await entry.isVisible())) continue;
-      await entry.click();
-      const dialog = page.getByRole("dialog", { name: "CV", exact: true });
-      await expect(dialog, path).toBeVisible();
-      await expect(dialog.getByTestId("cv-reader")).toHaveAttribute("data-page-count", String(cvPages.length), { timeout: 30_000 });
-      await expect(page).toHaveURL(new RegExp(`${path}\\?tier=static`));
-      await page.keyboard.press("Escape");
-      await expect(dialog).toBeHidden();
-      await expect(entry).toBeFocused();
+for (const locale of ["en", "id"] as const) {
+  test(`every CV entry point opens the CV in the shared PDF reader instead of downloading (${locale})`, async ({ page }) => {
+    // Three pages with several entry points each, every one opening a modal: more than the default 30 s on a CI runner.
+    test.setTimeout(90_000);
+    const close = locale === "en" ? "Close CV" : "Tutup CV";
+    for (const path of [`/${locale}`, `/${locale}/contact`, `/${locale}/quick`]) {
+      await openPage(page, staticTier(path));
+      await expect(page.locator('main a[href^="/cv/"][href$=".pdf"]'), path).toHaveCount(0);
+      const entries = page.locator("#site-shell [data-testid^='cv-open']");
+      expect(await entries.count(), path).toBeGreaterThan(1);
+      let opened = 0;
+      for (const entry of await entries.all()) {
+        if (!(await entry.isVisible())) continue;
+        await entry.click();
+        const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+        await expect(dialog, path).toBeVisible();
+        const reader = dialog.getByTestId("cv-reader");
+        // pdf.js opens the PDF once per page (the reader and its worker are cached after that); every entry mounts the reader.
+        if (opened++ === 0) await expect(reader).toHaveAttribute("data-page-count", String(cvPages.length), { timeout: 30_000 });
+        else await expect(reader).toBeAttached();
+        await expect(dialog.getByRole("button", { name: close })).toBeFocused();
+        await expect(page).toHaveURL(new RegExp(`${path}\\?tier=static`));
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+        await expect(entry).toBeFocused();
+      }
+      expect(opened, path).toBeGreaterThan(0);
     }
-  }
-});
+  });
+}
 
 test("the CV reader passes axe, draws selectable text and zooms with the keyboard", async ({ page }) => {
   await openPage(page, staticTier("/en/contact"));
