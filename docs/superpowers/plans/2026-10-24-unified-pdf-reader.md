@@ -1,6 +1,6 @@
 # One PDF Reader for Every PDF Implementation Plan
 
-Status: in review.
+Status: in review in #314.
 
 **Goal:** Every PDF on the site opens in the study guide reader's modal (owner request: "For all of pdf modal i expecting it to be used the modal just like the study guide change all"). Today the CV (`/cv`, every CV button, the RF kiosk) and the paper PDFs use an image-based `PageViewer`.
 
