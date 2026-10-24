@@ -6,8 +6,8 @@
  * parser sees it) and inserts right after <meta charSet="utf-8"/>, before any script:
  *   <meta http-equiv="Content-Security-Policy" content="script-src ...; worker-src ..." data-hq-csp=""/>
  * script-src is the site policy's script-src from out/_headers minus 'unsafe-inline', plus the page's
- * hashes. worker-src repeats the site value: a meta policy without it falls back to its own script-src,
- * which would block troika's blob: workers. The _headers policy keeps applying (frame-ancestors and every
+ * hashes. worker-src repeats the site value ('self' only: the 3D text config refuses blob: workers, see
+ * src/experience/text-config.ts), so the meta policy states it explicitly. The _headers policy keeps applying (frame-ancestors and every
  * directive a meta tag cannot set); browsers enforce both, so an inline script runs only when its hash is
  * listed. Then it checks every page and exits 1 on any problem, so the build fails when an inline script
  * lacks its hash. It must run after every step that edits HTML (defer-scripts, root-redirect).

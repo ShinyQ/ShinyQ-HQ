@@ -15,7 +15,7 @@ const SITE_CSP = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "media-src 'self' blob:",
-  "worker-src 'self' blob:",
+  "worker-src 'self'",
   "frame-src 'self' https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
