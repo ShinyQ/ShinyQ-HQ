@@ -97,6 +97,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Stats: since launch by default | 2026-10-23: owner decision: every visits number shows the all-time total since launch by default (the Visits panel opens on Since launch, listed first, with Last 30 days one click away; the home ticker, the `/build` tile, the L1 ring tile and observatory panel, the L3 Ops live panel and the B1 counter plate, reactor pulse and drawer), with "since launch" copy in both languages | In review |
 | Dead code sweep | 2026-10-23: the walkable floors and L4 concepts dev prototypes, the unpicked L4 concepts, the `proto` messages (about 370 B gzip less on every 3D gate page), unused message keys and exports, and helpers only their own tests called are gone; no visible change | Done |
 | Forward Deployed AI Engineer | 2026-10-23: owner decision: the headline is "Forward Deployed AI Engineer" in both languages, the title on the updated CV (which also adds GH-600 and Google Generative AI Leader); the bio opens with it, the current-role line keeps "Technical Consultant, Software & AI", and the home `<title>` drops the city to stay within 60 characters | Done |
+| Accurate visit counting | 2026-10-24: owner decision: visits are the site's own count (a ping as soon as a page is shown, once per browser tab session, Do Not Track and GPC included, automation and crawlers skipped), today's count is live within about a minute, the Worker runs every hour (delayed after 3 h), and Web Analytics keeps countries, page views and the history before the switch with no visit counted twice | In review |
 | Elevator camera diagonal | 2026-10-23: going into the elevator and coming out of it, the camera stands behind the rover and 35 degrees to its right ("serong kanan"); every floor's arrival view, the L3 overview and the B1 phone view included; phone views aim sideways so each floor's main sight stays in frame | In review |
 | Unique floating icons | 2026-10-23: every L2 job, education and freelance room floats its own line icon (milestones and awards cycle a few), every L4 post, paper, model and talk its own icon, and every L3 pod its own box sculpture; shapes load after the floor's first frame and crossfade in | In review |
 
@@ -251,11 +252,11 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - A hologram globe with a dot for every country with at least one page view (dots only, never a number per country).
 - A panel with visits since launch (today included) and in the last 30 days, then (since launch) the countries, questions asked to the site AI, the most explored floor and the 3D vs Classic split.
 - Its drawer filters by Topic (All, Work, AI, Career) and Period (Since launch, the default, and Last 30 days).
-- The numbers come from the snapshot at `GET /api/stats` (Cloudflare Web Analytics, sampled estimates rounded to tens, so small numbers move in steps of 10; refreshed every 2 hours with today so far). A snapshot older than 6 hours shows a "delayed" note; one older than 7 days hides every stats surface.
+- The numbers come from `GET /api/stats`: an hourly snapshot plus today's visits counted live (a new visit shows within about a minute). Visits are the site's own anonymous count, one per browser tab session with no cookie or identifier, from late October 2026 (Cloudflare Web Analytics estimates before); countries, page views and the most explored floor are Cloudflare Web Analytics sampled estimates. A snapshot older than 3 hours shows a "delayed" note; one older than 7 days hides every stats surface.
 - The suggested questions list shows the top 5, most picked first, in the drawer and the Contact section.
-- There is no opt-out switch: Do Not Track and Global Privacy Control still stop the site's own beacons.
+- There is no opt-out switch: Do Not Track and Global Privacy Control visitors are counted as visits (nothing identifying is sent) and still stop the performance beacon.
 - Automated browsers (Playwright, Lighthouse, headless checks; `navigator.webdriver`) are never counted: no visit, performance or Cloudflare beacon, and their Ask questions stay out of the question totals (still answered).
-- The 3D vs Classic split comes from the site's own visit beacon (it skips Do Not Track and automation), so its base is smaller than the visit total; its note says so.
+- The 3D vs Classic split comes from the site's own beacon's mode ping (one per page load, sent on leave), so its base is page loads, not visits; its note says so.
 
 ### Agent Office
 
@@ -328,7 +329,7 @@ Route `/en/labs`.
 `L3:ops`, also in Cmd-K. It stands in the AI wing's inner pocket beside the reactor.
 
 - Three screens styled like Grafana and Application Insights panels (Metrics, Traces, Alerts) built from the proof tiles of "How I run AI in production".
-- A live panel of this site's own telemetry from the stats snapshot (refreshed every 2 hours), all since launch: visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
+- A live panel of this site's own telemetry from the stats snapshot (refreshed every hour, today's visits live), all since launch: visits, the share of sampled 3D sessions at 55+ FPS, the median time to explore. Hidden when the snapshot is missing or stale.
 - Its drawer shows the section with the case studies that prove it.
 
 ## L4 Newsroom
@@ -419,7 +420,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`); `/` redirects by the reme
 - `/{locale}/build`: How this site was built (its 3D counterpart is the secret B1 Engine Room, unlocked after visiting all five floors): the blueprint, build rounds, AI agent workflow, quality gates, dashboard, Rover's Brain and Rejected Designs, with a table of contents of section anchors (`#blueprint`, `#timeline`, `#agents`, `#gates`, `#dashboard`, `#brain`, `#rejected`).
 - `/{locale}/cv`: CV viewer, page images of the owner's PDF (`/cv/kurniadi-ahmad-wijaya-cv.pdf`, one file for both languages) with zoom, a PDF download and open in new tab. Every CV button on the site opens the same viewer as a modal.
 - `/api/ask`: Ask the HQ endpoint (Pages Function): `GET` status, `POST` question, SSE answer.
-- `/api/stats`: the public visit stats snapshot, refreshed every 2 hours (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
+- `/api/stats`: the public visit stats snapshot, refreshed every hour with today's visits added live (200, or 204 before the first run). `/api/rum` and `/api/visit` take the anonymous performance and visit beacons (`POST` only).
 - `/api/office/history` (`GET` and `HEAD`): the Agent Office replay history, the 8-day index or `?day=YYYY-MM-DD` (one WIB day inside the window; events, merges, finished runs and deploys as numbers, no session ids or branches, titles cleaned again at read time), with an ETag (304 on a match), `max-age=30` for the index and today and `max-age=3600` for past days; a day outside the window is a fixed 404, a missing or older Worker a 503 for the index (a day request, the fixed 404).
 - `/api/office`: the Agent Office snapshot (`GET`, always 200 JSON) with an ETag (304 on a match) and `max-age=5, stale-while-revalidate=30`; the L1 office polls `?v=4` (snapshot v4: v3 plus the CI pipeline: the latest runs with their jobs, merges and production deploys), the Classic card and the beacon check `?v=3` (snapshot v3: up to ten desks with helper counts; v1 and v2 keep five desks plus the rest in `extra`, v1 never changes): the office while in view (every 30 s from afar, its fast pace near it or with a drawer open), the beacon check every 30 s while it is out of view. `POST /api/office/beat` and `/api/office/github` take the signed relay beats and GitHub webhooks ([office.md](agents/office.md)).
 - `/api/guides/{slug}`: a study guide PDF from the private R2 bucket (Pages Function, `GET` and `HEAD`): byte ranges, ETag, `?v=<version>` for a year of immutable caching, `?download=1` for an attachment. Runbook: [`study-guides-runbook.md`](study-guides-runbook.md).
@@ -511,8 +512,8 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 
 - Cloudflare Web Analytics runs on production builds only; its beacon loads after the page and its scripts, on idle.
 - An anonymous, sampled performance beacon (appendix 06 section 4) writes coarse tier, FPS and load-time buckets to Analytics Engine.
-- Public visit stats (appendix 06 section 4.1): a first-party beacon records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every 2 hours into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot.
-- No visitor opt-out (owner decision 2026-10-23): Do Not Track and Global Privacy Control turn the visit and performance beacons off, and a stale `hq:stats-optout` key from the retired switch is removed once. Automated browsers (`navigator.webdriver`) send no beacon either, and their Ask questions stay out of the public question counts.
+- Public visit stats (appendix 06 section 4.1): a first-party beacon sends a visit ping once per browser tab session (the visit count) and records whether a page lifetime used the 3D view or the Classic site, the `hq-stats` Cron Worker (`workers/stats/`) rolls Web Analytics and Analytics Engine up every hour into KV (finalized days once, today so far in the snapshot), and `GET /api/stats` serves the snapshot plus today's visit pings since the run (through the Worker's service-binding-only `GET /live`).
+- No visitor opt-out (owner decision 2026-10-23): Do Not Track and Global Privacy Control turn the performance beacon off but are counted as visits (owner decision 2026-10-24), and a stale `hq:stats-optout` key from the retired switch is removed once. Automated browsers (`navigator.webdriver`) send no beacon either, and their Ask questions stay out of the public question counts.
 - `deploy.yml` also deploys the Worker after checking its tokens.
 - Details, secrets, variables and the Cloudflare resource inventory: [`deploy.md`](deploy.md).
 

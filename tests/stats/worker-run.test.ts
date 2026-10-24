@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { parseStatsSnapshot, STATS_KEY } from "@/lib/stats/protocol";
-import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, runStats, WA_EXTRA_KEY } from "../../workers/stats/src/run";
+import { BACKFILL_DAYS, finalizedThrough, LEDGER_KEY, liveTail, runStats, WA_EXTRA_KEY } from "../../workers/stats/src/run";
+import { handleLive, LIVE_CACHE_SECONDS, LIVE_GATE_NAME, LIVE_QUERY_EVERY_MS, LiveGate } from "../../workers/stats/src/live";
+import { parseStatsLive, STATS_LIVE_KEY } from "@/lib/stats/live";
 import worker from "../../workers/stats/src/index";
 import type { Fetcher, Ledger, StatsWorkerEnv } from "../../workers/stats/src/types";
 
@@ -42,6 +44,12 @@ function fakeApi(
     perf?: Record<string, { fps50: string; explore: string; n: number }[]>;
     errors?: boolean;
     perfFails?: boolean;
+    /** Visit pings per day: count and the day's first ping time (AE DateTime, UTC). */
+    pings?: Record<string, { n: number; first: string }>;
+    /** Web Analytics visits on the cutover day before the cutover time (days-only query). */
+    waBefore?: number;
+    /** Answer of the live count query. */
+    live?: number;
   } = {},
 ) {
   const calls: Calls = { graphql: [], sql: [], auth: [] };
@@ -51,6 +59,10 @@ function fakeApi(
       const body = JSON.parse(String(init?.body));
       calls.graphql.push(body);
       if (data.errors) return new Response(JSON.stringify({ data: null, errors: [{ message: "quota exceeded" }] }));
+      if (String(body.query).includes("HqVisitsBefore")) {
+        const date = String(body.variables.start).slice(0, 10);
+        return new Response(JSON.stringify({ data: { viewer: { accounts: [{ days: [{ count: 1, sum: { visits: data.waBefore ?? 0 }, dimensions: { date } }] }] } }, errors: null }));
+      }
       const start = String(body.variables.start).slice(0, 10);
       const end = String(body.variables.end).slice(0, 10);
       const rows = Object.entries(data.wa ?? {}).filter(([d]) => d >= start && d < end);
@@ -81,9 +93,13 @@ function fakeApi(
         .flatMap(([day, list]) => list.map((r) => JSON.stringify({ day, fps50: r.fps50, explore: r.explore, n: String(r.n) })));
       return new Response(rows.join("\n"));
     }
+    if (sql.includes("blob2 = 'visit'")) return new Response(JSON.stringify({ n: String(data.live ?? 0) }));
     const lines = sql.includes("FROM ask_events")
       ? Object.entries(data.asks ?? {}).map(([day, n]) => JSON.stringify({ day, topic: "work", chip: "work-best", n: String(n) }))
-      : Object.entries(data.visits ?? {}).map(([day, n]) => JSON.stringify({ day, mode: "3d", n: String(n) }));
+      : [
+          ...Object.entries(data.visits ?? {}).map(([day, n]) => JSON.stringify({ day, mode: "3d", n: String(n), first_at: `${day} 00:00:00` })),
+          ...Object.entries(data.pings ?? {}).map(([day, p]) => JSON.stringify({ day, mode: "visit", n: String(p.n), first_at: p.first })),
+        ];
     return new Response(lines.join("\n"));
   };
   return { calls, fetcher };
@@ -463,7 +479,7 @@ describe("hq-stats run", () => {
     const e = env();
     const spy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } } }).fetcher(String(input), init));
     try {
-      await worker.scheduled({ cron: "17 */2 * * *", scheduledTime: AT("2026-10-14") }, e);
+      await worker.scheduled({ cron: "17 * * * *", scheduledTime: AT("2026-10-14") }, e);
     } finally {
       spy.mockRestore();
     }
@@ -472,8 +488,223 @@ describe("hq-stats run", () => {
 });
 
 describe("hq-stats schedule", () => {
-  it("runs every 2 hours, 17 minutes past the hour (owner decision 2026-10-19)", () => {
+  it("runs every hour, 17 minutes past the hour (owner decision 2026-10-24)", () => {
     const toml = readFileSync("workers/stats/wrangler.toml", "utf8");
-    expect(toml).toMatch(/^crons = \["17 \*\/2 \* \* \*"\]$/m);
+    expect(toml).toMatch(/^crons = \["17 \* \* \* \*"\]$/m);
+  });
+
+  it("has no route and no public URL: the fetch handler answers only the service binding", () => {
+    const toml = readFileSync("workers/stats/wrangler.toml", "utf8");
+    expect(toml).toMatch(/^workers_dev = false$/m);
+    expect(toml).toMatch(/^preview_urls = false$/m);
+    expect(toml).not.toMatch(/^\s*routes?\s*=/m);
+    expect(readFileSync("wrangler.toml", "utf8")).toMatch(/binding = "STATS"\nservice = "hq-stats"/);
+  });
+});
+
+describe("hq-stats first-party visits (owner decision 2026-10-24)", () => {
+  const liveOf = (e: { STATS_KV: MemoryKv }) => parseStatsLive(JSON.parse(e.STATS_KV.store.get(STATS_LIVE_KEY) ?? "null"));
+
+  it("splits the cutover day by time: Web Analytics before the first ping, pings after, with no double counting", async () => {
+    const e = env();
+    const api = fakeApi({
+      wa: { "2026-10-22": { count: 40, visits: 9 }, "2026-10-23": { count: 50, visits: 12 }, "2026-10-24": { count: 20, visits: 8 } },
+      pings: { "2026-10-23": { n: 7, first: "2026-10-23 15:04:05" }, "2026-10-24": { n: 3, first: "2026-10-24 00:10:00" } },
+      waBefore: 5,
+    });
+    const log = vi.fn();
+    await runStats(e, ATH("2026-10-24", 3), api.fetcher, log);
+    const ledger = ledgerOf(e);
+    expect(ledger.cutover).toBe("2026-10-23T15:04:05Z");
+    const byDate = Object.fromEntries(ledger.days.map((d) => [d.date, d]));
+    expect(byDate["2026-10-22"].visits).toBe(9);
+    expect(byDate["2026-10-22"].visitSource).toBeUndefined();
+    expect(byDate["2026-10-23"]).toMatchObject({ visits: 5 + 7, visitSource: "mixed", firstParty: 7 });
+    // Today: pings only (the Web Analytics 8 is not added).
+    expect(snapshotOf(e)!.visits.all).toBe(9 + 12 + 3);
+    const before = api.calls.graphql.find((g) => g.query.includes("HqVisitsBefore"))!;
+    expect(before.variables).toMatchObject({ start: "2026-10-23T00:00:00Z", end: "2026-10-23T15:04:05Z" });
+    expect(liveOf(e)).toEqual({ v: 1, updatedAt: snapshotOf(e)!.updatedAt, from: "2026-10-24T00:00:00Z", visits: 3 });
+    expect(log.mock.calls.at(-1)?.[0]).toContain("first-party visits since 2026-10-23T15:04:05Z (new)");
+  });
+
+  it("keeps the stored cutover and stops asking Web Analytics for the cutover day once it is stored", async () => {
+    const e = env();
+    await runStats(e, ATH("2026-10-24", 3), fakeApi({ wa: { "2026-10-23": { count: 50, visits: 12 } }, pings: { "2026-10-23": { n: 7, first: "2026-10-23 15:04:05" } }, waBefore: 5 }).fetcher, () => {});
+    const again = fakeApi({ wa: { "2026-10-24": { count: 10, visits: 4 } }, pings: { "2026-10-24": { n: 6, first: "2026-10-24 01:00:00" } } });
+    await runStats(e, ATH("2026-10-24", 4), again.fetcher, () => {});
+    expect(ledgerOf(e).cutover).toBe("2026-10-23T15:04:05Z");
+    expect(again.calls.graphql.some((g) => g.query.includes("HqVisitsBefore"))).toBe(false);
+    expect(snapshotOf(e)!.visits.all).toBe(12 + 6);
+  });
+
+  it("falls back to Web Analytics for a day whose pings outrun its page views, and adds nothing live", async () => {
+    const e = env();
+    const kv = e.STATS_KV;
+    kv.store.set(LEDGER_KEY, JSON.stringify({ v: 1, days: [], cutover: "2026-10-23T15:04:05Z" }));
+    await runStats(e, ATH("2026-10-24", 3), fakeApi({ wa: { "2026-10-24": { count: 10, visits: 4 } }, pings: { "2026-10-24": { n: 900, first: "2026-10-24 00:00:01" } } }).fetcher, () => {});
+    expect(snapshotOf(e)!.visits.all).toBe(4);
+    expect(liveOf(e)).toMatchObject({ from: null, visits: 0 });
+  });
+
+  it("writes no live tail and no cutover before the first ping", async () => {
+    const e = env();
+    await runStats(e, AT("2026-10-14"), fakeApi({ wa: { "2026-10-13": { count: 10, visits: 10 } }, visits: { "2026-10-13": 2 } }).fetcher, () => {});
+    expect(e.STATS_KV.store.has(STATS_LIVE_KEY)).toBe(false);
+    expect(ledgerOf(e).cutover).toBeUndefined();
+  });
+
+  it("refuses a ledger with a malformed cutover", async () => {
+    const e = env();
+    e.STATS_KV.store.set(LEDGER_KEY, JSON.stringify({ v: 1, days: [], cutover: "yesterday" }));
+    await expect(runStats(e, AT("2026-10-14"), fakeApi().fetcher, () => {})).rejects.toThrow(/cutover/);
+    expect(e.STATS_KV.puts).toEqual([]);
+  });
+
+  it("starts the live tail at the cutover when it is later than the oldest unstored day", () => {
+    const day = (date: string, firstParty?: number) => ({ date, visits: 0, pageViews: 0, countries: [], floors: {}, mode: { threeD: 0, classic: 0 }, asks: { total: 0, topics: {}, chips: {} }, ...(firstParty === undefined ? {} : { firstParty }) });
+    expect(liveTail([day("2026-10-23"), day("2026-10-24", 4)], "2026-10-24T08:00:00Z", "2026-10-24T09:17:00.000Z")).toEqual({ v: 1, updatedAt: "2026-10-24T09:17:00.000Z", from: "2026-10-24T08:00:00Z", visits: 4 });
+    expect(liveTail([], "2026-10-24T08:00:00Z", "2026-10-24T09:17:00.000Z").from).toBeNull();
+  });
+});
+
+describe("hq-stats GET /live (service binding only, one query a minute)", () => {
+  const NOW = Date.parse("2026-10-24T09:30:00Z");
+  const FROM = "2026-10-24T00:00:00Z";
+  const req = (path: string, method = "GET") => new Request(`https://hq-stats.internal${path}`, { method });
+
+  class MemoryStorage {
+    data = new Map<string, unknown>();
+    async get<T>(key: string) {
+      return this.data.get(key) as T | undefined;
+    }
+    async put<T>(key: string, value: T) {
+      this.data.set(key, structuredClone(value));
+    }
+  }
+
+  class MemoryCache {
+    store = new Map<string, Response>();
+    matches = 0;
+    async match(key: string) {
+      this.matches += 1;
+      return this.store.get(key)?.clone();
+    }
+    async put(key: string, response: Response) {
+      this.store.set(key, response.clone());
+    }
+  }
+
+  /** One gate shared by every "data center" (each with its own cache), like the single Durable Object. */
+  function setup(live = 14) {
+    const api = fakeApi({ live });
+    const clock = { t: NOW };
+    const gate = new LiveGate({ storage: new MemoryStorage() }, env(), api.fetcher, () => clock.t);
+    let gateCalls = 0;
+    const e: StatsWorkerEnv = {
+      ...env(),
+      LIVE_GATE: {
+        idFromName: (name) => name,
+        get: (id) => ({
+          fetch: async (input) => {
+            expect(id).toBe(LIVE_GATE_NAME);
+            gateCalls += 1;
+            return gate.fetch(new Request(input));
+          },
+        }),
+      },
+    };
+    return { api, clock, gate, e, gateCalls: () => gateCalls };
+  }
+
+  it("counts visit pings since a valid time with one fixed query", async () => {
+    const { api, e } = setup();
+    const res = await handleLive(req(`/live?from=${FROM}`), e, NOW, new MemoryCache());
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ n: 14 });
+    expect(api.calls.sql).toEqual(["SELECT SUM(_sample_interval) AS n FROM visit_events WHERE timestamp >= toDateTime('2026-10-24 00:00:00') AND blob1 = '1' AND blob2 = 'visit' FORMAT JSONEachRow"]);
+  });
+
+  it("serves a cache hit without asking the gate or Analytics Engine", async () => {
+    const { api, e, gateCalls } = setup();
+    const cache = new MemoryCache();
+    await handleLive(req(`/live?from=${FROM}`), e, NOW, cache);
+    const hit = await handleLive(req(`/live?from=${FROM}`), e, NOW + 5000, cache);
+    expect(hit.status).toBe(200);
+    expect(await hit.json()).toEqual({ n: 14 });
+    expect(hit.headers.get("Cache-Control")).toBe(`public, max-age=${LIVE_CACHE_SECONDS}`);
+    expect(cache.matches).toBe(2);
+    expect(gateCalls()).toBe(1);
+    expect(api.calls.sql).toHaveLength(1);
+  });
+
+  it("caps Analytics Engine at one query a minute across every data center and concurrent caller", async () => {
+    const { api, clock, e } = setup();
+    // Ten data centers (ten empty caches) asking at once, then again within the minute.
+    const first = await Promise.all(Array.from({ length: 10 }, () => handleLive(req(`/live?from=${FROM}`), e, clock.t, new MemoryCache())));
+    expect(first.map((r) => r.status)).toEqual(Array(10).fill(200));
+    expect(await Promise.all(first.map((r) => r.json()))).toEqual(Array(10).fill({ n: 14 }));
+    clock.t += LIVE_QUERY_EVERY_MS - 1;
+    await handleLive(req(`/live?from=${FROM}`), e, clock.t, new MemoryCache());
+    expect(api.calls.sql).toHaveLength(1);
+    // Another from inside the window is busy (the snapshot is served), never a second query.
+    expect((await handleLive(req("/live?from=2026-10-24T01:00:00Z"), e, clock.t, new MemoryCache())).status).toBe(503);
+    expect(api.calls.sql).toHaveLength(1);
+    clock.t += 1;
+    await handleLive(req(`/live?from=${FROM}`), e, clock.t, new MemoryCache());
+    expect(api.calls.sql).toHaveLength(2);
+    // A day of steady traffic, a request every 10 s from fresh caches: at most one query a minute.
+    for (let i = 0; i < 8640; i++) {
+      clock.t += 10_000;
+      await handleLive(req(`/live?from=${FROM}`), e, clock.t, undefined);
+    }
+    expect(api.calls.sql.length).toBeLessThanOrEqual(2 + 1440);
+  });
+
+  it("never hands a concurrent caller with another from the in-flight answer", async () => {
+    const { api, e } = setup();
+    const [a, b] = await Promise.all([handleLive(req(`/live?from=${FROM}`), e, NOW, new MemoryCache()), handleLive(req("/live?from=2026-10-24T01:00:00Z"), e, NOW, new MemoryCache())]);
+    expect([a.status, b.status]).toEqual([200, 503]);
+    expect(api.calls.sql).toHaveLength(1);
+  });
+
+  it("keeps the slot across a restart (storage) and after a failure, without retry queries", async () => {
+    const storage = new MemoryStorage();
+    let fail = true;
+    const calls: string[] = [];
+    const fetcher: Fetcher = async (_url, init) => {
+      calls.push(String(init?.body));
+      return fail ? new Response("down", { status: 500 }) : new Response(JSON.stringify({ n: "3" }));
+    };
+    const gate = () => new LiveGate({ storage }, env(), fetcher, () => NOW);
+    expect((await gate().fetch(new Request(`https://live-gate/live?from=${FROM}`))).status).toBe(502);
+    fail = false;
+    expect((await gate().fetch(new Request(`https://live-gate/live?from=${FROM}`))).status).toBe(502);
+    expect(calls).toHaveLength(1);
+    const later = new LiveGate({ storage }, env(), fetcher, () => NOW + LIVE_QUERY_EVERY_MS);
+    expect(await (await later.fetch(new Request(`https://live-gate/live?from=${FROM}`))).json()).toEqual({ n: 3 });
+    expect(calls).toHaveLength(2);
+  });
+
+  it("rejects bad, future and too old times, other paths and methods, and answers 503 without the gate", async () => {
+    const { api, e } = setup(1);
+    for (const from of ["", "2026-10-24", "2026-10-24T00:00:00.000Z", "2026-10-24T00:00:00Z' OR 1=1", "2026-10-25T00:00:00Z", "2026-10-01T00:00:00Z"]) {
+      expect((await handleLive(req(`/live?from=${encodeURIComponent(from)}`), e, NOW, new MemoryCache())).status).toBe(400);
+    }
+    expect((await handleLive(req("/"), e, NOW)).status).toBe(404);
+    expect((await handleLive(req(`/live?from=${FROM}`, "POST"), e, NOW)).status).toBe(405);
+    expect((await handleLive(req(`/live?from=${FROM}`), env(), NOW, new MemoryCache())).status).toBe(503);
+    expect(api.calls.sql).toEqual([]);
+  });
+
+  it("answers 502 without detail when Analytics Engine fails, caches nothing and never echoes the token", async () => {
+    const storage = new MemoryStorage();
+    const gate = new LiveGate({ storage }, env(), async () => new Response("boom", { status: 500 }), () => NOW);
+    const e: StatsWorkerEnv = { ...env(), LIVE_GATE: { idFromName: (n) => n, get: () => ({ fetch: (input) => gate.fetch(new Request(input)) }) } };
+    const cache = new MemoryCache();
+    const res = await handleLive(req(`/live?from=${FROM}`), e, NOW, cache);
+    expect(res.status).toBe(502);
+    expect(await res.text()).not.toContain(TOKEN);
+    expect(cache.store.size).toBe(0);
   });
 });

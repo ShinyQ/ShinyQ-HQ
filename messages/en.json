@@ -1137,14 +1137,14 @@
   "stats": {
     "title": "Visits",
     "observatory": "Visitor Observatory",
-    "intro": "Visit estimates and AI question totals, updated every 2 hours with today's data so far.",
+    "intro": "Visits counted by the site itself and AI question totals: today live, earlier days refreshed every hour.",
     "approx": "about {n}",
     "window": {
       "d30": "Last 30 days, including today",
       "all": "Since {date}"
     },
-    "source": "Cloudflare Web Analytics, sampled, rounded to tens",
-    "updated": "Updated every 2 hours",
+    "source": "Visits: the site's own anonymous counter, one per browser tab, no cookies (Cloudflare Web Analytics estimates before late Oct 2026). Countries and page views: Cloudflare Web Analytics, sampled",
+    "updated": "Today live, earlier days every hour",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
     "offline": "Stats unavailable",
@@ -1175,7 +1175,7 @@
       "title": "3D tower or Classic site",
       "threeD": "3D tower",
       "classic": "Classic site",
-      "note": "Share of the visits the site's own beacon saw (it skips Do Not Track and automated browsers), so it covers fewer visits than the total. A visit that used both views counts on both sides."
+      "note": "Share of page loads that used the 3D tower or the Classic site, from the site's own beacon (automated browsers are not counted). A page load that used both views counts on both sides."
     },
     "topicsTitle": "Questions by topic",
     "topicsNote": "Share of the questions that have a topic, classified automatically from the answer.",
@@ -1201,7 +1201,8 @@
       "countries": "countries",
       "questions": "questions asked",
       "topFloor": "most explored: {floor}",
-      "split": "3D {threeD}% · Classic {classic}%"
+      "split": "3D {threeD}% · Classic {classic}%",
+      "source": "Own visit counter + Cloudflare Web Analytics"
     }
   },
   "office": {
@@ -1312,7 +1313,7 @@
       "explore": "Median time until ready to explore",
       "nightly": "Nightly performance runs",
       "sessions": "{count} sampled 3D sessions since launch",
-      "source": "Anonymous performance beacon and Cloudflare Web Analytics. Updated every 2 hours.",
+      "source": "Anonymous performance beacon and the site's own visit counter. Today live, earlier days every hour.",
       "offline": "Current numbers are unavailable."
     },
     "explore": {

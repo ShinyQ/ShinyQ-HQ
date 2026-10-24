@@ -127,6 +127,8 @@ export interface VisitEnv {
   STATS_ENABLED?: string;
   /** Site origins, shared with Ask the HQ. */
   ASK_ALLOWED_ORIGINS?: string;
+  /** Secret shared with Ask the HQ: salts the daily-rotating visitor hash of the per-visitor cap (memory only). */
+  ASK_IP_SALT_SEED?: string;
   VISIT_EVENTS?: AnalyticsEngineDataset;
 }
 
@@ -136,6 +138,8 @@ export interface StatsEnv {
   STATS_ENABLED?: string;
   /** KV namespace written by the hq-stats Cron Worker (workers/stats/), read only here. */
   STATS_KV?: KvNamespace;
+  /** Service binding to the hq-stats Worker: `GET /live?from=` counts today's visit pings. */
+  STATS?: ServiceBinding;
 }
 
 /** A service binding to another Worker (the Agent Office: hq-office). */

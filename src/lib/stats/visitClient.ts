@@ -1,20 +1,26 @@
 import { isBotLike } from "../boot-first";
-import { VISIT_ENDPOINT, VISIT_VERSION, type VisitMode } from "./visit";
+import { VISIT_ENDPOINT, VISIT_KIND, VISIT_VERSION, type VisitMode } from "./visit";
 
 /**
- * First-party visit beacon (public visit stats): one point per page lifetime saying whether the
- * visitor used the 3D view, the Classic site or both. De-duplicated in memory only (no storage, no
- * cookie, no identifier). Never sent under Do Not Track, Global Privacy Control, automation or a
- * crawler (`?visit=1` forces it in tests and previews, `?visit=0` turns it off). The Classic site counts only after it stayed on screen for CLASSIC_DWELL_MS, so the
- * moment between a released boot cover and the 3D tower mounting never reads as a Classic visit.
+ * First-party visit beacon (public visit stats). Two pings, nothing identifying in either (no cookie, no
+ * identifier, no URL):
+ * - the visit ping, the public visit count (owner decision 2026-10-24): sent as soon as the page is shown,
+ *   once per browser tab session (a `sessionStorage` flag, so a reload or an in-tab navigation never counts
+ *   twice; memory only when storage is blocked);
+ * - the mode ping, once per page lifetime on the first hide or `pagehide`: whether the visitor used the 3D
+ *   view, the Classic site or both. The Classic site counts only after it stayed on screen for
+ *   CLASSIC_DWELL_MS, so the moment between a released boot cover and the 3D tower never reads as Classic.
+ * Do Not Track and Global Privacy Control visitors are counted (owner decision 2026-10-24: nothing
+ * identifying is sent). Automation and crawlers never send (`?visit=1` forces both pings in tests and
+ * previews, `?visit=0` turns them off).
  */
 
 /** How long the Classic site must stay on screen (visible, no boot cover, no tower) to count. */
 export const CLASSIC_DWELL_MS = 3000;
+/** sessionStorage flag of the visit ping: set once the tab session's visit was sent. */
+export const VISIT_SESSION_KEY = "hq:visit";
 
 export interface VisitSignals {
-  /** Do Not Track or Global Privacy Control. */
-  privacySignal: boolean;
   /** navigator.webdriver: Playwright, Lighthouse and other automation. */
   webdriver: boolean;
   /** Crawler, preview or audit user agent. */
@@ -23,7 +29,6 @@ export interface VisitSignals {
 }
 
 export function visitAllowed(s: VisitSignals): boolean {
-  if (s.privacySignal) return false;
   const forced = /[?&]visit=([01])(&|$)/.exec(s.search)?.[1];
   if (forced) return forced === "1";
   return !s.webdriver && !s.crawler;
@@ -55,34 +60,70 @@ export function clearLegacyOptOut(): void {
 }
 
 function signals(): VisitSignals {
-  const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
+  const nav = navigator;
   const search = window.location.search;
   return {
-    privacySignal: nav.doNotTrack === "1" || nav.globalPrivacyControl === true,
     webdriver: nav.webdriver === true,
     crawler: isBotLike({ userAgent: nav.userAgent, webdriver: false }, search),
     search,
   };
 }
 
-let active = false;
+/** Memory fallback of the tab session flag when sessionStorage is blocked. */
+let sentInMemory = false;
 
-/** Tests only: forget the page lifetime's beacon. */
-export function resetVisitBeacon(): void {
-  active = false;
+function visitSent(): boolean {
+  if (sentInMemory) return true;
+  try {
+    return window.sessionStorage.getItem(VISIT_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
-/** Starts watching once per page lifetime; returns a cleanup (which allows a restart only if nothing was sent). */
+function markVisitSent(): void {
+  sentInMemory = true;
+  try {
+    window.sessionStorage.setItem(VISIT_SESSION_KEY, "1");
+  } catch {
+    // Storage blocked: the memory flag covers this page lifetime.
+  }
+}
+
+function beacon(body: object): boolean {
+  try {
+    return navigator.sendBeacon?.(VISIT_ENDPOINT, JSON.stringify(body)) === true;
+  } catch {
+    // A refused beacon is a lost count, never an error for the visitor.
+    return false;
+  }
+}
+
+let active = false;
+
+/** Tests only: forget the page lifetime's beacon and the memory flag. */
+export function resetVisitBeacon(): void {
+  active = false;
+  sentInMemory = false;
+}
+
+/** Starts watching once per page lifetime; returns a cleanup (which allows a restart only if no mode ping was sent). */
 export function startVisitBeacon(now: () => number = () => performance.now()): () => void {
   if (active || typeof window === "undefined") return () => {};
   clearLegacyOptOut();
   if (!visitAllowed(signals())) return () => {};
   active = true;
-  const doc = document;
+  const doc = document as Document & { prerendering?: boolean };
   const html = doc.documentElement;
   const seen = { threeD: false, classic: false };
   let classicSince: number | null = null;
   let done = false;
+
+  const shown = () => doc.visibilityState === "visible" && doc.prerendering !== true;
+  const ping = () => {
+    if (!shown() || visitSent()) return;
+    if (beacon({ v: VISIT_VERSION, kind: VISIT_KIND })) markVisitSent();
+  };
 
   const look = () => {
     const view = viewOf(html, doc.visibilityState === "visible");
@@ -97,6 +138,7 @@ export function startVisitBeacon(now: () => number = () => performance.now()): (
   const stop = () => {
     observer.disconnect();
     doc.removeEventListener("visibilitychange", onVisibility);
+    doc.removeEventListener("prerenderingchange", ping);
     window.removeEventListener("pagehide", send);
   };
   function send() {
@@ -106,21 +148,20 @@ export function startVisitBeacon(now: () => number = () => performance.now()): (
     if (!mode) return;
     done = true;
     stop();
-    try {
-      navigator.sendBeacon?.(VISIT_ENDPOINT, JSON.stringify({ v: VISIT_VERSION, mode }));
-    } catch {
-      // A refused beacon is a lost count, never an error for the visitor.
-    }
+    beacon({ v: VISIT_VERSION, mode });
   }
   function onVisibility() {
+    ping();
     // Credits the Classic dwell up to this moment; a hidden page then stops the clock.
     look();
     if (doc.visibilityState === "hidden") send();
   }
 
+  ping();
   look();
   observer.observe(html, { attributes: true, attributeFilter: ["data-hq", "data-hq-boot"] });
   doc.addEventListener("visibilitychange", onVisibility);
+  doc.addEventListener("prerenderingchange", ping);
   window.addEventListener("pagehide", send);
   return () => {
     stop();

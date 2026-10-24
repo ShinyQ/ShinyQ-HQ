@@ -135,13 +135,15 @@ describe("VisitsPanel with an early snapshot", () => {
   it("notes that the 3D and Classic split comes from the site's own beacon", () => {
     __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
     renderPanel();
-    expect(screen.getByTestId("visits-split")).toHaveTextContent("Share of the visits the site's own beacon saw");
+    expect(screen.getByTestId("visits-split")).toHaveTextContent("Share of page loads that used the 3D tower or the Classic site, from the site's own beacon");
   });
 
-  it("states the sampling plainly and bases the country list on page views", () => {
+  it("names the visit counter and the sampling plainly and bases the country list on page views (owner decision 2026-10-24)", () => {
     __setStatsForTests({ status: "ready", snapshot: STATS_FIXTURE, freshness: "fresh" });
     renderPanel();
-    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Cloudflare Web Analytics, sampled, rounded to tens");
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Visits: the site's own anonymous counter, one per browser tab, no cookies");
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Countries and page views: Cloudflare Web Analytics, sampled");
+    expect(screen.getByTestId("visits-scope")).toHaveTextContent("Today live, earlier days every hour");
     expect(screen.getByText(/countries with at least one page view/)).toBeInTheDocument();
     expect(screen.getByText("Since Oct 11, 2026: countries with page views")).toBeInTheDocument();
   });

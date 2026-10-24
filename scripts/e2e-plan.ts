@@ -65,6 +65,7 @@ export const ALL_SPECS = [
   "topics",
   "view-links",
   "visit",
+  "visit-live",
   "visits",
   "workshop",
 ] as const;
@@ -123,15 +124,17 @@ export const RULES: Rule[] = [
   // Local developer tools (tools/office-relay): unit tested in tests/relay; nothing the site ships.
   { test: /^tools\//, specs: [] },
   // Public visit stats: the Functions and the hq-stats Worker are unit tested (tests/stats/); the client
-  // beacon and the automation aware Web Analytics guard run on every page.
-  { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats|askStats))\.ts$|^workers\/|^scripts\/stats-/, specs: [] },
+  // beacon and the automation aware Web Analytics guard run on every page. visit-live runs the real visit and
+  // stats Functions behind a page (a fresh tab raises the live count).
+  { test: /^functions\/(api\/(visit|stats)|_lib\/(visit|stats))\.ts$/, specs: ["visit-live"] },
+  { test: /^functions\/_lib\/askStats\.ts$|^workers\/|^scripts\/stats-/, specs: [] },
   // Study guide PDFs from R2: the Function is unit tested (tests/unit/guides-function.test.ts).
   { test: /^functions\/(api\/guides\/\[slug\]|_lib\/guides)\.ts$/, specs: [] },
   // Inline scripts under the per-page script policy (scripts/csp-hashes.ts): the head boot script, the
   // Web Analytics guard and the / language redirect each need their hash.
   { test: /^src\/components\/Analytics\.tsx$/, specs: ["csp", "boot-first", "static-routes", "visit", "pageview"] },
   { test: /^src\/(lib\/boot-first|app\/\(root\)\/page)\.tsx?$/, specs: ["csp", "boot-first", "static-routes", "experience", "onboarding", "view-links"] },
-  { test: /^src\/lib\/stats\/|^src\/components\/(VisitBeacon|Analytics)\.tsx$/, specs: ["visit", "pageview"] },
+  { test: /^src\/lib\/stats\/|^src\/components\/(VisitBeacon|Analytics)\.tsx$/, specs: ["visit", "visit-live", "pageview"] },
   { test: /^functions\//, specs: ["ask"] },
   { test: /^src\/ask\/|^scripts\/build-knowledge\.ts$/, specs: ["ask"] },
   { test: /^content\/ask\//, specs: ["ask"] },
@@ -321,7 +324,7 @@ export const RULES: Rule[] = [
   // Self-hosted fonts and other assets the 3D text and the boot card load.
   { test: /^src\/assets\//, specs: ["experience", "highlights", "boot-first", "ride"] },
   // Pages bindings: the Ask and visit Functions read them.
-  { test: /^wrangler\.toml$/, specs: ["ask", "visit"] },
+  { test: /^wrangler\.toml$/, specs: ["ask", "visit", "visit-live"] },
   // The client JSON cache behind the Glass Drawer room files and the hologram shapes.
   { test: /^src\/lib\/json-cache\.ts$/, specs: ["shapes", "drawer-solid", "hud", "labs", "library-roof", "career"] },
   { test: /^src\/lib\/audio\//, specs: ["ambience", "experience", "pageview"] },

@@ -25,8 +25,8 @@ const labels: ObservatoryLabels = {
   questions: "questions asked",
   topFloor: (f) => `most explored: ${f}`,
   split: (a, b) => `3D ${a}% · Classic ${b}%`,
-  source: "Cloudflare Web Analytics, sampled estimates",
-  updated: "Updated every 2 hours",
+  source: "Own visit counter + Cloudflare Web Analytics",
+  updated: "Today live, earlier days every hour",
   delayed: (d) => `Delayed: last updated ${d}`,
   floors: { L1: "Home", L2: "Journey", L3: "Work", L4: "Writing", RF: "About" },
 };
@@ -80,8 +80,8 @@ describe("Visitor Observatory parts", () => {
       "10 countries · 97 questions asked",
       "most explored: Work",
       "3D 64% · Classic 36%",
-      "Cloudflare Web Analytics, sampled estimates",
-      "Updated every 2 hours",
+      "Own visit counter + Cloudflare Web Analytics",
+      "Today live, earlier days every hour",
     ]);
     expect(rows.every((r) => r.yaw === observatoryParts().panel.yaw)).toBe(true);
   });
