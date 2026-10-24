@@ -41,15 +41,17 @@ export const MODE_FREEZE = { factor: 3, floor: 30 };
 /**
  * The same cross-check for the public `perf` block (security S7): RUM sessions are sampled 3D page
  * lifetimes, so a day with more than `max(floor, factor x page views)` of them is a flood of forged
- * beacons and keeps zero perf (`frozen`), never attacker-chosen FPS or explore numbers.
+ * beacons and keeps zero perf (`frozen`). Below that ceiling forged sessions are counted like real ones
+ * (beacons carry no proof of a browser), so the ratio bounds how far they can move the numbers, not whether.
  */
 export const PERF_FREEZE = MODE_FREEZE;
 
 /**
  * The same cross-check for the headline visit count (owner decision 2026-10-24): a day whose visit pings
  * exceed `max(floor, factor x Web Analytics page views)` keeps its Web Analytics visits (`visitsFrozen`), so
- * forged pings cannot set the public number. Wider than MODE_FREEZE: ad blockers stop the Web Analytics
- * beacon but not the same-origin ping, so a real day can have more pings than measured page views.
+ * forged pings can inflate a day's public number up to that ceiling but no further (an accepted tolerance,
+ * security audit 2026-10-24). Wider than MODE_FREEZE: ad blockers stop the Web Analytics beacon but not the
+ * same-origin ping, so a real day can have more pings than measured page views.
  */
 export const VISIT_FREEZE = { factor: 5, floor: 50 };
 

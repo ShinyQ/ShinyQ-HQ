@@ -84,9 +84,10 @@ export function secondsToMidnight(now: number): number {
 }
 
 /**
- * Circuit breaker: when more than half of the last 5 minutes of model calls failed or produced
- * an output that the checks had to block (at least 10 samples), pause for 15 minutes. Plain
- * declines do not count, so a visitor cannot trip it with off-topic questions alone.
+ * Circuit breaker: when more than half of the last 5 minutes of model calls failed, came back empty or
+ * produced an output a safety check had to block (at least 10 samples), pause for 15 minutes. Plain
+ * declines and grounding blocks (`EXPECTED_REASONS` in handler.ts) do not count, so a visitor cannot trip it
+ * with off-topic questions or questions that invite outside names or numbers.
  */
 export const BREAKER_WINDOW_MS = 5 * 60_000;
 export const BREAKER_PAUSE_MS = 15 * 60_000;

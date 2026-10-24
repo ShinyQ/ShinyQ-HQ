@@ -18,8 +18,16 @@ import { cleanText, detectLocale, normalizeDashes, normalizeQuestion } from "./t
 import type { AskEnv, PagesContext } from "./types";
 import type { StatsTopic } from "../../src/lib/stats/protocol";
 
-/** Expected outcomes, not model misbehaviour: they never count against the circuit breaker. */
-const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "others", "general", "persona", "injection", "offtopic", "unsourced", "model_decline", "fit", "consulting"]);
+/**
+ * Outcomes that never count against the circuit breaker: expected declines, and grounding checks a visitor can invite
+ * with an ordinary question (an outside name, a calculated number, a code request). Counting those let one visitor
+ * pause Ask for everyone (security audit 2026-10-24). Upstream failures, empty answers and the safety blocks
+ * (forbidden, secret, leak, roleplay) still count.
+ */
+export const EXPECTED_REASONS: ReadonlySet<string> = new Set([
+  "harmful", "private", "others", "general", "persona", "injection", "offtopic", "unsourced", "model_decline", "fit", "consulting",
+  "numeric", "entity", "employer", "code", "defamation", "personal-data",
+]);
 
 /** Request pipeline in the security order of spec 7.4. */
 
@@ -312,7 +320,9 @@ export function createAskHandler(deps: HandlerDeps) {
       background.push(recordSample(env.ASK_KV, bad, started));
     }
     const modelAnswer = result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup");
-    if (modelAnswer && result.historyUsed === 0 && env.ASK_KV) {
+    // Same gate as the read (step 6): only a request that sent no verified history may write the shared entry, so a
+    // signed turn that usableHistory drops cannot skip the read and overwrite another visitor's answer (audit 2026-10-24).
+    if (modelAnswer && history.length === 0 && result.historyUsed === 0 && env.ASK_KV) {
       background.push(env.ASK_KV.put(key, JSON.stringify({ text: result.text, ...(result.cite ? { cite: result.cite } : {}), ...(result.cites ? { cites: result.cites } : {}) }), { expirationTtl: CACHE_TTL_SECONDS }).catch(() => {}));
     }
     if (background.length) context.waitUntil(Promise.all(background));

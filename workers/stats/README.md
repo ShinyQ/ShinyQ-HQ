@@ -43,7 +43,7 @@ flowchart LR
   `floorOfPath` (the site's own route parser). Countries are ISO alpha-2 only (no `XX`, no `T1`),
   without counts. A day whose beacon points exceed `max(30, 3 x page views)` keeps a zero 3D vs Classic
   split (`frozen`); a day whose RUM sessions exceed the same `max(30, 3 x page views)` keeps a zero
-  `perf` (`PERF_FREEZE`, `frozen`), so forged beacons cannot set the public numbers (security S7). The optional snapshot `perf` block (sampled 3D sessions, sessions with a median FPS
+  `perf` (`PERF_FREEZE`, `frozen`), so forged beacons can move the public numbers only up to that ceiling (security S7; an accepted tolerance per the security audit 2026-10-24). The optional snapshot `perf` block (sampled 3D sessions, sessions with a median FPS
   bucket, sessions at "55+", median explore bucket) sums each day's `perf` over the period; the median
   is weighted (the first bucket where the running count reaches half the total).
 - Run: `src/run.ts`. The first run backfills 183 days (Web Analytics keeps 184, Analytics Engine 3

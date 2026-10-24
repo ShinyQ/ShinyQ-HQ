@@ -301,6 +301,15 @@ describe("Ask samples (ask-samples.yml)", () => {
     expect(withKey).toHaveLength(1);
     expect(withKey[0]).toContain("run: bun scripts/ask-samples.ts --groq");
   });
+
+  it("never saves a cache: the branch's code runs in main's cache scope (security audit 2026-10-24)", () => {
+    expect(samples).not.toContain("uses: ./.github/actions/setup");
+    expect(samples).not.toMatch(/uses:\s*actions\/cache@/);
+    expect(samples).not.toMatch(/uses:\s*actions\/cache\/save@/);
+    expect(samples).toMatch(/uses:\s*actions\/cache\/restore@[0-9a-f]{40}/);
+    const bun = steps.find((step) => /uses:\s*oven-sh\/setup-bun@/.test(step)) ?? "";
+    expect(bun).toMatch(/no-cache:\s*true/);
+  });
 });
 
 describe("pinned Node (security release 2026-10-21)", () => {

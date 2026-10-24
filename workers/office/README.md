@@ -59,8 +59,11 @@ The Worker has no route and no `workers.dev` URL; only the Pages service binding
 - Workflow runs only when `head_repository` is the same repository (runs from forks are ignored).
 - Titles go through `cleanTitle` (one clean line, cut to the cap); the repository allowlist is the privacy boundary
   (client names are kept out by review, with no automated blocklist).
-- A `repository` event with action `privatized` removes the repository from the known-public set and strips its
-  runs, pull requests, feed items and the repository data of its sessions.
+- A `repository` event with action `privatized` or `deleted`, or `renamed` / `transferred` away (the old name),
+  removes that name from the known-public set, strips its runs, pull requests, feed items and the repository data of
+  its sessions, and records it in `revoked`: a stale public-looking delivery cannot bring it back; only `publicized`
+  or a webhook `ping` can (security audit 2026-10-24).
+- Deployment statuses only when `deployment.ref` is the default branch (a fork pull request job is ignored).
 
 ## First setup (owner)
 

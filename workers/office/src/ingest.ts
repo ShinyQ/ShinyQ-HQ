@@ -81,6 +81,23 @@ function deployStatus(state: string): "running" | "success" | "failure" | null {
   return null;
 }
 
+/** The allowlisted name a `repository` delivery takes away (privatized, deleted, renamed from, transferred from), else null. */
+function revokedName(action: string, repo: string, body: Json): string | null {
+  const [owner, name] = repo.split("/");
+  const changes = obj(body.changes);
+  if (action === "privatized" || action === "deleted") return repo;
+  if (action === "renamed") {
+    const from = text(obj(obj(changes?.repository)?.name)?.from);
+    return from ? `${owner}/${from}` : null;
+  }
+  if (action === "transferred") {
+    const from = obj(obj(changes?.owner)?.from);
+    const login = text(obj(from?.user)?.login) || text(obj(from?.organization)?.login);
+    return login ? `${login}/${name}` : null;
+  }
+  return null;
+}
+
 /**
  * One GitHub webhook delivery to office changes, for allowlisted public repositories only (null otherwise, which also
  * keeps private repositories out of the known-public list). Titles are cleaned (`cleanTitle`); URLs must be https.
@@ -90,9 +107,18 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
   const body = obj(payload);
   const repository = obj(body?.repository);
   const repo = text(repository?.full_name);
-  if (!body || !repository || !REPO.test(repo) || !repoAllowed(repo, allow)) return null;
-  if (event === "repository" && text(body.action) === "privatized") return { repo, changes: [{ type: "privatized" }] };
+  if (!body || !repository || !REPO.test(repo)) return null;
+  const action = text(body.action);
+  if (event === "repository") {
+    // A name that stops being this public repository is forgotten: privatized, deleted, renamed away or transferred away
+    // (security audit 2026-10-24: a stale name must not stay public for a later private repository that reuses it).
+    const gone = revokedName(action, repo, body);
+    if (gone !== null) return REPO.test(gone) && repoAllowed(gone, allow) ? { repo: gone, changes: [{ type: "privatized" }] } : null;
+  }
+  if (!repoAllowed(repo, allow)) return null;
   if (repository.private !== false) return null;
+  // Only an owner action can make a forgotten name public again: making the repository public, or (re)adding the webhook.
+  if ((event === "repository" && action === "publicized") || event === "ping") return { repo, changes: [], restored: true };
   const home = `https://github.com/${repo}`;
   const url = (x: unknown) => (SAFE_URL.test(text(x)) ? text(x) : home);
   const title = (raw: string, fallback: string) => cleanTitle(raw) ?? fallback;
@@ -143,7 +169,11 @@ export function parseGithubEvent(event: string, payload: unknown, allow: readonl
       const deployment = obj(body.deployment);
       const id = int(deployment?.id);
       const state = deployStatus(text(status?.state));
-      if (!status || id === null || !state) break;
+      // Deployments of the default branch only: a job in a fork pull request run (which needs the owner's approval to
+      // start) must not put its own environment name on the public feed (security audit 2026-10-24).
+      const main = text(repository.default_branch);
+      const ref = text(deployment?.ref);
+      if (!status || id === null || !state || !BRANCH.test(main) || (ref !== main && ref !== `refs/heads/${main}`)) break;
       const environment = text(status.environment) || text(deployment?.environment) || "production";
       // Only the production environment ships in the v4 pipeline (the dock's beam); every deploy stays in the feed.
       changes.push({ type: "deploy", id, title: title(`Deploy · ${environment}`, "Deploy"), url: url(status.target_url ?? status.log_url), status: state, production: environment.toLowerCase() === "production" });
