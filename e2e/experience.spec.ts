@@ -455,7 +455,7 @@ test.describe("rover on desktop", () => {
 test.describe("rover on touch devices", () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-  test("a tap on empty floor does not move the rover; the joystick and a vertical swipe still do", async ({ page }) => {
+  test("a tap on empty floor does not move the rover; the joystick drives it and a vertical swipe only tilts the view", async ({ page }) => {
     const errors = collectErrors(page);
     await enterHQ(page);
 
@@ -475,8 +475,16 @@ test.describe("rover on touch devices", () => {
     await touch(page, [c, { x: c.x, y: c.y - 30 }, { x: c.x, y: c.y - 55 }], 1200);
     await waitForRoverMove(page, before, 2);
 
+    // Owner decision 2026-10-24: a fast vertical swipe tilts the view and never rides the elevator.
+    await waitForCameraSettle(page);
+    const camera = await page.evaluate(() => (window as unknown as { __hq: { camera: () => number[] } }).__hq.camera());
     await touch(page, [{ x: 200, y: 560 }, { x: 200, y: 500 }, { x: 200, y: 420 }]);
-    await waitForFloor(page, "L2");
+    await waitForCameraSettle(page);
+    const tilted = await page.evaluate(() => (window as unknown as { __hq: { camera: () => number[] } }).__hq.camera());
+    expect(Math.abs(tilted[1] - camera[1]), "the swipe tilts the view").toBeGreaterThan(0.05);
+    const after = await snapshot(page);
+    expect(after.floor).toBe("L1");
+    expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState: () => { ride: unknown } } } }).__hq.store.getState().ride)).toBeNull();
     expect(errors).toEqual([]);
   });
 });

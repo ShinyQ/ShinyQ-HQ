@@ -64,14 +64,10 @@ describe("keyboard mapping", () => {
 });
 
 describe("swipes", () => {
-  it("detects fast vertical swipes as elevator steps", () => {
-    expect(classifySwipe({ dx: 4, dy: -120, ms: 200 })).toEqual({ kind: "elevator", dir: "up" });
-    expect(classifySwipe({ dx: -10, dy: 90, ms: 300 })).toEqual({ kind: "elevator", dir: "down" });
-  });
-
-  it("rejects slow or short vertical swipes", () => {
-    expect(classifySwipe({ dx: 0, dy: -120, ms: 600 })).toBeNull();
-    expect(classifySwipe({ dx: 0, dy: -40, ms: 100 })).toBeNull();
+  it("never turns a vertical swipe into a floor change (owner decision 2026-10-24)", () => {
+    expect(classifySwipe({ dx: 4, dy: -120, ms: 200 })).toBeNull();
+    expect(classifySwipe({ dx: -10, dy: 90, ms: 300 })).toBeNull();
+    expect(classifySwipe({ dx: 0, dy: -400, ms: 80 })).toBeNull();
   });
 
   it("detects taps and horizontal scrubs", () => {
