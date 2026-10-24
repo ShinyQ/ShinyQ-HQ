@@ -75,13 +75,13 @@ describe("portfolio evidence and ownership", () => {
     expect(sewise.results.map((r) => r.value)).toEqual(["1,390", "118", "9"]);
   });
 
-  it("localizes explanatory labels in all 19 graphs without translating canonical technologies", () => {
+  it("localizes explanatory labels in all 20 graphs without translating canonical technologies", () => {
     const graphs = pods.flatMap((p) => p.architecture ? [p.architecture] : []);
     const canonical: Record<string, string> = {
       postgresql: "PostgreSQL", redis: "Redis", mysql: "MySQL",
       nessus: "Nessus", openai: "Azure OpenAI", search: "Azure AI Search",
     };
-    expect(graphs).toHaveLength(19);
+    expect(graphs).toHaveLength(20);
     for (const graph of graphs) {
       expect(graph.nodes.some((n) => typeof n.label !== "string")).toBe(true);
       expect(graph.edges.some((e) => e.label && typeof e.label !== "string")).toBe(true);

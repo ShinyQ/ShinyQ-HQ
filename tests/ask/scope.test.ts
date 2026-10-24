@@ -107,6 +107,8 @@ describe("privateTopic", () => {
     "Did he earn AI-103 in 2026?",
     "Does the voice agent have health checks?",
     "Apakah dia punya proyek rumah sakit?",
+    "What did Kurniadi build for a consumer health company?",
+    "Apa proyek dia untuk perusahaan consumer health?",
     "Did he build a voting app?",
     "Where is he based?",
     "What is his favorite tool?",

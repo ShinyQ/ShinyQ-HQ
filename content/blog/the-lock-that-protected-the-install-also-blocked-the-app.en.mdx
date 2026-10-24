@@ -1,0 +1,130 @@
+---
+title: "The Install Lock That Also Blocked the App"
+date: "2026-10-24"
+excerpt: "In the first managed application test installs, every AI call failed with correct roles. The lock blocked the app's own identities. 36 defects followed."
+tags: ["azure-managed-applications", "azure-marketplace", "cloud-security", "deployment", "case-study"]
+readingTime: "7 min"
+---
+
+After the first real test installs of four AI products, every AI call failed. In one product, every analysis ended with 401 PermissionDenied from Document Intelligence, Azure OpenAI and Prompt Shields. The app's managed identities held the right roles.
+
+The cause was a lock that was doing its job. A managed application's resource group is locked so that nobody except the publisher can change it. That includes the app itself.
+
+These were test installs in a test subscription. The packages are Marketplace-ready and validated by real installs, but no offer has been created in Partner Center yet, and nothing in this post ran for a paying customer.
+
+## Four products, one install per customer
+
+At Metrodata I worked on four AI products: ARIA (a realtime voice agent), Pris.AI (code security), MII E-Recruitment (CV screening) and MII Fraud Detection (document fraud review). In October they were being prepared for Microsoft Marketplace.
+
+On 7 October my manager decided to offer all four as an Azure Application with Managed Application plans instead of multi-tenant SaaS. I led the engineering of that change in all four codebases. With a managed application, each customer installs their own copy into their own Azure subscription. Customer data and Azure OpenAI usage stay there, and the publisher manages the installation through a managed resource group.
+
+The package layout we used came from a teammate's reference implementation for another internal product. I reviewed it and standardized the four products on it rather than inventing a second layout.
+
+Azure protects the managed resource group with a lock. At the ReadOnly level, Azure creates a system deny assignment on the group. Everyone can read, and only the publisher can change anything. The customer cannot rewrite app settings or swap code under the publisher.
+
+<Architecture diagram="install" caption="One managed application install. Every write and data call from the app's identities meets the deny assignment first; only reads and listed actions pass." />
+
+One install follows this path:
+
+1. The customer starts the install from the wizard in their own subscription.
+2. Deployment scripts inside the managed resource group verify the signed release and create the secrets in place.
+3. The app tier runs with its own managed identities.
+4. Each write or data call from those identities meets the deny assignment. Only reads and the listed exceptions get through.
+5. Azure RBAC then decides whether the identity may act at all.
+
+Step 4 is the one this post is about.
+
+## Testing the way a customer installs
+
+The packages already passed ARM-TTK and the static checks. None had been installed the way a customer would install them. Between 18 and 20 October I ran real Service Catalog installs in a test subscription, with an AI agent session per product running the installs under my Azure sign-in and my approvals.
+
+One setup choice made the results meaningful: I installed as the customer, not as the publisher. In the Pris.AI test definition, for example, the publisher was a stand-in identity with Reader only, and my own account played the customer, so the deny assignment applied to me exactly as it would to a real customer.
+
+## Every AI call failed
+
+The symptoms differed per product, but they pointed the same way:
+
+- **MII Fraud Detection:** analyses ended `Failed`, with 401 from Document Intelligence, Azure OpenAI and Prompt Shields.
+- **ARIA:** no AI call succeeded.
+- **Pris.AI:** the backend could not call Azure OpenAI, send to Service Bus or write a Key Vault secret.
+- **MII E-Recruitment:** no AI calls, no blob writes, and the Durable Functions task hub could not run.
+
+Some calls still worked. Cosmos DB and Key Vault reads succeeded.
+
+The role assignments were correct, so I stopped looking at them and read the deny assignment on the managed resource group instead. Its exclusions held one pattern, `*/read`, and the only principal it excluded was the publisher. Every action that was not a read was denied to every other principal, including the install's own managed identities.
+
+That matched the symptoms. An Azure OpenAI completion, a Document Intelligence analysis, a Service Bus send and a blob write are all non-read data actions, so the deny assignment refused them before RBAC was considered. Reads were allowed. Cosmos DB authorizes data through its own data-plane RBAC, which, as far as I can tell, is why it kept working.
+
+I also created a small probe managed application to test the lock behavior on its own, outside the product templates.
+
+## A short list, with a reason on every line
+
+A managed application can carry exceptions to its deny assignment: allowed control actions and allowed data actions. In Partner Center they belong to the plan's technical configuration. In a Service Catalog definition they belong to the locking policy. Each product got its own list, wired into both, with a reason for every entry.
+
+The shape looks like this. It is an illustration, not a production file:
+
+```json
+{
+  "allowedDataActions": [
+    {
+      "action": "Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action",
+      "why": "AI summaries and chat (backend identity)"
+    },
+    {
+      "action": "Microsoft.ServiceBus/namespaces/messages/send/action",
+      "why": "Scan jobs are queued (backend identity)"
+    }
+  ]
+}
+```
+
+The part that took me longest to accept: an exception is not scoped to the app. It lifts the deny assignment for every principal. RBAC still decides who may act. A customer cannot create role assignments inside the managed resource group, so a data action exception matters mostly for identities that already hold a role there. Control actions are riskier, because the customer may hold roles on the subscription. Every entry widens what anyone with the right role can do inside an installation the publisher is responsible for.
+
+So the lists had to stay short, and a build check keeps them short. In MII E-Recruitment the package build rejects an entry without a reason, any Authorization or Key Vault action, tag writes, a bare wildcard, app-settings writes and the code-publish action. The rules are product-specific. Pris.AI keeps one Key Vault write, because its setup flow stores the key of the customer's GitHub App, and that entry carries its reason like the others.
+
+After the fix, ARIA's data-plane probes returned 200 from Azure OpenAI, Speech, Language and Content Safety, and 202 from Document Intelligence. For MII Fraud Detection, the new exceptions were confirmed on an installed instance.
+
+The finding came from the MII Fraud Detection install. I copied it into MII E-Recruitment before that product's next install, so the same failure was not discovered again product by product.
+
+## The same lock, three more times
+
+The lock came back in other forms:
+
+- **Code deployment.** MII E-Recruitment first needed the code-publish action in its exception list, which any principal with a role could have used. While fixing a deploy race against a cold Kudu, I moved the code deployment into the template with a warm-up step and removed the publish exception entirely. On the next install, the installer identity got 403 on publish. A reliability bug led to a security improvement.
+- **Tokens cached for a day.** App Service can cache a managed identity token for up to 24 hours. In ARIA, one service's role assignment arrived after its first token, so a service-to-service call got 403. Restarting the app would refresh the token, but a customer cannot restart an app inside the locked group. The service now also accepts its peer by a pinned object ID.
+- **Key Vault references cached as denied.** In MII E-Recruitment, the reader roles were created after App Service had already cached the denial, and restarts did not help. The fix added the reader roles and a reference refresh in the health gate. The refresh call's authorization action is not a registered operation, so the locking policy rejected it by name. It needed the registered app-settings wildcard, with its reason written next to it.
+
+## 36 defects before a clean install
+
+The deny assignment was the most instructive defect, but not the only one. Across the four products, the installs found 36 install-blocking defects: 14 in ARIA, 12 in MII E-Recruitment, 5 in Pris.AI and 5 in MII Fraud Detection. I treated each failed install as a finding with a root cause, a fix and a rerun. Besides the lock, the main classes were:
+
+- Private plans blocked by ordering: worker jobs created before the network peering and DNS links they needed, and storage firewalls in front of the deployment scripts.
+- Deployment scripts failing because the Azure CLI container image lacks tools such as `awk`, `unzip` or `curl`.
+- Release packages missing runtime files that the repository had. The repository was fine; the artifact was not.
+- An upgrade that failed on an immutable Key Vault key tag, and a drain step that could leave the voice service refusing calls.
+- A Container Instances quota in the install region, already used by other teams.
+
+The post-install checks then passed:
+
+| Product | Result |
+|---|---|
+| ARIA | 25/25 public, 22/22 private, and an upgrade with drain (about 10.5 min) |
+| Pris.AI | 16/16 public, 24/24 private |
+| MII E-Recruitment | Two passing installs of 0.1.1, then 0.1.2 without the publish exception |
+| MII Fraud Detection | 2 of 5 attempts succeeded (Starter public, Enterprise private) |
+
+All test resources were torn down afterwards.
+
+## Where it stands
+
+The packages are Marketplace-ready and validated by real Service Catalog test installs. Metrodata is enrolled in Partner Center, but the offers have not been created or certified yet. Metering is implemented in all four products, switched off by default, and has never called the live Metering API, because no offer exists yet.
+
+Several checks are still open: interactive checks on an installed instance (first admin sign-in with MFA and live AI flows), the CreateUiDefinition portal sandbox, and upgrade and rollback rehearsals for three of the four products. The Pris.AI install notes say it plainly: a green automated check does not prove each exception end to end. A real scan and a chat turn on an installed instance do.
+
+## What I would do differently
+
+- **Probe the platform first.** The lock behavior was a property of Azure, not of our code. I learned it from four products failing. One small locked install before the first package would have shown it.
+- **Design the exception list with the roles.** Each role assignment for an app identity raises a second question: will the deny assignment let this through? I now write both in the design, side by side.
+- **Run the interactive checks in the same window.** The automated checks passed, but the end-to-end proof is still pending. That gap should have been closed while the test installs existed.
+
+A lock that protects the installation also constrains the app inside it. The exceptions are part of the security design, and they need the same review as any other permission.

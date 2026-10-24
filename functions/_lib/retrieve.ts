@@ -182,9 +182,9 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
       .forEach((r) => add(r.chunk));
   } else if (lead) {
     // Lead intent: who he is, his availability, how to reach him, then matching past work and skills.
-    for (const id of [...ALWAYS_INCLUDE, LEAD_INCLUDE]) add(byId(id));
+    // The engagements view comes before the matches, so long case studies can never clip it out of the budget.
+    for (const id of [...ALWAYS_INCLUDE, LEAD_INCLUDE, LEAD_ENGAGEMENTS]) add(byId(id));
     leadMatches(pack, question).forEach(add);
-    add(byId(LEAD_ENGAGEMENTS));
     const limit = TOP_K + ALWAYS_INCLUDE.length + 2;
     for (const { chunk } of ranked) {
       if (picked.length >= limit) break;

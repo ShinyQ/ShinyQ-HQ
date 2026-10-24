@@ -1,0 +1,97 @@
+---
+title: "The Stall That Was Never in the Query"
+date: "2026-10-24"
+excerpt: "A Fabric dashboard took ~21 s per request, static files included. A zero-row probe showed capacity throttling, not query cost. I had blamed indexes first."
+tags: ["microsoft-fabric", "performance", "graphql", "capacity-planning", "case-study"]
+readingTime: "7 min"
+---
+
+Every request to the dashboard took about 21 seconds before the first byte. That included static JavaScript files, which never touch the database.
+
+Two optimization passes on the read path had not changed it. My third attempt seemed to fix it, and I wrote down the wrong cause. The stall came back the same day. The cause was the Fabric capacity's admission delay, not the query.
+
+The figures below come from my commit and pull request notes on this project. They were measured once, under the conditions described, and not re-measured independently.
+
+## A forecasting dashboard on the smallest capacity
+
+At Metrodata I built a demand-forecasting dashboard for a national bakery brand. Planners and executives use it to compare forecast with actual sales, review the OTF (order-to-fulfil) plan, buffers and delivery schedules, and upload planner overrides.
+
+It is a statically exported Next.js app hosted as a Fabric App. The app reads typed GraphQL from Data API builder over a Fabric SQL database, which is filled from curated lakehouse views. In August the app ran on a synthetic dataset; the client's real data arrived in October. The capacity was F2, the smallest Fabric SKU.
+
+<Architecture pod="fabric-forecasting-dashboard" caption="The dashboard's architecture today, from its case study. The app, its GraphQL layer and the data behind them share one Fabric capacity, which is where the stall lived." />
+
+A page load follows this path:
+
+1. The browser loads the static app from Fabric hosting.
+2. The app sends GraphQL requests to Data API builder.
+3. Data API builder reads the views and tables in Fabric.
+4. Every one of those steps draws on the same capacity. Fabric meters and throttles at the capacity, not per component.
+
+Step 4 is the one I missed.
+
+## The fix that was not the fix
+
+The first two passes narrowed reads and tuned the read path. The stall did not move. Because static files were slow too, those passes concluded the cause was platform infrastructure that could not be fixed.
+
+On 24 August I tried something else. Two secondary indexes had been added to serve a cursor sort. I dropped them and changed nothing else. First byte went from about 21 s to about 1.1 s across nine measurements. I recorded the indexes as the root cause in the performance document and moved on.
+
+The same day, with no indexes left, the stall was back.
+
+## A probe that reads no rows
+
+I needed a measurement that could separate query cost from everything else. GraphQL allows a query for `{__typename}`, which Data API builder answers from its schema. It reads no table and returns 49 bytes.
+
+That query took 21.4 to 25.6 seconds. The same endpoint rejected an unauthorized request in 0.84 seconds.
+
+No projection, page size or index can explain 21 seconds for a request that reads nothing. The rejection was fast because it was refused before doing any work; the authorized request waited before it was admitted.
+
+A second measurement showed where the delay was charged. Three identical queries took 23 seconds when run together and 66 seconds when run one after another. A processing cost would add up the same way in both cases. This looked like a delay charged once per request, at submission.
+
+That pattern matches Fabric's documented interactive delay, one of the stages of capacity throttling. F2 has 2 capacity units. By my arithmetic at the time, one page making about 14 GraphQL requests could use roughly 70 seconds of the whole capacity's budget.
+
+The indexes did consume capacity. Dropping them removed one consumer for long enough that the capacity's carried-forward overuse burned down. The recovery was real; my explanation for it was wrong. The indexes stayed retired on their own merits, about 82 ms a page against a stall of about 20 s, and I corrected the performance document.
+
+The trap is worth writing down. "This static file does not touch the database" does not rule the database out when both share a capacity that throttles as a whole.
+
+## Measuring the capacity, not the query
+
+Three passes had each timed the problem with a different ad hoc method, so their results could not be compared. I committed a probe instead. It reports one of three verdicts: THROTTLED, THROTTLES UNDER LOAD or HEALTHY. A `--load` mode reproduces a throttle rather than waiting for one. The middle verdict exists because a capacity can pass a single probe and throttle on the second wave, which an earlier version of the script reported as healthy.
+
+Then a capacity A/B: the same 140-request load took 61.02 s on F2 and 9.50 s on F8, with no throttle episode on F8.
+
+The larger capacity removed the stall. Whether to pay for it was a cost decision for whoever owned the capacity bill, not mine to make alone. I recorded the measurement and the recommendation. In October the dashboard was still on F2, so the rest of the work went into making each request cheaper.
+
+## Making each request cheaper
+
+**Ask for fewer columns.** The original read fetched 35 columns everywhere. Per-use-case projections cut the data read by about three times.
+
+**Stop sending rows when the page needs totals.** In September, three pages showed no plan at all at their default filters. The default window held 83,824 rows, and a guard that refuses reads over 50,000 detailed rows stopped them. The guard was correct: a truncated read would understate every total. The page never needed the rows. It needed a fold per store and SKU pair, so the read now streams through an accumulator and the browser receives about 3,000 pair aggregates instead. A test still asserts that a materializing read of the same volume is refused.
+
+Measuring that read showed where the time went. Payload bytes were about 99.7% of wall clock, and server compute was 45 to 61 ms. The same 83,824 rows took 1.57 s at one column, 4.48 s at five and 21.79 s at eighteen. On this stack, column width was the lever that worked.
+
+All of this passed with fixtures. The fixtures held far fewer rows and never built a projection, so they could not fail the way live mode did. The fixture repository now projects too.
+
+**Keep the capacity awake, on purpose.** After an idle night, the first GraphQL request took 6.61 s against a steady 0.16 to 0.48 s. I measured the idle tolerance at between 16 and 25 minutes, so a scheduled job sends the same zero-row probe every 10 minutes during business hours on weekdays. It holds no Azure credentials, because it needs none.
+
+The trade-off is written at the top of the workflow file. An idle database releases its compute, so idle time costs nothing. A ping every ten minutes prevents that release and turns zero idle cost into a continuous one. That is defensible during business hours and not overnight, and widening the window is a cost decision for the capacity owner. It also does not solve cold starts: in the same session, a 9.91 s stall landed five minutes after a successful ping.
+
+## Real data, the same lesson
+
+In October a new build of the dashboard went onto the client's real data, still on F2. Two sections of the summary page timed out after 30 seconds, and the forecast output table took about 2 minutes. Query Store showed the SQL finishing in 0.7 s. The time was going into Data API builder serializing wide pages, with up to 25 requests in flight at once.
+
+The fixes followed the same rule: measure where the time goes, then send less.
+
+- Narrower projections for the plan and KPI reads, pages sized to about 1 MB, a shared gate of 4 requests in flight, and retries on timeouts.
+- Per-scope plan and deviation summaries computed in Fabric, using the dashboard's own arithmetic, with parity tests against the browser's calculation.
+
+Measured on a fixture built at the scale of one real planning scope (838 stores by 15 SKUs), the summary page's plan and deviation reads went from 39 requests, 90,230 rows and 11.7 MB to 5 requests, 556 rows and 156 KB. The forecast output table went from 37 requests and 14.1 MB to 13 requests and 2.5 MB. By that profile, its live 2 minutes should fall to about 20 s if time scales with the cells read. I have not recorded a live time after the change.
+
+## Limits, and what I would do differently
+
+- **I trusted one recovery.** One drop from 21 s to 1.1 s looked like proof. I should have asked for a measurement that could not be explained any other way before writing a root cause into the docs. The zero-row probe was that measurement, and it took one more day to reach it.
+- **I timed the symptom before I could compare it.** A committed probe on day one would have made the first three passes comparable.
+- **I could not read capacity usage directly.** Capacity-level metrics are not readable from the CLI I had; they need the Fabric Capacity Metrics app and a capacity admin. My capacity numbers are inferred from request timing and documented rates.
+- **Several numbers are estimates or fixture measurements.** The October sizes come from a scaled fixture, and the forecast output time after the change is an estimate. They show direction, not a live result.
+- **Fixtures need production's shape.** Two of these problems passed every test because the fixtures were small and did not project columns.
+
+The stall was never in the query. It was in the shared capacity in front of it, and the zero-row probe was the cheapest way to show that.

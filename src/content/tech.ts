@@ -198,7 +198,7 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "marketplace metering api",
   "arm-ttk",
   "data api builder",
-  "microsoft 365 copilot",
+  "whatsapp cloud api",
   "nessus api",
   "entra id",
   "microsoft entra id",
