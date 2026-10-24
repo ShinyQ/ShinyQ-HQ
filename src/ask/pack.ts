@@ -622,13 +622,22 @@ export function validateStoredPack(json: string, options: { maxBytes?: number } 
   const { pack, index } = stored;
   errors.push(...validatePack(pack));
   const { packVersion, packDate, chunks, entities, orgs, contact } = pack;
-  if (versioned({ packDate, chunks, entities, orgs, contact }).packVersion !== packVersion) errors.push(`packVersion ${packVersion} does not match the pack content`);
+  const textVersion = versioned({ packDate, chunks, entities, orgs, contact }).packVersion;
+  if ((stored.vectors ? vectorsVersion(textVersion, stored.vectors) : textVersion) !== packVersion) errors.push(`packVersion ${packVersion} does not match the pack content`);
   if (!Array.isArray(index.terms) || !Array.isArray(index.postings) || index.terms.length !== index.postings.length) errors.push("index terms and postings differ in length");
   if (!Array.isArray(index.len) || index.len.length !== chunks.length) errors.push("index lengths differ from the chunk count");
   if (typeof index.vocabulary !== "string") errors.push("index vocabulary is not a string");
   if (!errors.length && JSON.stringify(storePack(pack).index) !== JSON.stringify(index)) errors.push("index does not match the pack text");
   if (stored.vectors !== undefined && !hydrateVectors({ pack: { ...pack }, vectors: stored.vectors })) errors.push("vectors do not match the pack (model, dimensions or one row per chunk)");
   return errors;
+}
+
+/**
+ * `packVersion` of a stored pack that carries vectors: the text version folded with the vectors, so new embeddings over
+ * the same text get their own immutable `pack:v1:<version>` key (and fresh answer cache keys) instead of colliding.
+ */
+export function vectorsVersion(textVersion: string, vectors: NonNullable<StoredPack["vectors"]>): string {
+  return createHash("sha256").update(`${textVersion}|${JSON.stringify(vectors)}`).digest("hex").slice(0, 16);
 }
 
 export interface PackArtifacts {
@@ -643,7 +652,7 @@ export interface PackArtifacts {
 
 /** The build outputs of a text pack: the stored value, the fallback pack and the pin, with every gate applied. */
 export function buildPackArtifacts(pack: KnowledgePack, vectors?: StoredPack["vectors"]): PackArtifacts {
-  const json = JSON.stringify(storePack(pack, vectors));
+  const json = JSON.stringify(storePack(vectors ? { ...pack, packVersion: vectorsVersion(pack.packVersion, vectors) } : pack, vectors));
   const fallback = buildFallbackPack(pack);
   const fallbackJson = JSON.stringify(fallback);
   const fallbackBytes = Buffer.byteLength(fallbackJson, "utf8");
