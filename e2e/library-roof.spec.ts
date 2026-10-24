@@ -128,7 +128,7 @@ test.describe("missions to the Library and the Roof", () => {
     expect((await snapshot(page)).phase).toBe("explore");
   });
 
-  test("cv drives to the kiosk, opens the CV viewer over the tower and links the one CV PDF", async ({ page }) => {
+  test("cv drives to the kiosk, opens the CV in the shared PDF reader over the tower and links the one CV PDF", async ({ page }) => {
     await enterFloorRoute(page, "/en/library");
     await runMission(page, "cv");
     await waitForRoom(page, "RF:cv");
@@ -147,6 +147,7 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(panel.getByRole("link", { name: "Open the CV page" })).toHaveAttribute("href", "/en/cv");
     await panel.getByRole("button", { name: "View CV" }).click();
     const viewer = page.getByRole("dialog", { name: "CV", exact: true });
+    await expect(viewer.getByTestId("cv-reader")).toHaveAttribute("data-page-count", /^\d+$/, { timeout: 30_000 });
     await expect(viewer.getByRole("button", { name: "Close CV" })).toBeFocused();
     // Esc closes the viewer only; the room stays open.
     await page.keyboard.press("Escape");
@@ -207,8 +208,8 @@ test.describe("missions to the Library and the Roof", () => {
     await expect(paper).toBeHidden();
     await expect(drawer).toBeVisible();
     await drawer.getByRole("link", { name: "Read the paper" }).first().click();
-    const reader = page.getByTestId("paper-viewer-modal");
-    await expect(reader.getByRole("img", { name: /, page 1 of \d+$/ })).toBeVisible();
+    const reader = page.getByTestId("paper-reader");
+    await expect(reader.getByRole("img", { name: /, page 1 of \d+$/ })).toBeVisible({ timeout: 30_000 });
     await page.keyboard.press("Escape");
     await expect(reader).toBeHidden();
     await expect(drawer).toBeVisible();
@@ -247,7 +248,7 @@ test("a paper opens its preview modal with the abstract, citations and new-tab l
   await expect(research.getByRole("button", { name: /Study on the Dynamics of COVID-19/ })).toBeFocused();
 });
 
-test("a self-hosted paper opens in the paper reader: page images, zoom, download, IEEE notice, back to the abstract", async ({ page }) => {
+test("a self-hosted paper opens in the shared PDF reader: pages, zoom, download, IEEE notice, back to the abstract", async ({ page }) => {
   await openPage(page, "/en/library?tier=static");
   const research = page.locator("#research");
   const row = research.getByTestId("research-row").filter({ hasText: "Indonesian Digital Wallet" });
@@ -257,20 +258,24 @@ test("a self-hosted paper opens in the paper reader: page images, zoom, download
   await expect(research.getByTestId("research-row").filter({ hasText: "Study on the Dynamics of COVID-19" }).getByRole("link", { name: "Read the paper" })).toHaveCount(0);
 
   await read.click();
-  const dialog = page.getByRole("dialog", { name: "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method" });
-  const reader = dialog.getByTestId("paper-viewer-modal");
+  const title = "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method";
+  const dialog = page.getByRole("dialog", { name: title });
+  const reader = dialog.getByTestId("paper-reader");
+  await expect(reader).toHaveAttribute("data-page-count", "7", { timeout: 30_000 });
   await expect(dialog.getByRole("button", { name: "Close paper preview" })).toBeFocused();
   await expect(reader.getByTestId("paper-reader-meta")).toHaveText("7 pages · Authors' manuscript");
-  const first = reader.getByRole("img", { name: "Indonesian Digital Wallet Sentiment Analysis Using CNN and LSTM Method, page 1 of 7" });
-  await expect(first).toBeVisible();
-  await expect.poll(() => first.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(1400);
-  await expect(reader.getByRole("img")).toHaveCount(7);
+  await expect(reader.locator('[data-testid="paper-page"][data-page="1"]')).toHaveAttribute("data-rendered", "true", { timeout: 30_000 });
+  await expect(reader.getByRole("img", { name: `${title}, page 1 of 7` })).toBeVisible();
   await expect(reader.getByTestId("paper-notice")).toContainText("Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses");
   await expect(reader.getByTestId("paper-notice").getByRole("link")).toHaveAttribute("href", "https://doi.org/10.1109/icaibda53487.2021.9689712");
   await expect(reader.getByTestId("paper-download")).toHaveAttribute("href", "/papers/ewallet-sentiment-cnn-lstm.pdf");
-  await expect(reader.getByTestId("paper-open-tab")).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(reader.getByTestId("paper-download")).toHaveAttribute("download", "ewallet-sentiment-cnn-lstm.pdf");
+  const fit = reader.getByTestId("paper-fit");
+  await expect(fit).toHaveAttribute("aria-pressed", "true");
   await reader.getByRole("button", { name: "Zoom in" }).click();
-  await expect(reader.getByTestId("paper-zoom")).toHaveText(/125%/);
+  await expect(fit).toHaveAttribute("aria-pressed", "false");
+  await reader.getByTestId("paper-next").click();
+  await expect(reader).toHaveAttribute("data-current-page", "2");
   const pdf = await page.request.get("/papers/ewallet-sentiment-cnn-lstm.pdf");
   expect(pdf.headers()["content-type"]).toContain("pdf");
   await expect(page.locator("iframe")).toHaveCount(0);
@@ -288,14 +293,15 @@ test("a self-hosted paper opens in the paper reader: page images, zoom, download
   await expect(read).toBeFocused();
 });
 
-test("the thesis reader shows the redacted PDF as a full-screen sheet on phones", async ({ page }) => {
+test("the thesis opens in the shared PDF reader as a full-screen sheet on phones", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openPage(page, "/id/library?tier=static");
   const row = page.locator("#research").getByTestId("research-row").filter({ hasText: "Sentiboard" });
   await row.getByRole("link", { name: "Baca makalah" }).click();
   const dialog = page.getByTestId("paper-dialog");
   await expect(dialog.getByTestId("paper-reader-meta")).toHaveText("18 halaman · Data pribadi disamarkan");
-  await expect(dialog.getByRole("img", { name: "Sentiboard: University Sentiment Dashboard Using IndoBERT, halaman 1 dari 18" })).toBeVisible();
+  await expect(dialog.getByTestId("paper-reader")).toHaveAttribute("data-page-count", "18", { timeout: 30_000 });
+  await expect(dialog.getByRole("img", { name: "Sentiboard: University Sentiment Dashboard Using IndoBERT, halaman 1 dari 18" })).toBeVisible({ timeout: 30_000 });
   await expect(dialog.getByTestId("paper-notice")).toHaveCount(0);
   const box = (await dialog.boundingBox())!;
   expect(box.width).toBe(390);

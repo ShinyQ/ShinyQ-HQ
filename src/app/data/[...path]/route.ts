@@ -23,7 +23,7 @@ const MESSAGES = { en, id } as const;
  * (out/data/hud/index.json, rooms and missions for the palette and terminal) and the 3D page data
  * (out/data/experience/{locale}.json, fetched by ExperienceGate with the 3D chunk),
  * which the pages fetch after hydration instead of inlining it into every HTML file, and the study guides
- * (out/data/guides/{locale}.json: the guide views plus the `guides` strings, fetched by the guide dialog).
+ * (out/data/guides/{locale}.json: the guide views plus the `guides` and `reader` strings, fetched by the guide dialog).
  */
 export function generateStaticParams() {
   return [
@@ -40,7 +40,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/data/[..
   if (kind === "guides") {
     const locale = LOCALES.find((l) => file === GUIDES_FILE(l));
     if (!locale) return new Response("Not found", { status: 404 });
-    const data: GuidesData = { guides: guideViews(locale), messages: { guides: MESSAGES[locale].guides } };
+    const data: GuidesData = { guides: guideViews(locale), messages: { guides: MESSAGES[locale].guides, reader: MESSAGES[locale].reader } };
     return Response.json(data);
   }
   if (kind === "experience") {

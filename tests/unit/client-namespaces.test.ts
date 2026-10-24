@@ -73,11 +73,11 @@ function clientGraphOf(entry: string): Set<string> {
 
 /**
  * The files that fetch each FETCHED_NAMESPACES namespace with their data and read it under their own nested
- * provider (the study guide dialog, its lazy reader and the reader toolbar). Only these files may read the namespace without the
- * layout or `ClientMessages` sending it; the same read anywhere else still has to be covered.
+ * provider (the study guide dialog; the shared PDF reader reads `reader`, which the layout carries). Only these files may
+ * read the namespace without the layout or `ClientMessages` sending it; the same read anywhere else still has to be covered.
  */
 const FETCHING_FILES: Record<(typeof FETCHED_NAMESPACES)[number], readonly string[]> = {
-  guides: ["src/components/guides/GuideDialog.tsx", "src/components/guides/GuideReader.tsx", "src/components/guides/GuideToolbar.tsx", "src/components/guides/GuideControls.tsx"],
+  guides: ["src/components/guides/GuideDialog.tsx"],
 };
 const isFetchedRead = (rel: string, path: string) =>
   (FETCHING_FILES as Record<string, readonly string[] | undefined>)[path.split(".")[0]]?.includes(rel) ?? false;
@@ -155,7 +155,7 @@ describe("client message namespaces", () => {
     for (const files of Object.values(FETCHING_FILES)) for (const rel of files) expect(TEXTS.has(join(ROOT, rel)), rel).toBe(true);
     const sources: Record<string, string> = {
       "src/components/guides/GuideDialog.tsx": `const t = useTranslations("guides"); const d = useTranslations("dialog.menu");`,
-      "src/components/guides/GuideReader.tsx": `const t = useTranslations("guides.pageOf");`,
+      "src/components/pdf-reader/PdfReader.tsx": `const t = useTranslations("guides.pageOf");`,
       "src/components/library/GuideShelf.tsx": `const t = useTranslations("guides");`,
       "src/components/CertDialog.tsx": `const t = useTranslations("guides.readGuide");`,
     };
@@ -164,6 +164,7 @@ describe("client message namespaces", () => {
     const { used } = namespacesOf(files, { paths: true, fetched: true }, read);
     expect(missingFrom(used, LAYOUT_NAMESPACES).sort()).toEqual([
       "guides (src/components/library/GuideShelf.tsx)",
+      "guides.pageOf (src/components/pdf-reader/PdfReader.tsx)",
       "guides.readGuide (src/components/CertDialog.tsx)",
     ]);
     // The fetching dialog's other reads are still checked.

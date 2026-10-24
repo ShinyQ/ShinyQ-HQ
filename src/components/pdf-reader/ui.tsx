@@ -1,8 +1,8 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type Ref } from "react";
 
-/** Shared bits of the study guide dialog and reader (no strings, so no `guides` reads here). */
+/** Shared bits of the PDF reader dialogs and the reader (no strings here). */
 
 /** 44 px targets on touch screens, 36 px with a mouse or trackpad (`pointer-fine`), so the header stays one compact row. */
 const TARGET =
@@ -17,8 +17,8 @@ export const PILL_BUTTON = `${TARGET} rounded-full px-1 hover:bg-surface-2 aria-
 /** The dialog's single header row (loading, error and reader states share it, so the swap does not jump). */
 export const HEADER_ROW = "flex items-center gap-2 border-b border-line px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-1.5 sm:px-3";
 
-/** Loading skeleton: the guide's cover when the view is known, else a blank sheet. */
-export function GuideSkeleton({ cover }: { cover?: string }) {
+/** Loading skeleton: the document's cover (a guide cover or a page-1 image) when known, else a blank sheet. */
+export function ReaderSkeleton({ cover }: { cover?: string }) {
   return (
     <div aria-hidden="true" className="mx-auto w-full max-w-md px-4 py-6">
       {cover ? (
@@ -42,4 +42,24 @@ export function useKeepFocus() {
     if (!active || active === document.body) ref.current?.focus({ preventScroll: true });
   }, []);
   return ref;
+}
+
+/** A Back control left of the title (the paper reader returns to the abstract and citation). */
+export interface ReaderBack {
+  label: string;
+  onBack: () => void;
+  /** A callback ref can refocus Back when the loading header swaps for the reader's (the paper dialog does). */
+  node?: Ref<HTMLButtonElement>;
+}
+
+/** The Back control: an arrow on phones, the arrow and its label from `sm:` up. */
+export function BackButton({ back: { label, onBack, node }, testPrefix }: { back: ReaderBack; testPrefix: string }) {
+  return (
+    <button ref={node} type="button" onClick={onBack} aria-label={label} className={`${COMPACT_BUTTON} gap-2`} data-testid={`${testPrefix}-back`}>
+      <span aria-hidden="true">&#8592;</span>
+      <span aria-hidden="true" className="max-sm:hidden">
+        {label}
+      </span>
+    </button>
+  );
 }

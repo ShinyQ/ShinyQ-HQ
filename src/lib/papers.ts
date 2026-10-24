@@ -1,9 +1,10 @@
 import manifest from "../../content/generated/paper-pages.json";
 
 /**
- * Self-hosted paper PDFs (`public/papers/{file}.pdf`) and their page images for the in-site paper
- * reader, rendered by `bun run paper:pages` (`scripts/paper-pages.ts`). Dependency-free so client
- * components can import it; a test fails when a PDF changes and the images were not regenerated.
+ * Self-hosted paper PDFs (`public/papers/{file}.pdf`) and their page images, rendered by
+ * `bun run paper:pages` (`scripts/paper-pages.ts`): page 1 is the paper reader's loading cover and the
+ * page count comes from them. Dependency-free so client components can import it; a test fails when a
+ * PDF changes and the images were not regenerated.
  */
 export interface PaperPageImage {
   n: number;

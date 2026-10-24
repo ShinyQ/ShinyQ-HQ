@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GUIDE_PAGE_KEY } from "@/content/guides";
-import { canvasScale, canvasPixelCap, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage, ZOOM_STEPS } from "@/components/guides/reader-model";
+import { canvasScale, canvasPixelCap, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage, ZOOM_STEPS } from "@/components/pdf-reader/reader-model";
 
 describe("guide reader model", () => {
   it("snaps zoom to the next step either way and stops at the ends", () => {
@@ -97,13 +97,13 @@ describe("guide reader model", () => {
   it("reads and writes the saved page, and survives blocked or missing storage", () => {
     const store = new Map<string, string>();
     const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) };
-    expect(savedPage(storage, "gh-600", 40)).toBe(1);
-    savePage(storage, "gh-600", 12);
+    expect(savedPage(storage, GUIDE_PAGE_KEY("gh-600"), 40)).toBe(1);
+    savePage(storage, GUIDE_PAGE_KEY("gh-600"), 12);
     expect(store.get(GUIDE_PAGE_KEY("gh-600"))).toBe("12");
-    expect(savedPage(storage, "gh-600", 40)).toBe(12);
-    expect(savedPage(storage, "gh-600", 8)).toBe(8);
+    expect(savedPage(storage, GUIDE_PAGE_KEY("gh-600"), 40)).toBe(12);
+    expect(savedPage(storage, GUIDE_PAGE_KEY("gh-600"), 8)).toBe(8);
     store.set(GUIDE_PAGE_KEY("gh-600"), "nope");
-    expect(savedPage(storage, "gh-600", 40)).toBe(1);
+    expect(savedPage(storage, GUIDE_PAGE_KEY("gh-600"), 40)).toBe(1);
     const blocked = {
       getItem: () => {
         throw new Error("SecurityError");
@@ -112,9 +112,9 @@ describe("guide reader model", () => {
         throw new Error("QuotaExceededError");
       },
     };
-    expect(savedPage(blocked, "gh-600", 40)).toBe(1);
-    expect(() => savePage(blocked, "gh-600", 3)).not.toThrow();
-    expect(savedPage(null, "gh-600", 40)).toBe(1);
-    expect(() => savePage(null, "gh-600", 3)).not.toThrow();
+    expect(savedPage(blocked, GUIDE_PAGE_KEY("gh-600"), 40)).toBe(1);
+    expect(() => savePage(blocked, GUIDE_PAGE_KEY("gh-600"), 3)).not.toThrow();
+    expect(savedPage(null, GUIDE_PAGE_KEY("gh-600"), 40)).toBe(1);
+    expect(() => savePage(null, GUIDE_PAGE_KEY("gh-600"), 3)).not.toThrow();
   });
 });

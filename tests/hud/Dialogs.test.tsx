@@ -16,6 +16,19 @@ import { openCv, openPaper } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { CV_PAGES } from "@/lib/cv";
 
+// pdf.js never opens here: the reader stays on its loading sheet, with its header and controls already in place.
+vi.mock("@/components/pdf-reader/pdf", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/pdf-reader/pdf")>()),
+  loadPdfjs: () => new Promise(() => {}),
+}));
+
+// jsdom has no ResizeObserver; the reader only needs the constructor and its two calls.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+} as unknown as typeof ResizeObserver;
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -33,8 +46,8 @@ function mount(locale: Locale = "en") {
 
 const ewallet = researchPublications(getLibrary().publications).find((p) => p.id === "ewallet-sentiment-cnn-lstm")!;
 
-describe("CV viewer modal", () => {
-  it("opens on openCv with every page image, zoom, download and new-tab links, and closes on Esc with focus back", async () => {
+describe("CV reader modal", () => {
+  it("opens on openCv in the shared PDF reader (Close, title, Download, page-1 cover) and closes on Esc with focus back", async () => {
     const user = userEvent.setup();
     mount();
     const opener = screen.getByRole("button", { name: "opener" });
@@ -43,27 +56,17 @@ describe("CV viewer modal", () => {
     const dialog = await screen.findByRole("dialog", { name: "CV" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(within(dialog).getByRole("button", { name: "Close CV" })).toHaveFocus();
-    const images = within(dialog).getAllByRole("img");
-    expect(images.map((img) => img.getAttribute("alt"))).toEqual(CV_PAGES.map((p) => `CV page ${p.n} of ${CV_PAGES.length}`));
-    expect(images[0]).toHaveAttribute("src", CV_PAGES[0].src);
-    expect(images[0].getAttribute("srcset")).toContain(`${CV_PAGES[0].srcSmall} 800w`);
-    expect(dialog).toHaveTextContent(`${CV_PAGES.length} pages`);
+    expect(dialog.querySelector("img")).toHaveAttribute("src", CV_PAGES[0].srcSmall);
 
-    const download = within(dialog).getByRole("link", { name: "Download PDF" });
+    const reader = await within(dialog).findByTestId("cv-reader");
+    await vi.waitFor(() => expect(within(reader).getByRole("button", { name: "Close CV" })).toHaveFocus());
+    expect(within(reader).getByRole("heading", { level: 2 })).toHaveTextContent("CV");
+    const download = within(reader).getByRole("link", { name: "Download PDF" });
     expect(download).toHaveAttribute("href", "/cv/kurniadi-ahmad-wijaya-cv.pdf");
     expect(download).toHaveAttribute("download", "kurniadi-ahmad-wijaya-cv.pdf");
-    const tab = within(dialog).getByRole("link", { name: /Open in new tab/ });
-    expect(tab).toHaveAttribute("target", "_blank");
-    expect(tab).toHaveAttribute("rel", "noopener noreferrer");
-
-    expect(within(dialog).getByTestId("cv-zoom")).toHaveTextContent("100%");
-    await user.click(within(dialog).getByRole("button", { name: "Zoom in" }));
-    expect(within(dialog).getByTestId("cv-zoom")).toHaveTextContent("125%");
-    await user.keyboard("+");
-    expect(within(dialog).getByTestId("cv-zoom")).toHaveTextContent("150%");
-    await user.keyboard("0");
-    expect(within(dialog).getByTestId("cv-zoom")).toHaveTextContent("100%");
-    expect(within(dialog).getByRole("button", { name: "Zoom out" })).toBeDisabled();
+    expect(within(reader).getByTestId("cv-controls")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("link", { name: /Open in new tab/ })).toBeNull();
+    expect(dialog.querySelector("iframe")).toBeNull();
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -75,13 +78,12 @@ describe("CV viewer modal", () => {
     mount("id");
     act(() => openCv());
     const dialog = await screen.findByRole("dialog", { name: "CV" });
+    await within(dialog).findByTestId("cv-reader");
     const close = within(dialog).getByRole("button", { name: "Tutup CV" });
-    expect(close).toHaveFocus();
+    await vi.waitFor(() => expect(close).toHaveFocus());
     await user.tab({ shift: true });
     expect(dialog.contains(document.activeElement)).toBe(true);
     expect(document.activeElement).not.toBe(close);
-    await user.tab();
-    expect(close).toHaveFocus();
     expect(dialog).toHaveTextContent("Unduh PDF");
     await user.click(dialog.parentElement!.firstElementChild as HTMLElement);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -138,5 +140,22 @@ describe("paper preview modal", () => {
     expect(within(dialog).getByRole("link", { name: /Kode sumber/ })).toHaveAttribute("href", thesis.url);
     expect(within(dialog).queryByRole("link", { name: /Halaman publikasi/ })).toBeNull();
     expect(dialog).toHaveTextContent("Abstrak");
+  });
+
+  it("reads a self-hosted paper in the shared reader: Back, the version line and the IEEE notice, then back to the abstract", async () => {
+    const user = userEvent.setup();
+    mount();
+    act(() => openPaper(buildPaperPreview(ewallet, "en")));
+    const dialog = await screen.findByRole("dialog", { name: ewallet.title });
+    await user.click(within(dialog).getByRole("button", { name: "Read the paper" }));
+    const reader = await within(dialog).findByTestId("paper-reader");
+    await vi.waitFor(() => expect(within(reader).getByRole("button", { name: "Abstract and citation" })).toHaveFocus());
+    expect(within(reader).getByRole("heading", { level: 2 })).toHaveTextContent(ewallet.title);
+    expect(within(reader).getByTestId("paper-reader-meta")).toHaveTextContent("7 pages · Authors' manuscript");
+    expect(within(reader).getByTestId("paper-notice")).toHaveTextContent("Permission from IEEE must be obtained");
+    expect(within(reader).getByRole("link", { name: "Download PDF" })).toHaveAttribute("href", "/papers/ewallet-sentiment-cnn-lstm.pdf");
+    await user.click(within(reader).getByRole("button", { name: "Abstract and citation" }));
+    expect(within(dialog).getByTestId("paper-abstract")).toBeInTheDocument();
+    await vi.waitFor(() => expect(within(dialog).getByRole("button", { name: "Read the paper" })).toHaveFocus());
   });
 });

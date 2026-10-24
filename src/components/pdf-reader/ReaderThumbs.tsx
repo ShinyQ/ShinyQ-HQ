@@ -2,8 +2,8 @@
 
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from "pdfjs-dist";
 import { memo, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import styles from "./GuideReader.module.css";
-import { releaseCanvas } from "./GuidePage";
+import styles from "./PdfReader.module.css";
+import { releaseCanvas } from "./ReaderPage";
 
 const THUMB_SCALE = 0.18;
 
@@ -14,7 +14,7 @@ interface Thumb {
   cancelled: boolean;
 }
 
-export interface GuideThumbsProps {
+export interface ReaderThumbsProps {
   doc: PDFDocumentProxy;
   count: number;
   /** Page 1 size in points. */
@@ -23,6 +23,8 @@ export interface GuideThumbsProps {
   label: string;
   pageLabel: (page: number) => string;
   onGo: (page: number) => void;
+  /** Test id prefix of the surface (`guide`, `cv`, `paper`). */
+  testPrefix?: string;
 }
 
 /**
@@ -31,7 +33,7 @@ export interface GuideThumbsProps {
  * `aria-current="page"` and stays scrolled into view. One tab stop (roving tabindex): ArrowUp, ArrowDown, Home and
  * End move focus between thumbnails, Enter or Space goes to the focused one's page.
  */
-export const GuideThumbs = memo(function GuideThumbs({ doc, count, base, current, label, pageLabel, onGo }: GuideThumbsProps) {
+export const ReaderThumbs = memo(function ReaderThumbs({ doc, count, base, current, label, pageLabel, onGo, testPrefix = "guide" }: ReaderThumbsProps) {
   const rail = useRef<HTMLElement>(null);
   const width = Math.round(base.width * THUMB_SCALE);
   const height = Math.round(base.height * THUMB_SCALE);
@@ -113,7 +115,7 @@ export const GuideThumbs = memo(function GuideThumbs({ doc, count, base, current
   };
 
   return (
-    <nav ref={rail} aria-label={label} className={`${styles.rail} hidden overflow-y-auto overscroll-contain lg:block`} data-testid="guide-thumbs">
+    <nav ref={rail} aria-label={label} className={`${styles.rail} hidden overflow-y-auto overscroll-contain lg:block`} data-testid={`${testPrefix}-thumbs`}>
       <ol className={styles.railList} onKeyDown={onKeyDown}>
         {Array.from({ length: count }, (_, i) => i + 1).map((n) => (
           <li key={n}>

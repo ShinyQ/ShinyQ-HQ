@@ -17,16 +17,18 @@ describe("/data/guides/{locale}.json", () => {
   });
 
   for (const locale of ["en", "id"] as const) {
-    it(`serves the ${locale} guide views and only the guides strings`, async () => {
+    it(`serves the ${locale} guide views with only the guides and the shared reader strings`, async () => {
       const response = await get(["guides", GUIDES_FILE(locale)]);
       expect(response.status).toBe(200);
       const data = (await response.json()) as GuidesData;
       expect(data.guides).toHaveLength(4);
       expect(new Set(data.guides.map((g) => g.slug)).size).toBe(4);
-      expect(Object.keys(data.messages)).toEqual(["guides"]);
+      // The nested provider replaces the layout's messages, so the shared reader's strings ride along.
+      expect(Object.keys(data.messages)).toEqual(["guides", "reader"]);
       const strings = data.messages.guides as Record<string, string>;
       expect(Object.keys(strings).sort()).toEqual(Object.keys(en.guides).sort());
       expect(strings).toEqual((locale === "en" ? en : id).guides);
+      expect(data.messages.reader).toEqual((locale === "en" ? en : id).reader);
     });
   }
 

@@ -18,7 +18,7 @@ export type HudCommand =
    * opens that topic's question pills, `source` names the entry point for analytics.
    */
   | { type: "ask"; q?: string; topic?: AskTopic; source?: AskEntry }
-  /** The in-site CV viewer modal (page images of the owner's PDF), see `DialogHost`. */
+  /** The in-site CV reader modal (the owner's PDF in the shared PDF reader), see `DialogHost`. */
   | { type: "cv" }
   /** Paper preview modal (abstract, citations, DOI and Scholar links), see `DialogHost`; `read` opens the paper reader (self-hosted PDF) at once. */
   | { type: "paper"; paper: PaperPreview; read?: boolean }

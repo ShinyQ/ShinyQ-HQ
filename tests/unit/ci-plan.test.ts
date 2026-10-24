@@ -292,10 +292,10 @@ describe("ci-plan planFor: selective pull request runs", () => {
   });
 
   it("study guide reader code: the guides spec plus the reader's own perf gate, no 3D keys", () => {
-    const plan = planFor(["src/components/guides/GuideReader.tsx"], none, opts);
+    const plan = planFor(["src/components/pdf-reader/PdfReader.tsx"], none, opts);
     expect(plan.e2e).toContain("guides");
     expect(plan.perf).toEqual(["guides"]);
-    expect(plan.reasons).toContain("perf gate of page code: src/components/guides/GuideReader.tsx (guides)");
+    expect(plan.reasons).toContain("perf gate of page code: src/components/pdf-reader/PdfReader.tsx (guides)");
     expect(planOutputs(plan, lhciUrls).perf_grep).toBe("(the study guide reader stays)");
     const cert = planFor(["src/components/certs/CertDialog.tsx", "content/study-guides.json"], none, opts);
     expect(cert.e2e).toEqual(expect.arrayContaining(["guides", "pageview"]));

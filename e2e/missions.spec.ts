@@ -62,7 +62,7 @@ test.describe("command palette", () => {
     await page.keyboard.type("lihat cv");
     const palette = page.getByRole("dialog", { name: "Palet perintah" });
     await expect(palette.getByRole("option").first()).toContainText("Lihat CV");
-    // The "View CV" command opens the CV viewer modal, same PDF in every language.
+    // The "View CV" command opens the CV in the shared PDF reader, same PDF in every language.
     await palette.getByRole("group", { name: "Perintah" }).getByRole("option", { name: /Lihat CV/ }).click();
     const viewer = page.getByRole("dialog", { name: "CV", exact: true });
     await expect(viewer).toBeVisible();

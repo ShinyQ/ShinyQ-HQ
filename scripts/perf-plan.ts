@@ -110,10 +110,10 @@ export function sharedRuleKeys(file: string): readonly PerfKey[] | null {
 }
 
 /**
- * Page code behind the study guide reader gate (`e2e/perf/guide-reader.spec.ts`, key `guides`): the reader, pdf.js
- * loading and the dialogs and page that open it. Not 3D code, so scripts/ci-plan.ts adds the key on its own.
+ * Page code behind the study guide reader gate (`e2e/perf/guide-reader.spec.ts`, key `guides`): the shared PDF reader
+ * (`src/components/pdf-reader/`), pdf.js loading and the dialogs and page that open it. Not 3D code, so scripts/ci-plan.ts adds the key on its own.
  */
-const GUIDE_READER_FILES = /^src\/components\/guides\/|^src\/content\/guides\.ts$|^src\/components\/(DialogHost\.tsx|dialog-loaders\.ts)$|^src\/app\/\[locale\]\/library\/page\.tsx$/;
+const GUIDE_READER_FILES = /^src\/components\/(guides|pdf-reader)\/|^src\/content\/guides\.ts$|^src\/components\/(DialogHost\.tsx|dialog-loaders\.ts)$|^src\/app\/\[locale\]\/library\/page\.tsx$/;
 
 /** The non-3D perf keys a page file moves (`guides` for the study guide reader), [] for any other file. */
 export function pagePerfKeys(file: string): PerfKey[] {

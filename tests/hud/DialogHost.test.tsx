@@ -23,7 +23,13 @@ vi.mock("next/dynamic", () => ({
 // Stand-ins for the lazy dialog chunks: the cert card's action is a `[data-hq-guide]` button inside an `aria-modal`
 // dialog, as in the real CertDialog (on the shared Modal).
 vi.mock("@/components/dialog-loaders", () => ({
-  loadCvDialog: async () => ({ default: () => null }),
+  loadCvDialog: async () => ({
+    default: ({ onClose }: { onClose: () => void }) => (
+      <button type="button" data-testid="cv-close" onClick={onClose}>
+        Close CV
+      </button>
+    ),
+  }),
   loadPaperDialog: async () => ({ default: () => null }),
   loadCertDialog: async () => ({
     GuideDialog: (await import("@/components/guides/GuideDialog")).default,
@@ -123,5 +129,28 @@ describe("DialogHost", () => {
     fireEvent.click(screen.getByTestId("other"));
     await act(async () => {});
     expect(screen.queryByTestId("guide-close")).toBeNull();
+  });
+
+  it("opens the CV reader on a plain click on a [data-hq-cv] link, keeps modified clicks for the link and returns focus", async () => {
+    render(
+      <>
+        <a href="/cv/cv.pdf" data-hq-cv="" data-testid="cv-read">
+          View CV
+        </a>
+        <DialogHost />
+      </>,
+    );
+    const link = screen.getByTestId("cv-read");
+    // A modified click keeps the link's default (a new tab or a download) and opens nothing.
+    expect(fireEvent.click(link, { ctrlKey: true })).toBe(true);
+    await act(async () => {});
+    expect(screen.queryByTestId("cv-close")).toBeNull();
+    // A plain click is taken over: the default (opening the PDF) is prevented.
+    expect(fireEvent.click(link)).toBe(false);
+    const close = await screen.findByTestId("cv-close");
+    close.focus();
+    fireEvent.click(close);
+    await waitFor(() => expect(screen.queryByTestId("cv-close")).toBeNull());
+    await waitFor(() => expect(link).toHaveFocus());
   });
 });

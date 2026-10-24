@@ -27,8 +27,9 @@ export interface CvPageImage {
 }
 
 /**
- * Page images of the CV PDF for the in-site viewer, rendered by `bun run cv:pages`
- * (`scripts/cv-pages.ts`) into `public/cv/pages/`. A test fails when the PDF changes and the
+ * Page images of the CV PDF, rendered by `bun run cv:pages` (`scripts/cv-pages.ts`) into
+ * `public/cv/pages/`: page 1 is the /cv page's cover, the RF drawer's cover and the CV reader's
+ * loading cover. A test fails when the PDF changes and the
  * images were not regenerated.
  */
 export const CV_PAGES: readonly CvPageImage[] = manifest.pages;

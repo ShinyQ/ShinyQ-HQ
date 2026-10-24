@@ -22,7 +22,7 @@ export interface ModalProps {
 const WIDTH = { sm: "sm:h-auto sm:max-w-[480px]", md: "sm:h-auto sm:max-w-[720px]", lg: "sm:h-[min(92dvh,1100px)] sm:max-w-[1040px]" };
 
 /**
- * Shared modal dialog for the CV viewer, paper and certification previews and the floor pad pickers: portals into document.body, moves focus
+ * Shared modal dialog for the PDF readers (CV, papers, study guides), paper and certification previews and the floor pad pickers: portals into document.body, moves focus
  * to the first `[data-autofocus]` element (else the panel), traps Tab, closes on Esc and backdrop
  * click, locks page scroll and stays above the 3D HUD and the room drawer. Esc is captured on the
  * window so the drawer, hologram and rover ignore it; other world keys already pause while an

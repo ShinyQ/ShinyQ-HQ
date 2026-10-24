@@ -56,7 +56,7 @@ test.describe("RF roof deck", () => {
     expect(errors).toEqual([]);
   });
 
-  test("contact actions: location and timezone, Email me, Copy email, channels in new tabs, then the CV viewer", async ({ page, context }) => {
+  test("contact actions: location and timezone, Email me, Copy email, channels in new tabs, then the CV reader", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await openRoof(page);
     await openFromPalette(page, en.hud.rooms.contact, "RF:contact");

@@ -159,26 +159,43 @@ test("the build story page: stations by id, a working table of contents, the dia
 const cvPdf = `/cv/${content.floors.roof.cv.fileName}.pdf`;
 const cvPages = (cvManifest as { pages: { src: string }[] }).pages;
 
-for (const [locale, label] of [
-  ["en", "Download PDF"],
-  ["id", "Unduh PDF"],
+/** Waits until the CV dialog's shared reader has opened the PDF and drawn page 1 (canvas plus text layer). */
+async function expectCvReader(page: Page) {
+  const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("cv-reader")).toHaveAttribute("data-page-count", String(cvPages.length), { timeout: 30_000 });
+  await expect(dialog.locator('[data-testid="cv-page"][data-page="1"]')).toHaveAttribute("data-rendered", "true", { timeout: 30_000 });
+  return dialog;
+}
+
+for (const [locale, label, view] of [
+  ["en", "Download PDF", "View CV"],
+  ["id", "Unduh PDF", "Lihat CV"],
 ] as const) {
-  test(`/${locale}/cv shows the CV as page images with a PDF download and an open-in-new-tab link`, async ({ page }) => {
+  test(`/${locale}/cv shows page 1 with View CV (the shared PDF reader) and a PDF download`, async ({ page }) => {
     await openPage(page, staticTier(`/${locale}/cv`));
-    const viewer = page.getByTestId("cv-viewer-page");
-    const download = viewer.getByRole("link", { name: label });
+    const card = page.getByTestId("cv-card");
+    const download = card.getByRole("link", { name: label });
     await expect(download).toHaveAttribute("href", cvPdf);
     await expect(download).toHaveAttribute("download", cvPdf.split("/").pop()!);
-    await expect(viewer.getByRole("img")).toHaveCount(cvPages.length);
-    const first = viewer.getByRole("img").first();
-    await expect(first).toHaveAttribute("src", cvPages[0].src);
-    await expect.poll(() => first.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-    await expect(page.locator(`main a[href="${cvPdf}"][target="_blank"]`)).toHaveCount(2);
+    const cover = card.getByTestId("cv-cover-image");
+    await expect(cover).toHaveAttribute("src", cvPages[0].src);
+    await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(card.locator("img")).toHaveCount(1);
     await expect(page.locator("main iframe")).toHaveCount(0);
+    const read = card.getByRole("link", { name: view });
+    await expect(read).toHaveAttribute("href", cvPdf);
+    await read.click();
+    const dialog = await expectCvReader(page);
+    await expect(page).toHaveURL(new RegExp(`/${locale}/cv\\?tier=static$`));
+    await expect(dialog.getByTestId("cv-download")).toHaveAttribute("href", cvPdf);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(read).toBeFocused();
   });
 }
 
-test("every CV entry point opens the CV viewer modal instead of downloading, in both languages", async ({ page }) => {
+test("every CV entry point opens the CV in the shared PDF reader instead of downloading, in both languages", async ({ page }) => {
   for (const path of ["/en", "/en/contact", "/en/quick", "/id", "/id/contact", "/id/quick"]) {
     await openPage(page, staticTier(path));
     await expect(page.locator('main a[href^="/cv/"][href$=".pdf"]'), path).toHaveCount(0);
@@ -189,7 +206,7 @@ test("every CV entry point opens the CV viewer modal instead of downloading, in 
       await entry.click();
       const dialog = page.getByRole("dialog", { name: "CV", exact: true });
       await expect(dialog, path).toBeVisible();
-      await expect(dialog.getByRole("img")).toHaveCount(cvPages.length);
+      await expect(dialog.getByTestId("cv-reader")).toHaveAttribute("data-page-count", String(cvPages.length), { timeout: 30_000 });
       await expect(page).toHaveURL(new RegExp(`${path}\\?tier=static`));
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
@@ -198,13 +215,19 @@ test("every CV entry point opens the CV viewer modal instead of downloading, in 
   }
 });
 
-test("the CV modal passes axe and zooms with the keyboard", async ({ page }) => {
+test("the CV reader passes axe, draws selectable text and zooms with the keyboard", async ({ page }) => {
   await openPage(page, staticTier("/en/contact"));
   await page.locator("main [data-testid='cv-open']").click();
-  const dialog = page.getByRole("dialog", { name: "CV", exact: true });
+  const dialog = await expectCvReader(page);
   await expect(dialog.getByRole("button", { name: "Close CV" })).toBeFocused();
+  await expect(dialog.getByRole("img", { name: `CV page 1 of ${cvPages.length}` })).toBeVisible();
+  await expect(dialog.locator('[data-testid="cv-page"][data-page="1"] span').first()).toBeAttached();
+  const fit = dialog.getByTestId("cv-fit");
+  await expect(fit).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("+");
-  await expect(dialog.getByTestId("cv-zoom")).toHaveText(/125%/);
+  await expect(fit).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("0");
+  await expect(fit).toHaveAttribute("aria-pressed", "true");
   const results = await new AxeBuilder({ page }).include("[data-testid='cv-dialog']").analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
 });

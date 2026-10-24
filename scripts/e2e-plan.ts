@@ -404,11 +404,13 @@ const ALSO_RULES: Rule[] = [
     specs: ["shapes"],
   },
   { test: /^src\/experience\/fx\/HoloIcon\.tsx$/, specs: ["pads", "roof"] },
-  // Study guides: the shelf, the reader, its data and views, and the dialogs that open it (e2e/guides.spec.ts).
+  // Study guides: the shelf, the reader (the shared PDF reader), its data and views, and the dialogs that open it (e2e/guides.spec.ts).
   {
-    test: /^src\/components\/guides\/|^src\/content\/guide[\w-]*\.ts$|^content\/study-guides\.json$|^src\/components\/(certs\/CertDialog|DialogHost)\.tsx$|^src\/components\/dialog-loaders\.ts$|^src\/app\/\[locale\]\/library\/page\.tsx$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
+    test: /^src\/components\/(guides|pdf-reader)\/|^src\/content\/guide[\w-]*\.ts$|^content\/study-guides\.json$|^src\/components\/(certs\/CertDialog|DialogHost)\.tsx$|^src\/components\/dialog-loaders\.ts$|^src\/app\/\[locale\]\/library\/page\.tsx$|^src\/app\/data\/\[\.\.\.path\]\/route\.ts$/,
     specs: ["guides", "guides-vault"],
   },
+  // The other PDF readers on the shared reader: the CV (pageview, csp, the RF kiosk in library-roof) and the paper reader (library-roof).
+  { test: /^src\/components\/(pdf-reader|cv|paper)\/|^src\/lib\/page-images\.ts$|^src\/app\/\[locale\]\/cv\/page\.tsx$/, specs: ["pageview", "csp", "library-roof"] },
   // The L4 Study Vault (e2e/guides-vault.spec.ts): its layout and scene, the book targets and the hq:hud command they send.
   {
     test: /^src\/experience\/floors\/library\/(decor\/(StudyVault\.tsx|vault\.ts)|layout\.ts|model\.ts|concepts\/newsroom\.ts)$|^src\/experience\/floors\/Library\.tsx$|^src\/experience\/interact\/(registry|pick)\.ts$|^src\/hud\/events\.ts$/,

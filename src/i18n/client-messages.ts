@@ -26,6 +26,7 @@ export const CLIENT_NAMESPACES = [
   "office",
   "paper",
   "production",
+  "reader",
   "stats",
   "work",
 ] as const;
@@ -50,6 +51,7 @@ export const LAYOUT_NAMESPACES = [
   "hud.status",
   "hud.terminal",
   "paper",
+  "reader",
 ] as const;
 
 /**

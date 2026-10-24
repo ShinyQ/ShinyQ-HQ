@@ -2,23 +2,45 @@
 
 import { useTranslations } from "next-intl";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { GuideView } from "@/content/guides";
-import styles from "./GuideReader.module.css";
-import { GuideControls } from "./GuideControls";
-import { GuidePage } from "./GuidePage";
-import { GuideThumbs } from "./GuideThumbs";
-import { GuideToolbar, type Chapter } from "./GuideToolbar";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import styles from "./PdfReader.module.css";
+import { ReaderControls } from "./ReaderControls";
+import { ReaderPage } from "./ReaderPage";
+import { ReaderThumbs } from "./ReaderThumbs";
+import { ReaderToolbar, type Chapter, type ReaderBack } from "./ReaderToolbar";
 import { afterDestroy, destPage, destroyTask, loadPdfjs, raceLoad, workerFailure } from "./pdf";
 import { canvasPixelCap, canvasScale, clampPage, nextZoom, readerKey, releasable, renderWindow, savedPage, savePage } from "./reader-model";
-import { GuideSkeleton } from "./ui";
+import { ReaderSkeleton } from "./ui";
 
-export interface GuideReaderProps {
-  view: GuideView;
+/** The document a reader shows: a study guide, the CV or a paper PDF. */
+export interface ReaderDoc {
+  /** The PDF pdf.js opens (same origin). */
+  url: string;
+  /** The Download link and its suggested file name. */
+  downloadUrl: string;
+  file: string;
+  title: string;
+  /** Loading cover: a guide cover or the document's page-1 image. */
+  cover?: string;
+  /** `localStorage` key of the last page read. */
+  pageKey: string;
+}
+
+export interface PdfReaderProps {
+  doc: ReaderDoc;
   titleId: string;
+  /** The surface's Close label ("Close CV", "Close paper preview", "Close the reader"). */
+  closeLabel: string;
   onClose: () => void;
   /** The PDF could not be opened: the dialog swaps in its error state. */
   onError?: () => void;
+  /** Accessible name of a page canvas (default "Page N of M"; the CV says "CV page N of M"). */
+  pageLabel?: (page: number, count: number) => string;
+  back?: ReaderBack;
+  /** A block under the pages (the paper reader's version line and publisher notice). */
+  footer?: ReactNode;
+  /** Test id prefix of the surface (`guide`, `cv`, `paper`): `guide-reader`, `cv-close`, `paper-pages`, ... */
+  testPrefix?: string;
 }
 
 type Pdfjs = typeof import("pdfjs-dist");
@@ -55,13 +77,15 @@ const flatten = (items: readonly OutlineItem[], depth = 0): Chapter[] =>
   items.flatMap((item) => [{ title: item.title, dest: item.dest, depth }, ...(depth < 1 ? flatten(item.items ?? [], depth + 1) : [])]);
 
 /**
- * The study guide reader (lazy chunk): pdf.js over the guide's Range-enabled URL, so only the pages read are
- * fetched. Pages draw lazily in a window around the visible ones (canvas plus selectable text layer) and far
- * pages release their canvases; the last page read is remembered per guide. Fit width by default, zoom by
- * buttons and keys (`readerKey`), chapters from the PDF outline, a thumbnail rail on desktops.
+ * The shared PDF reader (lazy chunk) behind every PDF on the site: the study guides, the CV and the paper PDFs.
+ * pdf.js opens the URL with Range requests when the server takes them (the guides' Function), else in one fetch
+ * (static files on Pages). Pages draw lazily in a window around the visible ones (canvas plus selectable text
+ * layer) and far pages release their canvases; the last page read is remembered per document. Fit width by
+ * default, zoom by buttons and keys (`readerKey`), chapters from the PDF outline, a thumbnail rail on desktops.
  */
-export default function GuideReader({ view, titleId, onClose, onError }: GuideReaderProps) {
-  const t = useTranslations("guides");
+export default function PdfReader({ doc: view, titleId, closeLabel, onClose, onError, pageLabel, back, footer, testPrefix = "guide" }: PdfReaderProps) {
+  const t = useTranslations("reader");
+  const labelFor = (page: number, count: number) => (pageLabel ? pageLabel(page, count) : t("pageOf", { page, count }));
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [avail, setAvail] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -170,12 +194,12 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
     if (!el || !loaded || slotW === 0) return;
     if (!restored.current) {
       restored.current = true;
-      go(savedPage(storage(), view.slug, loaded.count));
+      go(savedPage(storage(), view.pageKey, loaded.count));
       return;
     }
     if (anchor.current !== null) el.scrollTop = PAD_Y + anchor.current * stride - el.clientHeight / 3;
     el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-  }, [loaded, slotW, stride, go, view.slug]);
+  }, [loaded, slotW, stride, go, view.pageKey]);
 
   // Current page: the slot at the top third (the last one at the very end); saved once scrolling settles.
   useEffect(() => {
@@ -186,7 +210,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
     const onScroll = () => {
       anchor.current = (el.scrollTop + el.clientHeight / 3 - PAD_Y) / stride;
       window.clearTimeout(idle);
-      idle = window.setTimeout(() => savePage(storage(), view.slug, currentRef.current), 300);
+      idle = window.setTimeout(() => savePage(storage(), view.pageKey, currentRef.current), 300);
       if (frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
@@ -206,9 +230,9 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
       window.clearTimeout(idle);
-      savePage(storage(), view.slug, currentRef.current);
+      savePage(storage(), view.pageKey, currentRef.current);
     };
-  }, [loaded, slotW, stride, view.slug, show, refresh]);
+  }, [loaded, slotW, stride, view.pageKey, show, refresh]);
 
   // Pages near the view (one screen above and below) feed the render window.
   useEffect(() => {
@@ -263,13 +287,16 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
     <div
       className="flex min-h-0 flex-1 flex-col"
       onKeyDown={onKeyDown}
-      data-testid="guide-reader"
+      data-testid={`${testPrefix}-reader`}
       data-page-count={loaded ? loaded.count : undefined}
       data-current-page={loaded ? current : undefined}
     >
-      <GuideToolbar
+      <ReaderToolbar
         title={view.title}
         titleId={titleId}
+        closeLabel={closeLabel}
+        back={back}
+        testPrefix={testPrefix}
         chapters={loaded?.chapters ?? []}
         downloadUrl={view.downloadUrl}
         file={view.file}
@@ -278,19 +305,20 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
       />
       <div className="flex min-h-0 flex-1">
         {loaded && base && (
-          <GuideThumbs
+          <ReaderThumbs
             doc={loaded.doc}
+            testPrefix={testPrefix}
             count={loaded.count}
             base={base}
             current={current}
             label={t("thumbnails")}
-            pageLabel={(page) => t("pageOf", { page, count: loaded.count })}
+            pageLabel={(page) => labelFor(page, loaded.count)}
             onGo={go}
           />
         )}
         {/* The pill comes before the pages in the DOM: Tab reaches the header, then the pill, then the pages. */}
         <div className={`${styles.column} flex min-h-0 min-w-0 flex-1 flex-col`}>
-          <GuideControls count={loaded ? loaded.count : null} current={current} zoom={zoom} onGo={go} onZoom={zoomBy} onFit={() => setZoom(1)} />
+          <ReaderControls count={loaded ? loaded.count : null} current={current} zoom={zoom} onGo={go} onZoom={zoomBy} onFit={() => setZoom(1)} testPrefix={testPrefix} />
           <div
             ref={scroller}
             tabIndex={0}
@@ -298,13 +326,14 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
             aria-labelledby={titleId}
             aria-busy={!loaded}
             className={`${styles.pages} min-h-0 flex-1 overflow-auto overscroll-contain outline-none focus-visible:ring-1 focus-visible:ring-cyan/60`}
-            data-testid="guide-pages"
+            data-testid={`${testPrefix}-pages`}
           >
             {loaded && slotW > 0 ? (
               <div className={styles.stack}>
                 {pages.map((n) => (
-                  <GuidePage
+                  <ReaderPage
                     key={n}
+                    testPrefix={testPrefix}
                     lib={loaded.lib}
                     doc={loaded.doc}
                     n={n}
@@ -313,7 +342,7 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
                     scale={scale}
                     ratio={ratio}
                     active={drawnSet.has(n)}
-                    label={t("pageOf", { page: n, count: loaded.count })}
+                    label={labelFor(n, loaded.count)}
                     failedLabel={t("pageFailed")}
                     retryLabel={t("retry")}
                   />
@@ -324,12 +353,17 @@ export default function GuideReader({ view, titleId, onClose, onError }: GuideRe
                 <p className="sr-only" role="status">
                   {t("loading")}
                 </p>
-                <GuideSkeleton cover={view.cover} />
+                <ReaderSkeleton cover={view.cover} />
               </>
             )}
           </div>
         </div>
       </div>
+      {footer && (
+        <div className="border-t border-line px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4" data-testid={`${testPrefix}-reader-footer`}>
+          {footer}
+        </div>
+      )}
     </div>
   );
 }

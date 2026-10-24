@@ -4,14 +4,15 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
-import { GuideToolbar, type GuideToolbarProps } from "@/components/guides/GuideToolbar";
+import { ReaderToolbar, type ReaderToolbarProps } from "@/components/pdf-reader/ReaderToolbar";
 
 afterEach(() => cleanup());
 
-function setup(overrides: Partial<GuideToolbarProps> = {}) {
-  const props: GuideToolbarProps = {
+function setup(overrides: Partial<ReaderToolbarProps> = {}) {
+  const props: ReaderToolbarProps = {
     title: "Example Study Guide",
     titleId: "guide-title",
+    closeLabel: en.guides.close,
     chapters: [
       { title: "Chapter One", dest: "one", depth: 0 },
       { title: "Section 1.1", dest: "one-one", depth: 1 },
@@ -24,13 +25,13 @@ function setup(overrides: Partial<GuideToolbarProps> = {}) {
   };
   render(
     <NextIntlClientProvider locale="en" messages={en}>
-      <GuideToolbar {...props} />
+      <ReaderToolbar {...props} />
     </NextIntlClientProvider>,
   );
   return props;
 }
 
-describe("GuideToolbar", () => {
+describe("ReaderToolbar", () => {
   it("is one header row: Close, title, Chapters and Download, with no page or zoom controls", () => {
     setup();
     const close = screen.getByTestId("guide-close");
@@ -74,5 +75,19 @@ describe("GuideToolbar", () => {
   it("hides Chapters when the PDF has no outline", () => {
     setup({ chapters: [] });
     expect(screen.queryByTestId("guide-chapters")).toBeNull();
+  });
+
+  it("puts the surface's Back after Close (the paper reader) and prefixes every test id", () => {
+    const onBack = vi.fn();
+    setup({ testPrefix: "paper", closeLabel: en.paper.close, chapters: [], back: { label: en.paper.back, onBack } });
+    const close = screen.getByRole("button", { name: en.paper.close });
+    expect(close).toHaveAttribute("data-testid", "paper-close");
+    const back = screen.getByRole("button", { name: en.paper.back });
+    expect(close.nextElementSibling).toBe(back);
+    expect(back.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-11", "pointer-fine:min-h-9"]));
+    fireEvent.click(back);
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("paper-download")).toHaveAttribute("href", "/api/guides/example?download=1");
+    expect(screen.queryByTestId("guide-close")).toBeNull();
   });
 });

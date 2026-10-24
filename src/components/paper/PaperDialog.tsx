@@ -1,10 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { previewCitations, type PaperCitations, type PaperPreview } from "@/content/citation";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
+import { previewCitations, type PaperCitations, type PaperDocumentRef, type PaperPreview } from "@/content/citation";
+import { paperPages } from "@/lib/papers";
 import { Modal } from "../Modal";
-import { PaperNotice, PaperReader } from "./PaperReader";
+import { LazyPdfReader } from "../pdf-reader/ReaderDialog";
+import { PAPER_PAGE_KEY } from "../pdf-reader/reader-model";
+import { PaperNotice } from "./PaperNotice";
 
 type Format = keyof PaperCitations;
 const FORMATS: readonly Format[] = ["apa", "ieee", "bibtex"];
@@ -27,8 +30,9 @@ function External({ href, children, testId }: { href: string; children: ReactNod
  * Paper preview modal (lazy chunk, opened by `DialogHost` on the `hq:hud` "paper" command): title,
  * authors with the owner highlighted, venue, date, abstract, a copyable citation (APA, IEEE,
  * BibTeX) and DOI, Google Scholar, PDF and code links in a new tab. Papers with a self-hosted PDF
- * get "Read the paper", which swaps the body for the paper reader (page images, `PaperReader`);
- * `read` opens the reader at once. Nothing from a third party is framed (CSP keeps `frame-src 'self'`).
+ * get "Read the paper", which swaps the body for the shared PDF reader (`../pdf-reader`, the same reader as the CV
+ * and the study guides) with a Back control and the version line and publisher notice under the pages; `read`
+ * opens the reader at once. Nothing from a third party is framed (CSP keeps `frame-src 'self'`).
  */
 export default function PaperDialog({ paper, read = false, onClose }: { paper: PaperPreview; read?: boolean; onClose: () => void }) {
   const t = useTranslations("paper");
@@ -37,15 +41,19 @@ export default function PaperDialog({ paper, read = false, onClose }: { paper: P
   const doc = paper.document;
   const [reading, setReading] = useState(read && Boolean(doc));
   const readRef = useRef<HTMLButtonElement>(null);
-  const backRef = useRef<HTMLButtonElement>(null);
   const switched = useRef(false);
+  // After "Read the paper", Back keeps focus: the loading header's Back, then the reader's once it replaces it.
+  const focusBack = useRef(false);
+  const backRef = useCallback((node: HTMLButtonElement | null) => {
+    if (node && focusBack.current) node.focus({ preventScroll: true });
+  }, []);
   useEffect(() => {
-    // The Modal focuses on mount; after a switch, focus the control that switches back.
-    if (!switched.current) return;
-    (reading ? backRef : readRef).current?.focus({ preventScroll: true });
+    // The Modal focuses on mount; after switching back, focus "Read the paper".
+    if (switched.current && !reading) readRef.current?.focus({ preventScroll: true });
   }, [reading]);
   const switchTo = (next: boolean) => {
     switched.current = true;
+    focusBack.current = next;
     setReading(next);
   };
   const [format, setFormat] = useState<Format>("apa");
@@ -204,5 +212,45 @@ export default function PaperDialog({ paper, read = false, onClose }: { paper: P
         </section>
       </div>
     </Modal>
+  );
+}
+
+/** The reading view: the paper PDF in the shared reader, "<title>, page N of M" per page, Back to the abstract. */
+function PaperReader({
+  paper,
+  document,
+  titleId,
+  backRef,
+  onBack,
+  onClose,
+}: {
+  paper: PaperPreview;
+  document: PaperDocumentRef;
+  titleId: string;
+  backRef: Ref<HTMLButtonElement>;
+  onBack: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("paper");
+  const tc = useTranslations("cv");
+  const file = `${document.file}.pdf`;
+  return (
+    <LazyPdfReader
+      doc={{ url: document.pdf, downloadUrl: document.pdf, file, title: paper.title, cover: paperPages(document.file)[0]?.src, pageKey: PAPER_PAGE_KEY(paper.id) }}
+      titleId={titleId}
+      closeLabel={t("close")}
+      onClose={onClose}
+      pageLabel={(page, total) => t("pageAlt", { title: paper.title, page, total })}
+      back={{ label: t("back"), onBack, node: backRef }}
+      footer={
+        <div className="space-y-1">
+          <p className="label text-ink-3" data-testid="paper-reader-meta">
+            {tc("pages", { count: document.pageCount })} · {t(`version.${document.version}`)}
+          </p>
+          <PaperNotice paper={paper} document={document} compact />
+        </div>
+      }
+      testPrefix="paper"
+    />
   );
 }
