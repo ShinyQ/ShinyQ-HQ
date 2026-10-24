@@ -5,7 +5,7 @@ import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
 import { indexPack } from "./pack-index";
-import { expandTokens, tokenize } from "./text";
+import { expandTokens, INVISIBLE, tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "./types";
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
@@ -146,7 +146,7 @@ export function sanitizeAnswer(raw: string, links: ReadonlySet<string> = DEFAULT
   let text = raw
     .normalize("NFKC")
     .replace(/\r\n?/g, "\n")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFEFF]/g, "")
+    .replace(INVISIBLE, "")
     .replace(/<(script|style)\b[^>]*>[\s\S]*?(<\/\1\s*>|$)/gi, " ")
     .replace(/<\/?[A-Za-z!][^>]*>?/g, " ")
     .replace(/!\[[^\]\n]*\]\([^)\n]*\)?/g, "")

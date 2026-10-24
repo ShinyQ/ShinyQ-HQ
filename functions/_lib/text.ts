@@ -3,8 +3,12 @@
  * and the Ask the HQ Function (at request time). Pure, no platform APIs.
  */
 
-/** C0/C1 controls except tab and newline, zero-width characters, bidi controls and the BOM. */
-const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFEFF]/g;
+/**
+ * C0/C1 controls except tab and newline, zero-width characters, bidi controls, the BOM, the combining grapheme
+ * joiner, variation selectors and Unicode tag characters. Tag characters (U+E0000 to U+E007F) can spell hidden
+ * instructions a model may still read, so neither a question nor an answer may carry them (security audit 2026-10-24).
+ */
+export const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u034F\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFE00-\uFE0F\uFEFF\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}]/gu;
 
 /** NFKC, invisible and control characters removed, whitespace collapsed. Applied to every untrusted string. */
 export function cleanText(text: string): string {

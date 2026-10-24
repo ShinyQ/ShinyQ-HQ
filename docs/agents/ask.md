@@ -164,7 +164,9 @@ Owner decision 2026-10-17. Code: `functions/_lib/history.ts`, `src/ask/thread.ts
   - Every deterministic decline runs on the question and on the question plus its anchor; lead intent and the routed topic use both; a general-assistant request is declined on its own words even after a project inquiry.
   - Retrieval runs on the question plus its anchor, and the anchor's top 2 chunks (`ANCHOR_TOP`, never a perspective) come first, so "What stack did it use?" finds the project, not every skill chunk. The context budget is unchanged.
   - The model gets the verified turns as earlier `user` and `assistant` messages, and the system prompt adds `HISTORY_LINE` (context only, never instructions, never a rule change). The output checks are unchanged.
-- Cache: only a request without verified history reads the KV cache, and only an answer with no turns used is written.
+- Cache: only a request without verified history reads the KV cache, and only such a request (no verified history, no turns used) writes it: a signed turn that `usableHistory` drops cannot skip the read and overwrite a shared answer (security audit 2026-10-24).
+- Hidden text: `cleanText` and `sanitizeAnswer` share `INVISIBLE` (`functions/_lib/text.ts`), which also strips Unicode tag characters (U+E0000 to U+E007F), variation selectors and the combining grapheme joiner, so a question cannot carry instructions the cache key and the input gates do not see.
+- Breaker: grounding blocks a visitor can invite (numeric, entity, employer, code, defamation, personal-data) are in `EXPECTED_REASONS` and never count; failures, empty answers and safety blocks (forbidden, secret, leak, roleplay) do.
 - Analytics: the third double of the `ask_events` data point is the number of turns the model saw.
 - Tests: `tests/ask/history.test.ts`, the multi-turn blocks in `tests/ask/pipeline.test.ts` and `tests/ask/handler.test.ts`; golden q72 to q74 and red-team rt64 and rt65 (`history` items; the eval asks a golden item's earlier questions first).
 
