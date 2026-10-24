@@ -70,7 +70,7 @@ Security S7.
 - `/api/rum` and `/api/visit` read bodies with `readCapped` (`functions/_lib/security.ts`, also used by `/api/ask`), which stops streaming at the byte cap even without `Content-Length`.
 - `/api/visit` caps points per isolate and minute (`VISIT_ISOLATE_CAP`) and per visitor and hour (`VISIT_IP_CAP`: 20 visit pings, 60 mode pings), keyed by the salted, daily-rotating IP hash (`visitorHash` with `ASK_IP_SALT_SEED`) in memory only; over the per-visitor cap it still answers 204 with no point.
 - The Worker keeps a day's Web Analytics visits when its pings outrun its page views (`VISIT_FREEZE`), and `/api/stats` adds at most `LIVE_MAX_DELTA` live pings.
-- The Worker freezes a day's 3D vs Classic split (`MODE_FREEZE`) and its `perf` block (`PERF_FREEZE`) when beacon points or RUM sessions exceed `max(30, 3 x page views)`, so forged beacons cannot set public numbers.
+- The Worker freezes a day's 3D vs Classic split (`MODE_FREEZE`) and its `perf` block (`PERF_FREEZE`) when beacon points or RUM sessions exceed `max(30, 3 x page views)`, so a forged flood is capped: below the ceiling forged beacons count like real ones (an accepted tolerance, security audit 2026-10-24); above it the day keeps zero.
 
 ### Ask events
 
