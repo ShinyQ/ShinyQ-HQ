@@ -6,6 +6,10 @@ name: Ask the HQ samples
 #   gh workflow run ask-samples.yml --ref main -f ref=<branch>
 # The branch must be a head of this repository (never a fork) and must contain the script.
 # Only the sample step receives GROQ_API_KEY; no Cloudflare token or other secret is in the job (H1).
+# The run's cache scope is refs/heads/main while the code is the branch's, so the job never saves a cache: it sets up
+# Node and Bun itself (main's pinned steps, not the branch's .github/actions/setup), restores the install cache only and
+# turns off setup-bun's post-job binary cache (security audit 2026-10-24: branch code must not seed caches that the
+# production deploy on main restores).
 
 on:
   workflow_dispatch:
@@ -59,7 +63,19 @@ jobs:
           repository: ${{ github.repository }}
           ref: ${{ inputs.ref }}
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+          no-cache: true
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
       - name: Sample answers
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
