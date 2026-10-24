@@ -132,8 +132,8 @@ After 15 s without input (`IDLE.delay`) the rover plays a short scripted sequenc
 
 ## Boost
 
-- Input: hold Shift, or double-tap the joystick on coarse pointers (`Joystick boost`, `useBoostToggle` in `src/hud/boost.ts`, `setBoost` in `input/joystick.ts`).
-  - A double tap is a short first tap (released within 250 ms, moved under 12 px), then a pointer down within 300 ms of its release (`DOUBLE_TAP_MS`); each double tap toggles. There is no Boost button: the joystick's double tap is the only touch control.
+- Input: hold Shift, or on coarse pointers tap the Boost button next to the joystick (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, `aria-pressed`, glows while on) or double-tap the joystick; both share one state (`Joystick boost` holds `useBoostToggle` from `src/hud/boost.ts`; `setBoost` in `input/joystick.ts`). Owner decision 2026-10-24: the visible button replaces the double tap as the main touch control, which stays as a shortcut.
+  - A double tap is a short first tap (released within 250 ms, moved under 12 px), then a pointer down within 300 ms of its release (`DOUBLE_TAP_MS`); each double tap toggles, like one tap on the button. The joystick's double tap stays a shortcut.
   - A floor change, a ride start and unmount reset it; never persisted.
 - Effect: 2x top speed and acceleration (`BOOST`, `boostOn`, `boostTuning`, `stepBoostLevel` in `rover/boost.ts`, pure).
 - Manual driving only: the autopilot (missions, the elevator approach, point-and-go drives) keeps its speed.
@@ -200,6 +200,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
   - `FloorPrep` in `tower/Tower.tsx` calls `precompileFloor` from `scene/precompile.ts` on the content group that `FloorLevel` registers in `tower/floorRegistry.ts`.
   - It compiles into the render target the scene pass uses, so full-tier programs match the composer.
 - Troika syncs are counted per floor (`tower/textSync.ts`, installed by `text-config.ts`).
+- Text workers: troika typesets on the main thread (`useWorker: false`), and `text-config.ts` makes `new Worker(blob:)` throw, so a GPU that fails webgl-sdf-generator's trial run (some tablets) gets troika's JS glyph SDFs on the main thread. A blob: worker would pass troika's probe in WebKit and then fail under the CSP, leaving every text unsynced and the Lobby empty (owner report 2026-10-24; `e2e/sdf-fallback.spec.ts` forces the trial failure).
 - `advanceRide` holds the car at closed doors (end of `closing`, or at the door under reduced motion) until `destinationReady(to)` (`tower/ridePrep.ts`) or `PREPARE_TIMEOUT` (1.5 s).
 - A floor below the car that is still compiling stays hidden until the car moves (`floorContentVisible`, `tower/near.ts`).
 - Ride stats: the Director measures each ride (`tower/rideStats.ts`): `window.__hq.ridePrep.lastRide`, and with `?perf=1` one `[hq ride]` console line per ride.
@@ -283,7 +284,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 ### Wheel zoom and first person
 
 - Zoom input: the mouse wheel, trackpad scroll and pinch, a two-finger pinch and `+`/`-` emit `zoom` (`classifyWheel`, `wheelZoomFactor` in `input/intents.ts`) (owner decision).
-- The wheel never changes floors; PageUp/PageDown, the elevator panel, call pads and the vertical touch swipe do.
+- Neither the wheel nor any touch swipe changes floors (owner decision 2026-10-24); PageUp/PageDown, the elevator panel, the floor chip sheet and call pads do. A one-finger drag turns and tilts the view like a mouse drag (`TOUCH_YAW`, `TOUCH_PITCH` in `input/useInputSources.ts`); `classifySwipe` only reports taps and horizontal scrubs (L2 years).
 - Entering first person: zooming in past the closest distance (`FIRST_PERSON.enterPush`) glides into the rover's eyes in 0.45 s; a cut under reduced motion.
 
   | `camera/firstPerson.ts` | Value |

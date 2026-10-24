@@ -145,8 +145,8 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
       if (p.type === "mouse" || p.type === "pen") {
         intents.emit({ type: "orbit", dyaw: -dx * MOUSE_YAW, dpitch: dy * MOUSE_PITCH, source: "mouse" });
       } else {
-        // One finger: horizontal drag turns the view; fast vertical swipes stay the elevator.
-        intents.emit({ type: "orbit", dyaw: -dx * TOUCH_YAW, source: "touch" });
+        // One finger turns and tilts the view like a mouse drag; no swipe changes floors (owner decision 2026-10-24).
+        intents.emit({ type: "orbit", dyaw: -dx * TOUCH_YAW, dpitch: dy * TOUCH_PITCH, source: "touch" });
       }
     };
 
@@ -160,8 +160,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
       if (!p || p.type === "mouse" || pointers.size > 0) return;
       // Event timestamps keep gesture timing correct even when frames are slow.
       const swipe = classifySwipe({ dx: e.clientX - p.startX, dy: e.clientY - p.startY, ms: e.timeStamp - p.start });
-      if (swipe?.kind === "elevator") intents.emit({ type: "elevator", to: swipe.dir });
-      else if (swipe?.kind === "scrub") intents.emit({ type: "scrub", dx: swipe.dx });
+      if (swipe?.kind === "scrub") intents.emit({ type: "scrub", dx: swipe.dx });
     };
 
     const onCancel = (e: PointerEvent) => {

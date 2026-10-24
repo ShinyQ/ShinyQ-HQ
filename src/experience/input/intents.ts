@@ -136,14 +136,16 @@ export function keyToIntent(key: string, ctx: KeyContext = {}): Intent | null {
   }
 }
 
-export type Swipe = { kind: "tap" } | { kind: "elevator"; dir: "up" | "down" } | { kind: "scrub"; dx: number };
+export type Swipe = { kind: "tap" } | { kind: "scrub"; dx: number };
 
-/** Classifies a single-finger gesture (appendix 03: vertical swipe > 60 px in < 400 ms). */
+/**
+ * Classifies a single-finger gesture. A vertical swipe never changes floors (owner decision 2026-10-24,
+ * replacing appendix 03's swipe-to-elevator): it tilts the view while it moves, so it classifies as nothing here.
+ */
 export function classifySwipe({ dx, dy, ms }: { dx: number; dy: number; ms: number }): Swipe | null {
   const ax = Math.abs(dx);
   const ay = Math.abs(dy);
   if (ax < 10 && ay < 10 && ms <= 350) return { kind: "tap" };
-  if (ay > 60 && ms < 400 && ay > ax * 1.2) return { kind: "elevator", dir: dy < 0 ? "up" : "down" };
   if (ax > 30 && ax > ay) return { kind: "scrub", dx };
   return null;
 }

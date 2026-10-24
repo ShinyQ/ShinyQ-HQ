@@ -65,22 +65,24 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (`useHudLayout`); the pixel layout is in [styling-and-i18n.md](styling-and-i18n.md#3d-hud-layout-owner-decision).
 
 - Owner decision 2026-10-17 (layout A "Corners"): phones and tablets keep the corners for controls, so the canvas stays clear.
-  - Phone: at most 5 controls plus the minimap (floor chip, Ask AI, menu, joystick, Reset view).
-  - Tablet (any coarse pointer): at most 9 (the phone set plus search; the chip also shows the floor name).
+  - Phone: at most 6 controls plus the minimap (floor chip, Ask AI, menu, joystick, Boost, Reset view).
+  - Tablet (any coarse pointer): at most 10 (the phone set plus search; the chip also shows the floor name).
+  - Owner decision 2026-10-24 raised both caps by one for the visible Boost button.
   - `e2e/hud-corners.spec.ts` counts them at 390 x 844, 834 x 1194 and 1194 x 834 (touch) and fails above the cap; a new control needs an owner note and a new cap.
 - The elevator rows (rail, floor sheet, floor picker) come from `floorRows` (`src/hud/floorRows.ts`): the five public floors top-down, plus B1 below L1, always listed.
   - Locked, B1 is a padlock row (`aria-disabled`, no ride) reading "Visit all 5 floors (n/5)"; the hint is in its accessible name and its `title` (the compact rail shows the code and the padlock). Floor names go through `useFloorLabel`.
   - During the unlock moment the unlocked row pulses, except under reduced motion.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
-- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, settings) lives there; keep new phone actions in the sheet.
+- `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, the controls help, settings) lives there; keep new phone actions in the sheet.
+  - The Controls action (`menu-controls`, `aria-expanded`) expands the controls card in place (`menu-controls-card`, `MenuControls` in `src/hud/menu/MenuControls.tsx`; it rides in the lazy settings chunk, rendered first by `SettingsPanel` when the menu passes `controls`, so it stays off the first-frame 3D path): one row per control from `hud.hintCoarse` (`hud.hintFine` with a fine pointer) split by `controlRows`, plus `hud.career.scrubHint` on L2 with touch. It stays open until toggled or the sheet closes.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
-- Boost on touch is a joystick double tap (`Joystick`, `useBoostToggle` in `src/hud/boost.ts`); there is no Boost button on Corners. See [Boost](3d-experience.md#boost).
+- Boost on touch is the Boost button next to the joystick (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, a toggle) or a joystick double tap, one shared state (`useBoostToggle` in `src/hud/boost.ts`). See [Boost](3d-experience.md#boost).
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
 - The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
 
 ### Controls hint
 
-- `HintBar` (`src/hud/Hud.tsx`, `data-testid="hint"`) is a plain text panel in the bottom band's center column under point-and-go's status, shown outside the intro and an open room while no Rover line is open: `hud.hintFine` with a fine pointer, `hud.hintCoarse` on touch, `hud.career.scrubHint` on L2 with touch. On phones it leaves after 6 s.
+- `HintBar` (`src/hud/Hud.tsx`, `data-testid="hint"`) is a plain text panel in the bottom band's center column under point-and-go's status, shown outside the intro and an open room while no Rover line is open: `hud.hintFine` with a fine pointer, `hud.hintCoarse` on touch, `hud.career.scrubHint` on L2 with touch. Phones never show it (owner decision 2026-10-24: it crowded the screen); the menu's Controls card has the same list.
 - It mounts with the HUD, under the SSR boot cover on a returning visit, so its first paint is an LCP candidate. Keep it smaller than the boot card's owner block (the game-first LCP, see [performance.md](performance.md#game-first-lcp)); do not merge it into a larger text block.
 
 ### Settings registry

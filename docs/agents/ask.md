@@ -365,7 +365,7 @@ Owner decision 2026-10-19. Related professional questions that are not strictly 
 - Security F1.9, [`docs/deploy.md`](../deploy.md) section 9.
 - `scripts/csp-hashes.ts`, the last build step, inserts a `data-hq-csp` meta tag into every HTML page with:
   - `script-src` from `_headers` minus `'unsafe-inline'`, plus the sha256 of each inline script;
-  - `worker-src 'self' blob:` again for troika's workers.
+  - `worker-src 'self'` again (no blob: workers: `src/experience/text-config.ts` refuses them at construction so troika's glyph SDF fallback runs on the main thread; WebKit would otherwise accept the worker and fail it later, leaving every 3D text unsynced).
 - So the effective script policy has no `'unsafe-inline'` (the header keeps it only because it cannot list per-page hashes).
 - Never add an inline event handler or a `javascript:` URL, and never inject an inline script at runtime.
 - A test that edits an inline script must rebuild the policy with `addScriptPolicy` (`scripts/csp-policy.ts`).

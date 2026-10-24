@@ -391,7 +391,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 ### src/hud/
 
 - `src/hud/`: HUD over the canvas.
-  - Profile card, elevator panel with named floors from `hud.floorLabel`, controls, boot, bottom band with the joystick (double tap boosts); `layout.ts` is the per-device HUD composition.
+  - Profile card, elevator panel with named floors from `hud.floorLabel`, controls, boot, bottom band with the joystick and the Boost button (`BoostButton` in `Joystick.tsx`); `layout.ts` is the per-device HUD composition.
   - Corners (phones and tablets): FloorChip (floor sheet) and FloorButtons, ViewControls (ResetView).
   - Plus RoverTerminal, CommandPalette, search, MissionHud, HudLaunchers, events, HologramOverlay, InteractStatus (point-and-go: aria-live target, Go chip, one-time hint).
   - Lazy palette and terminal: `lazy-hud.ts` (their chunks), PaletteHost.tsx (the palette chunk with its search), `typeahead.ts` (keys typed before the palette mounts), `hudActions.ts` (Cmd-K actions the 3D HUD adds).

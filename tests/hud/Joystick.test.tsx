@@ -7,6 +7,7 @@ import { DOUBLE_TAP_MS, Joystick } from "@/hud/Joystick";
 import { getHQStore } from "@/store/useHQStore";
 
 vi.mock("@/experience/input/joystick", () => ({ setBoost: vi.fn(), setJoystick: vi.fn() }));
+vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 
 const stick = () => screen.getByTestId("joystick");
 
@@ -173,5 +174,40 @@ describe("Joystick double-tap boost", () => {
     expect(setBoost).toHaveBeenLastCalledWith(true);
     unmount();
     expect(setBoost).toHaveBeenLastCalledWith(false);
+  });
+});
+
+describe("Boost button", () => {
+  const button = () => screen.getByTestId("boost");
+
+  it("shows next to a boost joystick and not next to a plain one", () => {
+    const { unmount } = render(<Joystick boost />);
+    expect(button()).toHaveAccessibleName("boost");
+    expect(button()).toHaveAttribute("aria-pressed", "false");
+    unmount();
+    render(<Joystick />);
+    expect(screen.queryByTestId("boost")).toBeNull();
+  });
+
+  it("toggles boost with one tap each, sharing the joystick's state", () => {
+    render(<Joystick boost />);
+    fireEvent.click(button());
+    expect(button()).toHaveAttribute("aria-pressed", "true");
+    expect(stick()).toHaveAttribute("data-boost", "on");
+    expect(setBoost).toHaveBeenLastCalledWith(true);
+    tapAt(10_000);
+    tapAt(10_100);
+    expect(button()).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(button());
+    fireEvent.click(button());
+    expect(button()).toHaveAttribute("aria-pressed", "false");
+    expect(setBoost).toHaveBeenLastCalledWith(false);
+  });
+
+  it("turns off with a floor change", () => {
+    render(<Joystick boost />);
+    fireEvent.click(button());
+    act(() => getHQStore().getState().arriveFloor("L2"));
+    expect(button()).toHaveAttribute("aria-pressed", "false");
   });
 });

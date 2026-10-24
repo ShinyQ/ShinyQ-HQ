@@ -323,7 +323,7 @@ Owner decisions: "Neon line" style; unique holograms per item on L2, L3 and L4 (
 ### Behaviour
 
 - The rover never drives to a clicked floor point (owner decision).
-- Visitors drive with WASD or the arrows (Shift boost) or the joystick (double tap boosts), or point at a glowing target:
+- Visitors drive with WASD or the arrows (Shift boost) or the joystick (the Boost button or a double tap boosts), or point at a glowing target:
   - desktop: hover highlights it (outline, destination ring, a name tag on a dark pill over the ring, pointer cursor); a click drives there along the road and runs its action;
   - touch: the first tap selects it (HUD "Go to ..." chip, aria-live text); a second tap or Go drives.
 - A click on empty floor only closes an open room, clears a tap selection and shows a hint once per session (`hq:point-hint`).

@@ -3,9 +3,27 @@ import { trackTextSync } from "./tower/textSync";
 import troikaFonts from "./troika-fonts.json";
 
 /**
+ * The site CSP has no blob: workers (`worker-src 'self'`), but WebKit refuses one only after
+ * `new Worker(blob:)` returns, so troika's worker probe passes and its glyph SDF fallback (used when a
+ * GPU fails webgl-sdf-generator's trial run, as some tablets do) waits forever: no in-world text ever
+ * syncs and L1 stays empty. Refusing blob: workers at construction makes the probe fail in every
+ * browser, and troika runs that fallback on the main thread instead.
+ */
+if (typeof Worker === "function") {
+  const Native = Worker;
+  const Guarded = function (url: string | URL, options?: WorkerOptions) {
+    if (String(url).startsWith("blob:")) throw new Error("blob: worker");
+    return new Native(url, options);
+  };
+  // `instanceof Worker` keeps working for same-origin workers (the pdf.js reader).
+  Guarded.prototype = Native.prototype;
+  window.Worker = Guarded as unknown as typeof Worker;
+}
+
+/**
  * Typeset in-world text on the main thread. The default worker loads blob: scripts, which the
- * production Content-Security-Policy (public/_headers, script-src without blob:) blocks.
- * Glyph SDFs are still generated on the GPU. Must run before the first <Text> mounts.
+ * production Content-Security-Policy (public/_headers) blocks.
+ * Glyph SDFs are still generated on the GPU when it passes the trial run. Must run before the first <Text> mounts.
  *
  * `defaultFontURL` is the fallback troika tries after each Text's own font. The self-hosted
  * latin subsets lack arrows and geometric shapes (for example the Labs tier marks), and without

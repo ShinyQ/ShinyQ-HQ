@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useId, useRef, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { Modal } from "@/components/Modal";
 import { PageViewIcon } from "@/components/PageViewIcon";
 import { intents } from "@/experience/input/intents";
@@ -60,7 +60,8 @@ function MenuProfile({ data }: { data: ExperienceData }) {
 /**
  * Corners HUD menu (phones and tablets, top right): a button that opens a side sheet (a bottom sheet
  * on phones) with the profile, the actions (Classic site, search, Rover menu, rotate, map) and every
- * setting. The Rover menu lives here, so the button carries its onboarding spotlight. The `,` key opens
+ * setting, and the controls help behind its Controls action. The Rover menu lives here, so the button
+ * carries its onboarding spotlight. The `,` key opens
  * it; closing returns focus to the button. Tablets show search in the bar, so the menu leaves it out.
  */
 export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout: HudLayout; onExit: () => void }) {
@@ -68,15 +69,17 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
   const [open, setOpen] = useHudToggle("settings");
   const button = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const [controls, setControls] = useState(false);
 
   // Focus moves back before the sheet unmounts, so it never drops to the body.
   const close = () => {
     button.current?.focus({ preventScroll: true });
+    setControls(false);
     setOpen(false);
   };
   // `close` runs first, so the overlay an action opens takes focus and returns it to the menu button;
   // rotating keeps the menu open.
-  const actions: { key: string; label: string; icon: ReactNode; run: () => void; close: boolean }[] = [
+  const actions: { key: string; label: string; icon: ReactNode; run: () => void; close: boolean; expanded?: boolean }[] = [
     ...(layout === "tablet" ? [] : [{ key: "search", label: t("launcher.search"), icon: <SearchIcon />, run: () => openPalette(), close: true }]),
     {
       key: "rover-menu",
@@ -92,6 +95,18 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
     { key: "rotate-left", label: t("view.rotateLeft"), icon: <RotateLeftIcon />, run: () => rotateView(-1), close: false },
     { key: "rotate-right", label: t("view.rotateRight"), icon: <RotateRightIcon />, run: () => rotateView(1), close: false },
     { key: "map", label: t("map.open"), icon: <MapIcon />, run: () => intents.emit({ type: "toggle", what: "map" }), close: true },
+    {
+      key: "controls",
+      label: t("controls"),
+      icon: (
+        <span aria-hidden="true" className="w-[18px] shrink-0 text-center font-mono text-cyan">
+          ?
+        </span>
+      ),
+      run: () => setControls((v) => !v),
+      close: false,
+      expanded: controls,
+    },
   ];
 
   return (
@@ -126,6 +141,8 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 <button
                   key={a.key}
                   type="button"
+                  data-testid={a.expanded === undefined ? undefined : `menu-${a.key}`}
+                  aria-expanded={a.expanded}
                   onClick={() => {
                     if (a.close) close();
                     a.run();
@@ -137,7 +154,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
                 </button>
               ))}
             </div>
-            <LazySettingsPanel headingLevel={3} onClose={close} />
+            <LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />
           </div>
         </Modal>
       )}

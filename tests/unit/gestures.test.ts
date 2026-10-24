@@ -29,9 +29,9 @@ describe("tap versus drag", () => {
     expect(exceedsDragThreshold(7, 0, "unknown")).toBe(true);
   });
 
-  it("still classifies a quick tap and a fast vertical swipe", () => {
+  it("still classifies a quick tap; a fast vertical swipe is no gesture (it only tilts the view)", () => {
     expect(classifySwipe({ dx: 3, dy: 2, ms: 120 })).toEqual({ kind: "tap" });
-    expect(classifySwipe({ dx: 10, dy: -150, ms: 200 })).toEqual({ kind: "elevator", dir: "up" });
+    expect(classifySwipe({ dx: 10, dy: -150, ms: 200 })).toBeNull();
     // A slow horizontal drag is a rotation, never an elevator ride.
     expect(classifySwipe({ dx: 160, dy: 12, ms: 900 })).toEqual({ kind: "scrub", dx: 160 });
   });

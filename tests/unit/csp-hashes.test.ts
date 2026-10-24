@@ -34,7 +34,7 @@ describe("sitePolicy and pagePolicy", () => {
   });
   it("drops 'unsafe-inline', keeps the script hosts, adds hashes and repeats worker-src", () => {
     expect(pagePolicy(SITE, ["'sha256-AAA='"])).toBe(
-      "script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com 'sha256-AAA='; worker-src 'self' blob:",
+      "script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com 'sha256-AAA='; worker-src 'self'",
     );
   });
   it("fails without script-src or worker-src", () => {
