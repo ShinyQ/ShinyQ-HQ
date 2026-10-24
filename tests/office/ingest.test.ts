@@ -59,7 +59,8 @@ describe("parseGithubEvent", () => {
   it("ignores private and non-allowlisted repositories", () => {
     expect(parseGithubEvent("ping", { repository: repository({ private: true }) }, ALLOW)).toBeNull();
     expect(parseGithubEvent("ping", { repository: repository({ full_name: "client/app" }) }, ALLOW)).toBeNull();
-    expect(parseGithubEvent("ping", { repository: repository() }, ALLOW)).toEqual({ repo: "ShinyQ/ShinyQ-HQ", changes: [] });
+    // A ping (the webhook was just added) is an owner action, so it also lifts a revoked name (audit 2026-10-24).
+    expect(parseGithubEvent("ping", { repository: repository() }, ALLOW)).toEqual({ repo: "ShinyQ/ShinyQ-HQ", changes: [], restored: true });
   });
 
   it("maps workflow_run and workflow_job", () => {
@@ -92,10 +93,27 @@ describe("parseGithubEvent", () => {
     const push = (ref: string) => ({ ref, repository: repository(), head_commit: { id: "abc1234def", message: "feat: office (#230)\n\nbody", url: "https://github.com/ShinyQ/ShinyQ-HQ/commit/abc1234def" } });
     expect(parseGithubEvent("push", push("refs/heads/main"), ALLOW)?.changes).toEqual([{ type: "push", sha: "abc1234def", title: "main · feat: office (#230)", url: "https://github.com/ShinyQ/ShinyQ-HQ/commit/abc1234def" }]);
     expect(parseGithubEvent("push", push("refs/heads/feat/x"), ALLOW)?.changes).toEqual([]);
-    const deploy = { repository: repository(), deployment: { id: 9, environment: "production" }, deployment_status: { state: "success", environment: "production", target_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
+    const deploy = { repository: repository(), deployment: { id: 9, environment: "production", ref: "main" }, deployment_status: { state: "success", environment: "production", target_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43" } };
     expect(parseGithubEvent("deployment_status", deploy, ALLOW)?.changes).toEqual([{ type: "deploy", id: 9, title: "Deploy · production", url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/43", status: "success", production: true }]);
-    const preview = { ...deploy, deployment: { id: 10, environment: "Preview" }, deployment_status: { ...deploy.deployment_status, environment: "Preview" } };
+    const preview = { ...deploy, deployment: { id: 10, environment: "Preview", ref: "refs/heads/main" }, deployment_status: { ...deploy.deployment_status, environment: "Preview" } };
     expect(parseGithubEvent("deployment_status", preview, ALLOW)?.changes[0]).toMatchObject({ type: "deploy", title: "Deploy · Preview", production: false });
+  });
+
+  it("ignores deployments that are not of the default branch, such as a fork pull request job (audit 2026-10-24)", () => {
+    const deploy = (ref: unknown) => ({ repository: repository(), sender: { login: "stranger" }, deployment: { id: 11, environment: "office-probe", ref, creator: { login: "stranger" } }, deployment_status: { state: "success", environment: "office-probe", target_url: "https://github.com/ShinyQ/ShinyQ-HQ/actions/runs/1" } });
+    for (const ref of ["refs/pull/1/merge", "feat/x", "", undefined, "refs/heads/main-ish"]) expect(parseGithubEvent("deployment_status", deploy(ref), ALLOW)?.changes).toEqual([]);
+  });
+
+  it("revokes a name that is deleted, renamed away or transferred away, and restores only on publicized (audit 2026-10-24)", () => {
+    const repoEvent = (action: string, extra: Record<string, unknown> = {}, repo = repository()) => ({ action, repository: repo, ...extra });
+    const revoked = (repo: string) => ({ repo, changes: [{ type: "privatized" }] });
+    expect(parseGithubEvent("repository", repoEvent("deleted"), ALLOW)).toEqual(revoked("ShinyQ/ShinyQ-HQ"));
+    expect(parseGithubEvent("repository", repoEvent("renamed", { changes: { repository: { name: { from: "Old-HQ" } } } }), ALLOW)).toEqual(revoked("ShinyQ/Old-HQ"));
+    const moved = repository({ full_name: "elsewhere/ShinyQ-HQ" });
+    expect(parseGithubEvent("repository", repoEvent("transferred", { changes: { owner: { from: { user: { login: "ShinyQ" } } } } }, moved), ALLOW)).toEqual(revoked("ShinyQ/ShinyQ-HQ"));
+    expect(parseGithubEvent("repository", repoEvent("transferred", { changes: { owner: { from: { organization: { login: "client" } } } } }, moved), ALLOW)).toBeNull();
+    expect(parseGithubEvent("repository", repoEvent("publicized"), ALLOW)).toEqual({ repo: "ShinyQ/ShinyQ-HQ", changes: [], restored: true });
+    expect(parseGithubEvent("repository", repoEvent("edited"), ALLOW)).toEqual({ repo: "ShinyQ/ShinyQ-HQ", changes: [] });
   });
 
   it("replaces an empty title with a generic one and an unsafe URL with the repository URL", () => {

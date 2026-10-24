@@ -90,8 +90,13 @@ Index: [AGENTS.md](../../AGENTS.md).
 - Only same-repository GitHub activity shows: pull requests from forks and workflow runs whose `head_repository` is
   another repository are ignored, and a pull request also needs a sender in `OFFICE_GITHUB_ACTORS` (Worker var,
   default `ShinyQ,Copilot`) or an OWNER, MEMBER or COLLABORATOR author association.
-- A `repository` webhook with action `privatized` removes the repository from the known-public set and strips its
-  runs, pull requests, feed items and the repository data of its sessions.
+- A `repository` webhook with action `privatized` or `deleted`, or `renamed` / `transferred` away (the old name),
+  removes that name from the known-public set and strips its runs, pull requests, feed items and the repository data
+  of its sessions. The name goes on the document's `revoked` list: a later delivery whose payload still says public
+  (GitHub does not order deliveries; an old one can be redelivered) changes nothing until an owner action restores it
+  (`repository` `publicized`, or a webhook `ping`) (security audit 2026-10-24).
+- Deployments count only when `deployment.ref` is the default branch, so a fork pull request job that declares an
+  environment cannot put its name on the feed.
 - Never add a field that carries prompt text, commands, paths, output or client names.
 
 ### Worker and Durable Object

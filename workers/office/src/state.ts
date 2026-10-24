@@ -107,6 +107,12 @@ export interface OfficeDoc {
   deliveries: string[];
   /** Cancelled runs (newest first, `TIMING.runsKept` at most), so a late delivery of the same attempt cannot bring one back. Absent in older stored documents. */
   cancelled: { id: number; attempt: number }[];
+  /**
+   * Names forgotten by a privatized, deleted, renamed or transferred delivery (newest last). A later delivery whose payload
+   * still says public (GitHub does not order deliveries; an old one can be redelivered) cannot re-add them; only `restored`
+   * can (security audit 2026-10-24). Absent in older stored documents.
+   */
+  revoked?: string[];
   today: OfficeToday;
 }
 
@@ -122,6 +128,8 @@ export type GithubChange =
 export interface GithubUpdate {
   repo: string;
   changes: GithubChange[];
+  /** The repository is public again by an owner action (`publicized`, or a webhook `ping`): lifts its revocation. */
+  restored?: true;
 }
 
 /** What the Worker posts to the Durable Object's /github. */
@@ -341,14 +349,18 @@ function applyChange(doc: OfficeDoc, repo: string, c: GithubChange, now: number)
 export function applyGithub(doc: OfficeDoc, update: GithubUpdate, delivery: string, now: number): OfficeDoc {
   if (delivery && doc.deliveries.includes(delivery)) return doc;
   const privatized = update.changes.some((c) => c.type === "privatized");
+  const revoked = (doc.revoked ?? []).filter((r) => r !== update.repo);
+  const blocked = !privatized && !update.restored && revoked.length !== (doc.revoked ?? []).length;
   let next: OfficeDoc = {
     ...doc,
     today: rollToday(doc.today, now),
     cancelled: doc.cancelled ?? [],
-    publicRepos: privatized || doc.publicRepos.includes(update.repo) ? doc.publicRepos : [...doc.publicRepos, update.repo].slice(-TIMING.publicReposKept),
+    publicRepos: privatized || blocked || doc.publicRepos.includes(update.repo) ? doc.publicRepos : [...doc.publicRepos, update.repo].slice(-TIMING.publicReposKept),
+    ...(privatized ? { revoked: [...revoked, update.repo].slice(-TIMING.publicReposKept) } : update.restored && doc.revoked ? { revoked } : {}),
     deliveries: delivery ? [...doc.deliveries, delivery].slice(-TIMING.deliveriesKept) : doc.deliveries,
   };
-  for (const change of update.changes) next = applyChange(next, update.repo, change, now);
+  // A revoked name's stale delivery records its id and changes nothing else (no feed item, run or pull request).
+  for (const change of blocked ? [] : update.changes) next = applyChange(next, update.repo, change, now);
   return {
     ...next,
     runs: next.runs.filter((r) => now - r.updated < TIMING.runStaleAfter).slice(0, TIMING.runsKept),

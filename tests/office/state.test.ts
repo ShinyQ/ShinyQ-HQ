@@ -289,6 +289,25 @@ describe("applyGithub", () => {
     expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("repo");
   });
 
+  it("keeps a revoked repository private when a stale public-looking delivery arrives later, until it is publicized (audit 2026-10-24)", () => {
+    const push = { type: "push" as const, sha: "def5678", title: "main · stale", url: "https://github.com/ShinyQ/ShinyQ-HQ" };
+    let doc = applyGithub(publicDoc(), { repo: HQ, changes: [{ type: "privatized" }] }, "priv-1", T0);
+    expect(doc.revoked).toEqual([HQ]);
+    // A delivery generated before the privatization (or an old one redelivered) still says public: it changes nothing.
+    doc = applyGithub(doc, { repo: HQ, changes: [push] }, "late-1", T0 + 1);
+    expect(doc.publicRepos).not.toContain(HQ);
+    expect(doc.feed.some((f) => f.repo === HQ)).toBe(false);
+    expect(doc.deliveries).toContain("late-1");
+    doc = applyBeat(doc, beat(1, { repo: HQ, branch: "feat/secret", title: "Secret" }), T0 + 2);
+    expect(view(doc, T0 + 2).desks[0]).not.toHaveProperty("title");
+    // Making it public again (or re-adding the webhook) lifts the revocation.
+    doc = applyGithub(doc, { repo: HQ, changes: [], restored: true }, "pub-1", T0 + 3);
+    expect(doc.revoked).toEqual([]);
+    expect(doc.publicRepos).toContain(HQ);
+    doc = applyBeat(doc, beat(1, { repo: HQ, branch: "feat/open", title: "Open" }), T0 + 4);
+    expect(view(doc, T0 + 4).desks[0]).toMatchObject({ title: "Open" });
+  });
+
   it("ignores a late running delivery of a completed attempt", () => {
     let doc = applyGithub(publicDoc(), { repo: HQ, changes: [run("running"), { type: "job", runId: 42, attempt: 1, jobId: "1", name: "Lint", status: "done" }] }, "a0", T0);
     doc = applyGithub(doc, { repo: HQ, changes: [run("success")] }, "a", T0 + 1000);
