@@ -6,7 +6,8 @@ import type { ScheduledControllerLike, StatsWorkerEnv } from "./types";
  * hq-stats: the public visit stats Cron Worker (every hour, UTC: finalizes days an hour after they end and
  * refreshes the snapshot with today so far) and the live count of visit pings behind `GET /api/stats`. No
  * route and no workers.dev URL: its fetch handler is reachable only through the Pages project's `STATS`
- * service binding. Runbook: workers/stats/README.md.
+ * service binding, and the `LiveGate` Durable Object caps the live query at one a minute. Runbook:
+ * workers/stats/README.md.
  */
 const worker = {
   async scheduled(controller: ScheduledControllerLike, env: StatsWorkerEnv): Promise<void> {
@@ -18,3 +19,6 @@ const worker = {
 };
 
 export default worker;
+
+/** The Durable Object class bound as LIVE_GATE (wrangler.toml). */
+export { LiveGate } from "./live";

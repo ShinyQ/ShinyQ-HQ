@@ -34,7 +34,11 @@ flowchart LR
   the unstored days (or the cutover when later), the pings the snapshot counted since then and the snapshot's
   `updatedAt` (`from: null` when a tail day is frozen). `GET /api/stats` adds the pings since then.
 - `GET /live?from=<ISO seconds>` (`src/live.ts`): one fixed SQL count of visit pings since `from` (not in the future,
-  at most 8 days old; anything else 400), memoized 20 s per isolate, 502 with no detail on an error.
+  at most 8 days old; anything else 400), 502 with no detail on an error. Cost cap: the Cache API (60 s, per data
+  center) first, then the single `LiveGate` Durable Object (binding `LIVE_GATE`, SQLite-backed, migration `v1`), which
+  runs the query at most once a minute across every instance (about 1,440 a day at most; a different `from` inside
+  the minute answers 503, failures use the slot too). A KV guard was not used: up to 1,440 writes a day would exceed
+  the account's free 1,000.
 - Math: `src/rollup.ts` (pure, `tests/stats/rollup.test.ts`). Floors come from Web Analytics paths via
   `floorOfPath` (the site's own route parser). Countries are ISO alpha-2 only (no `XX`, no `T1`),
   without counts. A day whose beacon points exceed `max(30, 3 x page views)` keeps a zero 3D vs Classic
@@ -66,8 +70,8 @@ flowchart LR
   SQL queries (asks, visits, perf; plus one perf backfill query at most), 2 KV reads (ledger and extra rows), and the
   snapshot and live tail writes every run. The ledger is written only when a day finalizes, perf is filled or the
   cutover is first seen, so at most 3 KV writes per run.
-- Live budget: `GET /api/stats` asks `GET /live` at most once per Pages isolate every 30 s, and the Worker answers a
-  repeated `from` from memory for 20 s, so a quiet site makes a handful of SQL queries an hour.
+- Live budget: `GET /api/stats` asks `GET /live` at most once per Pages isolate every 30 s; the Cache API answers
+  repeats per data center for 60 s and the `LiveGate` Durable Object allows one SQL query a minute globally.
 
 Limits checked 2026-10-24 (hourly cadence):
 
@@ -76,7 +80,8 @@ Limits checked 2026-10-24 (hourly cadence):
 | GraphQL Analytics API | 300 queries per 5 minutes per user | 1 to 2 per run, at most 48 a day |
 | Cron Triggers | several schedules per Worker | 1 schedule |
 | Workers KV (free plan) | 1,000 writes a day | 2 per run, 48 a day, plus one ledger write a day (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
-| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 per run (72 a day) plus the live counts (at most 2 a minute per Pages isolate, far below the cap at this traffic) |
+| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 per run (72 a day) plus at most 1 live count a minute (1,440 a day), about 1,512 at most |
+| Durable Objects (free plan, SQLite) | 100,000 requests a day | at most 1 `LiveGate` request per Pages isolate per 30 s on a cache miss |
 
 ## Configuration
 

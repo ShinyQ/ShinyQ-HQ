@@ -46,7 +46,13 @@ Index: [AGENTS.md](../../AGENTS.md).
   - the cutover day: Web Analytics visits before the cutover time (one days-only GraphQL query until the day is stored) plus that day's pings (`visitSource: "mixed"`);
   - later days: pings only (`visitSource: "first-party"`, `firstParty` kept for audits);
   - `VISIT_FREEZE`: a day with more pings than `max(50, 5 x page views)` keeps its Web Analytics visits (`visitsFrozen`) and writes a live tail with `from: null`.
-- Fetch handler `GET /live?from=<ISO seconds>` (`workers/stats/src/live.ts`): one fixed Analytics Engine count of visit pings since `from` (not in the future, at most 8 days old), memoized 20 s per isolate; reachable only through the Pages `STATS` service binding (no route, no workers.dev URL).
+- Fetch handler `GET /live?from=<ISO seconds>` (`workers/stats/src/live.ts`): one fixed Analytics Engine count of visit pings since `from` (not in the future, at most 8 days old); reachable only through the Pages `STATS` service binding (no route, no workers.dev URL).
+- Live read budget (owner cost guard): at most one live Analytics Engine query a minute across every instance, about 1,440 a day whatever the traffic.
+  - Layer 1: the Cache API (`caches.default`, key from `from`, `LIVE_CACHE_SECONDS` = 60). It is per data center, so it saves calls but is not the cap.
+  - Layer 2, the cap: one `LiveGate` Durable Object (SQLite-backed, free plan; binding `LIVE_GATE`, `idFromName("live")`) keeps the last count and query time in its storage and queries only when the last query is at least `LIVE_QUERY_EVERY_MS` (60 s) old; concurrent callers share one query, another `from` inside the window answers 503, and a failure uses the slot too (no retry queries).
+  - Not KV: a KV timestamp guard would write up to 1,440 times a day, over the account's free 1,000 writes shared with Ask.
+  - Any non-200 from `/live` makes `/api/stats` serve the hourly snapshot as it is.
+  - Daily Analytics Engine read queries: about 72 from the hourly runs plus at most 1,440 live, under the 10,000 a day of the Workers Free plan.
 - A stored day is never recomputed, so it is stored only from an exact Web Analytics answer.
   - `waExact`: unsampled, groups adding up; else the day stays provisional for up to 3 days.
 - A failed run writes nothing and the next one catches up.

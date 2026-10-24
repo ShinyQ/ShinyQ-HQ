@@ -103,6 +103,22 @@ export interface StatsWorkerEnv {
   WA_SITE_TAG?: string;
   /** Production hosts, comma separated (local and preview traffic shares the siteTag). */
   WA_HOSTS?: string;
+  /** The single `LiveGate` Durable Object: at most one live Analytics Engine query a minute (src/live.ts). */
+  LIVE_GATE?: DurableObjectNamespaceLike;
+}
+
+/** The parts of a Durable Object namespace the Worker uses (no Cloudflare type packages, T12). */
+export interface DurableObjectNamespaceLike {
+  idFromName(name: string): unknown;
+  get(id: unknown): { fetch(input: string, init?: RequestInit): Promise<Response> };
+}
+
+/** The parts of a Durable Object's state the gate uses (its transactional storage). */
+export interface DurableObjectStateLike {
+  storage: {
+    get<T>(key: string): Promise<T | undefined>;
+    put<T>(key: string, value: T): Promise<void>;
+  };
 }
 
 export type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;

@@ -27,6 +27,17 @@ crons = ["17 * * * *"]
 binding = "STATS_KV"
 id = "88fb27f910f44e6393b8fd495d6a2c4f"
 
+# The single LiveGate Durable Object (src/live.ts): every live visit count of GET /api/stats goes through it, so the
+# Analytics Engine query runs at most once a minute across every data center (about 1,440 a day). SQLite-backed, so
+# it runs on the free plan (like hq-office's Office).
+[[durable_objects.bindings]]
+name = "LIVE_GATE"
+class_name = "LiveGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LiveGate"]
+
 [vars]
 # Web Analytics site of the production site (not the public beacon token; useless without an API token).
 WA_SITE_TAG = "4134db56168b4eb58d19fc1ead78b131"

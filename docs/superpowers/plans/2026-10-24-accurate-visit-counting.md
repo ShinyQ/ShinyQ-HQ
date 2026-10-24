@@ -26,7 +26,8 @@ Cloudflare Web Analytics.
    daily-rotating IP hash, never stored), on top of the same-origin check, the 128-byte cap and the isolate cap.
 3. hq-stats Worker: the cutover is the first visit ping (min `timestamp` from the visits query, kept in the ledger);
    per-day visit source with `VISIT_FREEZE`; the live tail `stats:live:v1` next to the snapshot; hourly cron; a
-   `GET /live` fetch handler reachable only through the Pages `STATS` service binding.
+   `GET /live` fetch handler reachable only through the Pages `STATS` service binding, capped at one Analytics
+   Engine query a minute globally (the Cache API per data center, then the single `LiveGate` Durable Object).
 4. `/api/stats`: adds the pings since the run (same `updatedAt`, at most `LIVE_MAX_DELTA`, 1.5 s timeout, 30 s memo),
    `max-age=30`; the public contract is unchanged.
 5. Copy (EN and ID) and freshness: the source line names the site's own counter, "Today live, earlier days every
