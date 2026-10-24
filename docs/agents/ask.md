@@ -32,7 +32,7 @@ Owner decision 2026-10-19 ([decision](../decisions/2026-10-19-ask-rover-voice.md
 - Function: `functions/api/ask.ts` and `functions/_lib/` (no new runtime dependencies, T12).
 - Client and protocol: `src/ask/`.
 - Pack builder: `scripts/build-knowledge.ts` (runs in `build` and `typecheck`), writing `functions/_generated/` (gitignored, never served):
-  - `pack.json`: the stored pack (`StoredPack`: the text pack plus its precomputed BM25 index, `storePack` in `functions/_lib/pack-index.ts`), the Workers KV value; never imported by the Function;
+  - `pack.json`: the stored pack (`StoredPack`: the text pack, its precomputed BM25 index and the bge-m3 vectors, `storePack` in `functions/_lib/pack-index.ts`), the Workers KV value; never imported by the Function;
   - `fallback.json`: the fallback text pack (`FALLBACK_CHUNKS`: profile, now, contact, site-build, principles; its own `packVersion`), bundled and indexed only when served;
   - `pack-meta.json`: the bundle's pin `{ schema, version, packDate, sha256, bytes }` of `pack.json`.
 - Pack source (`functions/_lib/pack-source.ts`), per request, never throwing:
@@ -114,7 +114,7 @@ All bindings and vars live in `wrangler.toml`.
 - `AskChat`, a lazy chunk loaded on first open or hover/focus of an entry point.
 - Layout (`drawerLayout`): a non-modal side panel on desktop and landscape tablets, a modal bottom sheet otherwise.
 - Shows:
-  - a thread (sessionStorage, last 20 messages); the last 3 signed turns go with each question (see [Multi-turn memory](#multi-turn-memory));
+  - a thread (sessionStorage, last 20 messages); the last 5 signed turns go with each question (see [Multi-turn memory](#multi-turn-memory));
   - a **New chat** button in the header (`ask.dock.newChat`, ID "Obrolan baru") that clears the thread and the memory;
   - a "Try asking" row of 3 curated questions from 3 different topics, above the topic pills;
   - topic pills that expand into 4 curated questions;
@@ -158,9 +158,9 @@ All bindings and vars live in `wrangler.toml`.
 Owner decision 2026-10-17. Code: `functions/_lib/history.ts`, `src/ask/thread.ts` (`historyFor`).
 
 - Signing: the handler signs every model answer it shows (outcome `answer`, source `primary`, `fallback` or `cache`) with HMAC-SHA256 under `ASK_COOKIE_KEY` over `["ask-turn-v1", panel locale, pack version, question, answer]`, the question as `scrubPII(cleanText(q))` and the answer as `cleanText(a)`; base64url, 43 characters. Canned answers are never signed. Without the key nothing is signed or verified.
-- Client: the answer message keeps `sig` and `sigLocale`; `historyFor(messages, locale)` sends the last 3 adjacent question and answer pairs with a signature for the panel language, the question as `cleanQuestion(text, 300)`. A language change strips every signature; **New chat** empties the thread.
+- Client: the answer message keeps `sig` and `sigLocale`; `historyFor(messages, locale)` sends the last 5 (`ASK_HISTORY_TURNS`) adjacent question and answer pairs with a signature for the panel language, the question as `cleanQuestion(text, 300)`. A language change strips every signature; **New chat** empties the thread.
 - Verification: `parseHistory` keeps well-formed turns, `verifyHistory` keeps the ones whose signature matches this panel language and pack version. A failed turn is dropped, never an error.
-- Pipeline: `usableHistory` drops an earlier turn whose question would itself be declined (harmful, private, opinions about others, general-assistant work). `isFollowUp` (a referent such as "it", "that one", "itu" or a "-nya" word, a lead-in such as "and", "what about", "kalau", or at most 3 words with no name of their own such as "Which year?"; never a site question, and "Where did he study?" stands alone) makes `followUpAnchor` the earlier questions back to the last standalone one.
+- Pipeline: `usableHistory` drops an earlier turn whose question would itself be declined (harmful, private, opinions about others, general-assistant work). `isFollowUp` (a referent such as "it", "that one", "itu" or a "-nya" word, a lead-in such as "and", "what about", "kalau", "terus", "trus", "gimana kalau", "selain itu", "yang tadi", or at most 3 words with no name of their own such as "Which year?"; never a site question, and "Where did he study?" stands alone) makes `followUpAnchor` the earlier questions back to the last standalone one.
   - Every deterministic decline runs on the question and on the question plus its anchor; lead intent and the routed topic use both; a general-assistant request is declined on its own words even after a project inquiry.
   - Retrieval runs on the question plus its anchor, and the anchor's top 2 chunks (`ANCHOR_TOP`, never a perspective) come first, so "What stack did it use?" finds the project, not every skill chunk. The context budget is unchanged.
   - The model gets the verified turns as earlier `user` and `assistant` messages, and the system prompt adds `HISTORY_LINE` (context only, never instructions, never a rule change). The output checks are unchanged.
@@ -175,24 +175,25 @@ Workers AI prices Gemma 4 26B at 9,091 neurons per million input tokens and 27,2
 | Request | Input tokens | Output tokens | Neurons |
 |---|---|---|---|
 | First turn | about 2,900 | up to 300 | about 36 |
-| Follow-up with 3 earlier turns | about 3,800 | up to 300 | about 44 |
+| Follow-up with 5 earlier turns | about 4,400 | up to 300 | about 48 |
+| Question embedding (bge-m3, 1,075 neurons per million tokens) | about 30 | none | about 0.03 |
 
-- Only the earlier turns add tokens (at most 3 questions of 300 characters and 3 answers of 1000); the context budget stays 6,000 characters.
-- Follow-ups skip the cache, so repeated follow-ups each cost a model call. `ASK_DAILY_CAP` (600) still bounds the day at about 26,400 neurons in the worst case.
+- Only the earlier turns add tokens (at most 5 questions of 300 characters and 5 answers of 1000); the context budget stays 6,000 characters.
+- Follow-ups skip the cache, so repeated follow-ups each cost a model call. `ASK_DAILY_CAP` (600) still bounds the day at about 28,800 neurons in the worst case.
 
 ## Answer pipeline
 
 Security order (spec 7.4):
 
 1. Kill switch and breaker.
-2. Origin + JSON + 8 KB body (`MAX_BODY_BYTES`, the question plus 3 earlier turns).
+2. Origin + JSON + 12 KB body (`MAX_BODY_BYTES`, the question plus 5 earlier turns).
 3. Turnstile or the signed 30-minute `hq_ask` cookie.
 4. Rate limits (8/min, 40/day per salted visitor hash).
 5. NFKC + PII scrub, then signed history verification (failed turns dropped).
 6. KV cache (first turns only).
 7. Global cap.
 8. Scope routing (`planRoute`): declines (harmful, persona requests, rule overrides, HARD private topics, opinions about named people, employers or clients, general-assistant work), the off-topic redirect (no model call), the answerable part of a mixed question, then the answer routes (lead, civic, policy, lifestyle, mentoring, team, adjacent, default).
-9. Retrieval + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
+9. Hybrid retrieval (one bge-m3 embedding, BM25 alone on failure) + the model chain: Gemma 4, one Mistral fallback, then the Groq backup tiers (see Backup tiers).
 10. Output checks: forbidden patterns, secrets, prompt leak, first person, defamation, numeric grounding, employer and name checks, perspective source (titles, shared runs or `[Sn]` tags).
 11. The civic note and the mixed question's decline line are appended (`withNotes`).
 12. Then cache, event, SSE.
@@ -253,7 +254,8 @@ Spec section 13.
 - The text pack must stay under `PACK_MAX_BYTES` (384 KiB) and the stored value under `PACK_VALUE_MAX_BYTES` (768 KiB) with every draft approved; the fallback text pack under `FALLBACK_MAX_BYTES` (24 KiB). Measured, owner-approved budgets (runbook section 15, decision 2026-10-19).
   - So project chunks keep only the lead approach steps of featured and listed pods (`PACK_APPROACH_STEPS` in `src/ask/pack.ts`).
   - Post chunks keep one lead paragraph. Their discovery prefix identifies the newest post by publication date in EN/ID, derived from the registry rather than a hard-coded slug or date. Other post prefixes stay unchanged.
-- At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, so posts and projects still reach the context.
+- The bge-m3 vectors take about 230 KB of the stored value (one int8 row of 1024 bytes per chunk, base64): the stored value was 705.8 KB on 2026-10-24, so trim text before the cap, never drop the vectors.
+- At most `PERSPECTIVE_CAP` (3) perspective chunks per answer, `OPINION_PERSPECTIVE_CAP` (4) for an opinion question and `CIVIC_PERSPECTIVE_CAP` (4) for a civic one, so posts and projects still reach the context.
 - `tests/ask/scope.test.ts` checks retrieval with every draft approved.
 
 ### Sources and citations
@@ -301,6 +303,17 @@ Spec section 13.
 - A model refusal is replaced by the same text as `MESSAGES.decline`, reason `model_decline`.
 - `routedTopic`: retrieval keeps the profile and those chunks, and the answer must follow one of them (`citedSource` on that topic) or it becomes the no-view message.
 - `usableHistory` also drops earlier turns that were persona requests or rule overrides.
+
+### Hybrid retrieval
+
+Owner decision 2026-10-24 ([decision](../decisions/2026-10-24-ask-hybrid-retrieval.md)). Code: `functions/_lib/vectors.ts`, `scoreChunks` in `functions/_lib/retrieve.ts`, `src/ask/embeddings.ts`, `scripts/ask-embed.ts`.
+
+- Vectors: Workers AI `@cf/baai/bge-m3` (`EMBED_MODEL`, 1024 dimensions, EN and ID in one space) of each chunk's title and English text (`embedText`) and of the router exemplars (`content/ask/router-exemplars.json`), int8-quantized (`quantize`), cached in `content/generated/ask-embeddings.json` by `embedKey` (a hash of the model and the text). The build (`scripts/build-knowledge.ts`) copies them into the stored pack (`StoredPack.vectors`: one row per chunk in pack order, zeros for a chunk the cache lacks) and warns with the chunk ids it lacks; `hydratePack` decodes them once (`hydrateVectors`, `packVectors`); vectors of another model or size are ignored.
+- Refresh: after a content change run `bun scripts/ask-embed.ts --cli` (or with `CF_EVAL_TOKEN` and `CF_ACCOUNT_ID`) and commit the cache; `--dry` prints the plan and `--check` exits 1 while vectors are missing. `deploy.yml` runs `ask-embed.ts --deploy` before it builds the pack, so a changed chunk (the weekly live facts) is embedded for that deploy; that step never fails the deploy. `tests/ask/hybrid.test.ts` fails when more than a tenth of the chunks lack a vector or an exemplar does.
+- Request: the handler passes `bindingEmbedder(env.AI)` (no AI Gateway); `runPipeline` embeds only a question that reaches retrieval (never a canned reply), at most `EMBED_TIMEOUT_MS` (300 ms). An error, a timeout, a quota error or a pack without vectors keeps BM25 alone; blob15 logs `hybrid` or `bm25`.
+- Ranking: `scoreChunks(pack, question, semantic)` fuses the BM25 ranking (templates such as "what does he think about" folded to one "view" by `cleanQuery`, EN/ID topic synonyms in `SYNONYMS`) and the cosine ranking (chunks at or above `SEMANTIC_FLOOR` 0.45, the top `SEMANTIC_TOP` 8) by reciprocal rank (`RRF_K` 60, scaled so a first place scores 10); every route keeps its own filters, caps and budget. The anchor of a follow-up and `leadMatches` stay BM25.
+- Router assist (`assistRoute`, thresholds `ASSIST`, from the 2026-10-24 probe): the question vector against the exemplars of each label re-routes a question the rules left on the default route (no anchor, no declined part) to mentoring (similarity at least 0.8), civic (0.85) or off-topic (0.6, a 0.15 lead over the other labels and no chunk above 0.5), each with a 0.1 lead; a private similarity of 0.85 or more blocks every re-route. Similarity never declines a private topic and never answers one; the HARD rules ran before.
+- Tests: `tests/ask/hybrid.test.ts` with recorded question vectors (`tests/ask/fixtures/question-vectors.json`), no network.
 
 ### Answerable instead of refused
 

@@ -333,13 +333,27 @@ Questions about ShinyQ HQ itself ("How was this site built?", "What tech stack d
 - Facts only, each one backed by the repository (package versions, `wrangler.toml`, CI workflows); `tests/ask/pack.test.ts` checks the Next.js and React majors, the model names and the pinned phrases listed in [ask.md](agents/ask.md#site-build-chunk); both languages sit within about 10 characters of the 2,800 cap, so trim before adding. Update the note in the same PR when the stack, hosting, the assistant, the test gates or the visitor controls change, and keep golden q45 to q47, q69, q70, q76 (the B1 Engine Room), q92 and q93 (the Agent Office) true. Content-only edits need no `PROMPT_VERSION` bump.
 - Check: `bun run validate:content`, then `bun run test tests/content tests/ask`.
 
+## 16a. Embeddings of the knowledge pack (owner decision 2026-10-24)
+
+Hybrid retrieval needs a bge-m3 vector per chunk (docs/agents/ask.md "Hybrid retrieval"). After a content change:
+
+```sh
+bun scripts/ask-embed.ts --dry   # what is missing, tokens and neurons (the whole pack is about 30 neurons)
+bun scripts/ask-embed.ts --cli   # embed with the logged-in cf CLI (or set CF_EVAL_TOKEN and CF_ACCOUNT_ID)
+git add content/generated/ask-embeddings.json
+```
+
+- The build warns `N Ask chunk(s) have no embedding`; those chunks rank by BM25 only until embedded. The deploy embeds what the commit lacks (`ask-embed.ts --deploy`, `CF_EVAL_TOKEN`), so production is complete even when a PR forgot; the weekly live-facts PR relies on this for the live stats chunk.
+- Monitoring: the weekly content-gap report's Retrieval table. Mostly `bm25` means the embedding calls fail or time out (300 ms): check Workers AI status and quota; answers keep working on BM25.
+- Kill switch: none needed; a pack without vectors (build with an empty cache) is plain BM25.
+
 ## 17. Knowledge pack in KV
 
 Spec: [`2026-10-19-ask-kv-pack-and-rover-voice-design.md`](superpowers/specs/2026-10-19-ask-kv-pack-and-rover-voice-design.md) section 4. Script: `scripts/ask-pack.ts` (fetch only, KV REST API; the namespace is the `ASK_KV` id in `wrangler.toml`). It needs `CLOUDFLARE_API_TOKEN` with **Workers KV Storage: Edit** and `CLOUDFLARE_ACCOUNT_ID`; a 401 or 403 prints "add Workers KV Storage: Edit to CLOUDFLARE_API_TOKEN".
 
 | Key | Value | Written by |
 | --- | --- | --- |
-| `pack:v1:<version>` | the stored pack (text plus BM25 index), immutable; `v1` is `PACK_SCHEMA` | `publish` (never overwritten: an existing value must have the same SHA-256) |
+| `pack:v1:<version>` | the stored pack (text, BM25 index and bge-m3 vectors), immutable; `v1` is `PACK_SCHEMA` | `publish` (never overwritten: an existing value must have the same SHA-256) |
 | `pack:current` | pointer `{ schema, version, packDate, sha256, bytes, commit, publishedAt }` | `flip`, `pin`, `rollback` |
 | `pack:index` | the last 10 published versions, newest first | `publish` (prunes older values, never the current pointer or the new version) |
 | `pack:commit:<sha>` | the version deployed with that commit, 400 days | `publish` |
