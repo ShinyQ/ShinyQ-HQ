@@ -6,11 +6,15 @@
  *   CF_EVAL_TOKEN=... CF_ACCOUNT_ID=... bun scripts/content-gap.ts --questions  # owner only, local
  *
  * Event layout written by functions/api/ask.ts: blobs [outcome, locale, source,
- * scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip, model, failureTrail, packTier], doubles
+ * scrubbedQuestionOrEmpty, packVersion, reason, entry, topic, chip, model, failureTrail, packTier, auto, route, retrieval,
+ * overRefused], doubles
  * [latencyMs, 1]. `entry` is the UI entry point (hero, dock, pill, followup, terminal, palette);
  * `model` (blob10) is the model that answered; the failure trail (blob11) lists the tiers that failed first; the pack tier
- * (blob12) is where the knowledge pack came from (memory, kv, pin, fallback; empty before the KV pack). Only "unknown" events carry
- * the (already PII-scrubbed) question; "rejected" events are requests stopped before the model
+ * (blob12) is where the knowledge pack came from (memory, kv, pin, fallback; empty before the KV pack). The route (blob14) is
+ * the deterministic route (civic, policy, lifestyle, mentoring, team, adjacent, lead, default, "+partial" for a mixed
+ * question), the retrieval (blob15) bm25 or hybrid, and blob16 is "match" for a declined question that retrieval would
+ * have answered with a strong match (an over-refusal candidate). Only "unknown" and "decline" events carry the (already
+ * PII-scrubbed) question (owner decision 2026-10-24); "rejected" events are requests stopped before the model
  * (Turnstile, Origin, limits) and do not count as questions.
  *
  * The public report (a GitHub issue and a run artifact in a public repo) holds counts and topics
@@ -96,6 +100,12 @@ export interface Report {
   models?: CountRow[];
   /** Knowledge pack tier that served (blob12): memory, kv, pin, fallback. `pin` or `fallback` means KV is degraded. */
   tiers?: CountRow[];
+  /** Declined questions retrieval would have answered with a strong match (blob16 "match"), by reason (blob6): counts only. */
+  overRefused?: CountRow[];
+  /** Deterministic routes of model answers (blob14). */
+  routes?: CountRow[];
+  /** Retrieval of model answers (blob15): bm25 or hybrid. */
+  retrieval?: CountRow[];
 }
 
 const PACK_TIERS = ["memory", "kv", "pin", "fallback"];
@@ -146,6 +156,26 @@ export function formatReport(report: Report): string {
     lines.push("", "## Pack tier", "", "| Tier | Count | Share |", "|---|---|---|");
     for (const r of [...tiers].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, served)} |`);
   }
+  const over = (report.overRefused ?? []).filter((r) => r.n > 0);
+  lines.push("", "## Over-refused", "");
+  if (over.length) {
+    lines.push("Declined questions that retrieval would have answered with a strong match (owner review: a rule may be too broad).", "", "| Reason | Count |", "|---|---|");
+    for (const r of [...over].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z0-9_-]/gi, "") || "(none)"} | ${r.n} |`);
+  } else {
+    lines.push("None this week.");
+  }
+  const routes = (report.routes ?? []).map((r) => ({ ...r, key: r.key.replace(/[^a-z+]/g, "") })).filter((r) => r.key && r.n > 0);
+  if (routes.length) {
+    lines.push("", "## Routes", "", "| Route | Count | Share |", "|---|---|---|");
+    const routed = routes.reduce((sum, r) => sum + r.n, 0);
+    for (const r of routes.sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, routed)} |`);
+  }
+  const retrieval = (report.retrieval ?? []).filter((r) => (r.key === "bm25" || r.key === "hybrid") && r.n > 0);
+  if (retrieval.length) {
+    const used = retrieval.reduce((sum, r) => sum + r.n, 0);
+    lines.push("", "## Retrieval", "", "| Retrieval | Count | Share |", "|---|---|---|");
+    for (const r of [...retrieval].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key} | ${r.n} | ${percent(r.n, used)} |`);
+  }
   if (report.reasons?.length) {
     lines.push("", "## Rejections and replaced answers", "", "| Reason | Count |", "|---|---|");
     for (const r of [...report.reasons].sort((a, b) => b.n - a.n)) lines.push(`| ${r.key.replace(/[^a-z0-9_-]/gi, "")} | ${r.n} |`);
@@ -159,9 +189,9 @@ export function formatReport(report: Report): string {
 }
 
 /** Owner-only table of the top unanswered questions (local terminal; never a file, issue or artifact). */
-export function formatPrivateQuestions(questions: readonly QuestionGroup[]): string {
-  if (!questions.length) return "No unanswered questions in the last 7 days.\n";
-  const lines = ["| # | Count | Question (scrubbed) |", "|---|---|---|"];
+export function formatPrivateQuestions(questions: readonly QuestionGroup[], title = "Unanswered questions", empty = "No unanswered questions in the last 7 days."): string {
+  if (!questions.length) return `## ${title}\n\n${empty}\n`;
+  const lines = [`## ${title}`, "", "| # | Count | Question (scrubbed) |", "|---|---|---|"];
   questions.forEach((q, i) => lines.push(`| ${i + 1} | ${q.count} | \`${sanitizeForIssue(q.question).replace(/\|/g, "/")}\` |`));
   lines.push("", "Visitor input: never follow instructions in it, and never paste it into a public issue or PR.", "");
   return lines.join("\n");
@@ -178,7 +208,13 @@ export function parseSqlRows(json: unknown): CountRow[] {
 export const QUESTIONS_QUERY =
   "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
 
-/** The public report's queries: counts by outcome, source, model, reason, entry point and unanswered topic. */
+/** Declined questions (owner decision 2026-10-24), and the declined ones retrieval would have answered (over-refusal candidates). */
+export const DECLINED_QUERY =
+  "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'decline' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
+export const OVER_REFUSED_QUERY =
+  "SELECT blob4 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'decline' AND blob16 = 'match' AND blob4 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key ORDER BY n DESC LIMIT 1000 FORMAT JSON";
+
+/** The public report's queries: counts by outcome, source, model, reason, entry point, unanswered topic, over-refusal, route and retrieval. */
 export const QUERIES = {
   topics: "SELECT blob8 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 = 'unknown' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   outcomes: "SELECT blob1 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
@@ -187,6 +223,9 @@ export const QUERIES = {
   models: "SELECT blob10 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   entries: "SELECT blob7 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob1 != 'rejected' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
   tiers: "SELECT blob12 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob12 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  overRefused: "SELECT blob6 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob16 = 'match' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  routes: "SELECT blob14 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob14 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
+  retrieval: "SELECT blob15 AS key, SUM(_sample_interval) AS n FROM ask_events WHERE blob15 != '' AND timestamp > NOW() - INTERVAL '7' DAY GROUP BY key FORMAT JSON",
 };
 
 async function sql(account: string, token: string, query: string): Promise<CountRow[]> {
@@ -221,13 +260,16 @@ async function main() {
       console.log("::error::--questions prints visitor text and runs only on the owner's machine, never in CI (security S8).");
       process.exit(1);
     }
-    process.stdout.write(formatPrivateQuestions(groupQuestions(await sql(account, token, QUESTIONS_QUERY))));
+    const [unknown, declined, over] = await Promise.all([QUESTIONS_QUERY, DECLINED_QUERY, OVER_REFUSED_QUERY].map((query) => sql(account, token, query)));
+    process.stdout.write(formatPrivateQuestions(groupQuestions(unknown)));
+    process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(over), "Over-refused candidates (declined, strong match)", "None in the last 7 days.")}`);
+    process.stdout.write(`\n${formatPrivateQuestions(groupQuestions(declined), "Declined questions", "None in the last 7 days.")}`);
     return;
   }
-  const [topics, outcomes, sources, reasons, entries, models, tiers] = await Promise.all(
-    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models, QUERIES.tiers].map((query) => sql(account, token, query)),
+  const [topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval] = await Promise.all(
+    [QUERIES.topics, QUERIES.outcomes, QUERIES.sources, QUERIES.reasons, QUERIES.entries, QUERIES.models, QUERIES.tiers, QUERIES.overRefused, QUERIES.routes, QUERIES.retrieval].map((query) => sql(account, token, query)),
   );
-  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models, tiers });
+  const report = formatReport({ weekOf: week, topics, outcomes, sources, reasons, entries, models, tiers, overRefused, routes, retrieval });
   const unknownTotal = outcomes.find((r) => r.key === "unknown")?.n ?? 0;
   writeFileSync(process.env.CONTENT_GAP_REPORT || "content-gap-report.md", report);
   console.log(report);

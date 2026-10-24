@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { formatPrivateQuestions, formatReport, groupQuestions, parseSqlRows, QUERIES, QUESTIONS_QUERY, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
+import { DECLINED_QUERY, formatPrivateQuestions, formatReport, groupQuestions, OVER_REFUSED_QUERY, parseSqlRows, QUERIES, QUESTIONS_QUERY, sanitizeForIssue, weekOf } from "../../scripts/content-gap";
 
 describe("groupQuestions", () => {
   it("merges spellings by normalized text and keeps the most common one", () => {
@@ -110,6 +110,31 @@ describe("report", () => {
     expect(QUERIES.tiers).toContain("blob12 AS key");
   });
 
+  it("counts over-refused declines by reason, routes and retrieval, never question text (owner decision 2026-10-24)", () => {
+    const md = formatReport({
+      weekOf: "2026-10-19",
+      topics: [],
+      outcomes: [{ key: "decline", n: 6 }],
+      sources: [],
+      overRefused: [{ key: "private", n: 3 }, { key: "general<script>", n: 1 }],
+      routes: [{ key: "civic+partial", n: 2 }, { key: "mentoring", n: 4 }, { key: "", n: 9 }],
+      retrieval: [{ key: "bm25", n: 5 }, { key: "weird", n: 2 }],
+    });
+    expect(md).toContain("## Over-refused");
+    expect(md).toContain("| private | 3 |");
+    expect(md).toContain("| generalscript | 1 |");
+    expect(md).toContain("| mentoring | 4 | 67% |");
+    expect(md).toContain("| civic+partial | 2 | 33% |");
+    expect(md).toContain("| bm25 | 5 | 100% |");
+    expect(md).not.toContain("weird");
+    expect(formatReport({ weekOf: "2026-10-19", topics: [], outcomes: [], sources: [] })).toContain("## Over-refused\n\nNone this week.");
+    expect(QUERIES.overRefused).toContain("blob16 = 'match'");
+    expect(QUERIES.routes).toContain("blob14 AS key");
+    expect(QUERIES.retrieval).toContain("blob15 AS key");
+    expect(DECLINED_QUERY).toContain("blob1 = 'decline'");
+    expect(OVER_REFUSED_QUERY).toContain("blob16 = 'match'");
+  });
+
   it("says so when nothing was unanswered", () => {
     expect(formatReport({ weekOf: "2026-10-12", topics: [], outcomes: [], sources: [] })).toContain("None this week.");
   });
@@ -140,7 +165,7 @@ describe("report", () => {
       { key: "", n: 1 },
     ]);
     expect(() => parseSqlRows({})).toThrow();
-    for (const q of [...Object.values(QUERIES), QUESTIONS_QUERY]) expect(q).toMatch(/FROM ask_events WHERE .*INTERVAL '7' DAY/);
+    for (const q of [...Object.values(QUERIES), QUESTIONS_QUERY, DECLINED_QUERY, OVER_REFUSED_QUERY]) expect(q).toMatch(/FROM ask_events WHERE .*INTERVAL '7' DAY/);
     expect(QUESTIONS_QUERY).toContain("blob1 = 'unknown'");
     // The public report never selects the question text (blob4).
     for (const q of Object.values(QUERIES)) expect(q).not.toMatch(/blob4/);
