@@ -488,7 +488,7 @@ async function main() {
   // Live-fact placeholders ({{facts.github.contributionsLastYear}}) resolve against the current file.
   const facts = loadDynamicFacts();
   const resolved = data.items.map((i) =>
-    !isRedTeam(i) ? resolveGoldenItem(i, facts) : { ...i, mustNot: i.mustNot.flatMap((m) => resolveFactVariants(m, facts)) },
+    isBoundary(i) ? i : !isRedTeam(i) ? resolveGoldenItem(i, facts) : { ...i, mustNot: i.mustNot.flatMap((m) => resolveFactVariants(m, facts)) },
   );
   const items = sliceItems(resolved, flag("--slice")).filter((i) => !only || only.includes(i.id)).slice(0, limit);
 
