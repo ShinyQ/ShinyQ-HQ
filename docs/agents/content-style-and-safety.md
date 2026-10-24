@@ -55,7 +55,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
   - Never claim a product the owner did not build (Deck Studio inside MII Cowork, not all of Cowork).
 - Sole exception: the owner's CV PDF in `public/cv/`, committed byte for byte at the owner's request.
   - It may list items the site text hides. Never edit or regenerate it.
-  - Its page images in `public/cv/pages/` (rendered by `bun run cv:pages` for the CV viewer) share that exception.
+  - Its page images in `public/cv/pages/` (rendered by `bun run cv:pages`; page 1 is the CV cover) share that exception.
   - Never OCR them into site text or alt text (alt text is "CV page N of M").
 
 ### Content is data

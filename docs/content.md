@@ -86,8 +86,8 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 ## CV
 
 - The CV is the owner's own PDF, committed as-is at `public/cv/kurniadi-ahmad-wijaya-cv.pdf` and served for both languages.
-- CV buttons open an in-site viewer modal that shows pre-rendered page images (`public/cv/pages/`), so no PDF renderer ships to the browser.
-- Each page ships as near-lossless WebP at 800, 1200 and 1600 px (visually identical to lossless, about 25% smaller). Page 1 loads eagerly (high priority on `/{locale}/cv`, where it is the LCP); later pages load lazily.
+- CV buttons open the CV in the shared PDF reader (the study guide reader: pdf.js, loaded on the click), with page 1's image as the loading cover. `/{locale}/cv` shows page 1 with View CV and Download PDF.
+- The page images (`public/cv/pages/`) ship as near-lossless WebP at 800, 1200 and 1600 px (visually identical to lossless, about 25% smaller). Only page 1 shows (the `/cv` cover, its LCP; the RF kiosk; the reader's loading cover); the rest stay rendered with the manifest.
 - To update the CV, replace that file (same name) and run `bun run cv:pages` (needs `pdftoppm` and `cwebp`: `brew install poppler webp`). A unit test fails until the images match the PDF.
 
 ## Research papers
@@ -97,7 +97,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 
 ## Paper PDFs
 
-A paper or thesis with `document` in `site-content.json` gets "Read the paper" (Page View research list, the paper modal, the L4 Research drawer), which opens the paper reader in the paper modal: pre-rendered page images with zoom, the page count, "Download PDF" and "Open in new tab". To add one:
+A paper or thesis with `document` in `site-content.json` gets "Read the paper" (Page View research list, the paper modal, the L4 Research drawer), which opens the PDF in the paper modal's shared PDF reader (the study guide reader) with Back to the abstract, Download PDF, and the version line and publisher notice under the pages; page 1 of `bun run paper:pages` is its loading cover and the page count comes from the page images. To add one:
 
 1. **Check the publisher's posting rule.** IEEE allows the authors' accepted manuscript with IEEE's notice, never the publisher's final PDF, so IEEE papers must use `version: "manuscript"` and `notice: "ieee"` (the schema enforces both; the notice and the DOI link render next to the reader). Today the ICAIBDA 2021 e-wallet paper is the authors' manuscript; the ICICyTA 2021 COVID-19 paper has no hosted PDF because only the IEEE final version exists. Its accepted manuscript can be added later the same way.
 2. **Redact personal data first**: student or staff IDs, home addresses, phone numbers, signatures and QR codes that link to them. Rasterize the affected pages with the regions blacked out (so no text is left to extract) and keep the other pages as they are; never commit the unredacted original. Use `version: "redacted"`. The thesis PDF (`sentiboard-bsc-thesis`) was redacted this way on pages 1 to 4.

@@ -193,7 +193,7 @@ Root config: `next.config.ts`, `wrangler.toml` (Pages bindings), `lighthouserc.j
 
 | File | Covers |
 |---|---|
-| [content.md](docs/agents/content.md) | Content access, loaders, CV, papers, galleries, certifications, perspectives, indexes, schema additions |
+| [content.md](docs/agents/content.md) | Content access, loaders, CV, papers, the shared PDF reader, galleries, certifications, perspectives, indexes, schema additions |
 | [content-style-and-safety.md](docs/agents/content-style-and-safety.md) | Hard rules in full, editorial voice, glossary, Title Case, public-safety lint |
 | [styling-and-i18n.md](docs/agents/styling-and-i18n.md) | Tokens, classes, edge-stripe rule, fonts, HUD layout, i18n, metadata and SEO |
 | [page-view.md](docs/agents/page-view.md) | The Classic site: layout, filters, landing |

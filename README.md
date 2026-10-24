@@ -211,7 +211,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/library`, `/blog/{slug}` | Blog, publications, models, talks, study guides, `?topic=` filter | L4 Newsroom and the Topic Constellation |
 | `/{locale}/contact` | About, contact, "How I run AI in production", visit stats, CV, certifications | RF roof deck |
 | `/{locale}/build` | How this site was built: blueprint, build rounds, AI agent workflow, quality gates, measured numbers | |
-| `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
+| `/{locale}/cv` | CV cover with View CV and Download | View CV and every CV button open the shared PDF reader |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
 | `/api/stats` | Public visit stats snapshot, refreshed every hour, today's visits live (200 or 204) | |
 | `/api/guides/{slug}` | Study guide PDF from a private R2 bucket, by byte range (`GET`, `HEAD`) | |

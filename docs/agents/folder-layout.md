@@ -185,15 +185,16 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Certifications (server: featured cards + rows).
   - CertIndex (client island: preview clicks, issuer/status/search filter).
   - CertDialog (lazy preview modal in DialogHost), IssuerMark.
-- `src/components/docs/PageViewer.tsx`: shared page image viewer (zoom, page count, download, new tab, lazy pages) behind the CV viewer and the paper reader.
-- `src/components/cv/`: CV viewer: CvViewer (PageViewer with the CV pages), CvDialog (lazy modal), CvButton (every CV entry point).
+- `src/components/pdf-reader/`: the shared PDF reader behind every PDF (study guides, CV, papers).
+  - PdfReader (lazy chunk, `PdfReader.module.css`), ReaderPage, ReaderThumbs, ReaderToolbar (the one-row header), ReaderControls (the floating page and zoom pill), ui.
+  - ReaderDialog (small, static in each dialog: `useLazyReader`, the loading and error states, `LazyPdfReader`); `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules, page keys).
+- `src/components/cv/`: CvDialog (lazy modal: the CV in the shared reader), CvCover (the `/cv` page body: page 1 plus View CV and Download, server markup), CvButton (every CV entry point).
 - `src/components/paper/`: paper preview.
-  - PaperDialog (lazy modal: abstract, APA/IEEE/BibTeX, DOI and Scholar links, "Read the paper").
-  - PaperReader (PageViewer with a paper PDF, PaperNotice), PaperTrigger, PaperReadLink.
+  - PaperDialog (lazy modal: abstract, APA/IEEE/BibTeX, DOI and Scholar links, "Read the paper" in the shared reader).
+  - PaperNotice (the IEEE notice), PaperTrigger, PaperReadLink.
 - `src/components/guides/`: study guides.
   - GuideShelf (server: the `/library#guides` cards with server-rendered Read, a `data-hq-guide` button `DialogHost` opens, and Download PDF).
-  - GuideDialog (lazy modal in DialogHost: fetches /data/guides/{locale}.json, loading and error states, then imports the reader).
-  - GuideReader (lazy chunk, `GuideReader.module.css`), GuidePage, GuideThumbs, GuideToolbar (the one-row header), GuideControls (the floating page and zoom pill), ui; `pdf.ts` (loads pdf.js and its worker on first use), `reader-model.ts` (pure rules), `data-path.ts`.
+  - GuideDialog (lazy modal in DialogHost: fetches /data/guides/{locale}.json, then the shared reader); `data-path.ts`.
 - `src/components/page/`: Page View building blocks.
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
@@ -255,6 +256,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Geometry, colors and SVG bodies for every variant.
   - `RoverMark` (src/components/RoverMark.tsx) inlines it in the header.
   - The boot card shows `/brand/rover-mark.svg` as a lazy image, so the mark module stays out of the 3D chunk.
+- `src/lib/cv.ts`, `src/lib/papers.ts`: the CV and paper PDF paths and their page image manifests; `src/lib/page-images.ts`: `pageSrcSet` for page images.
 - `src/lib/site.ts`: SITE_URL, pageMetadata (absolute titles), ogImagePath, OG_PAGES, beacon token.
 - `src/lib/seo.ts`: every page's title, description and share card: seoFor, seoMetadata, fitDescription, keyResult.
 - `src/lib/routes.ts`: allPagePaths() for the sitemap (keep in sync with generateStaticParams).
@@ -459,7 +461,8 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 | Study Vault | `guides-vault.spec.ts`: the L4 Study Vault books on desktop and phone (full and reduced motion) open the reader, point-and-go from the constellation stop |
 | Floor ambience | `ambience.spec.ts`: the switch in the sound group, persistence, the engine follows the rover's floor |
 | Idle cadence and rover idle | `idle-cadence.spec.ts`: a parked scene drops to its floor's idle cadence and input brings 60 fps back; `rover-idle.spec.ts`: the rover's idle behaviour and what stops it |
-| Zero CSP violations | `csp.spec.ts`: 404, client navigation, the `/` redirect, the CV viewer, 3D boot, intro, a ride and a deep link (the Classic routes: `static-routes.spec.ts`) |
+| CV and paper readers | `pageview.spec.ts`: the `/cv` cover card and every CV entry point open the CV in the shared reader (page 1 drawn with its text layer, Download, Esc and focus return, axe); `library-roof.spec.ts`: the RF kiosk and the paper reader (Back, the version line, the IEEE notice, the thesis on a phone) |
+| Zero CSP violations | `csp.spec.ts`: 404, client navigation, the `/` redirect, the CV reader, 3D boot, intro, a ride and a deep link (the Classic routes: `static-routes.spec.ts`) |
 | Opt-in screenshots | `screenshots.spec.ts`, `pageview-visual.spec.ts` |
 
 ### e2e/ support and perf lane
