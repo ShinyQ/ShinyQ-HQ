@@ -115,7 +115,7 @@ Set `ASK_ENABLED = "false"` in `wrangler.toml` and redeploy (section 3). The end
 
 KV incident (pack tier `fallback` or `pin` in the content-gap report, or KV errors): set `ASK_PACK_SOURCE = "bundle"` and redeploy. Ask then answers from the bundled fallback pack (who he is, what he does now, contact, how the site was built, his principles) with no KV reads for the pack; answers, counters and the breaker still use KV and fail soft. Set it back to `"kv"` when KV is healthy.
 
-The circuit breaker trips on its own (more than half of 5 minutes of model calls failing or blocked) and pauses for 15 minutes; delete the `cb:until` key to clear it early.
+The circuit breaker trips on its own (more than half of 5 minutes of model calls failing, empty or blocked by a safety check: forbidden, secret, leak, roleplay) and pauses for 15 minutes; declines and grounding blocks (numeric, entity, employer, code, defamation, personal-data) never count, so one visitor cannot trip it with ordinary questions. Delete the `cb:until` key to clear it early.
 
 ## 6. Cache purge
 
