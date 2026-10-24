@@ -109,9 +109,9 @@ describe("thread signatures and history", () => {
     expect(noLocale).not.toHaveProperty("sig");
   });
 
-  it("returns the last three signed turns, oldest first", () => {
-    const list = [1, 2, 3, 4].flatMap((i) => [user(i), signed(i)]);
-    expect(historyFor(list, "en")).toEqual([2, 3, 4].map((i) => ({ q: `Question ${i}`, a: `Answer ${i}`, sig: sig(i) })));
+  it("returns the last five signed turns, oldest first", () => {
+    const list = [1, 2, 3, 4, 5, 6].flatMap((i) => [user(i), signed(i)]);
+    expect(historyFor(list, "en")).toEqual([2, 3, 4, 5, 6].map((i) => ({ q: `Question ${i}`, a: `Answer ${i}`, sig: sig(i) })));
     expect(historyFor([], "en")).toEqual([]);
   });
 

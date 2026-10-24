@@ -277,13 +277,13 @@ describe("signed multi-turn history", () => {
     expect(await askQuestion({ q: "Where does he work?", locale: "en", onDelta: () => {} }, deps([answer()]))).not.toHaveProperty("sig");
   });
 
-  it("posts history only when there is some, at most three turns", async () => {
+  it("posts history only when there is some, at most five turns", async () => {
     const d = deps([answer(), answer(), answer()]);
     await askQuestion({ q: "And before that?", locale: "en", history: [turn(1)], onDelta: () => {} }, d);
     expect(bodyOf(d.fetch.mock.calls[0])).toMatchObject({ q: "And before that?", history: [turn(1)] });
     await askQuestion({ q: "Fresh question", locale: "en", history: [], onDelta: () => {} }, d);
     expect(bodyOf(d.fetch.mock.calls[1])).not.toHaveProperty("history");
-    await askQuestion({ q: "Long thread", locale: "en", history: [1, 2, 3, 4].map(turn), onDelta: () => {} }, d);
-    expect(bodyOf(d.fetch.mock.calls[2]).history).toEqual([2, 3, 4].map(turn));
+    await askQuestion({ q: "Long thread", locale: "en", history: [1, 2, 3, 4, 5, 6].map(turn), onDelta: () => {} }, d);
+    expect(bodyOf(d.fetch.mock.calls[2]).history).toEqual([2, 3, 4, 5, 6].map(turn));
   });
 });

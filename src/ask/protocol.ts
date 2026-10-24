@@ -138,7 +138,7 @@ export function isAskContact(value: unknown): value is AskContact {
  * panel locale, pack version, question and answer), so a visitor cannot forge an assistant turn; the
  * server drops any turn that fails verification.
  */
-export const ASK_HISTORY_TURNS = 3;
+export const ASK_HISTORY_TURNS = 5;
 /** Longest answer a history turn may carry (the server caps answers at 1000 characters). */
 export const ASK_HISTORY_ANSWER_MAX = 1000;
 

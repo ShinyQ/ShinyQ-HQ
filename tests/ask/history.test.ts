@@ -43,19 +43,19 @@ describe("signed history turns", () => {
     expect(await verifyHistory([resent], KEY, SCOPE)).toHaveLength(1);
   });
 
-  it("parses only well-formed turns, the last three, and never throws", async () => {
+  it("parses only well-formed turns, the last five, and never throws", async () => {
     const t = await turn();
     expect(parseHistory("nope")).toEqual([]);
     expect(parseHistory({ q: Q })).toEqual([]);
     expect(parseHistory([null, 1, { q: Q, a: A }, { q: Q, a: A, sig: "short" }, { q: "", a: A, sig: t.sig }, { q: Q, a: "x".repeat(1001), sig: t.sig }])).toEqual([]);
-    const four = [1, 2, 3, 4].map((n) => ({ ...t, q: `${Q} ${n}` }));
-    expect(parseHistory(four).map((x) => x.q)).toEqual([`${Q} 2`, `${Q} 3`, `${Q} 4`]);
+    const six = [1, 2, 3, 4, 5, 6].map((n) => ({ ...t, q: `${Q} ${n}` }));
+    expect(parseHistory(six).map((x) => x.q)).toEqual([2, 3, 4, 5, 6].map((n) => `${Q} ${n}`));
   });
 });
 
 describe("follow-up questions", () => {
   it("treats short and referring questions as follow-ups", () => {
-    for (const q of ["What stack did it use?", "Teknologinya apa?", "and that one?", "Which year?", "Why?", "Which one is the newest of those projects?", "Bagaimana dengan proyek AI lainnya?", "Itu dibuat di acara apa?"]) {
+    for (const q of ["What stack did it use?", "Teknologinya apa?", "and that one?", "Which year?", "Why?", "Which one is the newest of those projects?", "Bagaimana dengan proyek AI lainnya?", "Itu dibuat di acara apa?", "Terus yang di Metrodata gimana?", "Trus pengalaman sebelumnya?", "Gimana kalau proyek data?", "Yang tadi dibuat tahun berapa?", "Selain itu, proyek apa lagi?"]) {
       expect(isFollowUp(q), q).toBe(true);
     }
   });

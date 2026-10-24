@@ -189,7 +189,7 @@ describe("request guards (T7)", () => {
   it("requires JSON, caps the body at 2 KB and the question at 300 characters", async () => {
     const { call, modelCalls } = setup();
     expect((await call({ headers: { "Content-Type": "text/plain" } })).status).toBe(415);
-    expect((await call({ body: JSON.stringify({ q: "x".repeat(9000), locale: "en" }) })).status).toBe(413);
+    expect((await call({ body: JSON.stringify({ q: "x".repeat(13000), locale: "en" }) })).status).toBe(413);
     expect((await call({ body: { q: "x".repeat(301), locale: "en" } })).status).toBe(400);
     expect((await call({ body: "{not json" })).status).toBe(400);
     expect((await call({ body: { q: "hi", locale: "fr" } })).status).toBe(400);
