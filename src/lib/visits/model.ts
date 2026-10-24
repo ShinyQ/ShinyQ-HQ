@@ -18,8 +18,8 @@ export const PERIODS: readonly StatsPeriod[] = ["all", "d30"];
 export const TOP_CHIPS = 5;
 
 const HOUR = 3_600_000;
-/** After this the stats show a "delayed" note (the snapshot refreshes every 2 hours, so 3 missed runs). */
-export const DELAYED_AFTER_MS = 6 * HOUR;
+/** After this the stats show a "delayed" note (the snapshot refreshes every hour, so 3 missed runs). */
+export const DELAYED_AFTER_MS = 3 * HOUR;
 /** After this every surface hides the stats. */
 export const HIDDEN_AFTER_MS = 7 * 24 * HOUR;
 

@@ -1,17 +1,20 @@
 # hq-stats: public visit stats Cron Worker
 
-Job every 2 hours (`17 */2 * * *`, UTC: 17 minutes past 00, 02, 04, 06, 08, 10, 12, 14, 16, 18, 20 and 22 o'clock) behind the public visit stats
-(Layer 1). It reads two sources with one read-only Account Analytics token, keeps one rollup per
-finalized UTC day, and writes the public snapshot (days so far, today included) that `GET /api/stats`
-(Pages Function, `functions/api/stats.ts`) serves.
+Job every hour (`17 * * * *`, UTC: 17 minutes past every hour; owner decision 2026-10-24, was every 2 hours) behind
+the public visit stats (Layer 1). It reads two sources with one read-only Account Analytics token, keeps one rollup
+per finalized UTC day, and writes the public snapshot (days so far, today included) and its live tail that
+`GET /api/stats` (Pages Function, `functions/api/stats.ts`) serves. Its fetch handler (`GET /live`) counts today's
+visit pings for `/api/stats`; it has no route and no workers.dev URL, so only the Pages `STATS` service binding
+reaches it.
 
 ```mermaid
 flowchart LR
-  WA[Web Analytics GraphQL<br/>visits, page views, countries, paths] --> W[hq-stats<br/>scheduled only]
+  WA[Web Analytics GraphQL<br/>visits before the cutover, page views, countries, paths] --> W[hq-stats<br/>hourly cron]
   AE[Analytics Engine SQL<br/>ask_events, visit_events, perf_events] --> W
-  W -->|stats:days:v1 ledger| KV[(KV STATS_KV)]
-  W -->|stats:v1 snapshot| KV
+  W -->|stats:days:v1 ledger + cutover| KV[(KV STATS_KV)]
+  W -->|stats:v1 snapshot, stats:live:v1 tail| KV
   KV --> F[GET /api/stats] --> C[3D HQ and Classic site]
+  F -->|STATS binding: GET /live?from=| L[hq-stats fetch handler] -->|visit pings since from| AE
 ```
 
 - Contract: `StatsSnapshotV1` in `src/lib/stats/protocol.ts` (validated before every write and again
@@ -19,9 +22,23 @@ flowchart LR
 - Sources: `src/sources.ts`. Web Analytics `rumPageloadEventsAdaptiveGroups` filtered by siteTag,
   `bot: 0` and the production hosts (`WA_HOSTS`; local `127.0.0.1` traffic shares the siteTag), grouped
   by `date`, each group with `avg { sampleInterval }`. Analytics Engine `ask_events` (blob8 topic, blob9 chip, Turnstile rejects excluded),
-  `visit_events` (blob2 mode) and `perf_events` (the RUM beacon: blob4 median FPS bucket, blob6
+  `visit_events` (blob2 `visit` for the visit ping, else the mode; each group's `min(timestamp)` gives the cutover) and `perf_events` (the RUM beacon: blob4 median FPS bucket, blob6
   explore time bucket, `blob1 = '1'`), counted with `SUM(_sample_interval)`. Bucket strings outside the
   RUM contract (`src/lib/rum/protocol.ts`) are ignored.
+- Visits (owner decision 2026-10-24): the cutover is the first visit ping, stored once in the ledger (`cutover`).
+  Days before the cutover day keep Web Analytics visits; the cutover day is Web Analytics visits before the cutover
+  time (one days-only GraphQL query, `fetchWaVisitsBetween`, until the day is stored) plus its pings
+  (`visitSource: "mixed"`); later days are pings only (`"first-party"`). No visit is counted twice. A day with more
+  pings than `max(50, 5 x page views)` keeps its Web Analytics visits (`VISIT_FREEZE`, `visitsFrozen`).
+- Live tail: `stats:live:v1` (`src/lib/stats/live.ts`), written after the snapshot once a cutover exists: the start of
+  the unstored days (or the cutover when later), the pings the snapshot counted since then and the snapshot's
+  `updatedAt` (`from: null` when a tail day is frozen). `GET /api/stats` adds the pings since then.
+- `GET /live?from=<ISO seconds>` (`src/live.ts`): one fixed SQL count of visit pings since `from` (not in the future,
+  at most 8 days old; anything else 400), 502 with no detail on an error. Cost cap: the Cache API (60 s, per data
+  center) first, then the single `LiveGate` Durable Object (binding `LIVE_GATE`, SQLite-backed, migration `v1`), which
+  runs the query at most once a minute across every instance (about 1,440 a day at most; a different `from` inside
+  the minute answers 503, failures use the slot too). A KV guard was not used: up to 1,440 writes a day would exceed
+  the account's free 1,000.
 - Math: `src/rollup.ts` (pure, `tests/stats/rollup.test.ts`). Floors come from Web Analytics paths via
   `floorOfPath` (the site's own route parser). Countries are ISO alpha-2 only (no `XX`, no `T1`),
   without counts. A day whose beacon points exceed `max(30, 3 x page views)` keeps a zero 3D vs Classic
@@ -49,19 +66,22 @@ flowchart LR
 - Perf backfill: stored days without `perf` (rolled up before it existed) that are inside the Analytics
   Engine retention (90 days) get `perf` filled once from one extra `perf_events` query; nothing else of
   those days changes, and older days stay without it (no data).
-- Run budget (routine run): 1 Web Analytics GraphQL request, 3 Analytics Engine SQL queries (asks,
-  visits, perf; plus one perf backfill query at most), 2 KV reads (ledger and extra rows), and the snapshot write every run. The
-  ledger is written only when a day finalizes or perf is filled, so at most 2 KV writes per run and 24
-  a day (12 runs).
+- Run budget (routine run): 1 Web Analytics GraphQL request (2 while the cutover day is unstored), 3 Analytics Engine
+  SQL queries (asks, visits, perf; plus one perf backfill query at most), 2 KV reads (ledger and extra rows), and the
+  snapshot and live tail writes every run. The ledger is written only when a day finalizes, perf is filled or the
+  cutover is first seen, so at most 3 KV writes per run.
+- Live budget: `GET /api/stats` asks `GET /live` at most once per Pages isolate every 30 s; the Cache API answers
+  repeats per data center for 60 s and the `LiveGate` Durable Object allows one SQL query a minute globally.
 
-Limits checked 2026-10-19 (2-hour cadence):
+Limits checked 2026-10-24 (hourly cadence):
 
 | Limit | Value | This Worker |
 |---|---|---|
-| GraphQL Analytics API | 300 queries per 5 minutes per user | 1 per run, 12 a day |
+| GraphQL Analytics API | 300 queries per 5 minutes per user | 1 to 2 per run, at most 48 a day |
 | Cron Triggers | several schedules per Worker | 1 schedule |
-| Workers KV (free plan) | 1,000 writes a day | at most 24 a day, usually 13 (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
-| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 queries per routine run (4 with a perf backfill), 36 to 48 a day |
+| Workers KV (free plan) | 1,000 writes a day | 2 per run, 48 a day, plus one ledger write a day (the quota is per account, so it is shared with the Ask Function, see `docs/ask-runbook.md`) |
+| Analytics Engine SQL API | 10,000 read queries a day on the Workers Free plan (not billed today) | 3 per run (72 a day) plus at most 1 live count a minute (1,440 a day), about 1,512 at most |
+| Durable Objects (free plan, SQLite) | 100,000 requests a day | at most 1 `LiveGate` request per Pages isolate per 30 s on a cache miss |
 
 ## Configuration
 
@@ -90,12 +110,12 @@ Workers Scripts Edit on the account.
   run's "hq-stats Worker" job, and the cron in the dashboard (Workers > hq-stats > Settings > Triggers).
 - Manual deploy (fallback only, with the owner's wrangler login and `STATS_WORKER_DEPLOY=false` set so CI
   does not fight it): from this folder, `bunx wrangler deploy` (this also
-  registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next 2-hour slot,
+  registers the cron schedule from `wrangler.toml`), then check `bunx wrangler deployments list`; after the next hourly slot,
   `curl -s https://kurniadi.pages.dev/api/stats | jq .updatedAt` shows that slot's time. Set the
   secrets only on a first deploy or after a rotation: `bunx wrangler secret put WA_TOKEN` and
   `bunx wrangler secret put WA_ACCOUNT_ID` (each reads the value from a hidden prompt).
-- Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 6 h old
-  (3 missed 2-hour runs). A faster cadence is safe in either order; the merge's deploy redeploys this Worker;
+- Cadence changes: the uptime check and the site's "delayed" note allow a snapshot at most 3 h old
+  (3 missed hourly runs). A faster cadence is safe in either order; the merge's deploy redeploys this Worker;
   confirm its "hq-stats Worker" job ran and the Worker's cron trigger shows the new schedule. A slower cadence needs the
   Worker first or a larger threshold.
 - Redeploy after a code change (for example the `perf` block): from this folder, `bunx wrangler deploy`.

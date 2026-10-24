@@ -5,7 +5,7 @@ import type { StatsStatus } from "@/lib/visits/store";
 import type { OpsData, OpsLiveRow } from "./ops";
 
 /**
- * The Ops Control Room's live panel: this site's own telemetry from the 2-hour stats snapshot (visits since
+ * The Ops Control Room's live panel: this site's own telemetry from the hourly stats snapshot (visits since
  * launch, today included, the share of sampled 3D sessions at 55+ FPS, the median time to explore, all since launch), then
  * "Nightly performance runs" as text (their results stay in CI artifacts). Null hides the whole panel: no
  * snapshot, an invalid one or one older than 7 days (the store's `hidden`, like every visits widget).

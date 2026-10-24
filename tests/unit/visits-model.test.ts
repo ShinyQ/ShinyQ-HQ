@@ -26,14 +26,14 @@ describe("parseStatsSnapshot (S1 contract, as the display uses it)", () => {
 
 describe("freshness", () => {
   const u = STATS_FIXTURE.updatedAt;
-  it("is fresh within 6 hours of the last update (3 missed 2-hour runs)", () => {
-    expect(DELAYED_AFTER_MS).toBe(6 * HOUR);
+  it("is fresh within 3 hours of the last update (3 missed hourly runs)", () => {
+    expect(DELAYED_AFTER_MS).toBe(3 * HOUR);
     expect(freshness(STATS_FIXTURE, at(u, 1))).toBe("fresh");
-    expect(freshness(STATS_FIXTURE, at(u, 5))).toBe("fresh");
-    expect(freshness(STATS_FIXTURE, at(u, 6))).toBe("fresh");
+    expect(freshness(STATS_FIXTURE, at(u, 2.5))).toBe("fresh");
+    expect(freshness(STATS_FIXTURE, at(u, 3))).toBe("fresh");
   });
-  it("is delayed after 6 hours and hidden after 7 days", () => {
-    expect(freshness(STATS_FIXTURE, at(u, 6.1))).toBe("delayed");
+  it("is delayed after 3 hours and hidden after 7 days", () => {
+    expect(freshness(STATS_FIXTURE, at(u, 3.1))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 13))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 - 1))).toBe("delayed");
     expect(freshness(STATS_FIXTURE, at(u, 24 * 7 + 1))).toBe("hidden");

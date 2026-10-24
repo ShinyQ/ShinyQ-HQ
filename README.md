@@ -56,7 +56,7 @@ Every piece of content is also a normal, accessible, bilingual (EN / ID) HTML pa
 - **Live Agent Office**: an L1 wing where ten Rovers mirror the owner's AI coding agents (Copilot, Claude Code, Codex) live, with helper drones, a ship-it pipeline tower and a day replay; also a card on the Classic home.
 - **Study guides**: certification study guides read in the site (a pdf.js reader over byte ranges from a private R2 bucket), from the Writing shelf, the certification dialogs and the L4 Study Vault.
 - **Glass Drawer**: one shared room panel with tabs, galleries, architecture holograms and a README terminal view.
-- **Public visit stats**: a rollup every 2 hours by a Cron Worker, shown as a hologram globe in the Lobby.
+- **Public visit stats**: the site's own visit count (live today, an hourly rollup by a Cron Worker), shown as a hologram globe in the Lobby.
 - **Classic site**: static export, Lighthouse-gated (LCP under 2 s), fully bilingual, works without JavaScript.
 - **Performance gates in CI**: draw calls, triangles, shader programs, GPU memory and JS bytes on every PR that touches 3D code, on `main` and nightly.
 
@@ -94,7 +94,7 @@ flowchart TB
     wa["Web Analytics"]
   end
 
-  cron["hq-stats Cron Worker<br/>2-hour rollup"]
+  cron["hq-stats Cron Worker<br/>hourly rollup, live count"]
   office["hq-office Worker<br/>Durable Object, 8-day log"]
   relay(["office-relay<br/>agent hooks on the owner's Mac"])
 
@@ -213,7 +213,7 @@ All routes are locale-prefixed (`/en/...`, `/id/...`). `/` redirects by the reme
 | `/{locale}/build` | How this site was built: blueprint, build rounds, AI agent workflow, quality gates, measured numbers | |
 | `/{locale}/cv` | CV viewer with zoom, download and open in new tab | Opens as a modal from every CV button |
 | `/api/ask` | Ask the HQ: `GET` status, `POST` question, SSE answer | |
-| `/api/stats` | Public visit stats snapshot, refreshed every 2 hours (200 or 204) | |
+| `/api/stats` | Public visit stats snapshot, refreshed every hour, today's visits live (200 or 204) | |
 | `/api/guides/{slug}` | Study guide PDF from a private R2 bucket, by byte range (`GET`, `HEAD`) | |
 | `/api/office`, `/api/office/history` | Agent Office snapshot (`?v=`) and the 8-day replay log (`?day=`) | |
 
@@ -225,7 +225,7 @@ Section anchors, filters and deep links per route: [docs/features.md](docs/featu
 content/         dataset, blog MDX, Ask knowledge and suggestions, perspectives, study guides, product allowlist, generated facts
 messages/        UI strings (en, id)
 functions/       Cloudflare Pages Functions: /api/ask, /api/rum, /api/visit, /api/stats, /api/guides/{slug}, /api/office
-workers/stats/   hq-stats Cron Worker: public visit stats rollup every 2 hours into KV
+workers/stats/   hq-stats Cron Worker: public visit stats rollup every hour into KV, live visit count
 workers/office/  hq-office Worker and Durable Object: the Agent Office state and 8-day log
 tools/           office-relay: the local agent hooks and installer for the Agent Office
 src/

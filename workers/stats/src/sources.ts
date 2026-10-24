@@ -78,7 +78,35 @@ export async function fetchWebAnalytics(cfg: SourceConfig, start: string, end: s
   };
 }
 
-async function sql(cfg: SourceConfig, query: string, fetcher: Fetcher): Promise<Record<string, unknown>[]> {
+/** Days-only Web Analytics visits: the cutover day's visits before the cutover time. */
+export const WA_VISITS_QUERY = `query HqVisitsBefore($accountTag: string!, $siteTag: string!, $start: Time!, $end: Time!, $hosts: [string!]) {
+  viewer {
+    accounts(filter: { accountTag: $accountTag }) {
+      days: rumPageloadEventsAdaptiveGroups(limit: 10, filter: ${FILTER}) { count sum { visits } dimensions { date } }
+    }
+  }
+}`;
+
+/** Web Analytics visits in [start, end) (ISO seconds, the same UTC day): the cutover day's part before the cutover. */
+export async function fetchWaVisitsBetween(cfg: SourceConfig, start: string, end: string, fetcher: Fetcher): Promise<number> {
+  if (!ISO_SECOND.test(start) || !ISO_SECOND.test(end)) throw new Error("Web Analytics: bad time");
+  if (start >= end) return 0;
+  const response = await fetcher(GRAPHQL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query: WA_VISITS_QUERY, variables: { accountTag: cfg.accountId, siteTag: cfg.siteTag, start, end, hosts: cfg.hosts } }),
+  });
+  if (!response.ok) throw new Error(`Web Analytics: HTTP ${response.status}`);
+  const body: unknown = await response.json();
+  if (!isRecord(body) || (Array.isArray(body.errors) && body.errors.length > 0)) throw new Error("Web Analytics: the API answered with errors");
+  const account = isRecord(body.data) && isRecord(body.data.viewer) && Array.isArray(body.data.viewer.accounts) ? body.data.viewer.accounts[0] : undefined;
+  if (!isRecord(account)) throw new Error("Web Analytics: no account in the response");
+  const total = groups(account, "days").reduce((sum, r) => sum + visitsOf(r), 0);
+  if (!Number.isFinite(total) || total < 0) throw new Error("Web Analytics: bad visits");
+  return Math.round(total);
+}
+
+async function sql(cfg: Pick<SourceConfig, "token" | "accountId">, query: string, fetcher: Fetcher): Promise<Record<string, unknown>[]> {
   const response = await fetcher(sqlUrl(cfg.accountId), { method: "POST", headers: { Authorization: `Bearer ${cfg.token}` }, body: query });
   if (!response.ok) throw new Error(`Analytics Engine: HTTP ${response.status}`);
   const text = await response.text();
@@ -107,9 +135,38 @@ const at = (day: string) => `toDateTime('${day} 00:00:00')`;
 export const asksSql = (start: string, end: string) =>
   `SELECT toDate(timestamp) AS day, blob8 AS topic, blob9 AS chip, SUM(_sample_interval) AS n FROM ask_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 != 'rejected' AND blob13 != 'auto' GROUP BY day, topic, chip FORMAT JSONEachRow`;
 
-/** Visit beacon points per day and mode. A dataset that was never written answers with no rows. */
+/**
+ * Visit beacon points per day and blob2 (a mode, or "visit" for the visit ping), with each group's earliest
+ * point: the first "visit" point is the first-party cutover (owner decision 2026-10-24). A dataset that was
+ * never written answers with no rows.
+ */
 export const visitsSql = (start: string, end: string) =>
-  `SELECT toDate(timestamp) AS day, blob2 AS mode, SUM(_sample_interval) AS n FROM visit_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, mode FORMAT JSONEachRow`;
+  `SELECT toDate(timestamp) AS day, blob2 AS mode, SUM(_sample_interval) AS n, min(timestamp) AS first_at FROM visit_events WHERE timestamp >= ${at(start)} AND timestamp < ${at(end)} AND blob1 = '1' GROUP BY day, mode FORMAT JSONEachRow`;
+
+/** ISO time to the seconds, UTC (`2026-10-24T01:02:03Z`): the cutover and the live tail start. */
+export const ISO_SECOND = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})Z$/;
+const AE_TIME = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?Z?$/;
+
+/** An Analytics Engine DateTime (`2026-10-24 01:02:03`, UTC) as ISO seconds, or undefined. */
+export function aeTimeToIso(value: unknown): string | undefined {
+  const m = typeof value === "string" ? AE_TIME.exec(value) : null;
+  return m ? `${m[1]}T${m[2]}Z` : undefined;
+}
+
+/** Visit pings (the public visit count) since `from` (ISO seconds), for the live today count of `/api/stats`. */
+export const liveSql = (from: string) => {
+  const m = ISO_SECOND.exec(from);
+  if (!m) throw new Error("Analytics Engine: bad time");
+  return `SELECT SUM(_sample_interval) AS n FROM visit_events WHERE timestamp >= toDateTime('${m[1]} ${m[2]}') AND blob1 = '1' AND blob2 = 'visit' FORMAT JSONEachRow`;
+};
+
+/** Visit pings since `from` (ISO seconds, validated): one cheap SQL count. */
+export async function fetchLiveVisits(cfg: Pick<SourceConfig, "token" | "accountId">, from: string, fetcher: Fetcher): Promise<number> {
+  const rows = await sql(cfg, liveSql(from), fetcher);
+  const n = num(rows[0]?.n ?? 0);
+  if (!Number.isFinite(n) || n < 0) throw new Error("Analytics Engine: bad count");
+  return Math.round(n);
+}
 
 /** RUM beacon points (one per sampled 3D session) per day, median FPS bucket (blob4) and explore bucket (blob6). */
 export const perfSql = (start: string, end: string) =>
@@ -129,7 +186,7 @@ export async function fetchAnalyticsEngine(cfg: SourceConfig, start: string, end
   const [asks, visits, perf] = await Promise.all([sql(cfg, asksSql(start, end), fetcher), sql(cfg, visitsSql(start, end), fetcher), sql(cfg, perfSql(start, end), fetcher)]);
   return {
     asks: asks.map((r) => ({ day: str(r.day), topic: str(r.topic), chip: str(r.chip), n: num(r.n) })),
-    visits: visits.map((r) => ({ day: str(r.day), mode: str(r.mode), n: num(r.n) })),
+    visits: visits.map((r) => ({ day: str(r.day), mode: str(r.mode), n: num(r.n), ...(aeTimeToIso(r.first_at) ? { first: aeTimeToIso(r.first_at) } : {}) })),
     perf: perfRows(perf),
   };
 }

@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createVisitHandler, resetVisitWindow, VISIT_ISOLATE_CAP } from "../../functions/_lib/visit";
+import { createVisitHandler, resetVisitWindow, VISIT_IP_CAP, VISIT_ISOLATE_CAP } from "../../functions/_lib/visit";
 import type { AnalyticsEngineDataset, VisitEnv } from "../../functions/_lib/types";
 import { VISIT_MAX_BYTES } from "../../src/lib/stats/visit";
 
 const ORIGIN = "https://kurniadi.pages.dev";
 
-function setup(env: Partial<VisitEnv> = {}) {
+function setup(env: Partial<VisitEnv> = {}, clock = { t: Date.UTC(2026, 9, 14, 3, 0, 0) }) {
   const points: Parameters<AnalyticsEngineDataset["writeDataPoint"]>[0][] = [];
   const fullEnv: VisitEnv = { STATS_ENABLED: "true", ASK_ALLOWED_ORIGINS: `${ORIGIN},https://kurniadi.dev`, VISIT_EVENTS: { writeDataPoint: (p) => points.push(p) }, ...env };
-  const handler = createVisitHandler({ now: () => Date.UTC(2026, 9, 14, 3, 0, 0) });
+  const handler = createVisitHandler({ now: () => clock.t });
   const post = (body: string, headers: Record<string, string> = {}) =>
     handler({
       request: new Request(`${ORIGIN}/api/visit`, {
@@ -99,9 +99,35 @@ describe("POST /api/visit", () => {
 
   it("caps points per isolate and minute", async () => {
     const { post, points } = setup();
-    for (let i = 0; i < VISIT_ISOLATE_CAP; i++) await post('{"v":1,"mode":"3d"}');
-    expect((await post('{"v":1,"mode":"3d"}')).status).toBe(429);
+    const ip = (i: number) => ({ "CF-Connecting-IP": `198.51.100.${i % 250}` });
+    for (let i = 0; i < VISIT_ISOLATE_CAP; i++) await post('{"v":1,"mode":"3d"}', ip(i));
+    expect((await post('{"v":1,"mode":"3d"}', ip(7))).status).toBe(429);
     expect(points).toHaveLength(VISIT_ISOLATE_CAP);
+  });
+
+  it("writes the visit ping as its own kind (the public visit count)", async () => {
+    const { post, points } = setup();
+    expect((await post('{"v":1,"kind":"visit"}')).status).toBe(204);
+    expect(points).toEqual([{ blobs: ["1", "visit"], doubles: [1], indexes: ["visit"] }]);
+    expect((await post('{"v":1,"kind":"view"}')).status).toBe(400);
+    expect((await post('{"v":1,"kind":"visit","mode":"3d"}')).status).toBe(400);
+    expect(points).toHaveLength(1);
+  });
+
+  it("caps visit pings per visitor and hour silently, without storing the IP", async () => {
+    const clock = { t: Date.UTC(2026, 9, 14, 3, 0, 0) };
+    const { post, points } = setup({ ASK_IP_SALT_SEED: "seed" }, clock);
+    for (let i = 0; i < VISIT_IP_CAP.visit + 5; i++) expect((await post('{"v":1,"kind":"visit"}')).status).toBe(204);
+    expect(points).toHaveLength(VISIT_IP_CAP.visit);
+    await post('{"v":1,"kind":"visit"}', { "CF-Connecting-IP": "203.0.113.10" });
+    expect(points).toHaveLength(VISIT_IP_CAP.visit + 1);
+    // Mode pings have their own budget.
+    await post('{"v":1,"mode":"3d"}');
+    expect(points).toHaveLength(VISIT_IP_CAP.visit + 2);
+    clock.t += 3_600_000;
+    await post('{"v":1,"kind":"visit"}');
+    expect(points).toHaveLength(VISIT_IP_CAP.visit + 3);
+    expect(JSON.stringify(points)).not.toContain("203.0.113");
   });
 
   it("never fails when Analytics Engine throws or is unbound", async () => {

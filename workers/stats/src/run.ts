@@ -1,7 +1,9 @@
 import { STATS_TOPIC_OF, SUGGESTIONS } from "../../../src/ask/suggestions";
 import { parseStatsSnapshot, STATS_KEY, type StatsSnapshotV1, type StatsTopic } from "../../../src/lib/stats/protocol";
+import { STATS_LIVE_KEY, type StatsLive } from "../../../src/lib/stats/live";
+import { VISIT_KIND } from "../../../src/lib/stats/visit";
 import { addDays, buildPerf, buildRollups, buildSnapshot, dayRange, trimLeadingEmpty, waExact } from "./rollup";
-import { fetchAnalyticsEngine, fetchPerf, fetchWebAnalytics, type SourceConfig } from "./sources";
+import { fetchAnalyticsEngine, fetchPerf, fetchWaVisitsBetween, fetchWebAnalytics, ISO_SECOND, type SourceConfig } from "./sources";
 import type { DayRollup, Fetcher, Ledger, StatsWorkerEnv, WaExtra, WaRows } from "./types";
 
 /** A UTC day is finalized (written to the ledger once, never recomputed) an hour after it ends, so late events land first. */
@@ -45,7 +47,7 @@ export interface RunResult {
 const HEX32 = /^[0-9a-f]{32}$/;
 const HOST = /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/;
 
-function config(env: StatsWorkerEnv): SourceConfig {
+export function config(env: StatsWorkerEnv): SourceConfig {
   const hosts = (env.WA_HOSTS ?? "")
     .split(",")
     .map((h) => h.trim().toLowerCase())
@@ -65,6 +67,7 @@ function readLedger(raw: string | null): Ledger {
   }
   const ledger = value as Partial<Ledger>;
   if (!ledger || ledger.v !== 1 || !Array.isArray(ledger.days)) throw new Error("hq-stats: the ledger in KV has an unknown shape; refusing to overwrite history");
+  if (ledger.cutover !== undefined && (typeof ledger.cutover !== "string" || !ISO_SECOND.test(ledger.cutover))) throw new Error("hq-stats: the ledger's cutover is not an ISO time; refusing to overwrite history");
   return ledger as Ledger;
 }
 
@@ -111,6 +114,19 @@ function waShape(date: string, wa: WaRows): string {
   return `page views ${total(wa.days)}, countries ${total(wa.countries)}, paths ${total(wa.paths)}, sample interval up to ${Number.isFinite(interval) ? Math.round(interval * 100) / 100 : "unknown"}`;
 }
 
+/**
+ * The live tail written next to the snapshot (`STATS_LIVE_KEY`): where the first-party count of the unstored
+ * days starts and how many pings the snapshot counted since then. `from` is null when a tail day is frozen
+ * (its visits fell back to Web Analytics, so live pings must not be added).
+ */
+export function liveTail(tail: readonly DayRollup[], cutover: string, updatedAt: string): StatsLive {
+  const cutDay = cutover.slice(0, 10);
+  const counted = tail.filter((d) => d.date >= cutDay);
+  if (!tail.length || counted.some((d) => d.visitsFrozen)) return { v: 1, updatedAt, from: null, visits: 0 };
+  const start = `${tail[0].date}T00:00:00Z`;
+  return { v: 1, updatedAt, from: start > cutover ? start : cutover, visits: counted.reduce((sum, d) => sum + (d.firstParty ?? 0), 0) };
+}
+
 /** Valid, and the perf block (when built) survived validation instead of being dropped. */
 function validSnapshot(snapshot: StatsSnapshotV1 | null): snapshot is StatsSnapshotV1 {
   if (!snapshot) return false;
@@ -130,7 +146,7 @@ async function backfillPerf(cfg: SourceConfig, days: readonly DayRollup[], missi
 }
 
 /**
- * One run (every 2 hours, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
+ * One run (every hour, see wrangler.toml): rolls up every UTC day after the ledger's last day up to today (the whole
  * backfill window on the first run) from one Web Analytics pass and the same Analytics Engine queries.
  * Days that ended at least `SETTLE_MS` ago are finalized: appended to the ledger once and never fetched
  * again, but only from an unsampled, consistent Web Analytics answer (`waExact`; else they stay provisional
@@ -168,7 +184,17 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
   const ae = await fetchAnalyticsEngine(cfg, from, end, fetcher);
   const stored = await backfillPerf(cfg, ledger.days, missingPerf, fetcher);
 
-  const rolled = buildRollups(dayRange(from, today), wa, ae, CHIP_TOPICS);
+  // First-party cutover (owner decision 2026-10-24): the first visit ping, kept in the ledger once seen.
+  const seen = ae.visits
+    .filter((r) => r.mode === VISIT_KIND && r.first && r.n > 0)
+    .map((r) => r.first as string)
+    .sort()[0];
+  const cutover = ledger.cutover ?? seen ?? null;
+  const newCutover = !ledger.cutover && cutover !== null;
+  const cutDay = cutover?.slice(0, 10);
+  const waBefore = cutover && cutDay && cutDay >= from && cutDay <= today ? await fetchWaVisitsBetween(cfg, `${cutDay}T00:00:00Z`, cutover, fetcher) : 0;
+
+  const rolled = buildRollups(dayRange(from, today), wa, ae, CHIP_TOPICS, { cutover, waBefore });
   const days = stored.length ? rolled : trimLeadingEmpty(rolled);
   // The ledger stays contiguous: the first day that may not be stored keeps every later day provisional too.
   const graceEnd = addDays(lastFinal, -EXACT_GRACE_DAYS);
@@ -187,12 +213,14 @@ export async function runStats(env: StatsWorkerEnv, now: number, fetcher: Fetche
   if (!validSnapshot(snapshot)) throw new Error("hq-stats: the snapshot failed validation; nothing written");
 
   const ledgerDays = [...stored, ...added];
-  if (added.length || missingPerf.length) await env.STATS_KV.put(LEDGER_KEY, JSON.stringify({ v: 1, days: ledgerDays } satisfies Ledger));
+  if (added.length || missingPerf.length || newCutover) await env.STATS_KV.put(LEDGER_KEY, JSON.stringify({ v: 1, days: ledgerDays, ...(cutover ? { cutover } : {}) } satisfies Ledger));
   await env.STATS_KV.put(STATS_KEY, JSON.stringify(snapshot));
+  if (cutover) await env.STATS_KV.put(STATS_LIVE_KEY, JSON.stringify(liveTail(provisional, cutover, snapshot.updatedAt)));
   const range = (list: readonly DayRollup[]) => (list.length ? `${list[0].date} to ${list.at(-1)?.date}` : "none");
   const filled = missingPerf.length ? `, filled perf for ${missingPerf.length} stored days` : "";
   const held = deferred.length ? `, held back ${deferred.map((date) => `${date} (${waShape(date, wa)})`).join(", ")}` : "";
   const late = forced.length ? `, stored ${forced.join(", ")} sampled after ${EXACT_GRACE_DAYS} days` : "";
-  log(`hq-stats: added ${added.length} days (${range(added)})${filled}${held}${late}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days`);
+  const since = cutover ? `, first-party visits since ${cutover}${newCutover ? " (new)" : ""}` : "";
+  log(`hq-stats: added ${added.length} days (${range(added)})${filled}${held}${late}, provisional ${range(provisional)}, ledger ${ledgerDays.length} days${since}`);
   return { added: added.map((d) => d.date), provisional: provisional.map((d) => d.date), days: ledgerDays.length, snapshot: true };
 }

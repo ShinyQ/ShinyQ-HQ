@@ -5,9 +5,11 @@ import { CLASSIC_DWELL_MS } from "../src/lib/stats/visitClient";
 import { asHumanBrowser, asReturningVisitor, openPage, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 
 /**
- * Public visit stats: the first-party visit beacon sends one point per page lifetime (3D, Classic or
- * both) and nothing under Do Not Track or automation. Playwright is automation, so the
- * tests force it with `?visit=1`. The local static server has no Functions: beacons are captured.
+ * Public visit stats: the first-party visit beacon sends a visit ping once per tab session as soon as the
+ * page is shown (the public visit count) and a mode ping once per page lifetime (3D, Classic or both), and
+ * nothing under automation; Do Not Track visitors are counted (owner decision 2026-10-24). Playwright is
+ * automation, so the tests force it with `?visit=1`. The local static server has no Functions: beacons are
+ * captured.
  */
 
 async function stubBeacon(page: Page) {
@@ -24,7 +26,11 @@ async function stubBeacon(page: Page) {
   });
 }
 
-const beacons = (page: Page) => page.evaluate(() => (window as unknown as { __beacons: { url: string; body: string }[] }).__beacons.filter((b) => b.url === "/api/visit"));
+const allVisitBeacons = (page: Page) => page.evaluate(() => (window as unknown as { __beacons: { url: string; body: string }[] }).__beacons.filter((b) => b.url === "/api/visit"));
+/** Mode pings only. */
+const beacons = async (page: Page) => (await allVisitBeacons(page)).filter((b) => !b.body.includes('"kind"'));
+/** Visit pings only. */
+const visitPings = async (page: Page) => (await allVisitBeacons(page)).filter((b) => b.body.includes('"kind"'));
 const leave = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
 
 /** Leaves until the beacon (mounted after hydration) has sent once, then returns its payload. */
@@ -41,7 +47,8 @@ async function sentMode(page: Page) {
   await leave(page);
   const sent = await beacons(page);
   expect(sent).toHaveLength(1);
-  return parseVisitPayload(JSON.parse(sent[0].body))?.mode;
+  const payload = parseVisitPayload(JSON.parse(sent[0].body));
+  return payload && "mode" in payload ? payload.mode : undefined;
 }
 
 test("the Classic site sends one classic visit when the page is left", async ({ page }) => {
@@ -83,18 +90,36 @@ test("a stale \"Don't count my visits\" key is cleared and the visit counts (own
   expect(await page.evaluate(() => localStorage.getItem("hq:stats-optout"))).toBeNull();
 });
 
-test("Do Not Track and plain automation send nothing", async ({ page }) => {
+test("plain automation sends nothing; Do Not Track is counted (owner decision 2026-10-24)", async ({ page }) => {
   await stubBeacon(page);
   await openPage(page, "/en/quick?tier=static");
   await leave(page);
   await page.waitForTimeout(300);
-  expect(await beacons(page)).toEqual([]);
+  expect(await allVisitBeacons(page)).toEqual([]);
 
   await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "doNotTrack", { configurable: true, get: () => "1" }));
   await openPage(page, "/en/quick?tier=static&visit=1");
-  await leave(page);
-  await page.waitForTimeout(300);
-  expect(await beacons(page)).toEqual([]);
+  await expect.poll(async () => (await visitPings(page)).length, { timeout: 30_000 }).toBe(1);
+});
+
+test("the visit ping goes out as soon as the page is shown, once per tab session", async ({ page, context }) => {
+  await stubBeacon(page);
+  await openPage(page, "/en/quick?tier=static&visit=1");
+  // No hide or pagehide: the ping does not wait for the visitor to leave.
+  await expect.poll(async () => (await visitPings(page)).map((b) => b.body), { timeout: 30_000 }).toEqual(['{"v":1,"kind":"visit"}']);
+  expect(await page.evaluate(() => sessionStorage.getItem("hq:visit"))).toBe("1");
+
+  // A reload in the same tab keeps the session flag: no second visit (the mode ping proves the beacon ran).
+  await page.reload();
+  expect(await sentMode(page)).toBe("classic");
+  expect(await visitPings(page)).toEqual([]);
+
+  // A new tab is a new session.
+  const other = await context.newPage();
+  await stubBeacon(other);
+  await openPage(other, "/en/quick?tier=static&visit=1");
+  await expect.poll(async () => (await visitPings(other)).length, { timeout: 30_000 }).toBe(1);
+  await other.close();
 });
 
 /** Runs the production Web Analytics guard (test builds carry no token) and waits until its idle step has run. */
