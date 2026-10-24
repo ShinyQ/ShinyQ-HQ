@@ -82,7 +82,7 @@ const PRIVATE: [PrivateTopic, RegExp][] = [
   ["health", /\b(?:his|kurniadi'?s)\s+(?:own\s+)?(?:physical\s+|mental\s+)?(?:health|illness(?:es)?|disease|diagnosis|disability|medical (?:history|condition)|condition)\b/i],
   ["health", /\b(?:is|was)\s+(?:he|kurniadi)\s+(?:\w+\s+)?(?:healthy|sick|ill|unwell|depressed|anxious|disabled)\b|\b(?:does|did|has|had)\s+(?:he|kurniadi)\s+(?:ever\s+)?(?:have|had|got|been|suffer(?:ed)?\s+from)\s+(?:an?\s+|any\s+)?(?:\w+\s+)?(?:illness(?:es)?|diseases?|disability|depression|anxiety|diagnosis|mental health (?:issues?|problems?|conditions?)|sick|ill|diagnosed)\b/i],
   ["health", /\bkesehatan mental\b|\bkesehatan(?:nya| kurniadi| dia)\b|\b(?:dia|kurniadi) (?:sakit|punya penyakit|sehat)\b|\bpenyakit(?:nya)?\b|\bdisabilitas(?:nya)?\b|\bdepresi\b/i],
-  ["religion", /\b(?:religion|religious|religius|beragama|keagamaan|pray(?:s|ing)?|church|mosque|muslim|christian|catholic|hindu|buddhist|atheist|islam|agama(?:nya)?|ibadah|sholat|shalat|salat|gereja|masjid|kristen|katolik|buddha|ateis|tuhan)\b/i],
+  ["religion", /\bbelieves? in god\b|\bpercaya (?:pada |kepada )?tuhan\b|\b(?:religion|religious|religius|beragama|keagamaan|pray(?:s|ing)?|church|mosque|muslim|christian|catholic|hindu|buddhist|atheist|islam|agama(?:nya)?|ibadah|sholat|shalat|salat|gereja|masjid|kristen|katolik|buddha|ateis|tuhan)\b/i],
   // Partisan politics: his vote, parties and candidates ("third-party APIs" and screening job candidates are not politics).
   ["politics", /\bvot(?:e|ed|es|ing) for\b|\bwho (?:did|does|will|would) (?:he|kurniadi|you) vote\b|\b(?:his|kurniadi'?s) vote\b|\bballot\b|\bpolitical part(?:y|ies)\b|\b(?:which|what|favou?rite|preferred) (?:political )?(?:party|parties|candidate)\b|\bparty (?:does|did|will|would) (?:he|kurniadi|you)\b|\bpresidential candidates?\b|\b(?:support|supports|supported|back|backs|backed|prefer|prefers) (?:a |which |the |any )?(?:political )?(?:party|parties|candidate|candidates|politician|politicians)\b|\bpartai\b|\bcapres\b|\bcawapres\b|\bcaleg\b|\bkandidat (?:presiden|mana)\b|\bcoblos\b|\bnyoblos\b|\bmencoblos\b|\bgolput\b|\b(?:pilih|memilih) siapa\b|\bpilihan (?:politik|capres|presiden)(?:nya)?\b/i],
   // Contested social policy is not tech policy: declined like partisan politics.
@@ -331,6 +331,7 @@ const MENTOR_FRAME: RegExp[] = [
   /\b(?:advice|tips?|guidance|roadmap|saran|nasihat)\b[^.?!]{0,25}\b(?:for|to|untuk|bagi)\b[^.?!]{0,15}\b(?:students?|beginners?|juniors?|newcomers?|fresh graduates?|aspiring|career switchers?|mahasiswa|pemula|junior|lulusan baru)\b/i,
   /\bshould (?:students?|beginners?|juniors?|i|developers?|programmers?|engineers?)\b[^.?!]{0,20}\b(?:use|learn|rely on|study)\b/i,
   /\b(?:become|be|get)\b[^.?!]{0,30}\b(?:like (?:him|kurniadi)|seperti (?:dia|kurniadi|beliau))\b/i,
+  /\b(?:help|helps) (?:me|someone|a student|students|beginners?) (?:land|get)\b|\b(?:land|get|find) (?:a|an|my first|your first) [^.?!]{0,30}\b(?:job|role|position|internship)\b/i,
   /\b(?:bagaimana|gimana) cara (?:saya |aku |untuk )?(?:belajar|mulai|memulai|menjadi|jadi|masuk ke)\b/i,
   /\b(?:harus|sebaiknya|perlu) belajar apa\b|\bbelajar apa (?:dulu|saja|yang)\b/i,
   /\b(?:apakah|haruskah|bolehkah) (?:mahasiswa|pelajar|pemula|programmer|developer)\b[^.?!]{0,20}\b(?:pakai|memakai|menggunakan|belajar)\b/i,
@@ -347,6 +348,8 @@ const TUTORIAL_ASK = /\b(?:teach me|explain to me|explain how|give me a tutorial
  */
 export function isMentoringQuestion(question: string): boolean {
   if (WRITING.some((re) => re.test(question)) || TUTORIAL_ASK.test(question) || TUTORIAL[0].test(question)) return false;
+  // "A job like his" needs no domain word: his job is the domain.
+  if (/\b(?:job|role|career|path|position) like (?:his|him|kurniadi'?s)\b|\b(?:pekerjaan|karier|karir|posisi) seperti (?:dia|kurniadi|beliau)\b/i.test(question)) return true;
   return MENTOR_DOMAIN.test(question) && MENTOR_FRAME.some((re) => re.test(question));
 }
 

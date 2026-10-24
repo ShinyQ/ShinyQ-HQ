@@ -668,7 +668,7 @@
             },
             {
               "id": "retrieve",
-              "label": { "en": "BM25 retrieval", "id": "Retrieval BM25" },
+              "label": { "en": "Hybrid retrieval", "id": "Retrieval hibrida" },
               "sublabel": { "en": "Top 6 chunks, 6,000 characters", "id": "6 chunk teratas, 6.000 karakter" },
               "layer": 3,
               "row": 0,
@@ -730,8 +730,8 @@
         {
           "title": { "en": "Retrieval", "id": "Retrieval" },
           "text": {
-            "en": "BM25 with title and intent boosts picks the top 6 chunks, at most 6,000 characters, from the knowledge pack. The pack lives in Workers KV, checked by its hash, with a small bundled fallback.",
-            "id": "BM25 dengan bobot judul dan intent memilih 6 chunk teratas, paling banyak 6.000 karakter, dari knowledge pack. Pack disimpan di Workers KV, diperiksa hash-nya, dengan fallback kecil di dalam bundle."
+            "en": "BM25 with title and intent boosts, fused with multilingual bge-m3 embeddings (one call per question, BM25 alone when it fails), picks the top 6 chunks, at most 6,000 characters, from the knowledge pack. The pack lives in Workers KV, checked by its hash, with a small bundled fallback.",
+            "id": "BM25 dengan bobot judul dan intent, digabung dengan embedding multibahasa bge-m3 (satu panggilan per pertanyaan, BM25 saja bila gagal), memilih 6 chunk teratas, paling banyak 6.000 karakter, dari knowledge pack. Pack disimpan di Workers KV, diperiksa hash-nya, dengan fallback kecil di dalam bundle."
           }
         },
         {

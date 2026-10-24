@@ -67,6 +67,8 @@ export interface StoredPack {
     /** Entity-check words, space-joined. */
     vocabulary: string;
   };
+  /** bge-m3 vectors of the chunks and the router exemplars (functions/_lib/vectors.ts); absent: BM25 only. */
+  vectors?: import("./vectors").StoredVectors;
 }
 
 export interface AiBinding {

@@ -40,6 +40,7 @@ import { promisify } from "node:util";
 import { resolveFactVariants, resolveGoldenItem } from "@/ask/golden-facts";
 import { buildRepoPack, loadDynamicFacts } from "@/ask/repo-pack";
 import { markdownToPlain } from "@/ask/markdown";
+import { ASK_HISTORY_TURNS } from "@/ask/protocol";
 import { SUGGESTIONS, type Suggestion } from "@/ask/suggestions";
 import { leaksPrompt, startsWithInterjection } from "../functions/_lib/checks";
 import { groqClient, GROQ_DIRECT_URL, type GroqUsage } from "../functions/_lib/groq";
@@ -49,6 +50,8 @@ import type { HistoryTurn } from "../functions/_lib/history";
 import type { KnowledgePack } from "../functions/_lib/types";
 import { packVocabulary, runPipeline, type PipelineResult } from "../functions/_lib/pipeline";
 import { cleanText, detectLocale } from "../functions/_lib/text";
+import { EMBED_MODEL, extractEmbedding, hydrateVectors, type Embedder } from "../functions/_lib/vectors";
+import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 
 const run = promisify(execFile);
 /** Share of curated pill questions that must get a real answer (not unknown, decline or fallback). */
@@ -327,6 +330,34 @@ export function restClient(token: string, accountId: string): ModelClient {
   };
 }
 
+/** The question embedder of a Workers AI run (hybrid retrieval like production); the Groq mode stays BM25 (no Workers AI). */
+export function restEmbedder(token: string, accountId: string): Embedder {
+  return async (text) => {
+    try {
+      const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${EMBED_MODEL}`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ text: [text] }), signal: AbortSignal.timeout(10_000) });
+      return response.ok ? extractEmbedding(await response.json()) : null;
+    } catch {
+      return null;
+    }
+  };
+}
+
+export function cliEmbedder(): Embedder {
+  return async (text) => {
+    const dir = mkdtempSync(path.join(tmpdir(), "ask-eval-embed-"));
+    try {
+      const file = path.join(dir, "body.json");
+      writeFileSync(file, JSON.stringify({ text: [text] }));
+      const { stdout } = await run("cf", ["ai", "run", EMBED_MODEL, "--body", `@${file}`], { maxBuffer: 4 * 1024 * 1024 });
+      return extractEmbedding(JSON.parse(stdout));
+    } catch {
+      return null;
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+}
+
 export function cliClient(): ModelClient {
   return {
     async *stream(model, input) {
@@ -475,6 +506,10 @@ async function main() {
   const { pack, errors } = buildRepoPack();
   if (errors.length) throw new Error(`Knowledge pack failed its checks: ${errors.join("; ")}`);
   const vocabulary = packVocabulary(pack);
+  // Hybrid retrieval like production on Workers AI runs: the committed vectors, one bge-m3 call per question.
+  const { vectors } = buildStoredVectors(pack, readEmbeddingCache(), readExemplars());
+  if (vectors) hydrateVectors({ pack, vectors });
+  const embed = groqMode || !vectors ? undefined : useCli ? cliEmbedder() : restEmbedder(token as string, accountId as string);
   const load = (name: "golden" | "redteam" | "boundary") => JSON.parse(readFileSync(path.join(ROOT, "tests", "ask", `${name}.json`), "utf8")) as { passThreshold?: number; items: (GoldenItem | RedTeamItem)[] };
   const smokeItems = () => [
     ...load("golden").items.filter((i) => (SMOKE_GOLDEN as readonly string[]).includes(i.id)),
@@ -519,7 +554,7 @@ async function main() {
 
   const rows = await pool(items, groqMode ? 1 : 3, async (item) => {
     const locale = "lang" in item ? item.lang : item.locale;
-    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, client, timeouts, deadlineMs: Number.POSITIVE_INFINITY, history, ...(models ? { models } : {}) });
+    const run = (question: string, history: HistoryTurn[]) => runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary, client, timeouts, deadlineMs: Number.POSITIVE_INFINITY, history, ...(models ? { models } : {}), ...(embed ? { embed } : {}) });
     // Groq mode waits out a rate limit (retry-after) and asks again, at most MAX_RATE_LIMIT_RETRIES times.
     const ask = async (q: string, history: HistoryTurn[]) => {
       const question = scrubPII(cleanText(q));
@@ -541,12 +576,12 @@ async function main() {
     const earlierTurns = (item.history ?? []) as (string | { q: string; a: string })[];
     const history: HistoryTurn[] = earlierTurns.filter((h): h is { q: string; a: string } => typeof h === "object").map((h) => ({ q: scrubPII(cleanText(h.q)), a: cleanText(h.a) }));
     for (const earlier of earlierTurns.filter((h): h is string => typeof h === "string")) {
-      const { question, result } = await ask(earlier, history.slice(-3));
+      const { question, result } = await ask(earlier, history.slice(-ASK_HISTORY_TURNS));
       if (result.outcome === "answer" && !result.reason && (result.source === "primary" || result.source === "fallback" || result.source === "backup")) history.push({ q: question, a: cleanText(result.text) });
     }
     last.usage = undefined;
     // Latency of the last attempt only (a rate-limit wait is not the model's time).
-    const { result, started } = await ask(item.q, history.slice(-3));
+    const { result, started } = await ask(item.q, history.slice(-ASK_HISTORY_TURNS));
     const ms = Date.now() - started;
     const chars = result.text.length;
     const usage = last.usage as GroqRow["usage"];

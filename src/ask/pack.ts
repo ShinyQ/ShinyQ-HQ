@@ -8,6 +8,7 @@ import { topicTagsOf } from "../../functions/_lib/tags";
 import { isAskContact } from "./protocol";
 import { cleanText, isInstructionLike } from "../../functions/_lib/text";
 import { PACK_SCHEMA, storePack } from "../../functions/_lib/pack-index";
+import { hydrateVectors } from "../../functions/_lib/vectors";
 import type { ChunkType, KnowledgeChunk, KnowledgePack, StoredPack } from "../../functions/_lib/types";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
@@ -626,6 +627,7 @@ export function validateStoredPack(json: string, options: { maxBytes?: number } 
   if (!Array.isArray(index.len) || index.len.length !== chunks.length) errors.push("index lengths differ from the chunk count");
   if (typeof index.vocabulary !== "string") errors.push("index vocabulary is not a string");
   if (!errors.length && JSON.stringify(storePack(pack).index) !== JSON.stringify(index)) errors.push("index does not match the pack text");
+  if (stored.vectors !== undefined && !hydrateVectors({ pack: { ...pack }, vectors: stored.vectors })) errors.push("vectors do not match the pack (model, dimensions or one row per chunk)");
   return errors;
 }
 
@@ -640,8 +642,8 @@ export interface PackArtifacts {
 }
 
 /** The build outputs of a text pack: the stored value, the fallback pack and the pin, with every gate applied. */
-export function buildPackArtifacts(pack: KnowledgePack): PackArtifacts {
-  const json = JSON.stringify(storePack(pack));
+export function buildPackArtifacts(pack: KnowledgePack, vectors?: StoredPack["vectors"]): PackArtifacts {
+  const json = JSON.stringify(storePack(pack, vectors));
   const fallback = buildFallbackPack(pack);
   const fallbackJson = JSON.stringify(fallback);
   const fallbackBytes = Buffer.byteLength(fallbackJson, "utf8");

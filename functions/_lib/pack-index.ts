@@ -1,5 +1,6 @@
 import { expandTokens, tokenize } from "./text";
 import type { KnowledgePack, StoredPack } from "./types";
+import { hydrateVectors } from "./vectors";
 
 /** Shape version of a stored pack (`pack:v1:<packVersion>` in KV): bumped when `StoredPack` changes. */
 export const PACK_SCHEMA = 1;
@@ -34,7 +35,7 @@ function chunkTokens(chunk: KnowledgePack["chunks"][number]): string[] {
 const words = (text: string) => text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [];
 
 /** Builds the stored form of a pack: its text plus the BM25 postings and the vocabulary (build time). */
-export function storePack(pack: KnowledgePack): StoredPack {
+export function storePack(pack: KnowledgePack, vectors?: StoredPack["vectors"]): StoredPack {
   const byTerm = new Map<string, number[]>();
   const len: number[] = [];
   const vocabulary = new Set<string>();
@@ -52,12 +53,14 @@ export function storePack(pack: KnowledgePack): StoredPack {
   });
   for (const entity of pack.entities) for (const word of entity.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []) vocabulary.add(word);
   const terms = [...byTerm.keys()].sort();
-  return { schema: PACK_SCHEMA, pack, index: { terms, postings: terms.map((t) => byTerm.get(t) as number[]), len, vocabulary: [...vocabulary].sort().join(" ") } };
+  return { schema: PACK_SCHEMA, pack, index: { terms, postings: terms.map((t) => byTerm.get(t) as number[]), len, vocabulary: [...vocabulary].sort().join(" ") }, ...(vectors ? { vectors } : {}) };
 }
 
 /** Turns a stored pack into its `PackIndex` without tokenizing, and registers it so `indexPack(pack)` returns it. */
 export function hydratePack(stored: StoredPack): { pack: KnowledgePack; index: PackIndex } {
   const { pack, index: raw } = stored;
+  // The vectors (if any) are decoded once and registered for `packVectors(pack)`; bad vectors leave BM25 alone.
+  if (stored.vectors) hydrateVectors(stored);
   const hit = cache.get(pack);
   if (hit) return { pack, index: hit };
   const termAt = new Map<string, number>();

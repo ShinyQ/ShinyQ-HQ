@@ -5,6 +5,7 @@ import { parseHistory, signTurn, verifyHistory } from "./history";
 import { breakerOpen, countModelCall, DEFAULT_DAILY_CAP, globalDayCount, minuteAllowed, modelBreaker, PER_DAY, recordSample, secondsToMidnight, visitorDayCount } from "./limits";
 import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } from "./model";
 import { scrubPII } from "./pii";
+import { bindingEmbedder, type Embedder } from "./vectors";
 import type { LoadedPack, PackSource } from "./pack-source";
 import { runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
@@ -22,8 +23,8 @@ const EXPECTED_REASONS: ReadonlySet<string> = new Set(["harmful", "private", "ot
 
 /** Request pipeline in the security order of spec 7.4. */
 
-/** The question plus up to 3 signed earlier turns (multi-turn memory, owner decision 2026-10-17). */
-export const MAX_BODY_BYTES = 8192;
+/** The question plus up to 5 signed earlier turns (multi-turn memory, owner decisions 2026-10-17 and 2026-10-24). */
+export const MAX_BODY_BYTES = 12288;
 export const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const STREAM_PIECE = 24;
 const STREAM_DELAY_MS = 15;
@@ -37,6 +38,8 @@ export interface HandlerDeps {
   client?: (env: AskEnv, metadata: Record<string, string>) => ModelClient | undefined;
   /** Fetch used by the Groq backup tiers (tests). */
   groqFetch?: typeof fetch;
+  /** Question embedder override (tests); default `bindingEmbedder(env.AI)`. */
+  embed?: (env: AskEnv) => Embedder;
   streamDelayMs?: number;
 }
 
@@ -297,6 +300,8 @@ export function createAskHandler(deps: HandlerDeps) {
       history,
       backups,
       breaker: modelBreaker(env.ASK_KV),
+      // Hybrid retrieval (owner decision 2026-10-24): one bge-m3 call, 300 ms at most, else BM25 alone.
+      ...(env.AI ? { embed: deps.embed ? deps.embed(env) : bindingEmbedder(env.AI) } : {}),
     });
 
     // 9. Count, cache passing answers, log, stream.
