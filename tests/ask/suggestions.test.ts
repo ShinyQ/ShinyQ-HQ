@@ -6,7 +6,8 @@ import { ASK_TOPICS, matchSuggestion, pickFollowUps, SUGGESTIONS, TOPIC_SIZE, to
 import { getContent } from "@/content/load";
 import { FORBIDDEN_PATTERNS } from "@/content/safety";
 import { orderPods } from "@/content/selectors";
-import { retrieve } from "../../functions/_lib/retrieve";
+import { planRoute } from "../../functions/_lib/pipeline";
+import { approachMatches, leadMatches, retrieve } from "../../functions/_lib/retrieve";
 import { isSiteQuestion, resolveNickname, routedTopic } from "../../functions/_lib/scope";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import { scoreSuggestion, suggestionItems } from "../../scripts/ask-eval";
@@ -93,7 +94,11 @@ describe("curated question bank (content/ask/suggestions.json)", () => {
   // Quality gate: no pill may lead to "I don't know". The nightly eval checks the real answers.
   it.each(SUGGESTIONS.flatMap((s) => (["en", "id"] as const).map((locale) => [s.id, locale, s] as const)))("%s (%s) retrieves its expected chunks", (_id, locale, s: Suggestion) => {
     // The pipeline resolves the "ShinyQ" nickname before retrieval, so the test does too.
-    const chunkIds = retrieve(pack, resolveNickname(s.q[locale]), locale).chunks.map((c) => c.id);
+    const question = resolveNickname(s.q[locale]);
+    // A problem pill takes the approach route (planRoute): the pipeline's own retrieval, BM25 order without a vector.
+    const plan = planRoute({ question, pack });
+    const options = plan.kind === "model" && plan.approach ? { lead: true, approach: approachMatches(pack, leadMatches(pack, plan.routed)) } : undefined;
+    const chunkIds = retrieve(pack, question, locale, options).chunks.map((c) => c.id);
     for (const expected of s.expect ?? []) expect(hit(chunkIds, expected), `${expected} in ${chunkIds.join(", ")}`).toBe(true);
   });
 });

@@ -17,7 +17,8 @@ import { findTerms as findSiteTerms, FORBIDDEN_PATTERNS } from "@/content/safety
 import { FORBIDDEN_OUTPUT, findTerms } from "../../functions/_lib/checks";
 import { indexPack } from "../../functions/_lib/pack-index";
 import { followUpAnchor } from "../../functions/_lib/history";
-import { retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
+import { planRoute } from "../../functions/_lib/pipeline";
+import { approachMatches, leadMatches, retrieve, SITE_INCLUDE } from "../../functions/_lib/retrieve";
 import { cleanText, detectLocale, normalizeQuestion, tokenize } from "../../functions/_lib/text";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import golden from "./golden.json";
@@ -159,7 +160,10 @@ describe("retrieval", () => {
       const history = ((raw as { history?: string[] }).history ?? []).map((q) => ({ q, a: "" }));
       const anchor = followUpAnchor(item.q, history);
       const lang = item.lang as "en" | "id";
-      const context = fold((anchor ? retrieve(pack, `${item.q} ${anchor}`, lang, { anchor }) : retrieve(pack, item.q, lang)).context);
+      // A problem question takes the approach route (planRoute): its outlined matches, BM25 order without a vector.
+      const plan = anchor ? undefined : planRoute({ question: item.q, pack });
+      const approach = plan?.kind === "model" && plan.approach ? { lead: true, approach: approachMatches(pack, leadMatches(pack, plan.routed)) } : undefined;
+      const context = fold((anchor ? retrieve(pack, `${item.q} ${anchor}`, lang, { anchor }) : retrieve(pack, item.q, lang, approach)).context);
       for (const fact of item.facts) {
         if (!text.includes(fold(fact))) missingInPack.push(`${item.id}: ${fact}`);
         else if (!context.includes(fold(fact))) missingInContext.push(`${item.id}: ${fact}`);

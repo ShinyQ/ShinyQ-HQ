@@ -411,6 +411,38 @@
       "expect": ["contact"]
     },
     {
+      "id": "contact-problem-callcenter",
+      "topic": "contact",
+      "q": { "en": "Our call center can't keep up. His approach?", "id": "Call center kami kewalahan. Pendekatannya?" },
+      "tags": ["contact", "work", "ai"],
+      "followUps": ["contact-problem-latency", "contact-reach", "work-best"],
+      "expect": ["project-voice-ai-contact-center", "contact"]
+    },
+    {
+      "id": "contact-problem-latency",
+      "topic": "contact",
+      "q": { "en": "How would he tackle slow voice AI latency?", "id": "Latensi voice AI kami lambat. Pendekatannya?" },
+      "tags": ["contact", "work", "ai"],
+      "followUps": ["contact-problem-callcenter", "contact-reach", "work-best"],
+      "expect": ["project-voice-ai-contact-center", "contact"]
+    },
+    {
+      "id": "contact-problem-docs",
+      "topic": "contact",
+      "q": { "en": "How would he speed up slow document review?", "id": "Review dokumen kami lambat. Pendekatannya?" },
+      "tags": ["contact", "work", "ai"],
+      "followUps": ["contact-problem-fraud", "contact-reach", "work-best"],
+      "expect": ["project-fraud-review-platform", "contact"]
+    },
+    {
+      "id": "contact-problem-fraud",
+      "topic": "contact",
+      "q": { "en": "Our fraud checks are manual. His approach?", "id": "Cek fraud kami masih manual. Pendekatannya?" },
+      "tags": ["contact", "work", "ai"],
+      "followUps": ["contact-problem-docs", "contact-reach", "work-best"],
+      "expect": ["project-automotive-fraud-dashboard", "contact"]
+    },
+    {
       "id": "persp-principles",
       "topic": "perspectives",
       "q": { "en": "What are his coding principles?", "id": "Apa prinsip coding-nya?" },
@@ -437,7 +469,7 @@
     {
       "id": "persp-reliability",
       "topic": "perspectives",
-      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menangani reliabilitas LLM?" },
+      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menjaga reliabilitas LLM?" },
       "tags": ["perspectives", "ai", "writing"],
       "followUps": ["ai-llm-failures", "persp-metrics", "ai-shadow"],
       "expect": ["post-45-percent-of-our-llm-calls-failed"]
