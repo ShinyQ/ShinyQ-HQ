@@ -30,7 +30,7 @@ test.describe("Time Travel on /journey", () => {
     await page.clock.install();
     await openPage(page, URL);
     // Without a pause the installed clock keeps ticking in real time; after this only runFor advances it.
-    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 100));
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1000));
     const section = page.locator("#time-travel");
     await section.getByRole("button", { name: en.timeTravel.play }).click();
     await expect(section.getByText(caption("pre-2019"))).toBeVisible();
