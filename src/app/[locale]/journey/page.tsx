@@ -4,6 +4,8 @@ import { ClientMessages } from "@/components/ClientMessages";
 import { JourneyFilter } from "@/components/page/JourneyFilter";
 import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
+import { TimeTravel } from "@/components/time-travel/TimeTravel";
+import { getTimeTravel } from "@/content/time-travel";
 import { RepoWall, SideProjectGrid } from "@/components/WorkshopAnnex";
 import { getPublicRepos, getSideProjects, getTimeline, getYears } from "@/content/load";
 import { typeCounts } from "@/content/pageview";
@@ -53,6 +55,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
           </nav>
         }
       />
+      <TimeTravel locale={locale} stops={getTimeTravel()} />
       <JourneyFilter counts={typeCounts(getTimeline())}>
         <ol className="pv-wrap">
           {years.map(({ year, entries }) => (

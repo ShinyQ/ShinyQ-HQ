@@ -204,6 +204,22 @@
     "all": "All",
     "navTitle": "Journey"
   },
+  "timeTravel": {
+    "title": "Time Travel",
+    "lead": "Each building is a year of the journey, from the first school projects to today. Pick a year, or play the whole journey.",
+    "skyline": "The journey as a skyline, one building per year",
+    "slider": "Year",
+    "play": "Play the journey",
+    "pause": "Pause",
+    "prologue": "Before 2019",
+    "building": "{label}: {count, plural, one {# item} other {# items}}",
+    "seeYear": "See {label} in full",
+    "seePrologue": "See the early years",
+    "added": "+{count} new",
+    "highlights": "Highlights",
+    "tally": { "roles": "Roles", "projects": "Projects", "awards": "Awards", "papers": "Papers", "certs": "Certifications" },
+    "kinds": { "roles": "Roles", "study": "Study and milestones", "projects": "Projects", "awards": "Awards", "writing": "Writing and research", "certs": "Certifications" }
+  },
   "labs": {
     "title": "Labs",
     "intro": "Software, AI and data case studies with my contribution and results: software since 2019, data and ML since 2021, and enterprise AI since 2026.",
