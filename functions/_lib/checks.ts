@@ -635,10 +635,23 @@ function isInvitation(sentence: string, bans: InviteBans = { caps: new Set(), st
 
 /**
  * A sentence that projects his work onto the visitor's case (follow-up R2): "a similar team would ...", "the same
- * stack fits", "the right fit here", "untuk kasus ini". Only the exact bridge and the final invitation may say "similar".
+ * stack fits", "the right fit here", "untuk kasus ini". Only the exact bridge, the final invitation and a past-tense
+ * statement of his own work (`OWN_PAST_SIMILAR`) may say "similar".
  */
 const PROJECTS =
   /\b(?:similar|serupa|sejenis|something like|the same (?:stack|approach|setup|design|system)|fits?|right fit|cocok|here|kasus ini|di sini|like (?:that|this|yours|theirs)|seperti (?:itu|ini|kalian|anda|kamu)|for (?:a|an|your) [\w-]+(?: [\w-]+)? like)\b/i;
+/**
+ * A past-tense statement of his own work ("Kurniadi has addressed similar challenges", "similar problems in his past
+ * work", "Kurniadi telah menangani masalah serupa"): only its "similar" / "serupa" is no projection, so the rest of the
+ * sentence is still read by `PROJECTS` and every other rule. `at` marks where the exempt word sits in the match.
+ */
+const OWN_PAST_SIMILAR: readonly { re: RegExp; at: "start" | "end" }[] = [
+  { re: /\b(?:kurniadi|he)\s+(?:has|had)\s+(?:\w+\s+){0,2}(?:addressed|tackled|solved|handled|faced|worked on|dealt with|met)\s+(?:\w+\s+){0,1}similar\b/gi, at: "end" },
+  { re: /\bsimilar\s+(?:problems|challenges|issues)\s+(?:in|across|through)\s+his\s+(?:past\s+)?work\b/gi, at: "start" },
+  { re: /\b(?:kurniadi|ia|dia)\s+(?:telah|pernah|sudah)\s+(?:\w+\s+){0,1}(?:menangani|menyelesaikan|menghadapi|mengatasi)\s+(?:masalah|tantangan|kasus|persoalan)\s+(?:serupa|sejenis)\b/gi, at: "end" },
+];
+const withoutOwnPastSimilar = (sentence: string) =>
+  OWN_PAST_SIMILAR.reduce((s, { re, at }) => s.replace(re, (m) => (at === "end" ? m.replace(/\w+$/, " ") : m.replace(/^\w+/, " "))), sentence);
 /** Vague durations and coming periods, always an estimate ("a few weeks", "next quarter", "beberapa minggu", "bulan depan"). */
 const VAGUE_DURATION =
   /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b|\bnext (?:week|month|quarter|sprint|year)\b|\b(?:bulan|minggu) depan\b/i;
@@ -684,7 +697,7 @@ export function prescribes(text: string, markdown: string, context: string, view
     }
     // A final sentence that points to the contact card must be a clean invitation ("Azure AI Search first, then reach him ...").
     if (i === sentences.length - 1 && CONTACT.test(sentence)) return true;
-    if (!isBridge(sentence) && PROJECTS.test(sentence)) return true;
+    if (!isBridge(sentence) && PROJECTS.test(withoutOwnPastSimilar(sentence))) return true;
     if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || MID_ORDER.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
     const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION), ...sentence.matchAll(TIMELINE_SPAN)].map((m) => fold(m[0]));
     if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;

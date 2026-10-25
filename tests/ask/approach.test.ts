@@ -646,4 +646,61 @@ describe("approach pipeline", () => {
       expect(system).not.toContain(`"${m.title}"`);
     }
   });
+
+  // Eval fix: raw Workers AI answers whose past-tense opener ("has addressed similar challenges") read as a projection.
+  it.each([
+    {
+      q: "Our call center can't keep up. His approach?",
+      locale: "en" as const,
+      raw: "Kurniadi has addressed similar challenges in his past work:\n\n* In **Realtime Voice AI Contact Center**, he built a voice agent with company knowledge-base answers and interruption capabilities to replace rigid phone menus [S5]. He prepared the system for production using atomic writes, crash recovery, and a replayable dead-letter queue [S5].\n* In **Enterprise AI Contact Center Architecture**, he contributed to a solution architecture for an insurer to integrate voice and chat AI with existing contact-center and CRM platforms [S6].\n\nA similar problem would likely start the same way. Please get in touch via the contact card on this site.",
+    },
+    {
+      q: "Call center kami kewalahan. Pendekatannya?",
+      locale: "id" as const,
+      raw: "Kurniadi telah menangani masalah serupa melalui beberapa proyek:\n\n*   **Realtime Voice AI Contact Center**: Dalam proyek ini, ia membangun voice agent yang dapat menjawab dari knowledge base, dapat disela saat berbicara, serta mampu mengalihkan panggilan ke petugas [S5]. Ia menggunakan pendekatan backend realtime dengan Python dan FastAPI, serta menyiapkan sistem produksi dengan *crash recovery* dan *dead-letter queue* [S5].\n*   **Arsitektur Contact Center AI Enterprise**: Ia berkontribusi pada desain arsitektur untuk integrasi voice dan chat AI dengan platform contact center dan CRM yang sudah ada sesuai kebutuhan keamanan enterprise [S6].\n\nSilakan hubungi Kurniadi melalui kartu kontak di situs ini untuk mendiskusikan kebutuhan Anda.",
+    },
+  ])("passes the live $locale answer with a past-tense opener", async ({ q, locale, raw }) => {
+    // The live run ranked the voice project first by cosine: a hydrated pack whose question vector is that project's row.
+    const { pack: vpack } = buildRepoPack("2026-10-11");
+    const vectors = hydrateVectors({ pack: vpack, vectors: buildStoredVectors(vpack, readEmbeddingCache(), readExemplars()).vectors as StoredVectors });
+    if (!vectors) throw new Error("pack vectors did not hydrate");
+    const voice = vpack.chunks.findIndex((c) => c.id === "project-voice-ai-contact-center");
+    expect(vectors.norms[voice]).toBeGreaterThan(0);
+    const question = scrubPII(cleanText(q));
+    const { client } = mockClient(raw);
+    const r = await runPipeline({ question, locale: detectLocale(question, locale), pack: vpack, vocabulary: packVocabulary(vpack), client, models: { primary: "p", fallback: "f" }, timeouts: fast, embed: async () => Float32Array.from(vectors.rows.subarray(voice * vectors.dims, (voice + 1) * vectors.dims)) });
+    expect(r.reason, JSON.stringify(r.detail)).toBeUndefined();
+    expect(r).toMatchObject({ outcome: "answer", route: "approach", cite: "/labs/voice-ai-contact-center" });
+    expect(r.chunkIds).toEqual(expect.arrayContaining(["project-voice-ai-contact-center", "project-insurer-contact-center-architecture"]));
+  });
+});
+
+describe("past-tense similar opener", () => {
+  it.each([
+    "Kurniadi has addressed similar challenges in his past work:",
+    "He has tackled similar problems before.",
+    "Kurniadi had already solved similar issues.",
+    "He has worked on similar systems.",
+    "He met similar challenges in his past work.",
+    "Kurniadi telah menangani masalah serupa melalui beberapa proyek:",
+    "Ia pernah menghadapi tantangan sejenis.",
+    "Dia sudah lama mengatasi kasus serupa.",
+  ])("does not count his own past work as a projection: %s", (ok) => {
+    expect(prescribes(ok, ok, "")).toBe(false);
+  });
+
+  it.each([
+    "He has tackled similar problems, so a similar call center would use Azure AI Search.",
+    "He has tackled similar problems, and the same stack fits.",
+    "He has tackled similar problems here.",
+    "Kurniadi has addressed similar challenges, so you should use Azure AI Search.",
+    "Kurniadi has addressed similar challenges; use Azure AI Search.",
+    "Kurniadi has addressed similar challenges and would start with the call flow.",
+    "Kurniadi telah menangani masalah serupa, jadi Azure AI Search cocok.",
+    "Kurniadi telah menangani masalah serupa untuk kasus ini.",
+    "A similar call center has tackled similar problems.",
+    "You have tackled similar problems.",
+  ])("still rejects any other projection, order, look-ahead or visitor address: %s", (bad) => {
+    expect(prescribes(bad, bad, "")).toBe(true);
+  });
 });
