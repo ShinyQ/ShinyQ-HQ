@@ -285,6 +285,9 @@ const BENIGN = [
   "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
   "I'm Rover, the guide robot of ShinyQ HQ.",
   "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views.",
+  // Rule 18 allows this sentence, and rules 11 and 18 ask for the contact card invitation.
+  "A similar problem would likely start the same way.",
+  "Feel free to get in touch: the site shows a contact card under the answer.",
 ];
 const ruleShingles = (() => {
   const benign = new Set(BENIGN.flatMap(shingles));

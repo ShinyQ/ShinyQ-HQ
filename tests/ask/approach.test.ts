@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
+import { leaksPrompt } from "../../functions/_lib/checks";
 import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { approachLine, PROMPT_VERSION, routingLines, RULES } from "../../functions/_lib/prompt";
@@ -156,5 +157,23 @@ describe("rule 18 and the approach line", () => {
     expect(lines[0]).toContain("rule 18");
     expect(lines[0]).toContain('"Realtime Voice AI Contact Center"');
     expect(lines[0]).not.toContain("rule 11");
+  });
+
+  it("does not count the bridging sentence rule 18 allows as a prompt leak", () => {
+    expect(leaksPrompt("A similar problem would likely start the same way.")).toBe(false);
+    expect(leaksPrompt("In Realtime Voice AI Contact Center, he started by mapping the call flow [S1]. A similar problem would likely start the same way, with the same first questions [S2].")).toBe(false);
+  });
+
+  it("does not count a contact card invitation as a prompt leak", () => {
+    for (const text of [
+      "Get in touch, the site shows a contact card under this answer.",
+      "Feel free to get in touch, the site shows a contact card.",
+      "Kurniadi takes freelance and part-time work; get in touch through the contact card.",
+    ]) expect(leaksPrompt(text), text).toBe(false);
+  });
+
+  it("still flags a verbatim span of rule 18", () => {
+    expect(leaksPrompt("Never tell the visitor what to use, build or do, recommend a stack or an architecture")).toBe(true);
+    expect(leaksPrompt("Describe how Kurniadi approached similar problems in the matching past projects it names.")).toBe(true);
   });
 });
