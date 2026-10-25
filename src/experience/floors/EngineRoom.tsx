@@ -10,7 +10,7 @@ import { FloatingSigns } from "../fx/FloatingSign";
 import { RoadMarkings } from "../fx/RoadMarkings";
 import type { ExperienceData, GpuTier } from "../types";
 import { DepthMask } from "./engine/DepthMask";
-import { FlowMesh, PanelMesh } from "./engine/EngineFx";
+import { FlowMesh, PanelMesh, PlateMesh } from "./engine/EngineFx";
 import { EngineHolo } from "./engine/EngineHolo";
 import { buildEngineLayout, ENGINE } from "./engine/layout";
 import { ReactorCore } from "./engine/ReactorCore";
@@ -21,8 +21,8 @@ export type { EngineLabels };
 
 /**
  * B1 Engine Room (spec 2026-10-17): the aisle (road kit), seven bays with their stations, rack rows, pipes and
- * the workbench, and the reactor hall's living core (`ReactorCore`). Scene draws: the road kit, one merged solid mesh
- * and its edges, two instanced holo draws, the core's three, the depth-only end mask (`endMask`) and the floating sign pair (with the reactor's title and its
+ * the workbench, and the reactor hall's living core (`ReactorCore`). Scene draws: the road kit, one merged gunmetal solid mesh
+ * and its edges, one plate instancing (`PlateMesh`, the lit-seam cladding), two instanced holo draws, the core's three, the depth-only end mask (`endMask`) and the floating sign pair (with the reactor's title and its
  * counter plate of the visits and questions since launch, rebuilt only when a formatted number changes), plus the WOW layer
  * (`EngineHolo`: a hologram in every bay and the Stack Halo over the core; the bay holograms read the B1 drawer file).
  * Stations are point-and-go targets (interact/registry.ts); their drawers are `EngineBody` in this chunk.
@@ -45,8 +45,9 @@ export function EngineRoom({ data, labels, tier }: { data: ExperienceData; label
   return (
     <group name="engine-room">
       <RoadMarkings network={layout.network} color={ENGINE.accent} tier={tier} reducedMotion={reducedMotion} />
-      <MergedBoxes boxes={scene.solids} color="#0c0a09" emissive={ENGINE.accent} emissiveIntensity={0.06} />
+      <MergedBoxes boxes={scene.solids} color="#1c1d22" emissive={ENGINE.accent} emissiveIntensity={0.03} />
       <MergedEdges boxes={scene.solids} color={ENGINE.accent} tier={tier} opacity={0.7} />
+      <PlateMesh items={scene.plates} tier={tier} />
       <FlowMesh items={scene.flows} tier={tier} />
       <PanelMesh items={scene.panels} tier={tier} />
       <ReactorCore tier={tier} stats={stats} />
