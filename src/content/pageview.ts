@@ -1,4 +1,4 @@
-import type { Pod, TimelineEntry } from "./schema";
+import type { Pod, Stat, TimelineEntry } from "./schema";
 import { podHasGallery } from "./selectors";
 
 /**
@@ -104,4 +104,9 @@ export function isKeyProject(pod: Pick<Pod, "tier" | "assets">): boolean {
 export function moreKeyProjects<T extends Pick<Pod, "id" | "tier" | "assets">>(pods: readonly T[], featured: readonly Pick<Pod, "id">[]): T[] {
   const shown = new Set(featured.map((p) => p.id));
   return pods.filter((p) => isKeyProject(p) && !shown.has(p.id));
+}
+
+/** The landing proof strip's stats, in `profile.heroProof` order (owner decision 2026-10-25); unknown ids are skipped. */
+export function heroProofStats(stats: readonly Stat[], ids: readonly string[]): Stat[] {
+  return ids.map((id) => stats.find((s) => s.id === id)).filter((s): s is Stat => s !== undefined);
 }

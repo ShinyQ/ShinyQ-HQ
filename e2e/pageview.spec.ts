@@ -428,8 +428,28 @@ test("landing: three featured projects with their screenshots, the stats ticker,
   }
   const ticker = page.getByRole("region", { name: en.home.statsTitle });
   await expect(ticker).toHaveAttribute("id", "stats");
-  for (const stat of data.stats) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
+  const proofIds = data.profile.heroProof;
+  const strip = page.getByTestId("hero-proof");
+  await expect(strip.getByRole("listitem")).toHaveCount(3);
+  for (const id of proofIds) {
+    const stat = data.stats.find((s) => s.id === id)!;
+    await expect(strip.locator(`[data-stat="${id}"]`)).toContainText(stat.value);
+    await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(0);
+  }
+  for (const stat of data.stats.filter((s) => !proofIds.includes(s.id))) await expect(ticker.getByRole("listitem").filter({ hasText: stat.label.en })).toHaveCount(1);
   await expect(page.getByTestId("enter-hq")).toBeHidden();
+});
+
+test("landing: View CV is the primary hero action and the sections follow the recruiter path", async ({ page }) => {
+  await openPage(page, staticTier("/en"));
+  const hero = page.locator("section[aria-labelledby='hero-title']");
+  const cv = hero.getByTestId("cv-open-hero");
+  await expect(cv).toHaveClass(/pv-btn-primary/);
+  await expect(cv).toHaveText(en.common.viewCv);
+  await expect(hero.locator(".pv-btn-primary")).toHaveCount(1);
+  const order = await page.locator("section[id]").evaluateAll((els) => els.map((el) => el.id));
+  const expected = ["work", "intro", "journey", "certifications", "skills", "office", "writing", "contact"];
+  expect(order.filter((id) => expected.includes(id))).toEqual(expected);
 });
 
 const columnsFor = (width: number) => (width >= 1024 ? 3 : width >= 768 ? 2 : 1);

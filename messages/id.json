@@ -76,6 +76,7 @@
     "inProgress": "dalam proses"
   },
   "home": {
+    "proofLabel": "Angka utama",
     "currentRole": "Saat ini",
     "statsTitle": "Sekilas",
     "journeyTitle": "Pekerjaan terbaru",

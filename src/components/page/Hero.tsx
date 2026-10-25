@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import { CvButton } from "@/components/cv/CvButton";
 import { getProfile } from "@/content/load";
 import type { Locale } from "@/content/schema";
 import { QuietLink } from "../QuietLink";
@@ -9,8 +10,9 @@ import { Portrait } from "./Portrait";
 
 /**
  * Landing hero: the owner portrait beside the name (no eyebrow), the headline and the motto over the Neon
- * Grid backdrop (CSS only, src/app/landing.css), the two ways in (Enter the 3D HQ and the Ask AI bar) across
- * the full width, and the stats ticker at the bottom of the first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
+ * Grid backdrop (CSS only, src/app/landing.css), the proof strip and View CV first (owner decision 2026-10-25),
+ * then See the work and Enter the 3D HQ, the Ask AI bar across the full width, and the stats ticker at the bottom
+ * of the first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
  *
  * The first paint waits until the whole first screen (ticker included) is parsed: a busy device can
  * otherwise paint a half-parsed hero, and the rest arriving moves the backdrop and the centered column
@@ -18,8 +20,9 @@ import { Portrait } from "./Portrait";
  * (Chrome unblocks on the target's start tag, so the target sits at the end). React hoists the
  * `rel="expect"` link into the head; browsers without render-blocking `expect` links ignore it.
  */
-export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: ReactNode }) {
+export async function HomeHero({ locale, ticker, proof }: { locale: Locale; ticker: ReactNode; proof: ReactNode }) {
   const t = await getTranslations({ locale, namespace: "home" });
+  const tc = await getTranslations({ locale, namespace: "common" });
   const profile = getProfile();
 
   return (
@@ -41,11 +44,16 @@ export async function HomeHero({ locale, ticker }: { locale: Locale; ticker: Rea
           </div>
           <p className="pv-lead mt-7 max-w-none font-semibold">{profile.headline[locale]}</p>
           <p className="pv-lead mt-1 max-w-none text-ink-2">{profile.subheadline[locale]}</p>
-          <div className="mt-9 flex flex-wrap items-center gap-3">
-            <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
+          {proof}
+          {/* Recruiter-first (owner decision 2026-10-25): View CV is the one primary action; full width on phones. */}
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <CvButton className="pv-btn pv-btn-primary w-full justify-center sm:w-auto" testId="cv-open-hero">
+              {tc("viewCv")}
+            </CvButton>
             <QuietLink href="/labs" className="pv-btn pv-btn-ghost">
               {t("seeWork")}
             </QuietLink>
+            <EnterHqButton label={t("hero.enter3d")} hint={t("hero.enter3dHint")} />
           </div>
           <AskHeroBar />
         </div>

@@ -76,6 +76,7 @@
     "inProgress": "in progress"
   },
   "home": {
+    "proofLabel": "Key numbers",
     "currentRole": "Current role",
     "statsTitle": "At a glance",
     "journeyTitle": "Recent work",

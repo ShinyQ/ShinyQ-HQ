@@ -7,6 +7,7 @@ import { OfficeSection } from "@/components/office/OfficeSection";
 import { FeaturedProject } from "@/components/page/Featured";
 import { HomeHero } from "@/components/page/Hero";
 import { SectionSplit, SectionWide } from "@/components/page/Layout";
+import { ProofStrip } from "@/components/page/ProofStrip";
 import { StatTicker } from "@/components/page/StatTicker";
 import { TickerVisits } from "@/components/stats/TickerVisits";
 import { TimelineRow } from "@/components/page/Timeline";
@@ -14,7 +15,7 @@ import { WorkRow } from "@/components/page/Work";
 import { Certifications } from "@/components/certs/Certifications";
 import { SkillsWall } from "@/components/ProfileBlocks";
 import { DYNAMIC_STATS, getPods, getPosts, getProfile, getRoof, getSkills, getStats, getTimeline } from "@/content/load";
-import { moreKeyProjects, pickFeaturedPods } from "@/content/pageview";
+import { heroProofStats, moreKeyProjects, pickFeaturedPods } from "@/content/pageview";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { experienceDataVersion } from "@/experience/gate-data";
 import { assertLocale } from "@/i18n/locale";
@@ -40,6 +41,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const profile = getProfile();
   const roof = getRoof();
   const pods = getPods();
+  const proof = heroProofStats(getStats(), profile.heroProof);
+  const tickerStats = getStats().filter((s) => !profile.heroProof.includes(s.id));
   const featured = pickFeaturedPods(pods);
   const more = moreKeyProjects(pods, featured);
   const latest = getTimeline()
@@ -61,9 +64,10 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} />
       <HomeHero
         locale={locale}
+        proof={<ProofStrip stats={proof} locale={locale} label={t("proofLabel")} />}
         ticker={
           <StatTicker
-            stats={getStats()}
+            stats={tickerStats}
             locale={locale}
             liveIds={Object.keys(DYNAMIC_STATS)}
             title={t("statsTitle")}
@@ -107,13 +111,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           ))}
         </dl>
         <div className="mt-8">
-          <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-hero">
+          <CvButton className="pv-btn pv-btn-ghost" testId="cv-open-intro">
             {tc("viewCv")}
           </CvButton>
         </div>
       </SectionSplit>
-
-      <OfficeSection locale={locale} />
 
       <SectionSplit id="journey" title={t("journeyTitle")} intro={tj("intro")} more={{ href: "/journey", label: t("fullJourney") }}>
         <ul className="pv-rows pv-rows-closed">
@@ -123,16 +125,18 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         </ul>
       </SectionSplit>
 
-      <SectionSplit id="writing" title={t("writingTitle")} intro={tl("intro")} more={{ href: "/library", label: t("allWriting") }}>
-        <PostList posts={getPosts().slice(0, 3)} locale={locale} />
+      <SectionSplit id="certifications" title={t("certsTitle")}>
+        <Certifications locale={locale} limit={6} />
       </SectionSplit>
 
       <SectionSplit id="skills" title={t("skillsTitle")}>
         <SkillsWall skills={getSkills()} locale={locale} />
       </SectionSplit>
 
-      <SectionSplit id="certifications" title={t("certsTitle")}>
-        <Certifications locale={locale} limit={6} />
+      <OfficeSection locale={locale} />
+
+      <SectionSplit id="writing" title={t("writingTitle")} intro={tl("intro")} more={{ href: "/library", label: t("allWriting") }}>
+        <PostList posts={getPosts().slice(0, 3)} locale={locale} />
       </SectionSplit>
 
       <section id="contact" aria-labelledby="closing-title" className="pv-wrap pv-sec">

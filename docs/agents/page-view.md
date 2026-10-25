@@ -76,7 +76,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Restraint (design refinement, spec `docs/superpowers/specs/2026-10-19-classic-design-refinement.md`):
   - Dates and periods use `pv-date` (sentence case, tabular mono); `pv-data` capitals are for labels only.
   - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
-    headline result is a `pv-result` block (value over label on a neutral hairline), pinned to the bottom.
+    headline result is a `pv-result` block (value over label on a neutral hairline), under the title on landing cards (recruiters scan results first), pinned to the bottom elsewhere.
   - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
   - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's headline and motto opt out.
   - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped either.
@@ -107,9 +107,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 ## Landing (home hero)
 
-- Section order after the hero (`src/app/[locale]/page.tsx`): Selected work (`#work`), the intro (`#intro`: bio and
-  status), the Live Agent Office (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Journey, Writing,
-  Skills, Certifications, Contact.
+- Section order after the hero (`src/app/[locale]/page.tsx`, the recruiter path, owner decision 2026-10-25): Selected
+  work (`#work`), the intro (`#intro`: bio and status), Journey, Certifications, Skills, the Live Agent Office
+  (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Writing, Contact.
 
 ### Hero
 
@@ -120,6 +120,8 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - About shows it at 80/112 px beside its title
 - Name: no eyebrow, `.hx-name` up to 112 px.
 - Then the headline and the motto (`profile.subheadline`).
+- Then the proof strip (`ProofStrip`, `data-testid="hero-proof"`): the stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`), value beside the stat's `short` label; the ticker skips these ids.
+- Then the actions: View CV (`cv-open-hero`) is the one primary button, then See the work, then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
 - Then it composes:
   - the CSS-only backdrop: a slow two-tone glow and a low, faint Neon Grid floor (no data packets, no glow on the name)
   - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
@@ -142,7 +144,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - independent of `tier`, so a hero such as AI Fraud Document Review stays a key project with its hologram without a landing slot
 - Rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as equal-height cards in one grid:
   - 3 columns from 1024 px, 2 from 768 px, 1 on phones
-  - screenshot, three filmstrip slots, text, then the live link and key result pinned to the bottom
+  - screenshot, three filmstrip slots, title, key result, text, then the live link pinned to the bottom
 - Never stagger or span cards (owner decision).
 - `/labs` Key projects use the same grid.
 

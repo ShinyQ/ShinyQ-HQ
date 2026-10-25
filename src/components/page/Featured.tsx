@@ -14,8 +14,8 @@ const FILM = 3;
 
 /**
  * A landing feature card: the pod's cover with its screenshot count, a filmstrip of the next gallery images,
- * then wing, period, client, the title (the card's link), tagline, and at the bottom the live-site link and
- * the headline result. Cards share one grid with equal heights (owner request, round 5). Only pods with a
+ * then wing, period, client, the title (the card's link), the headline result under the title (recruiters scan
+ * results first, 2026-10-25), the tagline, and at the bottom the live-site link. Cards share one grid with equal heights (owner request, round 5). Only pods with a
  * gallery are featured (`pickFeaturedPods`). Images load lazily: the section starts below the first screen,
  * so they never compete with the hero for LCP.
  */
@@ -65,15 +65,15 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
           {pod.title[locale]}
         </Link>
       </h3>
+      {result && (
+        <div className="pv-result" data-testid="feature-result">
+          <p className="pv-num text-[24px]">{result.value}</p>
+          <p className="pv-result-label">{result.label[locale]}</p>
+        </div>
+      )}
       <p className="pv-card-text">{pod.tagline[locale]}</p>
       <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
-        {result && (
-          <div className="pv-result">
-            <p className="pv-num text-[24px]">{result.value}</p>
-            <p className="pv-result-label">{result.label[locale]}</p>
-          </div>
-        )}
       </div>
     </article>
   );
