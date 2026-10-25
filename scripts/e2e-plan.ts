@@ -64,6 +64,7 @@ export const ALL_SPECS = [
   "shapes",
   "spectacle",
   "static-routes",
+  "time-travel",
   "topics",
   "view-links",
   "visit",
@@ -401,6 +402,11 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // Time Travel on /journey: the section, its selector and island, the page that mounts it, the captions it reads, the Motion setting it follows and its UI strings.
+  {
+    test: /^src\/components\/time-travel\/|^src\/content\/time-travel\.ts$|^src\/app\/\[locale\]\/journey\/page\.tsx$|^content\/site-content\.json$|^src\/lib\/(motion|reduced-motion)\.ts$|^messages\//,
+    specs: ["time-travel"],
+  },
   // The hosts of the unique floating holograms (e2e/shapes.spec.ts) and HoloIcon, which every pad and the Roof draw.
   {
     test: /^src\/experience\/floors\/(career\/(CareerRooms|icons)|CareerArchive|labs\/(Pods|hologramParts)|Labs|library\/(decor\/(common|NewsroomDecor)|icons))\.tsx?$|^src\/experience\/fx\/HoloIcon\.tsx$|^src\/content\/(experience|experience-floors)\.ts$/,

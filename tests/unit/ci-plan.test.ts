@@ -229,7 +229,7 @@ describe("ci-plan planFor: selective pull request runs", () => {
 
   it("runs the mapped specs for content, without smoke, perf or Lighthouse by default", () => {
     const plan = planFor(["content/site-content.json", "public/media/a.webp"], none, opts);
-    expect(plan).toMatchObject({ e2e: ["gallery", "pageview", "seo", "static-routes"], e2eTests: [], perf: false, lighthouse: false });
+    expect(plan).toMatchObject({ e2e: ["gallery", "pageview", "seo", "static-routes", "time-travel"], e2eTests: [], perf: false, lighthouse: false });
   });
 
   it("HUD change: its specs plus the smoke set, the bytes gate, 1 to 3 e2e shards", () => {

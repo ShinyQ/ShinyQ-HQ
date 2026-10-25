@@ -336,6 +336,7 @@ The floating holograms of L2, L3 and L4 (3D only; owner decision [2026-10-23](..
 | `library` | `library.researchMetrics` | `source`, `citations`, `hIndex`, `asOf`: always show the date, e.g. "as of Oct 2026" |
 | `SideProject` | `SideProject.year` | added field |
 | top level | `awards[]` | added |
+| `careerArchive` | `floors.careerArchive.timeTravel.stops` | one stop per year on `/journey` Time Travel: the stop `id` (`pre-2019` or a year), the caption `{ en, id }` (at most 140 characters, the owner's words) and up to 3 `{ kind, id, label? }` highlights (`entry`, `pod`, `publication`, `cert`; the optional `label` `{ en, id }` is the link text, otherwise an entry reads "role, organization" and the others their title). Counts are derived by `src/content/time-travel.ts`; a year with items needs a stop (`tests/content/time-travel.test.ts`) |
 | `ExperienceData` | `ExperienceData.highlights` | `buildHighlightsData`: `projects` from `pickFeaturedPods`, experience rows, stats, contact; feeds the hall ([floor-l1-lobby.md](floor-l1-lobby.md)) |
 | `ExperienceData` | `ExperienceData.engine` | `buildEngineData`: the seven bays with their titles (the dark ones included) for the B1 signs and the point-and-go names; feeds [the Engine Room](floor-b1-engine-room.md) |
 | `RoomView` | `RoomView.engine` (`RoomEngine`) | `buildEngineViews`: the B1 station block (diagram, rounds, gates, excerpt or tiles) and resolved labels |

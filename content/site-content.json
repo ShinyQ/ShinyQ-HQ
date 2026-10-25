@@ -2288,7 +2288,115 @@
           "confidence": "verified",
           "icon": "badge-check"
         }
-      ]
+      ],
+      "timeTravel": {
+        "stops": [
+          {
+            "id": "pre-2019",
+            "caption": {
+              "en": "Android apps at a vocational school in Malang, a GitHub account opened in 2016 and the first competition wins.",
+              "id": "Aplikasi Android di SMK di Malang, akun GitHub pertama pada 2016, dan juara kompetisi pertama."
+            },
+            "highlights": [{ "kind": "entry", "id": "prologue-2016" }]
+          },
+          {
+            "id": "2019",
+            "caption": {
+              "en": "A bootcamp, the first semester at Telkom University and the first paid job: part-time e-commerce backend work.",
+              "id": "Bootcamp, semester pertama di Telkom University, dan pekerjaan berbayar pertama: backend e-commerce paruh waktu."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "telkom-university-2019" },
+              { "kind": "entry", "id": "shumi-2019" },
+              { "kind": "pod", "id": "anime-figure-ecommerce" }
+            ]
+          },
+          {
+            "id": "2020",
+            "caption": {
+              "en": "Leading a campus programming club, assisting practicums and entering competitions all year.",
+              "id": "Memimpin klub pemrograman kampus, menjadi asisten praktikum, dan mengikuti kompetisi sepanjang tahun."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "campus-and-community-2020" },
+              { "kind": "entry", "id": "trophy-case-2020", "label": { "en": "Competition Results, 2020", "id": "Hasil Kompetisi 2020" } },
+              { "kind": "entry", "id": "research-vaccination-sentiment-2020", "label": { "en": "COVID-19 Vaccination Sentiment Analysis", "id": "Analisis Sentimen Vaksinasi COVID-19" } }
+            ]
+          },
+          {
+            "id": "2021",
+            "caption": {
+              "en": "Three internships, one of them remote for a team in Germany, and the first papers.",
+              "id": "Tiga program magang, salah satunya remote untuk tim di Jerman, dan paper pertama."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "techbros-2021" },
+              { "kind": "publication", "id": "ewallet-sentiment-cnn-lstm" },
+              { "kind": "entry", "id": "trophy-case-2021", "label": { "en": "Competition Results, 2021", "id": "Hasil Kompetisi 2021" } }
+            ]
+          },
+          {
+            "id": "2022",
+            "caption": {
+              "en": "The first full-time engineering job, travel payments at MNC, while finishing the thesis.",
+              "id": "Pekerjaan engineer penuh waktu pertama, pembayaran travel di MNC, sambil menyelesaikan skripsi."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "mnc-2022" },
+              { "kind": "pod", "id": "payments-realtime-backend" },
+              { "kind": "pod", "id": "university-sentiment-indobert" }
+            ]
+          },
+          {
+            "id": "2023",
+            "caption": {
+              "en": "Graduated, then built multi-tenant SaaS at Jatis, with freelance backend work on the side.",
+              "id": "Lulus, lalu membangun SaaS multi-tenant di Jatis, ditambah proyek backend freelance."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "graduation-2023" },
+              { "kind": "pod", "id": "multi-tenant-saas-platform" },
+              { "kind": "publication", "id": "sentiboard-bsc-thesis" }
+            ]
+          },
+          {
+            "id": "2024",
+            "caption": {
+              "en": "Joined Jenius to build digital banking integrations, and kept shipping side projects.",
+              "id": "Bergabung dengan Jenius untuk membangun integrasi perbankan digital, sambil terus merilis side project."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "jenius-2024" },
+              { "kind": "pod", "id": "digital-banking-integrations" },
+              { "kind": "pod", "id": "stock-allocation-optimizer" }
+            ]
+          },
+          {
+            "id": "2025",
+            "caption": {
+              "en": "Freelance and agency work for several teams at once, alongside the banking role.",
+              "id": "Proyek freelance dan agensi untuk beberapa tim sekaligus, di samping pekerjaan di bank."
+            },
+            "highlights": [
+              { "kind": "pod", "id": "event-ticketing-platform" },
+              { "kind": "pod", "id": "ticket-marketplace-backend" },
+              { "kind": "entry", "id": "portfolio-v1-2025", "label": { "en": "First Portfolio Site", "id": "Situs Portofolio Pertama" } }
+            ]
+          },
+          {
+            "id": "2026",
+            "caption": {
+              "en": "Joined Metrodata's Microsoft AI practice: writing specs, directing AI coding agents and shipping AI to production.",
+              "id": "Bergabung dengan praktik Microsoft AI di Metrodata: menulis spec, mengarahkan AI coding agent, dan merilis AI ke produksi."
+            },
+            "highlights": [
+              { "kind": "entry", "id": "metrodata-2026" },
+              { "kind": "pod", "id": "voice-ai-contact-center" },
+              { "kind": "cert", "id": "ai-103" }
+            ]
+          }
+        ]
+      }
     },
     "labs": {
       "pods": [

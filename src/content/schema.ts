@@ -408,6 +408,26 @@ export const SideProjectSchema = z.strictObject({
   repo: httpsUrl.optional(),
 });
 
+/** Time Travel on /journey (spec 2026-10-25-time-travel-slider-design.md): one owner caption per stop. */
+export const TIME_TRAVEL_CAPTION_MAX = 140;
+export const PROLOGUE_STOP_ID = "pre-2019";
+
+export const TimeTravelHighlightSchema = z.strictObject({
+  kind: z.enum(["entry", "pod", "publication", "cert"]),
+  id: nonEmpty,
+  /** Link text override. Without it an entry reads "role, organization"; the others use their title. */
+  label: LocalizedTextSchema.optional(),
+});
+
+export const TimeTravelStopSchema = z.strictObject({
+  /** `pre-2019` (everything before FIRST_CORRIDOR_YEAR) or a four-digit year. */
+  id: z.union([z.literal(PROLOGUE_STOP_ID), z.string().regex(/^20\d\d$/)]),
+  caption: z.strictObject({ en: nonEmpty.max(TIME_TRAVEL_CAPTION_MAX), id: nonEmpty.max(TIME_TRAVEL_CAPTION_MAX) }),
+  highlights: z.array(TimeTravelHighlightSchema).max(3),
+});
+
+export const TimeTravelSchema = z.strictObject({ stops: z.array(TimeTravelStopSchema).min(1) });
+
 export const RepoRefSchema = z.strictObject({
   name: nonEmpty,
   url: httpsUrl,
@@ -612,7 +632,7 @@ export const SiteContentObjectSchema = z.strictObject({
   certifications: z.array(CertificationSchema),
   awards: z.array(AwardSchema),
   floors: z.strictObject({
-    careerArchive: z.strictObject({ entries: z.array(TimelineEntrySchema).min(1) }),
+    careerArchive: z.strictObject({ entries: z.array(TimelineEntrySchema).min(1), timeTravel: TimeTravelSchema.optional() }),
     labs: z.strictObject({ pods: z.array(PodSchema).min(1) }),
     library: z.strictObject({
       posts: z.array(PostRefSchema),
@@ -731,6 +751,8 @@ export type Talk = z.infer<typeof TalkSchema>;
 export type Contact = z.infer<typeof ContactSchema>;
 export type CvConfig = z.infer<typeof CvConfigSchema>;
 export type SideProject = z.infer<typeof SideProjectSchema>;
+export type TimeTravelStop = z.infer<typeof TimeTravelStopSchema>;
+export type TimeTravelHighlightRef = z.infer<typeof TimeTravelHighlightSchema>;
 export type RepoRef = z.infer<typeof RepoRefSchema>;
 export type Award = z.infer<typeof AwardSchema>;
 export type DrawerTab = z.infer<typeof DrawerTabSchema>;

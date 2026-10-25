@@ -51,6 +51,22 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
+  it("runs the Time Travel spec for its section, selector, page, captions, Motion setting and strings", () => {
+    const files = [
+      "src/components/time-travel/Skyline.tsx",
+      "src/content/time-travel.ts",
+      "src/app/[locale]/journey/page.tsx",
+      "content/site-content.json",
+      "src/lib/motion.ts",
+      "src/lib/reduced-motion.ts",
+      "messages/en.json",
+      "messages/id.json",
+    ];
+    for (const file of files) {
+      expect(specsForChanges([file]).specs, file).toContain("time-travel");
+    }
+  });
+
   it("maps the shared PDF reader, the CV and the paper reader to every spec that opens one", () => {
     for (const file of ["src/components/pdf-reader/PdfReader.tsx", "src/components/pdf-reader/ReaderDialog.tsx"]) {
       expect(specsForChanges([file]).specs, file).toEqual(expect.arrayContaining(["guides", "guides-vault", "pageview", "csp", "library-roof"]));
@@ -301,7 +317,7 @@ describe("specsForChanges", () => {
 
   it("maps static pages and content", () => {
     expect(specsForChanges(["src/app/[locale]/labs/page.tsx"]).specs).toEqual(["gallery", "pageview", "static-routes"]);
-    expect(specsForChanges(["content/site-content.json"]).specs).toEqual(["pageview", "seo", "static-routes"]);
+    expect(specsForChanges(["content/site-content.json"]).specs).toEqual(["pageview", "seo", "static-routes", "time-travel"]);
   });
 
   it("maps Ask the HQ code, the Function and the panel to the ask spec", () => {
