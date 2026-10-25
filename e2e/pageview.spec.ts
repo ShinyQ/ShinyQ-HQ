@@ -9,7 +9,7 @@ import { content, firstEntry, heroPod, hostedPost, livePods } from "./routes";
 import data from "../content/site-content.json";
 import en from "../messages/en.json";
 import { perspectiveFingerprints } from "../src/content/perspectives";
-import { PerspectivesFileSchema } from "../src/content/schema";
+import { PerspectivesFileSchema, STORY_SLUGS } from "../src/content/schema";
 import { scanBuildOutput } from "../src/content/safety";
 import { headlineResults } from "../src/content/selectors";
 
@@ -96,10 +96,27 @@ test("Journey type filter hides other entries and empty years", async ({ page })
   await expect(page.locator("#y2026")).toBeHidden();
 });
 
+const storyPod = content.floors.labs.pods.find((p) => p.slug === "voice-ai-contact-center")!;
+const plainPod = content.floors.labs.pods.find((p) => p.tier === "hero" && !STORY_SLUGS.includes(p.slug as (typeof STORY_SLUGS)[number]))!;
+
 test("case study keeps its anchors and table of contents", async ({ page }) => {
-  await openPage(page, staticTier(`/en/labs/${heroPod.slug}`));
-  for (const id of ["results", "problem", "approach", "architecture", "stack"]) await expect(page.locator(`#${id}`)).toBeAttached();
+  await openPage(page, staticTier(`/en/labs/${plainPod.slug}`));
+  for (const id of ["results", "problem", "approach", "stack"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link", { name: "Problem" })).toHaveAttribute("href", "#problem");
+});
+
+test("a featured case study reads as a story: situation, key decisions, results, then lesson, with the old anchors kept", async ({ page }) => {
+  await openPage(page, staticTier(`/en/labs/${storyPod.slug}`));
+  const chapters = await page.locator("article section[id] > h2").evaluateAll((els) => els.map((h) => h.parentElement!.id));
+  const story = ["problem", "approach", "results"];
+  expect(chapters.filter((id) => story.includes(id))).toEqual(story);
+  await expect(page.locator("#problem h2")).toHaveText(en.labs.situation);
+  await expect(page.locator("#approach h2")).toHaveText(en.labs.decisions);
+  await expect(page.locator("#approach li")).toHaveCount(data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.story!.decisions.length);
+  await expect(page.locator("#approach li").first()).toContainText(en.labs.why);
+  const toc = page.getByRole("navigation", { name: "On this page" });
+  await expect(toc.getByRole("link", { name: en.labs.situation })).toHaveAttribute("href", "#problem");
+  await expectNoSeriousViolations(page);
 });
 
 test("Home keeps the deep-link anchors used by the room catalog", async ({ page }) => {

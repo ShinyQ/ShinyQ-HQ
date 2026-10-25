@@ -14,6 +14,7 @@ import { ShareLinks } from "@/components/ShareLinks";
 import { Chapter, FactRow, MetricLedger, StepList } from "@/components/page/Case";
 import { CaseToc } from "@/components/page/CaseToc";
 import { PodCodeResearch } from "@/components/page/PodCodeResearch";
+import { DecisionList, Lesson } from "@/components/page/Story";
 import { CrumbLink, Marker } from "@/components/page/Layout";
 import { getContent, getPod, getPods, getTimelineEntryById } from "@/content/load";
 import { toGalleryImages } from "@/content/media";
@@ -58,15 +59,27 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const headline = headlineResults(pod.results);
   // The full results chapter only when it adds something to the strip: more results, or how they were measured.
   const detail = pod.results.length > headline.length || pod.results.some((r) => r.context);
-  const toc = [
-    ...(detail ? [{ id: "results", label: t("results") }] : []),
-    { id: "problem", label: t("problem") },
-    { id: "approach", label: t("approach") },
+  const story = pod.story;
+  const tail = [
     ...(pod.architecture ? [{ id: "architecture", label: t("architecture") }] : []),
     ...(images.length > 0 ? [{ id: "gallery", label: tg("title") }] : []),
     ...(codeResearch ? [{ id: "code", label: t("codeResearch") }] : []),
     { id: "stack", label: tc("stack") },
   ];
+  const toc = story
+    ? [
+        { id: "problem", label: t("situation") },
+        { id: "approach", label: t("decisions") },
+        { id: "results", label: t("results") },
+        ...(story.lesson ? [{ id: "lesson", label: t("lesson") }] : []),
+        ...tail,
+      ]
+    : [
+        ...(detail ? [{ id: "results", label: t("results") }] : []),
+        { id: "problem", label: t("problem") },
+        { id: "approach", label: t("approach") },
+        ...tail,
+      ];
 
   return (
     <ClientMessages>
@@ -84,7 +97,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             <h1 className="pv-d-l mt-5">{pod.title[locale]}</h1>
             <p className="pv-lead mt-6">{pod.tagline[locale]}</p>
             {/* Without a results chapter the strip keeps the `#results` anchor (3D drawer tabs link to it). */}
-            <section id={detail ? undefined : "results"} aria-labelledby="key-results-title" className="mt-8">
+            <section id={detail || story ? undefined : "results"} aria-labelledby="key-results-title" className="mt-8">
               <h2 id="key-results-title" className="sr-only">
                 {t("keyResults")}
               </h2>
@@ -110,17 +123,38 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
 
         <div className="pv-wrap grid gap-6 lg:grid-cols-12">
           <div className="pv-col min-w-0 lg:col-span-8">
-            {detail && (
-              <Chapter id="results" title={t("results")}>
-                <MetricLedger results={pod.results} locale={locale} />
-              </Chapter>
+            {story ? (
+              <>
+                <Chapter id="problem" title={t("situation")}>
+                  <p className="pv-lead text-ink-2">{story.situation[locale]}</p>
+                </Chapter>
+                <Chapter id="approach" title={t("decisions")}>
+                  <DecisionList decisions={story.decisions} locale={locale} whyLabel={t("why")} />
+                </Chapter>
+                <Chapter id="results" title={t("results")}>
+                  <MetricLedger results={pod.results} locale={locale} />
+                </Chapter>
+                {story.lesson && (
+                  <Chapter id="lesson" title={t("lesson")}>
+                    <Lesson text={story.lesson[locale]} />
+                  </Chapter>
+                )}
+              </>
+            ) : (
+              <>
+                {detail && (
+                  <Chapter id="results" title={t("results")}>
+                    <MetricLedger results={pod.results} locale={locale} />
+                  </Chapter>
+                )}
+                <Chapter id="problem" title={t("problem")}>
+                  <p className="pv-lead text-ink-2">{pod.problem[locale]}</p>
+                </Chapter>
+                <Chapter id="approach" title={t("approach")}>
+                  <StepList steps={pod.approach} locale={locale} />
+                </Chapter>
+              </>
             )}
-            <Chapter id="problem" title={t("problem")}>
-              <p className="pv-lead text-ink-2">{pod.problem[locale]}</p>
-            </Chapter>
-            <Chapter id="approach" title={t("approach")}>
-              <StepList steps={pod.approach} locale={locale} />
-            </Chapter>
             {pod.architecture && (
               <Chapter id="architecture" title={t("architecture")}>
                 <ArchitectureDiagram architecture={pod.architecture} locale={locale} />
