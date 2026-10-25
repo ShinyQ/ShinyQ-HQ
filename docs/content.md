@@ -74,6 +74,7 @@ The `/journey` skyline has one stop per year (`floors.careerArchive.timeTravel.s
 - Add a stop when a new year gets its first item (the content test fails otherwise).
 - The caption is the owner's own words, at most 140 characters in each language, no counts (the tally is derived). Show it to the owner and merge it only after approval.
 - Highlights (up to 3) point at existing entries, pods, publications or certifications; an award is highlighted through its year's `trophy-case-*` entry.
+- A highlight link reads "role, organization" for an entry and the title for a pod, publication or certification. Add `label` (`{ en, id }`, Title Case, no first person) to a highlight when that text is vague or repeats another highlight's (the trophy case entries and research entries do); no two highlights may share link text (the content test checks).
 - Check: `bunx vitest run tests/content/time-travel.test.ts`.
 
 ## Writing a story case study

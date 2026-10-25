@@ -2319,8 +2319,8 @@
             },
             "highlights": [
               { "kind": "entry", "id": "campus-and-community-2020" },
-              { "kind": "entry", "id": "trophy-case-2020" },
-              { "kind": "entry", "id": "research-vaccination-sentiment-2020" }
+              { "kind": "entry", "id": "trophy-case-2020", "label": { "en": "Competition Results, 2020", "id": "Hasil Kompetisi 2020" } },
+              { "kind": "entry", "id": "research-vaccination-sentiment-2020", "label": { "en": "COVID-19 Vaccination Sentiment Analysis", "id": "Analisis Sentimen Vaksinasi COVID-19" } }
             ]
           },
           {
@@ -2332,7 +2332,7 @@
             "highlights": [
               { "kind": "entry", "id": "techbros-2021" },
               { "kind": "publication", "id": "ewallet-sentiment-cnn-lstm" },
-              { "kind": "entry", "id": "trophy-case-2021" }
+              { "kind": "entry", "id": "trophy-case-2021", "label": { "en": "Competition Results, 2021", "id": "Hasil Kompetisi 2021" } }
             ]
           },
           {
@@ -2380,7 +2380,7 @@
             "highlights": [
               { "kind": "pod", "id": "event-ticketing-platform" },
               { "kind": "pod", "id": "ticket-marketplace-backend" },
-              { "kind": "entry", "id": "portfolio-v1-2025" }
+              { "kind": "entry", "id": "portfolio-v1-2025", "label": { "en": "First Portfolio Site", "id": "Situs Portofolio Pertama" } }
             ]
           },
           {

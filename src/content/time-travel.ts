@@ -74,22 +74,22 @@ function resolveHighlight(content: SiteContent, ref: TimeTravelHighlightRef): Tt
     case "entry": {
       const e = careerArchive.entries.find((x) => x.id === ref.id);
       if (!e) throw fail();
-      return { kind: ref.kind, label: e.role, href: `/journey/${e.slug}` };
+      return { kind: ref.kind, label: ref.label ?? { en: `${e.role.en}, ${e.org}`, id: `${e.role.id}, ${e.org}` }, href: `/journey/${e.slug}` };
     }
     case "pod": {
       const p = labs.pods.find((x) => x.id === ref.id);
       if (!p) throw fail();
-      return { kind: ref.kind, label: p.title, href: `/labs/${p.slug}` };
+      return { kind: ref.kind, label: ref.label ?? p.title, href: `/labs/${p.slug}` };
     }
     case "publication": {
       const p = library.publications.find((x) => x.id === ref.id);
       if (!p) throw fail();
-      return { kind: ref.kind, label: { en: p.title, id: p.title }, href: isResearch(p.kind) ? "/library#research" : "/library#publications" };
+      return { kind: ref.kind, label: ref.label ?? { en: p.title, id: p.title }, href: isResearch(p.kind) ? "/library#research" : "/library#publications" };
     }
     case "cert": {
       const c = content.certifications.find((x) => x.id === ref.id);
       if (!c) throw fail();
-      return { kind: ref.kind, label: { en: c.name, id: c.name }, href: "/contact#certifications" };
+      return { kind: ref.kind, label: ref.label ?? { en: c.name, id: c.name }, href: "/contact#certifications" };
     }
   }
 }

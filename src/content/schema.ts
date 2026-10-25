@@ -415,6 +415,8 @@ export const PROLOGUE_STOP_ID = "pre-2019";
 export const TimeTravelHighlightSchema = z.strictObject({
   kind: z.enum(["entry", "pod", "publication", "cert"]),
   id: nonEmpty,
+  /** Link text override. Without it an entry reads "role, organization"; the others use their title. */
+  label: LocalizedTextSchema.optional(),
 });
 
 export const TimeTravelStopSchema = z.strictObject({

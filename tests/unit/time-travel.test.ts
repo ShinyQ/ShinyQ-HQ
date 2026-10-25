@@ -68,10 +68,31 @@ describe("time travel derivation", () => {
     const byId = Object.fromEntries(buildTimeTravel(real).map((s) => [s.id, s]));
     const entry = real.floors.careerArchive.entries.find((e) => e.id === "shumi-2019")!;
     const pod = real.floors.labs.pods.find((p) => p.id === "payments-realtime-backend")!;
-    expect(byId["2019"].highlights[1]).toEqual({ kind: "entry", label: entry.role, href: `/journey/${entry.slug}` });
+    expect(byId["2019"].highlights[1]).toEqual({
+      kind: "entry",
+      label: { en: `${entry.role.en}, ${entry.org}`, id: `${entry.role.id}, ${entry.org}` },
+      href: `/journey/${entry.slug}`,
+    });
     expect(byId["2022"].highlights[1].href).toBe(`/labs/${pod.slug}`);
     expect(byId["2021"].highlights[1].href).toBe("/library#research");
     expect(byId["2026"].highlights[2]).toMatchObject({ kind: "cert", href: "/contact#certifications" });
+  });
+
+  it("reads an entry highlight as role and organization, with an optional label override", () => {
+    const grad = real.floors.careerArchive.entries.find((e) => e.id === "graduation-2023")!;
+    const copy = withStops(real, expectedStopIds(real));
+    const stop = copy.floors.careerArchive.timeTravel!.stops.find((s) => s.id === "2023")!;
+    stop.highlights = [
+      { kind: "entry", id: "graduation-2023" },
+      { kind: "entry", id: "graduation-2023", label: { en: "Graduation Day", id: "Hari Wisuda" } },
+      { kind: "pod", id: "multi-tenant-saas-platform", label: { en: "Pod Override", id: "Pod Timpa" } },
+    ];
+    const [plain, custom, pod] = buildTimeTravel(copy).find((s) => s.id === "2023")!.highlights;
+    expect(plain.label).toEqual({ en: `${grad.role.en}, ${grad.org}`, id: `${grad.role.id}, ${grad.org}` });
+    expect(plain.label.en).toMatch(/^BSc graduate, /);
+    expect(plain.label.id).toMatch(/^Lulus S1, /);
+    expect(custom.label).toEqual({ en: "Graduation Day", id: "Hari Wisuda" });
+    expect(pod.label).toEqual({ en: "Pod Override", id: "Pod Timpa" });
   });
 
   it("throws on an unknown highlight id", () => {

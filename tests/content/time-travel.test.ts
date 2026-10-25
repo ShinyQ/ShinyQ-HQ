@@ -2,13 +2,26 @@ import { describe, expect, it } from "vitest";
 import data from "../../content/site-content.json";
 import { SiteContentSchema, TIME_TRAVEL_CAPTION_MAX } from "@/content/schema";
 import { buildTimeTravel, expectedStopIds } from "@/content/time-travel";
+import { hasFirstPerson } from "@/lib/first-person";
+import en from "../../messages/en.json";
+import id from "../../messages/id.json";
 
 const content = SiteContentSchema.parse(data);
 const stops = content.floors.careerArchive.timeTravel?.stops ?? [];
 
 describe("time travel stops (owner approved 2026-10-25)", () => {
-  it("has the prologue and one stop per year from 2019 to 2026, in order", () => {
-    expect(stops.map((s) => s.id)).toEqual(["pre-2019", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
+  it("has the prologue first and one stop per year from 2019, consecutive", () => {
+    const ids = stops.map((s) => s.id);
+    expect(ids[0]).toBe("pre-2019");
+    const years = ids.slice(1).map(Number);
+    expect(years[0]).toBe(2019);
+    years.forEach((year, i) => expect(year).toBe(2019 + i));
+    expect(ids).toEqual(expectedStopIds(content));
+  });
+
+  it("keeps the section title free of the first person", () => {
+    expect(hasFirstPerson(en.timeTravel.title, "en")).toBe(false);
+    expect(hasFirstPerson(id.timeTravel.title, "id")).toBe(false);
   });
 
   it("keeps every caption short, bilingual and free of em dashes", () => {
@@ -44,5 +57,14 @@ describe("time travel coverage", () => {
 
   it("resolves every highlight", () => {
     expect(() => buildTimeTravel(content)).not.toThrow();
+  });
+
+  it("gives every highlight its own link text in both locales", () => {
+    const all = buildTimeTravel(content).flatMap((s) => s.highlights);
+    for (const locale of ["en", "id"] as const) {
+      const labels = all.map((h) => h.label[locale]);
+      expect(labels.length).toBeGreaterThan(0);
+      expect(new Set(labels).size, `duplicate ${locale} labels: ${labels.join(" | ")}`).toBe(labels.length);
+    }
   });
 });
