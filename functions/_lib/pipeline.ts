@@ -8,8 +8,8 @@ import { cosines, packVectors, ROUTER_LABELS, routerSignals, type Embedder, type
 import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
-import { INTENT_TERMS, leadMatches, retrieve, scoreChunks } from "./retrieve";
-import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isOffTopic, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
+import { approachMatches, INTENT_TERMS, leadMatches, retrieve, scoreChunks } from "./retrieve";
+import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isProblemQuestion, isOffTopic, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack } from "./types";
 
@@ -108,7 +108,7 @@ export function usableHistory(history: readonly HistoryTurn[], pack: KnowledgePa
 }
 
 /** Deterministic routes (owner decision 2026-10-24); `default` is the general retrieval route. Logged as Analytics Engine blob14. */
-export type AskRoute = "lead" | "civic" | "policy" | "lifestyle" | "team" | "mentoring" | "adjacent" | "default";
+export type AskRoute = "approach" | "lead" | "civic" | "policy" | "lifestyle" | "team" | "mentoring" | "adjacent" | "default";
 
 /** Follow-up topics a canned decline offers (owner decision 2026-10-24: never a dead end). */
 const REDIRECT_TAGS: Partial<Record<CannedKind, AskTag[]>> = {
@@ -149,6 +149,8 @@ export type RoutePlan =
       history: HistoryTurn[];
       topic?: RoutedTopic;
       lead: boolean;
+      /** Bring your problem (owner decision 2026-10-25): a problem question with matching past projects. */
+      approach: boolean;
       adjacent: boolean;
       civic: boolean;
       mentoring: boolean;
@@ -192,7 +194,8 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   if (either(isRuleOverride)) return canned("decline", "injection", { tags: [] });
   // An earlier project inquiry never turns a request for general-assistant work into a lead.
   if (!isLeadQuestion(question) && isGeneralAssistantRequest(question)) return canned("decline", "general", { match: true });
-  const lead = either(isLeadQuestion);
+  const problem = either(isProblemQuestion);
+  const lead = either(isLeadQuestion) || problem;
   const personal = either(privateTopic);
   // A project inquiry that asks for a price gets no number, but still the invitation and the contact card.
   if (personal === "pay" && lead) return canned("leadRates", undefined, { tags: ["contact"], lead: true });
@@ -212,6 +215,8 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   if (!lead && either(isGeneralAssistantRequest)) return canned("decline", "general", { match: true });
   // Weather, trivia, arithmetic and the like (owner decision 2026-10-24): a fixed redirect, no model call.
   if (!lead && !declined.length && isOffTopic(question)) return canned("offtopic", "offtopic", { match: true });
+  // Bring your problem: a problem question with matching past projects gets the approach outline (rule 18).
+  const approach = problem && leadMatches(pack, routed).length > 0;
 
   // A learning question wins over the AI-and-jobs policy heuristic ("Which certificates would help me land an AI job?").
   const mentoring = !lead && !civicQuestion(routed) && isMentoringQuestion(routed);
@@ -220,8 +225,8 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   const team = !lead && !topic && !mentoring && isTeamQuestion(routed);
   // A related professional question (owner decision 2026-10-19): answered only from his work, with a cited source.
   const adjacent = !lead && !topic && !mentoring && !team && isAdjacentQuestion(routed);
-  const route: AskRoute = lead ? "lead" : civic ? "civic" : topic ? topic : mentoring ? "mentoring" : team ? "team" : adjacent ? "adjacent" : "default";
-  return { kind: "model", route, routed, modelQuestion, ...(anchor ? { anchor } : {}), history, ...(topic ? { topic } : {}), lead, adjacent, civic, mentoring, team, declined };
+  const route: AskRoute = approach ? "approach" : lead ? "lead" : civic ? "civic" : topic ? topic : mentoring ? "mentoring" : team ? "team" : adjacent ? "adjacent" : "default";
+  return { kind: "model", route, routed, modelQuestion, ...(anchor ? { anchor } : {}), history, ...(topic ? { topic } : {}), lead, approach, adjacent, civic, mentoring, team, declined };
 }
 
 /**
@@ -282,12 +287,16 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     };
   }
   const { routed, topic, lead, adjacent, civic, mentoring, team, anchor, history } = plan;
-  const routeLabel = `${plan.route}${plan.declined.length ? "+partial" : ""}`;
-  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
+  const matches = lead ? leadMatches(pack, routed) : [];
+  // The question vector keeps only matches that are really about the problem (2026-10-25 probe); none left: a plain lead.
+  const outlined = plan.approach ? approachMatches(pack, matches, semantic) : [];
+  const approach = outlined.length > 0;
+  const route: AskRoute = plan.route === "approach" && !approach ? "lead" : plan.route;
+  const routeLabel = `${route}${plan.declined.length ? "+partial" : ""}`;
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(approach ? { approach: outlined } : {}), ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
-  const matches = lead ? leadMatches(pack, routed) : [];
-  const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
+  const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(approach ? { approach: { matches: outlined.map((c) => c.title) } } : lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
   const messages = buildMessages(pack.packDate, context, plan.modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
@@ -312,6 +321,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     site: !lead && isSiteQuestion(routed),
     ...(topic ? { topic } : {}),
     ...(lead ? { lead: { fit: matches.length > 0 } } : {}),
+    ...(approach ? { approach: { matches: outlined } } : {}),
     adjacent,
     mentoring,
     locale,

@@ -181,6 +181,15 @@ const EDGES: [string, string, string][] = [
   ["health", "Did he build a mental health app?", "default"],
   ["life", "When is his birthday?", "private"],
   ["life", "What's his favorite movie?", "lifestyle"],
+  ["problem", "Our call center can't keep up. His approach?", "approach"],
+  ["problem", "Call center kami kewalahan. Pendekatannya?", "approach"],
+  ["problem", "How would he speed up slow document review?", "approach"],
+  ["problem", "Our team struggles with flaky tests", "lead"],
+  ["problem", "Kami kesulitan menyaring CV pelamar", "lead"],
+  ["problem", "Can he build us a chatbot?", "lead"],
+  ["problem", "Our fraud checks are manual. His approach? And is he married?", "approach+partial(family)"],
+  ["problem", "Our fraud checks are manual. Write the Python code for us.", "decline"],
+  ["problem", "How would he solve corruption in the government?", "civic"],
 ];
 
 describe("routing matrix", () => {

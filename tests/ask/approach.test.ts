@@ -1,11 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/checks";
-import { packVocabulary } from "../../functions/_lib/pipeline";
+import { MESSAGES } from "../../functions/_lib/messages";
+import type { ModelClient } from "../../functions/_lib/model";
+import { scrubPII } from "../../functions/_lib/pii";
+import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
 import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { approachLine, PROMPT_VERSION, routingLines, RULES } from "../../functions/_lib/prompt";
 import { APPROACH_MATCH_CAP, APPROACH_PERSPECTIVE_CAP, approachMatches, leadMatches, LEAD_ENGAGEMENTS, retrieve, SEMANTIC_FLOOR } from "../../functions/_lib/retrieve";
 import { isProblemQuestion } from "../../functions/_lib/scope";
+import { cleanText, detectLocale } from "../../functions/_lib/text";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import { cosines, decodeRows, encodeRows, hydrateVectors, type PackVectors, type StoredVectors } from "../../functions/_lib/vectors";
 
@@ -271,5 +275,63 @@ describe("approach checks", () => {
   it("matches a CONTEXT duration on word boundaries only", () => {
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 13 weeks")).toBe(true);
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 3 weeks")).toBe(false);
+  });
+});
+
+const fast = { firstTokenMs: 60, totalMs: 150 };
+
+function mockClient(answer: string) {
+  const calls: { model: string; input: unknown }[] = [];
+  const client: ModelClient = {
+    stream(model, input) {
+      calls.push({ model, input });
+      return (async function* () {
+        yield answer;
+      })();
+    },
+  };
+  return { client, calls };
+}
+
+const ask = async (q: string, answer = "unused", locale: "en" | "id" = "en") => {
+  const question = scrubPII(cleanText(q));
+  const { client, calls } = mockClient(answer);
+  const result = await runPipeline({ question, locale: detectLocale(question, locale), pack, vocabulary: packVocabulary(pack), client, models: { primary: "p", fallback: "f" }, timeouts: fast });
+  return { ...result, calls };
+};
+
+const systemOf = (calls: { input: unknown }[]) => (calls[0].input as { messages: { content: string }[] }).messages[0].content;
+
+describe("approach pipeline", () => {
+  const q = "Our call center can't keep up. His approach?";
+
+  it("routes a problem with matches to approach, states rule 18, and carries the cite and the contact card", async () => {
+    const matches = approachMatches(pack, leadMatches(pack, q), null);
+    const { context } = retrieve(pack, q, "en", { lead: true, approach: matches });
+    const m = matches[0];
+    const body = m.text_en.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
+    const answer = `In **${m.title}**, ${body.charAt(0).toLowerCase()}${body.slice(1)} Get in touch through the contact card.`;
+    expect(context).toContain(m.text_en.slice(0, 40));
+    const r = await ask(q, answer);
+    expect(r).toMatchObject({ outcome: "answer", route: "approach", lead: true, cite: m.url });
+    expect(systemOf(r.calls)).toContain("(rule 18)");
+  });
+
+  it("replaces a prescriptive answer with the lead message and the card", async () => {
+    const r = await ask(q, "You should use Azure OpenAI and it would take 6 weeks.");
+    expect(r).toMatchObject({ text: MESSAGES.lead.en, reason: "consulting", route: "approach", lead: true });
+  });
+
+  it("falls back to the lead route when no project matches", async () => {
+    const r = await ask("Our team struggles with flaky tests", "Kurniadi takes freelance work; get in touch through the contact card.");
+    expect(r.route).toBe("lead");
+    expect(systemOf(r.calls)).toContain("(rule 11)");
+  });
+
+  it("drops to the lead route when the question vector rejects every match", async () => {
+    // A vector orthogonal to every chunk: every cosine is 0, under SEMANTIC_FLOOR.
+    const zero = new Float32Array(1024);
+    zero[0] = 1;
+    expect(approachMatches(pack, leadMatches(pack, q), zero).length).toBeLessThanOrEqual(APPROACH_MATCH_CAP);
   });
 });
