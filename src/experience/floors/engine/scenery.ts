@@ -76,9 +76,9 @@ export interface ReactorCounts {
 export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
 const LED_TONES = [ENGINE_TONES.green, ENGINE_TONES.amber, ENGINE_TONES.cyan] as const;
 
-/** LEDs per rack cabinet; the lite tier draws half. */
-export function engineDetail(tier: GpuTier): { leds: number } {
-  return { leds: tier === "full" ? 8 : 4 };
+/** LEDs per rack cabinet and slats per vent grille; the lite tier draws half. */
+export function engineDetail(tier: GpuTier): { leds: number; slats: number } {
+  return tier === "full" ? { leds: 8, slats: 6 } : { leds: 4, slats: 3 };
 }
 
 const WALL = 0.8;
@@ -101,6 +101,17 @@ const PIPE = { run: 0.14, drop: 0.1 } as const;
  * disc at 0.16), `gap` kept from the aisle, spurs and walls, `tile` the target deck plate size.
  */
 export const PLATE = { lift: 0.02, bayFloor: 0.13, gap: 0.3, tile: 2 } as const;
+
+/** A vent grille on each bay side wall: slats from `y` up by `step`, `len` long along the wall, `off` from its inner face (in front of its plates). */
+export const VENT = { y: 3, step: 0.18, len: 1.2, h: 0.05, d: 0.04, off: 0.05 } as const;
+
+/** The bay's two vent grilles (dim cyan holo strips; the strip's pulse reads as air moving through them). */
+function ventSlats(bay: EngineBay, slats: number): FlowInstance[] {
+  const z = (backFace(bay) + bay.front) / 2;
+  return [bay.rect.minX + SIDE + VENT.off, bay.rect.maxX - SIDE - VENT.off].flatMap((x) =>
+    Array.from({ length: slats }, (_, i) => ({ x, y: VENT.y + i * VENT.step, z, w: VENT.d, h: VENT.h, d: VENT.len, color: ENGINE_TONES.data })),
+  );
+}
 
 /** `n` equal cells across [a, b]: their centers and size. */
 function split(a: number, b: number, n: number): { c: number[]; s: number } {
@@ -330,7 +341,7 @@ function workbenchProps(w: Rect): { solids: Box[]; panels: PanelInstance[] } {
 const frontStrip = (bay: EngineBay): FlowInstance => ({ x: bay.center.x, y: 0.03, z: bay.front - out(bay) * 0.15, w: ENGINE.bay.w - 0.6, h: 0.04, d: 0.25, color: ENGINE_TONES.amber });
 
 export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScenery {
-  const { leds } = engineDetail(tier);
+  const { leds, slats } = engineDetail(tier);
   const solids: Box[] = [];
   const flows: FlowInstance[] = pipes(layout);
   const panels: PanelInstance[] = [];
@@ -338,7 +349,7 @@ export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScener
   for (const bay of layout.bays) {
     const props = stationProps(bay, leds);
     solids.push(...bayShell(bay), ...props.solids);
-    flows.push(...props.flows, frontStrip(bay));
+    flows.push(...props.flows, frontStrip(bay), ...ventSlats(bay, slats));
     panels.push(...props.panels);
     plates.push(...bayPlates(bay));
   }

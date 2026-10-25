@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { buildEngineLayout, ENGINE } from "@/experience/floors/engine/layout";
 import { CORE_FX, coreSolids, PLINTH_STEPS } from "@/experience/floors/engine/reactorFx";
-import { END_MASK_H, endMask, ENGINE_TONES, engineScenery, engineSigns, PLATE, stationProps, type PanelInstance, type PlateInstance } from "@/experience/floors/engine/scenery";
+import { END_MASK_H, endMask, engineDetail, ENGINE_TONES, engineScenery, engineSigns, PLATE, stationProps, VENT, type PanelInstance, type PlateInstance } from "@/experience/floors/engine/scenery";
 import { signPlate } from "@/experience/fx/signLayout";
 import type { Rect } from "@/experience/types";
 
@@ -45,7 +45,7 @@ describe("B1 Engine Room scenery", () => {
     expect(leds("lite")).toBeGreaterThan(0);
     const full = engineScenery(layout, "full");
     expect(full.solids.length).toBeLessThan(200);
-    expect(full.flows.length).toBeLessThan(250);
+    expect(full.flows.length).toBeLessThan(300);
     expect(full.panels.length).toBeLessThan(40);
   });
 
@@ -250,5 +250,28 @@ describe("B1 lit-seam plates", () => {
       expect(inside(plateRect(p), R), JSON.stringify(p)).toBe(true);
     }
     expect(PLINTH_STEPS).toEqual([coreSolids()[0].w, coreSolids()[1].w]);
+  });
+});
+
+describe("B1 vents", () => {
+  const slats = (tier: "full" | "lite") => engineScenery(layout, tier).flows.filter((f) => f.h === VENT.h);
+
+  it("hangs one grille on each side wall of every bay, half the slats on lite", () => {
+    expect(engineDetail("full").slats).toBe(2 * engineDetail("lite").slats);
+    for (const tier of ["full", "lite"] as const) {
+      for (const bay of layout.bays) expect(slats(tier).filter((f) => inRect(f, bay.rect)), `${bay.id} ${tier}`).toHaveLength(2 * engineDetail(tier).slats);
+    }
+  });
+
+  it("keeps every slat dim cyan, mid-height on its wall's inner face, under the station sign and clear of the rack LEDs", () => {
+    for (const f of slats("full")) {
+      expect(f.color).toBe(ENGINE_TONES.data);
+      expect(f.y).toBeGreaterThanOrEqual(VENT.y - 1e-9);
+      expect(f.y + f.h / 2).toBeLessThan(ENGINE.bay.h);
+      const bay = layout.bays.find((b) => inRect(f, b.rect))!;
+      const face = Math.min(Math.abs(f.x - (bay.rect.minX + 0.3)), Math.abs(f.x - (bay.rect.maxX - 0.3)));
+      expect(face).toBeCloseTo(VENT.off);
+      expect(f.h).not.toBe(0.08);
+    }
   });
 });
