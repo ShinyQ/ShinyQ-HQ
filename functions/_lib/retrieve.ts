@@ -42,6 +42,10 @@ export const ADJACENT_BOOST = 2;
 const ADJACENT_BOOSTED: ReadonlySet<string> = new Set(["project", "post", "talk"]);
 /** Most matching past projects or jobs a lead answer is grounded in (owner request: 1 to 3). */
 export const LEAD_MATCH_CAP = 3;
+/** Most past projects an approach answer outlines (owner decision 2026-10-25; the 2026-10-25 probe showed weak third matches). */
+export const APPROACH_MATCH_CAP = 2;
+/** Most of his written views an approach answer gets, besides his principles and the engagements view. */
+export const APPROACH_PERSPECTIVE_CAP = 2;
 /** A lead match needs two specific terms in common, or one specific term with at least this BM25 score. */
 export const LEAD_STRONG_SCORE = 4.4;
 /** ...and that term appears at least this often in the project chunk. */
@@ -204,11 +208,34 @@ export function leadMatches(pack: KnowledgePack, question: string): KnowledgeChu
     .map((r) => r.chunk);
 }
 
+/**
+ * The matches an approach answer outlines (owner decision 2026-10-25): with the question's bge-m3 vector, matches whose
+ * cosine is under `SEMANTIC_FLOOR` drop out and the rest are ordered by cosine; a match without a stored vector keeps
+ * its place at the floor. Without a vector, the BM25 order stays. At most `APPROACH_MATCH_CAP`; empty means a plain lead.
+ */
+export function approachMatches(pack: KnowledgePack, matches: readonly KnowledgeChunk[], semantic?: Float32Array | null): KnowledgeChunk[] {
+  const vectors = semantic ? packVectors(pack) : null;
+  if (!semantic || !vectors) return matches.slice(0, APPROACH_MATCH_CAP);
+  const sims = cosines(semantic, vectors.rows, vectors.norms, vectors.dims);
+  return matches
+    .map((chunk) => {
+      const i = pack.chunks.indexOf(chunk);
+      const s = i >= 0 && vectors.norms[i] ? sims[i] : SEMANTIC_FLOOR;
+      return { chunk, s: Number.isFinite(s) ? s : SEMANTIC_FLOOR };
+    })
+    .filter((r) => r.s >= SEMANTIC_FLOOR)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, APPROACH_MATCH_CAP)
+    .map((r) => r.chunk);
+}
+
 export interface RetrieveOptions {
   /** Routed perspective topic (`routedTopic`): only that topic's perspectives, no other chunk but the profile. */
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): contact first, then the matching past work and his engagement terms, never other opinions. */
   lead?: boolean;
+  /** Bring your problem (owner decision 2026-10-25, with `lead`): these matches, his principles and up to `APPROACH_PERSPECTIVE_CAP` views, nothing else. */
+  approach?: readonly KnowledgeChunk[];
   /** Earlier questions a follow-up refers to (`followUpAnchor`): their best chunks come first, so "What stack did it use?" finds the project, not every skill. */
   anchor?: string;
   /** A related professional question (`isAdjacentQuestion`): his principles, then only his case studies, posts, talks, papers and written views. */
@@ -228,7 +255,7 @@ export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
 export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
-  const { topic, lead, anchor, adjacent, civic, mentoring, team, semantic } = options;
+  const { topic, lead, approach, anchor, adjacent, civic, mentoring, team, semantic } = options;
   const scored = scoreChunks(pack, question, semantic);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -273,12 +300,23 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
     // Lead intent: who he is, his availability, how to reach him, then matching past work and skills.
     // The engagements view comes before the matches, so long case studies can never clip it out of the budget.
     for (const id of [...ALWAYS_INCLUDE, LEAD_INCLUDE, LEAD_ENGAGEMENTS]) add(byId(id));
-    leadMatches(pack, question).forEach(add);
-    const limit = TOP_K + ALWAYS_INCLUDE.length + 2;
-    for (const { chunk } of ranked) {
-      if (picked.length >= limit) break;
-      if (chunk.type === "perspective" || chunk.type === "principle") continue;
-      add(chunk);
+    if (approach?.length) {
+      // Bring your problem: the outlined matches first, then his principles and the views closest to the question.
+      approach.forEach(add);
+      add(byId(PERSPECTIVE_INCLUDE));
+      scored
+        .filter((r) => r.score > 0 && r.chunk.type === "perspective" && r.chunk.id !== LEAD_ENGAGEMENTS && !r.chunk.keywords.includes("personal"))
+        .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+        .slice(0, APPROACH_PERSPECTIVE_CAP)
+        .forEach((r) => add(r.chunk));
+    } else {
+      leadMatches(pack, question).forEach(add);
+      const limit = TOP_K + ALWAYS_INCLUDE.length + 2;
+      for (const { chunk } of ranked) {
+        if (picked.length >= limit) break;
+        if (chunk.type === "perspective" || chunk.type === "principle") continue;
+        add(chunk);
+      }
     }
   } else if (adjacent) {
     // Related professional questions: his principles, then his case studies, posts, talks, papers and written views only.
