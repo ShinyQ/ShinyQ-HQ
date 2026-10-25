@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { APPROACH_BRIDGE, checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/checks";
+import { APPROACH_BRIDGE, checkAnswer, hypothesizes, leaksPrompt, prescribes } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
 import { scrubPII } from "../../functions/_lib/pii";
@@ -469,6 +469,32 @@ describe("lead opinion check", () => {
 
   it("passes a plain lead answer that claims no opinion", () => {
     expect(lead("Kurniadi takes freelance and part-time work. Get in touch through the contact card.").ok).toBe(true);
+  });
+
+  // Follow-up R3: invented behaviour without an opinion verb, on any lead answer.
+  const flaky = "Our team struggles with flaky tests";
+  const card = "Kurniadi takes freelance and part-time work, so get in touch through the contact card.";
+  it.each([
+    "For a tight deadline he would cut scope first and talk to stakeholders daily.",
+    "He'd cut scope first and talk to stakeholders daily.",
+    "Kurniadi will start with the flaky tests.",
+    "He might talk to stakeholders daily.",
+    "He'll cut scope first.",
+    "Dia akan memangkas lingkup lebih dulu.",
+  ])("rejects a hypothetical about him on a plain lead: %s", (bad) => {
+    expect(planRoute({ question: flaky, pack })).toMatchObject({ route: "lead", lead: true });
+    expect(hypothesizes(`${bad} ${card}`)).toBe(true);
+    expect(lead(`${bad} ${card}`, flaky)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it("passes a hypothetical inside quoted text and a plain invitation", () => {
+    expect(hypothesizes(`One of his posts is titled "What he would change next time". ${card}`)).toBe(false);
+    expect(hypothesizes("Kurniadi takes freelance work. If you'd like to discuss it, you can reach him through the contact card.")).toBe(false);
+    expect(lead(`Kurniadi takes freelance and part-time work. ${card}`, flaky).ok).toBe(true);
+  });
+
+  it("never flags a canned message", () => {
+    for (const [kind, m] of Object.entries(MESSAGES)) for (const text of Object.values(m)) expect(hypothesizes(text), `${kind}: ${text}`).toBe(false);
   });
 });
 

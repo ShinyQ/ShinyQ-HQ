@@ -654,6 +654,16 @@ export function claimsFit(text: string): boolean {
   return FIT_CLAIM.test(text);
 }
 
+/** A hypothetical about him ("he would cut scope", "he'll", "dia akan"): invented behaviour on a lead answer (follow-up R3). */
+const HYPOTHETICAL = /\b(?:he|kurniadi)(?:\s+(?:would|will|might)\b|['\u2019](?:d|ll)\b)|\b(?:dia|kurniadi)\s+akan\b/i;
+/** Quoted text (a title or his own words) never counts as a hypothetical. */
+const QUOTED = /"[^"\n]*"|\u201c[^\u201d\n]*\u201d/g;
+
+export function hypothesizes(text: string): boolean {
+  const sentences = sentencesOf(text.replace(QUOTED, " "));
+  return sentences.some((s, i) => !(i === sentences.length - 1 && isInvitation(s)) && HYPOTHETICAL.test(s));
+}
+
 export type CheckFailure = "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
 
 export type CheckResult =
@@ -729,6 +739,8 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
     // restate his engagement terms; in an approach answer the invitation echoes that view, so it never counts there.
     const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i && (!approach || c.id !== LEAD_ENGAGEMENTS));
     if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
+    // What he would do, told without an opinion verb, is invented too (follow-up R3).
+    if (hypothesizes(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
     // Bring your problem: grounded in CONTEXT like an adjacent answer, outlining at least one matched project by title
     // (or a source tag on it).
     if (approach && outcome === "answer") {
