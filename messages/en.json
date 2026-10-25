@@ -422,9 +422,16 @@
     "pageFailed": "This page could not be drawn."
   },
   "notFound": {
-    "title": "Page not found",
-    "body": "This page could not be found. Return to Home to continue browsing.",
-    "home": "Return to Home"
+    "kicker": "404 · Off the map",
+    "title": "Rover took a wrong turn",
+    "body": "This floor isn't on the map. Here are three good ways back.",
+    "cv": "View the CV",
+    "cvHint": "One page, 30 seconds",
+    "work": "See the work",
+    "workHint": "Selected projects",
+    "home": "Home",
+    "homeHint": "English · Bahasa Indonesia",
+    "didYouMean": "Did you mean"
   },
   "footer": {
     "pages": "Pages",

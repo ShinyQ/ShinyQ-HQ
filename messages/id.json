@@ -422,9 +422,16 @@
     "pageFailed": "Halaman ini tidak dapat ditampilkan."
   },
   "notFound": {
-    "title": "Halaman tidak ditemukan",
-    "body": "Halaman ini tidak ditemukan. Kembali ke Beranda untuk melanjutkan.",
-    "home": "Kembali ke Beranda"
+    "kicker": "404 · Di luar peta",
+    "title": "Rover salah belok",
+    "body": "Lantai ini tidak ada di peta. Ini tiga jalan kembali.",
+    "cv": "Lihat CV",
+    "cvHint": "Satu halaman, 30 detik",
+    "work": "Lihat karya",
+    "workHint": "Proyek pilihan",
+    "home": "Beranda",
+    "homeHint": "English · Bahasa Indonesia",
+    "didYouMean": "Mungkin maksudnya"
   },
   "footer": {
     "pages": "Halaman",

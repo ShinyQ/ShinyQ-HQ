@@ -112,7 +112,7 @@ describe("bilingual UI copy", () => {
   it("uses both localized headings on the static 404 and the existing live-link label", () => {
     const notFound = readFileSync("src/app/global-not-found.tsx", "utf8");
     expect(notFound).toContain("{en.notFound.title}");
-    expect(notFound).toMatch(/<h2\s+lang="id"[^>]*>\{id\.notFound\.title\}<\/h2>/);
+    expect(notFound).toMatch(/<p\s+lang="id"[^>]*>\s*\{id\.notFound\.title\}/);
     expect(notFound).toContain('href="/en"');
     expect(notFound).toContain('href="/id"');
     const workshop = readFileSync("src/components/WorkshopAnnex.tsx", "utf8");
