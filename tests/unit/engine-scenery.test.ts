@@ -213,9 +213,11 @@ describe("B1 lit-seam plates", () => {
       const back = walls.filter((p) => Math.abs(Math.sin(p.yaw)) < 0.5);
       expect(back, bay.id).toHaveLength(8);
       for (const p of walls) {
-        expect(p.y - p.h / 2, JSON.stringify(p)).toBeGreaterThanOrEqual(-1e-9);
+        expect(p.y - p.h / 2, JSON.stringify(p)).toBeGreaterThanOrEqual(0.12 - 1e-9);
         expect(p.y + p.h / 2, JSON.stringify(p)).toBeLessThanOrEqual(ENGINE.bay.h + 1e-9);
       }
+      // The rows start on top of the 0.12 u bay floor box, so the lower row's bottom seam is not buried in it.
+      expect(Math.min(...walls.map((p) => p.y - p.h / 2)), bay.id).toBeCloseTo(0.12);
       // Every back-wall screen of the bay stands in front of the back-wall panels (farther from the wall).
       const o = bay.side === "north" ? 1 : -1;
       const backZ = back[0].z;
