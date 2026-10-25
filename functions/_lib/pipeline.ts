@@ -301,7 +301,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(approach ? { approach: outlined } : {}), ...(demoted ? { excludeMatches: true } : {}), ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
-  const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(approach ? { approach: { matches: outlined.map((c) => c.title) } } : lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
+  const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(approach ? { approach: { matches: outlined.map((c) => c.title), locale } } : lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };
   const messages = buildMessages(pack.packDate, context, plan.modelQuestion, routing, history);
   const historyUsed = history.length;
   const models = input.models ?? { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };

@@ -2,11 +2,13 @@ import { ASK_LINK_PAGES, askLinkTarget } from "../../src/ask/links";
 import { markdownToPlain, parseMarkdown } from "../../src/ask/markdown";
 import { ASK_MAX_CITES, ASK_REPO_CITE, citeKind, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
-import { RULES } from "./prompt";
+import { APPROACH_BRIDGE, RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
 import { indexPack } from "./pack-index";
 import { expandTokens, INVISIBLE, tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "./types";
+
+export { APPROACH_BRIDGE };
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
 export const MAX_ANSWER_CHARS = 1000;
@@ -559,11 +561,6 @@ const IMPERATIVE = /^[^\p{L}\p{N}]*(?:start|use|build|add|pick|choose|consider|t
 const MID_ORDER = /[,;:]\s*(?:use|pick|choose|start with|go with|pakai|gunakan|mulai dengan)\b(?!\s+(?:the\s+)?(?:contact card|kartu kontak)\b)/i;
 /** Words that look ahead (folded: "he'll" is "he ll"). */
 const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "could", "may", "can", "akan", "sebaiknya", "seharusnya"]);
-/** The one forward-looking sentence rule 18 allows, in each language, exactly. */
-export const APPROACH_BRIDGE = {
-  en: "A similar problem would likely start the same way.",
-  id: "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
-} as const;
 const BRIDGES = new Set(Object.values(APPROACH_BRIDGE).map((b) => fold(b)));
 const isBridge = (sentence: string) => BRIDGES.has(fold(sentence.replace(SOURCE_TAGS, " ")));
 

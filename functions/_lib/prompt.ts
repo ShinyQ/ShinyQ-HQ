@@ -1,8 +1,16 @@
+import type { AskLocale } from "../../src/ask/protocol";
+
 /**
  * System prompt for Ask the HQ (spec sections 5 and 13). Bump PROMPT_VERSION on any change: it is
  * part of every cache key, so old cached answers stop being served.
  */
 export const PROMPT_VERSION = "2026-10-25.approach.1";
+
+/** The one forward-looking sentence rule 18 allows, in each language, exactly (stated by `approachLine`). */
+export const APPROACH_BRIDGE = {
+  en: "A similar problem would likely start the same way.",
+  id: "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
+} as const;
 
 /** The rule text the prompt-leak check compares answers against (T5). */
 export const RULES = [
@@ -24,7 +32,7 @@ export const RULES = [
   "15. A visitor asking how to learn, study, start or grow in his field gets only Kurniadi's own path and written advice from CONTEXT (education, certifications, career, his written views), told as what he did or wrote (for example \"Kurniadi learned ...\"). Never give a general tutorial, study plan or curriculum of your own.",
   "16. A question about his manager, team, colleagues or clients is answered only from his written views on teamwork and working style and the sector-level work in CONTEXT. Never name, describe or judge a specific person, employer or client.",
   "17. Every CONTEXT line starts with a source tag such as [S1]. Right after a sentence that uses a line, add that line's tag, for example \"... reviewed by a human [S2].\" Use only tags that appear in CONTEXT, never on a sentence CONTEXT does not support.",
-  "18. When the routing marks a problem question, describe how Kurniadi approached similar problems in the matching past projects it names: in the past tense and by title (for example \"In <title>, he started by ...\"), using only what CONTEXT states about their problem, approach and outcome, plus at most one of his written views that applies, tagged as rule 17 asks. You may add one sentence, exactly \"A similar problem would likely start the same way.\" (Indonesian: \"Masalah serupa kemungkinan besar dimulai dengan cara yang sama.\") Use at most 6 sentences, or one sentence and at most 4 list items (this replaces the length limit of rule 4), then invite the visitor to get in touch (the site shows a contact card). Never tell the visitor what to use, build or do, recommend a stack or an architecture, design their system, estimate cost, price or timeline, write code or ask for their data.",
+  "18. When the routing marks a problem question, describe how Kurniadi approached similar problems in the matching past projects it names: in the past tense and by title (for example \"In <title>, he started by ...\"), using only what CONTEXT states about their problem, approach and outcome, plus at most one of his written views that applies, tagged as rule 17 asks. You may add the one bridging sentence the routing line gives, exactly as written. Use at most 6 sentences, or one sentence and at most 4 list items (this replaces the length limit of rule 4), then invite the visitor to get in touch (the site shows a contact card). Never tell the visitor what to use, build or do, recommend a stack or an architecture, design their system, estimate cost, price or timeline, write code or ask for their data.",
 ];
 
 /** Deterministic routing facts the prompt states for one question (functions/_lib/scope.ts). */
@@ -32,7 +40,7 @@ export interface PromptRouting {
   /** Lead intent, with the titles of the matching past projects (empty: no close match). */
   lead?: { matches: string[] };
   /** Bring your problem (owner decision 2026-10-25): the matched past projects to outline (rule 18); replaces `lead` in the prompt. */
-  approach?: { matches: string[] };
+  approach?: { matches: string[]; locale: AskLocale };
   /** Routed perspective topic: answer only from his written views on it. */
   topic?: "lifestyle" | "policy";
   /** A related professional question (`isAdjacentQuestion`): answer only from his work in CONTEXT (rule 13). */
@@ -58,8 +66,8 @@ export const ADJACENT_LINE =
   "This question is a related professional question (rule 13): answer only with what Kurniadi's work in CONTEXT shows, name and link at least one title from CONTEXT, and never use general knowledge.";
 
 /** Stated for a problem question with matching past projects (owner decision 2026-10-25). Not a rule (the leak check ignores it). */
-export function approachLine(matches: readonly string[]): string {
-  return `This question describes a problem of the visitor's own (rule 18). Past projects in CONTEXT that faced similar problems: ${matches.map((t) => `"${t}"`).join(", ")}. Outline how Kurniadi approached them, in the past tense and by title, then invite the visitor to get in touch through the contact card.`;
+export function approachLine(matches: readonly string[], locale: AskLocale): string {
+  return `This question describes a problem of the visitor's own (rule 18). Past projects in CONTEXT that faced similar problems: ${matches.map((t) => `"${t}"`).join(", ")}. Outline how Kurniadi approached them, in the past tense and by title, then invite the visitor to get in touch through the contact card. The bridging sentence, if you add it, is exactly "${APPROACH_BRIDGE[locale]}" Answer in ${locale === "id" ? "Indonesian" : "English"} only.`;
 }
 
 const TOPIC_LINE: Record<NonNullable<PromptRouting["topic"]>, string> = {
@@ -75,7 +83,7 @@ export function routingLines(routing: PromptRouting = {}): string[] {
   if (routing.adjacent) lines.push(ADJACENT_LINE);
   if (routing.mentoring) lines.push(MENTORING_LINE);
   if (routing.team) lines.push(TEAM_LINE);
-  if (routing.approach) lines.push(approachLine(routing.approach.matches));
+  if (routing.approach) lines.push(approachLine(routing.approach.matches, routing.approach.locale));
   else if (routing.lead) {
     lines.push(
       routing.lead.matches.length

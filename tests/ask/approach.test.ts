@@ -196,11 +196,23 @@ describe("rule 18 and the approach line", () => {
   });
 
   it("states the approach line instead of the lead line", () => {
-    const lines = routingLines({ approach: { matches: ["Realtime Voice AI Contact Center"] } });
-    expect(lines).toEqual([approachLine(["Realtime Voice AI Contact Center"])]);
+    const lines = routingLines({ approach: { matches: ["Realtime Voice AI Contact Center"], locale: "en" } });
+    expect(lines).toEqual([approachLine(["Realtime Voice AI Contact Center"], "en")]);
     expect(lines[0]).toContain("rule 18");
     expect(lines[0]).toContain('"Realtime Voice AI Contact Center"');
     expect(lines[0]).not.toContain("rule 11");
+  });
+
+  it("gives only the bridge of the answer's language and names that language", () => {
+    const en = approachLine(["Realtime Voice AI Contact Center"], "en");
+    const id = approachLine(["Realtime Voice AI Contact Center"], "id");
+    expect(en).toContain(`"${APPROACH_BRIDGE.en}"`);
+    expect(en).not.toContain(APPROACH_BRIDGE.id);
+    expect(en).toContain("Answer in English only.");
+    expect(id).toContain(`"${APPROACH_BRIDGE.id}"`);
+    expect(id).not.toContain(APPROACH_BRIDGE.en);
+    expect(id).toContain("Answer in Indonesian only.");
+    expect(routingLines({ approach: { matches: ["Realtime Voice AI Contact Center"], locale: "id" } })).toEqual([id]);
   });
 
   it("does not count the bridging sentence rule 18 allows as a prompt leak", () => {
@@ -208,10 +220,11 @@ describe("rule 18 and the approach line", () => {
     expect(leaksPrompt("In Realtime Voice AI Contact Center, he started by mapping the call flow [S1]. A similar problem would likely start the same way, with the same first questions [S2].")).toBe(false);
   });
 
-  it("states the exact bridging sentence in both languages and never counts it as a leak", () => {
+  it("leaves the exact bridging sentence to the routing line and never counts it as a leak", () => {
     const rule = RULES.find((r) => r.startsWith("18."))!;
-    expect(rule).toContain(`exactly "${APPROACH_BRIDGE.en}"`);
-    expect(rule).toContain(`"${APPROACH_BRIDGE.id}"`);
+    expect(rule).toContain("the one bridging sentence the routing line gives, exactly as written");
+    expect(rule).not.toContain(APPROACH_BRIDGE.en);
+    expect(rule).not.toContain(APPROACH_BRIDGE.id);
     expect(leaksPrompt(`${APPROACH_BRIDGE.en} In his view, this is the right way to start.`)).toBe(false);
     expect(leaksPrompt(APPROACH_BRIDGE.id)).toBe(false);
     expect(leaksPrompt(`Dalam proyek itu, dia memetakan alur panggilan [S1]. ${APPROACH_BRIDGE.id} Silakan hubungi lewat kartu kontak.`)).toBe(false);
