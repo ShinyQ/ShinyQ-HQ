@@ -104,24 +104,27 @@ The header and metric strip are unchanged. `CaseToc` lists the story chapters. P
   - the kicker "404 · Off the map";
   - the title "Rover took a wrong turn", with one Indonesian line under it;
   - three path cards: **View the CV** (primary, `/en/cv`), See the work (`/en/labs`), and Home (`/en` and `/id`).
-- **"Did you mean...?":** one external script, `public/not-found.js` (CSP-safe under `script-src 'self'`, no inline code, loaded with `defer`).
-  - It reads a build-time `public/data/routes.json`, generated from `allPagePaths()` (`src/lib/routes.ts`) for both locales.
+- **"Did you mean...?":** one small client component (`DidYouMean`, a Next chunk under `script-src 'self'`, so it is CSP-safe and needs no inline code).
+  - It fetches `/data/routes/index.json`, a static file that the existing `src/app/data/[...path]/route.ts` builds from `allPagePaths()` (`src/lib/routes.ts`) for both locales, each path with its title.
   - It shows the closest path: a missing locale prefix is added, and the last segment is matched by edit distance, with a threshold so a far-off match shows nothing. The suggestion shows the page title.
   - Without JavaScript, only the suggestion is missing.
   - The route file is small: about 95 paths per locale, with titles, well under 10 KB.
+  - The 404's own styles live in a CSS module, so the global stylesheet (about 19.5 KB of its 20 KB budget) does not grow.
 
 **Empty and offline states** (`messages/en.json`, `messages/id.json`; copy only, same keys where possible). Every state names one next step:
 
 | State | New copy (EN) |
 |---|---|
-| Ask offline | Rover is resting for a moment. Meanwhile, the CV and selected work answer most questions. |
+| Ask offline | Rover is resting. The CV and the work pages answer most questions. |
 | Stats unavailable | Visitor numbers are refreshing. Check back in a minute. |
-| Office offline | The live office is quiet right now. See what shipped recently in Writing and Work. |
+| Office offline | The live office is quiet right now. See recent work in Writing and Work. |
 | No public activity | Nothing public yet today. |
-| Project filter empty | No projects match these filters. Clear filters or ask Rover what you're looking for. |
+| Project filter empty | No projects match these filters. Clear a filter or ask Rover. |
 | Room details failed | This room didn't load. Open the full page instead. |
 
-Links inside these strings become rich-text tags in `next-intl` (no raw HTML). The "Agents start work during WIB hours" idea from the mockup is dropped because it is a schedule claim.
+- The copy is plain text with no links. The `ask` namespace is inlined into every page's HTML (`LAYOUT_NAMESPACES`) and `/en/quick` is near its HTML budget, so `ask.error.offline` must not get longer than today's string.
+- The 3D wall string (`office.3d.wall.empty`) stays as it is: the 3D session budget has no room.
+- The "Agents start work during WIB hours" idea from the mockup is dropped because it is a schedule claim.
 
 ## Testing
 
@@ -131,7 +134,7 @@ Links inside these strings become rich-text tags in `next-intl` (no raw HTML). T
   - no em dash or first person in headings;
   - bilingual parity;
   - `validate:content` passes.
-- **Unit:** the did-you-mean matcher covers a locale missing, a slug typo, a trailing slash, an exact page, and a far-off path with no suggestion. The ticker excludes the proof ids.
+- **Unit:** the did-you-mean matcher (`src/lib/did-you-mean.ts`) covers a locale missing, a slug typo, a trailing slash, an exact page, and a far-off path with no suggestion. The ticker excludes the proof ids.
 - **E2E** (`e2e/pageview.spec.ts` and a new 404 spec):
   - View CV is the primary hero button and opens the reader;
   - the proof strip shows three values;
