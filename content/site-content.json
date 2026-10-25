@@ -91,6 +91,11 @@
           "id": "Saya hanya menampilkan metrik jika bisa menjelaskan cara pengukurannya: di lab, secara offline, atau live."
         }
       }
+    ],
+    "heroProof": [
+      "enterprise-clients",
+      "prs-merged-2026",
+      "microsoft-certifications"
     ]
   },
   "production": {
@@ -287,14 +292,18 @@
   },
   "stats": [
     {
-      "id": "shipping-since-2019",
-      "value": "2019",
+      "id": "enterprise-clients",
+      "value": "12+",
       "label": {
-        "en": "Building software since 2019; working full-time as an engineer since 2022",
-        "id": "Membangun software sejak 2019; bekerja penuh waktu sebagai engineer sejak 2022"
+        "en": "Enterprise clients served with Azure-native AI platforms since February 2026",
+        "id": "Klien enterprise yang dilayani dengan platform AI berbasis Azure sejak Februari 2026"
       },
-      "source": "Part-time e-commerce backend from Sep 2019; full-time engineering roles since Feb 2022",
-      "confidence": "verified"
+      "short": {
+        "en": "enterprise clients",
+        "id": "klien enterprise"
+      },
+      "source": "Owner-confirmed count of enterprise client engagements at Metrodata since Feb 2026 (owner decision 2026-10-24); never tied to repository evidence",
+      "confidence": "self-reported"
     },
     {
       "id": "prs-merged-2026",
@@ -302,6 +311,10 @@
       "label": {
         "en": "Merged pull requests in 2026",
         "id": "Pull request yang di-merge selama 2026"
+      },
+      "short": {
+        "en": "PRs merged in 2026",
+        "id": "PR di-merge selama 2026"
       },
       "source": "GitHub search of authored, merged pull requests in the employer organization (1,196 on 24 Oct 2026)",
       "confidence": "verified"
@@ -322,6 +335,10 @@
       "label": {
         "en": "Microsoft, GitHub and Google certifications: GH-600, AI-103, AI-901, AZ-900, Generative AI Leader",
         "id": "Sertifikasi Microsoft, GitHub dan Google: GH-600, AI-103, AI-901, AZ-900, Generative AI Leader"
+      },
+      "short": {
+        "en": "cloud and AI certifications",
+        "id": "sertifikasi cloud dan AI"
       },
       "source": "Microsoft Learn credential records (AI-103, AI-901 and AZ-900 also listed with credential IDs on LinkedIn; GH-600 credential 6BB32EB2B28BD602, earned 2026-10-13); Credly badge for Google Generative AI Leader (certification ID cadb3b0724f442698b9997a9d5c2adb4, earned 2026-10-17, valid until 2029-10-17)",
       "confidence": "verified"

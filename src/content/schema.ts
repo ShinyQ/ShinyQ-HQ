@@ -68,6 +68,9 @@ export const PrincipleSchema = z.strictObject({
   text: LocalizedTextSchema,
 });
 
+/** Longest `Stat.short` in either locale (one cell of the landing proof strip). */
+export const STAT_SHORT_MAX = 28;
+
 export const ProfileSchema = z.strictObject({
   name: nonEmpty,
   handle: nonEmpty,
@@ -85,12 +88,16 @@ export const ProfileSchema = z.strictObject({
   howIWork: LocalizedTextSchema,
   principles: z.array(PrincipleSchema).min(1).max(6),
   photo: AssetSchema.optional(),
+  /** The landing hero's proof strip (owner decision 2026-10-25): exactly three `stats` ids, each with a `short` label. */
+  heroProof: z.array(SlugSchema).length(3),
 });
 
 export const StatSchema = z.strictObject({
   id: SlugSchema,
   value: nonEmpty,
   label: LocalizedTextSchema,
+  /** Short label for the landing proof strip (`profile.heroProof`, owner decision 2026-10-25); `label` stays the full sentence. */
+  short: LocalizedTextSchema.optional(),
   source: nonEmpty,
   confidence: ConfidenceSchema,
 });
@@ -614,6 +621,22 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     if (pod.selected === undefined) return;
     if (ranks.has(pod.selected)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "selected"], message: `Selected rank ${pod.selected} is used twice` });
     ranks.add(pod.selected);
+  });
+  const statIndex = new Map(content.stats.map((s, i) => [s.id, i]));
+  if (new Set(content.profile.heroProof).size !== content.profile.heroProof.length) {
+    ctx.addIssue({ code: "custom", path: ["profile", "heroProof"], message: "heroProof lists a stat twice" });
+  }
+  content.profile.heroProof.forEach((id, i) => {
+    const at = statIndex.get(id);
+    if (at === undefined) {
+      ctx.addIssue({ code: "custom", path: ["profile", "heroProof", i], message: `Unknown stat "${id}"` });
+      return;
+    }
+    const short = content.stats[at].short;
+    if (!short) ctx.addIssue({ code: "custom", path: ["stats", at, "short"], message: `Stat "${id}" is in profile.heroProof and needs a short label` });
+    else for (const locale of LOCALES) {
+      if (short[locale].length > STAT_SHORT_MAX) ctx.addIssue({ code: "custom", path: ["stats", at, "short", locale], message: `Longer than ${STAT_SHORT_MAX} characters` });
+    }
   });
   for (const issue of hologramIdClashes(content)) ctx.addIssue({ code: "custom", path: issue.path, message: issue.message });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));

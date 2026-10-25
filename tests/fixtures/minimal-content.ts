@@ -55,6 +55,7 @@ export function makeContent(): SiteContent {
       story: lt("Story"),
       howIWork: lt("How"),
       principles: [{ id: "spec-first", title: lt("Spec first"), text: lt("Specs") }],
+      heroProof: ["a", "b", "c"],
     },
     production: {
       title: lt("How I run AI in production"),
@@ -68,7 +69,7 @@ export function makeContent(): SiteContent {
       alerts: [lt("Spend")],
       caseStudies: ["sample-pod"],
     },
-    stats: ["a", "b", "c", "d"].map((id) => ({ id, value: "1", label: lt(id), source: "test", confidence: "verified" as const })),
+    stats: ["a", "b", "c", "d"].map((id) => ({ id, value: "1", label: lt(id), short: lt(id), source: "test", confidence: "verified" as const })),
     skills: [{ id: "backend", label: lt("Backend"), items: ["Go"] }],
     certifications: [],
     awards: [],
