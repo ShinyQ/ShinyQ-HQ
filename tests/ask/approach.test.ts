@@ -454,10 +454,31 @@ describe("approach pipeline", () => {
     expect(systemOf(r.calls)).toContain("(rule 11)");
   });
 
-  it("drops to the lead route when the question vector rejects every match", async () => {
-    // A vector orthogonal to every chunk: every cosine is 0, under SEMANTIC_FLOOR.
-    const zero = new Float32Array(1024);
-    zero[0] = 1;
-    expect(approachMatches(pack, leadMatches(pack, q), zero).length).toBeLessThanOrEqual(APPROACH_MATCH_CAP);
+  it("drops to a plain lead with no fit when the question vector rejects every match", async () => {
+    // A separate hydrated pack (hydration is cached per pack object) and a stored row far from every match.
+    const { pack: vpack } = buildRepoPack("2026-10-11");
+    const stored = buildStoredVectors(vpack, readEmbeddingCache(), readExemplars()).vectors as StoredVectors;
+    const vectors = hydrateVectors({ pack: vpack, vectors: stored });
+    if (!vectors) throw new Error("pack vectors did not hydrate");
+    const row = (i: number) => Float32Array.from(vectors.rows.subarray(i * vectors.dims, (i + 1) * vectors.dims));
+    const matches = leadMatches(vpack, q);
+    expect(matches.length).toBeGreaterThan(0);
+    const at = matches.map((m) => vpack.chunks.indexOf(m));
+    const far = vpack.chunks.findIndex((c, i) => {
+      if (c.type === "project" || !vectors.norms[i]) return false;
+      const sims = cosines(row(i), vectors.rows, vectors.norms, vectors.dims);
+      return at.every((j) => sims[j] < SEMANTIC_FLOOR);
+    });
+    expect(far).toBeGreaterThanOrEqual(0);
+    const { client, calls } = mockClient("Kurniadi's past work looks like a strong fit for this. Get in touch through the contact card.");
+    const r = await runPipeline({ question: q, locale: "en", pack: vpack, vocabulary: packVocabulary(vpack), client, models: { primary: "p", fallback: "f" }, timeouts: fast, embed: async () => row(far) });
+    expect(r).toMatchObject({ route: "lead", lead: true, reason: "fit", text: MESSAGES.lead.en, retrieval: "hybrid" });
+    const system = systemOf(calls);
+    expect(system).toContain("No past project in CONTEXT closely matches it");
+    expect(system).not.toContain("(rule 18). Past projects");
+    for (const m of matches) {
+      expect(r.chunkIds).not.toContain(m.id);
+      expect(system).not.toContain(`"${m.title}"`);
+    }
   });
 });

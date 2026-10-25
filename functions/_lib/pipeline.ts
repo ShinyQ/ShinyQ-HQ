@@ -289,13 +289,16 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     };
   }
   const { routed, topic, lead, adjacent, civic, mentoring, team, anchor, history } = plan;
-  const matches = lead ? leadMatches(pack, routed) : [];
-  // The question vector keeps only matches that are really about the problem (2026-10-25 probe); none left: a plain lead.
-  const outlined = plan.approach ? approachMatches(pack, matches, semantic) : [];
+  const found = lead ? leadMatches(pack, routed) : [];
+  // The question vector keeps only matches that are really about the problem (2026-10-25 probe); none left: a plain
+  // lead with no fit, whose prompt, retrieval and fit check never offer the rejected matches (final review F3).
+  const outlined = plan.approach ? approachMatches(pack, found, semantic) : [];
   const approach = outlined.length > 0;
-  const route: AskRoute = plan.route === "approach" && !approach ? "lead" : plan.route;
+  const demoted = plan.approach && !approach;
+  const matches = demoted ? [] : found;
+  const route: AskRoute = demoted ? "lead" : plan.route;
   const routeLabel = `${route}${plan.declined.length ? "+partial" : ""}`;
-  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(approach ? { approach: outlined } : {}), ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
+  const { chunks, context } = retrieve(pack, routed, locale, { topic, lead, adjacent, civic, mentoring, team, ...(approach ? { approach: outlined } : {}), ...(demoted ? { excludeMatches: true } : {}), ...(anchor ? { anchor: resolveNickname(anchor) } : {}), ...(semantic ? { semantic } : {}) });
   const chunkIds = chunks.map((c) => c.id);
   const tags = answerTags(chunks);
   const routing = { ...(topic ? { topic } : {}), ...(adjacent ? { adjacent } : {}), ...(civic ? { civic } : {}), ...(mentoring ? { mentoring } : {}), ...(team ? { team } : {}), ...(approach ? { approach: { matches: outlined.map((c) => c.title) } } : lead ? { lead: { matches: matches.map((c) => c.title) } } : {}) };

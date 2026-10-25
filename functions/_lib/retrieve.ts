@@ -235,6 +235,11 @@ export interface RetrieveOptions {
   lead?: boolean;
   /** Bring your problem (owner decision 2026-10-25, with `lead`): these matches, his principles and up to `APPROACH_PERSPECTIVE_CAP` views, nothing else. */
   approach?: readonly KnowledgeChunk[];
+  /**
+   * With `lead`: leave out the question's `leadMatches`, also from the BM25 fill (final review F3). Set when the question
+   * vector rejected every match of a problem question, so a plain lead never offers the projects it rejected.
+   */
+  excludeMatches?: boolean;
   /** Earlier questions a follow-up refers to (`followUpAnchor`): their best chunks come first, so "What stack did it use?" finds the project, not every skill. */
   anchor?: string;
   /** A related professional question (`isAdjacentQuestion`): his principles, then only his case studies, posts, talks, papers and written views. */
@@ -254,7 +259,7 @@ export const ANCHOR_TOP = 2;
 
 /** BM25 top-k plus the always-included chunks, trimmed to the context budget. */
 export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "id", options: RetrieveOptions = { topic: routedTopic(question), lead: isLeadQuestion(question), adjacent: isAdjacentQuestion(question) }): Retrieved {
-  const { topic, lead, approach, anchor, adjacent, civic, mentoring, team, semantic } = options;
+  const { topic, lead, approach, excludeMatches, anchor, adjacent, civic, mentoring, team, semantic } = options;
   const scored = scoreChunks(pack, question, semantic);
   const ranked = scored.filter((r) => r.score > 0).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id));
   const picked: KnowledgeChunk[] = [];
@@ -309,11 +314,12 @@ export function retrieve(pack: KnowledgePack, question: string, locale: "en" | "
         .slice(0, APPROACH_PERSPECTIVE_CAP)
         .forEach((r) => add(r.chunk));
     } else {
-      leadMatches(pack, question).forEach(add);
+      const matches = leadMatches(pack, question);
+      if (!excludeMatches) matches.forEach(add);
       const limit = TOP_K + ALWAYS_INCLUDE.length + 2;
       for (const { chunk } of ranked) {
         if (picked.length >= limit) break;
-        if (chunk.type === "perspective" || chunk.type === "principle") continue;
+        if (chunk.type === "perspective" || chunk.type === "principle" || (excludeMatches && matches.includes(chunk))) continue;
         add(chunk);
       }
     }
