@@ -644,23 +644,25 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const questionWords = new Set(echo.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
-  // Bring your problem: grounded in CONTEXT like an adjacent answer, outlining at least one matched project by title
-  // (or a source tag on it); a view told as his must cite his written view (rule 8).
-  if (lead && approach && outcome === "answer") {
-    if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "lead" };
-    const marked = markedSources(answer, chunks, question);
-    const projects = [...citedSources(text, approach.matches, locale, APPROACH_TYPES), ...marked.filter((c) => approach.matches.includes(c))].filter((c, i, all) => all.indexOf(c) === i);
-    if (!projects.length) return { ok: false, reason: "unsourced", detail: [], replacement: "lead" };
-    // The invitation echoes the engagements perspective (always retrieved), so it never counts as the written view.
-    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i && c.id !== LEAD_ENGAGEMENTS);
-    if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
-    const pages = citePages([...projects, ...views]);
-    return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };
-  }
-  // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
-  if (lead) return { ok: true, text: markdown, outcome };
   // Source tags the model put after its sentences, kept only when the sentence really uses that line (rule 17).
   const marked = markedSources(answer, chunks, question);
+  if (lead) {
+    // A view told as his, on any lead answer, must cite his written view (rule 8, final review F1). A plain lead may
+    // restate his engagement terms; in an approach answer the invitation echoes that view, so it never counts there.
+    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i && (!approach || c.id !== LEAD_ENGAGEMENTS));
+    if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
+    // Bring your problem: grounded in CONTEXT like an adjacent answer, outlining at least one matched project by title
+    // (or a source tag on it).
+    if (approach && outcome === "answer") {
+      if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "lead" };
+      const projects = [...citedSources(text, approach.matches, locale, APPROACH_TYPES), ...marked.filter((c) => approach.matches.includes(c))].filter((c, i, all) => all.indexOf(c) === i);
+      if (!projects.length) return { ok: false, reason: "unsourced", detail: [], replacement: "lead" };
+      const pages = citePages([...projects, ...views]);
+      return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };
+    }
+    // A plain lead answer is about his past work and availability: checked above, no cite.
+    return { ok: true, text: markdown, outcome };
+  }
   const withCites = (cited: readonly KnowledgeChunk[]): CheckResult => {
     const pages = citePages(cited);
     return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };

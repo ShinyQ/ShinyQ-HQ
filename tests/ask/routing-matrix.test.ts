@@ -190,6 +190,13 @@ const EDGES: [string, string, string][] = [
   ["problem", "Our fraud checks are manual. His approach? And is he married?", "approach+partial(family)"],
   ["problem", "Our fraud checks are manual. Write the Python code for us.", "decline"],
   ["problem", "How would he solve corruption in the government?", "civic"],
+  // Final review F1: team, site, perspective and other ask-only questions keep the routes they had before.
+  ["problem", "How would he handle a disagreement with his manager?", "team"],
+  ["problem", "How would he handle a tight deadline?", "default"],
+  ["problem", "How would he handle conflict in a team?", "default"],
+  ["problem", "How would he handle a project with unclear requirements?", "default"],
+  ["problem", "How would you improve this website?", "default"],
+  ["problem", "We are curious what problems AI cannot solve in his view", "default"],
 ];
 
 describe("routing matrix", () => {

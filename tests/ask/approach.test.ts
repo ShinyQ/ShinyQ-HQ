@@ -3,12 +3,12 @@ import { checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/check
 import { MESSAGES } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
 import { scrubPII } from "../../functions/_lib/pii";
-import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
+import { packVocabulary, planRoute, runPipeline } from "../../functions/_lib/pipeline";
 import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { approachLine, PROMPT_VERSION, routingLines, RULES } from "../../functions/_lib/prompt";
 import { APPROACH_MATCH_CAP, APPROACH_PERSPECTIVE_CAP, approachMatches, leadMatches, LEAD_ENGAGEMENTS, retrieve, SEMANTIC_FLOOR } from "../../functions/_lib/retrieve";
-import { isProblemQuestion } from "../../functions/_lib/scope";
+import { isApproachAsk, isOwnProblem, isProblemQuestion } from "../../functions/_lib/scope";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
 import type { KnowledgePack } from "../../functions/_lib/types";
 import { cosines, decodeRows, encodeRows, hydrateVectors, type PackVectors, type StoredVectors } from "../../functions/_lib/vectors";
@@ -63,7 +63,45 @@ describe("isProblemQuestion", () => {
     "Bisakah kami lihat proyek yang menyelesaikan masalah fraud?",
     "Bagaimana Kurniadi menangani deteksi fraud dokumen?",
     "Bagaimana dia menangani reliabilitas LLM?",
+    // Questions about his team, this site or his views keep their routes (final review F1).
+    "How would he handle a disagreement with his manager?",
+    "How would you improve this website?",
+    "We are curious what problems AI cannot solve in his view",
+    "Bagaimana dia akan menangani konflik dengan atasannya?",
+    // A problem word needs its own word boundary.
+    "We issued a press release about his talk",
+    "Was our problematic launch in his case study?",
+    "Our slowdown chart came from his talk?",
   ])("leaves %s alone", (q) => expect(isProblemQuestion(q)).toBe(false));
+
+  it("splits the own-problem shape from an approach ask", () => {
+    expect(isOwnProblem("Our team struggles with flaky tests")).toBe(true);
+    expect(isApproachAsk("Our team struggles with flaky tests")).toBe(false);
+    expect(isOwnProblem("How would he handle a tight deadline?")).toBe(false);
+    expect(isApproachAsk("How would he handle a tight deadline?")).toBe(true);
+    expect(isOwnProblem("Our call center can't keep up. His approach?")).toBe(true);
+    expect(isApproachAsk("Our call center can't keep up. His approach?")).toBe(true);
+    // The exclusions apply to both predicates.
+    expect(isApproachAsk("How would he handle a disagreement with his manager?")).toBe(false);
+    expect(isOwnProblem("We are curious what problems AI cannot solve in his view")).toBe(false);
+  });
+});
+
+describe("lead promotion of a problem question", () => {
+  it.each([
+    ["How would he handle a tight deadline?", "default"],
+    ["How would he handle conflict in a team?", "default"],
+    ["How would he handle a project with unclear requirements?", "default"],
+  ])("keeps an approach ask with no matching project on its old route: %s", (q, route) => {
+    expect(leadMatches(pack, q)).toEqual([]);
+    expect(planRoute({ question: q, pack })).toMatchObject({ kind: "model", route, lead: false, approach: false });
+  });
+
+  it("promotes an approach ask with matching projects and an own problem without them", () => {
+    expect(planRoute({ question: "How would he speed up slow document review?", pack })).toMatchObject({ route: "approach", lead: true });
+    expect(leadMatches(pack, "Our team struggles with flaky tests")).toEqual([]);
+    expect(planRoute({ question: "Our team struggles with flaky tests", pack })).toMatchObject({ route: "lead", lead: true });
+  });
 });
 
 describe("approach retrieval", () => {
@@ -276,6 +314,30 @@ describe("approach checks", () => {
   it("matches a CONTEXT duration on word boundaries only", () => {
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 13 weeks")).toBe(true);
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 3 weeks")).toBe(false);
+  });
+});
+
+describe("lead opinion check", () => {
+  /** A plain lead (final review F1): an answer that tells a view as his must cite his written view. */
+  const lead = (answer: string, q = "How would he handle a tight deadline for our launch?") => {
+    const { chunks, context } = retrieve(pack, q, "en", { lead: true });
+    expect(chunks.map((c) => c.id)).toContain(LEAD_ENGAGEMENTS);
+    return checkAnswer({ answer, question: q, context, packDate: pack.packDate, pack, vocabulary: packVocabulary(pack), chunks, lead: { fit: false }, locale: "en" });
+  };
+
+  it("rejects an invented opinion on the lead path", () => {
+    const r = lead("Kurniadi believes deadlines are met by close collaboration. He would likely talk to stakeholders daily. Get in touch through the contact card.");
+    expect(r).toMatchObject({ ok: false, reason: "unsourced", replacement: "lead" });
+  });
+
+  it("passes a plain lead answer that restates his engagements view", () => {
+    const title = pack.chunks.find((c) => c.id === LEAD_ENGAGEMENTS)!.title;
+    const r = lead(`In his written view "${title}", Kurniadi is interested in projects with clear boundaries: backend systems, integrations, production hardening and practical AI applications. Get in touch through the contact card.`);
+    expect(r.ok).toBe(true);
+  });
+
+  it("passes a plain lead answer that claims no opinion", () => {
+    expect(lead("Kurniadi takes freelance and part-time work. Get in touch through the contact card.").ok).toBe(true);
   });
 });
 

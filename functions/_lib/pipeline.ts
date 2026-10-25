@@ -9,7 +9,7 @@ import { followUpAnchor, type HistoryTurn } from "./history";
 import { DEFAULT_FALLBACK, DEFAULT_PRIMARY, generate, type BackupTier, type Generation, type ModelBreaker, type ModelClient, type Timeouts } from "./model";
 import { buildMessages } from "./prompt";
 import { approachMatches, INTENT_TERMS, leadMatches, retrieve, scoreChunks } from "./retrieve";
-import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, isMentoringQuestion, isProblemQuestion, isOffTopic, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
+import { civicQuestion, isAdjacentQuestion, isCapabilityQuestion, isGeneralAssistantRequest, isApproachAsk, isLeadQuestion, isMentoringQuestion, isOffTopic, isOwnProblem, isPerspectiveQuestion, isPersonaRequest, isRuleOverride, isSiteQuestion, isTeamQuestion, opinionAboutOthers, partitionQuestion, privateTopic, nicknameForModel, resolveNickname, routedTopic, type PrivateTopic, type RoutedTopic } from "./scope";
 import { answerTags } from "./tags";
 import type { KnowledgePack } from "./types";
 
@@ -194,7 +194,9 @@ export function planRoute(input: Pick<PipelineInput, "question" | "pack" | "hist
   if (either(isRuleOverride)) return canned("decline", "injection", { tags: [] });
   // An earlier project inquiry never turns a request for general-assistant work into a lead.
   if (!isLeadQuestion(question) && isGeneralAssistantRequest(question)) return canned("decline", "general", { match: true });
-  const problem = either(isProblemQuestion);
+  // A problem question is a lead when the visitor states their own problem, or when an approach ask ("How would he
+  // handle a tight deadline?") has matching past projects; otherwise it keeps the route it would have had.
+  const problem = either(isOwnProblem) || (either(isApproachAsk) && leadMatches(pack, routed).length > 0);
   const lead = either(isLeadQuestion) || problem;
   const personal = either(privateTopic);
   // A project inquiry that asks for a price gets no number, but still the invitation and the contact card.
