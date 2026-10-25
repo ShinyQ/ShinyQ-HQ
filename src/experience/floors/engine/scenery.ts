@@ -2,7 +2,7 @@ import type { SignSpec } from "../../fx/signLayout";
 import type { EngineData, GpuTier, Rect } from "../../types";
 import type { Box } from "../roof/solids";
 import { ENGINE, type EngineBay, type EngineLayout } from "./layout";
-import { CORE_FX, coreSolids } from "./reactorFx";
+import { CORE_FX, coreSolids, PLINTH_STEPS } from "./reactorFx";
 
 /**
  * Pure scenery of the B1 Engine Room (no React or three): the solid boxes (one merged mesh plus its edges), the
@@ -34,12 +34,16 @@ export interface PanelInstance {
   color: string;
 }
 
+/** A lit-seam panel (holo `plate`): a dark inset panel whose thin rim reads as a glowing seam; placed like a screen. */
+export type PlateInstance = Omit<PanelInstance, "roll">;
+
 export interface EngineScenery {
   solids: Box[];
   /** Depth-only boxes (no color, no edges): the end mask (`endMask`). */
   masks: Box[];
   flows: FlowInstance[];
   panels: PanelInstance[];
+  plates: PlateInstance[];
 }
 
 /** Height of the end mask (`endMask`). */
@@ -72,13 +76,15 @@ export interface ReactorCounts {
 export const ENGINE_TONES = { amber: ENGINE.accent, cyan: "#22d3ee", violet: "#a78bfa", green: "#34d399", dim: "#71717a", warm: "#fde68a", tray: "#78350f", data: "#155e75", pipe: "#7c2d12" } as const;
 const LED_TONES = [ENGINE_TONES.green, ENGINE_TONES.amber, ENGINE_TONES.cyan] as const;
 
-/** LEDs per rack cabinet; the lite tier draws half. */
-export function engineDetail(tier: GpuTier): { leds: number } {
-  return { leds: tier === "full" ? 8 : 4 };
+/** LEDs per rack cabinet and slats per vent grille; the lite tier draws half. */
+export function engineDetail(tier: GpuTier): { leds: number; slats: number } {
+  return tier === "full" ? { leds: 8, slats: 6 } : { leds: 4, slats: 3 };
 }
 
 const WALL = 0.8;
 const SIDE = 0.3;
+/** Height of a bay's floor box; the wall plates start on top of it. */
+const BAY_FLOOR = 0.12;
 const CABINET = { w: 1.8, h: 3.6, pitch: 2 } as const;
 const SIGN_Y = 5.3;
 /**
@@ -91,6 +97,78 @@ const TRAY_Z = 3;
 const TRAY = { d: 0.4, h: 0.06, line: 0.08 } as const;
 /** Pipe runs and their drops stay thin and dim warm at the ceiling, so each bay's sign is its brightest element. */
 const PIPE = { run: 0.14, drop: 0.1 } as const;
+
+/**
+ * Lit-seam plates: `lift` off their face or the floor, `bayFloor` the y over a bay's 0.12 u floor (under the projector
+ * disc at 0.16), `gap` kept from the aisle, spurs and walls, `tile` the target deck plate size.
+ */
+export const PLATE = { lift: 0.02, bayFloor: 0.13, gap: 0.3, tile: 2 } as const;
+
+/** A vent grille on each bay side wall: slats from `y` up by `step`, `len` long along the wall, `off` from its inner face (in front of its plates). */
+export const VENT = { y: 3, step: 0.18, len: 1.2, h: 0.05, d: 0.04, off: 0.05 } as const;
+
+/** `n` equal cells across [a, b] in either order (no `n`: cells near `PLATE.tile`, none under half a tile): each one's center and size. */
+function split(a: number, b: number, n?: number): [number, number][] {
+  const len = Math.abs(b - a);
+  const s = len / (n ||= Math.round(len / PLATE.tile));
+  return Array.from({ length: n }, (_, i) => [Math.min(a, b) + s * (i + 0.5), s]);
+}
+
+/** A grid of flat plates over [x0, x1] x [z0, z1] at `y`. */
+function deck(x0: number, x1: number, z0: number, z1: number, y: number, color: string, nx?: number, nz?: number): PlateInstance[] {
+  return split(x0, x1, nx).flatMap(([x, w]) => split(z0, z1, nz).map(([z, h]) => ({ x, y, z, w, h, yaw: 0, flat: true, color })));
+}
+
+/**
+ * An upright face `r` (plus `PLATE.lift`) in front of (x, z) along its forward (sin yaw, cos yaw), facing `yaw`: `n` x `rows`
+ * plates over `len` along its plane (local +x after the yaw: (cos, -sin)) and over [y0, y1].
+ */
+function face(x: number, z: number, yaw: number, r: number, len: number, n: number, y0: number, y1: number, rows: number, color: string): PlateInstance[] {
+  return split(-len / 2, len / 2, n).flatMap(([u, w]) => split(y0, y1, rows).map(([y, h]) => ({ x: x + (r + PLATE.lift) * Math.sin(yaw) + u * Math.cos(yaw), y, z: z + (r + PLATE.lift) * Math.cos(yaw) - u * Math.sin(yaw), w, h, yaw, color })));
+}
+
+/** Deck plates from the aisle edge to a bay or rack front at z `front`, `gap` clear of both. */
+function strip(x0: number, x1: number, front: number): PlateInstance[] {
+  const s = Math.sign(front);
+  return deck(x0, x1, s * (ENGINE.aisle.width / 2 + PLATE.gap), front - s * PLATE.gap, PLATE.lift, ENGINE_TONES.tray);
+}
+
+/**
+ * One bay's cladding: its back wall in 4 x 2 panels and each side wall's inner face in 2 x 2 (both from the top of the bay
+ * floor up), its floor in 3 x 2 and the deck in front of it on both sides of its spur (`gap` clear of the spur); and the
+ * two vent grilles on its side walls (dim cyan holo strips; the strip's pulse reads as air moving through them).
+ */
+function bayCladding(bay: EngineBay, slats: number): [PlateInstance[], FlowInstance[]] {
+  const back = backFace(bay);
+  const x0 = bay.rect.minX + SIDE;
+  const x1 = bay.rect.maxX - SIDE;
+  const z = (back + bay.front) / 2;
+  const d = ENGINE.bay.d - WALL;
+  const spur = ENGINE.spurWidth / 2 + PLATE.gap;
+  const color = ENGINE_TONES.tray;
+  return [
+    [
+      ...face(bay.center.x, back, faceYaw(bay), 0, x1 - x0, 4, BAY_FLOOR, ENGINE.bay.h, 2, color),
+      ...face(x0, z, Math.PI / 2, 0, d, 2, BAY_FLOOR, ENGINE.bay.h, 2, color),
+      ...face(x1, z, -Math.PI / 2, 0, d, 2, BAY_FLOOR, ENGINE.bay.h, 2, color),
+      ...deck(x0, x1, back, bay.front - out(bay) * (WALL / 2), PLATE.bayFloor, color, 3, 2),
+      ...strip(bay.rect.minX, bay.center.x - spur, bay.front),
+      ...strip(bay.center.x + spur, bay.rect.maxX, bay.front),
+    ],
+    [x0 + VENT.off, x1 - VENT.off].flatMap((x) => Array.from({ length: slats }, (_, i) => ({ x, y: VENT.y + i * VENT.step, z, w: VENT.d, h: VENT.h, d: VENT.len, color: ENGINE_TONES.data }))),
+  ];
+}
+
+/** The reactor plinth: each step's four faces clad upright (4 and 2 panels a face) and a 1 u ring of flat plates round it inside the core's footprint. */
+function plinthPlates(): PlateInstance[] {
+  const { x, z, r } = ENGINE.reactor;
+  const color = ENGINE_TONES.data;
+  const half = PLINTH_STEPS[0] / 2;
+  return [
+    ...PLINTH_STEPS.flatMap((size, i) => [0, 1, 2, -1].flatMap((k) => face(x, z, (k * Math.PI) / 2, size / 2, size, i ? 2 : 4, 0.4 * i, i ? CORE_FX.plinth : 0.4, 1, color))),
+    ...[-1, 1].flatMap((o) => [...deck(x - r, x + r, z + o * half, z + o * r, PLATE.lift, color), ...deck(x + o * half, x + o * r, z - half, z + half, PLATE.lift, color)]),
+  ];
+}
 
 /** +1 when the bay's open face looks toward +z (north bays), -1 for south bays. */
 const out = (bay: EngineBay): 1 | -1 => (bay.side === "north" ? 1 : -1);
@@ -107,7 +185,7 @@ function bayShell(bay: EngineBay): Box[] {
     { x, y: 0, z: wallZ, w, h, d: WALL },
     { x: bay.rect.minX + SIDE / 2, y: 0, z: bay.center.z, w: SIDE, h, d },
     { x: bay.rect.maxX - SIDE / 2, y: 0, z: bay.center.z, w: SIDE, h, d },
-    { x, y: 0, z: bay.center.z, w: w - 2 * SIDE, h: 0.12, d: d - WALL },
+    { x, y: 0, z: bay.center.z, w: w - 2 * SIDE, h: BAY_FLOOR, d: d - WALL },
     { x: bay.rect.minX + SIDE / 2, y: h, z: wallZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
     { x: bay.rect.maxX - SIDE / 2, y: h, z: wallZ, w: 0.2, h: ENGINE.ceiling - h, d: 0.2 },
   ];
@@ -125,7 +203,8 @@ function cabinetLeds(x: number, frontZ: number, dir: 1 | -1, count: number, seed
   }));
 }
 
-function rackRow(rack: Rect, leds: number, seed: number): { solids: Box[]; flows: FlowInstance[] } {
+/** A rack row: its cabinets, their LEDs and the deck between the aisle and its front. */
+function rackRow(rack: Rect, leds: number, seed: number): [Box[], FlowInstance[], PlateInstance[]] {
   const north = rack.minZ === ENGINE.bounds.minZ;
   const z = (rack.minZ + rack.maxZ) / 2;
   const front = north ? rack.maxZ : rack.minZ;
@@ -137,7 +216,7 @@ function rackRow(rack: Rect, leds: number, seed: number): { solids: Box[]; flows
     solids.push({ x, y: 0, z, w: CABINET.w, h: CABINET.h, d: rack.maxZ - rack.minZ });
     flows.push(...cabinetLeds(x, front, north ? 1 : -1, leds, seed + i));
   }
-  return { solids, flows };
+  return [solids, flows, strip(rack.minX, rack.maxX, front)];
 }
 
 /** The props inside one station bay (no shell, no front strip); exported for the bay-fit tests. */
@@ -241,25 +320,29 @@ function workbenchProps(w: Rect): { solids: Box[]; panels: PanelInstance[] } {
 const frontStrip = (bay: EngineBay): FlowInstance => ({ x: bay.center.x, y: 0.03, z: bay.front - out(bay) * 0.15, w: ENGINE.bay.w - 0.6, h: 0.04, d: 0.25, color: ENGINE_TONES.amber });
 
 export function engineScenery(layout: EngineLayout, tier: GpuTier): EngineScenery {
-  const { leds } = engineDetail(tier);
+  const { leds, slats } = engineDetail(tier);
   const solids: Box[] = [];
   const flows: FlowInstance[] = pipes(layout);
   const panels: PanelInstance[] = [];
+  const plates: PlateInstance[] = plinthPlates();
   for (const bay of layout.bays) {
     const props = stationProps(bay, leds);
     solids.push(...bayShell(bay), ...props.solids);
-    flows.push(...props.flows, frontStrip(bay));
+    const [clad, vents] = bayCladding(bay, slats);
+    flows.push(...props.flows, frontStrip(bay), ...vents);
     panels.push(...props.panels);
+    plates.push(...clad);
   }
   layout.racks.forEach((rack, i) => {
-    const row = rackRow(rack, leds, i);
-    solids.push(...row.solids);
-    flows.push(...row.flows);
+    const [cabinets, lights, aisleDeck] = rackRow(rack, leds, i);
+    solids.push(...cabinets);
+    flows.push(...lights);
+    plates.push(...aisleDeck);
   });
   const bench = workbenchProps(layout.workbench);
   solids.push(...bench.solids, ...coreSolids());
   panels.push(...bench.panels);
-  return { solids, masks: [endMask(layout)], flows, panels };
+  return { solids, masks: [endMask(layout)], flows, panels, plates };
 }
 
 /**

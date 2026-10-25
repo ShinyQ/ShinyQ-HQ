@@ -3,7 +3,8 @@ import path from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { ARRIVAL_HEADING, ELEVATOR_DIAGONAL } from "../src/experience/camera/arrival";
 import { ENGINE_ATLAS } from "../src/experience/floors/engine/engine-atlas";
-import { ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
+import { buildEngineLayout, ENGINE, ENGINE_STATIONS } from "../src/experience/floors/engine/layout";
+import { engineScenery } from "../src/experience/floors/engine/scenery";
 import { B1_QUERY, enterB1Route, rideTo } from "./b1";
 import { STATS_FIXTURE } from "../src/lib/visits/contract";
 import { OFFICE_API_V4, shipStep } from "./office-fixtures";
@@ -339,6 +340,20 @@ test.describe("the floor", () => {
     const pad = await page.evaluate((room) => (window as unknown as { __hq: { layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }> } }).__hq.layouts.B1.doors!.find((d) => d.room === room)!.at, "B1:gates");
     await page.evaluate((p) => ((window as unknown as { __hq: { rover: { autopilot: unknown } } }).__hq.rover.autopilot = { point: p, state: "pending" }), pad);
     await expect.poll(async () => (await holo())!.awake, { timeout: 60_000 }).toBe(gates);
+  });
+
+  test("clads the bays, the deck and the reactor plinth in one lit-seam plate draw, drawn first among the transparents", async ({ page }) => {
+    type Plates = { count: number; renderOrder: number };
+    type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): Plates | undefined } | null } } };
+    await enterB1Route(page);
+    await rideTo(page, "B1");
+    const expected = engineScenery(buildEngineLayout(), "full").plates.length;
+    const plates = () =>
+      page.evaluate(() => {
+        const m = (window as unknown as SceneWindow).__hq.render.scene?.getObjectByName("engine-plates");
+        return m ? { count: m.count, renderOrder: m.renderOrder } : null;
+      });
+    await expect.poll(plates, { timeout: 30_000 }).toEqual({ count: expected, renderOrder: -1 });
   });
 
   test("the reactor core lights a segment run per job of the CI runs and polls only while on B1", async ({ page }) => {
