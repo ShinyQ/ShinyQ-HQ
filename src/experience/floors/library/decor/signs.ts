@@ -2,7 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { FONTS } from "../../../tower/primitives";
 import type { Vec2 } from "../../../types";
-import { LIBRARY_ZONES, YEAR_POST, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
+import { LIBRARY_ZONES, YEAR_POST, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone, type LibrarySection } from "../model";
 
 /** L4 floating signs (spectacle round: no words painted on the floor). Pure: Vitest runs it in node. */
 
@@ -40,7 +40,7 @@ export function stationBackEdge(s: LibraryStation): Vec2 {
  * never the plate between the follow camera and the rover. `layout.signs` (the zone anchors on the road)
  * stays in the layout contract for the tests; no decor reads it. Pure: the layout test reads it.
  */
-export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibraryZone, string>): SignSpec[] {
+export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibrarySection, string>): SignSpec[] {
   return LIBRARY_ZONES.flatMap((zone) => {
     const first = layout.stations.find((s) => s.zone === zone);
     if (!first) return [];
@@ -90,7 +90,7 @@ export function yearPostSegments(years: readonly { year: string; at: Vec2 }[]): 
 /** Every L4 sign in one list (sections, years, titles) with what each one is, for the screen placement rule. */
 export function librarySigns(input: {
   layout: LibraryLayout;
-  zones: Record<LibraryZone, string>;
+  zones: Record<LibrarySection, string>;
   titles: Map<RoomId, string>;
   titled: readonly LibraryStation[];
 }): { signs: SignSpec[]; meta: LibrarySignMeta[] } {

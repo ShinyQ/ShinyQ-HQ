@@ -11,11 +11,11 @@ import { NewsroomDecor as PickedDecor } from "./library/decor/NewsroomDecor";
 import { StudyVault } from "./library/decor/StudyVault";
 import { TopicHighlights } from "./library/decor/TopicHighlights";
 import { buildLibraryLayout } from "./library/layout";
-import { libraryLayoutInput, type LibraryZone } from "./library/model";
+import { libraryLayoutInput, type LibrarySection } from "./library/model";
 
 export interface LibraryLabels {
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
-  zones: Record<LibraryZone, string>;
+  zones: Record<LibrarySection, string>;
   /** End plaza signs: the topic count, the research monument, the archive board (`library.topics`) and the Study Vault. */
   end: EndPlazaLabels;
 }

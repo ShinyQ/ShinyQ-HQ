@@ -13,7 +13,7 @@ import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
 import { faceRoad, STATION_HEIGHT, ZONE_ICON } from "../icons";
-import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone } from "../model";
+import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
 
 export { faceRoad, STATION_HEIGHT };
 
@@ -24,13 +24,13 @@ export interface DecorProps {
   tier: GpuTier;
   reducedMotion: boolean;
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
-  zones: Record<LibraryZone, string>;
+  zones: Record<LibrarySection, string>;
   /** In-world click on a paper: open its preview modal (`openPaperFor`). */
   onPaper: (id: string) => void;
 }
 
 /** Titles per room: posts from content (any casing the content uses), shelves from zone names. */
-export function stationTitles(library: LibraryData, zones: Record<LibraryZone, string>): Map<RoomId, string> {
+export function stationTitles(library: LibraryData, zones: Record<LibrarySection, string>): Map<RoomId, string> {
   const map = new Map<RoomId, string>(library.posts.map((p) => [`L4:${p.slug}` as RoomId, p.title]));
   map.set("L4:research", zones.research);
   map.set("L4:publications", zones.models);

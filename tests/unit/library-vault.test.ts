@@ -28,9 +28,12 @@ import { expectPadRules, expectSpaceRules } from "../helpers/space";
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const data = buildExperienceData("en", FLOOR_NAMES);
 const real = libraryLayoutInput(data.library);
+/** 60 posts over 6 tracks: long, three-row bays push the end plaza east. */
+const crowdedPosts = Array.from({ length: 60 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false }));
 const crowded: LibraryLayoutInput = {
   ...real,
-  posts: Array.from({ length: LIBRARY_FLOOR.maxPosts + 6 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false })),
+  posts: crowdedPosts,
+  tracks: Array.from({ length: 6 }, (_, t) => ({ slug: `track-${t}`, posts: crowdedPosts.filter((_, i) => i % 6 === t).map((p) => p.slug) })),
 };
 const V = NEWSROOM.end.vault;
 const VAULT = "L4:vault";
@@ -72,7 +75,7 @@ function quadsOverlap(a: Vec2[], b: Vec2[]): boolean {
 
 describe.each([
   ["real content", real],
-  ["crowded (archive board)", crowded],
+  ["crowded (60 posts on 6 tracks)", crowded],
   ["no research metrics", { ...real, metrics: false }],
 ])("L4 Study Vault with %s", (_, input) => {
   const layout = buildLibraryLayout(input);
@@ -179,12 +182,11 @@ describe.each([
     expect(vault.shelf.minX - vault.stop.x).toBeGreaterThan(ROVER.radius + 3);
   });
 
-  it("keeps every book at least 3 u from the Return pad, the board, the monument, the ring road and the slab edge", () => {
+  it("keeps every book at least 3 u from the Return pad, the monument, the ring road and the slab edge", () => {
     const pad = around(end.returnPad, PAD.radius);
     const ring = net.roads.find((r) => r.id === "end-ring")!;
     for (const b of [...vault.books, { slug: "shelf", rect: vault.shelf }]) {
       expect(rectGap(b.rect, pad), `${b.slug} to the Return pad`).toBeGreaterThanOrEqual(3);
-      if (layout.board) expect(rectGap(b.rect, layout.board.rect), `${b.slug} to the board`).toBeGreaterThanOrEqual(3);
       if (end.monument) expect(rectGap(b.rect, end.monument.rect), `${b.slug} to the monument`).toBeGreaterThanOrEqual(3);
       expect(rectGap(b.rect, end.core), `${b.slug} to the pedestal`).toBeGreaterThanOrEqual(3);
       const { minX, maxX, minZ, maxZ } = b.rect;
@@ -198,9 +200,8 @@ describe.each([
       const slab = L4.bounds;
       expect(Math.min(b.rect.minX - slab.minX, slab.maxX - b.rect.maxX, b.rect.minZ - slab.minZ, slab.maxZ - b.rect.maxZ), `${b.slug} to the slab edge`).toBeGreaterThanOrEqual(3);
     }
-    // The vault road and plaza stay clear of the Return pad and the board.
+    // The vault road and plaza stay clear of the Return pad.
     expect(dist(vault.center, end.returnPad)).toBeGreaterThan(vault.radius + PAD.radius + 3);
-    if (layout.board) expect(rectGap(around(vault.center, vault.radius), layout.board.rect)).toBeGreaterThanOrEqual(3);
   });
 
   it("turns the camera at the stop toward the books (any heading), zoomed out to fit them", () => {

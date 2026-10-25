@@ -89,9 +89,9 @@ export interface FloorLayout {
    * L1: the office wing, whose view looks south under the L2 slab edge). Elsewhere the outline stays.
    */
   hideGhostAbove?: readonly Rect[];
-  /** Where `drive` stops for a room on this floor without a door (L4: posts on the archive board). */
+  /** Where `drive` stops for a room on this floor without a door or a stop (L4: the featured stage, else the spawn). */
   listStop?: Vec2;
-  /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars); checked before `listStop`. */
+  /** Rooms without a door that have their own stop (L3: the Tech Reactor; L2: the Workshop gateway, benches and skyline bars; L4: each post at its track bay); checked before `listStop`. */
   stops?: Partial<Record<RoomId, Vec2>>;
   /** L3: where `drive` stops for each wing's directory panel (listed pods and the directory boards). */
   directoryStops?: Partial<Record<Wing, Vec2>>;

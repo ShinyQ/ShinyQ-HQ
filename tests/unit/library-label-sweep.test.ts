@@ -4,7 +4,7 @@ import { stationTitles } from "@/experience/floors/library/decor/common";
 import { endPlazaSigns, PEDESTAL_OBSTACLE } from "@/experience/floors/library/decor/EndPlaza";
 import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
-import { type LibraryZone } from "@/experience/floors/library/model";
+import { type LibrarySection } from "@/experience/floors/library/model";
 import { orbSlots } from "@/experience/floors/library/topics";
 import { polygonArea, polygonOverlap, type Quad } from "@/experience/fx/labelPlacement";
 import { signPlate } from "@/experience/fx/signLayout";
@@ -22,7 +22,7 @@ import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l
  */
 
 // The timeline signs as `NewsroomDecor` builds them: the featured stage carries its title on the headline wall.
-const zones: Record<LibraryZone, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
+const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
 const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
 const timeline = librarySigns({ layout, zones, titles: stationTitles(data.library, zones), titled: layout.stations.filter((s) => s !== featured) });
 const half = libraryPlateHalves(timeline.signs);

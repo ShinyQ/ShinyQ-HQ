@@ -43,9 +43,9 @@ const LOBBY_STOPS: Record<string, Vec2> = {
 
 /**
  * Where `drive` takes the rover. Rooms with a door trigger stop in its zone (every floor), rooms with
- * a `stops` entry (the L3 Tech Reactor, the L2 Workshop) at that stop; Lobby
+ * a `stops` entry (the L3 Tech Reactor, the L2 Workshop, L4 posts at their track bay) at that stop; Lobby
  * rooms have real stops; L3 listed items stop at their wing directory; rooms without a door on a floor
- * with a `listStop` (L4 posts on the archive board) stop there; anything else stops near the floor label.
+ * with a `listStop` (L4: a post on no reader track, at the featured stage) stop there; anything else stops near the floor label.
  */
 export function roomTarget(room: RoomInfo | undefined, id: RoomId, layouts: Record<FloorId, FloorLayout>, years: readonly number[]): Vec2 {
   const floor = floorOf(id);

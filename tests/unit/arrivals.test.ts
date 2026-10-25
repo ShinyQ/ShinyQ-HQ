@@ -48,8 +48,8 @@ const SIZES = [
 
 const ZONE_ID: Record<FloorId, string> = { B1: "B1:arrival", L1: "L1:arrival", L2: "L2:arrival", L3: "L3:overview", L4: "L4:arrival", RF: "RF:arrival" };
 
-/** The first timeline station on L4 (the newest post north of the lane) and the point of its front nearest its door. */
-const firstStation = library.stations.find((s) => s.center.z < library.floor.approach.z)!;
+/** The first timeline bay on L4 (the first reader track, north of the lane) and the point of its front nearest its door. */
+const firstStation = library.bays.find((s) => s.center.z < library.floor.approach.z)!;
 const stationFront: Vec2 = {
   x: Math.max(firstStation.rect.minX, Math.min(firstStation.rect.maxX, firstStation.door.x)),
   z: Math.max(firstStation.rect.minZ, Math.min(firstStation.rect.maxZ, firstStation.door.z)),
@@ -78,7 +78,7 @@ const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
   ],
   L2: [{ label: "next year's arch", at: [road.years[1].arch.center.x, 0, road.years[1].arch.center.z] }],
   L3: [{ label: "Data and ML directory board", at: [dataBoard.center.x, (LABS.board.base + LABS.board.h) / 2, dataBoard.center.z] }],
-  L4: [{ label: "first timeline station front", at: [stationFront.x, 1.5, stationFront.z] }],
+  L4: [{ label: "first timeline bay front", at: [stationFront.x, 1.5, stationFront.z] }],
   RF: [
     { label: "centerpiece base", at: [mast.x, 0, mast.z] },
     { label: "centerpiece mast and sign", at: [mast.x, 6, mast.z] },

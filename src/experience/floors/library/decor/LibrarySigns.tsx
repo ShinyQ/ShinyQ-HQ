@@ -5,7 +5,7 @@ import type { Group } from "three";
 import type { RoomId } from "@/content/schema";
 import type { GpuTier } from "../../../types";
 import { FloatingSigns } from "../../../fx/FloatingSign";
-import type { LibraryLayout, LibraryStation, LibraryZone } from "../model";
+import type { LibraryLayout, LibraryStation, LibrarySection } from "../model";
 import { librarySigns } from "./signs";
 import { useLibrarySignPlacement } from "./useLibrarySignPlacement";
 
@@ -23,7 +23,7 @@ export function LibrarySigns({
   reducedMotion,
 }: {
   layout: LibraryLayout;
-  zones: Record<LibraryZone, string>;
+  zones: Record<LibrarySection, string>;
   titles: Map<RoomId, string>;
   titled: readonly LibraryStation[];
   tier: GpuTier;

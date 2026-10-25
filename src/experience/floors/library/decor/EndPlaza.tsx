@@ -140,10 +140,6 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
       meta.push({ kind: "monument" });
     }
   }
-  if (layout.board) {
-    signs.push({ text: labels.archive, x: layout.board.center.x - end.center.x - 0.6, y: NEWSROOM.board.h - 0.6, z: layout.board.center.z - end.center.z, color: "#22d3ee", fontSize: 0.4, font: FONTS.monoBold });
-    meta.push({ kind: "archive" });
-  }
   const vault = end.vault;
   if (vault) {
     const { books, stop } = vault;

@@ -5,20 +5,18 @@ import { ARRIVAL_YAW } from "../../../camera/look";
 import { TOPICS_ROOM } from "../topicHash";
 import type { Rect, Vec2 } from "../../../types";
 import {
-  DOCK,
   dockAlong,
   floorBounds,
   LIBRARY_FLOOR,
   libraryFloor,
+  roomOfPost,
   shelfItems,
   signsFor,
-  splitPosts,
-  STATION_SIZE,
   stationSpurs,
-  tagLinks,
-  YEAR_POST,
+  trackRoom,
   ZONE_TONE,
   type DockItem,
+  type LibraryBay,
   type LibraryLayout,
   type LibraryLayoutInput,
   type LibraryGuideInput,
@@ -26,15 +24,16 @@ import {
   type LibraryVault,
   type VaultBook,
 } from "../model";
+import { shelfSize, shelfSlots } from "../shelf";
 
 /**
  * Concept B, "Newsroom": a press plaza in front of the elevator with a giant headline wall (scrolling
  * ticker of post titles) on its north edge and the featured post (the newest hosted post) on a stage on
- * its south edge. One timeline lane runs east: the other posts newest first, alternating north and
- * south, with year marks on the road where the year changes, then the Research, Models and Talks desks,
- * and the end plaza (owner request 2026-10-14): the Topic Constellation on a pedestal in its middle with a
- * ring road around it, the research-metrics monument on its north rim, the Express Return pad south of it
- * and the archive board on its east rim. Pure.
+ * its south edge. One timeline lane runs east: one bookshelf bay per reader track in dataset order,
+ * alternating north and south (the featured post keeps its slot on its track's shelf too), then the Research,
+ * Models and Talks desks, and the end plaza (owner request 2026-10-14): the Topic Constellation on a pedestal
+ * in its middle with a ring road around it, the research-metrics monument on its north rim and the Express
+ * Return pad south of it. Pure.
  */
 export const NEWSROOM = {
   plaza: { x: -2, z: 0, w: 24, d: 20 },
@@ -53,7 +52,6 @@ export const NEWSROOM = {
   northStart: 14,
   southStart: 16,
   tail: 10,
-  board: { w: 0.6, d: 7, h: 4.2 },
   /** The end plaza: the timeline's turnaround, filled with the Topic Constellation. */
   end: {
     /** Round plaza diameter (room for the ring road around the pedestal and the orbiting topics). */
@@ -71,7 +69,7 @@ export const NEWSROOM = {
     monument: { w: 6, d: 1.5, h: 6.5, gap: 3, stopInset: 1.5 },
     /** Express Return pad, from the plaza center: south of the plaza, on the side toward the elevator. */
     returnPad: { dx: -4, dz: 15 },
-    /** Camera zones: straight north at the monument, straight east at the arrival, the constellation and the board. */
+    /** Camera zones: straight north at the monument, straight east at the arrival and the constellation. */
     lookNorth: -Math.PI / 4,
     lookEast: (-3 * Math.PI) / 4,
     /** Zoom out at the constellation stop so the whole cloud fits. */
@@ -82,8 +80,8 @@ export const NEWSROOM = {
      * The Study Vault (owner request 2026-10-19), only with study guides: a road from a ring road vertex out along
      * its diagonal to a small round plaza, the stop on the plaza's ring side and the guides as tall books on an arc
      * around the stop on the plaza's east rim, each facing the stop; the camera at the stop looks east at them, like
-     * the floor's other end plaza views. South-east, so it stays clear of the Return pad (south-west of it), the
-     * archive board (east rim) and the monument (north rim); `tests/unit/library-vault.test.ts` checks the space
+     * the floor's other end plaza views. South-east, so it stays clear of the Return pad (south-west of it) and the
+     * monument (north rim); `tests/unit/library-vault.test.ts` checks the space
      * rules, a 3 u clearance from each of them and the framing of all four books on every screen class.
      *
      * The arc runs north to south, so the books' common footprint (`LibraryVault.shelf`, the one obstacle) is a thin
@@ -121,10 +119,11 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const N = NEWSROOM;
   const P: Vec2 = { x: N.plaza.x, z: N.plaza.z };
   const east = { x: P.x + 1, z: P.z };
-  const { docked, archive } = splitPosts(input);
-  const featuredIndex = input.posts.slice(0, docked.length).findIndex((p) => !p.external);
-  const featured: DockItem[] = featuredIndex >= 0 ? [docked[featuredIndex]] : [];
-  const timeline: DockItem[] = [...docked.filter((_, i) => i !== featuredIndex), ...shelfItems(input)];
+  // The featured stage: the newest hosted post (it keeps its slot on its track's shelf too).
+  const newest = input.posts.find((p) => !p.external);
+  const featured: DockItem[] = newest ? [{ room: roomOfPost(newest.slug), zone: "blog" }] : [];
+  const tracks = input.tracks.filter((t) => t.posts.length);
+  const timeline: DockItem[] = [...tracks.map((t): DockItem => ({ room: trackRoom(t.slug), zone: "track", along: shelfSize(t.posts.length).along })), ...shelfItems(input)];
 
   const stage = dockAlong(featured, { a: P, b: east, side: 1, start: N.featuredStart });
   const northItems = timeline.filter((_, i) => i % 2 === 0);
@@ -132,7 +131,13 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const north = dockAlong(northItems, { a: P, b: east, side: -1, start: N.northStart });
   const south = dockAlong(southItems, { a: P, b: east, side: 1, start: N.southStart });
   const lane: LibraryStation[] = timeline.map((_, i) => (i % 2 === 0 ? north.stations[i / 2] : south.stations[(i - 1) / 2]));
-  const stations = [...stage.stations, ...lane];
+  // Every door pad in door order: the stage, the bays, the desks.
+  const docked = [...stage.stations, ...lane];
+  const stations = docked.filter((s) => s.zone !== "track");
+  const bays: LibraryBay[] = tracks.map((t, i) => {
+    const s = lane[i];
+    return { track: t.slug, room: s.room, rect: s.rect, center: s.center, door: s.door, facing: s.facing, from: s.from, stop: s.door, posts: [...t.posts], slots: shelfSlots(s, t.posts) };
+  });
 
   const E = N.end;
   const endX = P.x + Math.max(north.end, south.end, N.northStart) + N.tail + E.lead;
@@ -147,31 +152,9 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     { id: "timeline", points: [P, ringStop], width: LIBRARY_FLOOR.road },
     { id: "end-ring", points: ringRoadPoints(end, E.ring, E.segments), width: LIBRARY_FLOOR.road, closed: true },
   ];
-  const network: RoadNetwork = { roads, plazas: [pressPlaza, endPlaza], spurs: stationSpurs(stations, (z) => ZONE_TONE[z]) };
+  const network: RoadNetwork = { roads, plazas: [pressPlaza, endPlaza], spurs: stationSpurs(docked, (z) => ZONE_TONE[z]) };
 
   const wall: Rect = { minX: N.wall.x - N.wall.w / 2, maxX: N.wall.x + N.wall.w / 2, minZ: N.wall.z - N.wall.d / 2, maxZ: N.wall.z + N.wall.d / 2 };
-  const boardCenter = { x: end.x + radius + 3 + N.board.w / 2, z: end.z };
-  const board = archive.length
-    ? {
-        rect: { minX: boardCenter.x - N.board.w / 2, maxX: boardCenter.x + N.board.w / 2, minZ: boardCenter.z - N.board.d / 2, maxZ: boardCenter.z + N.board.d / 2 },
-        center: boardCenter,
-        stop: { x: boardCenter.x - N.board.w / 2 - 3, z: boardCenter.z },
-      }
-    : null;
-
-  // Year marks on the lane: before the first post of each year (the featured post's year is on its stage).
-  const years: { year: string; at: Vec2 }[] = [];
-  let last = featuredIndex >= 0 ? input.posts[featuredIndex].date.slice(0, 4) : "";
-  timeline.forEach((item, i) => {
-    if (item.zone !== "blog") return;
-    const year = input.posts.find((p) => `L4:${p.slug}` === item.room)!.date.slice(0, 4);
-    if (year === last) return;
-    last = year;
-    // A low post on the road edge in the gap before the first post of the year (Round 7 F: no billboard in the camera path).
-    const s = lane[i];
-    years.push({ year, at: { x: s.from.x - (STATION_SIZE.blog.along / 2 + DOCK.gap / 2), z: s.from.z + s.facing.z * (LIBRARY_FLOOR.road / 2 + YEAR_POST.edge) } });
-  });
-
   const monumentCenter = { x: end.x, z: end.z - radius - E.monument.gap - E.monument.d / 2 };
   const monument = input.metrics
     ? {
@@ -188,7 +171,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   }
   const books = vault?.books.map((b) => b.rect) ?? [];
 
-  const extra: Rect[] = [wall, ...(board ? [board.rect] : []), core, ...(monument ? [monument.rect] : []), ...(vault ? [vault.shelf] : [])];
+  const extra: Rect[] = [wall, core, ...(monument ? [monument.rect] : []), ...(vault ? [vault.shelf] : [])];
   const points = [
     { x: P.x - N.plaza.w / 2, z: P.z - N.plaza.d / 2 },
     { x: P.x + N.plaza.w / 2, z: P.z + N.plaza.d / 2 },
@@ -196,11 +179,14 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     { x: end.x - radius, z: end.z - radius },
     { x: returnPad.x, z: returnPad.z + 1.5 },
   ];
-  const bounds = floorBounds([...stations.map((s) => s.rect), ...extra, ...(vault ? [around(vault.center, vault.radius)] : [])], points, LIBRARY_FLOOR.margin);
+  const bounds = floorBounds([...docked.map((s) => s.rect), ...extra, ...(vault ? [around(vault.center, vault.radius)] : [])], points, LIBRARY_FLOOR.margin);
   const spawn: Vec2 = { x: N.arrival.x, z: N.arrival.z };
+  // Every post drives to its bay's door; the featured post's room keeps the stage door (doors win over stops).
+  const postStops: Partial<Record<RoomId, Vec2>> = {};
+  for (const bay of bays) for (const slug of bay.posts) if (slug !== newest?.slug) postStops[roomOfPost(slug)] = bay.stop;
   const floor = libraryFloor({
     bounds,
-    stations,
+    stations: docked,
     extraObstacles: extra,
     network,
     spawn,
@@ -229,17 +215,15 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         travel: { x: 1, z: 0 },
       },
       ...(monument ? [{ id: "L4:metrics", area: around(monument.stop, 2.5), yaw: E.lookNorth, zoom: 1.2 }] : []),
-      ...(board ? [{ id: "L4:board:archive", area: around(board.stop, 2), yaw: E.lookEast }] : []),
       // The Study Vault: from the stop, look east at the books (any heading), zoomed out so all four fit.
       ...(vault ? [{ id: VAULT_ROOM, area: around(vault.stop, E.vault.zone), yaw: E.lookEast, zoom: E.vault.zoom, classView: { mobile: { zoom: E.vault.zoomPhone } } }] : []),
     ],
     returnPad,
-    stops: { [TOPICS_ROOM]: ringStop, ...(vault ? { [VAULT_ROOM]: vault.stop } : {}) },
-    // The pedestal with its topic cloud, the monument, the board and the vault books block a low camera up to their height.
+    stops: { ...postStops, [TOPICS_ROOM]: ringStop, ...(vault ? { [VAULT_ROOM]: vault.stop } : {}) },
+    // The pedestal with its topic cloud, the monument and the vault books block a low camera up to their height.
     tall: [
       { ...core, h: E.coreHeight },
       ...(monument ? [{ ...monument.rect, h: E.monument.h }] : []),
-      ...(board ? [{ ...board.rect, h: N.board.h }] : []),
       ...books.map((r) => ({ ...r, h: E.vault.book.h })),
     ],
   });
@@ -249,12 +233,10 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     floor,
     network,
     stations,
-    archive,
-    board,
+    bays,
     signs: signsFor(stations, P),
     centerpiece: { x: N.wall.x, z: wall.maxZ },
-    links: tagLinks(input),
-    extras: { wall, years },
+    extras: { wall },
     end: { center: end, core, ringStop, monument, returnPad, vault },
   };
 }

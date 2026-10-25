@@ -2,6 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { ROAD, type RoadNetwork } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
+import { SHELF, type ShelfSlot } from "./shelf";
 
 /**
  * Shared contract of the L4 Writing floor (walkable floors plan, part 3). The concept builder
@@ -12,13 +13,20 @@ import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
 /** The shipped L4 concept (owner pick: newsroom). */
 export type LibraryConcept = "newsroom";
 
-/** Category of a station; display names come from messages (`library.posts`, `library.research`, ...). */
-export type LibraryZone = "blog" | "research" | "models" | "talks";
-export const LIBRARY_ZONES: readonly LibraryZone[] = ["blog", "research", "models", "talks"];
+/**
+ * Category of a station; display names come from messages (`library.posts`, `library.research`, ...). A `track` is a
+ * reader track bay (its name comes from content), so it has no section sign of its own.
+ */
+export type LibraryZone = "blog" | "research" | "models" | "talks" | "track";
+/** The zones with a section sign (every zone but the track bays). */
+export type LibrarySection = Exclude<LibraryZone, "track">;
+export const LIBRARY_ZONES: readonly LibrarySection[] = ["blog", "research", "models", "talks"];
 
 /** What a layout needs from the payload (`libraryLayoutInput`). Posts keep `getPosts()` order (newest first). */
 export interface LibraryLayoutInput {
   posts: { slug: string; date: string; tags: readonly string[]; external: boolean }[];
+  /** Reader tracks in dataset order, posts lead first then newest first; tracks without posts are dropped. */
+  tracks: { slug: string; posts: string[] }[];
   research: number;
   models: number;
   talks: number;
@@ -39,6 +47,7 @@ export interface LibraryGuideInput {
 export function libraryLayoutInput(library: Omit<LibraryData, "shapes">): LibraryLayoutInput {
   return {
     posts: library.posts.map((p) => ({ slug: p.slug, date: p.date, tags: [...p.tags], external: Boolean(p.url) })),
+    tracks: library.tracks.filter((t) => t.posts.length).map((t) => ({ slug: t.slug, posts: [...t.posts] })),
     research: library.research.length,
     models: library.models.length,
     talks: library.talks.length,
@@ -54,8 +63,6 @@ export const LIBRARY_FLOOR = {
   accent: "#e5e7eb",
   road: ROAD.minWidth,
   margin: 6,
-  /** Posts docked on the floor; older ones go to the archive board and the posts palette. */
-  maxPosts: 12,
   /**
    * Kept free for the elevator call pad (parallel work: a pad in front of the elevator on every floor):
    * no obstacle, door pad, station or sign may touch it. The lead road may cross it.
@@ -63,12 +70,13 @@ export const LIBRARY_FLOOR = {
   padZone: { minX: -24, maxX: -15, minZ: -4.5, maxZ: 4.5 } as Rect,
 } as const;
 
-/** Docking sizes: `along` the road and `across` it (u). */
+/** Docking sizes: `along` the road and `across` it (u). A track bay docks with its own `along` (`shelfSize`); this is its minimum. */
 export const STATION_SIZE: Record<LibraryZone, { along: number; across: number }> = {
   blog: { along: 4, across: 4 },
   research: { along: 10, across: 6 },
   models: { along: 8, across: 6 },
   talks: { along: 8, across: 6 },
+  track: { along: SHELF.minAlong, across: SHELF.across },
 };
 
 export const DOCK = {
@@ -80,9 +88,6 @@ export const DOCK = {
   padInset: 1.1,
   spurWidth: 3,
 } as const;
-
-/** Year markers: a low post on the road edge (`edge` past it) with a small plate on top (`top` = post height). Lives here so the layout builders stay free of the sign module's tower imports. */
-export const YEAR_POST = { fontSize: 0.45, top: 0.9, edge: 0.4 } as const;
 
 export interface LibraryStation {
   room: RoomId;
@@ -97,24 +102,41 @@ export interface LibraryStation {
   from: Vec2;
 }
 
+/** One reader track's bay on the timeline: a bookshelf with the lead post's cover and the other posts' spines. */
+export interface LibraryBay {
+  track: string;
+  /** `L4:track:<slug>` (`trackRoom`). */
+  room: RoomId;
+  rect: Rect;
+  center: Vec2;
+  /** Door pad center. */
+  door: Vec2;
+  /** Unit direction from the pad into the bay. */
+  facing: Vec2;
+  /** Spur start on the road centerline. */
+  from: Vec2;
+  /** Where the rover stops for the bay and every post on it (the door). */
+  stop: Vec2;
+  /** Lead first, then newest first. */
+  posts: string[];
+  /** One slot per post, in `posts` order (`shelfSlots`). */
+  slots: ShelfSlot[];
+}
+
 export interface LibraryLayout {
   concept: LibraryConcept;
   floor: FloorLayout;
   network: RoadNetwork;
-  /** Station order: docked posts (newest first, the featured post first where a concept has one), then research, models, talks. */
+  /** Station order: the featured stage (the newest hosted post, when there is one), then research, models, talks. */
   stations: LibraryStation[];
-  /** Slugs of posts beyond `maxPosts` (archive board and the posts palette). */
-  archive: string[];
-  /** Archive board with the stop in front of it (null while every post is docked). */
-  board: { rect: Rect; center: Vec2; stop: Vec2 } | null;
-  /** Zone sign anchors (floor text and icon) with the direction the zone's road runs. */
-  signs: Record<LibraryZone, { at: Vec2; heading: Vec2 }>;
+  /** One bay per reader track, in dataset order, alternating north and south of the timeline. */
+  bays: LibraryBay[];
+  /** Section sign anchors (floor text and icon) with the direction the zone's road runs. */
+  signs: Record<LibrarySection, { at: Vec2; heading: Vec2 }>;
   /** Concept centerpiece (the newsroom headline wall). */
   centerpiece: Vec2;
-  /** Docked posts that share a tag (no decor draws them today). */
-  links: [RoomId, RoomId][];
-  /** Concept extras the decor reads (headline wall, year marks). */
-  extras: { wall?: Rect; years?: { year: string; at: Vec2 }[] };
+  /** Concept extras the decor reads (headline wall). */
+  extras: { wall?: Rect };
   /** The end plaza (newsroom): Topic Constellation, research-metrics monument and Express Return pad. */
   end?: LibraryEnd | null;
 }
@@ -162,11 +184,15 @@ export interface LibraryVault {
 }
 
 export const roomOfPost = (slug: string): RoomId => `L4:${slug}` as RoomId;
-export const ZONE_ROOM: Record<Exclude<LibraryZone, "blog">, RoomId> = { research: "L4:research", models: "L4:publications", talks: "L4:talks" };
+/** The room of a reader track's bay. */
+export const trackRoom = (slug: string): RoomId => `L4:track:${slug}` as RoomId;
+export const ZONE_ROOM: Record<Exclude<LibrarySection, "blog">, RoomId> = { research: "L4:research", models: "L4:publications", talks: "L4:talks" };
 
 export interface DockItem {
   room: RoomId;
   zone: LibraryZone;
+  /** Length along the road (default `STATION_SIZE[zone].along`). */
+  along?: number;
 }
 
 /** Axis-aligned road segment to dock along, from `a` toward `b`. */
@@ -193,7 +219,8 @@ export function dockAlong(items: readonly DockItem[], run: DockRun): { stations:
   const half = (run.roadWidth ?? LIBRARY_FLOOR.road) / 2;
   let cursor = run.start;
   const stations = items.map((item) => {
-    const { along, across } = STATION_SIZE[item.zone];
+    const along = item.along ?? STATION_SIZE[item.zone].along;
+    const { across } = STATION_SIZE[item.zone];
     const s = cursor + along / 2;
     cursor += along + DOCK.gap;
     const from = { x: run.a.x + u.x * s, z: run.a.z + u.z * s };
@@ -213,12 +240,6 @@ export function dockAlong(items: readonly DockItem[], run: DockRun): { stations:
     };
   });
   return { stations, end: cursor - DOCK.gap };
-}
-
-/** Docked posts (capped) and the archive, from the input (newest first). */
-export function splitPosts(input: LibraryLayoutInput): { docked: DockItem[]; archive: string[] } {
-  const docked = input.posts.slice(0, LIBRARY_FLOOR.maxPosts).map((p) => ({ room: roomOfPost(p.slug), zone: "blog" as const }));
-  return { docked, archive: input.posts.slice(LIBRARY_FLOOR.maxPosts).map((p) => p.slug) };
 }
 
 /** The non-post stations that have content (an empty shelf gets no station). */
@@ -284,15 +305,6 @@ export function stationViewZones(stations: readonly LibraryStation[]): ViewZone[
   });
 }
 
-/** Pairs of docked posts that share at least one tag (each pair once, newer post first). */
-export function tagLinks(input: LibraryLayoutInput): [RoomId, RoomId][] {
-  const posts = input.posts.slice(0, LIBRARY_FLOOR.maxPosts);
-  const out: [RoomId, RoomId][] = [];
-  for (let i = 0; i < posts.length; i++)
-    for (let j = i + 1; j < posts.length; j++) if (posts[i].tags.some((t) => posts[j].tags.includes(t))) out.push([roomOfPost(posts[i].slug), roomOfPost(posts[j].slug)]);
-  return out;
-}
-
 const bare = ({ minX, maxX, minZ, maxZ }: Rect): Rect => ({ minX, maxX, minZ, maxZ });
 
 /** Slab bounds around everything on the floor, with the shaft side fixed at `slabMinX`. */
@@ -348,4 +360,5 @@ export const ZONE_TONE: Record<LibraryZone, string> = {
   research: "#fbbf24",
   models: "#a78bfa",
   talks: "#f472b6",
+  track: "#22d3ee",
 };

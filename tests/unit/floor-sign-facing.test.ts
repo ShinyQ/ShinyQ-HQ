@@ -7,7 +7,7 @@ import { buildCareerRoad, careerLayoutInput, labelFade } from "@/experience/floo
 import { stationTitles } from "@/experience/floors/library/decor/common";
 import { createLibraryFrame, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
-import type { LibraryZone } from "@/experience/floors/library/model";
+import type { LibrarySection } from "@/experience/floors/library/model";
 import { SIGN_HIDDEN, signFacing, signFacingDot, type SignSpec } from "@/experience/fx/signLayout";
 import type { Vec2 } from "@/experience/types";
 import en from "../../messages/en.json";
@@ -46,7 +46,7 @@ describe("L2 Workshop signs (career-workshop-signs)", () => {
 });
 
 describe("L4 timeline signs (library-signs)", () => {
-  const zones: Record<LibraryZone, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
+  const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
   const featured = l4Layout.stations[0]?.zone === "blog" ? l4Layout.stations[0] : undefined;
   const { signs, meta } = librarySigns({ layout: l4Layout, zones, titles: stationTitles(l4Data.library, zones), titled: l4Layout.stations.filter((s) => s !== featured) });
   const half = libraryPlateHalves(signs);
