@@ -9,6 +9,7 @@ import { PerspectivesFileSchema, SiteBuildSchema, SiteContentSchema, StudyGuides
 import { groupEntriesByYear, orderPods, sortTimeline } from "./selectors";
 import { buildTechIndex, type TechIndex } from "./tech-index";
 import { buildTopicIndex, type TopicIndex } from "./topic-index";
+import { buildTrackIndex, type TrackEntry } from "./track-index";
 
 let cached: SiteContent | undefined;
 
@@ -98,6 +99,14 @@ let cachedTopicIndex: TopicIndex | undefined;
 export function getTopicIndex(): TopicIndex {
   cachedTopicIndex ??= buildTopicIndex(getContent().floors.library);
   return cachedTopicIndex;
+}
+
+let cachedTrackIndex: TrackEntry[] | undefined;
+
+/** L4 reader tracks (`buildTrackIndex`): dataset order, each track's posts lead first then newest first, built at build time. */
+export function getTrackIndex(): TrackEntry[] {
+  cachedTrackIndex ??= buildTrackIndex(getContent().floors.library);
+  return cachedTrackIndex;
 }
 export const getCertifications = () => getContent().certifications;
 export const getAwards = () => [...getContent().awards].sort((a, b) => b.date.localeCompare(a.date));

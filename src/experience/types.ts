@@ -214,8 +214,17 @@ export interface LibraryData {
   topics: LibraryTopic[];
   /** Certification study guides (`content/study-guides.json`, file order): the books of the end plaza's Study Vault. */
   guides: { slug: string; spine: string; issuer: string; code: string | null }[];
+  /** Reader tracks (build-time track index, dataset order; tracks without posts dropped): the floor's post shelves. */
+  tracks: LibraryTrack[];
   /** Item icons (`/shapes/L4.<hash>.json`, keyed by post slug, publication id and talk id). */
   shapes: string;
+}
+
+/** One L4 reader track: its locale label and post slugs, lead first then newest first. */
+export interface LibraryTrack {
+  slug: string;
+  label: string;
+  posts: string[];
 }
 
 /** One topic of the L4 Topic Constellation. */

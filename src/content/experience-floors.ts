@@ -2,7 +2,7 @@ import { ENGINE_BAYS, engineRoom } from "@/experience/floors/engine/layout";
 import type { EngineData, LibraryData, RoofData } from "@/experience/types";
 import { getBuildStory } from "./build-story";
 import { guideViews } from "./guide-views";
-import { getLibrary, getPosts, getProfile, getRoof, getTopicIndex } from "./load";
+import { getLibrary, getPosts, getProfile, getRoof, getTopicIndex, getTrackIndex } from "./load";
 import { messages } from "./room-views/shared";
 import { topicRooms } from "./topic-index";
 import type { Locale } from "./schema";
@@ -34,6 +34,9 @@ export function buildLibraryData(locale: Locale): Omit<LibraryData, "shapes"> {
       .map((t) => ({ id: t.id, title: t.title[locale], event: t.event, date: t.date, role: t.role })),
     topics: getTopicIndex().topics.map((t) => ({ slug: t.slug, label: messages(locale).library.topics.names[t.slug], count: t.items.length, rooms: topicRooms(t) })),
     guides: guideViews(locale).map(({ slug, spine, issuer, code }) => ({ slug, spine, issuer, code })),
+    tracks: getTrackIndex()
+      .filter((t) => t.posts.length)
+      .map((t) => ({ slug: t.slug, label: library.tracks.find((x) => x.slug === t.slug)!.title[locale], posts: t.posts })),
   };
 }
 

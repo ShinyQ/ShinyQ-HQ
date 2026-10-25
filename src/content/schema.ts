@@ -298,10 +298,19 @@ export const PodSchema = z
     }
   });
 
+/** An L4 reader track (owner decision 2026-10-25): a titled shelf of posts, `lead` is the post shown first (else the newest). */
+export const TrackSchema = z.strictObject({
+  slug: SlugSchema,
+  title: LocalizedTextSchema,
+  lead: SlugSchema.optional(),
+});
+
 export const PostRefSchema = z.strictObject({
   slug: SlugSchema,
   title: LocalizedTextSchema,
   date: IsoDateSchema,
+  /** The slug of the one reader track the post sits on (`floors.library.tracks`). */
+  track: SlugSchema,
   tags: z.array(nonEmpty),
   languages: z.array(LocaleSchema).min(1),
   excerpt: LocalizedTextSchema,
@@ -635,6 +644,7 @@ export const SiteContentObjectSchema = z.strictObject({
     careerArchive: z.strictObject({ entries: z.array(TimelineEntrySchema).min(1), timeTravel: TimeTravelSchema.optional() }),
     labs: z.strictObject({ pods: z.array(PodSchema).min(1) }),
     library: z.strictObject({
+      tracks: z.array(TrackSchema).min(1).max(6),
       posts: z.array(PostRefSchema),
       publications: z.array(PublicationSchema),
       talks: z.array(TalkSchema),
@@ -675,6 +685,20 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     }
   });
   for (const issue of hologramIdClashes(content)) ctx.addIssue({ code: "custom", path: issue.path, message: issue.message });
+  const { tracks, posts } = content.floors.library;
+  const trackSlugs = new Set<string>();
+  tracks.forEach((track, i) => {
+    if (trackSlugs.has(track.slug)) ctx.addIssue({ code: "custom", path: ["floors", "library", "tracks", i, "slug"], message: `Track "${track.slug}" is listed twice` });
+    trackSlugs.add(track.slug);
+  });
+  posts.forEach((post, i) => {
+    if (!trackSlugs.has(post.track)) ctx.addIssue({ code: "custom", path: ["floors", "library", "posts", i, "track"], message: `Unknown track "${post.track}"` });
+  });
+  tracks.forEach((track, i) => {
+    if (track.lead && !posts.some((p) => p.slug === track.lead && p.track === track.slug)) {
+      ctx.addIssue({ code: "custom", path: ["floors", "library", "tracks", i, "lead"], message: `Lead "${track.lead}" is not a post of track "${track.slug}"` });
+    }
+  });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));
   content.floors.labs.pods.forEach((pod, i) => {
     pod.publications?.forEach((id, j) => {
@@ -744,6 +768,7 @@ export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type PostDiagrams = z.infer<typeof PostDiagramsSchema>;
 export type Pod = z.infer<typeof PodSchema>;
 export type PodStory = z.infer<typeof PodStorySchema>;
+export type Track = z.infer<typeof TrackSchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
 export type ResearchMetrics = z.infer<typeof ResearchMetricsSchema>;

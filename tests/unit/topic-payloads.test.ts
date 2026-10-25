@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
-import { getContent, getTopicIndex } from "@/content/load";
+import { getContent, getTopicIndex, getTrackIndex } from "@/content/load";
 import { buildRoomViews } from "@/content/room-views";
 import { topicRooms } from "@/content/topic-index";
 import { buildHudIndex } from "@/hud/index-data";
@@ -43,5 +43,18 @@ describe("Topic Constellation payloads", () => {
     expect(hud.topics.find((t) => t.slug === "ui-ux")?.title).toEqual({ en: "Show work about UI/UX", id: "Tampilkan karya tentang UI/UX" });
     const room = hud.rooms.find((r) => r.id === "L4:topics");
     expect(room).toMatchObject({ floor: "L4", kind: "topics", path: "/library#topics", title: { en: "Topic Constellation", id: "Konstelasi Topik" } });
+  });
+});
+
+describe("reader track payloads", () => {
+  it("ships the non-empty tracks to the 3D chunk with their locale label and post order", () => {
+    const index = getTrackIndex().filter((t) => t.posts.length);
+    for (const locale of ["en", "id"] as const) {
+      const tracks = buildExperienceData(locale, floors).library.tracks;
+      expect(tracks.map((t) => t.slug)).toEqual(index.map((t) => t.slug));
+      expect(tracks.map((t) => t.posts)).toEqual(index.map((t) => t.posts));
+    }
+    expect(buildExperienceData("en", floors).library.tracks[0]).toMatchObject({ slug: "ai-in-production", label: "AI in Production" });
+    expect(buildExperienceData("id", floors).library.tracks[0].label).toBe("AI di Produksi");
   });
 });

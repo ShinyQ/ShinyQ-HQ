@@ -10577,6 +10577,37 @@
       ]
     },
     "library": {
+      "tracks": [
+        {
+          "slug": "ai-in-production",
+          "title": {
+            "en": "AI in Production",
+            "id": "AI di Produksi"
+          },
+          "lead": "45-percent-of-our-llm-calls-failed"
+        },
+        {
+          "slug": "cloud-platform-and-security",
+          "title": {
+            "en": "Cloud Platform and Security",
+            "id": "Platform Cloud dan Keamanan"
+          }
+        },
+        {
+          "slug": "engineering-with-ai-agents",
+          "title": {
+            "en": "Engineering with AI Agents",
+            "id": "Rekayasa dengan AI Agent"
+          }
+        },
+        {
+          "slug": "earlier-writing",
+          "title": {
+            "en": "Earlier Writing",
+            "id": "Tulisan Terdahulu"
+          }
+        }
+      ],
       "posts": [
         {
           "slug": "untrusted-code-next-to-production-secrets",
@@ -10585,6 +10616,7 @@
             "id": "Kode Asing di Samping Secret Production"
           },
           "date": "2026-10-24",
+          "track": "cloud-platform-and-security",
           "tags": [
             "application-security",
             "supply-chain-security",
@@ -10609,6 +10641,7 @@
             "id": "Jeda 21 Detik yang Tidak Pernah Ada di Query"
           },
           "date": "2026-10-24",
+          "track": "cloud-platform-and-security",
           "tags": [
             "microsoft-fabric",
             "performance",
@@ -10633,6 +10666,7 @@
             "id": "Lock Instalasi yang Memblokir Aplikasi"
           },
           "date": "2026-10-24",
+          "track": "cloud-platform-and-security",
           "tags": [
             "azure-managed-applications",
             "azure-marketplace",
@@ -10657,6 +10691,7 @@
             "id": "Memilah Inbox dengan Microsoft-Decision-1"
           },
           "date": "2026-10-16",
+          "track": "ai-in-production",
           "tags": [
             "microsoft-decision-1",
             "microsoft-foundry",
@@ -10681,6 +10716,7 @@
             "id": "Cara Kami Membuat Voice Agent Bisa Diinterupsi"
           },
           "date": "2026-10-09",
+          "track": "ai-in-production",
           "tags": [
             "voice-ai",
             "azure-openai-realtime",
@@ -10705,6 +10741,7 @@
             "id": "Mengapa Fraud Engine yang Lebih Baik Dirilis dalam Shadow Mode"
           },
           "date": "2026-10-09",
+          "track": "ai-in-production",
           "tags": [
             "llm-evaluation",
             "shadow-mode",
@@ -10729,6 +10766,7 @@
             "id": "45% Panggilan LLM Kami Gagal: Apa Kata Pesan Error-nya"
           },
           "date": "2026-10-09",
+          "track": "ai-in-production",
           "tags": [
             "llm-reliability",
             "structured-output",
@@ -10753,6 +10791,7 @@
             "id": "Spec-Driven Development Bersama AI Coding Agent"
           },
           "date": "2026-10-09",
+          "track": "engineering-with-ai-agents",
           "tags": [
             "spec-driven-development",
             "ai-coding-agents",
@@ -10777,6 +10816,7 @@
             "id": "The Sun, The Moon, and The Dark Sea"
           },
           "date": "2025-06-06",
+          "track": "earlier-writing",
           "tags": [
             "personal",
             "growth"
@@ -10797,6 +10837,7 @@
             "id": "CRUD NodeJS Menggunakan Framework ExpressJS dan MySQL"
           },
           "date": "2022-02-28",
+          "track": "earlier-writing",
           "tags": [
             "nodejs",
             "express",
@@ -10820,6 +10861,7 @@
             "id": "Studi Kasus Perancangan UI/UX: Aplikasi Pemantau Perkembangan Bayi"
           },
           "date": "2020-12-31",
+          "track": "earlier-writing",
           "tags": [
             "ui-ux",
             "case-study",

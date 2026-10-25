@@ -5,6 +5,7 @@ import { isPublicLiveUrl } from "@/content/live-links";
 import { getPods } from "@/content/load";
 import { pickFeaturedPods } from "@/content/pageview";
 import { ArchitectureSchema, SiteContentSchema, type LocalizedText } from "@/content/schema";
+import { buildTrackIndex } from "@/content/track-index";
 import { LABS } from "@/experience/floors/labs/layout";
 import en from "../../messages/en.json";
 import idMessages from "../../messages/id.json";
@@ -421,5 +422,43 @@ describe("Data and ML pods (owner request 2026-10-14)", () => {
 
   it("keeps the home page's featured top three", () => {
     expect(pickFeaturedPods(getPods()).map((p) => p.slug)).toEqual(["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant"]);
+  });
+});
+
+describe("L4 reader tracks (owner decision 2026-10-25)", () => {
+  const data = parsed.success ? parsed.data : undefined;
+  if (!data) return;
+  const { tracks, posts } = data.floors.library;
+
+  it("puts every post on a known track and every track has at least one post", () => {
+    const slugs = new Set(tracks.map((t) => t.slug));
+    expect(posts.filter((p) => !slugs.has(p.track)).map((p) => p.slug)).toEqual([]);
+    expect(tracks.filter((t) => !posts.some((p) => p.track === t.slug)).map((t) => t.slug)).toEqual([]);
+  });
+
+  it("picks leads from their own track", () => {
+    for (const track of tracks) if (track.lead) expect(posts.find((p) => p.slug === track.lead)?.track, track.slug).toBe(track.slug);
+  });
+
+  it("indexes every post exactly once, lead first", () => {
+    const index = buildTrackIndex(data.floors.library);
+    expect(index.map((t) => t.slug)).toEqual(tracks.map((t) => t.slug));
+    expect(index.flatMap((t) => t.posts).sort()).toEqual(posts.map((p) => p.slug).sort());
+    expect(index.find((t) => t.slug === "ai-in-production")?.posts[0]).toBe("45-percent-of-our-llm-calls-failed");
+  });
+
+  it("rejects a post on an unknown track and a lead from another track", () => {
+    const clone = () => JSON.parse(JSON.stringify(raw)) as typeof data;
+    const unknown = clone();
+    unknown.floors.library.posts[0].track = "no-such-track";
+    const issues = SiteContentSchema.safeParse(unknown).error?.issues ?? [];
+    expect(issues.map((i) => i.message)).toContain('Unknown track "no-such-track"');
+    const foreign = clone();
+    const other = foreign.floors.library.posts.find((p) => p.track !== foreign.floors.library.tracks[0].slug)!;
+    foreign.floors.library.tracks[0].lead = other.slug;
+    expect((SiteContentSchema.safeParse(foreign).error?.issues ?? []).map((i) => i.path.join("."))).toContain("floors.library.tracks.0.lead");
+    const twice = clone();
+    twice.floors.library.tracks.push({ ...twice.floors.library.tracks[0] });
+    expect((SiteContentSchema.safeParse(twice).error?.issues ?? []).map((i) => i.message)).toContain(`Track "${twice.floors.library.tracks[0].slug}" is listed twice`);
   });
 });
