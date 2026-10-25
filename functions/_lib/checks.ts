@@ -555,6 +555,8 @@ export const APPROACH_MAX_ITEMS = 4;
 const ADDRESSES_VISITOR = /\b(?:you|your|yours|kamu|anda|kalian)\b/i;
 /** A sentence that starts with an order ("Start with ...", "Gunakan ..."). */
 const IMPERATIVE = /^[^\p{L}\p{N}]*(?:start|use|build|add|pick|choose|consider|try|deploy|set up|mulai|gunakan|pakai|bangun|tambahkan|pilih|coba)\b/iu;
+/** An order after a comma, semicolon or colon ("For a call center like that, use ..."), except "use the contact card". */
+const MID_ORDER = /[,;:]\s*(?:use|pick|choose|start with|go with|pakai|gunakan|mulai dengan)\b(?!\s+(?:the\s+)?(?:contact card|kartu kontak)\b)/i;
 /** Words that look ahead (folded: "he'll" is "he ll"). */
 const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "could", "may", "can", "akan", "sebaiknya", "seharusnya"]);
 /** The one forward-looking sentence rule 18 allows, in each language, exactly. */
@@ -579,27 +581,72 @@ const INVITE_CAPS = new Set(["kurniadi", "ahmad", "wijaya", "anda", "kamu", "kal
 export const INVITE_MAX_WORDS = 25;
 
 /**
- * The contact card invitation (follow-up R1): only the final sentence of an answer may be one, and only when it points
- * to the card, names no duration, product or stack, matches no consulting pattern, holds no modal but "would like" /
- * "'d like" (and "can"), and has at most `INVITE_MAX_WORDS` words. It may then address the visitor.
+ * Stack and product terms an invitation may not name in any position (follow-up fix 2): the capitalized terms CONTEXT
+ * uses mid-sentence (`properNouns`, so "Python" or "Azure"), minus `COMMON_CAPS` and `INVITE_CAPS`, matched as cased
+ * words; and the pack's skill terms (`stackTerms`), matched case-insensitively as phrases.
  */
-function isInvitation(sentence: string): boolean {
+interface InviteBans {
+  caps: ReadonlySet<string>;
+  stack: readonly string[];
+}
+
+function inviteBans(context: string, stack: readonly string[]): InviteBans {
+  const caps = new Set(properNouns(context).filter((w) => !COMMON_CAPS.has(w.toLowerCase()) && !INVITE_CAPS.has(w.toLowerCase())));
+  return { caps, stack };
+}
+
+const STACK_CACHE = new WeakMap<object, readonly string[]>();
+/**
+ * The pack's stack and skill terms: the keywords of its `skills` chunks, parentheticals dropped ("azure openai (incl.
+ * realtime)" is "azure openai"), terms under three characters skipped ("go" is a common word).
+ */
+export function stackTerms(pack: Partial<Pick<KnowledgePack, "chunks">>): readonly string[] {
+  if (!pack.chunks) return [];
+  const cached = STACK_CACHE.get(pack);
+  if (cached) return cached;
+  const terms = [...new Set(pack.chunks.filter((c) => c.type === "skills").flatMap((c) => c.keywords))]
+    .map((k) => k.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim())
+    .filter((k) => k.length >= 3 && k !== "skill");
+  STACK_CACHE.set(pack, terms);
+  return terms;
+}
+
+/**
+ * The contact card invitation (follow-up R1, fix 2): only the final sentence of an answer may be one, and only when it
+ * points to the card, names no duration or timeline, no product or stack (in any position, see `InviteBans`), matches
+ * no consulting pattern, holds no modal but "would like" / "'d like" (and "can"), and has at most `INVITE_MAX_WORDS`
+ * words. It may then address the visitor.
+ */
+function isInvitation(sentence: string, bans: InviteBans = { caps: new Set(), stack: [] }): boolean {
   const plain = sentence.replace(SOURCE_TAGS, " ");
-  if (!CONTACT.test(plain) || /\d/.test(plain) || VAGUE_DURATION.test(plain) || new RegExp(WORD_DURATION.source, "i").test(plain) || CONSULTING.some((re) => re.test(plain))) return false;
+  if (!CONTACT.test(plain) || /\d/.test(plain) || VAGUE_DURATION.test(plain) || new RegExp(WORD_DURATION.source, "i").test(plain) || new RegExp(TIMELINE_SPAN.source, "i").test(plain) || CONSULTING.some((re) => re.test(plain))) return false;
   const words = fold(plain).split(" ");
   if (words.length > INVITE_MAX_WORDS || words.some((w, i) => INVITE_MODALS.has(w) && !((w === "would" || w === "d") && words[i + 1] === "like"))) return false;
-  // Capitalized terms: every one after the first word, and a first word with an inner capital ("OpenAI", "RAG").
+  // Capitalized terms: every one after the first word, a first word with an inner capital ("OpenAI", "RAG"), and any
+  // word CONTEXT capitalizes mid-sentence ("Python").
   const terms = plain.match(/[\p{L}\p{N}][\p{L}\p{N}'.+#-]*/gu) ?? [];
-  return !terms.some((t, i) => (i > 0 ? /^\p{Lu}/u.test(t) : /^.+\p{Lu}/u.test(t)) && !INVITE_CAPS.has(t.toLowerCase().replace(/[.']+$/, "")));
+  const named = (t: string, i: number) => {
+    const bare = t.replace(/[.']+$/, "");
+    if (INVITE_CAPS.has(bare.toLowerCase())) return false;
+    return (i > 0 ? /^\p{Lu}/u.test(t) : /^.+\p{Lu}/u.test(t)) || bans.caps.has(bare);
+  };
+  return !terms.some(named) && !findTerms(plain, bans.stack).length;
 }
 
 /**
  * A sentence that projects his work onto the visitor's case (follow-up R2): "a similar team would ...", "the same
  * stack fits", "the right fit here", "untuk kasus ini". Only the exact bridge and the final invitation may say "similar".
  */
-const PROJECTS = /\b(?:similar|serupa|sejenis|something like|the same (?:stack|approach|setup|design|system)|fits?|right fit|cocok|here|kasus ini|di sini)\b/i;
-/** Vague durations, always an estimate ("a few weeks", "beberapa minggu", "dalam hitungan hari"). */
-const VAGUE_DURATION = /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b/i;
+const PROJECTS =
+  /\b(?:similar|serupa|sejenis|something like|the same (?:stack|approach|setup|design|system)|fits?|right fit|cocok|here|kasus ini|di sini|like (?:that|this|yours|theirs)|seperti (?:itu|ini|kalian|anda|kamu)|for (?:a|an|your) [\w-]+(?: [\w-]+)? like)\b/i;
+/** Vague durations and coming periods, always an estimate ("a few weeks", "next quarter", "beberapa minggu", "bulan depan"). */
+const VAGUE_DURATION =
+  /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b|\bnext (?:week|month|quarter|sprint|year)\b|\b(?:bulan|minggu) depan\b/i;
+/**
+ * Timeline spans ("within a month", "by the end", "in one day", "dalam sebulan"): never in an invitation; elsewhere
+ * checked like a duration, so a case-study fact CONTEXT states ("built in one day") stays a fact.
+ */
+const TIMELINE_SPAN = /\b(?:within|in|by)\s+(?:a|an|one|the|next|this)\s+(?:day|week|month|quarter|sprint|year)s?\b|\bdalam (?:seminggu|sebulan)\b/gi;
 /** Spelled-out durations ("six weeks", "dua minggu"): checked like digits, so a case-study fact stays a fact. */
 const WORD_DURATION = /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|dua belas)\s+(?:hari|minggu|bulan)\b/gi;
 
@@ -625,18 +672,21 @@ function looksAhead(sentence: string, stated: string): boolean {
  * is the full text of his retrieved written views (CONTEXT may clip them), read only for the forward-looking words of
  * his own sentences.
  */
-export function prescribes(text: string, markdown: string, context: string, views = ""): boolean {
+export function prescribes(text: string, markdown: string, context: string, views = "", stack: readonly string[] = []): boolean {
   const ctx = ` ${fold(context)} `;
   const stated = `${ctx}${fold(views)} `;
   const sentences = sentencesOf(text);
+  const bans = inviteBans(context, stack);
   for (const [i, sentence] of sentences.entries()) {
-    if (i === sentences.length - 1 && isInvitation(sentence)) {
-      if (IMPERATIVE.test(sentence) && !CARD_ORDER.test(sentence)) return true;
+    if (i === sentences.length - 1 && isInvitation(sentence, bans)) {
+      if ((IMPERATIVE.test(sentence) && !CARD_ORDER.test(sentence)) || MID_ORDER.test(sentence)) return true;
       continue;
     }
+    // A final sentence that points to the contact card must be a clean invitation ("Azure AI Search first, then reach him ...").
+    if (i === sentences.length - 1 && CONTACT.test(sentence)) return true;
     if (!isBridge(sentence) && PROJECTS.test(sentence)) return true;
-    if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
-    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION)].map((m) => fold(m[0]));
+    if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || MID_ORDER.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
+    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION), ...sentence.matchAll(TIMELINE_SPAN)].map((m) => fold(m[0]));
     if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;
   }
   if (CONSULTING.slice(1).some((re) => re.test(text))) return true;
@@ -675,7 +725,8 @@ export interface CheckInput {
   question: string;
   context: string;
   packDate: string;
-  pack: Pick<KnowledgePack, "entities">;
+  /** `chunks` (when given) supplies the stack terms an approach invitation may not name (`stackTerms`). */
+  pack: Pick<KnowledgePack, "entities"> & Partial<Pick<KnowledgePack, "chunks">>;
   vocabulary: ReadonlySet<string>;
   /** Retrieved chunks (the perspective source check); empty means no written source is available. */
   chunks?: readonly KnowledgeChunk[];
@@ -710,7 +761,7 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
   // Before the voice check: "I recommend ..." in an approach answer is consulting first (same lead replacement).
-  if (lead && approach && prescribes(text, markdown, context, chunks.filter((c) => isSource(c)).map((c) => `${c.text_en} ${c.text_id}`).join(" "))) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+  if (lead && approach && prescribes(text, markdown, context, chunks.filter((c) => isSource(c)).map((c) => `${c.text_en} ${c.text_id}`).join(" "), stackTerms(pack))) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
   if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
   if (asksForPersonalData(text)) return { ok: false, reason: "personal-data", detail: [], replacement: lead ? "lead" : "unknown" };

@@ -446,6 +446,77 @@ describe("approach checks", () => {
     // The month is not a modal.
     expect(prescribes("In May he shipped the pilot.", "x", "")).toBe(false);
   });
+
+  // Follow-up fix 2: an invitation names no stack or product in any position and carries no timeline.
+  it.each(["Python is the core here, so reach him through the contact card.", "Azure AI Search first, then reach him through the contact card."])(
+    "rejects a final invitation that names a stack or product term: %s",
+    (bad) => {
+      expect(check(`${outlineOnly()} ${bad}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+    },
+  );
+
+  it("rejects a first-word stack term from CONTEXT or the pack's skills, and keeps his name", () => {
+    const bad = "Python works, so reach him through the contact card.";
+    expect(prescribes(bad, bad, "")).toBe(false);
+    expect(prescribes(bad, bad, "", "", ["python"])).toBe(true);
+    expect(prescribes(bad, bad, "The pipeline ran on Python and FastAPI.")).toBe(true);
+    const lower = "To talk about python, reach him through the contact card.";
+    expect(prescribes(lower, lower, "", "", ["python"])).toBe(true);
+    const fine = "Kurniadi takes freelance and part-time work, so get in touch through the contact card.";
+    expect(prescribes(fine, fine, "Kurniadi built it with Python.", "", ["python"])).toBe(false);
+  });
+
+  it.each([
+    "If you'd like it live within a month, reach him through the contact card.",
+    "If you want it by next quarter, get in touch through the contact card.",
+    "If you need it next month, get in touch through the contact card.",
+    "Jika Anda ingin selesai dalam sebulan, hubungi Kurniadi lewat kartu kontak.",
+    "Jika Anda ingin mulai bulan depan, hubungi Kurniadi lewat kartu kontak.",
+    "Jika Anda ingin mulai minggu depan, hubungi Kurniadi lewat kartu kontak.",
+  ])("rejects a final invitation that carries a timeline: %s", (bad) => {
+    expect(prescribes(bad, bad, "")).toBe(true);
+    expect(check(`${outlineOnly()} ${bad}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it.each(["The pilot went live within a month.", "The next phase ships next quarter.", "Tahap berikutnya rilis bulan depan."])("rejects a timeline phrase in any approach sentence: %s", (bad) => {
+    expect(prescribes(bad, bad, bad)).toBe(true);
+  });
+
+  it("passes a timeline span CONTEXT states, in a past-tense sentence", () => {
+    const fact = "The SaaS track was built for all four products in one day.";
+    expect(prescribes(fact, fact, "the saas track was built for all four products in one day")).toBe(false);
+    expect(prescribes(fact, fact, "")).toBe(true);
+  });
+
+  it.each([
+    "For a call center like that, use Azure OpenAI Realtime.",
+    "Untuk call center seperti itu, pakai Azure OpenAI Realtime.",
+    "After the pilot, use Azure AI Search.",
+    "Setelah pilot, gunakan Azure AI Search.",
+    "For the transcripts: start with Azure AI Search.",
+    "Once the queue is stable; go with FastAPI.",
+  ])("rejects a mid-sentence order: %s", (bad) => {
+    expect(prescribes(bad, bad, bad)).toBe(true);
+    expect(check(`${outlineOnly()} ${bad} ${invitation}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it.each([
+    "For a call center like that, Azure OpenAI Realtime and Azure AI Search are the core.",
+    "A team like yours runs on Azure AI Search.",
+    "For your support desk like this, Azure AI Search is the core.",
+    "Untuk tim seperti kalian, Azure AI Search adalah intinya.",
+    "Call center seperti ini berjalan dengan Azure OpenAI Realtime.",
+  ])("rejects projection wording: %s", (bad) => {
+    expect(prescribes(bad, bad, bad)).toBe(true);
+    expect(check(`${outlineOnly()} ${bad} ${invitation}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it("still passes the plain discuss invitation", () => {
+    const invite = "If you'd like to discuss your situation, you can reach him through the contact card.";
+    expect(prescribes(invite, invite, "")).toBe(false);
+    const r = check(`${outlineOnly()} ${invite}`);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+  });
 });
 
 describe("lead opinion check", () => {
