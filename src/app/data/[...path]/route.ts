@@ -8,6 +8,7 @@ import { experienceDataFor } from "@/experience/gate-data";
 import { ROOM_DATA_FLOORS, ROOMS_FILE } from "@/hud/drawer/data-path";
 import { HUD_INDEX_FILE } from "@/hud/index-path";
 import { buildHudIndex } from "@/hud/index-data";
+import { buildRouteIndex, ROUTES_INDEX_FILE } from "@/lib/route-index";
 import en from "../../../../messages/en.json";
 import id from "../../../../messages/id.json";
 
@@ -23,12 +24,14 @@ const MESSAGES = { en, id } as const;
  * (out/data/hud/index.json, rooms and missions for the palette and terminal) and the 3D page data
  * (out/data/experience/{locale}.json, fetched by ExperienceGate with the 3D chunk),
  * which the pages fetch after hydration instead of inlining it into every HTML file, and the study guides
- * (out/data/guides/{locale}.json: the guide views plus the `guides` and `reader` strings, fetched by the guide dialog).
+ * (out/data/guides/{locale}.json: the guide views plus the `guides` and `reader` strings, fetched by the guide dialog),
+ * and the route index (out/data/routes/index.json: every page in both locales with its title, for the 404 "Did you mean").
  */
 export function generateStaticParams() {
   return [
     ...LOCALES.flatMap((locale) => ROOM_DATA_FLOORS.map((floor) => ({ path: ["rooms", ROOMS_FILE(locale, floor)] }))),
     { path: ["hud", HUD_INDEX_FILE] },
+    { path: ["routes", ROUTES_INDEX_FILE] },
     ...LOCALES.map((locale) => ({ path: ["guides", GUIDES_FILE(locale)] })),
     ...LOCALES.map((locale) => ({ path: ["experience", EXPERIENCE_DATA_FILE(locale)] })),
   ];
@@ -37,6 +40,7 @@ export function generateStaticParams() {
 export async function GET(_request: Request, { params }: RouteContext<"/data/[...path]">) {
   const [kind, file] = (await params).path;
   if (kind === "hud" && file === HUD_INDEX_FILE) return Response.json(buildHudIndex(getContent()));
+  if (kind === "routes" && file === ROUTES_INDEX_FILE) return Response.json(buildRouteIndex());
   if (kind === "guides") {
     const locale = LOCALES.find((l) => file === GUIDES_FILE(l));
     if (!locale) return new Response("Not found", { status: 404 });
