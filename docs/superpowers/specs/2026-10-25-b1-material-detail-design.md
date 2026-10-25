@@ -51,8 +51,8 @@ Everything lives in the B1 chunk. `src/experience/fx/holoFx.ts` (main path) and 
 - New `PlateMesh` in `src/experience/floors/engine/EngineFx.tsx`: one instanced draw (name `engine-plates`) on the holo
   `plate` mode, the program the B1 floating signs already compile, so no new program. A plate is a dark inset panel
   (the mode's fixed fill) with a thin lit rim in the instance color; the rims read as glowing seams.
-- Built like `FlowMesh` and `PanelMesh`: `instanceArrays` sets the matrices and colors at creation (precompile sees the
-  final program), an `aAlpha` instanced attribute filled with 1, `depthWrite` on, `fade` [40, 110] like the other
+- Built like `FlowMesh` and `PanelMesh`: the shared `useInstances` hook sets the matrices and colors at creation
+  (precompile sees the final program), an `aAlpha` instanced attribute filled with 1, `depthWrite` on, `fade` [40, 110] like the other
   B1 holo draws, `useDispose` on the geometry and the material, no frame loop and no uniform time.
 - Draw order: the panels are almost opaque (alpha 0.9) while screens and holograms are additive without depth writes,
   so `PlateMesh` sets `renderOrder` -1 and draws first among the transparents; nothing additive can be covered by a
@@ -61,11 +61,13 @@ Everything lives in the B1 chunk. `src/experience/fx/holoFx.ts` (main path) and 
   (`x`, `y`, `z`, `w`, `h`, `yaw`, `flat?`, `color`, the same shape as `PanelInstance` without `roll`), computed from
   `buildEngineLayout()` and `ENGINE`, never hard-coded per bay:
   - bay walls: each bay's back wall inner face in 4 x 2 panels and each side wall's inner face in 2 x 2 (16 a bay,
-    112 in all), 0.02 u off the face; the back-wall screens already stand 0.05 u off it, so they stay in front;
+    112 in all), 0.02 u off the face, the rows starting at the bay floor top (y 0.12); the back-wall screens already
+    stand 0.05 u off it, so they stay in front;
   - floor deck: flat plates 0.02 u over the floor on the open strips between the aisle edge and the bay fronts (on
-    both sides of each spur) and between the aisle edge and the rack rows, plus each bay's floor (0.02 u over the
-    0.12 u bay floor); a deck plate never covers the aisle, a spur, a door pad, the elevator call pad, the Express
-    Return pad, the reactor spur, the workbench or a point-and-go target;
+    both sides of each spur) and between the aisle edge and the rack rows, plus each bay's floor (0.01 u over the
+    0.12 u bay floor (`PLATE.bayFloor`, under the projector discs at 0.16)); a deck plate never covers the aisle, a
+    spur, a door pad, the elevator call pad, the Express Return pad, the reactor spur or the workbench (plates never
+    take a raycast, so the point-and-go targets work as before);
   - reactor plinth: the faces of its two steps (8 u and 5.6 u, to y 0.4 and 0.8) clad upright, and a ring of flat
     plates on the hall floor round the plinth, kept outside the glow pool and off the reactor spur;
   - seam tones: dim amber (`ENGINE_TONES.tray`) on walls and deck, dim cyan (`ENGINE_TONES.data`) on the plinth;
@@ -88,12 +90,12 @@ Everything lives in the B1 chunk. `src/experience/fx/holoFx.ts` (main path) and 
 
 ## 4. Budgets
 
-| Measure | Today | Expected | Cap |
+| Measure | Today | Expected (measured 2026-10-25) | Cap |
 |---|---|---|---|
-| B1 scene calls, settled (full / lite) | 56 / 53 | 57 / 54 | 100, unchanged |
-| B1 triangles, settled (full) | 12,809 | about 13.5k | under 30k |
-| Shader programs on B1 (lite / full) | 44 / 81 | unchanged | baseline + 2, `e2e/perf/baseline.json` unchanged |
-| B1 chunk (gzip) | 16,337 B | about 16.8 to 16.9 KB | reset once to measured + 0.6 KB (owner, 2026-10-25) |
+| B1 scene calls, settled (full / lite) | 56 / 53 | 55 / 53 | 100, unchanged |
+| B1 triangles, settled (full / lite) | 12,809 / 11,702 | 14,355 / 12,744 | under 30k |
+| Shader programs on B1 (lite / full) | 44 / 81 | 44 / 66, no new program | baseline + 2, `e2e/perf/baseline.json` unchanged |
+| B1 chunk (gzip) | 16,337 B | 16,946 B (269 plates; 84 vent slats full, 42 lite) | reset once to measured + 0.6 KB: 17,560 B (owner, 2026-10-25) |
 | 3D first frame and session total | unchanged | unchanged | unchanged |
 
 - A measure over these numbers blocks the PR; the cap is never raised beyond the approved reset without a new owner
@@ -105,8 +107,8 @@ Everything lives in the B1 chunk. `src/experience/fx/holoFx.ts` (main path) and 
 
 - Unit, `tests/unit/engine-scenery.test.ts` (extended):
   - every plate lies on a bay wall, a bay floor, a deck strip or the plinth;
-  - no deck plate overlaps the aisle, a spur, a door pad, the call pad, the Express Return pad, the reactor spur, the
-    workbench or a point-and-go target;
+  - no deck plate overlaps the aisle, a spur, a door pad, the call pad, the Express Return pad, the reactor spur or the
+    workbench (plates never take a raycast, so the point-and-go targets work as before);
   - wall panels stand behind every screen of their bay, and no plate or slat crosses a station sign seen from its
     door pad;
   - plate and slat counts per tier.

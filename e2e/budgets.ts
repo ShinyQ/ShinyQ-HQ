@@ -63,7 +63,8 @@ export const BYTES_3D_BUDGET = {
   failAt: Math.round(466.4 * 1024),
   spec: 600 * 1024,
   minExpected: 100 * 1024,
-  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16 * 1024 },
+  /** `B1` measured 16,946 B, cap 16,946 + 614 B (owner decision 2026-10-25, docs/decisions/2026-10-25-b1-material-cap.md). */
+  floors: { L3: 20 * 1024, L4: 16 * 1024, RF: 8 * 1024, B1: 16_946 + 614 },
   /** L1 Agent Office scene chunk (idle on every L1 visit, in the session total), incremental over the main path, the session floors and the watch chunk (measured 28,217 B, cap 28,831 B; was 26,586 B before the day replay, owner decision 2026-10-22). */
   office: 28_217 + 614,
   /** L1 Agent Office drawer body chunk (on an office drawer open), incremental over the office scene chunk: a sanity cap (measured 7,171 B, cap 7,785 B; 7,018 B and 7,097 B before the replay footer line and the hidden replay button, owner decision 2026-10-22). */

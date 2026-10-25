@@ -173,7 +173,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 450.0 KB and full 465.8 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 5.0 KB (B1 only in unlocked sessions); session totals lite 513.4 KB and full 529.1 KB (the office watch, scene and replay chunks included: the scene chunk 28,217 B loads at idle on every L1 visit, the replay chunk 5,240 B on a quiet one), under their caps of 513.9 and 529.7 KB; the office drawer body 7,171 B stays outside the session total (40,475 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 450.0 KB and full 465.8 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 16.5 KB (B1 only in unlocked sessions); session totals lite 513.4 KB and full 529.1 KB (the office watch, scene and replay chunks included: the scene chunk 28,217 B loads at idle on every L1 visit, the replay chunk 5,240 B on a quiet one), under their caps of 513.9 and 529.7 KB; the office drawer body 7,171 B stays outside the session total (40,475 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 

@@ -256,7 +256,7 @@ The full annotated layout is in [`docs/agents/folder-layout.md`](docs/agents/fol
 | Scene draw calls per floor | under 150 (L1 125, RF 79, B1 100) |
 | Post-processing passes | at most 20 |
 | Triangles per floor | under 30k |
-| JS after the 3D gate | under 466.4 KB gzip per tier; floor chunks L3 20 KB, L4 16 KB, RF 8 KB, B1 16 KB |
+| JS after the 3D gate | under 466.4 KB gzip per tier; floor chunks L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB |
 | Shader programs | committed baseline + 2 |
 | GPU memory | round trips return to baseline |
 | Lighthouse (Classic site) | LCP under 2 s, CLS under 0.01, TBT under 200 ms |
