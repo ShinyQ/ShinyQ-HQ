@@ -9,6 +9,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - [Perspectives](#perspectives)
 - [Titles and ordering](#titles-and-ordering)
 - [Project galleries and live sites](#project-galleries-and-live-sites)
+- [Time Travel stops](#time-travel-stops)
 - [Writing a story case study](#writing-a-story-case-study)
 - [Skills](#skills)
 - [Certifications](#certifications)
@@ -65,6 +66,15 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - Two client projects stay text only by the owner's choice: the coal mining chart-of-accounts assistant and the automotive fraud review dashboard.
 - Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the MII Microsoft Solutions Website and the MII Microsoft AI Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer.
 - It opens a new tab with `rel="noopener noreferrer"`; internal apps never get a link.
+
+## Time Travel stops
+
+The `/journey` skyline has one stop per year (`floors.careerArchive.timeTravel.stops` in `content/site-content.json`, rules in [`agents/content.md`](agents/content.md#other-types)).
+
+- Add a stop when a new year gets its first item (the content test fails otherwise).
+- The caption is the owner's own words, at most 140 characters in each language, no counts (the tally is derived). Show it to the owner and merge it only after approval.
+- Highlights (up to 3) point at existing entries, pods, publications or certifications; an award is highlighted through its year's `trophy-case-*` entry.
+- Check: `bunx vitest run tests/content/time-travel.test.ts`.
 
 ## Writing a story case study
 

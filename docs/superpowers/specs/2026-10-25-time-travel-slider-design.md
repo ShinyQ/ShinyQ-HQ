@@ -1,6 +1,6 @@
 # Time Travel Slider: Design
 
-Status: design approved by the owner and the parent session (sub-project F of the 2026-10-25 brainstorm); no plan yet.
+Status: approved; implementation in review.
 
 ## 1. Goal
 
@@ -118,7 +118,7 @@ Files in `src/components/time-travel/`:
 - **`Skyline.tsx`** (server): one `<svg>` with a fixed `viewBox` and aspect ratio (no layout shift). Per stop a
   `<g data-stop="2021">` of stacked `<rect>`s with `fill` and `opacity` as SVG attributes (no new CSS for colors).
   Each building sits in an `<a href="#y2021">` (the prologue links to `#y2019`) named, for example, "2021: 14
-  items". Without JS a click jumps to that year's rows below. The year ticks under the buildings are SVG text.
+  items". Without JS a click jumps to that year's rows below. Each kind's blocks are drawn as one SVG `<path>` per building (not one `<rect>` per item). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick reads "<2019", key `timeTravel.prologueShort`).
 - **`YearPanel.tsx`** (server): the year (`pv-num`; the prologue shows "Before 2019" / "Sebelum 2019"), the
   caption, the tally as ruled facts (value, label, "+N this year"), up to 3 highlight links and "See {year} in
   full" to `#y{year}`. The panel for 2026 is visible; the other 8 carry `hidden`.
@@ -129,7 +129,7 @@ Files in `src/components/time-travel/`:
   "Year" with `aria-valuetext` set to the stop's label, and a Play/Pause button. It toggles `hidden` on the panels
   and `data-on` on the buildings. The panel heading is `aria-live="polite"`. The controls render only on the client,
   so a no-JS visitor never sees dead controls; their row keeps a reserved height so hydration causes no shift.
-- **Strings:** new `journey.timeTravel.*` keys in `messages/en.json` and `messages/id.json` (title, lead, slider
+- **Strings:** the server-only top-level `timeTravel` namespace in `messages/en.json` and `messages/id.json`, in neither namespace list; labels reach the island as props (title, lead, slider
   label, play, pause, tally labels, "+{n} this year", "See {year} in full", prologue label, legend labels, building
   name). Only the island's few strings reach the client.
 - **Client bundle rule:** the island imports locale values only from `@/content/locales`, never from
@@ -142,7 +142,7 @@ Files in `src/components/time-travel/`:
   stop's building gets a brighter outline, later buildings fade to faint glass outlines (opacity only). The panel
   switches to that stop.
 - **Building click (with JS):** selects that stop instead of jumping; "See {year} in full" still jumps to the rows.
-- **Play the journey:** jumps to the prologue, then advances one stop every 2.5 s and rests on 2026. On each stop
+- **Play the journey:** when the current stop is the last one it restarts from the prologue; otherwise it resumes from the held stop. It then advances one stop every 2.5 s and rests on 2026. On each stop
   the new building rises (Web Animations API, `transform: scaleY` from the base, 600 ms) and the caption fades in.
   Pause holds the stop. Any drag, key or building click stops play. Play never starts by itself.
 - **Reduced motion** (`html[data-motion="reduced"]`, or the OS setting when the attribute is absent): no rise or
@@ -173,8 +173,8 @@ No cap is raised.
 | 3D session and first-frame bytes | lite 526,208 / 526,266 B, full 542,342 / 542,400 B | 0 B (nothing in the `Experience.tsx` closure imports `time-travel`) | unchanged |
 | Draw calls, triangles, shader programs | unchanged | 0 (no 3D) | unchanged |
 | Global CSS chunk (Lighthouse stylesheet) | about 19,601 B gzip | at most +300 B gzip (colors are SVG attributes; animation runs through WAAPI) | 20,480 B |
-| `/en/journey` JS | measured in the plan | island at most 4 KB gzip | 240 KB |
-| `/en/journey` and `/id/journey` HTML | measured in the plan before any change | at most +4 KB gzip (9 panels, the SVG) | 82 KB |
+| `/en/journey` JS | 39,494 B (`<script src>` tags) | island about 727 B gzip (lazy chunk; measured by summing every chunk the page references) | 240 KB |
+| `/en/journey` and `/id/journey` HTML | 47,564 / 48,428 B | +8,355 / +8,587 B gzip (55,919 / 57,015 B); accepted by the parent session (option A, 2026-10-25): the flight payload doubles the section; no cap rises | 82 KB (83,968 B) |
 | `/en/quick` HTML | about 77,195 / 77,230 B | 0 B (`journey.timeTravel` strings stay out of `LAYOUT_NAMESPACES`) | unchanged |
 | Lighthouse LCP, CLS, TBT on `/en/journey` | measured | LCP stays the intro `h1`; CLS 0 (fixed SVG ratio, reserved controls row) | 2 s, 0.01, 200 ms |
 

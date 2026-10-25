@@ -93,6 +93,19 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
   - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
 
+### Time Travel (`/journey`)
+
+- Placement: the `#time-travel` section sits between the intro and the year filter (`src/components/time-travel/`). It is Classic only: nothing in the 3D `Experience.tsx` closure imports it.
+- Server-rendered SVG skyline, one building per stop (`pre-2019`, then 2019 to 2026), each kind's blocks one `<path>`, plus the 9 year panels (2026 visible, the rest `hidden`) and the small `TimeTravelControls` island (range and Play). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick is "<2019", `timeTravel.prologueShort`).
+- DOM contract the island and the tests rely on: `data-tt-panel`, `data-tt-stop`, `data-tt-outline`, `data-tt-link`.
+- The labels come as props from the server-only `timeTravel` namespace, which is in neither namespace list. The island imports locale values only from `@/content/locales`.
+- Colors use the `ACCENT_TEXT` classes with `currentColor`, so the section adds almost no CSS.
+- Motion follows `html[data-motion]` and `html[data-hq-still]`; the building rise and the panel fade use WAAPI on `transform` and `opacity` only. The URL never changes while scrubbing.
+- Play restarts from the prologue when the current stop is the last one; otherwise it resumes from the held stop. Any drag, key or building click stops it.
+- Without JS, building links go to `#yYYYY` (the prologue to `#y2019`) and the controls do not render.
+- Budgets: 0 3D bytes, CSS +34 B gzip, island about 727 B gzip. The journey HTML grew about 8.4 KB gzip (`/en/journey` 47,564 to 55,919 B, `/id/journey` 48,428 to 57,015 B, cap 83,968 B) because the RSC flight payload carries the section a second time; the parent session accepted it (option A, 2026-10-25) for the no-JS reading of all 9 panels, and no cap rises. `/en/quick` is unchanged.
+- Tests: `e2e/time-travel.spec.ts`, `tests/hud/TimeTravelControls.test.tsx`, `tests/unit/time-travel.test.ts`, `tests/content/time-travel.test.ts`.
+
 ## Filters
 
 - Client islands over server-rendered rows: `WorkIndex`, `JourneyFilter`, and `TopicFilter` on `/library` with `?topic=`.
