@@ -2,7 +2,7 @@
 
 Date: 2026-10-25.
 
-Status: in review
+Status: shipped in #320 (3015599), 2026-10-25
 
 Owner request: "think something that is not just a feature but can impact the user who sees it". Ideas 1 (first 10 seconds), 2 (case studies as stories) and 6 (404 and empty states) were chosen as sub-project A of a six-part series. The rest of the series is out of scope here: L4 Writing revamp, B1 detailing, phone-first 3D, "Bring your problem", time-travel slider.
 
