@@ -378,6 +378,74 @@ describe("approach checks", () => {
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 13 weeks")).toBe(true);
     expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 3 weeks")).toBe(false);
   });
+
+  // Follow-up R1: the final contact card invitation may address the visitor, nothing else may.
+  it.each([
+    "If you'd like to discuss this, you can reach him through the contact card.",
+    "If you want to talk it through, get in touch through the contact card.",
+    "You can reach him through the contact card.",
+    "If this sounds similar to your situation, get in touch through the contact card.",
+    "To discuss your project, use the contact card below.",
+  ])("passes a final contact card invitation: %s", (invite) => {
+    expect(prescribes(invite, invite, "")).toBe(false);
+    const r = check(`${outlineOnly()} ${invite}`);
+    expect(r.ok, JSON.stringify(r)).toBe(true);
+  });
+
+  it.each(["Jika Anda ingin berdiskusi, hubungi Kurniadi lewat kartu kontak.", "Silakan hubungi dia lewat kartu kontak di bawah."])("passes an Indonesian final invitation: %s", (invite) => {
+    expect(prescribes(invite, invite, "")).toBe(false);
+  });
+
+  it.each([
+    "If you want Azure AI Search in two weeks, use the contact card.",
+    "If you'd like a pilot within 2 weeks, get in touch through the contact card.",
+    "If you want a RAG pipeline, reach out through the contact card.",
+    "You should reach him through the contact card.",
+    "If you'd like, he will reach out through the contact card.",
+    "Use a vector index and the contact card.",
+    "If you'd like to discuss it, get in touch through the contact card, he could help with a few weeks of design and review work.",
+    "If you would like to talk about the details, the background and the goals of the work with him at a time that suits, get in touch through the contact card.",
+  ])("rejects an invitation that adds a stack, a timeline, a modal, an order or advice: %s", (bad) => {
+    expect(prescribes(bad, bad, "")).toBe(true);
+    expect(check(`${outlineOnly()} ${bad}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it("rejects an invitation that is not the final sentence", () => {
+    const invite = "You can reach him through the contact card.";
+    expect(prescribes(`${invite} ${APPROACH_BRIDGE.en}`, "x", "")).toBe(true);
+    expect(check(`${outlineOnly()} ${invite} ${invitation}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  // Follow-up R2: no sentence projects his work onto the visitor's case, even in words CONTEXT states.
+  it.each([
+    "A similar call center would be selective: Azure OpenAI Realtime, Azure AI Search and warm transfer to a human.",
+    "A similar setup on Azure OpenAI Realtime and Azure AI Search with warm transfer will always work.",
+    "A similar team would push for Azure OpenAI and Azure AI Search, with a human review queue.",
+    "What would most help a similar team is a document pipeline with Azure OpenAI and a review queue.",
+    "A similar system could use Azure OpenAI Realtime and Azure AI Search.",
+    "A similar call center may need Azure AI Search.",
+    "The same stack fits: Azure OpenAI Realtime, Azure AI Search and FastAPI.",
+    "The right fit here is Azure OpenAI Realtime with Azure AI Search and warm transfer.",
+    "A similar build needs two weeks.",
+    "Building something similar takes two weeks.",
+    "A similar build is two weeks of work.",
+    "Untuk kasus ini, Azure AI Search cocok.",
+  ])("rejects a projection onto the visitor's case: %s", (bad) => {
+    expect(prescribes(bad, bad, bad)).toBe(true);
+    expect(check(`${outlineOnly()} ${bad} ${invitation}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it("passes a modal only when CONTEXT states the stretch from three words before it to the end of the sentence", () => {
+    const ctx = "I plan for failures and build a recovery path rather than assume the system will always work.";
+    expect(prescribes("He plans for failures, and the system will always work.", "x", ctx)).toBe(true);
+    expect(prescribes("He builds a recovery path rather than assume the system will always work today.", "x", ctx)).toBe(true);
+    expect(prescribes("The agents can scale later.", "x", "")).toBe(true);
+    expect(prescribes("The pipeline could absorb peaks.", "x", "")).toBe(true);
+    expect(prescribes("The queue may grow.", "x", "")).toBe(true);
+    expect(prescribes("The agents can hand off to a human.", "x", "in production the agents can hand off to a human")).toBe(false);
+    // The month is not a modal.
+    expect(prescribes("In May he shipped the pilot.", "x", "")).toBe(false);
+  });
 });
 
 describe("lead opinion check", () => {

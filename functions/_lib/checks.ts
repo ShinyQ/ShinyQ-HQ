@@ -556,40 +556,85 @@ const ADDRESSES_VISITOR = /\b(?:you|your|yours|kamu|anda|kalian)\b/i;
 /** A sentence that starts with an order ("Start with ...", "Gunakan ..."). */
 const IMPERATIVE = /^[^\p{L}\p{N}]*(?:start|use|build|add|pick|choose|consider|try|deploy|set up|mulai|gunakan|pakai|bangun|tambahkan|pilih|coba)\b/iu;
 /** Words that look ahead (folded: "he'll" is "he ll"). */
-const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "akan", "sebaiknya", "seharusnya"]);
+const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "could", "may", "can", "akan", "sebaiknya", "seharusnya"]);
 /** The one forward-looking sentence rule 18 allows, in each language, exactly. */
 export const APPROACH_BRIDGE = {
   en: "A similar problem would likely start the same way.",
   id: "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
 } as const;
 const BRIDGES = new Set(Object.values(APPROACH_BRIDGE).map((b) => fold(b)));
+const isBridge = (sentence: string) => BRIDGES.has(fold(sentence.replace(SOURCE_TAGS, " ")));
+
+/** Sentences of a plain answer (list items are lines). */
+const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+|\n+/).filter((s) => s.trim());
+
+/** A sentence that points to the contact card or asks the visitor to get in touch. */
+const CONTACT = /\b(?:contact card|get in touch|reach (?:out|him)|kartu kontak|hubungi|menghubungi)/i;
+/** The one order an invitation may give: use or try the contact card. */
+const CARD_ORDER = /^[^\p{L}\p{N}]*(?:use|try|gunakan|pakai|coba)\s+(?:the\s+)?(?:contact card|kartu kontak)\b/iu;
+/** Modals an invitation may not hold ("would" and "'d" only before "like"; "can" as in "you can reach him"). */
+const INVITE_MODALS = new Set(["would", "d", "will", "ll", "might", "should", "could", "may", "must", "shall", "akan", "sebaiknya", "seharusnya", "harus"]);
+/** Capitalized words an invitation may hold (his name, the polite Indonesian "Anda"); any other is a product or stack. */
+const INVITE_CAPS = new Set(["kurniadi", "ahmad", "wijaya", "anda", "kamu", "kalian"]);
+export const INVITE_MAX_WORDS = 25;
+
+/**
+ * The contact card invitation (follow-up R1): only the final sentence of an answer may be one, and only when it points
+ * to the card, names no duration, product or stack, matches no consulting pattern, holds no modal but "would like" /
+ * "'d like" (and "can"), and has at most `INVITE_MAX_WORDS` words. It may then address the visitor.
+ */
+function isInvitation(sentence: string): boolean {
+  const plain = sentence.replace(SOURCE_TAGS, " ");
+  if (!CONTACT.test(plain) || /\d/.test(plain) || VAGUE_DURATION.test(plain) || new RegExp(WORD_DURATION.source, "i").test(plain) || CONSULTING.some((re) => re.test(plain))) return false;
+  const words = fold(plain).split(" ");
+  if (words.length > INVITE_MAX_WORDS || words.some((w, i) => INVITE_MODALS.has(w) && !((w === "would" || w === "d") && words[i + 1] === "like"))) return false;
+  // Capitalized terms: every one after the first word, and a first word with an inner capital ("OpenAI", "RAG").
+  const terms = plain.match(/[\p{L}\p{N}][\p{L}\p{N}'.+#-]*/gu) ?? [];
+  return !terms.some((t, i) => (i > 0 ? /^\p{Lu}/u.test(t) : /^.+\p{Lu}/u.test(t)) && !INVITE_CAPS.has(t.toLowerCase().replace(/[.']+$/, "")));
+}
+
+/**
+ * A sentence that projects his work onto the visitor's case (follow-up R2): "a similar team would ...", "the same
+ * stack fits", "the right fit here", "untuk kasus ini". Only the exact bridge and the final invitation may say "similar".
+ */
+const PROJECTS = /\b(?:similar|serupa|sejenis|something like|the same (?:stack|approach|setup|design|system)|fits?|right fit|cocok|here|kasus ini|di sini)\b/i;
 /** Vague durations, always an estimate ("a few weeks", "beberapa minggu", "dalam hitungan hari"). */
 const VAGUE_DURATION = /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b/i;
 /** Spelled-out durations ("six weeks", "dua minggu"): checked like digits, so a case-study fact stays a fact. */
 const WORD_DURATION = /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|dua belas)\s+(?:hari|minggu|bulan)\b/gi;
 
 /**
- * A forward-looking word in a sentence that is not the exact bridge: allowed only inside words CONTEXT or his
- * retrieved written views state (the word and the next two, "the system will always work"), as a case-study duration is.
+ * A forward-looking word in a sentence that is not the exact bridge: allowed only when CONTEXT or his retrieved written
+ * views state the whole stretch from three words before it to the end of the sentence (follow-up R2), as a case-study
+ * duration is. A capitalized "May" is the month.
  */
 function looksAhead(sentence: string, stated: string): boolean {
-  const words = fold(sentence.replace(SOURCE_TAGS, " ")).split(" ");
-  if (BRIDGES.has(words.join(" "))) return false;
-  return words.some((w, i) => PROSPECTIVE.has(w) && !stated.includes(` ${words.slice(i, i + 3).join(" ")} `));
+  if (isBridge(sentence)) return false;
+  const raw = sentence.replace(SOURCE_TAGS, " ").normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ");
+  const words = raw.map((w) => w.toLowerCase());
+  return words.some((w, i) => PROSPECTIVE.has(w) && raw[i] !== "May" && !stated.includes(` ${words.slice(Math.max(0, i - 3)).join(" ")} `));
 }
 
 /**
- * Free consulting in an approach answer (owner decision 2026-10-25, final review F2): the lead patterns
- * (visitor-directed advice, cost and estimate words), any sentence that addresses the visitor, starts with an order or
- * looks ahead (only the exact bridge `APPROACH_BRIDGE` may), any vague duration and any duration CONTEXT does not
- * state, or more than `APPROACH_MAX_SENTENCES` sentences or `APPROACH_MAX_ITEMS` list items. A duration from a case
- * study ("from 3 days to 4 hours", "six weeks") is a fact, not an estimate. `views` is the full text of his retrieved
- * written views (CONTEXT may clip them), read only for the forward-looking words of his own sentences.
+ * Free consulting in an approach answer (owner decision 2026-10-25, final review F2 and follow-up R1, R2): the lead
+ * patterns (visitor-directed advice, cost and estimate words), any sentence that addresses the visitor, starts with an
+ * order, looks ahead (only the exact bridge `APPROACH_BRIDGE` may) or projects onto the visitor's case, any vague
+ * duration and any duration CONTEXT does not state, or more than `APPROACH_MAX_SENTENCES` sentences or
+ * `APPROACH_MAX_ITEMS` list items. The final sentence may be a contact card invitation (`isInvitation`) that addresses
+ * the visitor. A duration from a case study ("from 3 days to 4 hours", "six weeks") is a fact, not an estimate. `views`
+ * is the full text of his retrieved written views (CONTEXT may clip them), read only for the forward-looking words of
+ * his own sentences.
  */
 export function prescribes(text: string, markdown: string, context: string, views = ""): boolean {
   const ctx = ` ${fold(context)} `;
   const stated = `${ctx}${fold(views)} `;
-  for (const sentence of text.split(/(?<=[.!?])\s+|\n+/)) {
+  const sentences = sentencesOf(text);
+  for (const [i, sentence] of sentences.entries()) {
+    if (i === sentences.length - 1 && isInvitation(sentence)) {
+      if (IMPERATIVE.test(sentence) && !CARD_ORDER.test(sentence)) return true;
+      continue;
+    }
+    if (!isBridge(sentence) && PROJECTS.test(sentence)) return true;
     if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
     const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION)].map((m) => fold(m[0]));
     if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;
