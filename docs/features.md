@@ -205,7 +205,7 @@ The Classic site (internally the Page View) is the permanent no-WebGL fallback a
 
 - Architecture figures use native EN/ID node and edge labels where authored, consistently across case studies, technical posts, the build page and B1 drawers. Shared technical identities and legacy string labels remain supported.
 - The home opens on a calm first screen: the name over a slow glow and a low Neon Grid floor (CSS only, still under reduced motion).
-- Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result on a hairline at the bottom, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
+- Restrained, editorial look (design refinement 2026-10-19): dates read as values in sentence case, project cards share one title size with their headline result under the title on landing cards and on a hairline at the bottom elsewhere, filter bars are flat, the Work wing counts and the case study Results are ruled rows, and lead paragraphs keep a comfortable measure.
 - **Enter the 3D HQ** shows wherever WebGL2 is available.
 - Header, nav and hero links prefetch the next page when you point at, focus or touch them, never just because they are on screen.
 - Then the **Ask AI** bar and a live stats marquee, followed by the three projects the owner selected (`Pod.selected`), with their screenshots.

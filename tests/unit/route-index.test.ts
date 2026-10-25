@@ -9,6 +9,7 @@ describe("buildRouteIndex", () => {
     for (const entry of index) {
       expect(entry.p).toMatch(/^\/(en|id)(\/|$)/);
       expect(entry.t.length).toBeGreaterThan(0);
+      expect(entry.t.startsWith("/"), `${entry.p} title falls back to a path`).toBe(false);
     }
     expect(index.find((e) => e.p === "/en/labs/voice-ai-contact-center")?.t).toBe("Realtime Voice AI Contact Center");
   });

@@ -12,7 +12,7 @@ import { Portrait } from "./Portrait";
  * Landing hero: the owner portrait beside the name (no eyebrow), the headline and the motto over the Neon
  * Grid backdrop (CSS only, src/app/landing.css), the proof strip and View CV first (owner decision 2026-10-25),
  * then See the work and Enter the 3D HQ, the Ask AI bar across the full width, and the stats ticker at the bottom
- * of the first screen. Server-rendered; EnterHqButton and AskHeroBar are the only islands.
+ * of the first screen. Server-rendered; CvButton, EnterHqButton and AskHeroBar are the only islands.
  *
  * The first paint waits until the whole first screen (ticker included) is parsed: a busy device can
  * otherwise paint a half-parsed hero, and the rest arriving moves the backdrop and the centered column

@@ -108,8 +108,10 @@ test("case study keeps its anchors and table of contents", async ({ page }) => {
 test("a featured case study reads as a story: situation, key decisions, results, then lesson, with the old anchors kept", async ({ page }) => {
   await openPage(page, staticTier(`/en/labs/${storyPod.slug}`));
   const chapters = await page.locator("article section[id] > h2").evaluateAll((els) => els.map((h) => h.parentElement!.id));
-  const story = ["problem", "approach", "results"];
+  const story = ["problem", "approach", "results", "lesson"];
   expect(chapters.filter((id) => story.includes(id))).toEqual(story);
+  expect(chapters[chapters.indexOf("results") + 1]).toBe("lesson");
+  for (const id of ["architecture", "stack", "lesson"]) await expect(page.locator(`#${id}`)).toBeAttached();
   await expect(page.locator("#problem h2")).toHaveText(en.labs.situation);
   await expect(page.locator("#approach h2")).toHaveText(en.labs.decisions);
   await expect(page.locator("#approach li")).toHaveCount(data.floors.labs.pods.find((p) => p.slug === storyPod.slug)!.story!.decisions.length);
