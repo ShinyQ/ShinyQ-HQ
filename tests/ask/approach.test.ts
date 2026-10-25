@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 import { buildRepoPack } from "@/ask/repo-pack";
+import { approachLine, PROMPT_VERSION, routingLines, RULES } from "../../functions/_lib/prompt";
 import { APPROACH_MATCH_CAP, APPROACH_PERSPECTIVE_CAP, approachMatches, leadMatches, LEAD_ENGAGEMENTS, retrieve, SEMANTIC_FLOOR } from "../../functions/_lib/retrieve";
 import { isProblemQuestion } from "../../functions/_lib/scope";
 import type { KnowledgePack } from "../../functions/_lib/types";
@@ -136,5 +137,24 @@ describe("approachMatches with a question vector", () => {
     });
     expect(far).toBeGreaterThanOrEqual(0);
     expect(approachMatches(copy, matches, row(vectors, far))).toEqual([matches[0]]);
+  });
+});
+
+describe("rule 18 and the approach line", () => {
+  it("bumps the prompt version", () => expect(PROMPT_VERSION).toBe("2026-10-25.approach.1"));
+
+  it("adds rule 18 and points rule 11 to it", () => {
+    const rules = RULES.join(" ");
+    expect(rules).toContain("18. When the routing marks a problem question");
+    expect(RULES.find((r) => r.startsWith("11."))).toContain("rule 18");
+    expect(rules).toContain("Never tell the visitor what to use, build or do");
+  });
+
+  it("states the approach line instead of the lead line", () => {
+    const lines = routingLines({ approach: { matches: ["Realtime Voice AI Contact Center"] } });
+    expect(lines).toEqual([approachLine(["Realtime Voice AI Contact Center"])]);
+    expect(lines[0]).toContain("rule 18");
+    expect(lines[0]).toContain('"Realtime Voice AI Contact Center"');
+    expect(lines[0]).not.toContain("rule 11");
   });
 });

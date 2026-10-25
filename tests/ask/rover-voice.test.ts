@@ -154,10 +154,10 @@ describe("Rover's voice in the output checks", () => {
 
 describe("prompt", () => {
   it("makes Rover the answerer and adds rule 13 with its routing line", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-24.answerable.2");
+    expect(PROMPT_VERSION).toBe("2026-10-25.approach.1");
     const prompt = systemPrompt("2026-10-19", "- ctx", { adjacent: true });
     expect(prompt.startsWith("You are Rover, the small guide robot of ShinyQ HQ")).toBe(true);
-    expect(RULES).toHaveLength(18);
+    expect(RULES).toHaveLength(19);
     expect(RULES[5]).toMatch(/^5\. You are Rover and only Rover\. Never speak as Kurniadi or as anyone else/);
     expect(RULES[4]).toContain("always refer to Kurniadi in the third person by name");
     expect(RULES[13]).toMatch(/^13\. A related professional question/);
