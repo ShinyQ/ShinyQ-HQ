@@ -74,7 +74,7 @@ the dataset at build time.
 
 Anything before 2019 belongs to the `pre-2019` stop (same cut as `FIRST_CORRIDOR_YEAR`).
 
-**Block kinds** (one SVG rect per item, fixed hues from existing tokens, legend shown under the skyline):
+**Block kinds** (each kind's blocks in a building are one SVG `<path>` with one subpath per item, fill `currentColor` and the kind's accent text class; fixed hues from existing tokens, legend shown under the skyline):
 
 | Kind | Items | Hue |
 |---|---|---|
@@ -116,9 +116,9 @@ Files in `src/components/time-travel/`:
 - **`TimeTravel.tsx`** (server): section heading, one-line lead, the skyline, the legend, the 9 panels and the
   island. Resolves all labels on the server.
 - **`Skyline.tsx`** (server): one `<svg>` with a fixed `viewBox` and aspect ratio (no layout shift). Per stop a
-  `<g data-stop="2021">` of stacked `<rect>`s with `fill` and `opacity` as SVG attributes (no new CSS for colors).
+  `<g data-stop="2021">` holding one SVG `<path>` per kind per building (one subpath per item), colored through `currentColor` and the existing `ACCENT_TEXT` classes (no new CSS for colors). The building `<g>`'s `opacity` attribute is what the island toggles for ghosts.
   Each building sits in an `<a href="#y2021">` (the prologue links to `#y2019`) named, for example, "2021: 14
-  items". Without JS a click jumps to that year's rows below. Each kind's blocks are drawn as one SVG `<path>` per building (not one `<rect>` per item). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick reads "<2019", key `timeTravel.prologueShort`).
+  items". Without JS a click jumps to that year's rows below. Each kind's blocks are drawn as one SVG `<path>` per kind per building (one subpath per item, not one `<rect>` per item). The year ticks are an `aria-hidden` HTML row under the SVG (the prologue tick reads "<2019", key `timeTravel.prologueShort`).
 - **`YearPanel.tsx`** (server): the year (`pv-num`; the prologue shows "Before 2019" / "Sebelum 2019"), the
   caption, the tally as ruled facts (value, label, "+N this year"), up to 3 highlight links and "See {year} in
   full" to `#y{year}`. The panel for 2026 is visible; the other 8 carry `hidden`.
@@ -175,7 +175,7 @@ No cap is raised.
 | Global CSS chunk (Lighthouse stylesheet) | about 19,601 B gzip | at most +300 B gzip (colors are SVG attributes; animation runs through WAAPI) | 20,480 B |
 | `/en/journey` JS | 39,494 B (`<script src>` tags) | island about 727 B gzip (lazy chunk; measured by summing every chunk the page references) | 240 KB |
 | `/en/journey` and `/id/journey` HTML | 47,564 / 48,428 B | +8,355 / +8,587 B gzip (55,919 / 57,015 B); accepted by the parent session (option A, 2026-10-25): the flight payload doubles the section; no cap rises | 82 KB (83,968 B) |
-| `/en/quick` HTML | about 77,195 / 77,230 B | 0 B (`journey.timeTravel` strings stay out of `LAYOUT_NAMESPACES`) | unchanged |
+| `/en/quick` HTML | about 77,195 / 77,230 B | 0 B (the server-only top-level `timeTravel` namespace is in neither `CLIENT_NAMESPACES` nor `LAYOUT_NAMESPACES`) | unchanged |
 | Lighthouse LCP, CLS, TBT on `/en/journey` | measured | LCP stays the intro `h1`; CLS 0 (fixed SVG ratio, reserved controls row) | 2 s, 0.01, 200 ms |
 
 If a measurement in the plan shows a number above these targets, implementation stops and the parent session gets
