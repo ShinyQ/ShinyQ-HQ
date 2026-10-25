@@ -22,6 +22,9 @@ export const SHELF = {
   minAlong: 8,
 } as const;
 
+/** A bay door's camera zone: half size around the door and its zooms (phones: `classView.mobile`), the whole shelf in view. */
+export const SHELF_VIEW = { zone: 2.5, zoom: 1.15, zoomPhone: 1.35 } as const;
+
 /** Bay length along the road and its grid for `count` posts (the lead included). */
 export function shelfSize(count: number): { along: number; rows: number; cols: number } {
   const spines = Math.max(0, count - 1);

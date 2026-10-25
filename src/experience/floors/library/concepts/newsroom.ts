@@ -39,11 +39,11 @@ export const NEWSROOM = {
   plaza: { x: -2, z: 0, w: 24, d: 20 },
   /**
    * Elevator arrivals and floor deep links (Round 8 J, like L3): on the plaza axis, west of its center. The
-   * camera stands behind the rover and looks east down the timeline lane at its first stations. Zooms: the
-   * widest view whose camera stays east of the glass shaft (`shaftClearZoom`).
+   * camera stands behind the rover and looks east down the timeline lane at its first stations. Zooms: under
+   * `shaftClearZoom` (the camera stays east of the glass shaft), wide enough on desktops for the first bay's track sign.
    */
   arrival: { x: -4, z: 0 },
-  arrivalZoom: 1.12,
+  arrivalZoom: 1.16,
   arrivalZoomPhone: 0.96,
   wall: { x: -3, z: -15, w: 18, d: 1, h: 7 },
   /** Featured stage: docked on the south side from the plaza center. */

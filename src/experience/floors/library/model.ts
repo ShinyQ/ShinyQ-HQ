@@ -2,7 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { ROAD, type RoadNetwork } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
-import { SHELF, type ShelfSlot } from "./shelf";
+import { SHELF, SHELF_VIEW, type ShelfSlot } from "./shelf";
 
 /**
  * Shared contract of the L4 Writing floor (walkable floors plan, part 3). The concept builder
@@ -297,11 +297,13 @@ export function stationYaw(facing: Vec2): number {
   return -Math.PI / 2;
 }
 
-/** A camera zone around every door pad that turns the follow camera toward its station. */
+/** A camera zone around every door pad that turns the follow camera toward its station; a track bay's also zooms out to its whole shelf (`SHELF_VIEW`). */
 export function stationViewZones(stations: readonly LibraryStation[]): ViewZone[] {
   return stations.map((s) => {
-    const r = 2.2;
-    return { id: s.room, area: { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r }, yaw: stationYaw(s.facing) };
+    const bay = s.zone === "track";
+    const r = bay ? SHELF_VIEW.zone : 2.2;
+    const zone: ViewZone = { id: s.room, area: { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r }, yaw: stationYaw(s.facing) };
+    return bay ? { ...zone, zoom: SHELF_VIEW.zoom, classView: { mobile: { zoom: SHELF_VIEW.zoomPhone } } } : zone;
   });
 }
 

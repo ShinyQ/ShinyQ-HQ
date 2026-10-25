@@ -1,11 +1,8 @@
-import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { guideViews } from "@/content/guide-views";
-import { cameraWorld, clampCamera } from "@/experience/camera/collision";
-import { followOffsetScale } from "@/experience/camera/offset";
-import { ZOOM_RANGE, zoneAt, zoneView } from "@/experience/camera/orbit";
-import { FOLLOW_LOOK_AHEAD, followForward, followPose, type Vec3 } from "@/experience/camera/rigs";
+import { ZOOM_RANGE, zoneAt } from "@/experience/camera/orbit";
+import type { Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
@@ -16,7 +13,7 @@ import { PAD } from "@/experience/nav/pads";
 import { pathBetween, projectOnRoad } from "@/experience/nav/road";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
-import { cameraClass } from "@/lib/viewport";
+import { expectFramed, FRAME_SIZES, settleFollow } from "../helpers/follow-frame";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
 
 /**
@@ -254,50 +251,19 @@ describe("L4 Study Vault camera (real content)", () => {
   const L4 = buildFloorLayouts(data.years.length, { library: input }).L4;
   const vault = buildLibraryLayout(input).end!.vault!;
   const zone = zoneAt("L4", vault.stop, L4.viewZones)!;
-  const world = cameraWorld(L4, 0);
-  /** HUD-free boxes (`DESKTOP_SAFE`, `PHONE_SAFE` in e2e/hq.ts), as in arrivals.test.ts. */
-  const DESKTOP_SAFE = { top: 90, bottom: 90, side: 40 };
-  const PHONE_SAFE = { top: 120, bottom: 140, side: 24 };
-
-  for (const [w, h] of [
-    [1440, 900],
-    [1194, 834],
-    [834, 1194],
-    [390, 844],
-  ] as const) {
+  for (const [w, h] of FRAME_SIZES) {
     it(`frames all four books whole with the rover on the stop at ${w}x${h}`, () => {
-      const cls = cameraClass(w, h);
-      const view = zoneView(zone, cls);
-      const forward = followForward(cls, view.yaw);
-      const ahead = FOLLOW_LOOK_AHEAD[cls];
-      const rover: Vec3 = [vault.stop.x, 1, vault.stop.z];
-      const target: Vec3 = [vault.stop.x + forward.x * ahead, 1, vault.stop.z + forward.z * ahead];
-      const pose = followPose(cls, target, view.yaw, (view.zoom ?? 1) * followOffsetScale(cls, w / h), view.pitch ?? 0);
-      const position = clampCamera(target, pose.position, world, rover, pose.fov);
+      const settled = settleFollow(L4, zone, vault.stop, w, h);
       // The camera looks from the ring side toward the books.
+      const { target, position, rover } = settled;
       const look = { x: target[0] - position[0], z: target[2] - position[2] };
       const toBooks = { x: vault.books[1].at.x - vault.stop.x, z: 0 };
       expect(look.x * toBooks.x + look.z * toBooks.z).toBeGreaterThan(0);
-      const camera = new PerspectiveCamera(pose.fov, w / h, 0.1, 500);
-      camera.position.set(...position);
-      camera.lookAt(new Vector3(...target));
-      camera.updateMatrixWorld();
-      camera.updateProjectionMatrix();
-      const safe = cls === "mobile" ? PHONE_SAFE : DESKTOP_SAFE;
       const points: { label: string; at: Vec3 }[] = [
         { label: "rover", at: rover },
         ...vault.books.flatMap((b) => footprint(b).flatMap((c, k) => [0, V.book.h].map((y) => ({ label: `${b.slug} corner ${k} at ${y}`, at: [c.x, y, c.z] as Vec3 })))),
       ];
-      for (const { label, at } of points) {
-        const v = new Vector3(...at).project(camera);
-        const sx = ((v.x + 1) / 2) * w;
-        const sy = ((1 - v.y) / 2) * h;
-        expect(v.z, label).toBeLessThan(1);
-        expect(sx, label).toBeGreaterThanOrEqual(safe.side);
-        expect(sx, label).toBeLessThanOrEqual(w - safe.side);
-        expect(sy, label).toBeGreaterThanOrEqual(safe.top);
-        expect(sy, label).toBeLessThanOrEqual(h - safe.bottom);
-      }
+      expectFramed(settled, points, w, h);
     });
   }
 });
