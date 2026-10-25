@@ -251,3 +251,20 @@ Found while planning and building; where an earlier section differs, this sectio
 14. Final review, the demotion: when the question vector drops every match, the plain lead states no match, its fit
     check treats it as no fit (a "strong fit" claim becomes `MESSAGES.lead`, reason `fit`), and retrieval runs with
     `excludeMatches`, so the rejected projects are neither offered nor retrieved.
+15. Follow-up (2026-10-25), the contact card invitation: only the final sentence may be one (`isInvitation`), and it
+    may then address the visitor and say "use / try the contact card". It must point to the card ("contact card",
+    "get in touch", "reach out", "reach him", "kartu kontak", "hubungi", "menghubungi"), name no duration, product or
+    stack (no capitalized term but his name and "Anda"), match no consulting pattern, hold no modal but "would like",
+    "'d like" and "can", and have at most 25 words. "If you want Azure AI Search in two weeks, use the contact card."
+    fails, and so does any earlier sentence that addresses the visitor.
+16. Follow-up, projection: any other sentence that projects his work onto the visitor's case ("similar", "serupa",
+    "sejenis", "something like", "the same stack / approach / setup / design / system", "fits", "right fit", "cocok",
+    "here", "kasus ini", "di sini") fails, even in words CONTEXT states; only the exact bridging sentence and the
+    invitation may say "similar". "could", "may" and "can" join the forward-looking words, and such a word passes
+    only when CONTEXT or a retrieved written view states the whole stretch from three words before it to the end of
+    the sentence.
+17. Follow-up, hypotheticals on every lead answer (plain or approach): "he / Kurniadi would, will, 'd, 'll, might" or
+    "dia / Kurniadi akan" outside quoted text and the final invitation becomes `MESSAGES.lead` (reason `consulting`),
+    so "For a tight deadline he would cut scope first ..." never reaches a visitor.
+18. Known limitation (parked): an approach ask is promoted on loose BM25 matches ("How would he handle stress at
+    work?" routes `approach`); the approach checks above keep such an answer safe.

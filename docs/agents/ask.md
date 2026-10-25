@@ -351,6 +351,7 @@ Owner decision 2026-10-19. Related professional questions that are not strictly 
   - never estimates cost, price or timeline, designs their system, writes code or asks for the visitor's data.
   - Guards: `consulting`, `containsCode`, `asksForPersonalData`, and `claimsFit` without matches, all replaced by `MESSAGES.lead`.
   - A view told as his (`claimsOpinion`) must cite a written view (`citedSources` or a source tag on a `SOURCE_TYPES` chunk; the engagements view counts, since a lead answer restates his engagement terms), else `MESSAGES.lead`, reason `unsourced`.
+  - What he would do, told without an opinion verb, is invented too (`hypothesizes`): a sentence with "he" or "Kurniadi" + "would", "will", "'d", "'ll" or "might", or "dia" or "Kurniadi" + "akan", fails unless it is quoted text or the final contact card invitation, else `MESSAGES.lead`, reason `consulting` (checked after the opinion check, so an invented opinion stays `unsourced`).
 - A lead that asks for a rate gets `MESSAGES.leadRates` without a model call.
 - The `done` frame then carries `contact` (`AskContact`: email and LinkedIn from `roof.contact`, built into `KnowledgePack.contact`).
   - Validated by `isAskContact` on both ends, also on cache hits.
@@ -373,18 +374,22 @@ Owner decision 2026-10-25 ([decision](../decisions/2026-10-25-ask-bring-your-pro
 - Checks (`checkAnswer` with `approach`), after the forbidden, secret and leak checks:
   - `prescribes` runs before the voice check (so "I recommend ..." is consulting, not roleplay) and replaces `consulting`, per sentence:
     - a sentence that addresses the visitor ("you", "your", "yours", "kamu", "anda", "kalian") or starts with an order ("Start", "Use", "Build", "Add", "Pick", "Choose", "Consider", "Try", "Deploy", "Set up", "Mulai", "Gunakan", "Pakai", "Bangun", "Tambahkan", "Pilih", "Coba") fails;
-    - a forward-looking word ("would", "will", "'ll", "might", "should", "akan", "sebaiknya", "seharusnya") fails unless the sentence is exactly the bridging sentence (a trailing source tag aside; anything added to it fails) or the word and the next two are his own words in CONTEXT or in a retrieved written view ("the system will always work");
+    - the final sentence may be a contact card invitation (`isInvitation`): it says "contact card", "get in touch", "reach out", "reach him", "kartu kontak", "hubungi" or "menghubungi", has no digit and no spelled-out or vague duration, matches no `CONSULTING` pattern, has no capitalized term but his name and "Anda" / "Kamu" / "Kalian" (a product or stack fails), no modal but "would like", "'d like" and "can", and at most `INVITE_MAX_WORDS` (25) words; it may then address the visitor and say "use / try the contact card" ("If you'd like to discuss this, you can reach him through the contact card."); any other sentence that addresses the visitor still fails;
+    - a sentence that projects his work onto the visitor's case ("similar", "serupa", "sejenis", "something like", "the same stack / approach / setup / design / system", "fit" / "fits", "right fit", "cocok", "here", "kasus ini", "di sini") fails, even in words CONTEXT states; only the exact bridging sentence and the final invitation may say "similar";
+    - a forward-looking word ("would", "will", "'ll", "might", "should", "could", "may", "can", "akan", "sebaiknya", "seharusnya"; a capitalized "May" is the month) fails unless the sentence is exactly the bridging sentence (a trailing source tag aside; anything added to it fails) or CONTEXT or a retrieved written view states the whole stretch from three words before the word to the end of the sentence ("rather than assume the system will always work");
     - a vague duration ("a few / several / a couple of days, weeks, months", "beberapa minggu", "dalam hitungan hari") fails; a duration in digits or words ("six weeks", "dua minggu") passes only when CONTEXT states it (word boundaries, so "3 weeks" never matches "13 weeks") and never in a sentence with visitor or future framing ("you", "we", "within", "could", "will", "akan", "bisa");
     - plus the lead `CONSULTING` patterns, at most `APPROACH_MAX_SENTENCES` (7) sentences and `APPROACH_MAX_ITEMS` (4) list items;
   - then `firstPersonVoice`, `containsCode`, `asksForPersonalData`, defamation, numbers, employers and names, as for every answer;
   - groundedness: at least `ADJACENT_MIN_GROUNDED` (65%) of the answer's own words in CONTEXT and no `GENERALITY` wording;
   - a matched project cited by title (`citedSources` on the matches) or by its source tag;
   - an opinion must cite a written view (rule 8, the same check as every lead answer); in an approach answer the engagements perspective never counts as one, since the invitation echoes it.
+  - a hypothetical about him (`hypothesizes`, "he would ...", "dia akan ...") fails as `consulting`, the same check as every lead answer ([Lead intent and the contact card](#lead-intent-and-the-contact-card)).
   - Any failure, a model refusal or an empty answer becomes `MESSAGES.lead` with the contact card. The leak check ignores rule 18's bridging sentences (both languages) and the contact-card invitation (`BENIGN`).
 - The `done` frame carries the contact card and `cite` / `cites` (the cited matched project's page first). blob14 logs `approach` or `approach+partial`.
 - Pills (topic `contact`): `contact-problem-callcenter`, `contact-problem-latency`, `contact-problem-docs`, `contact-problem-fraud`; `tests/ask/suggestions.test.ts` retrieves a problem pill the way the pipeline does (approach route, BM25 order).
 - Evals: golden q97 to q102 (two approach items and one no-match lead per language; q97 is in the smoke set), red-team rt75 to rt79 (category `consulting`: an architecture, a timeline and code inside a problem must end as `MESSAGES.lead`; an injection inside a problem stays a canned decline; a client-name lure), boundary b21 and b22.
 - Known limitation: "support tickets" matches the event ticketing projects, lexically and semantically; no pill uses it.
+- Known limitation: an approach ask is promoted on loose BM25 matches ("How would he handle stress at work?" routes `approach`); it stays safe because the approach checks hold (no projection, no hypothetical, a matched project cited by title).
 
 ## CSP
 
