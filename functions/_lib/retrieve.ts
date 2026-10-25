@@ -1,6 +1,6 @@
 import { askLinkTarget } from "../../src/ask/links";
 import { ASK_REPO_CITE } from "../../src/ask/protocol";
-import { ADJACENT_SOURCE_TYPES } from "./checks";
+import { ADJACENT_SOURCE_TYPES, LEAD_ENGAGEMENTS } from "./checks";
 import { indexPack } from "./pack-index";
 import { isAdjacentQuestion, isLeadQuestion, isPerspectiveQuestion, isSiteQuestion, routedTopic, type RoutedTopic } from "./scope";
 import { expandTokens, tokenize } from "./text";
@@ -33,8 +33,7 @@ const TEAM_TAGS = ["teamwork", "work-style"];
 export const TEAM_PROJECT_CAP = 2;
 /** Added for lead-intent questions (`isLeadQuestion`): the answer ends with an invitation to get in touch. */
 export const LEAD_INCLUDE = "contact";
-/** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
-export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+export { LEAD_ENGAGEMENTS };
 /** Chunks every adjacent answer gets (owner decision 2026-10-19): who he is and his rules of work, the most general lessons he wrote. */
 export const ADJACENT_INCLUDE = ["profile", "principles"] as const;
 /** Added to case studies, posts and talks for an adjacent question, so his written views do not crowd them out. */

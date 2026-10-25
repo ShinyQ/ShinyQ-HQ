@@ -525,6 +525,9 @@ export function asksForPersonalData(text: string): boolean {
   return ASKS_PERSONAL_DATA.test(text);
 }
 
+/** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
+export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+
 /** Free consulting in a lead answer: time or cost estimates and designing the visitor's system (owner rule 2026-10-15). */
 const CONSULTING: RegExp[] = [
   /\b\d+\s*(?:-|to|or|sampai|hingga|atau)?\s*\d*\s*(?:hours?|days?|weeks?|months?|sprints?|jam|hari|minggu|bulan)\b/i,
@@ -536,6 +539,13 @@ export function consulting(text: string): boolean {
   return CONSULTING.some((re) => re.test(text)) || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > 5;
 }
 
+/**
+ * Visitor or future framing: a duration in such a sentence is a timeline for the visitor, even when CONTEXT states it
+ * ("Yours could be live in 2 days").
+ */
+const VISITOR_TIMELINE =
+  /\b(?:you|your|yours|we|our|expect(?:s|ed)?|within|could|can|will|would be|akan|bisa|dalam waktu|kamu|anda|kalian|kami)\b/i;
+
 /** Most sentences and list items of an approach answer (rule 18: 6 sentences or 4 items, plus the invitation). */
 export const APPROACH_MAX_SENTENCES = 7;
 export const APPROACH_MAX_ITEMS = 4;
@@ -546,9 +556,11 @@ export const APPROACH_MAX_ITEMS = 4;
  * `APPROACH_MAX_ITEMS` list items. A duration from a case study ("from 3 days to 4 hours") is a fact, not an estimate.
  */
 export function prescribes(text: string, markdown: string, context: string): boolean {
-  const ctx = context.toLowerCase().replace(/\s+/g, " ");
-  const durations = [...text.matchAll(new RegExp(CONSULTING[0].source, "gi"))].map((m) => m[0].toLowerCase().replace(/\s+/g, " ").trim());
-  if (durations.some((d) => !ctx.includes(d))) return true;
+  const ctx = ` ${fold(context)} `;
+  for (const sentence of text.split(/(?<=[.!?])\s+|\n+/)) {
+    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi"))].map((m) => fold(m[0]));
+    if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;
+  }
   if (CONSULTING.slice(1).some((re) => re.test(text))) return true;
   const items = parseMarkdown(markdown).reduce((n, b) => n + (b.type === "p" ? 0 : b.items.length), 0);
   return items > APPROACH_MAX_ITEMS || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > APPROACH_MAX_SENTENCES;
@@ -639,7 +651,8 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
     const marked = markedSources(answer, chunks, question);
     const projects = [...citedSources(text, approach.matches, locale, APPROACH_TYPES), ...marked.filter((c) => approach.matches.includes(c))].filter((c, i, all) => all.indexOf(c) === i);
     if (!projects.length) return { ok: false, reason: "unsourced", detail: [], replacement: "lead" };
-    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i);
+    // The invitation echoes the engagements perspective (always retrieved), so it never counts as the written view.
+    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i && c.id !== LEAD_ENGAGEMENTS);
     if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
     const pages = citePages([...projects, ...views]);
     return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };

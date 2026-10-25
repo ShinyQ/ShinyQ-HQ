@@ -235,4 +235,41 @@ describe("approach checks", () => {
     const r = check(`${outline()} In general, teams use chatbots for this.`);
     expect(r).toMatchObject({ ok: false, reason: "unsourced", replacement: "lead" });
   });
+
+  const invitation = "Kurniadi takes freelance and part-time work, so get in touch through the contact card.";
+  /** A longer outline (four of the match's own sentences), grounded enough to carry one more sentence. */
+  const outlineOnly = () => {
+    const m = setup().matches[0];
+    const words = m.text_en.split(/(?<=[.!?])\s+/).slice(0, 4).join(" ");
+    return `In **${m.title}**, ${words.charAt(0).toLowerCase()}${words.slice(1)} A similar problem would likely start the same way.`;
+  };
+
+  it("rejects an invented view even though the invitation echoes the engagements perspective", () => {
+    const r = check(`${outlineOnly()} In his view, this is the right way to start. ${invitation}`);
+    expect(r).toMatchObject({ ok: false, reason: "unsourced", replacement: "lead" });
+  });
+
+  it("passes a view that cites a retrieved written view", () => {
+    const r = check(`${outlineOnly()} In his view, "Design for Recovery" matters: he plans for failures and builds a recovery path rather than assume the system will always work. ${invitation}`);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.cites).toContain(pack.chunks.find((c) => c.id === "principles")?.url);
+  });
+
+  it.each(["Yours could be live in 2 days.", "Expect results within 2 days."])("rejects a CONTEXT duration reused as the visitor's timeline: %s", (bad) => {
+    const fq = "Our fraud checks are manual. His approach?";
+    const matches = approachMatches(pack, leadMatches(pack, fq), null);
+    const { chunks, context } = retrieve(pack, fq, "en", { lead: true, approach: matches });
+    expect(context).toMatch(/\b2 days\b/);
+    const m = matches[0];
+    const words = m.text_en.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
+    const answer = `In **${m.title}**, ${words.charAt(0).toLowerCase()}${words.slice(1)} ${bad} ${invitation}`;
+    const r = checkAnswer({ answer, question: fq, context, packDate: pack.packDate, pack, vocabulary: packVocabulary(pack), chunks, lead: { fit: true }, approach: { matches }, locale: "en" });
+    expect(r).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+    expect(prescribes(bad, bad, "Results: 2 days Time to the first working client dashboard")).toBe(true);
+  });
+
+  it("matches a CONTEXT duration on word boundaries only", () => {
+    expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 13 weeks")).toBe(true);
+    expect(prescribes("The rollout took 3 weeks.", "The rollout took 3 weeks.", "the rollout took 3 weeks")).toBe(false);
+  });
 });
