@@ -127,7 +127,7 @@ describe("build-shapes", () => {
 });
 
 describe("L4 icon placement", () => {
-  it("places one icon per docked post (the featured one excepted) and one per paper, model and talk", () => {
+  it("places one icon per reader track (its lead post's) and one per paper, model and talk", () => {
     const content = getContent();
     const { icons } = shapePayloads(content).L4;
     const lib = content.floors.library;
@@ -135,8 +135,9 @@ describe("L4 icon placement", () => {
     expect(new Set(keys).size).toBe(keys.length);
     for (const i of icons!) expect(i.strokes.length, i.key).toBeGreaterThan(0);
     for (const id of [...lib.publications.map((p) => p.id), ...lib.talks.map((t) => t.id)]) expect(keys).toContain(id);
-    // The newsroom features the newest post on its stage (a turning book, no icon).
-    expect(keys.filter((k) => lib.posts.some((p) => p.slug === k))).toHaveLength(Math.min(lib.posts.length, 12) - 1);
+    // Posts: only each track's lead, over its bay (the stage's turning book and the spines get none).
+    const leads = buildLibraryData("en").tracks.map((t) => t.posts[0]);
+    expect(keys.filter((k) => lib.posts.some((p) => p.slug === k))).toEqual(leads);
   });
 
   it("matches the floor the client builds, in either locale", () => {

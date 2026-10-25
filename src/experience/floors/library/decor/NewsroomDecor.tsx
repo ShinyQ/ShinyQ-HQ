@@ -13,7 +13,7 @@ import { ResearchPapers, STATION_HEIGHT, StationShells, stationTitles, ZoneIcons
 import { featuredStation } from "../icons";
 import { stageBook } from "./flipBooks";
 import { LibrarySigns } from "./LibrarySigns";
-import { yearPostSegments } from "./signs";
+import { TrackShelves } from "./TrackShelves";
 
 /** Ticker speed (u/s) and the gap between headlines. */
 const TICKER = { speed: 2.4, separator: "   \u25c6   " } as const;
@@ -55,8 +55,8 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
 
 /**
  * Concept B, "Newsroom": the headline wall (newest title in large type and the ticker of every title),
- * the featured post on a lit stage under a turning open-book hologram, year marks along the timeline
- * lane, and the shelves as press desks.
+ * the featured post on a lit stage under a turning open-book hologram, the reader track bookshelves along the
+ * timeline lane (`TrackShelves`), and the research, models and talks shelves as press desks.
  */
 export function NewsroomDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones } = props;
@@ -67,7 +67,6 @@ export function NewsroomDecor(props: DecorProps) {
   const ticker = library.posts.map((p) => p.title).join(TICKER.separator);
   const others = useMemo(() => layout.stations.filter((s) => s !== featured), [layout.stations, featured]);
   const books = useMemo(() => (featured ? [stageBook(featured, STATION_HEIGHT.blog)] : []), [featured]);
-  const years = layout.extras.years;
   const frame = useMemo(() => {
     if (!wall) return null;
     const batch = new LineBatch();
@@ -75,10 +74,8 @@ export function NewsroomDecor(props: DecorProps) {
     batch.box((wall.minX + wall.maxX) / 2, 3.5, (wall.minZ + wall.maxZ) / 2, w, 7, wall.maxZ - wall.minZ, ZONE_TONE.blog);
     // Ticker rails above and below the scrolling line.
     for (const y of [1.15, 2.25]) batch.segment([wall.minX, y, wall.maxZ + 0.05, wall.maxX, y, wall.maxZ + 0.05], ZONE_TONE.talks);
-    // The low posts under the year plates ride the wall's line batch: no draw call of their own.
-    for (const seg of yearPostSegments(years ?? [])) batch.segment(seg, ZONE_TONE.blog);
     return batch.build();
-  }, [wall, years]);
+  }, [wall]);
   useEffect(() => () => frame?.dispose(), [frame]);
   const neon = useMemo(() => neonColor("#ffffff", 1.5, tier), [tier]);
 
@@ -86,6 +83,7 @@ export function NewsroomDecor(props: DecorProps) {
     <group name="library-newsroom">
       <StationShells stations={layout.stations} tier={tier} />
       <ZoneIcons stations={others} shapes={library.shapes} tier={tier} reducedMotion={reducedMotion} />
+      {layout.bays.length > 0 && <TrackShelves bays={layout.bays} tier={tier} reducedMotion={reducedMotion} />}
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
       <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />

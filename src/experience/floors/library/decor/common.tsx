@@ -42,7 +42,7 @@ function setCursor(value: string) {
   document.body.style.cursor = value;
 }
 
-/** Station plinths and alcoves: glass boxes (one instanced mesh) and their edges and door markers (one line batch). */
+/** Station plinths and alcoves (the stage and the desks; `layout.stations` never hold a bay): glass boxes (one instanced mesh) and their edges and door markers (one line batch). */
 export function StationShells({ stations, tier }: { stations: readonly LibraryStation[]; tier: GpuTier }) {
   const mesh = useRef<InstancedMesh>(null);
   const glass = useMemo(() => createInstancedGlassMaterial(tierFill(0.06, tier)), [tier]);
@@ -53,7 +53,7 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
   const edges = useMemo(() => {
     const batch = new LineBatch();
     for (const s of stations) {
-      const h = STATION_HEIGHT[s.zone];
+      const h = STATION_HEIGHT[s.zone as LibrarySection];
       const w = s.rect.maxX - s.rect.minX;
       const d = s.rect.maxZ - s.rect.minZ;
       batch.box(s.center.x, h / 2, s.center.z, w, h, d, ZONE_TONE[s.zone]);
@@ -74,7 +74,7 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
     const matrix = new Matrix4();
     const color = new Color();
     stations.forEach((s, i) => {
-      const h = STATION_HEIGHT[s.zone];
+      const h = STATION_HEIGHT[s.zone as LibrarySection];
       matrix.compose(new Vector3(s.center.x, h / 2, s.center.z), new Quaternion(), new Vector3(s.rect.maxX - s.rect.minX, h, s.rect.maxZ - s.rect.minZ));
       m.setMatrixAt(i, matrix);
       m.setColorAt(i, color.set(ZONE_TONE[s.zone]));
@@ -105,13 +105,13 @@ export function StationShells({ stations, tier }: { stations: readonly LibrarySt
 /**
  * One Neon line icon per station in its zone tone, as one batch (one draw call, two on the full tier). Once the
  * floor's shapes load (`shapes`, after its first frame) they crossfade into the items' own icons, placed at build
- * (`libraryIcons`): one per post station and one per paper, model and talk over its desk.
+ * (`libraryIcons`): one over each track bay's lead and one per paper, model and talk over its desk.
  */
 export function ZoneIcons({ stations, shapes, tier, reducedMotion }: { stations: readonly LibraryStation[]; shapes: string; tier: GpuTier; reducedMotion: boolean }) {
   const group = useRef<Group>(null);
   const own = useShapes<Stroke[]>("L4", shapes, group, reducedMotion);
   const icons = useMemo(
-    () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone] + ZONE_ICON.lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone], color: ZONE_TONE[s.zone] })),
+    () => stations.map((s) => ({ x: s.center.x, y: STATION_HEIGHT[s.zone as LibrarySection] + ZONE_ICON.lift, z: s.center.z, face: faceRoad(s), strokes: LIBRARY_ICONS[s.zone as LibrarySection], color: ZONE_TONE[s.zone] })),
     [stations],
   );
   return (

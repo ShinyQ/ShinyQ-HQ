@@ -16,15 +16,16 @@ import { libraryLayoutInput, type LibrarySection } from "./library/model";
 export interface LibraryLabels {
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
   zones: Record<LibrarySection, string>;
-  /** End plaza signs: the topic count, the research monument, the archive board (`library.topics`) and the Study Vault. */
+  /** End plaza signs: the topic count, the research monument (`library.topics`) and the Study Vault. */
   end: EndPlazaLabels;
 }
 
 /**
  * L4 Writing (walkable floors plan, part 3), generated from content: the owner's pick of the three
- * concepts. Stations are point-and-go targets (interact/registry.ts: drive to the door, then open); paper
- * holograms open the paper preview modal. The end plaza holds the Topic Constellation, the research
- * monument and the archive board (`EndPlaza`), and a picked topic lights its stations (`TopicHighlights`). With study
+ * concepts. Stations and the reader track shelves' posts are point-and-go targets (interact/registry.ts: drive to
+ * the door or the bay, then open); the shelves are `TrackShelves` (in the decor); paper holograms open the paper
+ * preview modal. The end plaza holds the Topic Constellation and the research monument (`EndPlaza`), and a picked
+ * topic lights its stations and brightens its posts' spines (`TopicHighlights`, `TrackShelves`). With study
  * guides, the Study Vault's books stand off the end plaza (`StudyVault`; their spines are end plaza signs).
  */
 export function Library({ data, labels, tier }: { data: ExperienceData; labels: LibraryLabels; tier: GpuTier }) {

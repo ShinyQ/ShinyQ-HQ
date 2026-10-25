@@ -1,5 +1,6 @@
 import { MathUtils, Matrix4 } from "three";
 import { NEWSROOM } from "../concepts/newsroom";
+import type { Vec2 } from "../../../types";
 import type { VaultBook } from "../model";
 
 /**
@@ -38,35 +39,44 @@ export const issuerTone = (issuer: string): string => ISSUER_TONE[issuer] ?? "#f
 export const coverOpen = (distance: number): number => 1 - MathUtils.smoothstep(distance, VAULT_SCENE.near, VAULT_SCENE.far);
 
 const LOCAL = new Matrix4();
+const P = VAULT_SCENE.plinth;
 
 type BookPose = Pick<VaultBook, "at" | "facing">;
 
-/** The book's frame times `local`: on the plinth at its footprint center, turned so local +z (the spine) faces the stop. */
-const framed = (book: BookPose, out: Matrix4, local: Matrix4) =>
-  out.makeRotationY(Math.atan2(book.facing.x, book.facing.z)).setPosition(book.at.x, VAULT_SCENE.plinth, book.at.z).multiply(local);
+/** A book's frame times `local`: base at height `y` on its footprint center `at`, turned so local +z (the spine) faces `facing`. */
+export const framed = (at: Vec2, facing: Vec2, y: number, out: Matrix4, local: Matrix4) =>
+  out.makeRotationY(Math.atan2(facing.x, facing.z)).setPosition(at.x, y, at.z).multiply(local);
 
 /**
- * Instance matrix of the plinth under a book: the unit box laid on its side (its local z up, its y toward the back),
- * so the holo plate's rim (sized by the instance's x and y scale) follows the top face's edges.
+ * A flat slab `w` wide and `d` deep in the book frame, its top at `top` and its thickness the plinth's: the unit box
+ * laid on its side (its local z up, its y toward the back), so the holo plate's rim (sized by the instance's x and y
+ * scale) follows the top face's edges.
  */
+export const slabMatrix = (at: Vec2, facing: Vec2, top: number, w: number, d: number, out: Matrix4) =>
+  framed(at, facing, top, out, LOCAL.set(w, 0, 0, 0, 0, 0, P, -P / 2, 0, -d, 0, d / 2, 0, 0, 0, 1));
+
+/** Instance matrix of the plinth under a book. */
 export function plinthMatrix(book: BookPose, out: Matrix4): Matrix4 {
-  const p = VAULT_SCENE.plinth;
-  return framed(book, out, LOCAL.set(PLINTH.w, 0, 0, 0, 0, 0, p, -p / 2, 0, -PLINTH.d, 0, PLINTH.d / 2, 0, 0, 0, 1));
+  return slabMatrix(book.at, book.facing, P, PLINTH.w, PLINTH.d, out);
 }
 
 /** Instance matrix of a book's body (floor-local): the unit box scaled to the book. */
 export function bookMatrix(book: BookPose, out: Matrix4): Matrix4 {
   const { w, h, d } = NEWSROOM.end.vault.book;
-  return framed(book, out, LOCAL.makeScale(w, h, d));
+  return framed(book.at, book.facing, P, out, LOCAL.makeScale(w, h, d));
 }
 
 /**
- * Instance matrix of a book's cover at `open` (0 shut, 1 open): hinged on the right side's spine edge, slid out by
- * `cover.slide` and turned by `cover.turn` (a negative yaw swings its far edge outward), both times `open`.
+ * The cover of a `size` book framed at `at`, `facing`, `y` at `open` (0 shut, 1 open): hinged on the right side's spine
+ * edge, slid out by `cover.slide` and turned by `cover.turn` (a negative yaw swings its far edge outward), both times
+ * `open`.
  */
-export function coverMatrix(book: BookPose, open: number, out: Matrix4): Matrix4 {
-  const { w, h, d } = NEWSROOM.end.vault.book;
+export function openCover(at: Vec2, facing: Vec2, y: number, size: { w: number; h: number; d: number }, open: number, out: Matrix4): Matrix4 {
+  const { w, h, d } = size;
   const { t, slide, turn } = VAULT_SCENE.cover;
-  framed(book, out, LOCAL.makeRotationY(-turn * open).setPosition(w / 2 + slide * open, 0, d / 2));
+  framed(at, facing, y, out, LOCAL.makeRotationY(-turn * open).setPosition(w / 2 + slide * open, 0, d / 2));
   return out.multiply(LOCAL.makeScale(t, h * COVER_INSET, d).setPosition(t / 2, (h * (1 - COVER_INSET)) / 2, -d / 2));
 }
+
+/** Instance matrix of a vault book's cover at `open` (`openCover`). */
+export const coverMatrix = (book: BookPose, open: number, out: Matrix4): Matrix4 => openCover(book.at, book.facing, P, NEWSROOM.end.vault.book, open, out);
