@@ -40,7 +40,7 @@ export function Skyline({ stops, labels, names, title }: { stops: readonly TtSto
       </svg>
       <div className="mt-2 flex" aria-hidden="true">
         {labels.map((label, i) => (
-          <span key={stops[i].id} className="pv-data flex-1 text-center">
+          <span key={stops[i].id} className="pv-data min-w-0 flex-1 text-center">
             {label}
           </span>
         ))}

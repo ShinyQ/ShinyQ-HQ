@@ -12,7 +12,7 @@ export interface YearPanelText {
 /** One stop: the year, the owner's caption, the running tally and the highlights. Hidden unless it is the shown stop. */
 export function YearPanel({ stop, label, hidden, locale, text }: { stop: TtStop; label: string; hidden: boolean; locale: Locale; text: YearPanelText }) {
   return (
-    <div data-tt-panel="" data-stop={stop.id} hidden={hidden} className="grid gap-x-6 gap-y-5 lg:grid-cols-12">
+    <div data-tt-panel="" hidden={hidden} className="grid gap-x-6 gap-y-5 lg:grid-cols-12">
       <h3 className="pv-num text-[48px] leading-[0.9] lg:col-span-3 lg:text-[64px]">{label}</h3>
       <div className="min-w-0 lg:col-span-8">
         <p className="pv-lead">{stop.caption[locale]}</p>

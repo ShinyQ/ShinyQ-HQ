@@ -10,13 +10,13 @@ function mount() {
   document.body.innerHTML = `
     <section id="tt">
       <svg>${STOPS.map((_, i) => `<a href="#y${2019 + i}" data-tt-link="${i}"><g data-tt-stop="${i}" opacity="1"></g><rect data-tt-outline="${i}" visibility="${i === STOPS.length - 1 ? "visible" : "hidden"}"></rect></a>`).join("")}</svg>
-      ${STOPS.map((s, i) => `<div data-tt-panel data-stop="${s}" ${i === STOPS.length - 1 ? "" : "hidden"}>${s} panel</div>`).join("")}
+      ${STOPS.map((s, i) => `<div data-tt-panel ${i === STOPS.length - 1 ? "" : "hidden"}>${s}</div>`).join("")}
       <div id="controls"></div>
     </section>`;
   return render(<TimeTravelControls rootId="tt" labels={{ slider: "Year", play: "Play the journey", pause: "Pause", stops: STOPS }} />, { container: document.getElementById("controls")! });
 }
 
-const visiblePanel = () => document.querySelector<HTMLElement>("[data-tt-panel]:not([hidden])")?.dataset.stop;
+const visiblePanel = () => document.querySelector<HTMLElement>("[data-tt-panel]:not([hidden])")?.textContent;
 const opacity = (i: number) => document.querySelector(`[data-tt-stop="${i}"]`)?.getAttribute("opacity");
 const outline = (i: number) => document.querySelector(`[data-tt-outline="${i}"]`)?.getAttribute("visibility");
 
@@ -101,5 +101,64 @@ describe("TimeTravelControls", () => {
     document.documentElement.setAttribute("data-hq-still", "");
     fireEvent.change(screen.getByRole("slider"), { target: { value: "0" } });
     expect(animate).not.toHaveBeenCalled();
+  });
+
+  it.each(["Home", "End", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "PageDown"])("%s on the slider stops play even when the value cannot change", (key) => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Play the journey" }));
+    expect(visiblePanel()).toBe("Before 2019");
+    fireEvent.keyDown(screen.getByRole("slider"), { key });
+    expect(screen.getByRole("button", { name: "Play the journey" })).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(STEP_MS * 3));
+    expect(visiblePanel()).toBe("Before 2019");
+  });
+
+  it("keeps playing on Tab", () => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Play the journey" }));
+    fireEvent.keyDown(screen.getByRole("slider"), { key: "Tab" });
+    act(() => vi.advanceTimersByTime(STEP_MS));
+    expect(visiblePanel()).toBe("2019");
+  });
+
+  it("stops play on a press of the slider thumb without a drag", () => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Play the journey" }));
+    fireEvent.pointerDown(screen.getByRole("slider"));
+    act(() => vi.advanceTimersByTime(STEP_MS * 3));
+    expect(visiblePanel()).toBe("Before 2019");
+  });
+
+  it("stops play when a building is clicked and holds the picked stop", () => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Play the journey" }));
+    fireEvent.click(document.querySelector('[data-tt-link="2"] g')!);
+    expect(visiblePanel()).toBe("2020");
+    act(() => vi.advanceTimersByTime(STEP_MS * 3));
+    expect(visiblePanel()).toBe("2020");
+    expect(screen.getByRole("button", { name: "Play the journey" })).toBeInTheDocument();
+  });
+
+  it.each([
+    ["a middle click", { button: 1 }],
+    ["Ctrl-click", { ctrlKey: true }],
+    ["Cmd-click", { metaKey: true }],
+    ["Shift-click", { shiftKey: true }],
+    ["Alt-click", { altKey: true }],
+  ])("leaves %s on a building to the browser", (_name, init) => {
+    vi.useFakeTimers();
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Play the journey" }));
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true, ...init });
+    document.querySelector('[data-tt-link="2"] g')!.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(visiblePanel()).toBe("Before 2019");
+    act(() => vi.advanceTimersByTime(STEP_MS));
+    expect(visiblePanel()).toBe("2019");
   });
 });

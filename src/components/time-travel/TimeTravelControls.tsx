@@ -42,6 +42,9 @@ export function showStop(root: HTMLElement, index: number, animate: boolean) {
   root.querySelectorAll<SVGRectElement>("[data-tt-outline]").forEach((r, i) => r.setAttribute("visibility", i === index ? "visible" : "hidden"));
 }
 
+/** Keys that move a range; each one stops Play even when the value cannot change (Home at the first stop). */
+const SLIDER_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
+
 const subscribeNever = () => () => {};
 
 /**
@@ -85,6 +88,7 @@ export function TimeTravelControls({ rootId, labels }: { rootId: string; labels:
     const onClick = (event: MouseEvent) => {
       const link = (event.target as Element | null)?.closest?.("[data-tt-link]");
       if (!link || !el.contains(link)) return;
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       halt();
       select(Number(link.getAttribute("data-tt-link")), true);
@@ -133,6 +137,10 @@ export function TimeTravelControls({ rootId, labels }: { rootId: string; labels:
         value={index}
         aria-label={labels.slider}
         aria-valuetext={labels.stops[index]}
+        onPointerDown={halt}
+        onKeyDown={(event) => {
+          if (SLIDER_KEYS.has(event.key)) halt();
+        }}
         onChange={(event) => {
           halt();
           select(Number(event.currentTarget.value), true);
