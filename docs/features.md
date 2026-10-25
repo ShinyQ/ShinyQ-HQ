@@ -488,7 +488,7 @@ Visitors ask questions about Kurniadi's work, projects, career, contact details,
 ### Freshness and operations
 
 - `refresh-facts.yml` refreshes live numbers weekly (`content/generated/dynamic-facts.json`), merges after CI and deploys.
-- `ask-eval.yml` runs nightly within a budget: a 21-question smoke set on Workers AI (about 840 of the 10,000 daily neurons), and on Groq models production never uses a third of the golden set, a fourteenth of the pills and the red team; a 10-question fidelity set checks production's first Groq backup ([runbook section 9a](ask-runbook.md#9a-eval-neuron-budget-owner-decision-2026-10-19)).
+- `ask-eval.yml` runs nightly within a budget: a 21-question smoke set on Workers AI (about 840 of the 10,000 daily neurons), and on Groq models production never uses a third of the golden set, a twenty-first of the pills and the red team; a 10-question fidelity set checks production's first Groq backup ([runbook section 9a](ask-runbook.md#9a-eval-neuron-budget-owner-decision-2026-10-19)).
 - `ask-samples.yml` (dispatch only) writes sample answers for a branch on the Groq tier; `ask-pack.yml` (dispatch only) proves the deploy token can publish the KV pack.
 - `content-gap.yml` reports unanswered questions weekly, and which pack tier served (memory, KV, the pinned version or the fallback).
 - `uptime.yml` checks production every hour (pages, Ask status, stats freshness, the last deploy) and keeps one `uptime` issue open while something fails (docs/deploy.md section 16).

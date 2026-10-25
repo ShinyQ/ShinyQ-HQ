@@ -45,7 +45,7 @@ describe("eval neuron budget", () => {
     expect(runs).toEqual([
       "smoke",
       'golden --groq "$EVAL_GROQ_EVAL" --slice day/3',
-      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/14',
+      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/21',
       'redteam --groq "$EVAL_GROQ_STRESS"',
       'redteam --groq "$EVAL_GROQ_EVAL" --slice day/4',
       'fidelity --groq "$EVAL_GROQ_BACKUP"',
@@ -70,7 +70,7 @@ describe("eval neuron budget", () => {
       const day = new Date(Date.UTC(2026, 9, 20 + d));
       const calls =
         (await countModelCalls(sliceItems(g, "day/3", day) as never, deps)) +
-        (await countModelCalls(sliceItems(pills, "day/14", day) as never, deps)) +
+        (await countModelCalls(sliceItems(pills, "day/21", day) as never, deps)) +
         (await countModelCalls(sliceItems(redteam.items as never[], "day/4", day), deps));
       worst = Math.max(worst, calls);
     }
