@@ -47,7 +47,6 @@ export const l4EndLabels: EndPlazaLabels = {
         source: M.asOf.replace("{source}", metrics.source).replace("{date}", formatYearMonth(metrics.asOf, "en")),
       }
     : null,
-  archive: en.hud.interact.archive,
   vault: en.hud.interact.studyVault,
 };
 

@@ -82,18 +82,20 @@ export function libraryLabelFrame(
     half: readonly { w: number; h: number }[];
     origin: Point3;
     rover: Vec2;
-    /** Rooms of the picked topic: their titles place first. */
+    /** Rooms of the picked topic: their lead and spine titles place first. */
     rooms: readonly string[] | undefined;
+    /** The pulled spine's post room (`sceneProbes.shelves.pulled`): its title is the one live spine label. */
+    live: string | null;
     size: ScreenSize;
     /** The end plaza's shown boxes this frame. */
     endBoxes: readonly ScreenBox[];
     v: Vector3;
   },
 ): { shown: boolean[]; rover: ScreenBox | null } {
-  const { camera, signs, meta, half, origin, rover: at0, rooms, size, endBoxes, v } = input;
+  const { camera, signs, meta, half, origin, rover: at0, rooms, live, size, endBoxes, v } = input;
   if (work.meta !== meta) {
     work.meta = meta;
-    work.labels = meta.map((m) => ({ kind: m.kind, box: null, distance: 0, picked: false }));
+    work.labels = meta.map((m) => ({ kind: m.kind, box: null, distance: 0, picked: false, live: false }));
     work.quads = meta.map(() => null);
   }
   const { labels, quads, at } = work;
@@ -105,10 +107,11 @@ export function libraryLabelFrame(
     at.y = origin.y + s.y;
     at.z = origin.z + s.z;
     label.distance = Math.hypot(at0.x - at.x, at0.z - at.z);
-    label.picked = m.kind === "title" && Boolean(m.room && rooms?.includes(m.room));
+    label.picked = (m.kind === "lead" || m.kind === "spine") && Boolean(m.room && rooms?.includes(m.room));
+    label.live = m.kind === "spine" && m.room === live;
     label.box = null;
     quads[i] = null;
-    if (Math.hypot(camera.position.x - at.x, camera.position.z - at.z) < LIBRARY_SIGN.near) continue;
+    if ((m.kind === "spine" && !label.live && !label.picked) || Math.hypot(camera.position.x - at.x, camera.position.z - at.z) < LIBRARY_SIGN.near) continue;
     const projected = projectPlate(camera, at, half[i], size, v);
     if (!projected || !projected.onScreen) continue;
     label.box = projected.box;
@@ -125,7 +128,7 @@ export function libraryLabelFrame(
 /** Free topic labels shown at once: desktop, phone. */
 export const END_LABEL_MAX = { wide: 8, narrow: 5 } as const;
 /** Horizontal camera distance (u) under which an end plaza sign hides: it would fill the screen. */
-export const END_SIGN_NEAR: Record<EndSignMeta["kind"], number> = { topic: 8, count: 11, monument: 0, archive: 0, guide: 0, vault: 0 };
+export const END_SIGN_NEAR: Record<EndSignMeta["kind"], number> = { topic: 8, count: 11, monument: 0, guide: 0, vault: 0 };
 
 /**
  * Priority of the Study Vault's signs (spines, then the "Study Vault" sign): above every topic label while the rover is
@@ -149,8 +152,8 @@ export function vaultZone(rover: Vec2 | null | undefined, vault: { center: Vec2;
 }
 
 /**
- * Places the end plaza signs for one frame: the count headline, the monument plates, the archive name and the
- * picked topic always show; the other topic labels and the Study Vault's signs show by priority (the vault's first
+ * Places the end plaza signs for one frame: the count headline, the monument plates and the picked topic always
+ * show; the other topic labels and the Study Vault's signs show by priority (the vault's first
  * while the rover is in the vault plaza, after the topics near it, never far from it: `VAULT_PRIORITY`; topics by
  * hovered, then bigger topics, then nearer ones) up to `END_LABEL_MAX`, only where they cover nothing. `obstacles` (floor-local around `origin`) take their
  * screen box first, so no label covers them. Returns the candidates, the plate quads, the shown flags and the shown

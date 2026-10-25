@@ -61,6 +61,7 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
 export function NewsroomDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones } = props;
   const titles = useMemo(() => stationTitles(library, zones), [library, zones]);
+  const tracks = useMemo(() => new Map(library.tracks.map((t) => [t.slug, t.label])), [library.tracks]);
   const wall = layout.extras.wall;
   const featured = featuredStation(layout);
   const featuredPost = featured ? library.posts.find((p) => `L4:${p.slug}` === featured.room) : undefined;
@@ -85,7 +86,7 @@ export function NewsroomDecor(props: DecorProps) {
       <ZoneIcons stations={others} shapes={library.shapes} tier={tier} reducedMotion={reducedMotion} />
       {layout.bays.length > 0 && <TrackShelves bays={layout.bays} tier={tier} reducedMotion={reducedMotion} />}
       {books.length > 0 && <FlipBooks books={books} color={ZONE_TONE.blog} tier={tier} reducedMotion={reducedMotion} />}
-      <LibrarySigns layout={layout} zones={zones} titles={titles} titled={others} tier={tier} reducedMotion={reducedMotion} />
+      <LibrarySigns layout={layout} zones={zones} titles={titles} tracks={tracks} tier={tier} reducedMotion={reducedMotion} />
       <ResearchPapers layout={layout} library={library} tier={tier} onPaper={props.onPaper} />
       {wall && frame && (
         <group name="headline-wall">

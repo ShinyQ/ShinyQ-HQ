@@ -577,7 +577,6 @@ function ExperienceView({
                 source: tLibrary("topics.monument.asOf", { source: metrics.source, date: formatYearMonth(metrics.asOf, data.locale) }),
               }
             : null,
-          archive: t("interact.archive"),
           vault: t("interact.studyVault"),
         },
       },

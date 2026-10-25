@@ -160,7 +160,7 @@ describe("issuer tones", () => {
 });
 
 describe("the vault's signs", () => {
-  const labels = { pieces: () => "", monument: null, archive: "Post archive", vault: "Study Vault" };
+  const labels = { pieces: () => "", monument: null, vault: "Study Vault" };
   const { signs, meta } = endPlazaSigns(layout, data.library.topics, orbSlots(data.library.topics), labels, null);
   const end = layout.end!.center;
 

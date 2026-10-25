@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import content from "../content/site-content.json";
 import guides from "../content/study-guides.json";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
@@ -9,9 +10,10 @@ import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBu
 test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
- * L4 declutter (Round 7 F): the timeline signs (sections, post titles, year plates) and the end plaza signs
- * never cover each other or the rover on screen, from the arrival, along the posts, mid-floor and at each zone, on a
- * desktop and a phone. Titles stay within their cap, no text shows twice and each zone shows its own sign.
+ * L4 declutter (Round 7 F): the timeline signs (sections, track names, lead and spine titles) and the end plaza signs
+ * never cover each other or the rover on screen, from the arrival, at each bay's stop, mid-lane between bays and at
+ * each desk, on a desktop and a phone. Every kind stays within its cap, no text shows twice, each bay shows its track
+ * name and its live (pulled) spine's title at its stop and each zone shows its own sign.
  * Both run on the lite tier: the placement has no quality-tier input (`signPlacement.ts`, `useEndSignPlacement.ts`),
  * and the full tier drew about 3 frames a second here (6 minutes per CI run); the full-tier L4 budget is
  * gated by `e2e/perf/floors.spec.ts`. `L4_SHOTS=<dir>` also writes a screenshot per pose and the render numbers per
@@ -26,8 +28,8 @@ type Vec2 = { x: number; z: number };
 type LW = Window & {
   __hq: {
     probes: { library?: { labels: Box[] }; topics?: { labels: Box[] } };
-    layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] }; stops?: Record<string, Vec2> }>;
-    store: { getState: () => { phase: string; activeRoom: string | null } };
+    layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] }; stops?: Record<string, Vec2>; doors?: { room: string; at: Vec2 }[] }>;
+    store: { getState: () => { phase: string; activeRoom: string | null; closeRoom: () => void } };
     interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
     rover: { x: number; z: number };
   };
@@ -42,6 +44,14 @@ const ZONE_ROOM = { research: "L4:research", models: "L4:publications", talks: "
 const VAULT_SIGN = en.hud.interact.studyVault.toUpperCase();
 const VAULT_SPINES = guides.guides.map((g) => g.spine.replace(/\s+/g, " "));
 type Zone = keyof typeof ZONE_ROOM;
+/** Track names as `trackSignSpecs` writes them (uppercase) and whether the track has a spine (more than its lead post). */
+const TRACKS = content.floors.library.tracks.map((t) => ({
+  room: `L4:track:${t.slug}`,
+  name: t.title.en.toUpperCase(),
+  spines: content.floors.library.posts.filter((p) => p.track === t.slug).length > 1,
+}));
+/** Shown-label caps (`LIBRARY_LABEL_MAX` in `signPlacement.ts`; lead titles by width). */
+type Caps = Record<"section" | "track" | "lead" | "spine", number>;
 
 /** Shown timeline and end plaza plates (alpha above 0.5); the library probe is absent in builds before the declutter. */
 const shownLabels = (page: Page) =>
@@ -51,7 +61,7 @@ const shownLabels = (page: Page) =>
   });
 
 /** Kinds the timeline placement owns (the end plaza's own signs do not avoid the rover). */
-const TIMELINE_KINDS = new Set(["section", "title", "year"]);
+const TIMELINE_KINDS = new Set(["section", "track", "lead", "spine"]);
 /** Matches `useLibrarySignPlacement`: the rover's bounds, 0.9 u around it and `ROVER_HEIGHT` (2.8 u) tall. */
 const ROVER_BOUNDS = { half: 0.9, height: 2.8 };
 
@@ -78,8 +88,8 @@ function overlapShare(a: [number, number][], b: [number, number][]) {
   return min <= 1 ? 0 : polygonOverlap(a, b) / min;
 }
 
-/** What the gate checks on one read: overlapping pairs, labels on the rover, titles over the cap, texts shown twice. */
-function audit(boxes: Box[], titleCap: number, rover: [number, number][] | null = null) {
+/** What the gate checks on one read: overlapping pairs, labels on the rover, kinds over their cap, texts shown twice. */
+function audit(boxes: Box[], caps: Caps, rover: [number, number][] | null = null) {
   const hits: string[] = [];
   let worst = 0;
   for (let i = 0; i < boxes.length; i++)
@@ -93,19 +103,19 @@ function audit(boxes: Box[], titleCap: number, rover: [number, number][] | null 
   const onRover = rover
     ? boxes.filter((b) => TIMELINE_KINDS.has(b.kind) && overlapShare(b.quad, rover) > 0.02).map((b) => `${b.text} (${(overlapShare(b.quad, rover) * 100).toFixed(1)}%)`)
     : [];
-  const titles = boxes.filter((b) => b.kind === "title").length;
+  const overCap = (Object.keys(caps) as (keyof Caps)[]).filter((k) => boxes.filter((b) => b.kind === k).length > caps[k]);
   const seen = new Set<string>();
   const twice = boxes.filter((b) => (seen.has(b.text) ? true : (seen.add(b.text), false))).map((b) => b.text);
-  return { hits, onRover, overCap: Math.max(0, titles - titleCap), twice, worst };
+  return { hits, onRover, overCap, twice, worst };
 }
 
 for (const device of [
-  { id: "desktop", tier: "lite", titleCap: 6, use: { viewport: { width: 1440, height: 900 } } },
-  { id: "phone", tier: "lite", titleCap: 4, use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
+  { id: "desktop", tier: "lite", caps: { section: 4, track: 4, lead: 4, spine: 1 }, use: { viewport: { width: 1440, height: 900 } } },
+  { id: "phone", tier: "lite", caps: { section: 4, track: 4, lead: 2, spine: 1 }, use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
 ] as const) {
   test.describe(`L4 timeline labels (${device.id})`, () => {
     test.use(device.use);
-    test("never overlap, stay within the title cap and show each zone's sign @nightly", async ({ page }) => {
+    test("never overlap, stay within the caps and show each bay's track and each zone's sign @nightly", async ({ page }) => {
       // Captures add the door poses and a measured window per pose.
       if (SHOTS) test.setTimeout(1_800_000);
       const errors = collectErrors(page);
@@ -116,6 +126,15 @@ for (const device of [
         const net = (window as unknown as LW).__hq.layouts.L4.road!;
         return Object.fromEntries(rooms.map((r) => [r, net.spurs.find((s) => s.room === r)!])) as Record<string, { from: Vec2; to: Vec2 }>;
       }, Object.values(ZONE_ROOM));
+      // Each bay's stop (its door) and spur start, in door order (the dataset's track order).
+      const bays = await page.evaluate((rooms) => {
+        const L4 = (window as unknown as LW).__hq.layouts.L4;
+        return rooms.flatMap((room) => {
+          const door = L4.doors?.find((d) => d.room === room);
+          const spur = L4.road?.spurs.find((s) => s.room === room);
+          return door && spur ? [{ room, stop: door.at, from: spur.from }] : [];
+        });
+      }, TRACKS.map((t) => t.room));
       const numbers: { pose: string; sceneCalls: number; triangles: number; programs: number }[] = [];
       let worst = 0;
 
@@ -139,18 +158,18 @@ for (const device of [
         await settle();
         await capture(pose);
         // The probe and the drawn opacity can be a frame apart: poll until one read is clean.
-        let last = audit([], device.titleCap);
+        let last = audit([], device.caps);
         let boxes: Box[] = [];
         await expect
           .poll(
             async () => {
               boxes = await shownLabels(page);
-              last = audit(boxes, device.titleCap, await roverQuad(page));
-              return BASELINE ? { hits: [], onRover: [], overCap: 0, twice: [] } : { hits: last.hits, onRover: last.onRover, overCap: last.overCap, twice: last.twice };
+              last = audit(boxes, device.caps, await roverQuad(page));
+              return BASELINE ? { hits: [], onRover: [], overCap: [], twice: [] } : { hits: last.hits, onRover: last.onRover, overCap: last.overCap, twice: last.twice };
             },
             { message: `${device.id} ${pose}`, timeout: 10_000 },
           )
-          .toEqual({ hits: [], onRover: [], overCap: 0, twice: [] });
+          .toEqual({ hits: [], onRover: [], overCap: [], twice: [] });
         worst = Math.max(worst, last.worst);
         test.info().annotations.push({ type: `${device.id} ${pose}`, description: boxes.map((b) => `${b.kind}:${b.text}`).join(" | ") || "(none)" });
         return boxes;
@@ -171,13 +190,38 @@ for (const device of [
         }
       };
 
+      /** True when a shown label matches (polled briefly: it fades in). */
+      const labelShown = async (match: (b: Box) => boolean) => {
+        try {
+          await expect.poll(async () => (await shownLabels(page)).some(match), { timeout: 3_000 }).toBe(true);
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
       await check("approach");
-      await driveTo(page, { x: 8, z: 0 });
-      const posts = await check("posts");
-      await driveTo(page, { x: 24, z: 0 });
-      const mid = await check("mid");
-      // Along the posts the nearest titles show.
-      if (!BASELINE) expect([...posts, ...mid].some((b) => b.kind === "title"), `${device.id}: a post title at posts or mid`).toBe(true);
+      expect(bays.length, `${device.id}: bays`).toBeGreaterThan(0);
+      for (const [i, bay] of bays.entries()) {
+        const track = TRACKS.find((t) => t.room === bay.room)!;
+        // Mid-lane between this bay's spur and the previous one's.
+        if (i > 0) {
+          await driveTo(page, { x: (bays[i - 1].from.x + bay.from.x) / 2, z: bay.from.z });
+          await check(`lane-${i}`);
+        }
+        // The bay's stop is its door: close the bay's drawer, so the camera frames the floor as the unit sweep does
+        // (the door does not reopen while the rover stays on it). The nearest spine pulls (`TrackShelves`).
+        await driveTo(page, bay.stop);
+        await page.evaluate(() => {
+          const store = (window as unknown as LW).__hq.store.getState();
+          if (store.phase === "room") store.closeRoom();
+        });
+        await check(`bay-${bay.room}`);
+        if (!BASELINE) {
+          expect(await labelShown((b) => b.kind === "track" && b.text === track.name), `${device.id}: ${track.name} at its stop`).toBe(true);
+          if (track.spines) expect(await labelShown((b) => b.kind === "spine"), `${device.id}: the live spine at ${track.name}`).toBe(true);
+        }
+      }
       if (!SHOTS) await expectRenderBudget(page);
 
       // A section sign is for spotting the zone on arrival: it must show at the approach 6 u before the zone,

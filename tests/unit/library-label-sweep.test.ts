@@ -4,10 +4,12 @@ import { stationTitles } from "@/experience/floors/library/decor/common";
 import { endPlazaSigns, PEDESTAL_OBSTACLE } from "@/experience/floors/library/decor/EndPlaza";
 import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
-import { type LibrarySection } from "@/experience/floors/library/model";
+import { roomOfPost, type LibraryBay, type LibrarySection } from "@/experience/floors/library/model";
+import { LIBRARY_LABEL_MAX } from "@/experience/floors/library/signPlacement";
 import { orbSlots } from "@/experience/floors/library/topics";
 import { polygonArea, polygonOverlap, type Quad } from "@/experience/fx/labelPlacement";
 import { signPlate } from "@/experience/fx/signLayout";
+import type { Vec2 } from "@/experience/types";
 import en from "../../messages/en.json";
 import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l4Floor as floor, l4Layout as layout, l4Net as net } from "../helpers/l4-drive";
 
@@ -15,16 +17,17 @@ import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l
  * The L4 timeline label sweep without a renderer (owner request 2026-10-18; the rendered version is
  * `e2e/library-labels.spec.ts`). The real L4 layout and signs, the follow camera as `CameraDirector` settles it
  * (view zones along the driven route, look-ahead, offset scale, camera collision) and the scene's own per-frame
- * placement (`signFrame.ts`), on a desktop and a phone, at the rendered sweep's poses. Each pose is checked at
- * several orbit angles of the end plaza's topic labels: no two shown plates overlap, no timeline plate covers
- * the rover, titles stay within the cap and no text shows twice; a post title shows along the posts and each
- * zone's sign shows on the approach, road or door pose of its zone.
+ * placement (`signFrame.ts`), on a desktop and a phone, at the rendered sweep's poses: the arrival, each bay's stop
+ * (with the spine nearest the stop live, as `TrackShelves` pulls it), mid-lane between bays and each desk. Each pose
+ * is checked at several orbit angles of the end plaza's topic labels: no two shown plates overlap, no timeline plate
+ * covers the rover, every kind stays within its cap and no text shows twice; each bay's track name and its live
+ * spine's title show at its stop and each desk zone's sign shows on its approach, road or door pose.
  */
 
 // The timeline signs as `NewsroomDecor` builds them: the featured stage carries its title on the headline wall.
 const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
-const featured = layout.stations[0]?.zone === "blog" ? layout.stations[0] : undefined;
-const timeline = librarySigns({ layout, zones, titles: stationTitles(data.library, zones), titled: layout.stations.filter((s) => s !== featured) });
+const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
+const timeline = librarySigns({ layout, zones, titles: stationTitles(data.library, zones), tracks });
 const half = libraryPlateHalves(timeline.signs);
 const texts = timeline.signs.map((s) => s.text.replace(/\s+/g, " "));
 
@@ -39,7 +42,13 @@ const ANGLES = Array.from({ length: 8 }, (_, i) => (i * 2 * Math.PI) / 8);
 /** Zone sign texts and rooms, as the rendered sweep reads them. */
 const ZONE_SIGN = { research: en.library.research.toUpperCase(), models: en.library.publications.toUpperCase(), talks: en.library.talks.toUpperCase() } as const;
 const ZONE_ROOM = { research: "L4:research", models: "L4:publications", talks: "L4:talks" } as const;
-const TIMELINE_KINDS = new Set(["section", "title", "year"]);
+const TIMELINE_KINDS = new Set(["section", "track", "lead", "spine"]);
+
+/** The post room of the bay's spine (lead excepted) nearest `at`, as `pickSpine` pulls it at the bay's stop; null for a lead-only bay. */
+function nearestSpine(bay: LibraryBay, at: Vec2): string | null {
+  const [spine] = bay.slots.slice(1).sort((a, b) => Math.hypot(a.at.x - at.x, a.at.z - at.z) - Math.hypot(b.at.x - at.x, b.at.z - at.z));
+  return spine ? roomOfPost(spine.slug) : null;
+}
 
 interface Plate {
   text: string;
@@ -53,8 +62,11 @@ function overlapShare(a: Quad, b: Quad) {
   return min <= 1 ? 0 : polygonOverlap(a, b) / min;
 }
 
-/** The rendered sweep's audit: overlapping pairs, timeline plates on the rover, titles over the cap, texts shown twice. */
-function audit(plates: readonly Plate[], titleCap: number, rover: Quad | null) {
+/** Shown-label caps of a device (`LIBRARY_LABEL_MAX`, lead titles by width). */
+type Caps = Record<"section" | "track" | "lead" | "spine", number>;
+
+/** The rendered sweep's audit: overlapping pairs, timeline plates on the rover, kinds over their cap, texts shown twice. */
+function audit(plates: readonly Plate[], caps: Caps, rover: Quad | null) {
   const hits: string[] = [];
   for (let i = 0; i < plates.length; i++)
     for (let j = i + 1; j < plates.length; j++) {
@@ -62,18 +74,18 @@ function audit(plates: readonly Plate[], titleCap: number, rover: Quad | null) {
       if (share > 0.02) hits.push(`${plates[i].text} x ${plates[j].text} (${(share * 100).toFixed(1)}%)`);
     }
   const onRover = rover ? plates.filter((p) => TIMELINE_KINDS.has(p.kind) && overlapShare(p.quad, rover) > 0.02).map((p) => p.text) : [];
-  const titles = plates.filter((p) => p.kind === "title").length;
+  const overCap = (Object.keys(caps) as (keyof Caps)[]).filter((k) => plates.filter((p) => p.kind === k).length > caps[k]);
   const seen = new Set<string>();
   const twice = plates.filter((p) => (seen.has(p.text) ? true : (seen.add(p.text), false))).map((p) => p.text);
-  return { hits, onRover, overCap: Math.max(0, titles - titleCap), twice };
+  return { hits, onRover, overCap, twice };
 }
 
-/** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`. */
-function frame(drive: Drive, camera: PerspectiveCamera, angle: number) {
+/** Shown plates (timeline and end plaza) and the rover's screen quad for one frame at end plaza orbit angle `angle`, `live` the pulled spine's room. */
+function frame(drive: Drive, camera: PerspectiveCamera, angle: number, live: string | null = null) {
   const v = new Vector3();
   const end = endPlazaFrame({ camera, signs: plaza.signs, sizes: plazaSizes, meta: plaza.meta, origin: plazaOrigin, angle, hovered: null, obstacles: PEDESTAL_OBSTACLE, size: drive.size, v, vault: vaultZone(drive.pos, layout.end!.vault) });
   const work = createLibraryFrame();
-  const lib = libraryLabelFrame(work, { camera, signs: timeline.signs, meta: timeline.meta, half, origin: { x: 0, y: FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, size: drive.size, endBoxes: end.boxes, v });
+  const lib = libraryLabelFrame(work, { camera, signs: timeline.signs, meta: timeline.meta, half, origin: { x: 0, y: FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, live, size: drive.size, endBoxes: end.boxes, v });
   const plates: Plate[] = [];
   timeline.signs.forEach((_, i) => {
     const quad = work.quads[i];
@@ -88,33 +100,47 @@ function frame(drive: Drive, camera: PerspectiveCamera, angle: number) {
 }
 
 const DEVICES = [
-  { id: "desktop", titleCap: 6, size: { width: 1440, height: 900 } },
-  { id: "phone", titleCap: 4, size: { width: 390, height: 844 } },
+  { id: "desktop", size: { width: 1440, height: 900 }, lead: LIBRARY_LABEL_MAX.lead.wide },
+  { id: "phone", size: { width: 390, height: 844 }, lead: LIBRARY_LABEL_MAX.lead.narrow },
 ] as const;
 
-describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
-  it("never overlap, stay within the title cap and show each zone's sign", () => {
+describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, size, lead }) => {
+  const caps: Caps = { section: LIBRARY_LABEL_MAX.section, track: LIBRARY_LABEL_MAX.track, lead, spine: LIBRARY_LABEL_MAX.spine };
+
+  it("never overlap, stay within the caps and show each bay's track and each zone's sign", () => {
     const drive = new Drive(size);
     const visited: string[] = [];
     /** Audits every orbit angle at the current pose; returns the plates shown at each angle (in `ANGLES` order). */
-    const checkAngles = (pose: string) => {
+    const checkAngles = (pose: string, live: string | null = null) => {
       visited.push(pose);
       const camera = drive.camera();
       return ANGLES.map((angle) => {
-        const { plates, rover } = frame(drive, camera, angle);
-        expect(audit(plates, titleCap, rover), `${id} ${pose} at orbit ${angle.toFixed(2)}`).toEqual({ hits: [], onRover: [], overCap: 0, twice: [] });
+        const { plates, rover } = frame(drive, camera, angle, live);
+        expect(audit(plates, caps, rover), `${id} ${pose} at orbit ${angle.toFixed(2)}`).toEqual({ hits: [], onRover: [], overCap: [], twice: [] });
         return plates;
       });
     };
     /** Every plate shown at any orbit angle of the current pose. */
-    const check = (pose: string) => checkAngles(pose).flat();
+    const check = (pose: string, live: string | null = null) => checkAngles(pose, live).flat();
 
     check("approach");
-    drive.to({ x: 8, z: 0 });
-    const posts = check("posts");
-    drive.to({ x: 24, z: 0 });
-    const mid = check("mid");
-    expect([...posts, ...mid].some((p) => p.kind === "title"), `${id}: a post title at posts or mid`).toBe(true);
+    expect(layout.bays.length, `${id}: bays`).toBeGreaterThan(0);
+    layout.bays.forEach((bay, i) => {
+      // Mid-lane between this bay's spur and the previous one's.
+      if (i > 0) {
+        drive.to({ x: (layout.bays[i - 1].from.x + bay.from.x) / 2, z: bay.from.z });
+        check(`lane-${i}`);
+      }
+      drive.to(bay.stop);
+      const live = nearestSpine(bay, bay.stop);
+      const name = tracks.get(bay.track)!.toUpperCase();
+      const spine = live ? texts[timeline.meta.findIndex((m) => m.kind === "spine" && m.room === live)] : null;
+      checkAngles(`bay-${bay.track}`, live).forEach((plates, k) => {
+        const at = `${id} bay ${bay.track} at orbit ${ANGLES[k].toFixed(2)}`;
+        expect(plates.some((p) => p.kind === "track" && p.text === name), `${at}: ${name}`).toBe(true);
+        if (spine) expect(plates.some((p) => p.kind === "spine" && p.text === spine), `${at}: the live spine ${spine}`).toBe(true);
+      });
+    });
 
     const spurs = net.spurs;
     for (const zone of ["research", "models", "talks"] as const) {
@@ -153,16 +179,17 @@ describe.each(DEVICES)("L4 timeline labels ($id)", ({ id, titleCap, size }) => {
 describe("the sweep's audit", () => {
   const plate = (text: string, kind: string, x: number): Plate => ({ text, kind, quad: [[x, 0], [x + 100, 0], [x + 100, 30], [x, 30]] });
 
-  it("reports overlaps, plates on the rover, titles over the cap and repeated texts", () => {
-    const plates = [plate("A", "title", 0), plate("B", "title", 50), plate("A", "year", 300)];
+  it("reports overlaps, plates on the rover, kinds over their cap and repeated texts", () => {
+    const plates = [plate("A", "lead", 0), plate("B", "lead", 50), plate("A", "track", 300)];
     const rover: Quad = [[310, 0], [330, 0], [330, 20], [310, 20]];
-    expect(audit(plates, 1, rover)).toEqual({ hits: ["A x B (50.0%)"], onRover: ["A"], overCap: 1, twice: ["A"] });
+    expect(audit(plates, { section: 4, track: 4, lead: 1, spine: 1 }, rover)).toEqual({ hits: ["A x B (50.0%)"], onRover: ["A"], overCap: ["lead"], twice: ["A"] });
   });
 
   it("shows plates on the real floor (the sweep is not vacuous)", () => {
     const drive = new Drive({ width: 1440, height: 900 });
-    drive.to({ x: 8, z: 0 });
-    const { plates } = frame(drive, drive.camera(), 0);
+    const bay = layout.bays[0];
+    drive.to(bay.stop);
+    const { plates } = frame(drive, drive.camera(), 0, nearestSpine(bay, bay.stop));
     expect(plates.length).toBeGreaterThan(2);
   });
 });

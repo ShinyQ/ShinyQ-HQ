@@ -24,7 +24,7 @@ export const sceneProbes = {
   vault: { books: [] as string[], open: [] as number[], spines: 0 },
   /** L4 track shelves: the bays' track slugs, the spine count (leads excepted) and the pulled spine's post room (`L4:<slug>`). */
   shelves: { bays: [] as string[], spines: 0, pulled: null as string | null },
-  /** L4 timeline signs (sections, year marks, post titles) shown this frame: text, kind and their screen boxes and quads in CSS pixels (`useLibrarySignPlacement`). */
+  /** L4 timeline signs (sections, track names, lead and spine titles) shown this frame: text, kind and their screen boxes and quads in CSS pixels (`useLibrarySignPlacement`). */
   library: {
     labels: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[],
     /** On-screen candidates the placement left out (screen boxes), for diagnosing a missing label. */

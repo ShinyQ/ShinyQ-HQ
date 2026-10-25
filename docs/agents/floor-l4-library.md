@@ -49,21 +49,23 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
 
 - The timeline words are one `FloatingSigns` group `library-signs` (`LibrarySigns.tsx`, 2 draw calls instead of one troika `Text` per station).
   - Pure specs in `decor/signs.ts`.
-- One height rule for every plate on the timeline: `L4_SIGN.bottom`, 5.6 u.
-- Kinds of sign:
-  - Section signs: one per zone (Posts, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first desk (`stationBackEdge`).
-  - Post titles: from content, only on post stations (`stationTitleSpecs`).
-    - A shelf station never repeats its zone name.
-    - The featured post keeps its title on the headline wall.
-  - Years: a small plate on a low post (`yearPostSpecs`, `yearPostSegments`, `YEAR_POST` in `model.ts`) at the road edge, in the gap before the first post of each year.
+- Section and track names share one height: `L4_SIGN.bottom`, 5.6 u, in the zone sign type (`ZONE_SIGN`).
+- Kinds of sign (`LibrarySignMeta`: `kind`, `zone`, `room`, `bay`):
+  - `section`: one per zone with a station (Posts over the featured stage, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first station (`stationBackEdge`).
+  - `track`: each bay's track name in upper case over the bay's back edge (`trackSignSpecs`, from content); `room` is the bay room `L4:track:<slug>`.
+  - `lead`: each bay's lead title over the lead cover, plate bottom `L4_SIGN.bottom - 1.6` (`leadSignSpecs`); `room` is the post room.
+  - `spine`: one title per spine (every slot but the lead), plate bottom 0.6 u over the spine (`spineSignSpecs`); it shows only while its spine is live (pulled) or its topic picked.
+  - Titles wrap at `TITLE_SIGN.wrap` (22 characters). The featured post keeps its title on the headline wall (no lead sign over the stage).
 
 ### Placement (decided on screen every frame)
 
 - `useLibrarySignPlacement` calls the pure frame `libraryLabelFrame` (`decor/signFrame.ts`), which projects every plate (`projectPlate`).
+- The live spine: `TrackShelves` writes the pulled spine's post room to `sceneProbes.shelves.pulled` every frame (the hovered spine, else the nearest one while the rover is in a bay zone); `useLibrarySignPlacement` passes it to the frame as `live`.
 - `placeLibraryLabels` (`signPlacement.ts`, pure) picks what shows:
-  - priority: picked titles first, then sections (at most 4), years (3) and the other post titles, nearest to the rover first;
-  - at most 6 titles on desktop and 4 on phones (width < 600);
-  - titles beyond `TITLE_RANGE` (28 u) never show unless picked;
+  - priority: picked (lead and spine titles whose post room is in the picked topic), the live spine, track names, lead titles, then sections, nearest to the rover first within a tier;
+  - caps (`LIBRARY_LABEL_MAX`): sections 4, track names 4, lead titles 4 on desktop and 2 on phones (width < 600), spines 1 (picked or live);
+  - a spine that is neither live nor picked is never a candidate (the frame skips its projection);
+  - lead and spine titles beyond `TITLE_RANGE` (28 u) never show unless picked;
   - nothing overlaps.
 - Fixed obstacles: the rover's screen box and the end plaza's shown signs (`endPlazaScreen.boxes`, published by `useEndSignPlacement`).
 - Signs closer than 6 u to the camera hide.
@@ -98,7 +100,7 @@ No label may cover another (owner decision).
 
 - `useEndSignPlacement` calls the pure frame `endPlazaFrame` (`decor/signFrame.ts`), which projects each plate (yaw-facing, upright).
 - `placeLabels` (`fx/labelPlacement.ts`, pure) keeps:
-  - the count headline, the monument plates (stacked in one column), the archive name and the picked topic;
+  - the count headline, the monument plates (stacked in one column) and the picked topic;
   - then the other topic labels by priority (hovered orb, bigger topic, nearer), up to 8 (5 on phones), where they cover nothing.
 - Labels fade out when the camera is right under them.
 - The result reaches `FloatingSigns` through its `visibility` prop (a per-sign opacity array).
@@ -196,8 +198,9 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
   - `vault` poses in `tests/unit/end-plaza-label-sweep.test.ts` (every PR) and `e2e/library-labels.spec.ts` (`@nightly`);
   - `e2e/perf/floors.spec.ts`: L4 per tier at the vault stop (peak `settled-L4-vault`), same caps and program baseline.
 - `e2e/library-labels.spec.ts`:
-  - timeline label overlap under 2 percent of the smaller plate over the approach, the posts, mid-timeline and each zone, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
-  - the title caps, no duplicate text, no label on the rover;
+  - timeline label overlap under 2 percent of the smaller plate over the arrival, each bay's stop (its drawer closed), mid-lane between bays and each desk, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
+  - the caps per kind, no duplicate text, no label on the rover;
+  - each bay's track name and its live spine's title at its stop (the unit sweep sets `live` to the spine nearest the stop, as `TrackShelves` pulls it);
   - each zone's sign on its approach, road or door pose;
   - opt-in `L4_SHOTS` captures and numbers.
 

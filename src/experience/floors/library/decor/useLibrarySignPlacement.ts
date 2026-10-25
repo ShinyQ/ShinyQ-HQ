@@ -13,8 +13,9 @@ import { endPlazaScreen } from "./useEndSignPlacement";
 
 /**
  * Screen placement of the L4 timeline signs (Round 7 declutter): every frame each sign's plate is projected
- * to the screen and `placeLibraryLabels` decides which show (picked titles, sections, years, then the
- * nearest titles to the rover, capped per kind), so no label covers another, an end plaza sign or the
+ * to the screen and `placeLibraryLabels` decides which show (the picked topic's titles, the live spine read from
+ * `sceneProbes.shelves.pulled` as `TrackShelves` writes it, track names, lead titles, then sections, nearest to the
+ * rover first, capped per kind), so no label covers another, an end plaza sign or the
  * rover (its bounds projected to the screen count as occupied space). Signs hide when the camera is right
  * under them (`LIBRARY_SIGN.near`). The frame itself is pure (`libraryLabelFrame` in `signFrame.ts`). Fades
  * ease; under reduced motion they cut. Writes `__hq.probes.library.labels` (the shown boxes in CSS pixels) for
@@ -71,6 +72,7 @@ export function useLibrarySignPlacement({
       origin,
       rover: roverRuntime,
       rooms: getHQStore().getState().topics.topic?.rooms,
+      live: sceneProbes.shelves.pulled,
       size,
       endBoxes: endPlazaScreen.boxes,
       v,

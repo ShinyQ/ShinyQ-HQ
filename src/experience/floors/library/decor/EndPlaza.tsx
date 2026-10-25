@@ -48,8 +48,6 @@ export interface EndPlazaLabels {
   pieces: (count: number, topic: string) => string;
   /** Monument lines: the two numbers with their names and the source line ("Google Scholar · as of Oct 2026"); null without metrics. */
   monument: { citations: string; citationsLabel: string; hIndex: string; hIndexLabel: string; source: string } | null;
-  /** "Post archive". */
-  archive: string;
   /** "Study Vault" (`hud.interact.studyVault`): the sign over the vault's books. */
   vault: string;
 }
@@ -61,7 +59,7 @@ function setCursor(value: string) {
 /** What each end-plaza sign is, for the screen-space placement (`placeLabels`). */
 export interface EndSignMeta {
   /** `guide`: a Study Vault book's spine; `vault`: the "Study Vault" sign over the books. */
-  kind: "topic" | "count" | "monument" | "archive" | "guide" | "vault";
+  kind: "topic" | "count" | "monument" | "guide" | "vault";
   /** Topic slug (topic labels), study guide slug (spines). */
   slug?: string;
   /** Piece count (topic labels): bigger topics win a contested spot. */
@@ -90,7 +88,7 @@ function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignS
  * Every sign of the end plaza in one `FloatingSigns` group (two draw calls), with what each one is: the
  * topic labels riding the orbit above their orbs (the picked one larger, the others dimmed), "N pieces
  * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
- * they never cross from any camera yaw), the archive board's name and, with the Study Vault, each book's
+ * they never cross from any camera yaw) and, with the Study Vault, each book's
  * spine (in its issuer's tone, just in front of the spine face) and the "Study Vault" sign over the arc.
  * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`).
  */
@@ -167,7 +165,7 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
 /**
  * The L4 end plaza (owner request 2026-10-14): the Topic Constellation (a glowing pedestal with every
  * writing topic as an orb slowly orbiting above it, lines between topics that share a station, the topic
- * names riding along), the research-metrics monument on the north rim and the archive board's sign. A
+ * names riding along) and the research-metrics monument on the north rim. A
  * click on an orb picks its topic (again clears it); the pedestal itself is a point-and-go target
  * (interact/registry.ts). Draw calls: columns 1, orbs 1, links 1 (full), signs 2. Shared holo program;
  * lite drops the halos and the links; reduced motion holds the orbit and the pulse.
