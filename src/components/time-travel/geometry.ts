@@ -2,7 +2,7 @@ import type { Accent } from "@/content/schema";
 import { TT_KINDS, type TtKind, type TtStop } from "@/content/time-travel";
 
 /** Skyline units (SVG user space): one 100-wide slot per stop, buildings 60 wide on a base line at y 220. */
-export const SKY = { slot: 100, building: 60, base: 220, maxHeight: 200, height: 250, gap: 1, outline: 3 } as const;
+export const SKY = { slot: 100, building: 60, base: 220, maxHeight: 200, height: 224, gap: 1, outline: 3 } as const;
 
 /** One hue per block kind, from the accent tokens (spec section 3.2). */
 export const KIND_TONE: Record<TtKind, Accent> = { roles: "cyan", study: "amber", projects: "violet", awards: "pink", writing: "green", certs: "blue" };
@@ -24,6 +24,11 @@ export interface BuildingLayout {
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
+
+/** One closed rectangle subpath per block, joined into a single path `d` (keeps the serialized markup small). */
+export function blockPath(blocks: readonly BlockRect[]): string {
+  return blocks.map((b) => `M${b.x} ${b.y}h${b.width}v${b.height}h-${b.width}z`).join("");
+}
 
 export function viewBoxOf(count: number): string {
   return `0 0 ${count * SKY.slot} ${SKY.height}`;

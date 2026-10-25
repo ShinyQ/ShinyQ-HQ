@@ -212,6 +212,7 @@
     "play": "Play the journey",
     "pause": "Pause",
     "prologue": "Before 2019",
+    "prologueShort": "<2019",
     "building": "{label}: {count, plural, one {# item} other {# items}}",
     "seeYear": "See {label} in full",
     "seePrologue": "See the early years",

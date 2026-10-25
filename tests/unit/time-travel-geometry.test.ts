@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SKY, skylineLayout, viewBoxOf } from "@/components/time-travel/geometry";
+import { SKY, blockPath, skylineLayout, viewBoxOf } from "@/components/time-travel/geometry";
 import { TT_KINDS, type TtKind } from "@/content/time-travel";
 
 const counts = (partial: Partial<Record<TtKind, number>>) => Object.fromEntries(TT_KINDS.map((k) => [k, partial[k] ?? 0])) as Record<TtKind, number>;
@@ -31,6 +31,14 @@ describe("skyline layout", () => {
   });
 
   it("sizes the view box to the stop count", () => {
-    expect(viewBoxOf(9)).toBe("0 0 900 250");
+    expect(viewBoxOf(9)).toBe("0 0 900 224");
+  });
+
+  it("joins blocks into one path with a rectangle subpath each", () => {
+    expect(blockPath([])).toBe("");
+    expect(blockPath([{ kind: "roles", x: 20, y: 207.5, width: 60, height: 11.5 }, { kind: "awards", x: 20, y: 195, width: 60, height: 11.5 }])).toBe(
+      "M20 207.5h60v11.5h-60zM20 195h60v11.5h-60z",
+    );
+    expect(blockPath(layout[1].blocks.slice(0, 2)).match(/M/g)).toHaveLength(2);
   });
 });

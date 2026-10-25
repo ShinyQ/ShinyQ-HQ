@@ -15,6 +15,7 @@ export async function TimeTravel({ locale, stops }: { locale: Locale; stops: rea
   if (stops.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "timeTravel" });
   const labels = stops.map((s) => (s.year === null ? t("prologue") : String(s.year)));
+  const ticks = stops.map((s) => (s.year === null ? t("prologueShort") : String(s.year)));
   const names = stops.map((s, i) => t("building", { label: labels[i], count: s.size }));
   const last = stops.length - 1;
   const tally = Object.fromEntries(TALLY_KEYS.map((k) => [k, t(`tally.${k}`)])) as Record<(typeof TALLY_KEYS)[number], string>;
@@ -23,7 +24,7 @@ export async function TimeTravel({ locale, stops }: { locale: Locale; stops: rea
     <SectionWide id={TIME_TRAVEL_ID} title={t("title")}>
       <p className="pv-lead">{t("lead")}</p>
       <div className="mt-8">
-        <Skyline stops={stops} labels={labels} names={names} title={t("skyline")} />
+        <Skyline stops={stops} labels={ticks} names={names} title={t("skyline")} />
       </div>
       <ul className="pv-small mt-4 flex flex-wrap gap-x-5 gap-y-2">
         {TT_KINDS.map((kind) => (

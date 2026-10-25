@@ -212,6 +212,7 @@
     "play": "Putar perjalanan",
     "pause": "Jeda",
     "prologue": "Sebelum 2019",
+    "prologueShort": "<2019",
     "building": "{label}: {count} item",
     "seeYear": "Lihat {label} selengkapnya",
     "seePrologue": "Lihat tahun-tahun awal",
