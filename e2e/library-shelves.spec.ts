@@ -19,6 +19,7 @@ import {
   snapshot,
   turnCameraTo,
   waitForCameraSettle,
+  waitForFrames,
   waitForPhase,
   waitForRoom,
   waitForRoverMove,
@@ -41,8 +42,9 @@ type Vec2 = { x: number; z: number };
 type SW = Window & {
   __hq: {
     probes: { shelves: { bays: string[]; spines: number; pulled: string | null }; library?: { labels: { text: string; kind: string }[] } };
-    layouts: Record<string, { doors?: { room: string; at: Vec2 }[]; stops?: Record<string, Vec2>; arrival?: Vec2; spawn: Vec2; road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] } }>;
+    layouts: Record<string, { doors?: { room: string; at: Vec2 }[]; stops?: Record<string, Vec2>; road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] } }>;
     store: { getState: () => { phase: string; closeRoom: () => void } };
+    rover: { speed: number };
   };
 };
 
@@ -160,7 +162,11 @@ for (const device of [
       const at = await roverAt(page);
       expect(Math.hypot(at.x - door.x, at.z - door.z), `${device.id}: the post opens at its bay's door`).toBeLessThan(1.5);
 
-      // Esc gives the floor back.
+      // Esc gives the floor back. Wait until the rover rests on the door's pad and the scene drew the open drawer: the
+      // Director latches the pad on such a frame, and a drawer closed before it (a slow runner) lets the pad open the
+      // track drawer.
+      await expect.poll(() => page.evaluate(() => (window as unknown as SW).__hq.rover.speed)).toBeLessThan(0.1);
+      await waitForFrames(page, 2);
       await page.keyboard.press("Escape");
       await expect(page.getByTestId("room-drawer")).toHaveCount(0);
       await waitForPhase(page, "explore");
