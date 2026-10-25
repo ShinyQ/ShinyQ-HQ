@@ -712,7 +712,7 @@
     "label": "Detail ruang",
     "close": "Tutup ruang",
     "loading": "Memuat ruang",
-    "unavailable": "Detail ruang belum bisa dimuat. Coba buka halaman lengkapnya.",
+    "unavailable": "Ruang ini belum termuat. Buka halaman lengkapnya saja.",
     "tabs": {
       "overview": "Ringkasan",
       "architecture": "Arsitektur",
@@ -803,7 +803,7 @@
     "stack": "Stack",
     "anyStack": "Semua stack",
     "showing": "Menampilkan {shown} dari {total}",
-    "empty": "Tidak ada proyek yang cocok dengan filter ini.",
+    "empty": "Tidak ada proyek yang cocok. Hapus filter atau tanya Rover.",
     "clear": "Hapus filter",
     "wingShort": {
       "software": "Product Engineering",
@@ -832,7 +832,7 @@
     "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI, atau oleh Groq (tanpa penyimpanan data) sebagai cadangan saat Workers AI tidak tersedia atau kuotanya habis. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas yang dikenali disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Pertanyaan yang tidak bisa dijawab disimpan secara privat paling lama 3 bulan, disamarkan dengan cara yang sama, agar topik yang belum ada bisa ditambahkan; yang dipublikasikan hanya jumlah dan topiknya. Percakapan disimpan di tab ini selama sesi browser. Hingga tiga tanya-jawab sebelumnya dapat ikut dikirim saat bertanya lagi. Menutup obrolan hanya menyembunyikannya. Obrolan baru mengosongkan percakapan di tab ini, bukan menghapus log layanan yang tersimpan. Tidak perlu akun. Tanya AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",
     "error": {
       "rateLimited": "Terlalu banyak pertanyaan untuk saat ini. Coba lagi dalam {minutes} menit.",
-      "offline": "Tanya AI sedang tidak tersedia. Gunakan Cari atau jelajahi halaman situs.",
+      "offline": "Rover sedang istirahat. CV dan halaman karya menjawab banyak hal.",
       "fallback": "Jawaban belum tersedia saat ini. Coba pencarian atau halaman Karya dan Perjalanan."
     },
     "palette": {
@@ -1151,7 +1151,7 @@
     "updated": "Hari ini langsung, hari sebelumnya setiap jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
-    "offline": "Statistik belum tersedia",
+    "offline": "Angka pengunjung sedang diperbarui. Coba lagi sebentar lagi.",
     "topicLegend": "Topik",
     "periodLegend": "Periode",
     "topics": {
@@ -1225,7 +1225,7 @@
       "semiLive": "Semi-langsung: tidak ada agen yang melapor, hanya aktivitas GitHub publik",
       "resting": "Istirahat: kantor sedang tidak melapor",
       "offline": "Offline: menampilkan aktivitas terakhir yang diketahui",
-      "offlineEmpty": "Offline: kantor sedang tidak dapat dihubungi",
+      "offlineEmpty": "Kantor live sedang sepi. Lihat karya terbaru di Tulisan dan Karya.",
       "updated": "diperbarui {time}",
       "asOf": "per pukul {time}",
       "counts": { "active": "Aktif", "thinking": "Berpikir", "waiting": "Menunggu", "asleep": "Tidur" },

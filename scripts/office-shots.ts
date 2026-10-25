@@ -262,7 +262,7 @@ async function showCrew(page: Page, reply: { body: unknown }, crew: keyof typeof
 /**
  * Answers `/api/office` from `reply`: `?v=4` (the poller) as is, `?v=3` (the beacon watch) a v4 body as the Worker's v3
  * (`asV3`), the v1 path (no client asks it) `asV1`; and `/api/stats` with the stats fixture (as e2e/visits.spec.ts does,
- * updated 2 h ago), so no capture shows "Stats unavailable".
+ * updated 2 h ago), so no capture shows "Visitor numbers are refreshing".
  */
 async function serveOffice(page: Page, reply: { body: unknown }) {
   const stats: StatsSnapshotV1 = { ...STATS_FIXTURE, updatedAt: new Date(Date.now() - 2 * 3_600_000).toISOString() };
