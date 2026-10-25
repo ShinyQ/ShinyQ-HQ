@@ -24,7 +24,6 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
   | `floor` | road, doors, obstacles, spawn and arrival, view zones, `listStop` |
   | `stations` | docked posts newest first, then Research, Models, Talks |
   | `archive` and `board` | posts beyond `LIBRARY_FLOOR.maxPosts` = 12; `listStop` is the board stop |
-  | `signs` | |
   | `centerpiece` | |
   | `links` | posts sharing a tag |
   | `extras` | concept extras |
