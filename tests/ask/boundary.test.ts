@@ -5,7 +5,7 @@ import type { KnowledgePack } from "../../functions/_lib/types";
 import { BOUNDARY_ANSWER_MIN, BOUNDARY_MAX_CALLS, countModelCalls, scoreBoundary, type BoundaryItem } from "../../scripts/ask-eval";
 import boundary from "./boundary.json";
 
-/** The 20-question boundary set (owner decision 2026-10-24): its deterministic half, checked for free on every PR. */
+/** The 22-question boundary set (owner decisions 2026-10-24 and 2026-10-25): its deterministic half, checked for free on every PR. */
 let pack: KnowledgePack;
 const items = boundary.items as BoundaryItem[];
 
@@ -14,20 +14,20 @@ beforeAll(() => {
 });
 
 describe("boundary set", () => {
-  it("has 20 EN and ID items: 14 to answer, 2 to redirect and 4 to decline", () => {
-    expect(items).toHaveLength(20);
-    expect(new Set(items.map((i) => i.id)).size).toBe(20);
-    expect(items.filter((i) => i.expect.kind === "answer")).toHaveLength(14);
+  it("has 22 EN and ID items: 16 to answer, 2 to redirect and 4 to decline", () => {
+    expect(items).toHaveLength(22);
+    expect(new Set(items.map((i) => i.id)).size).toBe(22);
+    expect(items.filter((i) => i.expect.kind === "answer")).toHaveLength(16);
     expect(items.filter((i) => i.expect.kind === "redirect")).toHaveLength(2);
     expect(items.filter((i) => i.expect.kind === "decline")).toHaveLength(4);
     expect(items.some((i) => i.lang === "id")).toBe(true);
-    expect(BOUNDARY_ANSWER_MIN).toBe(14);
+    expect(BOUNDARY_ANSWER_MIN).toBe(16);
   });
 
   it("stays within the owner's 20 model calls", async () => {
     const calls = await countModelCalls(items, { pack, vocabulary: packVocabulary(pack) });
     expect(calls).toBeLessThanOrEqual(BOUNDARY_MAX_CALLS);
-    expect(calls).toBe(14);
+    expect(calls).toBe(16);
   });
 
   it("routes each item deterministically: declines and redirects never reach the model, answers do", () => {

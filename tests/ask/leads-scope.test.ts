@@ -12,7 +12,7 @@ import type { ModelClient } from "../../functions/_lib/model";
 import { scrubPII } from "../../functions/_lib/pii";
 import { packVocabulary, runPipeline } from "../../functions/_lib/pipeline";
 import { RULES, routingLines, systemPrompt } from "../../functions/_lib/prompt";
-import { leadMatches, retrieve } from "../../functions/_lib/retrieve";
+import { approachMatches, leadMatches, retrieve } from "../../functions/_lib/retrieve";
 import { isCapabilityQuestion, isGeneralAssistantRequest, isLeadQuestion, privateTopic, routedTopic } from "../../functions/_lib/scope";
 import { cleanText, detectLocale } from "../../functions/_lib/text";
 import type { AskEnv, KnowledgePack, KvNamespace, PagesContext } from "../../functions/_lib/types";
@@ -383,6 +383,35 @@ describe("contact card through the Function", () => {
     expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
     const cached = await call(q);
     expect(cached).toMatchObject({ source: "cache", contact: { email: contact.email, linkedin: contact.linkedin } });
+  });
+
+  it("keeps the contact card on a problem question's answer served from the cache", async () => {
+    const { contact } = getContent().floors.roof;
+    const q = "Our team struggles with flaky tests";
+    expect(isLeadQuestion(q)).toBe(false);
+    const { call, kv } = setup("Kurniadi takes freelance work; get in touch through the contact card.");
+    const live = await call(q);
+    expect(live).toMatchObject({ outcome: "answer", contact: { email: contact.email, linkedin: contact.linkedin } });
+    expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
+    const cached = await call(q);
+    expect(cached).toMatchObject({ source: "cache", contact: { email: contact.email, linkedin: contact.linkedin } });
+  });
+
+  it("keeps the contact card on a cached approach answer", async () => {
+    const q = "Our call center can't keep up. His approach?";
+    expect(isLeadQuestion(q)).toBe(false);
+    const matches = approachMatches(pack, leadMatches(pack, q), null);
+    expect(matches.length).toBeGreaterThan(0);
+    const m = matches[0];
+    const body = m.text_en.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
+    const { call, kv } = setup(`In **${m.title}**, ${body.charAt(0).toLowerCase()}${body.slice(1)} Get in touch through the contact card.`);
+    const live = await call(q);
+    expect(live).toMatchObject({ outcome: "answer" });
+    expect(isAskContact(live.contact)).toBe(true);
+    expect(kv.store.has(await cacheKey(pack.packVersion, "en", q))).toBe(true);
+    const cached = await call(q);
+    expect(cached).toMatchObject({ source: "cache" });
+    expect(isAskContact(cached.contact)).toBe(true);
   });
 
   it("sends no contact card for other questions, declines or capabilities", async () => {

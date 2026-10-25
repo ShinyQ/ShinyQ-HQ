@@ -278,7 +278,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-24.answerable.2");
+    expect(PROMPT_VERSION).toBe("2026-10-25.approach.1");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");

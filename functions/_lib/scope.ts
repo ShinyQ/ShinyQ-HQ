@@ -283,6 +283,70 @@ export function isLeadQuestion(question: string): boolean {
 }
 
 /**
+ * Bring your problem (owner decision 2026-10-25): the visitor describes a problem of their own team or company, or
+ * asks how Kurniadi would approach one. Deterministic, EN/ID. A first person singular ("I struggle to learn ...") is
+ * a learning question, never a problem; civic questions and routed lifestyle or policy topics keep their routes.
+ * An Indonesian approach ask needs "akan" (as the English one needs "would"): "Bagaimana dia menangani ..." asks
+ * about his practice, not about a problem. Questions about this site, his team, learning in his field or his views
+ * keep their routes too (final review F1).
+ */
+const PROBLEM_SUBJECT = String.raw`(?:we|we're|our|my (?:team|company|startup|clinic|business|organi[sz]ation)|kami|tim kami|perusahaan kami|usaha kami|klinik kami)`;
+const PROBLEM_WORD = String.raw`(?:struggl\w*|problems?|issues?|bottlenecks?|pain points?|drown\w*|too slow|slow|manual(?:ly)?|by hand|can'?t keep up|cannot keep up|keeps? failing|pil(?:e|es|ing) up|overwhelmed|backlog|kesulitan|masalah|bermasalah|kewalahan|kendala|lambat|manual|sering gagal|menumpuk|kerepotan)`;
+// The closing boundary keeps "issued", "problematic" and "slowdown" out.
+const PROBLEM_OWN = new RegExp(String.raw`\b${PROBLEM_SUBJECT}\b[^.?!]{0,40}\b${PROBLEM_WORD}\b`, "i");
+const PROBLEM_ASK: RegExp[] = [
+  /\bhow (?:would|will|could|might) (?:he|kurniadi|you) (?:approach|tackle|solve|handle|go about|start(?: on)?|fix|deal with|speed up|cut|reduce|improve)\b/i,
+  /\bwhat would (?:he|kurniadi|you) do (?:about|with|for)\b/i,
+  /\b(?:his|kurniadi'?s) (?:approach|take)\s*\?\s*$/i,
+  /\b(?:bagaimana|gimana) (?:dia|kurniadi|kamu|anda) akan (?:menangani|menyelesaikan|mendekati|memulai|mengatasi|memperbaiki|mempercepat)\b/i,
+  /\bpendekatan(?:nya| kurniadi)\s*\?\s*$/i,
+  /\bkalau (?:dia|kurniadi) yang (?:menangani|mengerjakan)\b/i,
+];
+
+/** Questions about his past work ("what problems he solved", "masalah yang pernah dia selesaikan"). */
+const PROBLEM_PAST_WORK: RegExp[] = [
+  /\b(?:he|kurniadi)\s+(?:has\s+|had\s+)?(?:solved|fixed|worked on|worked|tackled|handled|built|resolved|shipped)\b/i,
+  /\b(?:(?:dia|ia|kurniadi)\s+(?:pernah|sudah)\s+|pernah\s+(?:dia\s+|ia\s+|kurniadi\s+)?)(?:selesaikan|menyelesaikan|tangani|menangani|kerjakan|mengerjakan|atasi|mengatasi)\b/i,
+  /\byang\s+(?:dia|ia|kurniadi)\s+(?:selesaikan|tangani|kerjakan|atasi)\b/i,
+  /\b(?:proyek|project)\s+(?:dia\s+|kurniadi\s+)?yang\s+(?:pernah\s+|sudah\s+)?(?:menyelesaikan|mengatasi|menangani)\b/i,
+];
+/** "Like this" pointing back at the visitor's own problem ("has he handled something like this?"). */
+const PROBLEM_LIKE_THIS = /\b(?:like this|like ours|similar|seperti ini|serupa|semacam ini)\b/i;
+
+/**
+ * Approach asks the perspective heuristic also reads as a views question ("How would he approach ...", "What would he
+ * do about ..."): masked before the views exclusion, so the ask itself never counts as asking for his views.
+ */
+const PERSPECTIVE_ASK = /\bwhat would (?:he|kurniadi)\b|\bhow (?:does|would) (?:he|kurniadi) (?:approach|decide|handle|choose)\b/gi;
+
+function problemShape(question: string): { own: boolean; ask: boolean } {
+  const none = { own: false, ask: false };
+  if (civicQuestion(question) || routedTopic(question)) return none;
+  if (isSiteQuestion(question) || isTeamQuestion(question) || isMentoringQuestion(question) || isPerspectiveQuestion(question.replace(PERSPECTIVE_ASK, " "))) return none;
+  const own = PROBLEM_OWN.test(question);
+  const ask = PROBLEM_ASK.some((re) => re.test(question));
+  // Past work alone is a question about his record; with a forward-looking ask about the visitor's own problem it stays a problem.
+  const forward = ask || (own && PROBLEM_LIKE_THIS.test(question));
+  if (!forward && PROBLEM_PAST_WORK.some((re) => re.test(question))) return none;
+  return { own, ask };
+}
+
+/** The visitor's own problem: their subject ("we", "our", "tim kami") plus a problem word. Always a lead (rule 11 or 18). */
+export function isOwnProblem(question: string): boolean {
+  return problemShape(question).own;
+}
+
+/** An ask for his approach ("How would he tackle ...?", "His approach?"): a lead only with matching past projects (`planRoute`). */
+export function isApproachAsk(question: string): boolean {
+  return problemShape(question).ask;
+}
+
+export function isProblemQuestion(question: string): boolean {
+  const { own, ask } = problemShape(question);
+  return own || ask;
+}
+
+/**
  * General-assistant requests that are out of scope however they are phrased (owner rule 2026-10-15):
  * writing code, essays, poems or homework, tutorials, translations and recommendations for the
  * visitor. A lead question is let through (the prompt and output checks keep it from becoming

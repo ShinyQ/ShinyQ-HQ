@@ -7,11 +7,11 @@ import redteam from "../ask/redteam.json";
 /** Eval neuron budget (owner decision 2026-10-19): evals use under 20% of the 10,000 free daily Workers AI neurons. */
 
 describe("eval neuron budget", () => {
-  it("keeps the smoke set at 20 existing items, inside the primary budget", () => {
-    expect(SMOKE_GOLDEN.length + SMOKE_REDTEAM.length).toBe(20);
+  it("keeps the smoke set at 21 existing items, inside the primary budget", () => {
+    expect(SMOKE_GOLDEN.length + SMOKE_REDTEAM.length).toBe(21);
     for (const id of SMOKE_GOLDEN) expect(golden.items.some((i) => i.id === id), id).toBe(true);
     for (const id of SMOKE_REDTEAM) expect(redteam.items.some((i) => i.id === id), id).toBe(true);
-    expect(estimateNeurons(20).neurons).toBeLessThanOrEqual(PRIMARY_NEURON_BUDGET);
+    expect(estimateNeurons(21).neurons).toBeLessThanOrEqual(PRIMARY_NEURON_BUDGET);
     expect(PRIMARY_NEURON_BUDGET).toBe(2000);
     expect(estimateNeurons(3)).toEqual({ calls: 3, neurons: 3 * NEURONS_PER_CALL, share: (3 * NEURONS_PER_CALL) / 10_000 });
   });
@@ -45,7 +45,7 @@ describe("eval neuron budget", () => {
     expect(runs).toEqual([
       "smoke",
       'golden --groq "$EVAL_GROQ_EVAL" --slice day/3',
-      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/14',
+      'suggestions --groq "$EVAL_GROQ_EVAL" --slice day/21',
       'redteam --groq "$EVAL_GROQ_STRESS"',
       'redteam --groq "$EVAL_GROQ_EVAL" --slice day/4',
       'fidelity --groq "$EVAL_GROQ_BACKUP"',
@@ -70,7 +70,7 @@ describe("eval neuron budget", () => {
       const day = new Date(Date.UTC(2026, 9, 20 + d));
       const calls =
         (await countModelCalls(sliceItems(g, "day/3", day) as never, deps)) +
-        (await countModelCalls(sliceItems(pills, "day/14", day) as never, deps)) +
+        (await countModelCalls(sliceItems(pills, "day/21", day) as never, deps)) +
         (await countModelCalls(sliceItems(redteam.items as never[], "day/4", day), deps));
       worst = Math.max(worst, calls);
     }

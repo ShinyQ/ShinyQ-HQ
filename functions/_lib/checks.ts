@@ -1,12 +1,14 @@
 import { ASK_LINK_PAGES, askLinkTarget } from "../../src/ask/links";
-import { markdownToPlain } from "../../src/ask/markdown";
+import { markdownToPlain, parseMarkdown } from "../../src/ask/markdown";
 import { ASK_MAX_CITES, ASK_REPO_CITE, citeKind, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
-import { RULES } from "./prompt";
+import { APPROACH_BRIDGE, RULES } from "./prompt";
 import type { RoutedTopic } from "./scope";
 import { indexPack } from "./pack-index";
 import { expandTokens, INVISIBLE, tokenize } from "./text";
 import type { ChunkType, KnowledgeChunk, KnowledgePack } from "./types";
+
+export { APPROACH_BRIDGE };
 
 /** Hard cap on the displayed answer (max_tokens 300 keeps real answers far below it). */
 export const MAX_ANSWER_CHARS = 1000;
@@ -285,6 +287,10 @@ const BENIGN = [
   "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
   "I'm Rover, the guide robot of ShinyQ HQ.",
   "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views.",
+  // Rule 18 allows the bridging sentence (each language), and rules 11 and 18 ask for the contact card invitation.
+  "A similar problem would likely start the same way.",
+  "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
+  "Feel free to get in touch: the site shows a contact card under the answer.",
 ];
 const ruleShingles = (() => {
   const benign = new Set(BENIGN.flatMap(shingles));
@@ -522,6 +528,9 @@ export function asksForPersonalData(text: string): boolean {
   return ASKS_PERSONAL_DATA.test(text);
 }
 
+/** His own words on which freelance or part-time engagements he takes (owner-endorsed perspective), when published. */
+export const LEAD_ENGAGEMENTS = "perspective-freelance-engagements";
+
 /** Free consulting in a lead answer: time or cost estimates and designing the visitor's system (owner rule 2026-10-15). */
 const CONSULTING: RegExp[] = [
   /\b\d+\s*(?:-|to|or|sampai|hingga|atau)?\s*\d*\s*(?:hours?|days?|weeks?|months?|sprints?|jam|hari|minggu|bulan)\b/i,
@@ -533,11 +542,186 @@ export function consulting(text: string): boolean {
   return CONSULTING.some((re) => re.test(text)) || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > 5;
 }
 
+/**
+ * Visitor or future framing: a duration in such a sentence is a timeline for the visitor, even when CONTEXT states it
+ * ("Yours could be live in 2 days").
+ */
+const VISITOR_TIMELINE =
+  /\b(?:you|your|yours|we|our|expect(?:s|ed)?|within|could|can|will|would be|akan|bisa|dalam waktu|kamu|anda|kalian|kami)\b/i;
+
+/** Most sentences and list items of an approach answer (rule 18: 6 sentences or 4 items, plus the invitation). */
+export const APPROACH_MAX_SENTENCES = 7;
+export const APPROACH_MAX_ITEMS = 4;
+
+/** A sentence that addresses the visitor ("your call center", "call center kalian"): an approach answer is about his past work. */
+const ADDRESSES_VISITOR = /\b(?:you|your|yours|kamu|anda|kalian)\b/i;
+/** A sentence that starts with an order ("Start with ...", "Gunakan ..."). */
+const IMPERATIVE = /^[^\p{L}\p{N}]*(?:start|use|build|add|pick|choose|consider|try|deploy|set up|mulai|gunakan|pakai|bangun|tambahkan|pilih|coba)\b/iu;
+/** An order after a comma, semicolon or colon ("For a call center like that, use ..."), except "use the contact card". */
+const MID_ORDER = /[,;:]\s*(?:use|pick|choose|start with|go with|pakai|gunakan|mulai dengan)\b(?!\s+(?:the\s+)?(?:contact card|kartu kontak)\b)/i;
+/** Words that look ahead (folded: "he'll" is "he ll"). */
+const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "could", "may", "can", "akan", "sebaiknya", "seharusnya"]);
+const BRIDGES = new Set(Object.values(APPROACH_BRIDGE).map((b) => fold(b)));
+const isBridge = (sentence: string) => BRIDGES.has(fold(sentence.replace(SOURCE_TAGS, " ")));
+
+/** Sentences of a plain answer (list items are lines). */
+const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+|\n+/).filter((s) => s.trim());
+
+/** A sentence that points to the contact card or asks the visitor to get in touch. */
+const CONTACT = /\b(?:contact card|get in touch|reach (?:out|him)|kartu kontak|hubungi|menghubungi)/i;
+/** The one order an invitation may give: use or try the contact card. */
+const CARD_ORDER = /^[^\p{L}\p{N}]*(?:use|try|gunakan|pakai|coba)\s+(?:the\s+)?(?:contact card|kartu kontak)\b/iu;
+/** Modals an invitation may not hold ("would" and "'d" only before "like"; "can" as in "you can reach him"). */
+const INVITE_MODALS = new Set(["would", "d", "will", "ll", "might", "should", "could", "may", "must", "shall", "akan", "sebaiknya", "seharusnya", "harus"]);
+/** Capitalized words an invitation may hold (his name, the polite Indonesian "Anda"); any other is a product or stack. */
+const INVITE_CAPS = new Set(["kurniadi", "ahmad", "wijaya", "anda", "kamu", "kalian"]);
+export const INVITE_MAX_WORDS = 25;
+
+/**
+ * Stack and product terms an invitation may not name in any position (follow-up fix 2): the capitalized terms CONTEXT
+ * uses mid-sentence (`properNouns`, so "Python" or "Azure"), minus `COMMON_CAPS` and `INVITE_CAPS`, matched as cased
+ * words; and the pack's skill terms (`stackTerms`), matched case-insensitively as phrases.
+ */
+interface InviteBans {
+  caps: ReadonlySet<string>;
+  stack: readonly string[];
+}
+
+function inviteBans(context: string, stack: readonly string[]): InviteBans {
+  const caps = new Set(properNouns(context).filter((w) => !COMMON_CAPS.has(w.toLowerCase()) && !INVITE_CAPS.has(w.toLowerCase())));
+  return { caps, stack };
+}
+
+const STACK_CACHE = new WeakMap<object, readonly string[]>();
+/**
+ * The pack's stack and skill terms: the keywords of its `skills` chunks, parentheticals dropped ("azure openai (incl.
+ * realtime)" is "azure openai"), terms under three characters skipped ("go" is a common word).
+ */
+export function stackTerms(pack: Partial<Pick<KnowledgePack, "chunks">>): readonly string[] {
+  if (!pack.chunks) return [];
+  const cached = STACK_CACHE.get(pack);
+  if (cached) return cached;
+  const terms = [...new Set(pack.chunks.filter((c) => c.type === "skills").flatMap((c) => c.keywords))]
+    .map((k) => k.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim())
+    .filter((k) => k.length >= 3 && k !== "skill");
+  STACK_CACHE.set(pack, terms);
+  return terms;
+}
+
+/**
+ * The contact card invitation (follow-up R1, fix 2): only the final sentence of an answer may be one, and only when it
+ * points to the card, names no duration or timeline, no product or stack (in any position, see `InviteBans`), matches
+ * no consulting pattern, holds no modal but "would like" / "'d like" (and "can"), and has at most `INVITE_MAX_WORDS`
+ * words. It may then address the visitor.
+ */
+function isInvitation(sentence: string, bans: InviteBans = { caps: new Set(), stack: [] }): boolean {
+  const plain = sentence.replace(SOURCE_TAGS, " ");
+  if (!CONTACT.test(plain) || /\d/.test(plain) || VAGUE_DURATION.test(plain) || new RegExp(WORD_DURATION.source, "i").test(plain) || new RegExp(TIMELINE_SPAN.source, "i").test(plain) || CONSULTING.some((re) => re.test(plain))) return false;
+  const words = fold(plain).split(" ");
+  if (words.length > INVITE_MAX_WORDS || words.some((w, i) => INVITE_MODALS.has(w) && !((w === "would" || w === "d") && words[i + 1] === "like"))) return false;
+  // Capitalized terms: every one after the first word, a first word with an inner capital ("OpenAI", "RAG"), and any
+  // word CONTEXT capitalizes mid-sentence ("Python").
+  const terms = plain.match(/[\p{L}\p{N}][\p{L}\p{N}'.+#-]*/gu) ?? [];
+  const named = (t: string, i: number) => {
+    const bare = t.replace(/[.']+$/, "");
+    if (INVITE_CAPS.has(bare.toLowerCase())) return false;
+    return (i > 0 ? /^\p{Lu}/u.test(t) : /^.+\p{Lu}/u.test(t)) || bans.caps.has(bare);
+  };
+  return !terms.some(named) && !findTerms(plain, bans.stack).length;
+}
+
+/**
+ * A sentence that projects his work onto the visitor's case (follow-up R2): "a similar team would ...", "the same
+ * stack fits", "the right fit here", "untuk kasus ini". Only the exact bridge, the final invitation and a past-tense
+ * statement of his own work (`OWN_PAST_SIMILAR`) may say "similar".
+ */
+const PROJECTS =
+  /\b(?:similar|serupa|sejenis|something like|the same (?:stack|approach|setup|design|system)|fits?|right fit|cocok|here|kasus ini|di sini|like (?:that|this|yours|theirs)|seperti (?:itu|ini|kalian|anda|kamu)|for (?:a|an|your) [\w-]+(?: [\w-]+)? like)\b/i;
+/**
+ * A past-tense statement of his own work ("Kurniadi has addressed similar challenges", "similar problems in his past
+ * work", "Kurniadi telah menangani masalah serupa"): only its "similar" / "serupa" is no projection, so the rest of the
+ * sentence is still read by `PROJECTS` and every other rule. `at` marks where the exempt word sits in the match.
+ */
+const OWN_PAST_SIMILAR: readonly { re: RegExp; at: "start" | "end" }[] = [
+  { re: /\b(?:kurniadi|he)\s+(?:has|had)\s+(?:\w+\s+){0,2}(?:addressed|tackled|solved|handled|faced|worked on|dealt with|met)\s+(?:\w+\s+){0,1}similar\b/gi, at: "end" },
+  { re: /\bsimilar\s+(?:problems|challenges|issues)\s+(?:in|across|through)\s+his\s+(?:past\s+)?work\b/gi, at: "start" },
+  { re: /\b(?:kurniadi|ia|dia)\s+(?:telah|pernah|sudah)\s+(?:\w+\s+){0,1}(?:menangani|menyelesaikan|menghadapi|mengatasi)\s+(?:masalah|tantangan|kasus|persoalan)\s+(?:serupa|sejenis)\b/gi, at: "end" },
+];
+const withoutOwnPastSimilar = (sentence: string) =>
+  OWN_PAST_SIMILAR.reduce((s, { re, at }) => s.replace(re, (m) => (at === "end" ? m.replace(/\w+$/, " ") : m.replace(/^\w+/, " "))), sentence);
+/** Vague durations and coming periods, always an estimate ("a few weeks", "next quarter", "beberapa minggu", "bulan depan"). */
+const VAGUE_DURATION =
+  /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b|\bnext (?:week|month|quarter|sprint|year)\b|\b(?:bulan|minggu) depan\b/i;
+/**
+ * Timeline spans ("within a month", "by the end", "in one day", "dalam sebulan"): never in an invitation; elsewhere
+ * checked like a duration, so a case-study fact CONTEXT states ("built in one day") stays a fact.
+ */
+const TIMELINE_SPAN = /\b(?:within|in|by)\s+(?:a|an|one|the|next|this)\s+(?:day|week|month|quarter|sprint|year)s?\b|\bdalam (?:seminggu|sebulan)\b/gi;
+/** Spelled-out durations ("six weeks", "dua minggu"): checked like digits, so a case-study fact stays a fact. */
+const WORD_DURATION = /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|dua belas)\s+(?:hari|minggu|bulan)\b/gi;
+
+/**
+ * A forward-looking word in a sentence that is not the exact bridge: allowed only when CONTEXT or his retrieved written
+ * views state the whole stretch from three words before it to the end of the sentence (follow-up R2), as a case-study
+ * duration is. A capitalized "May" is the month.
+ */
+function looksAhead(sentence: string, stated: string): boolean {
+  if (isBridge(sentence)) return false;
+  const raw = sentence.replace(SOURCE_TAGS, " ").normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ");
+  const words = raw.map((w) => w.toLowerCase());
+  return words.some((w, i) => PROSPECTIVE.has(w) && raw[i] !== "May" && !stated.includes(` ${words.slice(Math.max(0, i - 3)).join(" ")} `));
+}
+
+/**
+ * Free consulting in an approach answer (owner decision 2026-10-25, final review F2 and follow-up R1, R2): the lead
+ * patterns (visitor-directed advice, cost and estimate words), any sentence that addresses the visitor, starts with an
+ * order, looks ahead (only the exact bridge `APPROACH_BRIDGE` may) or projects onto the visitor's case, any vague
+ * duration and any duration CONTEXT does not state, or more than `APPROACH_MAX_SENTENCES` sentences or
+ * `APPROACH_MAX_ITEMS` list items. The final sentence may be a contact card invitation (`isInvitation`) that addresses
+ * the visitor. A duration from a case study ("from 3 days to 4 hours", "six weeks") is a fact, not an estimate. `views`
+ * is the full text of his retrieved written views (CONTEXT may clip them), read only for the forward-looking words of
+ * his own sentences.
+ */
+export function prescribes(text: string, markdown: string, context: string, views = "", stack: readonly string[] = []): boolean {
+  const ctx = ` ${fold(context)} `;
+  const stated = `${ctx}${fold(views)} `;
+  const sentences = sentencesOf(text);
+  const bans = inviteBans(context, stack);
+  for (const [i, sentence] of sentences.entries()) {
+    if (i === sentences.length - 1 && isInvitation(sentence, bans)) {
+      if ((IMPERATIVE.test(sentence) && !CARD_ORDER.test(sentence)) || MID_ORDER.test(sentence)) return true;
+      continue;
+    }
+    // A final sentence that points to the contact card must be a clean invitation ("Azure AI Search first, then reach him ...").
+    if (i === sentences.length - 1 && CONTACT.test(sentence)) return true;
+    if (!isBridge(sentence) && PROJECTS.test(withoutOwnPastSimilar(sentence))) return true;
+    if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || MID_ORDER.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
+    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION), ...sentence.matchAll(TIMELINE_SPAN)].map((m) => fold(m[0]));
+    if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;
+  }
+  if (CONSULTING.slice(1).some((re) => re.test(text))) return true;
+  const items = parseMarkdown(markdown).reduce((n, b) => n + (b.type === "p" ? 0 : b.items.length), 0);
+  return items > APPROACH_MAX_ITEMS || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > APPROACH_MAX_SENTENCES;
+}
+
+/** Chunk types an approach answer outlines (the matches are past projects). */
+const APPROACH_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>(["project", "side-project"]);
+
 /** A lead answer that claims a fit (only allowed when retrieval found matching past projects). */
 const FIT_CLAIM = /\b(?:strong|good|great|close|natural|solid|perfect|excellent|ideal) (?:fit|match)\b|\bwell[- ]suited\b|\bperfect for\b|\bgood chance\b|\b(?:very|highly) likely\b|\bcocok\b|\bsangat sesuai\b|\bkemungkinan besar\b|\bpeluang (?:yang )?(?:besar|bagus|baik)\b/i;
 
 export function claimsFit(text: string): boolean {
   return FIT_CLAIM.test(text);
+}
+
+/** A hypothetical about him ("he would cut scope", "he'll", "dia akan"): invented behaviour on a lead answer (follow-up R3). */
+const HYPOTHETICAL = /\b(?:he|kurniadi)(?:\s+(?:would|will|might)\b|['\u2019](?:d|ll)\b)|\b(?:dia|kurniadi)\s+akan\b/i;
+/** Quoted text (a title or his own words) never counts as a hypothetical. */
+const QUOTED = /"[^"\n]*"|\u201c[^\u201d\n]*\u201d/g;
+
+export function hypothesizes(text: string): boolean {
+  const sentences = sentencesOf(text.replace(QUOTED, " "));
+  return sentences.some((s, i) => !(i === sentences.length - 1 && isInvitation(s)) && HYPOTHETICAL.test(s));
 }
 
 export type CheckFailure = "forbidden" | "secret" | "leak" | "roleplay" | "defamation" | "numeric" | "entity" | "employer" | "unsourced" | "empty" | "code" | "personal-data" | "consulting" | "fit";
@@ -551,7 +735,8 @@ export interface CheckInput {
   question: string;
   context: string;
   packDate: string;
-  pack: Pick<KnowledgePack, "entities">;
+  /** `chunks` (when given) supplies the stack terms an approach invitation may not name (`stackTerms`). */
+  pack: Pick<KnowledgePack, "entities"> & Partial<Pick<KnowledgePack, "chunks">>;
   vocabulary: ReadonlySet<string>;
   /** Retrieved chunks (the perspective source check); empty means no written source is available. */
   chunks?: readonly KnowledgeChunk[];
@@ -563,6 +748,8 @@ export interface CheckInput {
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
   lead?: { fit: boolean };
+  /** Bring your problem (owner decision 2026-10-25, with `lead`): the matches the answer must outline and cite by title. */
+  approach?: { matches: readonly KnowledgeChunk[] };
   /** A related professional question (`isAdjacentQuestion`): the answer must cite his work from CONTEXT (rule 13). */
   adjacent?: boolean;
   /** A learning or career question (`isMentoringQuestion`): his own path from CONTEXT, never general advice (rule 15). */
@@ -574,7 +761,7 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, approach, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
@@ -583,10 +770,12 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (scanned.some((s) => FORBIDDEN_OUTPUT.some((re) => re.test(s)))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
   if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
+  // Before the voice check: "I recommend ..." in an approach answer is consulting first (same lead replacement).
+  if (lead && approach && prescribes(text, markdown, context, chunks.filter((c) => isSource(c)).map((c) => `${c.text_en} ${c.text_id}`).join(" "), stackTerms(pack))) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
   if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
   if (asksForPersonalData(text)) return { ok: false, reason: "personal-data", detail: [], replacement: lead ? "lead" : "unknown" };
-  if (lead && consulting(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+  if (lead && !approach && consulting(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (lead && !lead.fit && claimsFit(text)) return { ok: false, reason: "fit", detail: [], replacement: "lead" };
 
   const accusations = defamatoryWords(text, context);
@@ -604,10 +793,27 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const questionWords = new Set(echo.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
-  // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
-  if (lead) return { ok: true, text: markdown, outcome };
   // Source tags the model put after its sentences, kept only when the sentence really uses that line (rule 17).
   const marked = markedSources(answer, chunks, question);
+  if (lead) {
+    // A view told as his, on any lead answer, must cite his written view (rule 8, final review F1). A plain lead may
+    // restate his engagement terms; in an approach answer the invitation echoes that view, so it never counts there.
+    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i && (!approach || c.id !== LEAD_ENGAGEMENTS));
+    if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
+    // What he would do, told without an opinion verb, is invented too (follow-up R3).
+    if (hypothesizes(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+    // Bring your problem: grounded in CONTEXT like an adjacent answer, outlining at least one matched project by title
+    // (or a source tag on it).
+    if (approach && outcome === "answer") {
+      if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "lead" };
+      const projects = [...citedSources(text, approach.matches, locale, APPROACH_TYPES), ...marked.filter((c) => approach.matches.includes(c))].filter((c, i, all) => all.indexOf(c) === i);
+      if (!projects.length) return { ok: false, reason: "unsourced", detail: [], replacement: "lead" };
+      const pages = citePages([...projects, ...views]);
+      return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };
+    }
+    // A plain lead answer is about his past work and availability: checked above, no cite.
+    return { ok: true, text: markdown, outcome };
+  }
   const withCites = (cited: readonly KnowledgeChunk[]): CheckResult => {
     const pages = citePages(cited);
     return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };

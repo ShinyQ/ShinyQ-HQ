@@ -11,7 +11,7 @@
  * [latencyMs, 1]. `entry` is the UI entry point (hero, dock, pill, followup, terminal, palette);
  * `model` (blob10) is the model that answered; the failure trail (blob11) lists the tiers that failed first; the pack tier
  * (blob12) is where the knowledge pack came from (memory, kv, pin, fallback; empty before the KV pack). The route (blob14) is
- * the deterministic route (civic, policy, lifestyle, mentoring, team, adjacent, lead, default, "+partial" for a mixed
+ * the deterministic route (approach, civic, policy, lifestyle, mentoring, team, adjacent, lead, default, "+partial" for a mixed
  * question), the retrieval (blob15) bm25 or hybrid, and blob16 is "match" for a declined question that retrieval would
  * have answered with a strong match (an over-refusal candidate). Only "unknown" and "decline" events carry the (already
  * PII-scrubbed) question (owner decision 2026-10-24); "rejected" events are requests stopped before the model
