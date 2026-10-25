@@ -2577,7 +2577,11 @@
                   "id": "Modul baru dan hasil refactor dirilis dengan load test k6 serta cakupan penuh Mocha, Chai, dan Sinon, dan masalah produksi turun sekitar 30%."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "With several partners on one platform, a consistent shared layer and clear standards matter more than any single integration.",
+              "id": "Dengan beberapa partner di satu platform, layer bersama yang konsisten dan standar yang jelas lebih penting daripada satu integrasi mana pun."
+            }
           },
           "stack": [
             "Node.js",
@@ -5432,7 +5436,11 @@
                   "id": "Media emulator, golden question, dan LLM judge yang terkalibrasi membuat setiap perubahan tanpa bukti pendukung tetap dinonaktifkan."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "A written spec and a merged PR are not proof that a fix helped. Set the verdict rules before testing, accept the negative results, and remove what the data rejected.",
+              "id": "Spec dan PR yang sudah di-merge bukan bukti bahwa sebuah perbaikan berhasil. Tetapkan kriteria pengujian lebih dulu, terima hasil negatif, dan hapus yang ditolak data."
+            }
           },
           "stack": [
             "Azure OpenAI Realtime",
@@ -5869,7 +5877,11 @@
                   "id": "Audit tersebut mereproduksi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, jadi saya memimpin hardening 14 item yang memindahkan scan ke job terisolasi dengan autoscaling dan token yang dibatasi per job; cut-over-nya menimbulkan jeda layanan sekitar 9 menit."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "Threat-model the first deploy: running scans inline was a reasonable trade for permissions, but it needed a written threat model then, not an audit later. A flag reduces the risk within hours; isolation is what makes the remaining risk smaller.",
+              "id": "Buat threat model sejak deploy pertama: menjalankan scan secara inline adalah kompromi yang masuk akal untuk urusan izin, tetapi saat itu juga seharusnya ada threat model tertulis, bukan audit belakangan. Flag mengurangi risiko dalam hitungan jam; isolasi yang membuat sisa risikonya lebih kecil."
+            }
           },
           "stack": [
             "Next.js",
@@ -6269,7 +6281,11 @@
                   "id": "Engine ini menurunkan false positive offline menjadi 9,1%, tetapi recall turun ke 0,841 sehingga gagal di gate-nya. Saya tetap menjalankannya di shadow mode, tempat engine ini tidak pernah mengubah hasil yang dilihat pengguna dalam run produksi."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "Write the release gates before running the evaluation; if a change fails a gate, it does not become the decision maker, even when another number looks better. One good development run is encouraging, but it is not the bar for letting the engine decide.",
+              "id": "Tulis release gate sebelum menjalankan evaluasi; jika perubahan gagal di salah satu gate, perubahan itu tidak menjadi pengambil keputusan, meskipun angka lain terlihat lebih baik. Satu run development yang bagus memang menggembirakan, tetapi belum cukup untuk memberi engine wewenang menentukan verdict."
+            }
           },
           "stack": [
             "Next.js",
@@ -7294,7 +7310,11 @@
                   "id": "Tim perencana sudah bekerja dari workbook mereka, jadi tabel OTF mengikuti urutan kolomnya, dan drawer menjelaskan setiap forecast serta menyimpan penyesuaian forecaster."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "Planners come to review and adjust a plan, not to look at charts, so the dashboard leads with the plan, and every figure comes from the one Fabric run that owns it. Two baselines is the same as no baseline.",
+              "id": "Planner datang untuk meninjau dan menyesuaikan rencana, bukan untuk melihat chart, jadi dashboard dimulai dari rencana, dan setiap angka berasal dari satu Fabric run yang memilikinya. Dua baseline sama saja dengan tidak ada baseline."
+            }
           },
           "stack": [
             "Microsoft Fabric",
@@ -7593,7 +7613,11 @@
                   "id": "Framing stream yang rusak, telemetry yang melaporkan nol request, dan spend cap harian yang menghitung token terlalu rendah tidak terdeteksi. Saya memperbaikinya satu per satu."
                 }
               }
-            ]
+            ],
+            "lesson": {
+              "en": "A RAG assistant earns trust by answering only from curated content and showing where each answer came from. The operational side, such as stream framing, telemetry and the daily spend cap, needs watching too, because failures there can stay silent.",
+              "id": "Asisten RAG layak dipercaya jika hanya menjawab dari konten yang sudah dikurasi dan menunjukkan sumber setiap jawaban. Sisi operasionalnya, seperti stream framing, telemetry, dan batas biaya harian, juga perlu dipantau, karena kegagalan di sana bisa tidak terlihat."
+            }
           },
           "stack": [
             "Next.js",
