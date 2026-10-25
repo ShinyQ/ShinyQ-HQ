@@ -37,9 +37,9 @@ export function shelfSize(count: number): { along: number; rows: number; cols: n
 /** Board thickness under each row (the vault's plinth): every slot's base stands this high above its row. */
 export const SHELF_PLINTH = 0.24;
 
+/** One post's slot on a shelf; the first slot of a bay is the lead's. */
 export interface ShelfSlot {
   slug: string;
-  lead: boolean;
   /** Footprint center. */
   at: Vec2;
   /** Base height (the row's shelf; the slot itself stands `SHELF_PLINTH` higher). */
@@ -66,18 +66,18 @@ export function shelfSlots(bay: Pick<LibraryBay, "center" | "facing" | "rect">, 
   const left = { x: f.z, z: -f.x };
   const along = Math.abs(left.x) * (rect.maxX - rect.minX) + Math.abs(left.z) * (rect.maxZ - rect.minZ);
   const { cols } = shelfSize(posts.length);
-  const slot = (slug: string, lead: boolean, t: number, y: number, w: number, d: number, h: number): ShelfSlot => {
+  const slot = (slug: string, t: number, y: number, w: number, d: number, h: number): ShelfSlot => {
     const at = { x: center.x + left.x * (along / 2 - t) + 0, z: center.z + left.z * (along / 2 - t) + 0 };
     const hx = (Math.abs(left.x) * w + Math.abs(f.x) * d) / 2;
     const hz = (Math.abs(left.z) * w + Math.abs(f.z) * d) / 2;
-    return { slug, lead, at, y, w, d, h, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
+    return { slug, at, y, w, d, h, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
   };
   const S = SHELF.spine;
   const first = SHELF.pad + SHELF.lead.w + SHELF.pad;
   return posts.map((slug, i) => {
-    if (i === 0) return slot(slug, true, SHELF.pad + SHELF.lead.w / 2, 0, SHELF.lead.w, SHELF.lead.d, SHELF.lead.h);
+    if (i === 0) return slot(slug, SHELF.pad + SHELF.lead.w / 2, 0, SHELF.lead.w, SHELF.lead.d, SHELF.lead.h);
     const r = Math.floor((i - 1) / cols);
     const c = (i - 1) % cols;
-    return slot(slug, false, first + (c + 0.5) * S.pitch, r * SHELF.rowH, S.w, S.d, S.h - S.dh * hash01(slug));
+    return slot(slug, first + (c + 0.5) * S.pitch, r * SHELF.rowH, S.w, S.d, S.h - S.dh * hash01(slug));
   });
 }

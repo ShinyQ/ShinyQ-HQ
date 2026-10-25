@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { bookBuffers, PAGE_ANGLES, PAGE_SEGMENTS, STAGE_BOOK, stageBook, turnAngle } from "@/experience/floors/library/decor/flipBooks";
 import { SHELF_PLINTH } from "@/experience/floors/library/decor/shelf3d";
-import { faceRoad, libraryIcons, ZONE_ICON } from "@/experience/floors/library/icons";
+import { faceRoad, libraryIcons, paperSlots, ZONE_ICON } from "@/experience/floors/library/icons";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { dockAlong, libraryLayoutInput, paperSlots, ZONE_TONE } from "@/experience/floors/library/model";
+import { dockAlong, libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
 import { buildExperienceData } from "@/content/experience";
 import { LIBRARY_ICONS } from "@/experience/fx/holoIcons";
 

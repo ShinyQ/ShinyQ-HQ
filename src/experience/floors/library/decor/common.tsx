@@ -12,8 +12,8 @@ import { useUniformTime } from "../../../fx/useUniformTime";
 import { tierFill } from "../../../tower/primitives";
 import type { GpuTier, LibraryData } from "../../../types";
 import { LineBatch } from "../../labs/lines";
-import { faceRoad, STATION_HEIGHT, ZONE_ICON } from "../icons";
-import { paperSlots, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
+import { faceRoad, paperSlots, STATION_HEIGHT, ZONE_ICON } from "../icons";
+import { ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
 
 export { faceRoad, STATION_HEIGHT };
 

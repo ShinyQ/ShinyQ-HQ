@@ -47,7 +47,7 @@ export interface LibraryGuideInput {
 export function libraryLayoutInput(library: Omit<LibraryData, "shapes">): LibraryLayoutInput {
   return {
     posts: library.posts.map((p) => ({ slug: p.slug, date: p.date, tags: [...p.tags], external: Boolean(p.url) })),
-    tracks: library.tracks.filter((t) => t.posts.length).map((t) => ({ slug: t.slug, posts: [...t.posts] })),
+    tracks: library.tracks,
     research: library.research.length,
     models: library.models.length,
     talks: library.talks.length,
@@ -131,8 +131,6 @@ export interface LibraryLayout {
   stations: LibraryStation[];
   /** One bay per reader track, in dataset order, alternating north and south of the timeline. */
   bays: LibraryBay[];
-  /** Section sign anchors (floor text and icon) with the direction the zone's road runs. */
-  signs: Record<LibrarySection, { at: Vec2; heading: Vec2 }>;
   /** Concept centerpiece (the newsroom headline wall). */
   centerpiece: Vec2;
   /** Concept extras the decor reads (headline wall). */
@@ -251,44 +249,6 @@ export function shelfItems(input: LibraryLayoutInput): DockItem[] {
   return out;
 }
 
-/**
- * Zone name anchors: on the road edge in front of each zone's first station, reading along the road
- * east (+x) or north (-z), so the floor text is upright for the default follow camera (south-east of
- * the rover). Zones without a station sit at `fallback`.
- */
-export function signsFor(stations: readonly LibraryStation[], fallback: Vec2): LibraryLayout["signs"] {
-  const inset = LIBRARY_FLOOR.road / 2 - 1.4;
-  const out = {} as LibraryLayout["signs"];
-  for (const zone of LIBRARY_ZONES) {
-    const s = stations.find((st) => st.zone === zone);
-    if (!s) {
-      out[zone] = { at: fallback, heading: { x: 1, z: 0 } };
-      continue;
-    }
-    const along = Math.abs(s.facing.z) > 0.5 ? { x: 1, z: 0 } : { x: 0, z: -1 };
-    out[zone] = { at: { x: s.from.x + s.facing.x * inset, z: s.from.z + s.facing.z * inset }, heading: along };
-  }
-  return out;
-}
-
-/**
- * Paper plates of the Research station: spread along its front, 0.15 u outside the glass (so a click
- * reaches the plate, not the station) and turned toward the road (`yaw` as in `HoloIcon` faces).
- */
-export function paperSlots(station: LibraryStation, count: number): (Vec2 & { yaw: number; width: number })[] {
-  const along = { x: Math.abs(station.facing.z), z: Math.abs(station.facing.x) };
-  const w = station.rect.maxX - station.rect.minX;
-  const d = station.rect.maxZ - station.rect.minZ;
-  const span = along.x * w + along.z * d;
-  const front = Math.abs(station.facing.x) * (w / 2) + Math.abs(station.facing.z) * (d / 2) + 0.15;
-  const step = (span - 1) / Math.max(1, count);
-  const yaw = Math.atan2(-station.facing.x, -station.facing.z);
-  return Array.from({ length: count }, (_, i) => {
-    const t = -span / 2 + 0.5 + step * (i + 0.5);
-    return { x: station.center.x + along.x * t - station.facing.x * front, z: station.center.z + along.z * t - station.facing.z * front, yaw, width: Math.min(1.8, step - 0.3) };
-  });
-}
-
 /** Follow-camera yaw that looks at a station from its road (see `ViewZone.yaw` in camera/orbit.ts). */
 export function stationYaw(facing: Vec2): number {
   if (facing.z < -0.5) return 0;
@@ -302,8 +262,7 @@ export function stationViewZones(stations: readonly LibraryStation[]): ViewZone[
   return stations.map((s) => {
     const bay = s.zone === "track";
     const r = bay ? SHELF_VIEW.zone : 2.2;
-    const zone: ViewZone = { id: s.room, area: { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r }, yaw: stationYaw(s.facing) };
-    return bay ? { ...zone, zoom: SHELF_VIEW.zoom, classView: { mobile: { zoom: SHELF_VIEW.zoomPhone } } } : zone;
+    return { id: s.room, area: { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r }, yaw: stationYaw(s.facing), ...(bay && { zoom: SHELF_VIEW.zoom, classView: { mobile: { zoom: SHELF_VIEW.zoomPhone } } }) };
   });
 }
 

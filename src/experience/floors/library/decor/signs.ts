@@ -2,7 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { FONTS } from "../../../tower/primitives";
 import type { Vec2 } from "../../../types";
-import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibraryZone, type LibrarySection } from "../model";
+import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
 
 /** L4 floating signs (spectacle round: no words painted on the floor). Pure: Vitest runs it in node. */
 
@@ -20,11 +20,8 @@ export type LibrarySignKind = "section" | "track" | "lead" | "spine";
 
 export interface LibrarySignMeta {
   kind: LibrarySignKind;
-  zone: LibraryZone;
   /** The bay room (`L4:track:<slug>`) of a track sign, the post room (`L4:<slug>`) of a lead or spine sign. */
   room?: RoomId;
-  /** Index of the sign's bay in `layout.bays`. */
-  bay?: number;
 }
 
 /** A sign whose plate bottom sits at `bottom`. */
@@ -50,8 +47,7 @@ const titleSign = (text: string, at: Vec2, bottom: number): SignSpec =>
 /**
  * One floating sign per zone that has a station, hung over the back edge of the zone's first station (a
  * storefront sign over the first desk; for the posts that is the featured stage). Off the road, so it is
- * never the plate between the follow camera and the rover. `layout.signs` (the zone anchors on the road)
- * stays in the layout contract for the tests; no decor reads it. Pure: the layout test reads it.
+ * never the plate between the follow camera and the rover. Pure: the layout test reads it.
  */
 export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibrarySection, string>): SignSpec[] {
   return LIBRARY_ZONES.flatMap((zone) => {
@@ -85,15 +81,15 @@ export function librarySigns(input: {
   tracks: Map<string, string>;
 }): { signs: SignSpec[]; meta: LibrarySignMeta[] } {
   const { layout, titles } = input;
-  const bays = layout.bays;
-  const present = LIBRARY_ZONES.filter((z) => layout.stations.some((s) => s.zone === z));
+  const { bays } = layout;
+  const zones = zoneSignSpecs(layout, input.zones);
   return {
-    signs: [...zoneSignSpecs(layout, input.zones), ...trackSignSpecs(layout, input.tracks), ...leadSignSpecs(layout, titles), ...spineSignSpecs(layout, titles)],
+    signs: [...zones, ...trackSignSpecs(layout, input.tracks), ...leadSignSpecs(layout, titles), ...spineSignSpecs(layout, titles)],
     meta: [
-      ...present.map((zone): LibrarySignMeta => ({ kind: "section", zone })),
-      ...bays.map((b, bay): LibrarySignMeta => ({ kind: "track", zone: "track", room: b.room, bay })),
-      ...bays.map((b, bay): LibrarySignMeta => ({ kind: "lead", zone: "track", room: roomOfPost(b.slots[0].slug), bay })),
-      ...bays.flatMap((b, bay) => b.slots.slice(1).map((s): LibrarySignMeta => ({ kind: "spine", zone: "track", room: roomOfPost(s.slug), bay }))),
+      ...zones.map((): LibrarySignMeta => ({ kind: "section" })),
+      ...bays.map((b): LibrarySignMeta => ({ kind: "track", room: b.room })),
+      ...bays.map((b): LibrarySignMeta => ({ kind: "lead", room: roomOfPost(b.posts[0]) })),
+      ...bays.flatMap((b) => b.posts.slice(1).map((p): LibrarySignMeta => ({ kind: "spine", room: roomOfPost(p) }))),
     ],
   };
 }

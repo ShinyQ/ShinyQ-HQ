@@ -111,7 +111,6 @@ describe("L4 concept newsroom", () => {
     const zone = LIBRARY_FLOOR.padZone;
     for (const o of layout.floor.obstacles) expect(overlaps(o, zone), JSON.stringify(o)).toBe(false);
     for (const s of docked(layout)) expect(overlaps(s.rect, zone) || inside(s.door, zone), s.room).toBe(false);
-    for (const sign of Object.values(layout.signs)) expect(inside(sign.at, zone)).toBe(false);
     expect(inside(layout.floor.spawn, zone)).toBe(false);
   });
 
@@ -182,16 +181,6 @@ describe("L4 concept newsroom", () => {
     expect(floor.arrival).toEqual(floor.spawn);
     expect(floor.door).toEqual({ x: -24, z: 0 });
     expect(floor.bounds.minX).toBe(-24);
-  });
-
-  it("writes zone names on the road in front of each zone, upright for the default camera", () => {
-    const layout = build(real);
-    for (const zone of ["blog", "research", "models", "talks"] as const) {
-      const sign = layout.signs[zone];
-      expect([JSON.stringify({ x: 1, z: 0 }), JSON.stringify({ x: 0, z: -1 })]).toContain(JSON.stringify(sign.heading));
-      const first = layout.stations.find((s) => s.zone === zone)!;
-      expect(Math.hypot(sign.at.x - first.from.x, sign.at.z - first.from.z)).toBeLessThanOrEqual(LIBRARY_FLOOR.road / 2);
-    }
   });
 
   it("turns the camera at every door", () => {

@@ -61,7 +61,7 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
     expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
       const lead = library.bays[i].slots[0];
-      expect(lead.lead).toBe(true);
+      expect(lead.slug).toBe(library.bays[i].posts[0]);
       expect([s.x, s.z]).toEqual([lead.at.x, lead.at.z]);
       expect(s.text.replace(/\n/g, " ")).toBe(titles.get(roomOfPost(lead.slug)));
       expect(wrapped(s.text, TITLE_SIGN.wrap)).toBe(true);
@@ -84,16 +84,15 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
     });
   });
 
-  it("lists sections, tracks, leads and spines with their kind, room and bay; no text repeats", () => {
+  it("lists sections, tracks, leads and spines with their kind and room; no text repeats", () => {
     const { signs, meta } = librarySigns({ layout: library, zones, titles, tracks });
     expect(signs).toHaveLength(meta.length);
     const texts = signs.map((s) => s.text.replace(/\n/g, " ").toUpperCase());
     expect(new Set(texts).size).toBe(texts.length);
     expect(meta.filter((m) => m.kind === "section")).toHaveLength(zoneSignSpecs(library, zones).length);
-    expect(meta.filter((m) => m.kind === "track").map((m) => [m.room, m.bay])).toEqual(library.bays.map((b, i) => [b.room, i]));
-    expect(meta.filter((m) => m.kind === "lead").map((m) => [m.room, m.bay])).toEqual(library.bays.map((b, i) => [roomOfPost(b.posts[0]), i]));
-    expect(meta.filter((m) => m.kind === "spine").map((m) => [m.room, m.bay])).toEqual(library.bays.flatMap((b, i) => b.posts.slice(1).map((p) => [roomOfPost(p), i])));
-    expect(meta.filter((m) => m.kind !== "section").every((m) => m.zone === "track")).toBe(true);
+    expect(meta.filter((m) => m.kind === "track").map((m) => m.room)).toEqual(library.bays.map((b) => b.room));
+    expect(meta.filter((m) => m.kind === "lead").map((m) => m.room)).toEqual(library.bays.map((b) => roomOfPost(b.posts[0])));
+    expect(meta.filter((m) => m.kind === "spine").map((m) => m.room)).toEqual(library.bays.flatMap((b) => b.posts.slice(1).map((p) => roomOfPost(p))));
     // The featured stage keeps its title on the headline wall: no lead sign over the stage.
     expect(signs.some((s) => s.x === featured.center.x && s.z === featured.center.z)).toBe(false);
   });

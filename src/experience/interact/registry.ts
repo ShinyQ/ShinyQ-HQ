@@ -15,7 +15,7 @@ import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
 import { VISITS_ROOM } from "../floors/lobby/visitsRoom";
 import { NEWSROOM, VAULT_ROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
-import { libraryLayoutInput, roomOfPost, type LibraryLayout, type LibraryZone } from "../floors/library/model";
+import { libraryLayoutInput, roomOfPost, type LibraryLayout, type LibrarySection } from "../floors/library/model";
 import { SHELF_PLINTH } from "../floors/library/shelf";
 import { TOPICS_ROOM } from "../floors/library/topicHash";
 import { CONSTELLATION } from "../floors/library/topics";
@@ -105,7 +105,7 @@ const PAD_HEIGHT = PAD.iconY + PAD.iconSize / 2;
 /** L2 rooms are open bays with a neon frame about 2.2 u tall. */
 const CAREER_ROOM_HEIGHT = 2.4;
 /** L4 stations (blog plinths are low, so their volume reaches their billboard titles). */
-const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6, track: 3.6 };
+const STATION_HEIGHT: Record<LibrarySection, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6 };
 const KIOSK_HEIGHT = 3.4;
 /** L2 Workshop: bench card tops and the console screen top (`WorkshopAnnex`). */
 export const BENCH_TOP = 3.1;
@@ -370,20 +370,21 @@ function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] 
 function shelfItems(library: LibraryLayout, data: InteractData): Interactable[] {
   return library.bays.flatMap((bay) => {
     const group = { id: bay.room, label: roomLabel(bay.room, data) };
-    return bay.slots.map(
-      (slot): Interactable => ({
+    return bay.slots.map((slot): Interactable => {
+      const room = roomOfPost(slot.slug);
+      return {
         id: `L4:shelf:${slot.slug}`,
         floor: "L4",
         kind: "station",
-        label: data.labels.readPost(roomLabel(roomOfPost(slot.slug), data)),
+        label: data.labels.readPost(roomLabel(room, data)),
         at: { ...bay.stop },
         bounds: bare(slot.rect),
         base: slot.y,
         height: slot.y + SHELF_PLINTH + slot.h,
-        action: { type: "command", command: `open:${roomOfPost(slot.slug)}` },
+        action: { type: "command", command: `open:${room}` },
         group,
-      }),
-    );
+      };
+    });
   });
 }
 
@@ -474,10 +475,10 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     }
     case "L4": {
       const library = buildLibraryLayout(libraryLayoutInput(experience.library));
-      const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone] }]));
+      const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone as LibrarySection] }]));
       // A bay door keeps its pad volume (the bay's would enclose and shadow its spines) and leads its bay's hint group.
       const doors = doorItems(floor, layouts, data, rooms);
-      for (const door of doors) if (door.id.startsWith("L4:door:track:")) door.group = { id: door.id.replace("door:", ""), label: door.label };
+      for (const door of doors) if (door.id.includes("track:")) door.group = { id: (door.action as { room: RoomId }).room, label: door.label };
       return [...pads, ...doors, ...shelfItems(library, data), ...endItems(library, data), ...vaultItems(library, data)];
     }
     case "RF": {

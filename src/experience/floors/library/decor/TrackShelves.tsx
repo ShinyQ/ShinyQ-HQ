@@ -75,18 +75,19 @@ export function TrackShelves({ bays, tier, reducedMotion }: { bays: readonly Lib
     const pick = store.floor === "L4" ? pickSpine(kit.live, store.hover?.item.id, roverRuntime.x, roverRuntime.z) : -1;
     const step = reducedMotion ? 1 : Math.min(dt, 0.1) * SHELF_SCENE.rate;
     let changed = false;
-    kit.posts.forEach(({ slot, bay }, i) => {
+    for (let i = 0; i < pull.length; i++) {
       const p = pull[i] + MathUtils.clamp((i === pick ? 1 : 0) - pull[i], -step, step);
       const l = (rooms?.includes(kit.rooms[i]) ? LEVEL.lit : LEVEL.spine) + LEVEL.pull * p;
       if (p !== pull[i]) {
         changed = true;
+        const { slot, bay } = kit.posts[i];
         mesh.setMatrixAt(i, spineMatrix(slot, (pull[i] = p), bay.facing, M).premultiply(kit.shift));
       }
       if (l !== level[i]) {
         changed = true;
         mesh.setColorAt(i, C.set(TONE).multiplyScalar((level[i] = l)));
       }
-    });
+    }
     sceneProbes.shelves.pulled = pick < 0 ? null : kit.rooms[pick];
     if (!changed) return;
     mesh.instanceMatrix.needsUpdate = true;

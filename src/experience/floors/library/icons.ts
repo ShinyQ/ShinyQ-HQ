@@ -1,5 +1,5 @@
 import { LIBRARY_ICONS, type PlacedIcon, type Stroke } from "../../fx/holoIcons";
-import type { LibraryData } from "../../types";
+import type { LibraryData, Vec2 } from "../../types";
 import { SHELF_PLINTH } from "./shelf";
 import { ZONE_TONE, type LibraryLayout, type LibrarySection, type LibraryStation } from "./model";
 
@@ -32,6 +32,24 @@ export function deskSlots(s: LibraryStation, n: number): { x: number; y: number;
     const o = ((i % cols) - (cols - 1) / 2) * DESK.gap;
     const d = n > 4 ? (i < cols ? -1.2 : 1.2) : 0;
     return { x: s.center.x - s.facing.z * o + s.facing.x * d, y: STATION_HEIGHT[s.zone as LibrarySection] + DESK.lift, z: s.center.z + s.facing.x * o + s.facing.z * d };
+  });
+}
+
+/**
+ * Paper plates of the Research station: spread along its front, 0.15 u outside the glass (so a click
+ * reaches the plate, not the station) and turned toward the road (`yaw` as in `HoloIcon` faces).
+ */
+export function paperSlots(station: LibraryStation, count: number): (Vec2 & { yaw: number; width: number })[] {
+  const along = { x: Math.abs(station.facing.z), z: Math.abs(station.facing.x) };
+  const w = station.rect.maxX - station.rect.minX;
+  const d = station.rect.maxZ - station.rect.minZ;
+  const span = along.x * w + along.z * d;
+  const front = Math.abs(station.facing.x) * (w / 2) + Math.abs(station.facing.z) * (d / 2) + 0.15;
+  const step = (span - 1) / Math.max(1, count);
+  const yaw = Math.atan2(-station.facing.x, -station.facing.z);
+  return Array.from({ length: count }, (_, i) => {
+    const t = -span / 2 + 0.5 + step * (i + 0.5);
+    return { x: station.center.x + along.x * t - station.facing.x * front, z: station.center.z + along.z * t - station.facing.z * front, yaw, width: Math.min(1.8, step - 0.3) };
   });
 }
 

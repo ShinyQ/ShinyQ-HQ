@@ -11,7 +11,6 @@ import {
   libraryFloor,
   roomOfPost,
   shelfItems,
-  signsFor,
   stationSpurs,
   trackRoom,
   ZONE_TONE,
@@ -136,7 +135,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const stations = docked.filter((s) => s.zone !== "track");
   const bays: LibraryBay[] = tracks.map((t, i) => {
     const s = lane[i];
-    return { track: t.slug, room: s.room, rect: s.rect, center: s.center, door: s.door, facing: s.facing, from: s.from, stop: s.door, posts: [...t.posts], slots: shelfSlots(s, t.posts) };
+    return { ...s, track: t.slug, stop: s.door, posts: t.posts, slots: shelfSlots(s, t.posts) };
   });
 
   const E = N.end;
@@ -234,7 +233,6 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
     network,
     stations,
     bays,
-    signs: signsFor(stations, P),
     centerpiece: { x: N.wall.x, z: wall.maxZ },
     extras: { wall },
     end: { center: end, core, ringStop, monument, returnPad, vault },

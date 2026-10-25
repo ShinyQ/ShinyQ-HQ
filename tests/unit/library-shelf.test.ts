@@ -19,7 +19,7 @@ describe("shelf", () => {
       const b = bay(along);
       const slots = shelfSlots(b, posts(n));
       expect(slots).toHaveLength(n);
-      expect(slots[0]).toMatchObject({ slug: "p0", lead: true });
+      expect(slots[0]).toMatchObject({ slug: "p0", w: SHELF.lead.w });
       for (const s of slots) {
         expect(s.rect.minX).toBeGreaterThanOrEqual(b.rect.minX - 1e-6);
         expect(s.rect.maxX).toBeLessThanOrEqual(b.rect.maxX + 1e-6);
@@ -52,7 +52,7 @@ describe("shelf", () => {
     for (const s of a.slice(1)) {
       expect(s.h).toBeLessThanOrEqual(SHELF.spine.h);
       expect(s.h).toBeGreaterThan(SHELF.spine.h - SHELF.spine.dh);
-      expect(s).toMatchObject({ w: SHELF.spine.w, d: SHELF.spine.d, lead: false });
+      expect(s).toMatchObject({ w: SHELF.spine.w, d: SHELF.spine.d });
     }
   });
 });

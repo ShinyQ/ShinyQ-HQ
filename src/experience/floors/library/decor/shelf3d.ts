@@ -68,12 +68,13 @@ export function pickSpine(spines: readonly { slot: ShelfSlot; zone: Rect }[], ho
   let pick = slug ? spines.findIndex((s) => s.slot.slug === slug) : -1;
   if (pick >= 0) return pick;
   let best = NEAR;
-  spines.forEach(({ slot, zone }, i) => {
+  for (let i = 0; i < spines.length; i++) {
+    const { slot, zone } = spines[i];
     const d = Math.hypot(x - slot.at.x, z - slot.at.z);
     if (d < best && x >= zone.minX && x <= zone.maxX && z >= zone.minZ && z <= zone.maxZ) {
       best = d;
       pick = i;
     }
-  });
+  }
   return pick;
 }
