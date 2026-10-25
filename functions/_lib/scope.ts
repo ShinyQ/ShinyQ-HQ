@@ -289,8 +289,8 @@ export function isLeadQuestion(question: string): boolean {
  */
 const PROBLEM_SUBJECT = String.raw`(?:we|we're|our|my (?:team|company|startup|clinic|business|organi[sz]ation)|kami|tim kami|perusahaan kami|usaha kami|klinik kami)`;
 const PROBLEM_WORD = String.raw`(?:struggl\w*|problems?|issues?|bottlenecks?|pain points?|drown\w*|too slow|slow|manual(?:ly)?|by hand|can'?t keep up|cannot keep up|keeps? failing|pil(?:e|es|ing) up|overwhelmed|backlog|kesulitan|masalah|bermasalah|kewalahan|kendala|lambat|manual|sering gagal|menumpuk|kerepotan)`;
-const PROBLEM: RegExp[] = [
-  new RegExp(String.raw`\b${PROBLEM_SUBJECT}\b[^.?!]{0,40}\b${PROBLEM_WORD}`, "i"),
+const PROBLEM_OWN = new RegExp(String.raw`\b${PROBLEM_SUBJECT}\b[^.?!]{0,40}\b${PROBLEM_WORD}`, "i");
+const PROBLEM_ASK: RegExp[] = [
   /\bhow (?:would|will|could|might) (?:he|kurniadi|you) (?:approach|tackle|solve|handle|go about|start(?: on)?|fix|deal with|speed up|cut|reduce|improve)\b/i,
   /\bwhat would (?:he|kurniadi|you) do (?:about|with|for)\b/i,
   /\b(?:his|kurniadi'?s) (?:approach|take)\s*\?\s*$/i,
@@ -299,19 +299,24 @@ const PROBLEM: RegExp[] = [
   /\bkalau (?:dia|kurniadi) yang (?:menangani|mengerjakan)\b/i,
 ];
 
-/** Questions about his past work ("what problems he solved", "masalah yang pernah dia selesaikan") or polite asks to know or see it. */
+/** Questions about his past work ("what problems he solved", "masalah yang pernah dia selesaikan"). */
 const PROBLEM_PAST_WORK: RegExp[] = [
   /\b(?:he|kurniadi)\s+(?:has\s+|had\s+)?(?:solved|fixed|worked on|worked|tackled|handled|built|resolved|shipped)\b/i,
   /\b(?:(?:dia|ia|kurniadi)\s+(?:pernah|sudah)\s+|pernah\s+(?:dia\s+|ia\s+|kurniadi\s+)?)(?:selesaikan|menyelesaikan|tangani|menangani|kerjakan|mengerjakan|atasi|mengatasi)\b/i,
   /\byang\s+(?:dia|ia|kurniadi)\s+(?:selesaikan|tangani|kerjakan|atasi)\b/i,
   /\b(?:proyek|project)\s+(?:dia\s+|kurniadi\s+)?yang\s+(?:pernah\s+|sudah\s+)?(?:menyelesaikan|mengatasi|menangani)\b/i,
-  /^\s*(?:we'?d like to know|we would like to know|can we see|kami ingin tahu|bisakah kami (?:lihat|melihat))\b/i,
 ];
+/** "Like this" pointing back at the visitor's own problem ("has he handled something like this?"). */
+const PROBLEM_LIKE_THIS = /\b(?:like this|like ours|similar|seperti ini|serupa|semacam ini)\b/i;
 
 export function isProblemQuestion(question: string): boolean {
   if (civicQuestion(question) || routedTopic(question)) return false;
-  if (PROBLEM_PAST_WORK.some((re) => re.test(question))) return false;
-  return PROBLEM.some((re) => re.test(question));
+  const own = PROBLEM_OWN.test(question);
+  const ask = PROBLEM_ASK.some((re) => re.test(question));
+  // Past work alone is a question about his record; with a forward-looking ask about the visitor's own problem it stays a problem.
+  const forward = ask || (own && PROBLEM_LIKE_THIS.test(question));
+  if (!forward && PROBLEM_PAST_WORK.some((re) => re.test(question))) return false;
+  return own || ask;
 }
 
 /**

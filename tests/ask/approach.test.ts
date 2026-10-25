@@ -17,6 +17,13 @@ describe("isProblemQuestion", () => {
     "Tim kami kesulitan menyaring CV pelamar",
     "Bagaimana Kurniadi menangani deteksi fraud dokumen?",
     "Gimana dia akan mengatasi latensi voice AI?",
+    "We would like to know how he would approach our slow onboarding",
+    "We would like to know how he would tackle our manual fraud checks",
+    "Can we see how he would handle our support backlog?",
+    "Kami ingin tahu bagaimana Kurniadi akan menangani call center kami yang kewalahan",
+    "Our fraud checks are manual. He built fraud detection before, how would he approach ours?",
+    "Our call center cannot keep up. Has he handled this before? His approach?",
+    "Tim kami kewalahan dengan CV pelamar, apakah dia pernah menangani hal seperti ini?",
   ])("detects %s", (q) => expect(isProblemQuestion(q)).toBe(true));
 
   it.each([
