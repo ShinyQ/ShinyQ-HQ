@@ -68,6 +68,9 @@ export const PrincipleSchema = z.strictObject({
   text: LocalizedTextSchema,
 });
 
+/** Longest `Stat.short` in either locale (one cell of the landing proof strip). */
+export const STAT_SHORT_MAX = 28;
+
 export const ProfileSchema = z.strictObject({
   name: nonEmpty,
   handle: nonEmpty,
@@ -85,12 +88,16 @@ export const ProfileSchema = z.strictObject({
   howIWork: LocalizedTextSchema,
   principles: z.array(PrincipleSchema).min(1).max(6),
   photo: AssetSchema.optional(),
+  /** The landing hero's proof strip (owner decision 2026-10-25): exactly three `stats` ids, each with a `short` label. */
+  heroProof: z.array(SlugSchema).length(3),
 });
 
 export const StatSchema = z.strictObject({
   id: SlugSchema,
   value: nonEmpty,
   label: LocalizedTextSchema,
+  /** Short label for the landing proof strip (`profile.heroProof`, owner decision 2026-10-25); `label` stays the full sentence. */
+  short: LocalizedTextSchema.optional(),
   source: nonEmpty,
   confidence: ConfidenceSchema,
 });
@@ -200,6 +207,20 @@ export const ArchitectureSchema = z
 /** Post-local architecture diagrams (content/blog/diagrams.json): post slug, then diagram id, then a pod-shaped `architecture`. */
 export const PostDiagramsSchema = z.record(SlugSchema, z.record(SlugSchema, ArchitectureSchema));
 
+/**
+ * A case study told as a story (owner decision 2026-10-25): the situation, the owner's key decisions with why, and an
+ * optional lesson in the owner's own words (added only after the owner approves it). Body text, so the first person is
+ * fine in `situation` and `why`; decision titles read as headings (no first person).
+ */
+export const PodStorySchema = z.strictObject({
+  situation: LocalizedTextSchema,
+  decisions: z.array(z.strictObject({ title: LocalizedTextSchema, why: LocalizedTextSchema })).min(2).max(4),
+  lesson: LocalizedTextSchema.optional(),
+});
+
+/** The featured case studies that must read as stories (owner decision 2026-10-25). */
+export const STORY_SLUGS = ["voice-ai-contact-center", "ai-code-security-platform", "ai-solutions-assistant", "fraud-review-platform", "digital-banking-integrations", "fabric-forecasting-dashboard"] as const;
+
 /** Longest `Pod.shortTitle` in either locale (one line on an L3 directory board). */
 export const SHORT_TITLE_MAX = 32;
 
@@ -243,6 +264,8 @@ export const PodSchema = z
     repos: z.array(httpsUrl.regex(GITHUB_REPO_PATTERN, "Expected https://github.com/ShinyQ/<repo>")).min(1).max(4).optional(),
     /** Ids of `floors.library.publications` that come from this project (papers, the thesis, models). */
     publications: z.array(SlugSchema).min(1).optional(),
+    /** Story chapters on the case study page (`STORY_SLUGS` must have one); `problem` and `approach` stay for 3D and Ask. */
+    story: PodStorySchema.optional(),
   })
   .superRefine((pod, ctx) => {
     if (pod.liveUrl) {
@@ -615,12 +638,34 @@ export const SiteContentSchema = SiteContentObjectSchema.superRefine((content, c
     if (ranks.has(pod.selected)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "selected"], message: `Selected rank ${pod.selected} is used twice` });
     ranks.add(pod.selected);
   });
+  const statIndex = new Map(content.stats.map((s, i) => [s.id, i]));
+  if (new Set(content.profile.heroProof).size !== content.profile.heroProof.length) {
+    ctx.addIssue({ code: "custom", path: ["profile", "heroProof"], message: "heroProof lists a stat twice" });
+  }
+  content.profile.heroProof.forEach((id, i) => {
+    const at = statIndex.get(id);
+    if (at === undefined) {
+      ctx.addIssue({ code: "custom", path: ["profile", "heroProof", i], message: `Unknown stat "${id}"` });
+      return;
+    }
+    const short = content.stats[at].short;
+    if (!short) ctx.addIssue({ code: "custom", path: ["stats", at, "short"], message: `Stat "${id}" is in profile.heroProof and needs a short label` });
+    else for (const locale of LOCALES) {
+      if (short[locale].length > STAT_SHORT_MAX) ctx.addIssue({ code: "custom", path: ["stats", at, "short", locale], message: `Longer than ${STAT_SHORT_MAX} characters` });
+    }
+  });
   for (const issue of hologramIdClashes(content)) ctx.addIssue({ code: "custom", path: issue.path, message: issue.message });
   const ids = new Set(content.floors.library.publications.map((p) => p.id));
   content.floors.labs.pods.forEach((pod, i) => {
     pod.publications?.forEach((id, j) => {
       if (!ids.has(id)) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "publications", j], message: `Unknown publication "${id}"` });
     });
+  });
+  // A featured pod present in the dataset must carry its story. Presence of all six is checked against the real dataset
+  // in tests/content/recruiter-pass.test.ts, so minimal fixtures without these pods still parse.
+  const storySlugs = new Set<string>(STORY_SLUGS);
+  content.floors.labs.pods.forEach((pod, i) => {
+    if (storySlugs.has(pod.slug) && !pod.story) ctx.addIssue({ code: "custom", path: ["floors", "labs", "pods", i, "story"], message: `"${pod.slug}" needs a story (situation and 2 to 4 decisions)` });
   });
 });
 
@@ -678,6 +723,7 @@ export type Result = z.infer<typeof ResultSchema>;
 export type Architecture = z.infer<typeof ArchitectureSchema>;
 export type PostDiagrams = z.infer<typeof PostDiagramsSchema>;
 export type Pod = z.infer<typeof PodSchema>;
+export type PodStory = z.infer<typeof PodStorySchema>;
 export type PostRef = z.infer<typeof PostRefSchema>;
 export type Publication = z.infer<typeof PublicationSchema>;
 export type ResearchMetrics = z.infer<typeof ResearchMetricsSchema>;

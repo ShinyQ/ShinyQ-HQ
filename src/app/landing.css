@@ -78,13 +78,6 @@
   /* Shown only where 3D can run; the head script sets html[data-hq-3d] before first paint. */
   .hx-enter {
     display: none;
-    background: var(--color-cyan);
-    color: var(--color-void);
-    box-shadow: 0 0 32px -6px var(--color-cyan);
-  }
-
-  .hx-enter:hover {
-    background: #67e8f9;
   }
 
   html[data-hq-3d] .hx-enter {

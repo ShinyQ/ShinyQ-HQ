@@ -383,7 +383,7 @@
     "office-classic.spec.ts › Classic: Live Agent Office › no state moves the next section (id, 390px)": 19.1,
     "office-classic.spec.ts › Classic: Live Agent Office › offline after a good snapshot keeps the last known rows, dimmed, with their time": 14.5,
     "office-classic.spec.ts › Classic: Live Agent Office › shows Offline when the first request fails, over quiet desk rows, without promising activity": 4.9,
-    "office-classic.spec.ts › Classic: Live Agent Office › sits after the intro and shows the busy office, with Client project for private work": 5.3,
+    "office-classic.spec.ts › Classic: Live Agent Office › sits after the skills and shows the busy office, with Client project for private work": 5.3,
     "office.spec.ts › Agent Office (L1) at 1440 x 900 › a side drawer panel is a HUD box: the chips stay on screen and clear of it": 30.4,
     "office.spec.ts › Agent Office (L1) at 1440 x 900 › at the stop the chips wait for the camera, then all ten show far in one row; a hand zoom keeps them shown; a drag turns them into dots": 66.7,
     "office.spec.ts › Agent Office (L1) at 1440 x 900 › helper drones: 3 helpers draw 3, 6 draw 4 and the near chip adds +2; a sleeping Rover's helpers draw none": 33.4,

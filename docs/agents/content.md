@@ -286,6 +286,20 @@ Keep them documented here.
   - Ask chunks say a live site exists but never carry the hostname.
   - Adding a host is an owner decision, never a content-only edit.
 - `Result.headline`: optional `true` puts a result in the case study's metric strip; at most `HEADLINE_MAX` (3) per pod (schema check). Read the strip's results through `headlineResults(results)` from `@/content/selectors`: the flagged ones in dataset order, else the first three. `HEADLINE_MAX` lives in `selectors.ts` (client-safe) and is re-exported from `schema.ts`. The room-view builder marks those metrics `RoomMetric.headline`.
+- `Pod.story`: optional `PodStorySchema` (owner decision 2026-10-25), the case study told as a story on the Classic page ([page-view.md](page-view.md#case-study-labsslug)).
+  - `situation` (`{ en, id }`), 2 to 4 `decisions` (`{ title, why }`, each `{ en, id }`) and an optional `lesson`.
+  - Every pod in `STORY_SLUGS` (`src/content/schema.ts`, the six featured case studies) needs one: a `SiteContentSchema` check when the pod is in the dataset, and `tests/content/recruiter-pass.test.ts` checks all six are there.
+  - `situation` and `why` are body text (first person fine); decision titles read as headings: no first person, at most 90 characters (`recruiter-pass.test.ts`).
+  - No new numbers: every number in the situation or a decision must already appear in the pod's tagline, problem, approach, results or role (same test).
+  - `lesson` is the owner's own words only: drafted from what the owner already wrote (posts, perspectives, the CV, commits) and added only after the owner approves it, one by one. Never write one for the owner.
+  - `problem` and `approach` stay required: the 3D drawer, missions and Ask still read them.
+
+### `Profile` and `Stat` (landing proof strip)
+
+- `Profile.heroProof`: exactly 3 `stats` ids (owner decision 2026-10-25), the landing hero's proof strip in that order ([page-view.md](page-view.md#hero)). The schema rejects an unknown or repeated id.
+- `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (ticker, 3D stats ring, Ask).
+  - Required on every `heroProof` stat, at most `STAT_SHORT_MAX` (28) characters per locale (schema check); no first person.
+- `stats` stays at exactly six entries: the 3D Lobby stats ring reads them (`tests/content/recruiter-pass.test.ts`).
 
 ### Hologram ids
 

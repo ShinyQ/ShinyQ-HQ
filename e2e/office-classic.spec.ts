@@ -7,7 +7,7 @@ import { collectErrors, openPage } from "./hq";
 import { OFFICE_API, OFFICE_API_V3 } from "./office-fixtures";
 
 /**
- * Live Agent Office on the Classic home page (`#office`, part 4 of the office): the lazy card after the intro, its
+ * Live Agent Office on the Classic home page (`#office`, part 4 of the office): the lazy card after the skills, its
  * states, the hidden section when the office is switched off, and no request before the card nears the viewport.
  * `/api/office?v=3` (the card's poll) is answered from `OFFICE_FIXTURES` (a v1 body, as after a rollback), `OFFICE_FIXTURES_V2` (v2, as after a rollback) or `OFFICE_FIXTURES_V3`. Set `OFFICE_SHOTS=<dir>` to write the owner's review captures.
  */
@@ -82,12 +82,12 @@ const TEN_LINES = {
 } as const;
 
 test.describe("Classic: Live Agent Office", () => {
-  test("sits after the intro and shows the busy office, with Client project for private work", async ({ page }) => {
+  test("sits after the skills and shows the busy office, with Client project for private work", async ({ page }) => {
     const errors = collectErrors(page);
     await mockOffice(page, OFFICE_FIXTURES.busy);
     await open(page);
     const ids = await page.locator("main section[id]").evaluateAll((els) => els.map((e) => e.id));
-    expect(ids.indexOf("office")).toBe(ids.indexOf("intro") + 1);
+    expect(ids.indexOf("office")).toBe(ids.indexOf("skills") + 1);
     await expect(section(page)).toHaveAttribute("data-status", "ready");
     await expect(page.locator("#office-title")).toHaveText(en.office.classic.title);
     await expect(page.getByTestId("office-desk")).toHaveCount(5);
@@ -313,12 +313,12 @@ test.describe("Classic: Live Agent Office", () => {
       // A viewport shot: scrolling to the top for a page clip would let the section hide.
       await page.locator("#office").evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 80));
       await page.screenshot({ path: `${dir}/classic-disabled-held-${size.width}.png` });
-      // Then scrolled away: the area between the intro and the journey, to show the section is gone.
+      // Then scrolled away: the area between the skills and the writing, to show the section is gone.
       await page.evaluate(() => window.scrollTo(0, 0));
       await expect(section(page)).toHaveAttribute("data-status", "disabled");
-      const intro = await pageBox("#intro");
-      const journey = await pageBox("#journey");
-      await clip(`disabled-${size.width}`, intro.bottom - 240, journey.top + 240);
+      const skills = await pageBox("#skills");
+      const writing = await pageBox("#writing");
+      await clip(`disabled-${size.width}`, skills.bottom - 240, writing.top + 240);
       // Offline before any snapshot.
       await page.unrouteAll();
       await mockOffice(page, 500);

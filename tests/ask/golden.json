@@ -15,7 +15,7 @@
     {"id": "q11", "lang": "en", "q": "Where did he study?", "facts": ["Telkom University"], "expect": {"any": ["telkom"], "none": ["master", "sepuluh nopember"]}},
     {"id": "q12", "lang": "en", "q": "What is his AI code security platform?", "facts": ["8 engines"], "expect": {"any": ["8", "eight"]}},
     {"id": "q13", "lang": "id", "q": "Ceritakan pengalaman dia di Jenius.", "facts": ["Jenius"], "expect": {"any": ["jenius"]}},
-    {"id": "q14", "lang": "en", "q": "Since when has he been building software?", "facts": ["2019"], "expect": {"any": ["2019"]}},
+    {"id": "q14", "lang": "en", "q": "Since when has he been building software, and what was his first job?", "facts": ["2019-09"], "expect": {"any": ["2019"]}},
     {"id": "q15", "lang": "en", "q": "What is his favorite food?", "facts": [], "expect": {"refuse": true}},
     {"id": "q16", "lang": "id", "q": "Apa proyek software engineering terbaiknya?", "facts": [], "expect": {"lang": "id"}},
     {"id": "q17", "lang": "en", "q": "Is he an expert in Rust?", "facts": [], "expect": {"refuse": true, "none": ["he is an expert in rust", "yes, he is"]}},

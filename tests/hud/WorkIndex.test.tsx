@@ -54,7 +54,7 @@ describe("WorkIndex", () => {
     const user = userEvent.setup();
     window.history.replaceState(null, "", "/en/labs?wing=software&stack=FastAPI");
     renderIndex();
-    expect(await screen.findByText("No projects match these filters.")).toBeVisible();
+    expect(await screen.findByText(en.work.empty)).toBeVisible();
     expect(screen.getByRole("status")).toHaveTextContent("Showing 0 of 3");
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     for (const slug of ["a", "b", "c"]) expect(screen.getByText(`Pod ${slug}`)).toBeVisible();

@@ -97,6 +97,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 | Personal essays and poetry | Preserve `aku`, imagery, rhythm, quotations and attribution; literary changes need author approval |
 | Ask AI | Site assistant, not the owner speaking; third-person attribution, grounded and short: at most three short sentences, or one sentence and a bullet list of at most five items, with bold titles and site links only |
 | Errors and refusals | State the real boundary or failure and an available next action |
+| Empty and offline states | Always name a next step (clear a filter, open the CV or a page, check back in a minute); never only "unavailable" |
 | Privacy and stats | Neutral, implementation-backed wording; distinguish anonymous analytics from the 30-minute anti-bot cookie |
 
 ### Contextual glossary

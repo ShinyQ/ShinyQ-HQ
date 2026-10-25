@@ -47,6 +47,7 @@ export const ALL_SPECS = [
   "memory",
   "missions",
   "motion",
+  "not-found",
   "office",
   "office-classic",
   "onboarding",
@@ -310,6 +311,7 @@ export const RULES: Rule[] = [
 
   // Static pages, SEO and hosting.
   { test: /^src\/app\/(sitemap|robots)\.ts$|^src\/app\/og\/|^src\/lib\/(site|jsonld|og|og-cards|og-layout|og-assets|og-encode|seo|first-person|routes)\.tsx?$|^scripts\/og-(check|meta)\.ts$|^public\/og-assets\//, specs: ["seo", "static-routes"] },
+  { test: /^src\/app\/(global-not-found\.tsx|not-found\.module\.css)$|^src\/components\/DidYouMean\.tsx$|^src\/lib\/did-you-mean\.ts$/, specs: ["not-found", "static-routes"] },
   { test: /^src\/app\/data\//, specs: ["labs", "library-roof", "boot-first", "experience"] },
   { test: /^scripts\/(csp-hashes|csp-policy|defer-scripts)\.ts$/, specs: ["csp", "deploy", "static-routes", "boot-first", "sdf-fallback"] },
   { test: /^public\/_headers$|^scripts\/root-redirect\.ts$/, specs: ["csp", "deploy", "static-routes", "sdf-fallback"] },

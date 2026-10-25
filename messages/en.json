@@ -76,6 +76,7 @@
     "inProgress": "in progress"
   },
   "home": {
+    "proofLabel": "Key numbers",
     "currentRole": "Current role",
     "statsTitle": "At a glance",
     "journeyTitle": "Recent work",
@@ -215,6 +216,10 @@
     "research": "Papers, thesis and models",
     "directory": "Directory",
     "problem": "Problem",
+    "situation": "Situation",
+    "decisions": "Role and key decisions",
+    "why": "Why",
+    "lesson": "Lesson",
     "approach": "Contribution",
     "architecture": "Architecture",
     "results": "Results",
@@ -417,9 +422,16 @@
     "pageFailed": "This page could not be drawn."
   },
   "notFound": {
-    "title": "Page not found",
-    "body": "This page could not be found. Return to Home to continue browsing.",
-    "home": "Return to Home"
+    "kicker": "404 · Off the map",
+    "title": "Rover took a wrong turn",
+    "body": "This floor isn't on the map. Here are three good ways back.",
+    "cv": "View the CV",
+    "cvHint": "Experience, skills and contact",
+    "work": "See the work",
+    "workHint": "Selected projects",
+    "waysBack": "Ways back",
+    "home": "Home",
+    "didYouMean": "Did you mean"
   },
   "footer": {
     "pages": "Pages",
@@ -700,7 +712,7 @@
     "label": "Room details",
     "close": "Close room",
     "loading": "Loading room",
-    "unavailable": "Could not load the room details. Try opening the full page.",
+    "unavailable": "This room didn't load. Open the full page instead.",
     "tabs": {
       "overview": "Overview",
       "architecture": "Architecture",
@@ -791,7 +803,7 @@
     "stack": "Stack",
     "anyStack": "Any stack",
     "showing": "Showing {shown} of {total}",
-    "empty": "No projects match these filters.",
+    "empty": "No projects match these filters. Clear a filter or ask Rover.",
     "clear": "Clear filters",
     "wingShort": {
       "software": "Product Engineering",
@@ -820,7 +832,7 @@
     "privacy": "Questions and answers are processed by Cloudflare Workers AI, or by Groq (zero data retention) as a backup when Workers AI is unavailable or out of quota. AI Gateway logs are kept for up to 7 days. Recognized email addresses, phone numbers and ID numbers are masked in questions before AI processing or logging. Questions it cannot answer are kept privately for up to 3 months, masked the same way, so missing topics can be added; only their number and topic are published. This tab keeps the conversation for the browser session. Up to three earlier exchanges may accompany a follow-up. Closing chat hides it. New chat clears this tab's conversation, not retained service logs. No account is needed. Ask AI uses a 30-minute anti-bot cookie, separate from anonymous visit analytics. Please avoid sharing personal information.",
     "error": {
       "rateLimited": "Too many questions for now. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
-      "offline": "Ask AI is unavailable right now. Use Search or browse the site pages.",
+      "offline": "Rover is resting. The CV and the work pages answer most questions.",
       "fallback": "An answer isn't available right now. Try search or the Work and Journey pages."
     },
     "palette": {
@@ -1139,7 +1151,7 @@
     "updated": "Today live, earlier days every hour",
     "delayed": "Delayed: last updated {date}",
     "loading": "Loading visit stats",
-    "offline": "Stats unavailable",
+    "offline": "Visitor numbers are refreshing. Check back in a minute.",
     "topicLegend": "Topic",
     "periodLegend": "Period",
     "topics": {
@@ -1213,7 +1225,7 @@
       "semiLive": "Semi-live: no agent is reporting, public GitHub activity only",
       "resting": "Resting: the office is not reporting right now",
       "offline": "Offline: showing the last known activity",
-      "offlineEmpty": "Offline: the office cannot be reached right now",
+      "offlineEmpty": "The live office is quiet right now. See recent work in Writing and Work.",
       "updated": "updated {time}",
       "asOf": "as of {time}",
       "counts": { "active": "Active", "thinking": "Thinking", "waiting": "Waiting", "asleep": "Asleep" },
@@ -1223,7 +1235,7 @@
       "moreDesks": "+{n, plural, one {# more desk} other {# more desks}}",
       "idle": "{n, plural, =0 {No desks idle} one {# desk idle} other {# desks idle}}",
       "github": "Latest on GitHub",
-      "noGithub": "No public activity yet today.",
+      "noGithub": "Nothing public yet today.",
       "today": "Today: {tasks, plural, one {# task} other {# tasks}} done, {prs, plural, one {# PR} other {# PRs}} merged, {green} of {runs, plural, one {# CI run} other {# CI runs}} green",
       "todayNoCi": "Today: {tasks, plural, one {# task} other {# tasks}} done, {prs, plural, one {# PR} other {# PRs}} merged",
       "status": { "running": "Running", "success": "Passed", "failure": "Failed", "merged": "Merged", "opened": "Opened", "pushed": "Pushed" }

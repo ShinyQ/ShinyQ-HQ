@@ -9,6 +9,7 @@ How the site's content is stored, checked and published. The authoritative rules
 - [Perspectives](#perspectives)
 - [Titles and ordering](#titles-and-ordering)
 - [Project galleries and live sites](#project-galleries-and-live-sites)
+- [Writing a story case study](#writing-a-story-case-study)
 - [Skills](#skills)
 - [Certifications](#certifications)
 - [CV](#cv)
@@ -64,6 +65,18 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 - Two client projects stay text only by the owner's choice: the coal mining chart-of-accounts assistant and the automotive fraud review dashboard.
 - Projects with a public live site (`liveUrl`, allowlisted hosts in `src/content/live-links.ts`; today the MII Microsoft Solutions Website and the MII Microsoft AI Portfolio and Assistant) show a "Visit live site" button on their case study, in the project rows and in the Glass Drawer footer.
 - It opens a new tab with `rel="noopener noreferrer"`; internal apps never get a link.
+
+## Writing a story case study
+
+The six featured case studies (`STORY_SLUGS` in `src/content/schema.ts`) read as a story on the Classic site: Situation, Role and key decisions, Results, Lesson. The text lives in the pod's `story` in `content/site-content.json` (rules: [`agents/content.md`](agents/content.md#pod)).
+
+- **Situation**: two or three sentences on where things stood and what was at stake, grounded in the pod's own problem text. Body text, so the first person is fine.
+- **Decisions**: 2 to 4, each a short title in sentence case that starts with the action (a heading: no first person, at most 90 characters) and the why in one or two sentences. Each reason must be true to the pod's own text; do not invent motives.
+- **No new numbers**: every number in the situation and the decisions must already appear in the pod's tagline, problem, approach, results or role. `tests/content/recruiter-pass.test.ts` fails otherwise. Results stay in `results`.
+- **Lesson** (optional): the owner's own words only. Draft it from what the owner already wrote (posts, perspectives, the CV, commit messages), show it to the owner, and add it only after the owner approves it. Never write a lesson for the owner.
+- Keep `problem` and `approach`: the 3D drawer, the missions and Ask still use them.
+- EN and ID are written independently, like every other text; no client names (C3).
+- The landing hero's three proof numbers are `profile.heroProof` (exactly three stat ids); each needs a `short` label of at most 28 characters.
 
 ## Skills
 

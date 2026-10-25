@@ -1,6 +1,6 @@
 # Page View
 
-The static HTML pages (the Classic site): naming, navigation, layout, filters and the landing hero. Index: [AGENTS.md](../../AGENTS.md).
+The static HTML pages (the Classic site): naming, navigation, layout, filters, the landing hero, the 404 and empty states. Index: [AGENTS.md](../../AGENTS.md).
 
 ## Naming (owner decision)
 
@@ -76,7 +76,7 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Restraint (design refinement, spec `docs/superpowers/specs/2026-10-19-classic-design-refinement.md`):
   - Dates and periods use `pv-date` (sentence case, tabular mono); `pv-data` capitals are for labels only.
   - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
-    headline result is a `pv-result` block (value over label on a neutral hairline), pinned to the bottom.
+    headline result is a `pv-result` block (value over label on a neutral hairline), under the title on landing cards (recruiters scan results first), pinned to the bottom elsewhere.
   - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
   - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's headline and motto opt out.
   - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped either.
@@ -87,6 +87,11 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - The header opens with the metric strip (`MetricStrip`, `src/components/MetricStrip.tsx`, server-rendered, no client JS) under the tagline: up to 3 headline results (`headlineResults`), a big value (`pv-num`) and its label, as a list named "Key results" (`labs.keyResults`). 3 across from `md`, stacked rows below.
 - No confidence marker: `Result.confidence` is never rendered (decision 2026-10-11, confirmed 2026-10-17).
 - A "Results" chapter (`MetricLedger`, every result with how it was measured) opens the main column only when it adds something: more results than the strip, or any `context`. The TOC lists it only then. Without it, the strip's section carries the `#results` anchor (the drawer's Results tab links there).
+- **Story mode** (owner decision 2026-10-25): a pod with `story` (every `STORY_SLUGS` pod, [content.md](content.md#pod)) reads as a story instead.
+  - Chapters in order: Situation (`#problem`, `story.situation`), Role and key decisions (`#approach`, `DecisionList`), Results (`#results`, always the full `MetricLedger`), then Lesson (`#lesson`, only with `story.lesson`), then the usual architecture, gallery, code and stack chapters.
+  - The ids `problem` and `approach` stay, so 3D drawer tabs, missions and old links keep working; only the labels change (`labs.situation`, `labs.decisions`, `labs.results`, `labs.lesson`). The strip never carries `#results` in story mode.
+  - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
+  - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
 
 ## Filters
 
@@ -107,9 +112,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 
 ## Landing (home hero)
 
-- Section order after the hero (`src/app/[locale]/page.tsx`): Selected work (`#work`), the intro (`#intro`: bio and
-  status), the Live Agent Office (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Journey, Writing,
-  Skills, Certifications, Contact.
+- Section order after the hero (`src/app/[locale]/page.tsx`, the recruiter path, owner decision 2026-10-25): Selected
+  work (`#work`), the intro (`#intro`: bio and status), Journey, Certifications, Skills, the Live Agent Office
+  (`#office`, lazy, [office.md](office.md#classic-card-and-ask)), Writing, Contact.
 
 ### Hero
 
@@ -120,6 +125,12 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - About shows it at 80/112 px beside its title
 - Name: no eyebrow, `.hx-name` up to 112 px.
 - Then the headline and the motto (`profile.subheadline`).
+- Then the proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25, style B):
+  - the three stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`, in that order), each with its `data-stat` id;
+  - one quiet bordered row (hairline dividers, `bg-surface`), the value in the display face (`pv-num`) beside the stat's `short` label; on phones three equal cells with the value above the label;
+  - a list named "Key numbers" (`home.proofLabel`), server-rendered, no motion;
+  - the ticker skips these ids, so no number shows twice in the first screen.
+- Then the actions: View CV (`CvButton`, `cv-open-hero`) is the one primary button (full width on phones), then See the work (`/labs`), then Enter the 3D HQ (ghost buttons). The About intro's CV button is `cv-open-intro`.
 - Then it composes:
   - the CSS-only backdrop: a slow two-tone glow and a low, faint Neon Grid floor (no data packets, no glow on the name)
   - `EnterHqButton` (client): a real link to `/{locale}?tier=lite&view=3d` (an explicit 3D choice for the plain-link path) that sends `enterHq()` once the gate's tier is known; shown only under `html[data-hq-3d]`
@@ -142,7 +153,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - independent of `tier`, so a hero such as AI Fraud Document Review stays a key project with its hologram without a landing slot
 - Rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as equal-height cards in one grid:
   - 3 columns from 1024 px, 2 from 768 px, 1 on phones
-  - screenshot, three filmstrip slots, text, then the live link and key result pinned to the bottom
+  - screenshot, three filmstrip slots, wing, period and client, the title, the headline result right under the title
+    (`pod.results[0]` as a `pv-result`, `data-testid="feature-result"`; recruiters scan results first), the tagline,
+    then the live link pinned to the bottom
 - Never stagger or span cards (owner decision).
 - `/labs` Key projects use the same grid.
 
@@ -169,3 +182,35 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Hold still under automation and for crawlers (`html[data-hq-still]`).
 - Never animate the `h1` (LCP).
 - Mockup and captures: `docs/design/landing/` (`bun docs/design/landing/gen-landing.ts`; built captures in `built/` from `bun run screenshots:pages`).
+
+## Not found (404)
+
+- `src/app/global-not-found.tsx` (owner decision 2026-10-25): "Rover took a wrong turn", in English with one
+  Indonesian line (`lang="id"`), because the bad URL may carry no locale. Strings: the `notFound` namespace, read
+  straight from `messages/*.json`; `robots` is `noindex, follow`.
+- Three ways out in a `nav` named "Ways back" (`notFound.waysBack`): View the CV first (primary, `/en/cv`,
+  `not-found-cv`), See the work (`/en/labs`, `not-found-work`), and Home with English and Bahasa Indonesia links.
+- "Did you mean": `DidYouMean` (`src/components/DidYouMean.tsx`, a client island) fetches
+  `/data/routes/index.json` after paint and shows `suggestRoute(location.pathname, routes)` as a link
+  (`data-testid="did-you-mean"`), or nothing.
+  - The index is every page of the export in both locales with its title (`buildRouteIndex`,
+    `src/lib/route-index.ts`, served by `src/app/data/[...path]/route.ts`), so it follows `allPagePaths` by itself.
+  - `suggestRoute` (`src/lib/did-you-mean.ts`): null for an existing page; a missing or wrong-case locale is
+    corrected (English when missing); else the closest last segment in the same section by edit distance, within
+    `max(2, a third of its length)`.
+  - The suggestion sits in a `role="status"` live region that is always rendered with a reserved line (`min-h-6`), so
+    the late answer shifts nothing.
+- Works without JavaScript; only the suggestion needs it.
+- Styles: utility classes and the shared `pv-` classes, plus `src/app/not-found.module.css` for the rover's glow and
+  wobble only (nothing 404-only goes into `globals.css`). The module hand-copies the two selectors of the
+  `motion-reduce` variant (`:root[data-motion="reduced"]` and the `prefers-reduced-motion` media query under
+  `:root:not([data-motion="full"])`) because `@reference` / `@variant` does not resolve in a CSS module; keep them in
+  step with `globals.css`.
+- Tests: `e2e/not-found.spec.ts`, `tests/unit/did-you-mean.test.ts`, `tests/unit/route-index.test.ts`.
+
+## Empty and offline states
+
+- Every empty, failed or offline state names a next step (a filter to clear, a page to open, when to check back),
+  never only "unavailable": for example the Work filter's no match, the room drawer's load failure, Ask offline, the
+  visit stats and the Live Agent Office when offline. Voice: "Errors and refusals" in
+  [content-style-and-safety.md](content-style-and-safety.md#bilingual-editorial-voice).
