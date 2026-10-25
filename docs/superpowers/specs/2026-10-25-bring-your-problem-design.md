@@ -229,3 +229,25 @@ Found while planning and building; where an earlier section differs, this sectio
 10. The Indonesian approach ask needs "akan", as the English one needs "would": "Bagaimana dia menangani reliabilitas
     LLM?" asks about his practice (present tense) and keeps its route, while "Gimana dia akan mengatasi latensi voice
     AI?" is a problem question. A question with the visitor's own problem still matches through the own-problem shape.
+11. Final review (2026-10-25), exclusions and lead promotion: problem detection also skips site, team, learning and
+    views questions (`isPerspectiveQuestion` read without the approach ask itself), and a problem word must end on a
+    word boundary ("issued", "problematic", "slowdown"). `isOwnProblem` and `isApproachAsk` split the two shapes: an
+    own problem is always a lead; an approach ask is a lead only when `leadMatches` finds a past project, so "How
+    would he handle a tight deadline?" keeps its default route and "... a disagreement with his manager?" its team
+    route.
+12. Final review, the lead opinion check: every lead answer that tells a view as his (`claimsOpinion`) must cite a
+    written view, else `MESSAGES.lead` (reason `unsourced`). A plain lead may cite the engagements view (it restates
+    his engagement terms); an approach answer may not (item 7).
+13. Final review, stricter `prescribes` (approach only): a sentence that addresses the visitor ("you", "your",
+    "kamu", "anda", "kalian") or starts with an imperative ("Start", "Use", "Build", "Add", "Pick", "Choose",
+    "Consider", "Try", "Deploy", "Set up", "Mulai", "Gunakan", "Pakai", "Bangun", "Tambahkan", "Pilih", "Coba") fails;
+    a sentence with "would", "will", "'ll", "might", "should", "akan", "sebaiknya" or "seharusnya" fails unless it is
+    exactly the bridging sentence (a trailing source tag aside) or the word and the next two are his own words in
+    CONTEXT or a retrieved written view; vague durations ("a few weeks", "beberapa minggu", "dalam hitungan hari")
+    fail, and spelled-out durations ("six weeks", "dua minggu") are checked like digits (a case-study fact passes).
+    Rule 18 states the exact bridging sentences: "A similar problem would likely start the same way." and, in
+    Indonesian, "Masalah serupa kemungkinan besar dimulai dengan cara yang sama." (`APPROACH_BRIDGE`); the leak check
+    ignores both.
+14. Final review, the demotion: when the question vector drops every match, the plain lead states no match, its fit
+    check treats it as no fit (a "strong fit" claim becomes `MESSAGES.lead`, reason `fit`), and retrieval runs with
+    `excludeMatches`, so the rejected projects are neither offered nor retrieved.

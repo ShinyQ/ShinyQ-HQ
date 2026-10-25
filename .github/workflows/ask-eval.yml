@@ -2,8 +2,8 @@ name: Ask the HQ eval
 
 # Nightly real-model checks of Ask the HQ (spec section 9). Neuron budget (owner decision 2026-10-19): evals use
 # under 20% of the 10,000 free daily Workers AI neurons, which production Ask shares.
-#   - smoke: the fixed 20-question set (scripts/ask-eval.ts SMOKE_GOLDEN, SMOKE_REDTEAM) on the primary Workers AI
-#     model, about 800 neurons; needs CF_EVAL_TOKEN (Workers AI Read, AI Gateway Read, Account Analytics Read).
+#   - smoke: the fixed 21-question set (scripts/ask-eval.ts SMOKE_GOLDEN, SMOKE_REDTEAM) on the primary Workers AI
+#     model, about 840 neurons; needs CF_EVAL_TOKEN (Workers AI Read, AI Gateway Read, Account Analytics Read).
 #   - Groq (owner direction 2026-10-20): the bulk runs on Groq models production never uses, so evals never compete
 #     with the backup tier. Groq limits are per model: 200,000 tokens, 1,000 requests and 8,000 tokens per minute a
 #     day on the free plan; about 3,000 tokens per model call. The key offers one capable non-production chat model
