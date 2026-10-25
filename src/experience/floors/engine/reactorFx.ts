@@ -147,6 +147,9 @@ export function coolantParts(): CoolantPart[] {
   ];
 }
 
+/** The reactor plinth's two steps (square sizes, bottom then top): the bottom to y 0.4, the top to `CORE_FX.plinth`. */
+export const PLINTH_STEPS = [8, 5.6] as const;
+
 /**
  * The core's solids for the floor's merged mesh: a two-step plinth, the risers' feet and clamps, and two thin rails
  * along x over the clamps (north and south) topping out at the core height. No column, collar or cap: the energy
@@ -158,8 +161,8 @@ export function coreSolids(): Box[] {
   const risers = coolantRisers();
   const clampTop = risers[0].y1 + 0.25;
   return [
-    at(8, 0, 0.4),
-    at(5.6, 0.4, CORE_FX.plinth),
+    at(PLINTH_STEPS[0], 0, 0.4),
+    at(PLINTH_STEPS[1], 0.4, CORE_FX.plinth),
     ...risers.flatMap((p) => [at(0.7, 0.4, p.y0, p.x, p.z), at(0.6, p.y1, clampTop, p.x, p.z)]),
     ...[-1, 1].map((sz) => at(7.4, clampTop, h, 0, sz * 3.4, 0.14)),
   ];
