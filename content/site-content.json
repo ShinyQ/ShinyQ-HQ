@@ -2541,6 +2541,44 @@
               "confidence": "self-reported"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "Jenius offers partner insurance products inside its banking app, and each partner used different APIs and file formats. Policy workflows still needed manual steps, and partner file exchange relied on a licensed commercial transfer product. As a Software Engineer, I needed to add partners without building a one-off integration each time.",
+              "id": "Jenius menawarkan produk asuransi mitra di dalam aplikasi perbankannya, dan setiap mitra memakai API serta format file yang berbeda. Alur polis masih memerlukan langkah manual, dan pertukaran file mitra bergantung pada produk transfer komersial berlisensi. Sebagai Software Engineer, saya perlu menambah mitra tanpa membangun integrasi khusus setiap kali."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Integrated five insurance partners through one consistent microservices layer",
+                  "id": "Mengintegrasikan lima mitra asuransi melalui satu lapisan microservice yang konsisten"
+                },
+                "why": {
+                  "en": "Each partner spoke a different API, so a shared layer on Express.js and Spring Boot kept partner differences at the edge instead of in every flow.",
+                  "id": "Setiap mitra memakai API yang berbeda, jadi lapisan bersama di Express.js dan Spring Boot menjaga perbedaan mitra tetap di tepi sistem, bukan di setiap alur."
+                }
+              },
+              {
+                "title": {
+                  "en": "Replaced a licensed transfer product with an in-house SFTP service",
+                  "id": "Mengganti produk transfer berlisensi dengan layanan SFTP in-house"
+                },
+                "why": {
+                  "en": "Scheduled partner file exchange could run in-house instead of on a licensed product; the MFT/SFTP service held 99% uptime with about 1,000 transfers per month.",
+                  "id": "Pertukaran file mitra yang terjadwal bisa berjalan in-house tanpa produk berlisensi; layanan MFT/SFTP ini menjaga uptime 99% dengan sekitar 1.000 transfer per bulan."
+                }
+              },
+              {
+                "title": {
+                  "en": "Set full unit-test coverage as the team standard",
+                  "id": "Menetapkan unit-test coverage penuh sebagai standar tim"
+                },
+                "why": {
+                  "en": "New and refactored modules shipped with full Mocha, Chai and Sinon coverage plus k6 load tests, and production issues fell by about 30%.",
+                  "id": "Modul baru dan hasil refactor dirilis dengan load test k6 serta cakupan penuh Mocha, Chai, dan Sinon, dan masalah produksi turun sekitar 30%."
+                }
+              }
+            ]
+          },
           "stack": [
             "Node.js",
             "Express.js",
@@ -5358,6 +5396,44 @@
               "confidence": "verified"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "Callers were stuck in rigid phone menus. MII needed a voice agent that answers from the company knowledge base, lets callers interrupt while it speaks or searches, and hands over to a human and back within the same call, with a live console for supervisors.",
+              "id": "Penelepon terjebak di menu telepon yang kaku. MII membutuhkan voice agent yang menjawab dari knowledge base perusahaan, bisa diinterupsi saat sedang berbicara atau mencari, dan bisa mengalihkan panggilan ke manusia lalu kembali dalam panggilan yang sama, dengan konsol live untuk supervisor."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Moved knowledge lookups out of the realtime loop",
+                  "id": "Memindahkan akses knowledge base keluar dari realtime loop"
+                },
+                "why": {
+                  "en": "A caller interrupting mid-search had to be heard at once, so lookups became cancellable tasks sharing one time budget, and barge-in accounts for audio still playing.",
+                  "id": "Penelepon yang menyela saat pencarian berlangsung harus langsung didengar, jadi akses knowledge base saya jadikan task yang bisa dibatalkan dengan satu anggaran waktu bersama, dan barge-in memperhitungkan audio yang masih diputar."
+                }
+              },
+              {
+                "title": {
+                  "en": "Replaced a retiring voice service with self-hosted WebRTC on zonal VMs",
+                  "id": "Mengganti layanan suara yang akan dihentikan dengan WebRTC self-hosted di VM zonal"
+                },
+                "why": {
+                  "en": "The managed service was being retired; I documented the decision, then proved the new path with hard VM-stop failover drills.",
+                  "id": "Layanan managed tersebut akan dihentikan; saya mendokumentasikan keputusannya, lalu membuktikan jalur baru dengan drill failover yang mematikan VM secara paksa."
+                }
+              },
+              {
+                "title": {
+                  "en": "Built an evaluation harness before shipping changes",
+                  "id": "Membangun evaluation harness sebelum merilis perubahan"
+                },
+                "why": {
+                  "en": "A media emulator, golden questions and a calibrated LLM judge meant any change without supporting evidence stayed disabled.",
+                  "id": "Media emulator, golden question, dan LLM judge yang terkalibrasi membuat setiap perubahan tanpa bukti pendukung tetap dinonaktifkan."
+                }
+              }
+            ]
+          },
           "stack": [
             "Azure OpenAI Realtime",
             "Azure AI Search",
@@ -5757,6 +5833,44 @@
               "confidence": "verified"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "A GitHub organization with 100+ repositories needed security scanning on every pull request, triage engineers could read and fixes they could review safely before merging. Pris.AI became MII's AI code security platform for this, with me as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
+              "id": "Organisasi GitHub dengan 100+ repository membutuhkan security scanning pada setiap pull request, triage yang mudah dibaca engineer, dan perbaikan yang dapat di-review dengan aman sebelum merge. Pris.AI menjadi platform keamanan kode AI milik MII untuk kebutuhan ini, dengan saya sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap bisa di-review, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Unified eight open-source scanners behind one GitHub App",
+                  "id": "Menyatukan delapan scanner open-source di balik satu GitHub App"
+                },
+                "why": {
+                  "en": "Engineers needed one consistent result per pull request, so I normalized every engine's output, added exploit-likelihood and known-exploited data, and kept finding identities stable across scans.",
+                  "id": "Engineer membutuhkan satu hasil yang konsisten per pull request, jadi saya menormalisasi output setiap engine, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas finding tetap stabil antar-scan."
+                }
+              },
+              {
+                "title": {
+                  "en": "Kept every fix PR narrow and behind human review",
+                  "id": "Menjaga setiap fix PR tetap sempit dan melewati review manusia"
+                },
+                "why": {
+                  "en": "A fix that engineers cannot review is a new risk, so the agent patches only selected code regions within a token budget, never downgrades a dependency, and must pass protected-path guards and a rescan before it opens a PR.",
+                  "id": "Perbaikan yang tidak bisa di-review engineer justru menjadi risiko baru, jadi agent hanya mem-patch bagian kode yang dipilih dalam token budget, tidak pernah men-downgrade dependency, dan harus lolos proteksi path sensitif serta rescan sebelum membuka PR."
+                }
+              },
+              {
+                "title": {
+                  "en": "Isolated scans from production secrets after an internal audit",
+                  "id": "Mengisolasi scan dari secret produksi setelah audit internal"
+                },
+                "why": {
+                  "en": "The audit reproduced untrusted repository code running alongside production secrets, so I led a 14-item hardening program that moved scans to isolated, autoscaled jobs with tokens scoped per job; the cut-over cost about 9 minutes of outage.",
+                  "id": "Audit tersebut mereproduksi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, jadi saya memimpin hardening 14 item yang memindahkan scan ke job terisolasi dengan autoscaling dan token yang dibatasi per job; cut-over-nya menimbulkan jeda layanan sekitar 9 menit."
+                }
+              }
+            ]
+          },
           "stack": [
             "Next.js",
             "FastAPI",
@@ -6119,6 +6233,44 @@
               "confidence": "verified"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "Procurement teams needed timely fraud review across document packets, and they needed to trust it. Early versions flagged clean packets, and every false alarm undermined confidence in the results. As the creator and sole engineer of MII Fraud Detection, I had to show that false positives could fall without missing real fraud.",
+              "id": "Tim pengadaan membutuhkan review fraud yang cepat untuk paket dokumen, dan mereka harus bisa memercayainya. Versi awal menandai paket bersih sebagai bermasalah, dan setiap alarm palsu mengurangi kepercayaan terhadap hasilnya. Sebagai pembuat dan engineer tunggal MII Fraud Detection, saya harus membuktikan bahwa false positive bisa turun tanpa melewatkan fraud yang sebenarnya."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Split review into per-document findings and a cross-document verdict",
+                  "id": "Memisahkan review menjadi temuan per dokumen dan verdict lintas dokumen"
+                },
+                "why": {
+                  "en": "A packet is judged as a whole, so the second pass weighs the findings from each document together, and live progress keeps the reviewer informed while it runs.",
+                  "id": "Sebuah paket dinilai secara utuh, jadi tahap kedua menimbang temuan dari setiap dokumen secara bersamaan, dan progres live membuat reviewer tetap mendapat informasi selama proses berjalan."
+                }
+              },
+              {
+                "title": {
+                  "en": "Gated changes on gold sets for false positives, recall and fail-open",
+                  "id": "Menguji setiap perubahan dengan gold set untuk false positive, recall, dan fail-open"
+                },
+                "why": {
+                  "en": "Trust needed evidence, so false-positive rate, recall and fail-open became CI gates; those gates justified replacing the majority-vote guardrail and the overly broad safe patterns.",
+                  "id": "Kepercayaan butuh bukti, jadi false-positive rate, recall, dan fail-open saya jadikan CI gate; gate inilah yang menjadi dasar untuk mengganti guardrail majority vote dan safe pattern yang terlalu luas."
+                }
+              },
+              {
+                "title": {
+                  "en": "Kept the hybrid risk engine in shadow mode after it failed recall",
+                  "id": "Mempertahankan risk engine hybrid di shadow mode setelah gagal di recall gate"
+                },
+                "why": {
+                  "en": "It cut offline false positives to 9.1%, but recall dropped to 0.841 and it failed its gate. I kept it in shadow mode, where it changed user-visible output in 0 of 3,780 production runs.",
+                  "id": "Engine ini menurunkan false positive offline menjadi 9,1%, tetapi recall turun ke 0,841 sehingga gagal di gate-nya. Saya tetap menjalankannya di shadow mode, tempat engine ini tidak pernah mengubah hasil yang dilihat pengguna dalam run produksi."
+                }
+              }
+            ]
+          },
           "stack": [
             "Next.js",
             "FastAPI",
@@ -7106,6 +7258,54 @@
               "confidence": "verified"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "Planners at a national bakery brand needed a demand-forecasting dashboard, but the sales and master data lived in an on-premise database. The first release reached production on Microsoft Fabric quickly, then loads stalled for about 21 seconds. The next requirement was a pipeline from the client's own source data, and I was the sole engineer, responsible for operations too.",
+              "id": "Tim perencana di sebuah merek roti nasional membutuhkan dashboard forecasting permintaan, tetapi data penjualan dan master data berada di database on-premise. Rilis pertama cepat masuk production di Microsoft Fabric, lalu pemuatan tersendat sekitar 21 detik. Kebutuhan berikutnya adalah pipeline dari data sumber milik klien, dan saya adalah engineer tunggal yang juga bertanggung jawab atas operasional."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Measured capacity throttling before changing the data path",
+                  "id": "Mengukur capacity throttling sebelum mengubah jalur data"
+                },
+                "why": {
+                  "en": "Zero-row and capacity probes showed throttling and corrected my earlier diagnosis, so the fix targeted capacity: an 83,824-row read became about 3,000 streamed aggregates.",
+                  "id": "Zero-row probe dan capacity probe menunjukkan throttling sekaligus mengoreksi diagnosis saya sebelumnya, jadi perbaikannya menyasar capacity: pembacaan 83.824 baris diganti dengan sekitar 3.000 agregat yang di-stream."
+                }
+              },
+              {
+                "title": {
+                  "en": "Built a contract-first medallion pipeline that stops on failure and resumes",
+                  "id": "Membangun pipeline medallion berbasis data contract yang bisa berhenti dan dilanjutkan"
+                },
+                "why": {
+                  "en": "The client's data lived in an on-premise SQL Server, so a data contract, bronze load audits, silver data-quality rules and a reconciled app sync made each stage checkable. Since 8 Oct 2026 the dashboard runs on the client's real data.",
+                  "id": "Data klien berada di SQL Server on-premise, jadi data contract, audit pemuatan bronze, aturan data quality silver, dan sinkronisasi aplikasi dengan rekonsiliasi membuat setiap tahap bisa diperiksa. Sejak 8 Okt 2026, dashboard berjalan dengan data riil klien."
+                }
+              },
+              {
+                "title": {
+                  "en": "Shaped the dashboard around five pages and the planners' own workbook",
+                  "id": "Menyusun dashboard menjadi lima halaman yang mengikuti workbook tim perencana"
+                },
+                "why": {
+                  "en": "Planners already work from their workbook, so the OTF table follows its column order, and a drawer explains each forecast and keeps forecaster adjustments.",
+                  "id": "Tim perencana sudah bekerja dari workbook mereka, jadi tabel OTF mengikuti urutan kolomnya, dan drawer menjelaskan setiap forecast serta menyimpan penyesuaian forecaster."
+                }
+              },
+              {
+                "title": {
+                  "en": "Removed an in-app chat that answered too slowly",
+                  "id": "Menghapus chat di dalam aplikasi yang menjawab terlalu lambat"
+                },
+                "why": {
+                  "en": "A Fabric data agent took 23 to 28 s per answer without streaming, too slow for a planning tool, so I removed it; the executive briefing stays, rule-based since the model deployment was retired.",
+                  "id": "Fabric data agent butuh 23 hingga 28 detik per jawaban tanpa streaming, terlalu lambat untuk alat perencanaan, jadi saya menghapusnya; executive briefing tetap tersedia dalam versi berbasis aturan sejak deployment model dihentikan."
+                }
+              }
+            ]
+          },
           "stack": [
             "Microsoft Fabric",
             "Fabric Data Pipelines",
@@ -7367,6 +7567,44 @@
               "confidence": "verified"
             }
           ],
+          "story": {
+            "situation": {
+              "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work, with an assistant visitors could question. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget, while the team needed to publish projects and read analytics without an engineer. I was the sole engineer.",
+              "id": "Praktik Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, dengan asisten yang bisa ditanya pengunjung. Asisten tersebut harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan tetap dalam anggaran harian yang dapat ditegakkan, sementara tim perlu menerbitkan proyek dan membaca analitik tanpa engineer. Saya adalah satu-satunya engineer."
+            },
+            "decisions": [
+              {
+                "title": {
+                  "en": "Put a deterministic router in front of three YAML agents",
+                  "id": "Menempatkan router deterministik di depan tiga YAML agent"
+                },
+                "why": {
+                  "en": "I wanted each question to follow a known path that can be tested, and a guarded fallback tier keeps the guardrails in place when a model path fails.",
+                  "id": "Saya ingin setiap pertanyaan mengikuti jalur yang jelas dan bisa diuji, dan tier fallback tetap mengikuti guardrail saat jalur model gagal."
+                }
+              },
+              {
+                "title": {
+                  "en": "Gated answers on citations and checked output sentence by sentence",
+                  "id": "Mewajibkan sitasi pada jawaban dan memeriksa output per kalimat"
+                },
+                "why": {
+                  "en": "The assistant may answer only from curated content, so Cosmos DB vector search and Azure AI Search hybrid retrieval feed citation gating, with Prompt Shields on the input and sentence-level checks on the output.",
+                  "id": "Asisten hanya boleh menjawab dari konten terkurasi, jadi vector search Cosmos DB dan hybrid retrieval Azure AI Search memasok citation gating, dengan Prompt Shields pada input dan pemeriksaan per kalimat pada output."
+                }
+              },
+              {
+                "title": {
+                  "en": "Fixed production failures that were not being surfaced",
+                  "id": "Memperbaiki kegagalan produksi yang tidak terdeteksi"
+                },
+                "why": {
+                  "en": "Broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens all looked healthy from outside, so I traced and fixed each one.",
+                  "id": "Framing stream yang rusak, telemetry yang melaporkan nol request, dan spend cap harian yang menghitung token terlalu rendah tampak sehat dari luar, jadi saya menelusuri dan memperbaikinya satu per satu."
+                }
+              }
+            ]
+          },
           "stack": [
             "Next.js",
             "FastAPI",
