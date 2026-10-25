@@ -603,7 +603,7 @@ function ExperienceView({
         console: t("interact.console"),
         kiosk: t("launcher.roverMenu"),
         board: (wing: string) => t("interact.board", { wing }),
-        archive: t("interact.archive"),
+        readPost: (title: string) => t("interact.readPostTitle", { title }),
         rooms: {
           profile: t("rooms.profile"),
           stats: t("rooms.stats"),

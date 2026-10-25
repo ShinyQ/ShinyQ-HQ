@@ -192,6 +192,8 @@ describe("parseCommand", () => {
 
   it("opens a room's drawer in place", () => {
     expect(parseCommand("open:L4:research")).toEqual({ type: "open", room: "L4:research" });
+    // An L4 shelf spine opens its post drawer at the bay door.
+    expect(parseCommand("open:L4:making-a-voice-agent-interruptible")).toEqual({ type: "open", room: "L4:making-a-voice-agent-interruptible" });
     expect(parseCommand("open:L9:research")).toBeNull();
     expect(parseCommand("open:L4:")).toBeNull();
   });

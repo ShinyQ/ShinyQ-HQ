@@ -199,6 +199,12 @@ export function buildRoomCatalog(content: SiteContent, labels: StructuralLabels)
     surpriseWeight: 0,
   });
   add({ floor: "L4", slug: "talks", kind: "shelf", title: labels.talks, keywords: library.talks.flatMap((t) => [t.title.en, t.title.id, t.event]), path: "/library#talks", floorPath: "/library#talks", surpriseWeight: 0 });
+  // L4 reader track bays (owner decision 2026-10-25): one shelf drawer per track with posts (the Classic site lists them on the Writing page).
+  for (const track of library.tracks) {
+    const posts = library.posts.filter((p) => p.track === track.slug);
+    if (!posts.length) continue;
+    add({ floor: "L4", slug: `track:${track.slug}`, kind: "shelf", title: track.title, keywords: ["reader track", "rak", "shelf", ...posts.flatMap((p) => [p.title.en, p.title.id])], path: "/library#posts", floorPath: "/library#posts", surpriseWeight: 0 });
+  }
 
   // Visitor Observatory (public visit stats, owner decision 2026-10-14: the Lobby's south-west corner; it
   // was RF:visits before, see roomAliases.ts). The Classic site shows the stats in the Contact page's

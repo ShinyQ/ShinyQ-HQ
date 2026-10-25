@@ -1,7 +1,7 @@
 import { Matrix4 } from "three";
 import type { Rect, Vec2 } from "../../../types";
 import { DOCK, LIBRARY_FLOOR, type LibraryBay } from "../model";
-import { SHELF, shelfSize, type ShelfSlot } from "../shelf";
+import { SHELF, SHELF_PLINTH, shelfSize, type ShelfSlot } from "../shelf";
 import { framed, openCover, slabMatrix } from "./vault";
 
 /**
@@ -11,8 +11,7 @@ import { framed, openCover, slabMatrix } from "./vault";
  * scale the kit's unit box (base at y 0).
  */
 
-/** Board thickness under each row (the vault's plinth): every slot's base stands this high above its row. */
-export const SHELF_PLINTH = 0.24;
+export { SHELF_PLINTH };
 /** A pulled spine slides out `pull` u toward the road; pulls move at `rate` of the full travel per second. */
 export const SHELF_SCENE = { pull: 0.3, rate: 1.6 } as const;
 /** A spine pulls for the rover within this distance (u) of it, inside its bay zone. */

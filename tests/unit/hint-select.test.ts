@@ -53,6 +53,15 @@ describe("hintTargets", () => {
     expect(nearestHint(out, { x: 2, z: 1 })?.id).toBe("L4:vault");
   });
 
+  it("keeps the room of a group whose first target opens one (an L4 bay door before its spines), so Go opens that drawer", () => {
+    const bay = { id: "L4:track:craft", label: "Craft" };
+    const door: Interactable = { ...target("L4:door:track:craft", 5, bay), kind: "door", action: { type: "open-room", room: "L4:track:craft" } };
+    const out = hintTargets([door, target("L4:shelf:a", 5, bay), target("L4:shelf:b", 5, bay)]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ id: "L4:track:craft", label: "Craft", kind: "door", at: { x: 5, z: 0 }, action: { type: "open-room", room: "L4:track:craft" } });
+    expect(out[0].group).toBeUndefined();
+  });
+
   it("keeps a list without groups as it is", () => {
     const items = [target("a", 0), target("b", 3)];
     expect(hintTargets(items)).toBe(items);

@@ -1,6 +1,6 @@
 import { LIBRARY_ICONS, type PlacedIcon, type Stroke } from "../../fx/holoIcons";
 import type { LibraryData } from "../../types";
-import { SHELF_PLINTH } from "./decor/shelf3d";
+import { SHELF_PLINTH } from "./shelf";
 import { ZONE_TONE, type LibraryLayout, type LibrarySection, type LibraryStation } from "./model";
 
 /**

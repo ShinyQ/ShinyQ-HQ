@@ -31,6 +31,8 @@ export interface RoomLinkItem {
   /** Locale-less internal route ("/labs/x") or an absolute https URL. */
   href?: string;
   external?: boolean;
+  /** A room the item rides to in the tower (`goToRoom`) instead of following `href` (the L4 track drawer's posts). */
+  room?: RoomId;
 }
 
 /** A block of the Overview tab or of the single-pane variant. */

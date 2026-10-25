@@ -9,12 +9,18 @@ import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import type { Locale, RoomId } from "@/content/schema";
 import { buildRoomViews } from "@/content/room-views";
-import { getPosts, getRoof } from "@/content/load";
+import { getLibrary, getPosts, getRoof, getTrackIndex } from "@/content/load";
 import { RoomDrawer } from "@/hud/drawer/RoomDrawer";
 import { onHudCommand, type HudCommand } from "@/hud/events";
 import { audio } from "@/lib/audio";
 import { CV_PAGES } from "@/lib/cv";
+import { formatDate } from "@/lib/format";
 
+const goTo = vi.hoisted(() => vi.fn());
+vi.mock("@/experience/missions/bridge", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/experience/missions/bridge")>()),
+  goToRoom: goTo,
+}));
 // next-intl's Link needs the Next router; a locale-prefixing anchor is enough here.
 vi.mock("@/i18n/navigation", async () => {
   const { useLocale } = await import("next-intl");
@@ -87,6 +93,32 @@ describe("Library rooms in the drawer", () => {
     expect(link).toHaveAttribute("href", post.url);
     expect(link).toHaveAttribute("target", "_blank");
     expect(within(drawer).queryByRole("link", { name: en.drawer.rooms.readPost })).toBeNull();
+  });
+});
+
+describe("Reader track drawer", () => {
+  it("lists the track's posts lead first with their dates, and a post rides to its drawer", async () => {
+    const user = userEvent.setup();
+    goTo.mockClear();
+    const entry = getTrackIndex().find((t) => t.posts.length > 1)!;
+    const track = getLibrary().tracks.find((t) => t.slug === entry.slug)!;
+    const posts = new Map(getPosts().map((p) => [p.slug, p]));
+    const drawer = open(`L4:track:${entry.slug}` as RoomId);
+    expect(drawer).toHaveTextContent(track.title.en);
+    expect(drawer).toHaveTextContent(`${entry.posts.length} posts`);
+    const items = within(drawer).getAllByTestId("room-item");
+    expect(items.map((el) => el.textContent)).toEqual(entry.posts.map((slug) => `${posts.get(slug)!.title.en}${formatDate(posts.get(slug)!.date, "en")}`));
+    expect(items[0].tagName).toBe("BUTTON");
+    await user.click(items[0]);
+    expect(goTo).toHaveBeenCalledExactlyOnceWith(`L4:${entry.posts[0]}`);
+  });
+
+  it("speaks Indonesian", () => {
+    const entry = getTrackIndex().find((t) => t.posts.length > 1)!;
+    const track = getLibrary().tracks.find((t) => t.slug === entry.slug)!;
+    const drawer = open(`L4:track:${entry.slug}` as RoomId, "id");
+    expect(drawer).toHaveTextContent(track.title.id);
+    expect(drawer).toHaveTextContent(`${entry.posts.length} tulisan`);
   });
 });
 

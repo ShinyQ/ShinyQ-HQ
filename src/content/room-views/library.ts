@@ -1,5 +1,5 @@
 import { createTranslator } from "next-intl";
-import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "../load";
+import { getContact, getLibrary, getPosts, getProfile, getTopicIndex, getTrackIndex } from "../load";
 import { buildPaperPreview } from "../papers";
 import type { Locale } from "../schema";
 import { isResearch, publicationDate, researchPublications } from "../selectors";
@@ -98,7 +98,38 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       page: "/library#talks",
     }),
   ];
-  return [...chain([...posts, ...shelves]), topicsView(locale)];
+  return [...chain([...posts, ...shelves]), topicsView(locale), ...chain(trackViews(locale))];
+}
+
+/**
+ * L4 reader track bays (`L4:track:<slug>`): the track's posts lead first, each with its date, each riding to its post
+ * drawer (`RoomLinkItem.room`). Tracks without posts have no bay, so no view.
+ */
+export function trackViews(locale: Locale): RoomView[] {
+  const m = messages(locale);
+  const t = createTranslator({ locale, messages: m, namespace: "library.tracks" });
+  const posts = new Map(getPosts().map((p) => [p.slug, p]));
+  const titles = new Map(getLibrary().tracks.map((track) => [track.slug, track.title[locale]]));
+  return getTrackIndex()
+    .filter((track) => track.posts.length)
+    .map((track) =>
+      single({
+        id: roomId("L4", `track:${track.slug}`),
+        kind: "shelf",
+        title: titles.get(track.slug) ?? track.slug,
+        subtitle: t("count", { count: track.posts.length }),
+        accent: "white",
+        sections: [
+          {
+            items: track.posts.map((slug) => {
+              const post = posts.get(slug)!;
+              return { title: post.title[locale], meta: formatDate(post.date, locale), room: roomId("L4", slug) };
+            }),
+          },
+        ],
+        page: "/library",
+      }),
+    );
 }
 
 /** L4 Topic Constellation (`L4:topics`): every topic with its pieces (posts, papers, models, talks) and their rooms. */

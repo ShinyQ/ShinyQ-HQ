@@ -11,7 +11,8 @@ import { buildLabsLayout, LABS } from "@/experience/floors/labs/layout";
 import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract";
 import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { libraryLayoutInput, roomOfPost, trackRoom } from "@/experience/floors/library/model";
+import { SHELF_PLINTH } from "@/experience/floors/library/shelf";
 import {
   interactablesFor,
   onInteractablesChange,
@@ -20,7 +21,8 @@ import {
   type InteractLabels,
   type Interactable,
 } from "@/experience/interact/registry";
-import { pickVolume, volumePoint } from "@/experience/interact/pick";
+import { parseCommand, pickVolume, volumePoint } from "@/experience/interact/pick";
+import { hintTargets } from "@/experience/hints/select";
 import { roomTarget } from "@/experience/missions/host3d";
 import { buildNavGrid, nearestWalkable } from "@/experience/nav/navgrid";
 import { inSlab } from "@/experience/nav/slab";
@@ -36,7 +38,7 @@ function labelsFrom(m: Messages): InteractLabels {
     console: m.hud.interact.console,
     kiosk: m.hud.launcher.roverMenu,
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
-    archive: m.hud.interact.archive,
+    readPost: (title) => m.hud.interact.readPostTitle.replace("{title}", title),
     rooms: m.hud.rooms,
     reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
     metrics: m.library.topics.monument.target,
@@ -167,6 +169,7 @@ describe("interactablesFor on the real content", () => {
     }
     expect(experience.library.research.length).toBeGreaterThan(0);
     expect(find("L4", "L4:door:research")?.label).toBe(en.hud.rooms.research);
+    for (const t of experience.library.tracks) if (t.posts.length) expect(find("L4", `L4:door:track:${t.slug}`)?.label).toBe(t.label);
     const entry = experience.career.years[0].entries[0];
     expect(find("L2", `L2:door:${entry.slug}`)?.label).toContain(entry.role);
     expect(find("L2", "L2:station:workshop")?.label).toBe(en.hud.rooms.workshop);
@@ -264,14 +267,61 @@ describe("interactablesFor on the real content", () => {
     }
   });
 
-  it("adds the L4 archive board only while older posts overflow the floor", () => {
+  it("adds one L4 shelf target per post on its bay: drive to the bay door, then open the post drawer there", () => {
     const library = buildLibraryLayout(libraryLayoutInput(experience.library));
-    const board = find("L4", "L4:board:archive");
-    if (library.board) {
-      expect(board?.action).toEqual({ type: "command", command: "palette:posts" });
-      expect(board?.at).toEqual(library.board.stop);
-    } else {
-      expect(board).toBeUndefined();
+    expect(library.bays.length).toBeGreaterThan(0);
+    const shelves = items.L4.filter((i) => i.id.startsWith("L4:shelf:"));
+    expect(shelves.map((i) => i.id).sort()).toEqual(experience.library.posts.map((p) => `L4:shelf:${p.slug}`).sort());
+    for (const bay of library.bays) {
+      const track = experience.library.tracks.find((t) => trackRoom(t.slug) === bay.room)!;
+      for (const slot of bay.slots) {
+        const item = find("L4", `L4:shelf:${slot.slug}`)!;
+        const post = experience.library.posts.find((p) => p.slug === slot.slug)!;
+        expect(item).toMatchObject({ floor: "L4", kind: "station", label: `Read ${post.title}`, action: { type: "command", command: `open:L4:${slot.slug}` } });
+        expect(parseCommand((item.action as { command: string }).command)).toEqual({ type: "open", room: roomOfPost(slot.slug) });
+        expect(item.at).toEqual(bay.stop);
+        expect(item.bounds).toEqual({ minX: slot.rect.minX, maxX: slot.rect.maxX, minZ: slot.rect.minZ, maxZ: slot.rect.maxZ });
+        expect(item.base).toBe(slot.y);
+        expect(item.height).toBeCloseTo(slot.y + SHELF_PLINTH + slot.h, 9);
+        // Inside its bay, grouped by it (one hint bubble per bay).
+        expect(item.bounds.minX).toBeGreaterThanOrEqual(bay.rect.minX);
+        expect(item.bounds.maxX).toBeLessThanOrEqual(bay.rect.maxX);
+        expect(item.bounds.minZ).toBeGreaterThanOrEqual(bay.rect.minZ);
+        expect(item.bounds.maxZ).toBeLessThanOrEqual(bay.rect.maxZ);
+        expect(item.group).toEqual({ id: bay.room, label: track.label });
+      }
+    }
+    expect(setup("id").items.L4.find((i) => i.id === shelves[0].id)?.label).toMatch(/^Baca /);
+  });
+
+  it("adds one L4 bay door per track that opens its track drawer, on the door pad only, so it never shadows a spine", () => {
+    const library = buildLibraryLayout(libraryLayoutInput(experience.library));
+    const doors = items.L4.filter((i) => i.id.startsWith("L4:door:track:"));
+    expect(doors.map((d) => d.id)).toEqual(library.bays.map((b) => `L4:door:${b.room.slice(3)}`));
+    for (const bay of library.bays) {
+      const door = find("L4", `L4:door:${bay.room.slice(3)}`)!;
+      const track = experience.library.tracks.find((t) => trackRoom(t.slug) === bay.room)!;
+      expect(door).toMatchObject({ kind: "door", label: track.label, action: { type: "open-room", room: bay.room } });
+      expect(door.at).toEqual(bay.door);
+      expect(door.group).toEqual({ id: bay.room, label: track.label });
+      const pad = door.bounds;
+      expect(pad.minX <= bay.door.x && bay.door.x <= pad.maxX && pad.minZ <= bay.door.z && bay.door.z <= pad.maxZ).toBe(true);
+      for (const slot of bay.slots) {
+        const overlap = Math.min(pad.maxX, slot.rect.maxX) > Math.max(pad.minX, slot.rect.minX) && Math.min(pad.maxZ, slot.rect.maxZ) > Math.max(pad.minZ, slot.rect.minZ);
+        expect(overlap, slot.slug).toBe(false);
+      }
+    }
+    expect(items.L4.some((i) => i.id === "L4:board:archive" || i.kind === "board")).toBe(false);
+  });
+
+  it("folds each bay into one hint target under its room, whose Go opens the track drawer", () => {
+    const library = buildLibraryLayout(libraryLayoutInput(experience.library));
+    const hints = hintTargets(items.L4);
+    for (const bay of library.bays) {
+      const own = hints.filter((h) => [bay.room, `L4:door:${bay.room.slice(3)}`, ...bay.posts.map((slug) => `L4:shelf:${slug}`)].includes(h.id));
+      expect(own.map((h) => h.id), bay.room).toEqual([bay.room]);
+      expect(own[0].action).toEqual({ type: "open-room", room: bay.room });
+      expect(own[0].at).toEqual(bay.stop);
     }
   });
 

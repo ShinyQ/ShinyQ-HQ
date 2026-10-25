@@ -349,9 +349,9 @@ Owner decisions: "Neon line" style; unique holograms per item on L2, L3 and L4 (
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
   - pads from `FloorLayout.pads`;
-  - plus the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory, the L3 wing boards and reactor rings, the L4 end plaza (Topic Constellation, research monument), Study Vault books and archive board;
+  - plus the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory, the L3 wing boards and reactor rings, the L4 reader track shelves (one target per post's spine or lead cover), the end plaza (Topic Constellation, research monument) and Study Vault books;
   - features register the rest through `registerExtraInteractables` (the Highlights Hall stations, the L1 Agent Office desks).
-- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
+- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:shelf:<post slug>` (a spine or lead cover on its reader track bay), `L4:vault:<guide slug>`.
 
 ### Adding targets
 

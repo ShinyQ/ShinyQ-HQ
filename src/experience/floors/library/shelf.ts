@@ -31,12 +31,15 @@ export function shelfSize(count: number): { along: number; rows: number; cols: n
   return { along, rows, cols };
 }
 
+/** Board thickness under each row (the vault's plinth): every slot's base stands this high above its row. */
+export const SHELF_PLINTH = 0.24;
+
 export interface ShelfSlot {
   slug: string;
   lead: boolean;
   /** Footprint center. */
   at: Vec2;
-  /** Base height (the row's shelf). */
+  /** Base height (the row's shelf; the slot itself stands `SHELF_PLINTH` higher). */
   y: number;
   /** Size along the bay, across it and up. */
   w: number;

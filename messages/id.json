@@ -325,6 +325,9 @@
     "citations": "{count} sitasi di {source}, per {date}",
     "metrics": "{citations} sitasi · h-index {hIndex} di {source}, per {date}",
     "profiles": "Profil riset",
+    "tracks": {
+      "count": "{count} tulisan"
+    },
     "topics": {
       "title": "Konstelasi Topik",
       "subtitle": "Jelajahi blog, riset, model, dan sesi berbagi berdasarkan topik. Pilih topik untuk menyorot karya terkait di lantai ini.",
@@ -694,7 +697,6 @@
       "teleporter": "Teleporter {year}",
       "returnPad": "Kembali ke lift",
       "board": "Direktori {wing}",
-      "archive": "Arsip tulisan",
       "live": "{label}. Klik untuk menuju ke sana.",
       "liveTap": "{label} dipilih. Ketuk sekali lagi atau gunakan tombol Pergi.",
       "go": "Pergi ke {label}",
@@ -702,6 +704,7 @@
       "hintCoarse": "Ketuk objek yang menyala, lalu ketuk sekali lagi untuk menuju ke sana.",
       "console": "Konsol waktu",
       "studyGuide": "Baca panduan belajar {code}",
+      "readPostTitle": "Baca {title}",
       "studyVault": "Study Vault"
     }
   },
@@ -1021,7 +1024,8 @@
         "workshop": "Workshop: proyek sampingan dan repositori publik.",
         "timeConsole": "Konsol waktu: pindah ke tahun mana pun, atau kembali ke lift.",
         "ops": "Ruang Kontrol Ops: cara {name} menjalankan AI di production, plus telemetri live situs ini.",
-        "vault": "Study Vault: panduan belajar sertifikasi {name} dalam bentuk buku. Pilih satu untuk membacanya."
+        "vault": "Study Vault: panduan belajar sertifikasi {name} dalam bentuk buku. Pilih satu untuk membacanya.",
+        "track": "Rak tulisan dengan satu tema, yang terbaik paling depan."
       },
       "go": {
         "open": "Buka",
