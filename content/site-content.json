@@ -2543,8 +2543,8 @@
           ],
           "story": {
             "situation": {
-              "en": "Jenius offers partner insurance products inside its banking app, and each partner used different APIs and file formats. Policy workflows still needed manual steps, and partner file exchange relied on a licensed commercial transfer product. As a Software Engineer, I needed to add partners without building a one-off integration each time.",
-              "id": "Jenius menawarkan produk asuransi mitra di dalam aplikasi perbankannya, dan setiap mitra memakai API serta format file yang berbeda. Alur polis masih memerlukan langkah manual, dan pertukaran file mitra bergantung pada produk transfer komersial berlisensi. Sebagai Software Engineer, saya perlu menambah mitra tanpa membangun integrasi khusus setiap kali."
+              "en": "Jenius offers partner insurance products inside its banking app, and each partner used different APIs and file formats. Policy workflows still needed manual steps, and partner file exchange relied on a licensed commercial transfer product. As a Software Engineer, I integrated five insurance partners through a consistent microservices layer.",
+              "id": "Jenius menawarkan produk asuransi mitra di dalam aplikasi perbankannya, dan setiap mitra memakai API serta format file yang berbeda. Alur polis masih memerlukan langkah manual, dan pertukaran file mitra bergantung pada produk transfer komersial berlisensi. Sebagai Software Engineer, saya mengintegrasikan lima mitra asuransi melalui lapisan microservice yang konsisten."
             },
             "decisions": [
               {
@@ -2553,8 +2553,8 @@
                   "id": "Mengintegrasikan lima mitra asuransi melalui satu lapisan microservice yang konsisten"
                 },
                 "why": {
-                  "en": "Each partner spoke a different API, so a shared layer on Express.js and Spring Boot kept partner differences at the edge instead of in every flow.",
-                  "id": "Setiap mitra memakai API yang berbeda, jadi lapisan bersama di Express.js dan Spring Boot menjaga perbedaan mitra tetap di tepi sistem, bukan di setiap alur."
+                  "en": "Each partner used different APIs and file formats, so the integrations went through one consistent microservices layer built with Express.js and Spring Boot.",
+                  "id": "Setiap mitra menggunakan API dan format file yang berbeda, jadi integrasinya melalui satu lapisan microservice yang konsisten dengan Express.js dan Spring Boot."
                 }
               },
               {
@@ -5835,8 +5835,8 @@
           ],
           "story": {
             "situation": {
-              "en": "A GitHub organization with 100+ repositories needed security scanning on every pull request, triage engineers could read and fixes they could review safely before merging. Pris.AI became MII's AI code security platform for this, with me as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
-              "id": "Organisasi GitHub dengan 100+ repository membutuhkan security scanning pada setiap pull request, triage yang mudah dibaca engineer, dan perbaikan yang dapat di-review dengan aman sebelum merge. Pris.AI menjadi platform keamanan kode AI milik MII untuk kebutuhan ini, dengan saya sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap bisa di-review, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
+              "en": "A GitHub organization with 100+ repositories needed consistent pull-request security scanning, clear triage, and fixes that engineers could review safely before merging. Pris.AI became MII's AI code security platform for this, with me as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
+              "id": "Organisasi GitHub dengan 100+ repository membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat di-review engineer dengan aman sebelum merge. Pris.AI menjadi platform keamanan kode AI milik MII untuk kebutuhan ini, dengan saya sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap bisa di-review, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
             },
             "decisions": [
               {
@@ -6235,8 +6235,8 @@
           ],
           "story": {
             "situation": {
-              "en": "Procurement teams needed timely fraud review across document packets, and they needed to trust it. Early versions flagged clean packets, and every false alarm undermined confidence in the results. As the creator and sole engineer of MII Fraud Detection, I had to show that false positives could fall without missing real fraud.",
-              "id": "Tim pengadaan membutuhkan review fraud yang cepat untuk paket dokumen, dan mereka harus bisa memercayainya. Versi awal menandai paket bersih sebagai bermasalah, dan setiap alarm palsu mengurangi kepercayaan terhadap hasilnya. Sebagai pembuat dan engineer tunggal MII Fraud Detection, saya harus membuktikan bahwa false positive bisa turun tanpa melewatkan fraud yang sebenarnya."
+              "en": "Procurement teams needed timely, trustworthy fraud review across document packets. Early versions flagged clean packets, undermining confidence in the results. As the creator and sole engineer of MII Fraud Detection, I had to show that false positives could fall without missing real fraud.",
+              "id": "Tim pengadaan membutuhkan review fraud yang cepat dan dapat dipercaya untuk paket dokumen. Versi awal menandai paket bersih sebagai bermasalah, sehingga mengurangi kepercayaan terhadap hasilnya. Sebagai pembuat dan engineer tunggal MII Fraud Detection, saya harus membuktikan bahwa false positive bisa turun tanpa melewatkan fraud yang sebenarnya."
             },
             "decisions": [
               {
@@ -6245,8 +6245,8 @@
                   "id": "Memisahkan review menjadi temuan per dokumen dan verdict lintas dokumen"
                 },
                 "why": {
-                  "en": "A packet is judged as a whole, so the second pass weighs the findings from each document together, and live progress keeps the reviewer informed while it runs.",
-                  "id": "Sebuah paket dinilai secara utuh, jadi tahap kedua menimbang temuan dari setiap dokumen secara bersamaan, dan progres live membuat reviewer tetap mendapat informasi selama proses berjalan."
+                  "en": "The pipeline runs over OCR output: the first pass records findings for each document, the second pass reaches a verdict across the documents, and live progress streams while it runs.",
+                  "id": "Pipeline berjalan di atas hasil OCR: tahap pertama mencatat temuan untuk setiap dokumen, tahap kedua menghasilkan verdict lintas dokumen, dan progres di-stream secara live selama proses berjalan."
                 }
               },
               {
@@ -6255,8 +6255,8 @@
                   "id": "Menguji setiap perubahan dengan gold set untuk false positive, recall, dan fail-open"
                 },
                 "why": {
-                  "en": "Trust needed evidence, so false-positive rate, recall and fail-open became CI gates; those gates justified replacing the majority-vote guardrail and the overly broad safe patterns.",
-                  "id": "Kepercayaan butuh bukti, jadi false-positive rate, recall, dan fail-open saya jadikan CI gate; gate inilah yang menjadi dasar untuk mengganti guardrail majority vote dan safe pattern yang terlalu luas."
+                  "en": "I first set up gold sets and CI gates for false-positive rate, recall and fail-open, then replaced the majority-vote guardrail and the overly broad safe patterns.",
+                  "id": "Saya lebih dulu menyusun gold set dan CI gate untuk false-positive rate, recall, dan fail-open, lalu mengganti guardrail majority vote serta safe pattern yang terlalu luas."
                 }
               },
               {
@@ -7293,16 +7293,6 @@
                   "en": "Planners already work from their workbook, so the OTF table follows its column order, and a drawer explains each forecast and keeps forecaster adjustments.",
                   "id": "Tim perencana sudah bekerja dari workbook mereka, jadi tabel OTF mengikuti urutan kolomnya, dan drawer menjelaskan setiap forecast serta menyimpan penyesuaian forecaster."
                 }
-              },
-              {
-                "title": {
-                  "en": "Removed an in-app chat that answered too slowly",
-                  "id": "Menghapus chat di dalam aplikasi yang menjawab terlalu lambat"
-                },
-                "why": {
-                  "en": "A Fabric data agent took 23 to 28 s per answer without streaming, too slow for a planning tool, so I removed it; the executive briefing stays, rule-based since the model deployment was retired.",
-                  "id": "Fabric data agent butuh 23 hingga 28 detik per jawaban tanpa streaming, terlalu lambat untuk alat perencanaan, jadi saya menghapusnya; executive briefing tetap tersedia dalam versi berbasis aturan sejak deployment model dihentikan."
-                }
               }
             ]
           },
@@ -7579,8 +7569,8 @@
                   "id": "Menempatkan router deterministik di depan tiga YAML agent"
                 },
                 "why": {
-                  "en": "I wanted each question to follow a known path that can be tested, and a guarded fallback tier keeps the guardrails in place when a model path fails.",
-                  "id": "Saya ingin setiap pertanyaan mengikuti jalur yang jelas dan bisa diuji, dan tier fallback tetap mengikuti guardrail saat jalur model gagal."
+                  "en": "The assistant runs on a FastAPI backend with a deterministic router and three YAML agents on Microsoft Agent Framework; when a model path fails, a guarded fallback tier keeps the guardrails in place.",
+                  "id": "Asisten berjalan di backend FastAPI dengan router deterministik dan tiga YAML agent menggunakan Microsoft Agent Framework; saat jalur model gagal, tier fallback tetap mengikuti guardrail."
                 }
               },
               {
@@ -7599,8 +7589,8 @@
                   "id": "Memperbaiki kegagalan produksi yang tidak terdeteksi"
                 },
                 "why": {
-                  "en": "Broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens all looked healthy from outside, so I traced and fixed each one.",
-                  "id": "Framing stream yang rusak, telemetry yang melaporkan nol request, dan spend cap harian yang menghitung token terlalu rendah tampak sehat dari luar, jadi saya menelusuri dan memperbaikinya satu per satu."
+                  "en": "Broken stream framing, telemetry reporting zero requests and a daily spend cap that undercounted tokens were not being surfaced. I fixed each one.",
+                  "id": "Framing stream yang rusak, telemetry yang melaporkan nol request, dan spend cap harian yang menghitung token terlalu rendah tidak terdeteksi. Saya memperbaikinya satu per satu."
                 }
               }
             ]
