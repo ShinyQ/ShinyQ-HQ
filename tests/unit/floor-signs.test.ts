@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { RoomId } from "@/content/schema";
 import { buildExperienceData } from "@/content/experience";
-import { L4_SIGN, leadSignSpecs, librarySigns, spineSignSpecs, stationBackEdge, TITLE_SIGN, trackSignSpecs, ZONE_SIGN, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
+import { L4_SIGN, leadSignSpecs, librarySigns, SHELF_SIGN, spineSignSpecs, stationBackEdge, TITLE_SIGN, trackSignSpecs, ZONE_SIGN, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
 import { SHELF_PLINTH } from "@/experience/floors/library/decor/shelf3d";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, roomOfPost, ZONE_TONE } from "@/experience/floors/library/model";
@@ -80,7 +80,7 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
       expect([s.x, s.z]).toEqual([slot.at.x, slot.at.z]);
       expect(s.text.replace(/\n/g, " ")).toBe(titles.get(roomOfPost(slot.slug)));
       expect(wrapped(s.text, 22)).toBe(true);
-      expect(s.y - signPlate(s).h / 2).toBeCloseTo(slot.y + slot.h + 0.6);
+      expect(s.y - signPlate(s).h / 2).toBeCloseTo(slot.y + slot.h + SHELF_SIGN.lift);
     });
   });
 

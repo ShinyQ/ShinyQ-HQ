@@ -13,7 +13,7 @@ export const ZONE_SIGN = { fontSize: 0.6, letterSpacing: 0.12 } as const;
 /** Post titles: type size and the wrap width (characters). */
 export const TITLE_SIGN = { fontSize: 0.4, wrap: 22 } as const;
 /** Lead titles hang this far under `L4_SIGN.bottom` (just over the lead cover); a spine title floats `lift` over its spine. */
-export const SHELF_SIGN = { leadDrop: 1.6, lift: 0.6 } as const;
+export const SHELF_SIGN = { leadDrop: 1.6, lift: 0.9 } as const;
 
 /** `track`: a reader track's name over its bay; `lead`: the lead post's title over its cover; `spine`: a post title over its spine. */
 export type LibrarySignKind = "section" | "track" | "lead" | "spine";
