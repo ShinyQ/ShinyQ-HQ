@@ -29,6 +29,8 @@ test.describe("Time Travel on /journey", () => {
   test("Play walks from the prologue to now", async ({ page }) => {
     await page.clock.install();
     await openPage(page, URL);
+    // Without a pause the installed clock keeps ticking in real time; after this only runFor advances it.
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 100));
     const section = page.locator("#time-travel");
     await section.getByRole("button", { name: en.timeTravel.play }).click();
     await expect(section.getByText(caption("pre-2019"))).toBeVisible();
@@ -47,11 +49,10 @@ test.describe("Time Travel on /journey", () => {
     expect(new globalThis.URL(page.url()).hash).toBe("");
   });
 
-  test("has no serious accessibility violations", async ({ page }) => {
+  test("has no accessibility violations", async ({ page }) => {
     await openPage(page, URL);
     const results = await new AxeBuilder({ page }).include("#time-travel").analyze();
-    const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
-    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+    expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
   });
 });
 

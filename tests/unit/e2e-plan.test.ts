@@ -51,8 +51,18 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["e2e/ride.spec.ts"]).specs).toEqual(["ride"]);
   });
 
-  it("runs the Time Travel spec for its section, selector, page and captions", () => {
-    for (const file of ["src/components/time-travel/Skyline.tsx", "src/content/time-travel.ts", "src/app/[locale]/journey/page.tsx", "content/site-content.json"]) {
+  it("runs the Time Travel spec for its section, selector, page, captions, Motion setting and strings", () => {
+    const files = [
+      "src/components/time-travel/Skyline.tsx",
+      "src/content/time-travel.ts",
+      "src/app/[locale]/journey/page.tsx",
+      "content/site-content.json",
+      "src/lib/motion.ts",
+      "src/lib/reduced-motion.ts",
+      "messages/en.json",
+      "messages/id.json",
+    ];
+    for (const file of files) {
       expect(specsForChanges([file]).specs, file).toContain("time-travel");
     }
   });
