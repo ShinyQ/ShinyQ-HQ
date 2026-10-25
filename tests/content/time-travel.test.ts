@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import data from "../../content/site-content.json";
 import { SiteContentSchema, TIME_TRAVEL_CAPTION_MAX } from "@/content/schema";
+import { buildTimeTravel, expectedStopIds } from "@/content/time-travel";
 
 const content = SiteContentSchema.parse(data);
 const stops = content.floors.careerArchive.timeTravel?.stops ?? [];
@@ -33,5 +34,15 @@ describe("time travel stops (owner approved 2026-10-25)", () => {
     const many = structuredClone(data) as unknown as Mutable;
     many.floors.careerArchive.timeTravel.stops[1].highlights = Array.from({ length: 4 }, () => ({ kind: "entry", id: "shumi-2019" }));
     expect(SiteContentSchema.safeParse(many).success).toBe(false);
+  });
+});
+
+describe("time travel coverage", () => {
+  it("has a stop for every year with items, so no year shows without its caption", () => {
+    expect(stops.map((s) => s.id)).toEqual(expectedStopIds(content));
+  });
+
+  it("resolves every highlight", () => {
+    expect(() => buildTimeTravel(content)).not.toThrow();
   });
 });
