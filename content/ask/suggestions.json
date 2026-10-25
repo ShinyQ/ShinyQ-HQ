@@ -469,7 +469,7 @@
     {
       "id": "persp-reliability",
       "topic": "perspectives",
-      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menjaga reliabilitas LLM?" },
+      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menangani reliabilitas LLM?" },
       "tags": ["perspectives", "ai", "writing"],
       "followUps": ["ai-llm-failures", "persp-metrics", "ai-shadow"],
       "expect": ["post-45-percent-of-our-llm-calls-failed"]

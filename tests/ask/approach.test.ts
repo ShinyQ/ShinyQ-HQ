@@ -32,7 +32,6 @@ describe("isProblemQuestion", () => {
     "Call center kami kewalahan. Pendekatannya?",
     "Review dokumen kami lambat. Pendekatannya?",
     "Tim kami kesulitan menyaring CV pelamar",
-    "Bagaimana Kurniadi menangani deteksi fraud dokumen?",
     "Gimana dia akan mengatasi latensi voice AI?",
     "We would like to know how he would approach our slow onboarding",
     "We would like to know how he would tackle our manual fraud checks",
@@ -62,6 +61,8 @@ describe("isProblemQuestion", () => {
     "We heard he fixed slow queries at Jenius, how?",
     "Kami ingin tahu masalah apa yang pernah dia selesaikan",
     "Bisakah kami lihat proyek yang menyelesaikan masalah fraud?",
+    "Bagaimana Kurniadi menangani deteksi fraud dokumen?",
+    "Bagaimana dia menangani reliabilitas LLM?",
   ])("leaves %s alone", (q) => expect(isProblemQuestion(q)).toBe(false));
 });
 

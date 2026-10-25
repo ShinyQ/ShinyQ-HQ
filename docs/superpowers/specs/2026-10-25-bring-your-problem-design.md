@@ -50,7 +50,8 @@ over 5 sentences.
    "kesulitan", "masalah", "kewalahan", "kendala", "lambat", "sering gagal").
 2. **Approach ask**: "how would (he | Kurniadi | you) (approach | tackle | solve | handle | go about | start)", "what
    would (he | Kurniadi) do about", "bagaimana (dia | Kurniadi) (akan )?(menangani | menyelesaikan | mendekati |
-   memulai)", "kalau Kurniadi yang menangani".
+   memulai)", "kalau Kurniadi yang menangani". As built, the Indonesian ask needs "akan" (section 10,
+   refinement 10).
 
 Negatives (unit tested): a question about his own work ("How did he build the fraud review?"), a tutorial ("How do I
 build a RAG chatbot step by step?"), a definition, a site question, a plain hiring question, and civic or private
@@ -225,3 +226,6 @@ Found while planning and building; where an earlier section differs, this sectio
    contact-card invitation (`BENIGN` in `functions/_lib/checks.ts`).
 9. A cache hit decides the contact card with `planRoute(...).lead` (only first-turn answers are cached and routing is
    deterministic), so cached problem answers keep the card.
+10. The Indonesian approach ask needs "akan", as the English one needs "would": "Bagaimana dia menangani reliabilitas
+    LLM?" asks about his practice (present tense) and keeps its route, while "Gimana dia akan mengatasi latensi voice
+    AI?" is a problem question. A question with the visitor's own problem still matches through the own-problem shape.

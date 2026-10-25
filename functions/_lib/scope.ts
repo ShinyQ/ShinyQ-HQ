@@ -286,6 +286,8 @@ export function isLeadQuestion(question: string): boolean {
  * Bring your problem (owner decision 2026-10-25): the visitor describes a problem of their own team or company, or
  * asks how Kurniadi would approach one. Deterministic, EN/ID. A first person singular ("I struggle to learn ...") is
  * a learning question, never a problem; civic questions and routed lifestyle or policy topics keep their routes.
+ * An Indonesian approach ask needs "akan" (as the English one needs "would"): "Bagaimana dia menangani ..." asks
+ * about his practice, not about a problem.
  */
 const PROBLEM_SUBJECT = String.raw`(?:we|we're|our|my (?:team|company|startup|clinic|business|organi[sz]ation)|kami|tim kami|perusahaan kami|usaha kami|klinik kami)`;
 const PROBLEM_WORD = String.raw`(?:struggl\w*|problems?|issues?|bottlenecks?|pain points?|drown\w*|too slow|slow|manual(?:ly)?|by hand|can'?t keep up|cannot keep up|keeps? failing|pil(?:e|es|ing) up|overwhelmed|backlog|kesulitan|masalah|bermasalah|kewalahan|kendala|lambat|manual|sering gagal|menumpuk|kerepotan)`;
@@ -294,7 +296,7 @@ const PROBLEM_ASK: RegExp[] = [
   /\bhow (?:would|will|could|might) (?:he|kurniadi|you) (?:approach|tackle|solve|handle|go about|start(?: on)?|fix|deal with|speed up|cut|reduce|improve)\b/i,
   /\bwhat would (?:he|kurniadi|you) do (?:about|with|for)\b/i,
   /\b(?:his|kurniadi'?s) (?:approach|take)\s*\?\s*$/i,
-  /\b(?:bagaimana|gimana) (?:dia|kurniadi|kamu|anda) (?:akan )?(?:menangani|menyelesaikan|mendekati|memulai|mengatasi|memperbaiki|mempercepat)\b/i,
+  /\b(?:bagaimana|gimana) (?:dia|kurniadi|kamu|anda) akan (?:menangani|menyelesaikan|mendekati|memulai|mengatasi|memperbaiki|mempercepat)\b/i,
   /\bpendekatan(?:nya| kurniadi)\s*\?\s*$/i,
   /\bkalau (?:dia|kurniadi) yang (?:menangani|mengerjakan)\b/i,
 ];
