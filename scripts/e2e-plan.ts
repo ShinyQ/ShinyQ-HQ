@@ -43,6 +43,7 @@ export const ALL_SPECS = [
   "labs-paths",
   "library-labels",
   "library-roof",
+  "library-shelves",
   "lifecycle",
   "memory",
   "missions",
@@ -218,7 +219,7 @@ export const RULES: Rule[] = [
   // L4 Topic Constellation: its drawer body, the topic index, the Classic filter and the library room views.
   { test: /^src\/hud\/drawer\/(TopicsBody|filterParts)\.tsx$|^src\/content\/(topic-index|topic-map|room-views\/library)\.ts$|^src\/components\/page\/TopicFilter\.tsx$/, specs: ["topics", "library-roof", "reactor"] },
   { test: /^src\/experience\/floors\/(filterHash|filterUrl)\.ts$|^src\/experience\/fx\/FilterHighlights\.tsx$/, specs: ["topics", "reactor"] },
-  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "spectacle", "topics", "fast-return", "arrivals"] },
+  { test: /^src\/experience\/floors\/library\/|^src\/experience\/floors\/Library\.tsx$/, specs: ["library-labels", "library-roof", "library-shelves", "spectacle", "topics", "fast-return", "arrivals"] },
   // Floating signs and the shared holo shader (spectacle round: floor words, L2 horizon, L3 reactor and waterfalls).
   { test: /^src\/experience\/fx\/(FloatingSign\.tsx|signLayout\.ts)$/, specs: ["spectacle", "career", "labs", "library-labels", "library-roof", "visits"] },
   // The shared holo shader also draws the sky dome and the sun and moon (day and night).
@@ -425,6 +426,8 @@ const ALSO_RULES: Rule[] = [
     test: /^src\/experience\/floors\/library\/(decor\/(StudyVault\.tsx|vault\.ts)|layout\.ts|model\.ts|concepts\/newsroom\.ts)$|^src\/experience\/floors\/Library\.tsx$|^src\/experience\/interact\/(registry|pick)\.ts$|^src\/hud\/events\.ts$/,
     specs: ["guides-vault"],
   },
+  // The L4 reader track shelves (e2e/library-shelves.spec.ts): the spine and bay targets, the track index and the track drawer.
+  { test: /^src\/experience\/interact\/(registry|pick)\.ts$|^src\/content\/(track-index|room-views\/library)\.ts$/, specs: ["library-shelves"] },
   // The B1 unlock files (PR 3) keep the specs of the rules they used to match.
   { test: /^src\/hud\/dialog\/(EngineUnlockLayer\.tsx|engineRoomAction\.ts)$/, specs: ["onboarding", "experience", "camera"] },
   { test: /^src\/hud\/FloorButtons\.tsx$/, specs: ["onboarding", "experience", "arrivals"] },

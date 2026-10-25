@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route, rideTo } from "../b1";
+import content from "../../content/site-content.json";
 import en from "../../messages/en.json";
 import { FLOOR_SCENE_CAPS, PROGRAM_HEADROOM } from "../budgets";
 import { yawLooking } from "../../src/experience/camera/look";
@@ -42,6 +43,11 @@ const FLOORS = [
 ] as const;
 
 const PROGRAMS: Record<string, Record<string, number>> = baseline.programs;
+
+/** The L4 reader track with the most posts (the first on ties): its bay is the busiest shelf. */
+const SHELF_TRACK = content.floors.library.tracks
+  .map((t) => ({ slug: t.slug, posts: content.floors.library.posts.filter((p) => p.track === t.slug).length }))
+  .reduce((a, b) => (b.posts > a.posts ? b : a)).slug;
 
 type OfficeWindow = {
   __hq: {
@@ -128,7 +134,7 @@ async function fps(page: Page, ms = 3_000) {
 
 /**
  * Settles, then gates the floor's draw calls, triangles and programs. `pose` names a view other than the arrival
- * (the L4 Study Vault stop, the L1 Agent Office stop): it is held to the same floor caps and program baseline, and reported as a settled peak
+ * (the L4 Study Vault stop and track shelf bay, the L1 Agent Office stop): it is held to the same floor caps and program baseline, and reported as a settled peak
  * (`settled-<floor>-<pose>`), so the program baseline keeps one entry per floor. `before` runs after the programs
  * settled, right before the draw calls are read (the office's pipeline effects).
  */
@@ -199,6 +205,24 @@ for (const tier of ["lite", "full"] as const) {
     // At real speed (the perf lane): the drive down the timeline takes a while on SwiftShader.
     await driveTo(page, stop!, 240_000);
     await measureFloor(page, tier, "L4", "vault");
+  });
+  // A reader track bay's own view (L4 Writing revamp): the largest track's shelf (its lead, spines, rows and back panel, the
+  // full tier's light pool) with the live spine pulled and its title, the track name and the lead title showing. The
+  // door opens the track drawer on arrival: close it, so the floor renders as a visitor sees it at the bay. Same caps
+  // and program baseline as L4; reported as the settled-L4-shelf peak.
+  test(`L4 ${tier}: settled draw calls and shader programs at a track shelf bay`, async ({ page }) => {
+    await enterFloorRoute(page, "/en/library", { tier });
+    const bay = `L4:track:${SHELF_TRACK}`;
+    const door = await page.evaluate((room) => (window as unknown as { __hq: { layouts: Record<string, { doors?: { room: string; at: { x: number; z: number } }[] }> } }).__hq.layouts.L4.doors?.find((d) => d.room === room)?.at, bay);
+    expect(door, `no ${bay} door on L4`).toBeDefined();
+    await driveTo(page, door!, 120_000);
+    await page.evaluate(() => {
+      const store = (window as unknown as { __hq: { store: { getState: () => { phase: string; closeRoom: () => void } } } }).__hq.store.getState();
+      if (store.phase === "room") store.closeRoom();
+    });
+    await waitForPhase(page, "explore");
+    await page.waitForFunction(() => (window as unknown as { __hq: { probes: { shelves: { pulled: string | null } } } }).__hq.probes.shelves.pulled !== null, null, { timeout: 60_000 });
+    await measureFloor(page, tier, "L4", "shelf");
   });
   test(`B1 ${tier}: settled draw calls and shader programs`, async ({ page }) => {
     // B1 has no route: unlock it on the Lobby and ride down (its baseline includes the Lobby's programs).

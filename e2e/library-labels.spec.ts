@@ -4,6 +4,7 @@ import content from "../content/site-content.json";
 import guides from "../content/study-guides.json";
 import en from "../messages/en.json";
 import { polygonArea, polygonOverlap } from "../src/experience/fx/labelPlacement";
+import { LIBRARY_LABEL_MAX } from "../src/experience/floors/library/signPlacement";
 import { skipFloorLines, collectErrors, driveTo, enterFloorRoute, expectRenderBudget, readGpuCounters, readRenderPeaks, resetRenderPeaks, waitForCameraSettle, waitForFrames, fastAnimations } from "./hq";
 
 // Rides, drives, camera eases and the intro at the test-only animation speed (render-peak windows measure at real speed).
@@ -27,7 +28,7 @@ type Box = { text: string; kind: string; x0: number; y0: number; x1: number; y1:
 type Vec2 = { x: number; z: number };
 type LW = Window & {
   __hq: {
-    probes: { library?: { labels: Box[] }; topics?: { labels: Box[] } };
+    probes: { library?: { labels: Box[] }; topics?: { labels: Box[] }; shelves?: { pulled: string | null } };
     layouts: Record<string, { road?: { spurs: { room: string; from: Vec2; to: Vec2 }[] }; stops?: Record<string, Vec2>; doors?: { room: string; at: Vec2 }[] }>;
     store: { getState: () => { phase: string; activeRoom: string | null; closeRoom: () => void } };
     interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
@@ -50,8 +51,11 @@ const TRACKS = content.floors.library.tracks.map((t) => ({
   name: t.title.en.toUpperCase(),
   spines: content.floors.library.posts.filter((p) => p.track === t.slug).length > 1,
 }));
+/** Post titles by post room (`L4:<slug>`), as the spine signs write them (line wraps folded to spaces). */
+const POST_TITLE = new Map(content.floors.library.posts.map((p) => [`L4:${p.slug}`, p.title.en.replace(/\s+/g, " ")]));
 /** Shown-label caps (`LIBRARY_LABEL_MAX` in `signPlacement.ts`; lead titles by width). */
 type Caps = Record<"section" | "track" | "lead" | "spine", number>;
+const capsFor = (narrow: boolean): Caps => ({ ...LIBRARY_LABEL_MAX, lead: narrow ? LIBRARY_LABEL_MAX.lead.narrow : LIBRARY_LABEL_MAX.lead.wide });
 
 /** Shown timeline and end plaza plates (alpha above 0.5); the library probe is absent in builds before the declutter. */
 const shownLabels = (page: Page) =>
@@ -110,8 +114,8 @@ function audit(boxes: Box[], caps: Caps, rover: [number, number][] | null = null
 }
 
 for (const device of [
-  { id: "desktop", tier: "lite", caps: { section: 4, track: 4, lead: 4, spine: 1 }, use: { viewport: { width: 1440, height: 900 } } },
-  { id: "phone", tier: "lite", caps: { section: 4, track: 4, lead: 2, spine: 1 }, use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
+  { id: "desktop", tier: "lite", caps: capsFor(false), use: { viewport: { width: 1440, height: 900 } } },
+  { id: "phone", tier: "lite", caps: capsFor(true), use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
 ] as const) {
   test.describe(`L4 timeline labels (${device.id})`, () => {
     test.use(device.use);
@@ -219,7 +223,13 @@ for (const device of [
         await check(`bay-${bay.room}`);
         if (!BASELINE) {
           expect(await labelShown((b) => b.kind === "track" && b.text === track.name), `${device.id}: ${track.name} at its stop`).toBe(true);
-          if (track.spines) expect(await labelShown((b) => b.kind === "spine"), `${device.id}: the live spine at ${track.name}`).toBe(true);
+          if (track.spines) {
+            // The live spine is the pulled one (`__hq.probes.shelves.pulled`): its own title shows.
+            const live = await page.evaluate(() => (window as unknown as LW).__hq.probes.shelves?.pulled ?? null);
+            expect(live, `${device.id}: a spine pulls at ${track.name}`).not.toBeNull();
+            const title = POST_TITLE.get(live!);
+            expect(await labelShown((b) => b.kind === "spine" && b.text === title), `${device.id}: the live spine's title (${title}) at ${track.name}`).toBe(true);
+          }
         }
       }
       if (!SHOTS) await expectRenderBudget(page);

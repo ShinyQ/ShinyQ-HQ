@@ -54,7 +54,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision).
   - `section`: one per zone with a station (Posts over the featured stage, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first station (`stationBackEdge`).
   - `track`: each bay's track name in upper case over the bay's back edge (`trackSignSpecs`, from content); `room` is the bay room `L4:track:<slug>`.
   - `lead`: each bay's lead title over the lead cover, plate bottom `L4_SIGN.bottom - 1.6` (`leadSignSpecs`); `room` is the post room.
-  - `spine`: one title per spine (every slot but the lead), plate bottom 0.6 u over the spine (`spineSignSpecs`); it shows only while its spine is live (pulled) or its topic picked.
+  - `spine`: one title per spine (every slot but the lead), plate bottom 0.9 u over the spine (`SHELF_SIGN.lift`, `spineSignSpecs`: clear of the rover at a bay stop on a desktop); it shows only while its spine is live (pulled) or its topic picked.
   - Titles wrap at `TITLE_SIGN.wrap` (22 characters). The featured post keeps its title on the headline wall (no lead sign over the stage).
 
 ### Placement (decided on screen every frame)
@@ -200,9 +200,13 @@ Owner decision: [2026-10-19](../decisions/2026-10-19-l4-study-vault.md). Design:
 - `e2e/library-labels.spec.ts`:
   - timeline label overlap under 2 percent of the smaller plate over the arrival, each bay's stop (its drawer closed), mid-lane between bays and each desk, at 1440x900 and 390x844, both on lite (the placement has no quality-tier input; the full-tier L4 budget is `e2e/perf/floors.spec.ts`);
   - the caps per kind, no duplicate text, no label on the rover;
-  - each bay's track name and its live spine's title at its stop (the unit sweep sets `live` to the spine nearest the stop, as `TrackShelves` pulls it);
+  - each bay's track name and its live spine's title at its stop (the title of `__hq.probes.shelves.pulled`; the unit sweep sets `live` to the spine nearest the stop, as `TrackShelves` pulls it);
   - each zone's sign on its approach, road or door pose;
   - opt-in `L4_SHOTS` captures and numbers.
+- Track shelves:
+  - `e2e/library-shelves.spec.ts` (lite; desktop with full motion and a phone with reduced motion): the shelves probe lists every bay and spine; at a bay's door the spine nearest the rover pulls (`__hq.probes.shelves.pulled`) and its title shows, on the lane none pulls; the pointed (or tapped) spine pulls and shows only its title; a click (or Go) drives to the bay's door and opens the post (its `/blog` URL), Esc gives the floor back;
+  - desktop only: the bay's door opens the track drawer (posts lead first) and an item opens its post at the door; a post opened from Cmd-K parks the rover at its bay's door (`stops["L4:<slug>"]` is the bay's door);
+  - `e2e/perf/floors.spec.ts`: L4 per tier at the largest track's bay door, the drawer closed and a spine pulled (peak `settled-L4-shelf`), same caps and program baseline.
 
 ## Budgets (measured)
 

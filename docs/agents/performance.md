@@ -244,6 +244,7 @@ The full local suite takes 20 to 40 minutes on SwiftShader; most of it covers co
 | `src/experience/input/**`, the rover fade and the rover mesh and runtime | `camera` and `experience` (the mesh and runtime add `rover-idle` and `idle-cadence`) |
 | `src/experience/rover/{idle,activity}.ts` | `rover-idle` (`idle.ts` adds `idle-cadence`) |
 | The L4 Study Vault (`floors/library/{decor/StudyVault,decor/vault,layout,model,concepts/newsroom}`, `Library.tsx`, `interact/{registry,pick}.ts`, `hud/events.ts`), the reader (`src/components/guides/**`, `src/components/pdf-reader/**`, `DialogHost.tsx`) and `e2e/fixtures/guide-pdf.ts` | their own specs plus `guides-vault` (through `ALSO_RULES`) |
+| The L4 reader track shelves: `floors/library/**` (its own rule), `interact/{registry,pick}.ts`, `content/track-index.ts` and `content/room-views/library.ts` (through `ALSO_RULES`) | their own specs plus `library-shelves` |
 | The shared PDF reader and its other hosts (`src/components/{pdf-reader,cv,paper}/**`, `src/lib/page-images.ts`, the `/cv` page) | their own specs plus `pageview`, `csp` and `library-roof` (through `ALSO_RULES`) |
 | `Readable`, `HoloIcon`, the scene probes and `tower/FloorLevel.tsx` | `camera`, `career`, `experience` and `ride` (`HoloIcon` also `shapes`, `pads` and `roof`) |
 | The hologram shapes pipeline (`fx/shapes.ts`, `content/shapes.ts`, `content/sculptures.ts`, `lib/svg-strokes.ts`, `scripts/build-shapes.ts`, `content/sculptures.json`, `assets/icons/`) | `shapes`, `career`, `labs` and `library-roof` |
