@@ -1,6 +1,7 @@
 # Phone-First 3D: the First 30 Seconds on a Portrait Phone (design)
 
-Status: in review (sub-project D of the 2026-10-25 brainstorm; no plan yet).
+Status: approved 2026-10-25 (sub-project D of the 2026-10-25 brainstorm; no plan yet). Implementation is queued until
+the L4 Writing revamp (sub-project B) merges.
 
 Owner decisions 2026-10-25 (brainstorm, sections 3.1 to 3.5); the remaining choices were delegated to the parent
 session, which took the recommended option each time (section 3.6). Builds on #317 (touch controls) and does not
@@ -202,7 +203,7 @@ flowchart LR
 |---|---|---|
 | 3D first frame (`failAt`, returning visitor, `?prefetch=off`) | net down: the tour script leaves; the zone, the docked placement, the step-aside and the loader join | measured delta at most 0 on the PR; no cap change |
 | 3D session total, full and lite | net down by the same amount | measured delta at most 0; no cap change. L4 (B) is using the session headroom: this PR never adds to it |
-| New `tour` chunk | first session or Replay only | a new sanity cap `BYTES_3D_BUDGET.tour` = measured + 614 B, measured in `bytes-3d.spec.ts` through `__hq.tour.load()`, outside the session total like the intro chunk. A new cap, not a raise of an existing one; listed for the parent's approval |
+| New `tour` chunk | first session or Replay only | a new sanity cap `BYTES_3D_BUDGET.tour` = measured + 614 B, measured in `bytes-3d.spec.ts` through `__hq.tour.load()`, outside the session total like the intro chunk. A new cap, not a raise of an existing one; approved (below) |
 | Intro chunk | grows a little (wake look, maybe the landing handoff) | unmeasured today, first session only |
 | Classic CSS (Lighthouse, 20,480 B) | the boot phone block | under 300 B gzip; headroom 894 B live |
 | Gate page HTML | 3 new strings in `dialog.onboarding`, EN and ID | under 200 B gzip; `/en` is 50 KB of 82 KB. `/en/quick` does not carry `dialog.onboarding` |
@@ -211,6 +212,15 @@ flowchart LR
 Estimate: the tour script is about 2.4 KB gzip as source and about 1 to 1.3 KB minified in the chunk; the main path
 additions are about 0.3 to 0.5 KB. Expected net about -0.6 to -1 KB on the first frame and both session totals.
 If the measured net is above 0, the plan cuts from the additions; it never asks for a raise.
+
+Approval of the `tour` cap (parent session under the owner's delegation, 2026-10-25), with conditions:
+
+- The session totals are measured as a returning visitor ([performance.md](../../agents/performance.md)), and the
+  intro chunk already sits outside both; the tour chunk follows that precedent.
+- The tour chunk loads only in a session that plays the tour (not onboarded, or Replay tutorial), never for a
+  returning visitor.
+- performance.md names the tour chunk next to the intro chunk.
+- A decision file records the new cap (`docs/decisions/2026-10-25-phone-first-3d.md`).
 
 ## 7. Error handling and fallbacks
 
