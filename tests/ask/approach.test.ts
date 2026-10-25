@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/checks";
+import { APPROACH_BRIDGE, checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/checks";
 import { MESSAGES } from "../../functions/_lib/messages";
 import type { ModelClient } from "../../functions/_lib/model";
 import { scrubPII } from "../../functions/_lib/pii";
@@ -208,6 +208,15 @@ describe("rule 18 and the approach line", () => {
     expect(leaksPrompt("In Realtime Voice AI Contact Center, he started by mapping the call flow [S1]. A similar problem would likely start the same way, with the same first questions [S2].")).toBe(false);
   });
 
+  it("states the exact bridging sentence in both languages and never counts it as a leak", () => {
+    const rule = RULES.find((r) => r.startsWith("18."))!;
+    expect(rule).toContain(`exactly "${APPROACH_BRIDGE.en}"`);
+    expect(rule).toContain(`"${APPROACH_BRIDGE.id}"`);
+    expect(leaksPrompt(`${APPROACH_BRIDGE.en} In his view, this is the right way to start.`)).toBe(false);
+    expect(leaksPrompt(APPROACH_BRIDGE.id)).toBe(false);
+    expect(leaksPrompt(`Dalam proyek itu, dia memetakan alur panggilan [S1]. ${APPROACH_BRIDGE.id} Silakan hubungi lewat kartu kontak.`)).toBe(false);
+  });
+
   it("does not count a contact card invitation as a prompt leak", () => {
     for (const text of [
       "Get in touch, the site shows a contact card under this answer.",
@@ -309,6 +318,60 @@ describe("approach checks", () => {
     const r = checkAnswer({ answer, question: fq, context, packDate: pack.packDate, pack, vocabulary: packVocabulary(pack), chunks, lead: { fit: true }, approach: { matches }, locale: "en" });
     expect(r).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
     expect(prescribes(bad, bad, "Results: 2 days Time to the first working client dashboard")).toBe(true);
+  });
+
+  // Final review F2: stack picks, designs and fuzzy timelines phrased without "you should".
+  it.each([
+    "Start with a voice agent on Azure OpenAI Realtime and Azure AI Search, then add warm transfer to a human.",
+    "Your call center needs a voice agent with Azure AI Search and warm transfer.",
+    "A similar problem would likely start the same way, with Azure OpenAI Realtime, Azure AI Search and FastAPI.",
+    "A similar system could be live in a few weeks.",
+  ])("rejects a reproduced prescription: %s", (bad) => {
+    expect(check(`${outline()} ${bad}`)).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it.each([
+    "Yours is a common problem.",
+    "Kamu bisa mulai dari data.",
+    "Masalah call center kalian umum.",
+    "Use a vector index for the transcripts.",
+    "Consider a human handoff.",
+    "Set up a queue first.",
+    "Gunakan Azure AI Search untuk transkrip.",
+    "Tambahkan human handoff.",
+    "He will build it on Azure.",
+    "Kurniadi'll start with the transcripts.",
+    "It might start with a pilot.",
+    "Masalah serupa akan dimulai dengan Azure.",
+    "Sebaiknya dimulai dengan pilot.",
+    "Several months of work went into it.",
+    "It could be ready in a couple of weeks.",
+    "The pilot needs three sprints.",
+    "Butuh beberapa minggu.",
+    "Selesai dalam hitungan hari.",
+    "Butuh dua belas minggu.",
+  ])("rejects a sentence that addresses the visitor, gives an order, looks ahead or names a vague duration: %s", (bad) => {
+    expect(prescribes(bad, bad, "the pilot ran for six weeks")).toBe(true);
+  });
+
+  it.each([
+    "A similar problem would likely start the same way.",
+    "A similar problem would likely start the same way [S2].",
+    "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
+    "Masalah serupa kemungkinan besar dimulai dengan cara yang sama [S3].",
+  ])("passes the exact bridging sentence: %s", (bridge) => {
+    expect(prescribes(bridge, bridge, "")).toBe(false);
+  });
+
+  it("passes a spelled-out duration CONTEXT states, in a past-tense sentence", () => {
+    expect(prescribes("The pilot ran for six weeks.", "The pilot ran for six weeks.", "the pilot ran for six weeks")).toBe(false);
+    expect(prescribes("The pilot ran for six weeks.", "The pilot ran for six weeks.", "the pilot ran for 6 weeks")).toBe(true);
+  });
+
+  it("passes a modal his written words in CONTEXT use", () => {
+    const ctx = "I plan for failures and build a recovery path rather than assume the system will always work.";
+    expect(prescribes("He builds a recovery path rather than assume the system will always work.", "x", ctx)).toBe(false);
+    expect(prescribes("The system will always scale.", "x", ctx)).toBe(true);
   });
 
   it("matches a CONTEXT duration on word boundaries only", () => {

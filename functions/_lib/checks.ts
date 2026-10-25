@@ -285,8 +285,9 @@ const BENIGN = [
   "Kurniadi hasn't shared a view on that and the closest thing he wrote is",
   "I'm Rover, the guide robot of ShinyQ HQ.",
   "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views.",
-  // Rule 18 allows this sentence, and rules 11 and 18 ask for the contact card invitation.
+  // Rule 18 allows the bridging sentence (each language), and rules 11 and 18 ask for the contact card invitation.
   "A similar problem would likely start the same way.",
+  "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
   "Feel free to get in touch: the site shows a contact card under the answer.",
 ];
 const ruleShingles = (() => {
@@ -550,15 +551,47 @@ const VISITOR_TIMELINE =
 export const APPROACH_MAX_SENTENCES = 7;
 export const APPROACH_MAX_ITEMS = 4;
 
+/** A sentence that addresses the visitor ("your call center", "call center kalian"): an approach answer is about his past work. */
+const ADDRESSES_VISITOR = /\b(?:you|your|yours|kamu|anda|kalian)\b/i;
+/** A sentence that starts with an order ("Start with ...", "Gunakan ..."). */
+const IMPERATIVE = /^[^\p{L}\p{N}]*(?:start|use|build|add|pick|choose|consider|try|deploy|set up|mulai|gunakan|pakai|bangun|tambahkan|pilih|coba)\b/iu;
+/** Words that look ahead (folded: "he'll" is "he ll"). */
+const PROSPECTIVE = new Set(["would", "will", "ll", "might", "should", "akan", "sebaiknya", "seharusnya"]);
+/** The one forward-looking sentence rule 18 allows, in each language, exactly. */
+export const APPROACH_BRIDGE = {
+  en: "A similar problem would likely start the same way.",
+  id: "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
+} as const;
+const BRIDGES = new Set(Object.values(APPROACH_BRIDGE).map((b) => fold(b)));
+/** Vague durations, always an estimate ("a few weeks", "beberapa minggu", "dalam hitungan hari"). */
+const VAGUE_DURATION = /\b(?:a few|several|(?:a )?couple of)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:beberapa|dalam hitungan)\s+(?:hari|minggu|bulan)\b/i;
+/** Spelled-out durations ("six weeks", "dua minggu"): checked like digits, so a case-study fact stays a fact. */
+const WORD_DURATION = /\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:days?|weeks?|months?|sprints?)\b|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|dua belas)\s+(?:hari|minggu|bulan)\b/gi;
+
 /**
- * Free consulting in an approach answer (owner decision 2026-10-25): the lead patterns (visitor-directed advice, cost
- * and estimate words) and any duration CONTEXT does not state, or more than `APPROACH_MAX_SENTENCES` sentences or
- * `APPROACH_MAX_ITEMS` list items. A duration from a case study ("from 3 days to 4 hours") is a fact, not an estimate.
+ * A forward-looking word in a sentence that is not the exact bridge: allowed only inside words CONTEXT or his
+ * retrieved written views state (the word and the next two, "the system will always work"), as a case-study duration is.
  */
-export function prescribes(text: string, markdown: string, context: string): boolean {
+function looksAhead(sentence: string, stated: string): boolean {
+  const words = fold(sentence.replace(SOURCE_TAGS, " ")).split(" ");
+  if (BRIDGES.has(words.join(" "))) return false;
+  return words.some((w, i) => PROSPECTIVE.has(w) && !stated.includes(` ${words.slice(i, i + 3).join(" ")} `));
+}
+
+/**
+ * Free consulting in an approach answer (owner decision 2026-10-25, final review F2): the lead patterns
+ * (visitor-directed advice, cost and estimate words), any sentence that addresses the visitor, starts with an order or
+ * looks ahead (only the exact bridge `APPROACH_BRIDGE` may), any vague duration and any duration CONTEXT does not
+ * state, or more than `APPROACH_MAX_SENTENCES` sentences or `APPROACH_MAX_ITEMS` list items. A duration from a case
+ * study ("from 3 days to 4 hours", "six weeks") is a fact, not an estimate. `views` is the full text of his retrieved
+ * written views (CONTEXT may clip them), read only for the forward-looking words of his own sentences.
+ */
+export function prescribes(text: string, markdown: string, context: string, views = ""): boolean {
   const ctx = ` ${fold(context)} `;
+  const stated = `${ctx}${fold(views)} `;
   for (const sentence of text.split(/(?<=[.!?])\s+|\n+/)) {
-    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi"))].map((m) => fold(m[0]));
+    if (ADDRESSES_VISITOR.test(sentence) || IMPERATIVE.test(sentence) || VAGUE_DURATION.test(sentence) || looksAhead(sentence, stated)) return true;
+    const durations = [...sentence.matchAll(new RegExp(CONSULTING[0].source, "gi")), ...sentence.matchAll(WORD_DURATION)].map((m) => fold(m[0]));
     if (durations.length && (VISITOR_TIMELINE.test(sentence) || durations.some((d) => !ctx.includes(` ${d} `)))) return true;
   }
   if (CONSULTING.slice(1).some((re) => re.test(text))) return true;
@@ -622,7 +655,7 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
   // Before the voice check: "I recommend ..." in an approach answer is consulting first (same lead replacement).
-  if (lead && approach && prescribes(text, markdown, context)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+  if (lead && approach && prescribes(text, markdown, context, chunks.filter((c) => isSource(c)).map((c) => `${c.text_en} ${c.text_id}`).join(" "))) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
   if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
   if (asksForPersonalData(text)) return { ok: false, reason: "personal-data", detail: [], replacement: lead ? "lead" : "unknown" };
