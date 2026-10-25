@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { leaksPrompt } from "../../functions/_lib/checks";
+import { checkAnswer, leaksPrompt, prescribes } from "../../functions/_lib/checks";
+import { packVocabulary } from "../../functions/_lib/pipeline";
 import { buildStoredVectors, readEmbeddingCache, readExemplars } from "@/ask/embeddings";
 import { buildRepoPack } from "@/ask/repo-pack";
 import { approachLine, PROMPT_VERSION, routingLines, RULES } from "../../functions/_lib/prompt";
@@ -175,5 +176,63 @@ describe("rule 18 and the approach line", () => {
   it("still flags a verbatim span of rule 18", () => {
     expect(leaksPrompt("Never tell the visitor what to use, build or do, recommend a stack or an architecture")).toBe(true);
     expect(leaksPrompt("Describe how Kurniadi approached similar problems in the matching past projects it names.")).toBe(true);
+  });
+});
+
+describe("approach checks", () => {
+  const q = "Our call center can't keep up. His approach?";
+  const setup = () => {
+    const matches = approachMatches(pack, leadMatches(pack, q), null);
+    const { chunks, context } = retrieve(pack, q, "en", { lead: true, approach: matches });
+    return { matches, chunks, context };
+  };
+  const check = (answer: string) => {
+    const { matches, chunks, context } = setup();
+    return checkAnswer({ answer, question: q, context, packDate: pack.packDate, pack, vocabulary: packVocabulary(pack), chunks, lead: { fit: true }, approach: { matches }, locale: "en" });
+  };
+  /** A past-tense outline built from the first match's own CONTEXT words. */
+  const outline = () => {
+    const { matches } = setup();
+    const m = matches[0];
+    const words = m.text_en.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
+    return `In **${m.title}**, ${words.charAt(0).toLowerCase()}${words.slice(1)} A similar problem would likely start the same way. Kurniadi takes freelance and part-time work, so get in touch through the contact card.`;
+  };
+
+  it("passes a grounded past-tense outline and cites the project page", () => {
+    const r = check(outline());
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.cite).toBe(setup().matches[0].url);
+  });
+
+  it.each([
+    "You should use Azure OpenAI with a RAG layer for this.",
+    "I recommend a three-service architecture.",
+    "It would take about 6 weeks to build.",
+    "Step 1: set up a vector index.",
+  ])("rejects visitor-directed advice or estimates: %s", (bad) => {
+    const r = check(`${outline()} ${bad}`);
+    expect(r).toMatchObject({ ok: false, reason: "consulting", replacement: "lead" });
+  });
+
+  it("rejects more than seven sentences or four list items", () => {
+    expect(prescribes("A. B. C. D. E. F. G. H.", "A. B. C. D. E. F. G. H.", "")).toBe(true);
+    const list = "Steps he took:\n\n- a\n- b\n- c\n- d\n- e";
+    expect(prescribes("Steps he took:\na\nb\nc\nd\ne", list, "")).toBe(true);
+    expect(prescribes("A. B. C. D. E. F. G.", "A. B. C. D. E. F. G.", "")).toBe(false);
+  });
+
+  it("allows a duration CONTEXT states, never a new one", () => {
+    expect(prescribes("The review went from 3 days to 4 hours.", "The review went from 3 days to 4 hours.", "review time fell from 3 days to 4 hours")).toBe(false);
+    expect(prescribes("It would be done in 3 weeks.", "It would be done in 3 weeks.", "review time fell from 3 days to 4 hours")).toBe(true);
+  });
+
+  it("rejects an answer that cites no matched project", () => {
+    const r = check("Kurniadi likes to start small and measure everything before scaling. Get in touch through the contact card.");
+    expect(r).toMatchObject({ ok: false, reason: "unsourced", replacement: "lead" });
+  });
+
+  it("rejects general-knowledge wording", () => {
+    const r = check(`${outline()} In general, teams use chatbots for this.`);
+    expect(r).toMatchObject({ ok: false, reason: "unsourced", replacement: "lead" });
   });
 });

@@ -1,5 +1,5 @@
 import { ASK_LINK_PAGES, askLinkTarget } from "../../src/ask/links";
-import { markdownToPlain } from "../../src/ask/markdown";
+import { markdownToPlain, parseMarkdown } from "../../src/ask/markdown";
 import { ASK_MAX_CITES, ASK_REPO_CITE, citeKind, isAskCite, type AskLocale, type AskOutcome } from "../../src/ask/protocol";
 import type { CannedKind } from "./messages";
 import { RULES } from "./prompt";
@@ -536,6 +536,27 @@ export function consulting(text: string): boolean {
   return CONSULTING.some((re) => re.test(text)) || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > 5;
 }
 
+/** Most sentences and list items of an approach answer (rule 18: 6 sentences or 4 items, plus the invitation). */
+export const APPROACH_MAX_SENTENCES = 7;
+export const APPROACH_MAX_ITEMS = 4;
+
+/**
+ * Free consulting in an approach answer (owner decision 2026-10-25): the lead patterns (visitor-directed advice, cost
+ * and estimate words) and any duration CONTEXT does not state, or more than `APPROACH_MAX_SENTENCES` sentences or
+ * `APPROACH_MAX_ITEMS` list items. A duration from a case study ("from 3 days to 4 hours") is a fact, not an estimate.
+ */
+export function prescribes(text: string, markdown: string, context: string): boolean {
+  const ctx = context.toLowerCase().replace(/\s+/g, " ");
+  const durations = [...text.matchAll(new RegExp(CONSULTING[0].source, "gi"))].map((m) => m[0].toLowerCase().replace(/\s+/g, " ").trim());
+  if (durations.some((d) => !ctx.includes(d))) return true;
+  if (CONSULTING.slice(1).some((re) => re.test(text))) return true;
+  const items = parseMarkdown(markdown).reduce((n, b) => n + (b.type === "p" ? 0 : b.items.length), 0);
+  return items > APPROACH_MAX_ITEMS || text.split(/(?<=[.!?])\s+/).filter(Boolean).length > APPROACH_MAX_SENTENCES;
+}
+
+/** Chunk types an approach answer outlines (the matches are past projects). */
+const APPROACH_TYPES: ReadonlySet<ChunkType> = new Set<ChunkType>(["project", "side-project"]);
+
 /** A lead answer that claims a fit (only allowed when retrieval found matching past projects). */
 const FIT_CLAIM = /\b(?:strong|good|great|close|natural|solid|perfect|excellent|ideal) (?:fit|match)\b|\bwell[- ]suited\b|\bperfect for\b|\bgood chance\b|\b(?:very|highly) likely\b|\bcocok\b|\bsangat sesuai\b|\bkemungkinan besar\b|\bpeluang (?:yang )?(?:besar|bagus|baik)\b/i;
 
@@ -566,6 +587,8 @@ export interface CheckInput {
   topic?: RoutedTopic;
   /** Lead intent (`isLeadQuestion`): `fit` is true when retrieval found matching past projects (`leadMatches`). */
   lead?: { fit: boolean };
+  /** Bring your problem (owner decision 2026-10-25, with `lead`): the matches the answer must outline and cite by title. */
+  approach?: { matches: readonly KnowledgeChunk[] };
   /** A related professional question (`isAdjacentQuestion`): the answer must cite his work from CONTEXT (rule 13). */
   adjacent?: boolean;
   /** A learning or career question (`isMentoringQuestion`): his own path from CONTEXT, never general advice (rule 15). */
@@ -577,7 +600,7 @@ export interface CheckInput {
  * Output checks in spec order (7.4 step 8). The first failure decides the replacement message.
  * Safety scans read the markdown answer with its links (URLs included) and its plain text; content checks read the plain text.
  */
-export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
+export function checkAnswer({ answer, question, context, packDate, pack, vocabulary, chunks = [], perspective = false, site = false, topic, lead, approach, adjacent = false, mentoring = false, locale = "en" }: CheckInput): CheckResult {
   const markdown = stripOpener(sanitizeAnswer(answer, answerLinkPaths(chunks)));
   const text = markdown ? markdownToPlain(markdown).trim() : "";
   if (!text) return { ok: false, reason: "empty", detail: [], replacement: "fallback" };
@@ -586,10 +609,12 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   if (scanned.some((s) => FORBIDDEN_OUTPUT.some((re) => re.test(s)))) return { ok: false, reason: "forbidden", detail: [], replacement: "restricted" };
   if (scanned.some((s) => SECRET_PATTERNS.some((re) => re.test(s)))) return { ok: false, reason: "secret", detail: [], replacement: "restricted" };
   if (leaksPrompt(text)) return { ok: false, reason: "leak", detail: [], replacement: lead ? "lead" : "decline" };
+  // Before the voice check: "I recommend ..." in an approach answer is consulting first (same lead replacement).
+  if (lead && approach && prescribes(text, markdown, context)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (firstPersonVoice(text)) return { ok: false, reason: "roleplay", detail: [], replacement: lead ? "lead" : "decline" };
   if (containsCode(text)) return { ok: false, reason: "code", detail: [], replacement: lead ? "lead" : "decline" };
   if (asksForPersonalData(text)) return { ok: false, reason: "personal-data", detail: [], replacement: lead ? "lead" : "unknown" };
-  if (lead && consulting(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
+  if (lead && !approach && consulting(text)) return { ok: false, reason: "consulting", detail: [], replacement: "lead" };
   if (lead && !lead.fit && claimsFit(text)) return { ok: false, reason: "fit", detail: [], replacement: "lead" };
 
   const accusations = defamatoryWords(text, context);
@@ -607,6 +632,18 @@ export function checkAnswer({ answer, question, context, packDate, pack, vocabul
   const questionWords = new Set(echo.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
   const names = unknownNames(text, vocabulary, questionWords);
   if (names.length) return { ok: false, reason: "entity", detail: names, replacement: "unknown" };
+  // Bring your problem: grounded in CONTEXT like an adjacent answer, outlining at least one matched project by title
+  // (or a source tag on it); a view told as his must cite his written view (rule 8).
+  if (lead && approach && outcome === "answer") {
+    if (GENERALITY.test(text) || groundedShare(text, context, question) < ADJACENT_MIN_GROUNDED) return { ok: false, reason: "unsourced", detail: ["ungrounded"], replacement: "lead" };
+    const marked = markedSources(answer, chunks, question);
+    const projects = [...citedSources(text, approach.matches, locale, APPROACH_TYPES), ...marked.filter((c) => approach.matches.includes(c))].filter((c, i, all) => all.indexOf(c) === i);
+    if (!projects.length) return { ok: false, reason: "unsourced", detail: [], replacement: "lead" };
+    const views = [...citedSources(text, chunks, locale), ...marked.filter((c) => isSource(c))].filter((c, i, all) => all.indexOf(c) === i);
+    if (claimsOpinion(text) && !views.length) return { ok: false, reason: "unsourced", detail: ["opinion"], replacement: "lead" };
+    const pages = citePages([...projects, ...views]);
+    return { ok: true, text: markdown, outcome, ...(pages.length ? { cite: pages[0] } : {}), ...(pages.length > 1 ? { cites: pages } : {}) };
+  }
   // A lead answer is about his past work and availability, not his opinions: it is checked above instead.
   if (lead) return { ok: true, text: markdown, outcome };
   // Source tags the model put after its sentences, kept only when the sentence really uses that line (rule 17).
