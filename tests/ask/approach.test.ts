@@ -32,5 +32,11 @@ describe("isProblemQuestion", () => {
     "How would he solve corruption in the government?",
     "What would he do about AI regulation?",
     "How would he build a RAG chatbot?",
+    "We would like to know what problems he solved at Metrodata",
+    "Our team wants to know which issues he worked on",
+    "Can we see the issues he fixed at Jenius?",
+    "We heard he fixed slow queries at Jenius, how?",
+    "Kami ingin tahu masalah apa yang pernah dia selesaikan",
+    "Bisakah kami lihat proyek yang menyelesaikan masalah fraud?",
   ])("leaves %s alone", (q) => expect(isProblemQuestion(q)).toBe(false));
 });

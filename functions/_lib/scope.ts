@@ -299,8 +299,18 @@ const PROBLEM: RegExp[] = [
   /\bkalau (?:dia|kurniadi) yang (?:menangani|mengerjakan)\b/i,
 ];
 
+/** Questions about his past work ("what problems he solved", "masalah yang pernah dia selesaikan") or polite asks to know or see it. */
+const PROBLEM_PAST_WORK: RegExp[] = [
+  /\b(?:he|kurniadi)\s+(?:has\s+|had\s+)?(?:solved|fixed|worked on|worked|tackled|handled|built|resolved|shipped)\b/i,
+  /\b(?:(?:dia|ia|kurniadi)\s+(?:pernah|sudah)\s+|pernah\s+(?:dia\s+|ia\s+|kurniadi\s+)?)(?:selesaikan|menyelesaikan|tangani|menangani|kerjakan|mengerjakan|atasi|mengatasi)\b/i,
+  /\byang\s+(?:dia|ia|kurniadi)\s+(?:selesaikan|tangani|kerjakan|atasi)\b/i,
+  /\b(?:proyek|project)\s+(?:dia\s+|kurniadi\s+)?yang\s+(?:pernah\s+|sudah\s+)?(?:menyelesaikan|mengatasi|menangani)\b/i,
+  /^\s*(?:we'?d like to know|we would like to know|can we see|kami ingin tahu|bisakah kami (?:lihat|melihat))\b/i,
+];
+
 export function isProblemQuestion(question: string): boolean {
   if (civicQuestion(question) || routedTopic(question)) return false;
+  if (PROBLEM_PAST_WORK.some((re) => re.test(question))) return false;
   return PROBLEM.some((re) => re.test(question));
 }
 
