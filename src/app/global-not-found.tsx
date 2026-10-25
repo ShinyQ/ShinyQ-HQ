@@ -24,24 +24,43 @@ export default function GlobalNotFound() {
       <body className="flex min-h-screen items-center">
         <main className="pv-wrap py-16 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.rover} src="/brand/rover-mark.svg" alt="" width={88} height={88} />
+          <img
+            className={`mx-auto ${styles.rover}`}
+            src="/brand/rover-mark.svg"
+            alt=""
+            width={88}
+            height={88}
+          />
           <p className="pv-data mt-5 text-cyan">{en.notFound.kicker}</p>
           <h1 className="pv-d-l mt-3">{en.notFound.title}</h1>
           <p className="pv-lead mx-auto mt-4 text-ink-2">{en.notFound.body}</p>
           <p lang="id" className="mt-2 text-sm text-ink-3">
             {id.notFound.title}. {id.notFound.body}
           </p>
-          <DidYouMean label={en.notFound.didYouMean} className="mt-6" />
-          <nav aria-label="404" className={styles.paths}>
-            <Link className={`pv-btn pv-btn-primary ${styles.path}`} href="/en/cv" data-testid="not-found-cv">
+          <DidYouMean label={en.notFound.didYouMean} className="mt-6 min-h-6" />
+          <nav
+            aria-label={en.notFound.waysBack}
+            className="mx-auto mt-7 grid max-w-xl gap-3 sm:grid-cols-3"
+          >
+            <Link
+              className="pv-btn pv-btn-primary flex flex-col items-start text-left"
+              href="/en/cv"
+              data-testid="not-found-cv"
+            >
               <b className="block">{en.notFound.cv}</b>
               <span className="text-xs font-normal">{en.notFound.cvHint}</span>
             </Link>
-            <Link className={`pv-btn pv-btn-ghost ${styles.path}`} href="/en/labs" data-testid="not-found-work">
+            <Link
+              className="pv-btn pv-btn-ghost flex flex-col items-start text-left"
+              href="/en/labs"
+              data-testid="not-found-work"
+            >
               <b className="block">{en.notFound.work}</b>
-              <span className="text-xs font-normal text-ink-3">{en.notFound.workHint}</span>
+              <span className="text-xs font-normal text-ink-3">
+                {en.notFound.workHint}
+              </span>
             </Link>
-            <span className={`pv-btn pv-btn-ghost ${styles.path}`}>
+            <span className="pv-btn pv-btn-ghost flex flex-col items-start text-left">
               <b className="block">{en.notFound.home}</b>
               <span className="text-xs font-normal">
                 <Link href="/en">English</Link> ·{" "}

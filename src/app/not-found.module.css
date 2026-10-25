@@ -1,7 +1,4 @@
 .rover {
-  width: 88px;
-  height: 88px;
-  margin-inline: auto;
   filter: drop-shadow(0 0 22px rgb(34 211 238 / 0.45));
   animation: wobble 3s ease-in-out infinite;
 }
@@ -25,24 +22,4 @@
   50% {
     transform: rotate(6deg) translateY(-6px);
   }
-}
-
-.paths {
-  display: grid;
-  gap: 12px;
-  margin-top: 28px;
-}
-
-@media (min-width: 640px) {
-  .paths {
-    grid-template-columns: repeat(3, minmax(0, 200px));
-    justify-content: center;
-  }
-}
-
-.path {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
 }
