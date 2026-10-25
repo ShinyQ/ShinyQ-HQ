@@ -7,10 +7,10 @@ import { bindingClient, DEFAULT_FALLBACK, DEFAULT_PRIMARY, type ModelClient } fr
 import { scrubPII } from "./pii";
 import { bindingEmbedder, type Embedder } from "./vectors";
 import type { LoadedPack, PackSource } from "./pack-source";
-import { runPipeline, type PipelineReason } from "./pipeline";
+import { planRoute, runPipeline, type PipelineReason } from "./pipeline";
 import { PROMPT_VERSION } from "./prompt";
 import { retrieve } from "./retrieve";
-import { isLeadQuestion, resolveNickname } from "./scope";
+import { resolveNickname } from "./scope";
 import { chipFor, topicOfTags } from "./askStats";
 import { answerTags } from "./tags";
 import { hasValidSession, issueSession, originAllowed, readCapped, sha256Hex, verifyTurnstile, visitorHash, type Fetcher } from "./security";
@@ -281,8 +281,9 @@ export function createAskHandler(deps: HandlerDeps) {
         logEvent(env, loaded, { outcome: "answer", locale, source: "cache", entry: body.entry, auto: body.auto, ...stats(tags), latencyMs: now() - started });
         const cite = isAskCite(cached.cite) ? cached.cite : undefined;
         const cites = cleanCites(cached.cites);
-        // Only model answers are cached, and the lead route is deterministic, so a cached answer to a lead question is a lead answer.
-        const contact = isLeadQuestion(resolved) ? pack.contact : undefined;
+        // Only first-turn model answers are cached and routing is deterministic, so the cache hit asks planRoute (the
+        // pipeline's own routing, same question, no history) whether this is a lead: project inquiries and problem questions alike.
+        const contact = planRoute({ question, pack }).lead ? pack.contact : undefined;
         return streamResponse(cachedText, withTags({ done: true, outcome: "answer", source: "cache", asOf: pack.packDate, ...(cite ? { cite } : {}), ...(cites.length > 1 ? { cites } : {}), ...(contact ? { contact } : {}), ...(await sign(cachedText)) }, tags), delay, responseHeaders);
       }
     } catch {
