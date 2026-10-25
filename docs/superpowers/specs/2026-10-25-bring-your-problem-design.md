@@ -43,8 +43,9 @@ over 5 sentences.
 
 `isProblemQuestion(question)` in `functions/_lib/scope.ts`, deterministic, EN and ID, two shapes:
 
-1. **Own problem**: a visitor subject ("we", "our team", "our company", "my company", "I", "kami", "tim kami",
-   "perusahaan kami", "saya", "usaha kami") within about 30 characters of a problem word ("struggle", "problem",
+1. **Own problem** (as built: no first person singular and 40 characters, see section 10, refinement 5): a visitor
+   subject ("we", "our team", "our company", "my company", "I", "kami", "tim kami", "perusahaan kami", "saya",
+   "usaha kami") within about 30 characters of a problem word ("struggle", "problem",
    "issue", "bottleneck", "pain point", "drowning in", "too slow", "manual", "can't keep up", "keeps failing",
    "kesulitan", "masalah", "kewalahan", "kendala", "lambat", "sering gagal").
 2. **Approach ask**: "how would (he | Kurniadi | you) (approach | tackle | solve | handle | go about | start)", "what
@@ -60,10 +61,12 @@ questions (their rules run first). The visitor's text stays untrusted data.
 - A problem question counts as a lead: `lead = either(isLeadQuestion) || either(isProblemQuestion)` (the question, or
   the question plus its follow-up anchor). Every earlier step is unchanged: harmful, persona and override declines, a
   rate request (`MESSAGES.leadRates`), HARD private topics and `partitionQuestion` for a mixed question.
-- `approach = lead && either(isProblemQuestion) && leadMatches(pack, routed).length > 0`.
+- `approach = lead && either(isProblemQuestion) && leadMatches(pack, routed).length > 0` (then at most 2 matches and
+  the demotion to `lead` when none is left: section 10, refinement 1).
 - Route: `approach` when `approach` is true; otherwise `lead` as today (a plain hiring question, or a problem with no
   matching project). `AskRoute` gains `"approach"`.
-- A problem question that also asks for code or a full design is still a lead: the prompt and the output checks
+- A problem question that also asks for code or a full design is still a lead (except general-assistant work: section
+  10, refinement 2): the prompt and the output checks
   (`containsCode`, `prescribes`) keep it from becoming free work, as for today's leads.
 
 ### 3.3 The answer
@@ -81,11 +84,12 @@ questions (their rules run first). The visitor's text stays untrusted data.
 ### 4.1 Retrieval (`retrieve` in `functions/_lib/retrieve.ts`)
 
 - New `approach` option. The lead set comes first, unchanged: `ALWAYS_INCLUDE`, `LEAD_INCLUDE`, `LEAD_ENGAGEMENTS`,
-  then `leadMatches` (1 to 3).
+  then `leadMatches` (1 to 3; as built, the approach route keeps at most 2: section 10, refinement 1).
 - Then `principles` and at most `APPROACH_PERSPECTIVE_CAP` (2) perspectives, ranked by the hybrid `scoreChunks` on the
   question (bge-m3 plus BM25, BM25 alone on embedding failure). They come after the matches so the context budget
   never clips a match.
-- Context budget unchanged (6,000 characters). `leadMatches` stays BM25, as today.
+- Context budget unchanged (6,000 characters). `leadMatches` stays BM25, as today (the approach route then orders its
+  matches by cosine: section 10, refinement 1).
 
 ### 4.2 Prompt (`functions/_lib/prompt.ts`)
 
@@ -95,7 +99,8 @@ questions (their rules run first). The visitor's text stays untrusted data.
   views that applies (tagged); at most one sentence that a similar problem would likely start the same way; at most 6
   sentences or 4 list items; never tell the visitor what to use or build, recommend a stack or an architecture,
   estimate cost, price or timeline, write code or ask for their data; end with the invitation to get in touch.
-- New routing line `APPROACH_LINE` naming the matched titles (replaces the lead line for this route).
+- New routing line `APPROACH_LINE` naming the matched titles (replaces the lead line for this route; built as the
+  function `approachLine(titles)`).
 - Bump `PROMPT_VERSION` (`2026-10-25.approach.1`). Adding a rule changes the stable system prompt prefix once (the Groq
   prompt cache rewarms).
 
@@ -103,7 +108,8 @@ questions (their rules run first). The visitor's text stays untrusted data.
 
 New input `approach?: { matches: KnowledgeChunk[] }` (implies `lead` with `fit: true`). In approach mode:
 
-1. `prescribes` replaces `consulting`: it keeps every `CONSULTING` pattern (durations, cost and estimate words,
+1. `prescribes` replaces `consulting` (as built, durations stated in CONTEXT pass and it runs before the voice check:
+   section 10, refinement 6): it keeps every `CONSULTING` pattern (durations, cost and estimate words,
    visitor-directed advice such as "you should use", "I recommend", "recommended stack", "the architecture would",
    "step 1", "first, set up", "sebaiknya anda gunakan", "arsitekturnya akan") and replaces the 5-sentence cap with 7
    sentences and at most 4 list items. Failure: reason `consulting`, replacement `lead`.
@@ -111,7 +117,8 @@ New input `approach?: { matches: KnowledgeChunk[] }` (implies `lead` with `fit: 
    `GENERALITY` wording check. Failure: reason `unsourced`, replacement `lead`.
 3. A matched project cited by title: `citedSources` limited to `approach.matches` (plus `markedSources` tags on them).
    None: reason `unsourced`, replacement `lead`.
-4. An opinion claim must cite his written view (rule 8, `SOURCE_TYPES`), as for adjacent answers.
+4. An opinion claim must cite his written view (rule 8, `SOURCE_TYPES`), as for adjacent answers (never the
+   engagements view: section 10, refinement 7).
 5. Unchanged and still first: forbidden, secret, leak, `firstPersonVoice`, `containsCode`, `asksForPersonalData`,
    defamation, numeric, entity, employer and client-name checks.
 
@@ -187,3 +194,34 @@ Model evals (Workers AI neurons; one run about 27 calls, about 1,100 neurons, 11
 - Pack growth (more approach steps per project).
 - Any new dock UI, mode toggle or Contact page entry.
 - Prospective designs, estimates or proposals; follow-up turns that refine an outline into a plan.
+
+## 10. Refinements during planning (2026-10-25)
+
+Found while planning and building; where an earlier section differs, this section is what shipped.
+
+1. Matches: the approach route keeps at most `APPROACH_MATCH_CAP` (2) of the `leadMatches`, ordered by cosine and
+   dropped below `SEMANTIC_FLOOR` (0.45) when the question vector exists, in BM25 order otherwise
+   (`approachMatches`). The 2026-10-25 bge-m3 probe showed weak third matches. None left: the route is demoted to
+   `lead`, today's lead answer.
+2. A problem question that asks for general-assistant work ("... write the code for us") stays declined as `general`:
+   only `isLeadQuestion` bypasses that decline, so no new path reaches the model with a code request.
+3. Problem detection never fires on a civic question or a routed lifestyle or policy topic, so "How would he solve
+   corruption in the government?" keeps its civic route.
+4. Known limitation: "support tickets" matches the event ticketing projects, lexically and semantically; no pill
+   uses it.
+5. Past-work guard: a question about his past work ("What problems did he solve at Metrodata?", "masalah apa yang
+   pernah dia selesaikan", "the issues he fixed") is not a problem question unless a forward cue (an approach ask
+   such as "how would he ..." or "his approach?", or the visitor's own problem with "like this" / "seperti ini") points
+   back at the visitor's problem. A first person singular ("I struggle to learn ML") is a learning question, so the
+   own-problem subjects are plural or a named team, company, startup, clinic or business, within 40 characters of
+   the problem word.
+6. `prescribes`: a duration passes only when CONTEXT states it (matched on word boundaries, so "3 weeks" never
+   matches "13 weeks") and its sentence has no visitor or future framing ("you", "we", "within", "could", "will",
+   "akan", "bisa"); the check runs before the first-person voice check, so "I recommend ..." in an approach answer is
+   `consulting` (same `MESSAGES.lead` replacement). The forbidden, secret and leak checks still run first.
+7. The freelance engagements perspective (`LEAD_ENGAGEMENTS`, always retrieved for a lead) never backs an opinion: the
+   contact invitation echoes it.
+8. The leak check ignores rule 18's bridging sentence ("A similar problem would likely start the same way.") and the
+   contact-card invitation (`BENIGN` in `functions/_lib/checks.ts`).
+9. A cache hit decides the contact card with `planRoute(...).lead` (only first-turn answers are cached and routing is
+   deterministic), so cached problem answers keep the card.
