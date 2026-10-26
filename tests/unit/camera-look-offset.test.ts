@@ -259,6 +259,12 @@ const OFFSET_ZONES: Record<ViewportClass, readonly string[]> = {
   mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival"],
 };
 const ARRIVAL_AIMS = ["L1:arrival", "L2:arrival", "L3:overview", "RF:arrival"];
+/**
+ * The zones with a view only for priming on each class (`ViewZone.primeView`): the L1 phone landing view (owner decision
+ * 2026-10-25, `tests/unit/landing-view.test.ts`). Their primed pose is new; driving into them stays frozen.
+ */
+const PRIME_VIEW_ZONES: Record<ViewportClass, readonly string[]> = { desktop: [], tablet: [], mobile: ["L1:kiosk"] };
+const hasPrimeView = (zone: ViewZone, cls: ViewportClass) => zone.primeView?.[cls] !== undefined;
 
 /** The settled follow pose as CameraDirector builds it (look-ahead, offset scale, look offset, camera collision), new code path. */
 function newPose(floor: FloorId, s: OrbitState, cls: ViewportClass, aspect: number, at: { x: number; z: number }): CameraPose {
@@ -333,17 +339,21 @@ describe("the follow rig's look offset", () => {
       // The office stop's view has a look offset on desktops and portrait screens; the tablet camera's aims plain.
       expect(plain.some(({ zone }) => zone.id === "L1:office")).toBe(cls === "tablet");
       expect(zones.filter((z) => !plain.includes(z)).map(({ zone }) => zone.id).sort()).toEqual([...OFFSET_ZONES[cls]].sort());
+      expect(zones.filter(({ zone }) => hasPrimeView(zone, cls)).map(({ zone }) => zone.id)).toEqual(PRIME_VIEW_ZONES[cls]);
       for (const { floor, zone } of plain) {
         const rail = floor === "L2";
         const at = centre(zone);
         for (const aspect of ASPECTS[cls]) {
-          // Primed (the spawn, an arrival, a deep link), then the pose every frame.
+          // Primed (the spawn, an arrival, a deep link), then the pose every frame. A zone with its own primed view on this
+          // class (the phone landing view) starts unprimed instead: its drive-in view stays frozen.
           const s = createOrbitState();
           const o: OldState = createOrbitState();
           setPitchRange(s, pitchRange(cls, rail ? "rail" : "follow"));
           setPitchRange(o as OrbitState, pitchRange(cls, rail ? "rail" : "follow"));
-          primeZone(s, zone, cls, rail);
-          oldPrimeZone(o, zone, cls, rail);
+          if (!hasPrimeView(zone, cls)) {
+            primeZone(s, zone, cls, rail);
+            oldPrimeZone(o, zone, cls, rail);
+          }
           expect(pick(s), `${zone.id} primed`).toEqual(pick(o));
           expect(newPose(floor, s, cls, aspect, at), `${zone.id} primed pose`).toEqual(oldPose(floor, o, cls, aspect, at));
           const got: unknown[] = [];
@@ -404,11 +414,11 @@ describe("the follow rig's look offset", () => {
     it("under reduced motion", () => run(true), 30_000);
   });
 
-  it("keeps the intro's end pose and timeline at the spawn on every class (the pinned intro poses use the same path)", () => {
+  it("keeps the intro's end pose and timeline at the spawn on desktops and tablets (phones land on their own view)", () => {
     const L1 = layouts.L1;
     const zone = zoneAt("L1", LOBBY.spawn, L1.viewZones);
     expect(zone?.prime).toBe(true);
-    for (const cls of CLASSES) {
+    for (const cls of CLASSES.filter((c) => !hasPrimeView(zone!, c))) {
       const s = createOrbitState();
       const o: OldState = createOrbitState();
       setPitchRange(s, pitchRange(cls, "follow"));

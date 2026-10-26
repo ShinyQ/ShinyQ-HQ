@@ -55,6 +55,8 @@ export interface OrbitState {
    * the pitch leveled, on exit, unless the visitor turned or tilted by hand meanwhile.
    */
   zoneTurn: number | null;
+  /** The current zone was primed (its `primeView` applies), not entered by a drive. */
+  zonePrime: boolean;
   /**
    * The look offset a view zone set (`ViewZone.lookOffset`, u before the follow zoom; `followPose` moves only the look
    * target by it), eased like the zoom: in on entering the zone, back to 0 on leaving it, on a hand zoom or on a reset. 0 in
@@ -112,6 +114,7 @@ export function createOrbitState(): OrbitState {
     zoneZoom: null,
     zoneRailYaw: null,
     zoneTurn: null,
+    zonePrime: false,
     lookForward: 0,
     lookForwardTarget: 0,
     lookUp: 0,
@@ -250,6 +253,9 @@ export interface LookOffset {
   near?: { zoom: number; up: number };
 }
 
+/** A camera class's own yaw, zoom, pitch and look offset in a view zone (`ViewZone.classView`, `ViewZone.primeView`). */
+export type ClassView = { yaw?: number; zoom?: number; pitch?: number; lookOffset?: LookOffset };
+
 /** A floor area where the camera turns to face something (a wall) when the rover walks in. */
 export interface ViewZone {
   id: string;
@@ -266,7 +272,13 @@ export interface ViewZone {
    * Defining `pitch` also opts into the turn-back on exit (`OrbitState.zoneTurn`); without it, exit leaves the yaw and the pitch
    * untouched (the zoom still eases back to 1 as on any zone exit).
    */
-  classView?: Partial<Record<ViewportClass, { yaw?: number; zoom?: number; pitch?: number; lookOffset?: LookOffset }>>;
+  classView?: Partial<Record<ViewportClass, ClassView>>;
+  /**
+   * Another class view applied only when the zone is primed (`primeZone`: the session start, through the boot and the
+   * intro), never when a drive enters it (owner decision 2026-10-25: the phone landing view on L1 at every session start,
+   * not on every return to the spawn). Falls back to `classView`.
+   */
+  primeView?: Partial<Record<ViewportClass, ClassView>>;
   /**
    * Opt-in: the follow rig's look target moves by this offset while the zone is applied (`OrbitState.lookForward`,
    * eased in and out like the zoom; a class view's own wins). Zones without it keep the plain follow pose, float for float.
@@ -292,16 +304,17 @@ export interface ViewZone {
 }
 
 /**
- * The zone's own yaw when its class view opts into the turn-back by defining a `pitch` (`OrbitState.zoneTurn`), else null.
- * A class view that only turns or zooms (the L1 kiosk on tablets and phones) never turns back on exit.
+ * The view's yaw when it opts into the turn-back by defining a `pitch` (`OrbitState.zoneTurn`), else null: the zone's own
+ * yaw for a class view without one (the B1 phone arrival, the L1 office), the view's own for a turned one (the L1 phone
+ * landing view). A class view that only turns or zooms (the L1 kiosk on tablets and phones) never turns back on exit.
  */
-function turnOf(zone: ViewZone, view: ReturnType<typeof zoneView>): number | null {
-  return view.pitch !== undefined ? zone.yaw : null;
+function turnOf(view: ReturnType<typeof zoneView>): number | null {
+  return view.pitch !== undefined ? view.yaw : null;
 }
 
-/** The yaw, zoom, pitch and look offset a zone asks for on a camera class. */
-export function zoneView(zone: ViewZone, cls?: ViewportClass): { yaw: number; zoom: number | undefined; pitch?: number; lookOffset?: LookOffset } {
-  const own = cls ? zone.classView?.[cls] : undefined;
+/** The yaw, zoom, pitch and look offset a zone asks for on a camera class (`prime`: primed, its `primeView` first). */
+export function zoneView(zone: ViewZone, cls?: ViewportClass, prime = false): { yaw: number; zoom: number | undefined; pitch?: number; lookOffset?: LookOffset } {
+  const own = cls ? ((prime ? zone.primeView?.[cls] : undefined) ?? zone.classView?.[cls]) : undefined;
   return { yaw: own?.yaw ?? zone.yaw, zoom: own?.zoom ?? zone.zoom, pitch: own?.pitch, lookOffset: own?.lookOffset ?? zone.lookOffset };
 }
 
@@ -355,15 +368,16 @@ export const VIEW_ZONES: Partial<Record<FloorId, ViewZone[]>> = {
  * so the intro ends on that view and a deep link opens on it. Also under reduced motion (nothing moves).
  */
 export function primeZone(s: OrbitState, zone: ViewZone | null, cls?: ViewportClass, rail = false): void {
-  const view = zone ? zoneView(zone, cls) : { yaw: 0, zoom: undefined, pitch: undefined, lookOffset: undefined };
+  const view = zone ? zoneView(zone, cls, true) : { yaw: 0, zoom: undefined, pitch: undefined, lookOffset: undefined };
   s.zone = zone?.id ?? null;
+  s.zonePrime = zone !== null;
   s.zoneCls = cls;
   s.suppressedZone = null;
   s.yaw = s.yawTarget = view.yaw;
   s.zoom = s.zoomTarget = view.zoom ?? 1;
   s.zoneZoom = view.zoom ?? null;
   s.pitch = s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
-  s.zoneTurn = zone ? turnOf(zone, view) : null;
+  s.zoneTurn = zone ? turnOf(view) : null;
   s.lookForward = s.lookForwardTarget = view.lookOffset?.forward ?? 0;
   s.lookUp = s.lookUpTarget = view.lookOffset?.up ?? 0;
   s.lookRight = s.lookRightTarget = view.lookOffset?.right ?? 0;
@@ -434,8 +448,8 @@ function releaseTurn(s: OrbitState): void {
  * are untouched.
  */
 function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: ViewportClass, reduced: boolean): void {
-  const was = zoneView(zone, from);
-  const view = zoneView(zone, to);
+  const was = zoneView(zone, from, s.zonePrime);
+  const view = zoneView(zone, to, s.zonePrime);
   const offset = (v: typeof view) => [v.lookOffset?.forward ?? 0, v.lookOffset?.up ?? 0, v.lookOffset?.right ?? 0];
   const [f0, u0, r0] = offset(was);
   const [f1, u1, r1] = offset(view);
@@ -443,7 +457,7 @@ function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: Vie
   if (was.yaw === view.yaw && was.zoom === view.zoom && was.pitch === view.pitch && f0 === f1 && u0 === u1 && r0 === r1) return;
   if (view.yaw !== was.yaw) s.yawTarget = nearestAngle(view.yaw, s.yaw);
   if (view.pitch !== was.pitch) s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
-  s.zoneTurn = turnOf(zone, view);
+  s.zoneTurn = turnOf(view);
   // A hand zoom set `zoneZoom` to null (and released the look offset): the visitor keeps that framing.
   if (was.zoom === undefined || s.zoneZoom !== null) {
     if (view.zoom !== was.zoom) {
@@ -506,6 +520,7 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
   }
   s.zone = id;
   s.zoneCls = cls;
+  s.zonePrime = false;
   if (!zone) {
     s.suppressedZone = null;
     if (s.zoneZoom !== null) {
@@ -528,7 +543,7 @@ export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolea
   aimAt(s, view.lookOffset);
   s.yawTarget = nearestAngle(view.yaw, s.yaw);
   s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
-  s.zoneTurn = turnOf(zone, view);
+  s.zoneTurn = turnOf(view);
   if (view.zoom) {
     s.zoomTarget = view.zoom;
     s.zoneZoom = view.zoom;
