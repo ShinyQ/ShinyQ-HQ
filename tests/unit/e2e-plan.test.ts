@@ -165,7 +165,7 @@ describe("specsForChanges", () => {
   });
 
   it("maps the B1 unlock files to the unlock spec and keeps their earlier mappings", () => {
-    expect(specsForChanges(["src/hud/dialog/EngineUnlockLayer.tsx"]).specs).toEqual(["b1-unlock", "camera", "experience", "hud", "hud-corners", "onboarding", "pads"]);
+    expect(specsForChanges(["src/hud/dialog/EngineUnlockLayer.tsx"]).specs).toEqual(["b1-unlock", "camera", "experience", "hud", "hud-corners", "onboarding", "pads", "phone-first"]);
     expect(specsForChanges(["src/hud/floorRows.ts"]).specs).toEqual(expect.arrayContaining(["b1-unlock", "engine-room", "floor-chunks", "memory"]));
     expect(specsForChanges(["src/hud/hudActions.ts"]).specs).toContain("b1-unlock");
     expect(specsForChanges(["e2e/b1-unlock.spec.ts"]).specs).toEqual(["b1-unlock"]);
@@ -241,9 +241,9 @@ describe("specsForChanges", () => {
   });
 
   it("maps the Rover dialog, the onboarding and the hint bubbles to the onboarding spec", () => {
-    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/engine.ts"]).specs).toEqual(["camera", "experience", "onboarding", "phone-first"]);
     expect(specsForChanges(["src/experience/hints/HintProbe.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
-    expect(specsForChanges(["src/hud/dialog/FloorIntroLayer.tsx"]).specs).toEqual(["camera", "experience", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/FloorIntroLayer.tsx"]).specs).toEqual(["camera", "experience", "onboarding", "phone-first"]);
     expect(specsForChanges(["src/experience/introContinue.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
   });
   it("maps point-and-go code to the interact spec and the specs that click targets", () => {

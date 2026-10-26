@@ -21,6 +21,14 @@ const band = (page: Page) => page.getByTestId("hud-bottom");
 /** Taps the toast's text near its left edge (a tap on the center can land on Skip). */
 const tapText = (page: Page) => dialog(page).locator("p[aria-hidden='true']").first().tap({ position: { x: 12, y: 10 } });
 const expectLine = (page: Page, key: string) => expect(dialog(page)).toHaveAttribute("data-line", key, { timeout: 30_000 });
+/** A toast clamps a long line to two rows: the first tap may only expand it, so tap again while the same line stays up. */
+async function tapThrough(page: Page, from: string) {
+  await tapText(page);
+  await expect
+    .poll(async () => (await dialog(page).getAttribute("data-line")) !== from || (await dialog(page).getAttribute("data-expanded")) === "true")
+    .toBe(true);
+  if ((await dialog(page).getAttribute("data-line")) === from) await tapText(page);
+}
 
 /** The Ask AI pill shows only when Ask the HQ is enabled; the teaser already seen. */
 async function mockAsk(page: Page) {
@@ -123,8 +131,11 @@ test.describe("phone (390x844)", () => {
     // The try-it step waits for the rover to move (the joystick is on screen; the keyboard drives it just the same).
     const from = (await snapshot(page)).rover;
     await page.keyboard.down("w");
-    await waitForRoverMove(page, from, 2.5);
-    await page.keyboard.up("w");
+    try {
+      await waitForRoverMove(page, from, 2.5);
+    } finally {
+      await page.keyboard.up("w");
+    }
     await expectLine(page, "moved");
     await expect(box).toContainText(en.dialog.onboarding.movedPhone);
 
@@ -138,7 +149,7 @@ test.describe("phone (390x844)", () => {
     expect(toast.y + toast.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
     for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap"]) expect(overlaps(toast, await rect(page.getByTestId(id))), id).toBe(false);
 
-    await tapText(page);
+    await tapThrough(page, "moved");
     await expectLine(page, "floor-chip");
     await expect(box).toContainText(en.dialog.onboarding.floorChip);
     await expect(box).not.toHaveAttribute("data-docked", "true");
@@ -149,37 +160,82 @@ test.describe("phone (390x844)", () => {
     for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap"]) expect(overlaps(chip, await rect(page.getByTestId(id))), id).toBe(false);
 
     // The remaining lines go on with taps: the Rover menu, Ask AI (the pill shows), then the closing.
+    let line = "floor-chip";
     for (const key of ["rover-menu", "ask-ai", "closing"]) {
-      await tapText(page);
-      if ((await box.getAttribute("data-expanded")) === "true") await tapText(page);
+      await tapThrough(page, line);
       await expectLine(page, key);
       await expect(box).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+      line = key;
     }
     expect(await page.evaluate(() => localStorage.getItem("hq:onboarded"))).not.toBe("done");
   });
 });
 
+/** Tablets keep the centered boot card, the raised dialog and the 8-step tour (a move line first). */
+const tabletBoot = async (page: Page) => {
+  await page.goto("/en?tier=lite");
+  await waitForHQ(page);
+  const overlay = page.getByTestId("boot");
+  const start = overlay.getByRole("button", { name: "Boot rover" });
+  await expect(start).not.toHaveAttribute("aria-disabled", "true", { timeout: 30_000 });
+  return { overlay, card: await rect(overlay.locator(".hq-boot-card")) };
+};
+
+async function expectCenteredBootLog(overlay: Locator) {
+  const lines = await overlay.locator(".hq-boot-log li").evaluateAll((lis) => ({
+    visible: lis.filter((li) => li.hasAttribute("data-shown") && getComputedStyle(li).opacity !== "0").length,
+    shown: lis.filter((li) => li.hasAttribute("data-shown")).length,
+  }));
+  expect(lines.visible, "every shown log line stays visible").toBe(lines.shown);
+}
+
+async function expectTabletWelcomeAndTour(page: Page) {
+  await freshVisit(page);
+  await expectLine(page, "welcome");
+  await expect(dialog(page)).not.toHaveAttribute("data-docked", "true");
+  await expect(band(page)).not.toHaveAttribute("data-aside", "true");
+  await dialog(page).getByRole("button", { name: en.dialog.onboarding.start }).tap();
+  await expectLine(page, "move");
+}
+
 test.describe("tablet landscape (1194x834)", () => {
   test.use({ viewport: { width: 1194, height: 834 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
 
-  test("keeps the centered boot card, no phone landing zoom and the full tour (a move line first)", async ({ page }) => {
+  test("keeps the centered boot card with every shown log line visible", async ({ page }) => {
+    const { overlay, card } = await tabletBoot(page);
+    expect(card.y + card.height / 2, "centered, not docked").toBeLessThan(834 * 0.65);
+    await expectCenteredBootLog(overlay);
+  });
+
+  test("keeps the raised welcome and the full tour (a move line first)", async ({ page }) => {
+    await expectTabletWelcomeAndTour(page);
+  });
+
+  test("has no phone landing zoom (the tablet camera class)", async ({ page }) => {
+    await asReturningVisitor(page);
+    await skipFloorLines(page);
     await page.goto("/en?tier=lite");
     await waitForHQ(page);
-    const overlay = page.getByTestId("boot");
-    const card = await rect(overlay.locator(".hq-boot-card"));
-    expect(card.y + card.height / 2, "centered, not docked").toBeLessThan(834 * 0.65);
-    await expect(overlay.getByRole("button", { name: "Boot rover" })).toBeVisible();
-    const visible = await overlay.locator(".hq-boot-log li").evaluateAll((lis) => lis.filter((li) => li.hasAttribute("data-shown") && getComputedStyle(li).opacity !== "0").length);
-    expect(visible, "every shown log line stays visible").toBe(await overlay.locator(".hq-boot-log li[data-shown]").count());
-
-    await page.goto("/en?tier=lite");
-    await freshVisit(page);
-    await expectLine(page, "welcome");
-    await expect(dialog(page)).not.toHaveAttribute("data-docked", "true");
-    await expect(band(page)).not.toHaveAttribute("data-aside", "true");
-    await dialog(page).getByRole("button", { name: en.dialog.onboarding.start }).tap();
-    await expectLine(page, "move");
+    await waitForPhase(page, "explore");
+    await waitForSceneLive(page);
     const zoom = await page.evaluate(() => (window as unknown as { __hq: { rover: { cameraZoom: number } } }).__hq.rover.cameraZoom);
-    expect(zoom, "the tablet camera class has no phone landing zoom").toBeLessThan(2);
+    expect(zoom, "the landscape tablet camera class has no phone landing zoom").toBeLessThan(2);
+  });
+});
+
+// Portrait tablets keep the viewport class `tablet` (the card CSS only applies to portrait phones up to 639px), so they
+// stay centered and raised; their camera class is `mobile`, so the zoom is deliberately not asserted here.
+test.describe("tablet portrait (834x1194)", () => {
+  test.use({ viewport: { width: 834, height: 1194 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("keeps the centered boot card, not docked", async ({ page }) => {
+    const { overlay, card } = await tabletBoot(page);
+    expect(card.y + card.height / 2, "centered, not docked").toBeLessThan(1194 * 0.65);
+    expect(card.y + card.height, "not pinned to the bottom edge").toBeLessThan(1194 - 40);
+    await expectCenteredBootLog(overlay);
+  });
+
+  test("keeps the raised welcome and the full tour (a move line first)", async ({ page }) => {
+    await expectTabletWelcomeAndTour(page);
   });
 });
