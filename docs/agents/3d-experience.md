@@ -61,7 +61,7 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `ExperienceGate` handles it without a reload once hydrated (`data-hq-page-link`).
   - It leaves the 3D view; it does not skip the boot or the intro.
 - `BootOverlay` renders the same `BootCard`, so the handoff does not move.
-- Portrait phones (`max-width: 639px` and portrait, the unlayered block after the `.hq-boot-*` layer in `globals.css`): the card docks at the bottom in thumb reach (mark beside the eyebrow and title; Boot rover fills its row next to the Classic site link, `flex: 1`) and the log is one rolling line. It is at most 55% of a 390 x 844 screen and 66% of a 375 x 667 one (`e2e/phone-first.spec.ts`). Landscape phones and tablets keep the centered card.
+- Portrait phones (`max-width: 639px` and portrait, the unlayered block after the `.hq-boot-*` layer in `hud-shared.css`): the card docks at the bottom in thumb reach (mark beside the eyebrow and title; Boot rover fills its row next to the Classic site link, `flex: 1`) and the log is one rolling line. It is at most 55% of a 390 x 844 screen and 66% of a 375 x 667 one (`e2e/phone-first.spec.ts`). Landscape phones and tablets keep the centered card.
   - `BootCard` marks the newest shown line `data-last`; the other lines are hidden. The cover's staggered lines fade in and out in their slots (`hq-boot-roll`) and the last one stays; the overlay moves `data-last` as it types, so the handoff shows the same line.
   - The overlay's `.hq-boot-backdrop` is clear at the top so Rover's wake close-up shows above the card; the SSR cover stays opaque (no canvas under it yet).
   - Hooks: `hq-boot-mark` (img), `hq-boot-title`, `hq-boot-actions` (button row). The owner block keeps its markup and rules.

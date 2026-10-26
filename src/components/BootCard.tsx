@@ -43,7 +43,7 @@ export interface BootCardProps {
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
  * There is no skip: the boot and the intro always play in full (owner decision). "Classic site" leaves
  * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
- * On a portrait phone the card docks at the bottom and the log shows one rolling line (`data-last`, globals.css).
+ * On a portrait phone the card docks at the bottom and the log shows one rolling line (`data-last`, hud-shared.css).
  */
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };

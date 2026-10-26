@@ -405,6 +405,7 @@ describe("specsForChanges", () => {
       "src/experience/floors/lobby/observatoryLayout.ts",
       "src/experience/camera/orbit.ts",
       "src/app/globals.css",
+      "src/app/hud-shared.css",
     ]) {
       expect(specsForChanges([file]).specs, file).toContain("phone-first");
     }
