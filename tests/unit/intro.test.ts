@@ -15,6 +15,7 @@ import {
   reducedVeil,
   revealRadius,
   skipsIntro,
+  WAKE,
 } from "@/experience/camera/intro";
 import { yawLooking } from "@/experience/camera/look";
 import { LOBBY, SHAFT } from "@/experience/config";
@@ -37,6 +38,8 @@ const cases: [ViewportClass, number, number][] = [
   ["tablet", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.tablet],
   ["mobile", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.mobile],
 ];
+/** When the face close-up is framed: at t 0, or once the push-in ends where the boot holds a lower look (portrait phones). */
+const closeUpAt = (cls: ViewportClass) => (WAKE[cls].boot === undefined ? 0 : INTRO.wake);
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
 /** The camera's angle around the orbit's center (Rover, or the plaza on narrow frames) at `t`. */
 const angleAt = (plan: ReturnType<typeof introPlan>, t: number) => {
@@ -63,7 +66,7 @@ describe("intro timeline", () => {
   it("opens on a close-up of the face and sweeps 270 degrees around the orbit's center", () => {
     for (const [cls, yaw, zoom] of cases) {
       const plan = introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom));
-      const first = introPose(plan, 0);
+      const first = introPose(plan, closeUpAt(cls));
       const toFace = Math.hypot(first.position[0] - first.target[0], first.position[2] - first.target[2]);
       expect(toFace).toBeLessThan(3.5);
       // The look point sits on the head, between the face screen's center and the head top, so the antenna stays in frame.
@@ -125,10 +128,34 @@ describe("intro timeline", () => {
 
   it("frames the wake close-up slightly from above", () => {
     for (const [cls, yaw, zoom] of primed) {
-      const first = introPose(introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom)), 0);
+      const first = introPose(introPlan(cls, rover, LOBBY.spawnHeading, endFor(cls, yaw, zoom)), closeUpAt(cls));
       const pitch = pitchAt(first);
       expect(pitch).toBeGreaterThan(5);
       expect(pitch).toBeLessThan(20);
+    }
+  });
+
+  it("holds a lower look through the boot on a phone, so Rover sits above the bottom boot card, then eases to the face", () => {
+    expect(WAKE.desktop.boot).toBeUndefined();
+    expect(WAKE.tablet.boot).toBeUndefined();
+    const boot = WAKE.mobile.boot;
+    expect(boot).toBeDefined();
+    expect(boot!).toBeLessThan(WAKE.mobile.look);
+    const [, yaw, zoom] = primed[2];
+    const end = endFor("mobile", yaw, zoom);
+    const plan = introPlan("mobile", rover, LOBBY.spawnHeading, end);
+    expect(introPose(plan, 0).target[1]).toBeCloseTo(rover[1] + boot!, 9);
+    expect(introPose(plan, INTRO.wake).target[1]).toBeCloseTo(rover[1] + WAKE.mobile.look, 9);
+    // Without the boot look the phone's first frame looks at the face, higher up.
+    const faceFirst = introPlan("mobile", rover, LOBBY.spawnHeading, end);
+    faceFirst.wake = { ...faceFirst.wake, boot: undefined };
+    expect(introPose(plan, 0).target[1]).toBeLessThan(introPose(faceFirst, 0).target[1]);
+    // The look eases down to up: it never jumps between frames during the push-in.
+    for (let i = 1; i <= INTRO.wake * 60; i++) {
+      const a = introPose(plan, (i - 1) / 60).target[1];
+      const b = introPose(plan, i / 60).target[1];
+      expect(b).toBeGreaterThanOrEqual(a - 1e-9);
+      expect(Math.abs(b - a) * 60).toBeLessThan(4);
     }
   });
 

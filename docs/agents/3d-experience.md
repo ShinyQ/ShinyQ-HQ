@@ -61,6 +61,10 @@ Index: [AGENTS.md](../../AGENTS.md).
   - `ExperienceGate` handles it without a reload once hydrated (`data-hq-page-link`).
   - It leaves the 3D view; it does not skip the boot or the intro.
 - `BootOverlay` renders the same `BootCard`, so the handoff does not move.
+- Portrait phones (`max-width: 639px` and portrait, the unlayered block after the `.hq-boot-*` layer in `globals.css`): the card docks at the bottom in thumb reach (mark beside the eyebrow and title, Boot rover full width) and the log is one rolling line.
+  - `BootCard` marks the newest shown line `data-last`; the other lines are hidden. The cover's staggered lines fade in and out in their slots (`hq-boot-roll`) and the last one stays; the overlay moves `data-last` as it types, so the handoff shows the same line.
+  - The overlay's `.hq-boot-backdrop` is clear at the top so Rover's wake close-up shows above the card; the SSR cover stays opaque (no canvas under it yet).
+  - Hooks: `hq-boot-mark` (img), `hq-boot-title`, `hq-boot-actions` (button row). The owner block keeps its markup and rules.
 
 ### Releasing the cover
 
@@ -102,6 +106,7 @@ The same script sets these on every page before first paint:
   - Boot rover only starts once the log has typed out (`aria-disabled` until then, same pace with reduced motion).
 - The intro: Rover wakes up, then a reveal orbit (owner design). The timeline is pure (`camera/intro.ts`, `INTRO`); the shared frame state is `introRuntime` (`intro/runtime.ts`), written by `CameraDirector` and read by the floor shaders and the Lobby parts.
   - The boot holds the wake pose under every motion setting: a still, dark close-up of Rover (`introPose(plan, 0)`, per camera class `WAKE`), its face screen off (`introRuntime.face`), turned to the orbit's start, nothing revealed.
+  - Portrait camera class (`mobile`): the boot holds a lower look (`WAKE.mobile.boot`, 0.6 u above the floor), so Rover's head sits in the top 40% of the frame above the bottom boot card; the push-in eases it to the face (`look`) by `INTRO.wake`.
   - Boot rover starts `INTRO.duration` (6.6 s): the face boots (`introFace`: off until 0.35 s, a boot screen until 0.8 s) during a slow push-in over `INTRO.wake` (1.1 s), and Rover turns to its spawn heading between 1.3 and 2.6 s (`introHeading`).
   - Reveal ring: from `INTRO.revealStart` (0.55 s) a ring spreads from Rover (`revealRadius`, out to `INTRO.revealReach` 90 u, past the far corner of the Highlights Hall) until `INTRO.revealEnd` (3.0 s), when the reveal turns off (Infinity). The grid and the lanes mask themselves with the shared `revealUniforms`, the Lobby landmarks switch on as the ring reaches them ([Intro reveal and beacons](floor-l1-lobby.md#intro-reveal-and-beacons)), and the fog rides the ring (`introFog`) so everything past it fades into the night, reaching the follow range before the ring turns off.
   - Orbit: after the wake the camera pulls back to a high point (`PULL`, `PEAK` per camera class) and sweeps 270 degrees (`INTRO.sweep`) while it descends, around Rover on desktop and around the plaza (the hologram, `plan.focus`) on tablets and phones, so the stats ring stays centred in a portrait frame and the skills wall is only seen from the front; the angular speed ramps up, holds and eases to rest (`orbitProgress`). The radius waits (`plan.hold`) until the path clears the elevator shaft. The plan (`introPlan`) is rebuilt every boot frame (the end pose follows a resize) and frozen from the first intro frame.

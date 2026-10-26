@@ -119,6 +119,7 @@ Open `/en` and press **Boot rover**.
 
 - The boot log and the intro play on the first 3D load of every browser session, on any route. Nothing skips the boot log.
 - The intro: a still, dark close-up of Rover during the boot card; Boot rover wakes it (its face boots), a ring of light spreads across the Lobby and switches each landmark on, then the camera pulls back and orbits 270 degrees (around Rover on desktop, around the plaza on phones and tablets), each landmark pulsing once as it passes, and lands on the view behind Rover (6.6 s).
+- On a portrait phone the boot card docks at the bottom in thumb reach with the boot log as one rolling line, and Rover's close-up shows above it.
 - Drive, turn, zoom, reset view or Esc skips the intro: a quick fade to the view behind Rover.
 - With reduced motion the camera does not move: the intro is a 0.9 s fade into the view behind Rover.
 - A deep link such as `/en/labs/<slug>` then rides on to its floor or room.
