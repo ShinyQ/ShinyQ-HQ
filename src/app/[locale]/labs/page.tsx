@@ -56,7 +56,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
       />
       <WorkIndex pods={all.map(({ wing, stack }) => ({ wing, stack }))}>
         <div data-pod-block>
-          <SectionWide id="key-projects" title={tw("keyProjects")} className="!pt-14">
+          <SectionWide id="key-projects" title={tw("keyProjects")} className="pv-sec !pt-14">
             <ul className="grid gap-x-6 gap-y-14 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3">
               {heroes.map((pod) => (
                 <li key={pod.id} {...podAttrs(pod)} className="min-w-0">

@@ -8,7 +8,7 @@ import { NavLink } from "./NavLink";
 import { QuietLink } from "./QuietLink";
 import { RoverMark } from "./RoverMark";
 
-/** Primary sections, in reading order; each one is a floor of the tower. */
+/** Primary sections, in reading order; each one is a floor of the tower (its floor code rides before the label). */
 export const PRIMARY_NAV = [
   { href: "/labs", key: "work", floor: "L3" },
   { href: "/journey", key: "journey", floor: "L2" },
@@ -33,7 +33,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
           <RoverMark id="hq-header-mark" size={34} className="shrink-0" />
           <span className="min-w-0 text-[14px] leading-[18px] sm:text-[15px]">
             <span className="block font-semibold text-ink">{profile.name}</span>
-            <span className="hidden font-mono text-[11px] leading-[14px] tracking-[0.04em] text-ink-3 sm:block">{tm("siteName")}</span>
+            <span className="pv-meta hidden sm:block">{tm("siteName")}</span>
           </span>
           <span className="sr-only">: {t("backToHq")}</span>
         </QuietLink>
@@ -42,7 +42,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
             {PRIMARY_NAV.map((item) => (
               <li key={item.key}>
                 <NavLink href={item.href} accent={FLOOR_ACCENT[item.floor]}>
-                  <span aria-hidden="true" className="font-mono text-[10.5px] tracking-[0.04em] text-ink-3">
+                  <span aria-hidden="true" className="text-xs text-ink-3 tabular-nums">
                     {item.floor}
                   </span>
                   {t(item.key)}

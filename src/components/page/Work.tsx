@@ -126,16 +126,16 @@ export async function WorkRow({ pod, locale }: { pod: Pod; locale: Locale }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="pv-data mb-2 flex flex-wrap gap-x-4">
-          <Marker accent={WING_ACCENT[pod.wing]}>{t(`wingShort.${pod.wing}`)}</Marker>
-          <span className="md:hidden">{[clientLabel(pod.client, locale), start].filter(Boolean).join(" · ")}</span>
-        </p>
-        <h3 className="pv-h3 pv-row-title text-[20px]">
+        <h3 className="pv-h3 pv-row-title">
           <Link href={`/labs/${pod.slug}`} className="pv-stretch">
             {pod.title[locale]}
           </Link>
         </h3>
-        <p className="pv-small mt-1.5 max-w-[60ch]">{pod.tagline[locale]}</p>
+        <p className="pv-meta mt-1">
+          {t(`wingShort.${pod.wing}`)}
+          <span className="md:hidden">{[clientLabel(pod.client, locale), start].filter(Boolean).map((v) => `, ${v}`)}</span>
+        </p>
+        <p className="pv-small mt-2 max-w-[60ch]">{pod.tagline[locale]}</p>
         <div className="mt-3">
           <TechLogoRow items={pod.stack} max={8} />
         </div>

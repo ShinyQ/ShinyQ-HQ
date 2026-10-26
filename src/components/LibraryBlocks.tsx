@@ -35,7 +35,7 @@ async function PostTitle({ post, locale, className }: { post: PostRef; locale: L
 async function PostMeta({ post, locale }: { post: PostRef; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "library" });
   const tc = await getTranslations({ locale, namespace: "common" });
-  return <span>{post.url ? t("onMedium") : post.languages.map((l) => tc(`langBadge.${l}`)).join(" · ")}</span>;
+  return <span>{post.url ? t("onMedium") : post.languages.map((l) => tc(`langBadge.${l}`)).join(", ")}</span>;
 }
 
 /** Blog posts as ruled rows; with `lead`, the newest one opens as a larger card. */
@@ -80,7 +80,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
                 ))}
               </ul>
             </div>
-            <p className="pv-data -order-1 md:order-none md:pt-1.5 md:text-right">
+            <p className="pv-meta md:pt-1.5 md:text-right">
               <PostMeta post={post} locale={locale} />
             </p>
           </li>

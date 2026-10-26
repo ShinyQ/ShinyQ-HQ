@@ -28,19 +28,19 @@ export async function TimelineRow({
     >
       <p className="pv-date md:pt-1.5">{formatPeriod(entry.start, entry.end, locale)}</p>
       <div className="min-w-0">
-        {note && <p className="pv-data mb-1">{note}</p>}
         <Heading className="pv-h3 pv-row-title">
           <Link href={`/journey/${entry.slug}`} className="pv-stretch">
             {entry.role[locale]}
           </Link>
         </Heading>
-        <p className="mt-1.5 flex items-center gap-2.5 text-[15px] text-ink-2">
+        {note && <p className="pv-meta mt-1">{note}</p>}
+        <p className="mt-2 flex items-center gap-2.5 text-ink-2">
           {entry.logo && <OrgLogo logo={entry.logo} locale={locale} size={24} />}
           {entry.org}
         </p>
-        <p className="mt-2.5 max-w-[64ch] text-[15px] leading-6 text-ink-2">{entry.summary[locale]}</p>
+        <p className="pv-small mt-2.5 max-w-[64ch]">{entry.summary[locale]}</p>
       </div>
-      <p className="pv-data -order-1 md:order-none md:pt-1.5">
+      <p className="pv-meta md:pt-1.5">
         <TypeMarker type={entry.type}>{t(`type.${entry.type}`)}</TypeMarker>
       </p>
     </li>

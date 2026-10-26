@@ -49,8 +49,8 @@ export function AskHeroBar() {
   }, [off]);
 
   return (
-    <div ref={ref} aria-hidden={off || undefined} inert={off} className={`mt-8 max-w-[640px] ${off ? "invisible" : ""}`} data-testid="ask-hero" data-off={off ? "" : undefined}>
-      <label htmlFor={`${id}-q`} className="pv-data mb-3 flex items-center gap-2 text-cyan">
+    <div ref={ref} aria-hidden={off || undefined} inert={off} className={`min-w-0 ${off ? "invisible" : ""}`} data-testid="ask-hero" data-off={off ? "" : undefined}>
+      <label htmlFor={`${id}-q`} className="mb-3 flex items-center gap-2 font-semibold text-cyan">
         <SparkIcon className="size-4" />
         {th("label")}
       </label>
@@ -65,7 +65,7 @@ export function AskHeroBar() {
           openAsk(q, { source: "hero" });
         }}
         onPointerEnter={preload}
-        className="flex items-center gap-2 rounded-full border border-line-2 bg-surface py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-cyan/60 hover:border-ink-3"
+        className="flex items-center gap-2 rounded-full border border-ink-3 bg-surface py-1.5 pr-1.5 pl-4 transition-colors focus-within:border-cyan hover:border-ink-2"
       >
         <input
           id={`${id}-q`}
@@ -79,7 +79,7 @@ export function AskHeroBar() {
           onChange={(event) => setValue(event.target.value)}
           className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-ink-3 focus:outline-none sm:text-[17px]"
         />
-        <button type="submit" disabled={!value.trim()} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-cyan px-4 font-semibold text-void transition hover:bg-cyan/85 disabled:bg-surface-2 disabled:text-ink-3 sm:px-5">
+        <button type="submit" disabled={!value.trim()} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-line-2 px-4 font-semibold text-cyan transition-colors hover:border-cyan disabled:cursor-not-allowed disabled:text-ink-3 sm:px-5">
           <span className="hidden sm:inline">{th("submit")}</span>
           <SendIcon className="size-[18px] sm:hidden" />
           <span className="sr-only sm:hidden">{th("submit")}</span>

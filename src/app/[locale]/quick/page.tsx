@@ -57,7 +57,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         </div>
       </nav>
 
-      <SectionSplit {...section("profile")} className="!pt-16">
+      <SectionSplit {...section("profile")} className="pv-sec !pt-16">
         <p className="pv-h3 pv-h3-l">{profile.name}</p>
         <p className="pv-lead mt-2 font-semibold">{profile.headline[locale]}</p>
         <p className="pv-small mt-2">
