@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RoomId } from "@/content/schema";
 import { buildExperienceData } from "@/content/experience";
 import { L4_SIGN, leadSignSpecs, librarySigns, SHELF_SIGN, spineSignSpecs, stationBackEdge, TITLE_SIGN, trackSignSpecs, ZONE_SIGN, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
-import { SHELF_PLINTH } from "@/experience/floors/library/decor/shelf3d";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, roomOfPost, ZONE_TONE } from "@/experience/floors/library/model";
 import { signPlate } from "@/experience/fx/signLayout";
@@ -60,7 +60,7 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
     const signs = leadSignSpecs(library, titles);
     expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
-      const lead = library.bays[i].slots[0];
+      const lead = baySlots(library.bays[i])[0];
       expect(lead.slug).toBe(library.bays[i].posts[0]);
       expect([s.x, s.z]).toEqual([lead.at.x, lead.at.z]);
       expect(s.text.replace(/\n/g, " ")).toBe(titles.get(roomOfPost(lead.slug)));
@@ -72,7 +72,7 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
 
   it("titles every spine (not the leads) just over its spine", () => {
     const signs = spineSignSpecs(library, titles);
-    const spines = library.bays.flatMap((b) => b.slots.slice(1));
+    const spines = library.bays.flatMap((b) => baySlots(b).slice(1));
     expect(spines.length).toBeGreaterThan(0);
     expect(signs).toHaveLength(spines.length);
     signs.forEach((s, i) => {

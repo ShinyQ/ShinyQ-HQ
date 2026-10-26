@@ -12,9 +12,11 @@ import { highlightsInteractables } from "@/experience/floors/lobby/hallInteract"
 import { HALL_LAYOUT } from "@/experience/floors/lobby/hallLayout";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, roomOfPost, trackRoom } from "@/experience/floors/library/model";
-import { SHELF_PLINTH } from "@/experience/floors/library/shelf";
+import { baySlots, SHELF_PLINTH, shelfTargets } from "@/experience/floors/library/slots";
 import {
+  baseInteractables,
   interactablesFor,
+  mergeInteractables,
   onInteractablesChange,
   registerExtraInteractables,
   type InteractData,
@@ -38,7 +40,6 @@ function labelsFrom(m: Messages): InteractLabels {
     console: m.hud.interact.console,
     kiosk: m.hud.launcher.roverMenu,
     board: (wing) => m.hud.interact.board.replace("{wing}", wing),
-    readPost: (title) => m.hud.interact.readPostTitle.replace("{title}", title),
     rooms: m.hud.rooms,
     reactorRing: (ring) => m.labs.reactor.ringTarget.replace("{ring}", m.labs.reactor.rings[ring]),
     metrics: m.library.topics.monument.target,
@@ -54,8 +55,12 @@ function setup(locale: "en" | "id") {
     career: careerLayoutInput(experience.career),
     library: libraryLayoutInput(experience.library),
   });
-  const data: InteractData = { experience, labels: labelsFrom((locale === "en" ? en : id) as Messages) };
+  const m = (locale === "en" ? en : id) as Messages;
+  const data: InteractData = { experience, labels: labelsFrom(m) };
   const items = Object.fromEntries(FLOOR_IDS.map((f) => [f, interactablesFor(f, layouts, data)])) as Record<FloorId, Interactable[]>;
+  // The L4 chunk (`Library`) registers the shelf targets while the floor is mounted.
+  const bays = buildLibraryLayout(libraryLayoutInput(experience.library)).bays;
+  items.L4 = mergeInteractables(items.L4, shelfTargets(bays, experience.library, (title) => m.hud.interact.readPostTitle.replace("{title}", title)));
   return { experience, layouts, data, items };
 }
 
@@ -267,14 +272,16 @@ describe("interactablesFor on the real content", () => {
     }
   });
 
-  it("adds one L4 shelf target per post on its bay: drive to the bay door, then open the post drawer there", () => {
+  it("adds one L4 shelf target per post on its bay from the L4 chunk: drive to the bay door, then open the post drawer there", () => {
     const library = buildLibraryLayout(libraryLayoutInput(experience.library));
     expect(library.bays.length).toBeGreaterThan(0);
+    // Off the main 3D path: the built-in L4 targets have no shelf target.
+    expect(baseInteractables("L4", layouts, data).some((i) => i.id.startsWith("L4:shelf:"))).toBe(false);
     const shelves = items.L4.filter((i) => i.id.startsWith("L4:shelf:"));
     expect(shelves.map((i) => i.id).sort()).toEqual(experience.library.posts.map((p) => `L4:shelf:${p.slug}`).sort());
     for (const bay of library.bays) {
       const track = experience.library.tracks.find((t) => trackRoom(t.slug) === bay.room)!;
-      for (const slot of bay.slots) {
+      for (const slot of baySlots(bay)) {
         const item = find("L4", `L4:shelf:${slot.slug}`)!;
         const post = experience.library.posts.find((p) => p.slug === slot.slug)!;
         expect(item).toMatchObject({ floor: "L4", kind: "station", label: `Read ${post.title}`, action: { type: "command", command: `open:L4:${slot.slug}` } });
@@ -306,7 +313,7 @@ describe("interactablesFor on the real content", () => {
       expect(door.group).toEqual({ id: bay.room, label: track.label });
       const pad = door.bounds;
       expect(pad.minX <= bay.door.x && bay.door.x <= pad.maxX && pad.minZ <= bay.door.z && bay.door.z <= pad.maxZ).toBe(true);
-      for (const slot of bay.slots) {
+      for (const slot of baySlots(bay)) {
         const overlap = Math.min(pad.maxX, slot.rect.maxX) > Math.max(pad.minX, slot.rect.minX) && Math.min(pad.maxZ, slot.rect.maxZ) > Math.max(pad.minZ, slot.rect.minZ);
         expect(overlap, slot.slug).toBe(false);
       }

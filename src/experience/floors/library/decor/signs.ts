@@ -2,6 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { FONTS } from "../../../tower/primitives";
 import type { Vec2 } from "../../../types";
+import { baySlots } from "../slots";
 import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
 
 /** L4 floating signs (spectacle round: no words painted on the floor). Pure: Vitest runs it in node. */
@@ -63,12 +64,15 @@ export function trackSignSpecs(layout: LibraryLayout, labels: Map<string, string
 
 /** Each bay's lead title (`titles` by post room) just over the lead cover. */
 export function leadSignSpecs(layout: LibraryLayout, titles: Map<RoomId, string>): SignSpec[] {
-  return layout.bays.map(({ slots: [lead] }) => titleSign(titles.get(roomOfPost(lead.slug)) ?? lead.slug, lead.at, L4_SIGN.bottom - SHELF_SIGN.leadDrop));
+  return layout.bays.map((bay) => {
+    const [lead] = baySlots(bay);
+    return titleSign(titles.get(roomOfPost(lead.slug)) ?? lead.slug, lead.at, L4_SIGN.bottom - SHELF_SIGN.leadDrop);
+  });
 }
 
 /** One title per spine (every slot but the lead), floating just over the spine; only the live or picked one shows. */
 export function spineSignSpecs(layout: LibraryLayout, titles: Map<RoomId, string>): SignSpec[] {
-  return layout.bays.flatMap((bay) => bay.slots.slice(1).map((s) => titleSign(titles.get(roomOfPost(s.slug)) ?? s.slug, s.at, s.y + s.h + SHELF_SIGN.lift)));
+  return layout.bays.flatMap((bay) => baySlots(bay).slice(1).map((s) => titleSign(titles.get(roomOfPost(s.slug)) ?? s.slug, s.at, s.y + s.h + SHELF_SIGN.lift)));
 }
 
 /** Every L4 timeline sign in one list (sections, track names, lead titles, spine titles) with what each one is, for the screen placement rule. */

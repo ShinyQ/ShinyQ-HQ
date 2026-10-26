@@ -23,7 +23,7 @@ import {
   type LibraryVault,
   type VaultBook,
 } from "../model";
-import { shelfSize, shelfSlots } from "../shelf";
+import { shelfSize } from "../shelf";
 
 /**
  * Concept B, "Newsroom": a press plaza in front of the elevator with a giant headline wall (scrolling
@@ -135,7 +135,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   const stations = docked.filter((s) => s.zone !== "track");
   const bays: LibraryBay[] = tracks.map((t, i) => {
     const s = lane[i];
-    return { ...s, track: t.slug, stop: s.door, posts: t.posts, slots: shelfSlots(s, t.posts) };
+    return { ...s, track: t.slug, stop: s.door, posts: t.posts };
   });
 
   const E = N.end;

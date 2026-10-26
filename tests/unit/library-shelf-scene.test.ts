@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { DOCK, LIBRARY_FLOOR, libraryLayoutInput, type LibraryBay } from "@/experience/floors/library/model";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { SHELF, shelfSize, shelfSlots } from "@/experience/floors/library/shelf";
-import { bayZone, frameMatrices, leadMatrix, pickSpine, SHELF_PLINTH, SHELF_SCENE, spineMatrix } from "@/experience/floors/library/decor/shelf3d";
+import { SHELF, shelfSize } from "@/experience/floors/library/shelf";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
+import { bayZone, frameMatrices, leadMatrix, pickSpine, SHELF_SCENE, spineMatrix } from "@/experience/floors/library/decor/shelf3d";
 import { VAULT_SCENE } from "@/experience/floors/library/decor/vault";
 import { shelfMeshes } from "@/experience/floors/library/decor/TrackShelves";
 
@@ -27,14 +28,14 @@ function bay(n: number, side: 1 | -1 = 1): LibraryBay {
   const rect = { minX: 10 - along / 2, maxX: 10 + along / 2, minZ: center.z - SHELF.across / 2, maxZ: center.z + SHELF.across / 2 };
   const posts = Array.from({ length: n }, (_, i) => `p${i}`);
   const door = { x: 10, z: -side * 5 };
-  return { track: `t${side}`, room: `L4:track:t${side}` as LibraryBay["room"], rect, center, door, facing, from: { x: 10, z: 0 }, stop: door, posts, slots: shelfSlots({ center, facing, rect }, posts) };
+  return { track: `t${side}`, room: `L4:track:t${side}` as LibraryBay["room"], rect, center, door, facing, from: { x: 10, z: 0 }, stop: door, posts };
 }
 
 describe("spineMatrix", () => {
   for (const side of [1, -1] as const)
     it(`stands each spine on its row, face toward the road, sized to the slot (${side > 0 ? "north" : "south"} bay)`, () => {
       const b = bay(30, side);
-      for (const slot of b.slots.slice(1)) {
+      for (const slot of baySlots(b).slice(1)) {
         const m = spineMatrix(slot, 0, b.facing, new Matrix4());
         const base = at(m, 0, 0, 0);
         expect(base.x).toBeCloseTo(slot.at.x, 6);
@@ -50,7 +51,7 @@ describe("spineMatrix", () => {
 
   it("slides a pulled spine toward the road by SHELF_SCENE.pull", () => {
     const b = bay(10);
-    const slot = b.slots[3];
+    const slot = baySlots(b)[3];
     const c = at(spineMatrix(slot, 1, b.facing, new Matrix4()), 0, 0, 0);
     expect(c.x).toBeCloseTo(slot.at.x - b.facing.x * SHELF_SCENE.pull, 6);
     expect(c.z).toBeCloseTo(slot.at.z - b.facing.z * SHELF_SCENE.pull, 6);
@@ -63,7 +64,7 @@ describe("leadMatrix", () => {
   for (const side of [1, -1] as const)
     it(`holds the lead's cover half open, hinged on its spine edge on the right as seen from the road (${side > 0 ? "north" : "south"} bay)`, () => {
       const b = bay(6, side);
-      const lead = b.slots[0];
+      const lead = baySlots(b)[0];
       const body = spineMatrix(lead, 0, b.facing, new Matrix4());
       const cover = leadMatrix(lead, 0.5, b.facing, new Matrix4());
       // Right of a viewer on the road looking into the bay along `facing`.
@@ -79,7 +80,7 @@ describe("leadMatrix", () => {
       expect(-(dir.x * b.facing.x + dir.z * b.facing.z)).toBeCloseTo(Math.cos(VAULT_SCENE.cover.turn * 0.5), 6);
       expect(at(cover, 0, 0, 0).y).toBeGreaterThanOrEqual(lead.y + SHELF_PLINTH);
       // The open cover stays clear of the first spine, even pulled out.
-      const inverse = spineMatrix(b.slots[1], 1, b.facing, new Matrix4()).invert();
+      const inverse = spineMatrix(baySlots(b)[1], 1, b.facing, new Matrix4()).invert();
       for (const x of [-0.5, 0.5])
         for (let z = -0.5; z <= 0.5; z += 0.05) {
           const p = at(cover, x, 0.2, z).applyMatrix4(inverse);
@@ -100,7 +101,7 @@ describe("frameMatrices", () => {
         expect(top).toBeCloseTo(r * SHELF.rowH + SHELF_PLINTH, 6);
       }
       // Every spine of a row stands within its board along the bay.
-      for (const slot of b.slots) {
+      for (const slot of baySlots(b)) {
         const board = frames[Math.round(slot.y / SHELF.rowH)];
         const p = new Vector3(slot.at.x, slot.y + SHELF_PLINTH - 0.01, slot.at.z).applyMatrix4(board.clone().invert());
         expect(Math.abs(p.x)).toBeLessThan(0.5);
@@ -114,7 +115,7 @@ describe("frameMatrices", () => {
 
 describe("pickSpine", () => {
   const b = bay(10);
-  const spines = b.slots.slice(1).map((slot) => ({ slot, zone: bayZone(b) }));
+  const spines = baySlots(b).slice(1).map((slot) => ({ slot, zone: bayZone(b) }));
 
   it("reaches from the bay to the road's centerline", () => {
     const z = bayZone(b);
@@ -154,7 +155,7 @@ describe("shelfMeshes", () => {
         }
         // Every spine stays inside the sphere when pulled.
         layout.bays.forEach((b) =>
-          b.slots.forEach((slot) => {
+          baySlots(b).forEach((slot) => {
             const p = at(spineMatrix(slot, 1, b.facing, new Matrix4()).premultiply(kit.shift), 0, 1, 0.5);
             expect(p.distanceTo(sphere.center)).toBeLessThanOrEqual(sphere.radius + 1e-6);
           }),

@@ -5,6 +5,7 @@ import { buildFloorLayouts, READY_FLOORS, ROVER } from "@/experience/config";
 import { buildNewsroomLayout } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout, LIBRARY_CONCEPT } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, roomOfPost, trackRoom } from "@/experience/floors/library/model";
+import { baySlots } from "@/experience/floors/library/slots";
 import { buildRoomCatalog } from "@/experience/missions/rooms";
 import { doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
@@ -50,7 +51,7 @@ describe("L4 Writing floor (the picked concept)", () => {
       const track = data.library.tracks[i];
       expect(bay.room).toBe(trackRoom(track.slug));
       expect(bay.posts).toEqual(track.posts);
-      expect(bay.slots.map((s) => s.slug)).toEqual(track.posts);
+      expect(baySlots(bay).map((s) => s.slug)).toEqual(track.posts);
       expect(bay.stop).toEqual(bay.door);
       expect(bay.facing).toEqual({ x: 0, z: i % 2 === 0 ? -1 : 1 });
     });

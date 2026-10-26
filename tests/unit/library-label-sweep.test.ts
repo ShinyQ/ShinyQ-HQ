@@ -6,6 +6,7 @@ import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, librar
 import { librarySigns } from "@/experience/floors/library/decor/signs";
 import { roomOfPost, type LibraryBay, type LibrarySection } from "@/experience/floors/library/model";
 import { LIBRARY_LABEL_MAX } from "@/experience/floors/library/signPlacement";
+import { baySlots } from "@/experience/floors/library/slots";
 import { orbSlots } from "@/experience/floors/library/topics";
 import { polygonArea, polygonOverlap, type Quad } from "@/experience/fx/labelPlacement";
 import { signPlate } from "@/experience/fx/signLayout";
@@ -46,7 +47,7 @@ const TIMELINE_KINDS = new Set(["section", "track", "lead", "spine"]);
 
 /** The post room of the bay's spine (lead excepted) nearest `at`, as `pickSpine` pulls it at the bay's stop; null for a lead-only bay. */
 function nearestSpine(bay: LibraryBay, at: Vec2): string | null {
-  const [spine] = bay.slots.slice(1).sort((a, b) => Math.hypot(a.at.x - at.x, a.at.z - at.z) - Math.hypot(b.at.x - at.x, b.at.z - at.z));
+  const [spine] = baySlots(bay).slice(1).sort((a, b) => Math.hypot(a.at.x - at.x, a.at.z - at.z) - Math.hypot(b.at.x - at.x, b.at.z - at.z));
   return spine ? roomOfPost(spine.slug) : null;
 }
 

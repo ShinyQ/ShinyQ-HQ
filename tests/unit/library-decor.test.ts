@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bookBuffers, PAGE_ANGLES, PAGE_SEGMENTS, STAGE_BOOK, stageBook, turnAngle } from "@/experience/floors/library/decor/flipBooks";
-import { SHELF_PLINTH } from "@/experience/floors/library/decor/shelf3d";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
 import { faceRoad, libraryIcons, paperSlots, ZONE_ICON } from "@/experience/floors/library/icons";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { dockAlong, libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
@@ -76,7 +76,7 @@ describe("post icons over the track bays", () => {
   it("floats one icon over each bay's lead, above its cover, facing the road, in the track tone", () => {
     expect(layout.bays.length).toBeGreaterThan(0);
     for (const bay of layout.bays) {
-      const [lead] = bay.slots;
+      const [lead] = baySlots(bay);
       const icon = icons.find((i) => i.key === lead.slug)!;
       expect(icon).toMatchObject({ size: ZONE_ICON.size, color: ZONE_TONE.track, strokes: LIBRARY_ICONS.blog });
       expect(icon.x).toBeCloseTo(lead.at.x, 3);

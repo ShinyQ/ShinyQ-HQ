@@ -1,7 +1,8 @@
 import { Matrix4 } from "three";
 import type { Rect, Vec2 } from "../../../types";
 import { DOCK, LIBRARY_FLOOR, type LibraryBay } from "../model";
-import { SHELF, SHELF_PLINTH, shelfSize, type ShelfSlot } from "../shelf";
+import { SHELF, shelfSize } from "../shelf";
+import { baySlots, SHELF_PLINTH, type ShelfSlot } from "../slots";
 import { framed, openCover, slabMatrix } from "./vault";
 
 /**
@@ -11,7 +12,6 @@ import { framed, openCover, slabMatrix } from "./vault";
  * scale the kit's unit box (base at y 0).
  */
 
-export { SHELF_PLINTH };
 /** A pulled spine slides out `pull` u toward the road; pulls move at `rate` of the full travel per second. */
 export const SHELF_SCENE = { pull: 0.3, rate: 1.6 } as const;
 /** A spine pulls for the rover within this distance (u) of it, inside its bay zone. */
@@ -33,9 +33,9 @@ export const leadMatrix = (slot: ShelfSlot, open: number, facing: Vec2, out: Mat
  * A bay's frame: one board under each row (row 0 under the lead and the spines, the rows above under the spines only,
  * clear of the tall lead), then one back panel behind them, `SHELF.lead.d` deep and as tall as the lead or the rows.
  */
-export function frameMatrices(bay: Pick<LibraryBay, "facing" | "slots" | "posts">): Matrix4[] {
+export function frameMatrices(bay: LibraryBay): Matrix4[] {
   const f = bay.facing;
-  const lead = bay.slots[0];
+  const lead = baySlots(bay)[0];
   const { rows, cols } = shelfSize(bay.posts.length);
   const first = SHELF.pad * 2 + SHELF.lead.w;
   const end = first + cols * SHELF.spine.pitch;

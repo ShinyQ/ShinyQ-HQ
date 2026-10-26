@@ -2,7 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { ROAD, type RoadNetwork } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
 import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
-import { SHELF, SHELF_VIEW, type ShelfSlot } from "./shelf";
+import { SHELF, SHELF_VIEW } from "./shelf";
 
 /**
  * Shared contract of the L4 Writing floor (walkable floors plan, part 3). The concept builder
@@ -117,10 +117,8 @@ export interface LibraryBay {
   from: Vec2;
   /** Where the rover stops for the bay and every post on it (the door). */
   stop: Vec2;
-  /** Lead first, then newest first. */
+  /** Lead first, then newest first (the L4 chunk builds their shelf slots, `baySlots` in slots.ts). */
   posts: string[];
-  /** One slot per post, in `posts` order (`shelfSlots`). */
-  slots: ShelfSlot[];
 }
 
 export interface LibraryLayout {

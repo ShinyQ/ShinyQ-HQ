@@ -1,6 +1,6 @@
 import { LIBRARY_ICONS, type PlacedIcon, type Stroke } from "../../fx/holoIcons";
 import type { LibraryData, Vec2 } from "../../types";
-import { SHELF_PLINTH } from "./shelf";
+import { baySlots, SHELF_PLINTH } from "./slots";
 import { ZONE_TONE, type LibraryLayout, type LibrarySection, type LibraryStation } from "./model";
 
 /**
@@ -75,7 +75,10 @@ export function libraryIcons(layout: LibraryLayout, library: Pick<LibraryData, "
     strokes: items[key] ?? LIBRARY_ICONS[zone],
   });
   return [
-    ...layout.bays.map(({ slots: [lead], ...bay }) => place(lead.slug, bay, "blog", { x: lead.at.x, y: lead.y + lead.h + SHELF_PLINTH + ZONE_ICON.lift, z: lead.at.z }, ZONE_ICON.size, ZONE_TONE.track)),
+    ...layout.bays.map((bay) => {
+      const [lead] = baySlots(bay);
+      return place(lead.slug, bay, "blog", { x: lead.at.x, y: lead.y + lead.h + SHELF_PLINTH + ZONE_ICON.lift, z: lead.at.z }, ZONE_ICON.size, ZONE_TONE.track);
+    }),
     ...layout.stations.flatMap((s) => {
       const zone = s.zone;
       if (zone === "blog" || zone === "track") return [];

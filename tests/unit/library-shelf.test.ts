@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SHELF, shelfSize, shelfSlots } from "@/experience/floors/library/shelf";
+import { SHELF, shelfSize } from "@/experience/floors/library/shelf";
+import { baySlots } from "@/experience/floors/library/slots";
 
 const bay = (along: number) => ({ center: { x: 0, z: -10 }, facing: { x: 0, z: -1 }, rect: { minX: -along / 2, maxX: along / 2, minZ: -13, maxZ: -7 } });
 const posts = (n: number) => Array.from({ length: n }, (_, i) => `p${i}`);
@@ -17,7 +18,7 @@ describe("shelf", () => {
     for (const n of [1, 4, 14, 40, 61]) {
       const { along } = shelfSize(n);
       const b = bay(along);
-      const slots = shelfSlots(b, posts(n));
+      const slots = baySlots({ ...b, posts: posts(n) });
       expect(slots).toHaveLength(n);
       expect(slots[0]).toMatchObject({ slug: "p0", w: SHELF.lead.w });
       for (const s of slots) {
@@ -33,20 +34,20 @@ describe("shelf", () => {
   });
   it("puts the lead at the left end as seen from the road, spines to its right, row 0 at the bottom filled first", () => {
     // Facing north (into the bay from a road south of it): the viewer's left is west (-x).
-    const slots = shelfSlots(bay(shelfSize(15).along), posts(15));
+    const slots = baySlots({ ...bay(shelfSize(15).along), posts: posts(15) });
     const lead = slots[0];
     for (const s of slots.slice(1)) expect(s.at.x).toBeGreaterThan(lead.at.x);
     expect(slots.slice(1, 8).every((s) => s.y === 0)).toBe(true);
     expect(slots.slice(8).every((s) => s.y === SHELF.rowH)).toBe(true);
     expect(slots[2].at.x).toBeGreaterThan(slots[1].at.x);
     // Facing south (road north of the bay): the viewer's left is east (+x).
-    const south = shelfSlots({ center: { x: 0, z: 10 }, facing: { x: 0, z: 1 }, rect: { minX: -4, maxX: 4, minZ: 7, maxZ: 13 } }, posts(3));
+    const south = baySlots({ center: { x: 0, z: 10 }, facing: { x: 0, z: 1 }, rect: { minX: -4, maxX: 4, minZ: 7, maxZ: 13 }, posts: posts(3) });
     expect(south[0].at.x).toBeGreaterThan(south[1].at.x);
     expect(south[1].at.x).toBeGreaterThan(south[2].at.x);
   });
   it("gives every spine a deterministic height within the spine range, the lead its own size", () => {
-    const a = shelfSlots(bay(SHELF.minAlong), posts(4));
-    const b = shelfSlots(bay(SHELF.minAlong), posts(4));
+    const a = baySlots({ ...bay(SHELF.minAlong), posts: posts(4) });
+    const b = baySlots({ ...bay(SHELF.minAlong), posts: posts(4) });
     expect(a).toEqual(b);
     expect(a[0]).toMatchObject({ w: SHELF.lead.w, d: SHELF.lead.d, h: SHELF.lead.h, y: 0 });
     for (const s of a.slice(1)) {

@@ -15,8 +15,7 @@ import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
 import { VISITS_ROOM } from "../floors/lobby/visitsRoom";
 import { NEWSROOM, VAULT_ROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
-import { libraryLayoutInput, roomOfPost, type LibraryLayout, type LibrarySection } from "../floors/library/model";
-import { SHELF_PLINTH } from "../floors/library/shelf";
+import { libraryLayoutInput, type LibraryLayout, type LibrarySection } from "../floors/library/model";
 import { TOPICS_ROOM } from "../floors/library/topicHash";
 import { CONSTELLATION } from "../floors/library/topics";
 import { buildRoofLayout } from "../floors/roof/layout";
@@ -81,8 +80,6 @@ export interface InteractLabels {
   console: string;
   kiosk: string;
   board: (wing: string) => string;
-  /** L4 shelf spines and lead covers ("Read {title}", `hud.interact.readPostTitle`). */
-  readPost: (title: string) => string;
   rooms: Record<StructuralRoom, string>;
   /** L3 Tech Reactor ring targets ("Tech Reactor: Azure"). */
   reactorRing: (ring: ReactorRingId) => string;
@@ -364,31 +361,6 @@ function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] 
 }
 
 /**
- * The L4 reader track bays: one target per post on its shelf (the spine, the lead's cover), each driving to the bay
- * door and then opening the post drawer there. A bay's door and spines form one hint group under the bay room.
- */
-function shelfItems(library: LibraryLayout, data: InteractData): Interactable[] {
-  return library.bays.flatMap((bay) => {
-    const group = { id: bay.room, label: roomLabel(bay.room, data) };
-    return bay.slots.map((slot): Interactable => {
-      const room = roomOfPost(slot.slug);
-      return {
-        id: `L4:shelf:${slot.slug}`,
-        floor: "L4",
-        kind: "station",
-        label: data.labels.readPost(roomLabel(room, data)),
-        at: { ...bay.stop },
-        bounds: bare(slot.rect),
-        base: slot.y,
-        height: slot.y + SHELF_PLINTH + slot.h,
-        action: { type: "command", command: `open:${room}` },
-        group,
-      };
-    });
-  });
-}
-
-/**
  * L2 Workshop (F3): the gateway (Workshop overview), the time console (year picker), one target per
  * bench (its side project drawer) and per skyline bar (its repo drawer). Stops come from the layout.
  */
@@ -476,10 +448,11 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     case "L4": {
       const library = buildLibraryLayout(libraryLayoutInput(experience.library));
       const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone as LibrarySection] }]));
-      // A bay door keeps its pad volume (the bay's would enclose and shadow its spines) and leads its bay's hint group.
+      // A bay door keeps its pad volume (the bay's would enclose and shadow its spines) and leads its bay's hint group; the
+      // spines join the group from the L4 chunk (`shelfTargets` in floors/library/slots.ts, registered by `Library`).
       const doors = doorItems(floor, layouts, data, rooms);
       for (const door of doors) if (door.id.includes("track:")) door.group = { id: (door.action as { room: RoomId }).room, label: door.label };
-      return [...pads, ...doors, ...shelfItems(library, data), ...endItems(library, data), ...vaultItems(library, data)];
+      return [...pads, ...doors, ...endItems(library, data), ...vaultItems(library, data)];
     }
     case "RF": {
       const roof = buildRoofLayout({ channels: experience.roof.channels.length });

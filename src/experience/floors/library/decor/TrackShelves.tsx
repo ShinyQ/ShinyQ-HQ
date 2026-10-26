@@ -11,6 +11,7 @@ import { roverRuntime } from "../../../rover/runtime";
 import type { GpuTier } from "../../../types";
 import { roomOfPost, ZONE_TONE, type LibraryBay } from "../model";
 import { bookKit, kitBodies, kitBox, kitCovers, kitPools, type KitItem, type KitMesh } from "./bookKit";
+import { baySlots } from "../slots";
 import { bayZone, frameMatrices, leadMatrix, pickSpine, SHELF_SCENE, spineMatrix } from "./shelf3d";
 
 /** Instance brightness: spines (and lead bodies), a topic's spines, added when pulled, frames, lead covers, pools. */
@@ -29,14 +30,14 @@ const C = new Color();
  * `posts` lists the bodies in instance order, the `spines` (non-lead) first.
  */
 export function shelfMeshes(bays: readonly LibraryBay[], tier: GpuTier, reducedMotion: boolean) {
-  const posts = [...bays.flatMap((bay) => bay.slots.slice(1).map((slot) => ({ slot, bay, zone: bayZone(bay) }))), ...bays.map((bay) => ({ slot: bay.slots[0], bay, zone: bayZone(bay) }))];
+  const posts = [...bays.flatMap((bay) => baySlots(bay).slice(1).map((slot) => ({ slot, bay, zone: bayZone(bay) }))), ...bays.map((bay) => ({ slot: baySlots(bay)[0], bay, zone: bayZone(bay) }))];
   const body = [
     ...posts.map(({ slot, bay }): KitItem => [spineMatrix(slot, 0, bay.facing, new Matrix4()), TONE, LEVEL.spine]),
     ...bays.flatMap((bay) => frameMatrices(bay).map((m): KitItem => [m, TONE, LEVEL.frame])),
   ];
   const box = kitBox(body.length);
-  const parts: KitMesh[] = [kitBodies(box, body, tier), kitCovers(box, bays.map((b): KitItem => [leadMatrix(b.slots[0], 0.5, b.facing, new Matrix4()), TONE, LEVEL.cover]), tier)];
-  if (tier === "full") parts.push(kitPools(bays.map(({ slots: [l] }): KitItem => [new Matrix4().makeScale(POOL, 1, POOL).setPosition(l.at.x, 0.02, l.at.z), TONE, LEVEL.pool]), reducedMotion));
+  const parts: KitMesh[] = [kitBodies(box, body, tier), kitCovers(box, bays.map((b): KitItem => [leadMatrix(baySlots(b)[0], 0.5, b.facing, new Matrix4()), TONE, LEVEL.cover]), tier)];
+  if (tier === "full") parts.push(kitPools(bays.map((b) => baySlots(b)[0].at).map((at): KitItem => [new Matrix4().makeScale(POOL, 1, POOL).setPosition(at.x, 0.02, at.z), TONE, LEVEL.pool]), reducedMotion));
   const x = bays.flatMap((b) => [b.rect.minX, b.rect.maxX]);
   const z = bays.flatMap((b) => [b.rect.minZ, b.rect.maxZ]);
   const origin = { x: (Math.min(...x) + Math.max(...x)) / 2, z: (Math.min(...z) + Math.max(...z)) / 2 };

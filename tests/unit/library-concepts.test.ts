@@ -13,6 +13,7 @@ import {
   type LibraryLayoutInput,
 } from "@/experience/floors/library/model";
 import { SHELF, shelfSize } from "@/experience/floors/library/shelf";
+import { baySlots } from "@/experience/floors/library/slots";
 import { distanceToRect } from "@/experience/nav/collision";
 import { doorAt, onPad } from "@/experience/nav/doors";
 import { buildNavGrid, isWalkable } from "@/experience/nav/navgrid";
@@ -121,11 +122,11 @@ describe("L4 concept newsroom", () => {
     expect(layout.bays.map((b) => b.room)).toEqual(input.tracks.map((t) => trackRoom(t.slug)));
     layout.bays.forEach((bay, i) => {
       expect(bay.posts).toEqual(input.tracks[i].posts);
-      expect(bay.slots).toHaveLength(bay.posts.length);
+      expect(baySlots(bay)).toHaveLength(bay.posts.length);
       expect(bay.facing.z).toBe(i % 2 === 0 ? -1 : 1);
       const along = bay.rect.maxX - bay.rect.minX;
       expect(along).toBeCloseTo(shelfSize(bay.posts.length).along);
-      for (const slot of bay.slots) expect(slot.rect.minX >= bay.rect.minX - 1e-6 && slot.rect.maxX <= bay.rect.maxX + 1e-6 && slot.rect.minZ >= bay.rect.minZ - 1e-6 && slot.rect.maxZ <= bay.rect.maxZ + 1e-6, slot.slug).toBe(true);
+      for (const slot of baySlots(bay)) expect(slot.rect.minX >= bay.rect.minX - 1e-6 && slot.rect.maxX <= bay.rect.maxX + 1e-6 && slot.rect.minZ >= bay.rect.minZ - 1e-6 && slot.rect.maxZ <= bay.rect.maxZ + 1e-6, slot.slug).toBe(true);
     });
     const zones = layout.stations.map((s) => s.zone);
     expect(zones.indexOf("research")).toBe(input.research ? (featured ? 1 : 0) : -1);

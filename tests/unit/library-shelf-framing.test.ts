@@ -7,7 +7,8 @@ import { buildFloorLayouts } from "@/experience/config";
 import { trackSignSpecs } from "@/experience/floors/library/decor/signs";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, stationYaw, type LibraryBay, type LibraryLayoutInput } from "@/experience/floors/library/model";
-import { SHELF_PLINTH, SHELF_VIEW } from "@/experience/floors/library/shelf";
+import { SHELF_VIEW } from "@/experience/floors/library/shelf";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
 import { signPlate } from "@/experience/fx/signLayout";
 import { expectFramed, FRAME_SIZES, settleFollow } from "../helpers/follow-frame";
 
@@ -26,7 +27,7 @@ const synthetic: LibraryLayoutInput = { posts: posts40, tracks: [{ slug: "forty"
 
 /** Every slot's 8 corners: its footprint at its row's shelf and at its top (plinth plus height). */
 function slotCorners(bay: LibraryBay): { label: string; at: Vec3 }[] {
-  return bay.slots.flatMap((s) =>
+  return baySlots(bay).flatMap((s) =>
     [s.y, s.y + SHELF_PLINTH + s.h].flatMap((y) =>
       [
         [s.rect.minX, s.rect.minZ],
@@ -48,7 +49,7 @@ for (const [name, input] of [
 
     it("has bays to frame", () => {
       expect(bays.length).toBeGreaterThan(0);
-      if (input === synthetic) expect(bays[0].slots).toHaveLength(40);
+      if (input === synthetic) expect(baySlots(bays[0])).toHaveLength(40);
     });
 
     for (const bay of bays) {
