@@ -1,7 +1,7 @@
 # Phone-First 3D: the First 30 Seconds on a Portrait Phone (design)
 
-Status: approved 2026-10-25 (sub-project D of the 2026-10-25 brainstorm; no plan yet). Implementation is queued until
-the L4 Writing revamp (sub-project B) merges.
+Status: approved 2026-10-25 (sub-project D of the 2026-10-25 brainstorm); plan `2026-10-26-phone-first-3d.md`;
+implementation in review.
 
 Owner decisions 2026-10-25 (brainstorm, sections 3.1 to 3.5); the remaining choices were delegated to the parent
 session, which took the recommended option each time (section 3.6). Builds on #317 (touch controls) and does not
