@@ -285,7 +285,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/content/topic-index.ts"]).specs).toEqual(["library-roof", "reactor", "topics"]);
     expect(specsForChanges(["src/experience/fx/FilterHighlights.tsx"]).specs).toEqual(["reactor", "topics"]);
     expect(specsForChanges(["src/lib/intro-session.ts"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
-    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding"]);
+    expect(specsForChanges(["src/components/BootCard.tsx"]).specs).toEqual(["boot-first", "experience", "onboarding", "phone-first"]);
     // The per-page script policy: its build step, the headers it derives from and every inline script source.
     expect(specsForChanges(["scripts/csp-hashes.ts"]).specs).toEqual(["boot-first", "csp", "deploy", "sdf-fallback", "static-routes"]);
     expect(specsForChanges(["public/_headers"]).specs).toEqual(["csp", "deploy", "sdf-fallback", "static-routes"]);
@@ -316,7 +316,7 @@ describe("specsForChanges", () => {
     expect(specsForChanges(["src/experience/Experience.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "experience"]);
     expect(specsForChanges(["src/experience/floors/career/YearGates.tsx"]).specs).toContain("arrivals");
     expect(specsForChanges(["src/experience/floors/library/concepts/newsroom.ts"]).specs).toContain("arrivals");
-    expect(specsForChanges(["src/experience/floors/lobby/observatoryLayout.ts"]).specs).toEqual(["arrivals", "experience", "highlights", "pageview", "visits"]);
+    expect(specsForChanges(["src/experience/floors/lobby/observatoryLayout.ts"]).specs).toEqual(["arrivals", "experience", "highlights", "pageview", "phone-first", "visits"]);
     expect(specsForChanges(["src/experience/floors/labs/layout.ts"]).specs).toEqual(["arrivals", "fast-return", "gallery", "labs", "labs-data", "labs-paths", "production", "reactor", "spectacle"]);
     expect(specsForChanges(["src/experience/camera/arrival.ts"]).specs).toEqual(["arrivals", "camera", "career", "experience", "ride"]);
     expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toContain("arrivals");
@@ -395,6 +395,22 @@ describe("specsForChanges", () => {
     expect(plan.specs).toEqual([...SMOKE_SPECS].sort());
   });
 
+  it("maps the phone-first 3D files (boot card, docked dialog, band, tour, landing view, camera, styles) to the phone-first spec", () => {
+    for (const file of [
+      "src/components/BootCard.tsx",
+      "src/hud/dialog/DialogBox.tsx",
+      "src/hud/dialog/onboarding.ts",
+      "src/hud/dialog/tourChunk.ts",
+      "src/hud/Joystick.tsx",
+      "src/experience/floors/lobby/observatoryLayout.ts",
+      "src/experience/camera/orbit.ts",
+      "src/app/globals.css",
+    ]) {
+      expect(specsForChanges([file]).specs, file).toContain("phone-first");
+    }
+    expect(specsForChanges(["e2e/phone-first.spec.ts"]).specs).toEqual(["phone-first"]);
+  });
+
   it("knows every spec in e2e/", () => {
     const onDisk = readdirSync("e2e")
       .filter((f) => f.endsWith(".spec.ts") && !["screenshots.spec.ts", "pageview-visual.spec.ts", "camera-visual.spec.ts", "visual-gate.spec.ts", "delivery-visual.spec.ts"].includes(f))
@@ -408,7 +424,7 @@ describe("specsForChanges", () => {
   });
 
   it("maps the camera, its input, the rover fade and the view buttons to the camera spec", () => {
-    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["arrivals", "camera", "career", "experience", "labs-paths", "ride"]);
+    expect(specsForChanges(["src/experience/camera/orbit.ts"]).specs).toEqual(["arrivals", "camera", "career", "experience", "labs-paths", "phone-first", "ride"]);
     expect(specsForChanges(["src/experience/input/useInputSources.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/experience/rover/fade.ts"]).specs).toEqual(["camera", "experience"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
@@ -431,18 +447,18 @@ describe("specsForChanges", () => {
     }
     expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "engine-room", "experience", "hud", "hud-corners", "onboarding", "pads"]);
     expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost"]);
-    expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding", "phone-first"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);
     expect(specsForChanges(["src/hud/ChunkFailed.tsx"]).specs).toEqual(corners);
   });
 
   it("adds hud-corners to the HUD hosts that shape the corner layout, keeping their own specs", () => {
-    expect(specsForChanges(["src/hud/Hud.tsx"]).specs).toEqual(["arrivals", "drawer-solid", "experience", "hud", "hud-corners", "missions"]);
+    expect(specsForChanges(["src/hud/Hud.tsx"]).specs).toEqual(["arrivals", "drawer-solid", "experience", "hud", "hud-corners", "missions", "phone-first"]);
     expect(specsForChanges(["src/hud/ViewControls.tsx"]).specs).toEqual(["camera", "experience", "hud-corners"]);
     expect(specsForChanges(["src/components/Modal.tsx"]).specs).toEqual(["gallery", "hud-corners", "lifecycle", "pageview"]);
-    expect(specsForChanges(["src/hud/dialog/DialogBox.tsx"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding"]);
-    expect(specsForChanges(["src/hud/dialog/placement.ts"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding"]);
+    expect(specsForChanges(["src/hud/dialog/DialogBox.tsx"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding", "phone-first"]);
+    expect(specsForChanges(["src/hud/dialog/placement.ts"]).specs).toEqual(["camera", "experience", "hud-corners", "onboarding", "phone-first"]);
     expect(specsForChanges(["src/hud/dialog/store.ts"]).specs).toEqual(["camera", "experience", "onboarding"]);
     expect(specsForChanges(["src/hud/ask/AskDock.tsx"]).specs).toEqual(["ask", "experience", "hud-corners", "pageview"]);
     expect(specsForChanges(["src/hud/ask/AskChat.tsx"]).specs).toEqual(["ask", "experience", "pageview"]);
