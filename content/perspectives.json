@@ -117,7 +117,7 @@
       "question": { "en": "How do you make LLM features reliable in production?", "id": "Bagaimana menjaga fitur LLM tetap andal di production?" },
       "answer": {
         "en": "I start from the actual error strings, not the failure percentage, because two different messages usually mean two different bugs. Then I layer the fix: structured output mode, explicit token and time limits, defensive parsing, and bounded retries that count every attempt. Reasoning effort is a budget setting too, not only a quality setting.",
-        "id": "Saya mulai dengan membaca pesan error yang muncul karena dua pesan berbeda biasanya berasal dari dua bug berbeda; persentase kegagalan saja tidak cukup. Perbaikannya kemudian saya susun berlapis: mode structured output, batas token dan waktu yang jelas, defensive parsing, serta retry terbatas yang mencatat setiap percobaan. Reasoning effort perlu diatur sebagai anggaran sekaligus penentu kualitas."
+        "id": "Saya mulai dengan membaca pesan error yang muncul karena dua pesan berbeda biasanya berasal dari dua bug berbeda; persentase kegagalan saja tidak cukup. Perbaikannya kemudian saya susun berlapis: mode structured output, batas token dan waktu yang jelas, defensive parsing, serta retry terbatas dengan setiap percobaan tetap dihitung. Pengaturan reasoning effort memengaruhi anggaran sekaligus kualitas."
       },
       "tags": ["reliability", "llm", "testing"],
       "asOf": "2026-10",
