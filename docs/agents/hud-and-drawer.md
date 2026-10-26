@@ -30,6 +30,7 @@ Missions and the HUD, the Corners layout, the settings registry, the minimap, th
 | `L4:publications` | | | the models shelf: models and datasets |
 | `L4:talks` | | | |
 | `L4:topics` | `topics` | `/library#topics` | the [Topic Constellation](floor-l4-library.md); no route of its own, its pick in `#library-topic=<slug>` |
+| `L4:track:<slug>` | `shelf` | `/library#posts` | a reader track bay's drawer (`trackViews`): its posts lead first, each a `RoomLinkItem.room` button that rides to the post drawer; only tracks with posts ([floor-l4-library.md](floor-l4-library.md#targets-hints-and-the-track-drawer)) |
 | `RF:contact`, `RF:cv` | | | |
 
 - L2 Workshop bench and skyline rooms (`L2:side-<id>`, `L2:repo-<slug>`, helpers in `@/content/workshop`):
@@ -328,7 +329,9 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `HintProbe` (in the canvas, no draw calls) picks the nearest point-and-go target within 5 u of its `at` (`nearestHint`, sticky to 6 u).
   - Source: `hintItems()` (`src/experience/hints/source.ts`: `interactRuntime.items`, the only read of the registry here).
-  - Targets that share one approach point carry a `group` (the L4 Study Vault's books): `hintTargets` folds them into one bubble under the group's id and label (`L4:vault`, object line `vault`), whose Go only drives to the shared point (an unhandled command, so no book opens). Hover tags and clicks stay per target.
+  - Targets that share one approach point carry a `group`: `hintTargets` folds them into one bubble under the group's id and label, at the first member's approach point. Hover tags and clicks stay per target.
+    - The L4 Study Vault's books: `L4:vault`, object line `vault`; Go only drives to the shared point (`GROUP_HINT_COMMAND`, an unhandled command, so no book opens).
+    - Each L4 reader track bay (its door, then its spines): `L4:track:<slug>`, object line `track` (`hintObjectKey` in `src/hud/dialog/hintLines.ts`); the first member is the door, whose `open-room` action the group keeps, so Go drives to the bay door and opens the track drawer ([floor-l4-library.md](floor-l4-library.md#targets-hints-and-the-track-drawer)).
   - Every frame it moves the HUD bubble (`HintLayer`) over `hintAnchor`: above point-and-go's hover label; in first person at most 0.9 u above eye height, so a near target's bubble stays in view.
 - Enter, a tap or a click opens `dialog.hints.kind.<kind>` (with the registry `label`) or an object line (`HINT_OBJECTS`, keyed by registry id such as `L1:pad:elevator`, `RF:station:cv`, `L1:station:highlights-about`).
 - Go emits point-and-go's `{ type: "interact", item }`, so it drives and acts exactly like a click.

@@ -60,7 +60,8 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - the Director learns of every open from the store (a drawer can open and close between two frames) and stops the rover's drive;
   - the pad stays silent until the rover has been on it and left, or has stopped elsewhere;
   - so a closed room never reopens when the rover rolls onto its pad.
-- `roomTarget` (host3d) drives to `door.at` for any room with a door, and to `FloorLayout.listStop` for a room without one on floors that set it (L4 archive posts).
+  - the pad under the rover counts as used on any frame a room is open, even another room's (an L4 post opens at its bay door), so a drawer closed before the next frame never lets that pad fire (`stepDoorLatch`).
+- `roomTarget` (host3d) drives to `door.at` for any room with a door, and to `FloorLayout.listStop` for a room without one on floors that set it (L4: a post on no reader track, at the featured stage). `FloorLayout.stops` wins over `listStop` (L4: every post drives to its track bay's door).
 - Spacing:
   - keep lanes off door pads (`tests/unit/labs-layout.test.ts` checks the L3 packet lanes);
   - layout tests keep 3 u of clear floor between neighbouring rooms, pods and pads.
@@ -344,7 +345,7 @@ Owner decisions: "Neon line" style; unique holograms per item on L2, L3 and L4 (
   | `box` | optional oriented footprint (`center`, `w`, `d`, `yaw`) for turned targets; the pick volume and the hover outline use it |
   | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `return-beam`, `console-picker` (the L2 time console), `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
-  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
+  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books; an L4 track bay's door and spines, `L4:track:<slug>`): one hint bubble for the group, whose Go keeps the first member's `open-room` (a bay door's track drawer) ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);

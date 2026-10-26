@@ -127,7 +127,7 @@ The hard rules in full, the editorial voice and title rules for content, and the
 ### Title Case for titles (owner decision)
 
 - Stored in Title Case in both locales, never cased with CSS `text-transform`:
-  - pod, post (`site-content.json` and the MDX frontmatter `title`), publication, talk, side project, award and principle titles.
+  - pod, post (`site-content.json` and the MDX frontmatter `title`), L4 reader track (`floors.library.tracks[].title`), publication, talk, side project, award and principle titles.
 - Not titles: role titles, org and certification names, skill group labels (rendered uppercase), mission labels (sentence-case actions) and body text.
 - The rules live in `titleCase` (`src/content/title-case.ts`):
   - Capitalize every word except minor words that are not first, last or right after a colon.
