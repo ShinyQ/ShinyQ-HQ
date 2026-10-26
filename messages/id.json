@@ -996,7 +996,10 @@
       "roverMenu": "Belum tahu mau ke mana? Buka Menu Rover untuk memilih tujuan di HQ.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
-      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja."
+      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja.",
+      "pointGoPhone": "Ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
+      "movedPhone": "Mantap! Joystick dan tombol Turbo juga bisa dipakai.",
+      "floorChip": "Ketuk chip lantai di atas untuk naik lift ke lantai lain."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",

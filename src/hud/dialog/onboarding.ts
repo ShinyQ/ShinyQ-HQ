@@ -47,12 +47,16 @@ export interface OnboardingCopy {
   askAi: string;
   closing: string;
   closingShort: string;
+  pointGoPhone: string;
+  movedPhone: string;
+  floorChip: string;
 }
 
 /** Every copy key, in `dialog.onboarding`; OnboardingLayer resolves them with its `t` once the chunk is in. */
 export const COPY_KEYS = [
   "welcome", "start", "skip", "skipped", "moveFine", "moveCoarse", "pointGoFine", "pointGoCoarse", "moved",
   "cameraFine", "cameraCoarse", "highlights", "showMe", "later", "elevator", "roverMenu", "askAi", "closing", "closingShort",
+  "pointGoPhone", "movedPhone", "floorChip",
 ] as const satisfies readonly (keyof OnboardingCopy)[];
 
 /** A `t` of the `dialog.onboarding` namespace; every line gets `{ name }` (lines without the placeholder ignore it). */
@@ -66,6 +70,8 @@ export interface OnboardingDeps {
   say: (input: SayInput, options?: SayOptions) => Promise<SayResult>;
   copy: OnboardingCopy;
   coarse: boolean;
+  /** A phone (the Corners phone HUD with touch): the short phone script. */
+  phone: boolean;
   variant: OnboardingVariant;
   waitForMove: (signal: AbortSignal) => Promise<void>;
   highlights: () => HighlightsTarget | null;
@@ -130,45 +136,60 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
   let end = await ended(result);
   if (end) return end;
 
-  // 2. Moving: keys or joystick and boost, then point-and-go (there is no click-the-floor driving any
-  // more: desktop points and clicks a glowing object, touch taps it twice or uses its Go chip); waits
-  // until the rover moves, whichever way. Then the camera (round 5): look around, zoom, first person.
-  result = await d.say(
-    [
-      { key: "move", text: d.coarse ? copy.moveCoarse : copy.moveFine },
-      { key: "point-go", text: d.coarse ? copy.pointGoCoarse : copy.pointGoFine, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
-      { key: "moved", text: copy.moved, face: "arrived" },
-      { key: "camera", text: d.coarse ? copy.cameraCoarse : copy.cameraFine, spotlight: "view" },
-    ],
-    tour,
-  );
-  end = await ended(result);
-  if (end) return end;
-
-  if (d.variant === "full") {
-    // 3. The Highlights Hall on L1 east, when it exists.
-    const hall = d.highlights();
-    if (hall) {
-      result = await d.say(
-        {
-          key: "highlights",
-          text: copy.highlights,
-          choices: [
-            { id: "show", label: copy.showMe },
-            { id: "later", label: copy.later, cancel: true },
-          ],
-        },
-        tour,
-      );
-      end = await ended(result);
-      if (end) return end;
-      if (result.choice === "show") await d.showMe(hall);
-    }
-
-    // 4. Elevator and call pads.
-    result = await d.say({ key: "elevator", text: copy.elevator, spotlight: "elevator" }, tour);
+  if (d.phone) {
+    // Phones (owner decision 2026-10-25): tap-to-go first (the joystick and Boost are on screen and in the menu's
+    // Controls card), then the floor chip; no camera, Highlights Hall or elevator pad lines.
+    result = await d.say(
+      [
+        { key: "point-go", text: copy.pointGoPhone, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
+        { key: "moved", text: copy.movedPhone, face: "arrived" },
+        { key: "floor-chip", text: copy.floorChip, spotlight: "elevator" },
+      ],
+      tour,
+    );
     end = await ended(result);
     if (end) return end;
+  } else {
+    // 2. Moving: keys or joystick and boost, then point-and-go (there is no click-the-floor driving any
+    // more: desktop points and clicks a glowing object, touch taps it twice or uses its Go chip); waits
+    // until the rover moves, whichever way. Then the camera (round 5): look around, zoom, first person.
+    result = await d.say(
+      [
+        { key: "move", text: d.coarse ? copy.moveCoarse : copy.moveFine },
+        { key: "point-go", text: d.coarse ? copy.pointGoCoarse : copy.pointGoFine, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
+        { key: "moved", text: copy.moved, face: "arrived" },
+        { key: "camera", text: d.coarse ? copy.cameraCoarse : copy.cameraFine, spotlight: "view" },
+      ],
+      tour,
+    );
+    end = await ended(result);
+    if (end) return end;
+
+    if (d.variant === "full") {
+      // 3. The Highlights Hall on L1 east, when it exists.
+      const hall = d.highlights();
+      if (hall) {
+        result = await d.say(
+          {
+            key: "highlights",
+            text: copy.highlights,
+            choices: [
+              { id: "show", label: copy.showMe },
+              { id: "later", label: copy.later, cancel: true },
+            ],
+          },
+          tour,
+        );
+        end = await ended(result);
+        if (end) return end;
+        if (result.choice === "show") await d.showMe(hall);
+      }
+
+      // 4. Elevator and call pads.
+      result = await d.say({ key: "elevator", text: copy.elevator, spotlight: "elevator" }, tour);
+      end = await ended(result);
+      if (end) return end;
+    }
   }
 
   // 5. The Rover menu and Ask AI, each ringed while Rover talks about it.

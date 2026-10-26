@@ -28,6 +28,7 @@ export const START_DELAY_MS = 600;
 export function OnboardingLayer({ data }: { data: ExperienceData }) {
   const t = useTranslations("dialog.onboarding");
   const coarse = useHQStore((s) => s.device.coarse);
+  const phone = useHQStore((s) => s.device.coarse && s.device.viewport === "mobile");
   const ready = useHQStore((s) => s.phase === "explore" && !s.ride);
   const [continuing, setContinuing] = useState(false);
   const deepLinked = useRef(false);
@@ -57,6 +58,7 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
           say,
           copy: tour.onboardingCopy(t as unknown as TourT, name),
           coarse,
+          phone,
           variant,
           waitForMove: (signal) => tour.waitForRoverMove(getHQStore(), signal),
           // The hall registers its stations as L1 extras, so they are found from any floor (replay).
@@ -73,7 +75,7 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
         running.current = false;
       }
     },
-    [t, name, coarse],
+    [t, name, coarse, phone],
   );
 
   // A session that will play the tour fetches its chunk early (during the boot and intro); a returning visitor never does.

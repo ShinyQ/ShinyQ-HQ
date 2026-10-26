@@ -299,6 +299,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   7. Ask AI when its pill shows;
   8. closing.
 - After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
+- Phone form (`OnboardingDeps.phone`: coarse pointer and the mobile viewport, the Corners phone HUD): welcome, tap-to-go try-it (`pointGoPhone`), `movedPhone`, the floor chip (`floorChip`, spotlight `elevator`), the Rover menu, Ask AI when shown, closing (`closingShort` after a deep link). No camera, Highlights Hall or elevator pad lines.
 - Onboarding replaces the Director's first-visit terminal auto-open.
 - Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 

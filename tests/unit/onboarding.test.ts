@@ -40,6 +40,9 @@ const copy: OnboardingCopy = {
   askAi: "askAi",
   closing: "closing",
   closingShort: "closingShort",
+  pointGoPhone: "pointGoPhone",
+  movedPhone: "movedPhone",
+  floorChip: "floorChip",
 };
 
 /** Records every line Rover says; answers a request from the first line whose key has an answer. */
@@ -64,6 +67,7 @@ function deps(over: Partial<OnboardingDeps> = {}): OnboardingDeps {
     say: fakeSay().say,
     copy,
     coarse: false,
+    phone: false,
     variant: "full",
     waitForMove: () => Promise.resolve(),
     highlights: () => ({ floor: "L1", at: { x: 20, z: 0 } }),
@@ -161,6 +165,31 @@ describe("runOnboarding", () => {
     const fake = fakeSay();
     await runOnboarding(deps({ say: fake.say, variant: "short" }));
     expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "rover-menu", "ask-ai", "closing"]);
+    expect(fake.line("closing").text).toBe("closingShort");
+  });
+
+  it("runs the phone tour: tap-to-go, the floor chip, the menu and Ask, no camera, hall or pad lines", async () => {
+    const fake = fakeSay();
+    const showMe = vi.fn(async () => {});
+    const highlights = vi.fn(() => null);
+    const waitForMove = vi.fn(() => Promise.resolve());
+    await runOnboarding(deps({ say: fake.say, phone: true, coarse: true, showMe, highlights, waitForMove }));
+    expect(fake.keys()).toEqual(["welcome", "point-go", "moved", "floor-chip", "rover-menu", "ask-ai", "closing"]);
+    expect(fake.line("point-go").text).toBe("pointGoPhone");
+    expect(fake.line("point-go").until).toBe(waitForMove);
+    expect(fake.line("moved").text).toBe("movedPhone");
+    expect(fake.line("floor-chip").spotlight).toBe("elevator");
+    expect(fake.line("floor-chip").text).toBe("floorChip");
+    expect(fake.line("rover-menu").spotlight).toBe("rover-menu");
+    expect(fake.line("ask-ai").spotlight).toBe("ask-ai");
+    expect(highlights).not.toHaveBeenCalled();
+    expect(showMe).not.toHaveBeenCalled();
+  });
+
+  it("runs the short phone tour without Ask AI and closes short", async () => {
+    const fake = fakeSay();
+    await runOnboarding(deps({ say: fake.say, phone: true, variant: "short", askAi: () => false }));
+    expect(fake.keys()).toEqual(["welcome", "point-go", "moved", "floor-chip", "rover-menu", "closing"]);
     expect(fake.line("closing").text).toBe("closingShort");
   });
 
