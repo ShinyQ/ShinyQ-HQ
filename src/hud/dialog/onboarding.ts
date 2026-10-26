@@ -49,6 +49,19 @@ export interface OnboardingCopy {
   closingShort: string;
 }
 
+/** Every copy key, in `dialog.onboarding`; OnboardingLayer resolves them with its `t` once the chunk is in. */
+export const COPY_KEYS = [
+  "welcome", "start", "skip", "skipped", "moveFine", "moveCoarse", "pointGoFine", "pointGoCoarse", "moved",
+  "cameraFine", "cameraCoarse", "highlights", "showMe", "later", "elevator", "roverMenu", "askAi", "closing", "closingShort",
+] as const satisfies readonly (keyof OnboardingCopy)[];
+
+/** A `t` of the `dialog.onboarding` namespace; every line gets `{ name }` (lines without the placeholder ignore it). */
+export type TourT = (key: string, values: { name: string }) => string;
+
+export function onboardingCopy(t: TourT, name: string): OnboardingCopy {
+  return Object.fromEntries(COPY_KEYS.map((key) => [key, t(key, { name })])) as unknown as OnboardingCopy;
+}
+
 export interface OnboardingDeps {
   say: (input: SayInput, options?: SayOptions) => Promise<SayResult>;
   copy: OnboardingCopy;
@@ -60,10 +73,6 @@ export interface OnboardingDeps {
   /** The Ask AI pill is on screen (Ask the HQ enabled). */
   askAi: () => boolean;
   tryItMs?: number;
-}
-
-export function firstName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
 }
 
 export function highlightsTarget(items: readonly Interactable[]): HighlightsTarget | null {

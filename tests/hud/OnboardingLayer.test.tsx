@@ -40,14 +40,15 @@ afterEach(() => {
 });
 
 describe("OnboardingLayer", () => {
-  it("starts the full tour 600 ms after the intro hands over in the Lobby, with the first name", () => {
+  it("starts the full tour 600 ms after the intro hands over in the Lobby, with the first name", async () => {
     renderLayer();
     act(() => void vi.advanceTimersByTime(2000));
     expect(dialog.view.id).toBeNull();
     act(() => void getHQStore().setState({ phase: "explore" }));
     act(() => void vi.advanceTimersByTime(600));
+    // The tour script is a lazy chunk: the first line follows its load.
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("welcome"));
     expect(dialog.view.id).toBe("onboarding");
-    expect(dialog.view.line?.key).toBe("welcome");
     expect(dialog.view.line?.text).toContain("Kurniadi");
     expect(dialog.view.line?.text).not.toContain("Wijaya");
   });
@@ -64,6 +65,7 @@ describe("OnboardingLayer", () => {
     getHQStore().setState({ phase: "explore" });
     renderLayer();
     act(() => void vi.advanceTimersByTime(600));
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("welcome"));
     await act(async () => {
       dialog.advance();
       dialog.choose("skip");
@@ -88,7 +90,7 @@ describe("OnboardingLayer", () => {
       endContinuation();
     });
     act(() => void vi.advanceTimersByTime(600));
-    expect(dialog.view.line?.key).toBe("welcome");
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("welcome"));
     await act(async () => {
       dialog.advance();
       dialog.choose("start");
@@ -117,7 +119,7 @@ describe("OnboardingLayer", () => {
     await vi.waitFor(() => expect(dialog.view.line?.key).toBe("rover-menu"));
   });
 
-  it("replays the full tour on request, even when onboarded", () => {
+  it("replays the full tour on request, even when onboarded", async () => {
     markOnboarded("done");
     getHQStore().setState({ phase: "explore" });
     renderLayer();
@@ -126,6 +128,6 @@ describe("OnboardingLayer", () => {
       replayTutorial();
       vi.advanceTimersByTime(1);
     });
-    expect(dialog.view.line?.key).toBe("welcome");
+    await vi.waitFor(() => expect(dialog.view.line?.key).toBe("welcome"));
   });
 });

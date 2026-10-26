@@ -15,7 +15,7 @@ import { EngineUnlockLayer } from "./dialog/EngineUnlockLayer";
 import { FloorIntroLayer } from "./dialog/FloorIntroLayer";
 import { HintLayer } from "./dialog/HintLayer";
 import { OnboardingLayer } from "./dialog/OnboardingLayer";
-import { firstName } from "./dialog/onboarding";
+import { firstName } from "./dialog/names";
 import { useDialog } from "./dialog/store";
 import { DrawerHost } from "./drawer/DrawerHost";
 import { InteractStatus } from "./InteractStatus";

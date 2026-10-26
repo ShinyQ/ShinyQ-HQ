@@ -405,7 +405,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/hud/ask/`: Ask the HQ dock: AskDock (launcher, teaser, mounted in the layout), AskChat (lazy panel), AskPill (3D), useAskThread, availability (status, tower, layout).
 - `src/hud/dialog/`: Rover's dialog.
   - Pure engine.ts (say, queue, typewriter), store.ts (singleton, useDialog).
-  - onboarding.ts, floorIntro.ts, hintLines.ts, storage.ts, tutorial.ts, placement.ts.
+  - onboarding.ts (lazy chunk, loaded by tourChunk.ts), names.ts, floorIntro.ts, hintLines.ts, storage.ts, tutorial.ts, placement.ts.
   - DialogBox, DialogLayer (3D chunk only), Spotlight, OnboardingLayer, HintLayer, EngineUnlockLayer (the B1 unlock moment and offer) and engineRoomAction.ts (Cmd-K "Go to B1 Engine Room").
 - `src/hud/pads/`: floor pad pickers: PadPicker (floor and year lists on the shared Modal, a bottom sheet on phones), BeamFade; pure picker.ts (options, roving focus, floorThumb).
 - `src/hud/drawer/`: Glass Drawer: RoomDrawer (UI), DrawerHost (store, data, audio), bodies (EngineBody for the B1 station drawers), layout, urlSync, data, `data-path.ts` (room data file per locale and floor, B1 as `b1-{locale}.json`), ascii (README).

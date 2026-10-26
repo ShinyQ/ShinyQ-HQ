@@ -288,7 +288,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 ### Onboarding
 
-- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro.
+- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro. `onboarding.ts` is a lazy chunk (only type imports; `tourChunk.ts` `loadTour()` is its only `import()`), loaded by a session that is not onboarded or by Replay tutorial; `firstName` lives in `names.ts`.
 - Full form, in order:
   1. welcome with Skip;
   2. moving, with a try-it wait that teaches [point-and-go](floors.md) (desktop: point and click a glowing object; touch: tap twice or use its Go chip; there is no click-the-floor driving);

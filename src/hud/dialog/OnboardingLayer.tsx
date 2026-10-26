@@ -9,9 +9,11 @@ import { runMissionSteps } from "@/experience/missions/bridge";
 import { roverRuntime } from "@/experience/rover/runtime";
 import type { ExperienceData } from "@/experience/types";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
-import { firstName, highlightsTarget, runOnboarding, waitForRoverMove, type OnboardingCopy, type OnboardingVariant } from "./onboarding";
+import { firstName } from "./names";
+import type { OnboardingVariant, TourT } from "./onboarding";
 import { markOnboarded, onboarded } from "./storage";
 import { cancelAllDialogs, say } from "./store";
+import { loadTour } from "./tourChunk";
 import { registerTutorial } from "./tutorial";
 
 /** Pause after the intro hands over (or a deep link arrives) before Rover speaks. */
@@ -20,7 +22,8 @@ export const START_DELAY_MS = 600;
 /**
  * Starts the first-session tour once per browser: in the Lobby right after the boot and intro
  * (full), or after a deep link has ridden on to its floor or room and the drawer is closed (short).
- * Replaces the old first-visit Rover Terminal auto-open. Also the host of "Replay the tutorial".
+ * Replaces the old first-visit Rover Terminal auto-open. Also the host of "Replay the tutorial". The script is a lazy
+ * chunk (`tourChunk.ts`), loaded only by a session that plays the tour or replays it.
  */
 export function OnboardingLayer({ data }: { data: ExperienceData }) {
   const t = useTranslations("dialog.onboarding");
@@ -46,36 +49,18 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
     async (variant: OnboardingVariant, replay: boolean) => {
       if (running.current) return;
       running.current = true;
-      const copy: OnboardingCopy = {
-        welcome: t("welcome", { name }),
-        start: t("start"),
-        skip: t("skip"),
-        skipped: t("skipped"),
-        moveFine: t("moveFine"),
-        moveCoarse: t("moveCoarse"),
-        pointGoFine: t("pointGoFine"),
-        pointGoCoarse: t("pointGoCoarse"),
-        moved: t("moved"),
-        cameraFine: t("cameraFine"),
-        cameraCoarse: t("cameraCoarse"),
-        highlights: t("highlights", { name }),
-        showMe: t("showMe"),
-        later: t("later"),
-        elevator: t("elevator"),
-        roverMenu: t("roverMenu"),
-        askAi: t("askAi", { name }),
-        closing: t("closing"),
-        closingShort: t("closingShort"),
-      };
       try {
-        const outcome = await runOnboarding({
+        const tour = await loadTour();
+        // A failed chunk: no tour this time, nothing marked, so a later session (or Replay) tries again.
+        if (!tour) return;
+        const outcome = await tour.runOnboarding({
           say,
-          copy,
+          copy: tour.onboardingCopy(t as unknown as TourT, name),
           coarse,
           variant,
-          waitForMove: (signal) => waitForRoverMove(getHQStore(), signal),
+          waitForMove: (signal) => tour.waitForRoverMove(getHQStore(), signal),
           // The hall registers its stations as L1 extras, so they are found from any floor (replay).
-          highlights: () => highlightsTarget(extraItems("L1")),
+          highlights: () => tour.highlightsTarget(extraItems("L1")),
           showMe: async (hall) => {
             const drive: MissionStep = { kind: "drive", to: hall.at };
             const steps: MissionStep[] = getHQStore().getState().floor === hall.floor ? [drive] : [{ kind: "elevator", floor: hall.floor }, drive];
@@ -90,6 +75,11 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
     },
     [t, name, coarse],
   );
+
+  // A session that will play the tour fetches its chunk early (during the boot and intro); a returning visitor never does.
+  useEffect(() => {
+    if (!onboarded()) void loadTour();
+  }, []);
 
   // "Replay the tutorial" (Settings, Cmd-K): stop whatever Rover says, then start over in full.
   useEffect(

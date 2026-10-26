@@ -1,12 +1,15 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { StateStorage } from "zustand/middleware";
 import type { Interactable } from "@/experience/hints/source";
 import { linesOf, type DialogLine, type SayInput, type SayOptions, type SayResult } from "@/hud/dialog/engine";
 import {
-  firstName,
+  COPY_KEYS,
   HIGHLIGHTS_ID,
   HIGHLIGHTS_ROOM,
   highlightsTarget,
+  onboardingCopy,
   ONBOARDING_ID,
   runOnboarding,
   TRY_IT_MS,
@@ -14,6 +17,7 @@ import {
   type OnboardingCopy,
   type OnboardingDeps,
 } from "@/hud/dialog/onboarding";
+import { firstName } from "@/hud/dialog/names";
 import { createHQStore } from "@/store/useHQStore";
 
 const copy: OnboardingCopy = {
@@ -211,5 +215,18 @@ describe("firstName", () => {
   it("keeps the first word of the profile name", () => {
     expect(firstName("Kurniadi Ahmad Wijaya")).toBe("Kurniadi");
     expect(firstName("  Single  ")).toBe("Single");
+  });
+});
+
+describe("onboardingCopy", () => {
+  it("resolves every copy key with the name", () => {
+    const built = onboardingCopy((k, v) => `${k}:${v.name}`, "Ana");
+    expect(Object.keys(built).sort()).toEqual([...COPY_KEYS].sort());
+    expect(built.welcome).toBe("welcome:Ana");
+  });
+
+  it("covers every key of dialog.onboarding in the messages", () => {
+    const en = JSON.parse(readFileSync(join(__dirname, "../../messages/en.json"), "utf8")) as { dialog: { onboarding: Record<string, string> } };
+    expect([...COPY_KEYS].sort()).toEqual(Object.keys(en.dialog.onboarding).sort());
   });
 });
