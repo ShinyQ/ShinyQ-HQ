@@ -139,10 +139,10 @@ describe("shelfMeshes", () => {
   const layout = buildLibraryLayout(libraryLayoutInput(data.library));
 
   for (const tier of ["full", "lite"] as const)
-    it(`spans every bay with one mesh per part, culled by one sphere (${tier})`, () => {
-      const kit = shelfMeshes(layout.bays, tier, false);
+    it(`spans every bay with one mesh per part (bodies, covers; no light pools), culled by one sphere (${tier})`, () => {
+      const kit = shelfMeshes(layout.bays, tier);
       try {
-        expect(kit.meshes).toHaveLength(tier === "full" ? 3 : 2);
+        expect(kit.meshes).toHaveLength(2);
         const posts = layout.bays.reduce((n, b) => n + b.posts.length, 0);
         const frames = layout.bays.reduce((n, b) => n + shelfSize(b.posts.length).rows + 1, 0);
         expect(kit.meshes[0].count).toBe(posts + frames);

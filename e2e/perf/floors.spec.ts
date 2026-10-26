@@ -206,10 +206,10 @@ for (const tier of ["lite", "full"] as const) {
     await driveTo(page, stop!, 240_000);
     await measureFloor(page, tier, "L4", "vault");
   });
-  // A reader track bay's own view (L4 Writing revamp): the largest track's shelf (its lead, spines, rows and back panel, the
-  // full tier's light pool) with the live spine pulled and its title, the track name and the lead title showing. The
-  // door opens the track drawer on arrival: close it, so the floor renders as a visitor sees it at the bay. Same caps
-  // and program baseline as L4; reported as the settled-L4-shelf peak.
+  // A reader track bay's own view (L4 Writing revamp): the largest track's shelf (its lead, spines, rows and back
+  // panel) with the live spine pulled and its title, the track name and the lead title showing. The door opens the
+  // track drawer on arrival: close it, so the floor renders as a visitor sees it at the bay. Same caps and program
+  // baseline as L4; reported as the settled-L4-shelf peak.
   test(`L4 ${tier}: settled draw calls and shader programs at a track shelf bay`, async ({ page }) => {
     await enterFloorRoute(page, "/en/library", { tier });
     const bay = `L4:track:${SHELF_TRACK}`;
