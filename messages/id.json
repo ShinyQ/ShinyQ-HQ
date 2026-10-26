@@ -833,7 +833,8 @@
   },
   "case": {
     "onThisPage": "Di halaman ini",
-    "more": "Proyek {wing} lainnya"
+    "more": "Proyek {wing} lainnya",
+    "nextStep": "Sedang merekrut untuk pekerjaan seperti ini?"
   },
   "writing": {
     "title": "Tulisan",

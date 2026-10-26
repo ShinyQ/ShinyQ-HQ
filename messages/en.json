@@ -833,7 +833,8 @@
   },
   "case": {
     "onThisPage": "On this page",
-    "more": "More {wing} projects"
+    "more": "More {wing} projects",
+    "nextStep": "Hiring for work like this?"
   },
   "writing": {
     "title": "Writing",

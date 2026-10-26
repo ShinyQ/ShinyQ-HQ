@@ -121,6 +121,20 @@ test("a featured case study reads as a story: situation, key decisions, results,
   await expectNoSeriousViolations(page);
 });
 
+for (const pod of [storyPod, plainPod]) {
+  test(`case study ${pod.slug} ends with a next step: View CV opens the reader, About and contact links on`, async ({ page }) => {
+    await openPage(page, staticTier(`/en/labs/${pod.slug}`));
+    const row = page.getByTestId("case-next-step");
+    await expect(row.getByRole("heading", { level: 2 })).toHaveText(en.case.nextStep);
+    await expect(row.getByRole("link", { name: en.home.aboutContact })).toHaveAttribute("href", "/en/contact");
+    const cv = row.getByTestId("cv-open-case");
+    await expect(cv).toHaveClass(/pv-btn-primary/);
+    await expect(cv).toHaveText(en.common.viewCv);
+    await cv.click();
+    await expectCvReader(page);
+  });
+}
+
 test("Home keeps the deep-link anchors used by the room catalog", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   // `office`: the Agent Office room's Classic page (`/#office`, src/experience/missions/rooms.ts).

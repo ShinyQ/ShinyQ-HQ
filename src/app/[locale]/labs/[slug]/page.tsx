@@ -6,6 +6,7 @@ import { experienceDataVersion } from "@/experience/gate-data";
 import { ExperienceGate } from "@/experience/ExperienceGate";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { ChipList } from "@/components/Chip";
+import { CvButton } from "@/components/cv/CvButton";
 import { Gallery } from "@/components/Gallery";
 import { JsonLd } from "@/components/JsonLd";
 import { LiveSiteLink } from "@/components/LiveSiteLink";
@@ -50,6 +51,7 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
   const tcase = await getTranslations({ locale, namespace: "case" });
   const tc = await getTranslations({ locale, namespace: "common" });
   const tg = await getTranslations({ locale, namespace: "gallery" });
+  const th = await getTranslations({ locale, namespace: "home" });
   const siblings = getPods(pod.wing);
   const { prev, next } = adjacent(siblings, siblings.findIndex((p) => p.id === pod.id));
   const entry = pod.timelineRef ? getTimelineEntryById(pod.timelineRef) : undefined;
@@ -180,6 +182,22 @@ export default async function PodPage({ params }: PageProps<"/[locale]/labs/[slu
             </div>
           </aside>
         </div>
+
+        <section aria-labelledby="next-step-title" className="pv-wrap pt-16" data-testid="case-next-step">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 border-y border-line py-6">
+            <h2 id="next-step-title" className="pv-h3 mr-auto">
+              {tcase("nextStep")}
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <CvButton className="pv-btn pv-btn-primary" testId="cv-open-case">
+                {tc("viewCv")}
+              </CvButton>
+              <Link href="/contact" className="pv-btn pv-btn-ghost">
+                {th("aboutContact")}
+              </Link>
+            </div>
+          </div>
+        </section>
 
         <section aria-labelledby="related-title" className="pv-wrap pv-sec">
           <h2 id="related-title" className="pv-h2 mb-8">
