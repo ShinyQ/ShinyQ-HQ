@@ -563,6 +563,25 @@ for (const v of [
   });
 }
 
+test("Work Key projects show each card's headline result under the title", async ({ page }) => {
+  await openPage(page, staticTier("/en/labs"));
+  const cards = page.locator("#key-projects article");
+  const count = await cards.count();
+  expect(count).toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    const card = cards.nth(i);
+    const result = card.getByTestId("feature-result");
+    await expect(result).toHaveCount(1);
+    const order = await card.evaluate((el) => {
+      const title = el.querySelector(".pv-feature-title")!;
+      const res = el.querySelector("[data-testid='feature-result']")!;
+      const text = el.querySelector(".pv-card-text")!;
+      return [title.compareDocumentPosition(res) & 4, res.compareDocumentPosition(text) & 4];
+    });
+    expect(order).toEqual([4, 4]);
+  }
+});
+
 /** Stand-in for the public sites so the suite never depends on the network. */
 const LIVE_SITE = /^https:\/\/mii-microsoft(?:-ai)?\.azurewebsites\.net\//;
 

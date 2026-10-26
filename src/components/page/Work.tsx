@@ -30,13 +30,14 @@ export async function PodLiveCta({ pod, locale, className = "" }: { pod: Pod; lo
 }
 
 /**
- * A project with its cover (or a designed placeholder when it has no images).
- * `lead`: full image and two outcomes; `pair`: wide thumb and one outcome; `grid`: thumb and stack logos.
+ * A Key project card on Work: its cover (or a designed placeholder), wing, period and client, the title, the headline
+ * result under the title (recruiters scan results first, as on the landing cards), the tagline, then the live link
+ * and the stack logos at the foot.
  */
-export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Locale; size: "lead" | "pair" | "grid" }) {
+export async function WorkFeature({ pod, locale }: { pod: Pod; locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "work" });
   const cover = coverImage(pod.assets, locale);
-  const [first, second] = pod.results;
+  const result = pod.results[0];
   return (
     <article className="pv-feature relative flex h-full flex-col gap-4">
       {cover ? (
@@ -45,17 +46,17 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
           <img
             src={cover.src}
             srcSet={imageSrcSet(cover)}
-            sizes={size === "lead" ? "(min-width: 1024px) 760px, 100vw" : size === "pair" ? "(min-width: 768px) 50vw, 100vw" : CARD_SIZES}
+            sizes={CARD_SIZES}
             alt={cover.alt}
             width={cover.width}
             height={cover.height}
-            loading={size === "lead" ? "eager" : "lazy"}
+            loading="lazy"
             decoding="async"
-            className={size === "pair" ? "aspect-[16/8]" : "aspect-[16/10]"}
+            className="aspect-[16/10]"
           />
         </div>
       ) : (
-        <div className={`pv-shot ${size === "pair" ? "[&_.pv-ph]:aspect-[16/8]" : ""}`}>
+        <div className="pv-shot">
           <ProjectPlaceholder id={`ph-card-${pod.slug}`} title={pod.title[locale]} wing={pod.wing} size="card" />
         </div>
       )}
@@ -64,31 +65,21 @@ export async function WorkFeature({ pod, locale, size }: { pod: Pod; locale: Loc
         <span className="pv-date">{formatPeriod(pod.period.start, pod.period.end, locale)}</span>
         {pod.client && <span>{clientLabel(pod.client, locale)}</span>}
       </p>
-      <h3 className={`pv-h3 pv-feature-title ${size === "lead" ? "pv-h3-l" : "pv-h3-card"}`}>
+      <h3 className="pv-h3 pv-h3-card pv-feature-title">
         <Link href={`/labs/${pod.slug}`} className="pv-stretch">
           {pod.title[locale]}
         </Link>
       </h3>
-      <p className={size === "lead" ? "pv-body" : "pv-card-text"}>{pod.tagline[locale]}</p>
+      {result && (
+        <div className="pv-result" data-testid="feature-result">
+          <p className="pv-num text-[24px]">{result.value}</p>
+          <p className="pv-result-label">{result.label[locale]}</p>
+        </div>
+      )}
+      <p className="pv-card-text">{pod.tagline[locale]}</p>
       <div className="mt-auto flex flex-col gap-4 empty:hidden">
         <PodLiveCta pod={pod} locale={locale} />
-        {size === "lead" && first && (
-          <dl className="grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
-            {[first, second].filter(Boolean).map((r) => (
-              <div key={r!.value}>
-                <dt className="pv-num text-[28px]">{r!.value}</dt>
-                <dd className="mt-1 text-sm leading-5 text-ink-2">{r!.label[locale]}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {size === "pair" && first && (
-          <div className="pv-result">
-            <p className="pv-num text-[22px]">{first.value}</p>
-            <p className="pv-result-label">{first.label[locale]}</p>
-          </div>
-        )}
-        {size === "grid" && cover && <TechLogoRow items={pod.stack} max={9} />}
+        {cover && <TechLogoRow items={pod.stack} max={6} />}
       </div>
     </article>
   );

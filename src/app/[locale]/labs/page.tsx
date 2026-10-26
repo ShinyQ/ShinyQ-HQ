@@ -60,7 +60,7 @@ export default async function LabsPage({ params }: PageProps<"/[locale]/labs">) 
             <ul className="grid gap-x-6 gap-y-14 md:auto-rows-fr md:grid-cols-2 lg:grid-cols-3">
               {heroes.map((pod) => (
                 <li key={pod.id} {...podAttrs(pod)} className="min-w-0">
-                  <WorkFeature pod={pod} locale={locale} size="grid" />
+                  <WorkFeature pod={pod} locale={locale} />
                 </li>
               ))}
             </ul>
