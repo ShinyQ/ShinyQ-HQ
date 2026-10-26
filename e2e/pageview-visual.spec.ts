@@ -48,7 +48,7 @@ for (const v of VIEWPORTS) {
 
 /**
  * The landing as a 3D-capable visitor's Page View sees it (Enter the 3D HQ and Back to 3D shown), with
- * Ask on. Motion stays on (the default ticker row) and Playwright stills the animations at their first frame.
+ * Ask on. Motion stays on and Playwright stills any animation at its first frame.
  */
 const LANDING_VIEWPORTS = [
   { width: 1440, height: 900 },

@@ -199,7 +199,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - Layout (PageIntro, SectionSplit, SectionWide, Marker, StatLedger), Work, Case, Timeline, About.
   - Production (About `#production`, server only; `AlertExcerpt` in `src/components/`).
   - Client islands WorkIndex, JourneyFilter, CaseToc, CopyEmail; urlState (query string as filter state).
-- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home ticker item).
+- `src/components/stats/`: VisitsPanel (Topic and Period radio groups, counters, DotMap, split, topic shares, chips, View as table), VisitsSection/VisitsLazy (Contact `#visits`), TickerVisits (home stats ledger item).
 
 ### src/content/
 

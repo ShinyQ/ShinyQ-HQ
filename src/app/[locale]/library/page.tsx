@@ -64,7 +64,7 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
         }
       />
       <TopicFilter topics={topics} total={posts.length + library.publications.length + library.talks.length}>
-        <SectionSplit id="posts" title={t("posts")} className="lg:!pt-24">
+        <SectionSplit id="posts" title={t("posts")} className="pv-sec lg:!pt-24">
           <PostList posts={posts} locale={locale} lead />
         </SectionSplit>
         <SectionSplit id="research" title={t("research")} intro={t("researchIntro")}>

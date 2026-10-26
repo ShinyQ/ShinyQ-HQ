@@ -1,0 +1,343 @@
+/*
+ * Shared with the 3D tower, the HUD, the boot cover and the dialogs that open over both (moved verbatim from
+ * globals.css and pageview.css by the Hallmark Classic redesign, 2026-10-27). The Classic pages no longer use these
+ * classes; edit them only together with the 3D experience.
+ */
+@layer components {
+  /* HUD tokens shared by the 3D overlay and the Page View (prototype values). */
+  .glass {
+    background: rgb(14 14 24 / 0.64);
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: 0 12px 40px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  @media (pointer: coarse) {
+    .glass {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgb(14 14 24 / 0.9);
+    }
+  }
+
+  /*
+   * Reading panels and pills over the 3D world (HUD, Glass Drawer, palette, hologram cards): the same
+   * glass edge and highlight, but near-opaque so in-world text and geometry never show through.
+   */
+  .glass-solid {
+    background: rgb(10 10 18 / 0.94);
+    /* 94% opaque: blurring the live canvas behind it costs GPU every frame for 6% show-through (perf report 9.1). */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  @media (pointer: coarse) {
+    .glass-solid {
+      background: rgb(10 10 18);
+    }
+  }
+
+  /* Small mono overline (prototype boot eyebrow); shared by the boot cover, the HUD and the Page View. */
+  .eyebrow {
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: rgb(255 255 255 / 0.04);
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--color-ink);
+    transition: border-color 150ms var(--ease-standard), background 150ms var(--ease-standard);
+  }
+
+  .chip:is(a, button) {
+    cursor: pointer;
+  }
+
+  .chip:is(a, button):hover {
+    border-color: rgb(165 180 252 / 0.5);
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-void);
+  }
+
+  .chip-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-ink-3);
+  }
+
+  .chip[aria-pressed="true"] .chip-count {
+    color: rgb(5 5 12 / 0.65);
+  }
+
+  .card {
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: var(--color-surface);
+  }
+
+  /* AccentDot (src/components/AccentDot.tsx): the colored marker next to a label, never an edge stripe. */
+  .hq-dot {
+    display: inline-block;
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .hq-dot-md {
+    width: 8px;
+    height: 8px;
+  }
+
+  .hq-dot-glow {
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .pv-data {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Wayfinding marker: a 7 px square in the text color, set with an accent text class. */
+  .pv-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pv-mark::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    background: currentColor;
+    flex: none;
+  }
+}
+
+/*
+ * Game-first load (src/lib/boot-first.ts). The inline head script sets html[data-hq-boot] before
+ * first paint on 3D-capable visits: the Page View stays hidden behind the SSR boot cover until the
+ * canvas draws its first frame. The 3D boot overlay reuses the same card, so the handoff is seamless.
+ */
+@layer components {
+  .hq-boot-cover {
+    display: none;
+  }
+  html[data-hq-boot] .hq-boot-cover {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    padding: 1rem;
+    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
+  }
+  /* Also while the HQ is open (Experience sets html[data-hq]): the page never paints under the
+     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. content-visibility
+     skips its layout too, so lazy images and link prefetches of the hidden page never start (quiet boot). */
+  html[data-hq-boot] #site-shell,
+  html[data-hq] #site-shell {
+    visibility: hidden;
+    content-visibility: hidden;
+  }
+  .hq-boot-backdrop {
+    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.35), rgb(5 5 12 / 0.8) 70%);
+  }
+
+  .hq-boot-card {
+    width: min(440px, 100%);
+    text-align: left;
+    padding: 24px;
+    border: 1px solid rgb(99 102 241 / 0.28);
+    border-radius: 16px;
+    background: rgb(5 5 12 / 0.6);
+    box-shadow: 0 0 60px -20px rgb(99 102 241 / 0.6);
+  }
+  /* The owner block paints as one LCP text block, larger than the HUD hint that later mounts under the cover:
+     its lines are inline spans split by <br> (BootCard), so Chrome groups their text under this element. Each
+     span keeps its own font and line height; the zero font size and line height here leave no strut, so every
+     line box is exactly its span's line height. .hq-boot-gap stands in for the old 4 px top margin: an empty
+     inline block one line height (leading-5, 20 px) plus 4 px tall, bottom-aligned, grows that line box upward.
+     Same pixels as four stacked paragraphs in Chrome, Safari and Firefox. */
+  .hq-boot-who {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-line);
+    font-size: 0;
+    line-height: 0;
+  }
+  .hq-boot-gap::before {
+    content: "";
+    display: inline-block;
+    height: 24px;
+    vertical-align: bottom;
+  }
+  .hq-boot-page {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: var(--color-ink-2);
+    text-decoration: underline;
+    text-decoration-color: rgb(34 211 238 / 0.5);
+    text-underline-offset: 4px;
+  }
+  .hq-boot-page:hover,
+  .hq-boot-page:focus-visible {
+    color: var(--color-ink);
+  }
+  .hq-boot-log {
+    font: 12px/1.8 var(--font-mono);
+    color: #a5b4fc;
+    min-height: 130px;
+  }
+  .hq-boot-log li {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .hq-boot-log li[data-shown] {
+    opacity: 1;
+  }
+  .hq-boot-log li.hq-boot-line-in {
+    opacity: 0;
+    animation: hq-boot-line 0.25s ease-out forwards;
+  }
+  .hq-boot-bar {
+    margin-top: 18px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
+    background-size: 200% 100%;
+    animation: hq-boot-scan 1.4s linear infinite;
+  }
+
+  .hq-boot-log li.hq-boot-line-in {
+    @variant motion-reduce {
+      animation: none;
+      opacity: 1;
+    }
+  }
+  .hq-boot-log li {
+    @variant motion-reduce {
+      transition: none;
+    }
+  }
+  .hq-boot-bar {
+    @variant motion-reduce {
+      animation: none;
+    }
+  }
+}
+
+@keyframes hq-boot-line {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes hq-boot-scan {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Ask the HQ dock (src/hud/ask): the one authored motion, used only under prefers-reduced-motion: no-preference. */
+@keyframes ask-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+    filter: blur(6px);
+  }
+}
+@keyframes ask-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes ask-teaser-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* Rover dialog box and hint bubble (src/hud/dialog): a pixel-style double frame, like a handheld RPG text box. */
+.hq-dialog {
+  border: 2px solid var(--color-ink);
+  border-radius: 6px;
+  background: rgb(10 10 18 / 0.96);
+  box-shadow:
+    0 0 0 2px var(--color-void),
+    0 0 0 4px rgb(34 211 238 / 0.55),
+    0 12px 32px rgb(0 0 0 / 0.5);
+}
+
+/*
+ * Hover, keyboard focus, current and selected states light up the whole hairline with a soft glow
+ * (R5 P10: never one colored edge). `--hq-glow` picks the color (default cyan). The global
+ * :focus-visible outline stays on top for keyboard users.
+ */
+@utility hq-glow {
+  transition-property: border-color, box-shadow, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease-standard);
+
+  &:hover,
+  &:focus-visible,
+  &[aria-current="true"],
+  &[aria-selected="true"] {
+    border-color: color-mix(in srgb, var(--hq-glow, var(--color-cyan)) 50%, transparent);
+    box-shadow: 0 0 24px -8px var(--hq-glow, var(--color-cyan));
+  }
+}
+
+/* Minimap Needs Kurniadi cue (src/hud/minimap/OfficeCue.tsx): a slow pulse, still under reduced motion. */
+.office-cue {
+  animation: office-cue 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  @variant motion-reduce {
+    animation: none;
+  }
+}
+@keyframes office-cue {
+  50% {
+    opacity: 0.45;
+    transform: scale(1.35);
+  }
+}

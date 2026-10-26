@@ -15,14 +15,14 @@ function FeaturedCard({ cert, details }: { cert: CertView; details: string }) {
       type="button"
       data-cert-open={cert.id}
       aria-haspopup="dialog"
-      className="card hq-glow relative flex h-full min-h-[200px] w-full flex-col overflow-hidden p-5 text-left hover:bg-surface-2"
+      className="card hq-glow relative flex h-full min-h-[220px] w-full flex-col overflow-hidden p-6 text-left hover:bg-surface-2"
     >
       <span className="flex items-center gap-2">
         <IssuerMark cert={cert} size={20} />
-        <span className="pv-data">{cert.issuer}</span>
+        <span className="pv-meta">{cert.issuer}</span>
       </span>
       {title && <span className="pv-num mt-4 block text-[clamp(30px,3vw,40px)] leading-none">{title}</span>}
-      <span className={`block leading-snug text-ink ${title ? "mt-3 text-[15px]" : "mt-4 text-[17px] font-semibold"}`}>{cert.short}</span>
+      <span className={`block leading-snug text-ink ${title ? "mt-3" : "mt-4 text-[17px] font-semibold"}`}>{cert.short}</span>
       <span className="mt-auto flex items-center justify-between gap-3 pt-4">
         <span className="pv-date">{cert.issuedLabel}</span>
         <span className="text-sm text-ink-2">{details}</span>
@@ -45,17 +45,17 @@ function CertRow({ cert, status, featured }: { cert: CertView; status: string; f
         <button type="button" data-cert-open={cert.id} aria-haspopup="dialog" title={cert.name} className="pv-stretch block w-full truncate text-left text-[15px] text-ink-2 hover:text-ink">
           {cert.short}
         </button>
-        <span className="pv-data mt-0.5 flex min-w-0 items-center gap-2">
+        <span className="pv-meta mt-0.5 flex min-w-0 items-center gap-2">
           {cert.code ? (
             <>
               <IssuerMark cert={cert} size={12} />
               <span className="sr-only">{cert.issuer}, </span>
             </>
           ) : (
-            <span className="truncate">{cert.issuer} ·</span>
+            <span className="truncate">{cert.issuer}</span>
           )}
           <span className="pv-date shrink-0">{cert.issuedLabel}</span>
-          {cert.status !== "earned" && <span className={`pv-mark shrink-0 ${STATUS_CLASS[cert.status]}`}>{status}</span>}
+          {cert.status !== "earned" && <span className={`shrink-0 ${STATUS_CLASS[cert.status]}`}>{status}</span>}
         </span>
       </span>
     </li>

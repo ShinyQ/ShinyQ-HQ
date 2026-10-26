@@ -8,40 +8,33 @@ export interface StatTickerProps {
   liveIds: readonly string[];
   title: string;
   live: string;
-  /** Live items appended to both copies of the track (`copy` is the aria-hidden duplicate): the public visits island. */
-  extra?: (copy: boolean) => ReactNode;
+  /** A live item appended to the list: the public visits island. */
+  extra?: ReactNode;
 }
 
 /**
- * The landing's stats as a ticker band at the bottom of the first screen (`#stats`, the L1:stats room).
- * CSS only (src/app/landing.css): a plain marquee (owner request 2026-10-15: no date stamp, no pause
- * switch). Two copies of the list scroll on the compositor and the second is aria-hidden; hover or
- * keyboard focus holds it; under reduced motion the copy hides and the first list wraps, still.
+ * The landing's stats (`#stats`, the L1:stats room) as a still, ruled ledger under "In short": each value in the
+ * display face beside its label, the live ones marked. It replaced the marquee ticker (owner decision 2026-10-27,
+ * Hallmark Floor 18: nothing on the page moves on its own, so it needs no pause control). Server-rendered.
  */
 export function StatTicker({ stats, locale, liveIds, title, live, extra }: StatTickerProps) {
-  const track = (hidden: boolean) => (
-    <ul className="hx-tick-track" aria-hidden={hidden || undefined}>
-      {stats.map((stat) => (
-        <li key={stat.id} className="hx-tick-item">
-          <span className="pv-num hx-tick-value">{stat.value}</span>
-          <span className="hx-tick-label">{stat.label[locale]}</span>
-          {liveIds.includes(stat.id) && <span className="pv-data hx-tick-live">{live}</span>}
-        </li>
-      ))}
-      {extra?.(hidden)}
-    </ul>
-  );
   return (
-    <section id="stats" aria-labelledby="stats-title" className="hx-tick">
-      <h2 id="stats-title" className="sr-only">
+    <section id="stats" aria-labelledby="stats-title" className="mt-24">
+      <h3 id="stats-title" className="pv-h3">
         {title}
-      </h2>
-      <div className="pv-wrap hx-tick-bar">
-        <div className="hx-tick-view">
-          {track(false)}
-          {track(true)}
-        </div>
-      </div>
+      </h3>
+      <ul className="hx-ledger mt-6">
+        {stats.map((stat) => (
+          <li key={stat.id} data-stat={stat.id}>
+            <span className="pv-num hx-ledger-value">{stat.value}</span>
+            <span className="text-ink-2">
+              {stat.label[locale]}
+              {liveIds.includes(stat.id) && <span className="pv-meta hx-live">{live}</span>}
+            </span>
+          </li>
+        ))}
+        {extra}
+      </ul>
     </section>
   );
 }

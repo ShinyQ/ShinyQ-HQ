@@ -1,0 +1,61 @@
+/*
+ * Hallmark tokens for the Classic site (kept brand: the Neon Grid). The roles map onto the Neon Grid names in the
+ * `@theme` block of globals.css, so there is one palette and one set of faces. Tailwind's own `text-*` and `ease-*`
+ * names are left alone, so the 3D HUD's utilities keep their sizes. Locked in DESIGN.md.
+ */
+:root {
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem);
+  --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem);
+  --text-body: 1rem;
+  --text-meta: 0.875rem;
+  --tracking-display: -0.015em;
+
+  --dur-micro: 120ms;
+
+  --container: 1440px;
+  --gutter: 64px;
+  --gap-columns: 32px;
+  --section-gap-s: 120px;
+  --section-gap: 144px;
+  --section-gap-l: 176px;
+  --nav-h: 68px;
+
+  --color-paper: var(--color-void);
+  --color-muted: var(--color-ink-3);
+  --color-accent: var(--color-cyan);
+  --color-accent-ink: var(--color-void);
+
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+}
+
+@media (max-width: 60rem) {
+  :root {
+    --gutter: 24px;
+    --section-gap-s: 80px;
+    --section-gap: 96px;
+    --section-gap-l: 120px;
+    --nav-h: 60px;
+  }
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 16px;
+    --section-gap-s: 56px;
+    --section-gap: 72px;
+    --section-gap-l: 96px;
+    --gap-columns: 16px;
+  }
+}

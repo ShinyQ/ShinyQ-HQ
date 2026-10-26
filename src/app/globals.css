@@ -1,3 +1,17 @@
+/* Hallmark · shape: Feature Stack (draw a485e6) · genre: atmospheric · theme: brand (Neon Grid) · redesign: full · job: hire
+ * paper: oklch(12% 0.018 283) · accent: oklch(79.7% 0.134 211.5) · display: Archivo condensed · body: Inter · hero: Ledge (/) · nav: search-led bar with the visible command pill, the brand ShinyQ HQ · footer: links and the copyright line, no name · signature: the shipped work at full size, its headline result first
+ * axes: dark/display-condensed/chromatic-cyan · posture: Restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: P, the hero is still name-first; the real screenshots and their results carry the argument right under it */
+/* Hallmark · waive 29 · a cyan glow only on hover, focus and the current item (hq-glow) · the Neon Grid glow is the owner's brand signal for the HQ */
+/* Hallmark · waive 47c · the 48px Neon Grid behind the first screen, faded where people read · the grid is the HQ tower's own brand material */
+/* Hallmark · waive 74 · --color-grid #6366f1 found in the project tokens · the Neon Grid line colour shared with the 3D tower floors */
+/* Hallmark · waive 39b · three featured certification cards, each one button 220px tall · the whole credential card opens its preview dialog */
+/* Hallmark · answered F19 · pv-num keeps weight 700 because the room drawer reads the same numeral class */
+/* Hallmark · dismissed 28a · the Selected work covers sit below the first screen on purpose; the hero name is the LCP */
+/* Hallmark · dismissed F20 · the stats ledger gains the visits item in production, two rows of two */
+/* Hallmark · dropped #_R_cp9bn2l9etb_-q · a React useId value that changes with the component tree; the Ask hero field itself is kept */
+/* Hallmark · dropped .hx-tick-track, .hx-tick-view · the stats marquee became the still #stats ledger, owner decision 2026-10-27 */
+/* Hallmark · dismissed 63 · the Agent Office desk lines are live state readouts (agent, activity, helpers) */
 @import "tailwindcss";
 /* Tailwind scans the whole repo by default; these folders never ship, and their words (design mockups, specs,
    test names) would otherwise add utilities to the shared stylesheet. */
@@ -10,8 +24,11 @@
 @source not "../../AGENTS.md";
 @source not "../../CLAUDE.md";
 @source not "../../README.md";
+@import "./tokens.css";
+@import "./base.css" layer(base);
 @import "./pageview.css";
 @import "./landing.css";
+@import "./hud-shared.css";
 
 /* The Motion setting (src/lib/motion.ts) overrides prefers-reduced-motion through html[data-motion]:
    "full" turns the reduce rules off, "reduced" applies them without the OS setting. Every
@@ -64,6 +81,17 @@
   --color-line-2: rgb(255 255 255 / 0.16);
   --color-surface: rgb(255 255 255 / 0.025);
   --color-surface-2: rgb(255 255 255 / 0.05);
+  --color-paper-2: oklch(15.5% 0.019 284);
+  --color-grid-line: rgb(99 102 241 / 0.09);
+  --color-bloom: rgb(30 27 75 / 0.55);
+  --color-print-paper: oklch(99.4% 0.002 283);
+  --color-print-ink: oklch(19% 0.012 283);
+  --color-cyan-soft: rgb(34 211 238 / 0.35);
+  --color-cyan-ring: rgb(34 211 238 / 0.6);
+  --color-cyan-glow: rgb(34 211 238 / 0.5);
+  --color-violet-soft: rgb(167 139 250 / 0.45);
+  --color-accent-hover: #50daf0;
+  --color-mask-fade: rgb(0 0 0 / 0.6);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
@@ -114,11 +142,11 @@
     z-index: -1;
     pointer-events: none;
     background-image:
-      linear-gradient(rgb(99 102 241 / 0.09) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(99 102 241 / 0.09) 1px, transparent 1px);
+      linear-gradient(var(--color-grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid-line) 1px, transparent 1px);
     background-size: 48px 48px;
     background-position: center top;
-    mask-image: linear-gradient(to bottom, #000 0%, rgb(0 0 0 / 0.6) 45%, transparent 100%);
+    mask-image: linear-gradient(to bottom, var(--color-ink) 0%, var(--color-mask-fade) 45%, transparent 100%);
   }
 
   :focus-visible {
@@ -128,7 +156,7 @@
   }
 
   ::selection {
-    background: rgb(34 211 238 / 0.35);
+    background: var(--color-cyan-soft);
   }
 
   /* Reduced motion: the OS setting unless the visitor picked Full, or the Reduced override
@@ -158,137 +186,20 @@
 }
 
 @layer components {
-  /* HUD tokens shared by the 3D overlay and the Page View (prototype values). */
-  .glass {
-    background: rgb(14 14 24 / 0.64);
-    border: 1px solid var(--color-line);
-    border-radius: 16px;
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    box-shadow: 0 12px 40px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.05);
-  }
-
-  @media (pointer: coarse) {
-    .glass {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      background: rgb(14 14 24 / 0.9);
-    }
-  }
-
-  /*
-   * Reading panels and pills over the 3D world (HUD, Glass Drawer, palette, hologram cards): the same
-   * glass edge and highlight, but near-opaque so in-world text and geometry never show through.
-   */
-  .glass-solid {
-    background: rgb(10 10 18 / 0.94);
-    /* 94% opaque: blurring the live canvas behind it costs GPU every frame for 6% show-through (perf report 9.1). */
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  @media (pointer: coarse) {
-    .glass-solid {
-      background: rgb(10 10 18);
-    }
-  }
-
-  /* Small mono overline (prototype boot eyebrow); shared by the boot cover, the HUD and the Page View. */
-  .eyebrow {
-    font: 500 11px/1.4 var(--font-mono);
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--color-ink-3);
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    min-height: 32px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--color-line);
-    background: rgb(255 255 255 / 0.04);
-    font-size: 13px;
-    line-height: 18px;
-    color: var(--color-ink);
-    transition: border-color 150ms var(--ease-standard), background 150ms var(--ease-standard);
-  }
-
-  .chip:is(a, button) {
-    cursor: pointer;
-  }
-
-  .chip:is(a, button):hover {
-    border-color: rgb(165 180 252 / 0.5);
-  }
-
-  .chip[aria-pressed="true"] {
-    background: var(--color-ink);
-    border-color: var(--color-ink);
-    color: var(--color-void);
-  }
-
-  .chip-count {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--color-ink-3);
-  }
-
-  .chip[aria-pressed="true"] .chip-count {
-    color: rgb(5 5 12 / 0.65);
-  }
-
-  .card {
-    border: 1px solid var(--color-line);
-    border-radius: 12px;
-    background: var(--color-surface);
-  }
-
   /* A post's wide architecture diagram (ArchitectureDiagram): from 1100 px it may extend past the text column. */
   @media (width >= 1100px) {
     .arch-break {
       position: relative;
       left: 50%;
-      width: max(100%, min(var(--arch-w), calc(100vw - 48px)));
+      width: max(100%, min(var(--arch-w), calc(100dvw - 48px)));
       transform: translateX(-50%);
     }
-  }
-
-  /* AccentDot (src/components/AccentDot.tsx): the colored marker next to a label, never an edge stripe. */
-  .hq-dot {
-    display: inline-block;
-    flex: none;
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: currentColor;
-  }
-
-  .hq-dot-md {
-    width: 8px;
-    height: 8px;
-  }
-
-  .hq-dot-glow {
-    box-shadow: 0 0 8px currentColor;
-  }
-
-  .label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 14px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    font-weight: 500;
   }
 
   .link {
     color: var(--color-cyan);
     text-decoration: underline;
-    text-decoration-color: rgb(34 211 238 / 0.35);
+    text-decoration-color: var(--color-cyan-soft);
     text-underline-offset: 3px;
     transition: text-decoration-color 150ms var(--ease-standard);
   }
@@ -321,7 +232,7 @@
   /* Quotes: a glowing violet dot on the first line, in the same 18 px gutter the old edge rule used (R5 P10). */
   .prose-hq :where(blockquote):not(:where(.not-prose, .not-prose *)) {
     position: relative;
-    padding-left: calc(1rem + 2px);
+    padding-left: calc(var(--space-md) + 2px);
     color: var(--color-ink);
     font-style: italic;
   }
@@ -377,207 +288,12 @@
   }
 
   body {
-    background: #fff !important;
-    color: #111 !important;
+    background: var(--color-print-paper) !important;
+    color: var(--color-print-ink) !important;
     padding: 0;
   }
 
   .no-print {
     display: none !important;
-  }
-}
-
-/*
- * Game-first load (src/lib/boot-first.ts). The inline head script sets html[data-hq-boot] before
- * first paint on 3D-capable visits: the Page View stays hidden behind the SSR boot cover until the
- * canvas draws its first frame. The 3D boot overlay reuses the same card, so the handoff is seamless.
- */
-@layer components {
-  .hq-boot-cover {
-    display: none;
-  }
-  html[data-hq-boot] .hq-boot-cover {
-    display: grid;
-    place-items: center;
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    padding: 1rem;
-    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.7), var(--color-void) 70%);
-  }
-  /* Also while the HQ is open (Experience sets html[data-hq]): the page never paints under the
-     opaque tower, so it is not a late LCP candidate. It stays in the DOM for SEO. content-visibility
-     skips its layout too, so lazy images and link prefetches of the hidden page never start (quiet boot). */
-  html[data-hq-boot] #site-shell,
-  html[data-hq] #site-shell {
-    visibility: hidden;
-    content-visibility: hidden;
-  }
-  .hq-boot-backdrop {
-    background: radial-gradient(ellipse at 50% 40%, rgb(30 27 75 / 0.35), rgb(5 5 12 / 0.8) 70%);
-  }
-
-  .hq-boot-card {
-    width: min(440px, 100%);
-    text-align: left;
-    padding: 24px;
-    border: 1px solid rgb(99 102 241 / 0.28);
-    border-radius: 16px;
-    background: rgb(5 5 12 / 0.6);
-    box-shadow: 0 0 60px -20px rgb(99 102 241 / 0.6);
-  }
-  /* The owner block paints as one LCP text block, larger than the HUD hint that later mounts under the cover:
-     its lines are inline spans split by <br> (BootCard), so Chrome groups their text under this element. Each
-     span keeps its own font and line height; the zero font size and line height here leave no strut, so every
-     line box is exactly its span's line height. .hq-boot-gap stands in for the old 4 px top margin: an empty
-     inline block one line height (leading-5, 20 px) plus 4 px tall, bottom-aligned, grows that line box upward.
-     Same pixels as four stacked paragraphs in Chrome, Safari and Firefox. */
-  .hq-boot-who {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px solid var(--color-line);
-    font-size: 0;
-    line-height: 0;
-  }
-  .hq-boot-gap::before {
-    content: "";
-    display: inline-block;
-    height: 24px;
-    vertical-align: bottom;
-  }
-  .hq-boot-page {
-    display: inline-flex;
-    min-height: 44px;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.875rem;
-    color: var(--color-ink-2);
-    text-decoration: underline;
-    text-decoration-color: rgb(34 211 238 / 0.5);
-    text-underline-offset: 4px;
-  }
-  .hq-boot-page:hover,
-  .hq-boot-page:focus-visible {
-    color: var(--color-ink);
-  }
-  .hq-boot-log {
-    font: 12px/1.8 var(--font-mono);
-    color: #a5b4fc;
-    min-height: 130px;
-  }
-  .hq-boot-log li {
-    opacity: 0;
-    transition: opacity 0.2s ease-out;
-  }
-  .hq-boot-log li[data-shown] {
-    opacity: 1;
-  }
-  .hq-boot-log li.hq-boot-line-in {
-    opacity: 0;
-    animation: hq-boot-line 0.25s ease-out forwards;
-  }
-  .hq-boot-bar {
-    margin-top: 18px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--color-cyan), transparent);
-    background-size: 200% 100%;
-    animation: hq-boot-scan 1.4s linear infinite;
-  }
-
-  .hq-boot-log li.hq-boot-line-in {
-    @variant motion-reduce {
-      animation: none;
-      opacity: 1;
-    }
-  }
-  .hq-boot-log li {
-    @variant motion-reduce {
-      transition: none;
-    }
-  }
-  .hq-boot-bar {
-    @variant motion-reduce {
-      animation: none;
-    }
-  }
-}
-
-@keyframes hq-boot-line {
-  to {
-    opacity: 1;
-  }
-}
-@keyframes hq-boot-scan {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
-}
-
-/* Ask the HQ dock (src/hud/ask): the one authored motion, used only under prefers-reduced-motion: no-preference. */
-@keyframes ask-panel-in {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-    filter: blur(6px);
-  }
-}
-@keyframes ask-sheet-in {
-  from {
-    transform: translateY(100%);
-  }
-}
-@keyframes ask-teaser-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-}
-
-/* Rover dialog box and hint bubble (src/hud/dialog): a pixel-style double frame, like a handheld RPG text box. */
-.hq-dialog {
-  border: 2px solid var(--color-ink);
-  border-radius: 6px;
-  background: rgb(10 10 18 / 0.96);
-  box-shadow:
-    0 0 0 2px var(--color-void),
-    0 0 0 4px rgb(34 211 238 / 0.55),
-    0 12px 32px rgb(0 0 0 / 0.5);
-}
-
-/*
- * Hover, keyboard focus, current and selected states light up the whole hairline with a soft glow
- * (R5 P10: never one colored edge). `--hq-glow` picks the color (default cyan). The global
- * :focus-visible outline stays on top for keyboard users.
- */
-@utility hq-glow {
-  transition-property: border-color, box-shadow, background-color;
-  transition-duration: 150ms;
-  transition-timing-function: var(--ease-standard);
-
-  &:hover,
-  &:focus-visible,
-  &[aria-current="true"],
-  &[aria-selected="true"] {
-    border-color: color-mix(in srgb, var(--hq-glow, var(--color-cyan)) 50%, transparent);
-    box-shadow: 0 0 24px -8px var(--hq-glow, var(--color-cyan));
-  }
-}
-
-/* Minimap Needs Kurniadi cue (src/hud/minimap/OfficeCue.tsx): a slow pulse, still under reduced motion. */
-.office-cue {
-  animation: office-cue 1.6s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-  @variant motion-reduce {
-    animation: none;
-  }
-}
-@keyframes office-cue {
-  50% {
-    opacity: 0.45;
-    transform: scale(1.35);
   }
 }

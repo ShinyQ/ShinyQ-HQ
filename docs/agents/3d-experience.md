@@ -85,7 +85,7 @@ The same script sets these on every page before first paint:
 | `html[data-hq-3d]` | `canOffer3D`: WebGL2, no Save-Data, not bot-like, no `?tier=static` | the landing shows "Enter the 3D HQ" only then, so it never appears late |
 | `html[data-hq-still]` | `ambientStill`: `navigator.webdriver` (covers Playwright and Lighthouse 12) or a crawler; `?ambient=on` opts out | the landing holds its still frame |
 
-- Reason for `data-hq-still`: on CI's software compositor (SwiftShader) the infinite hero and ticker animations queue seconds of GPU work that stall the page's main thread and the next browser call, even after navigating away (13 s at 1999x1129). This was the root of several flaky e2e tests.
+- Reason for `data-hq-still`: on CI's software compositor (SwiftShader) the infinite hero and ticker animations the landing used to run queued seconds of GPU work that stalled the page's main thread and the next browser call, even after navigating away (13 s at 1999x1129). This was the root of several flaky e2e tests.
 
 ## Boot and intro
 

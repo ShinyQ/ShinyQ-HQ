@@ -219,10 +219,10 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 
 - `setMotion` and the head script set `html[data-motion="full|reduced"]` (`full` by default, removed under System).
 - `globals.css` redefines Tailwind's `motion-reduce` and `motion-safe` variants on top of it (`@custom-variant`).
-  - Every `motion-reduce:` / `motion-safe:` utility and every `@variant motion-reduce { ... }` block (boot log, landing hero and ticker, Page View screenshots) applies under the OS setting unless `full`, and always under `reduced`.
+  - Every `motion-reduce:` / `motion-safe:` utility and every `@variant motion-reduce { ... }` block (boot log and the Classic pages) applies under the OS setting unless `full`, and always under `reduced`.
 - Write new reduce rules as `.x { @variant motion-reduce { ... } }`, never as a bare `@media (prefers-reduced-motion: reduce)`.
   - Top-level `@variant` blocks compile wrong, and `:is()` drops `::before` / `::after`, so the global duration rule is written out.
-- The landing ticker has no pause switch (owner decision); its duplicate track hides and the stats wrap under the effective reduced motion.
+- The Classic site is still: colour transitions only, no loops (the stats marquee became a still ledger, decision 2026-10-27), so it needs no pause control.
 
 ### UI
 

@@ -48,10 +48,11 @@ export interface OfficeCardLabels {
 /**
  * The card's one height in every state (five desk rows, four GitHub rows, the counts, the idle summary and today lines;
  * measured from 320 to 1440 px wide per locale: 881 px from 768, 1004 below, 1020 for an Indonesian semi-live line at
- * 320) plus about 8 px of headroom (889 px from 768, 1028 below), held from the loading line on, so neither the first
- * answer nor a later change of state moves the sections below (CLS).
+ * 320) plus headroom, held from the loading line on, so neither the first answer nor a later change of state moves the
+ * sections below (CLS). The Hallmark redesign (2026-10-27) set the labels in the body face (14 px on a 20 px line, was
+ * 12 px mono on 16 px), about 20 px taller in all, so the reserve grew by 24 px (913 px from 768, 1052 below).
  */
 export const OFFICE_RESERVE: Record<Locale, string> = {
-  en: "min-h-[1028px] md:min-h-[889px]",
-  id: "min-h-[1028px] md:min-h-[889px]",
+  en: "min-h-[1052px] md:min-h-[913px]",
+  id: "min-h-[1052px] md:min-h-[913px]",
 };
