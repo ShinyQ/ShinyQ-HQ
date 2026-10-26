@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DidYouMean } from "@/components/DidYouMean";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: en.notFound.body,
   robots: { index: false, follow: true },
 };
+
+export const viewport: Viewport = { themeColor: "#05050c" };
 
 /**
  * The 404 (owner decision 2026-10-25, option B): Rover took a wrong turn, in English with one Indonesian line (the URL may
@@ -60,15 +62,25 @@ export default function GlobalNotFound() {
                 {en.notFound.workHint}
               </span>
             </Link>
-            <span className="pv-btn pv-btn-ghost flex flex-col items-start text-left">
-              <b className="block">{en.notFound.home}</b>
-              <span className="text-xs font-normal">
-                <Link href="/en">English</Link> ·{" "}
-                <Link href="/id" lang="id">
+            <div
+              className="flex flex-col items-start rounded-xl border border-line-2 px-5 py-3 text-left"
+              data-testid="not-found-home"
+            >
+              <b className="block text-[15px] font-semibold">{en.notFound.home}</b>
+              <span className="flex flex-wrap items-center gap-x-2 text-xs">
+                <Link className="pv-uline inline-flex min-h-11 items-center" href="/en">
+                  English
+                </Link>
+                <span aria-hidden="true">·</span>
+                <Link
+                  className="pv-uline inline-flex min-h-11 items-center"
+                  href="/id"
+                  lang="id"
+                >
                   Bahasa Indonesia
                 </Link>
               </span>
-            </span>
+            </div>
           </nav>
         </main>
       </body>

@@ -211,6 +211,11 @@
     background: var(--color-surface-2);
   }
 
+  /* Pressed: an instant 1 px press (no transition, so nothing to reduce under reduced motion). */
+  .pv-btn:active {
+    transform: translateY(1px);
+  }
+
   .pv-go {
     display: inline-flex;
     align-items: center;

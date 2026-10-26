@@ -1240,7 +1240,7 @@
     "classic": {
       "title": "Live Agent Office",
       "intro": "The AI coding agents Kurniadi works with, shown live: what each one is doing right now, plus public GitHub activity. The same office stands in a wing of the 3D Lobby.",
-      "loading": "Opening the office...",
+      "loading": "Opening the office…",
       "loadingNote": "The agents at their desks, today's numbers and the latest public GitHub activity, refreshed while this card is on screen.",
       "live": "Live",
       "paused": "Paused: updates resume when you are back",

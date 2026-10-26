@@ -62,3 +62,14 @@ test("404: no suggestion for a far-off path", async ({ page }) => {
   await expect(page.getByTestId("not-found-cv")).toBeVisible();
   await expect(page.getByTestId("did-you-mean")).toHaveCount(0);
 });
+
+test("404: the Home box is not a button, its links are 44 px targets, theme-color matches the site", async ({ page }) => {
+  await page.goto("/en/no-such-page");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#05050c");
+  const home = page.getByTestId("not-found-home");
+  await expect(home).not.toHaveClass(/pv-btn/);
+  for (const name of [/English/, /Bahasa Indonesia/]) {
+    const box = await home.getByRole("link", { name }).boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+});

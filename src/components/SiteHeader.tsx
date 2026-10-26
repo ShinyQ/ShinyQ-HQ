@@ -32,7 +32,7 @@ export async function SiteHeader({ locale }: { locale: Locale }) {
         <QuietLink href="/" className="mr-auto flex min-h-11 min-w-0 items-center gap-3">
           <RoverMark id="hq-header-mark" size={34} className="shrink-0" />
           <span className="min-w-0 text-[14px] leading-[18px] sm:text-[15px]">
-            <span className="block font-semibold text-ink">{profile.name}</span>
+            <span translate="no" className="block font-semibold text-ink">{profile.name}</span>
             <span className="hidden font-mono text-[11px] leading-[14px] tracking-[0.04em] text-ink-3 sm:block">{tm("siteName")}</span>
           </span>
           <span className="sr-only">: {t("backToHq")}</span>

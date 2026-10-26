@@ -38,7 +38,7 @@ export async function HomeHero({ locale, ticker, proof }: { locale: Locale; tick
         <div className="min-w-0">
           <div className="flex items-center gap-4 sm:gap-6">
             <Portrait name={profile.name} size={128} sizes="(min-width: 1024px) 128px, (min-width: 640px) 96px, 72px" className="size-[72px] sm:size-24 lg:size-32" />
-            <h1 id="hero-title" className="pv-d-xl hx-name min-w-0">
+            <h1 id="hero-title" translate="no" className="pv-d-xl hx-name min-w-0">
               {profile.name}
             </h1>
           </div>
