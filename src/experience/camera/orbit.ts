@@ -445,16 +445,23 @@ function releaseTurn(s: OrbitState): void {
  * differ between the two classes, as entering it would, so a portrait look offset, pitch or zoom does not stay on a
  * landscape screen. Nothing when the zone applied nothing on entry (reduced motion, first person) or the visitor turned
  * by hand in it; a hand zoom keeps its zoom and its released (or held, `LookOffset.hold`) look offset. Zones whose view is the same on both classes
- * are untouched.
+ * are untouched. A primed zone with a `primeView` (`zonePrime`) did apply under reduced motion, so there the new class's
+ * view is primed at once (`primeZone`) unless the visitor turned by hand: a phone landing view never stays on a landscape
+ * screen. Other primed zones (an arrival) keep their pose under reduced motion.
  */
-function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: ViewportClass, reduced: boolean): void {
+function reclassZone(s: OrbitState, zone: ViewZone, from: ViewportClass, to: ViewportClass, reduced: boolean, rail: boolean): void {
   const was = zoneView(zone, from, s.zonePrime);
   const view = zoneView(zone, to, s.zonePrime);
   const offset = (v: typeof view) => [v.lookOffset?.forward ?? 0, v.lookOffset?.up ?? 0, v.lookOffset?.right ?? 0];
   const [f0, u0, r0] = offset(was);
   const [f1, u1, r1] = offset(view);
+  const same = was.yaw === view.yaw && was.zoom === view.zoom && was.pitch === view.pitch && f0 === f1 && u0 === u1 && r0 === r1;
+  if (reduced && s.zonePrime && zone.primeView && s.suppressedZone !== zone.id) {
+    if (!same) primeZone(s, zone, to, rail);
+    return;
+  }
   if (reduced || s.firstPerson || s.suppressedZone === zone.id) return;
-  if (was.yaw === view.yaw && was.zoom === view.zoom && was.pitch === view.pitch && f0 === f1 && u0 === u1 && r0 === r1) return;
+  if (same) return;
   if (view.yaw !== was.yaw) s.yawTarget = nearestAngle(view.yaw, s.yaw);
   if (view.pitch !== was.pitch) s.pitchTarget = clamp(view.pitch ?? 0, s.pitchMin, s.pitchMax);
   s.zoneTurn = turnOf(view);
@@ -514,7 +521,7 @@ export function holdZone(h: ZoneHold, s: OrbitState, reduced: boolean, still: bo
 export function updateZone(s: OrbitState, zone: ViewZone | null, reduced: boolean, cls?: ViewportClass, rail = false): void {
   const id = zone?.id ?? null;
   if (id === s.zone) {
-    if (zone && cls && s.zoneCls && cls !== s.zoneCls) reclassZone(s, zone, s.zoneCls, cls, reduced);
+    if (zone && cls && s.zoneCls && cls !== s.zoneCls) reclassZone(s, zone, s.zoneCls, cls, reduced, rail);
     if (cls) s.zoneCls = cls;
     return;
   }

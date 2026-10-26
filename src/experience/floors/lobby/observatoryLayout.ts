@@ -24,8 +24,10 @@ export const OBSERVATORY_VIEW = {
    */
   spawnTurn: 0.62,
   /**
-   * Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. Phones stay at
-   * 1.85 or under, so the office wing sign is out of a portrait tablet's frame, never a sliver at its edge.
+   * Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. The phone drive-in
+   * view (`classView`, a drive back to the kiosk) stays at 1.85 or under, so the office wing sign is out of a portrait
+   * tablet's frame, never a sliver at its edge. The primed landing view (`landingPhone`) zooms out to 2.1; its pitch
+   * keeps the sign out.
    */
   spawnZoom: 1.7,
   spawnZoomNarrow: { tablet: 1.8, mobile: 1.85 },

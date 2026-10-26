@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getStats } from "@/content/load";
 import { followOffsetScale } from "@/experience/camera/offset";
-import { createOrbitState, nearestAngle, primeZone, setPitchRange, updateZone, yawLooking, zoneAt, zoneView, type ViewZone } from "@/experience/camera/orbit";
+import { createOrbitState, nearestAngle, primeZone, rotateStep, setPitchRange, updateZone, yawLooking, zoneAt, zoneView, type ViewZone } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange, type CameraPose } from "@/experience/camera/rigs";
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { lobbyElements, TITLE_TOP } from "@/experience/floors/lobby/layout";
@@ -94,6 +94,33 @@ describe("the L1 phone landing view (primed only)", () => {
     expect(s.zoomTarget).toBe(OBSERVATORY_VIEW.spawnZoomNarrow.tablet);
     expect(s.lookForwardTarget).toBe(0);
     expect(s.zoneTurn).toBeNull();
+  });
+
+  it("re-primes the new class's view at once on a rotation under reduced motion", () => {
+    const s = orbitOn("mobile");
+    primeZone(s, kiosk, "mobile");
+    updateZone(s, kiosk, true, "tablet");
+    const fresh = orbitOn("mobile");
+    primeZone(fresh, kiosk, "tablet");
+    expect(s).toEqual(fresh);
+    expect(s.zonePrime).toBe(true);
+    expect(s.zoneCls).toBe("tablet");
+    expect(s.easing).toBe(false);
+    expect([s.pitch, s.pitchTarget]).toEqual([0, 0]);
+    expect([s.zoom, s.zoomTarget]).toEqual([OBSERVATORY_VIEW.spawnZoomNarrow.tablet, OBSERVATORY_VIEW.spawnZoomNarrow.tablet]);
+    expect([s.lookForward, s.lookUp, s.lookRight, s.lookForwardTarget, s.lookUpTarget, s.lookRightTarget]).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(s.yaw).toBe(zoneView(kiosk, "tablet").yaw);
+    expect(s.yawTarget).toBe(zoneView(kiosk, "tablet").yaw);
+  });
+
+  it("keeps a hand turn on a rotation under reduced motion", () => {
+    const s = orbitOn("mobile");
+    primeZone(s, kiosk, "mobile");
+    rotateStep(s, 1);
+    expect(s.suppressedZone).toBe(kiosk.id);
+    const before = { ...s };
+    updateZone(s, kiosk, true, "tablet");
+    expect(s).toEqual({ ...before, zoneCls: "tablet" });
   });
 });
 
