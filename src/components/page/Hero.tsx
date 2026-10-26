@@ -42,8 +42,8 @@ export async function HomeHero({ locale, ticker, proof }: { locale: Locale; tick
               {profile.name}
             </h1>
           </div>
-          <p className="pv-lead mt-7 max-w-none font-semibold">{profile.headline[locale]}</p>
-          <p className="pv-lead mt-1 max-w-none text-ink-2">{profile.subheadline[locale]}</p>
+          <p className="pv-h3 pv-h3-l mt-7">{profile.headline[locale]}</p>
+          <p className="pv-lead mt-2 max-w-none text-ink-2">{profile.subheadline[locale]}</p>
           {proof}
           {/* Recruiter-first (owner decision 2026-10-25): View CV is the one primary action; full width on phones. */}
           <div className="mt-8 flex flex-wrap items-center gap-3">

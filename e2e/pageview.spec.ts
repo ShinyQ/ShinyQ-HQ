@@ -396,6 +396,32 @@ for (const viewport of [
   });
 }
 
+/** The element's bottom edge is inside the first screen (no scrolling). */
+async function expectInFirstScreen(locator: Locator) {
+  const { bottom, height } = await locator.evaluate((el) => ({ bottom: el.getBoundingClientRect().bottom + scrollY, height: innerHeight }));
+  expect(bottom).toBeLessThanOrEqual(height);
+}
+
+test("landing: View CV stays above the fold on a 375x667 phone with the larger role title", async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 375, height: 667 } });
+  await openPage(page, staticTier("/en"));
+  await expect(page.locator("section[aria-labelledby='hero-title'] .pv-h3-l")).toHaveText(data.profile.headline.en);
+  await expectInFirstScreen(page.getByTestId("cv-open-hero"));
+  await page.close();
+});
+
+test("/cv on a phone: View CV and Download PDF come before the page image, inside the first screen", async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await openPage(page, staticTier("/en/cv"));
+  const card = page.getByTestId("cv-card");
+  await expectInFirstScreen(card.getByTestId("cv-read"));
+  await expectInFirstScreen(card.getByTestId("cv-download"));
+  const readTop = await card.getByTestId("cv-read").evaluate((el) => el.getBoundingClientRect().top);
+  const imgTop = await card.getByTestId("cv-cover-image").evaluate((el) => el.getBoundingClientRect().top);
+  expect(readTop).toBeLessThan(imgTop);
+  await page.close();
+});
+
 test("landing: the hero name is still the LCP element on a phone", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 412, height: 823 }, deviceScaleFactor: 1.75, isMobile: true, hasTouch: true });
   const page = await context.newPage();
