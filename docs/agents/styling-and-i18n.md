@@ -129,6 +129,7 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - `src/app/pageview.css` (`pv-` classes):
   - type scale `pv-d-xl pv-d-l pv-h2 pv-h3 pv-h3-card pv-lead pv-body pv-card-text pv-small pv-data pv-date pv-num`
   - `pv-mark`, `pv-btn`, `pv-go`, `pv-rows`, `pv-result`, `pv-stretch`, header, flat filter bar (`pv-filters`), ToC
+- `pv-btn` has an instant 1 px pressed state (`:active`, `translateY(1px)`), no transition, so it needs no reduce rule.
 - Grid spans use Tailwind utilities with the default `md`/`lg` breakpoints.
 - Page View structure: [page-view.md](page-view.md).
 

@@ -76,9 +76,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Restraint (design refinement, spec `docs/superpowers/specs/2026-10-19-classic-design-refinement.md`):
   - Dates and periods use `pv-date` (sentence case, tabular mono); `pv-data` capitals are for labels only.
   - Project cards (landing Selected work, Work Key projects) share `pv-h3-card` titles and `pv-card-text`; a card's
-    headline result is a `pv-result` block (value over label on a neutral hairline), under the title on landing cards (recruiters scan results first), pinned to the bottom elsewhere.
+    headline result is a `pv-result` block (value over label on a neutral hairline) right under the title on both
+    (recruiters scan results first). Project list rows (`WorkRow`) keep theirs in its own column.
   - Filter and contents bars (`pv-filters`) are flat: hairline and a near-opaque fill, no `.glass`, shadow or blur.
-  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's headline and motto opt out.
+  - `pv-lead` keeps a measure near 66 characters (`max-width: 30em`) in wide places (page intros); the hero's motto opts out.
   - Inside a reading column (`pv-col`, the 8-column main column of a case study or a Journey entry) a lead runs the column's full width, so its edge lines up with the ruled lists below; ledger and list text there is not capped either.
 - Floor and wing colors only mark wayfinding (`Marker`, the active nav rule); never fill surfaces with them.
 
@@ -92,6 +93,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - The ids `problem` and `approach` stay, so 3D drawer tabs, missions and old links keep working; only the labels change (`labs.situation`, `labs.decisions`, `labs.results`, `labs.lesson`). The strip never carries `#results` in story mode.
   - `DecisionList` (`src/components/page/Story.tsx`) numbers the decisions like `StepList`: the title, then "Why" (`labs.why`) and the reason. `Lesson` is a quote with a neutral hairline rule (never a colored stripe).
   - `pod.problem` and `pod.approach` still feed the 3D drawer and Ask; the Classic page shows them only for pods without a story.
+- A next-step row (`data-testid="case-next-step"`, heading `case.nextStep`, "Hiring for work like this?") closes every
+  case study before the related projects: View CV (`CvButton`, `cv-open-case`, `pv-btn-primary`) and About and
+  contact (`home.aboutContact`, a ghost link to `/contact`).
 
 ### Time Travel (`/journey`)
 
@@ -138,8 +142,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   - round, cyan ring with one quiet cyan glow, 72/96/128 px
   - `loading="lazy"` with `fetchpriority="low"`, so it never loads under the boot cover (`content-visibility: hidden` keeps lazy images idle) and never becomes the LCP element
   - About shows it at 80/112 px beside its title
-- Name: no eyebrow, `.hx-name` up to 112 px.
-- Then the headline and the motto (`profile.subheadline`).
+- Name: no eyebrow, `.hx-name` up to 112 px, `translate="no"` (so is the header name).
+- Then the headline (`profile.headline`, the role) in the display face (`pv-h3 pv-h3-l`) and the motto
+  (`profile.subheadline`) in `pv-lead`. View CV stays inside the first screen on a 375x667 phone
+  (`e2e/pageview.spec.ts`).
 - Then the proof strip (`ProofStrip`, `src/components/page/ProofStrip.tsx`, `data-testid="hero-proof"`, owner decision 2026-10-25, style B):
   - the three stats listed in `profile.heroProof` (`heroProofStats`, `src/content/pageview.ts`, in that order), each with its `data-stat` id;
   - one quiet bordered row (hairline dividers, `bg-surface`), the value in the display face (`pv-num`) beside the stat's `short` label; on phones three equal cells with the value above the label;
@@ -172,7 +178,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
     (`pod.results[0]` as a `pv-result`, `data-testid="feature-result"`; recruiters scan results first), the tagline,
     then the live link pinned to the bottom
 - Never stagger or span cards (owner decision).
-- `/labs` Key projects use the same grid.
+- `/labs` Key projects use the same grid with one card shape, `WorkFeature` (`src/components/page/Work.tsx`): cover
+  (or placeholder), wing, period and client, the title, `pod.results[0]` as a `pv-result` under the title
+  (`feature-result`, like the landing cards), the tagline, then the live link and the stack logos (`TechLogoRow`, up
+  to 6, only with a cover) at the foot.
 
 ### Other key projects
 
@@ -198,6 +207,12 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Never animate the `h1` (LCP).
 - Mockup and captures: `docs/design/landing/` (`bun docs/design/landing/gen-landing.ts`; built captures in `built/` from `bun run screenshots:pages`).
 
+## CV page (`/cv`)
+
+- `CvCover` (`src/components/cv/CvCover.tsx`): below `md` the actions (View CV, Download PDF) come first, then
+  page 1; from `md` the page image and the actions sit side by side (`e2e/pageview.spec.ts` checks both actions in
+  the first screen at 390x844). Everything else about the CV: [content.md](content.md#cv).
+
 ## Not found (404)
 
 - `src/app/global-not-found.tsx` (owner decision 2026-10-25): "Rover took a wrong turn", in English with one
@@ -205,6 +220,9 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
   straight from `messages/*.json`; `robots` is `noindex, follow`.
 - Three ways out in a `nav` named "Ways back" (`notFound.waysBack`): View the CV first (primary, `/en/cv`,
   `not-found-cv`), See the work (`/en/labs`, `not-found-work`), and Home with English and Bahasa Indonesia links.
+  - The Home box (`not-found-home`) is a plain bordered box, not a button (it holds two links); each link is a 44 px
+    target (`min-h-11`).
+  - `viewport.themeColor` is `#05050c`.
 - "Did you mean": `DidYouMean` (`src/components/DidYouMean.tsx`, a client island) fetches
   `/data/routes/index.json` after paint and shows `suggestRoute(location.pathname, routes)` as a link
   (`data-testid="did-you-mean"`), or nothing.
