@@ -15,7 +15,7 @@ Index: [AGENTS.md](../../AGENTS.md).
 
 | Budget | Value | Source |
 |---|---|---|
-| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 465.8 KB, lite 450.0 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
+| 3D JS after the gate, main path (`?prefetch=off`), one cap for both tiers | under 466.4 KB gzip (measured full 466.1 KB, lite 450.3 KB) | `e2e/budgets.ts` (`BYTES_3D_BUDGET.failAt`) |
 | L3 floor chunk (`BYTES_3D_BUDGET.floors`) | L3 20 KB gzip | `e2e/budgets.ts` |
 | L4 floor chunk | L4 16 KB gzip | `e2e/budgets.ts` |
 | RF floor chunk | RF 8 KB gzip | `e2e/budgets.ts` |
@@ -87,7 +87,7 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 #### `bytes-3d`
 
 - Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 466.4 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 465.8 KB (476,967 B), lite 450.0 KB (460,833 B) (the full tier adds the lazy `Effects` chunk).
+  - It gates the critical path before the first frame. Measured: full 466.1 KB (477,249 B), lite 450.3 KB (461,115 B) (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.
@@ -95,7 +95,7 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
   - lite 516.0 KB: measured 515.4 KB (main 450.3 KB plus floor chunks 30.5 KB plus the office watch chunk 1.7 KB plus the office scene chunk 27.7 KB plus the office replay chunk 5.2 KB).
   - Re-set for the L4 reader tracks (owner decision 2026-10-25, [decision](../decisions/2026-10-25-l4-reader-tracks.md)): measured + 614 B, +2,158 B on both tiers (from 526,266 B and 542,400 B).
   - Each cap, `failAt` included, is the measured value plus about 0.6 KB (owner decisions 2026-10-19: the Study Vault, the floor layouts out of the Classic bundle, and the inline idle frame cadence; the same rule relayed for the L1 Agent Office 2026-10-19/20, [decision](../decisions/2026-10-19-agent-office-3d-budgets.md), applied for the office crew, [decision](../decisions/2026-10-21-office-crew-budgets.md), the always-live office, [decision](../decisions/2026-10-21-office-always-live-budgets.md), the ten desks, [decision](../decisions/2026-10-21-office-live-ten-budgets.md), the ship-it pipeline, [decision](../decisions/2026-10-21-office-pipeline-budgets.md), and last for the day replay, [decision](../decisions/2026-10-22-office-replay-budgets.md)); a PR that grows the 3D path asks the owner, then rebases on `main`, re-measures and sets the caps the same way.
-  - Floor chunks measured L3 13.9 KB, L4 11.7 KB, RF 3.3 KB, B1 16.5 KB (B1 only in unlocked sessions).
+  - Floor chunks measured L3 13.9 KB, L4 13.2 KB (13,519 B), RF 3.3 KB, B1 16.5 KB (B1 only in unlocked sessions).
   - The audio engine chunk is not in either total: it loads only when the 3D view needs sound (a gesture, or a sound after an activation), and the measured sessions make none.
   - Both sessions are a returning visitor's (`asReturningVisitor`), so the intro chunk (`intro/scene.ts`, loaded only by a session that plays the intro; [Boot and intro](3d-experience.md#boot-and-intro)) is in neither total.
   - Asserted and logged; `scripts/perf-report.ts` prints them as "Floor chunks (loaded on demand)".
