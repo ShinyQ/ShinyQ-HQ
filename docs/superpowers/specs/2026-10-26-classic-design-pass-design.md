@@ -2,7 +2,7 @@
 
 Date: 2026-10-26.
 
-Status: draft, awaiting parent approval
+Status: approved by the parent session (owner delegation), 2026-10-26; plan `docs/superpowers/plans/2026-10-26-classic-design-pass.md`
 
 Request: improve the Classic site with `redesign-existing-projects` (audit, then upgrade) and check the result with
 `web-design-guidelines`. Design decisions are delegated to the parent session; the owner sees only budget raises and
@@ -96,7 +96,9 @@ page). Quick view keeps its own header unchanged.
 
 ## Out of scope
 
-- No 3D changes; nothing under `src/experience`, the boot card, onboarding or `src/hud` (F6 included).
+- No 3D changes; nothing under `src/experience`, the boot card, onboarding or `src/hud`.
+- F6 (the Ask teaser over body text on phones) is deferred until the Phone-first 3D work merges (parent decision,
+  2026-10-26), because it lives in `src/hud/ask/AskDock.tsx`.
 - F5 (phone sticky chrome) and F11 (a desktop `Invalid URL` page error seen once in one run, not reproduced) are
   reported, not fixed.
 - No content, token, font or section order changes.
