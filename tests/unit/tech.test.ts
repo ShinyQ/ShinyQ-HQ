@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { allTechLogos, getTechLogo, isTextOnlyTech, normalizeTech, TEXT_ONLY_TECH } from "@/content/tech";
+import { allTechLogos, getTechLogo, isTextOnlyTech, normalizeTech, sortLogosFirst, TEXT_ONLY_TECH } from "@/content/tech";
 
 const root = process.cwd();
 const content = JSON.parse(readFileSync(path.join(root, "content", "site-content.json"), "utf8"));
@@ -31,7 +31,7 @@ describe("tech logos", () => {
     expect(allTechLogos().every((logo) => logo.src.startsWith("/tech/"))).toBe(true);
   });
 
-  it("reuses committed logos for the Data science and ML group and keeps the rest as text", () => {
+  it("gives the Data science and ML group its logos and keeps models and logo-less libraries as text", () => {
     const logo = (name: string) => getTechLogo(name)?.src ?? null;
     expect(logo("pandas")).toBe("/tech/pandas.svg");
     expect(logo("Plotly")).toBe("/tech/plotly.svg");
@@ -40,7 +40,12 @@ describe("tech logos", () => {
     expect(logo("scikit-learn")).toBe("/tech/scikit-learn.svg");
     expect(logo("PyTorch")).toBe("/tech/pytorch.svg");
     expect(logo("Hugging Face Transformers")).toBe("/tech/huggingface.webp");
-    for (const name of ["NumPy", "Matplotlib", "Seaborn", "Keras", "Sastrawi"]) {
+    expect(logo("NumPy")).toBe("/tech/numpy.svg");
+    expect(logo("Matplotlib")).toBe("/tech/matplotlib.svg");
+    expect(logo("Seaborn")).toBe("/tech/seaborn.webp");
+    expect(logo("Keras")).toBe("/tech/keras.svg");
+    expect(logo("LightGBM")).toBe("/tech/lightgbm.svg");
+    for (const name of ["Sastrawi", "XGBoost", "IndoBERT", "N-BEATS", "PuLP", "yfinance"]) {
       expect(logo(name), name).toBeNull();
       expect(isTextOnlyTech(name), name).toBe(true);
     }
@@ -67,9 +72,32 @@ describe("tech logos", () => {
     expect(getTechLogo("Fabric Data Pipelines")?.src).toBe("/tech/fabric-data-pipelines.svg");
   });
 
+  it("resolves the stack logos found online, including aliases to existing Azure icons", () => {
+    const logo = (name: string) => getTechLogo(name)?.src ?? null;
+    expect(logo("Java")).toBe("/tech/java.svg");
+    expect(logo("MongoDB")).toBe("/tech/mongodb.svg");
+    expect(logo("Nuxt")).toBe("/tech/nuxt.svg");
+    expect(logo("Drizzle ORM")).toBe("/tech/drizzle.svg");
+    expect(logo("WhatsApp Cloud API")).toBe("/tech/whatsapp.svg");
+    expect(logo("Entra ID")).toBe("/tech/entra-id.svg");
+    expect(logo("Microsoft Entra ID")).toBe("/tech/entra-id.svg");
+    expect(logo("Marketplace Metering API")).toBe("/tech/marketplace.svg");
+    expect(logo("Prompt Shields")).toBe("/tech/content-safety.svg");
+    expect(logo("ARM-TTK")).toBe("/tech/arm-templates.svg");
+    expect(logo("Data API Builder")).toBe("/tech/data-api-builder.webp");
+    for (const name of ["Semgrep", "Bandit", "OSV-Scanner", "KEDA", "Sinon", "Kysely", "CKEditor", "Requests"]) expect(logo(name), name).not.toBeNull();
+  });
+
+  it("orders logo chips first and keeps each group in its original order", () => {
+    expect(sortLogosFirst(["RAG", "Python", "SSO", "Docker", "Naive Bayes", "Go"])).toEqual(["Python", "Docker", "Go", "RAG", "SSO", "Naive Bayes"]);
+    expect(sortLogosFirst(["Python", "Docker"])).toEqual(["Python", "Docker"]);
+    expect(sortLogosFirst([])).toEqual([]);
+  });
+
   it("returns null for unknown names so callers fall back to text chips", () => {
     expect(getTechLogo("Totally Unknown Framework")).toBeNull();
-    expect(getTechLogo("Semgrep")).toBeNull();
+    expect(getTechLogo("Gitleaks")).toBeNull();
+    expect(getTechLogo("Codex")).toBeNull();
     expect(isTextOnlyTech("IndoBERT / NLP")).toBe(true);
   });
 });

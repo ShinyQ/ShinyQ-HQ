@@ -130,7 +130,7 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("application-insights", "Application Insights"),
   svg("container-apps", "Azure Container Apps", ["container apps", "container apps jobs"]),
   svg("service-bus", "Azure Service Bus", ["service bus"]),
-  svg("content-safety", "Azure AI Content Safety"),
+  svg("content-safety", "Azure AI Content Safety", ["prompt shields"]),
   svg("foundry", "Microsoft Foundry", ["azure ai foundry"]),
   svg("key-vault", "Azure Key Vault", ["key vault"]),
   svg("managed-identity", "Managed Identity"),
@@ -138,11 +138,33 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("managed-applications", "Azure Managed Applications"),
   svg("log-analytics", "Log Analytics"),
   svg("azure-monitor", "Azure Monitor"),
-  svg("arm-templates", "ARM templates"),
+  svg("arm-templates", "ARM templates", ["arm-ttk"]),
   webp("agent-framework", "Microsoft Agent Framework"),
   svg("fabric", "Microsoft Fabric", ["fabric"]),
   svg("fabric-lakehouse", "Fabric Lakehouse", ["lakehouse"]),
   svg("fabric-data-pipelines", "Fabric Data Pipelines"),
+  // Simple Icons dropped Oracle's Java mark; the OpenJDK mark stands for Java.
+  svg("java", "Java", ["openjdk"]),
+  svg("mongodb", "MongoDB"),
+  svg("numpy", "NumPy"),
+  svg("keras", "Keras"),
+  svg("nuxt", "Nuxt", ["nuxt.js"]),
+  svg("drizzle", "Drizzle ORM", ["drizzle"]),
+  svg("whatsapp", "WhatsApp", ["whatsapp cloud api"]),
+  svg("matplotlib", "Matplotlib"),
+  webp("seaborn", "seaborn"),
+  webp("keda", "KEDA"),
+  svg("lightgbm", "LightGBM"),
+  webp("bandit", "Bandit"),
+  webp("osv-scanner", "OSV-Scanner"),
+  svg("semgrep", "Semgrep"),
+  webp("requests", "Requests"),
+  webp("sinon", "Sinon.JS", ["sinon"]),
+  svg("kysely", "Kysely"),
+  svg("ckeditor", "CKEditor"),
+  webp("data-api-builder", "Data API builder"),
+  svg("entra-id", "Microsoft Entra ID", ["entra id"]),
+  svg("marketplace", "Azure Marketplace", ["marketplace metering api"]),
 ];
 
 /**
@@ -153,25 +175,16 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "sftp",
   "ipaymu",
   "rajaongkir",
-  "sinon",
   "alembic",
-  "kysely",
-  "drizzle orm",
   "datatables",
-  "ckeditor",
+  // OpenAI marks were removed from Simple Icons and have no reusable licence, so OpenAI and Codex stay text chips.
   "openai",
-  // OpenAI marks are not in Simple Icons and have no reusable licence, so Codex stays a text chip.
   "codex",
-  "semgrep",
-  "bandit",
-  "osv-scanner",
   "grype",
   "gitleaks",
   "trufflehog",
   "checkov",
-  "keda",
   "xgboost",
-  "lightgbm",
   "naive bayes",
   "n-beats",
   "indobert",
@@ -179,13 +192,8 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "sastrawi",
   "gensim",
   "darts",
-  "matplotlib",
-  "numpy",
-  "seaborn",
-  "keras",
   "pulp",
   "yfinance",
-  "requests",
   "openpyxl",
   "nlp",
   "machine learning",
@@ -195,19 +203,9 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   "prompt engineering",
   "llm evaluation",
   "forecasting",
-  "marketplace metering api",
-  "arm-ttk",
-  "data api builder",
-  "whatsapp cloud api",
   "nessus api",
-  "entra id",
-  "microsoft entra id",
   "rag",
   "hybrid/vector search",
-  "prompt shields",
-  "java",
-  "nuxt",
-  "mongodb",
 ]);
 
 /** Lowercases, drops parentheticals and trailing version numbers ("Next.js 14" to "next.js"). */
@@ -245,6 +243,11 @@ export function getTechLogo(name: string): TechLogo | null {
 /** True when a name is deliberately rendered without a logo. */
 export function isTextOnlyTech(name: string): boolean {
   return TEXT_ONLY_TECH.has(normalizeTech(name)) || parts(name).every((p) => TEXT_ONLY_TECH.has(p));
+}
+
+/** Chip order wherever chips show logos: names with a logo first, then text chips, each in their original order. */
+export function sortLogosFirst(names: readonly string[]): string[] {
+  return [...names.filter((n) => getTechLogo(n)), ...names.filter((n) => !getTechLogo(n))];
 }
 
 /** Every committed logo file, for asset tests and the 3D texture atlas. */
