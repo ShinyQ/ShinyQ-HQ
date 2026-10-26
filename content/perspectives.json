@@ -7,7 +7,7 @@
       "question": { "en": "What are your core engineering principles?", "id": "Apa prinsip utama dalam pekerjaan engineering?" },
       "answer": {
         "en": "Five rules guide most of my work: define the spec first, delegate implementation but own the review, evaluate before release, design for recovery, and report metrics with their context. They come from building software and AI applications that run in production, where a plausible change and a correct change are not the same thing.",
-        "id": "Ada lima aturan yang memandu sebagian besar pekerjaan saya: tetapkan spec terlebih dahulu, delegasikan implementasi tetapi tetap pegang review, evaluasi sebelum rilis, rancang agar bisa pulih, dan laporkan metrik beserta konteksnya. Aturan ini lahir dari membangun aplikasi software dan AI yang berjalan di production, tempat perubahan yang tampak masuk akal belum tentu benar."
+        "id": "Sebagian besar pekerjaan saya mengikuti lima aturan: tetapkan spec lebih dulu, delegasikan implementasi tetapi tetap bertanggung jawab atas review, evaluasi sebelum rilis, rancang jalur pemulihan, dan laporkan metrik beserta konteksnya. Aturan ini berasal dari pengalaman membangun aplikasi software dan AI di production, saat perubahan yang tampak masuk akal belum tentu benar."
       },
       "tags": ["principles"],
       "asOf": "2026-10"
@@ -17,7 +17,7 @@
       "question": { "en": "Why do you write a spec before any code?", "id": "Kenapa spec ditulis sebelum kode?" },
       "answer": {
         "en": "Agents write plausible code quickly, but an agent cannot tell me whether an approval engine matches the business process. So I define what correct means first: a numbered spec with acceptance criteria, plus a constitution with the rules every agent follows. Fixing a contradiction in a document costs an afternoon; fixing it after it becomes a migration costs far more.",
-        "id": "Agent menulis kode yang tampak masuk akal dengan cepat, tetapi agent tidak bisa memastikan sebuah approval engine sesuai dengan proses bisnisnya. Karena itu saya menetapkan arti benar terlebih dahulu: spec bernomor dengan acceptance criteria, ditambah constitution berisi aturan yang diikuti setiap agent. Memperbaiki kontradiksi di dokumen hanya butuh satu sore; memperbaikinya setelah menjadi migration jauh lebih mahal."
+        "id": "Agent dapat menulis kode yang tampak masuk akal dengan cepat, tetapi tidak dapat memastikan apakah approval engine sudah sesuai dengan proses bisnisnya. Karena itu saya menetapkan kriteria kebenarannya lebih dulu: spec bernomor dengan acceptance criteria, serta constitution berisi aturan untuk setiap agent. Memperbaiki pertentangan dalam dokumen cukup satu sore; jika sudah telanjur menjadi migration, perbaikannya jauh lebih mahal."
       },
       "tags": ["spec-driven-development", "ai-agents"],
       "asOf": "2026-10",
@@ -28,7 +28,7 @@
       "question": { "en": "How do you work with AI coding agents?", "id": "Bagaimana alur kerja bersama AI coding agent?" },
       "answer": {
         "en": "I give agents a numbered spec, and they implement much of the code in parallel, each in its own git worktree. I stay responsible for the design, the review, verification in a deployed environment and the merge decision. What I carry between projects is not the idea of letting agents write code. It is making the work explicit enough to review, and checking that the tests really ran before I trust a green result.",
-        "id": "Saya memberi agent spec bernomor, lalu agent mengerjakan sebagian besar kode secara paralel, masing-masing di git worktree sendiri. Saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan keputusan merge. Yang saya bawa ke proyek berikutnya bukan sekadar membiarkan agent menulis kode, melainkan membuat pekerjaan cukup eksplisit untuk di-review dan memastikan test benar-benar berjalan sebelum saya memercayai hasil hijau."
+        "id": "Saya memberi agent spec bernomor, lalu mereka mengerjakan sebagian besar kode secara paralel di git worktree masing-masing. Saya tetap bertanggung jawab atas desain, review, verifikasi di environment yang sudah di-deploy, dan keputusan merge. Di setiap proyek, saya menjabarkan pekerjaan agar dapat di-review dan memastikan test benar-benar berjalan sebelum memercayai hasil CI yang hijau. Kebiasaan itulah yang saya pertahankan saat memakai agent untuk menulis kode."
       },
       "tags": ["ai-agents", "code-review"],
       "asOf": "2026-10",
@@ -42,7 +42,7 @@
       "question": { "en": "What do you look for in a code review, especially when an agent wrote the code?", "id": "Apa yang diperiksa saat code review, terutama pada kode yang ditulis agent?" },
       "answer": {
         "en": "I review against the spec: does the change meet its acceptance criteria and the architecture rules, and did the checks actually run? A skipped test tier can look exactly like a passed one, so I look at what CI really executed. For authentication, approvals and payment flows, I now want a second human reviewer, not only me.",
-        "id": "Saya me-review berdasarkan spec: apakah perubahan memenuhi acceptance criteria dan aturan arsitektur, dan apakah pengecekannya benar-benar berjalan? Test tier yang dilewati bisa terlihat persis seperti yang lulus, jadi saya melihat apa yang benar-benar dijalankan CI. Untuk alur autentikasi, approval, dan pembayaran, kini saya ingin ada reviewer manusia kedua, bukan hanya saya."
+        "id": "Saat review, saya mengacu pada spec: apakah perubahan memenuhi acceptance criteria dan aturan arsitektur, serta apakah pemeriksaannya benar-benar berjalan? Test tier yang dilewati bisa terlihat sama seperti test yang lulus, sehingga saya memeriksa apa yang sebenarnya dijalankan CI. Untuk alur autentikasi, approval, dan pembayaran, kini saya ingin ada reviewer manusia kedua selain saya."
       },
       "tags": ["code-review", "testing"],
       "asOf": "2026-10",
@@ -53,7 +53,7 @@
       "question": { "en": "How do you approach testing?", "id": "Bagaimana cara merancang testing?" },
       "answer": {
         "en": "CI should fail closed: a test tier that is skipped must fail the build, not pass it. I prefer production-shaped fixtures, because a tiny fake token once hid a session cookie that broke as soon as it carried real permissions. When a bug comes from a real failure, I turn the exact error into a regression test, so nobody can simplify the fix away later.",
-        "id": "CI harus fail closed: test tier yang dilewati harus menggagalkan build, bukan meloloskannya. Saya lebih memilih fixture yang menyerupai production, karena token palsu yang sangat pendek pernah menyembunyikan cookie sesi yang langsung rusak begitu membawa permission sungguhan. Jika bug berasal dari kegagalan nyata, saya mengubah error persisnya menjadi regression test agar perbaikannya tidak hilang saat kode disederhanakan nanti."
+        "id": "CI harus fail closed: build harus gagal jika ada test tier yang tidak dijalankan. Saya lebih memilih fixture yang menyerupai production karena token palsu yang sangat pendek pernah menutupi masalah cookie sesi, yang baru rusak saat memuat permission sebenarnya. Jika bug ditemukan dari kegagalan nyata, saya menjadikan pesan error yang sama sebagai regression test agar perbaikannya tetap terlindungi saat kode disederhanakan."
       },
       "tags": ["testing", "reliability"],
       "asOf": "2026-10",
@@ -67,7 +67,7 @@
       "question": { "en": "How do you decide whether an AI change is ready to release?", "id": "Kapan perubahan AI dianggap siap dirilis?" },
       "answer": {
         "en": "I write the release gates before I run the evaluation: labelled gold sets, separate development and held-out sets, and the metrics that matter for the risk, such as high-risk recall next to the false-positive rate. If a change fails a gate, it does not become the decision maker, even when another number looks better. That is why our more precise fraud engine went to shadow mode instead.",
-        "id": "Saya menulis release gate sebelum menjalankan evaluasi: gold set berlabel, set development dan held-out yang terpisah, serta metrik yang relevan dengan risikonya, misalnya recall untuk kasus high-risk di samping false-positive rate. Jika perubahan gagal di salah satu gate, perubahan itu tidak menjadi pengambil keputusan, meskipun angka lain terlihat lebih baik. Karena itulah fraud engine kami yang lebih presisi masuk ke shadow mode."
+        "id": "Saya menetapkan release gate sebelum menjalankan evaluasi: gold set berlabel, set development dan held-out yang terpisah, serta metrik sesuai risikonya, misalnya recall kasus high-risk beserta false-positive rate. Jika perubahan tidak lolos salah satu gate, hasilnya tidak dipakai untuk mengambil keputusan meskipun metrik lain membaik. Itu sebabnya fraud engine kami yang lebih presisi dirilis dalam shadow mode."
       },
       "tags": ["evaluation", "ai-engineering", "shadow-mode"],
       "asOf": "2026-10",
@@ -95,7 +95,7 @@
       "question": { "en": "What makes a RAG assistant trustworthy?", "id": "Apa yang membuat asisten RAG layak dipercaya?" },
       "answer": {
         "en": "It answers only from curated content and shows where each answer came from. In the bilingual assistant I built, retrieval is hybrid, answers are gated on citations, and Prompt Shields and output checks run before anything is shown. I also watch the operational side, such as stream framing, telemetry and the daily spend cap, because failures there can stay silent.",
-        "id": "Asisten itu hanya menjawab dari konten yang sudah dikurasi dan menunjukkan sumber setiap jawaban. Pada asisten bilingual yang saya bangun, retrieval-nya hybrid, jawaban dibatasi oleh citation gating, dan Prompt Shields serta output check berjalan sebelum apa pun ditampilkan. Saya juga memantau sisi operasionalnya, seperti stream framing, telemetry, dan batas biaya harian, karena kegagalan di sana bisa tidak terlihat."
+        "id": "Asisten hanya menjawab berdasarkan konten yang sudah dikurasi dan menunjukkan sumber setiap jawabannya. Asisten bilingual yang saya bangun memakai hybrid retrieval dan citation gating, lalu menjalankan Prompt Shields serta output check sebelum jawaban ditampilkan. Saya juga memantau stream framing, telemetry, dan batas biaya harian karena kegagalan operasional di bagian itu dapat luput dari perhatian."
       },
       "tags": ["rag", "ai-engineering"],
       "asOf": "2026-10",
@@ -106,7 +106,7 @@
       "question": { "en": "When do you use shadow mode?", "id": "Kapan shadow mode digunakan?" },
       "answer": {
         "en": "When a new system is better on some metrics but fails a gate I set in advance. In shadow mode it runs beside the live pipeline on real data and stores its output, while users still see the current system's result. That lets me learn from production without asking users to pay for the trade-off. Isolation is not accuracy, though, so promotion still needs the gates to pass.",
-        "id": "Saat sistem baru lebih baik di beberapa metrik tetapi gagal di gate yang sudah saya tetapkan sebelumnya. Dalam shadow mode, sistem itu berjalan di samping pipeline live dengan data nyata dan menyimpan output-nya, sementara pengguna tetap melihat hasil dari sistem yang sekarang. Dengan begitu saya bisa belajar dari production tanpa membebani pengguna dengan trade-off-nya. Namun terisolasi bukan berarti akurat, jadi promosi tetap harus lolos semua gate."
+        "id": "Saat beberapa metrik sistem baru membaik, tetapi sistem itu belum lolos gate yang saya tetapkan sejak awal. Dalam shadow mode, sistem berjalan berdampingan dengan pipeline live memakai data nyata dan menyimpan output-nya, sementara pengguna tetap melihat hasil sistem yang sudah digunakan. Saya dapat belajar dari production tanpa membebani pengguna dengan trade-off tersebut. Akurasinya tetap harus dibuktikan lewat semua gate sebelum sistem dipromosikan."
       },
       "tags": ["evaluation", "shadow-mode", "production"],
       "asOf": "2026-10",
@@ -117,7 +117,7 @@
       "question": { "en": "How do you make LLM features reliable in production?", "id": "Bagaimana menjaga fitur LLM tetap andal di production?" },
       "answer": {
         "en": "I start from the actual error strings, not the failure percentage, because two different messages usually mean two different bugs. Then I layer the fix: structured output mode, explicit token and time limits, defensive parsing, and bounded retries that count every attempt. Reasoning effort is a budget setting too, not only a quality setting.",
-        "id": "Saya mulai dari pesan error yang muncul, bukan dari persentase kegagalan, karena dua pesan yang berbeda biasanya berarti dua bug yang berbeda. Lalu perbaikannya saya susun berlapis: mode structured output, batas token dan waktu yang eksplisit, parsing yang defensif, dan retry terbatas yang menghitung setiap percobaan. Reasoning effort juga merupakan pengaturan anggaran, bukan hanya pengaturan kualitas."
+        "id": "Saya mulai dengan membaca pesan error yang muncul karena dua pesan berbeda biasanya berasal dari dua bug berbeda; persentase kegagalan saja tidak cukup. Perbaikannya kemudian saya susun berlapis: mode structured output, batas token dan waktu yang jelas, defensive parsing, serta retry terbatas yang mencatat setiap percobaan. Reasoning effort perlu diatur sebagai anggaran sekaligus penentu kualitas."
       },
       "tags": ["reliability", "llm", "testing"],
       "asOf": "2026-10",
@@ -145,7 +145,7 @@
       "question": { "en": "What does owning production mean to you?", "id": "Apa arti bertanggung jawab atas sistem production?" },
       "answer": {
         "en": "A merged pull request is not the end. I verify changes in a deployed environment, plan for failures with a recovery path, and watch what real deployments expose, because they catch defects that gold sets miss. I no longer call sign-in done until a smoke test passes against the real identity provider.",
-        "id": "Pull request yang sudah di-merge bukan akhir pekerjaan. Saya memverifikasi perubahan di environment yang sudah di-deploy, menyiapkan jalur pemulihan untuk kegagalan, dan memperhatikan apa yang terungkap dari deployment nyata, karena di sanalah muncul defect yang terlewat oleh gold set. Saya tidak lagi menganggap fitur sign-in selesai sebelum smoke test lolos terhadap identity provider yang sebenarnya."
+        "id": "Pekerjaan berlanjut setelah pull request di-merge. Saya memverifikasi perubahan di environment yang sudah di-deploy, menyiapkan jalur pemulihan, dan memantau masalah yang muncul pada deployment nyata karena sebagian defect tidak terdeteksi oleh gold set. Kini fitur sign-in baru saya anggap selesai setelah smoke test dengan identity provider yang sebenarnya lolos."
       },
       "tags": ["production", "reliability"],
       "asOf": "2026-10",
@@ -201,7 +201,7 @@
       "question": { "en": "How would you describe yourself in one sentence, beyond your job title?", "id": "Bagaimana menggambarkan diri dalam satu kalimat, di luar jabatan?" },
       "answer": {
         "en": "I'm a competitive builder who enjoys turning complicated, uncertain problems into useful systems, and who stays accountable for whether they actually work.",
-        "id": "Saya builder yang kompetitif, senang mengubah masalah yang rumit dan penuh ketidakpastian menjadi sistem yang berguna, dan tetap bertanggung jawab memastikan sistem itu benar-benar berjalan."
+        "id": "Saya seorang builder yang kompetitif, senang membangun sistem berguna untuk menyelesaikan masalah rumit dan penuh ketidakpastian, serta tetap bertanggung jawab memastikan hasilnya benar-benar berjalan."
       },
       "tags": ["work-style", "identity"],
       "asOf": "2026-10"
@@ -222,7 +222,7 @@
       "question": { "en": "What does a great working week look like for you?", "id": "Seperti apa minggu kerja yang ideal?" },
       "answer": {
         "en": "A great week gives me enough uninterrupted time to understand a difficult problem, define what correct means, and deliver something meaningful. Quick coordination happens asynchronously; meetings are for decisions that genuinely need discussion. By Friday, I want fewer unresolved risks, clearer documentation and a working improvement. A busy calendar or a large number of commits is not the same thing as progress.",
-        "id": "Minggu yang ideal memberi saya cukup waktu tanpa gangguan untuk memahami masalah yang sulit, menetapkan arti benar, dan menghasilkan sesuatu yang bermakna. Koordinasi singkat berjalan secara asinkron; rapat dipakai untuk keputusan yang memang perlu didiskusikan. Pada hari Jumat, saya ingin risiko yang belum terselesaikan berkurang, dokumentasi lebih jelas, dan ada perbaikan yang berjalan. Kalender yang padat atau banyaknya commit tidak sama dengan kemajuan."
+        "id": "Dalam minggu kerja yang ideal, saya punya cukup waktu tanpa gangguan untuk memahami masalah sulit, menetapkan kriteria hasil yang benar, dan menyelesaikan pekerjaan yang berarti. Koordinasi singkat dilakukan secara asinkron; rapat dipakai untuk keputusan yang memang perlu didiskusikan. Pada hari Jumat, saya ingin risiko yang belum terselesaikan berkurang, dokumentasi lebih jelas, dan ada perbaikan yang sudah berjalan. Kalender padat atau commit yang banyak belum menunjukkan kemajuan."
       },
       "tags": ["work-style", "productivity"],
       "asOf": "2026-10"
@@ -232,7 +232,7 @@
       "question": { "en": "How do you handle pressure, tight deadlines, or a production incident at 2 a.m.?", "id": "Bagaimana menghadapi tekanan, tenggat ketat, atau insiden production pukul 2 dini hari?" },
       "answer": {
         "en": "Under pressure, I try to make the situation smaller and more concrete: what is affected, what changed, and what is the safest recovery path? At 2 a.m., restoring service would come before redesigning the system. I would stabilize or roll back, communicate what is known, and preserve the evidence for investigation. With deadlines, I would rather reduce scope explicitly than quietly remove safeguards.",
-        "id": "Ketika berada di bawah tekanan, saya berusaha membuat situasinya lebih kecil dan konkret: apa yang terdampak, apa yang berubah, dan jalur pemulihan mana yang paling aman? Pukul 2 dini hari, memulihkan layanan lebih dulu daripada merancang ulang sistem. Saya akan menstabilkan atau melakukan rollback, menyampaikan apa yang sudah diketahui, dan menyimpan bukti untuk investigasi. Untuk tenggat, saya lebih memilih mengurangi scope secara terbuka daripada diam-diam menghapus pengaman."
+        "id": "Saat bekerja di bawah tekanan, saya mempersempit persoalan ke hal yang konkret: apa yang terdampak, apa yang berubah, dan jalur pemulihan mana yang paling aman? Pukul 2 dini hari, saya akan mendahulukan pemulihan layanan sebelum merancang ulang sistem. Saya akan menstabilkan layanan atau melakukan rollback, menyampaikan informasi yang sudah diketahui, dan menyimpan bukti untuk investigasi. Jika tenggat ketat, saya lebih memilih mengurangi scope secara terbuka daripada diam-diam menghapus pengaman."
       },
       "tags": ["work-style", "reliability", "production"],
       "asOf": "2026-10"
@@ -242,7 +242,7 @@
       "question": { "en": "What kind of team or manager brings out your best work?", "id": "Tim atau manajer seperti apa yang membuat hasil kerja paling baik?" },
       "answer": {
         "en": "I work best with people who provide clear outcomes, share the business context, and give me room to make engineering decisions. I appreciate direct feedback and reviews that improve the work rather than establish who is right. A good manager also makes trade-offs explicit. \"This matters more than that\" is much more useful than treating everything as equally urgent.",
-        "id": "Saya bekerja paling baik dengan orang yang memberi hasil akhir yang jelas, berbagi konteks bisnis, dan memberi ruang bagi saya untuk mengambil keputusan engineering. Saya menghargai feedback yang langsung dan review yang memperbaiki pekerjaan, bukan yang menentukan siapa yang benar. Manajer yang baik juga membuat trade-off menjadi eksplisit. \"Ini lebih penting daripada itu\" jauh lebih berguna daripada menganggap semuanya sama mendesaknya."
+        "id": "Saya bekerja paling baik bersama orang yang menjelaskan hasil yang diharapkan, berbagi konteks bisnis, dan memberi ruang untuk mengambil keputusan engineering. Saya menghargai feedback langsung dan review yang berfokus memperbaiki pekerjaan, tanpa memperdebatkan siapa yang benar. Manajer yang baik juga menjelaskan trade-off secara terbuka. \"Ini lebih penting daripada itu\" jauh lebih berguna daripada menganggap semuanya sama mendesaknya."
       },
       "tags": ["work-style", "teamwork"],
       "asOf": "2026-10"
@@ -263,7 +263,7 @@
       "question": { "en": "What are you deliberately getting better at this year?", "id": "Kemampuan apa yang sedang dikembangkan tahun ini?" },
       "answer": {
         "en": "I'm working on making my impact less dependent on me personally: better peer review, more direct mentoring, and helping other engineers adopt practices that have worked in my projects. Technically, I'm pushing further into retrieval evaluation, measurable operational cost, and reliability beyond the happy path. Certifications help structure learning, but the real goal is better decisions and stronger evidence in the systems I deliver.",
-        "id": "Saya sedang berusaha membuat dampak saya tidak terlalu bergantung pada diri saya sendiri: peer review yang lebih baik, mentoring yang lebih langsung, dan membantu engineer lain menerapkan praktik yang sudah berhasil di proyek saya. Secara teknis, saya mendalami evaluasi retrieval, biaya operasional yang terukur, dan keandalan di luar happy path. Sertifikasi membantu menyusun proses belajar, tetapi tujuan sebenarnya adalah keputusan yang lebih baik dan bukti yang lebih kuat di sistem yang saya bangun."
+        "id": "Saya berupaya agar hasil kerja tetap berguna tanpa harus selalu bergantung pada saya: lewat peer review yang lebih baik, mentoring langsung, dan bantuan bagi engineer lain untuk menerapkan praktik yang berhasil di proyek saya. Secara teknis, saya mendalami evaluasi retrieval, pengukuran biaya operasional, dan keandalan di luar happy path. Sertifikasi membantu menata proses belajar, tetapi sasaran saya tetap keputusan yang lebih baik dan bukti yang lebih kuat pada sistem yang saya bangun."
       },
       "tags": ["work-style", "learning", "evaluation"],
       "asOf": "2026-10"
@@ -283,7 +283,7 @@
       "question": { "en": "Will AI agents replace software engineers? What changes and what stays?", "id": "Apakah AI agent akan menggantikan software engineer? Apa yang berubah dan apa yang tetap?" },
       "answer": {
         "en": "They will replace some tasks and change how much implementation one engineer can coordinate. I already use agents to write substantial parts of the code. What does not disappear is responsibility: understanding the business process, choosing boundaries, defining correctness, reviewing changes, and operating the result. My work increasingly involves designing, directing, reviewing and verifying. Delegating the typing does not delegate the consequences.",
-        "id": "AI agent akan menggantikan sebagian tugas dan mengubah seberapa banyak implementasi yang bisa dikoordinasikan oleh satu engineer. Saya sendiri sudah memakai agent untuk menulis sebagian besar kode. Yang tidak hilang adalah tanggung jawab: memahami proses bisnis, memilih batasan, menetapkan kebenaran, me-review perubahan, dan mengoperasikan hasilnya. Pekerjaan saya makin banyak berisi merancang, mengarahkan, me-review, dan memverifikasi. Mendelegasikan pengetikan tidak berarti mendelegasikan konsekuensinya."
+        "id": "AI agent akan menggantikan sebagian tugas dan mengubah banyaknya implementasi yang dapat dikoordinasikan satu engineer. Saya sudah memakai agent untuk menulis sebagian besar kode. Engineer tetap bertanggung jawab memahami proses bisnis, menentukan batas sistem, menetapkan kriteria kebenaran, meninjau perubahan, dan mengoperasikan hasilnya. Pekerjaan saya kini lebih banyak mencakup perancangan, pengarahan, review, dan verifikasi. Tanggung jawab atas hasilnya tetap pada saya meskipun penulisan kode didelegasikan."
       },
       "tags": ["ai-industry", "ai-agents", "careers"],
       "asOf": "2026-10",
@@ -316,7 +316,7 @@
       "question": { "en": "How do you keep up with AI without drowning in hype?", "id": "Bagaimana mengikuti perkembangan AI tanpa tenggelam dalam hype?" },
       "answer": {
         "en": "I follow developments through problems I actually need to solve. I read the documentation, try the capability against a representative workload, and compare it with the existing approach. My questions are fairly consistent: does it improve quality, latency, cost or maintainability? What failure modes does it introduce? If I cannot answer those, it is an interesting experiment, not yet a reason to change production.",
-        "id": "Saya mengikuti perkembangan lewat masalah yang memang perlu saya selesaikan. Saya membaca dokumentasinya, mencoba kemampuannya pada workload yang representatif, lalu membandingkannya dengan pendekatan yang sudah ada. Pertanyaan saya cukup konsisten: apakah ini meningkatkan kualitas, latensi, biaya, atau kemudahan maintenance? Mode kegagalan apa yang dibawanya? Kalau saya belum bisa menjawabnya, itu eksperimen yang menarik, belum alasan untuk mengubah production."
+        "id": "Saya mengikuti perkembangan lewat masalah yang memang perlu saya selesaikan. Saya membaca dokumentasinya, mencoba kemampuannya pada workload yang representatif, lalu membandingkannya dengan pendekatan yang sudah ada. Pertanyaan saya tetap sama: apakah kualitasnya membaik, latensi atau biaya berkurang, atau maintenance menjadi lebih mudah? Risiko kegagalan baru apa yang muncul? Jika belum terjawab, saya menganggapnya eksperimen menarik yang belum cukup menjadi alasan untuk mengubah production."
       },
       "tags": ["ai-industry", "learning"],
       "asOf": "2026-10"
@@ -336,7 +336,7 @@
       "question": { "en": "Open-source versus closed models: where do you stand for enterprise use?", "id": "Model open-source atau closed: bagaimana posisinya untuk penggunaan enterprise?" },
       "answer": {
         "en": "I'm not ideological about it. I would choose based on workload quality, licensing, data handling, latency, total cost, and who will operate the system. Managed models are often the simplest route to a dependable enterprise application. Open-weight models can provide valuable deployment control and customization, but that comes with operational responsibility. I would keep the application boundaries clear enough to change providers without pretending every model behaves identically.",
-        "id": "Saya tidak ideologis soal ini. Saya memilih berdasarkan kualitas untuk workload-nya, lisensi, penanganan data, latensi, total biaya, dan siapa yang akan mengoperasikan sistemnya. Managed model sering kali jalur paling sederhana menuju aplikasi enterprise yang andal. Model open-weight bisa memberi kendali deployment dan kustomisasi yang berharga, tetapi disertai tanggung jawab operasional. Saya menjaga batas aplikasi cukup jelas agar provider bisa diganti, tanpa menganggap semua model berperilaku sama."
+        "id": "Saya tidak terpaku pada salah satu pilihan. Saya mempertimbangkan kualitas pada workload yang dituju, lisensi, penanganan data, latensi, total biaya, dan siapa yang mengoperasikan sistemnya. Managed model sering menjadi cara paling sederhana untuk membangun aplikasi enterprise yang andal. Model open-weight dapat memberi kendali deployment dan kustomisasi, sekaligus menambah tanggung jawab operasional. Batas antarkomponen aplikasi perlu cukup jelas agar provider dapat diganti, dengan tetap memperhitungkan perbedaan perilaku setiap model."
       },
       "tags": ["ai-industry", "llm", "enterprise"],
       "asOf": "2026-10"
@@ -346,7 +346,7 @@
       "question": { "en": "What's the state of AI adoption in Indonesian enterprises today?", "id": "Bagaimana kondisi adopsi AI di perusahaan Indonesia saat ini?" },
       "answer": {
         "en": "From the enterprise work I'm involved in, the interest is real. The harder step is moving from a convincing PoC to an owned, integrated, measurable service. Employee use and organizational readiness are different things. Microsoft and LinkedIn's 2024 Work Trend Index for Indonesia found widespread use among surveyed knowledge workers, while also reporting gaps in leadership plans. That is not a national measure of production AI deployment. My focus is the gap between experimentation and something a business can reliably operate.",
-        "id": "Dari pekerjaan enterprise yang saya jalani, minatnya nyata. Langkah yang lebih sulit adalah beralih dari PoC yang meyakinkan ke layanan yang punya pemilik, terintegrasi, dan terukur. Penggunaan oleh karyawan dan kesiapan organisasi adalah dua hal berbeda. Work Trend Index 2024 dari Microsoft dan LinkedIn untuk Indonesia menemukan penggunaan yang luas di antara pekerja pengetahuan yang disurvei, sekaligus mencatat kesenjangan dalam rencana pimpinan. Itu bukan ukuran nasional untuk deployment AI di production. Fokus saya adalah jarak antara eksperimen dan sesuatu yang bisa dioperasikan bisnis dengan andal."
+        "id": "Dari pekerjaan enterprise saya, minat terhadap AI memang nyata. Tantangannya adalah mengubah PoC yang meyakinkan menjadi layanan terintegrasi, terukur, dan jelas penanggung jawabnya. Penggunaan oleh karyawan berbeda dengan kesiapan organisasi. Work Trend Index 2024 dari Microsoft dan LinkedIn untuk Indonesia melaporkan penggunaan luas pada pekerja berbasis pengetahuan yang disurvei, tetapi juga kesenjangan rencana pimpinan. Temuan itu tidak mengukur deployment AI production secara nasional. Fokus saya adalah peralihan dari eksperimen ke layanan yang dapat dioperasikan bisnis dengan andal."
       },
       "tags": ["indonesia-tech", "enterprise", "ai-adoption"],
       "asOf": "2026-10",
@@ -362,7 +362,7 @@
       "question": { "en": "What's unique about building tech for Indonesian users and companies?", "id": "Apa yang khas dari membangun teknologi untuk pengguna dan perusahaan Indonesia?" },
       "answer": {
         "en": "Localization is more than translating an interface. People mix Indonesian, English, regional languages, abbreviations and domain-specific vocabulary. The workflow also has to fit how the organization actually works, including spreadsheets, document handoffs and approval chains. Device capability, connectivity and price sensitivity matter too. I would design around those realities rather than assume that a product proven elsewhere can simply be imported unchanged.",
-        "id": "Lokalisasi lebih dari sekadar menerjemahkan antarmuka. Orang mencampur bahasa Indonesia, bahasa Inggris, bahasa daerah, singkatan, dan istilah khusus domain. Workflow-nya juga harus cocok dengan cara organisasi benar-benar bekerja, termasuk spreadsheet, serah terima dokumen, dan rantai persetujuan. Kemampuan perangkat, konektivitas, dan sensitivitas harga juga penting. Saya merancang dengan mempertimbangkan kenyataan itu, bukan menganggap produk yang terbukti di tempat lain bisa langsung dipakai tanpa perubahan."
+        "id": "Lokalisasi mencakup bahasa antarmuka sekaligus cara produk digunakan. Pengguna mencampur bahasa Indonesia, bahasa Inggris, bahasa daerah, singkatan, dan istilah bidangnya. Workflow juga harus sesuai dengan cara organisasi bekerja, termasuk penggunaan spreadsheet, serah terima dokumen, dan alur persetujuan. Kemampuan perangkat, konektivitas, dan kepekaan terhadap harga perlu diperhitungkan. Saya merancang berdasarkan kondisi itu karena produk yang berhasil di tempat lain belum tentu dapat langsung dipakai tanpa penyesuaian."
       },
       "tags": ["indonesia-tech", "localization", "product"],
       "asOf": "2026-10"
@@ -372,7 +372,7 @@
       "question": { "en": "What does Indonesia's tech ecosystem need most: talent, funding, infrastructure, or policy?", "id": "Apa yang paling dibutuhkan ekosistem teknologi Indonesia: talenta, pendanaan, infrastruktur, atau kebijakan?" },
       "answer": {
         "en": "If I had to prioritize one, I would choose practical talent development, including the organizational ability to use that talent well. We need more opportunities to own real systems, receive serious reviews, and learn deployment, security, evaluation and operations. Funding and infrastructure help, but they do not automatically produce maintainable products. The goal should be more engineers and teams who can deliver and sustain outcomes, not just demonstrate technology.",
-        "id": "Kalau harus memilih satu prioritas, saya memilih pengembangan talenta yang praktis, termasuk kemampuan organisasi untuk memanfaatkan talenta itu dengan baik. Kita butuh lebih banyak kesempatan untuk memegang sistem nyata, mendapat review yang serius, dan belajar deployment, keamanan, evaluasi, serta operasional. Pendanaan dan infrastruktur membantu, tetapi tidak otomatis menghasilkan produk yang mudah dirawat. Tujuannya adalah lebih banyak engineer dan tim yang bisa menghasilkan dan menjaga hasil kerja, bukan sekadar mendemonstrasikan teknologi."
+        "id": "Jika harus memilih satu prioritas, saya akan memilih pengembangan kemampuan praktis, termasuk kemampuan organisasi memanfaatkan talentanya dengan baik. Kita memerlukan lebih banyak kesempatan untuk bertanggung jawab atas sistem nyata, mendapat review yang serius, serta belajar deployment, keamanan, evaluasi, dan operasional. Pendanaan dan infrastruktur membantu, tetapi tidak otomatis menghasilkan produk yang mudah dirawat. Sasarannya adalah lebih banyak engineer dan tim yang mampu membangun serta mempertahankan hasil kerja yang berguna, melampaui demonstrasi teknologi."
       },
       "tags": ["indonesia-tech", "talent", "learning"],
       "asOf": "2026-10"
@@ -403,7 +403,7 @@
       "question": { "en": "Which Indonesian digital products or companies do you admire, and why?", "id": "Produk atau perusahaan digital Indonesia mana yang dikagumi, dan mengapa?" },
       "answer": {
         "en": "I appreciate products such as Gojek, a pioneer in making complicated coordination feel straightforward for users. The interesting engineering achievement is not only scale; it is reducing uncertainty in an everyday activity.",
-        "id": "Saya mengapresiasi produk seperti Gojek, pelopor yang membuat koordinasi yang rumit terasa sederhana bagi pengguna. Pencapaian engineering yang menarik bukan hanya soal skala, melainkan mengurangi ketidakpastian dalam aktivitas sehari-hari."
+        "id": "Saya mengapresiasi produk seperti Gojek yang memelopori cara agar koordinasi rumit terasa sederhana bagi pengguna. Selain skalanya, pencapaian engineering yang menarik adalah berkurangnya ketidakpastian dalam aktivitas sehari-hari."
       },
       "tags": ["indonesia-tech", "product"],
       "asOf": "2026-10"
@@ -423,7 +423,7 @@
       "question": { "en": "How do you see the Personal Data Protection Law, UU PDP, in practice?", "id": "Bagaimana pandangan tentang UU Pelindungan Data Pribadi (UU PDP) dalam praktik?" },
       "answer": {
         "en": "I see it as something that needs to become system behavior, not only a privacy notice. For an AI application, that means understanding what data enters prompts, logs, retrieval indexes and external services; establishing the lawful basis; limiting access and retention; and supporting applicable rights and incident obligations. I would not assume encryption makes everything compliant, or that UU PDP imposes one blanket rule requiring all private-sector data to stay in Indonesia.",
-        "id": "Saya melihatnya sebagai sesuatu yang harus menjadi perilaku sistem, bukan hanya pemberitahuan privasi. Untuk aplikasi AI, artinya memahami data apa yang masuk ke prompt, log, indeks retrieval, dan layanan eksternal; menetapkan dasar pemrosesan yang sah; membatasi akses dan masa simpan; serta mendukung hak subjek data dan kewajiban saat insiden yang berlaku. Saya tidak menganggap enkripsi otomatis membuat semuanya patuh, atau bahwa UU PDP memberlakukan satu aturan menyeluruh yang mewajibkan semua data sektor swasta tetap berada di Indonesia."
+        "id": "Menurut saya, UU PDP perlu diterapkan dalam cara sistem bekerja, selain dicantumkan dalam pemberitahuan privasi. Pada aplikasi AI, penerapannya mencakup pemahaman tentang data yang masuk ke prompt, log, indeks retrieval, dan layanan eksternal; dasar pemrosesan yang sah; batas akses dan masa simpan; serta pemenuhan hak subjek data dan kewajiban penanganan insiden yang berlaku. Enkripsi saja tidak otomatis memenuhi semua persyaratan, dan UU PDP tidak menetapkan kewajiban menyeluruh agar semua data sektor swasta tetap berada di Indonesia."
       },
       "tags": ["policy", "privacy", "data-protection"],
       "asOf": "2026-10"
@@ -443,7 +443,7 @@
       "question": { "en": "How do you think about AI's impact on jobs in Indonesia?", "id": "Bagaimana pandangan tentang dampak AI terhadap pekerjaan di Indonesia?" },
       "answer": {
         "en": "I expect tasks to change unevenly, with real opportunities and real displacement. Productivity gains do not automatically benefit everyone. I'm particularly concerned about removing junior work without replacing the learning pathway it provided. If AI takes over straightforward implementation, organizations still need ways for new engineers to develop judgment. Training should happen inside real workflows, with supervision and responsibility that grow over time.",
-        "id": "Saya memperkirakan tugas akan berubah secara tidak merata, dengan peluang nyata sekaligus pergeseran pekerjaan yang nyata. Kenaikan produktivitas tidak otomatis menguntungkan semua orang. Saya terutama khawatir pekerjaan level junior dihapus tanpa ada pengganti jalur belajar yang dulu disediakannya. Kalau AI mengambil alih implementasi yang sederhana, organisasi tetap butuh cara agar engineer baru bisa membangun penilaian. Pelatihan sebaiknya terjadi di dalam workflow nyata, dengan pengawasan dan tanggung jawab yang bertambah seiring waktu."
+        "id": "Saya memperkirakan perubahan tugas akan berbeda-beda, dengan peluang baru sekaligus pekerjaan yang tergantikan. Kenaikan produktivitas tidak otomatis menguntungkan semua orang. Saya terutama khawatir tugas junior dihapus tanpa mengganti kesempatan belajar yang selama ini diperoleh dari tugas itu. Jika AI mengambil alih implementasi sederhana, organisasi tetap perlu membantu engineer baru mengembangkan kemampuan menilai dan mengambil keputusan. Pelatihan sebaiknya dilakukan dalam workflow nyata, dengan pengawasan dan tanggung jawab yang bertambah seiring waktu."
       },
       "tags": ["policy", "jobs", "careers"],
       "asOf": "2026-10"
@@ -453,7 +453,7 @@
       "question": { "en": "What's one public policy change that would most help Indonesian developers?", "id": "Satu perubahan kebijakan publik apa yang paling membantu developer Indonesia?" },
       "answer": {
         "en": "I would push for documented, interoperable digital interfaces across public services, with usable sandboxes and clear access rules. If every integration needs a separate negotiation or manual document exchange, developers spend time bridging incompatible processes instead of building useful services. Stable APIs, machine-readable standards and predictable processes would help small teams as well as established companies.",
-        "id": "Saya akan mendorong antarmuka digital antarlayanan publik yang terdokumentasi dan saling terhubung, dengan sandbox yang bisa dipakai serta aturan akses yang jelas. Jika setiap integrasi perlu negosiasi tersendiri atau pertukaran dokumen manual, waktu developer habis untuk menjembatani proses yang tidak kompatibel, bukan membangun layanan yang berguna. API yang stabil, standar yang bisa dibaca mesin, dan proses yang bisa diprediksi akan membantu tim kecil maupun perusahaan yang sudah mapan."
+        "id": "Saya akan mendorong antarmuka digital antarlayanan publik yang terdokumentasi dan interoperabel, dengan sandbox yang dapat digunakan serta aturan akses yang jelas. Jika setiap integrasi memerlukan negosiasi tersendiri atau pertukaran dokumen manual, developer menghabiskan waktu untuk menyambungkan proses yang tidak kompatibel sehingga waktu membangun layanan berkurang. API yang stabil, standar yang dapat dibaca mesin, dan proses yang dapat diprediksi akan membantu tim kecil maupun perusahaan mapan."
       },
       "tags": ["policy", "apis", "developers"],
       "asOf": "2026-10"
@@ -463,7 +463,7 @@
       "question": { "en": "What does a typical day look like outside work?", "id": "Seperti apa hari biasa di luar pekerjaan?" },
       "answer": {
         "en": "Outside work, I still make time for gaming. Sometimes I go to the gym or take a walk, depending on my energy. I also enjoy working from coffee shops. On weekends, I like exploring different cafes using public transport. It gives me a change of environment without needing an elaborate plan.",
-        "id": "Di luar pekerjaan, saya tetap menyempatkan waktu untuk bermain game. Kadang saya ke gym atau jalan kaki, tergantung energi. Saya juga senang bekerja dari coffee shop. Di akhir pekan, saya suka menjelajahi kafe yang berbeda dengan transportasi umum. Itu memberi suasana baru tanpa perlu rencana yang rumit."
+        "id": "Di luar pekerjaan, saya tetap meluangkan waktu untuk bermain game. Kadang saya ke gym atau berjalan kaki, tergantung tenaga. Saya juga senang bekerja dari coffee shop. Pada akhir pekan, saya suka mencoba kafe yang berbeda dengan naik transportasi umum. Kegiatan itu memberi suasana baru tanpa perlu rencana rumit."
       },
       "tags": ["lifestyle", "routine"],
       "asOf": "2026-10"
@@ -490,10 +490,10 @@
     },
     {
       "id": "avoiding-burnout",
-      "question": { "en": "How do you avoid burnout while shipping a lot?", "id": "Bagaimana menghindari burnout saat banyak merilis pekerjaan?" },
+      "question": { "en": "How do you avoid burnout while shipping a lot?", "id": "Bagaimana menghindari burnout saat banyak pekerjaan harus diselesaikan?" },
       "answer": {
         "en": "I try to leave room for things that are not another delivery target: gaming, watching anime, walking, going to the gym, or spending time in a different environment. Working from a coffee shop can give me a change of pace, but it is still work, not a replacement for rest. On the engineering side, clearer scope and fewer simultaneous commitments matter too. Using AI to produce more code does not remove my responsibility to review it, so I still need limits.",
-        "id": "Saya berusaha menyisakan ruang untuk hal yang bukan target delivery berikutnya: bermain game, menonton anime, jalan kaki, ke gym, atau menghabiskan waktu di lingkungan yang berbeda. Bekerja dari coffee shop bisa mengubah ritme, tetapi itu tetap kerja, bukan pengganti istirahat. Dari sisi engineering, scope yang lebih jelas dan komitmen paralel yang lebih sedikit juga penting. Memakai AI untuk menghasilkan lebih banyak kode tidak menghapus tanggung jawab saya untuk me-review-nya, jadi saya tetap butuh batasan."
+        "id": "Saya berusaha meluangkan waktu untuk kegiatan di luar target delivery: bermain game, menonton anime, berjalan kaki, ke gym, atau berganti suasana. Bekerja dari coffee shop dapat memberi variasi, tetapi tetap pekerjaan dan tidak menggantikan istirahat. Dari sisi engineering, scope yang jelas dan lebih sedikit komitmen bersamaan juga membantu. Kode dari AI tetap perlu saya review, sehingga jumlah pekerjaan yang diambil harus dibatasi."
       },
       "tags": ["lifestyle", "wellbeing", "productivity"],
       "asOf": "2026-10"

@@ -98,7 +98,7 @@ describe("knowledge pack", () => {
     for (const slug of ["solutions-marketing-site", "ai-solutions-assistant"]) {
       const chunk = pack.chunks.find((c) => c.id === `project-${slug}`)!;
       expect(chunk.text_en, slug).toContain("Live site: public");
-      expect(chunk.text_id, slug).toContain("Situs live: publik");
+      expect(chunk.text_id, slug).toContain("Situs aktif dapat diakses publik");
       expect(chunk.keywords, slug).toEqual(expect.arrayContaining(["website", "sites", "situs"]));
     }
     expect(pack.entities.filter((e) => /mii-microsoft/i.test(e))).toEqual([]);

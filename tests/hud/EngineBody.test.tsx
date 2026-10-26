@@ -161,7 +161,7 @@ describe("EngineBody (B1 station drawers)", () => {
       const stale = reactor("id");
       expect(stale.querySelector("[data-reactor-live]")?.getAttribute("data-reactor-live")).toBe("false");
       expect(tiles(stale)).toEqual({});
-      expect(stale.textContent).toContain("Feed langsung sedang offline");
+      expect(stale.textContent).toContain("Feed sedang offline");
       expect(stale.textContent).not.toContain("Data langsung");
     });
 

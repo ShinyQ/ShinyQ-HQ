@@ -13,7 +13,7 @@
       },
       "summary": {
         "en": "Operating, supervising, evaluating and governing AI agents across the software development lifecycle, with GitHub as the system of record and control plane.",
-        "id": "Mengoperasikan, mengawasi, mengevaluasi dan mengatur AI agent di seluruh siklus pengembangan perangkat lunak, dengan GitHub sebagai system of record dan control plane."
+        "id": "Mengoperasikan, mengawasi, mengevaluasi, dan menerapkan tata kelola AI agent sepanjang siklus pengembangan software, dengan GitHub sebagai system of record dan control plane."
       },
       "edition": "2026-10",
       "file": "GH-600_Study_Guide.pdf",
@@ -96,7 +96,7 @@
       },
       "summary": {
         "en": "Gen AI fundamentals, Google Cloud's gen AI offerings, techniques to improve model output and the business strategy for secure, responsible adoption.",
-        "id": "Dasar gen AI, layanan gen AI Google Cloud, teknik meningkatkan output model dan strategi bisnis untuk adopsi yang aman dan bertanggung jawab."
+        "id": "Dasar gen AI, layanan gen AI Google Cloud, teknik untuk meningkatkan kualitas output model, dan strategi bisnis untuk adopsi yang aman dan bertanggung jawab."
       },
       "edition": "2026-10",
       "file": "Google_Generative_AI_Leader_Study_Guide.pdf",
@@ -159,7 +159,7 @@
       },
       "summary": {
         "en": "Microsoft Foundry, agents, vision, text analysis and information extraction, with decision tables, verified code and original practice questions.",
-        "id": "Microsoft Foundry, agent, vision, analisis teks dan ekstraksi informasi, lengkap dengan tabel keputusan, kode yang sudah diverifikasi dan soal latihan orisinal."
+        "id": "Microsoft Foundry, agent, vision, analisis teks, dan ekstraksi informasi, disertai tabel keputusan, kode yang sudah diverifikasi, dan soal latihan orisinal."
       },
       "edition": "2026-10",
       "file": "AI-103_Study_Guide.pdf",
@@ -232,7 +232,7 @@
       },
       "summary": {
         "en": "A beginner-friendly path through responsible AI, how generative models work, AI workloads and hands-on Python with Microsoft Foundry.",
-        "id": "Jalur yang ramah pemula: responsible AI, cara kerja model generatif, AI workload dan praktik Python dengan Microsoft Foundry."
+        "id": "Panduan untuk pemula yang membahas responsible AI, cara kerja model generatif, AI workload, dan praktik Python dengan Microsoft Foundry."
       },
       "edition": "2026-10",
       "file": "AI-901_Study_Guide.pdf",

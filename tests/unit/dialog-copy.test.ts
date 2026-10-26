@@ -87,7 +87,7 @@ describe("touch boost copy", () => {
 
   it("explains that the next tap turns turbo off, not that it stops driving", () => {
     expect(en.dialog.onboarding.moveCoarse).toMatch(/tap again to turn boost off/i);
-    expect(id.dialog.onboarding.moveCoarse).toMatch(/turbo nyala atau mati/i);
+    expect(id.dialog.onboarding.moveCoarse).toMatch(/menyalakan atau mematikan turbo/i);
   });
 
   it("never teaches a swipe to change floors (owner decision 2026-10-24)", () => {

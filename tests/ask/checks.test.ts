@@ -278,7 +278,7 @@ const perspectiveCheck = (answer: string, question: string, locale: "en" | "id" 
 
 describe("prompt (spec section 13)", () => {
   it("widens the scope to his written views and keeps personal topics and general-assistant work out", () => {
-    expect(PROMPT_VERSION).toBe("2026-10-25.approach.1");
+    expect(PROMPT_VERSION).toBe("2026-10-27.indonesian.1");
     expect(RULES[0]).toContain("the views he has written down");
     expect(RULES[0]).toContain("technology policy and his life outside work");
     const rules = RULES.join(" ");
@@ -434,7 +434,7 @@ describe("perspective checks", () => {
     const q = "What are his engineering principles?";
     expect(relevantClosest(pack, q, retrieve(pack, q, "en").chunks, "en")).toEqual({ title: en.home.howTitle, url: "/contact#how" });
     expect(noViewMessage("en", { title: en.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.en} The closest written source is "${en.home.howTitle}", on the About page.`);
-    expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Tulisan yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
+    expect(noViewMessage("id", { title: id.home.howTitle, url: "/contact#how" })).toBe(`${MESSAGES.noView.id} Sumber tertulis yang paling terkait adalah "${id.home.howTitle}", di halaman Tentang.`);
     expect(noViewMessage("en", { title: "Spec-Driven Development with AI Coding Agents", url: "/blog/spec-driven-development-with-ai-coding-agents" })).toContain(
       '"Spec-Driven Development with AI Coding Agents", on his blog.',
     );

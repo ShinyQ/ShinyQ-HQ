@@ -129,21 +129,21 @@
     "howItRuns": "Cara kerjanya",
     "loop": "Setiap perubahan, langkah demi langkah",
     "tools": "Agent yang dipakai",
-    "excerpt": "Dari rencana sungguhan",
+    "excerpt": "Cuplikan Rencana Kerja",
     "excerptSource": "Baca rencana lengkapnya di GitHub",
     "dateTo": "hingga",
     "prHint": "Nomor pull request terbuka di GitHub pada tab baru.",
-    "round": "Ronde {n}",
+    "round": "Putaran {n}",
     "inProgress": "Sedang berjalan",
     "prCount": "{count, plural, other {# pull request di-merge}}",
-    "prList": "Pull request ronde {n}",
+    "prList": "Pull request putaran {n}",
     "before": "Sebelum",
     "after": "Sesudah",
     "gate": "Gate",
     "checks": "Yang diperiksa dan batasnya",
     "budget": "Batas",
     "blocksMerge": "Wajib lolos sebelum merge",
-    "reportsOnly": "Hanya melapor",
+    "reportsOnly": "Hanya laporan",
     "tiles": {
       "mergedPrs": "Pull request di-merge",
       "commits": "Commit sejak {date}",
@@ -168,12 +168,12 @@
       "title": "Reaktor",
       "subtitle": "Jantung build yang hidup: CI, deploy, agent, dan kunjungan dalam satu mesin.",
       "howItReads": "Cara membacanya",
-      "segments": "Segmen cincin adalah job dari CI run terbaru, dengan warna menara Agent Office: ungu sedang berjalan (cahaya berkejaran mengitari cincin), hijau selesai, merah gagal, abu-abu redup mengantre.",
+      "segments": "Segmen cincin menunjukkan job pada CI run terbaru. Warnanya mengikuti menara Agent Office: ungu berjalan (cahaya berputar mengitari cincin), hijau selesai, merah gagal, abu-abu redup mengantre.",
       "flash": "Kilatan putih menandakan deploy ke production.",
       "sparks": "Percikan yang mengorbit adalah sesi AI agent yang sedang aktif di Agent Office.",
       "pulse": "Kecepatan denyut mengikuti jumlah kunjungan dan pertanyaan Ask sejak peluncuran.",
       "idle": "Cahaya tenang dengan denyut pelan berarti offline, belum ada data, atau gerakan dikurangi.",
-      "polls": "Data baru hanya diambil selama Anda berada di B1.",
+      "polls": "Data baru hanya diambil selama berada di B1.",
       "live": "Data langsung",
       "running": "Job berjalan",
       "done": "Job selesai",
@@ -183,7 +183,7 @@
       "noDeploy": "Belum ada",
       "visits": "Kunjungan sejak peluncuran",
       "asks": "Pertanyaan Ask sejak peluncuran",
-      "offline": "Feed langsung sedang offline, jadi inti reaktor menampilkan cahaya tenangnya."
+      "offline": "Feed sedang offline. Inti reaktor menampilkan cahaya tenang."
     }
   },
   "journey": {
@@ -207,7 +207,7 @@
   "timeTravel": {
     "title": "Mesin Waktu",
     "lead": "Setiap gedung adalah satu tahun perjalanan, dari proyek sekolah pertama hingga hari ini. Pilih satu tahun, atau putar seluruh perjalanan.",
-    "skyline": "Perjalanan sebagai cakrawala, satu gedung per tahun",
+    "skyline": "Panorama perjalanan, satu gedung per tahun",
     "slider": "Tahun",
     "play": "Putar perjalanan",
     "pause": "Jeda",
@@ -289,7 +289,7 @@
     "download": "Unduh PDF",
     "close": "Tutup pembaca",
     "loading": "Membuka panduan belajar",
-    "error": "Panduan belajar tidak dapat dibuka.",
+    "error": "Panduan belajar belum dapat dibuka. Coba lagi.",
     "domains": "Domain ujian",
     "edition": "Edisi {date}",
     "independent": "Materi belajar mandiri, bukan panduan ujian resmi."
@@ -313,9 +313,9 @@
       "dataset": "Dataset"
     },
     "research": "Riset",
-    "researchIntro": "Makalah saya yang melalui peer review dan publikasi skripsi S1.",
+    "researchIntro": "Makalah hasil peer review dan publikasi skripsi S1 saya.",
     "guides": "Panduan belajar",
-    "guidesIntro": "Panduan belajar yang saya tulis saat menyiapkan tiap ujian sertifikasi, bisa dibaca langsung di sini.",
+    "guidesIntro": "Panduan yang saya tulis saat belajar untuk tiap ujian sertifikasi. Baca langsung di sini.",
     "authors": "Penulis",
     "doi": "DOI",
     "pdf": "PDF",
@@ -444,7 +444,7 @@
   "notFound": {
     "kicker": "404 · Di luar peta",
     "title": "Rover salah belok",
-    "body": "Lantai ini tidak ada di peta. Ini tiga jalan kembali.",
+    "body": "Lantai ini tidak ada di peta. Pilih salah satu dari tiga jalur berikut.",
     "cv": "Lihat CV",
     "cvHint": "Pengalaman, keahlian, dan kontak",
     "work": "Lihat karya",
@@ -493,11 +493,11 @@
       },
       "tutorial": {
         "label": "Putar ulang tutorial",
-        "hint": "Rover memandu keliling HQ lagi."
+        "hint": "Ulangi panduan menjelajah HQ."
       },
       "hints": {
         "label": "Petunjuk",
-        "hint": "Menampilkan gelembung ! di dekat hal yang bisa dipakai."
+        "hint": "Menampilkan gelembung ! di dekat objek yang bisa digunakan."
       },
       "title": "Pengaturan",
       "open": "Pengaturan",
@@ -539,11 +539,11 @@
       "rooms": "Tempat di lantai ini",
       "visited": "sudah dikunjungi",
       "close": "Tutup peta",
-      "officeAsks": ", Kantor Agen: sebuah Rover menunggu Kurniadi"
+      "officeAsks": ", Kantor Agen: ada Rover yang menunggu Kurniadi"
     },
     "profile": "Profil",
-    "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Tuju: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
-    "hintCoarse": "Kemudi: joystick · Turbo: tombol petir atau ketuk dua kali joystick · Tuju: ketuk dua kali objek yang menyala · Lihat: seret · Zoom: cubit · Lantai: chip lantai atau lift",
+    "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Pergi: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
+    "hintCoarse": "Kemudi: joystick · Turbo: tombol petir atau ketuk dua kali joystick · Pergi: ketuk dua kali objek yang menyala · Lihat: seret · Zoom: cubit · Lantai: chip lantai atau lift",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "bootEyebrow": "Agent HQ · memulai",
@@ -834,7 +834,7 @@
   "case": {
     "onThisPage": "Di halaman ini",
     "more": "Proyek {wing} lainnya",
-    "breadcrumb": "Jejak navigasi",
+    "breadcrumb": "Jalur navigasi",
     "kind": "Jenis proyek",
     "room": "Ruang di HQ 3D"
   },
@@ -855,7 +855,7 @@
     "privacy": "Pertanyaan dan jawaban diproses oleh Cloudflare Workers AI, atau oleh Groq (tanpa penyimpanan data) sebagai cadangan saat Workers AI tidak tersedia atau kuotanya habis. Log AI Gateway disimpan paling lama 7 hari. Pola email, nomor telepon, dan nomor identitas yang dikenali disamarkan dari pertanyaan sebelum diproses AI atau dicatat. Pertanyaan yang tidak bisa dijawab disimpan secara privat paling lama 3 bulan, disamarkan dengan cara yang sama, agar topik yang belum ada bisa ditambahkan; yang dipublikasikan hanya jumlah dan topiknya. Percakapan disimpan di tab ini selama sesi browser. Hingga tiga tanya-jawab sebelumnya dapat ikut dikirim saat bertanya lagi. Menutup obrolan hanya menyembunyikannya. Obrolan baru mengosongkan percakapan di tab ini, bukan menghapus log layanan yang tersimpan. Tidak perlu akun. Tanya AI memakai cookie anti-bot selama 30 menit, terpisah dari penghitungan kunjungan anonim. Hindari membagikan informasi pribadi.",
     "error": {
       "rateLimited": "Terlalu banyak pertanyaan untuk saat ini. Coba lagi dalam {minutes} menit.",
-      "offline": "Rover sedang istirahat. CV dan halaman karya menjawab banyak hal.",
+      "offline": "Rover sedang istirahat. Lihat CV dan halaman karya.",
       "fallback": "Jawaban belum tersedia saat ini. Coba pencarian atau halaman Karya dan Perjalanan."
     },
     "palette": {
@@ -872,7 +872,7 @@
       "close": "Tutup obrolan",
       "newChat": "Obrolan baru",
       "threadLabel": "Percakapan",
-      "welcome": "Halo, saya Rover! Tanyakan karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Saya menjawab dengan AI dari situs ini. Pilih topik atau ketik pertanyaan.",
+      "welcome": "Halo, saya Rover! Tanyakan karya, proyek, karier, cara kerja Kurniadi, atau cara menghubunginya. Jawaban AI saya bersumber dari situs ini. Pilih topik atau ketik pertanyaan.",
       "you": "Pengunjung",
       "hq": "Rover",
       "startersLabel": "Coba tanyakan",
@@ -986,9 +986,9 @@
       "skip": "Lewati tutorial",
       "skipped": "Tidak masalah. Tutorial bisa diputar ulang kapan saja dari Pengaturan.",
       "moveFine": "Kemudikan dengan WASD atau tombol panah. Tahan Shift untuk turbo.",
-      "moveCoarse": "Geser joystick untuk mengemudi. Ketuk tombol Turbo (atau ketuk dua kali joystick) untuk turbo nyala atau mati.",
+      "moveCoarse": "Geser joystick. Ketuk tombol Turbo atau ketuk dua kali joystick untuk menyalakan atau mematikan turbo.",
       "pointGoFine": "Arahkan ke objek yang menyala untuk melihat namanya, lalu klik, nanti saya antar. Coba!",
-      "pointGoCoarse": "Atau ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
+      "pointGoCoarse": "Ketuk objek yang menyala, lalu ketuk lagi atau pilih tombol Pergi. Nanti saya antar. Coba!",
       "moved": "Mantap, kemudinya lancar!",
       "cameraFine": "Seret atau pakai Q dan E untuk melihat sekeliling. Scroll untuk zoom; zoom terus untuk lihat dari mata saya!",
       "cameraCoarse": "Seret atau putar dua jari untuk melihat sekeliling. Cubit untuk zoom; zoom terus untuk lihat dari mata saya!",
@@ -996,8 +996,8 @@
       "roverMenu": "Belum tahu mau ke mana? Buka Menu Rover untuk memilih tujuan di HQ.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
-      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja.",
-      "pointGoPhone": "Ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
+      "closingShort": "Itu langkah dasarnya! Tutorial lengkap bisa diulang kapan saja dari Pengaturan.",
+      "pointGoPhone": "Ketuk objek yang menyala, lalu ketuk lagi atau pilih tombol Pergi. Nanti saya antar. Coba!",
       "movedPhone": "Mantap! Joystick dan tombol Turbo juga bisa dipakai.",
       "floorChip": "Ketuk chip lantai di atas untuk naik lift ke lantai lain."
     },
@@ -1165,14 +1165,14 @@
   "stats": {
     "title": "Kunjungan",
     "observatory": "Observatorium Pengunjung",
-    "intro": "Kunjungan yang dihitung oleh situs ini sendiri dan jumlah pertanyaan AI: hari ini langsung, hari-hari sebelumnya diperbarui setiap jam.",
+    "intro": "Jumlah kunjungan dan pertanyaan AI yang dicatat situs ini. Angka hari ini diperbarui langsung, hari sebelumnya tiap jam.",
     "approx": "sekitar {n}",
     "window": {
       "d30": "30 hari terakhir, termasuk hari ini",
       "all": "Sejak {date}"
     },
-    "source": "Kunjungan: penghitung anonim milik situs ini, satu per tab browser, tanpa cookie (estimasi Cloudflare Web Analytics sebelum akhir Okt 2026). Negara dan tampilan halaman: Cloudflare Web Analytics, sampel",
-    "updated": "Hari ini langsung, hari sebelumnya setiap jam",
+    "source": "Kunjungan: penghitung anonim situs ini, satu per tab browser, tanpa cookie (estimasi Cloudflare Web Analytics sebelum akhir Okt 2026). Negara dan tampilan halaman: sampel Cloudflare Web Analytics",
+    "updated": "Hari ini diperbarui langsung, hari sebelumnya tiap jam",
     "delayed": "Tertunda: terakhir diperbarui {date}",
     "loading": "Memuat statistik kunjungan",
     "offline": "Angka pengunjung sedang diperbarui. Coba lagi sebentar lagi.",
@@ -1208,7 +1208,7 @@
     "topicsTitle": "Pertanyaan per topik",
     "topicsNote": "Porsi pertanyaan bertopik, dikelompokkan otomatis berdasarkan jawabannya.",
     "chipsTitle": "Pertanyaan yang disarankan",
-    "chipsNote": "Pertanyaan yang disarankan yang paling sering dipilih (paling banyak lima) dan seberapa sering masing-masing dipilih. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
+    "chipsNote": "Saran pertanyaan terpopuler (paling banyak lima) beserta jumlah pemilihannya. Teks yang diketik pengunjung tidak ditampilkan di statistik ini.",
     "chipCount": "{count, plural, other {{n} kali dipilih}}",
     "noChips": "Pertanyaan yang disarankan untuk topik ini belum pernah dipilih.",
     "map": {
@@ -1240,13 +1240,13 @@
     "clientProject": "Proyek klien",
     "helpers": "{n, plural, other {# asisten}}",
     "classic": {
-      "title": "Kantor Agen Langsung",
-      "intro": "Agen AI coding yang bekerja bersama Kurniadi, ditampilkan langsung: apa yang sedang dikerjakan masing-masing saat ini, ditambah aktivitas GitHub publik. Kantor yang sama berdiri di sayap Lobi 3D.",
+      "title": "Kantor Agen Live",
+      "intro": "Aktivitas langsung para agen coding AI yang bekerja bersama Kurniadi, beserta aktivitas GitHub publik. Kantor yang sama juga ada di salah satu sayap Lobi 3D.",
       "loading": "Membuka kantor...",
       "loadingNote": "Agen di meja mereka, angka hari ini, dan aktivitas GitHub publik terbaru, diperbarui selama kartu ini terlihat di layar.",
       "live": "Langsung",
-      "paused": "Dijeda: pembaruan berlanjut saat Anda kembali",
-      "semiLive": "Semi-langsung: tidak ada agen yang melapor, hanya aktivitas GitHub publik",
+      "paused": "Dijeda: pembaruan dilanjutkan saat kembali",
+      "semiLive": "Live terbatas: tidak ada laporan agen, hanya aktivitas GitHub publik",
       "resting": "Istirahat: kantor sedang tidak melapor",
       "offline": "Offline: menampilkan aktivitas terakhir yang diketahui",
       "offlineEmpty": "Kantor live sedang sepi. Lihat karya terbaru di Tulisan dan Karya.",
@@ -1265,7 +1265,7 @@
       "status": { "running": "Berjalan", "success": "Lulus", "failure": "Gagal", "merged": "Di-merge", "opened": "Dibuka", "pushed": "Di-push" }
     },
     "3d": {
-      "subtitle": "Agen AI coding secara live dan aktivitas GitHub publik",
+      "subtitle": "Aktivitas live agen coding AI dan GitHub publik",
       "agentFull": { "copilot": "GitHub Copilot", "claude": "Claude Code", "codex": "OpenAI Codex" },
       "offDuty": "Tidak bertugas",
       "clientPrivate": "Proyek klien (privat, detail disembunyikan)",
@@ -1289,10 +1289,10 @@
         },
         "state": { "working": "sedang bekerja", "thinking": "sedang berpikir", "reviewing": "sedang meninjau", "testing": "sedang menjalankan tes", "ci": "sedang menunggu CI", "input": "sedang menunggu Kurniadi", "done": "sudah selesai", "failed": "terhenti karena CI gagal", "asleep": "sedang tidur" }
       },
-      "hooks": "Langsung dari hook agen di mesin Kurniadi, diperbarui sekitar setiap 10 detik selama Anda melihat.",
+      "hooks": "Dari hook agen di komputer Kurniadi, diperbarui sekitar setiap 10 detik selama panel ini terlihat.",
       "githubNote": "Dari webhook GitHub publik. Repositori privat tidak pernah muncul di sini.",
       "ciTitle": "Jalur Rilis",
-      "ciNote": "Menara CI: satu jalur lampu per job dari run terbaru di repositori publik, satu paket di dermaga per pull request yang digabung, satu sinar per deploy produksi.",
+      "ciNote": "Menara CI menampilkan satu jalur cahaya per job pada run terbaru di repositori publik, satu paket di dock per pull request merged, dan satu sorot cahaya per deploy ke production.",
       "target": { "office": "Agent Office: ringkasan", "github": "Agent Office: papan GitHub", "ci": "Agent Office: menara CI", "desk": "Meja {n}: {agent}" },
       "replay": {
         "banner": "Putar ulang · {day} · {time}",
@@ -1341,7 +1341,7 @@
       "explore": "Median waktu hingga siap dijelajahi",
       "nightly": "Uji performa setiap malam",
       "sessions": "{count} sesi 3D dalam sampel sejak peluncuran",
-      "source": "Beacon performa anonim dan penghitung kunjungan milik situs ini. Hari ini langsung, hari sebelumnya setiap jam.",
+      "source": "Beacon performa anonim dan penghitung kunjungan situs ini. Angka hari ini diperbarui langsung, hari sebelumnya tiap jam.",
       "offline": "Angka terkini belum tersedia."
     },
     "explore": {

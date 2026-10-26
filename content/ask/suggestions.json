@@ -28,7 +28,7 @@
     {
       "id": "work-security",
       "topic": "work",
-      "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia mengotomasi vulnerability scanning?" },
+      "q": { "en": "How did he automate vulnerability scanning?", "id": "Bagaimana dia membuat vulnerability scanning otomatis?" },
       "tags": ["work", "security"],
       "followUps": ["ai-security", "work-stack", "work-best"],
       "expect": ["project-vulnerability-scanning-automation"]
@@ -140,7 +140,7 @@
     {
       "id": "ai-voice-latency",
       "topic": "ai",
-      "q": { "en": "What latency did the voice agent reach?", "id": "Berapa latensi yang dicapai voice agent-nya?" },
+      "q": { "en": "What latency did the voice agent reach?", "id": "Berapa latensi voice agent yang dia bangun?" },
       "tags": ["ai", "voice"],
       "followUps": ["ai-voice-interrupt", "ai-fraud", "ai-llm-failures"],
       "expect": ["project-voice-ai-contact-center"]
@@ -365,7 +365,7 @@
     {
       "id": "contact-channels",
       "topic": "contact",
-      "q": { "en": "Where can I find him on LinkedIn and GitHub?", "id": "Di mana saya bisa menemukan dia di LinkedIn dan GitHub?" },
+      "q": { "en": "Where can I find him on LinkedIn and GitHub?", "id": "Di mana profil LinkedIn dan GitHub-nya?" },
       "tags": ["contact", "github"],
       "followUps": ["work-github", "contact-reach", "contact-writing"],
       "expect": ["contact"]
@@ -413,7 +413,7 @@
     {
       "id": "contact-problem-callcenter",
       "topic": "contact",
-      "q": { "en": "Our call center can't keep up. His approach?", "id": "Call center kami kewalahan. Pendekatannya?" },
+      "q": { "en": "Our call center can't keep up. His approach?", "id": "Call center kami kewalahan. Bagaimana pendekatannya?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-latency", "contact-reach", "work-best"],
       "expect": ["project-voice-ai-contact-center", "contact"]
@@ -421,7 +421,7 @@
     {
       "id": "contact-problem-latency",
       "topic": "contact",
-      "q": { "en": "How would he tackle slow voice AI latency?", "id": "Latensi voice AI kami lambat. Pendekatannya?" },
+      "q": { "en": "How would he tackle slow voice AI latency?", "id": "Bagaimana dia akan mengatasi latensi voice AI yang tinggi?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-callcenter", "contact-reach", "work-best"],
       "expect": ["project-voice-ai-contact-center", "contact"]
@@ -429,7 +429,7 @@
     {
       "id": "contact-problem-docs",
       "topic": "contact",
-      "q": { "en": "How would he speed up slow document review?", "id": "Review dokumen kami lambat. Pendekatannya?" },
+      "q": { "en": "How would he speed up slow document review?", "id": "Bagaimana dia akan mempercepat review dokumen yang lambat?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-fraud", "contact-reach", "work-best"],
       "expect": ["project-fraud-review-platform", "contact"]
@@ -437,7 +437,7 @@
     {
       "id": "contact-problem-fraud",
       "topic": "contact",
-      "q": { "en": "Our fraud checks are manual. His approach?", "id": "Cek fraud kami masih manual. Pendekatannya?" },
+      "q": { "en": "Our fraud checks are manual. His approach?", "id": "Cek fraud kami masih manual. Bagaimana pendekatannya?" },
       "tags": ["contact", "work", "ai"],
       "followUps": ["contact-problem-docs", "contact-reach", "work-best"],
       "expect": ["project-automotive-fraud-dashboard", "contact"]
@@ -461,7 +461,7 @@
     {
       "id": "persp-review",
       "topic": "perspectives",
-      "q": { "en": "What are his AI-agent code review principles?", "id": "Apa prinsipnya saat code review kode AI agent?" },
+      "q": { "en": "What are his AI-agent code review principles?", "id": "Apa prinsipnya saat review kode dari AI agent?" },
       "tags": ["perspectives", "agents"],
       "followUps": ["persp-agents", "persp-reliability", "work-security"],
       "expect": ["principles", "project-agent-orchestrated-delivery"]
@@ -469,7 +469,7 @@
     {
       "id": "persp-reliability",
       "topic": "perspectives",
-      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menangani reliabilitas LLM?" },
+      "q": { "en": "How does he handle LLM reliability?", "id": "Bagaimana dia menjaga keandalan LLM?" },
       "tags": ["perspectives", "ai", "writing"],
       "followUps": ["ai-llm-failures", "persp-metrics", "ai-shadow"],
       "expect": ["post-45-percent-of-our-llm-calls-failed"]
@@ -525,7 +525,7 @@
     {
       "id": "persp-build-indonesia",
       "topic": "perspectives",
-      "q": { "en": "What is unique about building for Indonesia?", "id": "Apa yang khas dari membangun untuk Indonesia?" },
+      "q": { "en": "What is unique about building for Indonesia?", "id": "Apa yang khas saat membangun teknologi untuk Indonesia?" },
       "tags": ["perspectives", "software"],
       "followUps": ["persp-ai-indonesia", "persp-indo-llm"],
       "expect": ["perspective-building-for-indonesia"]
@@ -557,7 +557,7 @@
     {
       "id": "persp-uu-pdp",
       "topic": "perspectives",
-      "q": { "en": "How does UU PDP work in practice?", "id": "Bagaimana UU PDP berjalan dalam praktik?" },
+      "q": { "en": "How does UU PDP work in practice?", "id": "Bagaimana penerapan UU PDP dalam praktik?" },
       "tags": ["perspectives", "data"],
       "followUps": ["persp-ai-regulation", "persp-dev-policy"],
       "expect": ["perspective-uu-pdp-in-practice"]
@@ -565,7 +565,7 @@
     {
       "id": "persp-ai-jobs",
       "topic": "perspectives",
-      "q": { "en": "Will AI take jobs in Indonesia?", "id": "Apakah AI akan mengambil pekerjaan di Indonesia?" },
+      "q": { "en": "Will AI take jobs in Indonesia?", "id": "Apakah AI akan menggantikan pekerjaan di Indonesia?" },
       "tags": ["perspectives", "ai", "career"],
       "followUps": ["persp-replace", "persp-compete", "persp-ai-regulation"],
       "expect": ["perspective-ai-and-jobs"]
@@ -573,7 +573,7 @@
     {
       "id": "persp-dev-policy",
       "topic": "perspectives",
-      "q": { "en": "Which tech policy would help developers?", "id": "Kebijakan apa yang paling membantu developer?" },
+      "q": { "en": "Which tech policy would help developers?", "id": "Kebijakan teknologi apa yang membantu developer?" },
       "tags": ["perspectives", "software"],
       "followUps": ["persp-build-indonesia", "persp-ai-regulation", "persp-uu-pdp"],
       "expect": ["perspective-public-digital-interfaces"]
@@ -685,7 +685,7 @@
     {
       "id": "about-problems",
       "topic": "about",
-      "q": { "en": "Which problems does he enjoy most?", "id": "Masalah apa yang paling dia nikmati?" },
+      "q": { "en": "Which problems does he enjoy most?", "id": "Masalah apa yang paling dia sukai untuk diselesaikan?" },
       "tags": ["perspectives"],
       "followUps": ["about-one-line", "about-pressure", "persp-principles"],
       "expect": ["perspective-problems-enjoyed"]
@@ -693,7 +693,7 @@
     {
       "id": "about-pressure",
       "topic": "about",
-      "q": { "en": "How does he handle a production incident?", "id": "Bagaimana dia menghadapi insiden pukul 2 pagi?" },
+      "q": { "en": "How does he handle a production incident?", "id": "Bagaimana dia menangani insiden production pukul 2 pagi?" },
       "tags": ["perspectives"],
       "followUps": ["about-mistake", "about-burnout", "persp-reliability"],
       "expect": ["perspective-pressure-incidents"]
@@ -774,7 +774,7 @@
     {
       "id": "site-settings",
       "topic": "site",
-      "q": { "en": "What can I change in this site's settings?", "id": "Apa saja yang bisa saya ubah di situs ini?" },
+      "q": { "en": "What can I change in this site's settings?", "id": "Apa saja yang bisa diubah lewat pengaturan situs ini?" },
       "tags": ["work"],
       "followUps": ["site-minimap", "site-classic", "site-share"],
       "expect": ["site-build"]

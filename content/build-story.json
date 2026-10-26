@@ -4,14 +4,14 @@
   "title": { "en": "How This Site Was Built", "id": "Cara Situs Ini Dibuat" },
   "lead": {
     "en": "ShinyQ HQ was built in the open by AI coding agents working from written specs and plans. Kurniadi reviewed the changes and approved each merge. This page follows the build from its blueprint to the checks required before release.",
-    "id": "ShinyQ HQ dibangun secara terbuka melalui serangkaian pull request. AI coding agent bekerja berdasarkan spec dan rencana tertulis; Kurniadi meninjau perubahan dan menyetujui setiap merge. Halaman ini menjelaskan arsitektur, proses pembangunan, dan pemeriksaan sebelum rilis."
+    "id": "ShinyQ HQ dibangun secara terbuka oleh AI coding agent berdasarkan spec dan rencana tertulis. Kurniadi meninjau perubahan dan menyetujui setiap merge. Halaman ini mengikuti proses pembangunannya, dari cetak biru hingga pemeriksaan wajib sebelum rilis."
   },
   "stations": {
     "blueprint": {
       "title": { "en": "The Blueprint", "id": "Cetak Biru" },
       "summary": {
         "en": "The whole system on one map: who writes the code, where it ships, and what runs when a visitor opens the site.",
-        "id": "Seluruh sistem dalam satu peta: siapa yang menulis kode, ke mana kode dikirim, dan apa yang berjalan saat pengunjung membuka situs."
+        "id": "Seluruh sistem dalam satu peta: siapa yang menulis kode, di mana hasilnya di-deploy, dan apa yang berjalan saat pengunjung membuka situs."
       },
       "architecture": {
         "nodes": [
@@ -94,7 +94,7 @@
           {
             "id": "kv",
             "label": { "en": "KV and Analytics Engine", "id": "KV dan Analytics Engine" },
-            "sublabel": { "en": "Ask knowledge pack, visit counts, beacons", "id": "Knowledge pack Ask, hitungan kunjungan, beacon" },
+            "sublabel": { "en": "Ask knowledge pack, visit counts, beacons", "id": "Knowledge pack Ask, jumlah kunjungan, beacon" },
             "layer": 3,
             "row": 2,
             "kind": "data",
@@ -134,7 +134,7 @@
           { "from": "visitor", "to": "pages", "label": "HTML, JS, 3D" },
           { "from": "visitor", "to": "functions", "label": { "en": "Ask, office, guides, stats", "id": "Ask, kantor, panduan, statistik" } },
           { "from": "agents", "to": "relay", "label": { "en": "Hooks", "id": "Hook" } },
-          { "from": "relay", "to": "functions", "label": { "en": "State beats", "id": "Beat status" } },
+          { "from": "relay", "to": "functions", "label": { "en": "State beats", "id": "Pembaruan status berkala" } },
           { "from": "github", "to": "functions", "label": "Webhook" },
           { "from": "functions", "to": "workers-ai" },
           { "from": "functions", "to": "groq", "label": { "en": "Backup", "id": "Cadangan" } },
@@ -163,7 +163,7 @@
         },
         {
           "en": "A merge to main triggers the deploy workflow. It can reuse a green pull request on the same tree; otherwise it waits for complete CI on main. A red main CI run rolls production back to the last good deployment.",
-          "id": "Merge ke main memicu workflow deploy. Hasil pull request yang lolos pada tree yang sama dapat dipakai ulang; jika tidak, workflow menunggu CI lengkap di main. CI main yang gagal memicu rollback ke deployment produksi terakhir yang baik."
+          "id": "Merge ke main memicu workflow deploy. Workflow dapat memakai hasil CI pull request yang sudah lolos pada tree yang sama; jika tidak, CI lengkap di main harus selesai lebih dulu. Jika CI main gagal, workflow melakukan rollback ke deployment production terakhir yang berhasil."
         },
         {
           "en": "The Agent Office runs live. Hooks in GitHub Copilot, Claude Code and Codex call a relay on the owner's Mac, which sends only each session's state and activity type; code, prompts and file paths never leave the machine.",
@@ -171,15 +171,15 @@
         },
         {
           "en": "The hq-office Worker has no public route: Pages Functions reach it through a service binding. Its Durable Object keeps the ten desks, the CI lanes reported by the GitHub webhook and an eight-day replay.",
-          "id": "Worker hq-office tidak punya rute publik: Pages Functions menjangkaunya lewat service binding. Durable Object-nya menyimpan sepuluh meja, jalur CI dari webhook GitHub, dan replay delapan hari."
+          "id": "Worker hq-office tidak memiliki rute publik: Pages Functions mengaksesnya lewat service binding. Durable Object-nya menyimpan sepuluh meja, jalur CI yang dilaporkan webhook GitHub, dan replay delapan hari."
         },
         {
           "en": "Ask reads its knowledge pack from Workers KV, checked by its hash, with a small bundled fallback. Gemma 4 on Workers AI answers first; Mistral Small 3.1 and two free Groq tiers take over when a tier fails.",
-          "id": "Ask membaca knowledge pack dari Workers KV, yang diperiksa hash-nya, dengan fallback kecil di dalam bundle. Gemma 4 di Workers AI menjawab lebih dulu; Mistral Small 3.1 dan dua tier Groq gratis mengambil alih jika satu tier gagal."
+          "id": "Ask membaca knowledge pack dari Workers KV setelah memeriksa hash-nya, dengan fallback kecil yang disertakan dalam bundle. Gemma 4 di Workers AI menjawab lebih dulu; Mistral Small 3.1 dan dua tier Groq gratis menjadi cadangan jika tier sebelumnya gagal."
         },
         {
           "en": "The certification study guides live as PDFs in a private R2 bucket. A Pages Function serves them in byte ranges, so the in-site reader opens a guide without downloading all of it.",
-          "id": "Panduan belajar sertifikasi disimpan sebagai PDF di bucket R2 privat. Pages Function menyajikannya per rentang byte, sehingga pembaca di situs membuka panduan tanpa mengunduh seluruh file."
+          "id": "Panduan belajar sertifikasi disimpan sebagai PDF di bucket R2 privat. Pages Function mengirimnya per rentang byte agar panduan dapat dibuka di pembaca PDF situs tanpa mengunduh seluruh file."
         }
       ],
       "stack": ["Next.js", "React", "Three.js", "TypeScript", "Tailwind CSS", "Bun", "Cloudflare Pages", "Cloudflare Workers", "GitHub Actions", "Vitest", "Playwright"]
@@ -226,7 +226,7 @@
               "height": 600,
               "alt": {
                 "en": "The Classic site home page as built",
-                "id": "Beranda situs klasik seperti yang dibangun"
+                "id": "Hasil pembangunan beranda Situs klasik"
               }
             },
             "caption": {
@@ -251,7 +251,7 @@
               "height": 600,
               "alt": {
                 "en": "Design mockup of the landing hero with the tower directory, drawn before it was built",
-                "id": "Mockup desain hero landing dengan direktori menara, dibuat sebelum dibangun"
+                "id": "Mockup hero halaman awal dengan direktori menara, dibuat sebelum implementasi"
               }
             },
             "after": {
@@ -260,12 +260,12 @@
               "height": 600,
               "alt": {
                 "en": "The landing hero as built, with the Ask AI shortcut",
-                "id": "Hero landing seperti yang dibangun, dengan pintasan Ask AI"
+                "id": "Hasil implementasi hero halaman awal dengan pintasan Ask AI"
               }
             },
             "caption": {
               "en": "The landing hero, from the design mockup to the built page.",
-              "id": "Hero landing, dari mockup desain sampai halaman yang dibangun."
+              "id": "Hero halaman awal, dari mockup desain hingga hasil implementasi."
             }
           }
         },
@@ -305,7 +305,7 @@
           "title": { "en": "Uptime, CSP and Floor Chunks", "id": "Uptime, CSP, dan Chunk Lantai" },
           "summary": {
             "en": "Hourly uptime alerts and per-page CSP hashes arrived, packages were upgraded, floors loaded as separate chunks and the Labs floor was split into three separate project boards.",
-            "id": "Peringatan uptime per jam dan hash CSP per halaman hadir, paket ditingkatkan, lantai dimuat sebagai chunk terpisah, dan lantai Labs dibagi menjadi tiga papan proyek terpisah."
+            "id": "Peringatan uptime per jam dan hash CSP per halaman ditambahkan, paket diperbarui, lantai dimuat sebagai chunk tersendiri, dan lantai Labs dibagi menjadi tiga papan proyek."
           },
           "prs": { "from": 146, "to": 171 },
           "shots": {
@@ -329,7 +329,7 @@
             },
             "caption": {
               "en": "The Labs floor before and after the three separate boards.",
-              "id": "Lantai Labs sebelum dan sesudah tiga papan terpisah."
+              "id": "Lantai Labs sebelum dan sesudah pembagian menjadi tiga papan."
             }
           }
         },
@@ -359,7 +359,7 @@
           "title": { "en": "Faster CI, a Living Sky and a New Intro", "id": "CI Lebih Cepat, Langit Hidup, dan Intro Baru" },
           "summary": {
             "en": "A CI speed-up series: main runs only the complement of its pull request's green run, perf gates follow shared imports, budget sweeps moved to the nightly, Lighthouse checks only the affected pages and e2e shards are packed by worker time. The sun and moon now rise and set on a four-minute cycle, Rover wakes up before a reveal orbit of the Lobby, and every owner decision became its own file.",
-            "id": "Serangkaian percepatan CI: main hanya menjalankan pelengkap dari run pull request yang sudah lolos, gate performa mengikuti import bersama, sapuan budget pindah ke run malam, Lighthouse hanya memeriksa halaman yang terdampak, dan shard e2e dibagi menurut waktu worker. Matahari dan bulan kini terbit dan terbenam dalam siklus empat menit, Rover bangun sebelum orbit pembuka mengelilingi Lobi, dan setiap keputusan pemilik menjadi file tersendiri."
+            "id": "CI dipercepat: main hanya menjalankan pemeriksaan yang belum dicakup run pull request yang lolos, gate performa mengikuti import bersama, pemeriksaan menyeluruh budget dipindahkan ke run malam, Lighthouse hanya memeriksa halaman terdampak, dan shard e2e dibagi menurut waktu worker. Matahari dan bulan kini terbit dan terbenam dalam siklus empat menit, Rover bangun sebelum kamera mengorbit mengelilingi Lobi, dan setiap keputusan pemilik disimpan dalam file tersendiri."
           },
           "prs": { "from": 214, "to": 232 }
         },
@@ -407,7 +407,7 @@
           "title": { "en": "Coordinator", "id": "Koordinator" },
           "text": {
             "en": "A coordinator chat holds the owner's requests and decisions. It splits the work into features and starts one project session per feature, each in its own git worktree and branch, so parallel work never collides, and it keeps at most two CI runs in flight.",
-            "id": "Chat koordinator menyimpan permintaan dan keputusan pemilik. Ia membagi pekerjaan per fitur dan membuka satu sesi proyek untuk setiap fitur, masing-masing dengan git worktree dan branch sendiri, sehingga pekerjaan paralel tidak bertabrakan, dan menjaga paling banyak dua run CI berjalan bersamaan."
+            "id": "Chat koordinator menyimpan permintaan dan keputusan pemilik. Koordinator membagi pekerjaan per fitur dan membuka satu sesi proyek untuk setiap fitur, masing-masing dengan git worktree dan branch sendiri agar pekerjaan paralel tidak bertabrakan, serta membatasi CI hingga dua run bersamaan."
           }
         },
         {
@@ -439,10 +439,10 @@
           }
         },
         {
-          "title": { "en": "Owner Gates", "id": "Gerbang Pemilik" },
+          "title": { "en": "Owner Gates", "id": "Tahap Persetujuan Pemilik" },
           "text": {
             "en": "The owner reviews at fixed gates: the spec, any list that needs approval (the Rejected Designs on this floor went through one), screenshots across phone, tablet and desktop for a visual change, and finally the merge.",
-            "id": "Pemilik meninjau di gerbang yang tetap: spec, daftar yang perlu persetujuan (Desain yang Ditolak di lantai ini melewati salah satunya), screenshot di ponsel, tablet, dan desktop untuk perubahan visual, dan terakhir merge."
+            "id": "Pemilik meninjau pada tahap yang sudah ditentukan: spec, daftar yang memerlukan persetujuan (termasuk Desain yang Ditolak di lantai ini), screenshot ponsel, tablet, dan desktop untuk perubahan visual, lalu merge."
           }
         },
         {
@@ -456,7 +456,7 @@
           "title": { "en": "Deploy", "id": "Deploy" },
           "text": {
             "en": "The owner approves the merge. The deploy workflow can reuse the pull request's required green checks on the same tree; otherwise it waits for full CI on main. Full CI still runs after every merge, and a red run rolls production back to the last good deployment.",
-            "id": "Pemilik menyetujui merge. Workflow deploy dapat memakai ulang pemeriksaan wajib pull request yang lolos pada tree yang sama; jika tidak, workflow menunggu CI lengkap di main. CI lengkap tetap berjalan setelah setiap merge, dan kegagalannya memicu rollback ke deployment produksi terakhir yang baik."
+            "id": "Pemilik menyetujui merge. Workflow deploy dapat memakai hasil pemeriksaan wajib pull request yang lolos pada tree yang sama; jika tidak, workflow menunggu CI lengkap di main. CI lengkap tetap berjalan setelah setiap merge, dan jika gagal, workflow melakukan rollback ke deployment production terakhir yang berhasil."
           }
         }
       ],
@@ -514,7 +514,7 @@
           "title": { "en": "Selective Pull Request Runs", "id": "Run Pull Request Selektif" },
           "text": {
             "en": "Reads a pull request's changed paths and runs only the e2e specs, perf tests and Lighthouse pages they affect, plus a smoke set. Any planner error runs everything.",
-            "id": "Membaca path yang berubah dalam pull request dan hanya menjalankan spec e2e, tes performa, dan halaman Lighthouse yang terdampak, ditambah satu set smoke. Jika perencana gagal, semuanya dijalankan."
+            "id": "Membaca path yang berubah dalam pull request, lalu menjalankan spec e2e, tes performa, dan pemeriksaan halaman Lighthouse yang terdampak beserta smoke test. Jika perencana gagal, seluruh pemeriksaan dijalankan."
           },
           "budget": { "en": "Docs-only and test-only pull requests run no heavy job", "id": "Pull request yang hanya mengubah dokumen atau tes tidak menjalankan job berat" },
           "where": "ci",
@@ -538,7 +538,7 @@
           "title": { "en": "End-to-End Shards", "id": "Shard End-to-End" },
           "text": {
             "en": "Playwright tests the exported site in shards packed by measured worker time, so they finish together. Actions wait for the required application state, never for fixed delays.",
-            "id": "Playwright menguji situs hasil export dalam shard yang dibagi menurut waktu worker terukur, sehingga semuanya selesai bersamaan. Tindakan menunggu kondisi aplikasi yang diperlukan, bukan jeda tetap."
+            "id": "Playwright menguji situs hasil export dalam shard yang dibagi menurut waktu worker terukur agar selesai bersamaan. Setiap aksi menunggu kondisi aplikasi yang diperlukan, tanpa jeda waktu tetap."
           },
           "budget": { "en": "Every spec passes in every shard", "id": "Setiap spec lulus di setiap shard" },
           "where": "ci",
@@ -598,7 +598,7 @@
           "title": { "en": "Nightly Full Run", "id": "Run Lengkap Malam Hari" },
           "text": {
             "en": "Every night the whole suite runs on 8 e2e and 4 perf shards, including the slow budget sweeps kept out of pull requests. A failure opens an issue, which closes once a later night is green.",
-            "id": "Setiap malam seluruh suite berjalan di 8 shard e2e dan 4 shard performa, termasuk sapuan budget lambat yang tidak dijalankan di pull request. Kegagalan membuka issue, yang ditutup setelah run malam berikutnya lolos."
+            "id": "Setiap malam seluruh suite berjalan di 8 shard e2e dan 4 shard performa, termasuk pemeriksaan menyeluruh budget yang terlalu lama untuk pull request. Jika ada kegagalan, issue dibuka dan baru ditutup setelah run malam berikutnya lolos."
           },
           "budget": { "en": "Everything, every night", "id": "Semuanya, setiap malam" },
           "where": "nightly",
@@ -625,7 +625,7 @@
             {
               "id": "visitor",
               "label": { "en": "Visitor", "id": "Pengunjung" },
-              "sublabel": { "en": "Question plus 3 signed turns", "id": "Pertanyaan dan 3 giliran bertanda tangan" },
+              "sublabel": { "en": "Question plus 3 signed turns", "id": "Pertanyaan dan 3 giliran dengan tanda tangan digital" },
               "layer": 0,
               "row": 0,
               "kind": "client"
@@ -717,7 +717,7 @@
           "title": { "en": "Gatekeeper", "id": "Penjaga" },
           "text": {
             "en": "Each question passes a Turnstile check (or a signed 30-minute cookie), rate limits of 8 a minute and 40 a day per visitor, and a scrub of personal data. Earlier turns arrive signed; a turn whose signature fails is dropped.",
-            "id": "Setiap pertanyaan melewati pemeriksaan Turnstile (atau cookie bertanda tangan 30 menit), rate limit 8 per menit dan 40 per hari untuk setiap pengunjung, serta pembersihan data pribadi. Giliran sebelumnya dikirim bertanda tangan; giliran yang tanda tangannya gagal dibuang."
+            "id": "Setiap pertanyaan melewati pemeriksaan Turnstile (atau cookie dengan tanda tangan digital yang berlaku 30 menit), rate limit 8 per menit dan 40 per hari per pengunjung, serta pembersihan data pribadi. Giliran sebelumnya disertai tanda tangan digital; giliran dengan tanda tangan tidak valid dibuang."
           }
         },
         {
@@ -766,7 +766,7 @@
           "title": { "en": "Nightly Evals", "id": "Evaluasi Malam Hari" },
           "text": {
             "en": "Every night a 20-question smoke test runs on Gemma 4, and slices of the golden set, the curated questions and a red team run on a Groq model production never uses; a fidelity set checks the first backup. A red-team failure opens an issue.",
-            "id": "Setiap malam tes smoke 20 pertanyaan berjalan di Gemma 4, dan potongan golden set, pertanyaan pilihan, serta red team berjalan di model Groq yang tidak dipakai produksi; satu set fidelity memeriksa cadangan pertama. Kegagalan red team membuka issue."
+            "id": "Setiap malam smoke test berisi 20 pertanyaan dijalankan di Gemma 4, sementara sebagian golden set, pertanyaan pilihan, dan red team dijalankan di model Groq yang tidak dipakai production; set fidelity menguji model cadangan pertama. Jika red team gagal, issue dibuka."
           }
         }
       ]
@@ -787,7 +787,7 @@
           },
           "reason": {
             "en": "The issuers' pages refuse to be framed (X-Frame-Options and frame-ancestors), and the site only frames itself; in-site preview cards and viewers took their place.",
-            "id": "Halaman penerbit menolak dibingkai (X-Frame-Options dan frame-ancestors), dan situs hanya membingkai dirinya sendiri; kartu pratinjau dan penampil di dalam situs menggantikannya."
+            "id": "Halaman penerbit tidak mengizinkan pemuatan dalam iframe (X-Frame-Options dan frame-ancestors), sedangkan situs hanya mengizinkan iframe dari situsnya sendiri. Sebagai gantinya, situs memakai kartu pratinjau dan penampil bawaan."
           }
         },
         {
@@ -812,7 +812,7 @@
           },
           "reason": {
             "en": "It had to carry the very names it guarded; the owner removed it, and client names stay out by review.",
-            "id": "Daftar itu harus memuat nama-nama yang justru dijaganya; pemilik menghapusnya, dan nama klien dijaga lewat review. B1 menjadi mesin yang hidup: kisah yang lebih rinci ini dengan stasiun Otak Rover dan Desain yang Ditolak, serta aula reaktor yang intinya bergerak mengikuti run CI, deploy, agent yang aktif, dan kunjungan secara langsung."
+            "id": "Daftar itu justru harus menyimpan nama-nama yang hendak dirahasiakan. Pemilik menghapusnya, dan kini review memastikan nama klien tidak masuk ke konten."
           },
           "pr": 288
         },
@@ -838,7 +838,7 @@
           },
           "reason": {
             "en": "Pages Functions bundle every imported JSON into one Worker script, so a second pack saved nothing; English only would break Indonesian retrieval, since BM25 matches the question's words, and the written-source check.",
-            "id": "Pages Functions menggabungkan setiap JSON yang diimpor ke satu script Worker, jadi pack kedua tidak menghemat apa pun; versi bahasa Inggris saja akan merusak retrieval bahasa Indonesia, karena BM25 mencocokkan kata dalam pertanyaan, serta pemeriksaan sumber tertulis."
+            "id": "Pages Functions menggabungkan semua JSON yang diimpor ke satu script Worker, sehingga pack kedua tidak menghemat ukuran. Menyimpan versi bahasa Inggris saja akan mengganggu retrieval bahasa Indonesia karena BM25 mencocokkan kata dalam pertanyaan, serta mengganggu pemeriksaan sumber tertulis."
           }
         },
         {
@@ -862,7 +862,7 @@
           },
           "reason": {
             "en": "In portrait it cut every station sign at the edges and showed mostly floor, so the phone camera turns across the aisle to two whole signs.",
-            "id": "Dalam mode potret, setiap papan nama stasiun terpotong di tepi dan yang terlihat kebanyakan lantai, jadi kamera ponsel berbelok melintasi lorong ke dua papan nama yang utuh."
+            "id": "Dalam mode potret, semua papan nama stasiun terpotong di tepi dan tampilan didominasi lantai. Kamera ponsel lalu diarahkan ke seberang lorong agar dua papan nama terlihat utuh."
           },
           "pr": 209
         },
@@ -875,7 +875,7 @@
           },
           "reason": {
             "en": "A lazy component suspends once even when its chunk is already loaded, and React holds the retry, so the first frame came about 250 ms later.",
-            "id": "Komponen lazy tetap menunda sekali meski chunk-nya sudah dimuat, dan React menahan percobaan ulangnya, sehingga frame pertama muncul sekitar 250 ms lebih lambat."
+            "id": "Komponen lazy tetap mengalami suspend sekali meski chunk-nya sudah dimuat, lalu React menunda percobaan render ulang, sehingga frame pertama muncul sekitar 250 ms lebih lambat."
           },
           "pr": 268
         },

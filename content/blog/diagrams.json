@@ -77,7 +77,7 @@
           },
           "sublabel": {
             "en": "Reviews every pull request and decides what merges",
-            "id": "Meninjau setiap pull request dan memutuskan yang di-merge"
+            "id": "Meninjau tiap pull request dan menentukan mana yang di-merge"
           },
           "layer": 4,
           "row": 0,
@@ -98,7 +98,7 @@
           "label": "Azure App Service",
           "sublabel": {
             "en": "Deploys only after green CI",
-            "id": "Deploy hanya setelah CI hijau"
+            "id": "Deploy hanya setelah CI lolos"
           },
           "layer": 5,
           "row": 1,
@@ -344,7 +344,7 @@
           },
           "sublabel": {
             "en": "Set a ceiling: keep or archive at most",
-            "id": "Menetapkan batas: paling tinggi keep atau archive"
+            "id": "Membatasi tindakan: maksimal keep atau archive"
           },
           "layer": 2,
           "row": 0,
@@ -439,7 +439,7 @@
           },
           "sublabel": {
             "en": "Decisions update priors; conditional nightly calibration",
-            "id": "Keputusan memperbarui prior; kalibrasi malam bersyarat"
+            "id": "Keputusan memperbarui prior; kalibrasi malam jika syarat terpenuhi"
           },
           "layer": 8,
           "row": 1,
@@ -553,7 +553,7 @@
           "label": "Deployment scripts",
           "sublabel": {
             "en": "Verify the release, create secrets in place",
-            "id": "Memverifikasi rilis, membuat secret di tempat"
+            "id": "Memverifikasi rilis, membuat secret di lingkungan pelanggan"
           },
           "layer": 2,
           "row": 0,

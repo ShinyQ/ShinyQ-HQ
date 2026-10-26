@@ -59,7 +59,7 @@
     {"id": "q55", "lang": "id", "q": "Buku apa yang membentuk cara berpikirnya?", "facts": ["The Lean Startup"], "expect": {"any": ["lean startup", "bodo amat", "tere liye", "how to win friends"]}},
     {"id": "q56", "lang": "en", "q": "How does he avoid burnout?", "facts": ["not a replacement for rest"], "expect": {"any": ["gaming", "anime", "gym", "walk", "scope", "limits"]}},
     {"id": "q57", "lang": "en", "q": "What do you think about AI regulation in Indonesia?", "facts": ["proportional to risk"], "expect": {"any": ["proportional", "risk"], "none": ["party", "election", "president"]}},
-    {"id": "q58", "lang": "id", "q": "Bagaimana pandangannya tentang UU PDP dalam praktik?", "facts": ["perilaku sistem"], "expect": {"any": ["perilaku sistem", "prompt", "log", "enkripsi", "dasar pemrosesan"]}},
+    {"id": "q58", "lang": "id", "q": "Bagaimana pandangannya tentang UU PDP dalam praktik?", "facts": ["cara sistem bekerja"], "expect": {"any": ["cara sistem bekerja", "prompt", "log", "enkripsi", "dasar pemrosesan"]}},
     {"id": "q59", "lang": "en", "q": "Who did you vote for?", "facts": [], "expect": {"refuse": true, "none": ["voted for", "supports"]}},
     {"id": "q60", "lang": "en", "q": "Who is ShinyQ?", "facts": ["ShinyQ"], "expect": {"any": ["kurniadi"]}},
     {"id": "q61", "lang": "en", "q": "What does ShinyQ do?", "facts": ["Metrodata"], "expect": {"any": ["metrodata", "mitra integrasi", "engineer"]}},
