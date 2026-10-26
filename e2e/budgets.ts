@@ -82,8 +82,8 @@ export const BYTES_3D_BUDGET = {
   officeWatch: Math.round(2.026 * 1024),
   /** L1 office beacon chunk (the beacon and deploy beam mesh, on the first Needs Kurniadi ask or fresh production deploy), incremental over the office chunks, outside the session total (measured 2,043 B, cap 2,657 B). */
   officeBeacon: Math.round(2.595 * 1024),
-  /** First-session tour chunk (`hud/dialog/onboarding.ts`, loaded only by a session that plays the tour or Replay tutorial), outside both session totals like the intro chunk (parent session under the owner's delegation, 2026-10-25): measured 1,211 B + 614 B (cap 1,825 B). */
-  tour: 1_211 + 614,
+  /** First-session tour chunk (`hud/dialog/onboarding.ts`, loaded only by a session that plays the tour or Replay tutorial), outside both session totals like the intro chunk (parent session under the owner's delegation, 2026-10-25): measured 1,018 B + 614 B (cap 1,632 B; 1,211 B before the tour stopped driving the rover, 2026-10-27). */
+  tour: 1_018 + 614,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   /** Main path + the session floors + the office watch, scene and replay chunks (measured 527,810 B lite, 543,944 B full; caps 528,424 B and 544,558 B, +2,158 B each for the L4 reader tracks, owner decision 2026-10-25). */

@@ -1,7 +1,5 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { stationOf } from "../src/experience/floors/lobby/hallLayout";
-import { highlightRoom } from "../src/experience/floors/lobby/stations";
 import {
   chooseMotion,
   asReturningVisitor,
@@ -18,7 +16,6 @@ import {
   waitForFloor,
   waitForHQ,
   waitForPhase,
-  waitForRoom,
   waitForRoverMove,
   waitForSceneLive,
   fastAnimations,
@@ -254,10 +251,6 @@ test.describe("every step of the tour", () => {
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "view");
     await next(page);
 
-    // The Highlights Hall on L1 east (its stations register once the hall mounts after the intro).
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
-
     await expectLine(page, "elevator");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-target", "elevator");
     await next(page);
@@ -276,7 +269,7 @@ test.describe("every step of the tour", () => {
     expect(errors).toEqual([]);
   });
 
-  test("Take me there drives to the Highlights Hall's first station, then the tour goes on", async ({ page }) => {
+  test("the tour never drives the rover: after the camera line it goes straight to the elevator line (owner decision 2026-10-27)", async ({ page }) => {
     const errors = collectErrors(page);
     await freshVisit(page);
     await waitForPhase(page, "explore", 30_000);
@@ -289,17 +282,13 @@ test.describe("every step of the tour", () => {
     await expectLine(page, "moved");
     await next(page);
     await expectLine(page, "camera");
+    const before = (await snapshot(page)).rover;
     await next(page);
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.showMe }).click();
-    // The drive ends on the first station's door pad, which opens its drawer; Rover waits behind it.
-    await waitForRoom(page, highlightRoom("about"), 60_000);
-    const hall = stationOf("about").pad;
-    const { rover } = await snapshot(page);
-    expect(Math.hypot(rover.x - hall.x, rover.z - hall.z)).toBeLessThan(1.5);
-    await expect(box(page)).toHaveCount(0);
-    await page.keyboard.press("Escape");
     await expectLine(page, "elevator");
+    await expect(choices(page)).toHaveCount(0);
+    const after = (await snapshot(page)).rover;
+    expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeLessThan(0.5);
+    expect(await page.evaluate(() => (window as unknown as { __hq: { store: { getState(): { mission: { status: string } | null } } } }).__hq.store.getState().mission?.status ?? null)).not.toBe("running");
     expect(errors).toEqual([]);
   });
 
@@ -368,8 +357,6 @@ test.describe("reduced motion", () => {
     await page.keyboard.press("Enter");
     await expectLine(page, "camera");
     await page.keyboard.press("Enter");
-    await expectLine(page, "highlights");
-    await choices(page).getByRole("button", { name: en.dialog.onboarding.later }).click();
     await expectLine(page, "elevator");
     await expect(page.getByTestId("onboard-spotlight")).toHaveAttribute("data-motion", "still");
     await context.close();

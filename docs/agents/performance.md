@@ -28,9 +28,9 @@ Index: [AGENTS.md](../../AGENTS.md).
 | L1 office replay controls chunk (`BYTES_3D_BUDGET.officeControls`) | 1.41 KB gzip, a lazy chunk of the replay chunk loaded only by the drawer's "Show day replay" press, outside the session total and the office total like the beacon (owner decision; measured 826 B of 1,440 B) | `e2e/budgets.ts` |
 | L1 office watch chunk (`BYTES_3D_BUDGET.officeWatch`) | 2.03 KB gzip, inside the session total (measured 1,737 B of 2,075 B) | `e2e/budgets.ts` |
 | L1 office beacon chunk (`BYTES_3D_BUDGET.officeBeacon`) | 2.59 KB gzip, outside the session total (measured 2,043 B of 2,657 B: measured plus 614 B) | `e2e/budgets.ts` |
-| First-session tour chunk (`BYTES_3D_BUDGET.tour`) | 1.78 KB gzip, outside both session totals like the intro chunk (measured 1,211 B of 1,825 B: measured plus 614 B, [decision](../decisions/2026-10-26-phone-first-3d.md)) | `e2e/budgets.ts` |
-| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 530.9 KB, 543,606 B of 544,558 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
-| Session total, lite tier | lite 516.0 KB (measured 515.1 KB, 527,472 B of 528,424 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| First-session tour chunk (`BYTES_3D_BUDGET.tour`) | 1.59 KB gzip, outside both session totals like the intro chunk (measured 1,018 B of 1,632 B: measured plus 614 B, [decision](../decisions/2026-10-26-phone-first-3d.md)) | `e2e/budgets.ts` |
+| Session total, full tier (`BYTES_3D_BUDGET.session`) | full 531.8 KB (measured 530.9 KB, 543,572 B of 544,558 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
+| Session total, lite tier | lite 516.0 KB (measured 515.1 KB, 527,438 B of 528,424 B; +2,158 B for the L4 reader tracks, owner decision 2026-10-25) | `e2e/budgets.ts` |
 | Study guide reader, downloaded on the Read click (`GUIDE_READER_BUDGET`) | chunk 160 KB gzip (measured 142.9 KB), worker 400 KB gzip (measured 361.3 KB) | `e2e/budgets.ts`, [Study guide reader](#study-guide-reader) |
 | Shader programs per floor and tier | within `e2e/perf/baseline.json` + 2 | `e2e/perf/baseline.json`, headroom in `e2e/budgets.ts` (`PROGRAM_HEADROOM`) |
 | Full-tier memory round trips (`GPU_MEMORY_BUDGET.fullTierRoundTrips`) | (3) Lobby to Roof round trips, geometries, textures and programs at baseline, heap within the budget | `e2e/budgets.ts` (`GPU_MEMORY_BUDGET`) |
@@ -88,7 +88,7 @@ CV page images are near-lossless WebP, about 27% fewer image bytes than lossless
 #### `bytes-3d`
 
 - Main path: 3D JS after the gate under `BYTES_3D_BUDGET.failAt`, 466.4 KB gzip, on both tiers, measured with `?prefetch=off` so it is the main path only.
-  - It gates the critical path before the first frame. Measured: full 465.7 KB (476,911 B), lite 450.0 KB (460,777 B) (the full tier adds the lazy `Effects` chunk).
+  - It gates the critical path before the first frame. Measured: full 465.7 KB (476,877 B), lite 450.0 KB (460,743 B) (the full tier adds the lazy `Effects` chunk).
 - Floor chunks: each is loaded through `__hq.floorChunks.load` and capped on its own: `BYTES_3D_BUDGET.floors`, L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB gzip.
   - Incremental: a module shared by two floors counts toward the first one loaded, L3.
 - Session total: idle prefetch loads every floor in a normal session, so the session total (main + the public floor chunks, `BYTES_3D_BUDGET.sessionFloors`) has its own cap, `BYTES_3D_BUDGET.session` (owner decision). B1 loads only in an unlocked session, so it is measured in a separate unlocked session and held to `BYTES_3D_BUDGET.floors.B1`. That cap counts B1 plus any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count.

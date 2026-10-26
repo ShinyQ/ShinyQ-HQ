@@ -162,7 +162,7 @@ Open `/en` and press **Boot rover**.
 
 - Right after the boot and intro of your first session, Rover runs a short tour in a classic text box at the bottom of the screen (typewriter text, its face as the portrait).
 - Press Enter, Space, the round A button, click or tap to continue, or "Skip tutorial".
-- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the Highlights Hall, the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it.
+- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it. The tour never drives the rover anywhere by itself (owner decision 2026-10-27).
 - A deep link rides on to its floor first and gets a shorter tour there.
 - On a phone the tour is shorter (6 steps): welcome, tap-to-go (try it), the floor chip, the menu, Ask AI when shown, and the closing line.
 - On a phone a Rover line with choices (the tour's, the B1 unlock offer, a try-it's Continue) docks at the bottom in thumb reach with full-width choices, and the joystick, Boost and Reset view step aside until it ends; lines without choices stay a slim toast.

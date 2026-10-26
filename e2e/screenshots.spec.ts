@@ -546,11 +546,7 @@ test.describe("Rover dialog", () => {
       await advance();
       await expect(box).toHaveAttribute("data-line", "camera");
       await advance();
-      await expect(box).toHaveAttribute("data-line", /^(highlights|elevator)$/, { timeout: 15_000 });
-      if ((await box.getAttribute("data-line")) === "highlights") {
-        await page.getByTestId("dialog-choices").getByRole("button", { name: en.dialog.onboarding.later }).click();
-      }
-      await expect(box).toHaveAttribute("data-line", "elevator");
+      await expect(box).toHaveAttribute("data-line", "elevator", { timeout: 15_000 });
       await expect(box).toHaveAttribute("data-typing", "false", { timeout: 60_000 });
       await page.waitForTimeout(800);
       await page.screenshot({ path: shot("hq-onboarding-spotlight", viewport) });

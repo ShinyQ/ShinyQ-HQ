@@ -297,13 +297,13 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   1. welcome with Skip;
   2. moving, with a try-it wait that teaches [point-and-go](floors.md) (desktop: point and click a glowing object; touch: tap twice or use its Go chip; there is no click-the-floor driving);
   3. the camera (look around, zoom, first person; spotlight on the view controls, `data-onboard="view"`);
-  4. the Highlights Hall (registry extra `L1:station:highlights-about`, room `L1:highlights-about`) when it is registered;
-  5. elevator and call pads;
-  6. the Rover menu;
-  7. Ask AI when its pill shows;
-  8. closing.
-- After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
-- Phone form (`OnboardingDeps.phone`: coarse pointer and the mobile viewport, the Corners phone HUD): welcome, tap-to-go try-it (`pointGoPhone`), `movedPhone`, the floor chip (`floorChip`, spotlight `elevator`), the Rover menu, Ask AI when shown, closing (`closingShort` after a deep link). No camera, Highlights Hall or elevator pad lines.
+  4. elevator and call pads;
+  5. the Rover menu;
+  6. Ask AI when its pill shows;
+  7. closing.
+- The tour never moves the rover by itself: no line offers to drive anywhere, and only the welcome has choices (owner decision 2026-10-27, [decision](../decisions/2026-10-27-tour-no-drive.md)). The Highlights Hall stays reachable through its station, hint bubble and `#highlights-<station>` links.
+- After a deep link: once the continuation ends and the drawer closes, the short form (no elevator).
+- Phone form (`OnboardingDeps.phone`: coarse pointer and the mobile viewport, the Corners phone HUD): welcome, tap-to-go try-it (`pointGoPhone`), `movedPhone`, the floor chip (`floorChip`, spotlight `elevator`), the Rover menu, Ask AI when shown, closing (`closingShort` after a deep link). No camera or elevator pad lines.
 - Onboarding replaces the Director's first-visit terminal auto-open.
 - Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 

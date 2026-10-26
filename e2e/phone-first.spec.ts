@@ -76,6 +76,8 @@ test.describe("phone (390x844)", () => {
     // Every line stays in the DOM; only the newest one is visible.
     const lines = overlay.locator(".hq-boot-log li");
     await expect.poll(() => lines.count()).toBeGreaterThan(1);
+    // The newest line fades in (0.2 s) as Boot rover enables: wait for it to finish, never read it mid-fade.
+    await expect.poll(() => overlay.locator(".hq-boot-log li[data-last]").evaluate((li) => getComputedStyle(li).opacity)).toBe("1");
     const opacities = await lines.evaluateAll((lis) => lis.map((li) => ({ last: li.hasAttribute("data-last"), opacity: getComputedStyle(li).opacity })));
     expect(opacities.filter((l) => l.last)).toHaveLength(1);
     for (const l of opacities) expect(l.opacity === "0", JSON.stringify(opacities)).toBe(!l.last);
@@ -171,7 +173,7 @@ test.describe("phone (390x844)", () => {
   });
 });
 
-/** Tablets keep the centered boot card, the raised dialog and the 8-step tour (a move line first). */
+/** Tablets keep the centered boot card, the raised dialog and the full tour (a move line first). */
 const tabletBoot = async (page: Page) => {
   await page.goto("/en?tier=lite");
   await waitForHQ(page);

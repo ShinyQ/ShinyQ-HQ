@@ -2,13 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { StateStorage } from "zustand/middleware";
-import type { Interactable } from "@/experience/hints/source";
 import { linesOf, type DialogLine, type SayInput, type SayOptions, type SayResult } from "@/hud/dialog/engine";
 import {
   COPY_KEYS,
-  HIGHLIGHTS_ID,
-  HIGHLIGHTS_ROOM,
-  highlightsTarget,
   onboardingCopy,
   ONBOARDING_ID,
   runOnboarding,
@@ -32,9 +28,6 @@ const copy: OnboardingCopy = {
   moved: "moved",
   cameraFine: "cameraFine",
   cameraCoarse: "cameraCoarse",
-  highlights: "highlights",
-  showMe: "showMe",
-  later: "later",
   elevator: "elevator",
   roverMenu: "roverMenu",
   askAi: "askAi",
@@ -70,23 +63,10 @@ function deps(over: Partial<OnboardingDeps> = {}): OnboardingDeps {
     phone: false,
     variant: "full",
     waitForMove: () => Promise.resolve(),
-    highlights: () => ({ floor: "L1", at: { x: 20, z: 0 } }),
-    showMe: vi.fn(async () => {}),
     askAi: () => true,
     ...over,
   };
 }
-
-const item = (over: Partial<Interactable>): Interactable => ({
-  id: "L1:station:profile",
-  floor: "L1",
-  kind: "station",
-  label: "Profile",
-  at: { x: 0, z: 0 },
-  bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
-  action: { type: "open-room", room: "L1:profile" },
-  ...over,
-});
 
 const memoryStorage: StateStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -96,7 +76,7 @@ describe("runOnboarding", () => {
     const fake = fakeSay({ welcome: { choice: "start" } });
     const outcome = await runOnboarding(deps({ say: fake.say }));
     expect(outcome).toBe("done");
-    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "highlights", "elevator", "rover-menu", "ask-ai", "closing"]);
+    expect(fake.keys()).toEqual(["welcome", "move", "point-go", "moved", "camera", "elevator", "rover-menu", "ask-ai", "closing"]);
     expect(fake.said[0].options).toEqual({ id: ONBOARDING_ID });
     expect(fake.said[1].options).toEqual({ id: ONBOARDING_ID, skip: { label: "skip" } });
     expect(fake.line("welcome").choices?.map((c) => c.id)).toEqual(["start", "skip"]);
@@ -144,21 +124,16 @@ describe("runOnboarding", () => {
     expect(fake.keys()).not.toContain("skipped");
   });
 
-  it("skips the Highlights Hall step when the hall is not there", async () => {
-    const fake = fakeSay();
-    await runOnboarding(deps({ say: fake.say, highlights: () => null }));
-    expect(fake.keys()).not.toContain("highlights");
-  });
-
-  it("drives to the Highlights Hall on Take me there, before the elevator line", async () => {
-    const fake = fakeSay({ highlights: { choice: "show" } });
-    const order: string[] = [];
-    const showMe = vi.fn(async () => {
-      order.push(`drive:${fake.keys().length}`);
-    });
-    await runOnboarding(deps({ say: fake.say, showMe }));
-    expect(showMe).toHaveBeenCalledWith({ floor: "L1", at: { x: 20, z: 0 } });
-    expect(order).toEqual([`drive:${fake.keys().indexOf("highlights") + 1}`]);
+  it("never offers to drive the rover anywhere: no line with a choice past the welcome (owner decision 2026-10-27)", async () => {
+    for (const phone of [false, true]) {
+      for (const variant of ["full", "short"] as const) {
+        const fake = fakeSay({ welcome: { choice: "start" } });
+        await runOnboarding(deps({ say: fake.say, phone, coarse: phone, variant }));
+        const withChoices = fake.said.flatMap((s) => s.lines).filter((l) => l.choices?.length).map((l) => l.key);
+        expect(withChoices, `${phone ? "phone" : "desktop"} ${variant}`).toEqual(["welcome"]);
+        expect(fake.keys()).not.toContain("highlights");
+      }
+    }
   });
 
   it("runs the short tour after a deep link: no Highlights Hall, no elevator", async () => {
@@ -168,12 +143,10 @@ describe("runOnboarding", () => {
     expect(fake.line("closing").text).toBe("closingShort");
   });
 
-  it("runs the phone tour: tap-to-go, the floor chip, the menu and Ask, no camera, hall or pad lines", async () => {
+  it("runs the phone tour: tap-to-go, the floor chip, the menu and Ask, no camera or pad lines", async () => {
     const fake = fakeSay();
-    const showMe = vi.fn(async () => {});
-    const highlights = vi.fn(() => null);
     const waitForMove = vi.fn(() => Promise.resolve());
-    await runOnboarding(deps({ say: fake.say, phone: true, coarse: true, showMe, highlights, waitForMove }));
+    await runOnboarding(deps({ say: fake.say, phone: true, coarse: true, waitForMove }));
     expect(fake.keys()).toEqual(["welcome", "point-go", "moved", "floor-chip", "rover-menu", "ask-ai", "closing"]);
     expect(fake.line("point-go").text).toBe("pointGoPhone");
     expect(fake.line("point-go").until).toBe(waitForMove);
@@ -182,8 +155,6 @@ describe("runOnboarding", () => {
     expect(fake.line("floor-chip").text).toBe("floorChip");
     expect(fake.line("rover-menu").spotlight).toBe("rover-menu");
     expect(fake.line("ask-ai").spotlight).toBe("ask-ai");
-    expect(highlights).not.toHaveBeenCalled();
-    expect(showMe).not.toHaveBeenCalled();
   });
 
   it("runs the short phone tour without Ask AI and closes short", async () => {
@@ -197,18 +168,6 @@ describe("runOnboarding", () => {
     const fake = fakeSay();
     await runOnboarding(deps({ say: fake.say, askAi: () => false }));
     expect(fake.keys()).not.toContain("ask-ai");
-  });
-});
-
-describe("highlightsTarget", () => {
-  it("finds the Highlights Hall's first station by registry id, else by its room", () => {
-    expect(HIGHLIGHTS_ID).toBe("L1:station:highlights-about");
-    const projects = item({ id: "L1:station:highlights-projects", at: { x: 40, z: 6 }, action: { type: "open-room", room: "L1:highlights-projects" } });
-    const about = item({ id: HIGHLIGHTS_ID, at: { x: 38, z: -6 }, action: { type: "open-room", room: HIGHLIGHTS_ROOM } });
-    expect(highlightsTarget([projects, about])).toEqual({ floor: "L1", at: { x: 38, z: -6 } });
-    const renamed = item({ id: "L1:station:hall-about", at: { x: 1, z: 2 }, action: { type: "open-room", room: HIGHLIGHTS_ROOM } });
-    expect(highlightsTarget([renamed])?.at).toEqual({ x: 1, z: 2 });
-    expect(highlightsTarget([item({}), projects])).toBeNull();
   });
 });
 

@@ -2,10 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MissionStep } from "@/content/schema";
-import { extraItems } from "@/experience/hints/source";
 import { isContinuing, onContinuationChange } from "@/experience/introContinue";
-import { runMissionSteps } from "@/experience/missions/bridge";
 import { roverRuntime } from "@/experience/rover/runtime";
 import type { ExperienceData } from "@/experience/types";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -61,13 +58,6 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
           phone,
           variant,
           waitForMove: (signal) => tour.waitForRoverMove(getHQStore(), signal),
-          // The hall registers its stations as L1 extras, so they are found from any floor (replay).
-          highlights: () => tour.highlightsTarget(extraItems("L1")),
-          showMe: async (hall) => {
-            const drive: MissionStep = { kind: "drive", to: hall.at };
-            const steps: MissionStep[] = getHQStore().getState().floor === hall.floor ? [drive] : [{ kind: "elevator", floor: hall.floor }, drive];
-            await runMissionSteps("onboarding:highlights", steps);
-          },
           askAi: () => document.querySelector("[data-testid='hud'] [data-onboard='ask-ai']") !== null,
         });
         if (outcome !== "cancelled" && (!replay || !onboarded())) markOnboarded(outcome);

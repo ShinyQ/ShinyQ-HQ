@@ -1,0 +1,6 @@
+# HUD
+
+- Date: 2026-10-27
+- PR: [#329](https://github.com/ShinyQ/ShinyQ-HQ/pull/329)
+
+The first-session tour never moves the rover by itself (owner request: "Why rover make me goes to About at the very first time i dont want that revert it"). The full tour's Highlights Hall step ("Want to see it?" with "Take me there" first, which Enter or A picked and which drove to the hall's About station) is removed from every variant, with its copy (`dialog.onboarding.highlights`, `showMe`, `later`) and the tour's `highlights` and `showMe` deps. The full tour is now welcome, moving and point-and-go, the camera, the elevator, the Rover menu, Ask AI and closing; the phone and short forms were already without it. The Highlights Hall station, its hint bubble and the `#highlights-<station>` deep links are unchanged. Bytes (perf lane, local build): the tour chunk 1,211 B to 1,018 B, so `BYTES_3D_BUDGET.tour` moves from 1,825 B to 1,632 B (measured plus 614 B); the first frame full 476,911 B to 476,877 B and lite 460,777 B to 460,743 B, the session totals full 543,606 B to 543,572 B and lite 527,472 B to 527,438 B (34 B less each: the Highlights Hall drive callback left the 3D chunk); no other cap changed.

@@ -1,19 +1,13 @@
-import type { FloorId } from "@/content/schema";
-import type { Interactable } from "@/experience/hints/source";
-import type { Vec2 } from "@/experience/types";
 import type { HQStore } from "@/store/useHQStore";
 import type { DialogLine, SayInput, SayOptions, SayResult } from "./engine";
 
 /**
  * The first-session tour (owner request: "simple guidance at first, like old Pokemon games"). Plain
  * async code on top of `say()`, so it is tested with a fake `say`. OnboardingLayer runs it after the
- * intro (full) or after a deep link arrives (short), and from "Replay the tutorial" (full).
+ * intro (full) or after a deep link arrives (short), and from "Replay the tutorial" (full). It never moves the rover
+ * by itself (owner decision 2026-10-27: no "take me there" step).
  */
 export const ONBOARDING_ID = "onboarding";
-/** The Highlights Hall's first station on L1 east (r4-g, registered as an L1 extra); the step is skipped without it. */
-export const HIGHLIGHTS_ID = "L1:station:highlights-about";
-/** Its room, matched when the station id differs. */
-export const HIGHLIGHTS_ROOM = "L1:highlights-about";
 /** A try-it step offers Continue after this long. */
 export const TRY_IT_MS = 12_000;
 /** The moving step is done once the rover has driven this far (keys, joystick or point-and-go). */
@@ -21,11 +15,6 @@ export const MOVE_DONE_U = 2;
 
 export type OnboardingVariant = "full" | "short";
 export type OnboardingOutcome = "done" | "skipped" | "cancelled";
-
-export interface HighlightsTarget {
-  floor: FloorId;
-  at: Vec2;
-}
 
 export interface OnboardingCopy {
   welcome: string;
@@ -39,9 +28,6 @@ export interface OnboardingCopy {
   moved: string;
   cameraFine: string;
   cameraCoarse: string;
-  highlights: string;
-  showMe: string;
-  later: string;
   elevator: string;
   roverMenu: string;
   askAi: string;
@@ -55,7 +41,7 @@ export interface OnboardingCopy {
 /** Every copy key, in `dialog.onboarding`; OnboardingLayer resolves them with its `t` once the chunk is in. */
 export const COPY_KEYS = [
   "welcome", "start", "skip", "skipped", "moveFine", "moveCoarse", "pointGoFine", "pointGoCoarse", "moved",
-  "cameraFine", "cameraCoarse", "highlights", "showMe", "later", "elevator", "roverMenu", "askAi", "closing", "closingShort",
+  "cameraFine", "cameraCoarse", "elevator", "roverMenu", "askAi", "closing", "closingShort",
   "pointGoPhone", "movedPhone", "floorChip",
 ] as const satisfies readonly (keyof OnboardingCopy)[];
 
@@ -74,16 +60,9 @@ export interface OnboardingDeps {
   phone: boolean;
   variant: OnboardingVariant;
   waitForMove: (signal: AbortSignal) => Promise<void>;
-  highlights: () => HighlightsTarget | null;
-  showMe: (target: HighlightsTarget) => Promise<void>;
   /** The Ask AI pill is on screen (Ask the HQ enabled). */
   askAi: () => boolean;
   tryItMs?: number;
-}
-
-export function highlightsTarget(items: readonly Interactable[]): HighlightsTarget | null {
-  const hall = items.find((i) => i.id === HIGHLIGHTS_ID) ?? items.find((i) => i.action.type === "open-room" && i.action.room === HIGHLIGHTS_ROOM);
-  return hall ? { floor: hall.floor, at: { x: hall.at.x, z: hall.at.z } } : null;
 }
 
 /** Resolves once the rover has moved `distance` from where it stood, changed floor, or the line ended. */
@@ -138,7 +117,7 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
 
   if (d.phone) {
     // Phones (owner decision 2026-10-25): tap-to-go first (the joystick and Boost are on screen and in the menu's
-    // Controls card), then the floor chip; no camera, Highlights Hall or elevator pad lines.
+    // Controls card), then the floor chip; no camera or elevator pad lines.
     result = await d.say(
       [
         { key: "point-go", text: copy.pointGoPhone, until: d.waitForMove, fallbackMs: d.tryItMs ?? TRY_IT_MS },
@@ -166,40 +145,21 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
     if (end) return end;
 
     if (d.variant === "full") {
-      // 3. The Highlights Hall on L1 east, when it exists.
-      const hall = d.highlights();
-      if (hall) {
-        result = await d.say(
-          {
-            key: "highlights",
-            text: copy.highlights,
-            choices: [
-              { id: "show", label: copy.showMe },
-              { id: "later", label: copy.later, cancel: true },
-            ],
-          },
-          tour,
-        );
-        end = await ended(result);
-        if (end) return end;
-        if (result.choice === "show") await d.showMe(hall);
-      }
-
-      // 4. Elevator and call pads.
+      // 3. Elevator and call pads.
       result = await d.say({ key: "elevator", text: copy.elevator, spotlight: "elevator" }, tour);
       end = await ended(result);
       if (end) return end;
     }
   }
 
-  // 5. The Rover menu and Ask AI, each ringed while Rover talks about it.
+  // 4. The Rover menu and Ask AI, each ringed while Rover talks about it.
   const ask: DialogLine[] = [{ key: "rover-menu", text: copy.roverMenu, spotlight: "rover-menu" }];
   if (d.askAi()) ask.push({ key: "ask-ai", text: copy.askAi, spotlight: "ask-ai" });
   result = await d.say(ask, tour);
   end = await ended(result);
   if (end) return end;
 
-  // 6. Closing.
+  // 5. Closing.
   result = await d.say({ key: "closing", text: d.variant === "full" ? copy.closing : copy.closingShort, face: "arrived" }, { id: ONBOARDING_ID });
   return result.status === "cancelled" ? "cancelled" : "done";
 }
