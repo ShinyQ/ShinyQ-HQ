@@ -1,17 +1,22 @@
 {
-  "file": "/atlas/logos.1a0452a6fb.webp",
+  "file": "/atlas/logos.ce99b4e305.webp",
   "srcs": [
     "/tech/agent-framework.webp",
     "/tech/langgraph.svg",
     "/tech/langchain.svg",
     "/tech/azure-openai.svg",
+    "/tech/content-safety.svg",
     "/tech/huggingface.webp",
     "/tech/pandas.svg",
+    "/tech/numpy.svg",
+    "/tech/matplotlib.svg",
+    "/tech/seaborn.webp",
     "/tech/plotly.svg",
     "/tech/streamlit.webp",
     "/tech/jupyter.svg",
     "/tech/scikit-learn.svg",
     "/tech/pytorch.svg",
+    "/tech/keras.svg",
     "/tech/foundry.svg",
     "/tech/azure-ai-search.svg",
     "/tech/cosmos-db.svg",
@@ -28,6 +33,7 @@
     "/tech/typescript.svg",
     "/tech/javascript.svg",
     "/tech/go.svg",
+    "/tech/java.svg",
     "/tech/php.svg",
     "/tech/fastapi.webp",
     "/tech/spring-boot.webp",
@@ -40,9 +46,11 @@
     "/tech/nextjs.svg",
     "/tech/react.webp",
     "/tech/vue.webp",
+    "/tech/nuxt.svg",
     "/tech/tailwind.svg",
     "/tech/postgresql.svg",
     "/tech/mysql.webp",
+    "/tech/mongodb.svg",
     "/tech/redis.webp",
     "/tech/kafka.svg",
     "/tech/rabbitmq.svg",
@@ -60,5 +68,5 @@
     "/tech/google.svg",
     "/tech/microsoft.svg"
   ],
-  "sources": "9adeedb01796"
+  "sources": "0e638362fc2f"
 }
