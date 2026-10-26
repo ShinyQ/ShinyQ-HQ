@@ -41,7 +41,7 @@ export function TopicFilter({ topics, total, children }: { topics: readonly Topi
     <>
       <div className="pv-wrap mt-10 lg:mt-14" id="topics">
         <div role="group" aria-label={t("filters")} className="pv-filters flex flex-wrap items-center gap-1.5 px-3 py-2" data-testid="topic-filter">
-          <span className="pv-data mr-2">{t("listLabel")}</span>
+          <span className="pv-meta mr-2">{t("listLabel")}</span>
           <button type="button" className="chip min-h-11" aria-pressed={topic === null} onClick={() => setSearchParams({ topic: null })}>
             {t("all")}
             <span className="chip-count">{total}</span>

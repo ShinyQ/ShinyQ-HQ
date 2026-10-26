@@ -47,7 +47,7 @@ export async function PostList({ posts, locale, lead = false }: { posts: readonl
     <div>
       {lead && first && (
         <article className="card relative p-6 transition hover:border-line-2 sm:p-8 [--pv-hover:var(--color-cyan)]" {...topicAttrs(first.slug)}>
-          <p className="pv-data flex flex-wrap gap-x-4">
+          <p className="pv-meta flex flex-wrap gap-x-4">
             <span className="pv-date">{formatDate(first.date, locale)}</span>
             <PostMeta post={first} locale={locale} />
           </p>
@@ -111,7 +111,7 @@ export async function PublicationList({ publications, locale }: { publications: 
             </p>
             <p className="pv-small mt-1">
               {t(`kind.${pub.kind}`)}
-              {pub.venue ? ` · ${pub.venue}` : ""}
+              {pub.venue ? `, ${pub.venue}` : ""}
             </p>
           </div>
         </li>
@@ -132,7 +132,7 @@ export async function TalkList({ talks, locale }: { talks: readonly Talk[]; loca
             <p className="font-semibold text-ink">{talk.title[locale]}</p>
             <p className="pv-small mt-1">{talk.event}</p>
           </div>
-          <p className="pv-data md:pt-1 md:text-right">{t(`role.${talk.role}`)}</p>
+          <p className="pv-meta md:pt-1 md:text-right">{t(`role.${talk.role}`)}</p>
         </li>
       ))}
     </ul>
@@ -172,11 +172,11 @@ export async function ResearchList({
         <div className="mb-6 flex flex-wrap items-end gap-x-10 gap-y-3">
           <p>
             <span className="pv-num block text-[40px] leading-none">{metrics.citations}</span>
-            <span className="pv-data mt-2 block">{tw("citationsLabel")}</span>
+            <span className="pv-meta mt-2 block">{tw("citationsLabel")}</span>
           </p>
           <p>
             <span className="pv-num block text-[40px] leading-none">{metrics.hIndex}</span>
-            <span className="pv-data mt-2 block">{tw("hIndexLabel")}</span>
+            <span className="pv-meta mt-2 block">{tw("hIndexLabel")}</span>
           </p>
           <p className="pv-small">{t("metrics", { citations: metrics.citations, hIndex: metrics.hIndex, source: metrics.source, date: asOf })}</p>
         </div>
@@ -184,14 +184,17 @@ export async function ResearchList({
       <ul className="pv-rows pv-rows-closed">
         {researchPublications(publications).map((pub) => ({ pub, preview: buildPaperPreview(pub, locale) })).map(({ pub, preview }) => (
           <li key={pub.id} className="grid gap-x-6 gap-y-1.5 py-5 md:grid-cols-[110px_minmax(0,1fr)] md:py-6" data-testid="research-row" {...topicAttrs(pub.id)}>
-            <p className="pv-data md:pt-1">
+            <p className="pv-meta md:pt-1">
               {t(`kind.${pub.kind}`)}
               <span className="mt-1 block">{publicationDate(pub, locale)}</span>
             </p>
             <div className="min-w-0">
-              <p className="pv-h3 text-[19px]">
-                <PaperTrigger paper={preview} className="text-left transition hover:text-cyan">
-                  {pub.title}
+              {/* The title stays text and its button covers it (named by the title), so a long title never wraps inside a
+                  control label (Hallmark 49a); Preview below opens the same dialog. */}
+              <p className="pv-h3 pv-row-title relative">
+                {pub.title}
+                <PaperTrigger paper={preview} className="absolute inset-0 rounded-sm">
+                  <span className="sr-only">{pub.title}</span>
                 </PaperTrigger>
               </p>
               <p className="mt-2 text-sm leading-6 text-ink-3">
@@ -231,7 +234,7 @@ export async function ResearchList({
                 )}
               </p>
               {pub.citations !== undefined && metrics && (
-                <p className="pv-data mt-1">{t("citations", { count: pub.citations, source: metrics.source, date: asOf })}</p>
+                <p className="pv-meta mt-1">{t("citations", { count: pub.citations, source: metrics.source, date: asOf })}</p>
               )}
             </div>
           </li>
@@ -239,7 +242,7 @@ export async function ResearchList({
       </ul>
       {profiles.length > 0 && (
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <h3 className="pv-data mr-2">{t("profiles")}</h3>
+          <h3 className="mr-2 font-semibold text-ink">{t("profiles")}</h3>
           {profiles.map((p) => (
             <ExternalLink key={p.href} href={p.href} srHint={tc("external")} className="pv-btn pv-btn-ghost">
               {p.label}

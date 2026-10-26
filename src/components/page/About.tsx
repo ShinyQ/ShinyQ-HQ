@@ -34,7 +34,7 @@ export async function ContactPanel({ roof, profile, locale }: { roof: Roof; prof
         <CopyEmail email={contact.email} label={tc("copyEmail")} copied={tc("copied")} failed={tc("emailCopyFailed")} />
       </div>
       <dl className="mt-5 grid grid-cols-[96px_1fr] gap-3 border-t border-line pt-4">
-        <dt className="pv-data pt-1">{t("location")}</dt>
+        <dt className="pv-meta pt-1">{t("location")}</dt>
         <dd className="text-[15px] leading-[22px] text-ink">
           {profile.location[locale]}
           <span className="block text-sm text-ink-2">{profile.timezone}</span>
@@ -52,7 +52,7 @@ export async function ContactPanel({ roof, profile, locale }: { roof: Roof; prof
                 <span aria-hidden="true"> ↗</span>
                 <span className="sr-only"> ({tc("external")})</span>
               </span>
-              <span className="truncate font-mono text-xs text-ink-3">{c.href.replace(/^https:\/\/(www\.)?/, "")}</span>
+              <span className="pv-meta truncate">{c.href.replace(/^https:\/\/(www\.)?/, "")}</span>
             </a>
           </li>
         ))}

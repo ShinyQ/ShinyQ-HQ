@@ -1,5 +1,5 @@
 .rover {
-  filter: drop-shadow(0 0 22px rgb(34 211 238 / 0.45));
+  filter: drop-shadow(0 0 22px var(--color-cyan-glow));
   animation: wobble 3s ease-in-out infinite;
 }
 

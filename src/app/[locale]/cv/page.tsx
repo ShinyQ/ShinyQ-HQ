@@ -25,8 +25,8 @@ export default async function CvPage({ params }: PageProps<"/[locale]/cv">) {
     <>
       <JsonLd data={pageJsonLd(locale, "/cv")} />
       <div className="pv-wrap pt-8 pb-8 sm:pt-12">
-        <h1 className="pv-h2">{t("title")}</h1>
-        <p className="pv-lead mt-2">{t("intro")}</p>
+        <h1 className="pv-d-l text-[length:var(--text-display-s)]">{t("title")}</h1>
+        <p className="pv-lead mt-4">{t("intro")}</p>
         <CvCover
           labels={{
             view: t("view"),

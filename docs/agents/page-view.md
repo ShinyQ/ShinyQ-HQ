@@ -123,6 +123,20 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Budgets: 0 3D bytes, CSS +34 B gzip, island about 727 B gzip. The journey HTML grew about 8.6 KB gzip (`/en/journey` 47,564 to 56,157 B, `/id/journey` 48,428 to 57,266 B, cap 83,968 B) because the RSC flight payload carries the section a second time; the parent session accepted it (option A, 2026-10-25), and no cap rises. What it buys: every stop's caption, tally and highlights ship in the server HTML (crawlers, reader modes and no-JS link targets). Without JS the visitor sees now (2026) plus building links to every year's rows below; the other 8 panels carry `hidden`. `/en/quick` is unchanged.
 - Tests: `e2e/time-travel.spec.ts`, `tests/hud/TimeTravelControls.test.tsx`, `tests/unit/time-travel.test.ts`, `tests/content/time-travel.test.ts`.
 
+### Other Classic pages (Hallmark redesign, part 3)
+
+- Page intros (`PageIntro`): no floor eyebrow; the title on seven columns, an aside on four.
+- Journey entries (`/journey/<slug>`) and posts (`/blog/<slug>`) are Long Documents: a breadcrumb (`case.breadcrumb`,
+  Journey / the entry's type) instead of the eyebrow, the 3D room (`L2:<slug>`, `case.room`) in the facts row, chapter
+  gaps at the section scale, Previous and Next without arrows. Post prose holds about 70 characters a line
+  (`.prose-hq > p` capped at 36rem); the date is a `<time>` under the title.
+- `/cv`: the title, the intro, then page 1 beside "2 pages, PDF" and the two actions at the top of their column, so View
+  CV is in the 1280 x 800 first screen (`cv-card`, `cv-read`, `cv-download`, `cv-cover-image` kept).
+- `/library` research: the paper title is text with its button laid over it (named by the title, so it never wraps
+  inside a control label); Preview (`paper-cite`) and Read the paper sit below it.
+- The Time Travel skyline is named as a chart (`tt-chart` on its SVG).
+- Guide cards and repo rows join their meta with commas, never middle dots.
+
 ## Filters
 
 - Client islands over server-rendered rows: `WorkIndex`, `JourneyFilter`, and `TopicFilter` on `/library` with `?topic=`.
@@ -224,6 +238,8 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - `src/app/global-not-found.tsx` (owner decision 2026-10-25): "Rover took a wrong turn", in English with one
   Indonesian line (`lang="id"`), because the bad URL may carry no locale. Strings: the `notFound` namespace, read
   straight from `messages/*.json`; `robots` is `noindex, follow`.
+- Hallmark posture Corridor: the rover, the status code as a large muted numeral (aria-hidden, in place of the old
+  "404 · Off the map" eyebrow; `notFound.kicker` stays in the messages), the title, the body and the Indonesian line.
 - Three ways out in a `nav` named "Ways back" (`notFound.waysBack`): View the CV first (primary, `/en/cv`,
   `not-found-cv`), See the work (`/en/labs`, `not-found-work`), and Home with English and Bahasa Indonesia links.
 - "Did you mean": `DidYouMean` (`src/components/DidYouMean.tsx`, a client island) fetches

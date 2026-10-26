@@ -101,7 +101,7 @@ export async function GatesBody({ locale }: Props) {
   return (
     <table className="w-full text-left">
       <caption className="sr-only">{title[locale]}</caption>
-      <thead className="pv-data">
+      <thead className="pv-meta">
         <tr className="border-b border-line">
           <th scope="col" className="py-3 pr-4 font-normal">
             {t("gate")}
@@ -121,7 +121,7 @@ export async function GatesBody({ locale }: Props) {
             <td className="py-4 text-ink-2">
               {gate.text[locale]}
               <span className="mt-2 block text-ink">
-                <span className="pv-data">{t("budget")}</span> {gate.budget[locale]}
+                <span className="pv-meta">{t("budget")}</span> {gate.budget[locale]}
               </span>
             </td>
           </tr>
@@ -165,10 +165,10 @@ export async function RejectedBody({ locale }: Props) {
         <li key={idea.id} id={`rejected-${idea.id}`} className="py-4">
           <p className="font-semibold text-ink">{idea.title[locale]}</p>
           <p className="pv-body mt-1">
-            <span className="pv-data">{t("tried")}</span> {idea.tried[locale]}
+            <span className="pv-meta">{t("tried")}</span> {idea.tried[locale]}
           </p>
           <p className="mt-2 text-ink">
-            <span className="pv-data">{t("whyDropped")}</span> {idea.reason[locale]}
+            <span className="pv-meta">{t("whyDropped")}</span> {idea.reason[locale]}
           </p>
           {idea.pr !== undefined &&
             (hidden.has(idea.pr) ? (

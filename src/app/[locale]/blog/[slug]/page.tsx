@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { postMdxComponents } from "@/components/blog/mdx";
 import { JsonLd } from "@/components/JsonLd";
 import { ShareLinks } from "@/components/ShareLinks";
-import { CrumbLink, Marker } from "@/components/page/Layout";
+import { CrumbLink } from "@/components/page/Layout";
 import { getPostSource } from "@/content/blog";
 import { getContent, getPost } from "@/content/load";
 import { LOCALES } from "@/content/schema";
@@ -53,12 +53,13 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
           <p lang={locale}>
             <CrumbLink crumb={{ href: "/library", label: tw("title") }} />
           </p>
-          <p className="pv-data mt-5 flex flex-wrap gap-x-4" lang={locale}>
-            <Marker accent="white">L4</Marker>
-            <span className="pv-date">{formatDate(post.date, locale)}</span>
-            <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(" · ")}</span>
+          <h1 className="pv-d-l mt-6 text-[length:var(--text-display-s)]">{post.title[found.locale]}</h1>
+          <p className="pv-meta mt-5 flex flex-wrap gap-x-4" lang={locale}>
+            <time dateTime={post.date} className="pv-date">
+              {formatDate(post.date, locale)}
+            </time>
+            <span>{post.languages.map((l) => tc(`langBadge.${l}`)).join(", ")}</span>
           </p>
-          <h1 className="pv-d-l mt-5 text-[clamp(36px,4.6vw,60px)]">{post.title[found.locale]}</h1>
           <ul className="pv-tags mt-6">
             {post.tags.map((tag) => (
               <li key={tag}>{tag}</li>
