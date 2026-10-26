@@ -157,7 +157,6 @@ const ENTRIES: readonly [string, Entry][] = [
   svg("lightgbm", "LightGBM"),
   webp("bandit", "Bandit"),
   webp("osv-scanner", "OSV-Scanner"),
-  svg("semgrep", "Semgrep"),
   webp("requests", "Requests"),
   webp("sinon", "Sinon.JS", ["sinon"]),
   svg("kysely", "Kysely"),
@@ -180,6 +179,8 @@ export const TEXT_ONLY_TECH: ReadonlySet<string> = new Set([
   // OpenAI marks were removed from Simple Icons and have no reusable licence, so OpenAI and Codex stay text chips.
   "openai",
   "codex",
+  // Semgrep has no Simple Icons mark (only LGPL and unlicensed brand files), so it stays a text chip.
+  "semgrep",
   "grype",
   "gitleaks",
   "trufflehog",

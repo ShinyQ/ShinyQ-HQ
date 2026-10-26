@@ -85,7 +85,7 @@ describe("tech logos", () => {
     expect(logo("Prompt Shields")).toBe("/tech/content-safety.svg");
     expect(logo("ARM-TTK")).toBe("/tech/arm-templates.svg");
     expect(logo("Data API Builder")).toBe("/tech/data-api-builder.webp");
-    for (const name of ["Semgrep", "Bandit", "OSV-Scanner", "KEDA", "Sinon", "Kysely", "CKEditor", "Requests"]) expect(logo(name), name).not.toBeNull();
+    for (const name of ["Bandit", "OSV-Scanner", "KEDA", "Sinon", "Kysely", "CKEditor", "Requests"]) expect(logo(name), name).not.toBeNull();
   });
 
   it("orders logo chips first and keeps each group in its original order", () => {
@@ -97,6 +97,7 @@ describe("tech logos", () => {
   it("returns null for unknown names so callers fall back to text chips", () => {
     expect(getTechLogo("Totally Unknown Framework")).toBeNull();
     expect(getTechLogo("Gitleaks")).toBeNull();
+    expect(getTechLogo("Semgrep")).toBeNull();
     expect(getTechLogo("Codex")).toBeNull();
     expect(isTextOnlyTech("IndoBERT / NLP")).toBe(true);
   });
