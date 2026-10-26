@@ -58,7 +58,10 @@ The spacing scale (`--space-2xs` 4px to `--space-3xl` 96px), the type roles (`--
 - One container, centred, 1312px of measure at 1440 and held at 1920.
 - Sections part by the section gaps and by hairlines; one band of `paper-2` on the landing (Credentials).
 - Compositions in use: Feature Stack rows (Selected work, Key projects), ruled rows (`pv-rows`) for indexes and
-  ledgers, a 7/5 split (In short), a statement close, a mast footer.
+  ledgers, a 7/5 split (In short), a statement close.
+- Chrome: the header brand is the rover mark beside "ShinyQ HQ" (`meta.siteName`), never the owner's name; the
+  footer is only the links (pages, the CV, the email, the profiles) and the copyright line, no name (owner decision
+  2026-10-27). The owner's name stays in the hero, the page titles, the share cards and JSON-LD.
 - The Neon Grid (48px, faded where people read) sits behind the first screen (waived Reflex 47c); one fixed indigo
   bloom on the landing hero. No colored edge stripes, no decorative dots, no glass on Classic surfaces.
 

@@ -63,10 +63,13 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 | Writing | `/library` | L4 |
 | About | `/contact` | RF |
 
-- The header is a search-led bar: the wordmark (name over "ShinyQ HQ"), the four sections with their floor codes, then
+- The header is a search-led bar: the brand (the rover mark `hq-header-mark` beside "ShinyQ HQ", `meta.siteName`,
+  linking home; never the owner's name, owner decision 2026-10-27), the four sections with their floor codes, then
   the Rover menu and the visible ⌘K search pill (`HudLaunchers`, `pv-tool`) and the language switch. The current
   section carries a bottom rule in its floor colour.
-- The footer is a mast: the name large over the availability line and email, the pages and the elsewhere links.
+- The footer is only links and the copyright line, no name (owner decision 2026-10-27): Pages (the sections, Quick
+  view, How this site was built and the CV dialog, `cv-open-footer`), Elsewhere (the email and the profiles), then
+  "© {year} ShinyQ HQ" under a hairline.
 - Quick view and CV live in the footer, the Home hero and About.
 - How this site was built (`/build`, key `nav.build`) is a footer link and a link under About's story; it is not in the primary nav. It is a Classic page without a 3D counterpart yet, with its own share card and TechArticle JSON-LD.
 - URLs and anchors never change (the room catalog and missions link to them).
