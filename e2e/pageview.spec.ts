@@ -471,7 +471,6 @@ test("landing: View CV is the primary hero action and the sections follow the re
   expect(order.filter((id) => expected.includes(id))).toEqual(expected);
 });
 
-const columnsFor = (width: number) => (width >= 1024 ? 3 : width >= 768 ? 2 : 1);
 
 /**
  * Cards in a grid: same top and bottom within each row, same width, and with two or more columns the same
@@ -530,7 +529,8 @@ for (const viewport of [
     const placeholders = page.locator("#all-projects [data-row-placeholder] [data-project-placeholder]");
     expect(await placeholders.count()).toBeGreaterThan(0);
     await expect(placeholders.first()).toHaveAttribute("aria-hidden", "true");
-    await expectAlignedGrid(page, "#key-projects li[data-pod]", columnsFor(viewport.width));
+    // Key projects are a Feature Stack too (Hallmark redesign 2026-10-27): one project a row.
+    await expectAlignedGrid(page, "#key-projects li[data-pod]", 1);
     await context.close();
   });
 }

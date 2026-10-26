@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
 import { GuideShelf } from "@/components/guides/GuideShelf";
 import { PostList, PublicationList, ResearchList, TalkList } from "@/components/LibraryBlocks";
-import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
+import { PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TopicFilter } from "@/components/page/TopicFilter";
 import { guideViews } from "@/content/guide-views";
 import { getContact, getLibrary, getPosts, getProfile, getTopicIndex } from "@/content/load";
@@ -24,7 +24,6 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "library" });
   const tw = await getTranslations({ locale, namespace: "writing" });
-  const tf = await getTranslations({ locale, namespace: "floors" });
   const tt = await getTranslations({ locale, namespace: "library.topics" });
   const library = getLibrary();
   const posts = getPosts();
@@ -45,7 +44,6 @@ export default async function LibraryPage({ params }: PageProps<"/[locale]/libra
       <JsonLd data={pageJsonLd(locale, "/library")} />
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L4" />
       <PageIntro
-        marker={<Marker accent="white">L4 · {tf("L4")}</Marker>}
         title={tw("title")}
         lead={t("intro")}
         aside={

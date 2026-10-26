@@ -6,14 +6,13 @@ export function DecisionList({ decisions, locale, whyLabel }: { decisions: PodSt
     <ol className="pv-rows pv-rows-closed">
       {decisions.map((d, i) => (
         <li key={i} className="grid grid-cols-[40px_1fr] gap-3 py-5">
-          <span aria-hidden="true" className="pt-1 font-mono text-xs text-violet">
-            {String(i + 1).padStart(2, "0")}
+          <span aria-hidden="true" className="pv-num text-xl text-ink-3">
+            {i + 1}
           </span>
           <div className="min-w-0">
-            <p className="font-semibold text-ink">{d.title[locale]}</p>
-            <p className="mt-1.5 text-ink-2">
-              <span className="pv-data mr-2">{whyLabel}</span>
-              {d.why[locale]}
+            <p className="pv-h3">{d.title[locale]}</p>
+            <p className="mt-2 text-ink-2">
+              <span className="font-semibold text-ink">{whyLabel}:</span> {d.why[locale]}
             </p>
           </div>
         </li>
@@ -24,5 +23,5 @@ export function DecisionList({ decisions, locale, whyLabel }: { decisions: PodSt
 
 /** The owner's lesson: a quote with a neutral hairline rule (never a colored stripe). */
 export function Lesson({ text }: { text: string }) {
-  return <blockquote className="pv-lead border-l border-line-2 pl-5 text-ink">{text}</blockquote>;
+  return <blockquote className="pv-h3 border-l border-line-2 pl-6 leading-snug">{text}</blockquote>;
 }

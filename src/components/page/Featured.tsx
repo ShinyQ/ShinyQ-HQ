@@ -4,23 +4,27 @@ import { imageSrcSet, toGalleryImages } from "@/content/media";
 import { clientLabel } from "@/content/selectors";
 import { Link } from "@/i18n/navigation";
 import { formatPeriod } from "@/lib/format";
+import { TechLogoRow } from "../Chip";
 import { ProjectPlaceholder } from "./ProjectPlaceholder";
 import { PodLiveCta } from "./Work";
 
 /** Thumbnails in the filmstrip under a featured project's cover (always this many slots, so rows line up). */
 const FILM = 3;
 
-/** `sizes` of a Feature Stack cover: seven of twelve columns of the 1312 px measure from 1024 px, else the full width. */
-export const FEATURE_SIZES = "(min-width: 1024px) 752px, 100vw";
+/**
+ * `sizes` of a Feature Stack cover: half of the 1312 px measure from 1024 px (640 px, so a 1440 px screenshot stays
+ * sharp at 2x), else the full width.
+ */
+export const FEATURE_SIZES = "(min-width: 1024px) 640px, 100vw";
 
 /**
  * One row of the Feature Stack (Hallmark redesign 2026-10-27, replacing the 3/2/1 card grid): the text held beside the
- * screenshots on five columns (sticky from 1024 px), the cover and its filmstrip on seven. The text leads with the
+ * screenshots on six columns (sticky from 1024 px), the cover and its filmstrip on the other six. The text leads with the
  * title (the row's link), then the headline result in the display face (recruiters scan results first), the tagline,
- * the facts and the live-site link. Only pods with a gallery are featured (`pickFeaturedPods`). Images load lazily:
+ * the facts, on /labs the stack logos (`stack`), and the live-site link. Only pods with a gallery are featured (`pickFeaturedPods`). Images load lazily:
  * the section starts below the first screen, so they never compete with the hero for LCP.
  */
-export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Locale }) {
+export async function FeaturedProject({ pod, locale, stack = false }: { pod: Pod; locale: Locale; stack?: boolean }) {
   const t = await getTranslations({ locale, namespace: "work" });
   const tl = await getTranslations({ locale, namespace: "labs" });
   const th = await getTranslations({ locale, namespace: "home" });
@@ -60,6 +64,7 @@ export async function FeaturedProject({ pod, locale }: { pod: Pod; locale: Local
             </div>
           )}
         </dl>
+        {stack && <TechLogoRow items={pod.stack} max={9} />}
         <PodLiveCta pod={pod} locale={locale} />
       </div>
       <div className="min-w-0">

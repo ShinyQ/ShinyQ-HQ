@@ -833,7 +833,10 @@
   },
   "case": {
     "onThisPage": "Di halaman ini",
-    "more": "Proyek {wing} lainnya"
+    "more": "Proyek {wing} lainnya",
+    "breadcrumb": "Jejak navigasi",
+    "kind": "Jenis proyek",
+    "room": "Ruang di HQ 3D"
   },
   "writing": {
     "title": "Tulisan",

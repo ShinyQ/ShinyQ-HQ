@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ClientMessages } from "@/components/ClientMessages";
 import { JourneyFilter } from "@/components/page/JourneyFilter";
-import { Marker, PageIntro, SectionSplit } from "@/components/page/Layout";
+import { PageIntro, SectionSplit } from "@/components/page/Layout";
 import { TimelineRow } from "@/components/page/Timeline";
 import { TimeTravel } from "@/components/time-travel/TimeTravel";
 import { getTimeTravel } from "@/content/time-travel";
@@ -24,7 +24,6 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
   const locale = assertLocale((await params).locale);
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "journey" });
-  const tf = await getTranslations({ locale, namespace: "floors" });
   const years = [...getYears()].reverse();
 
   return (
@@ -32,7 +31,6 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
       <JsonLd data={pageJsonLd(locale, "/journey")} />
       <ExperienceGate locale={locale} version={await experienceDataVersion(locale)} startFloor="L2" />
       <PageIntro
-        marker={<Marker accent="amber">L2 · {tf("L2")}</Marker>}
         title={t("navTitle")}
         lead={t("intro")}
         aside={
