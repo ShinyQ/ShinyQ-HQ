@@ -578,7 +578,7 @@ What keeps them there (subset fonts, deferred Next.js chunks, large client data 
 | Triangles | under 30k | `e2e/budgets.ts` |
 | Worst whole frame, every render pass | under 150 calls | `e2e/perf/peaks.spec.ts` |
 | Shader programs | committed baseline plus 2 | `e2e/perf/baseline.json` |
-| JS after the 3D gate (main path, `?prefetch=off`) | under 466.4 KB gzip per tier; session total full 529.7 KB, lite 513.9 KB (the office scene and replay chunks included) | `bun run e2e:perf` |
+| JS after the 3D gate (main path, `?prefetch=off`) | under 466.4 KB gzip per tier; session total full 531.8 KB, lite 516.0 KB (the office scene and replay chunks included) | `bun run e2e:perf` |
 | Floor chunk, loaded on demand | L3 20 KB, L4 16 KB, RF 8 KB, B1 17.1 KB gzip | `bun run e2e:perf` |
 | L1 Agent Office chunks | 40 KB gzip for the scene, drawer body and replay chunks together; the watch, beacon and replay controls chunks have their own caps | `bun run e2e:perf` |
 
