@@ -4,7 +4,7 @@ import type { Locale } from "../schema";
 import { formatYearMonth } from "@/lib/format";
 import { visitsLabels } from "@/lib/visits/labels";
 import { OFFICE_SEATS } from "@/lib/office/protocol";
-import { chain, chipLogos, fill, messages, roomId, single } from "./shared";
+import { chain, fill, logoChips, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 
 /** L1 Lobby: profile hologram, stats ring, skills wall, certifications wall and the Visitor Observatory (`VisitsBody`). */
@@ -41,7 +41,7 @@ export function buildLobbyViews(locale: Locale): RoomView[] {
       kind: "lobby",
       title: m.hud.rooms.skills,
       accent: "green",
-      sections: getSkills().map((g) => ({ title: g.label[locale], chips: [...g.items], chipLogos: chipLogos(g.items) })),
+      sections: getSkills().map((g) => ({ title: g.label[locale], ...logoChips(g.items) })),
       page: "/#skills",
     }),
     single({

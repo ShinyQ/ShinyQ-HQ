@@ -4,7 +4,7 @@ import { buildPaperPreview } from "../papers";
 import type { Locale } from "../schema";
 import { isResearch, publicationDate, researchPublications } from "../selectors";
 import { formatDate, formatYearMonth } from "@/lib/format";
-import { chain, chipLogos, fill, linkLogo, messages, roomId, single } from "./shared";
+import { chain, fill, linkLogo, logoChips, messages, roomId, single } from "./shared";
 import type { RoomView } from "./types";
 import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
 
@@ -23,7 +23,7 @@ export function buildLibraryViews(locale: Locale): RoomView[] {
       accent: "white",
       sections: [
         ...(post.languages.includes(locale) ? [] : [{ body: fill(m.drawer.rooms.writtenIn, { languages: badge(post.languages) }) }]),
-        ...(post.tags.length ? [{ title: m.drawer.rooms.tags, chips: [...post.tags], chipLogos: chipLogos(post.tags) }] : []),
+        ...(post.tags.length ? [{ title: m.drawer.rooms.tags, ...logoChips(post.tags) }] : []),
       ],
       page: post.url ? undefined : `/blog/${post.slug}`,
       external: post.url,

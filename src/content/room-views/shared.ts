@@ -2,7 +2,7 @@ import en from "../../../messages/en.json";
 import id from "../../../messages/id.json";
 import { toGalleryImages } from "../media";
 import type { Asset, Locale, RoomId } from "../schema";
-import { getTechLogo } from "../tech";
+import { getTechLogo, sortLogosFirst } from "../tech";
 import type { RoomImage, RoomStackItem, RoomView } from "./types";
 
 export type Messages = typeof en;
@@ -16,9 +16,9 @@ export function fill(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? `{${key}}`);
 }
 
-/** Stack chips with logos from the tech registry; unknown names stay text-only. */
+/** Stack chips with logos from the tech registry, logo chips first; unknown names stay text-only, after them. */
 export function stackItems(names: readonly string[]): RoomStackItem[] {
-  return names.map((name) => {
+  return sortLogosFirst(names).map((name) => {
     const logo = getTechLogo(name);
     return logo ? { name, logo: logo.src } : { name };
   });
@@ -30,9 +30,10 @@ export function linkLogo(title: string): { logo?: string } {
   return logo ? { logo: logo.src } : {};
 }
 
-/** Logo per chip for `RoomSection.chipLogos`. */
-export function chipLogos(names: readonly string[]): (string | null)[] {
-  return names.map((name) => getTechLogo(name)?.src ?? null);
+/** `RoomSection.chips` and `chipLogos` for a list of names, logo chips first. */
+export function logoChips(names: readonly string[]): { chips: string[]; chipLogos: (string | null)[] } {
+  const chips = sortLogosFirst(names);
+  return { chips, chipLogos: chips.map((name) => getTechLogo(name)?.src ?? null) };
 }
 
 export function galleryOf(assets: readonly Asset[], locale: Locale): RoomImage[] {

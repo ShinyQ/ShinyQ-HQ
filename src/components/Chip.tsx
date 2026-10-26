@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { getTechLogo } from "@/content/tech";
+import { getTechLogo, sortLogosFirst } from "@/content/tech";
 
 export function Chip({
   children,
@@ -29,12 +29,12 @@ export function Chip({
   );
 }
 
-/** Chip list. `logos` resolves tech logos through `getTechLogo`; unknown names stay text chips. */
+/** Chip list. `logos` resolves tech logos through `getTechLogo` and lists logo chips first; unknown names stay text chips, after them. */
 export function ChipList({ items, label, logos = false }: { items: readonly string[]; label?: string; logos?: boolean }) {
   if (items.length === 0) return null;
   return (
     <ul className="flex flex-wrap gap-2" aria-label={label}>
-      {items.map((item) => (
+      {(logos ? sortLogosFirst(items) : items).map((item) => (
         <li key={item}>
           <Chip logo={logos ? getTechLogo(item)?.src : undefined}>{item}</Chip>
         </li>

@@ -27,7 +27,7 @@ import type { FloorId, Locale } from "./schema";
 import { roomDataVersions } from "./room-views";
 import { shapeUrl } from "./shapes";
 import { FIRST_CORRIDOR_YEAR, podHasGallery, podLiveLink, roleLine, wallSkillGroups } from "./selectors";
-import { getTechLogo } from "./tech";
+import { getTechLogo, sortLogosFirst } from "./tech";
 import { repoSlug } from "./workshop";
 
 /** L3 Ops Control Room texts ("How I run AI in production"): proof tiles on their screens, alert rule families, live panel labels. */
@@ -112,7 +112,10 @@ export function buildExperienceData(locale: Locale, floorNames: Record<PublicFlo
       location: profile.location[locale],
     },
     stats: getStats().map((s) => ({ id: s.id, value: s.value, label: s.label[locale] })),
-    skills: wallSkillGroups(getSkills()).map((g) => ({ id: g.id, label: g.label[locale], items: [...g.items], logos: g.items.map((name) => getTechLogo(name)?.src ?? null) })),
+    skills: wallSkillGroups(getSkills()).map((g) => {
+      const items = sortLogosFirst(g.items);
+      return { id: g.id, label: g.label[locale], items, logos: items.map((name) => getTechLogo(name)?.src ?? null) };
+    }),
     certifications: certViews(locale),
     missions: getMissions().map((m) => ({ id: m.id, label: m.label[locale] })),
     floors: Object.fromEntries(
