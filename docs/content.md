@@ -93,7 +93,7 @@ The six featured case studies (`STORY_SLUGS` in `src/content/schema.ts`) read as
 
 - `skills[]` holds the skill groups (`id`, `label` as `{ en, id }`, `items`). The seven CV groups follow the CV's taxonomy and order (`tests/content/cv-facts.test.ts`); the site-only Data science and ML group (`ds`, owner decision 2026-10-17) comes right after AI and LLM.
 - Every group shows everywhere: the L1 skills wall (4 across by 2 down in `SKILLS_WALL_ORDER`; a new group is appended), its drawer, the Page View skills sections (home, About, Quick view), Cmd-K and Ask (dataset order). A group that grows the wall past `LOBBY.skillsWall.h` fails `tests/unit/lobby-layout.test.ts`.
-- Each item gets a logo through `src/content/tech.ts` (`public/tech/`) or is listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`); never add a logo file without a source in `public/tech/README.md`.
+- Each item gets a logo through `src/content/tech.ts` (`public/tech/`) or is listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`); never add a logo file without a source in `public/tech/README.md`. Search for a real logo before listing a name as text-only. Text chips render after every logo chip.
 - The 3D walls read their logos from a prebuilt atlas: after adding, removing or replacing a skill or issuer logo, run `bun run logo:atlas` and commit `public/atlas/`, `src/experience/logo-atlas.ts` and `scripts/logo-atlas.lock.json` (`bun run build` and `tests/unit/logo-atlas.test.ts` fail until then).
 
 ## Certifications

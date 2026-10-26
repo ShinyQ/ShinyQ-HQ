@@ -94,11 +94,15 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 ## Tech logos
 
 - `getTechLogo(name)` from `@/content/tech` returns `{ src, label } | null`. It normalizes case, versions like "Next.js 14", parentheticals, "A / B" compounds and kebab-case tags such as "azure-openai".
-- Unknown names render as text chips.
+- Unknown names render as text chips. Text-only is for names with no usable logo: generic concepts (RAG, SSO, REST APIs), research models, libraries that publish no logo, wordmark-only logos, and marks without published reuse terms. Search before adding a name to `TEXT_ONLY_TECH`.
 - Every stack and skill name in content must resolve or be listed in `TEXT_ONLY_TECH` (`tests/unit/tech.test.ts`).
 - Skill group ids (`SkillGroupSchema`): `ai`, `ds` (Data science and ML, site-only, after `ai`), `azure`, `languages`, `backend`, `frontend`, `data` (Data and messaging), `devops`. The CV groups match the CV (`tests/content/cv-facts.test.ts`, `SITE_ONLY_SKILLS` for the rest).
-- Add a logo: drop the file in `public/tech/`, add an entry in `tech.ts` and a line in `public/tech/README.md`.
-- `ChipList items logos` and `TechLogoRow` (`src/components/Chip.tsx`) render them on static pages.
+- Add a logo: drop the file in `public/tech/`, add an entry in `tech.ts` and a line in `public/tech/README.md`, then `bun run logo:atlas` (and `bun run engine:atlas` for a B1 halo name).
+  - Sources, in order: Simple Icons (CC0; lighten dark brand colors for the dark theme), Microsoft's Azure, Entra or Fabric icon sets, then the project's own logo from its public repository with its licence noted. Never invent a mark.
+  - Java uses the Simple Icons `openjdk` mark (Oracle's cup has no reuse terms).
+  - SVG with a `viewBox` only and no metadata; a raster (or an SVG that embeds one) ships as a 96 x 96 webp, trimmed and padded to 88 px.
+- Order: wherever chips show logos, logo chips come first in their original order, then text chips (`sortLogosFirst` in `tech.ts`). `ChipList logos`, the drawer's `stackItems` and `logoChips` (`src/content/room-views/shared.ts`) and the Lobby skills wall data (`buildExperienceData`) apply it on the server, so no client code sorts. The B1 halo lists its text cell (Codex) last; the L3 Reactor's tech list stays ranked by project count.
+- `ChipList items logos` and `TechLogoRow` (`src/components/Chip.tsx`) render them on static pages; `TechLogoRow` skips names without a logo.
 
 ## Architecture diagrams
 
