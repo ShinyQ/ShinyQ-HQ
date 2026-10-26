@@ -3,7 +3,7 @@ import { createTranslator } from "next-intl";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { collectStrings } from "@/content/safety";
-import { dialogPlacement, DIALOG_PLACE } from "@/hud/dialog/placement";
+import { dialogPlacement, DIALOG_PLACE, docks, DOCK_PLACE } from "@/hud/dialog/placement";
 
 /** Three rows of the box on a 390 px phone (about 37 mono characters per row). */
 const MAX_LINE = 110;
@@ -108,5 +108,15 @@ describe("dialog placement", () => {
     expect(DIALOG_PLACE.phone).toContain("bottom-[calc(168px");
     expect(DIALOG_PLACE.phone).toContain("right-3");
     expect(DIALOG_PLACE.phone).not.toContain("right-[68px]");
+  });
+
+  it("docks a phone line that asks for a choice, at the bottom in thumb reach", () => {
+    const choices = [{ id: "a", label: "A" }, { id: "b", label: "B" }];
+    expect(docks({ line: { key: "a", text: "x", choices }, paused: false, fallback: false })).toBe(true);
+    expect(docks({ line: { key: "a", text: "x" }, paused: false, fallback: false })).toBe(false);
+    expect(docks({ line: { key: "a", text: "x" }, paused: false, fallback: true })).toBe(true);
+    expect(docks({ line: { key: "a", text: "x", choices }, paused: true, fallback: false })).toBe(false);
+    expect(docks({ line: null, paused: false, fallback: false })).toBe(false);
+    expect(DOCK_PLACE).toContain("bottom-[calc(12px+env(safe-area-inset-bottom))]");
   });
 });

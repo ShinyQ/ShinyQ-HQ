@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { applyDeadZone } from "@/experience/input/intents";
 import { setJoystick } from "@/experience/input/joystick";
 import { useBoostToggle } from "./boost";
@@ -47,21 +47,21 @@ export function BoostButton({ boost }: { boost: Boost }) {
  * release; the first tap drives as usual. Keyboard users hold Shift instead. Without `boost` it never touches the boost state. The gesture is timed with the input events' own times, not the time a
  * handler runs, so a slow frame between the taps (a shader compile on a phone) never breaks it.
  */
-export function Joystick({ boost = false }: { boost?: boolean }) {
-  return boost ? <BoostJoystick /> : <Stick />;
+export function Joystick({ boost = false, aside = false }: { boost?: boolean; aside?: boolean }) {
+  return boost ? <BoostJoystick aside={aside} /> : <Stick aside={aside} />;
 }
 
-function BoostJoystick() {
+function BoostJoystick({ aside }: { aside: boolean }) {
   const boost = useBoostToggle();
   return (
     <>
-      <Stick boost={boost} />
+      <Stick boost={boost} aside={aside} />
       <BoostButton boost={boost} />
     </>
   );
 }
 
-function Stick({ boost }: { boost?: Boost }) {
+function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
   const base = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const active = useRef<number | null>(null);
@@ -69,6 +69,14 @@ function Stick({ boost }: { boost?: Boost }) {
   const press = useRef({ at: 0, x: 0, y: 0, moved: false });
   /** Release time of the last short tap (0: none pending). */
   const lastTap = useRef(0);
+
+  // Stepping aside for a docked Rover line (the band goes inert): let go of a held stick, so the rover stops.
+  useEffect(() => {
+    if (!aside || active.current === null) return;
+    active.current = null;
+    setJoystick(0, 0, false);
+    setKnob({ x: 0, y: 0 });
+  }, [aside]);
 
   const update = (e: PointerEvent<HTMLDivElement>) => {
     const rect = base.current?.getBoundingClientRect();

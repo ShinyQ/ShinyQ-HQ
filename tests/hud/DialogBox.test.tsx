@@ -273,4 +273,31 @@ describe("DialogBox", () => {
       expect(screen.queryByTestId("dialog-box")).toBeNull();
     });
   });
+
+  describe("docked card", () => {
+    const pick = { text: "Pick one", choices: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
+
+    it("docks a phone line with choices at the bottom and stacks the choices full width", () => {
+      renderBox("phone");
+      act(() => void say(pick));
+      const box = screen.getByTestId("dialog-box");
+      expect(box).toHaveAttribute("data-docked", "true");
+      expect(box.className).toContain("bottom-[calc(12px+env(safe-area-inset-bottom))]");
+      expect(box.className).not.toContain("168px");
+      expect(screen.getByTestId("dialog-choices")).toHaveClass("flex-col");
+      expect(screen.getByRole("button", { name: "Alpha" })).toHaveClass("w-full");
+    });
+
+    it("keeps a choiceless phone line a slim toast and a raised box undocked", () => {
+      renderBox("phone");
+      act(() => void say("Just a line"));
+      expect(screen.getByTestId("dialog-box")).not.toHaveAttribute("data-docked");
+      cleanup();
+      act(() => cancelAllDialogs());
+      renderBox("raised");
+      act(() => void say(pick));
+      expect(screen.getByTestId("dialog-box")).not.toHaveAttribute("data-docked");
+      expect(screen.getByTestId("dialog-choices")).not.toHaveClass("flex-col");
+    });
+  });
 });
