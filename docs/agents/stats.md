@@ -128,7 +128,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 - A 204 means no snapshot yet (before the first cron run) and hides quietly.
 - `requestStats()` fetches once per page:
   - idle after the first 3D frame (`useStatsAfterFirstFrame` in `src/experience/visits3d.ts`);
-  - after hydration for the home ticker;
+  - after hydration for the home stats ledger;
   - when the Contact section nears the viewport (never under the 3D tower).
 - Freshness (`freshness` in `model.ts`):
   - invalid bodies, a 204, errors and snapshots older than 7 days are `hidden` everywhere;
@@ -158,7 +158,7 @@ Owner plan "Public visit stats, Layer 1", S2.
 - Every placement shows the since-launch total by default (owner decision 2026-10-23), with its window in the copy:
   - `VisitsPanel` (the L1:visits drawer and the Contact section): opens on Since launch, window "Since <date>";
   - the L1 observatory panel: visits since launch in large type ("visits since launch", `stats.panel.visitsAll`), then the 30-day total ("in the last 30 days", `stats.panel.visits30`); countries, questions, top floor and split since launch;
-  - the L1 ring tile and the home ticker: `stats.tile` ("visits since launch (estimate)"); the ticker's title starts with `stats.periods.all`;
+  - the L1 ring tile and the home stats ledger: `stats.tile` ("visits since launch (estimate)"); the ledger item's title starts with `stats.periods.all`;
   - the `/build` tile and the B1 drawer tile: `build.tiles.visits` ("Visits since launch");
   - the L3 Ops live panel: `production.live.visits`, with the perf block since launch;
   - B1: the counter plate (`engine.reactor.visits`), the reactor pulse and its drawer (`build.reactor.visits`, `build.reactor.asks`).
@@ -170,7 +170,7 @@ Owner plan "Public visit stats, Layer 1", S2.
   - probes `__hq.probes.spectacle.observatory`, `observatoryCountries`.
 - RF keeps its deck without the observatory.
 - The L1 ring tile (`useRingStats`, appended when ready; the L1:stats drawer links to L1:visits; probe `ringTiles`).
-- The home ticker (`StatTicker` `extra`, `TickerVisits` with the live marker).
+- The home stats ledger (`StatTicker` `extra`, `TickerVisits` with the live marker).
 - The Contact "Visits" section (`VisitsSection`, lazy `VisitsPanel` chunk).
 
 ### Display tests

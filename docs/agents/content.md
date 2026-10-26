@@ -308,7 +308,7 @@ Keep them documented here.
 ### `Profile` and `Stat` (landing proof strip)
 
 - `Profile.heroProof`: exactly 3 `stats` ids (owner decision 2026-10-25), the landing hero's proof strip in that order ([page-view.md](page-view.md#hero)). The schema rejects an unknown or repeated id.
-- `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (ticker, 3D stats ring, Ask).
+- `Stat.short`: optional `{ en, id }`, the strip label; `label` stays the full sentence (the home stats ledger, 3D stats ring, Ask).
   - Required on every `heroProof` stat, at most `STAT_SHORT_MAX` (28) characters per locale (schema check); no first person.
 - `stats` stays at exactly six entries: the 3D Lobby stats ring reads them (`tests/content/recruiter-pass.test.ts`).
 
