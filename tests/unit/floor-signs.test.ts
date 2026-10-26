@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { RoomId } from "@/content/schema";
 import { buildExperienceData } from "@/content/experience";
-import { L4_SIGN, leadSignSpecs, librarySigns, SHELF_SIGN, spineSignSpecs, stationBackEdge, TITLE_SIGN, trackSignSpecs, ZONE_SIGN, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
+import { L4_SIGN, librarySigns, SHELF_SIGN, stationBackEdge, TITLE_SIGN, ZONE_SIGN, zoneSignSpecs, type LibrarySignKind } from "@/experience/floors/library/decor/signs";
 import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { LIBRARY_FLOOR, libraryLayoutInput, roomOfPost, ZONE_TONE } from "@/experience/floors/library/model";
@@ -16,8 +15,10 @@ const zones = { blog: "Blog", research: "Research", models: "Models and datasets
 const wrapped = (text: string, wrap: number) => text.split("\n").every((l) => l.length <= wrap || !l.includes(" "));
 
 describe("L4 floating signs (Round 7 F: one height rule)", () => {
-  const titles = new Map(data.library.posts.map((p) => [`L4:${p.slug}`, p.title])) as unknown as Map<RoomId, string>;
+  const titles = new Map(data.library.posts.map((p) => [p.slug, p.title]));
   const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
+  const all = librarySigns({ layout: library, zones, titles, tracks });
+  const ofKind = (kind: LibrarySignKind) => all.signs.filter((_, i) => all.meta[i].kind === kind);
   const featured = library.stations[0];
 
   it("hangs one sign per present zone over the back edge of its first station, off the road, plate bottom on the one L4 height", () => {
@@ -44,7 +45,7 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
 
   it("names each bay's track in upper case over the bay's back edge, off the road, in the zone sign type on the one L4 height", () => {
     expect(library.bays.length).toBeGreaterThan(0);
-    const signs = trackSignSpecs(library, tracks);
+    const signs = ofKind("track");
     expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
       const bay = library.bays[i];
@@ -57,13 +58,13 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
   });
 
   it("titles each bay's lead over its cover, 1.6 u under the L4 height and above the cover", () => {
-    const signs = leadSignSpecs(library, titles);
+    const signs = ofKind("lead");
     expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
       const lead = baySlots(library.bays[i])[0];
       expect(lead.slug).toBe(library.bays[i].posts[0]);
       expect([s.x, s.z]).toEqual([lead.at.x, lead.at.z]);
-      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(roomOfPost(lead.slug)));
+      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(lead.slug));
       expect(wrapped(s.text, TITLE_SIGN.wrap)).toBe(true);
       expect(s.y - signPlate(s).h / 2).toBeCloseTo(L4_SIGN.bottom - 1.6);
       expect(s.y - signPlate(s).h / 2).toBeGreaterThan(lead.y + SHELF_PLINTH + lead.h);
@@ -71,21 +72,21 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
   });
 
   it("titles every spine (not the leads) just over its spine", () => {
-    const signs = spineSignSpecs(library, titles);
+    const signs = ofKind("spine");
     const spines = library.bays.flatMap((b) => baySlots(b).slice(1));
     expect(spines.length).toBeGreaterThan(0);
     expect(signs).toHaveLength(spines.length);
     signs.forEach((s, i) => {
       const slot = spines[i];
       expect([s.x, s.z]).toEqual([slot.at.x, slot.at.z]);
-      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(roomOfPost(slot.slug)));
+      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(slot.slug));
       expect(wrapped(s.text, 22)).toBe(true);
       expect(s.y - signPlate(s).h / 2).toBeCloseTo(slot.y + slot.h + SHELF_SIGN.lift);
     });
   });
 
   it("lists sections, tracks, leads and spines with their kind and room; no text repeats", () => {
-    const { signs, meta } = librarySigns({ layout: library, zones, titles, tracks });
+    const { signs, meta } = all;
     expect(signs).toHaveLength(meta.length);
     const texts = signs.map((s) => s.text.replace(/\n/g, " ").toUpperCase());
     expect(new Set(texts).size).toBe(texts.length);

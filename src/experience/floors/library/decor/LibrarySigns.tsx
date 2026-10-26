@@ -2,7 +2,6 @@
 
 import { useMemo, useRef } from "react";
 import type { Group } from "three";
-import type { RoomId } from "@/content/schema";
 import type { GpuTier } from "../../../types";
 import { FloatingSigns } from "../../../fx/FloatingSign";
 import type { LibraryLayout, LibrarySection } from "../model";
@@ -25,7 +24,8 @@ export function LibrarySigns({
 }: {
   layout: LibraryLayout;
   zones: Record<LibrarySection, string>;
-  titles: Map<RoomId, string>;
+  /** Post titles by post slug. */
+  titles: Map<string, string>;
   /** Track names by track slug. */
   tracks: Map<string, string>;
   tier: GpuTier;

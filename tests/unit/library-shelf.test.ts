@@ -41,7 +41,7 @@ describe("shelf", () => {
     expect(slots.slice(8).every((s) => s.y === SHELF.rowH)).toBe(true);
     expect(slots[2].at.x).toBeGreaterThan(slots[1].at.x);
     // Facing south (road north of the bay): the viewer's left is east (+x).
-    const south = baySlots({ center: { x: 0, z: 10 }, facing: { x: 0, z: 1 }, rect: { minX: -4, maxX: 4, minZ: 7, maxZ: 13 }, posts: posts(3) });
+    const south = baySlots({ center: { x: 0, z: 10 }, facing: { x: 0, z: 1 }, posts: posts(3) });
     expect(south[0].at.x).toBeGreaterThan(south[1].at.x);
     expect(south[1].at.x).toBeGreaterThan(south[2].at.x);
   });

@@ -4,7 +4,7 @@ import { ROTATE_STEP, rotate, stepOrbit } from "@/experience/camera/orbit";
 import { FLOOR_COLOR } from "@/experience/config";
 import { workshopSigns } from "@/experience/floors/career/labels";
 import { buildCareerRoad, careerLayoutInput, labelFade } from "@/experience/floors/career/layout";
-import { stationTitles } from "@/experience/floors/library/decor/common";
+import { postTitles } from "@/experience/floors/library/decor/common";
 import { createLibraryFrame, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
 import type { LibrarySection } from "@/experience/floors/library/model";
@@ -48,7 +48,7 @@ describe("L2 Workshop signs (career-workshop-signs)", () => {
 describe("L4 timeline signs (library-signs)", () => {
   const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
   const tracks = new Map(l4Data.library.tracks.map((t) => [t.slug, t.label]));
-  const { signs, meta } = librarySigns({ layout: l4Layout, zones, titles: stationTitles(l4Data.library, zones), tracks });
+  const { signs, meta } = librarySigns({ layout: l4Layout, zones, titles: postTitles(l4Data.library), tracks });
   const half = libraryPlateHalves(signs);
 
   it.each([

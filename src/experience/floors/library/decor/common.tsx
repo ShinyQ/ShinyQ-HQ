@@ -3,7 +3,6 @@
 import type { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, Matrix4, Quaternion, Vector3, type Group, type InstancedMesh } from "three";
-import type { RoomId } from "@/content/schema";
 import { HoloSwap } from "../../../fx/HoloIcon";
 import { LIBRARY_ICONS, type Stroke } from "../../../fx/holoIcons";
 import { useShapes } from "../../../fx/shapes";
@@ -29,16 +28,11 @@ export interface DecorProps {
   onPaper: (id: string) => void;
 }
 
-/** Titles per room: posts from content (any casing the content uses), shelves from zone names. */
-export function stationTitles(library: LibraryData, zones: Record<LibrarySection, string>): Map<RoomId, string> {
-  const map = new Map<RoomId, string>(library.posts.map((p) => [`L4:${p.slug}` as RoomId, p.title]));
-  map.set("L4:research", zones.research);
-  map.set("L4:publications", zones.models);
-  map.set("L4:talks", zones.talks);
-  return map;
-}
+/** Post titles by post slug (any casing the content uses): the lead and spine signs read them. */
+export const postTitles = (library: Pick<LibraryData, "posts">) => new Map(library.posts.map((p) => [p.slug, p.title]));
 
-function setCursor(value: string) {
+/** The pointer over an in-world click target (L4 papers and topic orbs). */
+export function setCursor(value: string) {
   document.body.style.cursor = value;
 }
 

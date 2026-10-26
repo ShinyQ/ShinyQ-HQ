@@ -33,26 +33,24 @@ function hash01(s: string): number {
   return (h >>> 0) / 0x100000000;
 }
 
-/** A bay's slots, one per post in `bay.posts` order (lead first); `facing` points from the road into the bay. */
-export function baySlots(bay: Pick<LibraryBay, "center" | "facing" | "rect" | "posts">): ShelfSlot[] {
-  const { center, facing: f, rect, posts } = bay;
-  // Left of a viewer on the road looking along `facing`.
-  const left = { x: f.z, z: -f.x };
-  const along = Math.abs(left.x) * (rect.maxX - rect.minX) + Math.abs(left.z) * (rect.maxZ - rect.minZ);
-  const { cols } = shelfSize(posts.length);
-  const slot = (slug: string, t: number, y: number, w: number, d: number, h: number): ShelfSlot => {
-    const at = { x: center.x + left.x * (along / 2 - t) + 0, z: center.z + left.z * (along / 2 - t) + 0 };
-    const hx = (Math.abs(left.x) * w + Math.abs(f.x) * d) / 2;
-    const hz = (Math.abs(left.z) * w + Math.abs(f.z) * d) / 2;
-    return { slug, at, y, w, d, h, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
-  };
-  const S = SHELF.spine;
-  const first = SHELF.pad + SHELF.lead.w + SHELF.pad;
+/**
+ * A bay's slots, one per post in `bay.posts` order (lead first); `facing` (axis-aligned) points from the road into the
+ * bay, whose length along the road is `shelfSize(posts.length).along` (the layout docks it so).
+ */
+export function baySlots({ center: c, facing: f, posts }: Pick<LibraryBay, "center" | "facing" | "posts">): ShelfSlot[] {
+  const { cols, along } = shelfSize(posts.length);
+  const { pad, lead, spine: S, rowH } = SHELF;
   return posts.map((slug, i) => {
-    if (i === 0) return slot(slug, SHELF.pad + SHELF.lead.w / 2, 0, SHELF.lead.w, SHELF.lead.d, SHELF.lead.h);
-    const r = Math.floor((i - 1) / cols);
-    const c = (i - 1) % cols;
-    return slot(slug, first + (c + 0.5) * S.pitch, r * SHELF.rowH, S.w, S.d, S.h - S.dh * hash01(slug));
+    // Along the bay from its left end as seen from the road (`t`), base height, then size along, across and up.
+    const [t, y, w, d, h] = i
+      ? [pad + lead.w + pad + (((i - 1) % cols) + 0.5) * S.pitch, Math.floor((i - 1) / cols) * rowH, S.w, S.d, S.h - S.dh * hash01(slug)]
+      : [pad + lead.w / 2, 0, lead.w, lead.d, lead.h];
+    // Left of a viewer on the road looking along `facing` is (f.z, -f.x).
+    const k = along / 2 - t;
+    const at = { x: c.x + f.z * k + 0, z: c.z - f.x * k + 0 };
+    const hx = (Math.abs(f.z) * w + Math.abs(f.x) * d) / 2;
+    const hz = (Math.abs(f.x) * w + Math.abs(f.z) * d) / 2;
+    return { slug, at, y, w, d, h, rect: { minX: at.x - hx, maxX: at.x + hx, minZ: at.z - hz, maxZ: at.z + hz } };
   });
 }
 

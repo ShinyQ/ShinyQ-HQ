@@ -9,7 +9,7 @@ import { FONTS } from "../../../tower/primitives";
 import { LineBatch } from "../../labs/lines";
 import { ZONE_TONE } from "../model";
 import { FlipBooks } from "./BookHolograms";
-import { ResearchPapers, STATION_HEIGHT, StationShells, stationTitles, ZoneIcons, type DecorProps } from "./common";
+import { ResearchPapers, STATION_HEIGHT, StationShells, postTitles, ZoneIcons, type DecorProps } from "./common";
 import { featuredStation } from "../icons";
 import { stageBook } from "./flipBooks";
 import { LibrarySigns } from "./LibrarySigns";
@@ -60,7 +60,7 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
  */
 export function NewsroomDecor(props: DecorProps) {
   const { layout, library, tier, reducedMotion, zones } = props;
-  const titles = useMemo(() => stationTitles(library, zones), [library, zones]);
+  const titles = useMemo(() => postTitles(library), [library]);
   const tracks = useMemo(() => new Map(library.tracks.map((t) => [t.slug, t.label])), [library.tracks]);
   const wall = layout.extras.wall;
   const featured = featuredStation(layout);

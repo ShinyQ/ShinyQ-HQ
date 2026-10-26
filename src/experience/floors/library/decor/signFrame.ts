@@ -107,8 +107,9 @@ export function libraryLabelFrame(
     at.y = origin.y + s.y;
     at.z = origin.z + s.z;
     label.distance = Math.hypot(at0.x - at.x, at0.z - at.z);
-    label.picked = (m.kind === "lead" || m.kind === "spine") && Boolean(m.room && rooms?.includes(m.room));
-    label.live = m.kind === "spine" && m.room === live;
+    // Only lead and spine signs carry a post room (a track sign's bay room is never a topic's or the pulled one).
+    label.picked = Boolean(m.room && rooms?.includes(m.room));
+    label.live = m.room === live;
     label.box = null;
     quads[i] = null;
     if ((m.kind === "spine" && !label.live && !label.picked) || Math.hypot(camera.position.x - at.x, camera.position.z - at.z) < LIBRARY_SIGN.near) continue;

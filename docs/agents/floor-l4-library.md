@@ -93,13 +93,13 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 ## Timeline signs
 
 - The timeline words are one `FloatingSigns` group `library-signs` (`LibrarySigns.tsx`, 2 draw calls).
-  - Pure specs in `decor/signs.ts`; `librarySigns` lists every sign with its `LibrarySignMeta` (`kind`, `room`).
+  - Pure specs in `decor/signs.ts`; `librarySigns` lists every sign with its `LibrarySignMeta` (`kind`, `room`), building each bay's slots once; post titles come by post slug (`postTitles` in `decor/common.tsx`).
 - Section and track names share one height: `L4_SIGN.bottom`, 5.6 u, upper case in the zone sign type (`ZONE_SIGN`: 0.6, letter spacing 0.12).
 - Kinds of sign (`LibrarySignKind`):
   - `section`: one per zone with a station (Posts over the featured stage, Research, Models and datasets, Talks and workshops; `zoneSignSpecs`, from messages), hanging over the back edge of the zone's first station (`stationBackEdge`).
-  - `track`: each bay's track name over the bay's back edge (`trackSignSpecs`, from content); `room` is the bay room `L4:track:<slug>`.
-  - `lead`: each bay's lead title over the lead cover, plate bottom `L4_SIGN.bottom - SHELF_SIGN.leadDrop` (5.6 - 1.6 = 4.0 u; `leadSignSpecs`); `room` is the post room.
-  - `spine`: one title per spine (every slot but the lead), plate bottom `SHELF_SIGN.lift` 0.9 u over the spine top (`spineSignSpecs`; 0.9 keeps it clear of the rover's screen box at a bay door on a desktop, 0.6 sat inside `LABEL_GAP`); it shows only while its spine is live (pulled) or its topic picked.
+  - `track`: each bay's track name over the bay's back edge (from content); `room` is the bay room `L4:track:<slug>`.
+  - `lead`: each bay's lead title over the lead cover, plate bottom `L4_SIGN.bottom - SHELF_SIGN.leadDrop` (5.6 - 1.6 = 4.0 u); `room` is the post room.
+  - `spine`: one title per spine (every slot but the lead), plate bottom `SHELF_SIGN.lift` 0.9 u over the spine top (0.9 keeps it clear of the rover's screen box at a bay door on a desktop, 0.6 sat inside `LABEL_GAP`); it shows only while its spine is live (pulled) or its topic picked.
   - Titles wrap at `TITLE_SIGN.wrap` (22 characters, 0.4 type, track tone). The featured post keeps its title on the headline wall (no lead sign over the stage).
 
 ### Placement (decided on screen every frame)
@@ -281,4 +281,4 @@ Settled, `e2e/perf/floors.spec.ts` (SwiftShader). Programs within `e2e/perf/base
 
 - The shelves draw 2 calls on both tiers (bodies, covers), at any post or track count; the vault's own meshes 4 on full and 3 on lite.
 - Ride peak `ride-L1-L4` lite: 101 scene calls, 20,114 triangles.
-- Floor chunk: 13,672 B gzip on both tiers (with the shelf slots and the spine targets, `slots.ts`) (cap 16 KB, 16,384 B). The chunk also counts in the 3D session total ([performance.md](performance.md#bytes-3d)).
+- Floor chunk: 13,519 B gzip on both tiers (with the shelf slots and the spine targets, `slots.ts`) (cap 16 KB, 16,384 B). The chunk also counts in the 3D session total ([performance.md](performance.md#bytes-3d)).

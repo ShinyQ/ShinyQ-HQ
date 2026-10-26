@@ -2,7 +2,7 @@ import type { RoomId } from "@/content/schema";
 import { signPlate, wrapSign, type SignSpec } from "../../../fx/signLayout";
 import { FONTS } from "../../../tower/primitives";
 import type { Vec2 } from "../../../types";
-import { baySlots } from "../slots";
+import { baySlots, type ShelfSlot } from "../slots";
 import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryStation, type LibrarySection } from "../model";
 
 /** L4 floating signs (spectacle round: no words painted on the floor). Pure: Vitest runs it in node. */
@@ -29,12 +29,11 @@ export interface LibrarySignMeta {
 const atBottom = (bottom: number, spec: Omit<SignSpec, "y">): SignSpec => ({ ...spec, y: bottom + signPlate(spec).h / 2 });
 
 /**
- * Back-edge anchor of a station or bay: the middle of the edge farthest from the road (`facing` points from the
- * pad into it, `across` is its extent along it).
+ * Back-edge anchor of a station or bay: the middle of the edge farthest from the road (`facing`, axis-aligned, points
+ * from the pad into it).
  */
-export function stationBackEdge(s: Pick<LibraryStation, "rect" | "center" | "facing">): Vec2 {
-  const across = Math.abs(s.facing.x) * (s.rect.maxX - s.rect.minX) + Math.abs(s.facing.z) * (s.rect.maxZ - s.rect.minZ);
-  return { x: s.center.x + (s.facing.x * across) / 2, z: s.center.z + (s.facing.z * across) / 2 };
+export function stationBackEdge({ rect: r, center: c, facing: f }: Pick<LibraryStation, "rect" | "center" | "facing">): Vec2 {
+  return { x: c.x + (f.x * (r.maxX - r.minX)) / 2, z: c.z + (f.z * (r.maxZ - r.minZ)) / 2 };
 }
 
 /** A section or track name: upper case, the zone sign type, plate bottom on `L4_SIGN.bottom`. */
@@ -57,43 +56,26 @@ export function zoneSignSpecs(layout: LibraryLayout, zones: Record<LibrarySectio
   });
 }
 
-/** Each bay's track name (`labels` by track slug) over the bay's back edge, like a section sign. */
-export function trackSignSpecs(layout: LibraryLayout, labels: Map<string, string>): SignSpec[] {
-  return layout.bays.map((bay) => nameSign(labels.get(bay.track) ?? bay.track, stationBackEdge(bay), ZONE_TONE.track));
-}
-
-/** Each bay's lead title (`titles` by post room) just over the lead cover. */
-export function leadSignSpecs(layout: LibraryLayout, titles: Map<RoomId, string>): SignSpec[] {
-  return layout.bays.map((bay) => {
-    const [lead] = baySlots(bay);
-    return titleSign(titles.get(roomOfPost(lead.slug)) ?? lead.slug, lead.at, L4_SIGN.bottom - SHELF_SIGN.leadDrop);
-  });
-}
-
-/** One title per spine (every slot but the lead), floating just over the spine; only the live or picked one shows. */
-export function spineSignSpecs(layout: LibraryLayout, titles: Map<RoomId, string>): SignSpec[] {
-  return layout.bays.flatMap((bay) => baySlots(bay).slice(1).map((s) => titleSign(titles.get(roomOfPost(s.slug)) ?? s.slug, s.at, s.y + s.h + SHELF_SIGN.lift)));
-}
-
-/** Every L4 timeline sign in one list (sections, track names, lead titles, spine titles) with what each one is, for the screen placement rule. */
-export function librarySigns(input: {
+/**
+ * Every L4 timeline sign in one list with what each one is, for the screen placement rule: the sections, each bay's track
+ * name over its back edge (like a section sign), each bay's lead title just over the lead cover, then one title per spine
+ * (every slot but the lead) just over its spine; only the live or picked spine title shows.
+ */
+export function librarySigns({ layout, zones, titles, tracks }: {
   layout: LibraryLayout;
   zones: Record<LibrarySection, string>;
-  /** Post titles by post room (`stationTitles`). */
-  titles: Map<RoomId, string>;
+  /** Post titles by post slug (`postTitles`). */
+  titles: Map<string, string>;
   /** Track names by track slug. */
   tracks: Map<string, string>;
 }): { signs: SignSpec[]; meta: LibrarySignMeta[] } {
-  const { layout, titles } = input;
-  const { bays } = layout;
-  const zones = zoneSignSpecs(layout, input.zones);
-  return {
-    signs: [...zones, ...trackSignSpecs(layout, input.tracks), ...leadSignSpecs(layout, titles), ...spineSignSpecs(layout, titles)],
-    meta: [
-      ...zones.map((): LibrarySignMeta => ({ kind: "section" })),
-      ...bays.map((b): LibrarySignMeta => ({ kind: "track", room: b.room })),
-      ...bays.map((b): LibrarySignMeta => ({ kind: "lead", room: roomOfPost(b.posts[0]) })),
-      ...bays.flatMap((b) => b.posts.slice(1).map((p): LibrarySignMeta => ({ kind: "spine", room: roomOfPost(p) }))),
-    ],
-  };
+  const signs = zoneSignSpecs(layout, zones);
+  const meta = signs.map((): LibrarySignMeta => ({ kind: "section" }));
+  const slots = layout.bays.map(baySlots);
+  const add = (kind: LibrarySignKind, room: RoomId, spec: SignSpec) => (signs.push(spec), meta.push({ kind, room }));
+  const title = (kind: LibrarySignKind, s: ShelfSlot, bottom: number) => add(kind, roomOfPost(s.slug), titleSign(titles.get(s.slug) ?? s.slug, s.at, bottom));
+  layout.bays.forEach((bay) => add("track", bay.room, nameSign(tracks.get(bay.track) ?? bay.track, stationBackEdge(bay), ZONE_TONE.track)));
+  slots.forEach(([lead]) => title("lead", lead, L4_SIGN.bottom - SHELF_SIGN.leadDrop));
+  slots.forEach(([, ...spines]) => spines.forEach((s) => title("spine", s, s.y + s.h + SHELF_SIGN.lift)));
+  return { signs, meta };
 }

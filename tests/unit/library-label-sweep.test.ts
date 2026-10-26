@@ -1,6 +1,6 @@
 import { Vector3, type PerspectiveCamera } from "three";
 import { describe, expect, it } from "vitest";
-import { stationTitles } from "@/experience/floors/library/decor/common";
+import { postTitles } from "@/experience/floors/library/decor/common";
 import { endPlazaSigns, PEDESTAL_OBSTACLE } from "@/experience/floors/library/decor/EndPlaza";
 import { createLibraryFrame, endPlazaFrame, vaultZone, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
@@ -28,7 +28,7 @@ import { L4_FLOOR_Y as FLOOR_Y, L4Drive as Drive, l4Data as data, l4EndLabels, l
 // The timeline signs as `NewsroomDecor` builds them: the featured stage carries its title on the headline wall.
 const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
 const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
-const timeline = librarySigns({ layout, zones, titles: stationTitles(data.library, zones), tracks });
+const timeline = librarySigns({ layout, zones, titles: postTitles(data.library), tracks });
 const half = libraryPlateHalves(timeline.signs);
 const texts = timeline.signs.map((s) => s.text.replace(/\s+/g, " "));
 

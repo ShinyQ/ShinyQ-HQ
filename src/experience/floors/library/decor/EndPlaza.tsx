@@ -17,6 +17,7 @@ import type { GpuTier, LibraryData, LibraryTopic } from "../../../types";
 import { LineBatch } from "../../labs/lines";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryLayout } from "../model";
+import { setCursor } from "./common";
 import { useEndSignPlacement } from "./useEndSignPlacement";
 import { issuerTone } from "./vault";
 import { CONSTELLATION, constellationSpin, orbitAt, orbSlots, topicLinks, topicPickOf, type OrbSlot } from "../topics";
@@ -52,9 +53,6 @@ export interface EndPlazaLabels {
   vault: string;
 }
 
-function setCursor(value: string) {
-  document.body.style.cursor = value;
-}
 
 /** What each end-plaza sign is, for the screen-space placement (`placeLabels`). */
 export interface EndSignMeta {
