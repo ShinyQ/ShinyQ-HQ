@@ -19,7 +19,7 @@ describe("hint lines", () => {
   it("has a line for every kind, every special object and every Go label, in both languages", () => {
     for (const messages of [en, id]) {
       for (const kind of HINT_KINDS) expect(messages.dialog.hints.kind[kind], kind).toBeTruthy();
-      for (const key of Object.values(HINT_OBJECTS)) expect(messages.dialog.hints.object[key as keyof typeof en.dialog.hints.object], key).toBeTruthy();
+      for (const key of [...Object.values(HINT_OBJECTS), "track"]) expect(messages.dialog.hints.object[key as keyof typeof en.dialog.hints.object], key).toBeTruthy();
       for (const key of ["open", "pickFloor", "pickYear", "toElevator", "roverMenu", "browse", "viewCv", "go"] as const) expect(messages.dialog.hints.go[key], key).toBeTruthy();
     }
   });
@@ -42,6 +42,11 @@ describe("hint lines", () => {
     // The Study Vault's one bubble (its books folded by `hintTargets`), whose Go only drives to the stop.
     expect(hintObjectKey(item({ id: "L4:vault", floor: "L4", action: { type: "command", command: "settle" } }))).toBe("vault");
     expect(hintGoKey(item({ id: "L4:vault", floor: "L4", action: { type: "command", command: "settle" } }))).toBe("go");
+    // Each L4 reader track bay's one bubble (its door and spines folded under the bay room), whose Go opens the track drawer.
+    const bay = item({ id: "L4:track:craft", floor: "L4", kind: "door", action: { type: "open-room", room: "L4:track:craft" } });
+    expect(hintObjectKey(bay)).toBe("track");
+    expect(hintGoKey(bay)).toBe("open");
+    expect(hintObjectKey(item({ id: "L4:door:track:craft", floor: "L4" }))).toBeNull();
   });
 
   it("names the Go choice after the action", () => {

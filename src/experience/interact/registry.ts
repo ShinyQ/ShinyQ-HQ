@@ -15,7 +15,7 @@ import { kioskBounds, kioskStop } from "../floors/lobby/kiosk";
 import { VISITS_ROOM } from "../floors/lobby/visitsRoom";
 import { NEWSROOM, VAULT_ROOM } from "../floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "../floors/library/layout";
-import { libraryLayoutInput, type LibraryLayout, type LibraryZone } from "../floors/library/model";
+import { libraryLayoutInput, type LibraryLayout, type LibrarySection } from "../floors/library/model";
 import { TOPICS_ROOM } from "../floors/library/topicHash";
 import { CONSTELLATION } from "../floors/library/topics";
 import { buildRoofLayout } from "../floors/roof/layout";
@@ -80,7 +80,6 @@ export interface InteractLabels {
   console: string;
   kiosk: string;
   board: (wing: string) => string;
-  archive: string;
   rooms: Record<StructuralRoom, string>;
   /** L3 Tech Reactor ring targets ("Tech Reactor: Azure"). */
   reactorRing: (ring: ReactorRingId) => string;
@@ -103,7 +102,7 @@ const PAD_HEIGHT = PAD.iconY + PAD.iconSize / 2;
 /** L2 rooms are open bays with a neon frame about 2.2 u tall. */
 const CAREER_ROOM_HEIGHT = 2.4;
 /** L4 stations (blog plinths are low, so their volume reaches their billboard titles). */
-const STATION_HEIGHT: Record<LibraryZone, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6 };
+const STATION_HEIGHT: Record<LibrarySection, number> = { blog: 2, research: 3.2, models: 2.6, talks: 2.6 };
 const KIOSK_HEIGHT = 3.4;
 /** L2 Workshop: bench card tops and the console screen top (`WorkshopAnnex`). */
 export const BENCH_TOP = 3.1;
@@ -162,8 +161,8 @@ function roomLabel(room: RoomId, data: InteractData): string {
     if (pod) return pod.title;
   }
   if (room.startsWith("L4:")) {
-    const post = experience.library.posts.find((p) => p.slug === slug);
-    if (post) return post.title;
+    const title = experience.library.posts.find((p) => p.slug === slug)?.title ?? experience.library.tracks.find((t) => `track:${t.slug}` === slug)?.label;
+    if (title) return title;
   }
   if (room.startsWith("B1:")) {
     if (room === ENGINE_REACTOR_ROOM) return experience.engine.reactor;
@@ -361,22 +360,6 @@ function vaultItems(library: LibraryLayout, data: InteractData): Interactable[] 
   );
 }
 
-function archiveBoard(library: LibraryLayout, data: InteractData): Interactable[] {
-  if (!library.board) return [];
-  return [
-    {
-      id: "L4:board:archive",
-      floor: "L4",
-      kind: "board",
-      label: data.labels.archive,
-      at: { x: library.board.stop.x, z: library.board.stop.z },
-      bounds: bare(library.board.rect),
-      height: NEWSROOM.board.h,
-      action: { type: "command", command: "palette:posts" },
-    },
-  ];
-}
-
 /**
  * L2 Workshop (F3): the gateway (Workshop overview), the time console (year picker), one target per
  * bench (its side project drawer) and per skyline bar (its repo drawer). Stops come from the layout.
@@ -464,8 +447,12 @@ export function baseInteractables(floor: FloorId, layouts: FloorLayouts, data: I
     }
     case "L4": {
       const library = buildLibraryLayout(libraryLayoutInput(experience.library));
-      const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone] }]));
-      return [...pads, ...doorItems(floor, layouts, data, rooms), ...endItems(library, data), ...vaultItems(library, data), ...archiveBoard(library, data)];
+      const rooms = new Map<RoomId, Footprint>(library.stations.map((s) => [s.room, { rect: bare(s.rect), height: STATION_HEIGHT[s.zone as LibrarySection] }]));
+      // A bay door keeps its pad volume (the bay's would enclose and shadow its spines) and leads its bay's hint group; the
+      // spines join the group from the L4 chunk (`shelfTargets` in floors/library/slots.ts, registered by `Library`).
+      const doors = doorItems(floor, layouts, data, rooms);
+      for (const door of doors) if (door.id.includes("track:")) door.group = { id: (door.action as { room: RoomId }).room, label: door.label };
+      return [...pads, ...doors, ...endItems(library, data), ...vaultItems(library, data)];
     }
     case "RF": {
       const roof = buildRoofLayout({ channels: experience.roof.channels.length });

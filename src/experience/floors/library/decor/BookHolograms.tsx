@@ -6,30 +6,31 @@ import { useUniformTime } from "../../../fx/useUniformTime";
 import type { GpuTier } from "../../../types";
 import { bookBuffers, type BookInstance } from "./flipBooks";
 
-// The turning page follows `turnAngle` in flipBooks.ts (same smoothstep over an 8 s cycle).
-const VS = `attribute vec3 aCenter; attribute float aFace; attribute float aSize; attribute float aPhase; attribute float aAngle;
-uniform float uTime; uniform float uMotion;
+// The turning page follows `turnAngle` in flipBooks.ts (same smoothstep over an 8 s cycle). The GLSL is written
+// without spaces: the strings ship as they are in the L4 chunk.
+const VS = `attribute vec3 aCenter;attribute float aFace;attribute float aSize;attribute float aPhase;attribute float aAngle;
+uniform float uTime;uniform float uMotion;
 varying vec2 vUv;
 void main(){
-  vUv = vec2(position.x, position.y + .5);
-  float cyc = fract(uTime/8. + aPhase);
-  float k = clamp((cyc - .3)/.4, 0., 1.);
-  float turn = uMotion > .5 ? k*k*(3. - 2.*k)*3.14159 : 1.5708;
-  float ang = aAngle < 0. ? turn : aAngle;
-  ang += aAngle < 0. ? sin(position.x*3.14159)*.18*sin(turn) : 0.;
-  vec3 p = vec3(cos(ang)*position.x*.75, position.y, sin(ang)*position.x*.75)*aSize;
-  float c = cos(aFace), s = sin(aFace);
-  vec3 r = vec3(p.x*c + p.z*s, p.y, -p.x*s + p.z*c);
-  gl_Position = projectionMatrix*modelViewMatrix*vec4(aCenter + r, 1.);
+vUv=vec2(position.x,position.y+.5);
+float cyc=fract(uTime/8.+aPhase);
+float k=clamp((cyc-.3)/.4,0.,1.);
+float turn=uMotion>.5?k*k*(3.-2.*k)*3.14159:1.5708;
+float ang=aAngle<0.?turn:aAngle;
+ang+=aAngle<0.?sin(position.x*3.14159)*.18*sin(turn):0.;
+vec3 p=vec3(cos(ang)*position.x*.75,position.y,sin(ang)*position.x*.75)*aSize;
+float c=cos(aFace),s=sin(aFace);
+vec3 r=vec3(p.x*c+p.z*s,p.y,-p.x*s+p.z*c);
+gl_Position=projectionMatrix*modelViewMatrix*vec4(aCenter+r,1.);
 }`;
-const FS = `uniform vec3 uColor; uniform float uOpacity; varying vec2 vUv;
+const FS = `uniform vec3 uColor;uniform float uOpacity;varying vec2 vUv;
 void main(){
-  float edge = step(vUv.x, .04) + step(.96, vUv.x) + step(vUv.y, .03) + step(.97, vUv.y);
-  float line = step(.55, fract(vUv.y*9.))*step(.18, vUv.x)*step(vUv.x, .86)*step(.12, vUv.y)*step(vUv.y, .82);
-  float a = uOpacity*(.22 + .55*min(1., edge) + .25*line);
-  gl_FragColor = vec4(uColor, a);
-  #include <tonemapping_fragment>
-  #include <colorspace_fragment>
+float edge=step(vUv.x,.04)+step(.96,vUv.x)+step(vUv.y,.03)+step(.97,vUv.y);
+float line=step(.55,fract(vUv.y*9.))*step(.18,vUv.x)*step(vUv.x,.86)*step(.12,vUv.y)*step(vUv.y,.82);
+float a=uOpacity*(.22+.55*min(1.,edge)+.25*line);
+gl_FragColor=vec4(uColor,a);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
 }`;
 
 /** Every open book on the floor in one geometry and one draw call (pages turn unless reduced motion). */

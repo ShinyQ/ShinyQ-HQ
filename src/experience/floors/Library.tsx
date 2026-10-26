@@ -1,36 +1,43 @@
 "use client";
 
-import { Suspense, useCallback, useMemo } from "react";
+import { Suspense, useCallback, useEffect, useMemo } from "react";
 import { openPaperFor } from "@/hud/drawer/paper";
 import { useHQStore } from "@/store/useHQStore";
 import { FLOOR_COLOR } from "../config";
 import { RoadMarkings } from "../fx/RoadMarkings";
+import { registerExtraInteractables } from "../interact/registry";
 import type { ExperienceData, GpuTier } from "../types";
 import { EndPlaza, type EndPlazaLabels } from "./library/decor/EndPlaza";
 import { NewsroomDecor as PickedDecor } from "./library/decor/NewsroomDecor";
 import { StudyVault } from "./library/decor/StudyVault";
 import { TopicHighlights } from "./library/decor/TopicHighlights";
 import { buildLibraryLayout } from "./library/layout";
-import { libraryLayoutInput, type LibraryZone } from "./library/model";
+import { libraryLayoutInput, type LibrarySection } from "./library/model";
+import { shelfTargets } from "./library/slots";
 
 export interface LibraryLabels {
   /** Zone names from messages (`library.posts`, `library.research`, `library.publications`, `library.talks`). */
-  zones: Record<LibraryZone, string>;
-  /** End plaza signs: the topic count, the research monument, the archive board (`library.topics`) and the Study Vault. */
+  zones: Record<LibrarySection, string>;
+  /** End plaza signs: the topic count, the research monument (`library.topics`) and the Study Vault. */
   end: EndPlazaLabels;
+  /** Shelf spine and lead cover targets ("Read {title}", `hud.interact.readPostTitle`). */
+  readPost: (title: string) => string;
 }
 
 /**
  * L4 Writing (walkable floors plan, part 3), generated from content: the owner's pick of the three
- * concepts. Stations are point-and-go targets (interact/registry.ts: drive to the door, then open); paper
- * holograms open the paper preview modal. The end plaza holds the Topic Constellation, the research
- * monument and the archive board (`EndPlaza`), and a picked topic lights its stations (`TopicHighlights`). With study
- * guides, the Study Vault's books stand off the end plaza (`StudyVault`; their spines are end plaza signs).
+ * concepts. Stations and the reader track shelves' posts are point-and-go targets (interact/registry.ts: drive to
+ * the door or the bay, then open; the posts' targets are registered here from this lazy chunk, `shelfTargets`); the
+ * shelves are `TrackShelves` (in the decor); paper holograms open the paper preview modal. The end plaza holds the
+ * Topic Constellation and the research monument (`EndPlaza`), and a picked topic lights its stations and the bays
+ * holding its posts (`TopicHighlights`). With study guides, the Study Vault's books stand off the end plaza
+ * (`StudyVault`; their spines are end plaza signs).
  */
 export function Library({ data, labels, tier }: { data: ExperienceData; labels: LibraryLabels; tier: GpuTier }) {
   const layout = useMemo(() => buildLibraryLayout(libraryLayoutInput(data.library)), [data.library]);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   const onPaper = useCallback((id: string) => void openPaperFor(data.locale, id), [data.locale]);
+  useEffect(() => registerExtraInteractables("L4", shelfTargets(layout.bays, data.library, labels.readPost)), [layout, data.library, labels.readPost]);
   return (
     <group name="library">
       <RoadMarkings network={layout.network} color={FLOOR_COLOR.L4} tier={tier} reducedMotion={reducedMotion} chevronSpacing={5} />

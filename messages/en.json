@@ -325,6 +325,9 @@
     "citations": "{count, plural, one {# citation} other {# citations}} on {source}, as of {date}",
     "metrics": "{citations} citations · h-index {hIndex} on {source}, as of {date}",
     "profiles": "Research profiles",
+    "tracks": {
+      "count": "{count, plural, one {# post} other {# posts}}"
+    },
     "topics": {
       "title": "Topic Constellation",
       "subtitle": "Explore the blog, research, models and talks by topic. Pick a topic to highlight related work on this floor.",
@@ -694,7 +697,6 @@
       "teleporter": "Teleporter {year}",
       "returnPad": "Back to elevator",
       "board": "{wing} directory",
-      "archive": "Post archive",
       "live": "{label}. Click to go there.",
       "liveTap": "{label} selected. Tap it again or use the Go button.",
       "go": "Go to {label}",
@@ -702,6 +704,7 @@
       "hintCoarse": "Tap a glowing object, then tap it again to go there.",
       "console": "Time console",
       "studyGuide": "Read the {code} study guide",
+      "readPostTitle": "Read {title}",
       "studyVault": "Study Vault"
     }
   },
@@ -1021,7 +1024,8 @@
         "workshop": "The Workshop: side projects and public repositories.",
         "timeConsole": "The time console: beam to any year, or back to the elevator.",
         "ops": "The Ops Control Room: how {name} runs AI in production, plus this site's live telemetry.",
-        "vault": "The Study Vault: {name}'s certification study guides as books. Pick one to read it."
+        "vault": "The Study Vault: {name}'s certification study guides as books. Pick one to read it.",
+        "track": "A shelf of posts on one theme, the best one first."
       },
       "go": {
         "open": "Open",

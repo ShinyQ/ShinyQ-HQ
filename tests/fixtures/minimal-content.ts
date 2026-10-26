@@ -76,7 +76,7 @@ export function makeContent(): SiteContent {
     floors: {
       careerArchive: { entries: [makeEntry()] },
       labs: { pods: [makePod()] },
-      library: { posts: [], publications: [], talks: [] },
+      library: { tracks: [{ slug: "writing", title: lt("Writing") }], posts: [], publications: [], talks: [] },
       roof: {
         contact: { email: "a@example.com", linkedin: "https://linkedin.com/in/x", github: "https://github.com/x" },
         availability: lt("Open"),

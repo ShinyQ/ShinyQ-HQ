@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { BoxGeometry, Color, InstancedBufferAttribute, InstancedMesh, MathUtils, Matrix4, PlaneGeometry, RingGeometry, Sphere, type BufferGeometry, type ShaderMaterial } from "three";
+import { Color, MathUtils, Matrix4, RingGeometry, type InstancedMesh } from "three";
 import { getHQStore } from "@/store/useHQStore";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
 import { neonColor } from "../../../fx/materials";
@@ -13,9 +13,9 @@ import { roverRuntime } from "../../../rover/runtime";
 import type { GpuTier } from "../../../types";
 import { NEWSROOM } from "../concepts/newsroom";
 import type { LibraryVault } from "../model";
+import { bookKit, kitBodies, kitBox, kitCovers, kitPools, type KitItem } from "./bookKit";
 import { bookMatrix, coverMatrix, coverOpen, issuerTone, plinthMatrix } from "./vault";
 
-const NO_RAYCAST = () => null;
 /** Instance brightness: book rims, plinth rims, covers (shut, and added when open), floor pools and the track. */
 const LEVEL = { body: 1.15, plinth: 0.6, cover: 0.42, coverOpen: 0.6, pool: 0.3, center: 0.14, track: 0.42 };
 const TRACK_COLOR = "#67e8f9";
@@ -29,73 +29,44 @@ const COVER_RATE = 1.6;
 const M = new Matrix4();
 const C = new Color();
 
-/** One instance: its floor-local matrix, tone and brightness. */
-type Item = [Matrix4, string, number];
-
 /**
- * The vault's meshes (books and plinths, covers, the floor track and, on full only, the light pools), their instances
- * relative to the vault plaza's center (the group's origin, so transparent sorting sees the vault where it is), all
- * culled by one bounding sphere around the whole vault, open covers included. Draw order: the books (they write depth)
- * and then their covers go before the other transparent passes, so the spine plates (end plaza signs, sorted by their
- * own group's far origin) draw over the covers they stand in front of.
+ * The vault's meshes on the shared book kit (books and plinths, covers, the floor track and, on full only, the light
+ * pools), their instances relative to the vault plaza's center (the group's origin, so transparent sorting sees the
+ * vault where it is), all culled by one bounding sphere around the whole vault, open covers included. Draw order: the
+ * books (they write depth) and then their covers go before the other transparent passes, so the spine plates (end
+ * plaza signs, sorted by their own group's far origin) draw over the covers they stand in front of.
  */
 export function vaultMeshes(vault: LibraryVault, tier: GpuTier, reducedMotion: boolean) {
   const full = tier === "full";
   const { books, stop, center } = vault;
   const n = books.length;
   const V = NEWSROOM.end.vault;
-  const shift = new Matrix4().makeTranslation(-center.x, 0, -center.z);
   const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / n, z: m.z + b.at.z / n }), { x: 0, z: 0 });
-  const mesh = (geometry: BufferGeometry, material: ShaderMaterial, items: Item[], order = 0) => {
-    const m = new InstancedMesh(geometry, material, items.length);
-    items.forEach(([matrix, color, level], i) => {
-      m.setMatrixAt(i, matrix.premultiply(shift));
-      m.setColorAt(i, C.set(color).multiplyScalar(level));
-    });
-    m.renderOrder = order;
-    m.raycast = NO_RAYCAST;
-    return m;
-  };
-  // The holo plate reads a per-instance alpha (all 1); the covers' `core` mode ignores it, so they share the box.
-  const box = new BoxGeometry(1, 1, 1).translate(0, 0.5, 0).setAttribute("aAlpha", new InstancedBufferAttribute(new Float32Array(n * 2).fill(1), 1));
+  const box = kitBox(n * 2);
   // The arc the books stand on, around the stop (centered due east of it): in the ring's own plane, laid flat by the instance.
   const span = ((n - 1) / 2) * (V.spacing / V.arc) + TRACK.margin;
   const tones = books.map((b) => issuerTone(b.issuer));
-  const meshes = [
-    mesh(box, createHoloMaterial({ mode: HOLO_MODE.plate, color: neonColor("#ffffff", 1.4, tier), depthWrite: true }), [
-      ...books.map((b, i): Item => [bookMatrix(b, new Matrix4()), tones[i], LEVEL.body]),
-      ...books.map((b, i): Item => [plinthMatrix(b, new Matrix4()), tones[i], LEVEL.plinth]),
-    ], -2),
+  const parts = [
+    kitBodies(box, [
+      ...books.map((b, i): KitItem => [bookMatrix(b, new Matrix4()), tones[i], LEVEL.body]),
+      ...books.map((b, i): KitItem => [plinthMatrix(b, new Matrix4()), tones[i], LEVEL.plinth]),
+    ], tier),
     // Covers start shut; `useFrame` moves them.
-    mesh(box, createHoloMaterial({ mode: HOLO_MODE.core, color: neonColor("#ffffff", 1.6, tier), opacity: full ? 0.85 : 0.7, additive: full }), books.map((b, i): Item => [coverMatrix(b, 0, new Matrix4()), tones[i], LEVEL.cover]), -1),
-    mesh(
-      new RingGeometry(V.arc - TRACK.half, V.arc + TRACK.half, 40, 1, -span, span * 2),
-      createHoloMaterial({ mode: HOLO_MODE.ring, color: neonColor("#ffffff", 1.2, tier), opacity: full ? 0.8 : 0.6, additive: full, params: [TRACK.dashes, 0, 0, 0] }),
-      [[new Matrix4().makeRotationX(-Math.PI / 2).setPosition(stop.x, 0.03, stop.z), TRACK_COLOR, LEVEL.track]],
-    ),
+    kitCovers(box, books.map((b, i): KitItem => [coverMatrix(b, 0, new Matrix4()), tones[i], LEVEL.cover]), tier),
+    {
+      geometry: new RingGeometry(V.arc - TRACK.half, V.arc + TRACK.half, 40, 1, -span, span * 2),
+      material: createHoloMaterial({ mode: HOLO_MODE.ring, color: neonColor("#ffffff", 1.2, tier), opacity: full ? 0.8 : 0.6, additive: full, params: [TRACK.dashes, 0, 0, 0] }),
+      items: [[new Matrix4().makeRotationX(-Math.PI / 2).setPosition(stop.x, 0.03, stop.z), TRACK_COLOR, LEVEL.track]] as KitItem[],
+    },
   ];
-  if (full) {
-    meshes.push(
-      mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), createHoloMaterial({ mode: HOLO_MODE.dot, params: [reducedMotion ? 0 : 1, 1, 0, 0] }), [
-        ...books.map((b, i): Item => [new Matrix4().makeScale(POOL.book, 1, POOL.book).setPosition(b.at.x, 0.02, b.at.z), tones[i], LEVEL.pool]),
+  if (full)
+    parts.push(
+      kitPools([
+        ...books.map((b, i): KitItem => [new Matrix4().makeScale(POOL.book, 1, POOL.book).setPosition(b.at.x, 0.02, b.at.z), tones[i], LEVEL.pool]),
         [new Matrix4().makeScale(POOL.center, 1, POOL.center).setPosition(mid.x, 0.015, mid.z), TRACK_COLOR, LEVEL.center],
-      ]),
+      ], reducedMotion),
     );
-  }
-  // One sphere around every instance of every mesh (the book bodies' spheres hold their open covers), so the vault culls as one at any book count.
-  const bounds = new Sphere();
-  meshes.forEach((m) => (m.computeBoundingSphere(), bounds.union(m.boundingSphere!)));
-  for (const m of meshes) m.boundingSphere = bounds;
-  const materials = meshes.map((m) => m.material as ShaderMaterial);
-  return {
-    meshes,
-    materials,
-    shift,
-    ids: books.map((b) => `L4:vault:${b.slug}`),
-    tones,
-    // The meshes are primitives (R3F leaves them alone): their instance buffers, geometries and materials go here.
-    dispose: () => meshes.forEach((m, i) => (m.dispose(), m.geometry.dispose(), materials[i].dispose())),
-  };
+  return { ...bookKit(parts, center), ids: books.map((b) => `L4:vault:${b.slug}`), tones };
 }
 
 /**

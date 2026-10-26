@@ -3,7 +3,7 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { LIBRARY_FLOOR, libraryLayoutInput, type LibraryLayoutInput } from "@/experience/floors/library/model";
+import { libraryLayoutInput, type LibraryLayoutInput } from "@/experience/floors/library/model";
 import { TOPICS_ROOM } from "@/experience/floors/library/topicHash";
 import { zoneAt } from "@/experience/camera/orbit";
 import { distanceToRect } from "@/experience/nav/collision";
@@ -17,9 +17,12 @@ import { expectPadRules, expectSpaceRules } from "../helpers/space";
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const data = buildExperienceData("en", FLOOR_NAMES);
 const real = libraryLayoutInput(data.library);
+/** 60 posts over 6 tracks: long, three-row bays push the end plaza east. */
+const crowdedPosts = Array.from({ length: 60 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false }));
 const crowded: LibraryLayoutInput = {
   ...real,
-  posts: Array.from({ length: LIBRARY_FLOOR.maxPosts + 6 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false })),
+  posts: crowdedPosts,
+  tracks: Array.from({ length: 6 }, (_, t) => ({ slug: `track-${t}`, posts: crowdedPosts.filter((_, i) => i % 6 === t).map((p) => p.slug) })),
 };
 const inside = (p: Vec2, r: Rect) => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ;
 /** Shortest distance from a point to the segment a to b. */
@@ -32,7 +35,7 @@ function segDist(p: Vec2, a: Vec2, b: Vec2): number {
 
 describe.each([
   ["real content", real],
-  ["crowded (archive board)", crowded],
+  ["crowded (60 posts on 6 tracks)", crowded],
   ["no research metrics", { ...real, metrics: false }],
 ])("L4 end plaza with %s", (_, input) => {
   const layout = buildLibraryLayout(input);
@@ -61,15 +64,17 @@ describe.each([
     expect(L4.stops?.[TOPICS_ROOM]).toEqual(end.ringStop);
   });
 
-  it("keeps the plaza clear of every station and the timeline unchanged", () => {
+  it("keeps the plaza clear of every station and bay and the timeline unchanged", () => {
     const r = NEWSROOM.end.plaza / 2;
-    for (const s of layout.stations) expect(distanceToRect(end.center, s.rect), s.room).toBeGreaterThan(r);
-    // The press plaza, the stations and the year marks do not move.
-    expect(layout.stations.map((s) => s.rect)).toEqual(buildLibraryLayout({ ...input, metrics: false }).stations.map((s) => s.rect));
+    for (const s of [...layout.stations, ...layout.bays]) expect(distanceToRect(end.center, s.rect), s.room).toBeGreaterThan(r);
+    // The press plaza, the stations and the bays do not move.
+    const plain = buildLibraryLayout({ ...input, metrics: false });
+    expect(layout.stations.map((s) => s.rect)).toEqual(plain.stations.map((s) => s.rect));
+    expect(layout.bays.map((s) => s.rect)).toEqual(plain.bays.map((s) => s.rect));
   });
 
-  it("routes from the elevator to the constellation, the monument and the board around the core", () => {
-    const targets = [end.ringStop, ...(end.monument ? [end.monument.stop] : []), ...(layout.board ? [layout.board.stop] : [])];
+  it("routes from the elevator to the constellation and the monument around the core", () => {
+    const targets = [end.ringStop, ...(end.monument ? [end.monument.stop] : [])];
     for (const t of targets) {
       expect(isWalkable(grid, t)).toBe(true);
       const route = roadRoute(L4.road!, grid, L4.approach, t)!;
@@ -105,9 +110,8 @@ describe.each([
     expect(isWalkable(grid, pad.at)).toBe(true);
   });
 
-  it("lists the core (and the board) as tall camera columns and turns the camera at the constellation stop", () => {
+  it("lists the core as a tall camera column and turns the camera at the constellation stop", () => {
     expect(L4.tall).toContainEqual({ ...end.core, h: NEWSROOM.end.coreHeight });
-    if (layout.board) expect(L4.tall).toContainEqual({ ...layout.board.rect, h: NEWSROOM.board.h });
     const zone = L4.viewZones!.find((z) => z.id === TOPICS_ROOM)!;
     expect(inside(end.ringStop, zone.area)).toBe(true);
   });
@@ -118,8 +122,8 @@ describe.each([
     for (const x of [approach.x, end.ringStop.x - 6, end.ringStop.x - 3]) expect(zoneAt("L4", { x, z: 0, heading: east }, L4.viewZones)?.id, `${x}`).toBe(TOPICS_ROOM);
     expect(zoneAt("L4", { ...approach, heading: -east }, L4.viewZones)?.id).not.toBe(TOPICS_ROOM);
     for (const heading of [east, -east, 0, Math.PI]) expect(zoneAt("L4", { ...end.ringStop, heading }, L4.viewZones)?.id).toBe(TOPICS_ROOM);
-    // The approach is clear of every station's door zone, so a door on the last stretch keeps its own view.
-    const doors = (L4.viewZones ?? []).filter((z) => layout.stations.some((s) => s.room === z.id));
+    // The approach is clear of every station's and bay's door zone, so a door on the last stretch keeps its own view.
+    const doors = (L4.viewZones ?? []).filter((z) => [...layout.stations, ...layout.bays].some((s) => s.room === z.id));
     for (const z of L4.viewZones!.filter((v) => v.id === TOPICS_ROOM))
       for (const d of doors) expect(z.area.maxX < d.area.minX || z.area.minX > d.area.maxX || z.area.maxZ < d.area.minZ || z.area.minZ > d.area.maxZ, d.id).toBe(true);
   });

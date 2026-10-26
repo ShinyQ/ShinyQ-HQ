@@ -60,7 +60,8 @@ Per-floor files: [L1 Lobby](floor-l1-lobby.md), [L2 Career](floor-l2-career.md),
   - the Director learns of every open from the store (a drawer can open and close between two frames) and stops the rover's drive;
   - the pad stays silent until the rover has been on it and left, or has stopped elsewhere;
   - so a closed room never reopens when the rover rolls onto its pad.
-- `roomTarget` (host3d) drives to `door.at` for any room with a door, and to `FloorLayout.listStop` for a room without one on floors that set it (L4 archive posts).
+  - the pad under the rover counts as used on any frame a room is open, even another room's (an L4 post opens at its bay door), so a drawer closed before the next frame never lets that pad fire (`stepDoorLatch`).
+- `roomTarget` (host3d) drives to `door.at` for any room with a door, and to `FloorLayout.listStop` for a room without one on floors that set it (L4: a post on no reader track, at the featured stage). `FloorLayout.stops` wins over `listStop` (L4: every post drives to its track bay's door).
 - Spacing:
   - keep lanes off door pads (`tests/unit/labs-layout.test.ts` checks the L3 packet lanes);
   - layout tests keep 3 u of clear floor between neighbouring rooms, pods and pads.
@@ -173,7 +174,7 @@ L3, L4, RF and B1 load on demand; per-floor caps are owner-approved (budgets in 
 ### Probes, tests and sizes
 
 - Probe: `__hq.floorChunks`. E2E: `e2e/floor-chunks.spec.ts`.
-- Measured: main 3D path lite 450.0 KB and full 465.8 KB gzip; floor chunks L3 13.9, L4 11.7, RF 3.3, B1 16.5 KB (B1 only in unlocked sessions); session totals lite 513.4 KB and full 529.1 KB (the office watch, scene and replay chunks included: the scene chunk 28,217 B loads at idle on every L1 visit, the replay chunk 5,240 B on a quiet one), under their caps of 513.9 and 529.7 KB; the office drawer body 7,171 B stays outside the session total (40,475 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
+- Measured: main 3D path lite 450.3 KB and full 466.1 KB gzip; floor chunks L3 14.0, L4 13.2 (13,519 B), RF 3.3, B1 16.5 KB (B1 only in unlocked sessions); session totals lite 515.4 KB and full 531.2 KB (527,810 B and 543,944 B; the office watch, scene and replay chunks included: the scene chunk 28,410 B loads at idle on every L1 visit, the replay chunk 5,313 B on a quiet one), under their caps of 516.0 and 531.8 KB (owner decision 2026-10-25, the L4 reader tracks); the office drawer body 7,171 B stays outside the session total (40,894 B with the scene and replay chunks, office total cap 40 KB) ([performance.md](performance.md#bytes-3d)).
 
 ## Fast return
 
@@ -344,14 +345,14 @@ Owner decisions: "Neon line" style; unique holograms per item on L2, L3 and L4 (
   | `box` | optional oriented footprint (`center`, `w`, `d`, `yaw`) for turned targets; the pick volume and the hover outline use it |
   | `action` | `open-room`, `elevator-picker`, `teleport-picker` with `year`, `return-beam`, `console-picker` (the L2 time console), `command` |
   | `base` | optional bottom of the pick volume, for stacked targets such as the [Tech Reactor](floor-l3-labs.md) rings |
-  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books): one hint bubble for the group ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
+  | `group` | optional `{ id, label }` for targets sharing one approach point (the L4 Study Vault's books; an L4 track bay's door and spines, `L4:track:<slug>`): one hint bubble for the group, whose Go keeps the first member's `open-room` (a bay door's track drawer) ([Hint bubbles](hud-and-drawer.md#hint-bubbles)) |
 
 - Sources:
   - doors from `FloorLayout.doors`, with room footprints from each floor's layout builder (RF and B1 doors are `station`s);
   - pads from `FloorLayout.pads`;
-  - plus the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory, the L3 wing boards and reactor rings, the L4 end plaza (Topic Constellation, research monument), Study Vault books and archive board;
-  - features register the rest through `registerExtraInteractables` (the Highlights Hall stations, the L1 Agent Office desks).
-- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:board:archive`.
+  - plus the L1 profile hologram, skills wall, Rover menu kiosk and Visitor Observatory, the L3 wing boards and reactor rings, the L4 reader track shelves (one target per post's spine or lead cover), the end plaza (Topic Constellation, research monument) and Study Vault books;
+  - features register the rest through `registerExtraInteractables` (the Highlights Hall stations, the L1 Agent Office desks, the L4 shelf spines and lead covers).
+- Ids: `${floor}:door:${slug}`, `${floor}:pad:elevator`, `L2:teleporter:${year}`, `${floor}:station:${key}` (B1: `B1:station:<station>`), `L1:kiosk:ask-rover` (the Rover menu kiosk; the id is kept for stored visits), `L3:board:${wing}`, `L4:shelf:<post slug>` (a spine or lead cover on its reader track bay; registered from the L4 chunk), `L4:vault:<guide slug>`.
 
 ### Adding targets
 

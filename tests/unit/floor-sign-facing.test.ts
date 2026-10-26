@@ -4,10 +4,10 @@ import { ROTATE_STEP, rotate, stepOrbit } from "@/experience/camera/orbit";
 import { FLOOR_COLOR } from "@/experience/config";
 import { workshopSigns } from "@/experience/floors/career/labels";
 import { buildCareerRoad, careerLayoutInput, labelFade } from "@/experience/floors/career/layout";
-import { stationTitles } from "@/experience/floors/library/decor/common";
+import { postTitles } from "@/experience/floors/library/decor/common";
 import { createLibraryFrame, libraryLabelFrame, libraryPlateHalves } from "@/experience/floors/library/decor/signFrame";
 import { librarySigns } from "@/experience/floors/library/decor/signs";
-import type { LibraryZone } from "@/experience/floors/library/model";
+import type { LibrarySection } from "@/experience/floors/library/model";
 import { SIGN_HIDDEN, signFacing, signFacingDot, type SignSpec } from "@/experience/fx/signLayout";
 import type { Vec2 } from "@/experience/types";
 import en from "../../messages/en.json";
@@ -46,9 +46,9 @@ describe("L2 Workshop signs (career-workshop-signs)", () => {
 });
 
 describe("L4 timeline signs (library-signs)", () => {
-  const zones: Record<LibraryZone, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
-  const featured = l4Layout.stations[0]?.zone === "blog" ? l4Layout.stations[0] : undefined;
-  const { signs, meta } = librarySigns({ layout: l4Layout, zones, titles: stationTitles(l4Data.library, zones), titled: l4Layout.stations.filter((s) => s !== featured) });
+  const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
+  const tracks = new Map(l4Data.library.tracks.map((t) => [t.slug, t.label]));
+  const { signs, meta } = librarySigns({ layout: l4Layout, zones, titles: postTitles(l4Data.library), tracks });
   const half = libraryPlateHalves(signs);
 
   it.each([
@@ -64,7 +64,7 @@ describe("L4 timeline signs (library-signs)", () => {
       stepOrbit(drive.orbit, 1, true);
       const camera = drive.camera();
       const work = createLibraryFrame();
-      const { shown } = libraryLabelFrame(work, { camera, signs, meta, half, origin: { x: 0, y: L4_FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, size: drive.size, endBoxes: [], v: new Vector3() });
+      const { shown } = libraryLabelFrame(work, { camera, signs, meta, half, origin: { x: 0, y: L4_FLOOR_Y, z: 0 }, rover: drive.pos, rooms: undefined, live: null, size: drive.size, endBoxes: [], v: new Vector3() });
       const visible = signs.filter((_, i) => shown[i]);
       expect(visible.length, `L4 signs shown, camera turned ${turn} steps`).toBeGreaterThanOrEqual(1);
       const eye = { x: camera.position.x, z: camera.position.z };

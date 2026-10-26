@@ -28,6 +28,16 @@ How the site's content is stored, checked and published. The authoritative rules
 - A technical post can show an architecture figure: `<Architecture pod="<pod-slug>" caption="..." />` reuses a case study's diagram, and `<Architecture diagram="<id>" caption="..." />` draws a post-local one from `content/blog/diagrams.json` (keyed by post slug, then diagram id; each value has the pod `architecture` shape: nodes with layer, row and kind, plus edges). Props are strings only, and the tag is self-closing with double-quoted props, so `tests/content/post-diagrams.test.ts` can read it. Follow each figure with a numbered walkthrough of the flow, put the same tags in both locales (only the caption is translated), and note that an unknown pod or diagram fails the build and that test (which also flags unused diagrams). Diagrams are drawn at build time as inline SVG (boxes and arrows; dashed for `async` edges): left to right from 1100 px when the drawing fits (a post figure may extend past the text column), top to bottom below that and on phones. An optional node `group` (for example "Cloudflare") draws a frame around its nodes; keep a group on neighbouring layers and rows so the frame holds only its members. The group name sits above the frame's top-left corner, or further along the top when an edge runs through that corner. `tests/unit/diagram-layout.test.ts` fails when a post diagram has crossing edges in any layout, or when any edge, node or edge label touches a group name.
 - Check an edit quickly with `bun run validate:content`.
 
+### Reader tracks
+
+The L4 Writing floor shelves the posts by reader track, one bookshelf bay per track (owner decision [2026-10-25](decisions/2026-10-25-l4-reader-tracks.md); the floor in [`agents/floor-l4-library.md`](agents/floor-l4-library.md)).
+
+- Publishing a post: give its `floors.library.posts[]` entry a `track`, the slug of one entry in `floors.library.tracks`. Every post sits on exactly one track.
+- Optionally make it the track's `lead` (the post that stands face-out first on the shelf and heads the track drawer). Without a `lead` the newest post of the track leads, so a new post leads its track until the owner picks another.
+- Tracks (`floors.library.tracks`): 1 to 6 entries in bay order, each `{ slug, title: { en, id }, lead? }`, slugs unique. Titles are bilingual, Title Case like every title (minor words stay lowercase: "Engineering with AI Agents", "Rekayasa dengan AI Agent"), no first person, no client names (C3).
+- A track with no posts gets no bay and no drawer; keep each track at least one post (`tests/content/dataset.test.ts`).
+- `bun run validate:content` fails on a post without a `track` or with an unknown one, a `lead` that is not a post of that track, a duplicate track slug, fewer than 1 or more than 6 tracks, and a track title that is not Title Case (also `tests/content/title-case.test.ts`). `tests/content/first-person.test.ts` keeps track titles out of the first person.
+
 ## Build story
 
 The "How this site was built" page (`/{locale}/build`) renders `content/build-story.json`; its numbers come from a snapshot, never from the text.
@@ -53,7 +63,7 @@ The "How this site was built" page (`/{locale}/build`) renders `content/build-st
 
 ## Titles and ordering
 
-- Titles (projects, posts, publications, talks, side projects, awards, principles) are written in Title Case in both languages.
+- Titles (projects, posts, L4 reader tracks, publications, talks, side projects, awards, principles) are written in Title Case in both languages.
 - `bun scripts/title-case.ts` lists any that are not and `--write` fixes them (rules: "Title Case" in [`agents/content-style-and-safety.md`](agents/content-style-and-safety.md)).
 - A project whose title does not fit one line on its L3 directory board can set `shortTitle` (`{ en, id }`): at most 32 characters, shorter than the title in both languages, Title Case, no first person. Only the L3 boards use it; every other page, card and drawer keeps `title`.
 - Projects with a gallery come first in every project list (Work, Home, Cmd-K and the L3 wing roads), then hero, featured and listed pods by `order` (`orderPods` in `src/content/selectors.ts`).

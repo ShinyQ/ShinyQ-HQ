@@ -217,6 +217,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `src/content/tech.ts`: getTechLogo(name) registry (aliases, text-only allowlist), client-safe.
 - `src/content/tech-rings.ts`, `src/content/tech-index.ts`: L3 Tech Reactor: six rings from the CV skill groups, explicit ring map, aliases and misc allowlist; pure `buildTechIndex` (read it through `getTechIndex()` from `@/content/load`).
 - `src/content/topic-map.ts`, `src/content/topic-index.ts`: L4 Topic Constellation: the topic list, tag folds, item-to-topic map and allowlists; pure `buildTopicIndex` (read it through `getTopicIndex()` from `@/content/load`).
+- `src/content/track-index.ts`: L4 reader tracks: pure `buildTrackIndex` (each track's posts lead first, then newest first; read it through `getTrackIndex()` from `@/content/load`).
 - `src/content/certs.ts`: pure certification helpers and the CertView type (sort, featured, issuer counts and wall tabs, filter, issuer logos), client-safe.
 - `src/content/cert-views.ts`: certViews(locale) / toCertViews: serializable CertView[] for the island, the preview card and the 3D wall.
 - `src/content/guides.ts`: GuideView type and pure study guide helpers (URLs, weight and size labels, page key), client-safe.
@@ -322,10 +323,11 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - ops.ts (Ops Control Room numbers, screens, lines, labels), opsLive.ts (live panel rows), opsHash.ts (`L3:ops`, `#production`, import-free).
   - R3F Hub, Pods, PacketLanes, HologramStage, OpsRoom.
 - `src/experience/floors/library/`: L4 Writing.
-  - Pure model.ts (LibraryLayout contract, dockAlong, signsFor, paperSlots, tagLinks, `YEAR_POST`).
+  - Pure model.ts (LibraryLayout and LibraryBay contract, dockAlong, stationViewZones, `trackRoom`).
+  - Pure shelf.ts (`SHELF`, `SHELF_VIEW`, `shelfSize`: a reader track bay's bookshelf sizes; on the main 3D path) and slots.ts (`baySlots`, `SHELF_PLINTH`, `shelfTargets`: the post slots and their point-and-go targets; only in the lazy L4 chunk).
   - signPlacement.ts (`placeLibraryLabels`: which timeline signs show).
   - concepts/newsroom.ts (the picked concept's builder), layout.ts (buildLibraryLayout: the owner's pick).
-  - decor/ (R3F newsroom decor, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement; StudyVault.tsx with pure vault.ts: the Study Vault books whose covers open as the rover nears and whose click opens the study guide reader).
+  - decor/ (R3F newsroom decor, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement; StudyVault.tsx with pure vault.ts: the Study Vault books whose covers open as the rover nears and whose click opens the study guide reader; TrackShelves.tsx with pure shelf3d.ts: the reader track shelves, spines that pull for the rover or the pointer; bookKit.ts: the instanced holo book kit both share; signs.ts: section, track, lead and spine sign specs).
 - `src/experience/floors/roof/`: RF roof deck.
   - Pure layout.ts (buildRoofLayout, ROOF_DECK, roofActive), solids.ts (merged boxes, lattice, scatter).
   - kit.tsx (MergedBoxes, MergedEdges, PulseRings, HitBox, aboutCard).
@@ -373,7 +375,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 
 - `src/experience/fx/RoadMarkings.tsx`: road strip, chevrons, dashed edges and spur stubs (4 draw calls per floor; 3 on L3, which turns chevrons off).
 - `src/experience/fx/HoloIcon.tsx`: neon line hologram icons from holoIcons.ts (career type line art shared with components/TypeIcon.tsx); batched mode: any mix of icons, colors and sizes in one geometry (`instanced`).
-- `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots and `libraryIcons`, run at build for the shapes JSON.
+- `src/experience/floors/library/icons.ts`: where the L4 icons stand (pure): station heights, the desk slots, `paperSlots` and `libraryIcons` (one icon over each bay's lead), run at build for the shapes JSON.
 - `src/experience/fx/shapes.ts`: `useShapes`: fetches a floor's unique hologram shapes after its first frame and the crossfade weights (`HoloSwap` in `HoloIcon.tsx` draws the swap).
 - `src/experience/floors/career/icons.ts`: where the L2 room icons stand (pure): `ICON_SIZE`, `iconY` and `careerIcons`, run at build for the shapes JSON.
 - `src/experience/fx/BatchedLabels.tsx`: all labels of a floor in one draw call (troika BatchedText; labelProps.ts holds the pure label type).
@@ -417,6 +419,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 - `tests/helpers/space.ts`: expectSpaceRules(...) for walkable floor layouts.
 - `tests/helpers/edge-accents.ts`: static scanner for colored left/top edge stripes (`tests/unit/edge-accents.test.ts`).
 - `tests/helpers/office-cameras.ts`: settled L1 follow cameras and the six office sizes, shared by `office-chip-placement` and `office-beacon-view`.
+- `tests/helpers/follow-frame.ts`: the settled follow camera and HUD-safe framing checks (`DESKTOP_SAFE`, `PHONE_SAFE`, `FRAME_SIZES`, `settleFollow`, `toScreen`, `expectFramed`), shared by the L4 Study Vault and track shelf framing tests.
 - `tests/helpers/` (more): `office-endpoint.ts` (a fake hq-office service binding and edge cache), `office-history.ts` (generated office days), `office-frame.ts` and `office-rows.ts` (office projection checks), `office-t.ts` (an `office` translator), `fake-canvas.ts` (a recording 2D context), `shader-pow.ts` (unsafe GLSL `pow()` bases), `import-graph.ts` (static import walk for the chunk graph tests), `fake-renderer.ts`, `fake-audio.ts`, `real-layouts.ts`, `l4-drive.ts` (the real L4 floor and its settled follow camera for the label and sign sweeps), `webp.ts`, `woff.ts`, the frozen oracles `navgrid-legacy.ts` and `search-legacy.ts`, and `search-corpus.ts` (the search equivalence corpus and its seeded sample).
 - `tests/unit/`: Vitest.
   - Schema, selectors, format, safety, store, intents, navgrid, rover, rigs, url sync, missions, search, SEO, audio, doors.
@@ -459,6 +462,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
 | How I run AI in production | `production.spec.ts`: the About section and axe, Cmd-K, the L3 Ops Control Room, its drawer, live panel, deep link and reduced motion |
 | Study guides | `guides.spec.ts`: the `/library#guides` shelf and the certification card open the reader (page 1 with its text layer, Next, page input, Home and End, Esc and focus return), chapters, a same-origin download with no new tab, the resumed page, axe, the phone layout; `/api/guides/*` comes from `e2e/fixtures/guide-pdf.ts` |
 | Study Vault | `guides-vault.spec.ts`: the L4 Study Vault books on desktop and phone (full and reduced motion) open the reader, point-and-go from the constellation stop |
+| L4 track shelves | `library-shelves.spec.ts`: on desktop and phone (full and reduced motion) the spine nearest the rover pulls at a bay door and shows its title, a pointed or tapped spine drives to the bay and opens its post, the bay door's track drawer, a Cmd-K post parks at its bay |
 | Floor ambience | `ambience.spec.ts`: the switch in the sound group, persistence, the engine follows the rover's floor |
 | Idle cadence and rover idle | `idle-cadence.spec.ts`: a parked scene drops to its floor's idle cadence and input brings 60 fps back; `rover-idle.spec.ts`: the rover's idle behaviour and what stops it |
 | CV and paper readers | `pageview.spec.ts`: the `/cv` cover card and every CV entry point open the CV in the shared reader (page 1 drawn with its text layer, Download, Esc and focus return, axe); `library-roof.spec.ts`: the RF kiosk and the paper reader (Back, the version line, the IEEE notice, the thesis on a phone) |

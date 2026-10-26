@@ -1,11 +1,8 @@
-import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import { guideViews } from "@/content/guide-views";
-import { cameraWorld, clampCamera } from "@/experience/camera/collision";
-import { followOffsetScale } from "@/experience/camera/offset";
-import { ZOOM_RANGE, zoneAt, zoneView } from "@/experience/camera/orbit";
-import { FOLLOW_LOOK_AHEAD, followForward, followPose, type Vec3 } from "@/experience/camera/rigs";
+import { ZOOM_RANGE, zoneAt } from "@/experience/camera/orbit";
+import type { Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts, ROVER } from "@/experience/config";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
@@ -16,7 +13,7 @@ import { PAD } from "@/experience/nav/pads";
 import { pathBetween, projectOnRoad } from "@/experience/nav/road";
 import { rectGap } from "@/experience/nav/space";
 import type { Rect, Vec2 } from "@/experience/types";
-import { cameraClass } from "@/lib/viewport";
+import { expectFramed, FRAME_SIZES, settleFollow } from "../helpers/follow-frame";
 import { expectPadRules, expectSpaceRules } from "../helpers/space";
 
 /**
@@ -28,9 +25,12 @@ import { expectPadRules, expectSpaceRules } from "../helpers/space";
 const FLOOR_NAMES = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
 const data = buildExperienceData("en", FLOOR_NAMES);
 const real = libraryLayoutInput(data.library);
+/** 60 posts over 6 tracks: long, three-row bays push the end plaza east. */
+const crowdedPosts = Array.from({ length: 60 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false }));
 const crowded: LibraryLayoutInput = {
   ...real,
-  posts: Array.from({ length: LIBRARY_FLOOR.maxPosts + 6 }, (_, i) => ({ slug: `p${i}`, date: `${2026 - Math.floor(i / 4)}-01-01`, tags: ["case-study"], external: false })),
+  posts: crowdedPosts,
+  tracks: Array.from({ length: 6 }, (_, t) => ({ slug: `track-${t}`, posts: crowdedPosts.filter((_, i) => i % 6 === t).map((p) => p.slug) })),
 };
 const V = NEWSROOM.end.vault;
 const VAULT = "L4:vault";
@@ -72,7 +72,7 @@ function quadsOverlap(a: Vec2[], b: Vec2[]): boolean {
 
 describe.each([
   ["real content", real],
-  ["crowded (archive board)", crowded],
+  ["crowded (60 posts on 6 tracks)", crowded],
   ["no research metrics", { ...real, metrics: false }],
 ])("L4 Study Vault with %s", (_, input) => {
   const layout = buildLibraryLayout(input);
@@ -179,12 +179,11 @@ describe.each([
     expect(vault.shelf.minX - vault.stop.x).toBeGreaterThan(ROVER.radius + 3);
   });
 
-  it("keeps every book at least 3 u from the Return pad, the board, the monument, the ring road and the slab edge", () => {
+  it("keeps every book at least 3 u from the Return pad, the monument, the ring road and the slab edge", () => {
     const pad = around(end.returnPad, PAD.radius);
     const ring = net.roads.find((r) => r.id === "end-ring")!;
     for (const b of [...vault.books, { slug: "shelf", rect: vault.shelf }]) {
       expect(rectGap(b.rect, pad), `${b.slug} to the Return pad`).toBeGreaterThanOrEqual(3);
-      if (layout.board) expect(rectGap(b.rect, layout.board.rect), `${b.slug} to the board`).toBeGreaterThanOrEqual(3);
       if (end.monument) expect(rectGap(b.rect, end.monument.rect), `${b.slug} to the monument`).toBeGreaterThanOrEqual(3);
       expect(rectGap(b.rect, end.core), `${b.slug} to the pedestal`).toBeGreaterThanOrEqual(3);
       const { minX, maxX, minZ, maxZ } = b.rect;
@@ -198,9 +197,8 @@ describe.each([
       const slab = L4.bounds;
       expect(Math.min(b.rect.minX - slab.minX, slab.maxX - b.rect.maxX, b.rect.minZ - slab.minZ, slab.maxZ - b.rect.maxZ), `${b.slug} to the slab edge`).toBeGreaterThanOrEqual(3);
     }
-    // The vault road and plaza stay clear of the Return pad and the board.
+    // The vault road and plaza stay clear of the Return pad.
     expect(dist(vault.center, end.returnPad)).toBeGreaterThan(vault.radius + PAD.radius + 3);
-    if (layout.board) expect(rectGap(around(vault.center, vault.radius), layout.board.rect)).toBeGreaterThanOrEqual(3);
   });
 
   it("turns the camera at the stop toward the books (any heading), zoomed out to fit them", () => {
@@ -253,50 +251,19 @@ describe("L4 Study Vault camera (real content)", () => {
   const L4 = buildFloorLayouts(data.years.length, { library: input }).L4;
   const vault = buildLibraryLayout(input).end!.vault!;
   const zone = zoneAt("L4", vault.stop, L4.viewZones)!;
-  const world = cameraWorld(L4, 0);
-  /** HUD-free boxes (`DESKTOP_SAFE`, `PHONE_SAFE` in e2e/hq.ts), as in arrivals.test.ts. */
-  const DESKTOP_SAFE = { top: 90, bottom: 90, side: 40 };
-  const PHONE_SAFE = { top: 120, bottom: 140, side: 24 };
-
-  for (const [w, h] of [
-    [1440, 900],
-    [1194, 834],
-    [834, 1194],
-    [390, 844],
-  ] as const) {
+  for (const [w, h] of FRAME_SIZES) {
     it(`frames all four books whole with the rover on the stop at ${w}x${h}`, () => {
-      const cls = cameraClass(w, h);
-      const view = zoneView(zone, cls);
-      const forward = followForward(cls, view.yaw);
-      const ahead = FOLLOW_LOOK_AHEAD[cls];
-      const rover: Vec3 = [vault.stop.x, 1, vault.stop.z];
-      const target: Vec3 = [vault.stop.x + forward.x * ahead, 1, vault.stop.z + forward.z * ahead];
-      const pose = followPose(cls, target, view.yaw, (view.zoom ?? 1) * followOffsetScale(cls, w / h), view.pitch ?? 0);
-      const position = clampCamera(target, pose.position, world, rover, pose.fov);
+      const settled = settleFollow(L4, zone, vault.stop, w, h);
       // The camera looks from the ring side toward the books.
+      const { target, position, rover } = settled;
       const look = { x: target[0] - position[0], z: target[2] - position[2] };
       const toBooks = { x: vault.books[1].at.x - vault.stop.x, z: 0 };
       expect(look.x * toBooks.x + look.z * toBooks.z).toBeGreaterThan(0);
-      const camera = new PerspectiveCamera(pose.fov, w / h, 0.1, 500);
-      camera.position.set(...position);
-      camera.lookAt(new Vector3(...target));
-      camera.updateMatrixWorld();
-      camera.updateProjectionMatrix();
-      const safe = cls === "mobile" ? PHONE_SAFE : DESKTOP_SAFE;
       const points: { label: string; at: Vec3 }[] = [
         { label: "rover", at: rover },
         ...vault.books.flatMap((b) => footprint(b).flatMap((c, k) => [0, V.book.h].map((y) => ({ label: `${b.slug} corner ${k} at ${y}`, at: [c.x, y, c.z] as Vec3 })))),
       ];
-      for (const { label, at } of points) {
-        const v = new Vector3(...at).project(camera);
-        const sx = ((v.x + 1) / 2) * w;
-        const sy = ((1 - v.y) / 2) * h;
-        expect(v.z, label).toBeLessThan(1);
-        expect(sx, label).toBeGreaterThanOrEqual(safe.side);
-        expect(sx, label).toBeLessThanOrEqual(w - safe.side);
-        expect(sy, label).toBeGreaterThanOrEqual(safe.top);
-        expect(sy, label).toBeLessThanOrEqual(h - safe.bottom);
-      }
+      expectFramed(settled, points, w, h);
     });
   }
 });

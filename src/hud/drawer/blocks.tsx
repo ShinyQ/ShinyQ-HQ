@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { RoomLinkItem, RoomMetric, RoomSection } from "@/content/room-views/types";
+import { goToRoom } from "@/experience/missions/bridge";
 import { Link } from "@/i18n/navigation";
 
 /** An outside link that opens in a new tab: an arrow for sighted readers, "opens in a new tab" for screen readers. */
@@ -50,10 +51,19 @@ function ItemLink({ item }: { item: RoomLinkItem }) {
       {item.meta && <span className="block text-[13px] leading-5 text-ink-2">{item.meta}</span>}
     </>
   );
+  const row = "block min-h-11 rounded-md px-2 py-1.5 transition hover:bg-white/5";
+  if (item.room) {
+    const room = item.room;
+    return (
+      <button type="button" onClick={() => goToRoom(room)} className={`${row} w-full text-left`} data-testid="room-item" data-room={room}>
+        {body}
+      </button>
+    );
+  }
   if (!item.href) return <div className="py-1.5">{body}</div>;
   if (item.href.startsWith("/") && !item.external)
     return (
-      <Link href={item.href} className="block min-h-11 rounded-md px-2 py-1.5 transition hover:bg-white/5">
+      <Link href={item.href} className={row}>
         {body}
       </Link>
     );
@@ -62,7 +72,7 @@ function ItemLink({ item }: { item: RoomLinkItem }) {
       href={item.href}
       target={item.external ? "_blank" : undefined}
       rel={item.external ? "noopener noreferrer" : undefined}
-      className="block min-h-11 rounded-md px-2 py-1.5 transition hover:bg-white/5"
+      className={row}
     >
       {body}
       {item.external && <span className="sr-only"> ({t("external")})</span>}

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { RoomId } from "@/content/schema";
 import { buildExperienceData } from "@/content/experience";
-import { L4_SIGN, TITLE_SIGN, YEAR_POST, librarySigns, stationBackEdge, stationTitleSpecs, yearPostSegments, yearPostSpecs, zoneSignSpecs } from "@/experience/floors/library/decor/signs";
+import { L4_SIGN, librarySigns, SHELF_SIGN, stationBackEdge, TITLE_SIGN, ZONE_SIGN, zoneSignSpecs, type LibrarySignKind } from "@/experience/floors/library/decor/signs";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { DOCK, LIBRARY_FLOOR, libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
+import { LIBRARY_FLOOR, libraryLayoutInput, roomOfPost, ZONE_TONE } from "@/experience/floors/library/model";
 import { signPlate } from "@/experience/fx/signLayout";
 import { ROVER_HEIGHT } from "@/experience/config";
 
@@ -11,10 +11,15 @@ const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: 
 const library = buildLibraryLayout(libraryLayoutInput(data.library));
 const zones = { blog: "Blog", research: "Research", models: "Models and datasets", talks: "Talks and workshops" };
 
+/** Every line of a wrapped sign fits the wrap width (a single long word may not). */
+const wrapped = (text: string, wrap: number) => text.split("\n").every((l) => l.length <= wrap || !l.includes(" "));
+
 describe("L4 floating signs (Round 7 F: one height rule)", () => {
-  const titles = new Map(data.library.posts.map((p) => [`L4:${p.slug}`, p.title])) as unknown as Map<RoomId, string>;
+  const titles = new Map(data.library.posts.map((p) => [p.slug, p.title]));
+  const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
+  const all = librarySigns({ layout: library, zones, titles, tracks });
+  const ofKind = (kind: LibrarySignKind) => all.signs.filter((_, i) => all.meta[i].kind === kind);
   const featured = library.stations[0];
-  const titled = library.stations.filter((s) => s !== featured);
 
   it("hangs one sign per present zone over the back edge of its first station, off the road, plate bottom on the one L4 height", () => {
     const signs = zoneSignSpecs(library, zones);
@@ -38,44 +43,58 @@ describe("L4 floating signs (Round 7 F: one height rule)", () => {
     expect(L4_SIGN.bottom).toBeGreaterThan(ROVER_HEIGHT);
   });
 
-  it("titles only the post stations (shelves keep their zone sign alone), on the same height", () => {
-    const signs = stationTitleSpecs(titled, titles);
-    const posts = titled.filter((s) => s.zone === "blog");
-    expect(signs).toHaveLength(posts.length);
+  it("names each bay's track in upper case over the bay's back edge, off the road, in the zone sign type on the one L4 height", () => {
+    expect(library.bays.length).toBeGreaterThan(0);
+    const signs = ofKind("track");
+    expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
-      expect([s.x, s.z]).toEqual([posts[i].center.x, posts[i].center.z]);
-      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(posts[i].room));
-      expect(s.text.split("\n").every((l) => l.length <= TITLE_SIGN.wrap || !l.includes(" "))).toBe(true);
+      const bay = library.bays[i];
+      expect(s.text).toBe(tracks.get(bay.track)!.toUpperCase());
+      expect({ x: s.x, z: s.z }).toEqual(stationBackEdge(bay));
+      expect(Math.abs((s.x - bay.from.x) * bay.facing.x + (s.z - bay.from.z) * bay.facing.z)).toBeGreaterThan(LIBRARY_FLOOR.road / 2);
+      expect([s.fontSize, s.letterSpacing]).toEqual([ZONE_SIGN.fontSize, ZONE_SIGN.letterSpacing]);
       expect(s.y - signPlate(s).h / 2).toBeCloseTo(L4_SIGN.bottom);
     });
   });
 
-  it("puts every year on a low post at the road edge, in the gap before its first post", () => {
-    const years = library.extras.years ?? [];
-    expect(years.length).toBeGreaterThan(0);
-    const signs = yearPostSpecs(years);
-    const posts = yearPostSegments(years);
+  it("titles each bay's lead over its cover, 1.6 u under the L4 height and above the cover", () => {
+    const signs = ofKind("lead");
+    expect(signs).toHaveLength(library.bays.length);
     signs.forEach((s, i) => {
-      expect(s.text).toBe(years[i].year);
-      expect(Math.abs(s.z)).toBeCloseTo(LIBRARY_FLOOR.road / 2 + YEAR_POST.edge);
-      expect(s.y - signPlate(s).h / 2).toBeCloseTo(YEAR_POST.top);
-      expect(s.y + signPlate(s).h / 2).toBeLessThan(ROVER_HEIGHT);
-      expect(posts[i]).toEqual([s.x, 0, s.z, s.x, YEAR_POST.top, s.z]);
-      // Off every station and spur.
-      for (const st of library.stations) {
-        expect(s.x < st.rect.minX || s.x > st.rect.maxX || s.z < st.rect.minZ || s.z > st.rect.maxZ).toBe(true);
-        expect(Math.abs(s.x - st.from.x)).toBeGreaterThan(DOCK.spurWidth / 2);
-      }
+      const lead = baySlots(library.bays[i])[0];
+      expect(lead.slug).toBe(library.bays[i].posts[0]);
+      expect([s.x, s.z]).toEqual([lead.at.x, lead.at.z]);
+      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(lead.slug));
+      expect(wrapped(s.text, TITLE_SIGN.wrap)).toBe(true);
+      expect(s.y - signPlate(s).h / 2).toBeCloseTo(L4_SIGN.bottom - 1.6);
+      expect(s.y - signPlate(s).h / 2).toBeGreaterThan(lead.y + SHELF_PLINTH + lead.h);
     });
   });
 
-  it("lists sections, years and titles once each, with their kind; no title repeats a zone name", () => {
-    const { signs, meta } = librarySigns({ layout: library, zones, titles, titled });
+  it("titles every spine (not the leads) just over its spine", () => {
+    const signs = ofKind("spine");
+    const spines = library.bays.flatMap((b) => baySlots(b).slice(1));
+    expect(spines.length).toBeGreaterThan(0);
+    expect(signs).toHaveLength(spines.length);
+    signs.forEach((s, i) => {
+      const slot = spines[i];
+      expect([s.x, s.z]).toEqual([slot.at.x, slot.at.z]);
+      expect(s.text.replace(/\n/g, " ")).toBe(titles.get(slot.slug));
+      expect(wrapped(s.text, 22)).toBe(true);
+      expect(s.y - signPlate(s).h / 2).toBeCloseTo(slot.y + slot.h + SHELF_SIGN.lift);
+    });
+  });
+
+  it("lists sections, tracks, leads and spines with their kind and room; no text repeats", () => {
+    const { signs, meta } = all;
     expect(signs).toHaveLength(meta.length);
     const texts = signs.map((s) => s.text.replace(/\n/g, " ").toUpperCase());
     expect(new Set(texts).size).toBe(texts.length);
     expect(meta.filter((m) => m.kind === "section")).toHaveLength(zoneSignSpecs(library, zones).length);
-    expect(meta.filter((m) => m.kind === "title").every((m) => m.zone === "blog" && m.room)).toBe(true);
-    expect(meta.some((m) => m.kind === "title" && m.room === featured.room)).toBe(false);
+    expect(meta.filter((m) => m.kind === "track").map((m) => m.room)).toEqual(library.bays.map((b) => b.room));
+    expect(meta.filter((m) => m.kind === "lead").map((m) => m.room)).toEqual(library.bays.map((b) => roomOfPost(b.posts[0])));
+    expect(meta.filter((m) => m.kind === "spine").map((m) => m.room)).toEqual(library.bays.flatMap((b) => b.posts.slice(1).map((p) => roomOfPost(p))));
+    // The featured stage keeps its title on the headline wall: no lead sign over the stage.
+    expect(signs.some((s) => s.x === featured.center.x && s.z === featured.center.z)).toBe(false);
   });
 });

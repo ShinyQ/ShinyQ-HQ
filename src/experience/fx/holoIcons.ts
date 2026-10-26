@@ -1,4 +1,4 @@
-import type { LibraryZone } from "../floors/library/model";
+import type { LibrarySection } from "../floors/library/model";
 import type { CareerType, PadKind } from "../types";
 
 /**
@@ -178,7 +178,7 @@ export const PAD_ICONS: Record<PadKind, Stroke[]> = {
 export const PAD_TONE: Record<PadKind, string> = { elevator: "#22d3ee", teleport: "#f472b6", return: "#34d399" };
 
 /** L4 zone icons in the same "Neon line" style: open book, paper, model cube, presentation screen. */
-export const LIBRARY_ICONS: Record<LibraryZone, Stroke[]> = {
+export const LIBRARY_ICONS: Record<LibrarySection, Stroke[]> = {
   // Blog: an open book with a spine and two text lines per page.
   blog: [
     shut([12, 6], [12, 20], [3, 18], [3, 4]),

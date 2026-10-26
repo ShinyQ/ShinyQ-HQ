@@ -7,13 +7,14 @@ import type { LibraryConcept, LibraryLayout, LibraryLayoutInput } from "./model"
  */
 export const LIBRARY_CONCEPT: LibraryConcept = "newsroom";
 
-const EMPTY: LibraryLayoutInput = { posts: [], research: 0, models: 0, talks: 0, guides: [] };
+const EMPTY: LibraryLayoutInput = { posts: [], tracks: [], research: 0, models: 0, talks: 0, guides: [] };
 
 /**
- * The real L4 floor: the picked concept's layout, with `floor.listStop` set so rooms without a door
- * (posts on the archive board) drive to the board, or to the overview spot when every post is docked.
+ * The real L4 floor: the picked concept's layout, with `floor.listStop` set so rooms without a door or a
+ * stop (a post on no track) drive to the featured stage, or to the overview spot without a hosted post.
  */
 export function buildLibraryLayout(input: LibraryLayoutInput = EMPTY): LibraryLayout {
   const layout = buildPicked(input);
-  return { ...layout, floor: { ...layout.floor, listStop: layout.board?.stop ?? layout.floor.spawn } };
+  const stage = layout.stations[0]?.zone === "blog" ? layout.stations[0] : null;
+  return { ...layout, floor: { ...layout.floor, listStop: stage ? stage.door : layout.floor.spawn } };
 }

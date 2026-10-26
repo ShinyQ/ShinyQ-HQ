@@ -14,7 +14,7 @@ import { endPlazaFrame, vaultZone } from "./signFrame";
 /**
  * Label placement of the end plaza's signs (owner review 2026-10-14): every frame each sign's plate is
  * projected to the screen and `placeLabels` keeps the shown ones apart. The count headline, the monument
- * plates, the archive name and the picked topic always show; the other topic labels show by priority
+ * plates and the picked topic always show; the other topic labels show by priority
  * (hovered, then bigger topics, then nearer ones) up to `END_LABEL_MAX` and only where they cover nothing.
  * Signs fade out when the camera is right under them (`END_SIGN_NEAR`); the frame itself is pure
  * (`endPlazaFrame` in `signFrame.ts`). Fades ease; under reduced motion they cut.

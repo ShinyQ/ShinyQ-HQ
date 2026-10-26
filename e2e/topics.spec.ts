@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import content from "../content/site-content.json";
 import en from "../messages/en.json";
 import {
   asReturningVisitor,
@@ -25,7 +26,7 @@ test.beforeEach(({ context }) => fastAnimations(context));
 
 /**
  * L4 Topic Constellation (owner request 2026-10-14): the end plaza of the Writing floor. Picking a topic
- * (drawer or orb) lights its stations and desks, glows the road to them and floats "N pieces on X"; the
+ * (drawer or orb) lights its stations, desks and reader track bays, glows the road to them and floats "N pieces on X"; the
  * `#library-topic=<slug>` deep link, Cmd-K (3D and the Classic site filter), the research monument, the
  * Express Return pad and reduced motion. The end plaza labels never overlapping is checked without a renderer in
  * `tests/unit/end-plaza-label-sweep.test.ts` (the nightly `e2e/library-labels.spec.ts` reads the rendered plates).
@@ -38,7 +39,7 @@ type TW = Window & {
   __hq: {
     store: { getState: () => Record<string, unknown> & { topics: { topic: { slug: string } | null }; openRoom: (r: string) => void; selectTopic: (t: unknown) => void; beam: unknown; activeRoom: string | null } };
     probes: { topics: Topics; signs: Record<string, { text: string }[]> };
-    layouts: Record<string, { stops?: Record<string, { x: number; z: number }>; approach: { x: number; z: number } }>;
+    layouts: Record<string, { stops?: Record<string, { x: number; z: number }>; approach: { x: number; z: number }; doors?: { room: string }[] }>;
     interact: { project: (p: { x: number; y: number; z: number }) => { x: number; y: number } | null; floorY: number };
     rover: { x: number; z: number };
   };
@@ -53,11 +54,22 @@ const probe = (page: Page) =>
 /** Sign texts with line wraps folded to spaces. */
 const signs = (page: Page) => page.evaluate(() => ((window as unknown as TW).__hq.probes.signs["library-end-signs"] ?? []).map((s) => s.text.replace(/\s+/g, " ")));
 
+/** Each post room's reader track bay (`L4:<slug>` to `L4:track:<track>`). */
+const BAY_OF = new Map(content.floors.library.posts.map((p) => [`L4:${p.slug}`, `L4:track:${p.track}`]));
+
+/**
+ * A topic's pieces and what it lights (`litStations`): the stations among its rooms (the featured stage, the desks; every
+ * door but a bay's) and the bay of every one of its posts, sorted.
+ */
 async function topicOf(page: Page, slug: string) {
   const res = await page.request.get("/data/rooms/en-L4.json");
   const view = ((await res.json()) as Record<string, View>)["L4:topics"].topics;
   const topic = view.topics.find((t) => t.slug === slug)!;
-  return { ...topic, rooms: [...new Set(topic.items.map((i) => i.room))].sort() };
+  const rooms = [...new Set(topic.items.map((i) => i.room))].sort();
+  const doors = await page.evaluate(() => ((window as unknown as TW).__hq.layouts.L4.doors ?? []).map((d) => d.room));
+  const stations = rooms.filter((r) => doors.includes(r) && !r.startsWith("L4:track:"));
+  const bays = rooms.flatMap((r) => (BAY_OF.has(r) ? [BAY_OF.get(r)!] : []));
+  return { ...topic, rooms, lit: [...new Set([...stations, ...bays])].sort() };
 }
 
 async function openTopics(page: Page) {
@@ -74,14 +86,15 @@ test("picking a topic in the drawer lights its stations, glows their roads and f
   await page.locator("[data-testid=topics-list] [data-topic=sentiment-analysis]").click();
   await expect(page.getByTestId("topics-pieces")).toHaveText(`${sentiment.items.length} pieces on Sentiment analysis`);
   await expect(page.getByTestId("topic-piece")).toHaveCount(sentiment.items.length);
-  await expect.poll(() => probe(page)).toMatchObject({ topic: "sentiment-analysis", lit: sentiment.rooms });
-  // The timeline run back to the westmost lit desk plus a spur per lit desk.
-  expect((await probe(page)).roads).toBe(sentiment.rooms.length + 1);
+  expect(sentiment.lit.length).toBeGreaterThan(0);
+  await expect.poll(() => probe(page)).toMatchObject({ topic: "sentiment-analysis", lit: sentiment.lit });
+  // The lane run back to the westmost lit station or bay plus a spur per lit one.
+  expect((await probe(page)).roads).toBe(sentiment.lit.length + 1);
   // The headline shows where the plaza is on screen: from the plaza approach.
   await page.keyboard.press("Escape");
   await waitForPhase(page, "explore");
   const stop = await page.evaluate(() => (window as unknown as TW).__hq.layouts.L4.stops!["L4:topics"]);
-  // Heading east on the timeline 6 u short of the stop, the rover is in the constellation's approach zone: the camera
+  // Heading east on the lane 6 u short of the stop, the rover is in the constellation's approach zone: the camera
   // looks east over the whole cloud, zoomed out, with the headline above it on screen.
   await driveTo(page, { x: stop.x - 6, z: 0 });
   await waitForCameraSettle(page);
@@ -142,7 +155,10 @@ test("the #library-topic deep link opens the constellation with that topic picke
   await waitForSceneLive(page);
   await expect(page.getByTestId("topics-selection")).toHaveAttribute("data-topic", "voice-ai");
   await expect(page.locator("[data-testid=topics-list] [data-topic=voice-ai]")).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => probe(page)).toMatchObject({ topic: "voice-ai", lit: ["L4:making-a-voice-agent-interruptible"] });
+  // Its post's reader track bay lights (the post itself sits on the bay's shelf).
+  const voice = await topicOf(page, "voice-ai");
+  expect(voice.lit).toContain(BAY_OF.get("L4:making-a-voice-agent-interruptible"));
+  await expect.poll(() => probe(page)).toMatchObject({ topic: "voice-ai", lit: voice.lit });
   expect(page.url()).toContain("/en/library?tier=lite#library-topic=voice-ai");
 });
 

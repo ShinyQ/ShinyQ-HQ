@@ -18,8 +18,9 @@ export const HINT_OBJECTS: Readonly<Record<string, string>> = {
   "L4:vault": "vault",
 };
 
+/** Plus one line for every L4 reader track bay (its door and spines share one bubble under the bay room, `L4:track:<slug>`). */
 export function hintObjectKey(item: Pick<Interactable, "id">): string | null {
-  return HINT_OBJECTS[item.id] ?? null;
+  return HINT_OBJECTS[item.id] ?? (item.id.startsWith("L4:track:") ? "track" : null);
 }
 
 export type HintGoKey = "open" | "pickFloor" | "pickYear" | "toElevator" | "roverMenu" | "browse" | "viewCv" | "go";

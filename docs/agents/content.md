@@ -219,6 +219,13 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 - Labels name existing tags or words already in the titles; never add content for a topic.
 - It feeds `LibraryData.topics`, the `L4:topics` drawer view, `HudIndex.topics` and the Classic Writing filter (`topicsOfItem`).
 
+### Track index
+
+- L4 reader tracks (owner decision [2026-10-25](../decisions/2026-10-25-l4-reader-tracks.md)): `floors.library.tracks` (1 to 6, `TrackSchema`: `slug`, `title` `{ en, id }`, optional `lead`) and the required `PostRef.track` (publishing steps in [../content.md](../content.md#reader-tracks)).
+- `SiteContentSchema` rejects an unknown `track`, a `lead` that is not a post of its track and a duplicate track slug; track titles are Title Case slots (`titleSlots` in `src/content/titles.ts`) and first-person checked (`tests/content/first-person.test.ts`).
+- `getTrackIndex()` (`buildTrackIndex` in `src/content/track-index.ts`, pure): per track in dataset order, its posts lead first (the `lead`, else the newest), then newest first (same date: slug order); a track without posts stays in the index with no posts.
+- It feeds `LibraryData.tracks` (`slug`, the locale-resolved `label`, `posts` lead first, only tracks with posts; in the per-floor `/data` JSON), the `L4:track:<slug>` drawer views (`trackViews`) and their catalog entries; the Classic Writing page can adopt it later. The floor: [floor-l4-library.md](floor-l4-library.md).
+
 ## Side projects
 
 - `sideProjects` lists only work that has no project pod (owner decision).
@@ -346,6 +353,7 @@ The floating holograms of L2, L3 and L4 (3D only; owner decision [2026-10-23](..
 | `RoomView` | `RoomView.engine` (`RoomEngine`) | `buildEngineViews`: the B1 station block (diagram, rounds, gates, excerpt or tiles) and resolved labels |
 | `RoomView` | `RoomView.cards` (`RoomCard`) | carries the station cards |
 | `LibraryData` | `LibraryData.posts[].tags` | carries post tags to the 3D chunk |
+| `LibraryData` | `LibraryData.tracks` | the reader tracks with posts lead first and the resolved label, for the L4 shelves ([Track index](#track-index)) |
 
 ### Missions
 

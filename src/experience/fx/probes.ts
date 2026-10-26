@@ -18,11 +18,13 @@ export const sceneProbes = {
   spectacle: {} as Record<string, number>,
   /** L3 Tech Reactor: the picked tech, its lit (docked) pods, glowing road segments, the last Surprise me target and the ring spin boost. */
   reactor: { tech: null as string | null, lit: [] as string[], roads: 0, surprise: null as string | null, boost: 1 },
-  /** L4 Topic Constellation: the picked topic, its lit rooms (stations and desks, plus "L4:board:archive"), glowing road segments, orbit angle, the orbs' floor-local centers and the monument's texts. */
+  /** L4 Topic Constellation: the picked topic, its lit rooms (stations and desks, plus the reader track bays "L4:track:<slug>" holding its posts), glowing road segments, orbit angle, the orbs' floor-local centers and the monument's texts. */
   topics: { topic: null as string | null, lit: [] as string[], roads: 0, orbit: 0, orbs: [] as { slug: string; x: number; y: number; z: number }[], monument: null as string[] | null, labels: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[] },
   /** L4 Study Vault: the books' slugs (file order), how far each cover is open (0 to 1) and the spine signs shown this frame. */
   vault: { books: [] as string[], open: [] as number[], spines: 0 },
-  /** L4 timeline signs (sections, year marks, post titles) shown this frame: text, kind and their screen boxes and quads in CSS pixels (`useLibrarySignPlacement`). */
+  /** L4 track shelves: the bays' track slugs, the spine count (leads excepted) and the pulled spine's post room (`L4:<slug>`). */
+  shelves: { bays: [] as string[], spines: 0, pulled: null as string | null },
+  /** L4 timeline signs (sections, track names, lead and spine titles) shown this frame: text, kind and their screen boxes and quads in CSS pixels (`useLibrarySignPlacement`). */
   library: {
     labels: [] as { text: string; kind: string; x0: number; y0: number; x1: number; y1: number; quad: [number, number][] }[],
     /** On-screen candidates the placement left out (screen boxes), for diagnosing a missing label. */

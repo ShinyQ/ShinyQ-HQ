@@ -27,7 +27,7 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * 476,967 B full, 460,833 B lite; cap 477,594 B). `floors`: each on-demand floor chunk (Round 7 B, floors/floorChunks.ts), measured on
  * its own load; caps are incremental (a module shared by two floors counts toward the first one loaded, L3). Idle
  * prefetch loads every floor in a normal session, so the session total (main + the public floor chunks + the office
- * watch, scene and replay chunks) has its own cap per tier: full 529.7 KB (measured 529.1 KB), lite 513.9 KB (measured 513.4 KB). Owner decisions 2026-10-16
+ * watch, scene and replay chunks) has its own cap per tier: full 531.8 KB (measured 531.2 KB), lite 516.0 KB (measured 515.4 KB). Owner decisions 2026-10-16
  * and 2026-10-19 (the Study Vault; the floor layouts moved out of the Classic bundle, option A; the inline idle frame
  * cadence, option A), relayed for the L1 Agent Office 2026-10-19/20: each cap, `failAt` included, is the measured value
  * plus about 0.6 KB, re-set whenever the office merges main, for the office's look offset and ghost outline rule on the
@@ -42,7 +42,10 @@ export const BUDGET_WINDOW = { frames: 20, ms: 1200 } as const;
  * ship-it pipeline (owner decision 2026-10-21, docs/decisions/2026-10-21-office-pipeline-budgets.md: snapshot v4, the
  * tower's lanes per job and the pipeline effects in the scene chunk, the deploy beam in the beacon chunk) and for the day
  * replay (owner decision 2026-10-22, docs/decisions/2026-10-22-office-replay-budgets.md: the replay chunk joins the session
- * total, the scene chunk grew by its tiles, banner, pill and chip mark; `failAt` did not move).
+ * total, the scene chunk grew by its tiles, banner, pill and chip mark; `failAt` did not move), and re-set for the L4 reader
+ * tracks (owner decision 2026-10-25, docs/decisions/2026-10-25-l4-reader-tracks.md: the owner approved the session raise
+ * after the trims; measured lite 527,810 B and full 543,944 B, caps measured + 614 B: lite 528,424 B and full 544,558 B,
+ * +2,158 B on both tiers over 526,266 B and 542,400 B; `failAt` and every other cap did not move).
  * B1 (the Engine Room) is measured on its own in an unlocked session (`?unlock=b1&debug=1`). Its cap counts B1 plus
  * any modules it shares with the public floors (`?prefetch=off` never loads L3, L4 or RF first), a safe over-count,
  * and it is left out of the session total: only unlocked visitors load it.
@@ -81,8 +84,8 @@ export const BYTES_3D_BUDGET = {
   officeBeacon: Math.round(2.595 * 1024),
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
-  /** Main path + the session floors + the office watch, scene and replay chunks (measured 525,652 B lite, 541,786 B full; caps 526,266 B and 542,400 B). */
-  session: { lite: 525_652 + 614, full: 541_786 + 614 },
+  /** Main path + the session floors + the office watch, scene and replay chunks (measured 527,810 B lite, 543,944 B full; caps 528,424 B and 544,558 B, +2,158 B each for the L4 reader tracks, owner decision 2026-10-25). */
+  session: { lite: 527_810 + 614, full: 543_944 + 614 },
 } as const;
 
 /**

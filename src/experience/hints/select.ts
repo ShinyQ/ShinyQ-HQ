@@ -25,9 +25,10 @@ const distance = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.z - b.z);
 export const GROUP_HINT_COMMAND = "settle";
 
 /**
- * The hint candidates: grouped targets (`Interactable.group`, the L4 Study Vault's books, which share one approach
- * point) become one target under the group's id and label, at the first member's approach point, whose Go only drives
- * there. Without groups the list comes back as it is.
+ * The hint candidates: grouped targets (`Interactable.group`, the L4 Study Vault's books or a reader track bay's door and
+ * spines, which share one approach point) become one target under the group's id and label, at the first member's
+ * approach point, whose Go opens the first member's room (a bay door's track drawer) or else only drives there.
+ * Without groups the list comes back as it is.
  */
 export function hintTargets(items: readonly Interactable[]): readonly Interactable[] {
   if (!items.some((item) => item.group)) return items;
@@ -37,7 +38,8 @@ export function hintTargets(items: readonly Interactable[]): readonly Interactab
     if (!group) return [item];
     if (seen.has(group.id)) return [];
     seen.add(group.id);
-    return [{ ...item, id: group.id, label: group.label, action: { type: "command", command: GROUP_HINT_COMMAND }, group: undefined }];
+    const action: Interactable["action"] = item.action.type === "open-room" ? item.action : { type: "command", command: GROUP_HINT_COMMAND };
+    return [{ ...item, id: group.id, label: group.label, action, group: undefined }];
   });
 }
 

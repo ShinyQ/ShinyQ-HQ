@@ -92,9 +92,14 @@ export function stepDoorLatch<K extends string = RoomId>(
   current: K | null,
   { explore, following, now = 0, speed = 0, heading, facing, openRoom = null, dwell = DOOR_DWELL }: DoorStep<K>,
 ): K | null {
-  if (openRoom && openRoom !== latch.consumed) {
-    latch.consumed = openRoom;
-    latch.consumedSeen = false;
+  if (openRoom) {
+    // The pad under the rover counts as used, even when it is not the opened room's (an L4 post opens at its bay
+    // door): a drawer closed before the next frame must not let that pad fire.
+    latch.room = current;
+    if (openRoom !== latch.consumed) {
+      latch.consumed = openRoom;
+      latch.consumedSeen = false;
+    }
   }
   if (latch.consumed) {
     if (current === latch.consumed) latch.consumedSeen = true;

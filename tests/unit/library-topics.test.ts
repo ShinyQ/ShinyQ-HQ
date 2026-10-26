@@ -3,11 +3,10 @@ import { buildExperienceData } from "@/content/experience";
 import { ROVER_HEIGHT } from "@/experience/config";
 import { NEWSROOM } from "@/experience/floors/library/concepts/newsroom";
 import { buildLibraryLayout } from "@/experience/floors/library/layout";
-import { libraryLayoutInput, LIBRARY_FLOOR } from "@/experience/floors/library/model";
+import { libraryLayoutInput, roomOfPost } from "@/experience/floors/library/model";
 import {
   CONSTELLATION,
   constellationSpin,
-  litArchive,
   litStations,
   orbitAt,
   orbSlots,
@@ -50,18 +49,24 @@ describe("Topic Constellation (pure)", () => {
     expect(constellationSpin(false)).toBeLessThanOrEqual(0.2);
   });
 
-  it("lights the docked stations and desks of a topic", () => {
-    const sentiment = litStations(layout.stations, topic("sentiment-analysis").rooms).map((s) => s.room);
+  it("lights the desks of a topic and every bay holding one of its posts", () => {
+    const sentiment = litStations(layout, topic("sentiment-analysis").rooms).map((s) => s.room);
     expect(sentiment.sort()).toEqual(["L4:publications", "L4:research"]);
-    const cases = litStations(layout.stations, topic("case-study").rooms);
-    expect(cases.every((s) => s.zone === "blog")).toBe(true);
-    expect(cases).toHaveLength(topic("case-study").rooms.length);
-    expect(litArchive(layout, topic("case-study").rooms)).toBe(false);
-    expect(litArchive({ archive: ["old-post"] }, ["L4:old-post"])).toBe(true);
+    const cases = topic("case-study");
+    const lit = litStations(layout, cases.rooms);
+    const bays = layout.bays.filter((b) => b.posts.some((slug) => cases.rooms.includes(roomOfPost(slug))));
+    expect(bays.length).toBeGreaterThan(0);
+    // Bays light once each, after the stations on the topic (the featured stage when its post is on it).
+    expect(lit.filter((s) => s.room.startsWith("L4:track:")).map((s) => s.room)).toEqual(bays.map((b) => b.room));
+    expect(lit.filter((s) => !s.room.startsWith("L4:track:")).every((s) => cases.rooms.includes(s.room))).toBe(true);
+    // Every post of the topic sits on a lit bay.
+    for (const room of cases.rooms) expect(bays.some((b) => b.posts.some((slug) => roomOfPost(slug) === room)), room).toBe(true);
+    expect(litStations(layout, [])).toEqual([]);
   });
 
   it("glows the timeline from the ring stop back to the westmost lit spur, plus every lit spur", () => {
-    const lit = litStations(layout.stations, topic("ai-agents").rooms);
+    const lit = litStations(layout, topic("ai-agents").rooms);
+    expect(lit.some((s) => s.room.startsWith("L4:track:"))).toBe(true);
     const segments = topicRoadGlow(layout, lit);
     const run = segments.filter((s) => !s.spur);
     expect(run).toHaveLength(1);
@@ -69,9 +74,8 @@ describe("Topic Constellation (pure)", () => {
     expect(run[0].b.x).toBe(Math.min(...lit.map((s) => s.from.x)));
     expect(segments.filter((s) => s.spur).map((s) => s.b)).toEqual(lit.map((s) => s.door));
     expect(topicRoadGlow(layout, [])).toEqual([]);
-    // Capacity the scene preallocates: one run plus a spur per station.
-    expect(segments.length).toBeLessThanOrEqual(layout.stations.length + 1);
-    expect(LIBRARY_FLOOR.maxPosts + 3 + 1).toBeGreaterThanOrEqual(layout.stations.length + 1);
+    // Capacity the scene preallocates: one run plus a spur per station and bay.
+    expect(segments.length).toBeLessThanOrEqual(layout.stations.length + layout.bays.length + 1);
   });
 
   it("links topics that light a common station, each pair once", () => {
@@ -95,7 +99,6 @@ describe("end plaza signs", () => {
     const labels = {
       pieces: (count: number, topic: string) => `${count} pieces on ${topic}`,
       monument: { citations: "13", citationsLabel: "Citations", hIndex: "2", hIndexLabel: "h-index", source: "Google Scholar · as of Oct 2026" },
-      archive: "Post archive",
       vault: "Study Vault",
     };
     const slots = orbSlots(topics);

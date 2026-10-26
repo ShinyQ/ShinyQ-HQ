@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { bookBuffers, PAGE_ANGLES, PAGE_SEGMENTS, STAGE_BOOK, stageBook, turnAngle } from "@/experience/floors/library/decor/flipBooks";
-import { dockAlong, paperSlots } from "@/experience/floors/library/model";
+import { baySlots, SHELF_PLINTH } from "@/experience/floors/library/slots";
+import { faceRoad, libraryIcons, paperSlots, ZONE_ICON } from "@/experience/floors/library/icons";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
+import { dockAlong, libraryLayoutInput, ZONE_TONE } from "@/experience/floors/library/model";
+import { buildExperienceData } from "@/content/experience";
+import { LIBRARY_ICONS } from "@/experience/fx/holoIcons";
 
 describe("open-book holograms", () => {
   it("builds three pages per book in one buffer set", () => {
@@ -60,5 +65,32 @@ describe("research paper plates", () => {
     const xs = slots.map((s) => s.x);
     expect(xs).toEqual([...xs].sort((a, b) => a - b));
     expect(xs[1] - xs[0]).toBeGreaterThan(slots[0].width);
+  });
+});
+
+describe("post icons over the track bays", () => {
+  const library = buildExperienceData("en", { L1: "", L2: "", L3: "", L4: "", RF: "" }).library;
+  const layout = buildLibraryLayout(libraryLayoutInput(library));
+  const icons = libraryIcons(layout, library, {});
+
+  it("floats one icon over each bay's lead, above its cover, facing the road, in the track tone", () => {
+    expect(layout.bays.length).toBeGreaterThan(0);
+    for (const bay of layout.bays) {
+      const [lead] = baySlots(bay);
+      const icon = icons.find((i) => i.key === lead.slug)!;
+      expect(icon).toMatchObject({ size: ZONE_ICON.size, color: ZONE_TONE.track, strokes: LIBRARY_ICONS.blog });
+      expect(icon.x).toBeCloseTo(lead.at.x, 3);
+      expect(icon.z).toBeCloseTo(lead.at.z, 3);
+      expect(icon.y).toBeCloseTo(lead.h + SHELF_PLINTH + ZONE_ICON.lift, 3);
+      expect(icon.face).toBeCloseTo(faceRoad(bay), 3);
+      expect(Math.sin(icon.face)).toBeCloseTo(-bay.facing.x, 3);
+      expect(Math.cos(icon.face)).toBeCloseTo(-bay.facing.z, 3);
+    }
+  });
+
+  it("gives the other posts on a shelf no icon", () => {
+    const spines = layout.bays.flatMap((b) => b.posts.slice(1));
+    for (const slug of spines) expect(icons.some((i) => i.key === slug), slug).toBe(false);
+    expect(icons.filter((i) => library.posts.some((p) => p.slug === i.key))).toHaveLength(layout.bays.length);
   });
 });

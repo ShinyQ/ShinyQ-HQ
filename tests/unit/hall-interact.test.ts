@@ -26,7 +26,6 @@ const labels: InteractLabels = {
   console: en.hud.interact.console,
   kiosk: en.hud.launcher.roverMenu,
   board: (wing) => en.hud.interact.board.replace("{wing}", wing),
-  archive: en.hud.interact.archive,
   rooms: en.hud.rooms,
   reactorRing: (ring) => en.labs.reactor.rings[ring],
   metrics: en.library.topics.monument.target,

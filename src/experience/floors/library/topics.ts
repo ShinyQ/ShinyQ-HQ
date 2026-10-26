@@ -3,7 +3,7 @@ import type { RoomTopics } from "@/content/room-views/types";
 import type { TopicPick } from "@/store/useHQStore";
 import { orbitXZ } from "../../fx/signLayout";
 import type { LibraryTopic, Vec2 } from "../../types";
-import type { LibraryLayout, LibraryStation } from "./model";
+import type { LibraryBay, LibraryLayout, LibraryStation } from "./model";
 
 /**
  * L4 Topic Constellation (owner request 2026-10-14): pure helpers shared by the drawer, the deep link,
@@ -26,16 +26,13 @@ export function topicPickOf(topic: LibraryTopic): TopicPick {
   return { slug: topic.slug, name: topic.label, count: topic.count, rooms: [...topic.rooms] };
 }
 
-/** The stations a topic lights (docked posts and desks); archived posts light the archive board instead. */
-export function litStations(stations: readonly LibraryStation[], rooms: readonly RoomId[]): LibraryStation[] {
+/**
+ * What a topic lights: its stations (the featured stage, the desks), then every reader track bay holding one of its
+ * posts (`L4:<slug>`, `roomOfPost`, inlined: the drawer imports this file), in layout order.
+ */
+export function litStations(layout: Pick<LibraryLayout, "stations" | "bays">, rooms: readonly RoomId[]): (LibraryStation | LibraryBay)[] {
   const set = new Set(rooms);
-  return stations.filter((s) => set.has(s.room));
-}
-
-/** True when the topic has a post that is not docked (it sits on the archive board). */
-export function litArchive(layout: Pick<LibraryLayout, "archive">, rooms: readonly RoomId[]): boolean {
-  const archived = new Set(layout.archive.map((slug) => `L4:${slug}`));
-  return rooms.some((r) => archived.has(r));
+  return [...layout.stations.filter((s) => set.has(s.room)), ...layout.bays.filter((b) => b.posts.some((slug) => set.has(`L4:${slug}` as RoomId)))];
 }
 
 export interface GlowSegment {
@@ -46,10 +43,10 @@ export interface GlowSegment {
 }
 
 /**
- * Road to the lit stations, from the constellation out: the timeline from the ring stop back west to the
- * westmost lit spur, then every lit station's spur to its door. Never doubles a run.
+ * Road to the lit stations and bays, from the constellation out: the timeline from the ring stop back west to the
+ * westmost lit spur, then every lit spur to its door. Never doubles a run.
  */
-export function topicRoadGlow(layout: Pick<LibraryLayout, "end">, lit: readonly LibraryStation[]): GlowSegment[] {
+export function topicRoadGlow(layout: Pick<LibraryLayout, "end">, lit: readonly Pick<LibraryStation, "from" | "door">[]): GlowSegment[] {
   const end = layout.end;
   if (!end || !lit.length) return [];
   const z = end.ringStop.z;

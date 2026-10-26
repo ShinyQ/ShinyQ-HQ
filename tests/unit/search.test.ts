@@ -128,6 +128,19 @@ describe("searchPalette", () => {
     expect(searchPalette(entries, "cv", { filter: "rooms" }).map((g) => g.id)).toEqual(["rooms"]);
   });
 
+  it("indexes every L4 reader track with posts as a room (its drawer), found by its title in both languages", () => {
+    const library = getContent().floors.library;
+    const tracks = library.tracks.filter((t) => library.posts.some((p) => p.track === t.slug));
+    expect(tracks.length).toBeGreaterThan(0);
+    for (const t of tracks) {
+      const room = index.rooms.find((r) => r.id === `L4:track:${t.slug}`)!;
+      expect(room).toMatchObject({ floor: "L4", kind: "shelf", title: t.title, surpriseWeight: 0 });
+      expect(room.path).toContain("#");
+      for (const title of [t.title.en, t.title.id]) expect(keys(searchPalette(entries, title), "rooms"), title).toContain(`room:L4:track:${t.slug}`);
+    }
+    expect(index.rooms.filter((r) => r.id.startsWith("L4:track:"))).toHaveLength(tracks.length);
+  });
+
   it("limits results per group", () => {
     expect(group(searchPalette(entries, "a"), "rooms")).toHaveLength(8);
     expect(group(searchPalette(entries, "a", { limitPerGroup: 3 }), "rooms")).toHaveLength(3);

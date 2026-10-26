@@ -16,6 +16,7 @@ describe("title slots", () => {
     expect(paths).toContain("floors.labs.pods[0](voice).title.en");
     expect(paths).toContain("floors.labs.pods[0](voice).title.id");
     expect(paths).toContain("floors.library.publications[0](model).title");
+    expect(paths).toContain("floors.library.tracks[0](writing).title.id");
     expect(paths).toContain("sideProjects[0](crypto).title");
     expect(paths).toContain("profile.principles[0](spec-first).title.en");
   });

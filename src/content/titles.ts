@@ -32,7 +32,7 @@ const plain = <T extends { title: string }>(path: string, item: T): TitleSlot =>
 });
 
 /**
- * Every title shown as a heading: pods, posts, publications (papers, thesis, models), talks, side
+ * Every title shown as a heading: pods, L4 reader tracks, posts, publications (papers, thesis, models), talks, side
  * projects, awards and principles. Not titles: role titles, org and certification names, skill
  * group labels (rendered uppercase), mission labels (actions) and body text.
  */
@@ -41,6 +41,7 @@ export function titleSlots(content: SiteContent): TitleSlot[] {
   return [
     ...labs.pods.flatMap((p, i) => localized(`floors.labs.pods[${i}](${p.slug}).title`, p.title)),
     ...labs.pods.flatMap((p, i) => (p.shortTitle ? localized(`floors.labs.pods[${i}](${p.slug}).shortTitle`, p.shortTitle) : [])),
+    ...library.tracks.flatMap((t, i) => localized(`floors.library.tracks[${i}](${t.slug}).title`, t.title)),
     ...library.posts.flatMap((p, i) => localized(`floors.library.posts[${i}](${p.slug}).title`, p.title)),
     ...library.publications.map((p, i) => plain(`floors.library.publications[${i}](${p.id}).title`, p)),
     ...library.talks.flatMap((t, i) => localized(`floors.library.talks[${i}](${t.id}).title`, t.title)),

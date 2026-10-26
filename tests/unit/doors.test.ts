@@ -131,6 +131,18 @@ describe("a closed room never reopens when the rover reaches its pad", () => {
     expect(stepDoorLatch(latch, "L3:a", step({ speed: 1 }))).toBeNull();
   });
 
+  it("does not fire the pad under the rover when another room opened and closed before the next frame", () => {
+    const latch: DoorLatch<string> = { room: null };
+    // The rover drove onto the L4 bay door pad (a mission drive: not fired), then its post opened there.
+    expect(stepDoorLatch(latch, "L4:track:a", step({ following: true, speed: 0 }))).toBeNull();
+    // Esc before the next frame: the frame sees explore again, with the post as the room that opened.
+    expect(stepDoorLatch(latch, "L4:track:a", { ...step({ speed: 0 }), openRoom: "L4:post-a" })).toBeNull();
+    expect(stepDoorLatch(latch, "L4:track:a", step({ speed: 0 }))).toBeNull();
+    // Leaving the pad releases it; coming back on purpose opens the bay.
+    expect(stepDoorLatch(latch, null, step({ speed: 3 }))).toBeNull();
+    expect(stepDoorLatch(latch, "L4:track:a", step({ speed: 0 }))).toBe("L4:track:a");
+  });
+
   it("releases an unreached pad once the rover stops elsewhere", () => {
     const latch: DoorLatch = { room: null };
     stepDoorLatch(latch, null, step({ explore: false, openRoom: "L3:a" }));

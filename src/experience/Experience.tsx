@@ -577,9 +577,9 @@ function ExperienceView({
                 source: tLibrary("topics.monument.asOf", { source: metrics.source, date: formatYearMonth(metrics.asOf, data.locale) }),
               }
             : null,
-          archive: t("interact.archive"),
           vault: t("interact.studyVault"),
         },
+        readPost: (title: string) => t("interact.readPostTitle", { title }),
       },
       roof: {
         comms: t("world.comms"),
@@ -604,7 +604,6 @@ function ExperienceView({
         console: t("interact.console"),
         kiosk: t("launcher.roverMenu"),
         board: (wing: string) => t("interact.board", { wing }),
-        archive: t("interact.archive"),
         rooms: {
           profile: t("rooms.profile"),
           stats: t("rooms.stats"),
