@@ -324,7 +324,7 @@ Paths are relative to the repository root. Three paths are not in a fresh checko
   - R3F Hub, Pods, PacketLanes, HologramStage, OpsRoom.
 - `src/experience/floors/library/`: L4 Writing.
   - Pure model.ts (LibraryLayout and LibraryBay contract, dockAlong, stationViewZones, `trackRoom`).
-  - Pure shelf.ts (`SHELF`, `SHELF_VIEW`, `shelfSize`, `shelfSlots`: a reader track bay's bookshelf geometry; on the main 3D path).
+  - Pure shelf.ts (`SHELF`, `SHELF_VIEW`, `shelfSize`: a reader track bay's bookshelf sizes; on the main 3D path) and slots.ts (`baySlots`, `SHELF_PLINTH`, `shelfTargets`: the post slots and their point-and-go targets; only in the lazy L4 chunk).
   - signPlacement.ts (`placeLibraryLabels`: which timeline signs show).
   - concepts/newsroom.ts (the picked concept's builder), layout.ts (buildLibraryLayout: the owner's pick).
   - decor/ (R3F newsroom decor, BookHolograms.tsx shared turning book, pure flipBooks.ts and signFrame.ts: one frame of the timeline and end plaza sign placement; StudyVault.tsx with pure vault.ts: the Study Vault books whose covers open as the rover nears and whose click opens the study guide reader; TrackShelves.tsx with pure shelf3d.ts: the reader track shelves, spines that pull for the rover or the pointer; bookKit.ts: the instanced holo book kit both share; signs.ts: section, track, lead and spine sign specs).

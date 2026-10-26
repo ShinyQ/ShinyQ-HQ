@@ -36,10 +36,10 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
   | `centerpiece`, `extras.wall` | the headline wall |
   | `end` | the end plaza (`LibraryEnd`) |
 
-- `LibraryBay`: `track`, `room` (`L4:track:<slug>`, `trackRoom`), `rect`, `center`, `door`, `facing` (pad into the bay), `from` (spur start), `stop` (the door), `posts` (lead first), `slots` (`shelfSlots`, one per post in `posts` order; slot 0 is the lead).
+- `LibraryBay`: `track`, `room` (`L4:track:<slug>`, `trackRoom`), `rect`, `center`, `door`, `facing` (pad into the bay), `from` (spur start), `stop` (the door), `posts` (lead first). The layout carries no shelf slots: the lazy L4 chunk builds them (`baySlots`).
 - Docking: `dockAlong` over one item list (the bays, then the desks), even indexes north from `NEWSROOM.northStart` 14 u, odd ones south from `southStart` 16 u, `DOCK.gap` 6 u apart, `forecourt` 3 u, the pad 1.1 u in front, a spur from the road. A `DockItem` may carry its own `along` (a bay's `shelfSize(...).along`), else `STATION_SIZE[zone].along`; a bay is `SHELF.across` 6 u deep.
 - The featured stage docks south of the plaza (`featuredStart` 2). The featured post also keeps its slot on its track's shelf; its room keeps the stage door (doors win over stops).
-- Shelf geometry (`shelf.ts`, pure, on the main 3D path):
+- Shelf geometry (`shelf.ts`, pure, on the main 3D path; the slots in `slots.ts`, pure, only in the lazy L4 chunk):
 
   | `SHELF` | Value | Meaning |
   |---|---|---|
@@ -50,13 +50,13 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
   | `pad`, `minAlong` | 1, 8 | clear gap at the bay ends and after the lead; shortest bay |
 
   - `shelfSize(count)`: `rows` = min(3, ceil(spines / 13)) (at least 1), `cols` = ceil(spines / rows), `along` = max(8, 2 * pad + lead.w + pad + cols * pitch). Real content: every bay is 8 u long, one row.
-  - `shelfSlots(bay, posts)`: the lead at the bay's left end as seen from the road, the spines to its right, row 0 at the bottom filled first; each slot has `at`, `y` (its row), `w`, `d`, `h` and its axis-aligned `rect`. `SHELF_PLINTH` 0.24: every slot stands on a board that high.
+  - `baySlots(bay)` (`slots.ts`): one slot per post in `bay.posts` order (slot 0 is the lead), the lead at the bay's left end as seen from the road, the spines to its right, row 0 at the bottom filled first; each slot has `at`, `y` (its row), `w`, `d`, `h` and its axis-aligned `rect`. `SHELF_PLINTH` 0.24: every slot stands on a board that high.
 - Stops: `floor.stops["L4:<slug>"]` is the post's bay door for every post but the featured one, so `/blog/<slug>` 3D deep links, missions, Cmd-K and `roomTarget` drive to the bay. Plus `L4:topics` and `L4:vault`.
 - Doors: the stage, one per bay (room `L4:track:<slug>`), the three desks. No post has a door or station of its own.
 - Real content (`facing` z -1 north, +1 south): bays at x 16 (north), 18 (south), 30 (north), 32 (south), doors at z -5.9 / 5.9; the desks at x 45, 46, 60; the end plaza center (79, 0); slab x -24 to 108.7, z -23.5 to 29.6.
 - `LIBRARY_FLOOR.padZone` stays free for the elevator call pad.
 - Spawn and arrival are one point (`NEWSROOM.arrival`, (-4, 0)) on the plaza axis, west of its center: deep links spawn there and elevator arrivals roll on to it.
-- Tests: `tests/unit/library-layout.test.ts` (real content: space rules, every catalog room has a door or a stop, bays in order, post stops, `listStop`), `tests/unit/library-concepts.test.ts` (real content and synthetic 1, 12, 39, 60 and 120 posts over 4 to 6 tracks: `expectSpaceRules`, the pad zone, one bay per track, every post room reachable), `tests/unit/library-shelf.test.ts` (`shelfSize`, `shelfSlots`), `tests/unit/track-index.test.ts`.
+- Tests: `tests/unit/library-layout.test.ts` (real content: space rules, every catalog room has a door or a stop, bays in order, post stops, `listStop`), `tests/unit/library-concepts.test.ts` (real content and synthetic 1, 12, 39, 60 and 120 posts over 4 to 6 tracks: `expectSpaceRules`, the pad zone, one bay per track, every post room reachable), `tests/unit/library-shelf.test.ts` (`shelfSize`, `baySlots`), `tests/unit/track-index.test.ts`.
 
 ## Camera
 
@@ -78,16 +78,15 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 ### Track shelves (`decor/TrackShelves.tsx`, pure `decor/shelf3d.ts`)
 
 - Mounted by `NewsroomDecor` when there is a bay. Group `library-shelves` at the center of all the bays.
-- The shared book kit (`decor/bookKit.ts`, also behind the Study Vault): `kitBox` (the unit box with the holo plate's `aAlpha`), `kitBodies` (holo `plate`, depth write, `renderOrder` -2), `kitCovers` (holo `core`, `renderOrder` -1, additive on full only), `kitPools` (holo `dot`, full only), and `bookKit(parts, origin)`: one `InstancedMesh` per part, instance color tone times brightness, one bounding sphere shared by every mesh, never raycast, one `dispose`.
-- `shelfMeshes(bays, tier, reducedMotion)` builds the meshes once, each spanning every bay, so draw calls do not grow with posts or tracks:
+- The shared book kit (`decor/bookKit.ts`, also behind the Study Vault): `kitBox` (the unit box with the holo plate's `aAlpha`), `kitBodies` (holo `plate`, depth write, `renderOrder` -2), `kitCovers` (holo `core`, `renderOrder` -1, additive on full only), `kitPools` (holo `dot`, full only; the vault's pools), and `bookKit(parts, origin)`: one `InstancedMesh` per part, instance color tone times brightness, one bounding sphere shared by every mesh, never raycast, one `dispose`.
+- `shelfMeshes(bays, tier)` builds the meshes once, each spanning every bay, so draw calls do not grow with posts or tracks:
   - bodies (1 call): the spines, then the leads' bodies, then each bay's frame (`frameMatrices`: a board under each row, row 0 under the lead too, and one back panel `SHELF.lead.d` behind the slots, as tall as the lead or the rows);
-  - covers (1 call): each lead's cover held half open (`leadMatrix`, the vault's `openCover`: on the book's right as seen from the road, hinged on the spine edge);
-  - full tier only, pools (1 call): a 4.6 u light pool under each lead.
+  - covers (1 call): each lead's cover held half open (`leadMatrix`, the vault's `openCover`: on the book's right as seen from the road, hinged on the spine edge).
+  - No light pools under the leads and no topic brightening on the spines (owner decision 2026-10-25, bytes): a picked topic lights its bays through `TopicHighlights`.
 - A spine stands on its row's board with its face toward the road (`spineMatrix`), in the track tone (brightness 1.15, frames 0.6).
 - Pull: `pickSpine` takes the hovered spine (`L4:shelf:<slug>`), else the spine nearest the rover within 6 u while the rover is inside that spine's `bayZone` (the bay, its forecourt and the near half of the road); only on L4. The pulled spine slides out `SHELF_SCENE.pull` 0.3 u toward the road at `rate` 1.6 of the travel a second and brightens by 0.45. Leads never pull.
-- Topic brightening: a picked topic's posts (spines and lead bodies) brighten to 1.6.
 - `useFrame` writes instance matrices and colors only on change (module scratch objects, plain `for` loops); `useDispose(kit)`, `useUniformTime(kit.materials)`.
-- Reduced motion snaps the pull and holds the pool pulse; lite drops the pools and additive blending.
+- Reduced motion snaps the pull; lite drops additive blending.
 - Probe `__hq.probes.shelves`: `bays` (track slugs), `spines` (posts minus leads), `pulled` (the pulled spine's post room, or null), written every frame.
 - Tests: `tests/unit/library-shelf-scene.test.ts` (`spineMatrix`, `leadMatrix`, `frameMatrices`, `bayZone`, `pickSpine`, `shelfMeshes` per tier).
 
@@ -122,7 +121,7 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 
 ## Targets, hints and the track drawer
 
-- Spines and covers (`shelfItems` in `interact/registry.ts`): one target per post on its bay, id `L4:shelf:<post slug>`, kind `station`, label `hud.interact.readPostTitle` ("Read {title}"), `at` the bay stop, `bounds` the slot rect, `base` the row height, `height` the slot top; action command `open:L4:<slug>`: the rover drives to the bay door, then the post drawer opens there. No `onClick` on the meshes.
+- Spines and covers (`shelfTargets` in `floors/library/slots.ts`, registered by `Library` with `registerExtraInteractables("L4", ...)` while the floor is mounted, so they stay off the main 3D path): one target per post on its bay, id `L4:shelf:<post slug>`, kind `station`, label `hud.interact.readPostTitle` ("Read {title}"), `at` the bay stop, `bounds` the slot rect, `base` the row height, `height` the slot top; action command `open:L4:<slug>`: the rover drives to the bay door, then the post drawer opens there. No `onClick` on the meshes.
 - Bay doors: the ordinary door target `L4:door:track:<slug>` (kind `door`, label the track title, the pad volume rather than the bay's, which would shadow its spines); it opens the track drawer.
 - Hint group: the door and the spines of a bay share `group: { id: "L4:track:<slug>", label: <track title> }`. `hintTargets` folds them into one "!" per bay at the door with the object line `dialog.hints.object.track` ("A shelf of posts on one theme, the best one first."); the door comes first, so the bubble's Go opens the track drawer ([Hint bubbles](hud-and-drawer.md#hint-bubbles)). Hover tags and clicks stay per spine; touch: tap, then Go.
 - Track drawer (`trackViews` in `content/room-views/library.ts`): room `L4:track:<slug>`, kind `shelf`, the track title, subtitle `library.tracks.count` ("N posts"), one section with the posts lead first, each with its date; each item is a `RoomLinkItem.room` button that rides to its post drawer (`goToRoom`). Catalog entry (`missions/rooms.ts`): kind `shelf`, path `/library#posts`, Cmd-K keywords "reader track", "rak", "shelf" and the post titles. Tracks without posts have no view and no entry.
@@ -165,8 +164,7 @@ No label may cover another (owner decision).
 
 - `TopicHighlights.tsx` lights, through the shared `fx/FilterHighlights.tsx` (`HighlightBeacons`, `GlowStrips`, also used by the L3 Tech Reactor):
   - a beacon on each lit station (the featured stage, the desks) and on each bay holding one of the topic's posts (`litStations`);
-  - the timeline from the ring stop west to the westmost lit spur, then each lit spur (`topicRoadGlow`);
-  - the topic's spines and lead bodies brighten on their shelves (`TrackShelves`).
+  - the timeline from the ring stop west to the westmost lit spur, then each lit spur (`topicRoadGlow`).
 - Pure rules: `floors/library/topics.ts` (`orbSlots`, `topicLinks`, `litStations`, `topicRoadGlow`); `tests/unit/library-topics.test.ts`.
 - Deep link `#library-topic=<slug>`: `topicHash.ts`, `createTopicHashSync` in `topicUrl.ts` on the shared `floors/filterUrl.ts`; `gateStartRoom` starts on `L4:topics`.
 - Probe: `__hq.probes.topics` (`topic`, `lit` (station and bay rooms), `roads`, `orbit`, `orbs`, `monument`, `labels`: the shown signs' screen boxes and projected quads).
@@ -274,13 +272,13 @@ Settled, `e2e/perf/floors.spec.ts` (SwiftShader). Programs within `e2e/perf/base
 
 | Pose | Tier | Scene calls | Post passes | Triangles | Programs |
 |---|---|---:|---:|---:|---:|
-| arrival | full | 60 | 17 | 10,877 | 74 |
+| arrival | full | 59 | 17 | 10,869 | 74 |
 | arrival | lite | 56 | 0 | 9,950 | 43 |
-| bay door (`settled-L4-shelf`) | full | 69 | 17 | 11,353 | 75 |
+| bay door (`settled-L4-shelf`) | full | 68 | 17 | 11,345 | 75 |
 | bay door (`settled-L4-shelf`) | lite | 65 | 0 | 10,426 | 43 |
-| Study Vault stop (`settled-L4-vault`) | full | 47 | 17 | 10,743 | 75 |
+| Study Vault stop (`settled-L4-vault`) | full | 47 | 17 | 10,743 | 76 |
 | Study Vault stop (`settled-L4-vault`) | lite | 43 | 0 | 9,814 | 43 |
 
-- The shelves draw 3 calls on full (bodies, covers, pools) and 2 on lite, at any post or track count; the vault's own meshes 4 on full and 3 on lite.
+- The shelves draw 2 calls on both tiers (bodies, covers), at any post or track count; the vault's own meshes 4 on full and 3 on lite.
 - Ride peak `ride-L1-L4` lite: 101 scene calls, 20,114 triangles.
-- Floor chunk: 13,251 B gzip on both tiers (cap 16 KB, 16,384 B). The chunk also counts in the 3D session total ([performance.md](performance.md#bytes-3d)).
+- Floor chunk: 13,672 B gzip on both tiers (with the shelf slots and the spine targets, `slots.ts`) (cap 16 KB, 16,384 B). The chunk also counts in the 3D session total ([performance.md](performance.md#bytes-3d)).

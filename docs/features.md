@@ -353,7 +353,7 @@ Route `/en/library`.
 
 - **Press plaza**: a headline wall (the newest title in large type over a ticker of every title) and the featured post on a lit stage under a turning open book.
 - **Reader tracks**: the timeline lane east holds one bookshelf bay per reader track (today AI in Production, Cloud Platform and Security, Engineering with AI Agents, Earlier Writing), alternating north and south, so a visitor picks an interest first. Each bay's best post stands face-out as a tall book with its cover half open (the owner's pick, else the newest), the other posts as spines beside it; every post sits on exactly one track, and the featured post keeps its place on its shelf too. Then the Research desk (its paper plates open the paper preview), Models and datasets, and Talks and workshops.
-- **Shelves**: the spine nearest the rover in a bay (or the one you point at) slides out and shows its title; click a spine or the lead (tap, then Go, on touch screens) to drive to the bay's door and open that post. Posts opened from Cmd-K, missions or a `/blog/<slug>` link park at their bay (the featured post at its stage). Reduced motion snaps the spines; the lite tier drops the light pools under the leads.
+- **Shelves**: the spine nearest the rover in a bay (or the one you point at) slides out and shows its title; click a spine or the lead (tap, then Go, on touch screens) to drive to the bay's door and open that post. Posts opened from Cmd-K, missions or a `/blog/<slug>` link park at their bay (the featured post at its stage). Reduced motion snaps the spines.
 - **Track drawer**: each bay's door opens a drawer with the track's posts, the best one first, each with its date; an item rides to its post. One "!" hint bubble per bay, whose Go opens it; Cmd-K finds each track too.
 - **Item icons**: each bay's lead floats its own icon (an inbox, a microphone, a bug...) in the track's color, and the Research, Models and Talks desks show one icon per paper, model and talk in the zone's color.
 - **Signs**: each bay carries its track name and its lead's title, the desks one section sign each, and only the pulled spine shows its title. Labels are placed on screen every frame by priority (a picked topic's titles, the pulled spine, track names, lead titles, sections), so none covers another, the rover or the end plaza's signs.
@@ -367,7 +367,7 @@ Route `/en/library`.
 ### Topic Constellation
 
 - The timeline ends in a round plaza where every topic of the writing (from post tags, papers, models and talks) glows as an orb slowly orbiting a pedestal.
-- Click an orb (or pick a topic in its drawer, or Cmd-K "Show writing about X"): every matching desk and every bay holding a matching post lights up with a beacon, the matching spines brighten, the road to them glows and "N pieces on X" floats above.
+- Click an orb (or pick a topic in its drawer, or Cmd-K "Show writing about X"): every matching desk and every bay holding a matching post lights up with a beacon, the road to them glows and "N pieces on X" floats above.
 - The pick lives in the URL (`#library-topic=<slug>`). The Classic Writing page has the same topics as a filter (`/library?topic=<slug>`).
 - The research metrics stand on a monument on the plaza's north rim (citations, h-index, the source and its date; a click opens the Research desk), and a **Back to elevator** pad waits south of it.
 
