@@ -22,6 +22,12 @@ type MotionWindow = Window & {
   };
 };
 
+/**
+ * The Classic page's reduce CSS: a control's transition collapses to nothing. (The landing's stats were a marquee
+ * whose aria-hidden copy hid under reduce; they became a still ledger in the Hallmark redesign, 2026-10-27.)
+ */
+const classicStill = (page: Page) => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".pv-btn")!).transitionDuration) < 0.001);
+
 const motionState = (page: Page) =>
   page.evaluate(() => {
     const s = (window as unknown as MotionWindow).__hq.store.getState();
@@ -75,8 +81,8 @@ test("System brings the OS preference back: the ride is the 150 ms cut, and the 
   await page.keyboard.press("Escape");
   await expect(group).toBeHidden();
   await expect(trigger).toBeFocused();
-  // The landing's marquee copy hides under reduced motion (the stats wrap, still).
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-tick-track[aria-hidden='true']")!).display)).toBe("none");
+  // The landing's controls drop their transitions under reduced motion.
+  expect(await classicStill(page)).toBe(true);
   const ride = await rideTo(page, "L2");
   expect(ride).not.toBeNull();
   expect(ride!.distinctY).toBeLessThanOrEqual(2);
@@ -93,7 +99,7 @@ test("Reduced without the OS flag gives the cut and the reduced page CSS", async
   await pickMotion(page, en.hud.motion.reduced);
   await page.keyboard.press("Escape");
   expect(await motionState(page)).toEqual({ motion: "reduced", reduced: true, system: false, attr: "reduced" });
-  expect(await page.evaluate(() => getComputedStyle(document.querySelector(".hx-tick-track[aria-hidden='true']")!).display)).toBe("none");
+  expect(await classicStill(page)).toBe(true);
   const ride = await rideTo(page, "L2");
   expect(ride!.distinctY).toBeLessThanOrEqual(2);
 });
@@ -192,10 +198,9 @@ test("phones: Motion sits in the menu sheet's settings next to language and soun
 test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or System and the page CSS follows", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openPage(page, "/en?tier=static");
-  // The marquee's aria-hidden copy only shows while the stats scroll.
-  const marqueeCopy = page.locator(".hx-tick-track[aria-hidden='true']");
+  // The controls keep their transitions only while the page moves.
   await expect(page.locator("html")).toHaveAttribute("data-motion", "full");
-  await expect(marqueeCopy).toBeVisible();
+  await expect.poll(() => classicStill(page)).toBe(false);
   const palette = page.getByRole("dialog", { name: "Command palette" });
   async function run(query: string, label: string) {
     await page.keyboard.press("Control+k");
@@ -209,12 +214,12 @@ test("Classic site: Full by default under the OS flag; Cmd-K sets Reduced or Sys
   }
   await run("motion reduced", en.hud.actions.motionReduced);
   await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
-  await expect(marqueeCopy).toBeHidden();
+  await expect.poll(() => classicStill(page)).toBe(true);
   await run("motion system", en.hud.actions.motionSystem);
   await expect(page.locator("html")).not.toHaveAttribute("data-motion");
   // System follows the OS flag, which asks for reduced motion here.
-  await expect(marqueeCopy).toBeHidden();
+  await expect.poll(() => classicStill(page)).toBe(true);
   await page.reload();
   await expect(page.locator("html")).not.toHaveAttribute("data-motion");
-  await expect(marqueeCopy).toBeHidden();
+  await expect.poll(() => classicStill(page)).toBe(true);
 });

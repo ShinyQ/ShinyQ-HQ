@@ -434,7 +434,7 @@ for (const v of [
   });
 }
 
-test("landing: three featured projects with their screenshots, the stats ticker, and no 3D offer on the static tier", async ({ page }) => {
+test("landing: three featured projects with their screenshots, the stats ledger, and no 3D offer on the static tier", async ({ page }) => {
   await openPage(page, staticTier("/en"));
   const cards = page.locator("#work [data-feature-pod]");
   await expect(cards).toHaveCount(3);
@@ -510,7 +510,8 @@ for (const viewport of [
     await openPage(page, staticTier("/en"));
     // Below the first screen, so lazy images never compete with the hero for LCP.
     expect(await page.locator("#work").evaluate((el) => el.getBoundingClientRect().top >= window.innerHeight - 1)).toBe(true);
-    await expectAlignedGrid(page, "#work [data-feature-pod]", columnsFor(viewport.width));
+    // Selected work is a Feature Stack (Hallmark redesign 2026-10-27): one project a row, every row the same width.
+    await expectAlignedGrid(page, "#work [data-feature-pod]", 1);
     for (const card of await page.locator("#work [data-feature-pod]").all()) {
       const cover = card.locator(".pv-shot img");
       await cover.scrollIntoViewIfNeeded();
