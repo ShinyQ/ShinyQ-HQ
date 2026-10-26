@@ -6,17 +6,17 @@ tags: ["microsoft-fabric", "performance", "graphql", "capacity-planning", "case-
 readingTime: "7 min"
 ---
 
-Setiap request ke dashboard butuh sekitar 21 detik sebelum byte pertama tiba. Termasuk file JavaScript statis, yang sama sekali tidak menyentuh database.
+Setiap request ke dashboard membutuhkan sekitar 21 detik sebelum byte pertama diterima, bahkan saat memuat file JavaScript statis yang sama sekali tidak mengakses database.
 
-Dua putaran optimasi di jalur read tidak mengubah apa pun. Percobaan ketiga saya tampak berhasil, dan saya mencatat penyebab yang salah. Jeda itu kembali di hari yang sama. Penyebabnya adalah admission delay pada kapasitas Fabric, bukan query.
+Dua putaran optimasi pada jalur read tidak mengurangi jeda tersebut. Percobaan ketiga tampak berhasil, tetapi saya keliru mencatat penyebabnya. Pada hari yang sama, jeda itu muncul lagi. Ternyata request tertahan oleh admission delay pada kapasitas Fabric sebelum query dijalankan.
 
 Angka-angka di bawah berasal dari catatan commit dan pull request saya di proyek ini. Semuanya diukur sekali, dalam kondisi yang dijelaskan, dan tidak diukur ulang secara independen.
 
-## Dashboard forecasting di kapasitas terkecil
+## Dashboard Forecasting pada Kapasitas Terkecil
 
 Di Metrodata, saya membangun dashboard forecasting permintaan untuk sebuah merek roti nasional. Tim perencana dan eksekutif memakainya untuk membandingkan forecast dengan penjualan aktual, meninjau rencana OTF (order-to-fulfil), buffer, dan jadwal pengiriman, serta mengunggah override dari perencana.
 
-Aplikasinya adalah Next.js yang di-export statis dan di-host sebagai Fabric App. Aplikasi membaca GraphQL bertipe dari Data API builder di atas database Fabric SQL, yang diisi dari view lakehouse yang sudah dikurasi. Pada Agustus, aplikasi masih memakai dataset sintetis; data asli klien baru masuk pada Oktober. Kapasitasnya F2, SKU Fabric terkecil.
+Aplikasi Next.js ini di-export statis dan di-host sebagai Fabric App. Data diakses melalui GraphQL bertipe yang disediakan Data API builder dari database Fabric SQL. Database tersebut diisi dari view lakehouse yang sudah dikurasi. Pada Agustus, aplikasi masih memakai dataset sintetis; data asli klien baru masuk pada Oktober. Kapasitas yang digunakan adalah F2, SKU Fabric terkecil.
 
 <Architecture pod="fabric-forecasting-dashboard" caption="Arsitektur dashboard saat ini, dari studi kasusnya. Aplikasi, lapisan GraphQL, dan data di belakangnya berbagi satu kapasitas Fabric, dan di situlah jedanya berada." />
 
@@ -27,71 +27,71 @@ Satu kali page load berjalan seperti ini:
 3. Data API builder membaca view dan tabel di Fabric.
 4. Semua langkah itu memakai kapasitas yang sama. Fabric mengukur dan melakukan throttling di level kapasitas, bukan per komponen.
 
-Langkah 4 itulah yang terlewat oleh saya.
+Saat menelusuri masalah ini, saya belum memperhitungkan penggunaan kapasitas bersama pada langkah 4.
 
-## Perbaikan yang ternyata bukan perbaikan
+## Optimasi yang Keliru Dianggap Menyelesaikan Masalah
 
-Dua putaran pertama mempersempit read dan menyetel jalur read. Jedanya tidak bergeser. Karena file statis juga lambat, dua putaran itu menyimpulkan penyebabnya adalah infrastruktur platform yang tidak bisa diperbaiki.
+Pada dua putaran pertama, saya mengurangi data yang dibaca dan menyesuaikan jalur read, tetapi jedanya tetap sama. Karena file statis juga lambat, saya menyimpulkan saat itu bahwa masalahnya ada pada infrastruktur platform dan tidak dapat diperbaiki dari aplikasi.
 
-Pada 24 Agustus, saya mencoba hal lain. Ada dua secondary index yang ditambahkan untuk melayani cursor sort. Saya menghapus keduanya tanpa mengubah hal lain. Waktu byte pertama turun dari sekitar 21 detik ke sekitar 1,1 detik di sembilan pengukuran. Saya mencatat index sebagai root cause di dokumen performa, lalu lanjut.
+Pada 24 Agustus, saya mencoba menghapus dua secondary index yang sebelumnya ditambahkan untuk cursor sort, tanpa mengubah bagian lain. Waktu tunggu byte pertama turun dari sekitar 21 detik menjadi sekitar 1,1 detik dalam sembilan pengukuran. Saya kemudian mencatat index sebagai root cause di dokumen performa dan melanjutkan pekerjaan.
 
-Di hari yang sama, tanpa index tersisa, jeda itu kembali.
+Pada hari yang sama, jeda itu muncul lagi meskipun kedua index sudah dihapus.
 
-## Probe yang tidak membaca satu baris pun
+## Probe Tanpa Pembacaan Baris
 
 Saya butuh pengukuran yang bisa memisahkan biaya query dari hal lain. GraphQL mengizinkan query `{__typename}`, yang dijawab Data API builder dari schema-nya. Query ini tidak membaca tabel apa pun dan hanya mengembalikan 49 byte.
 
-Query itu butuh 21,4 sampai 25,6 detik. Endpoint yang sama menolak request tanpa otorisasi dalam 0,84 detik.
+Query tersebut membutuhkan 21,4 sampai 25,6 detik, sementara request tanpa otorisasi ditolak oleh endpoint yang sama dalam 0,84 detik.
 
-Tidak ada projection, ukuran page, atau index yang bisa menjelaskan 21 detik untuk request yang tidak membaca apa pun. Penolakan itu cepat karena ditolak sebelum ada pekerjaan; request yang sah menunggu sebelum diterima.
+Karena request itu tidak membaca data, jeda 21 detik tidak dapat dijelaskan oleh projection, ukuran page, atau index. Request tanpa otorisasi ditolak sebelum pemrosesan dimulai, sedangkan request yang sah harus menunggu hingga diizinkan masuk.
 
-Pengukuran kedua memperlihatkan di mana jeda itu dibebankan. Tiga query identik butuh 23 detik saat dijalankan bersamaan, dan 66 detik saat dijalankan berurutan. Biaya pemrosesan akan bertambah dengan cara yang sama di kedua kondisi. Ini lebih mirip jeda yang dibebankan sekali per request, saat request masuk.
+Pada pengukuran kedua, saya membandingkan tiga query identik yang dijalankan bersamaan dan berurutan. Ketiganya membutuhkan 23 detik saat dijalankan bersamaan dan 66 detik saat berurutan. Jika penyebabnya biaya pemrosesan, penambahannya akan sama pada kedua kondisi. Pola ini lebih sesuai dengan jeda yang diterapkan sekali pada setiap request saat masuk.
 
 Pola itu cocok dengan interactive delay yang didokumentasikan Fabric, salah satu tahap throttling kapasitas. F2 punya 2 capacity unit. Menurut hitungan saya waktu itu, satu halaman yang mengirim sekitar 14 request GraphQL bisa menghabiskan kira-kira 70 detik dari anggaran seluruh kapasitas.
 
-Index memang memakai kapasitas. Menghapusnya menghilangkan satu konsumen cukup lama sampai kelebihan pemakaian yang terbawa (carryforward) habis terbayar. Pemulihannya nyata; penjelasan saya yang salah. Index tetap dipensiunkan karena alasannya sendiri, sekitar 82 ms per halaman dibandingkan jeda sekitar 20 detik, dan saya mengoreksi dokumen performanya.
+Index memang menggunakan kapasitas. Setelah dihapus, beban kapasitas berkurang cukup lama hingga akumulasi kelebihan pemakaian (carryforward) selesai diperhitungkan. Waktu respons benar-benar membaik, tetapi penyebabnya berbeda dari penjelasan saya. Index tetap tidak digunakan karena pertimbangan tersendiri: pengaruhnya sekitar 82 ms per halaman, dibandingkan jeda sekitar 20 detik yang sedang ditelusuri. Saya juga mengoreksi dokumen performanya.
 
-Jebakan ini layak dicatat. "File statis ini tidak menyentuh database" tidak berarti database bisa dicoret dari daftar tersangka, jika keduanya berbagi kapasitas yang di-throttle secara keseluruhan.
+Dari pengukuran itu, saya belajar bahwa akses file statis tetap bisa melambat akibat beban database jika keduanya memakai kapasitas yang sama. Walaupun file tersebut tidak mengakses database secara langsung, throttling berlaku untuk seluruh kapasitas.
 
-## Mengukur kapasitas, bukan query
+## Pengukuran pada Level Kapasitas
 
-Tiga putaran sebelumnya masing-masing mengukur masalah ini dengan cara ad hoc yang berbeda, sehingga hasilnya tidak bisa dibandingkan. Karena itu saya meng-commit sebuah probe. Probe ini memberi satu dari tiga verdict: THROTTLED, THROTTLES UNDER LOAD, atau HEALTHY. Mode `--load` mereproduksi throttling alih-alih menunggunya terjadi. Verdict tengah ada karena kapasitas bisa lolos satu probe lalu ter-throttle di gelombang kedua, yang di versi awal script justru dilaporkan sehat.
+Pada tiga putaran sebelumnya, saya memakai metode pengukuran ad hoc yang berbeda-beda, sehingga hasilnya tidak dapat dibandingkan. Saya kemudian meng-commit probe dengan tiga kemungkinan verdict: THROTTLED, THROTTLES UNDER LOAD, atau HEALTHY. Mode `--load` digunakan untuk mereproduksi throttling tanpa menunggu masalahnya muncul sendiri. Verdict THROTTLES UNDER LOAD diperlukan karena kapasitas bisa lolos probe pertama, lalu mengalami throttling pada gelombang kedua. Versi awal script keliru melaporkan kondisi itu sebagai sehat.
 
-Lalu A/B kapasitas: beban 140 request yang sama butuh 61,02 detik di F2 dan 9,50 detik di F8, tanpa episode throttling di F8.
+Saya juga menjalankan pengujian A/B kapasitas. Beban 140 request yang sama membutuhkan 61,02 detik di F2 dan 9,50 detik di F8, tanpa episode throttling di F8.
 
-Kapasitas yang lebih besar menghilangkan jeda itu. Apakah layak membayarnya adalah keputusan biaya bagi pemilik tagihan kapasitas, bukan keputusan yang bisa saya ambil sendiri. Saya mencatat pengukuran dan rekomendasinya. Pada Oktober dashboard masih di F2, jadi sisa pekerjaannya adalah membuat setiap request lebih murah.
+Dengan kapasitas yang lebih besar, jeda tersebut tidak muncul. Namun, keputusan untuk membayar peningkatan kapasitas perlu diambil oleh pemilik tagihan, sehingga saya hanya mencatat pengukuran dan rekomendasinya. Pada Oktober, dashboard masih memakai F2 dan pekerjaan selanjutnya berfokus pada pengurangan beban setiap request.
 
-## Membuat setiap request lebih murah
+## Mengurangi Beban Setiap Request
 
-**Minta kolom lebih sedikit.** Read awal mengambil 35 kolom di semua tempat. Projection per use case memangkas data yang dibaca sekitar tiga kali lipat.
+**Ambil hanya kolom yang diperlukan.** Read awal mengambil 35 kolom untuk semua kebutuhan. Dengan projection yang disesuaikan per use case, volume data yang dibaca menjadi sekitar sepertiganya.
 
-**Berhenti mengirim baris kalau halaman hanya butuh total.** Pada September, tiga halaman sama sekali tidak menampilkan rencana pada filter default. Rentang default berisi 83.824 baris, dan guard yang menolak read di atas 50.000 baris detail menghentikannya. Guard itu benar: read yang terpotong akan membuat setiap total terlalu kecil. Halamannya memang tidak butuh baris. Halaman butuh fold per pasangan toko dan SKU, jadi read sekarang di-stream lewat accumulator dan browser menerima sekitar 3.000 agregat pasangan. Sebuah test tetap memastikan read yang mematerialisasi volume yang sama akan ditolak.
+**Kirim agregat jika halaman hanya membutuhkan total.** Pada September, tiga halaman tidak menampilkan rencana sama sekali saat memakai filter default. Rentang default berisi 83.824 baris, sehingga read-nya ditolak oleh guard dengan batas 50.000 baris detail. Guard itu bekerja sesuai tujuan karena read yang terpotong akan menghasilkan total yang terlalu kecil. Halaman tersebut hanya memerlukan fold per pasangan toko dan SKU, tanpa harus menerima seluruh baris. Sekarang read di-stream melalui accumulator, lalu browser menerima sekitar 3.000 agregat pasangan. Test tetap memastikan bahwa read yang mematerialisasi seluruh baris pada volume yang sama ditolak.
 
-Mengukur read itu memperlihatkan ke mana waktunya habis. Byte payload mencakup sekitar 99,7% waktu total, sementara compute server hanya 45 sampai 61 ms. Untuk 83.824 baris yang sama, satu kolom butuh 1,57 detik, lima kolom 4,48 detik, dan delapan belas kolom 21,79 detik. Di stack ini, lebar kolom adalah tuas yang benar-benar berpengaruh.
+Pengukuran read tersebut menunjukkan bahwa sekitar 99,7% waktu total berkaitan dengan payload, sementara compute server hanya 45 sampai 61 ms. Untuk 83.824 baris yang sama, pembacaan satu kolom membutuhkan 1,57 detik, lima kolom 4,48 detik, dan delapan belas kolom 21,79 detik. Pada stack ini, mengurangi jumlah kolom yang dibaca memberi dampak nyata.
 
-Semua ini lolos dengan fixture. Fixture-nya berisi jauh lebih sedikit baris dan tidak pernah membangun projection, jadi tidak bisa gagal seperti mode live. Kini repository fixture juga melakukan projection.
+Masalah tersebut tidak terdeteksi saat pengujian dengan fixture. Jumlah barisnya jauh lebih sedikit dan jalur fixture tidak membangun projection, sehingga kondisi kegagalan di mode live tidak teruji. Sekarang repository fixture juga menerapkan projection.
 
-**Jaga kapasitas tetap aktif, dengan sengaja.** Setelah semalam idle, request GraphQL pertama butuh 6,61 detik, dibandingkan kondisi stabil 0,16 sampai 0,48 detik. Saya mengukur toleransi idle-nya di antara 16 dan 25 menit, jadi sebuah job terjadwal mengirim probe tanpa baris yang sama setiap 10 menit selama jam kerja di hari kerja. Job ini tidak memegang kredensial Azure, karena memang tidak membutuhkannya.
+**Pertahankan kapasitas aktif selama jam kerja.** Setelah semalam idle, request GraphQL pertama membutuhkan 6,61 detik, dibandingkan 0,16 sampai 0,48 detik pada kondisi stabil. Dari pengukuran saya, batas toleransi tanpa aktivitas berada di antara 16 dan 25 menit. Karena itu, saya menjadwalkan job untuk mengirim probe tanpa baris yang sama setiap 10 menit selama jam kerja pada hari kerja. Job ini tidak menyimpan kredensial Azure karena memang tidak memerlukannya.
 
-Trade-off-nya ditulis di bagian atas file workflow. Database yang idle melepas compute-nya, sehingga waktu idle tidak memakan biaya. Ping setiap sepuluh menit mencegah pelepasan itu dan mengubah biaya idle nol menjadi biaya terus-menerus. Itu masuk akal selama jam kerja, tidak untuk malam hari, dan memperlebar jendelanya adalah keputusan biaya bagi pemilik kapasitas. Job ini juga tidak menyelesaikan cold start: di sesi yang sama, jeda 9,91 detik muncul lima menit setelah ping yang berhasil.
+Saya mencatat trade-off ini di bagian atas file workflow. Saat idle, database melepas compute sehingga tidak menimbulkan biaya selama waktu tersebut. Ping setiap sepuluh menit mencegah compute dilepas, tetapi membuat biaya terus berjalan. Saya membatasinya pada jam kerja, tanpa menjalankannya semalaman; perluasan jadwal harus diputuskan oleh pemilik kapasitas karena berdampak pada biaya. Job ini juga belum menyelesaikan cold start: pada sesi yang sama, masih muncul jeda 9,91 detik lima menit setelah ping berhasil.
 
-## Data asli, pelajaran yang sama
+## Pengujian dengan Data Asli
 
-Pada Oktober, build baru dashboard mulai memakai data asli klien, tetap di F2. Dua bagian di halaman ringkasan timeout setelah 30 detik, dan tabel forecast output butuh sekitar 2 menit. Query Store menunjukkan SQL selesai dalam 0,7 detik. Waktunya habis di Data API builder yang men-serialize page lebar, dengan sampai 25 request berjalan bersamaan.
+Pada Oktober, build baru dashboard mulai memakai data asli klien dengan kapasitas tetap F2. Dua bagian halaman ringkasan mengalami timeout setelah 30 detik, dan tabel forecast output membutuhkan sekitar 2 menit. Dari Query Store, SQL diketahui selesai dalam 0,7 detik. Sebagian besar waktu terpakai untuk serialisasi page dengan banyak kolom di Data API builder, sementara hingga 25 request berjalan bersamaan.
 
-Perbaikannya mengikuti aturan yang sama: ukur ke mana waktunya habis, lalu kirim lebih sedikit.
+Saya kembali mengukur tahap yang paling banyak memakan waktu, lalu mengurangi volume data yang dikirim melalui dua perubahan:
 
 - Projection yang lebih sempit untuk read rencana dan KPI, page berukuran sekitar 1 MB, satu gate bersama untuk 4 request yang berjalan bersamaan, dan retry saat timeout.
 - Ringkasan rencana dan deviasi per scope yang dihitung di Fabric dengan aritmetika dashboard itu sendiri, lengkap dengan parity test terhadap perhitungan di browser.
 
 Diukur pada fixture seukuran satu scope perencanaan sungguhan (838 toko kali 15 SKU), read rencana dan deviasi di halaman ringkasan turun dari 39 request, 90.230 baris, dan 11,7 MB menjadi 5 request, 556 baris, dan 156 KB. Tabel forecast output turun dari 37 request dan 14,1 MB menjadi 13 request dan 2,5 MB. Berdasarkan profil itu, 2 menit di live seharusnya turun ke sekitar 20 detik jika waktunya sebanding dengan jumlah sel yang dibaca. Saya belum mencatat waktu live setelah perubahan.
 
-## Batasan, dan yang akan saya lakukan secara berbeda
+## Batasan Pengukuran dan Perbaikan Proses
 
-- **Saya memercayai satu kali pemulihan.** Satu penurunan dari 21 detik ke 1,1 detik terlihat seperti bukti. Seharusnya saya meminta pengukuran yang tidak bisa dijelaskan dengan cara lain sebelum menulis root cause di dokumentasi. Probe tanpa baris adalah pengukuran itu, dan butuh satu hari lagi untuk sampai ke sana.
-- **Saya mengukur gejala sebelum bisa membandingkannya.** Probe yang di-commit sejak hari pertama akan membuat tiga putaran awal bisa dibandingkan.
-- **Saya tidak bisa membaca pemakaian kapasitas secara langsung.** Metrik level kapasitas tidak bisa dibaca dari CLI yang saya punya; perlu aplikasi Fabric Capacity Metrics dan admin kapasitas. Angka kapasitas saya disimpulkan dari timing request dan tarif yang didokumentasikan.
+- **Terlalu cepat menyimpulkan penyebab dari satu kali pemulihan.** Penurunan dari 21 detik ke 1,1 detik tampak seperti bukti yang cukup. Seharusnya saya mencari pengukuran yang dapat membedakan dugaan penyebab dari penjelasan lain sebelum mencatat root cause di dokumentasi. Probe tanpa baris memungkinkan pemeriksaan itu, tetapi saya baru menggunakannya satu hari kemudian.
+- **Metode pengukuran awal belum seragam.** Jika probe di-commit sejak hari pertama, hasil tiga putaran awal dapat dibandingkan.
+- **Pemakaian kapasitas tidak dapat diperiksa langsung.** CLI yang saya miliki tidak menyediakan metrik level kapasitas; aksesnya memerlukan aplikasi Fabric Capacity Metrics dan admin kapasitas. Saya menyimpulkan angka kapasitas dari waktu request dan laju pemakaian yang didokumentasikan.
 - **Beberapa angka adalah estimasi atau hasil fixture.** Ukuran di bulan Oktober berasal dari fixture yang diskalakan, dan waktu forecast output setelah perubahan adalah estimasi. Angka-angka itu menunjukkan arah, bukan hasil live.
-- **Fixture perlu bentuk yang sama dengan production.** Dua masalah di atas lolos semua test karena fixture-nya kecil dan tidak melakukan projection kolom.
+- **Fixture perlu menyerupai kondisi production.** Dua masalah di atas lolos semua test karena fixture-nya kecil dan tidak menerapkan projection kolom.
 
-Jedanya tidak pernah ada di query. Jedanya ada di kapasitas bersama di depannya, dan probe tanpa baris adalah cara termurah untuk membuktikannya.
+Probe tanpa baris menunjukkan bahwa request tertahan pada kapasitas bersama sebelum query dijalankan. Untuk masalah ini, probe tersebut merupakan cara pengujian dengan biaya paling rendah.

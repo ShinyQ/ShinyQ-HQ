@@ -29,7 +29,7 @@
     },
     "story": {
       "en": "I started learning Android development at a vocational school in Malang and opened my GitHub account in 2016. Through school and Telkom University, I earned 20 competition placings, including seven first places, in work ranging from chatbot prototypes to data science and capture-the-flag. I helped lead a 200-student programming club, trained an IndoBERT model for campus sentiment analysis and supported myself with part-time e-commerce backend work. At MNC, Jatis and Jenius, I built travel payments, multi-tenant SaaS and digital-banking integrations. In 2026, I joined Metrodata's Microsoft AI practice. I now write the specs, direct AI coding agents in parallel and review their work before merging. I build voice agents that callers can interrupt mid-sentence, a security platform that opens fix PRs and document AI that must not guess. Evaluation determines which changes I release.",
-      "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, lewat proyek dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan praktik Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang bisa disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menebak. Hasil evaluasi menentukan perubahan yang saya rilis."
+      "id": "Saya mulai belajar pengembangan Android di SMK di Malang dan membuka akun GitHub pada 2016. Selama sekolah dan kuliah di Telkom University, saya meraih 20 prestasi kompetisi, termasuk tujuh juara 1, melalui beragam proyek, dari prototipe chatbot hingga data science dan capture-the-flag. Saya ikut memimpin klub programming beranggotakan 200 mahasiswa, melatih model IndoBERT untuk analisis sentimen kampus, dan membiayai kebutuhan saya lewat pekerjaan backend e-commerce paruh waktu. Di MNC, Jatis, dan Jenius, saya membangun sistem pembayaran travel, SaaS multi-tenant, dan integrasi perbankan digital. Pada 2026, saya bergabung dengan tim Microsoft AI di Metrodata. Kini saya menulis spec, mengarahkan AI coding agent secara paralel, dan meninjau hasilnya sebelum merge. Saya membangun voice agent yang dapat disela di tengah kalimat, platform keamanan yang membuka fix PR, dan document AI yang tidak boleh menghasilkan jawaban tanpa dasar. Hasil evaluasi menentukan perubahan yang saya rilis."
     },
     "howIWork": {
       "en": "I define each feature in a written spec with acceptance criteria. GitHub Copilot, Claude Code and Codex implement much of the code in parallel; I remain responsible for design, review, verification in a deployed environment and the merge. I use gold sets, A/B tests, CI gates and shadow mode to evaluate changes, and report metrics with their measurement method.",
@@ -44,14 +44,14 @@
         },
         "text": {
           "en": "Before implementation, I write a numbered spec with acceptance criteria and a constitution: the working rules every agent must follow.",
-          "id": "Sebelum implementasi, saya menulis spec bernomor dengan acceptance criteria. Aturan kerja setiap agent saya tetapkan dalam constitution."
+          "id": "Sebelum implementasi, saya menulis spec bernomor dengan acceptance criteria dan constitution yang menetapkan aturan kerja setiap agent."
         }
       },
       {
         "id": "agents-parallel-human-gate",
         "title": {
           "en": "Delegate Implementation, Own the Review",
-          "id": "Delegasikan Implementasi, Tetap Pegang Review"
+          "id": "Delegasikan Implementasi, Tetap Bertanggung Jawab Atas Review"
         },
         "text": {
           "en": "AI coding agents implement much of the code in parallel. I am responsible for design, review, verification in a deployed environment and the merge decision.",
@@ -77,7 +77,7 @@
         },
         "text": {
           "en": "I plan for failures and build a recovery path rather than assume the system will always work.",
-          "id": "Saya memperhitungkan kegagalan dan menyiapkan jalur pemulihan, bukan menganggap sistem akan selalu berjalan tanpa masalah."
+          "id": "Saya memperhitungkan kemungkinan kegagalan dan menyiapkan jalur pemulihan agar sistem dapat kembali berjalan saat terjadi masalah."
         }
       },
       {
@@ -88,7 +88,7 @@
         },
         "text": {
           "en": "I publish a metric only when I can explain how it was measured: in the lab, offline or live.",
-          "id": "Saya hanya menampilkan metrik jika bisa menjelaskan cara pengukurannya: di lab, secara offline, atau live."
+          "id": "Saya hanya menampilkan metrik jika dapat menjelaskan cara pengukurannya: di lab, secara offline, atau live."
         }
       }
     ],
@@ -105,7 +105,7 @@
     },
     "intro": {
       "en": "I treat observability as part of the feature, not an afterthought. The AI services I run on Azure are instrumented with OpenTelemetry, mostly through the Azure Monitor distro, on Python (FastAPI, Functions) and Node (Next.js), across App Service, Functions and Container Apps.",
-      "id": "Bagi saya, observability adalah bagian dari fitur, bukan tambahan di akhir. Layanan AI yang saya jalankan di Azure memakai instrumentasi OpenTelemetry, sebagian besar lewat distro Azure Monitor. Ini mencakup Python (FastAPI, Functions) dan Node (Next.js) pada App Service, Functions, dan Container Apps."
+      "id": "Saya menyiapkan observability sebagai bagian dari fitur sejak awal. Layanan AI yang saya jalankan di Azure memakai instrumentasi OpenTelemetry, sebagian besar lewat distro Azure Monitor, pada Python (FastAPI, Functions) dan Node (Next.js) di App Service, Functions, dan Container Apps."
     },
     "points": [
       {
@@ -138,7 +138,7 @@
         },
         "text": {
           "en": "Personal data is redacted before export. Noisy spans are sampled, and ingestion has a daily cap with an alert at 80 percent.",
-          "id": "Data pribadi disamarkan sebelum diekspor. Span yang menambah noise di-sampling, dan ingestion dibatasi per hari dengan alert pada 80 persen."
+          "id": "Data pribadi disamarkan sebelum diekspor. Saya menerapkan sampling pada span yang menambah noise dan membatasi ingestion per hari, dengan alert saat mencapai 80 persen."
         }
       },
       {
@@ -210,7 +210,7 @@
         "id": "dependency-calls",
         "label": {
           "en": "Traced dependency calls",
-          "id": "Dependency call yang ditelusuri"
+          "id": "Panggilan dependency yang ditelusuri"
         },
         "value": {
           "en": "~1.2M",
@@ -880,7 +880,7 @@
           "end": "2019-11",
           "summary": {
             "en": "I earned five 2nd-place finishes in IT, web development, UI/UX and idea competitions, including Sigma Idea Competition at Telkom University.",
-            "id": "Saya meraih lima juara 2 di kompetisi IT, web development, UI/UX, dan ide bisnis, termasuk Sigma Idea Competition di Telkom University."
+            "id": "Saya meraih juara 2 dalam lima kompetisi di bidang IT, web development, UI/UX, dan ide bisnis, termasuk Sigma Idea Competition di Telkom University."
           },
           "highlights": [
             {
@@ -1370,7 +1370,7 @@
           "end": "2021-12",
           "summary": {
             "en": "I earned two certificates through self-study in machine learning and data science.",
-            "id": "Saya meraih dua sertifikat melalui belajar mandiri di bidang machine learning dan data science."
+            "id": "Saya meraih dua sertifikat setelah belajar mandiri di bidang machine learning dan data science."
           },
           "highlights": [
             {
@@ -1403,7 +1403,7 @@
           "end": "2021-10",
           "summary": {
             "en": "I earned four 1st places in one year, in business pitching, a security CTF and two data competitions.",
-            "id": "Saya meraih empat juara 1 dalam setahun, di business pitching, CTF keamanan, dan dua kompetisi data."
+            "id": "Dalam setahun, saya meraih juara 1 di empat kompetisi: business pitching, CTF keamanan, dan dua kompetisi data."
           },
           "highlights": [
             {
@@ -1624,7 +1624,7 @@
           "end": "2022-11",
           "summary": {
             "en": "My final competition season brought two 2nd-place finishes and a national finalist spot as I moved into full-time engineering.",
-            "id": "Pada musim kompetisi terakhir, saya meraih dua juara 2 dan menjadi finalis tingkat nasional saat beralih menjadi engineer penuh waktu."
+            "id": "Pada tahun terakhir mengikuti kompetisi, saya meraih juara 2 di dua ajang dan menjadi finalis tingkat nasional, sambil beralih menjadi engineer penuh waktu."
           },
           "highlights": [
             {
@@ -1893,7 +1893,7 @@
             },
             {
               "en": "Replaced a commercial product with an in-house MFT/SFTP service at 99% uptime (about 1,000 transfers a month)",
-              "id": "Mengganti produk komersial dengan layanan MFT/SFTP internal ber-uptime 99% (sekitar 1.000 transfer per bulan)"
+              "id": "Mengganti produk komersial dengan layanan MFT/SFTP internal dengan uptime 99% (sekitar 1.000 transfer per bulan)"
             },
             {
               "en": "Reduced production issues by 30% with full unit coverage on new modules and k6 load tests",
@@ -2158,7 +2158,7 @@
           "end": "2026-04",
           "summary": {
             "en": "I developed backend modules for a digital products and training e-commerce platform with a 5+ person agency team, working in a TypeScript monorepo.",
-            "id": "Saya mengembangkan modul backend untuk platform e-commerce produk digital dan pelatihan bersama tim agensi berisi 5+ orang dalam monorepo TypeScript."
+            "id": "Saya mengembangkan modul backend untuk platform e-commerce produk digital dan pelatihan dalam monorepo TypeScript, bersama tim agensi beranggotakan 5+ orang."
           },
           "highlights": [
             {
@@ -2210,7 +2210,7 @@
           "end": "present",
           "summary": {
             "en": "In the Microsoft AI practice, I lead Azure-native AI projects from architecture to production for 12+ enterprise clients in banking, automotive, mining, food manufacturing and consumer health. I also build the practice's own products, including a reusable full-stack AI template adopted across 10+ client projects. I write the specs, direct AI coding agents and review their work before release.",
-            "id": "Di praktik Microsoft AI, saya memimpin pengembangan platform AI berbasis Azure, dari arsitektur hingga production, untuk 12+ klien enterprise di sektor perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health. Saya juga mengerjakan produk tim sendiri, termasuk template AI full-stack yang bisa digunakan ulang dan dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
+            "id": "Di tim Microsoft AI, saya memimpin pengembangan platform AI berbasis Azure, dari arsitektur hingga production, untuk 12+ klien enterprise di sektor perbankan, otomotif, pertambangan, manufaktur makanan, dan consumer health. Saya juga mengerjakan produk tim sendiri, termasuk template AI full-stack yang dapat digunakan ulang dan telah dipakai di 10+ proyek klien. Saya menulis spec, mengarahkan AI coding agent, dan meninjau hasilnya sebelum rilis."
           },
           "highlights": [
             {
@@ -2295,7 +2295,7 @@
             "id": "pre-2019",
             "caption": {
               "en": "Android apps at a vocational school in Malang, a GitHub account opened in 2016 and the first competition wins.",
-              "id": "Aplikasi Android di SMK di Malang, akun GitHub pertama pada 2016, dan juara kompetisi pertama."
+              "id": "Aplikasi Android di SMK di Malang, akun GitHub yang dibuka pada 2016, dan kemenangan kompetisi pertama."
             },
             "highlights": [{ "kind": "entry", "id": "prologue-2016" }]
           },
@@ -2387,7 +2387,7 @@
             "id": "2026",
             "caption": {
               "en": "Joined Metrodata's Microsoft AI practice: writing specs, directing AI coding agents and shipping AI to production.",
-              "id": "Bergabung dengan praktik Microsoft AI di Metrodata: menulis spec, mengarahkan AI coding agent, dan merilis AI ke produksi."
+              "id": "Bergabung dengan tim Microsoft AI di Metrodata: menulis spec, mengarahkan AI coding agent, dan merilis AI ke production."
             },
             "highlights": [
               { "kind": "entry", "id": "metrodata-2026" },
@@ -2672,7 +2672,7 @@
                 },
                 "why": {
                   "en": "Scheduled partner file exchange could run in-house instead of on a licensed product; the MFT/SFTP service held 99% uptime with about 1,000 transfers per month.",
-                  "id": "Pertukaran file mitra yang terjadwal bisa berjalan in-house tanpa produk berlisensi; layanan MFT/SFTP ini menjaga uptime 99% dengan sekitar 1.000 transfer per bulan."
+                  "id": "Pertukaran file mitra yang terjadwal dapat dijalankan in-house tanpa produk berlisensi. Layanan MFT/SFTP ini mencapai uptime 99% dengan sekitar 1.000 transfer per bulan."
                 }
               },
               {
@@ -2682,13 +2682,13 @@
                 },
                 "why": {
                   "en": "New and refactored modules shipped with full Mocha, Chai and Sinon coverage plus k6 load tests, and production issues fell by about 30%.",
-                  "id": "Modul baru dan hasil refactor dirilis dengan load test k6 serta cakupan penuh Mocha, Chai, dan Sinon, dan masalah produksi turun sekitar 30%."
+                  "id": "Modul baru dan hasil refactor dirilis dengan cakupan unit test penuh menggunakan Mocha, Chai, dan Sinon, serta load test k6. Masalah produksi turun sekitar 30%."
                 }
               }
             ],
             "lesson": {
               "en": "With several partners on one platform, a consistent shared layer and clear standards matter more than any single integration.",
-              "id": "Dengan beberapa partner di satu platform, layer bersama yang konsisten dan standar yang jelas lebih penting daripada satu integrasi mana pun."
+              "id": "Saat beberapa partner menggunakan satu platform, layer bersama yang konsisten dan standar yang jelas lebih penting daripada satu integrasi tertentu."
             }
           },
           "stack": [
@@ -2739,7 +2739,7 @@
           },
           "problem": {
             "en": "TEMMPAT supports buying, reselling and auctioning concert and event tickets. Its v1 backend split data between MongoDB and PostgreSQL without clear layers. The business needed dependable escrow-style payments, refunds and partner payouts.",
-            "id": "TEMMPAT melayani pembelian, resale, dan lelang tiket konser maupun acara. Backend v1 membagi data antara MongoDB dan PostgreSQL tanpa lapisan yang jelas. Bisnis membutuhkan pembayaran bergaya escrow, refund, dan payout mitra yang dapat dipercaya."
+            "id": "TEMMPAT melayani pembelian, resale, dan lelang tiket konser maupun acara. Data backend v1 tersebar di MongoDB dan PostgreSQL tanpa lapisan yang jelas. Bisnis membutuhkan alur pembayaran berbasis escrow, refund, dan payout mitra yang andal."
           },
           "approach": [
             {
@@ -2826,7 +2826,7 @@
                 "label": "PostgreSQL",
                 "sublabel": {
                   "en": "Single source of truth",
-                  "id": "Satu-satunya sumber data"
+                  "id": "Sumber data acuan tunggal"
                 },
                 "layer": 2,
                 "row": 0,
@@ -3038,7 +3038,7 @@
             },
             {
               "en": "I diagnosed failures on the deployed portal: a build step that stopped the app from starting, a sign-in teardown race, and a session cookie that grew past the browser's 4 KB limit and silently broke staff sign-in.",
-              "id": "Saya menelusuri kegagalan di portal yang sudah di-deploy: langkah build yang membuat aplikasi gagal start, race condition saat teardown login, dan cookie sesi yang melewati batas 4 KB browser sehingga login staf gagal tanpa pesan."
+              "id": "Saya menelusuri kegagalan di portal yang sudah di-deploy: langkah build yang membuat aplikasi gagal dijalankan, race condition saat teardown login, dan cookie sesi yang melewati batas 4 KB browser sehingga login staf gagal tanpa pesan."
             }
           ],
           "architecture": {
@@ -3079,7 +3079,7 @@
                 },
                 "sublabel": {
                   "en": "UI and BFF with sealed sessions",
-                  "id": "UI dan BFF dengan sesi tersegel"
+                  "id": "UI dan BFF dengan sesi yang dilindungi secara kriptografis"
                 },
                 "layer": 1,
                 "row": 0,
@@ -3223,7 +3223,7 @@
               },
               "context": {
                 "en": "Measured against a live backend: 4,491 bytes, over the 4,096-byte browser limit, down to 2,083.",
-                "id": "Diukur terhadap backend live: 4.491 byte, melewati batas browser 4.096 byte, turun menjadi 2.083."
+                "id": "Diukur menggunakan backend live: ukuran awal 4.491 byte melampaui batas browser 4.096 byte, lalu turun menjadi 2.083."
               },
               "confidence": "verified"
             }
@@ -3550,7 +3550,7 @@
           },
           "problem": {
             "en": "Slow payments and stale data affected travel and hotel bookings at Mister Aladin. The payment gateway, realtime request handling and several MySQL-heavy endpoints were bottlenecks.",
-            "id": "Pembayaran lambat dan data yang tidak mutakhir mengganggu pemesanan travel dan hotel di Mister Aladin. Integrasi payment gateway, penanganan request realtime, dan sejumlah endpoint yang berat di MySQL menjadi bottleneck."
+            "id": "Pembayaran lambat dan data yang tidak mutakhir mengganggu pemesanan travel dan hotel di Mister Aladin. Bottleneck terjadi pada integrasi payment gateway, penanganan request realtime, dan sejumlah endpoint yang banyak mengakses MySQL."
           },
           "approach": [
             {
@@ -3567,7 +3567,7 @@
             },
             {
               "en": "I reduced homepage load time by migrating its backend to GraphQL.",
-              "id": "Saya memperbaiki waktu muat homepage dengan memigrasikan backend ke GraphQL."
+              "id": "Saya mempercepat pemuatan homepage dengan memigrasikan backend ke GraphQL."
             }
           ],
           "architecture": {
@@ -4404,7 +4404,7 @@
               },
               "context": {
                 "en": "A design property of the booking code, not a measured production incident count.",
-                "id": "Properti desain di kode booking, bukan hitungan insiden produksi yang diukur."
+                "id": "Berdasarkan rancangan kode booking, bukan pengukuran jumlah insiden produksi."
               },
               "confidence": "strongly-inferred"
             }
@@ -4556,7 +4556,7 @@
             },
             {
               "en": "I turned a v0-generated scaffold into the organizer dashboard and connected sign-in and event creation, editing and listing, with sub-categories and a location map, to the API.",
-              "id": "Saya mengubah kerangka hasil v0 menjadi dashboard penyelenggara dan menghubungkan login serta pembuatan, pengeditan, dan daftar acara, lengkap dengan sub-kategori dan peta lokasi, ke API."
+              "id": "Saya mengembangkan kerangka hasil v0 menjadi dashboard penyelenggara. Login serta fitur pembuatan, pengeditan, dan daftar acara saya hubungkan ke API, lengkap dengan subkategori dan peta lokasi."
             },
             {
               "en": "My teammate built ticket orders and payments in the API: quota and per-user limits, payment links and callbacks for QRIS, cards, e-wallets and virtual accounts, PDF invoices, status emails and Socket.IO payment events. My checkout and My Tickets pages call those endpoints.",
@@ -4870,7 +4870,7 @@
           },
           "problem": {
             "en": "Jublia's trade-event matchmaking needed more relevant results for people and exhibitors. Manual analysis of post-event NPS, CSAT and free-text feedback was too slow.",
-            "id": "Matchmaking untuk pameran dan acara dagang di Jublia membutuhkan hasil pencarian orang dan exhibitor yang lebih relevan. Analisis manual feedback NPS, CSAT, dan teks bebas setelah acara memakan terlalu banyak waktu."
+            "id": "Untuk matchmaking di pameran dan acara dagang, Jublia membutuhkan hasil pencarian peserta dan peserta pameran yang lebih relevan. Analisis manual feedback NPS, CSAT, dan teks bebas setelah acara memakan terlalu banyak waktu."
           },
           "approach": [
             {
@@ -4900,7 +4900,7 @@
                 },
                 "sublabel": {
                   "en": "Event attendees and exhibitors",
-                  "id": "Peserta acara dan exhibitor"
+                  "id": "Peserta acara dan peserta pameran"
                 },
                 "layer": 0,
                 "row": 0,
@@ -4982,7 +4982,7 @@
                 "to": "elasticsearch",
                 "label": {
                   "en": "ranked queries",
-                  "id": "query berperingkat"
+                  "id": "query untuk pemeringkatan"
                 }
               },
               {
@@ -5039,7 +5039,7 @@
               },
               "context": {
                 "en": "Based on a small evaluation set.",
-                "id": "Berdasarkan evaluation set yang kecil."
+                "id": "Berdasarkan evaluation set dengan jumlah sampel kecil."
               },
               "confidence": "self-reported"
             },
@@ -5088,7 +5088,7 @@
           },
           "role": {
             "en": "Backend Engineer, part of a five-plus-person agency team",
-            "id": "Backend Engineer, anggota tim agensi berisi lebih dari lima orang"
+            "id": "Backend Engineer, anggota tim agensi beranggotakan lebih dari lima orang"
           },
           "problem": {
             "en": "Naremax needed catalog and bundle management, a cart, checkout, shipping and CRM for its digital products, training and services. A small team developed these modules in parallel in one monorepo.",
@@ -5289,7 +5289,7 @@
           },
           "problem": {
             "en": "Callers needed an alternative to rigid phone menus: a voice agent with company knowledge-base answers, interruption during speech or search, and transfer to a human and back within the same call. Supervisors needed a live console.",
-            "id": "Penelepon membutuhkan alternatif menu telepon yang kaku: voice agent yang menjawab dari knowledge base perusahaan, bisa disela saat berbicara atau mencari, serta bisa mengalihkan panggilan ke petugas lalu kembali ke agent. Supervisor membutuhkan console live."
+            "id": "Penelepon membutuhkan pengganti menu telepon yang kaku: voice agent yang menjawab dari knowledge base perusahaan, dapat disela saat berbicara atau mencari, dan beralih ke petugas lalu kembali dalam satu panggilan. Supervisor membutuhkan console live."
           },
           "approach": [
             {
@@ -5306,7 +5306,7 @@
             },
             {
               "en": "I documented the decision to replace a retiring voice service with self-hosted WebRTC media on zonal VMs, then verified failover through hard VM-stop drills.",
-              "id": "Saya mendokumentasikan keputusan mengganti layanan voice yang akan pensiun dengan media WebRTC self-hosted di VM zonal, lalu memverifikasi failover melalui drill mematikan VM secara paksa."
+              "id": "Saya mendokumentasikan keputusan mengganti layanan voice yang akan dihentikan dengan media WebRTC self-hosted di VM zonal, lalu memverifikasi failover melalui drill dengan mematikan VM secara paksa."
             },
             {
               "en": "I built a voice evaluation harness with a media emulator, golden questions and a calibrated LLM judge. Changes without supporting evidence stayed disabled.",
@@ -5487,7 +5487,7 @@
               "value": "6 vs 18",
               "label": {
                 "en": "Hallucinated answers in an offline model comparison; the quality gate retained the stronger realtime model",
-                "id": "Jawaban halusinasi dalam perbandingan model offline; quality gate mempertahankan model realtime yang lebih kuat"
+                "id": "Jawaban halusinasi dalam perbandingan model offline; quality gate mempertahankan model realtime dengan hasil lebih baik"
               },
               "context": {
                 "en": "Evaluated offline with a calibrated LLM judge; mean score 4.71 vs 4.28.",
@@ -5499,11 +5499,11 @@
               "value": "Migrated",
               "label": {
                 "en": "Voice channel migrated from a retiring service; old path removed",
-                "id": "Voice channel dimigrasikan dari layanan yang akan pensiun; jalur lama dihapus"
+                "id": "Voice channel dimigrasikan dari layanan yang akan dihentikan; jalur lama dihapus"
               },
               "context": {
                 "en": "Live cut-over completed well before the announced 2028 retirement, removing about 20.5k lines from the old path.",
-                "id": "Cut-over live selesai jauh sebelum jadwal pensiun 2028, dengan sekitar 20,5 ribu baris kode jalur lama dihapus."
+                "id": "Cut-over live selesai jauh sebelum jadwal penghentian layanan pada 2028, dengan penghapusan sekitar 20,5 ribu baris kode dari jalur lama."
               },
               "confidence": "verified"
             }
@@ -5511,7 +5511,7 @@
           "story": {
             "situation": {
               "en": "Callers were stuck in rigid phone menus. MII needed a voice agent that answers from the company knowledge base, lets callers interrupt while it speaks or searches, and hands over to a human and back within the same call, with a live console for supervisors.",
-              "id": "Penelepon terjebak di menu telepon yang kaku. MII membutuhkan voice agent yang menjawab dari knowledge base perusahaan, bisa diinterupsi saat sedang berbicara atau mencari, dan bisa mengalihkan panggilan ke manusia lalu kembali dalam panggilan yang sama, dengan konsol live untuk supervisor."
+              "id": "Penelepon terjebak di menu telepon yang kaku. MII membutuhkan voice agent yang menjawab dari knowledge base perusahaan, dapat disela saat berbicara atau mencari informasi, serta dapat mengalihkan panggilan ke petugas lalu kembali ke agent dalam panggilan yang sama. Supervisor juga membutuhkan konsol live."
             },
             "decisions": [
               {
@@ -5521,7 +5521,7 @@
                 },
                 "why": {
                   "en": "A caller interrupting mid-search had to be heard at once, so lookups became cancellable tasks sharing one time budget, and barge-in accounts for audio still playing.",
-                  "id": "Penelepon yang menyela saat pencarian berlangsung harus langsung didengar, jadi akses knowledge base saya jadikan task yang bisa dibatalkan dengan satu anggaran waktu bersama, dan barge-in memperhitungkan audio yang masih diputar."
+                  "id": "Interupsi penelepon saat pencarian berlangsung harus langsung diproses. Karena itu, akses knowledge base saya jadikan task yang dapat dibatalkan dengan satu batas waktu bersama, sementara barge-in memperhitungkan audio yang masih diputar."
                 }
               },
               {
@@ -5531,7 +5531,7 @@
                 },
                 "why": {
                   "en": "The managed service was being retired; I documented the decision, then proved the new path with hard VM-stop failover drills.",
-                  "id": "Layanan managed tersebut akan dihentikan; saya mendokumentasikan keputusannya, lalu membuktikan jalur baru dengan drill failover yang mematikan VM secara paksa."
+                  "id": "Layanan managed tersebut akan dihentikan. Saya mendokumentasikan keputusan penggantinya, lalu memverifikasi jalur baru melalui drill failover dengan mematikan VM secara paksa."
                 }
               },
               {
@@ -5541,13 +5541,13 @@
                 },
                 "why": {
                   "en": "A media emulator, golden questions and a calibrated LLM judge meant any change without supporting evidence stayed disabled.",
-                  "id": "Media emulator, golden question, dan LLM judge yang terkalibrasi membuat setiap perubahan tanpa bukti pendukung tetap dinonaktifkan."
+                  "id": "Saya menggunakan media emulator, golden question, dan LLM judge terkalibrasi untuk mengevaluasi perubahan. Perubahan tanpa bukti pendukung tetap dinonaktifkan."
                 }
               }
             ],
             "lesson": {
               "en": "A written spec and a merged PR are not proof that a fix helped. Set the verdict rules before testing, accept the negative results, and remove what the data rejected.",
-              "id": "Spec dan PR yang sudah di-merge bukan bukti bahwa sebuah perbaikan berhasil. Tetapkan kriteria pengujian lebih dulu, terima hasil negatif, dan hapus yang ditolak data."
+              "id": "Spec dan PR yang sudah di-merge bukan bukti bahwa sebuah perbaikan berhasil. Tetapkan kriteria pengujian lebih dulu, terima hasil negatif, dan hapus perubahan yang tidak didukung data."
             }
           },
           "stack": [
@@ -5715,12 +5715,12 @@
           },
           "problem": {
             "en": "A GitHub organization with 100+ repositories needed consistent pull-request security scanning, clear triage and fixes that engineers could review safely before merging.",
-            "id": "Organisasi GitHub dengan 100+ repository membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat di-review engineer sebelum merge."
+            "id": "Organisasi GitHub dengan 100+ repositori membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat ditinjau dengan aman oleh engineer sebelum merge."
           },
           "approach": [
             {
               "en": "I integrated eight open-source engines through a GitHub App, normalizing results, enriching exploit-likelihood and known-exploited data, and preserving stable finding identities.",
-              "id": "Saya mengintegrasikan delapan engine open-source lewat GitHub App, menormalisasi hasil, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas finding tetap stabil."
+              "id": "Saya mengintegrasikan delapan engine open-source lewat GitHub App, menormalisasi hasil, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas temuan tetap stabil."
             },
             {
               "en": "I added Azure OpenAI triage and executive summaries, a check run for merge gating and a security assistant backed by a vector index.",
@@ -5732,7 +5732,7 @@
             },
             {
               "en": "After an internal audit reproduced untrusted repository code executing alongside production secrets, I led a 14-item hardening program. Scans moved to isolated, autoscaled jobs with tokens scoped per job.",
-              "id": "Setelah audit internal mereproduksi eksekusi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, saya memimpin hardening 14 item. Scan dipindahkan ke job terisolasi dengan autoscaling dan token yang dibatasi per job."
+              "id": "Audit internal berhasil mereproduksi eksekusi kode repositori tak tepercaya dalam lingkungan yang juga menyimpan secret produksi. Setelah itu, saya memimpin program hardening 14 item dan memindahkan scan ke job terisolasi dengan autoscaling serta token yang dibatasi per job."
             },
             {
               "en": "I added Prompt Shields, redacted secrets from prompts and built an offline prompt-injection suite, then released through staging, canary revisions and health gates (13 releases in 7 days). For Azure Marketplace readiness, I packaged it as a Managed Application with signed images; public and private test installs passed 16 of 16 and 24 of 24 post-install checks.",
@@ -5785,7 +5785,7 @@
                 "label": "FastAPI control plane",
                 "sublabel": {
                   "en": "Repository-scoped tokens; no repository code",
-                  "id": "Token terbatas per repository; tanpa kode repository"
+                  "id": "Token dibatasi per repositori; tanpa kode repositori"
                 },
                 "layer": 2,
                 "row": 0,
@@ -5829,7 +5829,7 @@
                 "label": "Cosmos DB",
                 "sublabel": {
                   "en": "Findings and vector index",
-                  "id": "Finding dan vector index"
+                  "id": "Temuan dan vector index"
                 },
                 "layer": 4,
                 "row": 1,
@@ -5904,7 +5904,7 @@
               "value": "8 engines",
               "label": {
                 "en": "Scanning engines per pull request in a 100+ repository organization",
-                "id": "Engine scanning per pull request dalam organisasi dengan 100+ repository"
+                "id": "Engine scanning per pull request dalam organisasi dengan 100+ repositori"
               },
               "context": {
                 "en": "Run in production through a GitHub App: Semgrep, Bandit, Trivy, OSV-Scanner, Grype, Gitleaks, TruffleHog and Checkov.",
@@ -5920,7 +5920,7 @@
               },
               "context": {
                 "en": "Recorded by 24 Oct 2026; about 4.9k scans and 645k findings were processed by late September 2026.",
-                "id": "Tercatat hingga 24 Okt 2026; sekitar 4,9 ribu scan dan 645 ribu finding diproses hingga akhir September 2026."
+                "id": "Tercatat hingga 24 Okt 2026; sekitar 4,9 ribu scan dan 645 ribu temuan diproses hingga akhir September 2026."
               },
               "confidence": "verified"
             },
@@ -5928,7 +5928,7 @@
               "value": "31 fix PRs",
               "label": {
                 "en": "Fix-agent PRs opened in 7 repositories; 8 merged after human review",
-                "id": "PR fix agent dibuka di 7 repository; 8 di-merge setelah review manusia"
+                "id": "PR fix agent dibuka di 7 repositori; 8 di-merge setelah review manusia"
               },
               "context": {
                 "en": "Human review is required for every fix PR. This does not claim a higher merge rate.",
@@ -5952,7 +5952,7 @@
           "story": {
             "situation": {
               "en": "A GitHub organization with 100+ repositories needed consistent pull-request security scanning, clear triage, and fixes that engineers could review safely before merging. Pris.AI became MII's AI code security platform for this, with me as its sole engineer and operator. Every fix had to stay reviewable, and scans of untrusted code had to stay away from production secrets.",
-              "id": "Organisasi GitHub dengan 100+ repository membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat di-review engineer dengan aman sebelum merge. Pris.AI menjadi platform keamanan kode AI milik MII untuk kebutuhan ini, dengan saya sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap bisa di-review, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
+              "id": "Organisasi GitHub dengan 100+ repositori membutuhkan security scanning yang konsisten pada pull request, triage yang jelas, dan perbaikan yang dapat ditinjau dengan aman oleh engineer sebelum merge. Untuk kebutuhan ini, saya membangun Pris.AI, platform keamanan kode AI milik MII, sebagai engineer dan operator tunggal. Setiap perbaikan harus tetap dapat ditinjau, dan scan atas kode tak tepercaya harus terpisah dari secret produksi."
             },
             "decisions": [
               {
@@ -5962,17 +5962,17 @@
                 },
                 "why": {
                   "en": "Engineers needed one consistent result per pull request, so I normalized every engine's output, added exploit-likelihood and known-exploited data, and kept finding identities stable across scans.",
-                  "id": "Engineer membutuhkan satu hasil yang konsisten per pull request, jadi saya menormalisasi output setiap engine, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas finding tetap stabil antar-scan."
+                  "id": "Engineer membutuhkan satu hasil yang konsisten per pull request. Karena itu, saya menormalisasi output setiap engine, menambahkan data exploit-likelihood dan known-exploited, serta menjaga identitas temuan tetap stabil antar-scan."
                 }
               },
               {
                 "title": {
                   "en": "Kept every fix PR narrow and behind human review",
-                  "id": "Menjaga setiap fix PR tetap sempit dan melewati review manusia"
+                  "id": "Membatasi cakupan setiap fix PR dan mewajibkan review manusia"
                 },
                 "why": {
                   "en": "A fix that engineers cannot review is a new risk, so the agent patches only selected code regions within a token budget, never downgrades a dependency, and must pass protected-path guards and a rescan before it opens a PR.",
-                  "id": "Perbaikan yang tidak bisa di-review engineer justru menjadi risiko baru, jadi agent hanya mem-patch bagian kode yang dipilih dalam token budget, tidak pernah men-downgrade dependency, dan harus lolos proteksi path sensitif serta rescan sebelum membuka PR."
+                  "id": "Perbaikan yang tidak dapat ditinjau oleh engineer justru menambah risiko. Karena itu, agent hanya menerapkan patch pada bagian kode yang dipilih sesuai token budget, tidak pernah menurunkan versi dependency, dan harus lolos proteksi path sensitif serta rescan sebelum membuka PR."
                 }
               },
               {
@@ -5982,13 +5982,13 @@
                 },
                 "why": {
                   "en": "The audit reproduced untrusted repository code running alongside production secrets, so I led a 14-item hardening program that moved scans to isolated, autoscaled jobs with tokens scoped per job; the cut-over cost about 9 minutes of outage.",
-                  "id": "Audit tersebut mereproduksi kode repository tak tepercaya yang berjalan berdampingan dengan secret produksi, jadi saya memimpin hardening 14 item yang memindahkan scan ke job terisolasi dengan autoscaling dan token yang dibatasi per job; cut-over-nya menimbulkan jeda layanan sekitar 9 menit."
+                  "id": "Audit tersebut berhasil mereproduksi eksekusi kode repositori tak tepercaya dalam lingkungan yang juga menyimpan secret produksi. Saya kemudian memimpin program hardening 14 item, memindahkan scan ke job terisolasi dengan autoscaling dan token yang dibatasi per job. Cut-over ini menimbulkan jeda layanan sekitar 9 menit."
                 }
               }
             ],
             "lesson": {
               "en": "Threat-model the first deploy: running scans inline was a reasonable trade for permissions, but it needed a written threat model then, not an audit later. A flag reduces the risk within hours; isolation is what makes the remaining risk smaller.",
-              "id": "Buat threat model sejak deploy pertama: menjalankan scan secara inline adalah kompromi yang masuk akal untuk urusan izin, tetapi saat itu juga seharusnya ada threat model tertulis, bukan audit belakangan. Flag mengurangi risiko dalam hitungan jam; isolasi yang membuat sisa risikonya lebih kecil."
+              "id": "Buat threat model sejak deploy pertama: menjalankan scan secara inline adalah kompromi yang masuk akal dengan izin yang tersedia, tetapi saat itu juga seharusnya ada threat model tertulis, bukan menunggu audit belakangan. Flag mengurangi risiko dalam hitungan jam; isolasi memperkecil risiko yang tersisa."
             }
           },
           "stack": [
@@ -6028,7 +6028,7 @@
               "src": "/media/ai-code-security-platform/02-repositories.webp",
               "alt": {
                 "en": "Repositories with severity posture, latest default-branch scan and scan history per repository",
-                "id": "Daftar repositori dengan postur severity, scan terakhir di default branch, dan riwayat scan per repositori"
+                "id": "Daftar repositori dengan kondisi temuan menurut severity, scan terakhir di default branch, dan riwayat scan per repositori"
               },
               "width": 1600,
               "height": 1000,
@@ -6205,7 +6205,7 @@
                 "kind": "ai",
                 "sublabel": {
                   "en": "Inputs screened by Prompt Shields",
-                  "id": "Input disaring Prompt Shields"
+                  "id": "Input disaring oleh Prompt Shields"
                 }
               },
               {
@@ -6280,7 +6280,7 @@
                 "to": "risk-engine",
                 "label": {
                   "en": "shadow run",
-                  "id": "run shadow mode"
+                  "id": "jalankan shadow mode"
                 },
                 "async": true
               },
@@ -6308,7 +6308,7 @@
               "value": "90.9% to 36.4%",
               "label": {
                 "en": "False-positive rate on noisy clean packets, offline development set",
-                "id": "False-positive rate paket bersih, gangguan administratif; development offline"
+                "id": "FPR paket bersih dengan gangguan administratif; set development offline"
               },
               "context": {
                 "en": "Development gold set.",
@@ -6366,7 +6366,7 @@
                 },
                 "why": {
                   "en": "The pipeline runs over OCR output: the first pass records findings for each document, the second pass reaches a verdict across the documents, and live progress streams while it runs.",
-                  "id": "Pipeline berjalan di atas hasil OCR: tahap pertama mencatat temuan untuk setiap dokumen, tahap kedua menghasilkan verdict lintas dokumen, dan progres di-stream secara live selama proses berjalan."
+                  "id": "Pipeline memproses hasil OCR dalam dua tahap: tahap pertama mencatat temuan per dokumen, lalu tahap kedua menghasilkan verdict lintas dokumen. Progres di-stream secara live selama proses berjalan."
                 }
               },
               {
@@ -6386,13 +6386,13 @@
                 },
                 "why": {
                   "en": "It cut offline false positives to 9.1%, but recall dropped to 0.841 and it failed its gate. I kept it in shadow mode, where it changed user-visible output in 0 of 3,780 production runs.",
-                  "id": "Engine ini menurunkan false positive offline menjadi 9,1%, tetapi recall turun ke 0,841 sehingga gagal di gate-nya. Saya tetap menjalankannya di shadow mode, tempat engine ini tidak pernah mengubah hasil yang dilihat pengguna dalam run produksi."
+                  "id": "Engine ini menurunkan false positive offline menjadi 9,1%, tetapi recall turun ke 0,841 sehingga gagal di gate-nya. Saya tetap menjalankannya di shadow mode, tanpa mengubah hasil yang dilihat pengguna dalam run produksi."
                 }
               }
             ],
             "lesson": {
               "en": "Write the release gates before running the evaluation; if a change fails a gate, it does not become the decision maker, even when another number looks better. One good development run is encouraging, but it is not the bar for letting the engine decide.",
-              "id": "Tulis release gate sebelum menjalankan evaluasi; jika perubahan gagal di salah satu gate, perubahan itu tidak menjadi pengambil keputusan, meskipun angka lain terlihat lebih baik. Satu run development yang bagus memang menggembirakan, tetapi belum cukup untuk memberi engine wewenang menentukan verdict."
+              "id": "Tulis release gate sebelum menjalankan evaluasi; jika perubahan gagal di salah satu gate, jangan gunakan perubahan itu untuk menentukan keputusan, meskipun angka lain terlihat lebih baik. Satu run development yang bagus memang menggembirakan, tetapi belum cukup untuk menjadikan engine penentu verdict."
             }
           },
           "stack": [
@@ -6495,7 +6495,7 @@
           "approach": [
             {
               "en": "I traced two production errors to token exhaustion mid-JSON and raw newlines in strings, then addressed them with JSON mode, output caps, a quote-aware extractor and retries.",
-              "id": "Saya menemukan bahwa dua error produksi disebabkan token yang habis di tengah JSON dan newline mentah dalam string, lalu mengatasinya dengan JSON mode, batas output, extractor yang mengenali tanda kutip, dan retry."
+              "id": "Saya menemukan dua penyebab error produksi: token habis di tengah JSON dan newline mentah dalam string. Keduanya saya atasi dengan JSON mode, batas output, extractor yang mengenali tanda kutip, dan retry."
             },
             {
               "en": "I introduced the first test suite and CI-gated evaluation harness, using a 40-pair golden set (37.5% in Bahasa Indonesia), counterfactual fairness checks and 20+ prompt-injection classes.",
@@ -6503,7 +6503,7 @@
             },
             {
               "en": "I removed AI hire-or-reject verdicts and added AI disclosure, a system card and identity redaction before model calls. In October 2026 I redesigned every page in English and Indonesian: the candidate result now leads with a fit band, requirement coverage and must-haves beside one merged AI summary, framed as decision support while the recruiter decides. Touch screens get 44 px targets, and every route was captured with accessibility (axe), overflow and touch-target checks.",
-              "id": "Saya menghapus keputusan terima atau tolak dari AI, serta menambahkan AI disclosure, system card, dan redaksi identitas sebelum pemanggilan model. Pada Oktober 2026, saya mendesain ulang setiap halaman dalam bahasa Inggris dan Indonesia: hasil kandidat kini diawali fit band, cakupan persyaratan, dan must-have di samping satu ringkasan AI gabungan, diposisikan sebagai pendukung keputusan sementara rekruter tetap yang memutuskan. Layar sentuh mendapat target 44 px, dan setiap route di-capture dengan pemeriksaan aksesibilitas (axe), overflow, dan target sentuh."
+              "id": "Saya menghapus keputusan terima atau tolak dari AI, serta menambahkan AI disclosure, system card, dan penyamaran identitas sebelum pemanggilan model. Pada Oktober 2026, saya mendesain ulang setiap halaman dalam bahasa Inggris dan Indonesia: hasil kandidat kini diawali fit band, cakupan persyaratan, dan must-have di samping satu ringkasan AI gabungan. Semua ini menjadi pendukung keputusan, sementara rekruter tetap yang memutuskan. Target sentuh berukuran 44 px, dan setiap route di-capture dengan pemeriksaan aksesibilitas (axe), overflow, dan target sentuh."
             },
             {
               "en": "I adopted passwordless managed identity and HMAC-signed calls between the web tier and backend.",
@@ -6646,7 +6646,7 @@
               "value": "270+",
               "label": {
                 "en": "Test files added from a zero-test baseline, with evaluation gates blocking deploys",
-                "id": "File test ditambahkan dari kondisi tanpa test, dengan evaluation gate yang memblokir deploy"
+                "id": "File test yang ditambahkan dari kondisi tanpa test, dengan evaluation gate yang memblokir deploy"
               },
               "context": {
                 "en": "Based on repository history.",
@@ -7205,7 +7205,7 @@
           },
           "tagline": {
             "en": "Order-to-fulfil (OTF) planning on Microsoft Fabric for a national bakery brand: a forecasting dashboard on the client's real sales data since October 2026, fed by a contract-first medallion pipeline from an on-premise database.",
-            "id": "Perencanaan order-to-fulfil (OTF) di Microsoft Fabric untuk merek roti nasional: dashboard forecasting yang memakai data penjualan riil klien sejak Oktober 2026, dipasok pipeline medallion berbasis data contract dari database on-premise."
+            "id": "Perencanaan order-to-fulfil (OTF) di Microsoft Fabric untuk merek roti nasional: dashboard forecasting yang memakai data penjualan riil klien sejak Oktober 2026, dengan aliran data dari database on-premise melalui pipeline medallion berbasis data contract."
           },
           "period": {
             "start": "2026-08",
@@ -7238,7 +7238,7 @@
             },
             {
               "en": "On the real data, I simplified the dashboard to five pages for planners: a national figure with a deviation headline, a store-by-SKU OTF table in the planners' workbook column order with a drawer that explains each forecast and keeps forecaster adjustments, a deviation page with Ideal, Watch and Critical bands, planning inputs and settings. Promotion, payday and other-activity inputs now apply upstream as an explicit uplift layer, store names and cities reach every view, and the interface switches between Indonesian and English with technical terms kept. In the latest release, the summary has an executive view (a short briefing first, then trends and the five stores that need attention most) and a technical view with deviation by store, and each store and SKU drawer opens on a plan summary that breaks the OTF into baseline, uplift and buffer with two weeks of delivery grids.",
-              "id": "Dengan data riil, saya menyederhanakan dashboard menjadi lima halaman untuk tim perencana: national figure dengan ringkasan deviasi, tabel OTF per toko dan SKU dengan urutan kolom workbook tim perencana dan drawer yang menjelaskan setiap forecast serta menyimpan penyesuaian forecaster, halaman deviasi dengan band Ideal, Perlu perhatian, dan Kritis, planning input, serta pengaturan. Input promo, gajian, dan aktivitas lain kini diterapkan di hulu sebagai uplift layer eksplisit, nama toko dan kota tampil di setiap tampilan, dan antarmuka bisa beralih antara bahasa Indonesia dan Inggris dengan istilah teknis tetap dipertahankan. Pada rilis terbaru, ringkasan memiliki tampilan eksekutif (briefing singkat lebih dulu, lalu tren dan lima toko yang paling perlu perhatian) dan tampilan teknis dengan deviasi per toko, dan drawer setiap toko dan SKU dibuka dengan ringkasan rencana yang memecah OTF menjadi baseline, uplift, dan buffer beserta grid pengiriman dua minggu."
+              "id": "Setelah memakai data riil, saya menyederhanakan dashboard menjadi lima halaman untuk tim perencana: angka nasional dengan ringkasan deviasi, tabel OTF per toko dan SKU, halaman deviasi dengan band Ideal, Perlu perhatian, dan Kritis, input perencanaan, serta pengaturan. Tabel OTF mengikuti urutan kolom workbook tim perencana, dengan drawer yang menjelaskan setiap forecast dan menyimpan penyesuaian forecaster. Input promo, gajian, dan aktivitas lain kini diterapkan di hulu sebagai uplift layer eksplisit. Nama toko dan kota tampil di seluruh tampilan, dan antarmuka dapat beralih antara bahasa Indonesia dan Inggris dengan istilah teknis tetap dipertahankan. Pada rilis terbaru, halaman ringkasan menyediakan tampilan eksekutif (briefing singkat lebih dulu, lalu tren dan lima toko yang paling perlu perhatian) serta tampilan teknis dengan deviasi per toko. Drawer setiap toko dan SKU diawali ringkasan rencana yang merinci OTF menjadi baseline, uplift, dan buffer, beserta grid pengiriman dua minggu."
             }
           ],
           "architecture": {
@@ -7341,7 +7341,7 @@
               },
               "context": {
                 "en": "Measured after removing capacity-heavy indexes and switching to streamed aggregates.",
-                "id": "Diukur setelah menghapus index yang membebani capacity dan beralih ke agregat yang di-stream."
+                "id": "Diukur setelah menghapus index yang banyak memakai capacity dan beralih ke agregat yang di-stream."
               },
               "confidence": "verified"
             },
@@ -7415,13 +7415,13 @@
                 },
                 "why": {
                   "en": "Planners already work from their workbook, so the OTF table follows its column order, and a drawer explains each forecast and keeps forecaster adjustments.",
-                  "id": "Tim perencana sudah bekerja dari workbook mereka, jadi tabel OTF mengikuti urutan kolomnya, dan drawer menjelaskan setiap forecast serta menyimpan penyesuaian forecaster."
+                  "id": "Tim perencana sudah menggunakan workbook dalam pekerjaannya, sehingga tabel OTF mengikuti urutan kolom workbook tersebut. Drawer menjelaskan setiap forecast serta menyimpan penyesuaian forecaster."
                 }
               }
             ],
             "lesson": {
               "en": "Planners come to review and adjust a plan, not to look at charts, so the dashboard leads with the plan, and every figure comes from the one Fabric run that owns it. Two baselines is the same as no baseline.",
-              "id": "Planner datang untuk meninjau dan menyesuaikan rencana, bukan untuk melihat chart, jadi dashboard dimulai dari rencana, dan setiap angka berasal dari satu Fabric run yang memilikinya. Dua baseline sama saja dengan tidak ada baseline."
+              "id": "Planner datang untuk meninjau dan menyesuaikan rencana, bukan untuk melihat chart, jadi dashboard dimulai dari rencana, dan setiap angka berasal dari satu run Fabric yang menjadi sumbernya. Dua baseline sama saja dengan tidak ada baseline."
             }
           },
           "stack": [
@@ -7516,7 +7516,7 @@
           },
           "tagline": {
             "en": "The bilingual portfolio site of MII's Microsoft AI practice, in dark and light themes, with a multi-agent RAG assistant that answers with citations and a /dashboard Studio for content and analytics.",
-            "id": "Situs portofolio dwibahasa untuk praktik Microsoft AI di MII, dengan tema gelap dan terang, asisten RAG multi-agent yang menjawab dengan sitasi, dan Studio /dashboard untuk konten dan analitik."
+            "id": "Situs portofolio dwibahasa untuk tim Microsoft AI di MII, dengan tema gelap dan terang, asisten RAG multi-agent yang menjawab dengan sitasi, dan Studio /dashboard untuk konten dan analitik."
           },
           "period": {
             "start": "2026-07",
@@ -7528,7 +7528,7 @@
           },
           "problem": {
             "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget. The team also needed a studio to publish projects and read analytics without an engineer.",
-            "id": "Praktik Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia. Asistennya harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan mengikuti batas anggaran harian yang dapat ditegakkan. Tim juga membutuhkan studio untuk menerbitkan proyek dan membaca analitik tanpa engineer."
+            "id": "Tim Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia. Asistennya harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan mengikuti batas anggaran harian yang diberlakukan oleh sistem. Tim juga membutuhkan studio untuk menerbitkan proyek dan membaca analitik tanpa bantuan engineer."
           },
           "approach": [
             {
@@ -7688,7 +7688,7 @@
           "story": {
             "situation": {
               "en": "MII's Microsoft AI practice needed a public portfolio of its non-confidential work, with an assistant visitors could question. The assistant had to answer only from curated content with citations, resist prompt injection and stay within an enforceable daily budget, while the team needed to publish projects and read analytics without an engineer. I was the sole engineer.",
-              "id": "Praktik Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, dengan asisten yang bisa ditanya pengunjung. Asisten tersebut harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan tetap dalam anggaran harian yang dapat ditegakkan, sementara tim perlu menerbitkan proyek dan membaca analitik tanpa engineer. Saya adalah satu-satunya engineer."
+              "id": "Tim Microsoft AI di MII membutuhkan portofolio publik untuk karya yang tidak rahasia, dengan asisten yang dapat menjawab pertanyaan pengunjung. Asisten tersebut harus menjawab hanya dari konten terkurasi dengan sitasi, tahan terhadap prompt injection, dan mengikuti batas anggaran harian yang diberlakukan oleh sistem. Tim juga perlu menerbitkan proyek dan membaca analitik tanpa bantuan engineer. Saya adalah satu-satunya engineer."
             },
             "decisions": [
               {
@@ -7708,7 +7708,7 @@
                 },
                 "why": {
                   "en": "The assistant may answer only from curated content, so Cosmos DB vector search and Azure AI Search hybrid retrieval feed citation gating, with Prompt Shields on the input and sentence-level checks on the output.",
-                  "id": "Asisten hanya boleh menjawab dari konten terkurasi, jadi vector search Cosmos DB dan hybrid retrieval Azure AI Search memasok citation gating, dengan Prompt Shields pada input dan pemeriksaan per kalimat pada output."
+                  "id": "Asisten hanya boleh menjawab dari konten terkurasi. Karena itu, hasil vector search Cosmos DB dan hybrid retrieval Azure AI Search harus melewati citation gating, dengan Prompt Shields pada input dan pemeriksaan per kalimat pada output."
                 }
               },
               {
@@ -7724,7 +7724,7 @@
             ],
             "lesson": {
               "en": "A RAG assistant earns trust by answering only from curated content and showing where each answer came from. The operational side, such as stream framing, telemetry and the daily spend cap, needs watching too, because failures there can stay silent.",
-              "id": "Asisten RAG layak dipercaya jika hanya menjawab dari konten yang sudah dikurasi dan menunjukkan sumber setiap jawaban. Sisi operasionalnya, seperti stream framing, telemetry, dan batas biaya harian, juga perlu dipantau, karena kegagalan di sana bisa tidak terlihat."
+              "id": "Asisten RAG layak dipercaya jika hanya menjawab dari konten yang sudah dikurasi dan menunjukkan sumber setiap jawaban. Sisi operasionalnya, seperti stream framing, telemetry, dan batas biaya harian, juga perlu dipantau karena kegagalannya bisa tidak terdeteksi."
             }
           },
           "stack": [
@@ -7869,7 +7869,7 @@
             },
             {
               "en": "I wrote enforceable agent instructions and dated memory logs.",
-              "id": "Saya menulis instruksi agent yang dapat ditegakkan dan log memori bertanggal."
+              "id": "Saya menulis instruksi yang wajib dipatuhi oleh agent dan log memori bertanggal."
             },
             {
               "en": "I ran agents in parallel worktrees and integrated their changes through merge trains, requiring CI gates and human review for every merge.",
@@ -7976,11 +7976,11 @@
               "value": "9+ repos",
               "label": {
                 "en": "Repositories developed through the spec-first workflow",
-                "id": "Repository yang dikembangkan melalui alur kerja spec-first"
+                "id": "Repositori yang dikembangkan melalui alur kerja spec-first"
               },
               "context": {
                 "en": "Based on repository analysis; other engineers have not yet adopted this workflow.",
-                "id": "Berdasarkan analisis repositori; alur kerja ini belum diadopsi engineer lain."
+                "id": "Berdasarkan analisis repositori; alur kerja ini belum diadopsi oleh engineer lain."
               },
               "confidence": "verified"
             },
@@ -8043,7 +8043,7 @@
             },
             {
               "en": "I built per-plan packages on a shared layout from a colleague's reference: an install wizard with region and Azure OpenAI quota checks, ARM-TTK in CI, and releases signed with non-exportable Key Vault keys through a GitHub OIDC signer without client secrets.",
-              "id": "Saya membangun paket per plan di atas struktur bersama dari referensi rekan kerja: wizard instalasi dengan pengecekan region dan kuota Azure OpenAI, ARM-TTK di CI, serta rilis yang ditandatangani dengan key Key Vault yang tidak bisa diekspor melalui signer GitHub OIDC tanpa client secret."
+              "id": "Saya membangun paket per plan dengan struktur bersama yang mengikuti referensi rekan kerja: wizard instalasi dengan pengecekan region dan kuota Azure OpenAI, ARM-TTK di CI, serta rilis yang ditandatangani melalui signer GitHub OIDC tanpa client secret, menggunakan key Key Vault yang tidak dapat diekspor."
             },
             {
               "en": "I implemented idempotent hourly metering in all four products: one record per dimension and hour, managed identity, product units only. It stays switched off until an offer exists.",
@@ -8151,7 +8151,7 @@
             },
             {
               "en": "When the October 2026 Node.js security release landed before App Service images caught up, I merged dependency fixes in 9 repositories within two days and proposed signature-verified bundled runtimes as a reversible stopgap; most runtime PRs still await merge, and one runs in production after smoke checks.",
-              "id": "Saat rilis keamanan Node.js Oktober 2026 keluar sebelum image App Service diperbarui, saya me-merge perbaikan dependency di 9 repositori dalam dua hari dan mengusulkan runtime bawaan yang diverifikasi tanda tangannya sebagai solusi sementara yang bisa dibatalkan; sebagian besar PR runtime masih menunggu merge, dan satu sudah berjalan di production setelah smoke check."
+              "id": "Saat rilis keamanan Node.js Oktober 2026 tersedia sebelum image App Service diperbarui, saya me-merge perbaikan dependency di 9 repositori dalam dua hari. Saya juga mengusulkan runtime yang disertakan dalam paket dan diverifikasi tanda tangannya sebagai solusi sementara yang dapat dibatalkan. Sebagian besar PR runtime masih menunggu merge, dan satu sudah berjalan di production setelah smoke check."
             }
           ],
           "results": [
@@ -8199,7 +8199,7 @@
               },
               "context": {
                 "en": "Dependency fixes merged; bundled-runtime PRs mostly open, one deployed to production with smoke checks.",
-                "id": "Perbaikan dependency sudah di-merge; PR runtime bawaan sebagian besar masih terbuka, satu sudah di-deploy ke production dengan smoke check."
+                "id": "Perbaikan dependency sudah di-merge; sebagian besar PR untuk runtime yang disertakan dalam paket masih terbuka, satu sudah di-deploy ke production dengan smoke check."
               },
               "confidence": "verified"
             }
@@ -8334,7 +8334,7 @@
           },
           "role": {
             "en": "Largest contributor since February 2026",
-            "id": "Kontributor dengan kontribusi terbesar sejak Februari 2026"
+            "id": "Kontributor terbesar sejak Februari 2026"
           },
           "problem": {
             "en": "The internal ticketing assistant needed to move to managed persistence, enterprise sign-in and a supported agent framework.",
@@ -8458,7 +8458,7 @@
           },
           "problem": {
             "en": "Crashes could lose document-processing work in the finance assistant. Data access also relied on repeated sequential database calls.",
-            "id": "Crash dapat menghilangkan hasil kerja pemrosesan dokumen pada asisten keuangan. Akses data juga bergantung pada panggilan database berulang secara berurutan."
+            "id": "Crash dapat menghilangkan hasil pemrosesan dokumen pada asisten keuangan. Akses data juga memerlukan banyak panggilan database yang dijalankan satu per satu."
           },
           "approach": [
             {
@@ -8651,7 +8651,7 @@
             },
             {
               "en": "I added audit logs recording IP, user agent, duration and JSON diffs, alongside an AI playground for side-by-side streaming-agent comparison.",
-              "id": "Saya menambahkan audit log yang mencatat IP, user agent, durasi, dan JSON diff, serta AI playground untuk membandingkan streaming agent berdampingan."
+              "id": "Saya menambahkan audit log yang mencatat IP, user agent, durasi, dan JSON diff, serta AI playground untuk membandingkan streaming agent dalam tampilan berdampingan."
             }
           ],
           "results": [
@@ -8704,7 +8704,7 @@
           },
           "problem": {
             "en": "MII teams needed client-ready presentations that AI agents could draft without breaking the MII design, with every change approved by a person and private decks kept behind their own passwords.",
-            "id": "Tim MII membutuhkan presentasi siap klien yang dapat disusun AI agent tanpa merusak desain MII, dengan setiap perubahan disetujui manusia dan deck privat tetap terlindungi password masing-masing."
+            "id": "Tim MII membutuhkan presentasi siap disampaikan kepada klien yang dapat disusun oleh AI agent tanpa merusak desain MII. Setiap perubahan harus disetujui oleh manusia, dan deck privat tetap dilindungi password masing-masing."
           },
           "approach": [
             {
@@ -8717,7 +8717,7 @@
             },
             {
               "en": "I built the publish path: Cowork opens a pull request per deck, a GitHub App merges it only after the required validation check passes, and the deployment verifies the exact commit and rolls back to the last good release on failure.",
-              "id": "Saya membangun alur publikasi: Cowork membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang sehat jika gagal."
+              "id": "Saya membangun alur publikasi: Cowork membuka pull request untuk setiap deck, GitHub App hanya melakukan merge setelah check validasi wajib lolos, lalu deployment memverifikasi commit yang tepat dan melakukan rollback ke rilis terakhir yang berhasil jika gagal."
             },
             {
               "en": "I added private decks with generated passwords, shared password links and rate limits on failed attempts.",
@@ -8975,7 +8975,7 @@
               },
               "context": {
                 "en": "Line authorship (git blame) on the main branch, 15 Oct 2026.",
-                "id": "Kepemilikan baris (git blame) di branch main, 15 Okt 2026."
+                "id": "Atribusi penulis per baris (git blame) di branch main, 15 Okt 2026."
               },
               "confidence": "verified"
             }
@@ -9111,7 +9111,7 @@
             },
             {
               "en": "Review groups email by sender with a confidence band and up to three reasons from real signals; one Clean up moves only approved mail to Trash or Archive, with Undo for 24 hours and no permanent delete path.",
-              "id": "Halaman Review mengelompokkan email per pengirim dengan tingkat keyakinan dan hingga tiga alasan dari sinyal nyata; satu Clean up hanya memindahkan email yang disetujui ke Trash atau Archive, dengan Undo selama 24 jam dan tanpa jalur penghapusan permanen."
+              "id": "Halaman Review mengelompokkan email per pengirim dengan tingkat keyakinan dan hingga tiga alasan berdasarkan sinyal nyata. Satu tindakan Clean up hanya memindahkan email yang disetujui ke Trash atau Archive, dengan Undo selama 24 jam dan tanpa jalur penghapusan permanen."
             },
             {
               "en": "Once enough labels are available, a nightly job targets at least 98% agreement with the owner's trash decisions, using the newest 500 labels: at least 50 eligible labels and 20 supporting labels per candidate threshold. It searches 0.80 to 0.99 and falls back to 0.99 if none qualifies. Approvals and overrides update sender priors.",
@@ -9231,7 +9231,7 @@
               "src": "/media/clearbox/06-rules.webp",
               "alt": {
                 "en": "Rules: always-keep and always-OK-to-trash senders, the recent-mail window, the locked guardrails and record words",
-                "id": "Rules: pengirim yang selalu disimpan dan selalu boleh dibuang, jendela email terbaru, guardrail yang terkunci, dan kata-kata penanda dokumen"
+                "id": "Rules: pengirim yang emailnya selalu disimpan atau selalu boleh dibuang, rentang waktu email terbaru, guardrail yang terkunci, dan kata-kata penanda dokumen"
               },
               "width": 1440,
               "height": 900,
@@ -9293,19 +9293,19 @@
             },
             {
               "en": "I made broadcasts safe to run: a state machine with approval by two different people, checked in the API and again in the worker, a frozen audience, a resumable runner on Cosmos DB leases, a per-recipient claim ledger, a fail-closed send allowlist and an append-only audit log.",
-              "id": "Saya membuat broadcast aman dijalankan: state machine dengan persetujuan dari dua orang berbeda yang dicek di API dan sekali lagi di worker, audiens yang dibekukan, runner yang bisa dilanjutkan dengan lease Cosmos DB, ledger klaim per penerima, allowlist pengiriman yang fail-closed, dan audit log append-only."
+              "id": "Saya menyiapkan broadcast agar aman dijalankan: state machine dengan persetujuan dari dua orang berbeda yang diperiksa di API dan sekali lagi di worker, daftar penerima yang tidak berubah setelah ditetapkan, runner yang dapat dilanjutkan dengan lease Cosmos DB, ledger klaim per penerima, allowlist pengiriman yang fail-closed, dan audit log append-only."
             },
             {
               "en": "Instead of developing on synthetic data or writing to production, I built a resumable, parity-checked, read-only copy of production data in the new database, and replaced the metrics function with a native endpoint checked by a parity script.",
-              "id": "Alih-alih mengembangkan dengan data sintetis atau menulis ke production, saya membuat salinan read-only data production di database baru yang bisa dilanjutkan dan dicek paritasnya, lalu mengganti function metrik dengan endpoint native yang dicek oleh skrip paritas."
+              "id": "Alih-alih mengembangkan dengan data sintetis atau menulis ke production, saya menyalin data production ke database baru sebagai salinan read-only. Proses penyalinannya dapat dilanjutkan dan hasilnya diperiksa kesetaraannya. Saya juga mengganti function metrik dengan endpoint native yang diperiksa oleh skrip paritas."
             },
             {
               "en": "I measured a baseline on Azure first: 60, 19 and 23 s stalls on a 0.2 s endpoint. A loop-lag watchdog traced them to one event loop shared by heavy aggregation and background sweeps, so I split API and worker into separate App Service apps and precomputed summaries with watermarks and a visible freshness indicator.",
-              "id": "Saya mengukur baseline di Azure terlebih dahulu: stall 60, 19, dan 23 detik pada endpoint 0,2 detik. Watchdog loop-lag menelusurinya ke satu event loop yang dipakai bersama oleh agregasi berat dan sweep latar belakang, sehingga saya memisahkan API dan worker ke aplikasi App Service terpisah dan menghitung ringkasan lebih awal dengan watermark serta indikator kesegaran data."
+              "id": "Saya mengukur baseline di Azure terlebih dahulu: stall 60, 19, dan 23 detik pada endpoint 0,2 detik. Dengan watchdog loop-lag, saya menemukan penyebabnya: agregasi berat dan sweep latar belakang memakai satu event loop yang sama. Saya kemudian memisahkan API dan worker ke aplikasi App Service terpisah dan menghitung ringkasan lebih awal dengan watermark serta indikator kebaruan data."
             },
             {
               "en": "I kept the dashboard bilingual, Indonesian by default with English, and accessible: axe WCAG 2.2 violations went from 4 to 0, guarded by browser tests.",
-              "id": "Saya menjaga dashboard tetap dwibahasa, dengan bahasa Indonesia sebagai default dan bahasa Inggris, serta aksesibel: pelanggaran WCAG 2.2 menurut axe turun dari 4 menjadi 0 dan dijaga oleh browser test."
+              "id": "Saya menjaga dashboard tetap dwibahasa dan aksesibel, dengan bahasa Indonesia sebagai default serta pilihan bahasa Inggris. Pelanggaran WCAG 2.2 menurut axe turun dari 4 menjadi 0, dengan browser test untuk mencegah regresi."
             }
           ],
           "architecture": {
@@ -9582,7 +9582,7 @@
               "src": "/media/healthcare-outreach-dashboard/03-broadcast-approval.webp",
               "alt": {
                 "en": "Broadcast in preview mode waiting for a second approver: a five-step flow, the first approval, an audience frozen at 1,206 recipients, a message preview, safety checks and the activity log; operators, phone numbers and topics masked",
-                "id": "Broadcast dalam mode preview yang menunggu persetujuan kedua: alur lima langkah, persetujuan pertama, audiens yang dibekukan pada 1.206 penerima, pratinjau pesan, safety check, dan log aktivitas; operator, nomor telepon, dan topik disamarkan"
+                "id": "Broadcast dalam mode preview yang menunggu persetujuan kedua: alur lima langkah, persetujuan pertama, daftar tetap berisi 1.206 penerima, pratinjau pesan, safety check, dan log aktivitas; operator, nomor telepon, dan topik disamarkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9636,7 +9636,7 @@
           },
           "problem": {
             "en": "MII's Microsoft Solutions division needed one public site in English and Indonesian for its three practices (Microsoft 365, Azure and Power Platform), delivered engagements, MII products, device and CSP licensing catalogues and promotions. The content needed to stay accurate as offers changed.",
-            "id": "Divisi Microsoft Solutions di MII membutuhkan satu situs publik dalam bahasa Inggris dan Indonesia untuk tiga practice-nya (Microsoft 365, Azure, dan Power Platform), engagement yang telah dikerjakan, produk MII, katalog perangkat dan lisensi CSP, serta promosi. Kontennya harus tetap akurat saat penawaran berubah."
+            "id": "Divisi Microsoft Solutions di MII membutuhkan satu situs publik dalam bahasa Inggris dan Indonesia untuk tiga bidang layanannya (Microsoft 365, Azure, dan Power Platform), proyek yang telah dikerjakan, produk MII, katalog perangkat dan lisensi CSP, serta promosi. Kontennya harus tetap akurat saat penawaran berubah."
           },
           "approach": [
             {
@@ -9645,7 +9645,7 @@
             },
             {
               "en": "I kept every page as typed bilingual content validated at build time, so a missing translation or a broken content rule fails the build instead of shipping.",
-              "id": "Saya menyimpan setiap halaman sebagai konten dwibahasa bertipe yang divalidasi saat build, sehingga terjemahan yang hilang atau aturan konten yang dilanggar menggagalkan build alih-alih terbit."
+              "id": "Saya menyimpan konten setiap halaman dalam struktur dwibahasa bertipe yang divalidasi saat build. Jika ada terjemahan yang hilang atau pelanggaran aturan konten, build gagal sehingga konten tersebut tidak terbit."
             },
             {
               "en": "I built an outcome navigator that maps a business goal to the matching practice and capabilities, plus searchable engagement, licensing and promotion catalogues.",
@@ -9653,7 +9653,7 @@
             },
             {
               "en": "I moved media to Azure Blob Storage with a synced manifest and shipped the standalone build to App Service. The deploy script wipes files left by earlier deploys so old routes cannot shadow the new build, then checks every route on the live site.",
-              "id": "Saya memindahkan media ke Azure Blob Storage dengan manifest yang tersinkron dan merilis build standalone ke App Service. Skrip deploy menghapus file sisa deploy sebelumnya agar route lama tidak menutupi build baru, lalu memeriksa setiap route di situs live."
+              "id": "Saya memindahkan media ke Azure Blob Storage dengan manifest yang tersinkron dan merilis build standalone ke App Service. Skrip deploy menghapus file sisa deploy sebelumnya agar route lama tidak dipakai sebagai pengganti route di build baru, lalu memeriksa setiap route di situs live."
             }
           ],
           "results": [
@@ -9684,7 +9684,7 @@
               "src": "/media/solutions-marketing-site/01-home.webp",
               "alt": {
                 "en": "Home hero of the Microsoft solutions site with the technology foundation panel grouped by practice",
-                "id": "Hero beranda situs solusi Microsoft dengan panel technology foundation yang dikelompokkan per practice"
+                "id": "Hero beranda situs solusi Microsoft dengan panel technology foundation yang dikelompokkan per bidang layanan"
               },
               "width": 1600,
               "height": 1000,
@@ -9694,7 +9694,7 @@
               "src": "/media/solutions-marketing-site/02-outcome-navigator.webp",
               "alt": {
                 "en": "Outcome navigator that maps a business goal to the matching Microsoft practice and capabilities",
-                "id": "Outcome navigator yang memetakan tujuan bisnis ke practice dan capability Microsoft yang sesuai"
+                "id": "Outcome navigator yang memetakan tujuan bisnis ke bidang layanan dan kapabilitas Microsoft yang sesuai"
               },
               "width": 1600,
               "height": 1000,
@@ -9704,7 +9704,7 @@
               "src": "/media/solutions-marketing-site/03-engagements.webp",
               "alt": {
                 "en": "Engagement catalogue with search, practice filters and cards listing work modules and deliverables",
-                "id": "Katalog engagement dengan pencarian, filter practice, dan kartu berisi work module serta deliverable"
+                "id": "Katalog proyek dengan pencarian, filter bidang layanan, dan kartu berisi modul pekerjaan serta hasil yang diserahkan"
               },
               "width": 1600,
               "height": 1000,
@@ -9724,7 +9724,7 @@
               "src": "/media/solutions-marketing-site/05-practice.webp",
               "alt": {
                 "en": "Practice page for Cloud Infra, Data and AI Platform with its capability diagram",
-                "id": "Halaman practice Cloud Infra, Data and AI Platform dengan diagram capability"
+                "id": "Halaman bidang layanan Cloud Infra, Data and AI Platform dengan diagram kapabilitas"
               },
               "width": 1600,
               "height": 1000,
@@ -9734,7 +9734,7 @@
               "src": "/media/solutions-marketing-site/06-about-indonesian.webp",
               "alt": {
                 "en": "About page in Indonesian, showing the bilingual content model",
-                "id": "Halaman About dalam bahasa Indonesia, menunjukkan model konten bilingual"
+                "id": "Halaman About dalam bahasa Indonesia yang menunjukkan model konten dwibahasa"
               },
               "width": 1600,
               "height": 1000,
@@ -9744,7 +9744,7 @@
               "src": "/media/solutions-marketing-site/07-mobile.webp",
               "alt": {
                 "en": "Mobile layouts of the home hero, outcome navigator and engagements catalogue",
-                "id": "Tampilan mobile untuk hero beranda, outcome navigator, dan katalog engagement"
+                "id": "Tampilan mobile untuk hero beranda, outcome navigator, dan katalog proyek"
               },
               "width": 1600,
               "height": 1000,
@@ -9796,7 +9796,7 @@
             },
             {
               "en": "AI only reads intent and orchestrates: Azure OpenAI reads a sketch into a constrained design spec, and an assistant on Microsoft Agent Framework calls the deterministic services as tools. Without the model, the samples and the manual spec form keep the whole flow working.",
-              "id": "AI hanya membaca maksud pengguna dan mengorkestrasi: Azure OpenAI membaca sketsa menjadi design spec yang dibatasi, dan asisten di Microsoft Agent Framework memanggil layanan deterministik sebagai tool. Tanpa model, sampel dan formulir spec manual tetap membuat seluruh alur berjalan."
+              "id": "AI hanya menafsirkan maksud pengguna dan mengatur alur: Azure OpenAI mengolah sketsa menjadi design spec dengan batasan yang ditetapkan, sedangkan asisten di Microsoft Agent Framework memanggil layanan deterministik sebagai tool. Tanpa model, seluruh alur tetap dapat dijalankan menggunakan sampel dan formulir spec manual."
             },
             {
               "en": "I froze the API contracts first (Pydantic models, OpenAPI and generated TypeScript types), then built nine feature specs with GitHub Copilot and GitHub Spec Kit on Cosmos DB, Blob Storage and Azure Container Apps scripts that need only Contributor access.",
@@ -9891,7 +9891,7 @@
               "src": "/media/sewise-fashion-labs/04-fabric.webp",
               "alt": {
                 "en": "Step 4, Fabric: the same pattern laid out on 110, 115 and 150 cm fabric with the metres used, the metres to buy and the utilization, with the least-fabric width marked",
-                "id": "Langkah 4, Kain: pattern yang sama ditata pada kain 110, 115, dan 150 cm dengan meter terpakai, meter yang harus dibeli, dan utilisasi, serta lebar paling hemat yang ditandai"
+                "id": "Langkah 4, Kain: pattern yang sama ditata pada kain selebar 110, 115, dan 150 cm, dengan panjang kain terpakai, panjang yang perlu dibeli, dan utilisasi; lebar paling hemat ditandai"
               },
               "width": 1600,
               "height": 1000,
@@ -9901,7 +9901,7 @@
               "src": "/media/sewise-fashion-labs/05-shopping-list.webp",
               "alt": {
                 "en": "Step 5, Shopping list: fabric, thread and notions in the exact amounts for the pattern, each with why that amount and a marketplace search",
-                "id": "Langkah 5, Daftar belanja: kain, benang, dan perlengkapan jahit dalam jumlah yang tepat untuk pattern, masing-masing dengan alasan jumlahnya dan pencarian marketplace"
+                "id": "Langkah 5, Daftar belanja: kain, benang, dan perlengkapan jahit sesuai kebutuhan pattern, masing-masing dengan penjelasan perhitungan jumlahnya dan pencarian marketplace"
               },
               "width": 1600,
               "height": 1000,
@@ -10036,7 +10036,7 @@
           },
           "problem": {
             "en": "A university wanted to follow how people talk about it on social media, but reading Indonesian posts one by one does not scale and generic sentiment tools handle Indonesian slang poorly.",
-            "id": "Sebuah universitas ingin mengikuti pembicaraan tentang kampusnya di media sosial, tetapi membaca unggahan berbahasa Indonesia satu per satu tidak efisien dan tool sentimen umum kurang baik menangani bahasa gaul Indonesia."
+            "id": "Sebuah universitas ingin memantau pembicaraan tentang kampusnya di media sosial, tetapi membaca unggahan berbahasa Indonesia satu per satu sulit dilakukan dalam jumlah besar. Tool sentimen umum juga kurang mampu menangani bahasa gaul Indonesia."
           },
           "approach": [
             {
@@ -10049,7 +10049,7 @@
             },
             {
               "en": "I wrapped the model in a Dockerized FastAPI service that returns the cleaned text, the logits and the label for each post.",
-              "id": "Saya membungkus model dalam layanan FastAPI ber-Docker yang mengembalikan teks bersih, logit, dan label untuk setiap unggahan."
+              "id": "Saya menjalankan model melalui layanan FastAPI dalam container Docker yang mengembalikan teks bersih, logit, dan label untuk setiap unggahan."
             },
             {
               "en": "I built Sentiboard, a Django dashboard that collects posts through the Twitter API, labels them with the model and shows sentiment by month with word clouds and topic views.",
@@ -10174,7 +10174,7 @@
               },
               "context": {
                 "en": "Organized by Universitas Padjadjaran; the judges reported the team's 0.79 test accuracy as the highest of all teams (repository README).",
-                "id": "Diselenggarakan Universitas Padjadjaran; juri menyatakan akurasi uji tim sebesar 0,79 sebagai yang tertinggi dari semua tim (README repository)."
+                "id": "Diselenggarakan oleh Universitas Padjadjaran; juri menyatakan akurasi uji tim sebesar 0,79 sebagai yang tertinggi dari semua tim (README repositori)."
               },
               "confidence": "verified"
             },
@@ -10281,7 +10281,7 @@
           },
           "problem": {
             "en": "In August 2021 Indonesia was coming off its largest COVID-19 wave, and the question was when cases would ease and how long full vaccination toward herd immunity would take at the current pace.",
-            "id": "Pada Agustus 2021 Indonesia baru melewati gelombang COVID-19 terbesarnya, dan pertanyaannya adalah kapan kasus mereda dan berapa lama vaksinasi lengkap menuju herd immunity dengan laju saat itu."
+            "id": "Pada Agustus 2021, Indonesia baru melewati gelombang COVID-19 terbesarnya. Pertanyaan yang dikaji adalah kapan kasus akan mereda dan berapa lama waktu yang dibutuhkan untuk mencapai vaksinasi lengkap menuju herd immunity dengan laju saat itu."
           },
           "approach": [
             {
@@ -10436,7 +10436,7 @@
             },
             {
               "en": "A teammate added the same model with SciPy's SLSQP solver, so the app compares both allocations side by side.",
-              "id": "Rekan tim menambahkan model yang sama dengan solver SLSQP dari SciPy, sehingga aplikasi membandingkan kedua alokasi berdampingan."
+              "id": "Rekan tim menambahkan model yang sama dengan solver SLSQP dari SciPy, sehingga hasil kedua alokasi dapat dibandingkan dalam tampilan berdampingan."
             }
           ],
           "results": [
@@ -10539,7 +10539,7 @@
               "value": "21 stars",
               "label": {
                 "en": "The most-starred of Kurniadi's public repositories",
-                "id": "Repository publik Kurniadi dengan bintang terbanyak"
+                "id": "Repositori publik Kurniadi dengan bintang terbanyak"
               },
               "context": {
                 "en": "GitHub star count as of October 2026.",
@@ -10630,7 +10630,7 @@
           ],
           "excerpt": {
             "en": "An audit showed a repository's code could run inside the API holding production secrets. Same-day stopgap, then isolated workers and a 9-minute outage.",
-            "id": "Audit menunjukkan kode repository bisa berjalan di API yang memegang secret production. Stopgap hari itu juga, lalu worker terisolasi dan outage 9 menit."
+            "id": "Audit menemukan kode repositori dapat berjalan di API dengan secret production. Solusi sementara hari itu juga, lalu worker terisolasi dan outage 9 menit."
           },
           "icon": "container"
         },
@@ -10680,7 +10680,7 @@
           ],
           "excerpt": {
             "en": "In the first managed application test installs, every AI call failed with correct roles. The lock blocked the app's own identities. 36 defects followed.",
-            "id": "Di test install managed application pertama, semua panggilan AI gagal walau role sudah benar. Lock memblokir identity aplikasi sendiri. 36 defect menyusul."
+            "id": "Pada test install managed application pertama, semua panggilan AI gagal meski role benar. Lock memblokir identity aplikasi sendiri. Ditemukan 36 defect."
           },
           "icon": "lock-keyhole"
         },
@@ -10849,7 +10849,7 @@
           ],
           "excerpt": {
             "en": "A beginner-friendly tutorial for building a CRUD REST API with Express and MySQL (in Bahasa Indonesia).",
-            "id": "Tutorial ramah pemula untuk membangun REST API CRUD dengan Express dan MySQL."
+            "id": "Tutorial untuk pemula tentang cara membangun REST API CRUD dengan Express dan MySQL."
           },
           "url": "https://kurniadiahmadwijaya.medium.com/crud-nodejs-menggunakan-framework-expressjs-a82c0f69329d",
           "icon": "database"
@@ -11108,7 +11108,7 @@
       "title": "JagaRupa",
       "summary": {
         "en": "I built JagaRupa to turn small sellers' real product photos into campaign images consistent with their brand. The workflow passes a brief through art director, brand guardian and copywriter agents, with a critique loop and checks against Indonesian marketplace rules. Text and logos are composited in code, never rendered by the model. I delivered it solo through 15 feature specs, directing a GitHub Copilot coding agent.",
-        "id": "Saya membangun JagaRupa untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Brief diproses oleh agent art director, brand guardian, dan copywriter, dengan peninjauan berulang serta pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
+        "id": "Saya membangun JagaRupa untuk mengubah foto produk asli penjual kecil menjadi gambar kampanye yang sesuai brand. Brief diproses oleh agent art director, brand guardian, dan copywriter, dengan peninjauan berulang serta pemeriksaan aturan marketplace Indonesia. Teks dan logo disusun lewat kode, bukan di-render oleh model. Saya mengerjakannya sendiri melalui 15 feature spec dengan mengarahkan GitHub Copilot coding agent."
       },
       "stack": [
         "Next.js",
@@ -11145,7 +11145,7 @@
       "title": "DevLens",
       "summary": {
         "en": "DevLens is my self-hosted dashboard for AI coding sessions, covering repositories, tools, costs and insights. An AI agent implemented it in one day; I directed the product and reviewed the work.",
-        "id": "DevLens adalah dashboard self-hosted untuk sesi AI coding saya, mencakup repositori, tool, biaya, dan insight. AI agent mengimplementasikannya dalam satu hari; saya mengarahkan produk dan meninjau hasilnya."
+        "id": "DevLens adalah dashboard self-hosted untuk sesi AI coding saya, mencakup repositori, tool, biaya, dan insight. AI agent mengimplementasikannya dalam satu hari; saya menentukan arah produk dan meninjau hasilnya."
       },
       "stack": [
         "FastAPI",
@@ -11270,7 +11270,7 @@
       "url": "https://github.com/ShinyQ/Writeup-Foresty-CTF-Competition-2021",
       "description": {
         "en": "Technical write-up from the first-place finish at Foresty CTF 2021.",
-        "id": "Write-up teknis dari pencapaian juara 1 di Foresty CTF 2021."
+        "id": "Write-up teknis dari hasil juara 1 di Foresty CTF 2021."
       },
       "language": "Markdown",
       "stars": 8
