@@ -49,6 +49,8 @@ export function MissionKiosk({ missions, labels }: { missions: ExperienceData["m
           <planeGeometry args={[screen.w, screen.h]} />
           <meshBasicMaterial color={COLORS.terminalBg} transparent opacity={0.95} />
         </mesh>
+        {/* The off-screen missions follow the hint (kioskLines, same glyphs at every offset): the clip ends the text after the
+            hint, at the screen's (KIOSK.visible + 3) lines of KIOSK.screen.lineHeight, 11.6 em (tests/unit/kiosk.test.ts). */}
         <Text
           font={FONTS.mono}
           fontSize={fontSize}
@@ -58,6 +60,7 @@ export function MissionKiosk({ missions, labels }: { missions: ExperienceData["m
           position={[-screen.w / 2 + KIOSK.screen.pad, screen.h / 2 - KIOSK.screen.pad, 0.01]}
           lineHeight={KIOSK.screen.lineHeight}
           whiteSpace="nowrap"
+          clipRect={[-1, -11.6 * fontSize, 9, 1]}
           material-toneMapped={false}
         >
           {text}

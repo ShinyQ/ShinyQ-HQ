@@ -96,11 +96,17 @@ export function kioskAllLines(labels: readonly string[], title: string, hint: st
   return [title, ...labels.map((label, i) => `${i + 1}. ${label}`), `> ${hint}`];
 }
 
-/** The lines on screen at a scroll offset: title, `KIOSK.visible` numbered missions, a gap, the hint; each fitted to one line. */
+/**
+ * The kiosk text at a scroll offset (below `labels.length`), each line fitted to one line: the title, `KIOSK.visible`
+ * numbered missions, a gap and the hint on the screen, then the other missions, which MissionKiosk clips. Every offset
+ * holds the same glyphs, so troika updates the text in place: a new glyph count disposes its geometry, and an unseen
+ * kiosk never uploaded it again (the renderer's geometry count one lower at random).
+ */
 export function kioskLines(labels: readonly string[], title: string, hint: string, offset: number, width: number): string[] {
   const max = kioskMaxChars(width);
-  const shown = Array.from({ length: Math.min(KIOSK.visible, labels.length) }, (_, i) => (offset + i) % labels.length);
-  return [title, ...shown.map((i) => `${i + 1}. ${labels[i]}`), "", `> ${hint}`].map((line) => fitLine(line, max));
+  const numbered = labels.map((label, i) => `${i + 1}. ${label}`);
+  const order = [...numbered.slice(offset), ...numbered.slice(0, offset)];
+  return [title, ...order.slice(0, KIOSK.visible), "", `> ${hint}`, ...order.slice(KIOSK.visible)].map((line) => fitLine(line, max));
 }
 
 /** One font size for every line: the longest line fills the usable width, within the min and max sizes. */
