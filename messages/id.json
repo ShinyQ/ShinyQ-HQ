@@ -989,14 +989,14 @@
       "moved": "Mantap, kemudinya lancar!",
       "cameraFine": "Seret atau pakai Q dan E untuk melihat sekeliling. Scroll untuk zoom; zoom terus untuk lihat dari mata saya!",
       "cameraCoarse": "Seret atau putar dua jari untuk melihat sekeliling. Cubit untuk zoom; zoom terus untuk lihat dari mata saya!",
-      "highlights": "Aula Sorotan di sisi timur merangkum karya pilihan {name}. Mau lihat?",
-      "showMe": "Antar saya ke sana",
-      "later": "Nanti saja",
       "elevator": "Berhenti di area menyala di depan lift, lalu pilih lantai.",
       "roverMenu": "Belum tahu mau ke mana? Buka Menu Rover untuk memilih tujuan di HQ.",
       "askAi": "Tanya AI juga bisa menjawab pertanyaan tentang karya {name}.",
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
-      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja."
+      "closingShort": "Itu dasarnya! Tutorial lengkap bisa diputar ulang dari Pengaturan kapan saja.",
+      "pointGoPhone": "Ketuk objek yang menyala, lalu ketuk lagi atau tombol Pergi, nanti saya antar. Coba!",
+      "movedPhone": "Mantap! Joystick dan tombol Turbo juga bisa dipakai.",
+      "floorChip": "Ketuk chip lantai di atas untuk naik lift ke lantai lain."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",

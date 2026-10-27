@@ -77,6 +77,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, the controls help, settings) lives there; keep new phone actions in the sheet.
   - The Controls action (`menu-controls`, `aria-expanded`) expands the controls card in place (`menu-controls-card`, `MenuControls` in `src/hud/menu/MenuControls.tsx`; it rides in the lazy settings chunk, rendered first by `SettingsPanel` when the menu passes `controls`, so it stays off the first-frame 3D path): one row per control from `hud.hintCoarse` (`hud.hintFine` with a fine pointer) split by `controlRows`, plus `hud.career.scrubHint` on L2 with touch. It stays open until toggled or the sheet closes.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
+- The bottom band (joystick, Boost, Reset view) steps aside while a phone's Rover line with choices docks at the bottom ([Dialog box](#dialog-box)).
 - Boost on touch is the Boost button next to the joystick (`BoostButton` in `Joystick.tsx`, `data-testid="boost"`, a toggle) or a joystick double tap, one shared state (`useBoostToggle` in `src/hud/boost.ts`). See [Boost](3d-experience.md#boost).
 - Keys: `,` opens the settings (the menu sheet on Corners, the settings sheet on desktop), `N` opens the map overview (`useHudToggle` in `menu/useHudToggles.ts`; each key is a `{ type: "toggle", what }` intent). World keys pause while any `aria-modal` dialog is open (a sheet, the overview, an open room), so Esc or the close button closes the sheet, and neither key works over an open room.
 - The open state lives in a module store (`hudToggles`), not component state: a graphics quality change remounts the HUD (see [Graphics quality](#graphics-quality)) and the open sheet stays open; it closes once nothing holds it after that commit (Classic site).
@@ -279,26 +280,30 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
 | Phones | 168 px, 12 px from both edges: a slim toast above the joystick (120 px plus the 24 px band padding and a 24 px gap) |
+| Phones, a line with choices | Docked: 12 px above the bottom safe area, 12 px from both edges (`DOCK_PLACE`) |
 
 - The phone toast (`placement === "phone"`):
   - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
   - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the two rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
   - choices and Skip still render (onboarding needs them).
+- The docked card (owner decision 2026-10-25, `docks(view)` in `placement.ts`): on placement `phone`, a shown line with choices (its own, or a try-it's Continue after the fallback) from any source (the tour, the B1 unlock offer) docks at the bottom in thumb reach (`DOCK_PLACE`, `data-docked="true"`), its choices stacked full width (`min-h-11`, 44 px). Lines without choices stay the slim toast.
+- While a line docks (`Hud`: phone layout, coarse pointer, `docks`), the whole bottom band steps aside (`BottomBand` `aside`: `inert`, `data-aside="true"`, faded to `opacity-0`): the joystick, Boost, Reset view and point-and-go's status. A held joystick lets go (`setJoystick(0, 0, false)`), so the rover stops. The band comes back when the line ends.
 - The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 
 ### Onboarding
 
-- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro.
+- `onboarding.ts`, `OnboardingLayer.tsx`: once per browser after the boot and intro. `onboarding.ts` is a lazy chunk (only type imports; `tourChunk.ts` `loadTour()` is its only `import()`), loaded by a session that is not onboarded or by Replay tutorial; `firstName` lives in `names.ts`.
 - Full form, in order:
   1. welcome with Skip;
   2. moving, with a try-it wait that teaches [point-and-go](floors.md) (desktop: point and click a glowing object; touch: tap twice or use its Go chip; there is no click-the-floor driving);
   3. the camera (look around, zoom, first person; spotlight on the view controls, `data-onboard="view"`);
-  4. the Highlights Hall (registry extra `L1:station:highlights-about`, room `L1:highlights-about`) when it is registered;
-  5. elevator and call pads;
-  6. the Rover menu;
-  7. Ask AI when its pill shows;
-  8. closing.
-- After a deep link: once the continuation ends and the drawer closes, the short form (no Highlights Hall, no elevator).
+  4. elevator and call pads;
+  5. the Rover menu;
+  6. Ask AI when its pill shows;
+  7. closing.
+- The tour never moves the rover by itself: no line offers to drive anywhere, and only the welcome has choices (owner decision 2026-10-27, [decision](../decisions/2026-10-27-tour-no-drive.md)). The Highlights Hall stays reachable through its station, hint bubble and `#highlights-<station>` links.
+- After a deep link: once the continuation ends and the drawer closes, the short form (no elevator).
+- Phone form (`OnboardingDeps.phone`: coarse pointer and the mobile viewport, the Corners phone HUD): welcome, tap-to-go try-it (`pointGoPhone`), `movedPhone`, the floor chip (`floorChip`, spotlight `elevator`), the Rover menu, Ask AI when shown, closing (`closingShort` after a deep link). No camera or elevator pad lines.
 - Onboarding replaces the Director's first-visit terminal auto-open.
 - Replay: the settings panel row "Replay the tutorial", Cmd-K "Replay the tutorial" (`registerTutorial` / `replayTutorial`, only while the 3D HUD is open).
 

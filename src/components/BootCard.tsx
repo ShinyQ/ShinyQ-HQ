@@ -43,6 +43,7 @@ export interface BootCardProps {
  * the other does not move a pixel. Plain markup (no hooks), usable from server and client components.
  * There is no skip: the boot and the intro always play in full (owner decision). "Classic site" leaves
  * the 3D view (it is not a skip); ExperienceGate handles it without a reload once hydrated.
+ * On a portrait phone the card docks at the bottom and the log shows one rolling line (`data-last`, hud-shared.css).
  */
 // Element Timing for the nightly game-first timeline (not in React's attribute types, so spread).
 const HEADLINE_TIMING: Record<string, string> = { elementtiming: HEADLINE_TIMING_ID };
@@ -61,8 +62,8 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
       {/* The brand mark file, not the inline RoverMark: keeps the mark module out of the 3D chunk (the overlay
           reuses this card). Lazy, so the hidden cover on Classic site visits never fetches it. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={BOOT_MARK_SRC} alt="" width={44} height={44} loading="lazy" decoding="async" className="mt-3 block" />
-      <p id={p.titleId} className="mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
+      <img src={BOOT_MARK_SRC} alt="" width={44} height={44} loading="lazy" decoding="async" className="hq-boot-mark mt-3 block" />
+      <p id={p.titleId} className="hq-boot-title mt-2 text-2xl font-extrabold text-ink" aria-hidden={deco} {...HEADLINE_TIMING}>
         {p.title}
       </p>
       {/* One text block for Largest Contentful Paint (styles in globals.css): the cover's first paint stays the LCP
@@ -98,6 +99,7 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
             <li
               key={line}
               data-shown={i < p.shown ? "" : undefined}
+              data-last={i === p.shown - 1 ? "" : undefined}
               style={p.stagger ? { animationDelay: `${120 + i * 220}ms` } : undefined}
               className={p.stagger ? "hq-boot-line-in" : undefined}
             >
@@ -107,7 +109,7 @@ export function BootCard({ startRef, ...p }: BootCardProps) {
         })}
       </ol>
       <div className="hq-boot-bar" aria-hidden="true" />
-      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="hq-boot-actions mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
         <button
           ref={startRef}
           type="button"

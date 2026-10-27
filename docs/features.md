@@ -110,6 +110,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | Time Travel | 2026-10-25: `/journey` opens with a skyline of the journey (Before 2019 to 2026), a slider and Play, the owner's caption, running tally and highlights per year; Classic only, no 3D bytes; the journey HTML grows about 8.6 KB gzip, accepted (no cap rises) | In review |
 | B1 material pass | 2026-10-25: gunmetal panels with lit seams on the B1 bay walls, bay floors and deck, vent grilles on the bay side walls, the reactor plinth cladding; the B1 cap reset to measured + 0.6 KB (17.1 KB) | In review |
 | L4 reader tracks | 2026-10-25: owner decision: the L4 timeline of single-post stations, the archive board and the year posts are replaced by one bookshelf bay per reader track (4 today, 1 to 6 in content), each led by its best post face-out with the others as spines; a pulled spine shows its title, a spine click drives to the bay and opens the post, a bay door opens the track drawer, one hint per bay; bay camera views; all posts in-world (tested to 120) | In review |
+| Phone-first 3D | 2026-10-26: owner decision: on a portrait phone the boot card docks at the bottom with one rolling log line and Rover's close-up above it, L1 opens on a phone landing view (Rover, the name hologram and the stats ring, no sky) at every session start, and a 6-step phone tour docks its choice lines at the bottom while the joystick, Boost and Reset view step aside; the tour script loads as its own chunk, no cap rises | In review |
 
 ## Controls and first visit
 
@@ -119,6 +120,7 @@ Open `/en` and press **Boot rover**.
 
 - The boot log and the intro play on the first 3D load of every browser session, on any route. Nothing skips the boot log.
 - The intro: a still, dark close-up of Rover during the boot card; Boot rover wakes it (its face boots), a ring of light spreads across the Lobby and switches each landmark on, then the camera pulls back and orbits 270 degrees (around Rover on desktop, around the plaza on phones and tablets), each landmark pulsing once as it passes, and lands on the view behind Rover (6.6 s).
+- On a portrait phone the boot card docks at the bottom in thumb reach with the boot log as one rolling line, and Rover's close-up shows above it.
 - Drive, turn, zoom, reset view or Esc skips the intro: a quick fade to the view behind Rover.
 - With reduced motion the camera does not move: the intro is a 0.9 s fade into the view behind Rover.
 - A deep link such as `/en/labs/<slug>` then rides on to its floor or room.
@@ -160,8 +162,11 @@ Open `/en` and press **Boot rover**.
 
 - Right after the boot and intro of your first session, Rover runs a short tour in a classic text box at the bottom of the screen (typewriter text, its face as the portrait).
 - Press Enter, Space, the round A button, click or tap to continue, or "Skip tutorial".
-- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the Highlights Hall, the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it.
+- The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it. The tour never drives the rover anywhere by itself (owner decision 2026-10-27).
 - A deep link rides on to its floor first and gets a shorter tour there.
+- On a phone the tour is shorter (6 steps): welcome, tap-to-go (try it), the floor chip, the menu, Ask AI when shown, and the closing line.
+- On a phone a Rover line with choices (the tour's, the B1 unlock offer, a try-it's Continue) docks at the bottom in thumb reach with full-width choices, and the joystick, Boost and Reset view step aside until it ends; lines without choices stay a slim toast.
+- The tour's script loads only for a session that plays it or on Replay the tutorial, so returning visitors never download it.
 - Near anything you can use, a "!" bubble floats over it: press Enter or tap it for a one-line tip with a Go choice.
 - The first time you reach L2, L3, L4 or RF, Rover introduces the floor in one line. Driving, a point-and-go action or a swipe dismisses it, and it never comes back on that floor.
 
@@ -260,6 +265,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - **Certifications wall**: a curved holo-wall with issuer tabs and paging.
 - **Rover menu kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
 - The camera looks past the kiosk at the hologram's name and at the Visitor Observatory in the south-west corner.
+- **Phone landing view**: on a portrait screen (phones and portrait tablets) every session starts on a higher, wider view that frames Rover, the full name over the hologram and the stats ring between the top bar and the controls, with no empty sky; after the intro and for a returning visitor alike. The first drive away eases back to the view behind Rover.
 
 ### Visitor Observatory
 

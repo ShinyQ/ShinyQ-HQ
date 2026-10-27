@@ -9,7 +9,6 @@ import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { interactablesFor, registerExtraInteractables, type InteractData, type InteractLabels } from "@/experience/interact/registry";
 import { roomTarget } from "@/experience/missions/host3d";
 import { hintGoKey, hintObjectKey } from "@/hud/dialog/hintLines";
-import { highlightsTarget, HIGHLIGHTS_ID, HIGHLIGHTS_ROOM } from "@/hud/dialog/onboarding";
 import en from "../../messages/en.json";
 
 const names = { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" };
@@ -75,10 +74,9 @@ describe("Highlights Hall point-and-go targets", () => {
     expect(interactablesFor("L1", layouts, data).some((i) => i.id.startsWith("L1:station:highlights-"))).toBe(false);
   });
 
-  it("feed the onboarding hall step and the hall's hint line (ids shared with src/hud/dialog)", () => {
-    const about = items.find((i) => i.id === HIGHLIGHTS_ID)!;
-    expect(about.action).toEqual({ type: "open-room", room: HIGHLIGHTS_ROOM });
-    expect(highlightsTarget(items)).toEqual({ floor: "L1", at: about.at });
+  it("feed the hall's hint line (ids shared with src/hud/dialog)", () => {
+    const about = items.find((i) => i.id === "L1:station:highlights-about")!;
+    expect(about.action).toEqual({ type: "open-room", room: "L1:highlights-about" });
     expect(hintObjectKey(about)).toBe("highlights");
     expect(items.map(hintGoKey)).toEqual(items.map(() => "open"));
   });

@@ -270,13 +270,14 @@ Code: `floors/lobby/observatoryLayout.ts`.
 
 | Zone | Where | Camera |
 |---|---|---|
-| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView` |
+| `L1:kiosk` | the spawn | desktop 0.62 rad off the kiosk axis at zoom 1.7 (landscape tablets 1.8, phones and portrait tablets 1.85), so the hologram's name, the rover at the kiosk and the observatory panel all read; tablets and phones straight down the axis through `ViewZone.classView`; primed at the session start on a portrait screen (camera class `mobile`, phones and portrait tablets), the phone landing view through `ViewZone.primeView` |
 | `L1:arrival` | the elevator arrival point `LOBBY.arrival` (-6, 0), just inside the lane ring's west point | behind the rover and 35 degrees to its right (the elevator diagonal, owner decision 2026-10-23), looking at the hologram and the stats ring (`arrivalOnly`, `travel` east); zoom 1.03, phones 1.03 aimed 4.75 u right (`arrivalAimPhone`, the whole name in frame), the camera east of the glass shaft |
 | `L1:visits` | the observatory door | |
 | `L1:office` | the office stop in the south wing | looking south at the console and the screen wall; per class zoom and pitch in [Agent Office](#agent-office) |
 
 - `CameraDirector` primes the zone under the rover when it is marked `prime` (only `L1:kiosk`; `primeZone`), on the first frame and through the boot and the intro.
 - The intro's end pose is that follow pose (yaw, zoom, look-ahead, offset scale), so the intro lands on the spawn view with no jump.
+- Spawn view on phones (owner decision 2026-10-25): on camera class `mobile` the primed kiosk zone takes `OBSERVATORY_VIEW.landingPhone` (zoom 2.1, pitch 0.1, look offset forward -13.75 u, toward the camera), so Rover, the full name over the hologram and the stats ring sit in the safe frame between the top bar and the bottom band, with no sky above the slab (`tests/unit/landing-view.test.ts` at 390 x 844 and 375 x 667). It applies at every L1 session start: after the intro and for a returning visitor who opens at the spawn; a drive back to the kiosk later uses the ordinary `classView`. The first drive away eases back to the follow view (the `pitch` turn-back); under reduced motion it applies at once and a rotation to landscape re-primes the landscape view. Desktop and landscape tablet poses are unchanged.
 - `resetView` returns to the default north-west look.
 - The elevator rolls the rover on east from the shaft to `LOBBY.arrival`; the camera glides out of the car into the arrival zone ([Elevator arrival](3d-experience.md#elevator-arrival)). Under reduced motion the rover and the camera cut to it.
 - The arrival zone is `arrivalOnly`: it applies only to an elevator arrival, never to a rover driving through later. The session still spawns at the kiosk stop in `L1:kiosk` (a `prime` zone), not on the arrival point.

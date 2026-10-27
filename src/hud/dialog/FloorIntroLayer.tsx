@@ -8,7 +8,7 @@ import type { ExperienceData } from "@/experience/types";
 import { useHQStore } from "@/store/useHQStore";
 import { FLOOR_LINES, floorIntroLine } from "./floorIntro";
 import { useOnboardingSettled } from "./hooks";
-import { firstName } from "./onboarding";
+import { firstName } from "./names";
 import { floorIntroSeen, markFloorIntroSeen } from "./storage";
 import { cancelDialog, say } from "./store";
 

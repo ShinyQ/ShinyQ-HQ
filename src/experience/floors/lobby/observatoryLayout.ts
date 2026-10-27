@@ -24,11 +24,22 @@ export const OBSERVATORY_VIEW = {
    */
   spawnTurn: 0.62,
   /**
-   * Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. Phones stay at
-   * 1.85 or under, so the office wing sign is out of a portrait tablet's frame, never a sliver at its edge.
+   * Retuned for the wider plaza (more room 2026-10-19: 1.5, 1.6 and 1.75 before), same composition. The phone drive-in
+   * view (`classView`, a drive back to the kiosk) stays at 1.85 or under, so the office wing sign is out of a portrait
+   * tablet's frame, never a sliver at its edge. The primed landing view (`landingPhone`) zooms out to 2.1; its pitch
+   * keeps the sign out.
    */
   spawnZoom: 1.7,
   spawnZoomNarrow: { tablet: 1.8, mobile: 1.85 },
+  /**
+   * Phone landing view at the session start (owner decision 2026-10-25, primed only): a little steeper and aimed back
+   * toward the camera, so Rover, the name over the hologram and the stats ring fill a portrait frame with no sky (tuned
+   * on 390x844 and 375x667: `tests/unit/landing-view.test.ts`, and on captures). The zoom keeps the ring's tiles inside
+   * the frame; 0.1 is about the smallest pitch that keeps the Agent Office wing sign whole or out of a portrait tablet's
+   * frame (820x1180, `tests/unit/office-chip-placement.test.ts`). Leaving the spawn eases back to the follow view (its
+   * `pitch` opts into the turn-back).
+   */
+  landingPhone: { zoom: 2.1, pitch: 0.1, lookOffset: { forward: -13.75, up: 0 } },
   /** Half size of the spawn zone around the kiosk stop. */
   spawnHalf: 2.5,
 } as const;
@@ -66,6 +77,14 @@ export function lobbyObservatory({ rect, spawn, axis }: LobbyObservatoryInput): 
       classView: {
         tablet: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.tablet },
         mobile: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.mobile },
+      },
+      primeView: {
+        mobile: {
+          yaw: yawLooking(axis),
+          zoom: OBSERVATORY_VIEW.landingPhone.zoom,
+          pitch: OBSERVATORY_VIEW.landingPhone.pitch,
+          lookOffset: OBSERVATORY_VIEW.landingPhone.lookOffset,
+        },
       },
     },
   ];

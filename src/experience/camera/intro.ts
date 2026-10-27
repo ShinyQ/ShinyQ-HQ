@@ -27,10 +27,21 @@ const FACE_AHEAD = 0.45;
  * antenna) and the top of the body stay in frame, seen slightly from above: the 0.9 by 0.7 u face screen is about a third
  * of the frame height on desktop and about 60 percent of the frame width on a phone.
  */
-const WAKE: Record<ViewportClass, { distance: number; fov: number; height: number; look: number }> = {
+interface WakeFrame {
+  distance: number;
+  fov: number;
+  height: number;
+  look: number;
+  /**
+   * Look height held through the boot on portrait screens, so Rover sits above the bottom boot card; the push-in eases
+   * it to `look`.
+   */
+  boot?: number;
+}
+export const WAKE: Record<ViewportClass, WakeFrame> = {
   desktop: { distance: 3.5, fov: 38, height: 2.4, look: 1.85 },
   tablet: { distance: 3.8, fov: 44, height: 2.5, look: 1.8 },
-  mobile: { distance: 3.75, fov: 52, height: 2.4, look: 1.75 },
+  mobile: { distance: 3.75, fov: 52, height: 2.4, look: 1.75, boot: 0.6 },
 };
 /** The slow push-in during the wake (fraction of the wake distance). */
 const PUSH = 0.06;
@@ -134,7 +145,7 @@ export interface IntroPlan {
   endHeight: number;
   endAhead: number;
   endLookY: number;
-  wake: { distance: number; fov: number; height: number; look: number };
+  wake: WakeFrame;
   /** Pull-back length (s after the wake). */
   pull: number;
   peak: { radius: number; height: number };
@@ -251,7 +262,8 @@ function rawPose(plan: IntroPlan, t: number): CameraPose {
   const { ahead: across, y: acrossY, land } = plan.across;
   const look = land === undefined ? settle : settleEase(span(t, Math.max(pullEnd, INTRO.duration - land), INTRO.duration));
   const ahead = -FACE_AHEAD + (across + FACE_AHEAD) * pull + (plan.endAhead - across) * look;
-  const lookY = wake.look + (acrossY - wake.look) * pull + (plan.endLookY - acrossY) * look;
+  const push = smooth(span(t, 0, INTRO.wake));
+  const lookY = wake.look + ((wake.boot ?? wake.look) - wake.look) * (1 - push) + (acrossY - wake.look) * pull + (plan.endLookY - acrossY) * look;
   const fov = wake.fov + (plan.end.fov - wake.fov) * orbitAt(t);
   const [cx, cy, cz] = orbitCenter(plan, t);
   const s = Math.sin(angle);

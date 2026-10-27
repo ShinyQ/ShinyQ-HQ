@@ -10,6 +10,7 @@ import { buildFloorLayouts } from "@/experience/config";
 import { minimapPref } from "@/hud/minimap/pref";
 import { Hud } from "@/hud/Hud";
 import { intents } from "@/experience/input/intents";
+import { cancelAllDialogs, say } from "@/hud/dialog/store";
 import { getHQStore } from "@/store/useHQStore";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -108,6 +109,24 @@ describe("Hud composition", () => {
     expect(place).toHaveClass("top-[64px]", "right-3");
     expect(within(place).getByTestId("minimap")).toHaveClass("size-[72px]");
     expect(screen.getAllByTestId("minimap")).toHaveLength(1);
+  });
+
+  it("a phone line with choices steps the bottom band aside (inert, faded) and a tablet keeps it", () => {
+    device("mobile", true);
+    mount();
+    const band = screen.getByTestId("hud-bottom");
+    expect(band).not.toHaveAttribute("inert");
+    expect(band).not.toHaveAttribute("data-aside");
+    act(() => void say({ text: "Pick one", choices: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] }));
+    expect(band).toHaveAttribute("inert");
+    expect(band).toHaveAttribute("data-aside", "true");
+    expect(band).toHaveClass("opacity-0");
+    act(() => cancelAllDialogs());
+    expect(band).not.toHaveAttribute("inert");
+    act(() => device("tablet", true));
+    act(() => void say({ text: "Pick one", choices: [{ id: "a", label: "Alpha" }] }));
+    expect(band).not.toHaveAttribute("inert");
+    act(() => cancelAllDialogs());
   });
 
   it("phones hide the minimap while a room sheet is open, tablets keep it; N still opens the overview", async () => {

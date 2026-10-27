@@ -55,6 +55,7 @@ export const ALL_SPECS = [
   "pads",
   "pageview",
   "perf-probes",
+  "phone-first",
   "production",
   "reactor",
   "ride",
@@ -403,6 +404,11 @@ export function e2eShardsFor(seconds: number): number {
  * changed (rows, drawers, audio, the sky, the tower, chunk loading, the data route) keep their own specs and add `engine-room`.
  */
 const ALSO_RULES: Rule[] = [
+  // The phone-first 3D design (e2e/phone-first.spec.ts): the bottom boot card, the docked Rover line and the band stepping aside, the phone tour, the L1 landing view and the camera it primes.
+  {
+    test: /^src\/components\/Boot(Card|Cover)\.tsx$|^src\/hud\/(BootOverlay|Hud|Joystick)\.tsx$|^src\/hud\/dialog\/(?!store\.ts)|^src\/experience\/floors\/lobby\/observatoryLayout\.ts$|^src\/experience\/camera\/orbit\.ts$|^src\/app\/(globals|hud-shared)\.css$/,
+    specs: ["phone-first"],
+  },
   // Time Travel on /journey: the section, its selector and island, the page that mounts it, the captions it reads, the Motion setting it follows and its UI strings.
   {
     test: /^src\/components\/time-travel\/|^src\/content\/time-travel\.ts$|^src\/app\/\[locale\]\/journey\/page\.tsx$|^content\/site-content\.json$|^src\/lib\/(motion|reduced-motion)\.ts$|^messages\//,

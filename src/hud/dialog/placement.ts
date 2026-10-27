@@ -1,4 +1,5 @@
 import type { ViewportClass } from "@/experience/types";
+import type { DialogView } from "./engine";
 
 export type DialogPlacement = "bottom" | "raised" | "phone";
 
@@ -19,3 +20,14 @@ export const DIALOG_PLACE: Record<DialogPlacement, string> = {
   raised: "bottom-[160px] left-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2",
   phone: "bottom-[calc(168px+env(safe-area-inset-bottom))] left-3 right-3",
 };
+
+/** Docked on a phone (owner decision 2026-10-25): the box sits at the bottom in thumb reach, full width. */
+export const DOCK_PLACE = "bottom-[calc(12px+env(safe-area-inset-bottom))] left-3 right-3";
+
+/**
+ * A phone line that asks for a choice (its own choices, or a try-it's Continue) docks at the bottom while it shows,
+ * and the bottom band (joystick, Boost, Reset view) steps aside. Lines without choices stay the slim toast.
+ */
+export function docks(view: Pick<DialogView, "line" | "paused" | "fallback">): boolean {
+  return !view.paused && Boolean(view.line?.choices?.length || view.fallback);
+}
