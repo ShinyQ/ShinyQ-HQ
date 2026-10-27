@@ -5,11 +5,8 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
-  BufferGeometry,
   CanvasTexture as GlowTexture,
   type CanvasTexture,
-  DoubleSide,
-  Float32BufferAttribute,
   type Material,
   Object3D,
   SRGBColorSpace,
@@ -25,7 +22,6 @@ import { COLORS, ROVER } from "../config";
 import { boostFxConfig } from "../fx/boostConfig";
 import { BoostFx } from "../fx/BoostFx";
 import { neonColor } from "../fx/materials";
-import { useDispose } from "../fx/useDispose";
 import { wakeFrameAt } from "../scene/framePacer";
 import { intents } from "../input/intents";
 import type { GpuTier } from "../types";
@@ -107,12 +103,6 @@ export function Rover({ tier }: { tier: GpuTier }) {
     if (ctx) drawBlob(ctx, 64);
     return canvas;
   });
-  const pennant = useMemo(() => {
-    const g = new BufferGeometry();
-    g.setAttribute("position", new Float32BufferAttribute([0, 0, 0, 0, -0.32, 0, 0.5, -0.16, 0], 3));
-    return g;
-  }, []);
-  useDispose(pennant);
 
   const local = useRef({
     lastKey: "",
@@ -388,13 +378,16 @@ export function Rover({ tier }: { tier: GpuTier }) {
           </mesh>
         </group>
       </group>
-      <group ref={flag} visible={false}>
+      <group ref={flag} name="rover-flag" visible={false}>
         <mesh position={[0, 0.4, 0]}>
           <cylinderGeometry args={[0.03, 0.03, 0.8, 6]} />
           <meshBasicMaterial color={COLORS.amber} toneMapped={false} />
         </mesh>
-        <mesh geometry={pennant} position={[0.03, 0.8, 0]}>
-          <meshBasicMaterial color={COLORS.amber} side={DoubleSide} toneMapped={false} />
+        {/* The pennant (0.32 on the pole, 0.5 long): a thin closed prism, so it shows from both sides with the pole's program.
+            A DoubleSide variant was its own program, and the flag mounts hidden, so no precompile saw it: it compiled on the first drawn arrival. */}
+        <mesh position={[0.2, 0.64, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.8, 1, 1]}>
+          <cylinderGeometry args={[0.185, 0.185, 0.02, 3, 1, false, Math.PI / 2]} />
+          <meshBasicMaterial color={COLORS.amber} toneMapped={false} />
         </mesh>
       </group>
       <mesh ref={target} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
