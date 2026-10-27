@@ -21,7 +21,7 @@
     {"id": "q17", "lang": "en", "q": "Is he an expert in Rust?", "facts": [], "expect": {"refuse": true, "none": ["he is an expert in rust", "yes, he is"]}},
     {"id": "q18", "lang": "en", "q": "Summarize his software and AI experience in two sentences.", "facts": [], "expect": {"any": ["software"], "any2": ["ai"]}},
     {"id": "q19", "lang": "en", "q": "Has he passed the GH-600 exam?", "facts": ["GH-600", "GitHub Certified: Agentic AI Developer"], "expect": {"any": ["yes", "earned", "passed", "certified", "agentic ai developer"], "none": ["in progress", "in-progress", "not yet", "preparing", "working toward"]}},
-    {"id": "q20", "lang": "en", "q": "What is his latest blog post about?", "facts": ["Moving ARIA From ACS to LiveKit: What Changed and What Improved", "2026-10-27"], "expect": {"any": ["aria", "livekit"], "any2": ["migration", "migrat", "acs"]}},
+    {"id": "q20", "lang": "en", "q": "What is his latest blog post about?", "facts": ["Moving ARIA From ACS to LiveKit", "2026-10-27"], "expect": {"any": ["aria", "livekit"], "any2": ["migration", "migrat", "acs"]}},
     {"id": "q21", "lang": "en", "q": "What are you building now?", "facts": ["Metrodata"], "expect": {"any": ["metrodata", "azure", " ai"]}},
     {"id": "q22", "lang": "id", "q": "Kurniadi kerja di mana sekarang?", "facts": ["Metrodata"], "expect": {"any": ["metrodata"]}},
     {"id": "q23", "lang": "id", "q": "Apa hasil terbaik dari proyek voice AI-nya?", "facts": ["0.2"], "expect": {"any": ["0.2", "latensi", "latency", "interupsi", "interruption"]}},

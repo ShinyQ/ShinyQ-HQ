@@ -10612,8 +10612,8 @@
         {
           "slug": "aria-acs-to-livekit",
           "title": {
-            "en": "Moving ARIA From ACS to LiveKit: What Changed and What Improved",
-            "id": "Migrasi ARIA dari ACS ke LiveKit: Perubahan dan Hasil Pengujiannya"
+            "en": "Moving ARIA From ACS to LiveKit",
+            "id": "Migrasi ARIA dari ACS ke LiveKit"
           },
           "date": "2026-10-27",
           "track": "ai-in-production",
