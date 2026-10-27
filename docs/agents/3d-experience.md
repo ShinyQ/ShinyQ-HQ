@@ -454,6 +454,9 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - `precompileFloor` returns null before the scene's first drawn frame and never switches to a render target that is already bound.
   - `withTarget`: three resets the canvas viewport with `floor()` on a switch to null, which would draw a fractional lite canvas 1 px narrower.
 - Content visibility is `floorContentVisible` and `contentVisible` (`tower/visibility.ts`) together.
+- `gl.compile` skips hidden objects, so the boot and floor precompiles never see an object that mounts hidden and shows later. Such an object either reuses a program the scene already draws (same material type and flags, same geometry attributes) or is precompiled with its hidden children shown (`OfficeReady`).
+  - Otherwise it compiles on the first drawn frame that shows it, and on a slow runner which frame that is comes down to chance (the rover's arrival flag: its DoubleSide pennant was a flaky +1 program in the L1 replay perf gate; now a closed prism with the pole's program).
+  - Test: `e2e/gpu.spec.ts` ("an arrival flag adds no shader program", full tier) drives until a frame drew the flag, then holds the settled program set.
 - `__hq.render` exposes `peakCalls` (reset with `resetPeak()`), `programs()`, `programNames()`, `graphics()` and `warmFloors()`.
 
 ## Batched text with live members
