@@ -24,7 +24,7 @@ export function CaseToc({ items, label, children }: { items: readonly { id: stri
 
   return (
     <nav aria-label={label} className="pv-toc">
-      <p className="pv-data mb-3">{label}</p>
+      <p className="pv-meta mb-3 px-3">{label}</p>
       <ul>
         {items.map((item) => (
           <li key={item.id}>

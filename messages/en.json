@@ -833,7 +833,10 @@
   },
   "case": {
     "onThisPage": "On this page",
-    "more": "More {wing} projects"
+    "more": "More {wing} projects",
+    "breadcrumb": "Breadcrumb",
+    "kind": "Project type",
+    "room": "Room in the 3D HQ"
   },
   "writing": {
     "title": "Writing",

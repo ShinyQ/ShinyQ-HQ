@@ -190,10 +190,10 @@ Pure helpers in `src/lib/view-param.ts`; storage and the in-place URL rewrite in
 - Rendered by `FeaturedProject` (`src/components/page/Featured.tsx`) as a Feature Stack (decision 2026-10-27, it
   replaced the 3/2/1 card grid): one project a row (`ul.hx-stack`, `data-testid="featured-grid"`), parted by a
   hairline:
-  - from 1024 px the text holds sticky on five columns beside the screenshots on seven; below, the text comes first
+  - from 1024 px the text holds sticky on six columns beside the screenshots on six (640 px, so a 1440 px capture stays sharp at 2x); below, the text comes first
   - the text: the title (the row's link), the headline result (`pod.results[0]` as a `pv-result` in the display face,
     `data-testid="feature-result"`; recruiters scan results first), the tagline, the facts (wing, period, client) as a
-    `dl`, and the live link
+    `dl`, on `/labs` the stack logos, and the live link
   - the screenshots: the cover (also a hidden link to the case study, since the sticky column holds the title's
     stretched link), three filmstrip slots and the screenshot count as a caption
 - `/labs` Key projects use the same rows.

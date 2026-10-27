@@ -34,16 +34,14 @@ export function CrumbLink({ crumb }: { crumb: Crumb }) {
   );
 }
 
-/** Page title block: optional crumb and floor locator, the h1, a lead and an aside column. */
+/** Page title block: optional crumb, the h1, a lead and an aside column (no eyebrow over the title: Hallmark Floor). */
 export function PageIntro({
-  marker,
   title,
   lead,
   aside,
   crumb,
   children,
 }: {
-  marker?: ReactNode;
   title: string;
   lead?: string;
   aside?: ReactNode;
@@ -51,20 +49,19 @@ export function PageIntro({
   children?: ReactNode;
 }) {
   return (
-    <header className="pv-wrap pt-8 sm:pt-12 lg:pt-16">
+    <header className="pv-wrap pt-10 sm:pt-16 lg:pt-24">
       {crumb && (
         <p className="mb-4">
           <CrumbLink crumb={crumb} />
         </p>
       )}
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-6">
-        <div className="min-w-0 lg:col-span-8">
-          {marker && <p className="pv-data mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">{marker}</p>}
+        <div className="min-w-0 lg:col-span-7">
           <h1 className="pv-d-l">{title}</h1>
           {lead && <p className="pv-lead mt-6">{lead}</p>}
           {children}
         </div>
-        {aside && <div className="min-w-0 lg:col-span-4 lg:self-end">{aside}</div>}
+        {aside && <div className="min-w-0 lg:col-span-4 lg:col-start-9 lg:self-end">{aside}</div>}
       </div>
     </header>
   );

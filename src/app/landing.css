@@ -97,7 +97,7 @@
 
   @media (min-width: 64rem) {
     .hx-feature {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .hx-feature-text {

@@ -5,11 +5,11 @@ import type { Locale, LocalizedText } from "@/content/schema";
 export function FactRow({ items }: { items: { label: string; value?: ReactNode }[] }) {
   const shown = items.filter((item) => item.value);
   return (
-    <dl className="mt-10 grid border-y border-line md:grid-flow-col md:auto-cols-fr">
+    <dl className="mt-12 grid border-y border-line md:grid-flow-col md:auto-cols-fr">
       {shown.map((item, i) => (
         <div key={item.label} className={`py-4 md:py-5 md:pr-6 ${i > 0 ? "border-t border-line md:border-t-0 md:border-l md:pl-6" : ""}`}>
-          <dt className="pv-data">{item.label}</dt>
-          <dd className="mt-1.5 text-[15px] leading-[22px] text-ink">{item.value}</dd>
+          <dt className="pv-meta">{item.label}</dt>
+          <dd className="mt-1 text-ink [overflow-wrap:anywhere]">{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -30,8 +30,8 @@ export function MetricLedger({ results, locale }: { results: readonly LedgerResu
         <li key={i} className="grid gap-x-6 gap-y-2 py-5 sm:grid-cols-[13.5rem_minmax(0,1fr)] sm:items-baseline sm:py-6">
           <p className="pv-num text-[30px] leading-none sm:text-[34px]">{r.value}</p>
           <div className="min-w-0">
-            <p className="text-[15px] leading-[22px] text-ink">{r.label[locale]}</p>
-            {r.context && <p className="mt-1.5 text-[13px] leading-[20px] text-ink-3">{r.context[locale]}</p>}
+            <p className="text-ink">{r.label[locale]}</p>
+            {r.context && <p className="pv-meta mt-1.5">{r.context[locale]}</p>}
           </div>
         </li>
       ))}
@@ -45,8 +45,8 @@ export function StepList({ steps, locale }: { steps: readonly LocalizedText[]; l
     <ol className="pv-rows pv-rows-closed">
       {steps.map((step, i) => (
         <li key={i} className="grid grid-cols-[40px_1fr] gap-3 py-4 text-ink-2">
-          <span aria-hidden="true" className="pt-1 font-mono text-xs text-violet">
-            {String(i + 1).padStart(2, "0")}
+          <span aria-hidden="true" className="pv-num text-xl text-ink-3">
+            {i + 1}
           </span>
           <span>{step[locale]}</span>
         </li>
@@ -58,8 +58,8 @@ export function StepList({ steps, locale }: { steps: readonly LocalizedText[]; l
 /** Case-study chapter: an h2 and its content, an anchor for the table of contents. */
 export function Chapter({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="pt-16 lg:pt-20">
-      <h2 id={`${id}-title`} className="pv-h2 mb-6">
+    <section id={id} aria-labelledby={`${id}-title`} className="pt-20 lg:pt-32">
+      <h2 id={`${id}-title`} className="pv-h2 mb-8">
         {title}
       </h2>
       {children}

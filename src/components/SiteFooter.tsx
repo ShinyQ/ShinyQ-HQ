@@ -36,7 +36,7 @@ export async function SiteFooter({ locale }: { locale: Locale }) {
             <ul className="mt-3 sm:columns-2 sm:gap-8">
               {pages.map((page) => (
                 <li key={page.href}>
-                  <Link href={page.href} className={linkClass}>
+                  <Link href={page.href} className={`${linkClass} whitespace-nowrap`}>
                     {page.label}
                   </Link>
                 </li>
