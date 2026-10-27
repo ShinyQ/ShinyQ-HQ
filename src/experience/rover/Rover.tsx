@@ -378,15 +378,15 @@ export function Rover({ tier }: { tier: GpuTier }) {
           </mesh>
         </group>
       </group>
-      <group ref={flag} name="rover-flag" visible={false}>
+      <group ref={flag} visible={false}>
         <mesh position={[0, 0.4, 0]}>
           <cylinderGeometry args={[0.03, 0.03, 0.8, 6]} />
           <meshBasicMaterial color={COLORS.amber} toneMapped={false} />
         </mesh>
         {/* The pennant (0.32 on the pole, 0.5 long): a thin closed prism, so it shows from both sides with the pole's program.
             A DoubleSide variant was its own program, and the flag mounts hidden, so no precompile saw it: it compiled on the first drawn arrival. */}
-        <mesh position={[0.2, 0.64, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1.8, 1, 1]}>
-          <cylinderGeometry args={[0.185, 0.185, 0.02, 3, 1, false, Math.PI / 2]} />
+        <mesh position={[0.2, 0.64, 0]} rotation={[Math.PI / 2, Math.PI / 2, 0]} scale={[1, 1, 1.8]}>
+          <cylinderGeometry args={[0.185, 0.185, 0.02, 3]} />
           <meshBasicMaterial color={COLORS.amber} toneMapped={false} />
         </mesh>
       </group>
