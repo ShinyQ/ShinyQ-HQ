@@ -35,7 +35,7 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
         lead={t("intro")}
         aside={
           <nav aria-label={t("yearNav")}>
-            <p className="pv-data mb-3">{t("jumpTo")}</p>
+            <p className="pv-meta mb-3">{t("jumpTo")}</p>
             <ul className="flex flex-wrap gap-1.5">
               {years.map(({ year }) => (
                 <li key={year}>
@@ -57,10 +57,10 @@ export default async function JourneyPage({ params }: PageProps<"/[locale]/journ
       <JourneyFilter counts={typeCounts(getTimeline())}>
         <ol className="pv-wrap">
           {years.map(({ year, entries }) => (
-            <li key={year} id={`y${year}`} data-year="" className="grid gap-x-6 pt-14 lg:grid-cols-12 lg:pt-16">
-              <h2 className="pv-num text-[48px] leading-[0.9] lg:sticky lg:top-[160px] lg:col-span-2 lg:self-start lg:text-[64px]">
+            <li key={year} id={`y${year}`} data-year="" className="grid gap-x-8 pt-20 lg:grid-cols-12 lg:pt-28">
+              <h2 className="pv-num text-[56px] leading-[0.9] lg:sticky lg:top-[160px] lg:col-span-2 lg:self-start lg:text-[72px]">
                 {year}
-                <span className="pv-data mt-2.5 block">{t("entries", { count: entries.length })}</span>
+                <span className="pv-meta mt-2.5 block">{t("entries", { count: entries.length })}</span>
               </h2>
               <ul className="pv-rows mt-4 lg:col-span-10 lg:mt-0 [&>li:first-child]:border-line-2">
                 {[...entries].reverse().map((entry) => (

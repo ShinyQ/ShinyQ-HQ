@@ -61,7 +61,7 @@ export default async function QuickViewPage({ params }: PageProps<"/[locale]/qui
         <p className="pv-h3 pv-h3-l">{profile.name}</p>
         <p className="pv-lead mt-2 font-semibold">{profile.headline[locale]}</p>
         <p className="pv-small mt-2">
-          {th("currentRole")}: {profile.currentRole.title[locale]} · {profile.currentRole.org} · {formatYearMonth(profile.currentRole.since, locale)}
+          {th("currentRole")}: {profile.currentRole.title[locale]}, {profile.currentRole.org}, {formatYearMonth(profile.currentRole.since, locale)}
         </p>
         <p className="pv-body mt-5">{profile.bio[locale]}</p>
         <p className="pv-body mt-4">{profile.howIWork[locale]}</p>

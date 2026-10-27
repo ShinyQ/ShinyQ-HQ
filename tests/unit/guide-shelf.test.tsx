@@ -80,7 +80,7 @@ describe("GuideCard", () => {
     expect(card).toHaveTextContent("Microsoft");
     expect(card).toHaveTextContent("EX-100");
     expect(card).toHaveTextContent("A fictional guide for the test.");
-    expect(card).toHaveTextContent("120 pages · 4.4 MB · Edition Oct 2026");
+    expect(card).toHaveTextContent("120 pages, 4.4 MB, Edition Oct 2026");
     expect(within(card).getByTestId("guide-read")).toBeInTheDocument();
   });
 
@@ -112,7 +112,7 @@ describe("GuideShelf", () => {
   it("labels each card with its pages and edition and ends with the independent material note", async () => {
     render(await GuideShelf({ locale: "en", guides: [view] }));
     const card = screen.getAllByRole("listitem")[0];
-    expect(card).toHaveTextContent("120 pages · 4.4 MB · Edition Oct 2026");
+    expect(card).toHaveTextContent("120 pages, 4.4 MB, Edition Oct 2026");
     const note = screen.getByText(en.guides.independent);
     expect(note).toHaveClass("pv-small", "text-ink-3");
     expect(note.closest("li")).toBeNull();

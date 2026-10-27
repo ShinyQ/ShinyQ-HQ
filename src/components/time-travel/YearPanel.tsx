@@ -19,7 +19,7 @@ export function YearPanel({ stop, label, hidden, locale, text }: { stop: TtStop;
         <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
           {TALLY_KEYS.map((key) => (
             <div key={key}>
-              <dt className="pv-data">{text.tally[key]}</dt>
+              <dt className="pv-meta">{text.tally[key]}</dt>
               <dd className="pv-num mt-1 text-[28px] leading-none">{stop.tally[key].total}</dd>
               {stop.tally[key].added > 0 && <dd className="pv-small mt-1">{text.added(stop.tally[key].added)}</dd>}
             </div>
@@ -27,7 +27,7 @@ export function YearPanel({ stop, label, hidden, locale, text }: { stop: TtStop;
         </dl>
         {stop.highlights.length > 0 && (
           <>
-            <h4 className="pv-data mt-6">{text.highlights}</h4>
+            <h4 className="mt-6 font-semibold text-ink">{text.highlights}</h4>
             <ul className="mt-2 flex flex-col gap-1.5">
               {stop.highlights.map((h) => (
                 <li key={h.href + h.label.en}>

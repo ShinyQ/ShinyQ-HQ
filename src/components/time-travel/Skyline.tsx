@@ -13,7 +13,7 @@ export function Skyline({ stops, labels, names, title }: { stops: readonly TtSto
   const last = stops.length - 1;
   return (
     <div>
-      <svg viewBox={viewBoxOf(stops.length)} role="group" aria-label={title} className="block h-auto w-full" preserveAspectRatio="xMidYMax meet">
+      <svg viewBox={viewBoxOf(stops.length)} role="group" aria-label={title} className="tt-chart block h-auto w-full" preserveAspectRatio="xMidYMax meet">
         {layout.map((b, i) => (
           <a key={stops[i].id} href={`#${stops[i].anchor}`} data-tt-link={i} aria-label={names[i]}>
             <rect x={i * SKY.slot} width={SKY.slot} height={SKY.height} fill="transparent" />
@@ -40,7 +40,7 @@ export function Skyline({ stops, labels, names, title }: { stops: readonly TtSto
       </svg>
       <div className="mt-2 flex" aria-hidden="true">
         {labels.map((label, i) => (
-          <span key={stops[i].id} className="pv-data min-w-0 flex-1 text-center">
+          <span key={stops[i].id} className="pv-meta min-w-0 flex-1 text-center">
             {label}
           </span>
         ))}

@@ -24,7 +24,7 @@ export function JourneyFilter({ counts, children }: { counts: Record<"all" | Ent
     <>
       <div className="pv-wrap mt-10 lg:mt-14">
         <div role="group" aria-label={t("filters")} className="pv-filters flex flex-wrap items-center gap-1.5 px-3 py-2">
-          <span className="pv-data mr-2">{t("show")}</span>
+          <span className="pv-meta mr-2">{t("show")}</span>
           <button type="button" className="chip min-h-11" aria-pressed={type === "all"} onClick={() => setSearchParams({ type: null })}>
             {t("all")}
             <span className="chip-count">{counts.all}</span>

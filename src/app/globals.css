@@ -1,5 +1,5 @@
 /* Hallmark · shape: Feature Stack (draw a485e6) · genre: atmospheric · theme: brand (Neon Grid) · redesign: full · job: hire
- * paper: oklch(12% 0.018 283) · accent: oklch(79.7% 0.134 211.5) · display: Archivo condensed · body: Inter · hero: Ledge (/), Banner (/labs, /labs/[slug]) · nav: search-led bar with the visible command pill, the brand ShinyQ HQ · footer: links and the copyright line, no name · signature: the shipped work at full size, its headline result first
+ * paper: oklch(12% 0.018 283) · accent: oklch(79.7% 0.134 211.5) · display: Archivo condensed · body: Inter · hero: Ledge (/), Banner (/labs, /labs/[slug], /journey, /library, /contact, /cv, /build, /quick), Corridor (404) · nav: search-led bar with the visible command pill, the brand ShinyQ HQ · footer: links and the copyright line, no name · signature: the shipped work at full size, its headline result first
  * axes: dark/display-condensed/chromatic-cyan · posture: Restrained · contrast: pass · fold: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: P, the hero is still name-first; the real screenshots and their results carry the argument right under it */
 /* Hallmark · waive 29 · a cyan glow only on hover, focus and the current item (hq-glow) · the Neon Grid glow is the owner's brand signal for the HQ */
@@ -8,6 +8,10 @@
 /* Hallmark · waive 39b · three featured certification cards, each one button 220px tall · the whole credential card opens its preview dialog */
 /* Hallmark · waive 77 · case studies read as a Long Document in an 8 of 12 reading column beside the sticky contents · the chapters are prose a recruiter reads, not sections to fill */
 /* Hallmark · waive 44c · /labs and the case studies open on a Banner head, the filter or the first chapter starting above the fold · an index and a document lead with their content, not a full screen */
+/* Hallmark · waive 49b · post, role and certification titles in the indexes are real phrases that cannot shorten, two lines on a phone · the content is the owner's own titles */
+/* Hallmark · waive 59 · Journey, Writing and Quick view are dense indexes that part their years and sections with hairlines · the ruled rows are the content a recruiter scans */
+/* Hallmark · dismissed 79 · posts and journey entries are Long Documents; the linter reads the header bar as their hero */
+/* Hallmark · dismissed 73 · the Bicep excerpt scrolls inside its own max-height box; the lines it reports are clipped there, not painted under the caption */
 /* Hallmark · answered F19 · pv-num keeps weight 700 because the room drawer reads the same numeral class */
 /* Hallmark · dismissed 28a · the Selected work covers sit below the first screen on purpose; the hero name is the LCP */
 /* Hallmark · dismissed F20 · the stats ledger gains the visits item in production, two rows of two */
@@ -218,6 +222,11 @@
 
   .prose-hq > * + * {
     margin-top: 1.1em;
+  }
+
+  /* About 70 characters a line in Inter (the ch unit is the wide digit zero, so a rem cap holds the measure). */
+  .prose-hq > :where(p, ul, ol) {
+    max-width: 36rem;
   }
 
   .prose-hq :where(h2, h3):not(:where(.not-prose, .not-prose *)) {

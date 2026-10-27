@@ -12,17 +12,17 @@ export interface CvCoverLabels {
 }
 
 /**
- * The `/cv` page body (server markup, no client island): page 1 of the CV as an image (the page's LCP) and two
- * actions. "View CV" is a real link to the PDF carrying `data-hq-cv`: `DialogHost` turns a plain click into the CV
+ * The `/cv` page body (server markup, no client island): page 1 of the CV as an image (the page's LCP) beside two
+ * actions at the top of their column. "View CV" is a real link to the PDF carrying `data-hq-cv`: `DialogHost` turns a plain click into the CV
  * reader modal (the shared PDF reader), and without JS it opens the PDF. Download saves the file.
  */
 export function CvCover({ labels }: { labels: CvCoverLabels }) {
   const cover = CV_PAGES[0];
   const pdf = cvPdfPath(CV_FILE_NAME);
   return (
-    <div className="card mt-8 grid gap-6 p-5 sm:grid-cols-[minmax(0,320px)_1fr] sm:p-6" data-testid="cv-card">
+    <div className="mt-10 grid gap-8 sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] sm:gap-10" data-testid="cv-card">
       {cover && (
-        <a href={pdf} data-hq-cv="" aria-haspopup="dialog" tabIndex={-1} aria-hidden="true" className="block overflow-hidden rounded-md border border-line bg-[#fff]">
+        <a href={pdf} data-hq-cv="" aria-haspopup="dialog" tabIndex={-1} aria-hidden="true" className="block overflow-hidden rounded-md border border-line bg-print-paper">
           {/* Static export: page images are pre-rendered webp files under public/. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -41,9 +41,10 @@ export function CvCover({ labels }: { labels: CvCoverLabels }) {
           />
         </a>
       )}
+      {/* The actions sit at the top of their column, so View CV is in the first screen at 1280 x 800 (Hallmark 44b). */}
       <div className="flex min-w-0 flex-col">
-        <p className="pv-data">{labels.pages} · PDF</p>
-        <div className="mt-5 flex flex-wrap gap-3 sm:mt-auto">
+        <p className="pv-meta">{labels.pages}, PDF</p>
+        <div className="mt-5 flex flex-wrap gap-3">
           <a href={pdf} data-hq-cv="" aria-haspopup="dialog" className="pv-btn pv-btn-primary" data-testid="cv-read">
             {labels.view}
           </a>
