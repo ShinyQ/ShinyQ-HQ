@@ -32,8 +32,8 @@ test.beforeEach(({ context }) => fastAnimations(context));
  * The L4 reader track shelves (L4 Writing revamp): one bay per track, its lead post as a tall book and the other posts as
  * spines. Near a bay the spine nearest the rover pulls (`__hq.probes.shelves.pulled`); the pointed (or tapped) spine
  * pulls instead and shows its title; a click (or Go after a tap) drives to the bay's door and opens the post; Esc
- * gives the floor back. The bay's door opens the track drawer, whose items open their posts, and a post opened in 3D
- * (Cmd-K) parks the rover at its bay. Lite tier, like the other L4 specs (the full-tier bay is gated by
+ * gives the floor back. The bay's door opens the track drawer, whose ordinary posts open at the bay and whose
+ * featured post opens at the stage. Cmd-K follows the same room destinations. Lite tier, like the other L4 specs (the full-tier bay is gated by
  * `e2e/perf/floors.spec.ts`, `settled-L4-shelf`). Every wait is on state (probes, the store, the drawer), never on time.
  */
 test.describe.configure({ timeout: 240_000 });
@@ -49,6 +49,7 @@ type SW = Window & {
 };
 
 const library = content.floors.library;
+const FEATURED = [...library.posts].sort((a, b) => b.date.localeCompare(a.date)).find((p) => !p.url)!;
 /** Each track's posts, lead first (the 3D payload's order); tracks without posts have no bay. */
 const TRACKS = buildTrackIndex(library as unknown as Parameters<typeof buildTrackIndex>[0]).filter((t) => t.posts.length);
 const TITLE = new Map(library.posts.map((p) => [p.slug, p.title.en]));
@@ -57,6 +58,7 @@ const TRACK = TRACKS.reduce((a, b) => (b.posts.length > a.posts.length ? b : a))
 const BAY = `L4:track:${TRACK.slug}`;
 /** Its spines (every post but the lead): only these pull. */
 const SPINES = TRACK.posts.slice(1);
+const ORDINARY_SPINES = SPINES.filter((slug) => slug !== FEATURED.slug);
 const fold = (s: string) => s.replace(/\s+/g, " ");
 
 const shelves = (page: Page) => page.evaluate(() => (window as unknown as SW).__hq.probes.shelves);
@@ -179,7 +181,7 @@ for (const device of [
 test.describe("L4 track drawer and post links (desktop)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("the bay's door opens the track drawer, and an item opens its post there", async ({ page }) => {
+  test("the bay's door opens the track drawer, and an ordinary item opens its post there", async ({ page }) => {
     const errors = collectErrors(page);
     await skipFloorLines(page);
     await enterFloorRoute(page, "/en/library");
@@ -192,12 +194,33 @@ test.describe("L4 track drawer and post links (desktop)", () => {
     const items = drawer.getByTestId("room-item");
     await expect(items).toHaveCount(TRACK.posts.length);
     expect(await items.evaluateAll((els) => els.map((e) => e.getAttribute("data-room")))).toEqual(TRACK.posts.map((s) => `L4:${s}`));
-    const slug = TRACK.posts[1];
-    await items.nth(1).click();
+    const slug = ORDINARY_SPINES[0];
+    expect(slug, "the bay has an ordinary spine").toBeDefined();
+    await drawer.locator(`[data-testid="room-item"][data-room="L4:${slug}"]`).click();
     await waitForRoom(page, `L4:${slug}`);
     await expect(drawer.getByRole("heading", { level: 2 })).toHaveText(TITLE.get(slug)!);
     const at = await roverAt(page);
     expect(Math.hypot(at.x - door.x, at.z - door.z), "the post opens at its bay's door").toBeLessThan(1.5);
+    expect(errors).toEqual([]);
+  });
+
+  test("the featured post keeps its shelf slot, but its track drawer item opens at the stage", async ({ page }) => {
+    const errors = collectErrors(page);
+    await skipFloorLines(page);
+    await enterFloorRoute(page, "/en/library");
+    const track = TRACKS.find((t) => t.posts.includes(FEATURED.slug))!;
+    const [bayDoor, stageDoor] = await Promise.all([doorOf(page, `L4:track:${track.slug}`), doorOf(page, `L4:${FEATURED.slug}`)]);
+    expect((await spineCenters(page)).has(FEATURED.slug), "the featured post also has a shelf slot").toBe(true);
+    expect(Math.hypot(stageDoor.x - bayDoor.x, stageDoor.z - bayDoor.z), "the stage and bay are distinct destinations").toBeGreaterThan(1.5);
+    await driveTo(page, bayDoor);
+    await waitForRoom(page, `L4:track:${track.slug}`);
+    const drawer = page.getByTestId("room-drawer");
+    await drawer.locator(`[data-testid="room-item"][data-room="L4:${FEATURED.slug}"]`).click();
+    await waitForRoom(page, `L4:${FEATURED.slug}`);
+    await expect(drawer.getByRole("heading", { level: 2 })).toHaveText(FEATURED.title.en);
+    await expect(page).toHaveURL(new RegExp(`/en/blog/${FEATURED.slug}\\?tier=lite$`), { timeout: NAV_TIMEOUT });
+    const at = await roverAt(page);
+    expect(Math.hypot(at.x - stageDoor.x, at.z - stageDoor.z), "the featured post opens at its stage door").toBeLessThan(1.5);
     expect(errors).toEqual([]);
   });
 
@@ -206,7 +229,8 @@ test.describe("L4 track drawer and post links (desktop)", () => {
     await skipFloorLines(page);
     await enterFloorRoute(page, "/en/library");
     // A post off the featured stage (the stage keeps the newest hosted post's own door).
-    const slug = SPINES[SPINES.length - 1];
+    const slug = ORDINARY_SPINES[ORDINARY_SPINES.length - 1];
+    expect(slug, "the bay has an ordinary spine").toBeDefined();
     const [stop, door] = await Promise.all([page.evaluate((r) => (window as unknown as SW).__hq.layouts.L4.stops![r], `L4:${slug}`), doorOf(page, BAY)]);
     expect(stop, `L4:${slug} stops at its bay's door`).toEqual(door);
     await page.keyboard.press("Control+k");
