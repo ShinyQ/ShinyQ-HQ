@@ -146,7 +146,7 @@ describe("specsForChanges", () => {
   it("maps the rover idle code to the rover-idle spec", () => {
     expect(specsForChanges(["src/experience/rover/idle.ts"]).specs).toEqual(["idle-cadence", "rover-idle"]);
     expect(specsForChanges(["src/experience/rover/activity.ts"]).specs).toEqual(["rover-idle"]);
-    expect(specsForChanges(["src/experience/rover/Rover.tsx"]).specs).toEqual(["camera", "experience", "idle-cadence", "rover-idle"]);
+    expect(specsForChanges(["src/experience/rover/Rover.tsx"]).specs).toEqual(["camera", "experience", "gpu", "idle-cadence", "rover-idle"]);
     expect(specsForChanges(["e2e/rover-idle.spec.ts"]).specs).toEqual(["rover-idle"]);
   });
 

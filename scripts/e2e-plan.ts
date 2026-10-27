@@ -275,7 +275,7 @@ export const RULES: Rule[] = [
   // Rover idle behaviour (the state machine, the activity counter) and the rover mesh that draws it.
   { test: /^src\/experience\/rover\/idle\.ts$/, specs: ["rover-idle", "idle-cadence"] },
   { test: /^src\/experience\/rover\/activity\.ts$/, specs: ["rover-idle"] },
-  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "idle-cadence", "camera", "experience"] },
+  { test: /^src\/experience\/rover\/(Rover\.tsx|runtime\.ts)$/, specs: ["rover-idle", "idle-cadence", "camera", "experience", "gpu"] },
   // Round 5 camera work: input, the rover body fade and the view buttons.
   { test: /^src\/experience\/input\/|^src\/experience\/rover\/fade\.ts$|^src\/hud\/ViewControls\.tsx$/, specs: ["camera", "experience"] },
   // Quiet boot: header and nav links stop prefetching under the boot cover (pageview still covers the header).

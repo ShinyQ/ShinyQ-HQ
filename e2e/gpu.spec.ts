@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { asReturningVisitor, driveTo, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { waitForStablePrograms } from "./perf/helpers";
 
 /**
  * GPU and rendering gates (round 5, P2). Counters are deterministic on SwiftShader (draw calls,
@@ -83,6 +84,39 @@ test("boot warms every floor: first arrivals add at most 3 programs each (full t
 });
 
 /**
+ * The arrival flag mounts hidden, so no precompile sees it: its meshes must reuse programs the scene already has, or the first
+ * arrival a frame lands on compiles one (the pennant's DoubleSide variant did, a flaky +1 in the L1 replay perf gate). Drives
+ * until a frame drew the flag (a slow runner can miss its 1.4 s), then holds the programs to the settled set.
+ */
+test("an arrival flag adds no shader program (full tier)", async ({ page }) => {
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=full");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await waitForStablePrograms(page);
+  const names = () => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.programNames());
+  const before = await names();
+  await page.evaluate(() => {
+    const w = window as unknown as SceneWindow & { flagDrawn?: boolean };
+    const watch = () => {
+      if (w.__hq.render.scene?.getObjectByName("rover-flag")?.visible) w.flagDrawn = true;
+      else requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+  });
+  const drawn = () => page.evaluate(() => (window as unknown as { flagDrawn?: boolean }).flagDrawn === true);
+  for (let i = 0; i < 4 && !(await drawn()); i++) {
+    const at = await page.evaluate(() => (window as unknown as { __hq: { rover: { x: number; z: number } } }).__hq.rover);
+    const d = i % 2 === 0 ? -3 : 3;
+    await driveTo(page, { x: at.x + d, z: at.z + d });
+  }
+  expect(await drawn(), "a frame drew the arrival flag").toBe(true);
+  await waitForStablePrograms(page);
+  expect((await names()).filter((n) => !before.includes(n))).toEqual([]);
+});
+
+/**
  * The renderer applies the pixel budget: one desktop (full tier, MSAA on) and one phone (lite, touch). The rule's
  * other cases (Retina, DPR 1.5 and up, the 5K pixel cap) are unit tested in tests/unit/scene-settings.test.ts.
  */
@@ -143,7 +177,7 @@ test("the safety net steps down on sustained slow frames, at most twice a minute
   expect(await page.evaluate(() => sessionStorage.getItem("hq:gfx"))).toBe(JSON.stringify({ level: 2, locked: false }));
 });
 
-type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): { traverse(cb: (o: { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; visible: boolean }) => void): void } | undefined } | null } } };
+type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): { visible: boolean; traverse(cb: (o: { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; visible: boolean }) => void): void } | undefined } | null } } };
 
 /** Renderable objects (one draw call each, two for an outlined text batch) under a named group. */
 async function renderables(page: Page, name: string) {
