@@ -4,12 +4,12 @@ import type { AskLocale } from "../../src/ask/protocol";
  * System prompt for Ask the HQ (spec sections 5 and 13). Bump PROMPT_VERSION on any change: it is
  * part of every cache key, so old cached answers stop being served.
  */
-export const PROMPT_VERSION = "2026-10-25.approach.1";
+export const PROMPT_VERSION = "2026-10-27.indonesian.1";
 
 /** The one forward-looking sentence rule 18 allows, in each language, exactly (stated by `approachLine`). */
 export const APPROACH_BRIDGE = {
   en: "A similar problem would likely start the same way.",
-  id: "Masalah serupa kemungkinan besar dimulai dengan cara yang sama.",
+  id: "Masalah serupa kemungkinan besar akan ditangani dengan pendekatan awal yang sama.",
 } as const;
 
 /** The rule text the prompt-leak check compares answers against (T5). */

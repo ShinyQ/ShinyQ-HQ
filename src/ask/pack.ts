@@ -173,7 +173,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     text: join([
       {
         en: `Kurniadi's principles, in his own words, from "${HOW_TITLE.en}" on the About page:`,
-        id: `Prinsip Kurniadi, dengan kata-katanya sendiri, dari "${HOW_TITLE.id}" di halaman About:`,
+        id: `Prinsip Kurniadi, dengan kata-katanya sendiri, dari "${HOW_TITLE.id}" di halaman Tentang:`,
       },
       loc(profile.howIWork),
       join(profile.principles.map((p) => ({ en: `"${p.title.en}": ${p.text.en}`, id: `"${p.title.id}": ${p.text.id}` }))),
@@ -204,7 +204,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     text: join([
       {
         en: `Kurniadi, "${production.title.en}" (About page):`,
-        id: `Kurniadi, "${production.title.id}" (halaman About):`,
+        id: `Kurniadi, "${production.title.id}" (halaman Tentang):`,
       },
       loc(production.intro),
       join(production.points.map((p) => ({ en: `${p.lead.en} ${p.text.en}`, id: `${p.lead.id} ${p.text.id}` }))),
@@ -302,7 +302,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
     url: "/labs",
     keywords: ["project", "projects", "portfolio", "best", "hero"],
     text: join([
-      { en: "Projects (AI Engineering, Product Engineering, and Data and ML), highlighted ones first:", id: "Proyek (AI Engineering, Product Engineering, serta Data dan ML), yang utama lebih dulu:" },
+      { en: "Projects (AI Engineering, Product Engineering, and Data and ML), highlighted ones first:", id: "Proyek (AI Engineering, Product Engineering, serta Data dan ML), dengan proyek unggulan lebih dulu:" },
       join(
         [...pods]
           .sort((a, b) => ["hero", "featured", "listed"].indexOf(a.tier) - ["hero", "featured", "listed"].indexOf(b.tier) || a.order - b.order)
@@ -363,7 +363,7 @@ function drafts({ content, facts, posts = {}, products, perspectives = [], siteB
           ),
         ]),
         label("Stack", "Stack", pod.stack.join(", ")),
-        live ? { en: "Live site: public; the case study page links to it.", id: "Situs live: publik; halaman studi kasus menautkannya." } : undefined,
+        live ? { en: "Live site: public; the case study page links to it.", id: "Situs aktif dapat diakses publik melalui tautan di halaman studi kasus." } : undefined,
       ]),
     });
   }

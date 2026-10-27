@@ -9,7 +9,7 @@ export const MESSAGES = {
   },
   decline: {
     en: "I only answer questions about Kurniadi: his projects, skills, career, writing, availability, this site and his written views, plus what his work shows on related engineering questions. Try asking about one of those.",
-    id: "Saya hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, dan pandangan tertulisnya, serta pelajaran dari karyanya untuk pertanyaan engineering terkait. Coba tanyakan salah satunya.",
+    id: "Saya hanya menjawab pertanyaan tentang Kurniadi: proyek, keahlian, karier, tulisan, ketersediaan, situs ini, pandangan tertulisnya, serta pertanyaan engineering terkait yang dapat dijawab dari karyanya. Coba tanyakan salah satunya.",
   },
   restricted: {
     en: "I can't share client names or private details. Projects for clients are described by sector on this site.",
@@ -17,7 +17,7 @@ export const MESSAGES = {
   },
   fallback: {
     en: "A reliable answer is not available right now. Search with Cmd-K or Ctrl-K, or browse the Work and Journey pages.",
-    id: "Jawaban yang bisa diandalkan belum tersedia saat ini. Cari lewat Cmd-K atau Ctrl-K, atau buka halaman Karya dan Perjalanan.",
+    id: "Saat ini belum ada jawaban yang dapat diandalkan. Cari lewat Cmd-K atau Ctrl-K, atau buka halaman Karya dan Perjalanan.",
   },
   private: {
     en: "I only cover Kurniadi's work and the views he has written down. Personal topics such as family, relationships, health, religion, partisan politics and pay are not on this site.",
@@ -30,12 +30,12 @@ export const MESSAGES = {
   // "What can you do?" (owner request 2026-10-15) and "Who are you?": fixed, no model call, Rover introduces itself (2026-10-19). Also the scope a decline points back to.
   capabilities: {
     en: "I'm Rover, the guide robot of ShinyQ HQ, and I answer questions about Kurniadi Ahmad Wijaya's projects, skills, career, writing, availability, this site and his written views, in English or Indonesian, with links to the source on this site. I don't cover his private life, partisan politics, religion, pay or opinions about other people, and I don't write code or answer general questions.",
-    id: "Saya Rover, robot pemandu ShinyQ HQ, dan saya menjawab pertanyaan tentang proyek, keahlian, karier, tulisan, ketersediaan, dan pandangan tertulis Kurniadi Ahmad Wijaya serta situs ini, dalam bahasa Inggris atau Indonesia, dengan tautan ke sumbernya di situs ini. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang lain, dan tidak menulis kode atau menjawab pertanyaan umum.",
+    id: "Saya Rover, robot pemandu ShinyQ HQ yang menjawab pertanyaan tentang proyek, keahlian, karier, tulisan, ketersediaan, dan pandangan tertulis Kurniadi Ahmad Wijaya serta situs ini, dalam bahasa Inggris atau Indonesia dengan tautan sumber di situs ini. Saya tidak membahas kehidupan pribadi, politik partisan, agama, penghasilan, atau pendapat tentang orang lain, serta tidak menulis kode atau menjawab pertanyaan umum.",
   },
   // Lead intent when the model's answer cannot be shown (failed checks, a fit claimed without a match, a model refusal).
   lead: {
     en: "Kurniadi considers freelance and part-time software and AI engineering projects alongside his full-time role, subject to capacity. Send a short message describing the project to discuss fit; his contact details are below.",
-    id: "Kurniadi mempertimbangkan proyek freelance dan pekerjaan paruh waktu di bidang software dan AI engineering sesuai kapasitas di luar pekerjaan penuh waktu. Kirim pesan singkat tentang proyeknya untuk membahas kecocokan; detail kontaknya ada di bawah.",
+    id: "Kurniadi terbuka untuk mempertimbangkan proyek freelance dan paruh waktu di bidang software dan AI engineering, sesuai kapasitas di luar pekerjaan penuh waktunya. Kirim gambaran singkat proyek untuk membahas kecocokannya melalui kontak di bawah.",
   },
   // Lead intent that asks for a price or a rate: no numbers, contact instead.
   leadRates: {
@@ -45,7 +45,7 @@ export const MESSAGES = {
   // A request to speak as Kurniadi or anyone else, or to take another persona (owner decision 2026-10-19).
   persona: {
     en: "I'm Rover, so I can't speak for Kurniadi or take on another persona; I only talk about him in the third person. Ask about his work and I'll answer from this site.",
-    id: "Saya Rover, jadi saya tidak bisa berbicara mewakili Kurniadi atau berperan sebagai orang lain; saya hanya membahasnya sebagai orang ketiga. Tanyakan tentang karyanya dan saya jawab dari isi situs ini.",
+    id: "Saya Rover, jadi saya tidak bisa berbicara mewakili Kurniadi atau berperan sebagai orang lain; saya hanya menyebutnya sebagai orang ketiga. Tanyakan tentang karyanya, dan saya jawab berdasarkan isi situs ini.",
   },
   noView: {
     en: "Kurniadi hasn't shared a written view on that on this site.",
@@ -86,7 +86,7 @@ export function partialDecline(topics: readonly PrivateTopic[], locale: AskLocal
   const labels = [...new Set(topics)].map((t) => PRIVATE_LABEL[t][locale]);
   const and = locale === "id" ? "dan" : "and";
   const list = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} ${and} ${labels[labels.length - 1]}` : (labels[0] ?? PRIVATE_LABEL.life[locale]);
-  return locale === "id" ? `Soal ${list}, saya tidak bisa membagikannya: itu hal pribadi dan tidak ada di situs ini.` : `I can't share anything about ${list}: that's personal and not on this site.`;
+  return locale === "id" ? `Saya tidak bisa membagikan informasi tentang ${list} karena bersifat pribadi dan tidak dimuat di situs ini.` : `I can't share anything about ${list}: that's personal and not on this site.`;
 }
 
 export function canned(kind: CannedKind, locale: AskLocale): string {
@@ -98,14 +98,14 @@ const WHERE: Record<AskCiteKind, Record<AskLocale, string>> = {
   blog: { en: "on his blog", id: "di blognya" },
   project: { en: "in a project case study", id: "di studi kasus proyek" },
   library: { en: "on the Writing page", id: "di halaman Tulisan" },
-  build: { en: "on the How this site was built page", id: "di halaman Cara situs ini dibuat" },
+  build: { en: "on the How this site was built page", id: "di halaman Cara Situs Ini Dibuat" },
   repo: { en: "in the site's public repository", id: "di repositori publik situs ini" },
 };
-const CLOSEST: Record<AskLocale, string> = { en: "The closest written source is", id: "Tulisan yang paling terkait adalah" };
+const CLOSEST: Record<AskLocale, string> = { en: "The closest written source is", id: "Sumber tertulis yang paling terkait adalah" };
 /** No relevant written source (owner decision 2026-10-19): suggest topics Rover covers instead of naming an unrelated title. */
 const NO_SOURCE_HINT: Record<AskLocale, string> = {
   en: "Try asking about his AI projects, how he takes AI to production, or his career.",
-  id: "Coba tanyakan proyek AI-nya, cara dia membawa AI ke produksi, atau kariernya.",
+  id: "Coba tanyakan proyek AI-nya, cara dia menerapkan AI di production, atau kariernya.",
 };
 
 /**
