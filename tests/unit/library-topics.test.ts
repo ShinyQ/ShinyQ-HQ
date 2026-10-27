@@ -88,7 +88,7 @@ describe("Topic Constellation (pure)", () => {
   });
 
   it("turns a payload topic into the store pick", () => {
-    expect(topicPickOf(topic("voice-ai"))).toEqual({ slug: "voice-ai", name: "Voice AI", count: 1, rooms: ["L4:making-a-voice-agent-interruptible"] });
+    expect(topicPickOf(topic("voice-ai"))).toEqual({ slug: "voice-ai", name: "Voice AI", count: 2, rooms: ["L4:aria-acs-to-livekit", "L4:making-a-voice-agent-interruptible"] });
   });
 });
 
