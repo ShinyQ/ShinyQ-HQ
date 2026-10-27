@@ -364,6 +364,7 @@
   },
   "blog": {
     "back": "Back to Writing",
+    "tableLabel": "Scrollable table",
     "translationMissing": "This post is available in {language}. The original version is shown here.",
     "languageName": {
       "en": "English",

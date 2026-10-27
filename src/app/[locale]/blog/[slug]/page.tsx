@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { compileMDX } from "next-mdx-remote/rsc";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { postMdxComponents } from "@/components/blog/mdx";
+import { compilePost } from "@/components/blog/compile";
 import { JsonLd } from "@/components/JsonLd";
 import { ShareLinks } from "@/components/ShareLinks";
 import { CrumbLink } from "@/components/page/Layout";
@@ -39,11 +38,7 @@ export default async function BlogPostPage({ params }: PageProps<"/[locale]/blog
   const t = await getTranslations({ locale, namespace: "blog" });
   const tw = await getTranslations({ locale, namespace: "writing" });
   const tc = await getTranslations({ locale, namespace: "common" });
-  const { content } = await compileMDX({
-    source: found.source,
-    components: postMdxComponents(slug, found.locale),
-    options: { parseFrontmatter: true },
-  });
+  const { content } = await compilePost(found.source, slug, found.locale, t("tableLabel"));
 
   return (
     <>
