@@ -10610,6 +10610,30 @@
       ],
       "posts": [
         {
+          "slug": "aria-acs-to-livekit",
+          "title": {
+            "en": "Moving ARIA From ACS to LiveKit",
+            "id": "Migrasi ARIA dari ACS ke LiveKit"
+          },
+          "date": "2026-10-27",
+          "track": "ai-in-production",
+          "tags": [
+            "voice-ai",
+            "azure-openai-realtime",
+            "evaluation",
+            "case-study"
+          ],
+          "languages": [
+            "en",
+            "id"
+          ],
+          "excerpt": {
+            "en": "ARIA moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS-to-LiveKit speedup was measured.",
+            "id": "ARIA pindah dari ACS ke LiveKit self-hosted. Drill PoC mencatat median hand-back 425 ms dalam 20 putaran; speedup terhadap ACS belum diukur secara sebanding."
+          },
+          "icon": "server"
+        },
+        {
           "slug": "untrusted-code-next-to-production-secrets",
           "title": {
             "en": "Untrusted Code Next to Production Secrets",

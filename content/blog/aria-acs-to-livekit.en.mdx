@@ -1,0 +1,110 @@
+---
+title: "Moving ARIA From ACS to LiveKit"
+date: "2026-10-27"
+excerpt: "ARIA moved from ACS to self-hosted LiveKit. A PoC drill measured 425 ms median hand-back over 20 rounds; no matched ACS-to-LiveKit speedup was measured."
+tags: ["voice-ai", "azure-openai-realtime", "evaluation", "case-study"]
+readingTime: "9 min"
+---
+
+I led ARIA's move from Azure Communication Services (ACS) to self-hosted LiveKit at Metrodata. In a live proof-of-concept drill, returning a call from the operator to the AI took 425 ms at the median across 20 rounds. That is a measured result on the new path. I do not have a matched ACS-to-LiveKit comparison that isolates a migration speedup.
+
+The migration started with a support deadline and a product decision. ARIA needed browser voice calls, AI responses and human takeover. It did not need a telephone network connection or a dependency on Teams. I wanted to keep the agent's orchestration while replacing the part carrying the audio.
+
+## The Deadline Applied to Our Calling Scenario
+
+Microsoft announced the retirement of ACS as a standalone offering on September 23, 2026, effective September 30, 2028. The [official retirement and breaking changes guide](https://learn.microsoft.com/en-us/azure/communication-services/acs-retirement-and-breaking-changes-guide) makes an important distinction: Calling SDK, Call Automation and Audio Streaming are classified as breaking changes, while ACS Email is being retired.
+
+After that date, the affected calling services remain supported only for eligible Teams-aligned scenarios. Connecting an AI service does not make a standalone workload eligible. The notice explicitly covers the server-side, bidirectional WebSocket audio streaming through Call Automation that ARIA used.
+
+I did not read that as "every ACS API disappears." I read it as a support boundary our standalone voice agent would cross. The available Teams integrations also needed their own capability checks; sending audio out of a call did not automatically establish support for sending it back.
+
+ARIA was still in development, so I chose to migrate before that boundary became a customer deadline. The product scope was web-only calls, with the media service self-hosted on Azure. LiveKit fit that scope without introducing a Teams requirement. Running it on Azure VMs also avoided a Kubernetes control plane we did not need for these rooms.
+
+## Change the Media Path, Keep the Agent
+
+The important boundary was between call transport and agent behavior. I introduced `CallChannel` for joining and controlling calls, and `MediaLink` for sending, receiving and clearing audio. ACS was wrapped behind that boundary first. LiveKit could then implement the same contract before the old transport was removed.
+
+<Architecture diagram="migration" caption="The media path before and after the migration. Each row is a separate path; agent orchestration and Azure OpenAI stay, while the call transport and its adapter change." />
+
+Read each row from the browser toward the model:
+
+1. Before the migration, the browser used the ACS Calling SDK. Call Automation attached the AI and exchanged audio with the Python backend over a media WebSocket.
+2. Afterward, the caller and operator joined a LiveKit room. The self-hosted media plane ran on two zonal Azure VMs, with embedded TURN for networks that could not connect directly.
+3. Adapter workers joined the room as the AI participant and exposed audio through `MediaLink`. The Python bridge still owned tools, knowledge retrieval, escalation and conversation state.
+4. Azure OpenAI Realtime still generated the spoken response. The change did not move ARIA's orchestration into the LiveKit Agents framework.
+
+That separation limited the migration's reach. I could replace join credentials, media envelopes, callbacks and channel-specific dependencies without rewriting how a knowledge search or escalation worked.
+
+It also made failure more explicit. After ACS removal, an unavailable production media channel refused new calls instead of silently choosing a different transport.
+
+## A Connected Room Was Only the Beginning
+
+### TURN Had to Work on the Restricted Path
+
+A successful call on a permissive network did not prove that a corporate browser could connect.
+
+In the infrastructure drill, Chromium connected through TURN over TLS on port 443 with outbound UDP blocked. Getting there required a routing fix: the HTTP matcher in front of the media service waited on TURN clients until its timeout. I replaced that distinction with byte-prefix routing and excluded Docker bridge addresses from advertised ICE candidates.
+
+The browser drill established that relay path. The reduced live validation window did not repeat the same UDP-blocked TLS exercise, so I keep those two pieces of evidence separate.
+
+### Server Recovery Did Not Mean the Caller Had Recovered
+
+The first hard node-loss test left the caller reconnecting without recovering.
+
+The backend could create a room on the surviving node, but the browser kept retrying the old node. In an intermediate fix, the AI also spoke its resume line before the caller had joined the replacement room. Server logs showed a successful resume that nobody heard.
+
+I tied the browser's rejoin to the session's media-node change and made resume audio wait for the caller's track. In the final two power-off drills, the caller heard the AI again after 11.5 s and 13.0 s, with conversation context preserved.
+
+That was a concrete recovery improvement within the drill. It was still an audible interruption, not seamless failover.
+
+### Mobile Failures and a Mobile Test Failure Were Different
+
+An actual mobile first-join failure exposed a retry that only handled one negotiation error. I broadened it to bounded connection retries with a fresh join token, while leaving microphone permission errors and backend client errors out of the retry loop.
+
+A separate commit fixed the "30 s drop" mobile test. The test emitted reconnecting before the initial join had finished, so join completion overwrote the state the test expected. Waiting for the listening state and polling microphone publication fixed that race. Its passing repetitions are evidence about the test, not a measured reduction in real mobile call drops.
+
+Another connection failure came from client-side navigation. The browser kept the Content Security Policy of the document it had originally loaded. Serving the LiveKit-aware policy only on call pages meant a visitor could fail to connect until reloading. The runtime policy had to apply to every page document.
+
+## The Upgrades Around the Cutover
+
+Removing ACS also meant dealing with email, secrets, observability and tests. Some changes replaced retiring services directly; others hardened the new path after the cutover.
+
+**Email became a separate delivery concern.** Summary email moved behind a provider interface, with Microsoft Graph and SMTP options and an outbox for delivery work. Removing the voice transport no longer required keeping ACS Email. Delivery failure could be tracked and handled independently of the call.
+
+**Secrets moved to one vault per environment.** The media and email integrations had introduced separate vaults. I consolidated them into the environment's vault and added a dry-run-first migration script that drained workloads, updated references, then restarted and checked media nodes individually. A follow-up fixed the helper's missing Azure dependency and stopped reporting a helper crash as a drain timeout.
+
+That reduced configuration to maintain, but it changed isolation too. In the access-policy deployment, media-node identities could read more secrets in the shared vault. Consolidation was an operational trade-off, not an unconditional security improvement.
+
+**The relay metric acquired an emitter.** An alert for TURN share is not useful if nothing reports the selected connection. I added `aria.livekit.ice.relay` from the browser's selected ICE candidate pair on connect, reconnect and rejoin. It distinguishes direct and relayed connections and lets operations inspect which transport was selected. It is best-effort, per-connection telemetry, not a measure of media minutes or proof that relay use fell.
+
+**Takeover needed cancellation across unfinished work.** A hold prompt could still be rendering when an operator claimed a call. Cancelling the currently playing prompt found nothing, then the late render played over the operator. A prompt-generation guard now discards renders completed after cancellation. I also added retries for the cached resume line while the AI remains muted, so hand-back need not depend on a fresh model response during throttling.
+
+Those drills found model-capacity problems as well as media bugs. Failed responses became visible and retryable, and later frame traces corrected an earlier diagnosis: caller frames were still arriving while semantic turn detection stalled under throttling. Media migration did not remove the need to size model capacity.
+
+**Tests followed behavior rather than implementation shape.** Backend checks moved from source-string inspection toward executing startup guards, checking actual token permissions, inspecting exported telemetry and asserting persisted events. Frontend constant-echo checks were removed or replaced with contract checks. The removal also retired ACS SDK dependencies and the unused Bun backend, leaving the Python realtime service and LiveKit runtime path.
+
+## What the Measurements Support
+
+The live window was a reduced PoC exercise, not a production service-level measurement. These are the useful results from it:
+
+| Exercise | Recorded Result | Limit |
+|---|---|---|
+| Steady-state load with 10 concurrent calls, four turns per call | Turn latency P50 1286 to 1324 ms; barge-in P50 100 to 191 ms | Three calls escalated after knowledge search exceeded its 2.5 s budget |
+| Operator takeover and hand-back, four calls with five rounds each | 20 successful rounds; caller-heard hand-back P50 425 ms, P95 2.4 s; resume line cached in 19 rounds | A long tail remained, and later consent-flow drills exposed further failures |
+| Call setup during the window | 70 of 74 setups succeeded, 94.6%, against a 99% target | The setup gate failed; deployment overlaps, cold start and a relay publication failure were among the causes |
+
+The older ACS reference recorded turn latency P50 2701 ms and P95 4325 ms over 30 turns. Its emulator fed the backend directly, bypassing the actual ACS media plane. The agent settings and test conditions also differed from the LiveKit calls.
+
+Putting those figures beside the LiveKit results does not isolate a transport gain. I cannot honestly turn them into an "ACS to LiveKit was X% faster" headline. The new path was measured and met useful drill goals; the causal before-and-after number is missing.
+
+The largest practical change was in-session hand-back with a cached resume line, alongside the ability to drain nodes and recover calls onto another node. Those are changes to the complete call path, not benefits attributable to a media server alone.
+
+Cost changed shape too: a metered call-provider component was replaced by infrastructure we operate. The repository has planning estimates, but no matched billed before-and-after result I can publish as savings. Certificates, patching, capacity and incident response remain work someone must own.
+
+## The Remaining Gaps
+
+The broader 900 ms turn-P50 goal was still unmet. Real-microphone validation and wider-network coverage were deferred.
+
+Turn-taking also remained unfinished. In a later live start-hold experiment, cut-offs went from 8 of 15 utterances to 9 of 15. That small sample showed no improvement. I covered the interruption mechanism and that negative result in [How We Made a Voice Agent Interruptible](/en/blog/making-a-voice-agent-interruptible); it should not be counted again as a migration gain.
+
+I directed AI coding agents for much of the implementation, then reviewed and merged their work. The migration gave ARIA a self-hosted media path, measured cached hand-back in the recorded drills, and explicit recovery and operational controls. It did not establish a production latency or cost advantage over ACS. The remaining setup and real-microphone checks still needed a larger validation window.
