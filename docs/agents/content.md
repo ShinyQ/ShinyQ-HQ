@@ -110,6 +110,12 @@ Every PDF on the site (the study guides, the CV, the paper PDFs) opens in one mo
 - Resolve a raw graph once for the requested locale before layout, accessible summaries and room-view serialization. Layout and client DTO labels remain strings; never mutate cached source graphs.
 - Node IDs, edge endpoints, ordering and group strings are structural. Groups remain shared membership/display keys, not localized captions.
 
+### Blog MDX
+
+- Every post compiles through `compilePost` (`src/components/blog/compile.ts`): `next-mdx-remote` with `parseFrontmatter` and `remark-gfm`, build time only (no client JS). The page and `tests/content/blog-mdx.test.tsx` share it; never call `compileMDX` with other options.
+- `postMdxComponents` overrides `pre` (focusable) and `table`: each table sits in `div.prose-table`, a `role="region"` with `tabindex="0"` and the `blog.tableLabel` name, the only thing that scrolls sideways (`overflow-x: auto`); the page keeps `overflow-x: clip`.
+- Table styles live with `.prose-hq` in `src/app/globals.css`: tokens only, ruled rows (`--color-line`, header rule `--color-line-2`), the body face at `--text-meta`, left-aligned, `tabular-nums`.
+
 ### Blog architecture figures
 
 - A post embeds `<Architecture pod="<pod-slug>" caption="..." />` (the case study's diagram) or `<Architecture diagram="<id>" caption="..." />` (from `content/blog/diagrams.json`).

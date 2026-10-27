@@ -364,6 +364,7 @@
   },
   "blog": {
     "back": "Kembali ke Tulisan",
+    "tableLabel": "Tabel yang dapat digeser",
     "translationMissing": "Tulisan ini tersedia dalam {language}. Versi asli ditampilkan di sini.",
     "languageName": {
       "en": "bahasa Inggris",

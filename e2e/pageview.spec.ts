@@ -698,6 +698,21 @@ test("the Page View stays silent: clicks and the CV dialog create no AudioContex
   expect(await page.evaluate(() => (window as unknown as { __audioContexts: number }).__audioContexts)).toBe(0);
 });
 
+test("a post's Markdown table renders as a table that scrolls in its own region on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openPage(page, staticTier("/en/blog/aria-acs-to-livekit"));
+  const region = page.getByRole("region", { name: en.blog.tableLabel });
+  await expect(region).toHaveCount(1);
+  const table = region.getByRole("table");
+  await expect(table).toBeVisible();
+  await expect(table.getByRole("columnheader")).toHaveText(["Exercise", "Recorded Result", "Limit"]);
+  await expect(page.locator("article")).not.toContainText("|---|");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const box = await region.boundingBox();
+  expect(box && box.x >= 0 && box.x + box.width <= 390).toBe(true);
+  await expectNoSeriousViolations(page);
+});
+
 test.describe("architecture diagrams", () => {
   const FIGURE_POSTS: { slug: string; figures: number }[] = [
     { slug: "making-a-voice-agent-interruptible", figures: 1 },
