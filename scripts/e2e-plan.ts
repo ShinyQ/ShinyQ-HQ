@@ -243,7 +243,7 @@ export const RULES: Rule[] = [
   { test: /^src\/experience\/floors\/roof\/|^src\/experience\/floors\/Roof\.tsx$/, specs: ["library-roof", "pads", "roof"] },
   { test: /^src\/content\/room-views\/roof\.ts$/, specs: ["library-roof", "roof"] },
   // The kiosk, its spoke and the session spawn in front of it (owner 2026-10-14): the first frame, the tour and point-and-go.
-  { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits"] },
+  { test: /^src\/experience\/floors\/lobby\/(kiosk\.ts|MissionKiosk\.tsx|Lanes\.tsx)$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "gpu"] },
   // The Lobby spawn and the kiosk axis (out of config.ts): the kiosk's specs plus the arrivals tour.
   { test: /^src\/experience\/floors\/lobby\/spawn\.ts$/, specs: ["experience", "highlights", "onboarding", "interact", "camera", "visits", "arrivals"] },
   // The prebuilt L1 wall logo atlas (scripts/logo-atlas.ts) draws on the Lobby walls only.

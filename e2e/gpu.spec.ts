@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { asReturningVisitor, driveTo, waitForFloor, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
+import { LOBBY } from "../src/experience/config";
+import { asReturningVisitor, driveTo, waitForCameraSettle, waitForFloor, waitForFrames, waitForHQ, waitForPhase, waitForSceneLive } from "./hq";
 import { waitForStablePrograms } from "./perf/helpers";
 
 /**
@@ -98,9 +99,15 @@ test("an arrival flag adds no shader program (full tier)", async ({ page }) => {
   const names = () => page.evaluate(() => (window as unknown as GpuWindow).__hq.render.programNames());
   const before = await names();
   await page.evaluate(() => {
-    const w = window as unknown as SceneWindow & { flagDrawn?: boolean };
+    type Node = { visible: boolean; parent: Node | null; geometry?: { type: string; parameters?: { radialSegments?: number } } };
+    const w = window as unknown as { flagDrawn?: boolean; __hq: { render: { scene: { traverse(cb: (o: Node) => void): void } | null } } };
+    // The flag group holds the pennant, the only 3-segment cylinder in the scene.
+    let flag: Node | null = null;
+    w.__hq.render.scene?.traverse((o) => {
+      if (o.geometry?.type === "CylinderGeometry" && o.geometry.parameters?.radialSegments === 3) flag = o.parent;
+    });
     const watch = () => {
-      if (w.__hq.render.scene?.getObjectByName("rover-flag")?.visible) w.flagDrawn = true;
+      if ((flag as Node | null)?.visible) w.flagDrawn = true;
       else requestAnimationFrame(watch);
     };
     requestAnimationFrame(watch);
@@ -114,6 +121,45 @@ test("an arrival flag adds no shader program (full tier)", async ({ page }) => {
   expect(await drawn(), "a frame drew the arrival flag").toBe(true);
   await waitForStablePrograms(page);
   expect((await names()).filter((n) => !before.includes(n))).toEqual([]);
+});
+
+/**
+ * The Lobby kiosk's Rover menu scrolls with the same glyphs at every offset, so troika updates its text in place. A new glyph
+ * count made troika dispose the text geometry, which an unseen kiosk never uploaded again (the renderer's geometry count one
+ * lower at random, a flaky L1 replay memory gate). From the office stop (the kiosk out of view) two scroll steps keep the
+ * glyph attribute and the geometry count.
+ */
+test("the kiosk menu scrolls without reallocating its text geometry", async ({ page }) => {
+  await asReturningVisitor(page);
+  await page.goto("/en?tier=lite");
+  await waitForHQ(page);
+  await waitForPhase(page, "explore");
+  await waitForSceneLive(page);
+  await driveTo(page, LOBBY.officeWing.stop);
+  await waitForCameraSettle(page);
+  type KioskText = { text: string; geometry: { getAttribute(name: string): unknown } };
+  type KioskWindow = { kiosk?: { mesh: KioskText; attr: unknown; geometries: number }; __hq: { perf: { stats: { geometries: number } }; render: { scene: { traverse(cb: (o: Partial<KioskText>) => void): void } | null } } };
+  const start = await page.evaluate(() => {
+    const w = window as unknown as KioskWindow;
+    w.__hq.render.scene?.traverse((o) => {
+      if (typeof o.text === "string" && o.text.includes("./rover-menu")) {
+        const mesh = o as KioskText;
+        w.kiosk = { mesh, attr: mesh.geometry.getAttribute("aTroikaGlyphBounds"), geometries: w.__hq.perf.stats.geometries };
+      }
+    });
+    return w.kiosk?.mesh.text ?? null;
+  });
+  expect(start).not.toBeNull();
+  const text = () => page.evaluate(() => (window as unknown as KioskWindow).kiosk!.mesh.text);
+  const first = await expect.poll(text, { timeout: 60_000 }).not.toBe(start).then(text);
+  await expect.poll(text, { timeout: 60_000 }).not.toBe(first);
+  // Let the second step's typesetting land.
+  await waitForFrames(page, 10);
+  const kept = await page.evaluate(() => {
+    const w = window as unknown as KioskWindow;
+    return { attr: w.kiosk!.mesh.geometry.getAttribute("aTroikaGlyphBounds") === w.kiosk!.attr, geometries: w.__hq.perf.stats.geometries - w.kiosk!.geometries };
+  });
+  expect(kept).toEqual({ attr: true, geometries: 0 });
 });
 
 /**
@@ -177,7 +223,7 @@ test("the safety net steps down on sustained slow frames, at most twice a minute
   expect(await page.evaluate(() => sessionStorage.getItem("hq:gfx"))).toBe(JSON.stringify({ level: 2, locked: false }));
 });
 
-type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): { visible: boolean; traverse(cb: (o: { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; visible: boolean }) => void): void } | undefined } | null } } };
+type SceneWindow = { __hq: { render: { scene: { getObjectByName(name: string): { traverse(cb: (o: { isMesh?: boolean; isLine?: boolean; isPoints?: boolean; visible: boolean }) => void): void } | undefined } | null } } };
 
 /** Renderable objects (one draw call each, two for an outlined text batch) under a named group. */
 async function renderables(page: Page, name: string) {
