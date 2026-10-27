@@ -28,6 +28,11 @@ How the site's content is stored, checked and published. The authoritative rules
 - A technical post can show an architecture figure: `<Architecture pod="<pod-slug>" caption="..." />` reuses a case study's diagram, and `<Architecture diagram="<id>" caption="..." />` draws a post-local one from `content/blog/diagrams.json` (keyed by post slug, then diagram id; each value has the pod `architecture` shape: nodes with layer, row and kind, plus edges). Props are strings only, and the tag is self-closing with double-quoted props, so `tests/content/post-diagrams.test.ts` can read it. Follow each figure with a numbered walkthrough of the flow, put the same tags in both locales (only the caption is translated), and note that an unknown pod or diagram fails the build and that test (which also flags unused diagrams). Diagrams are drawn at build time as inline SVG (boxes and arrows; dashed for `async` edges): left to right from 1100 px when the drawing fits (a post figure may extend past the text column), top to bottom below that and on phones. An optional node `group` (for example "Cloudflare") draws a frame around its nodes; keep a group on neighbouring layers and rows so the frame holds only its members. The group name sits above the frame's top-left corner, or further along the top when an edge runs through that corner. `tests/unit/diagram-layout.test.ts` fails when a post diagram has crossing edges in any layout, or when any edge, node or edge label touches a group name.
 - Check an edit quickly with `bun run validate:content`.
 
+The bilingual `aria-acs-to-livekit` case study belongs to **AI in Production**. Its
+post-local migration figure compares the old and new media paths. Results retain
+the reduced-PoC scope, sample sizes and failed setup gate; the ACS harness reference
+bypasses the ACS media plane and is not a controlled migration-speedup comparison.
+
 ### Reader tracks
 
 The L4 Writing floor shelves the posts by reader track, one bookshelf bay per track (owner decision [2026-10-25](decisions/2026-10-25-l4-reader-tracks.md); the floor in [`agents/floor-l4-library.md`](agents/floor-l4-library.md)).

@@ -195,10 +195,21 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("It went from 90.9% to 36.4%.", item).pass).toBe(false);
   });
 
-  it("has 102 unique items with a 99 pass threshold", () => {
-    expect(golden.items).toHaveLength(102);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(102);
-    expect(golden.passThreshold).toBe(99);
+  it("requires measurement context and comparison limits for the migration", () => {
+    const en = golden.items.find((i) => i.id === "q103") as GoldenItem;
+    const id = golden.items.find((i) => i.id === "q104") as GoldenItem;
+    expect(scoreGolden("Kurniadi reports 425 ms P50 hand-back in a PoC drill, not a matched ACS comparison.", en).pass).toBe(true);
+    expect(scoreGolden("Kurniadi reports 425 ms P50 hand-back in a PoC drill.", en).pass).toBe(false);
+    expect(scoreGolden("Kurniadi reports 425 ms in a PoC drill, twice as fast as the matched ACS baseline.", en).pass).toBe(false);
+    expect(scoreGolden("Kurniadi mencatat P50 hand-back 425 ms dalam drill PoC, tanpa pembanding ACS yang sebanding.", id).pass).toBe(true);
+    expect(scoreGolden("Kurniadi mencatat P50 hand-back 425 ms dalam drill PoC.", id).pass).toBe(false);
+    expect(scoreGolden("Kurniadi mencatat 425 ms dalam drill PoC, dua kali lebih cepat daripada ACS yang setara.", id).pass).toBe(false);
+  });
+
+  it("has 104 unique items with a 101 pass threshold", () => {
+    expect(golden.items).toHaveLength(104);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(104);
+    expect(golden.passThreshold).toBe(101);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {
