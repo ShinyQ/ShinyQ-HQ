@@ -206,6 +206,7 @@ Per-frame state lives in runtime objects; the store changes only on a real chang
   - `FloorPrep` in `tower/Tower.tsx` calls `precompileFloor` from `scene/precompile.ts` on the content group that `FloorLevel` registers in `tower/floorRegistry.ts`.
   - It compiles into the render target the scene pass uses, so full-tier programs match the composer.
 - Troika syncs are counted per floor (`tower/textSync.ts`, installed by `text-config.ts`).
+- A troika text whose glyph count changes gets a disposed and rebuilt geometry (`renderer.info` geometries drop by one until it draws again, so an unseen text holds the count low). Text that changes on a timer keeps the same glyphs (the Lobby kiosk clips the entries it does not show).
 - Text workers: troika typesets on the main thread (`useWorker: false`), and `text-config.ts` makes `new Worker(blob:)` throw, so a GPU that fails webgl-sdf-generator's trial run (some tablets) gets troika's JS glyph SDFs on the main thread. A blob: worker would pass troika's probe in WebKit and then fail under the CSP, leaving every text unsynced and the Lobby empty (owner report 2026-10-24; `e2e/sdf-fallback.spec.ts` forces the trial failure).
 - `advanceRide` holds the car at closed doors (end of `closing`, or at the door under reduced motion) until `destinationReady(to)` (`tower/ridePrep.ts`) or `PREPARE_TIMEOUT` (1.5 s).
 - A floor below the car that is still compiling stays hidden until the car moves (`floorContentVisible`, `tower/near.ts`).
@@ -454,6 +455,9 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 - `precompileFloor` returns null before the scene's first drawn frame and never switches to a render target that is already bound.
   - `withTarget`: three resets the canvas viewport with `floor()` on a switch to null, which would draw a fractional lite canvas 1 px narrower.
 - Content visibility is `floorContentVisible` and `contentVisible` (`tower/visibility.ts`) together.
+- `gl.compile` skips hidden objects, so the boot and floor precompiles never see an object that mounts hidden and shows later. Such an object either reuses a program the scene already draws (same material type and flags, same geometry attributes) or is precompiled with its hidden children shown (`OfficeReady`).
+  - Otherwise it compiles on the first drawn frame that shows it, and on a slow runner which frame that is comes down to chance (the rover's arrival flag: its DoubleSide pennant was a flaky +1 program in the L1 replay perf gate; now a closed prism with the pole's program).
+  - Test: `e2e/gpu.spec.ts` ("an arrival flag adds no shader program", full tier) drives until a frame drew the flag, then holds the settled program set.
 - `__hq.render` exposes `peakCalls` (reset with `resetPeak()`), `programs()`, `programNames()`, `graphics()` and `warmFloors()`.
 
 ## Batched text with live members

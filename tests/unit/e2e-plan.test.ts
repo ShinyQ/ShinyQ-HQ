@@ -146,7 +146,7 @@ describe("specsForChanges", () => {
   it("maps the rover idle code to the rover-idle spec", () => {
     expect(specsForChanges(["src/experience/rover/idle.ts"]).specs).toEqual(["idle-cadence", "rover-idle"]);
     expect(specsForChanges(["src/experience/rover/activity.ts"]).specs).toEqual(["rover-idle"]);
-    expect(specsForChanges(["src/experience/rover/Rover.tsx"]).specs).toEqual(["camera", "experience", "idle-cadence", "rover-idle"]);
+    expect(specsForChanges(["src/experience/rover/Rover.tsx"]).specs).toEqual(["camera", "experience", "gpu", "idle-cadence", "rover-idle"]);
     expect(specsForChanges(["e2e/rover-idle.spec.ts"]).specs).toEqual(["rover-idle"]);
   });
 
@@ -304,7 +304,7 @@ describe("specsForChanges", () => {
     // The Visitor Observatory lives in the Lobby (owner decision 2026-10-14).
     expect(specsForChanges(["src/experience/floors/lobby/VisitsStation.tsx"]).specs).toEqual(["experience", "highlights", "pageview", "visits"]);
     expect(specsForChanges(["src/experience/floors/lobby/observatory.ts"]).specs).toEqual(["experience", "highlights", "pageview", "visits"]);
-    expect(specsForChanges(["src/experience/floors/lobby/kiosk.ts"]).specs).toEqual(["camera", "experience", "highlights", "interact", "onboarding", "visits"]);
+    expect(specsForChanges(["src/experience/floors/lobby/kiosk.ts"]).specs).toEqual(["camera", "experience", "gpu", "highlights", "interact", "onboarding", "visits"]);
   });
 
   it("selects the arrivals spec for arrival points, zones and the camera (Round 8 J)", () => {

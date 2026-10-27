@@ -257,6 +257,7 @@ Code: `floors/lobby/kiosk.ts`. The kiosk lines up straight, radially into the ho
 - Body, stand and screen are one group turned by one yaw (`KIOSK.yaw`) that faces the hologram.
 - The screen is centered on the body and only tilts back.
 - Lines never wrap: `kioskFontSize` fits the longest line, `fitLine` ends longer ones in "...".
+- The screen shows five of the Rover menu's entries and scrolls one line every 2.2 s (static under reduced motion). `kioskLines` puts the other entries after the hint, and the text's `clipRect` ends it after the hint (11.6 em: 8 screen lines of `KIOSK.screen.lineHeight`, checked in `tests/unit/kiosk.test.ts`), so every offset holds the same glyphs and troika updates the text in place. A new glyph count made troika dispose the text geometry, which an unseen kiosk never uploaded again: `renderer.info` geometries one lower at random (a flaky L1 replay memory gate). `e2e/gpu.spec.ts` ("the kiosk menu scrolls without reallocating its text geometry") checks it from the office stop.
 - Placement: on the kiosk axis (`LOBBY.kioskAxis`: the unit direction from the hologram to the Visitor Observatory), 22.5 u from the hologram (its front about 6 u past the lane ring, its box 6 u from the observatory).
 - Lane spoke (`Lanes.tsx`): one straight radial segment ending 0.4 u in front of its front (`kioskLaneEnd`).
 - Obstacle and pick volume: the axis-aligned box of the turned footprint (`kioskRect` in config.ts, `kioskBounds`).
