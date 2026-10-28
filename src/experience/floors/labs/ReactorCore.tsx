@@ -3,11 +3,8 @@
 import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Color, CylinderGeometry, Object3D, PlaneGeometry, RingGeometry, type InstancedMesh } from "three";
-import type { ReactorRingId } from "@/content/tech-rings";
-import { getHQStore, useHQStore, type ReactorTech } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { FloatingSigns } from "../../fx/FloatingSign";
-import { signPlate, wrapSign, type SignSpec } from "../../fx/signLayout";
-import { FONTS } from "../../tower/primitives";
 import { createHoloMaterial, HOLO_MODE } from "../../fx/holoFx";
 import { HoloMesh } from "../../fx/HoloMesh";
 import { neonColor } from "../../fx/materials";
@@ -17,41 +14,16 @@ import { useUniformTime } from "../../fx/useUniformTime";
 import type { Rect, Vec2 } from "../../types";
 import { WING_TINT } from "./layout";
 import { REACTOR, reactorSpin, waterfallPanels, WATERFALL } from "./reactor";
-import { COUNT_SIGN_Y, SURPRISE_SPIN, TECH_RINGS } from "./techReactor";
+import { CORE_COLOR, reactorSigns, type ReactorLabels } from "./readable";
+import { SURPRISE_SPIN, TECH_RINGS } from "./techReactor";
+
+export type { ReactorLabels };
 
 const NO_RAYCAST = () => null;
-const CORE_COLOR = "#67e8f9";
 /** The floor ring around the core's base (one more instance of the orbit ring mesh). */
 const BASE_RING = { r: 2.4, y: 0.06 } as const;
-/** Ring label type size and the gap between a ring and its label plate. */
-const LABEL = { font: 0.5, gap: 0.4 } as const;
-const COUNT_FONT = 0.7;
 /** Ring brightness: selected ring, other rings while a tech is picked, every ring otherwise. */
 const RING_LEVEL = { on: 2.6, off: 0.18, idle: 1 } as const;
-
-export interface ReactorLabels {
-  rings: Record<ReactorRingId, string>;
-  uses: (count: number, tech: string) => string;
-}
-
-/**
- * Ring labels beside their rings, alternating north and south of the column so they never cover the
- * core from the wing roads or the reactor stop (both look along x), plus "N projects use X" above
- * the core while a tech is picked. One `FloatingSigns` group: two draw calls.
- */
-export function reactorSigns(labels: ReactorLabels, tech: ReactorTech | null): SignSpec[] {
-  const signs: SignSpec[] = TECH_RINGS.map((ring, i) => {
-    const text = labels.rings[ring.id].toUpperCase();
-    const { w } = signPlate({ text, fontSize: LABEL.font });
-    const side = i % 2 === 0 ? -1 : 1;
-    return { text, x: 0, y: ring.y, z: side * (ring.r + LABEL.gap + w / 2), color: ring.color, fontSize: LABEL.font, font: FONTS.monoBold };
-  });
-  if (tech) {
-    const ring = TECH_RINGS.find((r) => r.id === tech.ring);
-    signs.push({ text: wrapSign(labels.uses(tech.count, tech.name), 28), x: 0, y: COUNT_SIGN_Y, z: 0, color: ring?.color ?? CORE_COLOR, fontSize: COUNT_FONT, font: FONTS.monoBold });
-  }
-  return signs;
-}
 
 /**
  * L3 Tech Reactor core in the east plaza (design 2026-10-14, section 2; the spectacle round's core): a
@@ -138,7 +110,8 @@ export function Reactor({ center, labels }: { center: Vec2; labels: ReactorLabel
     },
     [],
   );
-  const signs = useMemo(() => reactorSigns(labels, tech), [labels, tech]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const signs = useMemo(() => reactorSigns(labels, tech, phone), [labels, tech, phone]);
 
   return (
     <group name="labs-reactor" position={[center.x, 0, center.z]}>
