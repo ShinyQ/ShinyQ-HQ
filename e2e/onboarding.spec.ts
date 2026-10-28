@@ -397,8 +397,9 @@ test.describe("phone layout", () => {
     expect(overlaps(await rect(box(page)), await rect(page.getByTestId("point-hint")))).toBe(false);
 
     // Point-and-go on touch, as the line teaches: the first tap selects (Go chip), the chip drives.
-    const top = (await rect(box(page))).y;
-    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, bottom: 844 - top + 8 }, minDistance: 4 });
+    // The choiceless line is a top toast: pick a target below it.
+    const tryIt = await rect(box(page));
+    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, top: tryIt.y + tryIt.height + 8 }, minDistance: 4 });
     const point = await targetPoint(page, target.id);
     await page.touchscreen.tap(point.x, point.y);
     const go = page.getByTestId("interact-go");
