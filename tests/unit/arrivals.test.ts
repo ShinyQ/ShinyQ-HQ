@@ -1,11 +1,9 @@
-import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
 import { ARRIVAL_HEADING, ARRIVAL_RAIL_YAW, ARRIVAL_YAW, cameraBehindHeading, ELEVATOR_DIAGONAL, SHAFT_CLEAR_X, shaftClearZoom } from "@/experience/camera/arrival";
-import { followOffsetScale } from "@/experience/camera/offset";
 import { ZOOM_RANGE, zoneAt, zoneView, type ViewZone } from "@/experience/camera/orbit";
-import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type CameraPose, type Vec3 } from "@/experience/camera/rigs";
+import type { CameraPose, Vec3 } from "@/experience/camera/rigs";
 import { buildFloorLayouts, FLOOR_IDS, LOBBY, ROVER } from "@/experience/config";
 import { buildCareerRoad, careerLayoutInput, roadZAt } from "@/experience/floors/career/layout";
 import { buildEngineLayout, ENGINE } from "@/experience/floors/engine/layout";
@@ -20,6 +18,7 @@ import { buildNavGrid, findPath, isWalkable, segmentWalkable } from "@/experienc
 import { padAt } from "@/experience/nav/pads";
 import type { FloorLayout, Vec2, ViewportClass } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
+import { cameraOf, readingPose, rigOf, screen } from "../helpers/phone-camera";
 
 /**
  * Round 8 J, L3-style arrivals (owner 2026-10-17: "the proper one is the third floor"): after a ride the rover
@@ -57,8 +56,8 @@ const stationFront: Vec2 = {
 const dataBoard = directoryBoard("data");
 const mast = buildRoofLayout().centerpiece.center;
 /**
- * The RF availability sign's four corners (owner 2026-10-17: in view on arrival with the mast): `SIGN` in
- * floors/roof/SignalGarden.tsx (2.3 u out from the mast along `signYaw`, 8 u wide, from 4.2 u to 7.6 u up).
+ * The RF availability sign's four corners (owner 2026-10-17: in view on arrival with the mast): `ROOF_SIGN` in
+ * floors/roof/readable.ts (2.3 u out from the mast along `signYaw`, 8 u wide, from 4.2 u to 7.6 u up).
  */
 const signNormal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
 const signCenter = { x: mast.x + signNormal.x * 2.3, z: mast.z + signNormal.z * 2.3 };
@@ -85,8 +84,6 @@ const SIGHTS: Record<FloorId, { label: string; at: Vec3 }[]> = {
     ...signCorners,
   ],
 };
-
-const rigOf = (floor: FloorId): "follow" | "rail" => (floor === "L2" ? "rail" : "follow");
 
 /** Half the width of the owner's name over the L1 hologram (a billboard; the bold name measures about 6.7 u in the 1440x900 arrival). */
 const NAME_HALF = 3.5;
@@ -133,31 +130,7 @@ function settledPose(floor: FloorId, w: number, h: number): { pose: CameraPose; 
   const { layout, arrival, zone } = arrivalOf(floor);
   const cls = cameraClass(w, h);
   const zoom = zoneView(zone, cls).zoom ?? 1;
-  if (rigOf(floor) === "rail") {
-    const axis = layout.road?.roads[0]?.points ?? [];
-    const right = zoneView(zone, cls).lookOffset?.right ?? 0;
-    return { pose: railPose(cls, arrival.x, 0, zoom, arrival.z, zone.railYaw, roadZAt(axis, arrival.x), 0, true, right), cls, zoom };
-  }
-  const view = zoneView(zone, cls);
-  const forward = followForward(cls, view.yaw);
-  const ahead = FOLLOW_LOOK_AHEAD[cls];
-  const target: Vec3 = [arrival.x + forward.x * ahead, 1, arrival.z + forward.z * ahead];
-  const look = view.lookOffset;
-  return { pose: followPose(cls, target, view.yaw, zoom * followOffsetScale(cls, w / h), view.pitch ?? 0, look?.forward ?? 0, look?.up ?? 0, look?.right ?? 0), cls, zoom };
-}
-
-function cameraOf(pose: CameraPose, w: number, h: number): PerspectiveCamera {
-  const camera = new PerspectiveCamera(pose.fov, w / h, 0.1, 500);
-  camera.position.set(...pose.position);
-  camera.lookAt(new Vector3(...pose.target));
-  camera.updateMatrixWorld();
-  camera.updateProjectionMatrix();
-  return camera;
-}
-
-function screen(camera: PerspectiveCamera, w: number, h: number, p: Vec3) {
-  const v = new Vector3(...p).project(camera);
-  return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, front: v.z < 1 };
+  return { pose: readingPose(floor, layout, { at: arrival, heading: ARRIVAL_HEADING, primed: true }, w, h), cls, zoom };
 }
 
 function expectInside(p: { x: number; y: number; front: boolean }, w: number, h: number, safe: Safe, label: string) {
