@@ -20,9 +20,29 @@ export interface LabelSet {
 }
 
 export const ROOM_LABEL_Y = 4.7;
+/**
+ * Room label type: size, line height and lean back toward the rail camera. On a portrait phone (camera class `mobile`)
+ * the size is `phone.near` on the south edge (near the rail camera) and `phone.far` on the north edge (the phone reading rule).
+ */
+export const ROOM_LABEL = { fontSize: 0.4, lineHeight: 1.25, tilt: 0.55, phone: { near: 0.52, far: 0.72 } } as const;
+/** The year digits over each arch (`YearGates`): type size, and their bottom over the arch beam. */
+export const YEAR_DIGITS = { fontSize: 2.2, bar: 0.5, lift: 0.3 } as const;
+/**
+ * Award placings ("×10") on the plinth of an award room (`CareerRooms`): height, offset toward the road side, size and
+ * lean back; on a portrait phone (camera class `mobile`) a north room's (far from the rail camera) is `phoneFar`.
+ */
+export const PLACING = { y: 0.6, ahead: 1.15, fontSize: 0.55, tilt: 0.55, phoneFar: 0.74 } as const;
 
-/** One label per career room with an entry: role, then org and period; leans back 0.55 rad toward the rail camera. */
-export function roomLabelSet(rooms: readonly CareerRoom[], entries: ReadonlyMap<string, CareerEntryView>): LabelSet {
+/** A room's placings type size (`phone`: camera class `mobile`). */
+export const placingSize = (room: Pick<CareerRoom, "side">, phone: boolean): number => (phone && room.side < 0 ? PLACING.phoneFar : PLACING.fontSize);
+
+/** Signpost type size, and on a portrait phone. */
+export const SIGNPOST = { fontSize: 0.42, phone: 0.66 } as const;
+/** The repo skyline sign's type size, and on a portrait phone. */
+export const REPOS_SIGN = { fontSize: 0.6, phone: 0.66 } as const;
+
+/** One label per career room with an entry: role, then org and period; leans back 0.55 rad toward the rail camera (`phone`: portrait sizes). */
+export function roomLabelSet(rooms: readonly CareerRoom[], entries: ReadonlyMap<string, CareerEntryView>, phone = false): LabelSet {
   const labels: BatchedLabel[] = [];
   const xs: number[] = [];
   const pivots: [number, number][] = [];
@@ -34,10 +54,10 @@ export function roomLabelSet(rooms: readonly CareerRoom[], entries: ReadonlyMap<
     labels.push({
       text: `${entry.role}\n${entry.org} \u00B7 ${entry.period}`,
       position: [room.center.x, ROOM_LABEL_Y, room.center.z],
-      tilt: 0.55,
+      tilt: ROOM_LABEL.tilt,
       font: FONTS.sansBold,
-      fontSize: 0.4,
-      lineHeight: 1.25,
+      fontSize: phone ? ROOM_LABEL.phone[room.side < 0 ? "far" : "near"] : ROOM_LABEL.fontSize,
+      lineHeight: ROOM_LABEL.lineHeight,
       maxWidth: room.w + 0.6,
       outlineWidth: 0.03,
       outlineColor: COLORS.void,
@@ -50,8 +70,8 @@ export function roomLabelSet(rooms: readonly CareerRoom[], entries: ReadonlyMap<
   return { labels, xs, pivots };
 }
 
-/** The signpost under each year arch ("2021 · 8 rooms →"). */
-export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count: number) => string): LabelSet {
+/** The signpost under each year arch ("2021 · 8 rooms →"); `phone`: the portrait size. */
+export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count: number) => string, phone = false): LabelSet {
   return {
     xs: years.map((y) => y.arch.center.x),
     pivots: years.map((y) => [y.arch.center.x, y.arch.center.z]),
@@ -61,7 +81,7 @@ export function signpostSet(years: CareerRoadLayout["years"], roomsLabel: (count
       text: `${y.year} \u00B7 ${roomsLabel(y.rooms.length)} \u2192`,
       position: [y.arch.center.x, CAREER_ROAD.archHeight - 0.2, y.arch.center.z + CAREER_ROAD.width / 2 + 1.4],
       font: FONTS.mono,
-      fontSize: 0.42,
+      fontSize: phone ? SIGNPOST.phone : SIGNPOST.fontSize,
       letterSpacing: 0.06,
       color: COLORS.white,
       outlineWidth: 0.03,
@@ -100,8 +120,8 @@ export interface WorkshopSignLabels {
   repos: string;
 }
 
-/** Floating signs over the gateway (the Workshop), the time console and the repo skyline; they fade with the rover's distance like the room labels. */
-export function workshopSigns(w: WorkshopLayout, labels: WorkshopSignLabels, color: string): SignSpec[] {
+/** Floating signs over the gateway (the Workshop), the time console and the repo skyline; they fade with the rover's distance like the room labels (`phone`: portrait sizes). */
+export function workshopSigns(w: WorkshopLayout, labels: WorkshopSignLabels, color: string, phone = false): SignSpec[] {
   const gatewayTop = WORKSHOP.gateway.height + WORKSHOP.gateway.beam;
   const signs: SignSpec[] = [
     { text: labels.workshop.toUpperCase(), x: w.gateway.x, y: gatewayTop + 1.3, z: 0, color, fontSize: 0.9, letterSpacing: 0.08, font: FONTS.monoBold, tilt: 0.2, fadeX: w.gateway.x },
@@ -115,7 +135,7 @@ export function workshopSigns(w: WorkshopLayout, labels: WorkshopSignLabels, col
       y: SKYLINE.plinth + w.skyline.top + 2.2,
       z: (p.minZ + p.maxZ) / 2,
       color: COLORS.cyan,
-      fontSize: 0.6,
+      fontSize: phone ? REPOS_SIGN.phone : REPOS_SIGN.fontSize,
       letterSpacing: 0.06,
       font: FONTS.monoBold,
       tilt: 0.2,

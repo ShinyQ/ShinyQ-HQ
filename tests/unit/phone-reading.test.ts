@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { buildExperienceData } from "@/content/experience";
 import type { FloorId } from "@/content/schema";
 import { buildFloorLayouts } from "@/experience/config";
-import { careerLayoutInput } from "@/experience/floors/career/layout";
+import { buildCareerRoad, careerLayoutInput } from "@/experience/floors/career/layout";
+import { readableLabels as careerLabels } from "@/experience/floors/career/readable";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
 import { readableLabels as labsLabels } from "@/experience/floors/labs/readable";
 import { postTitles } from "@/experience/floors/library/decor/common";
@@ -28,8 +29,8 @@ import { cameraOf, emPx, endsPx, facingAngle, readingPose, screen } from "../hel
  * phone size), so the desktop and tablet sizes stay as they were (pinned below). `PHONE_READING_ALL=1` prints every
  * label's sizes, not just the misses.
  */
-type Floor = "L3" | "L4" | "RF";
-const FLOORS: readonly Floor[] = ["L3", "L4", "RF"];
+type Floor = "L2" | "L3" | "L4" | "RF";
+const FLOORS: readonly Floor[] = ["L2", "L3", "L4", "RF"];
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const career = careerLayoutInput(data.career);
 const libraryInput = libraryLayoutInput(data.library);
@@ -45,6 +46,7 @@ const topics = data.library.topics;
 const picked = topics[0];
 
 const LABELS: Record<Floor, Readable[]> = {
+  L2: careerLabels(buildCareerRoad(career)),
   L3: labsLabels({ layout: labs, wings: data.labs.wings, reactor, ops: data.labs.ops.sign }),
   L4: libraryLabels({
     layout: library,
@@ -73,6 +75,7 @@ const SAFE = { top: 120, bottom: 140, side: 24 };
 
 /** Desktop and tablet type sizes (u) per floor: the phone rule leaves them as they were. */
 const DESKTOP_SIZES: Record<Floor, number[]> = {
+  L2: [0.4, 0.42, 0.5, 0.55, 0.6, 0.9, 2.2],
   L3: [0.46, 0.5, 0.6, 0.62, 0.7],
   L4: [0.34, 0.36, 0.4, 0.44, 0.5, 0.6, 0.62, 0.7, 0.95],
   RF: [0.3, 0.38, 0.44, 0.5],

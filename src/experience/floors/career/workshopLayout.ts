@@ -159,7 +159,8 @@ export function buildWorkshop(start: number, input: WorkshopInput): WorkshopLayo
   ];
   const viewZones: ViewZone[] = [
     // At the console: square on, a little closer, so the year list on its screen reads.
-    { id: "L2:time-console", area: { minX: consoleStop.x - 4, maxX: consoleStop.x + 4, minZ: consoleStop.z - 1, maxZ: consoleStop.z + 3 }, yaw: 0, zoom: 0.85 },
+    // A portrait phone comes closer still, so the console's sign reads (the phone reading rule).
+    { id: "L2:time-console", area: { minX: consoleStop.x - 4, maxX: consoleStop.x + 4, minZ: consoleStop.z - 1, maxZ: consoleStop.z + 3 }, yaw: 0, zoom: 0.85, classView: { mobile: { zoom: 0.62 } } },
     // On the Horizon deck: turn to look east through the window at the bridge and the skyline beyond.
     { id: "L2:horizon-deck", area: { minX: roadEnd - 3, maxX: windowX, minZ: -6, maxZ: 6 }, yaw: -Math.PI / 2, zoom: 1.2 },
   ];

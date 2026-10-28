@@ -4,7 +4,7 @@ import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { BufferGeometry, Float32BufferAttribute, type Mesh } from "three";
-import { getHQStore } from "@/store/useHQStore";
+import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { COLORS, FLOOR_COLOR } from "../../config";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
 import { neonColor } from "../../fx/materials";
@@ -16,9 +16,9 @@ import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { CAREER_ROAD, type CareerRoadLayout } from "./layout";
 import { useMemberFade } from "./CareerRooms";
-import { signpostSet } from "./labels";
+import { signpostSet, YEAR_DIGITS } from "./labels";
 
-const BAR = 0.5;
+const BAR = YEAR_DIGITS.bar;
 
 function boxEdges(pts: number[], a: Vec2, b: Vec2, y0: number, y1: number, half: number) {
   // A thin box from a to b (plan view), half-width `half`, between heights y0 and y1.
@@ -93,7 +93,8 @@ export function YearGates({
   });
 
   // Signposts fade with distance like the room labels (the floor runs about 390 u).
-  const signposts = useMemo(() => signpostSet(years, roomsLabel), [years, roomsLabel]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const signposts = useMemo(() => signpostSet(years, roomsLabel, phone), [years, roomsLabel, phone]);
   const signpostBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(signpostBatch, signposts);
 
@@ -111,12 +112,12 @@ export function YearGates({
               digits.current[i] = node;
             }}
             font={FONTS.monoBold}
-            fontSize={2.2}
+            fontSize={YEAR_DIGITS.fontSize}
             letterSpacing={0.04}
             color={accent}
             anchorX="center"
             anchorY="bottom"
-            position={[0, H + BAR + 0.3, 0]}
+            position={[0, H + BAR + YEAR_DIGITS.lift, 0]}
             material-toneMapped={false}
           >
             {String(y.year)}

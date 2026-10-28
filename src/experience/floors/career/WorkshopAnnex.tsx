@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
+import { useHQStore } from "@/store/useHQStore";
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, InstancedBufferAttribute, Object3D } from "three";
 import { COLORS, FLOOR_COLOR, FLOOR_GAP } from "../../config";
 import { BatchedLabels, type BatchedLabelsHandle } from "../../fx/BatchedLabels";
@@ -122,7 +123,11 @@ export function WorkshopAnnex({
   );
   const batch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(batch, text);
-  const signs = useMemo(() => workshopSigns(w, { workshop: labels.workshop, console: labels.console, repos: labels.repos }, accent), [w, labels.workshop, labels.console, labels.repos, accent]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const signs = useMemo(
+    () => workshopSigns(w, { workshop: labels.workshop, console: labels.console, repos: labels.repos }, accent, phone),
+    [w, labels.workshop, labels.console, labels.repos, accent, phone],
+  );
   const icons = useMemo(() => w.benches.map((b) => ({ x: b.center.x, y: WORKSHOP_SCENE.icon.y, z: b.center.z, face: 0 })), [w.benches]);
 
   // Sight lines from the window frame up to the east edge of the Labs slab (L3, one floor up).
