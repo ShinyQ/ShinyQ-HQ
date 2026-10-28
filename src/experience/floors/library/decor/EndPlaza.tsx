@@ -38,7 +38,7 @@ const MONUMENT_COLOR = "#fbbf24";
 const SPINE_AHEAD = NEWSROOM.end.vault.book.d / 2 + 0.6;
 const SPINE_STAGGER = 0.5;
 /** The "Study Vault" sign: its height (u) over the middle of the arc and how far behind the books. */
-const VAULT_TITLE = { y: 5.9, behind: 1.2 };
+const VAULT_TITLE = { y: 5.9, behind: 1.2, phone: 0.6 };
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
 export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
@@ -76,7 +76,7 @@ const LABEL = { font: 0.34, picked: 0.44, phone: 0.5, phonePicked: 0.6 } as cons
  * Study Vault spines: type size and middle height; on a portrait phone a larger size, with the spines standing alternately
  * low and high (`phoneY`) so the wider plates of neighbouring books clear each other.
  */
-const SPINE = { font: 0.36, y: 3.1, phone: 0.58, phoneY: [2.0, 4.6] } as const;
+const SPINE = { font: 0.36, y: 3.1, phone: 0.68, phoneY: [2.0, 4.6] } as const;
 /** Gap between the monument's stacked plates (u). */
 const MONUMENT_GAP = 0.5;
 
@@ -164,7 +164,7 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
     // Over the middle of the arc, a little behind the books (away from the stop, which is the arc's center).
     const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / books.length, z: m.z + b.at.z / books.length }), { x: 0, z: 0 });
     const k = 1 + VAULT_TITLE.behind / NEWSROOM.end.vault.arc;
-    signs.push({ text: labels.vault.toUpperCase(), x: stop.x + (mid.x - stop.x) * k - end.center.x, y: VAULT_TITLE.y, z: stop.z + (mid.z - stop.z) * k - end.center.z, color: "#e0f2fe", fontSize: 0.5, font: FONTS.monoBold });
+    signs.push({ text: labels.vault.toUpperCase(), x: stop.x + (mid.x - stop.x) * k - end.center.x, y: VAULT_TITLE.y, z: stop.z + (mid.z - stop.z) * k - end.center.z, color: "#e0f2fe", fontSize: phone ? VAULT_TITLE.phone : 0.5, font: FONTS.monoBold });
     meta.push({ kind: "vault" });
   }
   return { signs, meta };
