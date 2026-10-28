@@ -31,7 +31,7 @@ Code: `floors/career/layout.ts`. Design: walkable floors plan Part 2. Meander ro
 - A neon arch with the year digits and a signpost ("2021 · 8 rooms") stands on the link before each plaza; posts are obstacles.
 - The arch digits are the only year marker: no floating year board stands behind the plaza (owner decision).
 - Labels and signposts fade with distance along x (`labelFade`, 20 to 30 u).
-- Phone reading rule ([floors.md](floors.md#arrival)): the rail camera cannot come close enough from a door pad, so portrait phones get larger type (`labels.ts`): room names `ROOM_LABEL.phone` 0.52 on the south edge and 0.72 on the north edge, north award placings `PLACING.phoneFar` 0.74, signposts and the repo skyline sign 0.66.
+- Phone reading rule ([floors.md](floors.md#arrival)): the time console's sign reads through its phone zoom; room names, north award placings, signposts and the repo sign do not yet (the rail camera cannot come close enough from a door pad or an arch, and larger portrait type costs main-path bytes, pending an owner call).
 - `placeAt(layout, x)` drives the HUD "You are here" chip (`src/hud/YearChip.tsx`).
 
 ### Data and mounting

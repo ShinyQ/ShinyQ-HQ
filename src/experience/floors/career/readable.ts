@@ -1,6 +1,15 @@
+import type { CareerEntryView } from "../../types";
 import { headingTo, type Readable } from "../../readable";
 import { CAREER_ROAD, type CareerRoadLayout } from "./layout";
-import { PLACING, placingSize, ROOM_LABEL, ROOM_LABEL_Y, SIGNPOST, signpostSet, workshopSigns, YEAR_DIGITS } from "./labels";
+import { roomLabelSet, signpostSet, workshopSigns } from "./labels";
+
+/**
+ * Geometry the L2 scene draws inline (main 3D path, so the components keep their literals): the year digits over each
+ * arch (`YearGates.tsx`: type size, bottom over the arch beam) and the award placings on an award room's plinth
+ * (`CareerRooms.tsx`: height, offset toward the road side, type size, lean back).
+ */
+const YEAR_DIGITS = { fontSize: 2.2, bar: 0.5, lift: 0.3 } as const;
+const PLACING = { y: 0.6, ahead: 1.15, fontSize: 0.55, tilt: 0.55 } as const;
 
 /** `phoneFontSize` when the portrait size differs. */
 const phoneSize = (fontSize: number, phone: number) => (phone !== fontSize ? { phoneFontSize: phone } : {});
@@ -13,53 +22,59 @@ const phoneSize = (fontSize: number, phone: number) => (phone !== fontSize ? { p
  */
 export function readableLabels(road: CareerRoadLayout): Readable[] {
   const out: Readable[] = [];
-  for (const room of road.rooms) {
+  const entries = new Map(road.rooms.map((r): [string, CareerEntryView] => [r.slug, { slug: r.slug, type: r.type, role: r.slug, org: "", period: "", prologue: false }]));
+  const desktop = roomLabelSet(road.rooms, entries).labels;
+  const phone = desktop;
+  road.rooms.forEach((room, i) => {
     const reading = { at: room.at, heading: headingTo(room.at, room.center) };
-    const size = ROOM_LABEL.phone[room.side < 0 ? "far" : "near"];
+    const label = phone[i];
+    const tilt = label.tilt ?? 0;
     // The role is the first line of a bottom-anchored block of about two lines.
-    const lift = size * ROOM_LABEL.lineHeight * 1.5;
+    const lift = label.fontSize * (label.lineHeight ?? 1) * 1.5;
     out.push({
       id: `room:${room.slug}`,
       text: room.slug,
-      at: [room.center.x, ROOM_LABEL_Y + Math.cos(ROOM_LABEL.tilt) * lift, room.center.z - Math.sin(ROOM_LABEL.tilt) * lift],
-      fontSize: ROOM_LABEL.fontSize,
-      ...phoneSize(ROOM_LABEL.fontSize, size),
+      at: [label.position[0], label.position[1] + Math.cos(tilt) * lift, label.position[2] - Math.sin(tilt) * lift],
+      fontSize: desktop[i].fontSize,
+      ...phoneSize(desktop[i].fontSize, label.fontSize),
       yaw: 0,
       flips: true,
-      tilt: ROOM_LABEL.tilt,
+      tilt,
       reading,
     });
     if (room.type === "award") {
-      const placing = placingSize(room, true);
+      const size = PLACING.fontSize;
       out.push({
         id: `placing:${room.slug}`,
         text: "\u00D7N",
-        at: [room.center.x, PLACING.y + (Math.cos(PLACING.tilt) * placing) / 2, room.center.z + PLACING.ahead - (Math.sin(PLACING.tilt) * placing) / 2],
-        fontSize: PLACING.fontSize,
-        ...phoneSize(PLACING.fontSize, placing),
+        at: [room.center.x, PLACING.y + (Math.cos(PLACING.tilt) * size) / 2, room.center.z + PLACING.ahead - (Math.sin(PLACING.tilt) * size) / 2],
+        fontSize: size,
         yaw: 0,
         flips: true,
         tilt: PLACING.tilt,
         reading,
       });
     }
-  }
-  const posts = signpostSet(road.years, () => "", true);
+  });
+  const posts = signpostSet(road.years, () => "");
+  const phonePosts = posts;
   road.years.forEach((y, i) => {
     const reading = { at: y.arch.center, heading: Math.PI / 2 };
     const top = CAREER_ROAD.archHeight + YEAR_DIGITS.bar + YEAR_DIGITS.lift;
     out.push({ id: `year:${y.year}`, text: String(y.year), at: [y.arch.center.x, top + YEAR_DIGITS.fontSize / 2, y.arch.center.z], fontSize: YEAR_DIGITS.fontSize, yaw: 0, flips: true, reading });
-    const post = posts.labels[i];
-    out.push({ id: `signpost:${y.year}`, text: post.text, at: [post.position[0], post.position[1] - post.fontSize / 2, post.position[2]], fontSize: SIGNPOST.fontSize, ...phoneSize(SIGNPOST.fontSize, post.fontSize), yaw: 0, flips: true, reading });
+    const post = phonePosts.labels[i];
+    const size = posts.labels[i].fontSize;
+    out.push({ id: `signpost:${y.year}`, text: post.text, at: [post.position[0], post.position[1] - post.fontSize / 2, post.position[2]], fontSize: size, ...phoneSize(size, post.fontSize), yaw: 0, flips: true, reading });
   });
   const w = road.workshop;
-  const desktop = workshopSigns(w, { workshop: "workshop", console: "console", repos: "repos" }, "");
-  const phone = workshopSigns(w, { workshop: "workshop", console: "console", repos: "repos" }, "", true);
+  const names = { workshop: "workshop", console: "console", repos: "repos" };
+  const signs = workshopSigns(w, names, "");
+  const phoneSigns = signs;
   const middle = w.skyline.stops[Math.floor(w.skyline.stops.length / 2)];
   const stops = [w.gateway.stop, w.console.stop, middle];
-  phone.forEach((sign, i) => {
+  phoneSigns.forEach((sign, i) => {
     if (!stops[i]) return;
-    const fontSize = desktop[i].fontSize;
+    const fontSize = signs[i].fontSize;
     out.push({ id: `sign:${sign.text.split(" ")[0].toLowerCase()}`, text: sign.text, at: [sign.x, sign.y, sign.z], fontSize, ...phoneSize(fontSize, sign.fontSize), tilt: sign.tilt, reading: { at: stops[i], heading: headingTo(stops[i], sign) } });
   });
   return out;

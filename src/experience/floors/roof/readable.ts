@@ -3,11 +3,14 @@ import { headingTo, type Readable } from "../../readable";
 import type { Vec2 } from "../../types";
 import { ROOF_DECK, type RoofLayout } from "./layout";
 
-/** The availability sign on the mast (`SignalGarden`): out from the mast along `ROOF_DECK.signYaw`, plate bottom, size, headline type. */
+/**
+ * As `SignalGarden.tsx` draws them (copies: the runtime keeps its own literals, so this test-only list stays off every
+ * bundle). The availability sign on the mast: out from the mast along `ROOF_DECK.signYaw`, plate bottom, size, headline type.
+ */
 export const ROOF_SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
 /** The comms station's name over it (`SignalGarden`): height and type size. */
 export const COMMS_LABEL = { y: 5.6, fontSize: 0.44 } as const;
-/** Channel names over their antennas: gap over the ring, offset toward the plaza, type size and on a portrait phone (camera class `mobile`). */
+/** Channel names over their antennas: gap over the ring, offset toward the plaza, type size and on a portrait phone (`CHANNEL_FONT`). */
 export const CHANNEL_LABEL = { lift: 0.6, ahead: 0.2, fontSize: 0.38, phone: 0.41 } as const;
 /** The CV station's title on its screen, facing west: x from the station's west edge, height and type size. */
 export const CV_TITLE = { dx: 3.28, y: 3.0, fontSize: 0.3 } as const;

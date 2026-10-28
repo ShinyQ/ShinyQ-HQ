@@ -8,7 +8,6 @@ import { neonColor } from "../../../fx/materials";
 import { FONTS } from "../../../tower/primitives";
 import { LineBatch } from "../../labs/lines";
 import { ZONE_TONE } from "../model";
-import { WALL_TEXT } from "../readable";
 import { FlipBooks } from "./BookHolograms";
 import { ResearchPapers, STATION_HEIGHT, StationShells, postTitles, ZoneIcons, type DecorProps } from "./common";
 import { featuredStation } from "../icons";
@@ -40,7 +39,7 @@ function Ticker({ text, width, y, z, x, reducedMotion }: { text: string; width: 
       <Text
         ref={ref}
         font={FONTS.monoBold}
-        fontSize={WALL_TEXT.ticker.fontSize}
+        fontSize={0.62}
         anchorX="left"
         anchorY="middle"
         whiteSpace="nowrap"
@@ -101,19 +100,19 @@ export function NewsroomDecor(props: DecorProps) {
           {featuredPost && (
             <Text
               font={FONTS.sansBold}
-              fontSize={WALL_TEXT.title.fontSize}
-              maxWidth={wall.maxX - wall.minX - 2 * WALL_TEXT.title.inset}
-              lineHeight={WALL_TEXT.title.lineHeight}
+              fontSize={0.95}
+              maxWidth={wall.maxX - wall.minX - 1.2}
+              lineHeight={1.1}
               anchorX="left"
               anchorY="top"
-              position={[wall.minX + WALL_TEXT.title.inset, WALL_TEXT.title.top, wall.maxZ + WALL_TEXT.title.out]}
+              position={[wall.minX + 0.6, 6.4, wall.maxZ + 0.06]}
               color="#f4f4f5"
               material-toneMapped={false}
             >
               {featuredPost.title}
             </Text>
           )}
-          <Ticker text={ticker} width={wall.maxX - wall.minX - 0.4} x={(wall.minX + wall.maxX) / 2} y={WALL_TEXT.ticker.y} z={wall.maxZ + WALL_TEXT.ticker.out} reducedMotion={reducedMotion} />
+          <Ticker text={ticker} width={wall.maxX - wall.minX - 0.4} x={(wall.minX + wall.maxX) / 2} y={1.7} z={wall.maxZ + 0.07} reducedMotion={reducedMotion} />
         </group>
       )}
       {featured && (

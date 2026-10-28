@@ -140,8 +140,6 @@ export interface PlacedPod {
 
 /** Half depth (along z) of the camera zone around each pod's door pad. */
 const VIEW_ZONE_DEPTH = 2;
-/** How far a portrait phone's view at a pod door aims toward the pod (u). */
-const POD_AIM_PHONE = 2.5;
 /**
  * Follow camera yaw whose forward (`followForward`) is `dir`, in (-PI, PI]. Every follow offset has
  * ox = oz, so the forward of yaw y points at angle 5PI/4 - y.
@@ -157,11 +155,6 @@ const LOOK_EAST = (-3 * Math.PI) / 4;
 const LOOK_WEST = Math.PI / 4;
 /** Camera zoom at the Tech Reactor stop: the core in front, both wing roads beside it. */
 const REACTOR_ZOOM = 1.3;
-/**
- * The portrait phone view there (the phone reading rule): a lower camera aimed a little higher, so the stacked ring names
- * (set larger on phones, `RING_LABEL.phone`) read and the count sign over the top ring stays in frame.
- */
-const REACTOR_PHONE = { pitch: -0.2, up: 4 } as const;
 
 /** A directory board; its `Rect` is the axis-aligned bounds of its footprint. */
 export interface DirectoryBoard extends Rect {
@@ -427,23 +420,21 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
       travel: EAST,
     },
     // Tech Reactor stop on the ring road's east point: the camera stands east of the rover and looks west
-    // over the core, so the lit pods and roads of every wing fill the frame beside it.
-    { id: REACTOR_ROOM, area: { minX: reactorStop(loopEnd).x - 2, maxX: reactorStop(loopEnd).x + 2, minZ: -2, maxZ: 2 }, yaw: LOOK_WEST, zoom: REACTOR_ZOOM, classView: { mobile: { pitch: REACTOR_PHONE.pitch, lookOffset: { up: REACTOR_PHONE.up } } } },
+    // over the core, so the lit pods and roads of every wing fill the frame beside it. A portrait phone's camera is lower
+    // and aims 4 u higher, so the stacked ring names (larger on phones, `RING_LABEL.phone`) read and the count sign stays in frame.
+    { id: REACTOR_ROOM, area: { minX: reactorStop(loopEnd).x - 2, maxX: reactorStop(loopEnd).x + 2, minZ: -2, maxZ: 2 }, yaw: LOOK_WEST, zoom: REACTOR_ZOOM, classView: { mobile: { pitch: -0.2, lookOffset: { up: 4 } } } },
     // At a door the camera looks at the pod front at 45 degrees: from the south-east (the default) for
     // pods facing south, from the north-east for pods facing north, so a pod never sits between the
     // camera and the rover.
-    // A portrait phone aims `POD_AIM_PHONE` u toward the pod (to the right of a south-facing pod's view, left of a
-    // north-facing one's), so the pod's name stays whole over it.
     ...placed.map((p) => ({
       id: p.room,
       area: { minX: p.rect.minX, maxX: p.rect.maxX, minZ: p.door.z - VIEW_ZONE_DEPTH, maxZ: p.door.z + VIEW_ZONE_DEPTH },
       yaw: p.facing > 0 ? 0 : Math.PI / 2,
-      classView: { mobile: { lookOffset: { right: p.facing * POD_AIM_PHONE } } },
     })),
     // The Ops Control Room faces the AI wing road like the inner pods: the same 45 degree look at its screens.
     // Zoomed in a little, so the screens and the live panel read.
-    // A portrait phone aims `OPS_AIM_PHONE` u to the right, so the room's sign stays whole over the screens.
-    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM, classView: { mobile: { lookOffset: { right: OPS_AIM_PHONE } } } },
+    // A portrait phone aims 4 u to the right, so the room sign over the screens stays whole (the phone reading rule).
+    { id: OPS_ROOM, area: { minX: ops.rect.minX, maxX: ops.rect.maxX, minZ: ops.door.z - VIEW_ZONE_DEPTH, maxZ: ops.door.z + VIEW_ZONE_DEPTH }, yaw: 0, zoom: OPS_ZOOM, classView: { mobile: { lookOffset: { right: 4 } } } },
   ];
   const obstacles: Rect[] = [...placed.map((p) => bare(p.rect)), ...wallPosts().map((p) => p.rect), core, ops.rect];
   const extentZ = Math.max(wingZ + half, ...placed.map((p) => Math.max(Math.abs(p.rect.minZ), Math.abs(p.rect.maxZ))));
@@ -496,9 +487,8 @@ export function buildLabsLayout(pods: readonly LabPod[]): LabsLayout {
   };
 }
 
-/** Camera zoom in the Ops Control Room's door zone, and the portrait phone's aim to the right there (u). */
+/** Camera zoom in the Ops Control Room's door zone. */
 const OPS_ZOOM = 0.85;
-const OPS_AIM_PHONE = 4;
 
 /** Road tint of the Ops Control Room spur (monitoring green). */
 export const OPS_TINT = "#34d399";

@@ -5,7 +5,8 @@ import { librarySigns } from "./decor/signs";
 import type { LibraryLayout, LibrarySection } from "./model";
 
 /**
- * The headline wall's texts (`NewsroomDecor`): the featured title (left aligned from `inset`, top at `top`) and the
+ * The headline wall's texts as `NewsroomDecor.tsx` draws them (a copy: the runtime keeps its own literals, so this
+ * test-only list stays off every bundle): the featured title (left aligned from `inset`, top at `top`) and the
  * scrolling ticker (middle at `y`), each standing `out` in front of the wall.
  */
 export const WALL_TEXT = {

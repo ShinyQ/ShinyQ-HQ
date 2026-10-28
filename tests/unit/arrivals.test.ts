@@ -56,8 +56,8 @@ const stationFront: Vec2 = {
 const dataBoard = directoryBoard("data");
 const mast = buildRoofLayout().centerpiece.center;
 /**
- * The RF availability sign's four corners (owner 2026-10-17: in view on arrival with the mast): `ROOF_SIGN` in
- * floors/roof/readable.ts (2.3 u out from the mast along `signYaw`, 8 u wide, from 4.2 u to 7.6 u up).
+ * The RF availability sign's four corners (owner 2026-10-17: in view on arrival with the mast): `SIGN` in
+ * floors/roof/SignalGarden.tsx (2.3 u out from the mast along `signYaw`, 8 u wide, from 4.2 u to 7.6 u up).
  */
 const signNormal = { x: Math.sin(ROOF_DECK.signYaw), z: Math.cos(ROOF_DECK.signYaw) };
 const signCenter = { x: mast.x + signNormal.x * 2.3, z: mast.z + signNormal.z * 2.3 };

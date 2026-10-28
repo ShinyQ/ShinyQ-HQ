@@ -8,17 +8,17 @@ import { BatchedLabels } from "../../fx/BatchedLabels";
 import { FloatingSigns } from "../../fx/FloatingSign";
 import { neonColor } from "../../fx/materials";
 import { sceneProbes } from "../../fx/probes";
-import type { SignSpec } from "../../fx/signLayout";
+import { signPlate, type SignSpec } from "../../fx/signLayout";
 import { FONTS } from "../../tower/primitives";
 import { useStatsAfterFirstFrame } from "../../visits3d";
 import { MergedBoxes } from "../roof/kit";
 import { LABS } from "./layout";
 import { LineBatch } from "./lines";
-import { OPS_TONE, opsLabels, opsLines, opsLiveLabels, opsLiveLines, opsSolids, type OpsData, type OpsLabel, type OpsPlacement } from "./ops";
+import { OPS, OPS_TONE, opsFrame, opsLabels, opsLines, opsLiveLabels, opsLiveLines, opsSolids, type OpsData, type OpsLabel, type OpsPlacement } from "./ops";
 import { opsLiveRows } from "./opsLive";
-import { opsSign } from "./readable";
 
 const NO_RAYCAST = () => null;
+const SIGN_FONT = 0.6;
 
 const toBatched = (l: OpsLabel): BatchedLabel => ({
   text: l.text,
@@ -84,7 +84,13 @@ export function OpsRoom({ ops, data, locale }: { ops: OpsPlacement; data: OpsDat
   const lines = useLines(useMemo(() => opsLines(ops, detail), [ops, detail]));
   const labels = useMemo(() => opsLabels(ops, data).map(toBatched), [ops, data]);
   const tone = useMemo(() => neonColor("#ffffff", 1.6, tier), [tier]);
-  const signs = useMemo<SignSpec[]>(() => [{ ...opsSign(ops, data.sign.toUpperCase()), color: OPS_TONE.live, font: FONTS.monoBold }], [data.sign, ops]);
+  const signs = useMemo<SignSpec[]>(() => {
+    const text = data.sign.toUpperCase();
+    const { h } = signPlate({ text, fontSize: SIGN_FONT });
+    // Over the back wall, clear of the screens as seen from the wing road.
+    const f = opsFrame(ops);
+    return [{ text, x: ops.center.x, y: OPS.h + 1 + h / 2, z: f.back - f.n * 0.6, color: OPS_TONE.live, fontSize: SIGN_FONT, font: FONTS.monoBold }];
+  }, [data.sign, ops]);
   useEffect(() => {
     sceneProbes.ops.mounted = true;
     return () => {

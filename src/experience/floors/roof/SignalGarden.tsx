@@ -14,14 +14,15 @@ import { FONTS } from "../../tower/primitives";
 import type { GpuTier, Vec2 } from "../../types";
 import { aboutCard, CHANNEL_TONE, MergedBoxes, MergedEdges, PulseRings, ROOF_BLUE, ROOF_CYAN, ROOF_VIOLET, type PulseSource, type RoofSceneryProps } from "./kit";
 import { ROOF_DECK, type RoofActive } from "./layout";
-import { antennaHeight, CHANNEL_LABEL, channelRingY, COMMS_LABEL, CV_TITLE, ROOF_SIGN, roofSignCenter } from "./readable";
 import { latticeSegments, roofDetail, scatter, type Box } from "./solids";
 
 const mid = (a: number, b: number) => (a + b) / 2;
 const MAST_HEIGHT = 14;
 /** The availability sign hangs on the mast, facing the arrival camera (west) head on. */
 const SIGN_YAW = ROOF_DECK.signYaw;
-const SIGN = ROOF_SIGN;
+const SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
+/** Channel name type size, and on a portrait phone (camera class `mobile`, the phone reading rule). */
+export const CHANNEL_FONT = { size: 0.38, phone: 0.41 } as const;
 /** The drone patrols round the mast above the sign. */
 const DRONE = { radius: 3.4, height: 9, speed: 0.35 } as const;
 
@@ -156,13 +157,16 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
     const aboutX = mid(about.minX, about.maxX);
     const nx = Math.sin(SIGN_YAW);
     const nz = Math.cos(SIGN_YAW);
-    const sign = roofSignCenter(c);
+    const sign = { x: c.x + nx * SIGN.offset, z: c.z + nz * SIGN.offset };
     const face = (d: number, y: number): V3 => [sign.x + nx * d, y, sign.z + nz * d];
+    // Odd channels stand taller so their labels sit on a second row and never overlap.
+    const antenna = (i: number) => (i % 2 ? 3.4 : 2.6);
+    const ringY = (i: number) => 0.3 + antenna(i) + 0.15;
     const solids: Box[] = [
       { x: c.x, y: 0, z: c.z, w: 4, h: 0.5, d: 4 },
       { x: sign.x, y: SIGN.bottom, z: sign.z, w: SIGN.w, h: SIGN.h, d: 0.12, yaw: SIGN_YAW },
       { x: commsX, y: 0, z: commsZ, w: 12, h: 0.3, d: 6 },
-      ...layout.channelSlots.map((s, i): Box => ({ x: s.x, y: 0.3, z: s.z, w: 0.25, h: antennaHeight(i), d: 0.25 })),
+      ...layout.channelSlots.map((s, i): Box => ({ x: s.x, y: 0.3, z: s.z, w: 0.25, h: antenna(i), d: 0.25 })),
       { x: commsX, y: 0.3, z: comms.maxZ - 0.8, w: 6, h: 0.9, d: 1 },
       { x: cv.minX + 2, y: 0, z: cvZ, w: 2.4, h: 1.3, d: 4 },
       { x: cv.minX + 3.4, y: 1.3, z: cvZ, w: 0.2, h: 2.2, d: 4 },
@@ -170,16 +174,16 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { x: aboutX, y: 0, z: about.minZ + 0.9, w: 5, h: 0.5, d: 1.2 },
     ];
     const mastRings: PulseSource[] = [0, 1 / 3, 2 / 3].map((phase) => ({ x: c.x, y: MAST_HEIGHT + 0.6, z: c.z, color: ROOF_BLUE, phase }));
-    const channelRings: PulseSource[] = layout.channelSlots.map((s, i) => ({ x: s.x, y: channelRingY(i), z: s.z, color: CHANNEL_TONE[roof.channels[i]?.id ?? "googleScholar"] }));
+    const channelRings: PulseSource[] = layout.channelSlots.map((s, i) => ({ x: s.x, y: ringY(i), z: s.z, color: CHANNEL_TONE[roof.channels[i]?.id ?? "googleScholar"] }));
     const signTop = SIGN.bottom + SIGN.h;
     const text: BatchedLabel[] = [
       { text: labels.availability.toUpperCase(), position: face(0.08, signTop - 0.4), yaw: SIGN_YAW, font: FONTS.monoBold, fontSize: 0.28, color: ROOF_BLUE, letterSpacing: 0.16 },
       { text: roof.availability, position: face(0.08, SIGN.bottom + (SIGN.h - 0.7) / 2), yaw: SIGN_YAW, font: FONTS.sansBold, fontSize: SIGN.fontSize, color: "#eff6ff", maxWidth: SIGN.w - 0.8, textAlign: "center", lineHeight: 1.15 },
-      { text: labels.comms.toUpperCase(), position: [commsX, COMMS_LABEL.y, commsZ], font: FONTS.monoBold, fontSize: COMMS_LABEL.fontSize, color: ROOF_BLUE, letterSpacing: 0.14 },
+      { text: labels.comms.toUpperCase(), position: [commsX, 5.6, commsZ], font: FONTS.monoBold, fontSize: 0.44, color: ROOF_BLUE, letterSpacing: 0.14 },
       { text: labels.email.toUpperCase(), position: [commsX, 0.98, comms.maxZ - 0.28], font: FONTS.mono, fontSize: 0.14, color: ROOF_BLUE, letterSpacing: 0.12 },
       { text: roof.email, position: [commsX, 0.65, comms.maxZ - 0.28], font: FONTS.monoBold, fontSize: 0.24, color: "#dbeafe" },
-      { text: labels.cvTitle.toUpperCase(), position: [cv.minX + CV_TITLE.dx, CV_TITLE.y, cvZ], yaw: -Math.PI / 2, font: FONTS.monoBold, fontSize: CV_TITLE.fontSize, color: ROOF_CYAN, letterSpacing: 0.1 },
-      { text: labels.cvHint, position: [cv.minX + CV_TITLE.dx, 2.4, cvZ], yaw: -Math.PI / 2, font: FONTS.mono, fontSize: 0.17, color: "#cffafe", maxWidth: 3.6, textAlign: "center" },
+      { text: labels.cvTitle.toUpperCase(), position: [cv.minX + 3.28, 3.0, cvZ], yaw: -Math.PI / 2, font: FONTS.monoBold, fontSize: 0.3, color: ROOF_CYAN, letterSpacing: 0.1 },
+      { text: labels.cvHint, position: [cv.minX + 3.28, 2.4, cvZ], yaw: -Math.PI / 2, font: FONTS.mono, fontSize: 0.17, color: "#cffafe", maxWidth: 3.6, textAlign: "center" },
       ...aboutCard({ x: aboutX, z: about.maxZ - 0.82, top: 3.1, yaw: Math.PI, width: 7 }, profile, roof, labels),
     ];
     const b = layout.floor.bounds;
@@ -204,23 +208,17 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI, strokes: ROOF_ICONS.about, color: ROOF_VIOLET },
     ];
     const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
-    return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
+    const channels = layout.channelSlots.map((s, i): V3 => [s.x, ringY(i) + 0.6, s.z + 0.2]);
+    return { solids, mastRings, channelRings, text, channels, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
-  // Channel names take their portrait size on phones (the phone reading rule); the rest of the scene does not change with it.
-  // They go in after the sign's two lines and the comms name, the batch order they always had.
-  const text = useMemo<BatchedLabel[]>(
+  // Channel names take their portrait size on phones; they go in after the sign's two lines and the comms name, their batch order.
+  const text = useMemo(
     () => [
       ...scene.text.slice(0, 3),
-      ...layout.channelSlots.map((s, i): BatchedLabel => ({
-        text: roof.channels[i]?.label ?? "",
-        position: [s.x, channelRingY(i) + CHANNEL_LABEL.lift, s.z + CHANNEL_LABEL.ahead],
-        font: FONTS.sansBold,
-        fontSize: phone ? CHANNEL_LABEL.phone : CHANNEL_LABEL.fontSize,
-        color: "#e0e7ff",
-      })),
+      ...scene.channels.map((position, i): BatchedLabel => ({ text: roof.channels[i]?.label ?? "", position, font: FONTS.sansBold, fontSize: phone ? CHANNEL_FONT.phone : CHANNEL_FONT.size, color: "#e0e7ff" })),
       ...scene.text.slice(3),
     ],
-    [scene.text, layout.channelSlots, roof.channels, phone],
+    [scene, roof.channels, phone],
   );
   const sending = active === "contact";
 

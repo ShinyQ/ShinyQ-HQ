@@ -16,7 +16,6 @@ import { FONTS, tierFill } from "../../tower/primitives";
 import { hologramParts, MAX_PARTS, type HologramPart } from "./hologramParts";
 import { LABS, WING_TINT, type PlacedPod } from "./layout";
 import { LineBatch } from "./lines";
-import { POD_LABEL } from "./readable";
 
 export const ACCENT_HEX: Record<Accent, string> = {
   violet: "#a78bfa",
@@ -214,13 +213,13 @@ function PodLabels({ placed }: { placed: PlacedPod[] }) {
   return (
     <group visible={!hologram}>
       {placed.map((p) => {
-        const s = p.pod.tier === "hero" ? POD_LABEL.hero : POD_LABEL.pod;
+        const hero = p.pod.tier === "hero";
         return (
-          <Billboard key={p.room} position={[p.center.x, H + s.lift, p.center.z]}>
+          <Billboard key={p.room} position={[p.center.x, H + (hero ? 2.3 : 1.7), p.center.z]}>
             <Text
               font={FONTS.sansBold}
-              fontSize={s.fontSize}
-              maxWidth={s.maxWidth}
+              fontSize={hero ? 0.62 : 0.46}
+              maxWidth={hero ? 9 : 7}
               textAlign="center"
               lineHeight={1.15}
               color="#f4f4f5"

@@ -18,7 +18,7 @@ import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, GpuTier } from "../../types";
 import { ICON_SIZE, iconY } from "./icons";
-import { PLACING, placingSize, roomLabelSet, type LabelSet } from "./labels";
+import { roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
 const FRAME_H = 2.2;
@@ -27,26 +27,25 @@ const dummy = new Object3D();
 
 /**
  * Award rooms: the placings that year as "×10" on the plinth, under the trophy icon (the old ring of
- * cups read as a second, distorted trophy from the rail camera). One small label per award room (`PLACING`).
+ * cups read as a second, distorted trophy from the rail camera). One small label per award room.
  */
 function Placings({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, number> }) {
-  const phone = useHQStore((s) => s.device.camera === "mobile");
   return (
     <>
       {rooms.map((room) => {
         const n = counts.get(room.slug) ?? 0;
         if (n < 1) return null;
         return (
-          <Readable key={room.id} position={[room.center.x, PLACING.y, room.center.z + PLACING.ahead]} pivot={[room.center.x, room.center.z]}>
+          <Readable key={room.id} position={[room.center.x, 0.6, room.center.z + 1.15]} pivot={[room.center.x, room.center.z]}>
             <Text
               font={FONTS.monoBold}
-              fontSize={placingSize(room, phone)}
+              fontSize={0.55}
               color={CAREER_TONE.award}
               outlineWidth={0.03}
               outlineColor={COLORS.void}
               anchorX="center"
               anchorY="bottom"
-              rotation={[-PLACING.tilt, 0, 0]}
+              rotation={[-0.55, 0, 0]}
               material-toneMapped={false}
             >
               {`\u00D7${n}`}
@@ -234,8 +233,7 @@ export function CareerRooms({
   // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
   const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: iconY(r.type), z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
-  const phone = useHQStore((s) => s.device.camera === "mobile");
-  const roomLabels = useMemo(() => roomLabelSet(rooms, entries, phone), [rooms, entries, phone]);
+  const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(labelBatch, roomLabels);
 

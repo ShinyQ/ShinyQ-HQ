@@ -45,9 +45,6 @@ export const NEWSROOM = {
   arrivalZoom: 1.16,
   arrivalZoomPhone: 0.96,
   wall: { x: -3, z: -15, w: 18, d: 1, h: 7 },
-  /** In front of the headline wall: zoomed out so the whole wall fits; a portrait phone comes closer so the ticker reads. */
-  headlinesZoom: 1.4,
-  headlinesZoomPhone: 0.95,
   /** Featured stage: docked on the south side from the plaza center. */
   featuredStart: 2,
   /** First timeline station on the north and south sides (distance from the plaza center). */
@@ -74,13 +71,8 @@ export const NEWSROOM = {
     /** Camera zones: straight north at the monument, straight east at the arrival and the constellation. */
     lookNorth: -Math.PI / 4,
     lookEast: (-3 * Math.PI) / 4,
-    /**
-     * Zoom out at the constellation stop so the whole cloud fits; a portrait phone comes closer so the topic names read
-     * and aims `aimUpPhone` u higher, so the pieces count over the cloud stays in frame.
-     */
+    /** Zoom out at the constellation stop so the whole cloud fits. */
     zoom: 1.35,
-    zoomPhone: 1,
-    aimUpPhone: 3,
     /** How far west of the constellation stop an eastbound rover already gets its view (along the timeline). */
     approach: 8,
     /**
@@ -194,6 +186,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   // Every post drives to its bay's door; the featured post's room keeps the stage door (doors win over stops).
   const postStops: Partial<Record<RoomId, Vec2>> = {};
   for (const bay of bays) for (const slug of bay.posts) if (slug !== newest?.slug) postStops[roomOfPost(slug)] = bay.stop;
+  const topicsPhone = { mobile: { zoom: 1, lookOffset: { up: 3 } } };
   const floor = libraryFloor({
     bounds,
     stations: docked,
@@ -212,10 +205,11 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         arrivalOnly: true,
       },
       // In front of the headline wall: look north at it, zoomed out so the whole wall fits.
-      // A portrait phone comes closer (`headlinesZoomPhone`), so the ticker reads.
-      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: N.headlinesZoom, classView: { mobile: { zoom: N.headlinesZoomPhone } } },
-      // The end plaza: look east over the constellation from where the timeline meets the ring road.
-      { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom, classView: { mobile: { zoom: E.zoomPhone, lookOffset: { up: E.aimUpPhone } } } },
+      // A portrait phone comes closer, so the ticker reads (the phone reading rule).
+      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4, classView: { mobile: { zoom: 0.95 } } },
+      // The end plaza: look east over the constellation from where the timeline meets the ring road. A portrait phone
+      // comes closer so the topic names read, aimed 3 u higher so the pieces count over the cloud stays in frame.
+      { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom, classView: topicsPhone },
       // Its approach on the timeline, same id and view: a rover heading east toward the plaza already sees the
       // whole cloud with the topic count above it. Eastbound only, so a drive back west from the plaza keeps its view.
       {
@@ -223,7 +217,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
         area: { minX: ringStop.x - E.approach, maxX: ringStop.x - 2.5, minZ: ringStop.z - 2.5, maxZ: ringStop.z + 2.5 },
         yaw: E.lookEast,
         zoom: E.zoom,
-        classView: { mobile: { zoom: E.zoomPhone, lookOffset: { up: E.aimUpPhone } } },
+        classView: topicsPhone,
         travel: { x: 1, z: 0 },
       },
       ...(monument ? [{ id: "L4:metrics", area: around(monument.stop, 2.5), yaw: E.lookNorth, zoom: 1.2 }] : []),

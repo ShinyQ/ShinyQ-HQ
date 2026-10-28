@@ -10,9 +10,9 @@ import { LIBRARY_ZONES, roomOfPost, ZONE_TONE, type LibraryLayout, type LibraryS
 /** One height rule (Round 7 F): section and track signs have their plate bottom here, above the rover and the station icons. */
 export const L4_SIGN = { bottom: 5.6 } as const;
 /** Zone and track sign type size; a track name on a portrait phone (camera class `mobile`): `phone` size, wrapped at `phoneWrap` characters. */
-export const ZONE_SIGN = { fontSize: 0.6, letterSpacing: 0.12, phone: 0.65, phoneWrap: 14 } as const;
+export const ZONE_SIGN = { fontSize: 0.6, letterSpacing: 0.12, phone: 0.7, phoneWrap: 14 } as const;
 /** Post titles: type size and the wrap width (characters); on a portrait phone `phone` and `phoneWrap` (the phone reading rule). */
-export const TITLE_SIGN = { fontSize: 0.4, wrap: 22, phone: 0.66, phoneWrap: 16 } as const;
+export const TITLE_SIGN = { fontSize: 0.4, wrap: 22, phone: 0.76, phoneWrap: 16 } as const;
 /** Lead titles hang this far under `L4_SIGN.bottom` (just over the lead cover); a spine title floats `lift` over its spine. */
 export const SHELF_SIGN = { leadDrop: 1.6, lift: 0.9 } as const;
 
