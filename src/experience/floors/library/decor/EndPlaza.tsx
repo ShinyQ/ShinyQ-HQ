@@ -72,8 +72,11 @@ export interface EndSignMeta {
 
 /** Topic label type size, and the picked topic's; on a portrait phone (camera class `mobile`) `phone` and `phonePicked`. */
 const LABEL = { font: 0.34, picked: 0.44, phone: 0.5, phonePicked: 0.6 } as const;
-/** Study Vault spine type size, and on a portrait phone. */
-const SPINE = { font: 0.36, phone: 0.54 } as const;
+/**
+ * Study Vault spines: type size and middle height; on a portrait phone a larger size, with the spines standing alternately
+ * low and high (`phoneY`) so the wider plates of neighbouring books clear each other.
+ */
+const SPINE = { font: 0.36, y: 3.1, phone: 0.58, phoneY: [2.0, 4.6] } as const;
 /** Gap between the monument's stacked plates (u). */
 const MONUMENT_GAP = 0.5;
 
@@ -93,7 +96,7 @@ function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignS
  * topic labels riding the orbit above their orbs (the picked one larger, the others dimmed), "N pieces
  * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
  * they never cross from any camera yaw) and, with the Study Vault, each book's
- * spine (in its issuer's tone, just in front of the spine face) and the "Study Vault" sign over the arc.
+ * spine (in its issuer's tone, just in front of the spine face; staggered on phones, `SPINE`) and the "Study Vault" sign over the arc.
  * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`). `phone`
  * (camera class `mobile`): the topic names and the spines take their portrait phone sizes (the phone reading rule).
  */
@@ -146,18 +149,18 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
   const vault = end.vault;
   if (vault) {
     const { books, stop } = vault;
-    for (const [i, book] of books.entries()) {
+    books.forEach((book, i) => {
       signs.push({
         text: wrapSign(book.spine, 8),
         x: book.at.x + book.facing.x * SPINE_AHEAD - end.center.x,
-        y: 3.1 + (i % 2) * SPINE_STAGGER,
+        y: phone ? SPINE.phoneY[i % 2] : SPINE.y + (i % 2) * SPINE_STAGGER,
         z: book.at.z + book.facing.z * SPINE_AHEAD - end.center.z,
         color: issuerTone(book.issuer),
         fontSize: phone ? SPINE.phone : SPINE.font,
         font: FONTS.monoBold,
       });
       meta.push({ kind: "guide", slug: book.slug });
-    }
+    });
     // Over the middle of the arc, a little behind the books (away from the stop, which is the arc's center).
     const mid = books.reduce((m, b) => ({ x: m.x + b.at.x / books.length, z: m.z + b.at.z / books.length }), { x: 0, z: 0 });
     const k = 1 + VAULT_TITLE.behind / NEWSROOM.end.vault.arc;
