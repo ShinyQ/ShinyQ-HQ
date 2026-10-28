@@ -142,7 +142,7 @@ describe("DialogBox", () => {
     expect(screen.queryByTestId("dialog-box")).toBeNull();
   });
 
-  it("renders a compact three-row toast at the top on phones, clear of the joystick and Boost", () => {
+  it("renders a compact four-row toast at the top on phones, clear of the joystick and Boost", () => {
     renderBox("phone");
     act(() => void say("Hi"));
     const box = screen.getByTestId("dialog-box");
@@ -150,7 +150,7 @@ describe("DialogBox", () => {
     expect(box.className).toContain("right-3");
     expect(box.className).not.toContain("bottom-");
     expect(box).toHaveAttribute("data-expanded", "false");
-    expect(box.querySelector(".line-clamp-3")).not.toBeNull();
+    expect(box.querySelector(".line-clamp-4")).not.toBeNull();
   });
 
   it("expands a clamped toast on the first tap and advances on the second", async () => {
@@ -164,7 +164,7 @@ describe("DialogBox", () => {
     const box = screen.getByTestId("dialog-box");
     act(() => void fireEvent.click(box));
     expect(box).toHaveAttribute("data-expanded", "true");
-    expect(box.querySelector(".line-clamp-3")).toBeNull();
+    expect(box.querySelector(".line-clamp-4")).toBeNull();
     expect(box).toBeInTheDocument();
     act(() => void fireEvent.click(box));
     await expect(result).resolves.toMatchObject({ status: "done" });

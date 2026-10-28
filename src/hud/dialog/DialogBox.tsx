@@ -29,7 +29,7 @@ function choicesOf(view: DialogView, continueLabel: string): readonly DialogChoi
  * focus; Esc picks a "cancel" choice. A tap or click anywhere on the box advances too.
  *
  * On phones (`placement === "phone"`) it is a slim toast at the top (`TOAST_PLACE`): the text is clamped to
- * three rows until a tap expands it, and a finished line without choices or a try-it task moves on by itself
+ * four rows (every floor line fits at 375 px, EN and ID) until a tap expands it, and a finished line without choices or a try-it task moves on by itself
  * after `TOAST_HOLD_MS` only when it fits in those rows: a clamped line waits for a tap, and an expanded line
  * never moves on by itself. On a phone a line with choices docks at the bottom (`DOCK_PLACE`), its choices
  * stacked full width.
@@ -181,7 +181,7 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
         <p
           ref={textRow}
           aria-hidden="true"
-          className={`whitespace-pre-line ${toast ? `min-h-10 ${expanded ? "" : "line-clamp-3"}` : "min-h-12"}`}
+          className={`whitespace-pre-line ${toast ? `min-h-10 ${expanded ? "" : "line-clamp-4"}` : "min-h-12"}`}
         >
           {line.text.slice(0, view.shown)}
           <span className="invisible">{line.text.slice(view.shown)}</span>

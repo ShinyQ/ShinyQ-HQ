@@ -22,10 +22,11 @@ export const DIALOG_PLACE: Record<Exclude<DialogPlacement, "phone">, string> = {
 /**
  * A phone line without choices (owner decision 2026-10-28): a top toast, never over the rover, Boost or the joystick.
  * Portrait: full width below the minimap row (64 px plus the 72 px minimap, plus a gap). Landscape: at the top, between
- * the floor chip (its widest name, EN and ID) and the Ask and menu buttons, which also clears the minimap under them.
+ * the floor chip (its widest name, B1 in Indonesian, ends at 179 px) and the Ask and menu buttons (Ask starts about
+ * 120 px from the right edge), which also clears the minimap under them and the L2 year chip (ends at 163 px).
  */
 export const TOAST_PLACE =
-  "left-3 right-3 portrait:top-[calc(144px+env(safe-area-inset-top))] landscape:top-[calc(16px+env(safe-area-inset-top))] landscape:left-[216px] landscape:right-[128px]";
+  "left-3 right-3 portrait:top-[calc(144px+env(safe-area-inset-top))] landscape:top-[calc(16px+env(safe-area-inset-top))] landscape:left-[188px] landscape:right-[128px]";
 
 /** Docked on a phone (owner decision 2026-10-25): the box sits at the bottom in thumb reach, full width. */
 export const DOCK_PLACE = "bottom-[calc(12px+env(safe-area-inset-bottom))] left-3 right-3";
