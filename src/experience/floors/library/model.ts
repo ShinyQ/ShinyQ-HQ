@@ -1,6 +1,7 @@
 import type { RoomId } from "@/content/schema";
 import { ROAD, type RoadNetwork } from "../../nav/road";
 import type { ViewZone } from "../../camera/orbit";
+import { followForward } from "../../camera/rigs";
 import type { FloorLayout, LibraryData, Rect, Vec2 } from "../../types";
 import { SHELF, SHELF_VIEW } from "./shelf";
 
@@ -255,12 +256,28 @@ export function stationYaw(facing: Vec2): number {
   return -Math.PI / 2;
 }
 
-/** A camera zone around every door pad that turns the follow camera toward its station; a track bay's also zooms out to its whole shelf (`SHELF_VIEW`). */
+/** How far a portrait phone's view at a desk's door (a bay's) aims toward it (u), so its section (track) sign stays whole. */
+export const STATION_AIM_PHONE = 3.5;
+export const BAY_AIM_PHONE = 2;
+
+/** +1 when a station `facing` (from its pad into it) lies to the right of the phone follow view at `yaw`, else -1. */
+function sideOf(yaw: number, facing: Vec2): 1 | -1 {
+  const f = followForward("mobile", yaw);
+  return -f.z * facing.x + f.x * facing.z >= 0 ? 1 : -1;
+}
+
+/**
+ * A camera zone around every door pad that turns the follow camera toward its station; a track bay's also zooms out to
+ * its whole shelf (`SHELF_VIEW`). On a portrait phone a desk's view aims `STATION_AIM_PHONE` u toward it.
+ */
 export function stationViewZones(stations: readonly LibraryStation[]): ViewZone[] {
   return stations.map((s) => {
     const bay = s.zone === "track";
     const r = bay ? SHELF_VIEW.zone : 2.2;
-    return { id: s.room, area: { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r }, yaw: stationYaw(s.facing), ...(bay && { zoom: SHELF_VIEW.zoom, classView: { mobile: { zoom: SHELF_VIEW.zoomPhone } } }) };
+    const yaw = stationYaw(s.facing);
+    const area = { minX: s.door.x - r, maxX: s.door.x + r, minZ: s.door.z - r, maxZ: s.door.z + r };
+    if (bay) return { id: s.room, area, yaw, zoom: SHELF_VIEW.zoom, classView: { mobile: { zoom: SHELF_VIEW.zoomPhone, lookOffset: { right: sideOf(yaw, s.facing) * BAY_AIM_PHONE } } } };
+    return { id: s.room, area, yaw, classView: { mobile: { lookOffset: { right: sideOf(yaw, s.facing) * STATION_AIM_PHONE } } } };
   });
 }
 

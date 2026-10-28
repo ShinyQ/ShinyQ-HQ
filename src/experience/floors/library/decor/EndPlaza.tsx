@@ -70,8 +70,10 @@ export interface EndSignMeta {
   picked?: boolean;
 }
 
-/** Topic label type size, and the picked topic's. */
-const LABEL = { font: 0.34, picked: 0.44 } as const;
+/** Topic label type size, and the picked topic's; on a portrait phone (camera class `mobile`) `phone` and `phonePicked`. */
+const LABEL = { font: 0.34, picked: 0.44, phone: 0.5, phonePicked: 0.6 } as const;
+/** Study Vault spine type size, and on a portrait phone. */
+const SPINE = { font: 0.36, phone: 0.54 } as const;
 /** Gap between the monument's stacked plates (u). */
 const MONUMENT_GAP = 0.5;
 
@@ -92,9 +94,10 @@ function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignS
  * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
  * they never cross from any camera yaw) and, with the Study Vault, each book's
  * spine (in its issuer's tone, just in front of the spine face) and the "Study Vault" sign over the arc.
- * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`).
+ * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`). `phone`
+ * (camera class `mobile`): the topic names and the spines take their portrait phone sizes (the phone reading rule).
  */
-export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTopic[], slots: readonly OrbSlot[], labels: EndPlazaLabels, pick: TopicPick | null): { signs: SignSpec[]; meta: EndSignMeta[] } {
+export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTopic[], slots: readonly OrbSlot[], labels: EndPlazaLabels, pick: TopicPick | null, phone = false): { signs: SignSpec[]; meta: EndSignMeta[] } {
   const end = layout.end!;
   const signs: SignSpec[] = [];
   const meta: EndSignMeta[] = [];
@@ -106,7 +109,7 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
       y: slot.y + slot.size + CONSTELLATION.labelLift,
       z: slot.z,
       color: pick && !picked ? "#8b8b94" : orbTone(i),
-      fontSize: picked ? LABEL.picked : LABEL.font,
+      fontSize: phone ? (picked ? LABEL.phonePicked : LABEL.phone) : picked ? LABEL.picked : LABEL.font,
       font: FONTS.monoBold,
       opacity: pick && !picked ? 0.6 : 1,
       orbit: true,
@@ -150,7 +153,7 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
         y: 3.1 + (i % 2) * SPINE_STAGGER,
         z: book.at.z + book.facing.z * SPINE_AHEAD - end.center.z,
         color: issuerTone(book.issuer),
-        fontSize: 0.36,
+        fontSize: phone ? SPINE.phone : SPINE.font,
         font: FONTS.monoBold,
       });
       meta.push({ kind: "guide", slug: book.slug });
@@ -286,7 +289,8 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
     else store.selectTopic(topicPickOf(topic));
   };
 
-  const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick), [layout, topics, slots, labels, pick]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick, phone), [layout, topics, slots, labels, pick, phone]);
   const hovered = useRef<string | null>(null);
   const root = useRef<Group>(null);
   const visibility = useEndSignPlacement({ signs, meta, group: root, angle, hovered, reducedMotion, obstacles: PEDESTAL_OBSTACLE, vault: end.vault });

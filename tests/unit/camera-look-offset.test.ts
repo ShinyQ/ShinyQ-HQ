@@ -26,6 +26,7 @@ import { FIRST_PERSON } from "@/experience/camera/firstPerson";
 import { buildFloorLayouts, FLOOR_IDS, floorY, LOBBY } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput } from "@/experience/floors/library/model";
 import { OFFICE } from "@/experience/floors/lobby/officeLayout";
 import type { FloorLayout, ViewportClass } from "@/experience/types";
@@ -256,13 +257,19 @@ const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone
  */
 /**
  * Portrait phone views that aim at what a visitor reads at a stop (the phone reading rule, `tests/unit/phone-reading.test.ts`):
- * every L3 pod door, the Ops Control Room and the Tech Reactor.
+ * every L3 pod door, the Ops Control Room and the Tech Reactor; every L4 desk and bay door and the Topic Constellation.
  * On phones only.
  */
+const library = buildLibraryLayout(libraryLayoutInput(data.library));
 const PHONE_READING_AIMS = [
   ...buildLabsLayout(data.labs.pods).placed.map((p) => p.room),
   "L3:ops",
   "L3:reactor",
+  ...library.stations.map((s) => s.room),
+  ...library.bays.map((b) => b.room),
+  // The constellation stop and its approach on the timeline share the id.
+  "L4:topics",
+  "L4:topics",
 ];
 const OFFSET_ZONES: Record<ViewportClass, readonly string[]> = {
   desktop: ["L1:office", "L3:overview"],

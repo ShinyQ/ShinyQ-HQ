@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import type { Group } from "three";
+import { useHQStore } from "@/store/useHQStore";
 import type { GpuTier } from "../../../types";
 import { FloatingSigns } from "../../../fx/FloatingSign";
 import type { LibraryLayout, LibrarySection } from "../model";
@@ -31,7 +32,8 @@ export function LibrarySigns({
   tier: GpuTier;
   reducedMotion: boolean;
 }) {
-  const { signs, meta } = useMemo(() => librarySigns({ layout, zones, titles, tracks }), [layout, zones, titles, tracks]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const { signs, meta } = useMemo(() => librarySigns({ layout, zones, titles, tracks, phone }), [layout, zones, titles, tracks, phone]);
   const group = useRef<Group>(null);
   const alpha = useLibrarySignPlacement({ signs, meta, group, reducedMotion });
   return (

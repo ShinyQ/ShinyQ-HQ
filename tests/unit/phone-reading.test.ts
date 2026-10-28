@@ -5,10 +5,16 @@ import { buildFloorLayouts } from "@/experience/config";
 import { careerLayoutInput } from "@/experience/floors/career/layout";
 import { buildLabsLayout } from "@/experience/floors/labs/layout";
 import { readableLabels as labsLabels } from "@/experience/floors/labs/readable";
-import { libraryLayoutInput } from "@/experience/floors/library/model";
+import { postTitles } from "@/experience/floors/library/decor/common";
+import { endPlazaSigns } from "@/experience/floors/library/decor/EndPlaza";
+import { buildLibraryLayout } from "@/experience/floors/library/layout";
+import { libraryLayoutInput, type LibrarySection } from "@/experience/floors/library/model";
+import { readableLabels as libraryLabels } from "@/experience/floors/library/readable";
+import { orbSlots, topicPickOf } from "@/experience/floors/library/topics";
 import type { Readable } from "@/experience/readable";
 import { cameraClass } from "@/lib/viewport";
 import en from "../../messages/en.json";
+import { l4EndLabels } from "../helpers/l4-drive";
 import { cameraOf, emPx, endsPx, facingAngle, readingPose, screen } from "../helpers/phone-camera";
 
 /**
@@ -20,8 +26,8 @@ import { cameraOf, emPx, endsPx, facingAngle, readingPose, screen } from "../hel
  * phone size), so the desktop and tablet sizes stay as they were (pinned below). `PHONE_READING_ALL=1` prints every
  * label's sizes, not just the misses.
  */
-type Floor = "L3";
-const FLOORS: readonly Floor[] = ["L3"];
+type Floor = "L3" | "L4";
+const FLOORS: readonly Floor[] = ["L3", "L4"];
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const career = careerLayoutInput(data.career);
 const libraryInput = libraryLayoutInput(data.library);
@@ -30,8 +36,24 @@ const layouts = buildFloorLayouts(data.years.length, { labs: data.labs.pods, car
 const labs = buildLabsLayout(data.labs.pods);
 const reactor = { rings: en.labs.reactor.rings, uses: (count: number, tech: string) => `${count} projects use ${tech}` };
 
+const library = buildLibraryLayout(libraryInput);
+const zones: Record<LibrarySection, string> = { blog: en.library.posts, research: en.library.research, models: en.library.publications, talks: en.library.talks };
+const tracks = new Map(data.library.tracks.map((t) => [t.slug, t.label]));
+const topics = data.library.topics;
+const picked = topics[0];
+
 const LABELS: Record<Floor, Readable[]> = {
   L3: labsLabels({ layout: labs, wings: data.labs.wings, reactor, ops: data.labs.ops.sign }),
+  L4: libraryLabels({
+    layout: library,
+    zones,
+    titles: postTitles(data.library),
+    tracks,
+    end: {
+      desktop: endPlazaSigns(library, topics, orbSlots(topics), l4EndLabels, picked ? topicPickOf(picked) : null),
+      phone: endPlazaSigns(library, topics, orbSlots(topics), l4EndLabels, picked ? topicPickOf(picked) : null, true),
+    },
+  }),
 };
 
 const SIZES = [
@@ -45,6 +67,7 @@ const SAFE = { top: 120, bottom: 140, side: 24 };
 /** Desktop and tablet type sizes (u) per floor: the phone rule leaves them as they were. */
 const DESKTOP_SIZES: Record<Floor, number[]> = {
   L3: [0.46, 0.5, 0.6, 0.62, 0.7],
+  L4: [0.34, 0.36, 0.4, 0.44, 0.5, 0.6, 0.62, 0.7, 0.95],
 };
 
 function measure(floor: FloorId, l: Readable, w: number, h: number) {
