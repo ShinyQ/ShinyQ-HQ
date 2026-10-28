@@ -40,6 +40,13 @@ export const OBSERVATORY_VIEW = {
    * `pitch` opts into the turn-back).
    */
   landingPhone: { zoom: 2.1, pitch: 0.1, lookOffset: { forward: -13.75, up: 0 } },
+  /**
+   * Landscape phone view at the kiosk, primed and on a drive back (spec 2026-10-29): the desktop's turn (`spawnTurn`, the
+   * name at the lower left, Rover in the middle, the observatory at the right) suits the wide, short frame; zoomed out past
+   * the closer landscape rig and aimed back and down, so Rover, the whole name and the stats ring clear the HUD
+   * (`tests/unit/landing-view.test.ts`).
+   */
+  landingLandscape: { zoom: 3, pitch: -0.1, lookOffset: { forward: -2, up: -2 } },
   /** Half size of the spawn zone around the kiosk stop. */
   spawnHalf: 2.5,
 } as const;
@@ -77,6 +84,7 @@ export function lobbyObservatory({ rect, spawn, axis }: LobbyObservatoryInput): 
       classView: {
         tablet: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.tablet },
         mobile: { yaw: yawLooking(axis), zoom: OBSERVATORY_VIEW.spawnZoomNarrow.mobile },
+        landscape: { yaw: yawLooking(axis) + OBSERVATORY_VIEW.spawnTurn, ...OBSERVATORY_VIEW.landingLandscape },
       },
       primeView: {
         mobile: {

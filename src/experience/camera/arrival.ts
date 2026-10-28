@@ -1,7 +1,7 @@
 import type { FloorId } from "@/content/schema";
 import { SHAFT_EAST_FACE } from "../config";
 import { easeInOutCubic, type RideStage } from "../tower/elevator";
-import type { ViewportClass } from "../types";
+import type { CameraClass } from "../types";
 import { followForward, followPose, FOLLOW_LOOK_AHEAD, railPose, type CameraPose, type Vec3 } from "./rigs";
 import { ARRIVAL_RAIL_YAW, ARRIVAL_YAW, ELEVATOR_DIAGONAL } from "./look";
 import { followOffsetScale } from "./offset";
@@ -111,7 +111,7 @@ export function cameraBehindHeading(camera: Vec3, rover: Vec3): number {
 }
 
 /** Camera x of the settled arrival view for a rover at floor x (z does not matter) at `zoom`. */
-function arrivalCameraX(cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number): number {
+function arrivalCameraX(cls: CameraClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number): number {
   if (rig === "rail") return railPose(cls, x, 0, zoom, 0, ARRIVAL_RAIL_YAW, 0).position[0];
   const forward = followForward(cls, ARRIVAL_YAW);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
@@ -123,7 +123,7 @@ function arrivalCameraX(cls: ViewportClass, aspect: number, rig: "follow" | "rai
  * east, at the arrival yaw. The camera x is linear in the zoom (the position is the target plus offset times zoom), so two
  * samples solve it exactly.
  */
-export function shaftClearZoom(cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number): number {
+export function shaftClearZoom(cls: CameraClass, aspect: number, rig: "follow" | "rail", x: number): number {
   const at0 = arrivalCameraX(cls, aspect, rig, x, 0);
   const slope = arrivalCameraX(cls, aspect, rig, x, 1) - at0;
   if (slope >= 0) return Infinity;

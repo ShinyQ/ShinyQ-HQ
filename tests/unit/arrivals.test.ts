@@ -16,7 +16,7 @@ import { signPlate } from "@/experience/fx/signLayout";
 import { doorAt } from "@/experience/nav/doors";
 import { buildNavGrid, findPath, isWalkable, segmentWalkable } from "@/experience/nav/navgrid";
 import { padAt } from "@/experience/nav/pads";
-import type { FloorLayout, Vec2, ViewportClass } from "@/experience/types";
+import type { CameraClass, FloorLayout, Vec2 } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
 import { cameraOf, readingPose, rigOf, screen } from "../helpers/phone-camera";
 
@@ -112,7 +112,7 @@ function signCornersFrom(camera: Vec3): { label: string; at: Vec3 }[] {
 }
 
 /** The B1 phone arrival frames whole station signs (owner 2026-10-18), on the same diagonal as every arrival. */
-const signsView = (floor: FloorId, cls: ViewportClass) => floor === "B1" && cls === "mobile";
+const signsView = (floor: FloorId, cls: CameraClass) => floor === "B1" && cls === "mobile";
 /** Heading from the settled camera to the rover: behind the rover and `ELEVATOR_DIAGONAL` to its right. */
 const DIAGONAL_HEADING = ARRIVAL_HEADING + ELEVATOR_DIAGONAL;
 
@@ -126,7 +126,7 @@ function arrivalOf(floor: FloorId): { layout: FloorLayout; arrival: Vec2; zone: 
 }
 
 /** The camera the Director settles on with the rover at the arrival (CameraDirector: follow look-ahead and offset scale; L2 rail). */
-function settledPose(floor: FloorId, w: number, h: number): { pose: CameraPose; cls: ViewportClass; zoom: number } {
+function settledPose(floor: FloorId, w: number, h: number): { pose: CameraPose; cls: CameraClass; zoom: number } {
   const { layout, arrival, zone } = arrivalOf(floor);
   const cls = cameraClass(w, h);
   const zoom = zoneView(zone, cls).zoom ?? 1;

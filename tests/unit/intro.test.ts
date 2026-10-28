@@ -20,10 +20,10 @@ import {
 import { yawLooking } from "@/experience/camera/look";
 import { LOBBY, SHAFT } from "@/experience/config";
 import { OBSERVATORY_VIEW } from "@/experience/floors/lobby/observatoryLayout";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 
 const rover: [number, number, number] = [LOBBY.spawn.x, 0, LOBBY.spawn.z];
-const endFor = (cls: ViewportClass, yaw: number, zoom: number) => {
+const endFor = (cls: CameraClass, yaw: number, zoom: number) => {
   const f = followForward(cls, yaw);
   const ahead = FOLLOW_LOOK_AHEAD[cls];
   return followPose(cls, [rover[0] + f.x * ahead, 1, rover[2] + f.z * ahead], yaw, zoom);
@@ -31,7 +31,7 @@ const endFor = (cls: ViewportClass, yaw: number, zoom: number) => {
 const axisYaw = yawLooking(LOBBY.kioskAxis);
 // Two off-axis views, then the primed spawn views (L1:kiosk, observatoryLayout): desktop turned spawnTurn off the kiosk
 // axis, tablet and phone straight down it.
-const cases: [ViewportClass, number, number][] = [
+const cases: [CameraClass, number, number][] = [
   ["desktop", 0.9, 1.5],
   ["mobile", 0.3, 1.75],
   ["desktop", axisYaw + OBSERVATORY_VIEW.spawnTurn, OBSERVATORY_VIEW.spawnZoom],
@@ -39,7 +39,7 @@ const cases: [ViewportClass, number, number][] = [
   ["mobile", axisYaw, OBSERVATORY_VIEW.spawnZoomNarrow.mobile],
 ];
 /** When the face close-up is framed: at t 0, or once the push-in ends where the boot holds a lower look (portrait phones). */
-const closeUpAt = (cls: ViewportClass) => (WAKE[cls].boot === undefined ? 0 : INTRO.wake);
+const closeUpAt = (cls: CameraClass) => (WAKE[cls].boot === undefined ? 0 : INTRO.wake);
 const dist = (a: number[], b: number[]) => Math.hypot(...a.map((v, i) => v - b[i]));
 /** The camera's angle around the orbit's center (Rover, or the plaza on narrow frames) at `t`. */
 const angleAt = (plan: ReturnType<typeof introPlan>, t: number) => {

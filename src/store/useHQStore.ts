@@ -10,7 +10,7 @@ import type { Ride } from "@/experience/tower/elevator";
 import type { PickerRequest } from "@/experience/nav/pads";
 import type { Beam } from "@/experience/nav/teleport";
 import type { HoverState } from "@/experience/interact/pick";
-import type { GpuTier, RoverFace, ViewportClass } from "@/experience/types";
+import type { CameraClass, GpuTier, RoverFace, ViewportClass } from "@/experience/types";
 import type { ReactorRingId } from "@/content/tech-rings";
 import { isPublicFloor } from "@/lib/floors";
 import { applyMotionAttr, DEFAULT_MOTION, isMotionPref, migrateMotion, resolveReducedMotion, type MotionPref } from "@/lib/motion";
@@ -47,7 +47,7 @@ export interface MissionState {
 
 export interface DeviceState {
   viewport: ViewportClass;
-  camera: ViewportClass;
+  camera: CameraClass;
   coarse: boolean;
 }
 

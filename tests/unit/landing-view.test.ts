@@ -6,7 +6,7 @@ import { FOLLOW_LOOK_AHEAD, followForward, followPose, pitchRange, type CameraPo
 import { buildFloorLayouts, LOBBY } from "@/experience/config";
 import { lobbyElements, TITLE_TOP } from "@/experience/floors/lobby/layout";
 import { OBSERVATORY_VIEW } from "@/experience/floors/lobby/observatoryLayout";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
 
 type V3 = [number, number, number];
@@ -17,7 +17,7 @@ const axisYaw = yawLooking(LOBBY.kioskAxis);
 const landing = OBSERVATORY_VIEW.landingPhone;
 
 /** A fresh orbit on a class's follow rig (its pitch range), as CameraDirector sets it every frame. */
-function orbitOn(cls: ViewportClass) {
+function orbitOn(cls: CameraClass) {
   const s = createOrbitState();
   setPitchRange(s, pitchRange(cls, "follow"));
   return s;
@@ -207,5 +207,47 @@ describe.each([
     ];
     const far = corners.reduce((a, b) => (b[0] * f.x + b[2] * f.z > a[0] * f.x + a[2] * f.z ? b : a));
     expect(screen(pose, far, w, h).y).toBeLessThanOrEqual(0.15 * h);
+  });
+});
+
+/**
+ * Safe frame on a landscape phone (spec 2026-10-29): under the floor chip row, left of the minimap and the right column
+ * (Ask, menu, Boost, Reset view); the floating stick's resting ring is not a control.
+ */
+const LANDSCAPE_SAFE = { left: 24, right: 96, top: 72, bottom: 24 };
+
+describe.each([
+  [844, 390],
+  [667, 375],
+  [932, 430],
+])("the landscape phone landing view at %i x %i", (w, h) => {
+  const pose = landingPose(w, h);
+  const inside = (p: V3) => {
+    const q = screen(pose, p, w, h);
+    return q.x >= LANDSCAPE_SAFE.left && q.x <= w - LANDSCAPE_SAFE.right && q.y >= LANDSCAPE_SAFE.top && q.y <= h - LANDSCAPE_SAFE.bottom;
+  };
+
+  it("uses the landscape camera class and the kiosk's landscape view", () => {
+    expect(cameraClass(w, h)).toBe("landscape");
+    expect(kiosk.classView?.landscape).toBeDefined();
+  });
+
+  it("keeps Rover and both ends of the name in the safe frame", () => {
+    expect(inside([LOBBY.spawn.x, 1, LOBBY.spawn.z]), "rover").toBe(true);
+    const fx = pose.target[0] - pose.position[0];
+    const fz = pose.target[2] - pose.position[2];
+    const len = Math.hypot(fx, fz);
+    for (const side of [-1, 1]) {
+      const end: V3 = [LOBBY.hologram.x - (fz / len) * NAME_HALF * side, TITLE_TOP, LOBBY.hologram.z + (fx / len) * NAME_HALF * side];
+      expect(inside(end), `name end ${side}`).toBe(true);
+    }
+  });
+
+  it.each([getStats().length, 8])("keeps three quarters of a %i-tile stats ring in the safe frame", (n) => {
+    for (const turn of [0, Math.PI / 8, Math.PI / 4]) {
+      const tiles = lobbyElements(n, turn).filter((b) => b.name.startsWith("tile-"));
+      const centres = tiles.map((b): V3 => [(b.min[0] + b.max[0]) / 2, (b.min[1] + b.max[1]) / 2, (b.min[2] + b.max[2]) / 2]);
+      expect(centres.filter(inside).length, `turn ${turn}`).toBeGreaterThanOrEqual(Math.ceil(0.75 * n));
+    }
   });
 });

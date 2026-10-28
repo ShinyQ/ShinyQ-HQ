@@ -1,4 +1,4 @@
-import type { Vec2, ViewportClass } from "../types";
+import type { CameraClass, Vec2 } from "../types";
 import type { CameraPose, Vec3 } from "./rigs";
 
 /**
@@ -31,14 +31,14 @@ export const FIRST_PERSON = {
 } as const;
 
 /** Vertical FOV in first person, per camera class (wider than the follow rig, like a driver's view). */
-export const FIRST_PERSON_FOV: Record<ViewportClass, number> = { desktop: 65, tablet: 70, mobile: 80 };
+export const FIRST_PERSON_FOV: Record<CameraClass, number> = { desktop: 65, tablet: 70, mobile: 80, landscape: 70 };
 
 /** The Canvas camera's planes (`Experience.tsx`), restored whenever first person is off. Keep in sync. */
 export const CAMERA_NEAR = 0.5;
 export const CAMERA_FAR = 600;
 
 /** Eye pose at the rover (`rover` is x, floor y, z) looking along `forward` (horizontal) tilted by `look`. */
-export function firstPersonPose(cls: ViewportClass, rover: Vec3, forward: Vec2, look: number): CameraPose {
+export function firstPersonPose(cls: CameraClass, rover: Vec3, forward: Vec2, look: number): CameraPose {
   const eye: Vec3 = [rover[0], rover[1] + FIRST_PERSON.eyeHeight, rover[2]];
   const len = Math.hypot(forward.x, forward.z) || 1;
   const across = (Math.cos(look) * FIRST_PERSON.lookDistance) / len;

@@ -30,7 +30,7 @@ import {
 } from "@/experience/floors/lobby/office/chipRows";
 import { officeChipMode, officeChipsHere, officeSign, wingSignHidden } from "@/experience/floors/lobby/officeShell";
 import { boxesOverlap, type ScreenBox } from "@/experience/fx/labelPlacement";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 import { hudLayout } from "@/hud/layout";
 import { cameraClass, viewportClass } from "@/lib/viewport";
 import { boxOf, floor, followCamera, orbitCamera, orbitPose, poseCamera, SIZES, type Pose } from "../helpers/office-cameras";
@@ -96,7 +96,7 @@ const hudBar = ({ width }: { width: number }) => (width >= 768 ? 62 : 58);
  * near band (e2e/office.spec.ts `nearChips` and scripts/office-shots.ts zoom in to it). On a phone the chips stay compact
  * at any distance, and on the tablet camera one line, so there the near pose only checks the row.
  */
-const NEAR_STEPS: Record<ViewportClass, number> = { desktop: 1, tablet: 1, mobile: 2 };
+const NEAR_STEPS: Record<CameraClass, number> = { desktop: 1, tablet: 1, mobile: 2, landscape: 1 };
 
 /** Near: the scene's far band flips a far chip to near under this distance. */
 const NEAR = OFFICE_CHIP_FAR - OFFICE_CHIP_FAR_BAND;

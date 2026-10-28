@@ -71,13 +71,23 @@ const LABELS: Record<Floor, Readable[]> = {
   }),
 };
 
-const SIZES = [
-  { w: 390, h: 844, min: 10 },
-  { w: 375, h: 667, min: 9 },
-] as const;
-const MAX_FACING = Math.PI / 3;
 /** The phone's HUD-free box (`PHONE_SAFE` in e2e/hq.ts, as in arrivals.test.ts): the label's middle stays inside it. */
-const SAFE = { top: 120, bottom: 140, side: 24 };
+const SAFE = { top: 120, bottom: 140, left: 24, right: 24 };
+/**
+ * A landscape phone's HUD-free box (spec 2026-10-29): under the floor chip row, left of the minimap and the right column
+ * (Ask, menu, Boost, Reset view); the floating stick's resting ring is not a control, so the bottom is open.
+ */
+const LANDSCAPE_SAFE = { top: 72, bottom: 24, left: 24, right: 96 };
+/** Portrait phones (part 2) and landscape phones (part 3, camera class `landscape`): the same 10 px and 9 px gates. */
+const SIZES = [
+  { w: 390, h: 844, min: 10, safe: SAFE },
+  { w: 375, h: 667, min: 9, safe: SAFE },
+  { w: 844, h: 390, min: 10, safe: LANDSCAPE_SAFE },
+  { w: 667, h: 375, min: 9, safe: LANDSCAPE_SAFE },
+] as const;
+/** Reported only (PHONE_READING_ALL=1): the largest landscape phone. */
+const REPORTED = [{ w: 932, h: 430, min: 10, safe: LANDSCAPE_SAFE }] as const;
+const MAX_FACING = Math.PI / 3;
 
 /** Desktop and tablet type sizes (u) per floor: the phone rule leaves them as they were. */
 const DESKTOP_SIZES: Record<Floor, number[]> = {
@@ -88,11 +98,11 @@ const DESKTOP_SIZES: Record<Floor, number[]> = {
 };
 
 
-function measure(floor: FloorId, l: Readable, w: number, h: number) {
+function measure(floor: FloorId, l: Readable, w: number, h: number, box: { top: number; bottom: number; left: number; right: number } = SAFE) {
   const pose = readingPose(floor, layouts[floor], l.reading, w, h);
   const camera = cameraOf(pose, w, h);
   const cls = cameraClass(w, h);
-  const safe = (p: { x: number; y: number; front: boolean }) => p.front && p.x >= SAFE.side && p.x <= w - SAFE.side && p.y >= SAFE.top && p.y <= h - SAFE.bottom;
+  const safe = (p: { x: number; y: number; front: boolean }) => p.front && p.x >= box.left && p.x <= w - box.right && p.y >= box.top && p.y <= h - box.bottom;
   const p = screen(camera, w, h, l.at);
   const ends = endsPx(camera, w, h, l, cls);
   const whole = !ends || ends.every((e) => e.front && e.x >= 0 && e.x <= w);
@@ -105,8 +115,8 @@ function failures(): string[] {
   const out: string[] = [];
   for (const floor of FLOORS)
     for (const l of LABELS[floor]) {
-      const m = SIZES.map(({ w, h }) => measure(floor, l, w, h));
-      const bad = m.some((x, i) => !x.front || !x.inside || !x.rover || x.px < SIZES[i].min || x.facing > MAX_FACING);
+      const m = [...SIZES, ...REPORTED].map(({ w, h, safe }) => measure(floor, l, w, h, safe));
+      const bad = m.slice(0, SIZES.length).some((x, i) => !x.front || !x.inside || !x.rover || x.px < SIZES[i].min || x.facing > MAX_FACING);
       if (bad || m.some((x) => !x.whole) || process.env.PHONE_READING_ALL) out.push(`${floor} ${l.id}: ${m.map((x) => `${x.px.toFixed(1)} px${x.front ? "" : " behind"}${x.inside ? "" : ` out (${x.at.x.toFixed(0)}, ${x.at.y.toFixed(0)})`}${x.rover ? "" : " no rover"}${x.whole ? "" : " clipped"}`).join(", ")}; facing ${((m[0].facing * 180) / Math.PI).toFixed(0)} deg`);
     }
   return out;
@@ -118,7 +128,7 @@ describe("phone reading rule (L2, L3, L4, RF)", () => {
   });
   it("prints the labels that miss the rule", () => {
     const list = failures();
-    if (list.length) console.log(`Phone reading failures (390x844, 375x667):\n${list.join("\n")}`);
+    if (list.length) console.log(`Phone reading failures (390x844, 375x667, 844x390, 667x375; 932x430 reported):\n${list.join("\n")}`);
     expect(Array.isArray(list)).toBe(true);
   });
   for (const floor of FLOORS) {
@@ -129,9 +139,9 @@ describe("phone reading rule (L2, L3, L4, RF)", () => {
       expect([...new Set(list.map((l) => l.fontSize))].sort((a, b) => a - b)).toEqual(DESKTOP_SIZES[floor]);
     });
     for (const l of list) {
-      it(`${floor} ${l.id} reads on portrait phones`, () => {
-        for (const { w, h, min } of SIZES) {
-          const m = measure(floor, l, w, h);
+      it(`${floor} ${l.id} reads on portrait and landscape phones`, () => {
+        for (const { w, h, min, safe } of SIZES) {
+          const m = measure(floor, l, w, h, safe);
           const what = `${floor} ${l.id} "${l.text.slice(0, 24)}" at ${w}x${h}`;
           expect(m.front, `${what}: in front of the camera`).toBe(true);
           expect(m.inside, `${what}: on screen clear of the HUD at (${m.at.x.toFixed(0)}, ${m.at.y.toFixed(0)})`).toBe(true);

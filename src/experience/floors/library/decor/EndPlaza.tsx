@@ -4,6 +4,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, CylinderGeometry, Object3D, PlaneGeometry, type Group, type InstancedMesh } from "three";
+import { phoneCamera } from "@/lib/viewport";
 import { getHQStore, useHQStore, type TopicPick } from "@/store/useHQStore";
 import { FloatingSigns } from "../../../fx/FloatingSign";
 import { createHoloMaterial, HOLO_MODE } from "../../../fx/holoFx";
@@ -292,7 +293,7 @@ export function EndPlaza({ layout, library, tier, reducedMotion, labels }: { lay
     else store.selectTopic(topicPickOf(topic));
   };
 
-  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const phone = useHQStore((s) => phoneCamera(s.device.camera));
   const { signs, meta } = useMemo(() => endPlazaSigns(layout, topics, slots, labels, pick, phone), [layout, topics, slots, labels, pick, phone]);
   const hovered = useRef<string | null>(null);
   const root = useRef<Group>(null);

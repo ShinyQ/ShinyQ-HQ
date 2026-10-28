@@ -31,9 +31,9 @@ import {
 } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type CameraPose, type Vec3 } from "@/experience/camera/rigs";
 import { SHAFT_EAST_FACE } from "@/experience/config";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 
-const CLASSES: readonly ViewportClass[] = ["desktop", "tablet", "mobile"];
+const CLASSES: readonly CameraClass[] = ["desktop", "tablet", "mobile"];
 const DEG = Math.PI / 180;
 
 /** Degrees between the horizon and the top edge of the view (positive: the edge is below the horizon; no roll). */
@@ -267,7 +267,7 @@ describe("the elevator diagonal (owner 2026-10-23)", () => {
 
 describe("shaftClearZoom", () => {
   /** The settled arrival camera built the way CameraDirector does. */
-  const cameraX = (cls: ViewportClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number) => {
+  const cameraX = (cls: CameraClass, aspect: number, rig: "follow" | "rail", x: number, zoom: number) => {
     if (rig === "rail") return railPose(cls, x, 0, zoom, 0, ARRIVAL_RAIL_YAW, 0).position[0];
     const forward = followForward(cls, ARRIVAL_YAW);
     const ahead = FOLLOW_LOOK_AHEAD[cls];

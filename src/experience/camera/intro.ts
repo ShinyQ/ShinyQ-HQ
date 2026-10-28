@@ -1,5 +1,5 @@
 import { LOBBY, SHAFT } from "../config";
-import type { ViewportClass } from "../types";
+import type { CameraClass } from "../types";
 import type { CameraPose, Vec3 } from "./rigs";
 
 /** Intro timeline (s): the wake close-up, the reveal ring, the pull-back and the orbit, then explore (owner design 2026-10-18). */
@@ -38,38 +38,41 @@ interface WakeFrame {
    */
   boot?: number;
 }
-export const WAKE: Record<ViewportClass, WakeFrame> = {
+export const WAKE: Record<CameraClass, WakeFrame> = {
   desktop: { distance: 3.5, fov: 38, height: 2.4, look: 1.85 },
   tablet: { distance: 3.8, fov: 44, height: 2.5, look: 1.8 },
   mobile: { distance: 3.75, fov: 52, height: 2.4, look: 1.75, boot: 0.6 },
+  landscape: { distance: 3.8, fov: 44, height: 2.5, look: 1.8 },
 };
 /** The slow push-in during the wake (fraction of the wake distance). */
 const PUSH = 0.06;
 /** How long the pull-back from the close-up to the orbit's high point takes (s after the wake), per camera class. */
-const PULL: Record<ViewportClass, number> = { desktop: 2, tablet: 2.1, mobile: 2.6 };
+const PULL: Record<CameraClass, number> = { desktop: 2, tablet: 2.1, mobile: 2.6, landscape: 2.1 };
 /**
  * The orbit's high point after the pull-back: radius around the orbit's center and how far above the end (follow) height
  * it rises, so the orbit descends onto the follow pose on every camera class.
  */
-const PEAK: Record<ViewportClass, { radius: number; rise: number }> = {
+const PEAK: Record<CameraClass, { radius: number; rise: number }> = {
   desktop: { radius: 26, rise: 6 },
   tablet: { radius: 18, rise: 10 },
   mobile: { radius: 24, rise: 10 },
+  landscape: { radius: 18, rise: 10 },
 };
 /**
  * The orbit's center: Rover on desktop; on the narrow (portrait) frames of tablets and phones the plaza (the hologram),
  * which the center glides to during the pull-back, so the stats ring stays in the middle of the frame all the way round.
  */
-const PLAZA_ORBIT: Record<ViewportClass, boolean> = { desktop: false, tablet: true, mobile: true };
+const PLAZA_ORBIT: Record<CameraClass, boolean> = { desktop: false, tablet: true, mobile: true, landscape: true };
 /**
  * How far past the orbit's center (and at what height) the camera looks during the orbit: on desktop past Rover, so the
  * far side of the plaza (the landmarks) fills the frame; on narrow frames just past the plaza's center, where the look
  * point holds until `land` s before the end and only then moves onto the follow target (desktop: from the pull-back's end).
  */
-const ACROSS: Record<ViewportClass, { ahead: number; y: number; land?: number }> = {
+const ACROSS: Record<CameraClass, { ahead: number; y: number; land?: number }> = {
   desktop: { ahead: 10, y: 2.5 },
   tablet: { ahead: 4, y: 1, land: 1.4 },
   mobile: { ahead: 4, y: 1, land: 1.4 },
+  landscape: { ahead: 4, y: 1, land: 1.4 },
 };
 /**
  * The elevator shaft (a tower through every floor): the pull-back's radius waits (up to HOLD_MAX s, in HOLD_STEP steps)
@@ -155,7 +158,7 @@ export interface IntroPlan {
   endError: { position: Vec3; target: Vec3 };
 }
 
-export function introPlan(cls: ViewportClass, rover: Vec3, spawnHeading: number, end: CameraPose): IntroPlan {
+export function introPlan(cls: CameraClass, rover: Vec3, spawnHeading: number, end: CameraPose): IntroPlan {
   const focus: Vec3 = PLAZA_ORBIT[cls] ? [LOBBY.hologram.x, rover[1], LOBBY.hologram.z] : rover;
   const [cx, cy, cz] = focus;
   const ex = end.position[0] - cx;
