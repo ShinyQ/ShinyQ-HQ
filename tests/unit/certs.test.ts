@@ -7,10 +7,11 @@ import { CertificationSchema } from "@/content/schema";
 import { CERT_FIXTURE, certFixture } from "@/experience/prototype/certs/fixture";
 
 describe("certification helpers", () => {
-  it("keeps the scale fixture valid against the schema, with the live 8 first", () => {
+  it("keeps the scale fixture valid against the schema, with the live ones first", () => {
     expect(CERT_FIXTURE).toHaveLength(30);
     for (const cert of CERT_FIXTURE) expect(CertificationSchema.safeParse(cert).success, cert.id).toBe(true);
-    expect(certFixture(8).map((c) => c.id)).toEqual(getCertifications().map((c) => c.id));
+    const live = getCertifications();
+    expect(certFixture(live.length).map((c) => c.id)).toEqual(live.map((c) => c.id));
   });
 
   it("sorts earned newest first, then in progress, then expired", () => {
@@ -45,9 +46,10 @@ describe("certification helpers", () => {
 
   it("builds wall tabs: All, issuers with 2 or more, then Other", () => {
     expect(issuerTabs(getCertifications()).map((t) => [t.key, t.count])).toEqual([
-      ["all", 8],
+      ["all", 9],
       ["Microsoft", 3],
-      ["other", 5],
+      ["GitHub", 2],
+      ["other", 4],
     ]);
     const tabs = issuerTabs(CERT_FIXTURE);
     expect(tabs.map((t) => t.key)).toEqual(["all", "Microsoft", "GitHub", "AWS", "other"]);

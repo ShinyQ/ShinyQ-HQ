@@ -546,6 +546,14 @@
       "expires": "2027-10"
     },
     {
+      "id": "gh-300",
+      "code": "GH-300",
+      "name": "GitHub Copilot",
+      "issuer": "GitHub",
+      "issued": "2026-11",
+      "status": "in-progress"
+    },
+    {
       "id": "google-gen-ai-leader",
       "name": "Google Certified: Generative AI Leader",
       "issuer": "Google",
