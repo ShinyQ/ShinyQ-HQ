@@ -88,6 +88,8 @@ function mount(layout: HudLayout = "phone", onExit = vi.fn()) {
 async function openMenu(layout: HudLayout = "phone") {
   const result = mount(layout);
   await userEvent.click(result.button);
+  // The sheet body is a lazy chunk: wait for its actions.
+  await screen.findByTestId("menu-actions");
   return { ...result, sheet: screen.getByTestId("menu-sheet") };
 }
 
@@ -151,9 +153,22 @@ describe("HudMenu", () => {
     expect(openPalette).toHaveBeenCalledTimes(1);
     expect(button).toHaveFocus();
     await userEvent.click(button);
-    await userEvent.click(within(screen.getByTestId("menu-sheet")).getByRole("button", { name: "Rover menu" }));
+    await userEvent.click(await within(screen.getByTestId("menu-sheet")).findByRole("button", { name: "Rover menu" }));
     expect(screen.queryByTestId("menu-sheet")).toBeNull();
     expect(openTerminal).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the rotate and map keys for keyboards only: aria-keyshortcuts and a key cap hidden on coarse pointers", async () => {
+    const { sheet } = await openMenu();
+    for (const [name, key] of [[/^Rotate left/, "Q"], [/^Rotate right/, "E"], ["Map", "N"]] as const) {
+      const action = within(sheet).getByRole("button", { name });
+      expect(action).toHaveAttribute("aria-keyshortcuts", key);
+      const cap = action.querySelector("kbd");
+      expect(cap).toHaveTextContent(key);
+      expect(cap).toHaveAttribute("aria-hidden", "true");
+      expect(cap?.className).toContain("pointer-coarse:hidden");
+    }
+    expect(within(sheet).getByRole("button", { name: /^Rotate left/ })).toHaveAccessibleName(en.hud.view.rotateLeft);
   });
 
   it("rotate emits the view controls' orbit intents and keeps the menu open", async () => {
@@ -244,7 +259,7 @@ describe("HudMenu", () => {
     await userEvent.click(screen.getByTestId("hud-menu"));
     const sheet = screen.getByTestId("menu-sheet");
     expect(sheet).toHaveAccessibleName(id.hud.menuTitle);
-    expect(within(sheet).getByRole("button", { name: id.hud.map.open })).toBeInTheDocument();
+    expect(await within(sheet).findByRole("button", { name: id.hud.map.open })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: id.hud.launcher.roverMenu })).toBeInTheDocument();
   });
 });
