@@ -90,6 +90,7 @@ export function WorkshopAnnex({
   years,
   tier,
   reducedMotion,
+  phone,
 }: {
   layout: CareerRoadLayout;
   career: CareerData;
@@ -98,6 +99,8 @@ export function WorkshopAnnex({
   years: readonly number[];
   tier: GpuTier;
   reducedMotion: boolean;
+  /** Camera class `mobile`: the repo sign's portrait size. */
+  phone: boolean;
 }) {
   const { workshop: w, windowX } = layout;
   const accent = FLOOR_COLOR.L2;
@@ -122,7 +125,10 @@ export function WorkshopAnnex({
   );
   const batch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(batch, text);
-  const signs = useMemo(() => workshopSigns(w, { workshop: labels.workshop, console: labels.console, repos: labels.repos }, accent), [w, labels.workshop, labels.console, labels.repos, accent]);
+  const signs = useMemo(
+    () => workshopSigns(w, { workshop: labels.workshop, console: labels.console, repos: labels.repos }, accent, phone),
+    [w, labels.workshop, labels.console, labels.repos, accent, phone],
+  );
   const icons = useMemo(() => w.benches.map((b) => ({ x: b.center.x, y: WORKSHOP_SCENE.icon.y, z: b.center.z, face: 0 })), [w.benches]);
 
   // Sight lines from the window frame up to the east edge of the Labs slab (L3, one floor up).

@@ -783,7 +783,7 @@ test.describe("free orbit camera", () => {
     expect(await currentYaw(page)).toBeLessThan(afterE - 0.3);
 
     await page.getByRole("button", { name: en.hud.view.rotateRight }).click();
-    await page.getByRole("button", { name: "Reset view (0)" }).click();
+    await page.getByRole("button", { name: en.hud.view.reset, exact: true }).click();
     await expect.poll(async () => Math.abs(Math.sin((await cameraYaw(page)) / 2)), { timeout: 15_000 }).toBeLessThan(0.01);
 
     await page.keyboard.press("q");

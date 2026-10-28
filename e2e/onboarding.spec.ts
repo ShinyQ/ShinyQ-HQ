@@ -364,7 +364,7 @@ test.describe("reduced motion", () => {
 });
 
 test.describe("phone layout", () => {
-  test("390x844: the welcome docks over the stepped-aside band; a choiceless line is a toast above the joystick that clears the Corners controls; taps and Go advance", async ({ browser }: { browser: Browser }) => {
+  test("390x844: the welcome docks over the stepped-aside band; a choiceless line is a top toast that clears the Corners controls; taps and Go advance", async ({ browser }: { browser: Browser }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
     const page = await context.newPage();
     await freshVisit(page);
@@ -397,8 +397,9 @@ test.describe("phone layout", () => {
     expect(overlaps(await rect(box(page)), await rect(page.getByTestId("point-hint")))).toBe(false);
 
     // Point-and-go on touch, as the line teaches: the first tap selects (Go chip), the chip drives.
-    const top = (await rect(box(page))).y;
-    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, bottom: 844 - top + 8 }, minDistance: 4 });
+    // The choiceless line is a top toast: pick a target below it.
+    const tryIt = await rect(box(page));
+    const target = await visibleTarget(page, { kinds: ["station", "kiosk", "elevator-pad"], safe: { ...PHONE_SAFE, top: tryIt.y + tryIt.height + 8 }, minDistance: 4 });
     const point = await targetPoint(page, target.id);
     await page.touchscreen.tap(point.x, point.y);
     const go = page.getByTestId("interact-go");
@@ -414,7 +415,7 @@ test.describe("phone layout", () => {
     await page.keyboard.press("Escape");
     await expectLine(page, "moved");
 
-    // A choiceless line is the slim toast above the joystick, clear of the Corners controls.
+    // A choiceless line is the slim top toast, clear of the Corners controls.
     await expect(box(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
     const toast = await rect(box(page));
     expect(toast.x).toBeGreaterThanOrEqual(0);
@@ -424,7 +425,7 @@ test.describe("phone layout", () => {
       expect(overlaps(toast, await rect(page.getByTestId(id))), id).toBe(false);
     }
     await tapText(page);
-    // The toast clamps a long line to two rows: the first tap may expand it, the next one moves on.
+    // The toast clamps a long line to four rows: the first tap may expand it, the next one moves on.
     if ((await box(page).getAttribute("data-line")) === "moved" && (await box(page).getAttribute("data-expanded")) === "true") await tapText(page);
     await expectLine(page, "floor-chip");
     await expect(box(page)).not.toHaveAttribute("data-docked", "true");

@@ -98,6 +98,8 @@ Three free-standing boards stand at the fork (`LABS.board`; owner decision: a ne
 | Overview | Behind the rover and 35 degrees to its right (`ARRIVAL_YAW`, the elevator diagonal, owner decision 2026-10-23), zoom 1.4 aimed 5.75 u right (`LABS.overviewAim`, the left board clear of the profile card and the right one of the elevator rail), phones 1.45 aimed 2.75 u right (`LABS.overviewZoomPhone`, `overviewAimPhone`; the camera stays east of the elevator shaft) |
 | Board stop | Looks at the board head on, zoom 1.05, phones 1 |
 | Door | Turns the follow camera so the pod is in front of the rover |
+| Tech Reactor stop | Looks west over the core, zoom 1.3; phones 0.2 lower and aimed 4 u up, with the ring names at `RING_LABEL.phone` 0.7 (`ReactorCore.tsx`) |
+| Ops Control Room door | Yaw 0, zoom 0.85; phones aimed 4 u right, so the room's sign stays whole |
 
 - Overview framing, asserted in `tests/unit/labs-arrival.test.ts`:
   - Desktop and tablet show the three boards whole and apart (at least 40 px between them at 1440x900).

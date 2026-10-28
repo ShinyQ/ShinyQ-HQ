@@ -1,68 +1,64 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { createElement, Suspense, useId, useReducer, useRef, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { PageViewIcon } from "@/components/PageViewIcon";
-import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
 import { ACCENT_TEXT, FLOOR_ACCENT } from "@/lib/accent";
 import { useHQStore } from "@/store/useHQStore";
-import { openPalette, openTerminal } from "../events";
 import type { HudLayout } from "../layout";
 import { ProfilePhoto } from "../ProfileCard";
 import { LazySettingsPanel } from "../settings/LazySettingsPanel";
 import { RotateLeftIcon, RotateRightIcon, rotateView } from "../ViewControls";
+import { lazyFromChunk } from "../lazyFromChunk";
+import { loadMenu } from "./menuChunk";
+import type { MenuSheetProps } from "./MenuSheet";
 import { SheetHeader } from "./SheetHeader";
 import { useHudToggle } from "./useHudToggles";
 
-const action =
-  "hq-glow inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-2 px-3 py-2 text-left text-sm text-ink-2 hover:bg-surface-2 hover:text-ink";
-const primary =
-  "col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-cyan px-4 text-sm font-semibold text-void shadow-[0_0_24px_-6px_var(--color-cyan)] transition hover:bg-cyan/85 focus-visible:outline-offset-4";
+type LoadProps = MenuSheetProps & { onRetry: () => void };
 
-function SearchIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" className="shrink-0">
-      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />
-    </svg>
-  );
-}
-
-/** Who and where: the photo, name, headline and current floor (no buttons; the desktop shows the same in its profile card). */
-function MenuProfile({ data }: { data: ExperienceData }) {
+/** A failed sheet chunk: the load note, Retry, and the Classic site stays one tap away. */
+function MenuFailed({ onRetry, onExit, pageViewIcon }: LoadProps) {
   const t = useTranslations("hud");
-  const floor = useHQStore((s) => s.floor);
+  const button = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm";
   return (
-    <section aria-label={t("profile")} data-testid="menu-profile" className="flex items-center gap-3 px-3">
-      <ProfilePhoto size={44} />
-      <div className="min-w-0">
-        <p className="truncate text-[15px] leading-5 font-bold text-ink">{data.profile.name}</p>
-        <p className="text-[13px] leading-5 text-cyan">{data.profile.headline}</p>
-        <p className="text-sm leading-5 text-ink-2">
-          <span className={`label mr-1.5 ${ACCENT_TEXT[FLOOR_ACCENT[floor]]}`}>{floor}</span>
-          {data.floors[floor].name}
-        </p>
-      </div>
-    </section>
+    <div role="alert" data-testid="menu-failed" className="flex flex-col gap-2 px-3 text-sm text-ink-2">
+      <p>{t("loadFailed")}</p>
+      <button type="button" onClick={onRetry} className={`${button} border border-line-2 text-ink`}>
+        {t("retry")}
+      </button>
+      <button type="button" onClick={onExit} data-testid="page-view" className={`${button} bg-cyan font-semibold text-void`}>
+        {pageViewIcon}
+        {t("pageView")}
+      </button>
+    </div>
   );
+}
+
+const lazySheet = lazyFromChunk<LoadProps>(
+  () =>
+    loadMenu().then((mod) => {
+      if (!mod) throw new Error("menu sheet chunk");
+      return mod.MenuSheet;
+    }),
+  MenuFailed,
+);
+
+function LazyMenuSheet(props: LoadProps) {
+  return createElement(lazySheet(), props);
 }
 
 /**
  * Corners HUD menu (phones and tablets, top right): a button that opens a side sheet (a bottom sheet
  * on phones) with the profile, the actions (Classic site, search, Rover menu, rotate, map) and every
  * setting, and the controls help behind its Controls action. The Rover menu lives here, so the button
- * carries its onboarding spotlight. The `,` key opens
- * it; closing returns focus to the button. Tablets show search in the bar, so the menu leaves it out.
+ * carries its onboarding spotlight. The `,` key opens it; closing returns focus to the button.
+ *
+ * The sheet's body is a lazy chunk (`MenuSheet`, owner decision 2026-10-28), fetched from the button's first press,
+ * so only the button and the sheet frame ride the first-frame 3D path; a placeholder holds the body's height while it
+ * loads.
  */
 export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout: HudLayout; onExit: () => void }) {
   const t = useTranslations("hud");
@@ -70,6 +66,8 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
   const button = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const [controls, setControls] = useState(false);
+  const [, retry] = useReducer((n: number) => n + 1, 0);
+  const floor = useHQStore((s) => s.floor);
 
   // Focus moves back before the sheet unmounts, so it never drops to the body.
   const close = () => {
@@ -77,37 +75,6 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
     setControls(false);
     setOpen(false);
   };
-  // `close` runs first, so the overlay an action opens takes focus and returns it to the menu button;
-  // rotating keeps the menu open.
-  const actions: { key: string; label: string; icon: ReactNode; run: () => void; close: boolean; expanded?: boolean }[] = [
-    ...(layout === "tablet" ? [] : [{ key: "search", label: t("launcher.search"), icon: <SearchIcon />, run: () => openPalette(), close: true }]),
-    {
-      key: "rover-menu",
-      label: t("launcher.roverMenu"),
-      icon: (
-        <span aria-hidden="true" className="w-[18px] shrink-0 text-center font-mono text-cyan">
-          &gt;_
-        </span>
-      ),
-      run: openTerminal,
-      close: true,
-    },
-    { key: "rotate-left", label: t("view.rotateLeft"), icon: <RotateLeftIcon />, run: () => rotateView(-1), close: false },
-    { key: "rotate-right", label: t("view.rotateRight"), icon: <RotateRightIcon />, run: () => rotateView(1), close: false },
-    { key: "map", label: t("map.open"), icon: <MapIcon />, run: () => intents.emit({ type: "toggle", what: "map" }), close: true },
-    {
-      key: "controls",
-      label: t("controls"),
-      icon: (
-        <span aria-hidden="true" className="w-[18px] shrink-0 text-center font-mono text-cyan">
-          ?
-        </span>
-      ),
-      run: () => setControls((v) => !v),
-      close: false,
-      expanded: controls,
-    },
-  ];
 
   return (
     <>
@@ -119,6 +86,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
         aria-label={t("menu")}
         aria-haspopup="dialog"
         aria-expanded={open}
+        onPointerDown={() => void loadMenu()}
         onClick={() => setOpen(true)}
         className="glass glass-solid pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full text-ink"
       >
@@ -130,31 +98,23 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
         <Modal labelledBy={titleId} onClose={close} side testId="menu-sheet">
           <SheetHeader id={titleId} title={t("menuTitle")} onClose={close} />
           <div className="flex flex-col gap-5 overflow-y-auto px-2 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-            <MenuProfile data={data} />
-            <div data-testid="menu-actions" className="grid grid-cols-2 gap-2 px-3">
-              <button type="button" onClick={onExit} title={t("pageViewHint")} className={primary} data-testid="page-view">
-                <PageViewIcon />
-                {t("pageView")}
-              </button>
-              {actions.map((a, i) => (
-                // An odd last action takes the full row.
-                <button
-                  key={a.key}
-                  type="button"
-                  data-testid={a.expanded === undefined ? undefined : `menu-${a.key}`}
-                  aria-expanded={a.expanded}
-                  onClick={() => {
-                    if (a.close) close();
-                    a.run();
-                  }}
-                  className={`${action} ${i === actions.length - 1 && actions.length % 2 === 1 ? "col-span-2" : ""}`}
-                >
-                  {a.icon}
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />
+            <Suspense fallback={<div aria-hidden="true" data-testid="menu-loading" className="min-h-[36rem]" />}>
+              <LazyMenuSheet
+                data={data}
+                layout={layout}
+                onExit={onExit}
+                close={close}
+                controls={controls}
+                onControls={() => setControls((v) => !v)}
+                onRetry={retry}
+                photo={<ProfilePhoto size={44} />}
+                pageViewIcon={<PageViewIcon />}
+                floorTone={ACCENT_TEXT[FLOOR_ACCENT[floor]]}
+                rotateIcons={[<RotateLeftIcon key="l" />, <RotateRightIcon key="r" />]}
+                onRotate={rotateView}
+                settings={<LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />}
+              />
+            </Suspense>
           </div>
         </Modal>
       )}

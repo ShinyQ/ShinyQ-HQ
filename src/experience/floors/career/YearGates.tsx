@@ -49,12 +49,15 @@ export function YearGates({
   roomsLabel,
   tier,
   reducedMotion,
+  phone,
 }: {
   layout: CareerRoadLayout;
   prologue: string | null;
   roomsLabel: (count: number) => string;
   tier: GpuTier;
   reducedMotion: boolean;
+  /** Camera class `mobile`: the signposts' portrait size. */
+  phone: boolean;
 }) {
   const accent = FLOOR_COLOR.L2;
   const H = CAREER_ROAD.archHeight;
@@ -93,7 +96,7 @@ export function YearGates({
   });
 
   // Signposts fade with distance like the room labels (the floor runs about 390 u).
-  const signposts = useMemo(() => signpostSet(years, roomsLabel), [years, roomsLabel]);
+  const signposts = useMemo(() => signpostSet(years, roomsLabel, phone), [years, roomsLabel, phone]);
   const signpostBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(signpostBatch, signposts);
 

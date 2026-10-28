@@ -36,9 +36,9 @@ interface Plate {
   quad: Quad;
 }
 
-/** The end plaza signs for a pick (null: none), with their plate sizes and texts, as `EndPlaza` builds them. */
-function plazaFor(pick: TopicPick | null) {
-  const { signs, meta } = endPlazaSigns(layout, TOPICS, SLOTS, l4EndLabels, pick);
+/** The end plaza signs for a pick (null: none), with their plate sizes and texts, as `EndPlaza` builds them (`phone`: camera class `mobile`). */
+function plazaFor(pick: TopicPick | null, phone = false) {
+  const { signs, meta } = endPlazaSigns(layout, TOPICS, SLOTS, l4EndLabels, pick, phone);
   return { signs, meta, sizes: signs.map(signPlate), texts: signs.map((s) => s.text.replace(/\s+/g, " ")) };
 }
 
@@ -82,8 +82,10 @@ const DEVICES = [
 describe.each(DEVICES)("L4 end plaza labels ($id)", ({ id, minTopics, size }) => {
   it("never overlap from the approach, the constellation (idle, picked, orbited), the monument and the vault", () => {
     expect(CASE_STUDY, "the case-study topic").toBeDefined();
-    const idle = plazaFor(null);
-    const picked = plazaFor(topicPickOf(CASE_STUDY!));
+    // Portrait phones draw the topic names and the vault spines at their phone sizes (the phone reading rule).
+    const phone = id === "phone";
+    const idle = plazaFor(null, phone);
+    const picked = plazaFor(topicPickOf(CASE_STUDY!), phone);
     const drive = new L4Drive(size);
     /** Audits every topic orbit angle at the current camera; returns the plates shown at each angle. */
     const check = (pose: string, plaza: ReturnType<typeof plazaFor>) => {

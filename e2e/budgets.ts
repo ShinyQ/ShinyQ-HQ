@@ -84,6 +84,10 @@ export const BYTES_3D_BUDGET = {
   officeBeacon: Math.round(2.595 * 1024),
   /** First-session tour chunk (`hud/dialog/onboarding.ts`, loaded only by a session that plays the tour or Replay tutorial), outside both session totals like the intro chunk (parent session under the owner's delegation, 2026-10-25): measured 1,018 B + 614 B (cap 1,632 B; 1,211 B before the tour stopped driving the rover, 2026-10-27). */
   tour: 1_018 + 614,
+  /** Corners menu sheet chunk (`hud/menu/MenuSheet.tsx`, loaded on the menu button's first press), outside both session totals like the tour chunk (owner decision 2026-10-28): measured 1,470 B + 614 B (cap 2,084 B; 1,475 B since it reads the pointer for the key caps). */
+  menu: 1_470 + 614,
+  /** Pad picker sheet chunk (`hud/pads/PickerSheet.tsx`, loaded when a pad picker first opens), outside both session totals like the menu chunk (owner decision 2026-10-28): measured 1,891 B + 614 B (cap 2,505 B). */
+  picker: 1_891 + 614,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   /** Main path + the session floors + the office watch, scene and replay chunks (measured 527,810 B lite, 543,944 B full; caps 528,424 B and 544,558 B, +2,158 B each for the L4 reader tracks, owner decision 2026-10-25). */

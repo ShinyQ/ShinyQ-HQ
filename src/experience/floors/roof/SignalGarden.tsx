@@ -2,6 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useHQStore } from "@/store/useHQStore";
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, NormalBlending, Object3D, type Group, type InstancedMesh, type MeshBasicMaterial } from "three";
 import { BatchedLabels } from "../../fx/BatchedLabels";
 import { HoloIcon } from "../../fx/HoloIcon";
@@ -20,6 +21,8 @@ const MAST_HEIGHT = 14;
 /** The availability sign hangs on the mast, facing the arrival camera (west) head on. */
 const SIGN_YAW = ROOF_DECK.signYaw;
 const SIGN = { offset: 2.3, bottom: 4.2, w: 8, h: 3.4, fontSize: 0.5 } as const;
+/** Channel name type size, and on a portrait phone (camera class `mobile`, the phone reading rule). */
+export const CHANNEL_FONT = { size: 0.38, phone: 0.41 } as const;
 /** The drone patrols round the mast above the sign. */
 const DRONE = { radius: 3.4, height: 9, speed: 0.35 } as const;
 
@@ -144,6 +147,7 @@ function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; tar
  */
 export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotion, active }: RoofSceneryProps) {
   const detail = roofDetail(tier);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
   const scene = useMemo(() => {
     const { centerpiece: cp, comms, cv, about } = layout;
     const c = cp.center;
@@ -176,7 +180,6 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { text: labels.availability.toUpperCase(), position: face(0.08, signTop - 0.4), yaw: SIGN_YAW, font: FONTS.monoBold, fontSize: 0.28, color: ROOF_BLUE, letterSpacing: 0.16 },
       { text: roof.availability, position: face(0.08, SIGN.bottom + (SIGN.h - 0.7) / 2), yaw: SIGN_YAW, font: FONTS.sansBold, fontSize: SIGN.fontSize, color: "#eff6ff", maxWidth: SIGN.w - 0.8, textAlign: "center", lineHeight: 1.15 },
       { text: labels.comms.toUpperCase(), position: [commsX, 5.6, commsZ], font: FONTS.monoBold, fontSize: 0.44, color: ROOF_BLUE, letterSpacing: 0.14 },
-      ...layout.channelSlots.map((s, i): BatchedLabel => ({ text: roof.channels[i]?.label ?? "", position: [s.x, ringY(i) + 0.6, s.z + 0.2], font: FONTS.sansBold, fontSize: 0.38, color: "#e0e7ff" })),
       { text: labels.email.toUpperCase(), position: [commsX, 0.98, comms.maxZ - 0.28], font: FONTS.mono, fontSize: 0.14, color: ROOF_BLUE, letterSpacing: 0.12 },
       { text: roof.email, position: [commsX, 0.65, comms.maxZ - 0.28], font: FONTS.monoBold, fontSize: 0.24, color: "#dbeafe" },
       { text: labels.cvTitle.toUpperCase(), position: [cv.minX + 3.28, 3.0, cvZ], yaw: -Math.PI / 2, font: FONTS.monoBold, fontSize: 0.3, color: ROOF_CYAN, letterSpacing: 0.1 },
@@ -205,8 +208,18 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       { x: aboutX, y: 4.6, z: about.maxZ - 0.6, face: Math.PI, strokes: ROOF_ICONS.about, color: ROOF_VIOLET },
     ];
     const droneTargets: Record<"contact" | "cv", V3> = { contact: [commsX, 8.4, commsZ + 1], cv: [cv.minX + 2, 6.4, cvZ] };
-    return { solids, mastRings, channelRings, text, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
+    const channels = layout.channelSlots.map((s, i): V3 => [s.x, ringY(i) + 0.6, s.z + 0.2]);
+    return { solids, mastRings, channelRings, text, channels, spots, icons, droneTargets, glow: face(0.07, SIGN.bottom + SIGN.h / 2) };
   }, [layout, roof, profile, labels, detail.flowers]);
+  // Channel names take their portrait size on phones; they go in after the sign's two lines and the comms name, their batch order.
+  const text = useMemo(
+    () => [
+      ...scene.text.slice(0, 3),
+      ...scene.channels.map((position, i): BatchedLabel => ({ text: roof.channels[i]?.label ?? "", position, font: FONTS.sansBold, fontSize: phone ? CHANNEL_FONT.phone : CHANNEL_FONT.size, color: "#e0e7ff" })),
+      ...scene.text.slice(3),
+    ],
+    [scene, roof.channels, phone],
+  );
   const sending = active === "contact";
 
   return (
@@ -219,7 +232,7 @@ export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotio
       <SignGlow at={scene.glow} yaw={SIGN_YAW} size={[SIGN.w - 0.2, SIGN.h - 0.2]} tier={tier} reducedMotion={reducedMotion} />
       <Flowers spots={scene.spots} tier={tier} />
       <Drone mast={layout.centerpiece.center} targets={scene.droneTargets} active={active} tier={tier} reducedMotion={reducedMotion} />
-      <BatchedLabels labels={scene.text} name="roof-labels" />
+      <BatchedLabels labels={text} name="roof-labels" />
       <HoloIcon instances={scene.icons} size={1.6} tier={tier} reducedMotion={reducedMotion} />
     </group>
   );

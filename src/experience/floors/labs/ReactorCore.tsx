@@ -23,8 +23,8 @@ const NO_RAYCAST = () => null;
 const CORE_COLOR = "#67e8f9";
 /** The floor ring around the core's base (one more instance of the orbit ring mesh). */
 const BASE_RING = { r: 2.4, y: 0.06 } as const;
-/** Ring label type size and the gap between a ring and its label plate. */
-const LABEL = { font: 0.5, gap: 0.4 } as const;
+/** Ring label type size (`phone`: camera class `mobile`, the phone reading rule) and the gap between a ring and its label plate. */
+export const RING_LABEL = { font: 0.5, phone: 0.7, gap: 0.4 } as const;
 const COUNT_FONT = 0.7;
 /** Ring brightness: selected ring, other rings while a tech is picked, every ring otherwise. */
 const RING_LEVEL = { on: 2.6, off: 0.18, idle: 1 } as const;
@@ -37,14 +37,16 @@ export interface ReactorLabels {
 /**
  * Ring labels beside their rings, alternating north and south of the column so they never cover the
  * core from the wing roads or the reactor stop (both look along x), plus "N projects use X" above
- * the core while a tech is picked. One `FloatingSigns` group: two draw calls.
+ * the core while a tech is picked. One `FloatingSigns` group: two draw calls. `phone` (camera class `mobile`) sets the
+ * ring names larger, their plates moving out to keep the gap.
  */
-export function reactorSigns(labels: ReactorLabels, tech: ReactorTech | null): SignSpec[] {
+export function reactorSigns(labels: ReactorLabels, tech: ReactorTech | null, phone = false): SignSpec[] {
+  const fontSize = phone ? RING_LABEL.phone : RING_LABEL.font;
   const signs: SignSpec[] = TECH_RINGS.map((ring, i) => {
     const text = labels.rings[ring.id].toUpperCase();
-    const { w } = signPlate({ text, fontSize: LABEL.font });
+    const { w } = signPlate({ text, fontSize });
     const side = i % 2 === 0 ? -1 : 1;
-    return { text, x: 0, y: ring.y, z: side * (ring.r + LABEL.gap + w / 2), color: ring.color, fontSize: LABEL.font, font: FONTS.monoBold };
+    return { text, x: 0, y: ring.y, z: side * (ring.r + RING_LABEL.gap + w / 2), color: ring.color, fontSize, font: FONTS.monoBold };
   });
   if (tech) {
     const ring = TECH_RINGS.find((r) => r.id === tech.ring);
@@ -138,7 +140,8 @@ export function Reactor({ center, labels }: { center: Vec2; labels: ReactorLabel
     },
     [],
   );
-  const signs = useMemo(() => reactorSigns(labels, tech), [labels, tech]);
+  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const signs = useMemo(() => reactorSigns(labels, tech, phone), [labels, tech, phone]);
 
   return (
     <group name="labs-reactor" position={[center.x, 0, center.z]}>

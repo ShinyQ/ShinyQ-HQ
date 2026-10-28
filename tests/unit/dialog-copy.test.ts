@@ -3,7 +3,7 @@ import { createTranslator } from "next-intl";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { collectStrings } from "@/content/safety";
-import { dialogPlacement, DIALOG_PLACE, docks, DOCK_PLACE } from "@/hud/dialog/placement";
+import { dialogPlacement, DIALOG_PLACE, docks, DOCK_PLACE, TOAST_ROWS, toastPlace } from "@/hud/dialog/placement";
 
 /** Three rows of the box on a 390 px phone (about 37 mono characters per row). */
 const MAX_LINE = 110;
@@ -98,16 +98,20 @@ describe("touch boost copy", () => {
 });
 
 describe("dialog placement", () => {
-  it("sits above the bottom band and point-and-go's chip and hint: low on fine pointers, raised over the joystick on touch, a toast above the joystick on phones", () => {
+  it("sits above the bottom band and point-and-go's chip and hint: low on fine pointers, raised over the joystick on touch tablets", () => {
     expect(dialogPlacement("desktop", false)).toBe("bottom");
     expect(dialogPlacement("mobile", false)).toBe("bottom");
     expect(dialogPlacement("tablet", true)).toBe("raised");
     expect(dialogPlacement("mobile", true)).toBe("phone");
     expect(DIALOG_PLACE.bottom).toContain("bottom-[128px]");
     expect(DIALOG_PLACE.raised).toContain("bottom-[160px]");
-    expect(DIALOG_PLACE.phone).toContain("bottom-[calc(168px");
-    expect(DIALOG_PLACE.phone).toContain("right-3");
-    expect(DIALOG_PLACE.phone).not.toContain("right-[68px]");
+    expect(Object.keys(DIALOG_PLACE).sort()).toEqual(["bottom", "raised"]);
+  });
+
+  it("puts a phone line without choices at the top: below the minimap row in portrait, between the floor chip and the buttons in landscape", () => {
+    expect(toastPlace(false)).toEqual({ top: "calc(144px + env(safe-area-inset-top))", left: 12, right: 12 });
+    expect(toastPlace(true)).toEqual({ top: "calc(16px + env(safe-area-inset-top))", left: 188, right: 128 });
+    expect(TOAST_ROWS).toBe(4);
   });
 
   it("docks a phone line that asks for a choice, at the bottom in thumb reach", () => {

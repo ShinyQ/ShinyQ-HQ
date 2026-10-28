@@ -13,6 +13,7 @@ import { TypeIcon } from "@/components/TypeIcon";
 import { CAREER_TONE } from "@/experience/fx/holoIcons";
 import { Link } from "@/i18n/navigation";
 import { ACCENT_TEXT } from "@/lib/accent";
+import { useHQStore } from "@/store/useHQStore";
 import { lazyRoomBody } from "./bodies";
 import { Chips, MetricTiles, Sections } from "./blocks";
 import { SHEET_SNAPS, snapSheet, type DrawerLayout } from "./layout";
@@ -160,6 +161,7 @@ function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps
   const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const id = useId();
+  const coarse = useHQStore((s) => s.device.coarse);
   return (
     <div className="relative">
       <button
@@ -193,7 +195,11 @@ function Overflow({ readme, onToggleReadme, page, onLeave, link }: OverflowProps
               className={MENU_ITEM}
             >
               <span>{t("readme")}</span>
-              <kbd className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">t</kbd>
+              {!coarse && (
+                <kbd aria-hidden="true" className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">
+                  t
+                </kbd>
+              )}
             </button>
           </li>
           {link && (

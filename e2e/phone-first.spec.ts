@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, fastAnimations, skipFloorLines, snapshot, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
+import { asReturningVisitor, fastAnimations, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
 
 // Camera eases, rides and the intro at the test-only animation speed.
 test.beforeEach(({ context }) => fastAnimations(context));
@@ -21,7 +21,7 @@ const band = (page: Page) => page.getByTestId("hud-bottom");
 /** Taps the toast's text near its left edge (a tap on the center can land on Skip). */
 const tapText = (page: Page) => dialog(page).locator("p[aria-hidden='true']").first().tap({ position: { x: 12, y: 10 } });
 const expectLine = (page: Page, key: string) => expect(dialog(page)).toHaveAttribute("data-line", key, { timeout: 30_000 });
-/** A toast clamps a long line to two rows: the first tap may only expand it, so tap again while the same line stays up. */
+/** A toast clamps a long line to four rows: the first tap may only expand it, so tap again while the same line stays up. */
 async function tapThrough(page: Page, from: string) {
   await tapText(page);
   await expect
@@ -101,7 +101,7 @@ test.describe("phone (390x844)", () => {
     await expect.poll(async () => (await read()).held, { timeout: 30_000 }).toBe(true);
   });
 
-  test("the welcome docks and the band steps aside; point-go gives it back; choiceless lines are toasts above the joystick", async ({ page }) => {
+  test("the welcome docks and the band steps aside; point-go gives it back; choiceless lines are toasts at the top", async ({ page }) => {
     await freshVisit(page);
     await expectLine(page, "welcome");
     const box = dialog(page);
@@ -124,7 +124,7 @@ test.describe("phone (390x844)", () => {
     await expect(box).toContainText(en.dialog.onboarding.pointGoPhone);
   });
 
-  test("the phone tour: point-go, moved, the floor chip, the Rover menu, Ask AI, closing; choiceless lines stay toasts above the joystick", async ({ page }) => {
+  test("the phone tour: point-go, moved, the floor chip, the Rover menu, Ask AI, closing; choiceless lines stay toasts at the top", async ({ page }) => {
     await freshVisit(page);
     const box = dialog(page);
     await box.getByRole("button", { name: en.dialog.onboarding.start }).tap();
@@ -149,7 +149,7 @@ test.describe("phone (390x844)", () => {
     expect(toast.x).toBeGreaterThanOrEqual(0);
     expect(toast.x + toast.width).toBeLessThanOrEqual(390);
     expect(toast.y + toast.height).toBeLessThanOrEqual((await rect(page.getByTestId("joystick"))).y);
-    for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap"]) expect(overlaps(toast, await rect(page.getByTestId(id))), id).toBe(false);
+    for (const id of ["view-controls", "floor-chip", "hud-menu", "minimap", "boost"]) expect(overlaps(toast, await rect(page.getByTestId(id))), id).toBe(false);
 
     await tapThrough(page, "moved");
     await expectLine(page, "floor-chip");
@@ -239,5 +239,124 @@ test.describe("tablet portrait (834x1194)", () => {
 
   test("keeps the raised welcome and the full tour (a move line first)", async ({ page }) => {
     await expectTabletWelcomeAndTour(page);
+  });
+});
+
+/**
+ * Phone-first part 2 (docs/superpowers/specs/2026-10-28-phone-first-3d-part-2-design.md): a floor's first-visit line is a
+ * top toast that covers neither the rover nor a control and shows whole, on portrait and landscape phones; the phone
+ * menu loads its sheet on the first tap and names no keys.
+ */
+type PartTwoWindow = {
+  __hq: {
+    store: { getState: () => { goToFloor: (f: string) => void } };
+    rover: { x: number; y: number; z: number };
+    interact: { project: ((p: { x: number; y: number; z: number }) => { x: number; y: number } | null) | null };
+  };
+};
+
+/** The rover's projected box: its footprint corners from its floor (`rover.y`) to its antenna. */
+async function roverBox(page: Page): Promise<Box> {
+  const points = await page.evaluate(() => {
+    const hq = (window as unknown as PartTwoWindow).__hq;
+    const out: { x: number; y: number }[] = [];
+    for (const dx of [-0.6, 0.6]) for (const dz of [-0.6, 0.6]) for (const y of [0, 1.5]) {
+      const p = hq.interact.project?.({ x: hq.rover.x + dx, y: hq.rover.y + y, z: hq.rover.z + dz });
+      if (p) out.push(p);
+    }
+    return out;
+  });
+  // Corners off screen project to null; the box spans the ones on screen.
+  expect(points.length).toBeGreaterThan(0);
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return { x: Math.min(...xs), y: Math.min(...ys), width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) };
+}
+
+const CONTROLS = ["joystick", "boost", "view-reset", "floor-chip", "hud-menu", "hud-minimap"];
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 375, height: 667 },
+  { width: 844, height: 390 },
+]) {
+  test.describe(`phone part 2 (${viewport.width}x${viewport.height})`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+    test("each floor's first-visit line is a whole top toast clear of the rover and every control", async ({ page }) => {
+      test.setTimeout(300_000);
+      await mockAsk(page);
+      // B1 already unlocked, so its offer on the fifth floor never takes the line's place.
+      await page.addInitScript(() =>
+        localStorage.setItem("hq:v1", JSON.stringify({ state: { firstVisit: false, visited: [], locale: "en", sound: false, floorsSeen: ["L1", "L2", "L3", "L4", "RF"], b1Unlocked: true }, version: 3 })),
+      );
+      await asReturningVisitor(page);
+      await page.goto("/en?tier=lite");
+      await waitForHQ(page);
+      await waitForPhase(page, "explore");
+      await waitForSceneLive(page);
+      for (const floor of ["L2", "L3", "L4", "RF"]) {
+        await page.evaluate((f) => (window as unknown as PartTwoWindow).__hq.store.getState().goToFloor(f), floor);
+        await waitForFloor(page, floor);
+        const box = dialog(page);
+        await expectLine(page, "floor");
+        await expect(box).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+        await expect(box).not.toHaveAttribute("data-docked", "true");
+        const toast = await rect(box);
+        expect(toast.x, floor).toBeGreaterThanOrEqual(0);
+        expect(toast.x + toast.width, floor).toBeLessThanOrEqual(viewport.width);
+        for (const id of [...CONTROLS, "ask-pill"]) {
+          const control = page.getByTestId(id);
+          if (!(await control.isVisible())) continue;
+          expect(overlaps(toast, await rect(control)), `${floor} ${id}`).toBe(false);
+        }
+        expect(overlaps(toast, await roverBox(page)), `${floor} rover`).toBe(false);
+        // Whole: the floor line fits the four rows, so the clamp never cuts it.
+        const clamped = await box.locator("p[aria-hidden='true']").first().evaluate((el) => el.scrollHeight > el.clientHeight);
+        expect(clamped, `${floor} line clamped`).toBe(false);
+        await tapText(page);
+        await expect(box).toHaveCount(0, { timeout: 15_000 });
+      }
+    });
+  });
+}
+
+test.describe("phone menu (390x844)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("the first tap loads the sheet; rotate names no key, and the pad picker hint is a touch hint", async ({ page }) => {
+    await asReturningVisitor(page);
+    await skipFloorLines(page);
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    await page.getByTestId("hud-menu").tap();
+    const sheet = page.getByTestId("menu-sheet");
+    const rotate = sheet.getByRole("button", { name: en.hud.view.rotateLeft });
+    await expect(rotate).toBeVisible({ timeout: 15_000 });
+    await expect(rotate).toHaveAttribute("aria-keyshortcuts", "Q");
+    await expect(rotate.locator("kbd")).toBeHidden();
+    await expect(sheet).not.toContainText("(Q)");
+    await expect(sheet.getByTestId("setting-sound")).toContainText(en.hud.settings.sound.hint);
+    await expect(sheet.getByTestId("setting-sound").locator("kbd")).toBeHidden();
+  });
+});
+
+test.describe("desktop keys (1440x900)", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("keeps the key hints: the view controls' tooltips and the sound key cap", async ({ page }) => {
+    await asReturningVisitor(page);
+    await skipFloorLines(page);
+    await page.goto("/en?tier=lite");
+    await waitForHQ(page);
+    await waitForPhase(page, "explore");
+    const controls = page.getByTestId("view-controls");
+    await expect(controls.getByRole("button", { name: en.hud.view.rotateLeft })).toHaveAttribute("title", `${en.hud.view.rotateLeft} (Q)`);
+    await expect(controls.getByRole("button", { name: en.hud.view.rotateLeft })).toHaveAttribute("aria-keyshortcuts", "Q");
+    await page.keyboard.press(",");
+    const sound = page.getByTestId("setting-sound");
+    await expect(sound.locator("kbd")).toBeVisible({ timeout: 15_000 });
+    await expect(sound.locator("kbd")).toHaveText("M");
   });
 });

@@ -253,10 +253,16 @@ const plainOn = (cls: ViewportClass) => zones.filter(({ zone }) => zoneView(zone
  * The zones with a look offset on each class: the office (not on tablets), the L3 overview everywhere and, on portrait
  * screens, the arrivals whose main sight sits right of the elevator diagonal's view (owner 2026-10-23).
  */
+/**
+ * Portrait phone views that aim at what a visitor reads at a stop (the phone reading rule, `tests/unit/phone-reading.test.ts`):
+ * the L3 Ops Control Room and Tech Reactor, and the L4 Topic Constellation (its stop and its approach on the timeline
+ * share the id). On phones only.
+ */
+const PHONE_READING_AIMS = ["L3:ops", "L3:reactor", "L4:topics", "L4:topics"];
 const OFFSET_ZONES: Record<ViewportClass, readonly string[]> = {
   desktop: ["L1:office", "L3:overview"],
   tablet: ["L3:overview"],
-  mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival"],
+  mobile: ["L1:arrival", "L1:office", "L2:arrival", "L3:overview", "RF:arrival", ...PHONE_READING_AIMS],
 };
 const ARRIVAL_AIMS = ["L1:arrival", "L2:arrival", "L3:overview", "RF:arrival"];
 /**
@@ -291,7 +297,10 @@ const centre = (zone: ViewZone) => ({ x: (zone.area.minX + zone.area.maxX) / 2, 
 describe("the follow rig's look offset", () => {
   it("is opt-in data on the office zone and the sideways-aimed elevator arrivals only", () => {
     expect(zones.length).toBeGreaterThan(20);
-    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id).sort()).toEqual(["L1:office", ...ARRIVAL_AIMS].sort());
+    expect(zones.filter(({ zone }) => hasOffset(zone)).map(({ zone }) => zone.id).sort()).toEqual(["L1:office", ...ARRIVAL_AIMS, ...PHONE_READING_AIMS].sort());
+    // The phone reading aims never touch a desktop or tablet view.
+    for (const { zone } of zones.filter(({ zone }) => PHONE_READING_AIMS.includes(zone.id)))
+      for (const cls of ["desktop", "tablet"] as const) expect(zoneView(zone, cls).lookOffset, `${zone.id} ${cls}`).toBeUndefined();
     // The arrivals only aim sideways: no forward or up offset, never held through a hand zoom.
     for (const { zone } of zones.filter(({ zone }) => ARRIVAL_AIMS.includes(zone.id)))
       for (const cls of CLASSES) {

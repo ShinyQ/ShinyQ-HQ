@@ -18,7 +18,7 @@ import { roverRuntime } from "../../rover/runtime";
 import { FONTS, tierFill } from "../../tower/primitives";
 import type { CareerEntryView, GpuTier } from "../../types";
 import { ICON_SIZE, iconY } from "./icons";
-import { roomLabelSet, type LabelSet } from "./labels";
+import { placingSize, roomLabelSet, type LabelSet } from "./labels";
 import { labelFade, type CareerRoom } from "./layout";
 
 const FRAME_H = 2.2;
@@ -27,9 +27,9 @@ const dummy = new Object3D();
 
 /**
  * Award rooms: the placings that year as "×10" on the plinth, under the trophy icon (the old ring of
- * cups read as a second, distorted trophy from the rail camera). One small label per award room.
+ * cups read as a second, distorted trophy from the rail camera). One small label per award room (`placingSize`).
  */
-function Placings({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, number> }) {
+function Placings({ rooms, counts, phone }: { rooms: CareerRoom[]; counts: Map<string, number>; phone: boolean }) {
   return (
     <>
       {rooms.map((room) => {
@@ -39,7 +39,7 @@ function Placings({ rooms, counts }: { rooms: CareerRoom[]; counts: Map<string, 
           <Readable key={room.id} position={[room.center.x, 0.6, room.center.z + 1.15]} pivot={[room.center.x, room.center.z]}>
             <Text
               font={FONTS.monoBold}
-              fontSize={0.55}
+              fontSize={placingSize(room, phone)}
               color={CAREER_TONE.award}
               outlineWidth={0.03}
               outlineColor={COLORS.void}
@@ -220,6 +220,7 @@ export function CareerRooms({
   shapes,
   tier,
   reducedMotion,
+  phone,
 }: {
   rooms: CareerRoom[];
   entries: Map<string, CareerEntryView>;
@@ -227,13 +228,15 @@ export function CareerRooms({
   shapes: string;
   tier: GpuTier;
   reducedMotion: boolean;
+  /** Camera class `mobile`: the room names' and placings' portrait sizes. */
+  phone: boolean;
 }) {
   const group = useRef<Group>(null);
   const own = useShapes<Stroke[]>("L2", shapes, group, reducedMotion);
   // Icons face the default rail camera (+z); HoloIcon turns them around when the camera is behind.
   const icons = useMemo(() => rooms.map((r) => ({ x: r.center.x, y: iconY(r.type), z: r.center.z, face: 0, strokes: CAREER_ICONS[r.type], color: CAREER_TONE[r.type] })), [rooms]);
   const awards = useMemo(() => rooms.filter((r) => r.type === "award"), [rooms]);
-  const roomLabels = useMemo(() => roomLabelSet(rooms, entries), [rooms, entries]);
+  const roomLabels = useMemo(() => roomLabelSet(rooms, entries, phone), [rooms, entries, phone]);
   const labelBatch = useRef<BatchedLabelsHandle>(null);
   useMemberFade(labelBatch, roomLabels);
 
@@ -242,7 +245,7 @@ export function CareerRooms({
       <Pads rooms={rooms} tier={tier} />
       <Frames rooms={rooms} />
       <HoloSwap base={icons} next={own.data?.icons} shapes={own} size={ICON_SIZE} tier={tier} reducedMotion={reducedMotion} />
-      <Placings rooms={awards} counts={trophies} />
+      <Placings rooms={awards} counts={trophies} phone={phone} />
       <ActiveRing rooms={rooms} />
       <BatchedLabels ref={labelBatch} labels={roomLabels.labels} name="career-room-labels" toneMapped exactColors />
     </group>
