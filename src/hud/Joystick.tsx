@@ -1,17 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
+import { floatingStick, releaseStick, STICK } from "@/experience/input/floatingStick";
 import { applyDeadZone } from "@/experience/input/intents";
 import { setJoystick } from "@/experience/input/joystick";
 import { useBoostToggle } from "./boost";
 
-const RADIUS = 60;
+const RADIUS = STICK.radius;
 /** After a short tap's release, a pointer down on the joystick within this window toggles boost. */
-export const DOUBLE_TAP_MS = 300;
+export const DOUBLE_TAP_MS = STICK.doubleTapMs;
 /** A touch counts as a tap only if it is released this quickly and moved less than `TAP_SLOP_PX`. */
-export const TAP_MAX_MS = 250;
-export const TAP_SLOP_PX = 12;
+export const TAP_MAX_MS = STICK.tapMs;
+export const TAP_SLOP_PX = STICK.slop;
 
 type Boost = ReturnType<typeof useBoostToggle>;
 
@@ -153,5 +154,66 @@ function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       />
     </div>
+  );
+}
+
+/**
+ * Phone Boost (spec 2026-10-29): the Boost button in the bottom band's right column, above Reset view; its toggle is the
+ * floating stick's double tap too (`floatingStick.toggleBoost`).
+ */
+export function PhoneBoost() {
+  const boost = useBoostToggle();
+  const { toggle } = boost;
+  useEffect(() => {
+    floatingStick.toggleBoost = toggle;
+    return () => {
+      if (floatingStick.toggleBoost === toggle) floatingStick.toggleBoost = null;
+    };
+  }, [toggle]);
+  return <BoostButton boost={boost} />;
+}
+
+const stickView = () => floatingStick.view;
+
+/**
+ * The phone's floating stick (spec 2026-10-29): the world input owns the gesture (`input/floatingStick.ts`); this draws a
+ * faint resting ring where the fixed stick sat and, while a thumb drives, the base and knob under it. Neither takes a
+ * touch (the world under them does). `active` is the HUD's policy: it enables the drive zone, and turning it off (a docked
+ * Rover line, unmount) lets go of a held stick, so the rover stops.
+ */
+export function FloatingStick({ active }: { active: boolean }) {
+  const view = useSyncExternalStore(floatingStick.subscribe, stickView, stickView);
+  useEffect(() => {
+    floatingStick.enabled = active;
+    if (!active) releaseStick();
+    return () => {
+      floatingStick.enabled = false;
+      releaseStick();
+    };
+  }, [active]);
+  const { origin, knob } = view;
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        data-testid="joystick"
+        data-floating={origin ? "live" : "rest"}
+        className="glass pointer-events-none relative size-[120px] shrink-0 rounded-full transition-opacity motion-reduce:transition-none"
+        style={{ opacity: origin ? 0 : 0.45 }}
+      />
+      {origin && (
+        <div
+          aria-hidden="true"
+          data-testid="joystick-live"
+          className="glass glass-solid pointer-events-none fixed top-0 left-0 size-[120px] rounded-full"
+          style={{ transform: `translate(${origin.x - RADIUS}px, ${origin.y - RADIUS}px)` }}
+        >
+          <span
+            className="absolute top-1/2 left-1/2 size-12 rounded-full border border-cyan bg-cyan/25"
+            style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
+          />
+        </div>
+      )}
+    </>
   );
 }

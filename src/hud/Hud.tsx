@@ -32,7 +32,7 @@ import { HudMenu } from "./menu/HudMenu";
 import { Minimap } from "./minimap/Minimap";
 import { SettingsLauncher } from "./menu/SettingsSheet";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
-import { Joystick } from "./Joystick";
+import { FloatingStick, Joystick, PhoneBoost } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
 import { ResetView, ViewControls } from "./ViewControls";
 import { YearChip } from "./YearChip";
@@ -271,9 +271,21 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
           {phase !== "intro" && <YearChip career={data.career} layout={layout} hidden={phone && phase === "room"} />}
           <BottomBand
             aside={docked}
-            // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost.
-            left={drive ? <Joystick boost aside={docked} /> : null}
-            right={desktop ? <DesktopCorner data={data} layouts={layouts} explorable={explorable} /> : explorable ? <ResetView /> : null}
+            // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost. Phones
+            // drive with the floating stick (a drag in the lower-left drive zone) and keep Boost above Reset view.
+            left={drive ? phone ? <FloatingStick active={!docked} /> : <Joystick boost aside={docked} /> : null}
+            right={
+              desktop ? (
+                <DesktopCorner data={data} layouts={layouts} explorable={explorable} />
+              ) : phone && drive ? (
+                <div className="flex flex-col items-end gap-3">
+                  <PhoneBoost />
+                  {explorable && <ResetView />}
+                </div>
+              ) : explorable ? (
+                <ResetView />
+              ) : null
+            }
           >
             <InteractStatus coarse={coarse} />
             {explorable && !speaking && !phone && <HintBar coarse={coarse} />}

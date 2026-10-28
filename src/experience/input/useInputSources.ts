@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
+import { getHQStore } from "@/store/useHQStore";
 import {
   classifySwipe,
   classifyWheel,
@@ -14,6 +15,7 @@ import {
   twistDelta,
   wheelZoomFactor,
 } from "./intents";
+import { stickDown, stickMove, stickUp } from "./floatingStick";
 
 /** Radians of yaw per pixel of drag or trackpad deltaX, and pitch per pixel of vertical drag. */
 const MOUSE_YAW = 0.006;
@@ -105,6 +107,8 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     };
 
     const onDown = (e: PointerEvent) => {
+      // A phone touch in the drive zone is the floating stick's (spec 2026-10-29): it never looks, pinches or twists.
+      if (e.pointerType === "touch" && stickDown(e.pointerId, e.clientX, e.clientY, e.timeStamp, el.getBoundingClientRect(), getHQStore().getState().hover?.via !== "tap")) return;
       pointers.set(e.pointerId, {
         x: e.clientX,
         y: e.clientY,
@@ -118,6 +122,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     };
 
     const onMove = (e: PointerEvent) => {
+      if (stickMove(e.pointerId, e.clientX, e.clientY)) return;
       const p = pointers.get(e.pointerId);
       if (!p) return;
       const dx = e.clientX - p.x;
@@ -154,6 +159,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     const onContextMenu = (e: Event) => e.preventDefault();
 
     const onUp = (e: PointerEvent) => {
+      if (stickUp(e.pointerId, e.timeStamp, true)) return;
       const p = pointers.get(e.pointerId);
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pair = null;
@@ -164,6 +170,7 @@ export function useInputSources(world: RefObject<HTMLElement | null>) {
     };
 
     const onCancel = (e: PointerEvent) => {
+      if (stickUp(e.pointerId, e.timeStamp, false)) return;
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pair = null;
     };
