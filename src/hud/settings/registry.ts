@@ -25,7 +25,7 @@ export interface SettingDef {
   labelKey: string;
   /** Optional one-line note under the label (key under `hud.settings`). */
   hintKey?: string;
-  /** The setting's key, shown after the note as a `Kbd` chip on fine pointers only (owner decision 2026-10-28). */
+  /** The setting's key, shown after the note as a key cap on fine pointers only (owner decision 2026-10-28). */
   hintKbd?: string;
   control: SettingControl;
   subscribe: (listener: () => void) => () => void;

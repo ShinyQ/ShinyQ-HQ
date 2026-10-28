@@ -5,8 +5,12 @@ import { createElement, Suspense, useId, useReducer, useRef, useState } from "re
 import { Modal } from "@/components/Modal";
 import { PageViewIcon } from "@/components/PageViewIcon";
 import type { ExperienceData } from "@/experience/types";
-import { ChunkFailed } from "../ChunkFailed";
+import { ACCENT_TEXT, FLOOR_ACCENT } from "@/lib/accent";
+import { useHQStore } from "@/store/useHQStore";
 import type { HudLayout } from "../layout";
+import { ProfilePhoto } from "../ProfileCard";
+import { LazySettingsPanel } from "../settings/LazySettingsPanel";
+import { RotateLeftIcon, RotateRightIcon, rotateView } from "../ViewControls";
 import { lazyFromChunk } from "../lazyFromChunk";
 import { loadMenu } from "./menuChunk";
 import type { MenuSheetProps } from "./MenuSheet";
@@ -15,19 +19,18 @@ import { useHudToggle } from "./useHudToggles";
 
 type LoadProps = MenuSheetProps & { onRetry: () => void };
 
-/** A failed sheet chunk: Retry, and the Classic site stays one tap away. */
-function MenuFailed({ onRetry, onExit }: LoadProps) {
+/** A failed sheet chunk: the load note, Retry, and the Classic site stays one tap away. */
+function MenuFailed({ onRetry, onExit, pageViewIcon }: LoadProps) {
   const t = useTranslations("hud");
+  const button = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm";
   return (
-    <div className="flex flex-col gap-3">
-      <ChunkFailed onRetry={onRetry} testId="menu-failed" />
-      <button
-        type="button"
-        onClick={onExit}
-        data-testid="page-view"
-        className="mx-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-cyan px-4 text-sm font-semibold text-void"
-      >
-        <PageViewIcon />
+    <div role="alert" data-testid="menu-failed" className="flex flex-col gap-2 px-3 text-sm text-ink-2">
+      <p>{t("loadFailed")}</p>
+      <button type="button" onClick={onRetry} className={`${button} border border-line-2 text-ink`}>
+        {t("retry")}
+      </button>
+      <button type="button" onClick={onExit} data-testid="page-view" className={`${button} bg-cyan font-semibold text-void`}>
+        {pageViewIcon}
         {t("pageView")}
       </button>
     </div>
@@ -64,6 +67,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
   const titleId = useId();
   const [controls, setControls] = useState(false);
   const [, retry] = useReducer((n: number) => n + 1, 0);
+  const floor = useHQStore((s) => s.floor);
 
   // Focus moves back before the sheet unmounts, so it never drops to the body.
   const close = () => {
@@ -95,7 +99,21 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
           <SheetHeader id={titleId} title={t("menuTitle")} onClose={close} />
           <div className="flex flex-col gap-5 overflow-y-auto px-2 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <Suspense fallback={<div aria-hidden="true" data-testid="menu-loading" className="min-h-[22rem]" />}>
-              <LazyMenuSheet data={data} layout={layout} onExit={onExit} close={close} controls={controls} onControls={() => setControls((v) => !v)} onRetry={retry} />
+              <LazyMenuSheet
+                data={data}
+                layout={layout}
+                onExit={onExit}
+                close={close}
+                controls={controls}
+                onControls={() => setControls((v) => !v)}
+                onRetry={retry}
+                photo={<ProfilePhoto size={44} />}
+                pageViewIcon={<PageViewIcon />}
+                floorTone={ACCENT_TEXT[FLOOR_ACCENT[floor]]}
+                rotateIcons={[<RotateLeftIcon key="l" />, <RotateRightIcon key="r" />]}
+                onRotate={rotateView}
+                settings={<LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />}
+              />
             </Suspense>
           </div>
         </Modal>

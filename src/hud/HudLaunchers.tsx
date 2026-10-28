@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
 import { openPalette, openTerminal } from "./events";
-import { KEY_HINT } from "./Kbd";
 import { preloadPalette, preloadTerminal } from "./lazy-hud";
 
 const noop = () => () => {};
@@ -58,7 +57,7 @@ export function HudLaunchers({
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
-          <kbd aria-hidden="true" className={`label hidden rounded border border-glass-border px-1.5 py-0.5 text-ink-3 sm:inline ${KEY_HINT}${chip}`}>
+          <kbd aria-hidden="true" className={`label hidden rounded border border-glass-border px-1.5 py-0.5 text-ink-3 sm:inline pointer-coarse:hidden${chip}`}>
             {shortcut}
           </kbd>
         </button>

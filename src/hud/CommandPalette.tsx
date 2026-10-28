@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { AccentDot } from "@/components/AccentDot";
 import type { FloorId, Locale, RoomId } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
-import { KEY_HINT } from "./Kbd";
 import type { PaletteEntry, PaletteGroup } from "./palette-types";
 import { searchPalette } from "./search";
 import type { PaletteTypeahead } from "./typeahead";
@@ -304,7 +303,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
           </p>
         ) : null}
 
-        <p className={`label hidden border-t border-glass-border px-4 py-2.5 text-ink-3 sm:block ${KEY_HINT}`}>{t("hint")}</p>
+        <p className="label hidden border-t border-glass-border px-4 py-2.5 text-ink-3 sm:block pointer-coarse:hidden">{t("hint")}</p>
       </div>
     </div>
   );

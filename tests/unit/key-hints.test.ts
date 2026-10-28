@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -54,4 +55,24 @@ describe("touch wording", () => {
       }
     });
   }
+});
+
+function sources(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) sources(full, out);
+    else if (name.endsWith(".tsx")) out.push(full);
+  }
+  return out;
+}
+
+describe("key caps", () => {
+  it("every visible key cap in the HUD hides on a coarse pointer and is hidden from screen readers", () => {
+    const caps = sources("src/hud").flatMap((file) => [...readFileSync(file, "utf8").matchAll(/<kbd\b[^>]*>/g)].map((m) => [file, m[0]] as const));
+    expect(caps.length).toBeGreaterThan(0);
+    for (const [file, tag] of caps) {
+      expect(tag, file).toContain("pointer-coarse:hidden");
+      expect(tag, file).toContain('aria-hidden="true"');
+    }
+  });
 });

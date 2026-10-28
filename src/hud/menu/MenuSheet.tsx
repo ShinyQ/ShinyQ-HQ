@@ -2,17 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { PageViewIcon } from "@/components/PageViewIcon";
 import { intents } from "@/experience/input/intents";
 import type { ExperienceData } from "@/experience/types";
-import { ACCENT_TEXT, FLOOR_ACCENT } from "@/lib/accent";
 import { useHQStore } from "@/store/useHQStore";
 import { openPalette, openTerminal } from "../events";
-import { Kbd } from "../Kbd";
 import type { HudLayout } from "../layout";
-import { ProfilePhoto } from "../ProfileCard";
-import { LazySettingsPanel } from "../settings/LazySettingsPanel";
-import { RotateLeftIcon, RotateRightIcon, rotateView } from "../ViewControls";
 
 const action =
   "hq-glow inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-2 px-3 py-2 text-left text-sm text-ink-2 hover:bg-surface-2 hover:text-ink";
@@ -37,17 +31,17 @@ function MapIcon() {
 }
 
 /** Who and where: the photo, name, headline and current floor (no buttons; the desktop shows the same in its profile card). */
-function MenuProfile({ data }: { data: ExperienceData }) {
+function MenuProfile({ data, photo, floorTone }: { data: ExperienceData; photo: ReactNode; floorTone: string }) {
   const t = useTranslations("hud");
   const floor = useHQStore((s) => s.floor);
   return (
     <section aria-label={t("profile")} data-testid="menu-profile" className="flex items-center gap-3 px-3">
-      <ProfilePhoto size={44} />
+      {photo}
       <div className="min-w-0">
         <p className="truncate text-[15px] leading-5 font-bold text-ink">{data.profile.name}</p>
         <p className="text-[13px] leading-5 text-cyan">{data.profile.headline}</p>
         <p className="text-sm leading-5 text-ink-2">
-          <span className={`label mr-1.5 ${ACCENT_TEXT[FLOOR_ACCENT[floor]]}`}>{floor}</span>
+          <span className={`label mr-1.5 ${floorTone}`}>{floor}</span>
           {data.floors[floor].name}
         </p>
       </div>
@@ -63,14 +57,25 @@ export type MenuSheetProps = {
   close: () => void;
   controls: boolean;
   onControls: () => void;
+  /**
+   * Pieces the main path already holds (the profile photo, the Classic site icon, the floor's accent class), passed in
+   * so this chunk shares no module with the main path that Turbopack would otherwise split out of its hoisted scope.
+   */
+  photo: ReactNode;
+  pageViewIcon: ReactNode;
+  floorTone: string;
+  /** The rotate icons and step (`ViewControls`), and the settings panel host (`LazySettingsPanel`). */
+  rotateIcons: readonly [ReactNode, ReactNode];
+  onRotate: (dir: -1 | 1) => void;
+  settings: ReactNode;
 };
 
 /**
  * The Corners menu sheet's body (a lazy chunk, `menuChunk.ts`): the profile, the actions (Classic site, search, Rover
  * menu, rotate, map, the controls help) and every setting. Rotate and map name their keys with `aria-keyshortcuts` and a
- * `Kbd` chip that only fine pointers see. Tablets show search in the bar, so the sheet leaves it out.
+ * key cap that only fine pointers see. Tablets show search in the bar, so the sheet leaves it out.
  */
-export function MenuSheet({ data, layout, onExit, close, controls, onControls }: MenuSheetProps) {
+export function MenuSheet({ data, layout, onExit, close, controls, onControls, photo, pageViewIcon, floorTone, rotateIcons, onRotate, settings }: MenuSheetProps) {
   const t = useTranslations("hud");
   // `close` runs first, so the overlay an action opens takes focus and returns it to the menu button;
   // rotating keeps the menu open.
@@ -87,8 +92,8 @@ export function MenuSheet({ data, layout, onExit, close, controls, onControls }:
       run: openTerminal,
       close: true,
     },
-    { key: "rotate-left", label: t("view.rotateLeft"), icon: <RotateLeftIcon />, run: () => rotateView(-1), close: false, kbd: "Q" },
-    { key: "rotate-right", label: t("view.rotateRight"), icon: <RotateRightIcon />, run: () => rotateView(1), close: false, kbd: "E" },
+    { key: "rotate-left", label: t("view.rotateLeft"), icon: rotateIcons[0], run: () => onRotate(-1), close: false, kbd: "Q" },
+    { key: "rotate-right", label: t("view.rotateRight"), icon: rotateIcons[1], run: () => onRotate(1), close: false, kbd: "E" },
     { key: "map", label: t("map.open"), icon: <MapIcon />, run: () => intents.emit({ type: "toggle", what: "map" }), close: true, kbd: "N" },
     {
       key: "controls",
@@ -106,10 +111,10 @@ export function MenuSheet({ data, layout, onExit, close, controls, onControls }:
 
   return (
     <>
-      <MenuProfile data={data} />
+      <MenuProfile data={data} photo={photo} floorTone={floorTone} />
       <div data-testid="menu-actions" className="grid grid-cols-2 gap-2 px-3">
         <button type="button" onClick={onExit} title={t("pageViewHint")} className={primary} data-testid="page-view">
-          <PageViewIcon />
+          {pageViewIcon}
           {t("pageView")}
         </button>
         {actions.map((a, i) => (
@@ -128,11 +133,15 @@ export function MenuSheet({ data, layout, onExit, close, controls, onControls }:
           >
             {a.icon}
             {a.label}
-            {a.kbd && <Kbd className="ml-auto">{a.kbd}</Kbd>}
+            {a.kbd && (
+              <kbd aria-hidden="true" className="ml-auto label rounded border border-glass-border px-1.5 py-0.5 text-ink-3 pointer-coarse:hidden">
+                {a.kbd}
+              </kbd>
+            )}
           </button>
         ))}
       </div>
-      <LazySettingsPanel headingLevel={3} onClose={close} controls={controls} />
+      {settings}
     </>
   );
 }

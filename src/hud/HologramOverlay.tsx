@@ -9,7 +9,6 @@ import { ACCENT_TEXT } from "@/lib/accent";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { MetricTiles } from "./drawer/RoomDrawer";
 import { useFloorViews } from "./drawer/DrawerHost";
-import { Kbd } from "./Kbd";
 
 function subscribeResize(onChange: () => void) {
   window.addEventListener("resize", onChange);
@@ -152,7 +151,9 @@ export function HologramOverlay({ locale }: { locale: Locale }) {
         </button>
         <button type="button" onClick={() => getHQStore().getState().closeHologram()} className={nav}>
           {t("back")}
-          <Kbd>Esc</Kbd>
+          <kbd aria-hidden="true" className="label rounded border border-glass-border px-1.5 py-0.5 text-ink-3 pointer-coarse:hidden">
+            Esc
+          </kbd>
         </button>
         <button type="button" onClick={() => step(1)} className={nav} aria-label={t("next")} disabled={heroes.length < 2}>
           <span className="hidden sm:inline">{t("next")}</span>
