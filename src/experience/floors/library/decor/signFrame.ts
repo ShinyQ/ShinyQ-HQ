@@ -218,7 +218,9 @@ export function endPlazaFrame(input: {
         }
     candidates.push({ box: seen ? box : null, priority: 0, fixed: true });
   }
-  const shown = placeLabels(candidates, width < 600 ? END_LABEL_MAX.narrow : END_LABEL_MAX.wide);
+  // Inside the vault every vault sign (each spine and the "Study Vault" sign) may show, even past the narrow cap.
+  const vaultSigns = zone === "inside" ? meta.filter((m) => m.kind === "guide" || m.kind === "vault").length : 0;
+  const shown = placeLabels(candidates, Math.max(width < 600 ? END_LABEL_MAX.narrow : END_LABEL_MAX.wide, vaultSigns));
   const boxes: ScreenBox[] = [];
   for (let i = 0; i < signs.length; i++) {
     const box = candidates[i].box;

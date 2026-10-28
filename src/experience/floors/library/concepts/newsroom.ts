@@ -81,7 +81,7 @@ export const NEWSROOM = {
      * around the stop on the plaza's east rim, each facing the stop; the camera at the stop looks east at them, like
      * the floor's other end plaza views. South-east, so it stays clear of the Return pad (south-west of it) and the
      * monument (north rim); `tests/unit/library-vault.test.ts` checks the space
-     * rules, a 3 u clearance from each of them and the framing of all four books on every screen class.
+     * rules, a 3 u clearance from each of them and the framing of every book on every screen class.
      *
      * The arc runs north to south, so the books' common footprint (`LibraryVault.shelf`, the one obstacle) is a thin
      * axis-aligned strip: one obstacle per book would leave gaps under the 6 u clear floor rule between them.
@@ -93,8 +93,11 @@ export const NEWSROOM = {
       distance: 22,
       /** Round plaza diameter (`ROAD.minPlaza`). */
       plaza: 16,
-      /** The stop stands this far from the vault plaza center, toward the ring, on the road. */
-      stopInset: 1.5,
+      /**
+       * The stop stands this far from the vault plaza center, toward the ring, on the road: close to the center, so five
+       * books on the arc stay inside the plaza and clear of the road's end.
+       */
+      stopInset: 0.5,
       /**
        * The books stand on an arc of this radius around the stop, centered due east of it, `spacing` apart along the
        * arc (file order north to south, left to right on screen); the road's end keeps its half width clear of them.
@@ -103,10 +106,10 @@ export const NEWSROOM = {
       spacing: 3,
       /** Book: thickness (the spine) along the arc, depth toward the stop, height (a tall camera column). */
       book: { w: 1.2, d: 2.6, h: 4.2 },
-      /** Camera zone half size around the stop, and its zooms: all four books in view, phones included. */
+      /** Camera zone half size around the stop, and its zooms: every book in view, phones included. */
       zone: 2.5,
       zoom: 1.15,
-      zoomPhone: 0.95,
+      zoomPhone: 1.15,
     },
   },
 } as const;
