@@ -11,6 +11,8 @@ import { buildLibraryLayout } from "@/experience/floors/library/layout";
 import { libraryLayoutInput, type LibrarySection } from "@/experience/floors/library/model";
 import { readableLabels as libraryLabels } from "@/experience/floors/library/readable";
 import { orbSlots, topicPickOf } from "@/experience/floors/library/topics";
+import { buildRoofLayout } from "@/experience/floors/roof/layout";
+import { readableLabels as roofLabels } from "@/experience/floors/roof/readable";
 import type { Readable } from "@/experience/readable";
 import { cameraClass } from "@/lib/viewport";
 import en from "../../messages/en.json";
@@ -26,8 +28,8 @@ import { cameraOf, emPx, endsPx, facingAngle, readingPose, screen } from "../hel
  * phone size), so the desktop and tablet sizes stay as they were (pinned below). `PHONE_READING_ALL=1` prints every
  * label's sizes, not just the misses.
  */
-type Floor = "L3" | "L4";
-const FLOORS: readonly Floor[] = ["L3", "L4"];
+type Floor = "L3" | "L4" | "RF";
+const FLOORS: readonly Floor[] = ["L3", "L4", "RF"];
 const data = buildExperienceData("en", { L1: "Lobby", L2: "Career Archive", L3: "Labs", L4: "Library", RF: "Roof" });
 const career = careerLayoutInput(data.career);
 const libraryInput = libraryLayoutInput(data.library);
@@ -54,6 +56,11 @@ const LABELS: Record<Floor, Readable[]> = {
       phone: endPlazaSigns(library, topics, orbSlots(topics), l4EndLabels, picked ? topicPickOf(picked) : null, true),
     },
   }),
+  RF: roofLabels(buildRoofLayout({ channels: data.roof.channels.length }), {
+    comms: en.hud.world.comms.toUpperCase(),
+    channels: data.roof.channels.map((c) => c.label),
+    cvTitle: en.contact.cvTitle.toUpperCase(),
+  }),
 };
 
 const SIZES = [
@@ -68,6 +75,7 @@ const SAFE = { top: 120, bottom: 140, side: 24 };
 const DESKTOP_SIZES: Record<Floor, number[]> = {
   L3: [0.46, 0.5, 0.6, 0.62, 0.7],
   L4: [0.34, 0.36, 0.4, 0.44, 0.5, 0.6, 0.62, 0.7, 0.95],
+  RF: [0.3, 0.38, 0.44, 0.5],
 };
 
 function measure(floor: FloorId, l: Readable, w: number, h: number) {

@@ -58,6 +58,12 @@ export const ROOF_DECK = {
    * the arrival camera and the availability stop's camera, both behind a rover heading east.
    */
   signYaw: -Math.PI / 2,
+  /**
+   * Portrait phone views at the comms and CV stations (the phone reading rule): closer and lower, so the channel names
+   * and the CV title read. The pitch opts into the turn-back on leaving, like the B1 phone arrival.
+   */
+  contactPhone: { zoom: 0.9, pitch: -0.3 },
+  cvPhone: { zoom: 0.65, pitch: -0.3 },
 } as const;
 
 export type RoofStop = "about" | "availability" | "cv" | "contact";
@@ -146,9 +152,9 @@ export function buildRoofLayout({ channels = 6 }: RoofLayoutInput = {}): RoofLay
       arrivalOnly: true,
     },
     // Comms (facing south): the camera south of the rover, looking north at the station and the channels above it.
-    { id: "RF:contact", area: { minX: comms.minX, maxX: comms.maxX, minZ: contactPad.z - 2, maxZ: contactPad.z + 2 }, yaw: -Math.PI / 4 },
+    { id: "RF:contact", area: { minX: comms.minX, maxX: comms.maxX, minZ: contactPad.z - 2, maxZ: contactPad.z + 2 }, yaw: -Math.PI / 4, classView: { mobile: D.contactPhone } },
     // CV station (facing west): the camera west of the rover, looking east.
-    { id: "RF:cv", area: { minX: cvPad.x - 2, maxX: cv.minX, minZ: cv.minZ, maxZ: cv.maxZ }, yaw: (-3 * Math.PI) / 4 },
+    { id: "RF:cv", area: { minX: cvPad.x - 2, maxX: cv.minX, minZ: cv.minZ, maxZ: cv.maxZ }, yaw: (-3 * Math.PI) / 4, classView: { mobile: D.cvPhone } },
     // About board (facing north): the camera north of the rover, looking south.
     { id: "RF:about", area: { minX: about.minX, maxX: about.maxX, minZ: stops.about.z - 2, maxZ: about.minZ }, yaw: (3 * Math.PI) / 4 },
     // Availability sign on the mast (facing `signYaw`, west): looking straight at it. Eastbound rovers only, so driving
