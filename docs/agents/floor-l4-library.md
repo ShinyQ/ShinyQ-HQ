@@ -62,9 +62,11 @@ Design: walkable floors plan, part 3. Concept: newsroom (owner decision). Reader
 
 - Zone `L4:arrival` (`arrivalOnly`, `travel` east) puts the camera behind the rover and 35 degrees to its right (the elevator diagonal, owner decision 2026-10-23), looking down the timeline lane at its first bays: zoom `arrivalZoom` 1.16, phones `arrivalZoomPhone` 0.96 (both under `shaftClearZoom`, the camera east of the glass shaft).
   - Only the first bay's track sign is whole in the arrival view (desktop 1.12 cut its top corner). The second bay stands south of the lane beside the camera, so no zoom brings its sign in; two signs would need another arrival yaw or layout (an owner composition).
-- Bay zones (`stationViewZones` in `model.ts`, `SHELF_VIEW` in `shelf.ts`): one per bay door, id the bay room, `SHELF_VIEW.zone` 2.5 u around the door (other doors 2.2), yaw `stationYaw(facing)`, zoom 1.15, phones (`classView.mobile`, portrait tablets too) 1.35. No other zone overlaps a bay zone.
-  - The phone zoom is larger than the desktop one: the follow yaw sees a north bay diagonally, and 1.35 is what keeps a 40-post bay's far end inside 390 px (1.3 passes at the edge, lower zooms cut a south bay's lead).
-- Other zones: `L4:headlines` (look north at the wall, zoom 1.4), the end plaza's (below).
+- Bay zones (`stationViewZones` in `model.ts`, `SHELF_VIEW` in `shelf.ts`): one per bay door, id the bay room, `SHELF_VIEW.zone` 2.5 u around the door (other doors 2.2), yaw `stationYaw(facing)`, zoom 1.15, phones (`classView.mobile`, portrait tablets too) 1.15 aimed `BAY_AIM_PHONE` 2 u toward the bay. No other zone overlaps a bay zone.
+  - The phone aim keeps a 40-post bay's far end inside 390 px at that zoom (1 cuts it by 2 px) and the bay's track sign whole.
+  - The other doors' zones aim a phone view `STATION_AIM_PHONE` 3.5 u toward the desk, so its section sign stays whole.
+- Other zones: `L4:headlines` (look north at the wall, zoom `headlinesZoom` 1.4, phones 0.95 so the ticker reads), the end plaza's (below).
+- Phone reading rule ([floors.md](floors.md#arrival)): on portrait phones track names are 0.65 wrapped at 14 characters and post titles 0.66 wrapped at 16 (`ZONE_SIGN.phone`, `TITLE_SIGN.phone` in `decor/signs.ts`); topic names 0.5 (picked 0.6) and vault spines 0.54 (`endPlazaSigns`).
 - `tests/unit/library-shelf-framing.test.ts` (real content and a synthetic 40-post bay): the bay zone's id, yaw, zooms and area; the follow camera settled as `CameraDirector` does (`tests/helpers/follow-frame.ts`, shared with the vault) keeps the rover and all 8 corners of every slot inside the HUD-safe box at 1440x900, 1194x834, 834x1194 and 390x844; from `L4:arrival` the first bay's track sign projects whole at the four sizes.
 
 ## Scene (`Library.tsx`, `decor/NewsroomDecor.tsx`)
@@ -140,7 +142,7 @@ Code: `LibraryLayout.end`, `NEWSROOM.end`, scene `EndPlaza.tsx`.
 - The timeline lane ends on a closed ring road (`nav/ringRoad.ts`, shared with the L3 reactor) around the Topic Constellation pedestal.
   - The pedestal is a `Plaza.core` obstacle and tall column.
   - Stop: `stops["L4:topics"]`, on the ring's west point.
-  - Camera zone `L4:topics` (look east, zoom 1.35): any heading within 2.5 u of the stop, plus the last `NEWSROOM.end.approach` (8 u) of the timeline for eastbound rovers (`travel`), so a rover approaching the plaza already sees the whole cloud and the topic count above it. Both parts share the id, and the approach clears every door zone.
+  - Camera zone `L4:topics` (look east, zoom 1.35; phones `zoomPhone` 1 aimed `aimUpPhone` 3 u up, so the topic names read and the pieces count stays in frame): any heading within 2.5 u of the stop, plus the last `NEWSROOM.end.approach` (8 u) of the timeline for eastbound rovers (`travel`), so a rover approaching the plaza already sees the whole cloud and the topic count above it. Both parts share the id, and the approach clears every door zone.
 - The research monument stands north of the plaza: only with `researchMetrics`, `L4:station:metrics`, command `open:L4:research`.
 - The Express Return pad is south of it.
 
