@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { audio } from "@/lib/audio";
 import { BLIP_EVERY, CONTINUE_CHOICE, type DialogChoice, type DialogView } from "./engine";
-import { DIALOG_PLACE, DOCK_PLACE, docks, type DialogPlacement } from "./placement";
+import { DIALOG_PLACE, DOCK_PLACE, docks, TOAST_PLACE, type DialogPlacement } from "./placement";
 import { RoverPortrait } from "./RoverPortrait";
 import { dialog, useDialog } from "./store";
 
@@ -28,11 +28,11 @@ function choicesOf(view: DialogView, continueLabel: string): readonly DialogChoi
  * field, another control or a modal dialog has the key; arrows move between the choices once one has
  * focus; Esc picks a "cancel" choice. A tap or click anywhere on the box advances too.
  *
- * On phones (`placement === "phone"`) it is a slim toast: the text is clamped to two rows until a tap
- * expands it, and a finished line without choices or a try-it task moves on by itself after
- * `TOAST_HOLD_MS` only when it fits in those two rows: a clamped line waits for a tap, and an expanded
- * line never moves on by itself. On a phone a line with choices docks at the bottom (`DOCK_PLACE`), its
- * choices stacked full width.
+ * On phones (`placement === "phone"`) it is a slim toast at the top (`TOAST_PLACE`): the text is clamped to
+ * three rows until a tap expands it, and a finished line without choices or a try-it task moves on by itself
+ * after `TOAST_HOLD_MS` only when it fits in those rows: a clamped line waits for a tap, and an expanded line
+ * never moves on by itself. On a phone a line with choices docks at the bottom (`DOCK_PLACE`), its choices
+ * stacked full width.
  */
 export function DialogBox({ placement, reducedMotion }: { placement: DialogPlacement; reducedMotion: boolean }) {
   const t = useTranslations("dialog");
@@ -155,7 +155,7 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
       }}
       className={`hq-dialog pointer-events-auto absolute z-20 flex cursor-pointer text-ink font-mono ${
         toast ? "gap-2 p-2.5 text-[13px] leading-5" : "gap-3 p-3 text-[14px] leading-6 sm:p-4"
-      } ${docked ? DOCK_PLACE : DIALOG_PLACE[placement]}`}
+      } ${docked ? DOCK_PLACE : toast ? TOAST_PLACE : DIALOG_PLACE[placement as Exclude<DialogPlacement, "phone">]}`}
     >
       <RoverPortrait face={line.face ?? "idle"} still={reducedMotion} compact={toast} />
       <div className="min-w-0 flex-1">
@@ -181,7 +181,7 @@ export function DialogBox({ placement, reducedMotion }: { placement: DialogPlace
         <p
           ref={textRow}
           aria-hidden="true"
-          className={`whitespace-pre-line ${toast ? `min-h-10 ${expanded ? "" : "line-clamp-2"}` : "min-h-12"}`}
+          className={`whitespace-pre-line ${toast ? `min-h-10 ${expanded ? "" : "line-clamp-3"}` : "min-h-12"}`}
         >
           {line.text.slice(0, view.shown)}
           <span className="invisible">{line.text.slice(view.shown)}</span>
