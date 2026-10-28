@@ -347,7 +347,7 @@ describe("interactablesFor on the real content", () => {
 
   it("adds one Study Vault target per book: drive to the vault stop, then open its study guide", () => {
     const vault = buildLibraryLayout(libraryLayoutInput(experience.library)).end!.vault!;
-    expect(vault.books).toHaveLength(4);
+    expect(vault.books).toHaveLength(experience.library.guides.length);
     const books = items.L4.filter((i) => i.id.startsWith("L4:vault:"));
     expect(books.map((b) => b.id)).toEqual(vault.books.map((b) => `L4:vault:${b.slug}`));
     vault.books.forEach((book, i) => {

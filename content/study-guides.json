@@ -85,6 +85,89 @@
       ]
     },
     {
+      "slug": "gh-300",
+      "certId": "gh-300",
+      "code": "GH-300",
+      "spine": "GH-300",
+      "issuer": "GitHub",
+      "title": {
+        "en": "GitHub Copilot",
+        "id": "GitHub Copilot"
+      },
+      "summary": {
+        "en": "Using GitHub Copilot responsibly and productively: plans and features, Copilot Chat, agent mode and the CLI, data flow, prompt engineering, testing and the privacy controls administrators configure.",
+        "id": "Menggunakan GitHub Copilot secara bertanggung jawab dan produktif: paket dan fitur, Copilot Chat, agent mode dan CLI, alur data, prompt engineering, testing, serta kontrol privasi yang dikonfigurasi administrator."
+      },
+      "edition": "2026-10",
+      "file": "GH-300_Study_Guide.pdf",
+      "pages": 222,
+      "bytes": 7024991,
+      "version": "51f3d2d8e908",
+      "cover": "/study-guides/gh-300.webp",
+      "domains": [
+        {
+          "weight": [
+            15,
+            20
+          ],
+          "label": {
+            "en": "Use Copilot responsibly",
+            "id": "Menggunakan Copilot secara bertanggung jawab"
+          }
+        },
+        {
+          "weight": [
+            25,
+            30
+          ],
+          "label": {
+            "en": "Use Copilot features",
+            "id": "Menggunakan fitur Copilot"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Data and architecture",
+            "id": "Data dan arsitektur"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Prompt engineering and context",
+            "id": "Prompt engineering dan konteks"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Developer productivity",
+            "id": "Produktivitas developer"
+          }
+        },
+        {
+          "weight": [
+            10,
+            15
+          ],
+          "label": {
+            "en": "Privacy, exclusions and safeguards",
+            "id": "Privasi, pengecualian dan safeguard"
+          }
+        }
+      ]
+    },
+    {
       "slug": "google-gen-ai-leader",
       "certId": "google-gen-ai-leader",
       "code": null,

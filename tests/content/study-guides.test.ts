@@ -11,12 +11,12 @@ import { titleCase } from "@/content/title-case";
 import { hasFirstPerson } from "@/lib/first-person";
 import raw from "../../content/study-guides.json";
 
-const SLUGS = ["gh-600", "google-gen-ai-leader", "ai-103", "ai-901"];
+const SLUGS = ["gh-600", "gh-300", "google-gen-ai-leader", "ai-103", "ai-901"];
 
 describe("content/study-guides.json", () => {
   const file = getStudyGuides();
 
-  it("parses with four guides in file order and unique slugs", () => {
+  it("parses with five guides in file order and unique slugs", () => {
     expect(StudyGuidesFileSchema.safeParse(raw).success).toBe(true);
     expect(file.guides.map((g) => g.slug)).toEqual(SLUGS);
     expect(new Set(file.guides.map((g) => g.slug)).size).toBe(file.guides.length);
@@ -108,9 +108,9 @@ describe("guide views", () => {
     expect(guideForCert("az-900")).toBeNull();
   });
 
-  it("sets CertView.guide for the four guides and null for the rest", () => {
+  it("sets CertView.guide for the five guides and null for the rest", () => {
     const views = toCertViews(getContent().certifications, "en");
     for (const c of views) expect(c.guide, c.id).toBe(SLUGS.includes(c.id) ? c.id : null);
-    expect(views.filter((c) => c.guide).length).toBe(4);
+    expect(views.filter((c) => c.guide).length).toBe(SLUGS.length);
   });
 });

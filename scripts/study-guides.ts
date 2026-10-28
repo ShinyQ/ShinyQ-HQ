@@ -112,19 +112,23 @@ function prepare(pairs: string[]) {
   }
 }
 
-function check(): GuideEntry[] {
+/** Checks the prepared files of `slugs` (every guide when empty) against the JSON and returns those guides. */
+function check(slugs: string[] = []): GuideEntry[] {
   const data = readData();
-  for (const g of data.guides) {
+  const unknown = slugs.filter((s) => !data.guides.some((g) => g.slug === s));
+  if (unknown.length) throw new Error(`unknown guide ${unknown.join(", ")}`);
+  const guides = data.guides.filter((g) => slugs.length === 0 || slugs.includes(g.slug));
+  for (const g of guides) {
     const file = preparedFile(g.slug);
     if (!existsSync(file)) throw new Error(`${g.slug}: run prepare first (${file} is missing)`);
     const bytes = new Uint8Array(readFileSync(file));
     if (bytes.byteLength !== g.bytes || versionOf(bytes) !== g.version) throw new Error(`${g.slug}: prepared file does not match content/study-guides.json`);
   }
-  return data.guides;
+  return guides;
 }
 
 function upload(slugs: string[]) {
-  const guides = check().filter((g) => slugs.length === 0 || slugs.includes(g.slug));
+  const guides = check(slugs);
   for (const g of guides) {
     const key = `${GUIDES_BUCKET}/${objectKey(g.slug, g.version)}`;
     run("bunx", [
@@ -146,9 +150,9 @@ if (import.meta.main) {
   const [command, ...rest] = process.argv.slice(2);
   if (command === "prepare" && rest.length) prepare(rest);
   else if (command === "upload") upload(rest);
-  else if (command === "check") console.log(`${check().length} prepared guides match`);
+  else if (command === "check") console.log(`${check(rest).length} prepared guides match`);
   else {
-    console.error("Usage: bun scripts/study-guides.ts prepare <slug>=<file.pdf> ... | upload [<slug> ...] | check");
+    console.error("Usage: bun scripts/study-guides.ts prepare <slug>=<file.pdf> ... | upload [<slug> ...] | check [<slug> ...]");
     process.exit(1);
   }
 }
