@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore, type Keyboard
 import type { Locale, Mission } from "@/content/schema";
 import { resolveReducedMotion } from "@/lib/motion";
 import { useHQStore } from "@/store/useHQStore";
+import { KEY_HINT } from "./Kbd";
 import { greetingKey } from "./terminal";
 
 export { TERMINAL_SEEN_KEY, markTerminalSeen } from "./terminal";
@@ -263,7 +264,7 @@ function TerminalPanel({ locale, missions, onRun, onClose, now, className, anima
             );
           })}
         </ul>
-        <p className="hidden shrink-0 border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block">
+        <p className={`hidden shrink-0 border-t border-terminal-fg/25 px-4 py-2 text-[11px] text-terminal-fg/85 sm:block ${KEY_HINT}`}>
           {t("hint", { last: missions.length })}
         </p>
       </div>

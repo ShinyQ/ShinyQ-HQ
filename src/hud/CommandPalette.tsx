@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AccentDot } from "@/components/AccentDot";
 import type { FloorId, Locale, RoomId } from "@/content/schema";
 import type { PaletteFilter } from "@/experience/missions/host";
+import { KEY_HINT } from "./Kbd";
 import type { PaletteEntry, PaletteGroup } from "./palette-types";
 import { searchPalette } from "./search";
 import type { PaletteTypeahead } from "./typeahead";
@@ -237,10 +238,10 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
             onClick={onClose}
             className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-ink-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-cyan"
           >
-            <span aria-hidden="true" className="label hidden sm:inline">
+            <span aria-hidden="true" className="label hidden sm:pointer-fine:inline">
               Esc
             </span>
-            <span aria-hidden="true" className="text-xl leading-none sm:hidden">
+            <span aria-hidden="true" className="text-xl leading-none sm:pointer-fine:hidden">
               ×
             </span>
           </button>
@@ -303,7 +304,7 @@ function PaletteDialog({ locale, entries, recent, filter = null, ask = false, on
           </p>
         ) : null}
 
-        <p className="label hidden border-t border-glass-border px-4 py-2.5 text-ink-3 sm:block">{t("hint")}</p>
+        <p className={`label hidden border-t border-glass-border px-4 py-2.5 text-ink-3 sm:block ${KEY_HINT}`}>{t("hint")}</p>
       </div>
     </div>
   );

@@ -521,7 +521,7 @@
         "lite": "Lite"
       },
       "minimap": { "label": "Minimap" },
-      "sound": { "label": "Sound", "hint": "Off mutes everything (key M)." },
+      "sound": { "label": "Sound", "hint": "Off mutes everything." },
       "effects": { "label": "Sound effects" },
       "music": { "label": "Background music" },
       "ambience": { "label": "Floor ambience", "hint": "Replaces the background music with each floor's soundtrack. Controlled separately from Background music." },
@@ -664,9 +664,9 @@
     },
     "view": {
       "label": "View controls",
-      "rotateLeft": "Rotate left (Q)",
-      "rotateRight": "Rotate right (E)",
-      "reset": "Reset view (0)"
+      "rotateLeft": "Rotate left",
+      "rotateRight": "Rotate right",
+      "reset": "Reset view"
     },
     "floorLabel": {
       "L1": "Home",
@@ -678,8 +678,10 @@
     "pads": {
       "floorTitle": "Take the elevator",
       "floorHint": "Pick a floor: arrows to move, Enter to ride, Esc to close.",
+      "floorHintTouch": "Tap a floor to ride there.",
       "yearTitle": "Teleport to a year",
       "yearHint": "Pick a year: arrows to move, Enter to beam there, Esc to close.",
+      "yearHintTouch": "Tap a year to beam there.",
       "close": "Close",
       "here": "You are here",
       "floorDesc": {
@@ -691,6 +693,7 @@
       },
       "consoleTitle": "Time console",
       "consoleHint": "Pick a year to beam there, or go back to the elevator. Esc closes.",
+      "consoleHintTouch": "Tap a year to beam there, or go back to the elevator.",
       "back": "Back to elevator",
       "backDetail": "Beam to the elevator call pad at the start of the road"
     },
@@ -768,6 +771,7 @@
       "prev": "Previous project",
       "next": "Next project",
       "hint": "Projects: left or right · Back: Esc",
+      "hintTouch": "Projects: Previous or Next · Back: the Back button",
       "results": "Results",
       "label": "{title}, architecture"
     },

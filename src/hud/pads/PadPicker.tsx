@@ -114,6 +114,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
   const picker = useHQStore((s) => s.picker);
   const exploring = useHQStore((s) => s.phase === "explore");
   const floor = useHQStore((s) => s.floor);
+  const coarse = useHQStore((s) => s.device.coarse);
   const b1Unlocked = useHQStore((s) => s.b1Unlocked);
   const seen = useHQStore((s) => floorProgress(s.floorsSeen).seen);
   const closePicker = useHQStore((s) => s.closePicker);
@@ -132,7 +133,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
     return (
       <PickerList
         title={t("pads.floorTitle")}
-        hint={t("pads.floorHint")}
+        hint={t(coarse ? "pads.floorHintTouch" : "pads.floorHint")}
         options={floorOptions(floor, floorLabel, (id) => (isPublicFloor(id) ? t(`pads.floorDesc.${id}`) : tEngine("desc")), b1Unlocked, {
           title: tEngine("lockedTitle"),
           detail: tEngine("locked", { seen, total: PUBLIC_FLOOR_COUNT }),
@@ -150,7 +151,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
     return (
       <PickerList
         title={t("pads.consoleTitle")}
-        hint={t("pads.consoleHint")}
+        hint={t(coarse ? "pads.consoleHintTouch" : "pads.consoleHint")}
         options={consoleOptions(data.career, (count) => t("career.rooms", { count }), t("career.prologue"), { title: t("pads.back"), detail: t("pads.backDetail") })}
         onClose={close}
         onPick={(id) => {
@@ -164,7 +165,7 @@ export function PadPicker({ data }: { data: ExperienceData }) {
   return (
     <PickerList
       title={t("pads.yearTitle")}
-      hint={t("pads.yearHint")}
+      hint={t(coarse ? "pads.yearHintTouch" : "pads.yearHint")}
       options={yearOptions(data.career, from, (count) => t("career.rooms", { count }), t("career.prologue"))}
       onClose={close}
       onPick={(id) => {

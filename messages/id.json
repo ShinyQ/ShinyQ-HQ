@@ -521,7 +521,7 @@
         "lite": "Lite"
       },
       "minimap": { "label": "Peta mini" },
-      "sound": { "label": "Suara", "hint": "Mati membisukan semuanya (tombol M)." },
+      "sound": { "label": "Suara", "hint": "Mati membisukan semuanya." },
       "effects": { "label": "Efek suara" },
       "music": { "label": "Musik latar" },
       "ambience": { "label": "Suara latar tiap lantai", "hint": "Mengganti musik latar dengan suara khas tiap lantai. Pengaturannya terpisah dari Musik latar." },
@@ -664,9 +664,9 @@
     },
     "view": {
       "label": "Kontrol tampilan",
-      "rotateLeft": "Putar ke kiri (Q)",
-      "rotateRight": "Putar ke kanan (E)",
-      "reset": "Atur ulang tampilan (0)"
+      "rotateLeft": "Putar ke kiri",
+      "rotateRight": "Putar ke kanan",
+      "reset": "Atur ulang tampilan"
     },
     "floorLabel": {
       "L1": "Beranda",
@@ -678,8 +678,10 @@
     "pads": {
       "floorTitle": "Naik lift",
       "floorHint": "Pilih lantai: panah untuk berpindah, Enter untuk naik, Esc untuk menutup.",
+      "floorHintTouch": "Ketuk lantai untuk naik ke sana.",
       "yearTitle": "Teleportasi ke tahun",
       "yearHint": "Pilih tahun: panah untuk berpindah, Enter untuk teleportasi, Esc untuk menutup.",
+      "yearHintTouch": "Ketuk tahun untuk pindah ke sana.",
       "close": "Tutup",
       "here": "Posisi saat ini",
       "floorDesc": {
@@ -691,6 +693,7 @@
       },
       "consoleTitle": "Konsol waktu",
       "consoleHint": "Pilih tahun untuk pindah ke sana, atau kembali ke lift. Esc untuk menutup.",
+      "consoleHintTouch": "Ketuk tahun untuk pindah ke sana, atau kembali ke lift.",
       "back": "Kembali ke lift",
       "backDetail": "Pindah ke pad panggil lift di awal jalan"
     },
@@ -768,6 +771,7 @@
       "prev": "Proyek sebelumnya",
       "next": "Proyek berikutnya",
       "hint": "Proyek: kiri atau kanan · Kembali: Esc",
+      "hintTouch": "Proyek: Sebelumnya atau Berikutnya · Kembali: tombol Kembali",
       "results": "Hasil",
       "label": "{title}, arsitektur"
     },

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useReducer, useRef, useSyncExternalStore } from "react";
 import { AccentDot } from "@/components/AccentDot";
+import { Kbd } from "../Kbd";
 import { MenuControls } from "../menu/MenuControls";
 import { SETTINGS } from "./defs";
 import { settingsByGroup, type SettingControl, type SettingDef } from "./registry";
@@ -23,6 +24,7 @@ function RowText({ def, labelId, hintId, htmlFor }: { def: SettingDef; labelId: 
       {def.hintKey && (
         <p id={hintId} className="mt-0.5 text-xs leading-4 text-ink-3">
           {t(def.hintKey)}
+          {def.hintKbd && <Kbd className="ml-1.5">{def.hintKbd}</Kbd>}
         </p>
       )}
     </div>
@@ -72,6 +74,7 @@ function ChoiceRow({ def, control }: RowProps<"choice">) {
       {def.hintKey && (
         <p id={hint} className="clear-left pt-0.5 text-xs leading-4 text-ink-3">
           {t(def.hintKey)}
+          {def.hintKbd && <Kbd className="ml-1.5">{def.hintKbd}</Kbd>}
         </p>
       )}
       <div
