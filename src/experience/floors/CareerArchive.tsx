@@ -25,6 +25,8 @@ export function CareerArchive({ career, labs, labels }: { career: CareerData; la
   const active = shown || warming;
   const tier = useHQStore((s) => s.tier);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
+  // Portrait phones set the room names, placings and signposts larger (the phone reading rule).
+  const phone = useHQStore((s) => s.device.camera === "mobile");
   const layout = useMemo(() => buildCareerRoad(careerLayoutInput(career)), [career]);
   const years = useMemo(() => career.years.map((y) => y.year), [career]);
   const entries = useMemo(() => new Map(career.years.flatMap((y) => y.entries.map((e) => [e.slug, e] as const))), [career]);
@@ -41,9 +43,9 @@ export function CareerArchive({ career, labs, labels }: { career: CareerData; la
   return (
     // Warmed during boot: mounted for the compile only, never drawn (L2's shell shows in the intro).
     <group name="career-archive" visible={shown}>
-      <YearGates layout={layout} prologue={prologue} roomsLabel={labels.rooms} tier={tier} reducedMotion={reducedMotion} />
-      <CareerRooms rooms={layout.rooms} entries={entries} trophies={trophies} shapes={career.shapes} tier={tier} reducedMotion={reducedMotion} />
-      <WorkshopAnnex layout={layout} career={career} labs={labs} labels={labels} years={years} tier={tier} reducedMotion={reducedMotion} />
+      <YearGates layout={layout} prologue={prologue} roomsLabel={labels.rooms} tier={tier} reducedMotion={reducedMotion} phone={phone} />
+      <CareerRooms rooms={layout.rooms} entries={entries} trophies={trophies} shapes={career.shapes} tier={tier} reducedMotion={reducedMotion} phone={phone} />
+      <WorkshopAnnex layout={layout} career={career} labs={labs} labels={labels} years={years} tier={tier} reducedMotion={reducedMotion} phone={phone} />
       <Horizon layout={layout} />
     </group>
   );

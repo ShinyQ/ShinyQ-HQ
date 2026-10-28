@@ -1,15 +1,15 @@
 import type { CareerEntryView } from "../../types";
 import { headingTo, type Readable } from "../../readable";
 import { CAREER_ROAD, type CareerRoadLayout } from "./layout";
-import { roomLabelSet, signpostSet, workshopSigns } from "./labels";
+import { placingSize, roomLabelSet, signpostSet, workshopSigns } from "./labels";
 
 /**
  * Geometry the L2 scene draws inline (main 3D path, so the components keep their literals): the year digits over each
  * arch (`YearGates.tsx`: type size, bottom over the arch beam) and the award placings on an award room's plinth
- * (`CareerRooms.tsx`: height, offset toward the road side, type size, lean back).
+ * (`CareerRooms.tsx`: height, offset toward the road side, lean back; the type size is `placingSize`).
  */
 const YEAR_DIGITS = { fontSize: 2.2, bar: 0.5, lift: 0.3 } as const;
-const PLACING = { y: 0.6, ahead: 1.15, fontSize: 0.55, tilt: 0.55 } as const;
+const PLACING = { y: 0.6, ahead: 1.15, tilt: 0.55 } as const;
 
 /** `phoneFontSize` when the portrait size differs. */
 const phoneSize = (fontSize: number, phone: number) => (phone !== fontSize ? { phoneFontSize: phone } : {});
@@ -24,7 +24,7 @@ export function readableLabels(road: CareerRoadLayout): Readable[] {
   const out: Readable[] = [];
   const entries = new Map(road.rooms.map((r): [string, CareerEntryView] => [r.slug, { slug: r.slug, type: r.type, role: r.slug, org: "", period: "", prologue: false }]));
   const desktop = roomLabelSet(road.rooms, entries).labels;
-  const phone = desktop;
+  const phone = roomLabelSet(road.rooms, entries, true).labels;
   road.rooms.forEach((room, i) => {
     const reading = { at: room.at, heading: headingTo(room.at, room.center) };
     const label = phone[i];
@@ -43,12 +43,14 @@ export function readableLabels(road: CareerRoadLayout): Readable[] {
       reading,
     });
     if (room.type === "award") {
-      const size = PLACING.fontSize;
+      const size = placingSize(room, false);
+      const phoneFont = placingSize(room, true);
       out.push({
         id: `placing:${room.slug}`,
         text: "\u00D7N",
-        at: [room.center.x, PLACING.y + (Math.cos(PLACING.tilt) * size) / 2, room.center.z + PLACING.ahead - (Math.sin(PLACING.tilt) * size) / 2],
+        at: [room.center.x, PLACING.y + (Math.cos(PLACING.tilt) * phoneFont) / 2, room.center.z + PLACING.ahead - (Math.sin(PLACING.tilt) * phoneFont) / 2],
         fontSize: size,
+        ...phoneSize(size, phoneFont),
         yaw: 0,
         flips: true,
         tilt: PLACING.tilt,
@@ -57,7 +59,7 @@ export function readableLabels(road: CareerRoadLayout): Readable[] {
     }
   });
   const posts = signpostSet(road.years, () => "");
-  const phonePosts = posts;
+  const phonePosts = signpostSet(road.years, () => "", true);
   road.years.forEach((y, i) => {
     const reading = { at: y.arch.center, heading: Math.PI / 2 };
     const top = CAREER_ROAD.archHeight + YEAR_DIGITS.bar + YEAR_DIGITS.lift;
@@ -69,7 +71,7 @@ export function readableLabels(road: CareerRoadLayout): Readable[] {
   const w = road.workshop;
   const names = { workshop: "workshop", console: "console", repos: "repos" };
   const signs = workshopSigns(w, names, "");
-  const phoneSigns = signs;
+  const phoneSigns = workshopSigns(w, names, "", true);
   const middle = w.skyline.stops[Math.floor(w.skyline.stops.length / 2)];
   const stops = [w.gateway.stop, w.console.stop, middle];
   phoneSigns.forEach((sign, i) => {

@@ -87,13 +87,6 @@ const DESKTOP_SIZES: Record<Floor, number[]> = {
   RF: [0.3, 0.38, 0.44, 0.5],
 };
 
-/**
- * L2 labels that miss the rule until the owner picks a fix: the rail camera cannot come close enough from a door pad or
- * an arch, so they need larger portrait type, which costs main 3D path bytes (L2 is not a lazy chunk). Marked
- * `it.fails`, so the suite stays green and each fix flips one.
- */
-const PENDING = (floor: Floor, id: string) =>
-  floor === "L2" && (/^(room|signpost):/.test(id) || ["sign:repos", "placing:trophy-case-2021", "placing:trophy-case-2022"].includes(id));
 
 function measure(floor: FloorId, l: Readable, w: number, h: number) {
   const pose = readingPose(floor, layouts[floor], l.reading, w, h);
@@ -136,7 +129,7 @@ describe("phone reading rule (L2, L3, L4, RF)", () => {
       expect([...new Set(list.map((l) => l.fontSize))].sort((a, b) => a - b)).toEqual(DESKTOP_SIZES[floor]);
     });
     for (const l of list) {
-      (PENDING(floor, l.id) ? it.fails : it)(`${floor} ${l.id} reads on portrait phones`, () => {
+      it(`${floor} ${l.id} reads on portrait phones`, () => {
         for (const { w, h, min } of SIZES) {
           const m = measure(floor, l, w, h);
           const what = `${floor} ${l.id} "${l.text.slice(0, 24)}" at ${w}x${h}`;
