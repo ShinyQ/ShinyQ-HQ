@@ -181,6 +181,14 @@ Locales, client messages, links, dates and page metadata, plus the design tokens
 - axe joins adjacent elements' text without a space, so put a `{" "}` text node between visible spans (flex and grid collapse it).
 - `tests/unit/label-in-name.test.ts` guards the elevator, search and palette close names.
 
+### Key hints on touch (owner decision)
+
+- No text a touch visitor sees names a keyboard key (owner decision 2026-10-28). Labels carry no key ("Rotate left", "Reset view", "Off mutes everything."); the key goes in a `<kbd>` cap with `aria-hidden="true"` and `pointer-coarse:hidden` (the HUD's one key cap style: `label rounded border border-glass-border px-1.5 py-0.5 text-ink-3`), and the control names it with `aria-keyshortcuts`.
+  - Write the cap inline: no shared component, so the lazy sheets stay off the main path's hoisted modules ([performance.md](performance.md#perf-lane-e2eperf)).
+  - Desktop icon buttons keep the key in their `title` tooltip ("Rotate left (Q)").
+- A hint line made of keys gets a touch variant on a coarse pointer (`useHQStore((s) => s.device.coarse)`): `hud.pads.floorHintTouch`, `yearHintTouch`, `consoleHintTouch`, `drawer.hologram.hintTouch`. Keyboard-only footers (the Rover menu, search) hide with `pointer-coarse:hidden` as well as below `sm`.
+- Strings that keep keys are only shown to fine pointers, as tooltips or to screen readers; `tests/unit/key-hints.test.ts` lists them, fails on any other string that names a key (EN and ID), and checks every HUD `<kbd>` hides on a coarse pointer.
+
 ### 3D HUD layout (owner decision)
 
 - Layout per device (`hudLayout` in `src/hud/layout.ts`; `Hud` sets `html[data-hq-hud="phone|tablet|desktop"]`):

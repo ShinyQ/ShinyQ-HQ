@@ -112,6 +112,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | L4 reader tracks | 2026-10-25: owner decision: the L4 timeline of single-post stations, the archive board and the year posts are replaced by one bookshelf bay per reader track (4 today, 1 to 6 in content), each led by its best post face-out with the others as spines; a pulled spine shows its title, a spine click drives to the bay and opens the post, a bay door opens the track drawer, one hint per bay; bay camera views; all posts in-world (tested to 120) | In review |
 | Phone-first 3D | 2026-10-26: owner decision: on a portrait phone the boot card docks at the bottom with one rolling log line and Rover's close-up above it, L1 opens on a phone landing view (Rover, the name hologram and the stats ring, no sky) at every session start, and a 6-step phone tour docks its choice lines at the bottom while the joystick, Boost and Reset view step aside; the tour script loads as its own chunk, no cap rises | In review |
 | GH-300 study guide | 2026-10-29: owner decision: the GH-300 (GitHub Copilot) study guide joins the Study guides shelf, the certification card and the L4 Study Vault (a fifth book, right after GH-600); GH-300 itself is listed as in progress (planned November 2026, no credential yet) and stays out of the Time Travel certification tally until earned | Done |
+| Phone-first 3D, part 2 | 2026-10-28: owner decision: on a phone Rover's lines without choices show whole at the top (below the minimap row in portrait, between the floor chip and the buttons in landscape), never over the rover, Boost or the joystick; every title and name on L2, L3, L4 and RF reads at least 10 px tall on a 390 x 844 phone from where a visitor stops (9 px at 375 x 667); touch screens no longer see keyboard keys ("Rotate left (Q)" is "Rotate left", pad pickers say "Tap a floor"); the menu sheet and the pad picker sheet load on first use as their own chunks, so the first frame and both session totals stay below main | In review |
 
 ## Controls and first visit
 
@@ -166,7 +167,7 @@ Open `/en` and press **Boot rover**.
 - The tour covers driving and boost, point-and-go, the camera (look around, zoom, first person), the elevator and its call pads, then the Rover menu and Ask AI, each ringed while Rover talks about it. The tour never drives the rover anywhere by itself (owner decision 2026-10-27).
 - A deep link rides on to its floor first and gets a shorter tour there.
 - On a phone the tour is shorter (6 steps): welcome, tap-to-go (try it), the floor chip, the menu, Ask AI when shown, and the closing line.
-- On a phone a Rover line with choices (the tour's, the B1 unlock offer, a try-it's Continue) docks at the bottom in thumb reach with full-width choices, and the joystick, Boost and Reset view step aside until it ends; lines without choices stay a slim toast.
+- On a phone a Rover line with choices (the tour's, the B1 unlock offer, a try-it's Continue) docks at the bottom in thumb reach with full-width choices, and the joystick, Boost and Reset view step aside until it ends; lines without choices show whole as a slim toast at the top (below the minimap in portrait, between the floor chip and the buttons in landscape), so they never cover the rover, Boost or the joystick.
 - The tour's script loads only for a session that plays it or on Replay the tutorial, so returning visitors never download it.
 - Near anything you can use, a "!" bubble floats over it: press Enter or tap it for a one-line tip with a Go choice.
 - The first time you reach L2, L3, L4 or RF, Rover introduces the floor in one line. Driving, a point-and-go action or a swipe dismisses it, and it never comes back on that floor.
@@ -195,6 +196,8 @@ Open `/en` and press **Boot rover**.
 
 - The four corners hold the controls: the floor chip top left (tap it to pick a floor), Ask AI, search (tablets) and the **Menu** top right, the joystick bottom left and **Reset view** bottom right.
 - **Menu** opens a sheet with the profile (name, title and current floor), the actions (**Classic site**, Search, Rover menu, Rotate left and right, Map) and every setting (language, Open links in, motion, graphics quality, day and night, minimap, sound and music, plus **Replay the tutorial** and **Hints** while in 3D).
+- Touch screens see no keyboard keys: labels read "Rotate left" and "Reset view", key caps show only with a mouse or trackpad, and the pad pickers say "Tap a floor" or "Tap a year".
+- On a portrait phone every sign title and name on L2 to RF is readable from where you stop (at least 10 px tall on a 390 x 844 screen): the camera comes closer at a few stops and some signs use larger type on phones only.
 - Desktops keep the top bar, the profile card and the elevator; a gear button above the view controls opens the same settings. The **,** key opens the settings on every device.
 
 ### Minimap and floor overview

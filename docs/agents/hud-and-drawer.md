@@ -75,6 +75,7 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
   - During the unlock moment the unlocked row pulses, except under reduced motion.
 - `FloorChip` (top left) opens the floor sheet (`floor-sheet`, `FloorButtons` rows named with all of their visible text); picking a floor rides there. It replaces the elevator rail.
 - `HudMenu` (top right) opens the menu sheet (`menu-sheet`: profile, actions, `SettingsPanel`). Everything that was a loose button on phones (Classic site, search, Rover menu, view rotation, Map, the controls help, settings) lives there; keep new phone actions in the sheet.
+  - The sheet's body is a lazy chunk (owner decision 2026-10-28): `MenuSheet.tsx`, loaded by `menuChunk.ts` (`loadMenu()`, the only `import()` of it) from the button's `pointerdown` or the first open; `HudMenu` keeps the button, the `Modal` frame and its header, and a placeholder holds the body's height while it loads. A failed load shows the load note, Retry and the Classic site button (`menu-failed`). `MenuSheet` imports no module the main path hoists: `HudMenu` passes the profile photo, the Classic site icon, the floor's accent class, the rotate icons and step and the settings host in as props (a shared module would leave the main path's hoisted scope and cost wrapper bytes). `tests/unit/menu-chunk-graph.test.ts` guards the boundary.
   - The Controls action (`menu-controls`, `aria-expanded`) expands the controls card in place (`menu-controls-card`, `MenuControls` in `src/hud/menu/MenuControls.tsx`; it rides in the lazy settings chunk, rendered first by `SettingsPanel` when the menu passes `controls`, so it stays off the first-frame 3D path): one row per control from `hud.hintCoarse` (`hud.hintFine` with a fine pointer) split by `controlRows`, plus `hud.career.scrubHint` on L2 with touch. It stays open until toggled or the sheet closes.
 - `ResetView` is the single bottom-right button on Corners; desktops keep the three view controls.
 - The bottom band (joystick, Boost, Reset view) steps aside while a phone's Rover line with choices docks at the bottom ([Dialog box](#dialog-box)).
@@ -273,20 +274,22 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 - A soft `blip` (`audio.play("blip")`, shares the click rate limit).
 - It pauses and hides during boot, intro, a room drawer, the hologram, the pad picker, the Ask panel and any `aria-modal` dialog.
 - The modal check (`useModalOpen`) is synchronous, from the first render on, and choices never take focus from a text field or another dialog, so typing in Cmd-K is never stolen when a floor line finishes.
-- Placement (`placement.ts`), always above the bottom band's center column (point-and-go's `InteractStatus` Go chip and one-time hint, and the controls hint):
+- Placement (`placement.ts`): on fine pointers and touch tablets above the bottom band's center column (point-and-go's `InteractStatus` Go chip and one-time hint, and the controls hint); on phones at the top (owner decision 2026-10-28), so a Rover line never covers the rover, Boost or the joystick:
 
 | Device | Offset |
 |---|---|
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
-| Phones | 168 px, 12 px from both edges: a slim toast above the joystick (120 px plus the 24 px band padding and a 24 px gap) |
+| Phones, portrait | Top toast (`TOAST_PLACE`): 144 px from the top (below the minimap row: 64 px plus the 72 px minimap and a gap), 12 px from both edges |
+| Phones, landscape | Top toast: 16 px from the top, 188 px from the left (clear of the floor chip's widest name, B1 in Indonesian, and the L2 year chip) and 128 px from the right (clear of Ask, the menu and the minimap under them) |
 | Phones, a line with choices | Docked: 12 px above the bottom safe area, 12 px from both edges (`DOCK_PLACE`) |
 
 - The phone toast (`placement === "phone"`):
-  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to two rows (`line-clamp-2`) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
-  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the two rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
+  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to four rows (`line-clamp-4`; every floor line fits at 375 px, EN and ID) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
+  - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the four rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
   - choices and Skip still render (onboarding needs them).
-- The docked card (owner decision 2026-10-25, `docks(view)` in `placement.ts`): on placement `phone`, a shown line with choices (its own, or a try-it's Continue after the fallback) from any source (the tour, the B1 unlock offer) docks at the bottom in thumb reach (`DOCK_PLACE`, `data-docked="true"`), its choices stacked full width (`min-h-11`, 44 px). Lines without choices stay the slim toast.
+- The docked card (owner decision 2026-10-25, `docks(view)` in `placement.ts`): on placement `phone`, a shown line with choices (its own, or a try-it's Continue after the fallback) from any source (the tour, the B1 unlock offer) docks at the bottom in thumb reach (`DOCK_PLACE`, `data-docked="true"`), its choices stacked full width (`min-h-11`, 44 px). Lines without choices stay the top toast.
+- `e2e/phone-first.spec.ts` rides to L2, L3, L4 and RF at 390 x 844, 375 x 667 and 844 x 390 and checks the floor line's toast clears the rover's projected box and every Corners control and shows unclamped.
 - While a line docks (`Hud`: phone layout, coarse pointer, `docks`), the whole bottom band steps aside (`BottomBand` `aside`: `inert`, `data-aside="true"`, faded to `opacity-0`): the joystick, Boost, Reset view and point-and-go's status. A held joystick lets go (`setJoystick(0, 0, false)`), so the rover stops. The band comes back when the line ends.
 - The Ask teaser (`AskDock`, outside the 3D chunk) never shows while `[data-testid='dialog-box']` exists, and hides within 500 ms when one appears. In the tower it sits at `top-[var(--hq-teaser-top,116px)]`: `Hud` sets `--hq-teaser-top` on `<html>` next to `data-hq-hud` (phone 148 px, tablet 200 px, desktop 124 px below 1024 px wide and 76 px from there) and removes it on unmount.
 

@@ -55,6 +55,7 @@ stops, and nothing asks a touch visitor to press a key.
 | 3.4 | The small phone | 10 px at 390 x 844 is the gate; 375 x 667 must reach at least 9 px, reported in the PR |
 | 3.5 | Keyboard hints on touch | Split label and key: labels become plain ("Rotate left"); the key shows as a small kbd chip only on a fine pointer (CSS, no JS) and is exposed as `aria-keyshortcuts`. Hint lines made of keys get a touch wording on coarse pointers |
 | 3.6 | How the bytes are paid | The phone menu's sheet body moves into its own lazy chunk, loaded on the first menu tap like the settings panel, with its own small new cap outside the session totals (the tour chunk precedent). Only the menu button stays on the main path |
+| 3.7 | Paying for L2 (during implementation; owner approval relayed by the parent session) | The pad picker sheet moves into its own lazy chunk too, loaded when a picker first opens, with a new cap `BYTES_3D_BUDGET.picker` = measured + 614 B outside both session totals: L2's portrait type sits on the main path and the L3, L4 and RF phone sizes grow the session totals |
 
 ## 4. Design
 
@@ -72,9 +73,12 @@ needed), docs `hud-and-drawer.md` (Dialog box).
     width varies by floor name, the left inset uses its widest name (the plan measures it at 844 x 390 in EN and ID).
   - Written as two Tailwind arbitrary variants (`portrait:` and `landscape:`) on one class string; no JS and no
     resize listener.
-- The text row clamps at 3 rows (`line-clamp-3`) instead of 2; tap to expand and the `TOAST_HOLD_MS` auto-advance
-  keep their rules (a line that fits advances by itself, a clamped line waits for a tap). The floor lines fit in 3
-  rows at 375 px wide (checked by the e2e).
+- The text row clamps at 4 rows (`line-clamp-4`) instead of 2; tap to expand and the `TOAST_HOLD_MS` auto-advance
+  keep their rules (a line that fits advances by itself, a clamped line waits for a tap). Amended in implementation:
+  decision 3.2's 3 rows became 4, because the longest floor line (Indonesian L2, 98 characters) needs 4 rows at
+  375 px; the owner's intent (the whole sentence, no ellipsis) holds, checked by the e2e at all three sizes.
+- Measured insets (844 x 390): the floor chip's widest name (B1 in Indonesian) ends at 179 px, so the landscape toast
+  starts at 188 px; Ask starts about 120 px from the right edge, so it ends 128 px from the right.
 - Unchanged: the docked choice card at the bottom and its step-aside, the `raised` and `bottom` placements (tablets
   and desktops), the Ask teaser rule (it never shows while a dialog box exists, so it cannot meet the toast), the
   dialog's pause rules.
@@ -186,7 +190,7 @@ flowchart LR
 | New `menu` chunk | first menu open only | a new sanity cap `BYTES_3D_BUDGET.menu` = measured + 614 B, measured through `__hq.menu.load()` in `bytes-3d.spec.ts`, outside both session totals like the tour chunk. A new cap, not a raise; owner approved (3.6) |
 | Floor chunks L3 20 KB, L4 16 KB, RF 8 KB | the label lists and phone sizes | measured on the PR; must stay under each cap with no raise. If a floor is over, its phone sizes move into zone views instead |
 | Settings chunk | the sound hint chip | unmeasured today, on demand only |
-| Classic CSS (Lighthouse, 20,480 B) | `pointer-coarse:hidden`, the `portrait:` and `landscape:` toast utilities, `line-clamp-3` | only if these land in the Classic stylesheet; under 150 B gzip together, headroom measured in the plan |
+| Classic CSS (Lighthouse, 20,480 B) | `pointer-coarse:hidden`, the `portrait:` and `landscape:` toast utilities, `line-clamp-4` | only if these land in the Classic stylesheet; under 150 B gzip together, headroom measured in the plan |
 | Gate page HTML (82 KB; `/en` about 50 KB) | 4 new coarse strings per locale, shorter view and sound strings | under 200 B gzip net; none in `/en/quick` |
 | Draw calls, triangles, programs | none expected (same meshes, other sizes) | unchanged; the perf lane confirms per floor |
 
@@ -194,6 +198,15 @@ Estimate: additions on the main path about 0.2 to 0.4 KB gzip; the sheet body (p
 action wiring) about 0.6 to 1 KB. Expected net about -0.2 to -0.8 KB on the first frame and both session totals.
 If the measured net is above 0, the plan cuts from the additions (for example the L2 phone sizes move into a zone
 view); it never asks for a raise.
+
+Measured (implementation, against a main build on the same machine): the menu sheet alone left the first frame
+84 B under main, but the L3, L4 and RF phone sizes put the session totals 187 B over and L2 needed about 123 B more
+(no zone view reaches 10 px from the rail), so decision 3.7 added the pad picker chunk. Final: first frame full
+476,049 B and lite 459,915 B (main 476,875 B and 460,741 B, 826 B less), session totals full 542,943 B and lite
+526,809 B (main 543,570 B and 527,436 B, 627 B less); menu chunk 1,470 B (cap 2,084 B), picker chunk 1,891 B (cap
+2,505 B); floor chunks L3 14,409 B, L4 13,599 B, RF 3,426 B. Lesson: a lazy chunk that imports a module the main
+path also uses splits it out of Turbopack's hoisted scope (100 to 800 B of wrappers on the main path), so both sheets
+take such pieces as props.
 
 ## 7. Error handling and fallbacks
 
