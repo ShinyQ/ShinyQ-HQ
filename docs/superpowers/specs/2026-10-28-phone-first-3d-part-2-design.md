@@ -202,9 +202,9 @@ view); it never asks for a raise.
 Measured (implementation, against a main build on the same machine): the menu sheet alone left the first frame
 84 B under main, but the L3, L4 and RF phone sizes put the session totals 187 B over and L2 needed about 123 B more
 (no zone view reaches 10 px from the rail), so decision 3.7 added the pad picker chunk. Final: first frame full
-476,049 B and lite 459,915 B (main 476,875 B and 460,741 B, 826 B less), session totals full 542,943 B and lite
-526,809 B (main 543,570 B and 527,436 B, 627 B less); menu chunk 1,470 B (cap 2,084 B), picker chunk 1,891 B (cap
-2,505 B); floor chunks L3 14,409 B, L4 13,599 B, RF 3,426 B. Lesson: a lazy chunk that imports a module the main
+476,048 B and lite 459,914 B (main 476,875 B and 460,741 B, 827 B less), session totals full 542,952 B and lite
+526,818 B (main 543,570 B and 527,436 B, 618 B less); menu chunk 1,470 B (cap 2,084 B), picker chunk 1,891 B (cap
+2,505 B); floor chunks L3 14,409 B, L4 13,609 B, RF 3,426 B. Lesson: a lazy chunk that imports a module the main
 path also uses splits it out of Turbopack's hoisted scope (100 to 800 B of wrappers on the main path), so both sheets
 take such pieces as props.
 
