@@ -85,6 +85,17 @@ describe("touch boost copy", () => {
     expect(id.hud.hintCoarse).toMatch(/Turbo: tombol petir atau ketuk dua kali joystick/);
   });
 
+  it("teaches the phone's floating stick (spec 2026-10-29): the lower-left drag and the Boost button, never a joystick", () => {
+    for (const [messages, zone] of [[en, /lower left/], [id, /kiri bawah/]] as const) {
+      expect(messages.hud.hintPhone).toMatch(zone);
+      expect(messages.dialog.onboarding.movedPhone).toMatch(zone);
+      expect(messages.hud.hintPhone).not.toMatch(/joystick/i);
+      expect(messages.dialog.onboarding.movedPhone).not.toMatch(/joystick/i);
+    }
+    expect(en.dialog.onboarding.movedPhone).toMatch(/Boost button/);
+    expect(id.dialog.onboarding.movedPhone).toMatch(/tombol Turbo/);
+  });
+
   it("explains that the next tap turns turbo off, not that it stops driving", () => {
     expect(en.dialog.onboarding.moveCoarse).toMatch(/tap again to turn boost off/i);
     expect(id.dialog.onboarding.moveCoarse).toMatch(/menyalakan atau mematikan turbo/i);
