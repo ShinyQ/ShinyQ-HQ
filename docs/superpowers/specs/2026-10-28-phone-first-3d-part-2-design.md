@@ -208,6 +208,15 @@ Measured (implementation, against a main build on the same machine): the menu sh
 path also uses splits it out of Turbopack's hoisted scope (100 to 800 B of wrappers on the main path), so both sheets
 take such pieces as props.
 
+Classic CSS (amended after CI): the first push added ten utilities (the `portrait:` and `landscape:` toast offsets,
+`line-clamp-4`, `pointer-coarse:` and `pointer-fine:` key hiding, two spacing values) to the one global stylesheet, and
+Lighthouse measured 20,569 B against the 20,480 B cap. Every utility under `src/` ships in that stylesheet, so the
+toast now places itself with an inline style from `device.camera`, the four-row clamp is an inline `WebkitLineClamp` on
+the existing `line-clamp-2`, the key caps and key-only footers render behind `device.coarse`, and the spacing reuses
+existing utilities. The stylesheet ends 18 B gzip under main's (19,995 B against 20,013 B), and sections 4.1 and 4.3's
+utility names below are superseded by this. Bytes after the change: first frame full 476,091 B and lite 459,957 B
+(784 B under main), session totals full 543,016 B and lite 526,882 B (581 B under main), menu chunk 1,475 B.
+
 ## 7. Error handling and fallbacks
 
 - No WebGL, Save-Data, bots, `?tier=static`: unchanged; the Classic page renders and the HUD is not mounted.

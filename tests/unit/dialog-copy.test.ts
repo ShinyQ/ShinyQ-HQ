@@ -3,7 +3,7 @@ import { createTranslator } from "next-intl";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
 import { collectStrings } from "@/content/safety";
-import { dialogPlacement, DIALOG_PLACE, docks, DOCK_PLACE, TOAST_PLACE } from "@/hud/dialog/placement";
+import { dialogPlacement, DIALOG_PLACE, docks, DOCK_PLACE, TOAST_ROWS, toastPlace } from "@/hud/dialog/placement";
 
 /** Three rows of the box on a 390 px phone (about 37 mono characters per row). */
 const MAX_LINE = 110;
@@ -109,12 +109,9 @@ describe("dialog placement", () => {
   });
 
   it("puts a phone line without choices at the top: below the minimap row in portrait, between the floor chip and the buttons in landscape", () => {
-    expect(TOAST_PLACE).toContain("left-3 right-3");
-    expect(TOAST_PLACE).toContain("portrait:top-[calc(144px+env(safe-area-inset-top))]");
-    expect(TOAST_PLACE).toContain("landscape:top-[calc(16px+env(safe-area-inset-top))]");
-    expect(TOAST_PLACE).toMatch(/landscape:left-\[\d+px\]/);
-    expect(TOAST_PLACE).toMatch(/landscape:right-\[\d+px\]/);
-    expect(TOAST_PLACE).not.toContain("bottom-");
+    expect(toastPlace(false)).toEqual({ top: "calc(144px + env(safe-area-inset-top))", left: 12, right: 12 });
+    expect(toastPlace(true)).toEqual({ top: "calc(16px + env(safe-area-inset-top))", left: 188, right: 128 });
+    expect(TOAST_ROWS).toBe(4);
   });
 
   it("docks a phone line that asks for a choice, at the bottom in thumb reach", () => {

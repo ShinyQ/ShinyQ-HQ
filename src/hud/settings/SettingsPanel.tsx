@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useReducer, useRef, useSyncExternalStore } from "react";
 import { AccentDot } from "@/components/AccentDot";
+import { useHQStore } from "@/store/useHQStore";
 import { MenuControls } from "../menu/MenuControls";
 import { SETTINGS } from "./defs";
 import { settingsByGroup, type SettingControl, type SettingDef } from "./registry";
@@ -15,6 +16,7 @@ const ROW = "flex min-h-14 items-center gap-4 px-4 py-2.5 transition-colors hove
 /** Label and note; the label names the control (`htmlFor`), so a tap on the text works the control too. */
 function RowText({ def, labelId, hintId, htmlFor }: { def: SettingDef; labelId: string; hintId: string; htmlFor: string }) {
   const t = useTranslations("hud.settings");
+  const coarse = useHQStore((s) => s.device.coarse);
   return (
     <div className="min-w-0 flex-1">
       <label id={labelId} htmlFor={htmlFor} className="block cursor-pointer text-sm leading-5 text-ink">
@@ -23,8 +25,8 @@ function RowText({ def, labelId, hintId, htmlFor }: { def: SettingDef; labelId: 
       {def.hintKey && (
         <p id={hintId} className="mt-0.5 text-xs leading-4 text-ink-3">
           {t(def.hintKey)}
-          {def.hintKbd && (
-            <kbd aria-hidden="true" className="ml-1.5 label rounded border border-glass-border px-1.5 py-0.5 text-ink-3 pointer-coarse:hidden">
+          {def.hintKbd && !coarse && (
+            <kbd aria-hidden="true" className="ml-2 label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">
               {def.hintKbd}
             </kbd>
           )}
@@ -63,6 +65,7 @@ function ToggleRow({ def, control }: RowProps<"toggle">) {
 
 function ChoiceRow({ def, control }: RowProps<"choice">) {
   const t = useTranslations("hud.settings");
+  const coarse = useHQStore((s) => s.device.coarse);
   const value = useSyncExternalStore(def.subscribe, control.get, control.get);
   const name = useId();
   const hint = useId();
@@ -77,8 +80,8 @@ function ChoiceRow({ def, control }: RowProps<"choice">) {
       {def.hintKey && (
         <p id={hint} className="clear-left pt-0.5 text-xs leading-4 text-ink-3">
           {t(def.hintKey)}
-          {def.hintKbd && (
-            <kbd aria-hidden="true" className="ml-1.5 label rounded border border-glass-border px-1.5 py-0.5 text-ink-3 pointer-coarse:hidden">
+          {def.hintKbd && !coarse && (
+            <kbd aria-hidden="true" className="ml-2 label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">
               {def.hintKbd}
             </kbd>
           )}

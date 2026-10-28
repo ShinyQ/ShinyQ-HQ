@@ -280,12 +280,12 @@ Per-device composition is `hudLayout(viewport, coarse)` in `src/hud/layout.ts` (
 |---|---|
 | Fine pointers | 128 px above the bottom |
 | Touch tablets | 160 px |
-| Phones, portrait | Top toast (`TOAST_PLACE`): 144 px from the top (below the minimap row: 64 px plus the 72 px minimap and a gap), 12 px from both edges |
+| Phones, portrait | Top toast (`toastPlace(landscape)`, an inline style: no new utility in the Classic stylesheet; landscape is a phone whose `device.camera` is not `mobile`): 144 px from the top (below the minimap row: 64 px plus the 72 px minimap and a gap), 12 px from both edges |
 | Phones, landscape | Top toast: 16 px from the top, 188 px from the left (clear of the floor chip's widest name, B1 in Indonesian, and the L2 year chip) and 128 px from the right (clear of Ask, the menu and the minimap under them) |
 | Phones, a line with choices | Docked: 12 px above the bottom safe area, 12 px from both edges (`DOCK_PLACE`) |
 
 - The phone toast (`placement === "phone"`):
-  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to four rows (`line-clamp-4`; every floor line fits at 375 px, EN and ID) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
+  - compact (`p-2.5 text-[13px]`, 32 px portrait), the text clamped to four rows (`line-clamp-2` with an inline `WebkitLineClamp` of `TOAST_ROWS` 4; every floor line fits at 375 px, EN and ID) until a tap expands it (`data-expanded`); a tap on a short or expanded line advances as before;
   - a finished line with no choices and no try-it task advances by itself after `TOAST_HOLD_MS` (4500 ms, counted from the end of typing, also under reduced motion) only when it fits in the four rows: a clamped line (`scrollHeight > clientHeight` on the text row) waits for a tap (expand, then advance), and an expanded line never moves on by itself;
   - choices and Skip still render (onboarding needs them).
 - The docked card (owner decision 2026-10-25, `docks(view)` in `placement.ts`): on placement `phone`, a shown line with choices (its own, or a try-it's Continue after the fallback) from any source (the tour, the B1 unlock offer) docks at the bottom in thumb reach (`DOCK_PLACE`, `data-docked="true"`), its choices stacked full width (`min-h-11`, 44 px). Lines without choices stay the top toast.

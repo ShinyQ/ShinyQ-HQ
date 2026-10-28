@@ -67,12 +67,15 @@ function sources(dir: string, out: string[] = []): string[] {
 }
 
 describe("key caps", () => {
-  it("every visible key cap in the HUD hides on a coarse pointer and is hidden from screen readers", () => {
-    const caps = sources("src/hud").flatMap((file) => [...readFileSync(file, "utf8").matchAll(/<kbd\b[^>]*>/g)].map((m) => [file, m[0]] as const));
-    expect(caps.length).toBeGreaterThan(0);
-    for (const [file, tag] of caps) {
-      expect(tag, file).toContain("pointer-coarse:hidden");
-      expect(tag, file).toContain('aria-hidden="true"');
+  it("every key cap in the HUD renders only for a fine pointer and is hidden from screen readers", () => {
+    const files = sources("src/hud").filter((file) => /<kbd\b/.test(readFileSync(file, "utf8")));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      // Rendered behind `!coarse` (device.coarse from the store): no `pointer-*` utility, so the Classic stylesheet stays put.
+      expect(text, file).toMatch(/useHQStore\(\(s\) => s\.device\.coarse\)/);
+      for (const [cap] of text.matchAll(/<kbd\b[^>]*>/g)) expect(cap, file).toContain('aria-hidden="true"');
+      for (const m of text.matchAll(/<kbd\b/g)) expect(text.slice(Math.max(0, m.index - 80), m.index), file).toMatch(/!coarse/);
     }
   });
 });

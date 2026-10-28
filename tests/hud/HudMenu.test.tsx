@@ -158,7 +158,8 @@ describe("HudMenu", () => {
     expect(openTerminal).toHaveBeenCalledTimes(1);
   });
 
-  it("names the rotate and map keys for keyboards only: aria-keyshortcuts and a key cap hidden on coarse pointers", async () => {
+  it("names the rotate and map keys for keyboards only: aria-keyshortcuts, and a key cap only with a fine pointer", async () => {
+    const device = getHQStore().getState().device;
     const { sheet } = await openMenu();
     for (const [name, key] of [[/^Rotate left/, "Q"], [/^Rotate right/, "E"], ["Map", "N"]] as const) {
       const action = within(sheet).getByRole("button", { name });
@@ -166,9 +167,12 @@ describe("HudMenu", () => {
       const cap = action.querySelector("kbd");
       expect(cap).toHaveTextContent(key);
       expect(cap).toHaveAttribute("aria-hidden", "true");
-      expect(cap?.className).toContain("pointer-coarse:hidden");
     }
     expect(within(sheet).getByRole("button", { name: /^Rotate left/ })).toHaveAccessibleName(en.hud.view.rotateLeft);
+    act(() => getHQStore().setState({ device: { ...device, coarse: true } }));
+    expect(sheet.querySelector("kbd")).toBeNull();
+    expect(within(sheet).getByRole("button", { name: /^Rotate left/ })).toHaveAttribute("aria-keyshortcuts", "Q");
+    act(() => getHQStore().setState({ device }));
   });
 
   it("rotate emits the view controls' orbit intents and keeps the menu open", async () => {

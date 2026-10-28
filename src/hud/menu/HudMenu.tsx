@@ -98,7 +98,7 @@ export function HudMenu({ data, layout, onExit }: { data: ExperienceData; layout
         <Modal labelledBy={titleId} onClose={close} side testId="menu-sheet">
           <SheetHeader id={titleId} title={t("menuTitle")} onClose={close} />
           <div className="flex flex-col gap-5 overflow-y-auto px-2 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-            <Suspense fallback={<div aria-hidden="true" data-testid="menu-loading" className="min-h-[22rem]" />}>
+            <Suspense fallback={<div aria-hidden="true" data-testid="menu-loading" className="min-h-[36rem]" />}>
               <LazyMenuSheet
                 data={data}
                 layout={layout}

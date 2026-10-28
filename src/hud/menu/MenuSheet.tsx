@@ -77,6 +77,8 @@ export type MenuSheetProps = {
  */
 export function MenuSheet({ data, layout, onExit, close, controls, onControls, photo, pageViewIcon, floorTone, rotateIcons, onRotate, settings }: MenuSheetProps) {
   const t = useTranslations("hud");
+  // Touch screens never see keyboard keys (owner decision 2026-10-28); the actions still name them in `aria-keyshortcuts`.
+  const coarse = useHQStore((s) => s.device.coarse);
   // `close` runs first, so the overlay an action opens takes focus and returns it to the menu button;
   // rotating keeps the menu open.
   const actions: { key: string; label: string; icon: ReactNode; run: () => void; close: boolean; kbd?: string; expanded?: boolean }[] = [
@@ -133,8 +135,8 @@ export function MenuSheet({ data, layout, onExit, close, controls, onControls, p
           >
             {a.icon}
             {a.label}
-            {a.kbd && (
-              <kbd aria-hidden="true" className="ml-auto label rounded border border-glass-border px-1.5 py-0.5 text-ink-3 pointer-coarse:hidden">
+            {a.kbd && !coarse && (
+              <kbd aria-hidden="true" className="ml-auto label rounded border border-glass-border px-1.5 py-0.5 text-ink-3">
                 {a.kbd}
               </kbd>
             )}

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
+import { useHQStore } from "@/store/useHQStore";
 import { openPalette, openTerminal } from "./events";
 import { preloadPalette, preloadTerminal } from "./lazy-hud";
 
@@ -27,6 +28,7 @@ export function HudLaunchers({
   parts = ["roverMenu", "search"],
 }: { buttonClassName?: string; labelClassName?: string; compactShortcut?: boolean; parts?: readonly ("roverMenu" | "search")[] } = {}) {
   const t = useTranslations("hud.launcher");
+  const coarse = useHQStore((s) => s.device.coarse);
   const shortcut = useSyncExternalStore(noop, () => (isApple() ? "⌘K" : "Ctrl K"), () => "Ctrl K");
   const chip = compactShortcut && shortcut !== "⌘K" ? ` ${CTRL_CHIP_COMPACT}` : "";
   const button =
@@ -57,9 +59,11 @@ export function HudLaunchers({
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
-          <kbd aria-hidden="true" className={`label hidden rounded border border-glass-border px-1.5 py-0.5 text-ink-3 sm:inline pointer-coarse:hidden${chip}`}>
-            {shortcut}
-          </kbd>
+          {!coarse && (
+            <kbd aria-hidden="true" className={`label hidden rounded border border-glass-border px-1.5 py-0.5 text-ink-3 sm:inline${chip}`}>
+              {shortcut}
+            </kbd>
+          )}
         </button>
       )}
     </div>

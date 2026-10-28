@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { getHQStore } from "@/store/useHQStore";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
 import type { SayResult } from "@/hud/dialog/engine";
@@ -143,14 +144,23 @@ describe("DialogBox", () => {
   });
 
   it("renders a compact four-row toast at the top on phones, clear of the joystick and Boost", () => {
+    const device = getHQStore().getState().device;
+    getHQStore().setState({ device: { ...device, camera: "mobile" } });
     renderBox("phone");
     act(() => void say("Hi"));
     const box = screen.getByTestId("dialog-box");
-    expect(box.className).toContain("portrait:top-[calc(144px");
-    expect(box.className).toContain("right-3");
+    expect(box.style.top).toBe("calc(144px + env(safe-area-inset-top))");
+    expect(box.style.right).toBe("12px");
+    // A landscape phone (camera class tablet): between the floor chip and the top-right buttons.
+    act(() => getHQStore().setState({ device: { ...device, camera: "tablet" } }));
+    expect(box.style.top).toBe("calc(16px + env(safe-area-inset-top))");
+    expect(box.style.left).toBe("188px");
+    getHQStore().setState({ device });
     expect(box.className).not.toContain("bottom-");
     expect(box).toHaveAttribute("data-expanded", "false");
-    expect(box.querySelector(".line-clamp-4")).not.toBeNull();
+    const row = box.querySelector<HTMLElement>(".line-clamp-2");
+    expect(row).not.toBeNull();
+    expect(row?.getAttribute("style")).toContain("line-clamp: 4");
   });
 
   it("expands a clamped toast on the first tap and advances on the second", async () => {
@@ -164,7 +174,7 @@ describe("DialogBox", () => {
     const box = screen.getByTestId("dialog-box");
     act(() => void fireEvent.click(box));
     expect(box).toHaveAttribute("data-expanded", "true");
-    expect(box.querySelector(".line-clamp-4")).toBeNull();
+    expect(box.querySelector(".line-clamp-2")).toBeNull();
     expect(box).toBeInTheDocument();
     act(() => void fireEvent.click(box));
     await expect(result).resolves.toMatchObject({ status: "done" });
