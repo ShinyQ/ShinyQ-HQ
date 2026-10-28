@@ -49,7 +49,8 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 2. Review what changed: `git diff content/study-guides.json public/study-guides`. Only the machine fields and the
    cover should move; open the cover to check it.
 3. Upload: `bun scripts/study-guides.ts upload` (every guide) or `bun scripts/study-guides.ts upload gh-600`. It first
-   runs `check` (each prepared file must match its entry's `bytes` and `version`), then puts
+   runs `check` on the same guides (each prepared file must match its entry's `bytes` and `version`; only the guides
+   named need a prepared file), then puts
    `hq-study-guides/<slug>/<version>.pdf` with `Content-Type: application/pdf` and an immutable `Cache-Control`.
    Re-uploading an existing version is harmless (same key, same bytes).
 4. Commit `content/study-guides.json` and the covers (never a PDF), for example
@@ -57,7 +58,7 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 5. Deploy: the merge to `main` deploys as usual ([`deploy.md`](deploy.md)). Upload before the deploy that carries
    the new version: the Function answers 404 for a version whose object is not in the bucket yet.
 
-`bun scripts/study-guides.ts check` on its own confirms that the prepared files match the JSON.
+`bun scripts/study-guides.ts check [<slug> ...]` on its own confirms that the prepared files match the JSON.
 
 ## Replace a guide
 
@@ -78,7 +79,8 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 ## Add a guide
 
 1. Add the certification to `site-content.json` first if it is not there (the guide's `certId` must match a
-   `certifications[].id`; that is how the certification card gets "Read study guide").
+   `certifications[].id`; that is how the certification card gets "Read study guide"). An exam not passed yet may be
+   listed as `in-progress` with the owner's approval ([content.md](content.md#certifications)).
 2. Add the entry to `content/study-guides.json` with the human fields: `slug` (lowercase, 2 to 40 characters),
    `certId`, `code` (the exam code, or `null`), `spine` (at most 14 characters, the label on the book's spine in the
    L4 Study Vault), `issuer`, `title` and `summary` (`{ en, id }`, titles in Title Case with no first person),
@@ -86,9 +88,10 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
    `[min, max]` percent and a `{ en, id }` label). Fill the machine fields with placeholders that pass the schema
    (`"pages": 1`, `"bytes": 1`, `"version": "000000000000"`, `"cover": "/study-guides/<slug>.webp"`).
 3. Run `prepare`, review, `upload`, then commit as above. `tests/content/study-guides.test.ts` pins the slugs in
-   file order (`SLUGS`) and the four `CertView.guide` links: update both in the same PR. The L4 Study Vault adds a
-   book per guide from the real content, so `tests/unit/library-vault.test.ts` (space rules, every book framed) and
-   `tests/unit/library-label-sweep.test.ts` must pass with the new book.
+   file order (`SLUGS`), which also drive the `CertView.guide` links: update it in the same PR. The L4 Study Vault adds
+   a book per guide from the real content, so `tests/unit/library-vault.test.ts` (space rules, every book framed) and
+   `tests/unit/library-label-sweep.test.ts` must pass with the new book. Five books 3 u apart fill the vault plaza
+   ([floor-l4-library.md](agents/floor-l4-library.md#study-vault)); a sixth needs a layout change, not a constant tweak.
 
 ## Verify
 

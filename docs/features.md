@@ -111,6 +111,7 @@ What every part of ShinyQ HQ does, floor by floor. The [README](../README.md) is
 | B1 material pass | 2026-10-25: gunmetal panels with lit seams on the B1 bay walls, bay floors and deck, vent grilles on the bay side walls, the reactor plinth cladding; the B1 cap reset to measured + 0.6 KB (17.1 KB) | In review |
 | L4 reader tracks | 2026-10-25: owner decision: the L4 timeline of single-post stations, the archive board and the year posts are replaced by one bookshelf bay per reader track (4 today, 1 to 6 in content), each led by its best post face-out with the others as spines; a pulled spine shows its title, a spine click drives to the bay and opens the post, a bay door opens the track drawer, one hint per bay; bay camera views; all posts in-world (tested to 120) | In review |
 | Phone-first 3D | 2026-10-26: owner decision: on a portrait phone the boot card docks at the bottom with one rolling log line and Rover's close-up above it, L1 opens on a phone landing view (Rover, the name hologram and the stats ring, no sky) at every session start, and a 6-step phone tour docks its choice lines at the bottom while the joystick, Boost and Reset view step aside; the tour script loads as its own chunk, no cap rises | In review |
+| GH-300 study guide | 2026-10-29: owner decision: the GH-300 (GitHub Copilot) study guide joins the Study guides shelf, the certification card and the L4 Study Vault (a fifth book, right after GH-600); GH-300 itself is listed as in progress (planned November 2026, no credential yet) and stays out of the Time Travel certification tally until earned | Done |
 
 ## Controls and first visit
 
@@ -262,7 +263,7 @@ Route `/en`. The stats ring, the skills wall and the certifications wall surroun
 - **Agent Office wing**: south of the plaza, reached by its own lead road (see [Agent Office](#agent-office)); the Highlights Hall's lead road starts 6 u east of it.
 
 - **Skills wall**: every skill group (the seven CV groups plus Data science and ML), 4 across by 2 down on a 40 u wall under one storey (every item shown, long groups in two tidy sub-columns); its drawer and the Page View list the same groups.
-- **Certifications wall**: a curved holo-wall with issuer tabs and paging.
+- **Certifications wall**: a curved holo-wall with issuer tabs and paging. An in-progress certification (GH-300 today) shows in amber with "In progress" instead of its month.
 - **Rover menu kiosk**: the session starts with the rover in front of it. The kiosk stands on a straight spoke from the lane ring and faces the hologram. It is one straight unit (body, stand and screen turned together to face the hologram, its lane spoke one straight line into its front) whose lines never wrap.
 - The camera looks past the kiosk at the hologram's name and at the Visitor Observatory in the south-west corner.
 - **Phone landing view**: on a portrait screen (phones and portrait tablets) every session starts on a higher, wider view that frames Rover, the full name over the hologram and the stats ring between the top bar and the controls, with no empty sky; after the intro and for a returning visitor alike. The first drive away eases back to the view behind Rover.
@@ -366,7 +367,7 @@ Route `/en/library`.
 - **Signs**: each bay carries its track name and its lead's title, the desks one section sign each, and only the pulled spine shows its title. Labels are placed on screen every frame by priority (a picked topic's titles, the pulled spine, track names, lead titles, sections), so none covers another, the rover or the end plaza's signs.
 - **Sign follow-ups (open)**: add hysteresis so two labels at almost the same distance from the rover cannot swap places (today the fade hides the swap), and skip the placement pass when the camera, the rover and the picked topic are unchanged (`useLibrarySignPlacement`).
 - **Read the writing** (Rover menu or Cmd-K) rides to L4 and opens the list of posts.
-- **Study Vault**: a road from the end plaza's ring road leads south-east to a small round plaza where the four certification study guides stand as tall holo books on an arc, each on a low plinth over a dashed floor track, in its issuer's tone (Microsoft cyan, GitHub violet, Google amber) with its exam code on the spine and a STUDY VAULT sign above.
+- **Study Vault**: a road from the end plaza's ring road leads south-east to a small round plaza where the certification study guides (five today) stand as tall holo books on an arc, each on a low plinth over a dashed floor track, in its issuer's tone (Microsoft cyan, GitHub violet, Google amber) with its exam code on the spine and a STUDY VAULT sign above.
   - Covers slide out and swing open as the rover comes near (half open from the vault stop, fully open next to a book or when you point at it); reduced motion snaps them, and the lite tier drops the light pools.
   - Click a book (tap, then Go, on touch screens) to drive to the vault and read that guide in the same in-site reader as the Classic Writing page ([Classic site](#classic-site)); one "!" hint bubble introduces the vault.
   - The spine signs show only near the vault and never cover another label.
