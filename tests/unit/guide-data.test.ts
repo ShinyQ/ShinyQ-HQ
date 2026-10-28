@@ -3,6 +3,7 @@ import { generateStaticParams, GET } from "@/app/data/[...path]/route";
 import { guidesDataUrl, GUIDES_FILE, type GuidesData } from "@/components/guides/data-path";
 import en from "../../messages/en.json";
 import id from "../../messages/id.json";
+import studyGuides from "../../content/study-guides.json";
 
 async function get(path: string[]) {
   return GET(new Request(`https://example.test/data/${path.join("/")}`), { params: Promise.resolve({ path }) } as never);
@@ -21,8 +22,8 @@ describe("/data/guides/{locale}.json", () => {
       const response = await get(["guides", GUIDES_FILE(locale)]);
       expect(response.status).toBe(200);
       const data = (await response.json()) as GuidesData;
-      expect(data.guides).toHaveLength(4);
-      expect(new Set(data.guides.map((g) => g.slug)).size).toBe(4);
+      expect(data.guides.map((g) => g.slug)).toEqual(studyGuides.guides.map((g) => g.slug));
+      expect(new Set(data.guides.map((g) => g.slug)).size).toBe(studyGuides.guides.length);
       // The nested provider replaces the layout's messages, so the shared reader's strings ride along.
       expect(Object.keys(data.messages)).toEqual(["guides", "reader"]);
       const strings = data.messages.guides as Record<string, string>;

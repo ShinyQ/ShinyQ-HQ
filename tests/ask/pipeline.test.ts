@@ -206,10 +206,16 @@ describe("golden set (mocked model)", () => {
     expect(scoreGolden("Kurniadi mencatat 425 ms dalam drill PoC, dua kali lebih cepat daripada ACS yang setara.", id).pass).toBe(false);
   });
 
-  it("has 104 unique items with a 101 pass threshold", () => {
-    expect(golden.items).toHaveLength(104);
-    expect(new Set(golden.items.map((i) => i.id)).size).toBe(104);
-    expect(golden.passThreshold).toBe(101);
+  it("has 105 unique items with a 102 pass threshold", () => {
+    expect(golden.items).toHaveLength(105);
+    expect(new Set(golden.items.map((i) => i.id)).size).toBe(105);
+    expect(golden.passThreshold).toBe(102);
+  });
+
+  it("scores the in-progress GH-300 as not earned", () => {
+    const gh300 = golden.items.find((i) => i.id === "q105") as GoldenItem;
+    expect(scoreGolden("Not yet: Kurniadi's GH-300 (GitHub Copilot) certification is in progress, planned for 2026-11.", gh300).pass).toBe(true);
+    expect(scoreGolden("Yes, Kurniadi has passed GH-300 and has earned the GitHub Copilot certification.", gh300).pass).toBe(false);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {

@@ -31,8 +31,12 @@ const ORB_LEVEL = { on: 2.2, off: 0.35, idle: 1 } as const;
 const HALO = { scale: 2.4, level: 0.3 } as const;
 const PEDESTAL = { radius: 1.25, color: "#67e8f9" } as const;
 const MONUMENT_COLOR = "#fbbf24";
-/** Study Vault spines: from the book's center to just in front of its spine face (u); their middle stands 3.1 u up, 8 characters a line. */
+/**
+ * Study Vault spines: from the book's center to just in front of its spine face (u); their middle stands 3.1 u up,
+ * every other one `SPINE_STAGGER` higher (the arc's outer neighbors close up on screen), 8 characters a line.
+ */
 const SPINE_AHEAD = NEWSROOM.end.vault.book.d / 2 + 0.6;
+const SPINE_STAGGER = 0.5;
 /** The "Study Vault" sign: its height (u) over the middle of the arc and how far behind the books. */
 const VAULT_TITLE = { y: 5.9, behind: 1.2 };
 /** The pedestal column as a placement obstacle: no topic label shows over it. */
@@ -139,11 +143,11 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
   const vault = end.vault;
   if (vault) {
     const { books, stop } = vault;
-    for (const book of books) {
+    for (const [i, book] of books.entries()) {
       signs.push({
         text: wrapSign(book.spine, 8),
         x: book.at.x + book.facing.x * SPINE_AHEAD - end.center.x,
-        y: 3.1,
+        y: 3.1 + (i % 2) * SPINE_STAGGER,
         z: book.at.z + book.facing.z * SPINE_AHEAD - end.center.z,
         color: issuerTone(book.issuer),
         fontSize: 0.36,

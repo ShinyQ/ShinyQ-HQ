@@ -82,10 +82,10 @@ describe.each([
   const net = L4.road!;
   const grid = buildNavGrid(L4, ROVER.radius);
 
-  it("stands the guides as four books in file order, with their spine, issuer and code", () => {
+  it("stands every guide as a book in file order, with their spine, issuer and code", () => {
     expect(vault).not.toBeNull();
     const guides = guideViews("en");
-    expect(vault.books).toHaveLength(4);
+    expect(vault.books).toHaveLength(guides.length);
     expect(vault.books.map((b) => b.slug)).toEqual(guides.map((g) => g.slug));
     for (const [i, b] of vault.books.entries()) expect({ spine: b.spine, issuer: b.issuer, code: b.code }).toEqual({ spine: guides[i].spine, issuer: guides[i].issuer, code: guides[i].code });
   });
@@ -174,8 +174,8 @@ describe.each([
     });
     expect(L4.obstacles).toContainEqual(vault.shelf);
     for (const r of rects) expect(L4.obstacles).not.toContainEqual(r);
-    // A thin strip on the plaza's east side, clear of the stop by more than the rover.
-    expect(vault.shelf.maxX - vault.shelf.minX).toBeLessThan(4);
+    // A thin strip on the plaza's east side (five books curve it to about 4.8 u), clear of the stop by more than the rover.
+    expect(vault.shelf.maxX - vault.shelf.minX).toBeLessThan(5);
     expect(vault.shelf.minX - vault.stop.x).toBeGreaterThan(ROVER.radius + 3);
   });
 
@@ -252,7 +252,7 @@ describe("L4 Study Vault camera (real content)", () => {
   const vault = buildLibraryLayout(input).end!.vault!;
   const zone = zoneAt("L4", vault.stop, L4.viewZones)!;
   for (const [w, h] of FRAME_SIZES) {
-    it(`frames all four books whole with the rover on the stop at ${w}x${h}`, () => {
+    it(`frames every book whole with the rover on the stop at ${w}x${h}`, () => {
       const settled = settleFollow(L4, zone, vault.stop, w, h);
       // The camera looks from the ring side toward the books.
       const { target, position, rover } = settled;

@@ -48,7 +48,14 @@ describe("time travel derivation", () => {
     }
     const last = stops.at(-1)!;
     expect(last.tally.projects.total).toBe(real.floors.labs.pods.length + real.sideProjects.length);
-    expect(last.tally.certs.total).toBe(real.certifications.length);
+    expect(last.tally.certs.total).toBe(real.certifications.filter((c) => c.status !== "in-progress").length);
+  });
+
+  it("leaves an in-progress certification out of the tally", () => {
+    const base = buildTimeTravel(real).at(-1)!.tally.certs.total;
+    const planned = { id: "planned-cert", name: "Planned Cert", issuer: "GitHub", issued: "2026-01", status: "in-progress" as const };
+    const withPlanned = { ...real, certifications: [...real.certifications, planned] };
+    expect(buildTimeTravel(withPlanned).at(-1)!.tally.certs.total).toBe(base);
   });
 
   it("scales building heights by the square root, the largest at 1", () => {
