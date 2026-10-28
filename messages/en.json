@@ -1005,7 +1005,8 @@
       "closingShort": "That's the basics! Replay the full tutorial from Settings anytime.",
       "pointGoPhone": "Tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
       "movedPhone": "Nice driving! Drag on the lower left to steer yourself, and tap the Boost button to speed up.",
-      "floorChip": "Tap the floor chip up here to ride the elevator to another floor."
+      "floorChip": "Tap the floor chip up here to ride the elevator to another floor.",
+      "tilt": "Tip: turn your screen sideways for a wider view of the tower."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",

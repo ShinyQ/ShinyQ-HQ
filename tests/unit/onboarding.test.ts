@@ -8,6 +8,8 @@ import {
   onboardingCopy,
   ONBOARDING_ID,
   runOnboarding,
+  TILT_ID,
+  type TiltDeps,
   TRY_IT_MS,
   waitForRoverMove,
   type OnboardingCopy,
@@ -36,6 +38,7 @@ const copy: OnboardingCopy = {
   pointGoPhone: "pointGoPhone",
   movedPhone: "movedPhone",
   floorChip: "floorChip",
+  tilt: "tilt",
 };
 
 /** Records every line Rover says; answers a request from the first line whose key has an answer. */
@@ -64,6 +67,7 @@ function deps(over: Partial<OnboardingDeps> = {}): OnboardingDeps {
     variant: "full",
     waitForMove: () => Promise.resolve(),
     askAi: () => true,
+    tilt: null,
     ...over,
   };
 }
@@ -168,6 +172,72 @@ describe("runOnboarding", () => {
     const fake = fakeSay();
     await runOnboarding(deps({ say: fake.say, askAi: () => false }));
     expect(fake.keys()).not.toContain("ask-ai");
+  });
+});
+
+describe("the tilt hint (spec 2026-10-29)", () => {
+  function fakeTilt(due = true) {
+    let turn = () => {};
+    const tilt: TiltDeps & { seenCount: number; cancelled: string[] } = {
+      seenCount: 0,
+      cancelled: [],
+      due: () => due,
+      seen: () => void tilt.seenCount++,
+      rotated: (signal) => new Promise<void>((resolve) => {
+        turn = resolve;
+        signal.addEventListener("abort", () => resolve(), { once: true });
+      }),
+      cancel: (id) => void tilt.cancelled.push(id),
+    };
+    return { tilt, turn: () => turn() };
+  }
+
+  it("follows the closing line once on a portrait touch screen, as its own toast with no choices, phones and tablets alike", async () => {
+    for (const phone of [true, false]) {
+      const fake = fakeSay({ welcome: { choice: "start" } });
+      const { tilt } = fakeTilt();
+      expect(await runOnboarding(deps({ say: fake.say, coarse: true, phone, tilt }))).toBe("done");
+      expect(fake.keys().slice(-2)).toEqual(["closing", "tilt"]);
+      const last = fake.said.at(-1)!;
+      expect(last.options).toEqual({ id: TILT_ID });
+      expect(last.lines[0]).toEqual({ key: "tilt", text: "tilt" });
+      expect(tilt.seenCount).toBe(1);
+      expect(tilt.cancelled).toEqual([]);
+    }
+  });
+
+  it("is skipped when not due (a landscape screen, a fine pointer, already had), or when the tour is skipped or cancelled", async () => {
+    const quiet = fakeSay({ welcome: { choice: "start" } });
+    const { tilt } = fakeTilt(false);
+    await runOnboarding(deps({ say: quiet.say, coarse: true, tilt }));
+    expect(quiet.keys()).not.toContain("tilt");
+    expect(tilt.seenCount).toBe(0);
+    for (const answer of [{ welcome: { choice: "skip" } }, { closing: { status: "cancelled" as const } }]) {
+      const fake = fakeSay({ welcome: { choice: "start" }, ...answer });
+      const due = fakeTilt();
+      await runOnboarding(deps({ say: fake.say, coarse: true, tilt: due.tilt }));
+      expect(fake.keys()).not.toContain("tilt");
+    }
+  });
+
+  it("ends the line when the screen turns", async () => {
+    let release: (r: SayResult) => void = () => {};
+    const said: string[] = [];
+    const say = vi.fn((input: SayInput, options?: SayOptions): Promise<SayResult> => {
+      const lines = linesOf(input);
+      said.push(...lines.map((l) => l.key ?? ""));
+      if (options?.id === TILT_ID) return new Promise((resolve) => (release = resolve));
+      return Promise.resolve({ status: "done", choice: lines[0].key === "welcome" ? "start" : null });
+    });
+    const { tilt, turn } = fakeTilt();
+    const done = runOnboarding(deps({ say, coarse: true, tilt }));
+    await flush();
+    expect(said.at(-1)).toBe("tilt");
+    turn();
+    await flush();
+    expect(tilt.cancelled).toEqual([TILT_ID]);
+    release({ status: "cancelled", choice: null });
+    expect(await done).toBe("done");
   });
 });
 
