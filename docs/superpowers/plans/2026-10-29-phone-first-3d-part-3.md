@@ -1,6 +1,6 @@
 # Phone-First 3D, Part 3 Implementation Plan
 
-Status: in review.
+Status: in review (#348).
 
 **Goal:** A landscape phone reads as well as a portrait one and sees more; on phones the stick appears only where and
 when a thumb drives; portrait touch visitors learn once that sideways is wider. The 3D first frame and both session

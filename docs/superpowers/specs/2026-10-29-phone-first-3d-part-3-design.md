@@ -1,6 +1,6 @@
 # Phone-First 3D, Part 3: Landscape Camera, Floating Stick and Tilt Hint (design)
 
-Status: approved 2026-10-29 (owner decisions 2026-10-28/29, brainstorm, section 3); plan `2026-10-29-phone-first-3d-part-3.md`.
+Status: approved 2026-10-29 (owner decisions 2026-10-28/29, brainstorm, section 3); plan `2026-10-29-phone-first-3d-part-3.md`; implementation in review in #348.
 
 Builds on part 1 (#329; spec `2026-10-25-phone-first-3d-design.md`), part 2 (#346; spec
 `2026-10-28-phone-first-3d-part-2-design.md`) and #317 (touch controls). It does not redo them: the bottom boot card,
