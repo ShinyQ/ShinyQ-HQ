@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { driveZone, floatingStick, inDriveZone, releaseStick, STICK, stickDown, stickMove, stickUp } from "@/experience/input/floatingStick";
-import { joystick } from "@/experience/input/joystick";
+import { createStick, driveZone, inDriveZone, STICK } from "@/experience/input/floatingStick";
+import { joystick, setJoystick } from "@/experience/input/joystick";
+
+const floatingStick = createStick(setJoystick);
+const stickDown = floatingStick.down;
+const stickMove = floatingStick.move;
+const stickUp = floatingStick.up;
+const releaseStick = floatingStick.release;
 
 /** The phone's floating stick (spec 2026-10-29): the drive zone, drive vs tap, the double tap Boost and letting go. */
 const PORTRAIT = { left: 0, top: 0, width: 390, height: 844 };

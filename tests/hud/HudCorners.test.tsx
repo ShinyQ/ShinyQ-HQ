@@ -9,7 +9,8 @@ import { buildExperienceData } from "@/content/experience";
 import { buildFloorLayouts } from "@/experience/config";
 import { minimapPref } from "@/hud/minimap/pref";
 import { Hud } from "@/hud/Hud";
-import { floatingStick } from "@/experience/input/floatingStick";
+import type { FloatingStick } from "@/experience/input/floatingStick";
+import { stickInput } from "@/experience/input/joystick";
 import { intents } from "@/experience/input/intents";
 import { cancelAllDialogs, say } from "@/hud/dialog/store";
 import { getHQStore } from "@/store/useHQStore";
@@ -88,12 +89,13 @@ describe("Hud composition", () => {
     for (const name of ["elevator", "view", "rover-menu"]) expect(onboardTargets(name)).toHaveLength(1);
   });
 
-  it("phones get the Corners HUD: floor chip, compact Ask AI and the menu, the floating stick, Boost above one reset button and no controls bar", () => {
+  it("phones get the Corners HUD: floor chip, compact Ask AI and the menu, the floating stick, Boost above one reset button and no controls bar", async () => {
     device("mobile", true);
     mount();
     expect(screen.queryByRole("region", { name: en.hud.profile })).toBeNull();
     expect(screen.queryByTestId("elevator-panel")).toBeNull();
-    expect(screen.getByTestId("boost")).toHaveAttribute("aria-pressed", "false");
+    // The touch controls are a lazy chunk (coarse pointers only).
+    expect(await screen.findByTestId("boost")).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByTestId("hint")).toBeNull();
     expect(screen.queryByTestId("settings-open")).toBeNull();
     expect(screen.queryByTestId("page-view")).toBeNull();
@@ -102,7 +104,7 @@ describe("Hud composition", () => {
     expect(within(bar).getAllByRole("button").map((b) => b.dataset.testid)).toEqual(["ask-pill", "hud-menu"]);
     expect(within(bar).getByTestId("ask-pill")).toHaveAttribute("data-compact", "true");
     // The floating stick (spec 2026-10-29): a resting ring that takes no touch; Boost sits in the right column above Reset view.
-    expect(screen.getByTestId("joystick")).toHaveAttribute("data-floating", "rest");
+    expect(await screen.findByTestId("joystick")).toHaveAttribute("data-floating", "rest");
     expect(screen.getByTestId("joystick")).toHaveClass("pointer-events-none");
     expect(within(screen.getByTestId("view-controls")).getAllByRole("button")).toHaveLength(1);
     const column = screen.getByTestId("view-controls").parentElement!;
@@ -135,9 +137,11 @@ describe("Hud composition", () => {
     act(() => cancelAllDialogs());
   });
 
-  it("enables the phone drive zone, turns it off while a docked line covers the bottom, and keeps the fixed stick on tablets", () => {
+  it("enables the phone drive zone, turns it off while a docked line covers the bottom, and keeps the fixed stick on tablets", async () => {
     device("mobile", true);
     mount();
+    await screen.findByTestId("joystick");
+    const floatingStick = stickInput.handler as FloatingStick;
     expect(floatingStick.enabled).toBe(true);
     expect(floatingStick.toggleBoost).toBeTypeOf("function");
     act(() => void say({ text: "Pick one", choices: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] }));
@@ -146,7 +150,7 @@ describe("Hud composition", () => {
     expect(floatingStick.enabled).toBe(true);
     act(() => device("tablet", true));
     expect(floatingStick.enabled).toBe(false);
-    expect(screen.getByTestId("joystick")).toHaveAttribute("data-boost", "off");
+    expect(await screen.findByTestId("joystick")).toHaveAttribute("data-boost", "off");
     expect(screen.getByTestId("joystick")).not.toHaveAttribute("data-floating");
   });
 

@@ -1,13 +1,14 @@
 import { applyDeadZone } from "./intents";
-import { setJoystick } from "./joystick";
+import type { setJoystick as SetJoystick, StickHandler } from "./joystick";
 
 /**
  * The phone's floating stick (spec 2026-10-29, owner decisions 3.2 to 3.5): a touch that starts in the lower-left drive
  * zone drives once it leaves the tap slop, with the stick centered where the thumb came down; a still tap is left to
  * point-and-go (its drag filter already ignores moved presses); a second press within `doubleTapMs` of a still tap's
- * release toggles Boost unless that tap selected a target (point-and-go's tap-tap drives there). Pure and DOM-free: the
- * world input (`useInputSources`) feeds it pointer events, the HUD (`FloatingStick`) draws `floatingStick.view` and sets
- * the policy (`enabled`, `toggleBoost`). Gestures are timed with the input events' own times, as the fixed stick's are.
+ * release toggles Boost unless that tap selected a target (point-and-go's tap-tap drives there). Pure and DOM-free: it
+ * rides in the touch controls chunk, which creates one (`createStick`) and registers it in `stickInput` for the world input
+ * (`useInputSources`) to feed pointer events; the HUD (`FloatingStick`) draws its `view` and sets the policy (`enabled`,
+ * `toggleBoost`). Gestures are timed with the input events' own times, as the fixed stick's are.
  */
 export const STICK = {
   /** Knob travel (px) for a full push, as the fixed stick (`Joystick.tsx`). */
@@ -43,90 +44,89 @@ export type StickView = {
   knob: { x: number; y: number };
 };
 
+export interface FloatingStick extends StickHandler {
+  /** Set by the HUD: phone layout, coarse pointer, not stepped aside for a docked Rover line. */
+  enabled: boolean;
+  /** The HUD's Boost toggle (the same state as the Boost button). */
+  toggleBoost: (() => void) | null;
+  /** Replaced (never mutated) on every change. */
+  view: StickView;
+  subscribe(listener: () => void): () => void;
+  /** Lets go of a held stick at once (the HUD stepping aside, a disable, unmount): the rover stops. */
+  release(): void;
+}
+
 type Press = { id: number; x: number; y: number; at: number; active: boolean; moved: boolean };
 
-const listeners = new Set<() => void>();
-let press: Press | null = null;
-/** Release time of the last still tap (0: none pending). */
-let lastTap = 0;
-
-/** Shared state between the world input and the HUD; `view` is replaced (never mutated) on every change. */
-export const floatingStick = {
-  /** Set by the HUD: phone layout, coarse pointer, not stepped aside for a docked Rover line. */
-  enabled: false,
-  /** The HUD's Boost toggle (the same state as the Boost button). */
-  toggleBoost: null as (() => void) | null,
-  view: { origin: null, knob: { x: 0, y: 0 } } as StickView,
-  subscribe(listener: () => void): () => void {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  },
-};
-
-function show(view: StickView) {
-  floatingStick.view = view;
-  for (const l of [...listeners]) l();
-}
-
-function drive(p: Press, x: number, y: number) {
-  let dx = (x - p.x) / STICK.radius;
-  let dy = (y - p.y) / STICK.radius;
-  const mag = Math.hypot(dx, dy);
-  if (mag > 1) {
-    dx /= mag;
-    dy /= mag;
-  }
-  const v = applyDeadZone(dx, dy);
-  setJoystick(v.x, -v.y, true);
-  show({ origin: { x: p.x, y: p.y }, knob: { x: dx * STICK.radius, y: dy * STICK.radius } });
-}
-
-/**
- * A touch pointer came down at client (x, y) over the world element's `rect`. Returns true when the stick takes it (the
- * caller then keeps it out of look, pinch and twist). `canBoost`: no target is tap-selected, so a double tap may toggle Boost.
- */
-export function stickDown(id: number, x: number, y: number, at: number, rect: { left: number; top: number; width: number; height: number }, canBoost: boolean): boolean {
-  if (!floatingStick.enabled || press || !inDriveZone(x - rect.left, y - rect.top, rect.width, rect.height)) return false;
-  const second = lastTap > 0 && at - lastTap <= STICK.doubleTapMs;
-  lastTap = 0;
-  if (second && canBoost) floatingStick.toggleBoost?.();
-  // The press that completes a pair never starts the next one, so a third tap starts a new pair.
-  press = { id, x, y, at, active: false, moved: second };
-  return true;
-}
-
-/** Returns true when the pointer is the stick's. */
-export function stickMove(id: number, x: number, y: number): boolean {
-  const p = press;
-  if (!p || p.id !== id) return false;
-  if (!p.active && Math.hypot(x - p.x, y - p.y) >= STICK.slop) {
-    p.active = true;
-    p.moved = true;
-  }
-  if (p.active) drive(p, x, y);
-  return true;
-}
-
-/** `up` is a real release (a cancelled pointer never counts as a tap). Returns true when the pointer was the stick's. */
-export function stickUp(id: number, at: number, up: boolean): boolean {
-  const p = press;
-  if (!p || p.id !== id) return false;
-  press = null;
-  lastTap = up && !p.moved && at - p.at <= STICK.tapMs ? at : 0;
-  if (p.active) {
-    setJoystick(0, 0, false);
-    show({ origin: null, knob: { x: 0, y: 0 } });
-  }
-  return true;
-}
-
-/** Lets go of a held stick at once (the HUD stepping aside, a disable, unmount): the rover stops. */
-export function releaseStick(): void {
-  const held = press?.active;
-  press = null;
-  lastTap = 0;
-  if (held) setJoystick(0, 0, false);
-  if (floatingStick.view.origin) show({ origin: null, knob: { x: 0, y: 0 } });
+/** A floating stick that drives through `setJoystick` (`input/joystick.ts`, passed in so the chunk imports no main-path value). */
+export function createStick(setJoystick: typeof SetJoystick): FloatingStick {
+  const listeners = new Set<() => void>();
+  let press: Press | null = null;
+  /** Release time of the last still tap (0: none pending). */
+  let lastTap = 0;
+  const show = (view: StickView) => {
+    stick.view = view;
+    for (const l of [...listeners]) l();
+  };
+  const rest = () => show({ origin: null, knob: { x: 0, y: 0 } });
+  const drive = (p: Press, x: number, y: number) => {
+    let dx = (x - p.x) / STICK.radius;
+    let dy = (y - p.y) / STICK.radius;
+    const mag = Math.hypot(dx, dy);
+    if (mag > 1) {
+      dx /= mag;
+      dy /= mag;
+    }
+    const v = applyDeadZone(dx, dy);
+    setJoystick(v.x, -v.y, true);
+    show({ origin: { x: p.x, y: p.y }, knob: { x: dx * STICK.radius, y: dy * STICK.radius } });
+  };
+  const stick: FloatingStick = {
+    enabled: false,
+    toggleBoost: null,
+    view: { origin: null, knob: { x: 0, y: 0 } },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    // A touch at client (x, y) over the world element's `rect`; `canBoost`: no target is tap-selected.
+    down(id, x, y, at, rect, canBoost) {
+      if (!stick.enabled || press || !inDriveZone(x - rect.left, y - rect.top, rect.width, rect.height)) return false;
+      const second = lastTap > 0 && at - lastTap <= STICK.doubleTapMs;
+      lastTap = 0;
+      if (second && canBoost) stick.toggleBoost?.();
+      // The press that completes a pair never starts the next one, so a third tap starts a new pair.
+      press = { id, x, y, at, active: false, moved: second };
+      return true;
+    },
+    move(id, x, y) {
+      const p = press;
+      if (!p || p.id !== id) return false;
+      if (!p.active && Math.hypot(x - p.x, y - p.y) >= STICK.slop) p.active = p.moved = true;
+      if (p.active) drive(p, x, y);
+      return true;
+    },
+    // `up` is a real release (a cancelled pointer never counts as a tap).
+    up(id, at, up) {
+      const p = press;
+      if (!p || p.id !== id) return false;
+      press = null;
+      lastTap = up && !p.moved && at - p.at <= STICK.tapMs ? at : 0;
+      if (p.active) {
+        setJoystick(0, 0, false);
+        rest();
+      }
+      return true;
+    },
+    release() {
+      const held = press?.active;
+      press = null;
+      lastTap = 0;
+      if (held) setJoystick(0, 0, false);
+      if (stick.view.origin) rest();
+    },
+  };
+  return stick;
 }

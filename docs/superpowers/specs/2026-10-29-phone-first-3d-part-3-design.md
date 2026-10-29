@@ -131,6 +131,32 @@ Files: `src/hud/dialog/onboarding.ts` (the tour chunk), `src/hud/dialog/Onboardi
   the PR reports portrait and landscape numbers side by side. If the landscape gate cannot pass, the phone condition
   is dropped and tablets keep the hint.
 
+### 4.4 Amended in implementation
+
+- Landscape rig: the tablet direction and FOV at 0.7 of the follow distance and 0.66 of the rail distance, plus a rig
+  `lift` of 2 u (the look target raised, scaled by the zoom), so tall signs stay under the chip row of a short frame.
+- Phone type sizes apply on both phone classes (`phoneCamera(cls)`): the camera alone could not reach 10 px on L2 and L4
+  without cutting signs at the top. Desktop and tablet sizes are unchanged.
+- Landscape zone views: the L1 kiosk (`landingLandscape`: the desktop's turn, zoom 3, pitch -0.1, look offset forward -2,
+  up -2), the L1 office (the tablet frame: zoom 1.5 / 0.7 and a held look offset up -2 that takes the lift back), the L2
+  time console, the L3 ops room and Tech Reactor, the L4 headlines and Topic Constellation, the RF comms and CV stops.
+- The L2 repo skyline sign needed a higher rail aim than the near-row award placings allow, so `ViewZone.only` (a zone for
+  some camera classes; `zoneAt` takes the class) adds a landscape-only `L2:skyline` view, and the rail honours a zone's
+  `lookOffset.up` (`railPose(..., lookUp)`; no existing L2 zone sets one).
+- A zone zoom above the hand-zoom range (the kiosk's 3) made the first pinch jump to 1.5: `zoomBy` never jumps a hand zoom
+  past where it starts (zooming in from there is smooth, zooming out holds).
+- The stick gesture and drawing state live in one pure module, `src/experience/input/floatingStick.ts` (not
+  `driveZone.ts` plus `joystick.ts`); the drawn stick uses client coordinates.
+- The floating stick's double tap toggles Boost only when its first tap selected no target, so point-and-go's tap-tap
+  still drives to a target in the zone.
+- The tilt string lives in `dialog.onboarding` (the tour's message keys, read only by the tour chunk); the tour chunk
+  imports no values, so `OnboardingLayer` passes the store's `cancelDialog` in (`OnboardingDeps.cancel`). Only a phone's
+  toast moves on by itself after the hold; a tablet's raised line waits for a tap.
+
+- Bytes (section 5): trims could not pay the main-path growth, so the touch controls (`Joystick.tsx` with the stick
+  gesture, `floatingStick.ts`) became a lazy chunk on coarse pointers (`touchChunk.ts`, `BYTES_3D_BUDGET.touch`), with the
+  world input reading a handler slot (`stickInput` in `input/joystick.ts`) the chunk fills through `bindTouch`.
+
 ## 5. Bytes
 
 - Main path grows by the landscape rows, the zone views, `driveZone`, the stick gesture and `FloatingStick`; it

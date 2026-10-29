@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { createElement, Suspense, useEffect, useLayoutEffect, useRef, type ComponentProps, type ReactNode, type RefObject } from "react";
 import { READY_FLOORS } from "@/experience/floorOrder";
 import { floorChunks } from "@/experience/floors/floorChunks";
+import { setBoost, setJoystick, stickInput } from "@/experience/input/joystick";
 import type { ExperienceData, FloorLayouts } from "@/experience/types";
 import { Link } from "@/i18n/navigation";
 import { getHQStore, useHQStore } from "@/store/useHQStore";
@@ -32,8 +33,8 @@ import { HudMenu } from "./menu/HudMenu";
 import { Minimap } from "./minimap/Minimap";
 import { SettingsLauncher } from "./menu/SettingsSheet";
 import { BeamFade, PadPicker } from "./pads/PadPicker";
-import { FloatingStick, Joystick, PhoneBoost } from "./Joystick";
 import { ProfileCard } from "./ProfileCard";
+import { loadTouch } from "./touchChunk";
 import { ResetView, ViewControls } from "./ViewControls";
 import { YearChip } from "./YearChip";
 
@@ -48,6 +49,25 @@ function HologramUnavailable() {
 }
 
 // The hologram view only opens on L3, whose chunk carries the overlay (Round 7 B); a failed import is retried on the next open.
+/** No touch controls this time (a failed chunk): point-and-go still drives, and the next mount retries the import. */
+const NoTouch = () => null;
+/** The touch controls chunk (`touchChunk.ts`, coarse pointers only): the bottom band's left column and the phone's Boost. */
+const TOUCH = { input: stickInput, setJoystick, setBoost };
+const touch = () =>
+  loadTouch().then((m) => {
+    if (!m) throw new Error("touch chunk");
+    m.bindTouch(TOUCH);
+    return m;
+  });
+const lazyTouchLeft = lazyFromChunk<{ phone: boolean; aside: boolean }>(() => touch().then((m) => m.TouchLeft), NoTouch);
+const lazyPhoneBoost = lazyFromChunk<object>(() => touch().then((m) => m.PhoneBoost), NoTouch);
+function LazyTouchLeft(props: { phone: boolean; aside: boolean }) {
+  return <Suspense fallback={null}>{createElement(lazyTouchLeft(), props)}</Suspense>;
+}
+function LazyPhoneBoost() {
+  return <Suspense fallback={null}>{createElement(lazyPhoneBoost())}</Suspense>;
+}
+
 const lazyHologramOverlay = lazyFromChunk<HologramOverlayProps>(() => floorChunks.load("L3").then((m) => m.HologramOverlay), HologramUnavailable);
 
 function HologramView({ locale }: { locale: HologramOverlayProps["locale"] }) {
@@ -273,13 +293,13 @@ export function Hud({ data, layouts, onExit, onToggleLang }: { data: ExperienceD
             aside={docked}
             // Coarse pointers always get the Corners HUD: the Boost button (or a joystick double tap) toggles boost. Phones
             // drive with the floating stick (a drag in the lower-left drive zone) and keep Boost above Reset view.
-            left={drive ? phone ? <FloatingStick active={!docked} /> : <Joystick boost aside={docked} /> : null}
+            left={drive ? <LazyTouchLeft phone={phone} aside={docked} /> : null}
             right={
               desktop ? (
                 <DesktopCorner data={data} layouts={layouts} explorable={explorable} />
               ) : phone && drive ? (
                 <div className="flex flex-col items-end gap-3">
-                  <PhoneBoost />
+                  <LazyPhoneBoost />
                   {explorable && <ResetView />}
                 </div>
               ) : explorable ? (

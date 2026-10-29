@@ -31,7 +31,8 @@ import { writePerfEntry } from "./helpers";
  * session that plays the tour or Replay tutorial, so never by this returning visitor) is measured after it, held to `BYTES_3D_BUDGET.tour`, outside the session total.
  * The Corners menu sheet chunk (`__hq.menu.load()`, loaded on the menu button's first press) and the pad picker sheet
  * chunk (`__hq.picker.load()`, loaded when a pad picker first opens) are measured last, held to `BYTES_3D_BUDGET.menu` and
- * `BYTES_3D_BUDGET.picker`, outside the session total.
+ * `BYTES_3D_BUDGET.picker`, outside the session total. The touch controls chunk (`__hq.touch.load()`, loaded only on a coarse
+ * pointer, so never by this mouse session) is measured after them and held to `BYTES_3D_BUDGET.touch`, outside the session total.
  */
 test.describe.configure({ timeout: 240_000 });
 
@@ -62,13 +63,13 @@ async function measureOffice(page: Page, loader: OfficeLoader, seen: Set<string>
   return bytes;
 }
 
-type ChunkLoad = { __hq: Partial<Record<"tour" | "menu" | "picker", { load: () => Promise<unknown> }>> };
+type ChunkLoad = { __hq: Partial<Record<"tour" | "menu" | "picker" | "touch", { load: () => Promise<unknown> }>> };
 
 /**
  * Bytes of a lazy HUD chunk with its own cap (`__hq.tour.load()`, the first-session tour; `__hq.menu.load()`, the Corners
  * menu sheet; `__hq.picker.load()`, the pad picker sheet), on top of everything counted; null on a build without it.
  */
-async function measureChunk(page: Page, name: "tour" | "menu" | "picker", seen: Set<string>, counted: Set<string>): Promise<number | null> {
+async function measureChunk(page: Page, name: "tour" | "menu" | "picker" | "touch", seen: Set<string>, counted: Set<string>): Promise<number | null> {
   if (!(await page.evaluate((n) => Boolean((window as unknown as ChunkLoad).__hq[n]), name))) return null;
   const loaded = await recordTransfers(page, () => page.evaluate((n) => (window as unknown as ChunkLoad).__hq[n]!.load().then(() => undefined), name), 2000);
   const bytes = loaded.filter((t) => t.type === "script" && !seen.has(t.path) && !counted.has(t.path)).reduce((n, t) => n + t.bytes, 0);
@@ -191,6 +192,8 @@ for (const tier of ["lite", "full"] as const) {
     const menu = await measureChunk(page, "menu", seen, mainPaths);
     // The pad picker sheet loads when a pad picker first opens: its own cap, outside the session total.
     const picker = await measureChunk(page, "picker", seen, mainPaths);
+    // The touch controls (the joysticks and Boost) load only on a coarse pointer: their own cap, outside the session total.
+    const touch = await measureChunk(page, "touch", seen, mainPaths);
     await context.close();
 
     // B1 only loads when unlocked. It is a near floor of the Lobby, so it may arrive during the main path even with
@@ -242,6 +245,7 @@ for (const tier of ["lite", "full"] as const) {
       ...(tour === null ? {} : { tour }),
       ...(menu === null ? {} : { menu }),
       ...(picker === null ? {} : { picker }),
+      ...(touch === null ? {} : { touch }),
     });
     console.log(`3D JS after the gate (${tier}): ${kb(total)} gzip in ${Object.keys(js).length} chunks; other ${JSON.stringify(other)}`);
     if (hasChunks) console.log(`3D JS session total (${tier}): ${kb(sessionTotal)} gzip (main ${kb(total)} + public floor chunks ${kb(floorsTotal)} + office watch ${kb(officeWatch ?? 0)} + office scene ${kb(office ?? 0)}${officeReplay === null ? "" : ` + office replay ${kb(officeReplay)}`}, B1 excluded, session cap ${kb(BYTES_3D_BUDGET.session[tier])})`);
@@ -256,6 +260,7 @@ for (const tier of ["lite", "full"] as const) {
     if (officeBeacon !== null) console.log(`Agent Office beacon chunk (${tier}, on the first ask): ${kb(officeBeacon)} gzip (cap ${kb(BYTES_3D_BUDGET.officeBeacon)}), not in the session total`);
     if (tour !== null) console.log(`First-session tour chunk (${tier}): ${kb(tour)} gzip (cap ${kb(BYTES_3D_BUDGET.tour)}), outside the session total`);
     if (menu !== null) console.log(`Menu sheet chunk (${tier}): ${kb(menu)} gzip (${menu} B, cap ${kb(BYTES_3D_BUDGET.menu)}), outside the session total`);
+    if (touch !== null) console.log(`Touch controls chunk (${tier}): ${kb(touch)} gzip (${touch} B, cap ${kb(BYTES_3D_BUDGET.touch)}), outside the session total`);
     if (picker !== null) console.log(`Pad picker sheet chunk (${tier}): ${kb(picker)} gzip (${picker} B, cap ${kb(BYTES_3D_BUDGET.picker)}), outside the session total`);
 
     if (tier === "full" && postPasses !== null) expect(postPasses, "the full-tier composer never rendered (postprocessing chunk missing)").toBeGreaterThan(0);
@@ -304,6 +309,10 @@ for (const tier of ["lite", "full"] as const) {
     if (menu !== null) {
       expect(menu, "Menu sheet chunk: did __hq.menu.load fetch any script?").toBeGreaterThan(0);
       expect(menu, `Menu sheet chunk ${kb(menu)} is over its ${kb(BYTES_3D_BUDGET.menu)} cap`).toBeLessThan(BYTES_3D_BUDGET.menu);
+    }
+    if (touch !== null) {
+      expect(touch, "Touch controls chunk: did __hq.touch.load fetch any script?").toBeGreaterThan(0);
+      expect(touch, `Touch controls chunk ${kb(touch)} is over its ${kb(BYTES_3D_BUDGET.touch)} cap`).toBeLessThan(BYTES_3D_BUDGET.touch);
     }
     if (picker !== null) {
       expect(picker, "Pad picker sheet chunk: did __hq.picker.load fetch any script?").toBeGreaterThan(0);

@@ -11,3 +11,15 @@ export function setJoystick(x: number, y: number, active: boolean) {
 export function setBoost(on: boolean) {
   joystick.boost = on;
 }
+
+type Rect = { left: number; top: number; width: number; height: number };
+
+/** The phone's floating stick as the world input sees it (`createStick` in `floatingStick.ts`): each returns true when the touch is the stick's. */
+export interface StickHandler {
+  down(id: number, x: number, y: number, at: number, rect: Rect, canBoost: boolean): boolean;
+  move(id: number, x: number, y: number): boolean;
+  up(id: number, at: number, up: boolean): boolean;
+}
+
+/** Set by the touch controls chunk once it loads on a coarse pointer (`hud/Joystick.tsx`); null before, so touches look. */
+export const stickInput: { handler: StickHandler | null } = { handler: null };
