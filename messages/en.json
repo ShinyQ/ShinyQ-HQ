@@ -545,6 +545,7 @@
     "profile": "Profile",
     "hintFine": "Drive: WASD or arrows · Boost: hold Shift · Go: click a glowing object · Rotate: drag or Q/E · Zoom: scroll · Floors: PgUp/PgDn",
     "hintCoarse": "Drive: joystick · Boost: the bolt button or double-tap the joystick · Go: tap a glowing object twice · Look: drag · Zoom: pinch · Floors: the floor chip or the elevator",
+    "hintPhone": "Drive: drag on the lower left · Boost: the bolt button or double-tap the lower left · Go: tap a glowing object twice · Look: drag elsewhere · Zoom: pinch · Floors: the floor chip or the elevator",
     "underConstruction": "{name} is not ready in 3D yet.",
     "openFloorPage": "Open the {name} page",
     "bootEyebrow": "Agent HQ · booting",
@@ -1003,8 +1004,9 @@
       "closing": "That's it! Look for the ! bubbles near things you can use. Have fun exploring!",
       "closingShort": "That's the basics! Replay the full tutorial from Settings anytime.",
       "pointGoPhone": "Tap a glowing object, then tap it again or its Go button, and I'll drive you there. Try it!",
-      "movedPhone": "Nice driving! The joystick and the Boost button work too.",
-      "floorChip": "Tap the floor chip up here to ride the elevator to another floor."
+      "movedPhone": "Nice driving! Drag on the lower left to steer yourself, and tap the Boost button to speed up.",
+      "floorChip": "Tap the floor chip up here to ride the elevator to another floor.",
+      "tilt": "Tip: turn your screen sideways for a wider view of the tower."
     },
     "floor": {
       "L2": "This is the Career Road: one plaza per year, oldest first, from the first job to today.",

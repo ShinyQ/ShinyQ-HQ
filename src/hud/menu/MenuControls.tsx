@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useHQStore } from "@/store/useHQStore";
+import { useHudLayout } from "../layout";
 
 /** Splits a controls hint ("Drive: joystick · Zoom: pinch") into label and value rows. */
 export function controlRows(hint: string): { label: string; value: string }[] {
@@ -16,7 +17,8 @@ export function controlRows(hint: string): { label: string; value: string }[] {
 
 /**
  * The controls help in the menu (owner decision 2026-10-24: phones show no controls bar, so the full list lives
- * here): the same text as the bar (`hud.hintCoarse`, `hud.hintFine` with a fine pointer), one row per control,
+ * here): the same text as the bar (`hud.hintCoarse`, `hud.hintFine` with a fine pointer; `hud.hintPhone` on a phone, which
+ * drives with the floating stick), one row per control,
  * plus the L2 year scrub on touch. It rides in the lazy settings chunk (`SettingsPanel` renders it first when the
  * menu passes `controls`), so it stays off the first-frame 3D path.
  */
@@ -24,7 +26,8 @@ export function MenuControls() {
   const t = useTranslations("hud");
   const coarse = useHQStore((s) => s.device.coarse);
   const rail = useHQStore((s) => s.floor === "L2");
-  const rows = controlRows(coarse ? t("hintCoarse") : t("hintFine"));
+  const phone = useHudLayout() === "phone";
+  const rows = controlRows(coarse ? t(phone ? "hintPhone" : "hintCoarse") : t("hintFine"));
   return (
     <section aria-label={t("controls")} data-testid="menu-controls-card" className="rounded-xl border border-line-2 px-3 py-2">
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[13px] leading-5">

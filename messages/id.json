@@ -545,6 +545,7 @@
     "profile": "Profil",
     "hintFine": "Kemudi: WASD atau panah · Turbo: tahan Shift · Pergi: klik objek yang menyala · Putar: seret atau Q/E · Zoom: scroll · Lantai: PgUp/PgDn",
     "hintCoarse": "Kemudi: joystick · Turbo: tombol petir atau ketuk dua kali joystick · Pergi: ketuk dua kali objek yang menyala · Lihat: seret · Zoom: cubit · Lantai: chip lantai atau lift",
+    "hintPhone": "Kemudi: seret di kiri bawah · Turbo: tombol petir atau ketuk dua kali di kiri bawah · Pergi: ketuk dua kali objek yang menyala · Lihat: seret di bagian lain · Zoom: cubit · Lantai: chip lantai atau lift",
     "underConstruction": "{name} belum tersedia dalam 3D.",
     "openFloorPage": "Buka halaman {name}",
     "bootEyebrow": "Agent HQ · memulai",
@@ -1003,8 +1004,9 @@
       "closing": "Selesai! Cari gelembung ! di dekat benda yang bisa dipakai. Selamat menjelajah!",
       "closingShort": "Itu langkah dasarnya! Tutorial lengkap bisa diulang kapan saja dari Pengaturan.",
       "pointGoPhone": "Ketuk objek yang menyala, lalu ketuk lagi atau pilih tombol Pergi. Nanti saya antar. Coba!",
-      "movedPhone": "Mantap! Joystick dan tombol Turbo juga bisa dipakai.",
-      "floorChip": "Ketuk chip lantai di atas untuk naik lift ke lantai lain."
+      "movedPhone": "Mantap! Seret di kiri bawah untuk menyetir sendiri, dan ketuk tombol Turbo untuk melaju lebih cepat.",
+      "floorChip": "Ketuk chip lantai di atas untuk naik lift ke lantai lain.",
+      "tilt": "Tips: putar layar ke posisi mendatar supaya tampilan menara lebih luas."
     },
     "floor": {
       "L2": "Ini Career Road: satu plaza per tahun, dari yang terlama, sejak pekerjaan pertama hingga hari ini.",

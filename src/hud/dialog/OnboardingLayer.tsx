@@ -9,7 +9,7 @@ import { getHQStore, useHQStore } from "@/store/useHQStore";
 import { firstName } from "./names";
 import type { OnboardingVariant, TourT } from "./onboarding";
 import { markOnboarded, onboarded } from "./storage";
-import { cancelAllDialogs, say } from "./store";
+import { cancelAllDialogs, cancelDialog, say } from "./store";
 import { loadTour } from "./tourChunk";
 import { registerTutorial } from "./tutorial";
 
@@ -53,6 +53,7 @@ export function OnboardingLayer({ data }: { data: ExperienceData }) {
         if (!tour) return;
         const outcome = await tour.runOnboarding({
           say,
+          cancel: cancelDialog,
           copy: tour.onboardingCopy(t as unknown as TourT, name),
           coarse,
           phone,

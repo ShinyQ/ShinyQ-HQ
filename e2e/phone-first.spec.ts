@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import en from "../messages/en.json";
-import { asReturningVisitor, fastAnimations, skipFloorLines, snapshot, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
+import { asReturningVisitor, enterHQ, fastAnimations, hoveredTarget, PHONE_SAFE, skipFloorLines, snapshot, targetPoint, visibleTarget, waitForCameraSettle, waitForFloor, waitForHQ, waitForPhase, waitForRoverMove, waitForSceneLive } from "./hq";
 
 // Camera eases, rides and the intro at the test-only animation speed.
 test.beforeEach(({ context }) => fastAnimations(context));
@@ -360,3 +360,224 @@ test.describe("desktop keys (1440x900)", () => {
     await expect(sound.locator("kbd")).toHaveText("M");
   });
 });
+
+/**
+ * Phone-first part 3 (docs/superpowers/specs/2026-10-29-phone-first-3d-part-3-design.md): the floating stick on phones
+ * (a drag in the lower-left drive zone drives, a still tap there stays point-and-go's, the rest of the screen looks),
+ * Boost above Reset view, and the one-time tilt hint after the tour's closing line on portrait touch screens.
+ */
+type Point = { x: number; y: number };
+
+/** A real touch drag through CDP that stays down until `end()` (40 ms between moves, as `touch` in experience.spec.ts). */
+async function press(page: Page, points: Point[]) {
+  const cdp = await page.context().newCDPSession(page);
+  const [first, ...rest] = points;
+  let timestamp = Date.now() / 1000;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [first], timestamp });
+  for (const p of rest) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [p], timestamp: (timestamp += 0.04) });
+  return async () => {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: Date.now() / 1000 });
+    await cdp.detach();
+  };
+}
+
+/** Two still taps 120 ms apart at one point, with their own input times (see `doubleTapJoystick` in touch.ts). */
+async function doubleTap(page: Page, p: Point) {
+  const cdp = await page.context().newCDPSession(page);
+  const t = Date.now() / 1000;
+  await Promise.all([
+    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [p], timestamp: t }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.05 }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [p], timestamp: t + 0.17 }),
+    cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [], timestamp: t + 0.22 }),
+  ]);
+  await cdp.detach();
+}
+
+/** A landscape phone's HUD-free box for `visibleTarget` (under the chip row, clear of the right column). */
+const LANDSCAPE_SAFE = { top: 80, bottom: 40, side: 110 };
+const camera = (page: Page) => page.evaluate(() => (window as unknown as { __hq: { camera: () => number[] } }).__hq.camera());
+/** The world (the canvas) is what a touch at `p` lands on: no HUD control or dialog over it. */
+const onWorld = (page: Page, p: Point) => page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName === "CANVAS", p);
+
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+]) {
+  const landscape = viewport.width > viewport.height;
+  /** A point well inside the drive zone (portrait: the left half of the bottom 40%; landscape: the left 40% under the chip row). */
+  const inZone: Point = landscape ? { x: 0.2 * viewport.width, y: 0.62 * viewport.height } : { x: 0.25 * viewport.width, y: 0.78 * viewport.height };
+  /** A point outside it, on the look side. */
+  const outside: Point = landscape ? { x: 0.62 * viewport.width, y: 0.55 * viewport.height } : { x: 0.7 * viewport.width, y: 0.72 * viewport.height };
+
+  test.describe(`phone part 3 (${viewport.width}x${viewport.height})`, () => {
+    test.use({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+    test("a drag in the drive zone drives with the stick under the thumb; a drag outside it looks; Boost sits above Reset view", async ({ page }) => {
+      await enterHQ(page);
+      await waitForCameraSettle(page);
+      const ring = page.getByTestId("joystick");
+      await expect(ring).toHaveAttribute("data-floating", "rest");
+      expect(await onWorld(page, inZone), "the drive zone point is open world").toBe(true);
+
+      // Boost: bottom right, above Reset view, clear of the ring.
+      const boost = await rect(page.getByTestId("boost"));
+      const reset = await rect(page.getByTestId("view-reset"));
+      expect(boost.x).toBeGreaterThan(viewport.width / 2);
+      expect(boost.y + boost.height).toBeLessThanOrEqual(reset.y);
+      expect(overlaps(boost, await rect(ring))).toBe(false);
+
+      // Drive: the stick appears where the thumb came down and the rover moves.
+      const from = (await snapshot(page)).rover;
+      const end = await press(page, [inZone, { x: inZone.x, y: inZone.y - 30 }, { x: inZone.x, y: inZone.y - 55 }]);
+      const live = page.getByTestId("joystick-live");
+      await expect(live).toBeVisible();
+      const stick = await rect(live);
+      expect(Math.abs(stick.x + stick.width / 2 - inZone.x)).toBeLessThan(2);
+      expect(Math.abs(stick.y + stick.height / 2 - inZone.y)).toBeLessThan(2);
+      await expect(ring).toHaveAttribute("data-floating", "live");
+      await waitForRoverMove(page, from, 2);
+      await end();
+      await expect(live).toBeHidden();
+      await expect(ring).toHaveAttribute("data-floating", "rest");
+
+      // Look: a drag outside the zone turns the view and never drives.
+      await waitForCameraSettle(page);
+      const parked = (await snapshot(page)).rover;
+      const before = await camera(page);
+      const look = await press(page, [outside, { x: outside.x - 40, y: outside.y }, { x: outside.x - 90, y: outside.y }]);
+      await look();
+      await waitForCameraSettle(page);
+      const after = await camera(page);
+      expect(Math.hypot(after[0] - before[0], after[2] - before[2]), "the view turned").toBeGreaterThan(0.5);
+      const still = (await snapshot(page)).rover;
+      expect(Math.hypot(still.x - parked.x, still.z - parked.z)).toBeLessThan(0.05);
+      await expect(live).toBeHidden();
+    });
+
+    test("a still tap in the drive zone stays point-and-go's; a double tap there on open floor toggles Boost", async ({ page }) => {
+      await enterHQ(page);
+      await waitForCameraSettle(page);
+      // Select a target with one tap, then a still tap on open world in the zone reaches the scene and clears it.
+      const target = await visibleTarget(page, { kinds: ["door", "kiosk", "station", "board", "elevator-pad"], safe: landscape ? LANDSCAPE_SAFE : PHONE_SAFE });
+      const point = await targetPoint(page, target.id);
+      await page.touchscreen.tap(point.x, point.y);
+      await expect.poll(() => hoveredTarget(page)).toMatchObject({ via: "tap" });
+      const selected = await hoveredTarget(page);
+      const rover = (await snapshot(page)).rover;
+      await page.touchscreen.tap(inZone.x, inZone.y);
+      await expect.poll(async () => JSON.stringify(await hoveredTarget(page))).not.toBe(JSON.stringify(selected));
+      expect(Math.hypot((await snapshot(page)).rover.x - rover.x, (await snapshot(page)).rover.z - rover.z)).toBeLessThan(0.05);
+      await expect(page.getByTestId("joystick-live")).toBeHidden();
+
+      // With nothing selected, a double tap in the zone toggles Boost (the same state as the button).
+      if (await hoveredTarget(page)) await page.touchscreen.tap(inZone.x, inZone.y);
+      await expect.poll(() => hoveredTarget(page)).toBeNull();
+      const button = page.getByTestId("boost");
+      await expect(button).toHaveAttribute("aria-pressed", "false");
+      await page.waitForTimeout(400);
+      await doubleTap(page, inZone);
+      await expect(button).toHaveAttribute("aria-pressed", "true");
+    });
+  });
+}
+
+test.describe("phone part 3: the drive zone steps aside (390x844)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("a docked line turns the drive zone off", async ({ page }) => {
+    await freshVisit(page);
+    await expectLine(page, "welcome");
+    await expect(dialog(page)).toHaveAttribute("data-docked", "true");
+    await expect(band(page)).toHaveAttribute("data-aside", "true");
+    const docked = await rect(dialog(page));
+    // A zone point above the docked card: the world gets the touch, but the stick is off.
+    const p = { x: 90, y: Math.max(0.6 * 844 + 8, docked.y - 30) };
+    test.skip(p.y >= docked.y, "the docked card covers the whole drive zone");
+    expect(await onWorld(page, p)).toBe(true);
+    const from = (await snapshot(page)).rover;
+    const end = await press(page, [p, { x: p.x, y: p.y - 30 }, { x: p.x, y: p.y - 55 }]);
+    await page.waitForTimeout(600);
+    await end();
+    await expect(page.getByTestId("joystick-live")).toHaveCount(0);
+    const now = (await snapshot(page)).rover;
+    expect(Math.hypot(now.x - from.x, now.z - from.z)).toBeLessThan(0.05);
+  });
+});
+
+/** Plays a fresh session's tour to its closing line: Show me around, drive for the try-it step, tap through the rest. */
+async function tourToClosing(page: Page) {
+  await freshVisit(page);
+  await expectLine(page, "welcome");
+  await dialog(page).getByRole("button", { name: en.dialog.onboarding.start }).tap();
+  for (let i = 0; i < 12; i++) {
+    await expect(dialog(page)).toHaveAttribute("data-typing", "false", { timeout: 15_000 });
+    const line = (await dialog(page).getAttribute("data-line"))!;
+    if (line === "closing") return;
+    if (line === "point-go") {
+      const from = (await snapshot(page)).rover;
+      await page.keyboard.down("w");
+      try {
+        await waitForRoverMove(page, from, 2.5);
+      } finally {
+        await page.keyboard.up("w");
+      }
+      await expect.poll(async () => dialog(page).getAttribute("data-line")).not.toBe("point-go");
+      continue;
+    }
+    await tapThrough(page, line);
+    await expect.poll(async () => dialog(page).getAttribute("data-line"), { timeout: 30_000 }).not.toBe(line);
+  }
+  throw new Error("the tour never reached its closing line");
+}
+
+const TILT_TEXT = en.dialog.onboarding.tilt;
+
+test.describe("tilt hint on a portrait phone (390x844)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("follows the closing line once as a top toast; a tap clears it; Replay tutorial never shows it again", async ({ page }) => {
+    await tourToClosing(page);
+    // The closing line fits its toast, so it moves on by itself (a tap here could land on the next line).
+    await expectLine(page, "tilt");
+    const box = dialog(page);
+    await expect(box).toContainText(TILT_TEXT);
+    await expect(box).not.toHaveAttribute("data-docked", "true");
+    expect((await rect(box)).y, "a top toast").toBeLessThan(844 / 3);
+    expect(await page.evaluate(() => localStorage.getItem("hq:tilt-hint"))).toBe("1");
+    await box.locator("p[aria-hidden='true']").first().tap({ position: { x: 12, y: 10 } });
+    await expect(box).toBeHidden({ timeout: 15_000 });
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("hq:onboarded"))).toBe("done");
+  });
+
+  test("ends when the phone turns sideways", async ({ page }) => {
+    await tourToClosing(page);
+    // The closing line fits its toast, so it moves on by itself (a tap here could land on the next line).
+    await expectLine(page, "tilt");
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(dialog(page)).toBeHidden({ timeout: 15_000 });
+  });
+});
+
+test.describe("tilt hint on a portrait tablet (834x1194)", () => {
+  test.use({ viewport: { width: 834, height: 1194 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("follows the full tour's closing line", async ({ page }) => {
+    await tourToClosing(page);
+    // A tablet's raised line waits for a tap (only a phone's toast moves on by itself).
+    await tapThrough(page, "closing");
+    await expectLine(page, "tilt");
+    await expect(dialog(page)).toContainText(TILT_TEXT);
+  });
+});
+
+test.describe("no tilt hint in landscape (844x390)", () => {
+  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+
+  test("the tour ends on its closing line", async ({ page }) => {
+    await tourToClosing(page);
+    await expect(dialog(page)).toBeHidden({ timeout: 30_000 });
+    expect(await page.evaluate(() => localStorage.getItem("hq:tilt-hint"))).toBeNull();
+  });
+});
+

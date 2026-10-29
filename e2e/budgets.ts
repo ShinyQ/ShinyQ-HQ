@@ -82,12 +82,14 @@ export const BYTES_3D_BUDGET = {
   officeWatch: Math.round(2.026 * 1024),
   /** L1 office beacon chunk (the beacon and deploy beam mesh, on the first Needs Kurniadi ask or fresh production deploy), incremental over the office chunks, outside the session total (measured 2,043 B, cap 2,657 B). */
   officeBeacon: Math.round(2.595 * 1024),
-  /** First-session tour chunk (`hud/dialog/onboarding.ts`, loaded only by a session that plays the tour or Replay tutorial), outside both session totals like the intro chunk (parent session under the owner's delegation, 2026-10-25): measured 1,018 B + 614 B (cap 1,632 B; 1,211 B before the tour stopped driving the rover, 2026-10-27). */
-  tour: 1_018 + 614,
+  /** First-session tour chunk (`hud/dialog/onboarding.ts`, loaded only by a session that plays the tour or Replay tutorial), outside both session totals like the intro chunk (parent session under the owner's delegation, 2026-10-25): measured 1,340 B + 614 B (cap 1,954 B; 1,018 B before the tilt hint, spec 2026-10-29 section 5; 1,211 B before the tour stopped driving the rover, 2026-10-27). */
+  tour: 1_340 + 614,
   /** Corners menu sheet chunk (`hud/menu/MenuSheet.tsx`, loaded on the menu button's first press), outside both session totals like the tour chunk (owner decision 2026-10-28): measured 1,470 B + 614 B (cap 2,084 B; 1,475 B since it reads the pointer for the key caps). */
   menu: 1_470 + 614,
   /** Pad picker sheet chunk (`hud/pads/PickerSheet.tsx`, loaded when a pad picker first opens), outside both session totals like the menu chunk (owner decision 2026-10-28): measured 1,891 B + 614 B (cap 2,505 B). */
   picker: 1_891 + 614,
+  /** Touch controls chunk (`hud/Joystick.tsx`: the tablet joystick, the phone's floating stick and Boost, loaded only on a coarse pointer), outside both session totals like the menu chunk (spec 2026-10-29, decision 3.8): measured 2,368 B + 614 B (cap 2,982 B). */
+  touch: 2_368 + 614,
   /** Floor chunks every session loads (idle prefetch): the session total counts these. B1 loads only for unlocked visitors. */
   sessionFloors: ["L3", "L4", "RF"],
   /** Main path + the session floors + the office watch, scene and replay chunks (measured 527,810 B lite, 543,944 B full; caps 528,424 B and 544,558 B, +2,158 B each for the L4 reader tracks, owner decision 2026-10-25). */

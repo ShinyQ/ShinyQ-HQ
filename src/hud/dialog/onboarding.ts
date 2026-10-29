@@ -36,13 +36,14 @@ export interface OnboardingCopy {
   pointGoPhone: string;
   movedPhone: string;
   floorChip: string;
+  tilt: string;
 }
 
 /** Every copy key, in `dialog.onboarding`; OnboardingLayer resolves them with its `t` once the chunk is in. */
 export const COPY_KEYS = [
   "welcome", "start", "skip", "skipped", "moveFine", "moveCoarse", "pointGoFine", "pointGoCoarse", "moved",
   "cameraFine", "cameraCoarse", "elevator", "roverMenu", "askAi", "closing", "closingShort",
-  "pointGoPhone", "movedPhone", "floorChip",
+  "pointGoPhone", "movedPhone", "floorChip", "tilt",
 ] as const satisfies readonly (keyof OnboardingCopy)[];
 
 /** A `t` of the `dialog.onboarding` namespace; every line gets `{ name }` (lines without the placeholder ignore it). */
@@ -63,6 +64,62 @@ export interface OnboardingDeps {
   /** The Ask AI pill is on screen (Ask the HQ enabled). */
   askAi: () => boolean;
   tryItMs?: number;
+  /** Cancels a dialog request by id (the store's `cancelDialog`): a rotation ends the tilt hint. */
+  cancel?: (id: string) => void;
+  /** The tilt hint after the closing line; null for none. Omitted: the browser's (`browserTilt`). */
+  tilt?: TiltDeps | null;
+}
+
+/**
+ * The one-time tilt hint (spec 2026-10-29, owner decisions 3.6, 3.7, 3.9): after the tour's closing line, a portrait touch
+ * screen (phone or tablet) hears once that sideways shows a wider view. A tap or the toast hold ends it, and so does a
+ * rotation. Never a lock or an overlay (iOS Safari cannot lock the orientation).
+ */
+export interface TiltDeps {
+  /** A coarse pointer on a portrait screen that has not had the hint. */
+  due: () => boolean;
+  /** Marks the hint as had (when it shows). */
+  seen: () => void;
+  /** Resolves when the screen turns (or the signal aborts). */
+  rotated: (signal: AbortSignal) => Promise<void>;
+  cancel: (id: string) => void;
+}
+
+/** localStorage: the tilt hint was shown on this device. */
+export const TILT_KEY = "hq:tilt-hint";
+export const TILT_ID = "tilt";
+const PORTRAIT = "(orientation: portrait)";
+
+export function browserTilt(coarse: boolean, cancel: (id: string) => void = () => {}): TiltDeps | null {
+  if (!coarse || typeof window === "undefined" || typeof window.matchMedia !== "function") return null;
+  const portrait = window.matchMedia(PORTRAIT);
+  return {
+    due: () => {
+      try {
+        return portrait.matches && !window.localStorage.getItem(TILT_KEY);
+      } catch {
+        return false;
+      }
+    },
+    seen: () => {
+      try {
+        window.localStorage.setItem(TILT_KEY, "1");
+      } catch {
+        // Storage off: the hint may show again next session, which is harmless.
+      }
+    },
+    rotated: (signal) =>
+      new Promise((resolve) => {
+        const done = () => {
+          portrait.removeEventListener("change", done);
+          signal.removeEventListener("abort", done);
+          resolve();
+        };
+        portrait.addEventListener("change", done);
+        signal.addEventListener("abort", done, { once: true });
+      }),
+    cancel,
+  };
 }
 
 /** Resolves once the rover has moved `distance` from where it stood, changed floor, or the line ended. */
@@ -161,5 +218,18 @@ export async function runOnboarding(d: OnboardingDeps): Promise<OnboardingOutcom
 
   // 5. Closing.
   result = await d.say({ key: "closing", text: d.variant === "full" ? copy.closing : copy.closingShort, face: "arrived" }, { id: ONBOARDING_ID });
-  return result.status === "cancelled" ? "cancelled" : "done";
+  if (result.status === "cancelled") return "cancelled";
+
+  // 6. The tilt hint, once per device on a portrait touch screen; a rotation ends it.
+  const tilt = d.tilt === undefined ? browserTilt(d.coarse, d.cancel) : d.tilt;
+  if (tilt?.due()) {
+    tilt.seen();
+    const stop = new AbortController();
+    void tilt.rotated(stop.signal).then(() => {
+      if (!stop.signal.aborted) tilt.cancel(TILT_ID);
+    });
+    await d.say({ key: "tilt", text: copy.tilt }, { id: TILT_ID });
+    stop.abort();
+  }
+  return "done";
 }

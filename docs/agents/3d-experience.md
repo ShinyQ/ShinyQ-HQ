@@ -261,17 +261,25 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 ## Camera
 
+### Camera classes
+
+- `cameraClass(w, h)` (`src/lib/viewport.ts`) picks the value set, `device.camera` (`CameraClass` in `experience/types.ts`): `landscape` for phones held sideways (wider than tall, under 500 px high: 844 x 390, 667 x 375, 932 x 430), `mobile` for portrait screens of any width (height over 1.15 x width), else `desktop` or `tablet` by width. The HUD's classes (`ViewportClass`) are separate and unchanged.
+- Every per-class camera table has a `landscape` row (`FOLLOW`, `FOLLOW_LOOK_AHEAD`, `RAIL`, `HOLOGRAM_RIG`, `FIRST_PERSON_FOV`, `CLASS_ASPECT`, the intro's `WAKE`, `PULL`, `PEAK`, `PLAZA_ORBIT`, `ACROSS`, `SKY.azimuth`). The landscape follow rig is the tablet one at 0.7 of its distance, the rail at 0.66, both with `lift: 2` (the look target raised 2 u, scaled by the zoom), so titles read as on a portrait phone in a short frame (spec 2026-10-29, `tests/unit/landscape-camera.test.ts`).
+- Phone type sizes: `phoneCamera(cls)` (`mobile` or `landscape`) picks the phone font sizes of the [reading rule](floors.md#arrival) in `CareerArchive`, `ReactorCore`, `LibrarySigns`, `EndPlaza` and `SignalGarden`.
+- Landscape zone views: the L1 kiosk (`OBSERVATORY_VIEW.landingLandscape`, primed and on a drive back: the desktop's turn, zoom 3, pitch -0.1, look offset forward -2 and up -2, `tests/unit/landing-view.test.ts`), the L1 office (the tablet frame: zoom 1.5 / 0.7 and a held look offset up -2 that takes the lift back), the L2 time console, the L2 repo skyline (`L2:skyline`, landscape only), the L3 ops room and Tech Reactor, the L4 headlines and Topic Constellation, the RF comms and CV stops.
+
 ### Orbit
 
 - `camera/orbit.ts` holds the orbit state (owner decision):
   - Unbounded yaw on every floor; L2 has its own yaw so it opens on its side view.
   - Pitch from just above the floor to near top-down: `PITCH_LIMITS` [0.06, 1.45] rad in `camera/rigs.ts`, applied per rig through `pitchRange(cls, rig)`.
-  - Zoom 0.6 to 1.5.
+  - Zoom 0.6 to 1.5 (`ZOOM_RANGE`). A zone may hold the zoom past it (the L1 kiosk: 3 on a landscape phone); a hand zoom then never jumps past where it starts (`zoomBy`: zooming in from there is smooth, zooming out holds).
   - Eased steps, reset, wall auto-face via `VIEW_ZONES`.
   - A `ViewZone.travel` direction limits a zone to a rover facing within 90 degrees of it; `zoneAt` takes the heading.
   - `ViewZone.railYaw` (L2 rail rig only) turns the rail like `yaw` turns the follow camera; leaving such a zone eases the rail back to the side view, unless the visitor turned it by hand.
   - `ViewZone.arrivalOnly` zones are active only once an arrival or a floor deep-link spawn primed them (`activeZone`): driving into one later does nothing.
-  - `ViewZone.lookOffset` (or a class view's own `lookOffset`), opt-in: `{ forward?, up?, right?, hold?, near? }` in u, scaled with the follow distance like the camera offset. `followPose(cls, target, yaw, zoom, pitch, lookForward, lookUp, lookRight)` moves only the look target by it (`forward` along the camera's horizontal forward, negative toward the camera; `up` along y; `right` along the camera's horizontal right), so the view tilts or turns and the camera stays. On the L2 rail only `right` applies (`railPose(..., lookRight)`). Steering and the look-ahead keep the orbit's forward (`followForward(cls, yaw)` while a `right` applies). `OrbitState.lookForward`, `lookUp` and `lookRight` ease to it with the zone like its zoom (`updateZone`, `primeZone` at once), back to 0 on leaving, on a hand zoom (`zoomBy`) or a reset; never applied under reduced motion. With `hold` (`OrbitState.lookHold`) a hand zoom keeps it: it scales with the zoom, so the view zooms in about the same aim (a drag, a reset or leaving still let it go); a held offset's `near: { zoom, up }` swaps its `up` while a hand zoom is under `zoom` (`OrbitState.lookAim` keeps the offset to re-aim from; the L1 office's desktop near pose). Without it a zone produces exactly the poses it did before (identical floats, `tests/unit/camera-look-offset.test.ts` against a frozen copy of the rig and orbit, every zone and class). `L1:office` uses `forward` and `up` ([L1 Agent Office](floor-l1-lobby.md#agent-office)); the elevator arrivals use only `right` ([Elevator arrival](#elevator-arrival)): `L3:overview` on every class, `L1:arrival`, `L2:arrival` and `RF:arrival` on portrait screens.
+  - `ViewZone.only` limits a zone to some camera classes (`zoneAt(floor, p, extra, cls)`; callers without a class never get it): the landscape-only `L2:skyline`. Other classes drive through it as open floor.
+  - `ViewZone.lookOffset` (or a class view's own `lookOffset`), opt-in: `{ forward?, up?, right?, hold?, near? }` in u, scaled with the follow distance like the camera offset. `followPose(cls, target, yaw, zoom, pitch, lookForward, lookUp, lookRight)` moves only the look target by it (`forward` along the camera's horizontal forward, negative toward the camera; `up` along y; `right` along the camera's horizontal right), so the view tilts or turns and the camera stays. On the L2 rail `right` and `up` apply (`railPose(..., lookRight, lookUp)`; the class's rig `lift` adds to the up). Steering and the look-ahead keep the orbit's forward (`followForward(cls, yaw)` while a `right` applies). `OrbitState.lookForward`, `lookUp` and `lookRight` ease to it with the zone like its zoom (`updateZone`, `primeZone` at once), back to 0 on leaving, on a hand zoom (`zoomBy`) or a reset; never applied under reduced motion. With `hold` (`OrbitState.lookHold`) a hand zoom keeps it: it scales with the zoom, so the view zooms in about the same aim (a drag, a reset or leaving still let it go); a held offset's `near: { zoom, up }` swaps its `up` while a hand zoom is under `zoom` (`OrbitState.lookAim` keeps the offset to re-aim from; the L1 office's desktop near pose). Without it a zone produces exactly the poses it did before (identical floats, `tests/unit/camera-look-offset.test.ts` against a frozen copy of the rig and orbit, every zone and class). `L1:office` uses `forward` and `up` ([L1 Agent Office](floor-l1-lobby.md#agent-office)); the elevator arrivals use only `right` ([Elevator arrival](#elevator-arrival)): `L3:overview` on every class, `L1:arrival`, `L2:arrival` and `RF:arrival` on portrait screens.
 - `roverRuntime.cameraSettled` (written by `CameraDirector` every frame): the orbit is not easing and the drawn camera has reached the wanted pose (within 0.1 u); an L1 Agent Office chip turns near only then.
 - `roverRuntime.cameraView` and `cameraHeld` (`holdZone` in `orbit.ts`, written by `CameraDirector` every frame): the view zone whose view is applied (entered with motion on, not turned by hand, third person; else null) and whether the camera has come to rest in it, held from that frame until the zone changes, the camera class changes or its look offset is retargeted unless it holds (a hand zoom with a held look offset, re-aimed for the near pose or not, and the rover moving inside the zone keep it); the L1 Agent Office chips show in full only while it holds the office view ([floor-l1-lobby.md](floor-l1-lobby.md#agent-office)).
 - Add a floor's view zones there.
@@ -292,12 +300,13 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
 
 - Zoom input: the mouse wheel, trackpad scroll and pinch, a two-finger pinch and `+`/`-` emit `zoom` (`classifyWheel`, `wheelZoomFactor` in `input/intents.ts`) (owner decision).
 - Neither the wheel nor any touch swipe changes floors (owner decision 2026-10-24); PageUp/PageDown, the elevator panel, the floor chip sheet and call pads do. A one-finger drag turns and tilts the view like a mouse drag (`TOUCH_YAW`, `TOUCH_PITCH` in `input/useInputSources.ts`); `classifySwipe` only reports taps and horizontal scrubs (L2 years).
+- Phones: a touch that starts in the drive zone is the floating stick's, not a look drag ([Floating stick](hud-and-drawer.md#floating-stick)); it never joins a pinch or twist, so one thumb drives while the other looks.
 - Entering first person: zooming in past the closest distance (`FIRST_PERSON.enterPush`) glides into the rover's eyes in 0.45 s; a cut under reduced motion.
 
   | `camera/firstPerson.ts` | Value |
   |---|---|
   | eye | 1.55 u |
-  | FOV | 65/70/80 |
+  | FOV | 65/70/80 (desktop/tablet/portrait; landscape 70) |
   | look | -60 to +31 degrees |
   | near / far | 0.1 / 72 |
   | fog | 14 to 64 u |

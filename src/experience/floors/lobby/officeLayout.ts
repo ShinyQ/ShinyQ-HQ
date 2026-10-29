@@ -168,6 +168,10 @@ export const OFFICE = {
   view: {
     desktop: { zoom: 1.285, pitch: 0.26, lookOffset: { up: 1.15, hold: true, near: { zoom: 1.2, up: 4 } } },
     tablet: { zoom: 1.5, pitch: 0.35 },
+    // Landscape phones keep the tablet frame (tuned on 844 x 390): their rig stands at 0.7 of the tablet distance and looks
+    // 2 u higher (`FOLLOW.landscape`), so the zoom grows by 1 / 0.7 and the look offset takes the lift back (held through a
+    // hand zoom, as the tablet frame has no offset to ease out).
+    landscape: { zoom: 1.5 / 0.7, pitch: 0.35, lookOffset: { up: -2, hold: true } },
     mobile: { zoom: 1.42, pitch: 0.2, lookOffset: { forward: -3.75 } },
     half: { x: 2, z: 1.4 },
   },
@@ -383,6 +387,7 @@ export function officeZone(w: OfficeWing): ViewZone {
     classView: {
       desktop: { ...view.desktop, lookOffset: { ...view.desktop.lookOffset } },
       tablet: { ...view.tablet },
+      landscape: { ...view.landscape, lookOffset: { ...view.landscape.lookOffset } },
       mobile: { ...view.mobile, lookOffset: { ...view.mobile.lookOffset } },
     },
     // The view looks south past the L1 slab edge, under the L2 slab: its ghost outline hides here (tower/ghostOutline.ts).

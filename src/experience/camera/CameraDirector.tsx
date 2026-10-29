@@ -167,7 +167,7 @@ export function CameraDirector({
     // that view and the first frame shows it, with no turn afterwards. Other zones keep easing in (never under reduced motion).
     // A deep link that spawns on an arrival point (L4, RF) opens on the arrival view too (rail-aware).
     if (!l.ready || s.phase === "boot" || s.phase === "intro") {
-      const zone = zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones);
+      const zone = zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones, cls);
       if (zone?.prime || zone?.arrivalOnly) primeZone(orbit, zone, cls, s.floor === "L2");
     }
 
@@ -201,7 +201,7 @@ export function CameraDirector({
     // order here (Scene.tsx mounts the Director just before the CameraDirector).
     if (!s.ride && l.prevStage !== null && l.prevStage !== "toDoor" && s.reducedMotion) {
       const zone = arrivalZone(layouts?.[s.floor]);
-      if (zone && zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones)?.id === zone.id) {
+      if (zone && zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones, cls)?.id === zone.id) {
         primeArrival(orbit, zone, s.floor, cls);
         // The follow look-ahead reads the last drawn forward (still the origin's view): cut straight to the settled one.
         if (s.floor !== "L2") roverRuntime.cameraForward = followForward(cls, orbit.yaw);
@@ -214,7 +214,7 @@ export function CameraDirector({
     // The arrival view holds while the camera glides and the rover rolls on to the arrival point, so it parks in the primed zone.
     // A pending roll-on while the visitor steers releases the hold: the zones follow the steered rover.
     if (exploring && !s.ride && !glide && !rollingOn) {
-      updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones), orbit), s.reducedMotion, cls, rail);
+      updateZone(orbit, activeZone(zoneAt(s.floor, roverRuntime, layouts?.[s.floor].viewZones, cls), orbit), s.reducedMotion, cls, rail);
     }
     stepOrbit(orbit, dt, s.reducedMotion, rig === "intro" || holdThirdPerson(s) || glide !== null, frameDt);
     roverRuntime.cameraYaw = orbit.yaw;
@@ -241,7 +241,7 @@ export function CameraDirector({
       // centered (a zone's sideways look offset, `LookOffset.right`, aims a portrait view between the rover and the road ahead).
       if (onRail) {
         const axisZ = roadZAt(railAxis, roverRuntime.x);
-        return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null, orbit.lookRight);
+        return railPose(cls, roverRuntime.x, roverRuntime.y, orbit.zoom * l.boost.pull, roverRuntime.z, orbit.railYaw, axisZ, orbit.pitch, orbit.zoneRailYaw !== null, orbit.lookRight, orbit.lookUp);
       }
       // Look slightly ahead of the rover so more of the floor in front is visible; a zone's eased look offset moves the target only.
       const ahead = FOLLOW_LOOK_AHEAD[cls];

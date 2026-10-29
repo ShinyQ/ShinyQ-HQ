@@ -10,9 +10,12 @@ describe("viewport classes", () => {
     expect(viewportClass(1440, 900)).toBe("desktop");
   });
 
-  it("keeps mobile HUD but tablet camera on landscape phones", () => {
+  it("keeps mobile HUD and gives landscape phones their own camera", () => {
     expect(viewportClass(844, 390)).toBe("mobile");
-    expect(cameraClass(844, 390)).toBe("tablet");
+    expect(cameraClass(844, 390)).toBe("landscape");
+    expect(cameraClass(667, 375)).toBe("landscape");
+    expect(cameraClass(932, 430)).toBe("landscape");
+    expect(cameraClass(960, 640)).toBe("tablet");
     expect(cameraClass(390, 844)).toBe("mobile");
     expect(cameraClass(1024, 1366)).toBe("mobile");
     expect(cameraClass(800, 1000)).toBe("mobile");

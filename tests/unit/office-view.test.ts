@@ -1,6 +1,6 @@
 import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
-import type { ViewportClass } from "@/experience/types";
+import type { CameraClass } from "@/experience/types";
 import { cameraClass } from "@/lib/viewport";
 import type { OfficeTranslate } from "@/experience/floors/lobby/officeLayout";
 import { chipLines, nearDropsFor, nearParts, officeView, safeGithubUrl, safeRepoUrl, screenInput } from "@/experience/floors/lobby/office/officeModel";
@@ -169,18 +169,20 @@ describe("Agent Office view model", () => {
  */
 describe("the office stop frame", () => {
   /** The measured wall top and both rows' top and bottom (fractions of the height from the top edge), per camera class. */
-  const MEASURED: Record<ViewportClass, readonly [number, number, number]> = {
+  const MEASURED: Record<CameraClass, readonly [number, number, number]> = {
     desktop: [0.15, 0.386, 0.687],
     tablet: [0.177, 0.377, 0.629],
+    // Landscape phones keep the tablet frame (`OFFICE.view.landscape`).
+    landscape: [0.177, 0.377, 0.629],
     mobile: [0.149, 0.295, 0.469],
   };
   /** The front row's top (its Rovers' heads), measured at the same view: the back row on its riser stands higher. */
-  const FRONT_TOP: Record<ViewportClass, number> = { desktop: 0.492, tablet: 0.467, mobile: 0.358 };
+  const FRONT_TOP: Record<CameraClass, number> = { desktop: 0.492, tablet: 0.467, mobile: 0.358, landscape: 0.467 };
   /**
    * The lowest the wall's top may stand: 15% (the target), but 18% on the tablet camera, whose screens are short: measured
    * clear of the HUD's top bar (62 px) on 844 x 390 and of the chip row (66 px plus a 32 px chip) on 960 x 640.
    */
-  const WALL_TOP_MAX: Record<ViewportClass, number> = { desktop: 0.15, tablet: 0.18, mobile: 0.15 };
+  const WALL_TOP_MAX: Record<CameraClass, number> = { desktop: 0.15, tablet: 0.18, mobile: 0.15, landscape: 0.18 };
 
   it.each(SIZES)("frames the office on $id ($width x $height): wall top, both rows, the tower, the dock and the visitor's Rover", ({ width, height }) => {
     const cls = cameraClass(width, height);
@@ -190,7 +192,7 @@ describe("the office stop frame", () => {
     expect(f.wallTop, "wall top 12% down or lower").toBeGreaterThanOrEqual(0.12);
     expect(f.wallTop, "wall top 15% down or higher (18% on the tablet camera)").toBeLessThanOrEqual(WALL_TOP_MAX[cls] + 5e-4);
     if (cls === "desktop") expect(f.wallTop * height, "wall top under the chip row by 8 px").toBeGreaterThanOrEqual(66 + 32 + 8);
-    if (cls === "tablet") {
+    if (cls === "tablet" || cls === "landscape") {
       expect(f.wallTop * height, "wall top under the HUD's top bar").toBeGreaterThanOrEqual(62 + 4);
       if (height > 390) expect(f.wallTop * height, "wall top under the chip row").toBeGreaterThanOrEqual(66 + 32 + 8);
     }

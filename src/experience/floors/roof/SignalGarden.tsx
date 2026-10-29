@@ -2,6 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { phoneCamera } from "@/lib/viewport";
 import { useHQStore } from "@/store/useHQStore";
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, NormalBlending, Object3D, type Group, type InstancedMesh, type MeshBasicMaterial } from "three";
 import { BatchedLabels } from "../../fx/BatchedLabels";
@@ -147,7 +148,7 @@ function Drone({ mast, targets, active, tier, reducedMotion }: { mast: Vec2; tar
  */
 export function SignalGarden({ layout, roof, profile, labels, tier, reducedMotion, active }: RoofSceneryProps) {
   const detail = roofDetail(tier);
-  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const phone = useHQStore((s) => phoneCamera(s.device.camera));
   const scene = useMemo(() => {
     const { centerpiece: cp, comms, cv, about } = layout;
     const c = cp.center;

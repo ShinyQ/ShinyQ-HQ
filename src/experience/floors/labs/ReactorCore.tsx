@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Color, CylinderGeometry, Object3D, PlaneGeometry, RingGeometry, type InstancedMesh } from "three";
 import type { ReactorRingId } from "@/content/tech-rings";
+import { phoneCamera } from "@/lib/viewport";
 import { getHQStore, useHQStore, type ReactorTech } from "@/store/useHQStore";
 import { FloatingSigns } from "../../fx/FloatingSign";
 import { signPlate, wrapSign, type SignSpec } from "../../fx/signLayout";
@@ -140,7 +141,7 @@ export function Reactor({ center, labels }: { center: Vec2; labels: ReactorLabel
     },
     [],
   );
-  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const phone = useHQStore((s) => phoneCamera(s.device.camera));
   const signs = useMemo(() => reactorSigns(labels, tech, phone), [labels, tech, phone]);
 
   return (

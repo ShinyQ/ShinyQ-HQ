@@ -186,7 +186,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
   // Every post drives to its bay's door; the featured post's room keeps the stage door (doors win over stops).
   const postStops: Partial<Record<RoomId, Vec2>> = {};
   for (const bay of bays) for (const slug of bay.posts) if (slug !== newest?.slug) postStops[roomOfPost(slug)] = bay.stop;
-  const topicsPhone = { mobile: { zoom: 1, lookOffset: { up: 3 } } };
+  const topicsPhone = { mobile: { zoom: 1, lookOffset: { up: 3 } }, landscape: { zoom: E.zoom * 1.05, pitch: -0.3, lookOffset: { up: 2 } } };
   const floor = libraryFloor({
     bounds,
     stations: docked,
@@ -206,7 +206,7 @@ export function buildNewsroomLayout(input: LibraryLayoutInput): LibraryLayout {
       },
       // In front of the headline wall: look north at it, zoomed out so the whole wall fits.
       // A portrait phone comes closer, so the ticker reads (the phone reading rule).
-      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4, classView: { mobile: { zoom: 0.95 } } },
+      { id: "L4:headlines", area: { minX: wall.minX, maxX: wall.maxX, minZ: wall.maxZ + 0.5, maxZ: wall.maxZ + 5 }, yaw: 0, zoom: 1.4, classView: { mobile: { zoom: 0.95 }, landscape: { zoom: 1.3 } } },
       // The end plaza: look east over the constellation from where the timeline meets the ring road. A portrait phone
       // comes closer so the topic names read, aimed 3 u higher so the pieces count over the cloud stays in frame.
       { id: TOPICS_ROOM, area: around(ringStop, 2.5), yaw: E.lookEast, zoom: E.zoom, classView: topicsPhone },

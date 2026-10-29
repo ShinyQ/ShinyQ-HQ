@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { phoneCamera } from "@/lib/viewport";
 import { useHQStore } from "@/store/useHQStore";
 import { useWarmingFloor } from "../scene/warmState";
 import type { CareerData, Rect } from "../types";
@@ -26,7 +27,7 @@ export function CareerArchive({ career, labs, labels }: { career: CareerData; la
   const tier = useHQStore((s) => s.tier);
   const reducedMotion = useHQStore((s) => s.reducedMotion);
   // Portrait phones set the room names, placings and signposts larger (the phone reading rule).
-  const phone = useHQStore((s) => s.device.camera === "mobile");
+  const phone = useHQStore((s) => phoneCamera(s.device.camera));
   const layout = useMemo(() => buildCareerRoad(careerLayoutInput(career)), [career]);
   const years = useMemo(() => career.years.map((y) => y.year), [career]);
   const entries = useMemo(() => new Map(career.years.flatMap((y) => y.entries.map((e) => [e.slug, e] as const))), [career]);

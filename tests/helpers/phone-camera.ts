@@ -6,8 +6,8 @@ import { zoneAt, zoneView } from "@/experience/camera/orbit";
 import { FOLLOW_LOOK_AHEAD, followForward, followPose, railPose, type CameraPose, type Vec3 } from "@/experience/camera/rigs";
 import { roadZAt } from "@/experience/floors/career/layout";
 import type { Readable, ReadingPose } from "@/experience/readable";
-import type { FloorLayout, ViewportClass } from "@/experience/types";
-import { cameraClass } from "@/lib/viewport";
+import type { CameraClass, FloorLayout } from "@/experience/types";
+import { cameraClass, phoneCamera } from "@/lib/viewport";
 
 /**
  * Settled camera poses for pure tests, mirroring `CameraDirector`: the rover at a point with a heading, the zone
@@ -21,7 +21,7 @@ export const rigOf = (floor: FloorId): "follow" | "rail" => (floor === "L2" ? "r
 export function readingPose(floor: FloorId, layout: FloorLayout, reading: ReadingPose, w: number, h: number): CameraPose {
   const cls = cameraClass(w, h);
   const { at, heading, primed = false } = reading;
-  const found = zoneAt(floor, { ...at, heading }, layout.viewZones);
+  const found = zoneAt(floor, { ...at, heading }, layout.viewZones, cls);
   const zone = found && (!found.arrivalOnly || primed) ? found : null;
   const view = zone ? zoneView(zone, cls, primed) : null;
   const zoom = view?.zoom ?? 1;
@@ -30,7 +30,7 @@ export function readingPose(floor: FloorId, layout: FloorLayout, reading: Readin
   if (rigOf(floor) === "rail") {
     const axis = layout.road?.roads[0]?.points ?? [];
     const railYaw = zone?.railYaw;
-    return railPose(cls, at.x, 0, zoom, at.z, railYaw ?? 0, roadZAt(axis, at.x), pitch, railYaw !== undefined, look?.right ?? 0);
+    return railPose(cls, at.x, 0, zoom, at.z, railYaw ?? 0, roadZAt(axis, at.x), pitch, railYaw !== undefined, look?.right ?? 0, look?.up ?? 0);
   }
   const yaw = view?.yaw ?? ARRIVAL_YAW;
   const forward = followForward(cls, yaw);
@@ -54,7 +54,7 @@ export function screen(camera: PerspectiveCamera, w: number, h: number, p: Vec3)
 }
 
 /** The label's font size on a camera class: its phone size on class `mobile` when it has one. */
-export const fontOf = (l: Pick<Readable, "fontSize" | "phoneFontSize">, cls: ViewportClass): number => (cls === "mobile" ? (l.phoneFontSize ?? l.fontSize) : l.fontSize);
+export const fontOf = (l: Pick<Readable, "fontSize" | "phoneFontSize">, cls: CameraClass): number => (phoneCamera(cls) ? (l.phoneFontSize ?? l.fontSize) : l.fontSize);
 
 /** The label's up direction: vertical, leaning back by its `tilt` away from the side it faces (`yaw`, 0 faces +z; else toward the camera). */
 function upOf(l: Pick<Readable, "yaw" | "tilt" | "at" | "flips">, camera: Vector3): Vec3 {
@@ -66,7 +66,7 @@ function upOf(l: Pick<Readable, "yaw" | "tilt" | "at" | "flips">, camera: Vector
 }
 
 /** On-screen height (CSS px) of the label's em box: `at` plus and minus half its font size along its up direction. */
-export function emPx(camera: PerspectiveCamera, w: number, h: number, l: Readable, cls: ViewportClass): number {
+export function emPx(camera: PerspectiveCamera, w: number, h: number, l: Readable, cls: CameraClass): number {
   const half = fontOf(l, cls) / 2;
   const up: Vec3 = l.billboard ? (new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).toArray() as Vec3) : upOf(l, camera.position);
   const top = screen(camera, w, h, [l.at[0] + up[0] * half, l.at[1] + up[1] * half, l.at[2] + up[2] * half]);
@@ -93,9 +93,9 @@ export function facingAngle(l: Readable, camera: Vec3): number {
  * Both ends of the label's title line on screen (CSS px), along its facing (or square to the camera when it turns to it),
  * scaled to the class's font size; null without a `width`.
  */
-export function endsPx(camera: PerspectiveCamera, w: number, h: number, l: Readable, cls: ViewportClass): { x: number; y: number; front: boolean }[] | null {
+export function endsPx(camera: PerspectiveCamera, w: number, h: number, l: Readable, cls: CameraClass): { x: number; y: number; front: boolean }[] | null {
   if (l.width === undefined) return null;
-  const half = (cls === "mobile" && l.phoneWidth !== undefined ? l.phoneWidth : (l.width * fontOf(l, cls)) / l.fontSize) / 2;
+  const half = (phoneCamera(cls) && l.phoneWidth !== undefined ? l.phoneWidth : (l.width * fontOf(l, cls)) / l.fontSize) / 2;
   const toward = Math.atan2(camera.position.x - l.at[0], camera.position.z - l.at[2]);
   const flipped = l.yaw !== undefined && l.flips && Math.cos(toward - l.yaw) < 0;
   const yaw = l.yaw === undefined ? toward : flipped ? l.yaw + Math.PI : l.yaw;

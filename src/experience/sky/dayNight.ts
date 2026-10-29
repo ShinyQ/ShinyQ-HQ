@@ -1,7 +1,7 @@
 import { Color, Vector3 } from "three";
 import { dayNightOn, type DayNightPref } from "@/lib/day-night";
 import { sceneSettings } from "../scene/settings";
-import type { ViewportClass } from "../types";
+import type { CameraClass } from "../types";
 
 /** One full day and night: 4 minutes, so a typical visit sees dawn, day, dusk and night (owner decision 2026-10-18; Round 8 K had 8). */
 export const CYCLE_MS = 4 * 60 * 1000;
@@ -20,10 +20,10 @@ export type SkyPhaseName = keyof typeof SKY_PHASES;
  * profile card and the Visitor Observatory (the camera looks along about -0.38 rad there); tablet and
  * phone: the open sky at the top left of the L1 portrait view (the camera looks along about -1.0 rad).
  */
-export const SKY = { horizon: -0.6, rise: 0.16, width: 0.06, azimuth: { desktop: -0.2, tablet: -0.85, mobile: -0.85 } } as const;
+export const SKY = { horizon: -0.6, rise: 0.16, width: 0.06, azimuth: { desktop: -0.2, tablet: -0.85, mobile: -0.85, landscape: -0.85 } } as const;
 
 /** The sun and moon arc's azimuth for a camera class (`device.camera`). */
-export function skyAzimuth(cls: ViewportClass): number {
+export function skyAzimuth(cls: CameraClass): number {
   return SKY.azimuth[cls];
 }
 

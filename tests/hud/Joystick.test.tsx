@@ -3,10 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBoost, setJoystick } from "@/experience/input/joystick";
-import { DOUBLE_TAP_MS, Joystick } from "@/hud/Joystick";
+import { stickInput } from "@/experience/input/joystick";
+import { STICK } from "@/experience/input/floatingStick";
+import { bindTouch, DOUBLE_TAP_MS, Joystick, TAP_MAX_MS, TAP_SLOP_PX } from "@/hud/Joystick";
 import { getHQStore } from "@/store/useHQStore";
 
-vi.mock("@/experience/input/joystick", () => ({ setBoost: vi.fn(), setJoystick: vi.fn() }));
+vi.mock("@/experience/input/joystick", () => ({ setBoost: vi.fn(), setJoystick: vi.fn(), stickInput: { handler: null } }));
+
+// The touch chunk binds its main-path values once it loads (`Hud`); here, the mocked ones.
+bindTouch({ input: stickInput, setJoystick, setBoost });
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 
 const stick = () => screen.getByTestId("joystick");
@@ -41,6 +46,9 @@ afterEach(() => {
 describe("Joystick double-tap boost", () => {
   it("exports a 300 ms double-tap window", () => {
     expect(DOUBLE_TAP_MS).toBe(300);
+    // The fixed stick and the floating stick share their gesture constants.
+    expect([DOUBLE_TAP_MS, TAP_MAX_MS, TAP_SLOP_PX]).toEqual([STICK.doubleTapMs, STICK.tapMs, STICK.slop]);
+    expect(stickInput.handler).not.toBeNull();
   });
 
   it("toggles boost on with two taps 100 ms apart, and off with the next double tap", () => {

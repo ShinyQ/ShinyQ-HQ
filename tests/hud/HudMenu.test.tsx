@@ -210,6 +210,17 @@ describe("HudMenu", () => {
     getHQStore().setState({ device });
   });
 
+  it("a phone's controls help names the floating stick's drive zone (spec 2026-10-29), not a joystick", async () => {
+    const device = getHQStore().getState().device;
+    getHQStore().setState({ device: { ...device, viewport: "mobile", coarse: true } });
+    const { sheet } = await openMenu();
+    await userEvent.click(within(sheet).getByRole("button", { name: en.hud.controls }));
+    const card = await within(sheet).findByRole("region", { name: en.hud.controls });
+    expect(within(card).getAllByRole("definition").map((el) => el.textContent)).toEqual(en.hud.hintPhone.split(" · ").map((part) => part.split(": ")[1]));
+    expect(card).not.toHaveTextContent(/joystick/i);
+    getHQStore().setState({ device });
+  });
+
   it("Esc closes and returns focus to the menu button; so does the close button", async () => {
     const { button } = await openMenu();
     await userEvent.keyboard("{Escape}");

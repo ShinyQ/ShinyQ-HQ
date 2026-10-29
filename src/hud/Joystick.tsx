@@ -1,17 +1,32 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent } from "react";
+import { createStick, STICK, type FloatingStick as Stick } from "@/experience/input/floatingStick";
 import { applyDeadZone } from "@/experience/input/intents";
-import { setJoystick } from "@/experience/input/joystick";
+import type { setBoost, setJoystick, stickInput } from "@/experience/input/joystick";
 import { useBoostToggle } from "./boost";
 
-const RADIUS = 60;
+/**
+ * Main-path values this chunk uses, bound once when it loads (`bindTouch`, from `Hud`): importing them here would pull
+ * their modules out of the main path's hoisted scope and cost wrapper bytes there (performance.md, bytes-3d).
+ */
+export type TouchDeps = { input: typeof stickInput; setJoystick: typeof setJoystick; setBoost: typeof setBoost };
+let deps: TouchDeps & { stick: Stick };
+/** Binds the main-path values once and registers the phone's floating stick with the world input (`stickInput`). */
+export function bindTouch(next: TouchDeps): void {
+  if (deps) return;
+  const stick = createStick(next.setJoystick);
+  deps = { ...next, stick };
+  next.input.handler = stick;
+}
+
+const RADIUS = STICK.radius;
 /** After a short tap's release, a pointer down on the joystick within this window toggles boost. */
-export const DOUBLE_TAP_MS = 300;
+export const DOUBLE_TAP_MS = STICK.doubleTapMs;
 /** A touch counts as a tap only if it is released this quickly and moved less than `TAP_SLOP_PX`. */
-export const TAP_MAX_MS = 250;
-export const TAP_SLOP_PX = 12;
+export const TAP_MAX_MS = STICK.tapMs;
+export const TAP_SLOP_PX = STICK.slop;
 
 type Boost = ReturnType<typeof useBoostToggle>;
 
@@ -52,7 +67,7 @@ export function Joystick({ boost = false, aside = false }: { boost?: boolean; as
 }
 
 function BoostJoystick({ aside }: { aside: boolean }) {
-  const boost = useBoostToggle();
+  const boost = useBoostToggle(deps.setBoost);
   return (
     <>
       <Stick boost={boost} aside={aside} />
@@ -74,7 +89,7 @@ function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
   useEffect(() => {
     if (!aside || active.current === null) return;
     active.current = null;
-    setJoystick(0, 0, false);
+    deps.setJoystick(0, 0, false);
     setKnob({ x: 0, y: 0 });
   }, [aside]);
 
@@ -89,7 +104,7 @@ function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
       dy /= mag;
     }
     const v = applyDeadZone(dx, dy);
-    setJoystick(v.x, -v.y, true);
+    deps.setJoystick(v.x, -v.y, true);
     setKnob({ x: dx * RADIUS, y: dy * RADIUS });
   };
 
@@ -108,7 +123,7 @@ function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
       const p = press.current;
       lastTap.current = up && !p.moved && now - p.at <= TAP_MAX_MS ? now : 0;
     }
-    setJoystick(0, 0, false);
+    deps.setJoystick(0, 0, false);
     setKnob({ x: 0, y: 0 });
   };
 
@@ -153,5 +168,71 @@ function Stick({ boost, aside }: { boost?: Boost; aside: boolean }) {
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       />
     </div>
+  );
+}
+
+/** The bottom band's left column on touch (the chunk's entry from `Hud`): the floating stick on phones, else the fixed joystick with Boost. */
+export function TouchLeft({ phone, aside }: { phone: boolean; aside: boolean }) {
+  return phone ? <FloatingStick active={!aside} /> : <Joystick boost aside={aside} />;
+}
+
+/**
+ * Phone Boost (spec 2026-10-29): the Boost button in the bottom band's right column, above Reset view; its toggle is the
+ * floating stick's double tap too (`deps.stick.toggleBoost`).
+ */
+export function PhoneBoost() {
+  const boost = useBoostToggle(deps.setBoost);
+  const { toggle } = boost;
+  useEffect(() => {
+    deps.stick.toggleBoost = toggle;
+    return () => {
+      if (deps.stick.toggleBoost === toggle) deps.stick.toggleBoost = null;
+    };
+  }, [toggle]);
+  return <BoostButton boost={boost} />;
+}
+
+const stickView = () => deps.stick.view;
+
+/**
+ * The phone's floating stick (spec 2026-10-29): the world input owns the gesture (`input/floatingStick.ts`); this draws a
+ * faint resting ring where the fixed stick sat and, while a thumb drives, the base and knob under it. Neither takes a
+ * touch (the world under them does). `active` is the HUD's policy: it enables the drive zone, and turning it off (a docked
+ * Rover line, unmount) lets go of a held stick, so the rover stops.
+ */
+export function FloatingStick({ active }: { active: boolean }) {
+  const view = useSyncExternalStore(deps.stick.subscribe, stickView, stickView);
+  useEffect(() => {
+    deps.stick.enabled = active;
+    if (!active) deps.stick.release();
+    return () => {
+      deps.stick.enabled = false;
+      deps.stick.release();
+    };
+  }, [active]);
+  const { origin, knob } = view;
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        data-testid="joystick"
+        data-floating={origin ? "live" : "rest"}
+        className="glass pointer-events-none relative size-[120px] shrink-0 rounded-full transition-opacity motion-reduce:transition-none"
+        style={{ opacity: origin ? 0 : 0.45 }}
+      />
+      {origin && (
+        <div
+          aria-hidden="true"
+          data-testid="joystick-live"
+          className="glass glass-solid pointer-events-none fixed top-0 left-0 size-[120px] rounded-full"
+          style={{ transform: `translate(${origin.x - RADIUS}px, ${origin.y - RADIUS}px)` }}
+        >
+          <span
+            className="absolute top-1/2 left-1/2 size-12 rounded-full border border-cyan bg-cyan/25"
+            style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
+          />
+        </div>
+      )}
+    </>
   );
 }
