@@ -811,8 +811,8 @@ test.describe("free orbit on touch", () => {
     await page.touchscreen.tap(empty.x, empty.y);
     await expect(page.getByTestId("interact-go")).toHaveCount(0);
     const before = await snapshot(page);
-    // A slow horizontal drag across empty floor (not a swipe).
-    const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 560 }));
+    // A slow horizontal drag across empty floor (not a swipe), above the floating stick's drive zone (the bottom 40%).
+    const points = Array.from({ length: 12 }, (_, i) => ({ x: 80 + i * 20, y: 440 }));
     const cdp = await page.context().newCDPSession(page);
     let timestamp = Date.now() / 1000;
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [points[0]], timestamp });

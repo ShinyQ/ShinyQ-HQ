@@ -212,7 +212,8 @@ describe("the tilt hint (spec 2026-10-29)", () => {
     await runOnboarding(deps({ say: quiet.say, coarse: true, tilt }));
     expect(quiet.keys()).not.toContain("tilt");
     expect(tilt.seenCount).toBe(0);
-    for (const answer of [{ welcome: { choice: "skip" } }, { closing: { status: "cancelled" as const } }]) {
+    const answers: Record<string, Partial<SayResult>>[] = [{ welcome: { choice: "skip" } }, { closing: { status: "cancelled" } }];
+    for (const answer of answers) {
       const fake = fakeSay({ welcome: { choice: "start" }, ...answer });
       const due = fakeTilt();
       await runOnboarding(deps({ say: fake.say, coarse: true, tilt: due.tilt }));

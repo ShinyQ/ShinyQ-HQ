@@ -121,12 +121,13 @@ test.describe("boost effects on keyboards", () => {
   });
 });
 
-// Phones only: tablets run the same Corners joystick (their control set is checked in hud-corners.spec.ts).
+// Phones only: tablets run the fixed Corners joystick (their control set is checked in hud-corners.spec.ts). A phone's
+// stick floats (spec 2026-10-29): its double tap and its drive land on the world under the resting ring.
 for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
   test.describe(`boost toggle on a ${vp.name}`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-    test("a double tap on the joystick or the Boost button turns boost on and it stays on while driving; the next double tap or tap turns it off; a floor change resets it", async ({ page }) => {
+    test("a double tap in the drive zone or the Boost button turns boost on and it stays on while driving; the next double tap or tap turns it off; a floor change resets it", async ({ page }) => {
       const errors = collectErrors(page);
       await enterHQ(page);
       await waitForCameraSettle(page);
@@ -134,9 +135,9 @@ for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
       const button = page.getByTestId("boost");
       await expect(button).toBeVisible();
       await expect(button).toHaveAttribute("aria-pressed", "false");
-      await expect(joystick).toHaveAttribute("data-boost", "off");
+      await expect(joystick).toHaveAttribute("data-floating", "rest");
       await doubleTapJoystick(page);
-      await expect(joystick).toHaveAttribute("data-boost", "on");
+      await expect(button).toHaveAttribute("aria-pressed", "true");
       // On but parked: boost only applies while driving by hand.
       await waitForFrames(page, 20);
       expect((await liveFx(page)).boostFx).toBe(0);
@@ -150,21 +151,18 @@ for (const vp of [{ name: "phone", width: 390, height: 844 }]) {
       expect(peak.speed).toBeGreaterThan(9);
       expect(peak.trail).toBeGreaterThan(0);
       expect(peak.boostFx).toBeGreaterThan(0);
-      // Still on after the joystick is released, with no effects once the rover stops.
-      await expect(joystick).toHaveAttribute("data-boost", "on");
+      // Still on after the stick is released, with no effects once the rover stops.
+      await expect(button).toHaveAttribute("aria-pressed", "true");
       await expect.poll(async () => (await liveFx(page)).boostFx, { timeout: 15_000 }).toBe(0);
 
       await doubleTapJoystick(page);
-      await expect(joystick).toHaveAttribute("data-boost", "off");
       await expect(button).toHaveAttribute("aria-pressed", "false");
 
       // The visible Boost button (owner decision 2026-10-24) toggles the same state.
       await button.tap();
       await expect(button).toHaveAttribute("aria-pressed", "true");
-      await expect(joystick).toHaveAttribute("data-boost", "on");
       await page.keyboard.press("PageUp");
       await waitForFloor(page, "L2");
-      await expect(joystick).toHaveAttribute("data-boost", "off");
       await expect(button).toHaveAttribute("aria-pressed", "false");
       expect(errors).toEqual([]);
     });
