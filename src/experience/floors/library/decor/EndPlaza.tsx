@@ -44,6 +44,8 @@ const VAULT_TITLE = { y: 5.9, yTiers: 9.6, behind: 1.2, phone: 0.6 };
 export const PEDESTAL_OBSTACLE = [{ x: 0, z: 0, r: 1.25, h: 2.6 }] as const;
 const LINK_COLOR = "#a5f3fc";
 const COUNT_FONT = 0.62;
+/** Space (u) between the picked topic's label and the "N pieces on X" headline stacked over it. */
+const COUNT_GAP = 0.25;
 /** Bottom of the monument's plate column (u above the floor). */
 const MONUMENT_BASE = 0.7;
 
@@ -100,7 +102,7 @@ function stackColumn(specs: readonly Omit<SignSpec, "y">[], base: number): SignS
 /**
  * Every sign of the end plaza in one `FloatingSigns` group (two draw calls), with what each one is: the
  * topic labels riding the orbit above their orbs (the picked one larger, the others dimmed), "N pieces
- * on X" high above the cloud while a topic is picked, the monument's plates stacked in one column (so
+ * on X" stacked over the picked topic's label (riding the orbit with it) while a topic is picked, the monument's plates stacked in one column (so
  * they never cross from any camera yaw) and, with the Study Vault, each book's
  * spine (in its issuer's tone, just in front of the spine face; staggered on phones, `SPINE`) and the "Study Vault" sign over the arc.
  * Positions are relative to the plaza center. Which of them show each frame is decided on screen (`placeLabels`). `phone`
@@ -127,7 +129,13 @@ export function endPlazaSigns(layout: LibraryLayout, topics: readonly LibraryTop
   });
   if (pick) {
     const i = topics.findIndex((t) => t.slug === pick.slug);
-    signs.push({ text: wrapSign(labels.pieces(pick.count, pick.name), 26), x: 0, y: CONSTELLATION.countY, z: 0, color: i >= 0 ? orbTone(i) : "#f4f4f5", fontSize: COUNT_FONT, font: FONTS.monoBold });
+    const text = wrapSign(labels.pieces(pick.count, pick.name), 26);
+    const count: SignSpec = { text, x: 0, y: CONSTELLATION.countY, z: 0, color: i >= 0 ? orbTone(i) : "#f4f4f5", fontSize: COUNT_FONT, font: FONTS.monoBold };
+    // Stacked over the picked label and riding the orbit with it, so the two never overlap at any orbit angle
+    // (owner rule: no end plaza label covers another; issue #297).
+    const label = i >= 0 ? signs[i] : null;
+    if (label) count.y = label.y + signPlate(label).h / 2 + COUNT_GAP + signPlate(count).h / 2;
+    signs.push(label ? { ...count, x: label.x, z: label.z, orbit: true } : count);
     meta.push({ kind: "count" });
   }
   const m = end.monument;
