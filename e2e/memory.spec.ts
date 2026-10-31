@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { enterB1Route } from "./b1";
 import { GPU_MEMORY_BUDGET } from "./budgets";
+import { readRetainedJsBytes } from "./heap";
 import { chooseMotion, enterHQ, expectNoGpuGrowth, readGpuCounters, readJsHeapAfterGc, readJsHeapSettled, readSettledGpuCounters, waitForFloor, waitForHQ, waitForSceneLive } from "./hq";
 
 /**
@@ -11,7 +12,11 @@ import { chooseMotion, enterHQ, expectNoGpuGrowth, readGpuCounters, readJsHeapAf
  * drawn, so what the camera saw decides the counts: every trip calls the elevator the moment the
  * rover arrives, and the baseline is read after one trip shaped like the measured ones (under reduced
  * motion every arrival places the rover on the floor's arrival point, so it always stops at the L1 one). The
- * counts, trips, toggles and heap slack come from GPU_MEMORY_BUDGET (e2e/budgets.ts).
+ * counts, trips, toggles and retained heap slack come from GPU_MEMORY_BUDGET (e2e/budgets.ts).
+ *
+ * The heap gate is the retained JS of a heap snapshot (`readRetainedJsBytes`): `Runtime.getHeapUsage` also counts V8's
+ * code, which grows by about 2 MB over 10 round trips and 1 MB over 4 toggles as V8 optimizes more of the page
+ * (issue #298), with no object retained. Its growth stays in the annotation.
  */
 type MemoryWindow = Window & {
   __hq: {
@@ -19,50 +24,23 @@ type MemoryWindow = Window & {
     floorChunks: { snapshot: () => Record<string, string> };
     office?: { load(): Promise<void> };
     probes: { office?: { loaded: boolean } };
-    render: {
-      gl: { info: { programs?: object[] }; properties: { get(material: object): { currentProgram?: object } | undefined } } | null;
-      scene: { traverse(fn: (o: { material?: object | object[] }) => void): void } | null;
-    };
   };
 };
 
-const { roundTrips: TRIPS, pageViewToggles: TOGGLES, heapBytes: HEAP_SLACK } = GPU_MEMORY_BUDGET;
+const { roundTrips: TRIPS, pageViewToggles: TOGGLES, retainedHeapBytes: RETAINED_SLACK } = GPU_MEMORY_BUDGET;
+const kb = (bytes: number) => `${(bytes / 1024).toFixed(0)} KB`;
 
 test.describe.configure({ timeout: 600_000 });
 test.use({ reducedMotion: "reduce" });
 test.beforeEach(({ page }) => chooseMotion(page, "system"));
 
 /**
- * The toggle gate's window: its baseline after `WARM_TOGGLES` toggles, its growth over `MEASURED_TOGGLES` more. The heap
- * grows most over the first toggles of a page (about 1.2, 0.8 and 0.5 MB locally, then 0.1 to 0.5 MB a toggle), so a
- * window that starts after the third measures the steady state. `TOGGLES` counts the first toggle, the only warm-up
- * before, so the measured window keeps its 4 toggles.
+ * The toggle gate's window: its baseline after `WARM_TOGGLES` toggles, its growth over `MEASURED_TOGGLES` more. A window
+ * that starts after the third measures the steady state. `TOGGLES` counts the first toggle, the only warm-up before, so
+ * the measured window keeps its 4 toggles.
  */
 const WARM_TOGGLES = 3;
 const MEASURED_TOGGLES = TOGGLES - 1;
-/** Extra toggles the gate may take to reach a mount that pins as many programs as its counterpart (see `pinOnlyPrograms`). */
-const MOUNT_RETRIES = 3;
-
-/**
- * Shader programs held only by pins (no material in the scene uses them). The boot precompile (`ProgramWarmup`, frame 3)
- * compiles and pins everything mounted; when a hidden neighbour (L2) commits before it and its own effects have not
- * yet set a material's final variant, the pin keeps that stale variant: about 1 mount in 7 holds one program more than
- * the others. That is a race of each mount, not growth, so the gate compares mounts that pin the same number of programs.
- */
-async function pinOnlyPrograms(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const { gl, scene } = (window as unknown as MemoryWindow).__hq.render;
-    if (!gl || !scene) return -1;
-    const used = new Set<object>();
-    scene.traverse((o) => {
-      for (const material of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) {
-        const program = gl.properties.get(material)?.currentProgram;
-        if (program) used.add(program);
-      }
-    });
-    return (gl.info.programs ?? []).filter((program) => !used.has(program)).length;
-  });
-}
 
 /**
  * Waits for the one-off loads every L1 visit starts at idle: the public floor chunks (the idle prefetch) and the
@@ -97,6 +75,7 @@ test("10 Lobby to Roof round trips leave renderer memory at its baseline @nightl
   await ride(page, "L1");
   const base = await readSettledGpuCounters(page);
   const heapBase = await readJsHeapAfterGc(page);
+  const retainedBase = await readRetainedJsBytes(page);
   const perTrip: string[] = [];
   for (let i = 0; i < TRIPS; i++) {
     await ride(page, "RF");
@@ -106,9 +85,10 @@ test("10 Lobby to Roof round trips leave renderer memory at its baseline @nightl
   }
   const after = await readSettledGpuCounters(page);
   const heapGrowth = (await readJsHeapAfterGc(page)) - heapBase;
-  test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} trips ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
+  const retainedGrowth = (await readRetainedJsBytes(page)) - retainedBase;
+  test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} trips ${JSON.stringify(after)}, retained JS +${kb(retainedGrowth)}, heap in use +${kb(heapGrowth)}` });
   expectNoGpuGrowth(base, after, GPU_MEMORY_BUDGET, `after each trip: ${perTrip.join(" ")}`);
-  expect(heapGrowth).toBeLessThan(HEAP_SLACK);
+  expect(retainedGrowth).toBeLessThan(RETAINED_SLACK);
 });
 
 test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ page }) => {
@@ -121,15 +101,17 @@ test("Lobby to B1 round trips leave renderer memory at its baseline", async ({ p
   const base = await readSettledGpuCounters(page);
   // Settled heap reads (`readJsHeapSettled`): one read after one collection can count garbage still held weakly.
   const heapBase = await readJsHeapSettled(page);
+  const retainedBase = await readRetainedJsBytes(page);
   for (let i = 0; i < TRIPS; i++) {
     await ride(page, "B1");
     await ride(page, "L1");
   }
   const after = await readSettledGpuCounters(page);
   const heapGrowth = (await readJsHeapSettled(page)) - heapBase;
-  test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} B1 trips ${JSON.stringify(after)}, heap +${(heapGrowth / 1024).toFixed(0)} KB` });
+  const retainedGrowth = (await readRetainedJsBytes(page)) - retainedBase;
+  test.info().annotations.push({ type: "measure", description: `base ${JSON.stringify(base)}, after ${TRIPS} B1 trips ${JSON.stringify(after)}, retained JS +${kb(retainedGrowth)}, heap in use +${kb(heapGrowth)}` });
   expectNoGpuGrowth(base, after, GPU_MEMORY_BUDGET, "B1 round trips");
-  expect(heapGrowth).toBeLessThan(HEAP_SLACK);
+  expect(retainedGrowth).toBeLessThan(RETAINED_SLACK);
 });
 
 test("5 Page View and 3D toggles leave renderer memory and the JS heap flat", async ({ page }) => {
@@ -144,33 +126,20 @@ test("5 Page View and 3D toggles leave renderer memory and the JS heap flat", as
   // The baseline is the steady state, not the first visit: the idle loads of the first L1 visit (the floor chunk
   // prefetch, the office watch and scene chunks, their first compile) and the first remounts' one-off allocations
   // would otherwise land inside the measured window. A leak still shows: it adds up over every measured toggle.
-  const pinned: number[] = [];
-  for (let i = 0; i < WARM_TOGGLES; i++) {
-    await toggle();
-    pinned.push(await pinOnlyPrograms(page));
-  }
-  // The baseline mount pins as few programs as the warm-up mounts did (the boot precompile race, `pinOnlyPrograms`).
-  for (let i = 0; i < MOUNT_RETRIES && pinned.at(-1)! > Math.min(...pinned); i++) {
-    await toggle();
-    pinned.push(await pinOnlyPrograms(page));
-  }
-  const basePinned = pinned.at(-1)!;
+  for (let i = 0; i < WARM_TOGGLES; i++) await toggle();
   const base = await readSettledGpuCounters(page);
   const heapBase = await readJsHeapSettled(page);
+  const retainedBase = await readRetainedJsBytes(page);
   for (let i = 0; i < MEASURED_TOGGLES; i++) await toggle();
-  const heapGrowth = (await readJsHeapSettled(page)) - heapBase;
-  // The renderer's counts on a mount that pins as many programs as the baseline's.
-  let retries = 0;
-  while (retries < MOUNT_RETRIES && (await pinOnlyPrograms(page)) !== basePinned) {
-    await toggle();
-    retries++;
-  }
+  // Every mount compiles the same programs: the boot precompile leaves a floor's content to its FloorPrep until that
+  // floor's own effects have run (issue #298), so no mount pins a variant they still change.
   const after = await readSettledGpuCounters(page);
-  const afterPinned = await pinOnlyPrograms(page);
+  const heapGrowth = (await readJsHeapSettled(page)) - heapBase;
+  const retainedGrowth = (await readRetainedJsBytes(page)) - retainedBase;
   test.info().annotations.push({
     type: "measure",
-    description: `base ${JSON.stringify(base)} (pin-only ${basePinned}) after ${pinned.length} warm-up toggles, after ${MEASURED_TOGGLES} more toggles (+${retries} for a matching mount) ${JSON.stringify(after)} (pin-only ${afterPinned}), heap +${(heapGrowth / 1024).toFixed(0)} KB`,
+    description: `base ${JSON.stringify(base)} after ${WARM_TOGGLES} warm-up toggles, after ${MEASURED_TOGGLES} more toggles ${JSON.stringify(after)}, retained JS +${kb(retainedGrowth)}, heap in use +${kb(heapGrowth)}`,
   });
   expectNoGpuGrowth(base, after);
-  expect(heapGrowth).toBeLessThan(HEAP_SLACK);
+  expect(retainedGrowth).toBeLessThan(RETAINED_SLACK);
 });

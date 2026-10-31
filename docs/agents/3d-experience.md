@@ -257,7 +257,7 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - Otherwise each Page View toggle would keep the old renderer alive.
 - Guards:
   - `tests/unit/three-disposal.test.ts` fails on a memoized geometry or texture that is never disposed.
-  - `e2e/memory.spec.ts` checks that 10 Lobby to Roof round trips and 5 Page View toggles keep `renderer.info` geometries, textures and programs at their baseline (`__hq.memory()`) with under 2 MB of JS heap growth.
+  - `e2e/memory.spec.ts` checks that 10 Lobby to Roof round trips, 10 Lobby to B1 round trips and 5 Page View toggles keep `renderer.info` geometries, textures and programs at their baseline (`__hq.memory()`) with under 256 KB of retained JS growth (a heap snapshot's objects, closures, arrays and strings: `GPU_MEMORY_BUDGET.retainedHeapBytes`, [performance.md](performance.md#memory-gates)).
 
 ## Camera
 
@@ -459,12 +459,15 @@ Every floor arrives like L3 (owner decision, Round 8 J): the rover leaves the ca
   - wait without blocking where `KHR_parallel_shader_compile` exists;
   - pin new programs (`scene/programPins.ts`: never-rendered clones, so three keeps the program after the floor unmounts).
 - `ProgramWarmup` compiles the scene after the first frame.
+  - It leaves out the content of every floor whose `FloorPrep` has not begun (`precompileScene`, `ridePrep.floors`): that floor committed but its passive effects have not run, and they may still change program variants (the first `setColorAt` of the door and floor pads, L3's pods, L4's decor). Its `FloorPrep` runs after them and compiles the final variants. Otherwise a neighbour (L2) committing right before frame 3 pinned its pads' variant without instance colors, one program more in some mounts.
+  - The scene still compiles in one call, with that content out of its parent's children for the call (`without`): three's `compile` adds the lights of the object it compiles to the scene's, so a subtree compiled on its own (the rover and its headlight) would compile variants for one point light too many.
+  - Test: `tests/unit/precompile.test.ts` ("leaves floor content to its FloorPrep until that began").
   - During boot only and on the full tier, it mounts each other floor hidden (`warmingFloor`, `nearFloors(..., warm)`), compiles and unmounts it. A Career Road mounted for warming stays hidden.
   - Every other floor compiles as it mounts through the tower's `FloorPrep` (see [Elevator ride](#elevator-ride)).
 - `precompileFloor` returns null before the scene's first drawn frame and never switches to a render target that is already bound.
   - `withTarget`: three resets the canvas viewport with `floor()` on a switch to null, which would draw a fractional lite canvas 1 px narrower.
 - Content visibility is `floorContentVisible` and `contentVisible` (`tower/visibility.ts`) together.
-- `gl.compile` skips hidden objects, so the boot and floor precompiles never see an object that mounts hidden and shows later. Such an object either reuses a program the scene already draws (same material type and flags, same geometry attributes) or is precompiled with its hidden children shown (`OfficeReady`).
+- `gl.compile` compiles hidden objects too (three r186 checks visibility only for lights), but never an object that is not mounted yet, so the boot and floor precompiles never see an object that mounts later. Such an object either reuses a program the scene already draws (same material type and flags, same geometry attributes) or is precompiled once it mounts (`OfficeReady`, with its hidden children shown).
   - Otherwise it compiles on the first drawn frame that shows it, and on a slow runner which frame that is comes down to chance (the rover's arrival flag: its DoubleSide pennant was a flaky +1 program in the L1 replay perf gate; now a closed prism with the pole's program).
   - Test: `e2e/gpu.spec.ts` ("an arrival flag adds no shader program", full tier) drives until a frame drew the flag, then holds the settled program set.
 - `__hq.render` exposes `peakCalls` (reset with `resetPeak()`), `programs()`, `programNames()`, `graphics()` and `warmFloors()`.

@@ -448,6 +448,7 @@ describe("specsForChanges", () => {
     }
     expect(specsForChanges(["src/hud/FloorButtons.tsx"]).specs).toEqual(["arrivals", "b1-unlock", "engine-room", "experience", "hud", "hud-corners", "onboarding", "pads"]);
     expect(specsForChanges(["e2e/touch.ts"]).specs).toEqual(["boost"]);
+    expect(specsForChanges(["e2e/heap.ts"]).specs).toEqual(["memory"]);
     expect(specsForChanges(["src/hud/Joystick.tsx"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding", "phone-first"]);
     expect(specsForChanges(["src/hud/boost.ts"]).specs).toEqual(["boost", "hud", "hud-corners", "onboarding"]);
     expect(specsForChanges(["e2e/hud-corners.spec.ts"]).specs).toEqual(["hud-corners"]);
