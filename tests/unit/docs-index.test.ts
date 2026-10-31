@@ -11,6 +11,8 @@ import {
   renderDecisions,
   renderPlans,
   statusPrs,
+  DECISION_AREAS,
+  broadArea,
 } from "../../scripts/docs-index";
 
 // Conflict-free history docs: parallel PRs that each add a decision and a plan never edit the same lines
@@ -27,6 +29,12 @@ describe("owner decisions, one file each", () => {
     const decisions = listDecisions(root);
     expect(decisions.length).toBe(files.length);
     expect(decisions.length).toBeGreaterThan(150);
+  });
+
+  it("names only the listed broad areas in decision headings, so one area never splits under two names", () => {
+    const off = listDecisions(root).filter((d) => !(DECISION_AREAS as readonly string[]).includes(broadArea(d.area)));
+    expect(off.map((d) => `${d.file}: ${d.area}`)).toEqual([]);
+    expect(broadArea("Content: CV")).toBe("Content");
   });
 
   it("docs/decisions.md is a static page with no rows to append", () => {

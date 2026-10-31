@@ -1,6 +1,6 @@
 # B1 WOW Pass Implementation Plan
 
-Status: in review
+Status: shipped in #307 (ef7d7fb), 2026-10-23
 
 **Goal:** B1 reads as a WOW hidden floor: a data-driven hologram in every station bay and the site's build stack
 orbiting the reactor ([spec](../specs/2026-10-23-b1-wow-illustration-design.md)).

@@ -1,4 +1,4 @@
-# Page View
+# Classic site
 
 - Date: 2026-10-13
 - PR: [#83](https://github.com/ShinyQ/ShinyQ-HQ/pull/83)

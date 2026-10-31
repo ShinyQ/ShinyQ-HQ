@@ -1,4 +1,4 @@
-# Public visit stats: since launch by default
+# Stats: since launch by default
 
 - Date: 2026-10-23
 

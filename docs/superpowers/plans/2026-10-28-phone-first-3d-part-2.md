@@ -1,6 +1,6 @@
 # Phone-First 3D, Part 2 Implementation Plan
 
-Status: in review (#346).
+Status: shipped in #346 (15ec117), 2026-10-29
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

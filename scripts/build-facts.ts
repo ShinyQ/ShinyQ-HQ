@@ -22,7 +22,9 @@ import { PROMPT_VERSION } from "../functions/_lib/prompt";
 import { PACK_MAX_BYTES } from "../src/ask/pack";
 import { ASK_HISTORY_TURNS } from "../src/ask/protocol";
 import { BuildFactsSchema, getBuildStory, type BuildFacts } from "../src/content/build-story";
-import { listDecisions, listPlans, type Decision, type Plan } from "./docs-index";
+import { broadArea, listDecisions, listPlans, type Decision, type Plan } from "./docs-index";
+
+export { broadArea };
 
 export const FACTS_FILE = path.join(process.cwd(), "content", "generated", "build-facts.json");
 
@@ -165,8 +167,6 @@ export function firstSentence(markdown: string, max = SENTENCE_MAX): string {
   return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)).replace(/[,;:]$/, "")}\u2026`;
 }
 
-/** The broad area of a decision heading: "Content: CV" counts as "Content". */
-export const broadArea = (area: string) => area.split(":")[0].trim();
 
 /**
  * The owner decision log: the total, the busiest broad areas (most first, then by name, `LOG_LATEST.areas` of them)

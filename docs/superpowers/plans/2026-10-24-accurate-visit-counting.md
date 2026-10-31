@@ -1,6 +1,6 @@
 # Accurate Visit Counting Plan
 
-Status: in review
+Status: shipped in #312 (857e567), 2026-10-24
 
 Owner decision 2026-10-24 ([decision](../../decisions/2026-10-24-stats-first-party-visits.md)). Rules:
 [`docs/agents/stats.md`](../../agents/stats.md).

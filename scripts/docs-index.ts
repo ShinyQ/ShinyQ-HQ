@@ -14,6 +14,45 @@ export const DECISIONS_DIR = "docs/decisions";
 export const PLANS_DIR = "docs/superpowers/plans";
 export const DECISION_FILE = /^(\d{4}-\d{2}(?:-\d{2})?)-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 export const PR_LINK = /^\[#(\d+)\]\(https:\/\/github\.com\/ShinyQ\/ShinyQ-HQ\/pull\/(\d+)\)$/;
+/**
+ * The broad areas a decision heading may name (the part before any ":", as in "Content: CV"). One list keeps the log
+ * and the B1 decision chips from splitting one area under two names; add a new area here with its first decision.
+ */
+export const DECISION_AREAS = [
+  "3D experience",
+  "Ask",
+  "Audio",
+  "B1 Engine Room",
+  "Brand",
+  "Budgets",
+  "CI",
+  "Classic site",
+  "Codebase",
+  "Content",
+  "Dependencies",
+  "Deploy",
+  "Docs",
+  "Floors",
+  "HUD",
+  "L1 Agent Office",
+  "L1 Lobby",
+  "L2 Career",
+  "L3 Labs",
+  "L4 Writing",
+  "Motion",
+  "Onboarding",
+  "Performance",
+  "RF Roof",
+  "Safety",
+  "Security",
+  "Stats",
+  "Styling",
+  "Tests",
+] as const;
+
+/** The broad area of a decision heading: "Content: CV" counts as "Content". */
+export const broadArea = (area: string) => area.split(":")[0].trim();
+
 /** The status line sits under the title or after the agentic-workers note. */
 export const STATUS_WITHIN_LINES = 12;
 

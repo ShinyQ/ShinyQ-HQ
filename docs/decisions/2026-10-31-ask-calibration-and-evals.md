@@ -1,4 +1,4 @@
-# Ask the HQ
+# Ask
 
 - Date: 2026-10-31
 - PR: [#359](https://github.com/ShinyQ/ShinyQ-HQ/pull/359)

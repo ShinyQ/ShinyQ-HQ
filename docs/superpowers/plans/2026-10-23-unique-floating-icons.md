@@ -1,6 +1,6 @@
 # Unique Floating Icons Implementation Plan
 
-Status: in review
+Status: shipped in #309 (6ad90eb), 2026-10-23
 
 Design: [`2026-10-23-unique-floating-icons-design.md`](../specs/2026-10-23-unique-floating-icons-design.md). Owner
 decision 2026-10-23 ([decision](../../decisions/2026-10-23-unique-floating-icons.md)).
