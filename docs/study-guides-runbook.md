@@ -90,8 +90,9 @@ Content rules: [`content.md`](content.md#study-guides). Code rules: [`agents/con
 3. Run `prepare`, review, `upload`, then commit as above. `tests/content/study-guides.test.ts` pins the slugs in
    file order (`SLUGS`), which also drive the `CertView.guide` links: update it in the same PR. The L4 Study Vault adds
    a book per guide from the real content, so `tests/unit/library-vault.test.ts` (space rules, every book framed) and
-   `tests/unit/library-label-sweep.test.ts` must pass with the new book. Five books 3 u apart fill the vault plaza
-   ([floor-l4-library.md](agents/floor-l4-library.md#study-vault)); a sixth needs a layout change, not a constant tweak.
+   `tests/unit/library-label-sweep.test.ts` must pass with the new book. Up to five books stand on one arc, six to ten
+   as two tiers ([floor-l4-library.md](agents/floor-l4-library.md#study-vault)); the schema stops at ten (`MAX_GUIDES`),
+   and an eleventh needs a vault layout change, not a constant tweak.
 
 ## Verify
 

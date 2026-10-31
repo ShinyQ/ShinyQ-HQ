@@ -212,10 +212,10 @@ describe("golden set (mocked model)", () => {
     expect(golden.passThreshold).toBe(102);
   });
 
-  it("scores the in-progress GH-300 as not earned", () => {
-    const gh300 = golden.items.find((i) => i.id === "q105") as GoldenItem;
-    expect(scoreGolden("Not yet: Kurniadi's GH-300 (GitHub Copilot) certification is in progress, planned for 2026-11.", gh300).pass).toBe(true);
-    expect(scoreGolden("Yes, Kurniadi has passed GH-300 and has earned the GitHub Copilot certification.", gh300).pass).toBe(false);
+  it("scores the in-progress AB-100 as not earned", () => {
+    const ab100 = golden.items.find((i) => i.id === "q105") as GoldenItem;
+    expect(scoreGolden("Not yet: Kurniadi's AB-100 (Agentic AI Business Solutions Architect Expert) certification is in progress, planned for 2026-11.", ab100).pass).toBe(true);
+    expect(scoreGolden("Yes, Kurniadi has passed AB-100 and has earned the Agentic AI Business Solutions Architect Expert certification.", ab100).pass).toBe(false);
   });
 
   it("scores a no-written-view answer as the refusal it is", () => {

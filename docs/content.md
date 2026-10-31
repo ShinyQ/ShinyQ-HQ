@@ -147,7 +147,7 @@ A paper or thesis with `document` in `site-content.json` gets "Read the paper" (
 
 ## Study guides
 
-The owner's certification study guides (today GH-600, GH-300, Google Generative AI Leader, AI-103 and AI-901) are read in the site's own pdf.js reader: from the Study guides shelf on the Writing page (`/library#guides`), from "Read study guide" in a certification's preview card and from the books of the L4 Study Vault in the 3D tower. Step by step: [`study-guides-runbook.md`](study-guides-runbook.md).
+The owner's certification study guides (today GH-600, GH-300, Google Generative AI Leader, AB-100, AI-103 and AI-901; at most 10) are read in the site's own pdf.js reader: from the Study guides shelf on the Writing page (`/library#guides`), from "Read study guide" in a certification's preview card and from the books of the L4 Study Vault in the 3D tower. Step by step: [`study-guides-runbook.md`](study-guides-runbook.md).
 
 - **Dataset**: `content/study-guides.json`, a separate file (zod `StudyGuidesFileSchema`), one entry per guide in shelf order (also the Study Vault's book order).
   - Written by hand: `slug`, `certId` (a `certifications[].id`; it links the guide to its certification card), `code` (or `null`), `spine` (at most 14 characters, for the L4 Study Vault's book spines), `issuer`, `title` and `summary` (`{ en, id }`; titles in Title Case with no first person), `edition` (`YYYY-MM`), `file` (the download file name) and 1 to 8 exam `domains` (`weight` `[min, max]` percent and a `{ en, id }` label).

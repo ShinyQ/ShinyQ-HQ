@@ -12,7 +12,7 @@ Related: floor rules shared by every floor live in [floors.md](floors.md); the V
 - Code: `floors/lobby/CertWall.tsx`; pure layout `CERT_WALL`, `certSlots`, `certPage`, `tabAngles`, `certPanelHalf` in `floors/lobby/layout.ts`.
 - Shape: a curved holo-wall on an arc of radius 23.5 (`LOBBY.certWall.radius`) around the hologram, inside the `LOBBY.certWall` footprint. Badges keep their size at any radius (angles scale with it).
   - A layout test keeps the widest panel inside the footprint.
-- Tabs come from `issuerTabs`: All, up to 3 issuers with 2 or more certifications, Other. Real content: All 9, Microsoft 3, GitHub 2 (GH-600 and the in-progress GH-300), Other 4. An in-progress badge reads "In progress" in amber where an earned one shows its month.
+- Tabs come from `issuerTabs`: All, up to 3 issuers with 2 or more certifications, Other. Real content: All 10, Microsoft 4 (the in-progress AB-100 among them), GitHub 2 (GH-600 and GH-300), Other 4. An in-progress badge reads "In progress" in amber where an earned one shows its month.
 - Paging: 12 badges per page in two rows sized to content, a pager past 12.
 - Draw calls:
   - badge bodies and glows: two instanced meshes;
