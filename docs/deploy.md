@@ -234,6 +234,18 @@ Status (2026-10-11): the `kurniadi.dev` zone is active on Cloudflare, but the do
 4. Optional: send `kurniadi.pages.dev` to the custom domain with a Cloudflare Bulk Redirect (Rules > Redirect Rules > Bulk Redirects, source `kurniadi.pages.dev`, target `https://kurniadi.dev`, preserve path and query). `_redirects` cannot do this because it cannot match on host names.
 5. Optional: redirect `www.kurniadi.dev` to the apex with a Redirect Rule in the zone.
 
+## 7b. Main address kurniadi.my.id (owner decision 2026-10-31)
+
+`kurniadi.my.id` becomes the canonical origin and `kurniadi.pages.dev` redirects to it (`kurniadi.dev` stays blocked in Indonesia, section 7). Status and the remaining steps, in this order:
+
+1. Done 2026-10-31: the zone `kurniadi.my.id` is on Cloudflare (status pending until step 2). Its records: the apex and `www` are proxied CNAMEs to `kurniadi.pages.dev`; mail stays as it was (Zoho MX 10, 20 and 50; the cPanel fallback MX 100 now targets `mail.kurniadi.my.id`; `mail` and `ftp` are DNS-only A records to the old host; SPF, DKIM and DMARC unchanged).
+2. Owner: at the registrar (PT Digital Registra Indonesia), replace the nameservers `ns1` to `ns4.ardetamedia.com` with `amir.ns.cloudflare.com` and `ophelia.ns.cloudflare.com`. The zone turns active once they propagate (minutes to a day; `cf zones list` shows the status).
+3. Done 2026-10-31: the Pages project has the custom domains `kurniadi.my.id` and `www.kurniadi.my.id` (pending until step 2 validates them), the Turnstile widget lists `kurniadi.my.id`, and `ASK_ALLOWED_ORIGINS` and the stats Worker's `WA_HOSTS` accept the new hosts.
+4. Check: `curl -sI https://kurniadi.my.id/en` answers 200 from Cloudflare with the site's headers, Ask answers on the new host, and a visit is counted.
+5. `gh variable set SITE_URL --body https://kurniadi.my.id`, then redeploy (`gh workflow run deploy.yml --ref main`): canonical URLs, `hreflang`, the sitemap, OG URLs and the uptime and smoke checks use the new origin. Update this page's "Production URL" row and the docs that name the production host in the same PR as the cutover.
+6. Move the GitHub webhook payload URL to `https://kurniadi.my.id/api/office/github` (webhooks do not follow redirects) and the office relay endpoint on the owner's Mac to `https://kurniadi.my.id/api/office/beat` (the relay's `DEFAULT_CONFIG` moves with it).
+7. Last: a Bulk Redirect from `kurniadi.pages.dev` to `https://kurniadi.my.id`, status 308 (keeps the method of a POST), path and query preserved. It matches the exact host only, so per-deployment previews (`<hash>.kurniadi.pages.dev`) keep working. Keep `kurniadi.pages.dev` in the allowed origins.
+
 ## 8. Lighthouse CI
 
 - Job `lighthouse` (check name `Lighthouse CI`) in `ci.yml` runs after the `site` build on every dispatch and nightly, on pull requests on the URLs their smart CI plan needs (page code, strings, assets, 3D code, content, or a full run; [`agents/ci-and-deploy.md`](agents/ci-and-deploy.md#what-a-pull-request-runs)), and on a push to `main` on the URLs the merged PR's run skipped (merging that run's reports); otherwise its steps skip and the check passes. It downloads the `site` artifact, serves it with `scripts/serve-static.ts` on port 4320 and runs `@lhci/cli` (pinned in the workflow) with `lighthouserc.json`.
@@ -303,6 +315,7 @@ Account `6b396b5c1b91035048383cf4c3f3f437` (Workers Free plan), as of 2026-10-11
 | R2 | `hq-study-guides` | Study guide PDFs (private, no `r2.dev` URL, no custom domain), binding `GUIDES`, served by `/api/guides/<slug>` (section 19) |
 | R2 | `shinyq` | Archive of the previous site's images and logos (not used by this site) |
 | Zone | `kurniadi.dev` | Custom domain (blocked in Indonesia, see section 7) and email routing |
+| Zone | `kurniadi.my.id` | The main address from the cutover in section 7b (pending until the registrar's nameservers point at Cloudflare); mail on Zoho |
 | API tokens | `hq-ci-deploy` (`CLOUDFLARE_API_TOKEN`, `production` environment), `shinyq-hq CI read` (`CF_EVAL_TOKEN`), `shinyq-hq AI Gateway log purge` (`CF_LOGS_TOKEN`) | Rotate each before it expires (the two `shinyq-hq` tokens on 2027-01-09; `docs/ask-runbook.md`) |
 
 ## 12. Performance beacon (RUM)
